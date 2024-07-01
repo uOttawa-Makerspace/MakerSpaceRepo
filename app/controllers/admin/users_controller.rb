@@ -244,16 +244,24 @@ class Admin::UsersController < AdminAreaController
     end
   end
 
-  def manage_roles
-    @admins = User.where(role: "admin").order("lower(name) ASC")
-    @staff = User.where(role: "staff").order("lower(name) ASC")
-    @volunteers =
-      User
-        .joins(:programs)
-        .where(programs: { program_type: Program::VOLUNTEER })
-        .order("lower(name) ASC")
-    @roles = %w[admin staff regular_user]
+def manage_roles
+  @admins = User.where(role: "admin").order("lower(name) ASC")
+  @staff = User.where(role: "staff").order("lower(name) ASC")
+  @volunteers =
+  User
+    .joins(:programs)
+    .where(programs: { program_type: Program::VOLUNTEER })
+    .order("lower(name) ASC")
+  @roles = %w[admin staff regular_user]
+  @space_list = Space.all
+
+  # Fetching staff spaces for each admin
+  @admin_spaces = {}
+  @admins.each do |admin|
+    @admin_spaces[admin.id] = admin.staff_spaces.pluck(:space_id)
   end
+end
+
 
   private
 

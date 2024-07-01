@@ -1,22 +1,34 @@
-    <thead class="table-primary">
-      <tr class="text-center">
-        <th class="name-header">Username</th>
-        <th class="name-header">Name</th>
-        <th class="email-header">Email</th>
-        <th class="email-header">Role</th>
-      </tr>
-    </thead>
-    <% @admins.each do |admin| %>
-    <tr>
-      <td class="username-cell"><%= link_to admin.username, user_url(admin.username) %></td>
-      <td class="name-cell"><%= admin.name %></td>
-      <td class="email-cell"><%= admin.email %></td>
-      <td class="w-auto">
-        <%= form_tag set_role_admin_users_path(id: admin.id), method: :patch, format: 'js', remote: true do %>
-          <% @roles = [%w[Admin admin], %w[Staff staff], %w[Regular regular_user]] %>
-          <%= select_tag(:role, options_for_select(@roles, selected: admin.role), class: 'form-control form-select d-inline w-auto') %>
-          <%= submit_tag 'Change', class: 'btn btn-primary btn-sm form-control d-inline w-auto' %>
+<thead class="table-primary">
+  <tr class="text-center">
+    <th class="name-header">Username</th>
+    <th class="name-header">Name</th>
+    <th class="email-header">Email</th>
+    <th class="spaces-header">Spaces</th>
+    <th class="email-header">Role</th>
+  </tr>
+</thead>
+<% @admins.each do |admin| %>
+<tr>
+  <td class="username-cell"><%= link_to admin.username, user_url(admin.username) %></td>
+  <td class="name-cell"><%= admin.name %></td>
+  <td class="email-cell"><%= admin.email %></td>
+  <td class="spaces-cell"> <!-- New column data -->
+    <div class="space-list">
+      <% @space_list.each do |space| %>
+        <% color = space.assigned_color %>
+        <% if @admin_spaces[admin.id].include?(space.id) %>
+          <div class="space-bubble" style="margin-right: 10px; border-color: <%= rgba(color, 1) %>; background-color: <%= rgba(color, 0.3) %>;">
+            <%= space.name %>
+          </div>
         <% end %>
-      </td>
-    </tr>
+      <% end %>
+    </div>
+  </td>
+  <td class="w-auto">
+    <%= form_tag set_role_admin_users_path(id: admin.id), method: :patch, format: 'js', remote: true do %>
+      <%= select_tag(:role, options_for_select(@roles, selected: admin.role), class: 'form-control form-select d-inline w-auto') %>
+      <%= submit_tag 'Change', class: 'btn btn-primary btn-sm form-control d-inline w-auto' %>
     <% end %>
+  </td>
+</tr>
+<% end %>
