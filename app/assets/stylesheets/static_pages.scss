@@ -2,8 +2,6 @@
 @import "./shared/variables";
 
 .home ~ #quick-access-bar {
-  position: fixed;
-  top: 4rem;
   width: 100%;
   z-index: 50;
 }

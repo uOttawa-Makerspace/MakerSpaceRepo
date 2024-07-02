@@ -1,4 +1,5 @@
-<nav class="navbar navbar-expand-xl navbar-light fixed-top <%= controller_name %> <%= action_name %> bg-primary shadow-lg" id="header-navbar">
+<div class="sticky-top">
+<nav class="navbar navbar-expand-xl navbar-light <%= controller_name %> <%= action_name %> bg-primary shadow-lg" id="header-navbar">
   <div class="container-fluid m-2">
     <a class="navbar-brand ms-5" href="/"><strong>CEED</strong>Repo</a>
     <button class="navbar-toggler" id="navbar-toggle-button" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -73,10 +74,6 @@
       <li class="nav-item"><a class="nav-link" data-bs-toggle="modal" data-bs-target="#popUpWindow" href=""><%= t('navbar.sign_in') %></a></li>
       <li class="nav-item"><a class="nav-link" href="/new"><%= t('navbar.create_account') %></a></li>
         <% else %>
-        <li class="nav-item">
-          <a class="nav-link" href="<%= new_repository_path(@user.username) %>"><%= t('navbar.create_project') %></a>
-        </li>
-
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href=" <%= user_path(@user.username) %>" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             <%= image_tag @user.display_avatar, class: 'avatar', alt: 'Avatar' %>
@@ -121,4 +118,5 @@
 
 <div class="flash" id="flash" style="padding-left: 20px; padding-right: 20px; z-index: 100;">
   <%= render 'layouts/flash' %>
+</div>
 </div>

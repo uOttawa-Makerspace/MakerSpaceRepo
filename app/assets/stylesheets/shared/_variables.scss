@@ -1,10 +1,13 @@
 $theme-colors: (
   //"primary": rgb(95, 158, 160) // "MakerRepo Green"
   //"primary": #497979 // New "MakerRepo Green"
-  "primary": #ff7800 // "CEEDRepo Orange"
+  "primary": #ff7800,
+  // "CEEDRepo Orange"
+  "secondary": #868686
 );
 
 $primary: #ff7800;
+$secondary: #868686;
 $navbar-light-color: rgba(0, 0, 0, 0.7);
 $navbar-light-hover-color: rgba(0, 0, 0, 1);
 $navbar-dark-color: rgba(255, 255, 255, 0.7);
