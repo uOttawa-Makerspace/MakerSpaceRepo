@@ -16,37 +16,54 @@
 
       <ul class="navbar-nav ms-5 me-auto align-items-xl-baseline">
       <li class="nav-item">
-        <a class="nav-link" href="/explore"><%= t('navbar.explore') %></a>
+        <a class="nav-link" href="/"><%= t('navbar.home') %></a>
       </li>
 
       <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle" href="/project_proposals" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-          <%= t('navbar.project_proposals') %>
+        <a class="nav-link dropdown-toggle" href="/explore" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <%= t('navbar.projects') %>
         </a>
         <div class="dropdown-menu">
-          <a class="dropdown-item" href="/project_proposals/new"><%= t('navbar.propose_project') %></a>
+          <a class="dropdown-item" href="/explore"><%= t('navbar.explore') %></a>
           <% if signed_in? %>
-            <a class="dropdown-item" href="/project_proposals/user_projects"><%= t('navbar.your_projects') %></a>
-            <a class="dropdown-item" href="/project_proposals/projects_assigned"><%= t('navbar.assigned_projects') %></a>
+          <a class="dropdown-item" href="<%= new_repository_path(@user.username) %>"><%= t('navbar.create_project') %></a>
           <% end %>
+          <a class="dropdown-item" href="/project_proposals/new"><%= t('navbar.propose_project') %></a>
+          <% if signed_in? and @user.staff? %>
           <a class="dropdown-item" href="/project_proposals"><%= t('navbar.proposed_projects') %></a>
-          <a class="dropdown-item" href="/project_proposals/projects_completed"><%= t('navbar.completed_projects') %></a>
+          <% end %>
         </div>
       </li>
 
       <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle" href="/project_proposals" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-          <%= t('navbar.more') %>
+        <a class="nav-link dropdown-toggle" href="" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <%= t('navbar.get_involved') %>
         </a>
-
         <div class="dropdown-menu">
-          <a class="dropdown-item" href="https://www.eventbrite.ca/o/latelier-makerspace-richard-labbe-uottawa-uottawa-richard-labbe-makerspace-6930970537"><%= t('navbar.makerspace_events') %></a>
-          <a class="dropdown-item" href="https://www.eventbrite.ca/o/the-manufacturing-training-centre-8474302765"><%= t('navbar.brunsfield_events') %></a>
-          <a class="dropdown-item" href="https://designday.makerepo.com/"/><%= t('navbar.design_day') %></a>
-          <a class="dropdown-item" href="https://wiki.makerepo.com/wiki/Main_Page"><%= t('navbar.resources') %></a>
+          <a class="dropdown-item" href="https://www.eventbrite.ca/o/latelier-makerspace-richard-labbe-uottawa-uottawa-richard-labbe-makerspace-6930970537"><%= t('navbar.workshops') %></a>
+          <a class="dropdown-item" ><%= t('navbar.join_a_team') %></a>
+          <a class="dropdown-item" href="volunteers" ><%= t('navbar.volunteering') %></a>
+          <a class="dropdown-item" ><%= t('navbar.makerlaunch') %></a>
+        </div>
+      </li>
+
+      <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle" href="" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <%= t('navbar.resources') %>
+        </a>
+        <div class="dropdown-menu">
+          <a class="dropdown-item" href="https://wiki.makerepo.com/wiki/Main_Page"><%= t('navbar.ceed_wiki') %></a>
           <a class="dropdown-item" href="https://makerstore.ca/"><%= t('navbar.makerstore') %></a>
           <%= link_to('MakerRoom', sub_space_booking_index_path, class: 'dropdown-item') %>
         </div>
+      </li>
+      
+      <li class="nav-item">
+        <a class="nav-link" href="<%= job_orders_path %>"><%= t('navbar.user.joborder') %></a>
+      </li>
+
+      <li class="nav-item">
+        <a class="nav-link" href="">FAQ</a>
       </li>
     </ul>
 
