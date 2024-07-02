@@ -75,7 +75,7 @@
       <li class="nav-item"><a class="nav-link" href="/new"><%= t('navbar.create_account') %></a></li>
         <% else %>
         <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href=" <%= user_path(@user.username) %>" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <a class="nav-link dropdown-toggle" href=" <%= user_path(@user.username) %>" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="text-transform: none;">
             <%= image_tag @user.display_avatar, class: 'avatar', alt: 'Avatar' %>
             <%= @user.username %>
           </a>
@@ -101,7 +101,7 @@
       </li>
         <% end %>
 
-        <li class="navbar-divider mx-5"></li>
+        <!-- <li class="navbar-divider mx-5"></li> -->
 
         <% locales_change.each do |locale| %>
         <li class="nav-item">
