@@ -319,7 +319,7 @@ class StaffDashboardController < StaffAreaController
               "%#{@query}%",
               "%#{@query}%"
             )
-            .includes(:lab_sessions)
+            .includes(lab_sessions: :space)
             .order(:updated_at)
       end
       format.html
