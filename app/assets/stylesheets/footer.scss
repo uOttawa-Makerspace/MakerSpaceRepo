@@ -1,43 +1,25 @@
+//@import "bootstrap/scss/bootstrap";
 @import "lib";
+@import "./shared/variables";
 
 footer {
-  display: block;
-  text-align: center;
-  border-top: 1px solid #5f9ea0;
-  color: #5f9ea0;
-  text-transform: uppercase;
-  font-size: 0.8rem;
-  font-weight: bold;
-  margin-top: 2rem;
-  padding: 1rem;
-
-  a,
-  a:hover,
-  a:focus,
-  a:active {
-    text-decoration: none;
+  color: #fff;
+  background-color: #000;
+  padding-top: 3rem;
+  padding-bottom: 3rem;
+  // Icons
+  .fa {
+    font-size: 20px;
+    color: $primary;
+    padding: 1rem;
   }
 
-  ul.footer-items {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-wrap: wrap;
-    margin: -0.1rem 0;
-
-    li {
-      padding: 0 0.5rem;
-      margin: 0.1rem 0.5rem;
-      white-space: nowrap;
-
-      a {
-        display: inline-block;
-        text-decoration: none;
-      }
-    }
+  a {
+    color: #fff !important;
+    font-weight: 700;
   }
-
-  .copyright {
-    margin-top: 1rem;
+  ul {
+    list-style: none;
+    column-count: 2;
   }
 }
