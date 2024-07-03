@@ -241,6 +241,10 @@ Rails.application.routes.draw do
         put "toggle_lock_user"
         get "manage_roles"
       end
+    member do
+         get 'fetch_spaces'
+      patch 'update_spaces'
+    end
     end
 
     resources :spaces, only: %i[index create edit] do
@@ -634,3 +638,4 @@ Rails.application.routes.draw do
     delete :delete, path: "delete/:id", as: "delete"
   end
 end
+

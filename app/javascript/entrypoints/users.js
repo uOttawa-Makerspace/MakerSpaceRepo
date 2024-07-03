@@ -1,5 +1,6 @@
 import TomSelect from "tom-select";
 import Rails from "@rails/ujs";
+import { Modal } from "bootstrap";
 
 document.addEventListener("turbo:load", function () {
   const elements = document.querySelectorAll("[data-show], [data-hide]");
@@ -78,6 +79,79 @@ document.addEventListener("turbo:load", function () {
       } else {
         alert("Please attach a pdf file only");
       }
+    });
+  });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+  const manageSpacesModal = document.getElementById('manageSpacesModal');
+  let adminId; // To keep track of the current admin ID
+
+  manageSpacesModal.addEventListener('show.bs.modal', function(event) {
+    const button = event.relatedTarget; // Button that triggered the modal
+    adminId = button.getAttribute('data-admin-id'); // Extract admin ID from data attribute
+    const modalBody = manageSpacesModal.querySelector('.modal-body');
+    
+    // Clear previous contents and show loading status
+    modalBody.innerHTML = '<p>Loading...</p>';
+
+    // Fetch spaces associated with this admin
+    fetch(`/admin/users/${adminId}/fetch_spaces`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error, status = ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(spaces => {
+        modalBody.innerHTML = ''; // Clear the loading message
+        spaces.forEach(space => {
+          const isChecked = space.is_assigned ? 'checked' : '';
+          const checkboxHTML = `
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="${space.id}" id="space_${space.id}" ${isChecked}>
+              <label class="form-check-label" for="space_${space.id}">
+                ${space.name}
+              </label>
+            </div>
+          `;
+          modalBody.innerHTML += checkboxHTML;
+        });
+      })
+      .catch(error => {
+        console.error('Error loading spaces:', error);
+        modalBody.innerHTML = `<p>Error loading spaces: ${error.message}. Please try again.</p>`; // Handle errors more specifically
+      });
+  });
+
+  // Save changes button handler
+  document.getElementById('saveSpaceChangesButton').addEventListener('click', function() {
+    const checkedBoxes = manageSpacesModal.querySelectorAll('.form-check-input:checked');
+    const spaceIds = Array.from(checkedBoxes).map(cb => cb.value);
+
+    fetch(`/admin/users/${adminId}/update_spaces`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+      },
+      body: JSON.stringify({ space_ids: spaceIds })
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error, status = ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      // Handle success, maybe close the modal and show a success message
+      console.log('Spaces updated successfully:', data);
+      // Optionally close the modal
+      const bootstrapModal = bootstrap.Modal.getInstance(manageSpacesModal);
+      bootstrapModal.hide();
+    })
+    .catch(error => {
+      console.error('Error updating spaces:', error);
     });
   });
 });

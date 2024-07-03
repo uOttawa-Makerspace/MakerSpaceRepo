@@ -268,6 +268,37 @@ def manage_roles
   end
 end
 
+def fetch_spaces
+  user = User.find_by(id: params[:id])
+  if user
+    all_spaces = Space.select(:id, :name)
+    user_space_ids = user.spaces.pluck(:id).to_set
+
+    spaces = all_spaces.map do |space|
+      { id: space.id, name: space.name, is_assigned: user_space_ids.include?(space.id) }
+    end
+
+    render json: spaces
+  else
+    render json: { error: "User not found" }, status: :not_found
+  end
+rescue StandardError => e
+  render json: { error: e.message }, status: :internal_server_error
+end
+
+def update_spaces
+  user = User.find_by(id: params[:id])
+  if user
+    user.space_ids = params[:space_ids]
+    render json: { message: "Spaces updated successfully" }
+  else
+    render json: { error: "User not found" }, status: :not_found
+  end
+rescue StandardError => e
+  render json: { error: e.message }, status: :internal_server_error
+end
+
+
 
   private
 
