@@ -1,12 +1,11 @@
-//@import "bootstrap/scss/bootstrap";
 @import "lib";
 @import "./shared/variables";
 
 footer {
+  font-size: 16px;
   color: #fff;
   background-color: #000;
-  padding-top: 3rem;
-  padding-bottom: 3rem;
+  padding: 5rem 10rem 3rem 10rem;
   // Icons
   .fa {
     font-size: 20px;
@@ -14,12 +13,20 @@ footer {
     padding: 1rem;
   }
 
+  b {
+    font-size: 20px;
+  }
+
   a {
     color: #fff !important;
     font-weight: 700;
   }
   ul {
+    white-space: nowrap;
     list-style: none;
     column-count: 2;
+    li {
+      padding: 0.5rem;
+    }
   }
 }

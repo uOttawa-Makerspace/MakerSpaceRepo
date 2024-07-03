@@ -1,31 +1,35 @@
 <footer>
-  <div class="d-flex flex-row justify-content-around">
-    <div class="p-2 text-center">
-      <%= image_tag 'ceed.svg', alt: 'CEED' %>
+  <div class="row g-0 text-center">
+    <div class="col-auto me-auto">
+      <%= image_tag 'logo/CEED_LOGO_WHITE_ORANGE.png', alt: 'CEED Logo', width: '125px' %>
+      <div class="vr"></div>
+      <%= image_tag 'logo/CGEC_LOGO_WHITE_ORANGE.png', alt: 'CGEC Logo', width: '125px' %>
       <p>
         <i class="fa fa-facebook" aria-hidden="true"></i>
         <i class="fa fa-linkedin" aria-hidden="true"></i>
         <i class="fa fa-youtube" aria-hidden="true"></i>
         <i class="fa fa-instagram" aria-hidden="true"></i>
       </p>
-      <p><%= t('footer.copyright_html') % Time.zone.now.year %></p>
     </div>
-      <div class="col-lg d-block">
-        <p>Stay Connected</p>
-        <p>Sign up to our newsletter stay up to date with the latest news from CEED.</p>
-        <input type="email" name="signupEmail" value="" />
-        <button class="btn btn-primary">Sign Up</button>
-      </div>
-      <div>
-        <ul>
-          <li><%= link_to t('footer.contact_us'), contact_path %></li>
-          <li><p>STEM Building, uOttawa</p></li>
-          <li>ceed@uottawa.ca</li>
-          <!-- <li><%= link_to t('footer.hours'), hours_path %></li> -->
-          <li><%= link_to t('footer.help'), help_path %></li>
-          <li><%= link_to t('footer.tos'), tos_path %></li>
-          <li><%= link_to t('footer.about'), about_path %></li>
-        </ul>
+    <div class="col-auto  ">
+      <p><b>Stay Connected</b></p>
+      <p>Sign up to our newsletter stay up to date <br /> with the latest news from CEED.</p>
+      <%= form_with class: 'form-inline' do |form| %>
+        <%= form.email_field :signUpEmail, class: 'form-control-sm', placeholder: 'Enter email' %>
+        <%= form.submit 'Sign Up', class: 'btn btn-sm btn-primary' %>
+      <% end %>
+    </div>
+    <div class="col-auto align-items-start">
+      <ul class="align-items-start">
+        <li><%= link_to t('footer.contact_us'), contact_path %></li>
+        <li><p>STEM Building, uOttawa</p></li>
+        <li>ceed@uottawa.ca</li>
+        <!-- <li><%= link_to t('footer.hours'), hours_path %></li> -->
+        <li><%= link_to t('footer.help'), help_path %></li>
+        <li><%= link_to t('footer.tos'), tos_path %></li>
+        <li><%= link_to t('footer.about'), about_path %></li>
+      </ul>
     </div>
   </div>
+  <p class="text-center mt-5"><%= t('footer.copyright_html') % Time.zone.now.year %></p>
 </footer>
