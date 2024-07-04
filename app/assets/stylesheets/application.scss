@@ -21,7 +21,7 @@ $marker-size: 32px !default;
 $color-marker-hover: #6e6e6e;
 // $table-accent-bg: #d6ebeb;
 $pagination-border-radius: 0;
-$primary: #497979;
+$primary: #ff7800;
 $primary-light: rgba(59, 147, 147, 0.5);
 $navbar-light-color: rgba(0, 0, 0, 0.7);
 $navbar-light-hover-color: rgba(0, 0, 0, 1);
@@ -45,7 +45,6 @@ html {
 body {
   min-height: 100%;
   margin: 0;
-  padding: 4rem 0 0 0;
   background-color: rgba(238, 238, 238, 0.5);
   font-family: "Raleway", helvetica, sans-serif !important;
   display: flex;
@@ -56,13 +55,46 @@ h1 {
   font-size: 2.25rem;
 }
 
-.dropdown-item:active {
-  color: #000 !important;
-  background-color: #497979 !important;
+.dropdown-item {
+  :active {
+    color: #000 !important;
+    background-color: #497979 !important;
+  }
+
+  :hover {
+    background-color: rgba(59, 147, 147, 0.2) !important;
+  }
+
+  font-weight: 700; // bold
+  color: $secondary;
 }
 
-.dropdown-item:hover {
-  background-color: rgba(59, 147, 147, 0.2) !important;
+// Add the triangle between the menu and the dropdown button
+// uses @extend to inherit from .d-none and .d-xl-block
+// to hide for screens below xl aka when navbar collapses
+// avoids having to have an empty div to every single dropdown
+// and add these classes to them. This is globally added to all
+// dropdowns sitewide.
+// NOTE: the left: 10% could cause issues if the dropdown button
+// is too small and might have the connection pointing to thin air.
+$dropdown-connection-size: 12px;
+.dropdown-menu:before {
+  @extend .d-none;
+  @extend .d-xl-block;
+  content: "";
+  display: block;
+  border-left: $dropdown-connection-size solid transparent;
+  border-right: $dropdown-connection-size solid transparent;
+  border-bottom: $dropdown-connection-size solid #fff; /* change color here, modified for a black arrow */
+  position: absolute;
+  top: -$dropdown-connection-size;
+  left: 10%;
+}
+
+.dropdown-menu {
+  border: none;
+  border-radius: 4px;
+  box-shadow: 4px blur;
 }
 
 h2 {
@@ -84,7 +116,7 @@ h6 {
 }
 
 p {
-  margin: 0.5rem 0 !important;
+  margin: 0.5rem 0; // !important;
 }
 
 a {
@@ -105,7 +137,7 @@ a {
       .like,
       .make
     ) {
-    color: $primary !important;
+    color: $primary; // !important;
   }
   &::visited {
     color: #789;
@@ -129,6 +161,12 @@ body {
 u {
   display: inline-block;
   text-decoration: none;
+}
+
+.btn {
+  color: #fff;
+  font-weight: 700;
+  font-size: 16px;
 }
 
 // TODO figure out why this is here and move it to the right place

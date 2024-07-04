@@ -1,43 +1,41 @@
 @import "lib";
+@import "./shared/variables";
 
 footer {
-  display: block;
-  text-align: center;
-  border-top: 1px solid #5f9ea0;
-  color: #5f9ea0;
-  text-transform: uppercase;
-  font-size: 0.8rem;
-  font-weight: bold;
-  margin-top: 2rem;
-  padding: 1rem;
-
-  a,
-  a:hover,
-  a:focus,
-  a:active {
-    text-decoration: none;
+  font-size: 16px;
+  color: #fff;
+  background-color: #000;
+  padding: 5rem 10rem 3rem 10rem;
+  // Icons
+  .fa {
+    font-size: 20px;
+    color: $primary;
+    padding: 1rem;
   }
 
-  ul.footer-items {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-wrap: wrap;
-    margin: -0.1rem 0;
+  b {
+    font-size: 20px;
+  }
 
-    li {
-      padding: 0 0.5rem;
-      margin: 0.1rem 0.5rem;
-      white-space: nowrap;
-
-      a {
-        display: inline-block;
-        text-decoration: none;
-      }
+  ul {
+    white-space: nowrap;
+    // list-style: none;
+    column-count: 2;
+    li,
+    a {
+      color: #fff !important;
+      margin-bottom: 1rem;
+      font-weight: 700;
     }
   }
 
-  .copyright {
-    margin-top: 1rem;
+  .brand-tagline {
+    margin-top: 0px;
+    font-size: 1.2rem;
+    text-align-last: justify;
+  }
+
+  .brand-separator {
+    border-right: solid 1px white;
   }
 }
