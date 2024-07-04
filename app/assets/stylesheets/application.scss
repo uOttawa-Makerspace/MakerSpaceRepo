@@ -116,7 +116,7 @@ h6 {
 }
 
 p {
-  margin: 0.5rem 0 !important;
+  margin: 0.5rem 0; // !important;
 }
 
 a {
@@ -137,7 +137,7 @@ a {
       .like,
       .make
     ) {
-    color: $primary !important;
+    color: $primary; // !important;
   }
   &::visited {
     color: #789;
@@ -161,6 +161,12 @@ body {
 u {
   display: inline-block;
   text-decoration: none;
+}
+
+.btn {
+  color: #fff;
+  font-weight: 700;
+  font-size: 16px;
 }
 
 // TODO figure out why this is here and move it to the right place
