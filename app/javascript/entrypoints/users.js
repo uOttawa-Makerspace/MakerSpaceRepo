@@ -1,6 +1,5 @@
 import TomSelect from "tom-select";
 import Rails from "@rails/ujs";
-import { Modal } from "bootstrap";
 
 document.addEventListener("turbo:load", function () {
   const elements = document.querySelectorAll("[data-show], [data-hide]");
@@ -85,17 +84,14 @@ document.addEventListener("turbo:load", function () {
 
 document.addEventListener('DOMContentLoaded', function() {
   const manageSpacesModal = document.getElementById('manageSpacesModal');
-  let adminId; // To keep track of the current admin ID
-
+  let adminId;
   manageSpacesModal.addEventListener('show.bs.modal', function(event) {
-    const button = event.relatedTarget; // Button that triggered the modal
-    adminId = button.getAttribute('data-admin-id'); // Extract admin ID from data attribute
+    const button = event.relatedTarget;
+    adminId = button.getAttribute('data-admin-id');
     const modalBody = manageSpacesModal.querySelector('.modal-body');
     
-    // Clear previous contents and show loading status
     modalBody.innerHTML = '<p>Loading...</p>';
 
-    // Fetch spaces associated with this admin
     fetch(`/admin/users/${adminId}/fetch_spaces`)
       .then(response => {
         if (!response.ok) {
@@ -104,7 +100,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return response.json();
       })
       .then(spaces => {
-        modalBody.innerHTML = ''; // Clear the loading message
+        modalBody.innerHTML = '';
         spaces.forEach(space => {
           const isChecked = space.is_assigned ? 'checked' : '';
           const checkboxHTML = `
@@ -120,11 +116,11 @@ document.addEventListener('DOMContentLoaded', function() {
       })
       .catch(error => {
         console.error('Error loading spaces:', error);
-        modalBody.innerHTML = `<p>Error loading spaces: ${error.message}. Please try again.</p>`; // Handle errors more specifically
+        modalBody.innerHTML = `<p>Error loading spaces: ${error.message}. Please try again.</p>`;
       });
   });
 
-  // Save changes button handler
+
   document.getElementById('saveSpaceChangesButton').addEventListener('click', function() {
     const checkedBoxes = manageSpacesModal.querySelectorAll('.form-check-input:checked');
     const spaceIds = Array.from(checkedBoxes).map(cb => cb.value);
@@ -143,15 +139,29 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       return response.json();
     })
-    .then(data => {
-      // Handle success, maybe close the modal and show a success message
-      console.log('Spaces updated successfully:', data);
-      // Optionally close the modal
-      const bootstrapModal = bootstrap.Modal.getInstance(manageSpacesModal);
-      bootstrapModal.hide();
+    .then(data => {    
+     
+
     })
     .catch(error => {
       console.error('Error updating spaces:', error);
     });
+  });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Select/Deselect all checkboxes
+  document.getElementById('select-all').addEventListener('click', function(event) {
+    const checked = event.target.checked;
+    document.querySelectorAll('.select-user').forEach(function(checkbox) {
+      checkbox.checked = checked;
+    });
+  });
+
+  document.getElementById('change-button').addEventListener('click', function(event) {
+    console.log('Form submit event'); // Debugging line to check if submit event is triggered
+    const selectedUserIds = Array.from(document.querySelectorAll('.select-user:checked')).map(cb => cb.value);
+    console.log('Selected user IDs:', selectedUserIds); // Debugging line to check the selected user IDs
+    document.getElementById('user_ids_field').value = selectedUserIds.join(',');
   });
 });

@@ -244,6 +244,34 @@ class Admin::UsersController < AdminAreaController
     end
   end
 
+  def mass_update_roles
+    user_ids = params[:user_ids]
+    role = params[:role]
+
+    User.where(id: user_ids).each do |user|
+      user.role = role
+      user.save
+
+      if role == "regular_user"
+        user.staff_spaces.destroy_all
+      end
+
+      if user.staff?
+        space_list = params[:space].present? ? params[:space] : []
+        
+        space_list.each do |space|
+          StaffSpace.find_or_create_by(space_id: space, user: user)
+        end
+
+        user.staff_spaces.where.not(space_id: space_list).destroy_all
+      end
+    end
+
+    flash[:notice] = "Selected user IDs: #{user_ids}"
+    redirect_to manage_roles_admin_users_path
+  end
+
+
 def manage_roles
   @admins = User.where(role: "admin").order("lower(name) ASC")
   @staff = User.where(role: "staff").order("lower(name) ASC")
@@ -297,8 +325,6 @@ def update_spaces
 rescue StandardError => e
   render json: { error: e.message }, status: :internal_server_error
 end
-
-
 
   private
 
