@@ -137,7 +137,7 @@ a {
       .like,
       .make
     ) {
-    color: $primary !important;
+    color: $primary; // !important;
   }
   &::visited {
     color: #789;

@@ -17,16 +17,15 @@ footer {
     font-size: 20px;
   }
 
-  a {
-    color: #fff !important;
-    font-weight: 700;
-  }
   ul {
     white-space: nowrap;
-    list-style: none;
+    // list-style: none;
     column-count: 2;
-    li {
-      padding: 0.5rem;
+    li,
+    a {
+      color: #fff !important;
+      margin-bottom: 1rem;
+      font-weight: 700;
     }
   }
 }
