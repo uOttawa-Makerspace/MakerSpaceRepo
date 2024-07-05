@@ -6,6 +6,9 @@ class StaticPagesController < SessionsController
   def home
   end
 
+  def home_redesign
+  end
+
   def about
   end
 
