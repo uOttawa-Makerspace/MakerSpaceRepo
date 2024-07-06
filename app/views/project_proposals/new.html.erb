@@ -138,7 +138,8 @@
 
           <div class="mb-5">
             <%= f.label :equipments, 'Possible technologies involved / Technologies possibles impliquées', class: 'form-label' %>
-            <%= f.text_area :equipments, class: 'form-control text-dark' %>
+            <%= f.hidden_field :equipments, id: 'project_proposal_technology_involved', class: 'form-control text-dark' %>
+            <trix-editor input="project_proposal_technology_involved"></trix-editor>
           </div>
 
           <div class="mb-5">
