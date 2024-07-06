@@ -33,8 +33,8 @@
         Project Information / Information sur le projet
       </div>
       <div class="card-body">
-        <b>Possible technologies involved / Technologies possibles impliquées</b>: <%= @project_proposal.equipments %>
-        <br>
+        <b>Possible technologies involved / Technologies possibles impliquées</b>: <%= @project_proposal.equipments.html_safe %>
+        <!-- <br> -->
         <b>Project Type / Type de projet</b> : <%= @project_proposal.project_type %>
         <br>
         <b>Expected prototype budget / Budget prévu pour le prototype:</b> <%= @project_proposal.prototype_cost.present? ? "$#{@project_proposal.prototype_cost}" : 'Not available' %>
@@ -101,7 +101,7 @@
           </div>
           <div class="card-body">
             <% if @project_proposal.past_experiences.split("|")[0] != "" %>
-              <%= @project_proposal.past_experiences.split('|')[0] %><br>
+              <%= @project_proposal.past_experiences.split('|')[0].html_safe %><!-- <br> -->
             <% end %>
             <% if @project_proposal.past_experiences.split("|")[1].present? %>
               <% @project_proposal.past_experiences.split('|')[1].split(',').each do |links| %>
