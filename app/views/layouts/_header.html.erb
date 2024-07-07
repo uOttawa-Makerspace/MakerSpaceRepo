@@ -107,8 +107,8 @@
   </div>
 </div>
 </nav>
-<%# Set by layouts/volunteer.html.erb%>
-<%= render 'layouts/volunteer_header' if with_volunteer %>
+<%# Set by layouts/volunteer.html.erb, sometimes not even set?%>
+<%= render 'layouts/volunteer_header' if (defined? with_volunteer) && with_volunteer %>
 
 <%= render 'layouts/quick_access_link' if current_user.admin? %>
 </div>
