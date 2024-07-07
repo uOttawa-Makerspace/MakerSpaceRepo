@@ -8,10 +8,10 @@
                     <div class="card-body">
                         <h2><%= t('home.staff_resources.header') %></h2>
                     <ul class="list-unstyled">
-                        <li><a href=""><%= t('home.staff_resources.staff_area') %></a></li>
-                        <li><a href=""><%= t('home.staff_resources.shifts') %></a></li>
-                        <li><a href=""><%= t('home.staff_resources.job_order_admin') %></a></li>
-                        <li><a href=""><%= t('home.staff_resources.admin_area') %></a></li>
+                        <li><%= link_to t('home.staff_resources.staff_area'), staff_dashboard_index_path %></li>
+                        <li><%= link_to t('home.staff_resources.shifts'), shifts_admin_shifts_path %></li>
+                        <li><%= link_to t('home.staff_resources.job_order_admin'), admin_job_orders_path %></li>
+                        <li><%= link_to t('home.staff_resources.admin_area'), admin_settings_path %></li>
                     </ul>
                     </div>
                 </div>
@@ -21,7 +21,7 @@
                     <h2><%= t('home.general_resources.header') %></h2>
                         <ul class="list-unstyled">
                             <li><a href=""><%= t('home.general_resources.makeroom') %></a></li>
-                            <li><a href=""><%= t('home.general_resources.job_orders') %></a></li>
+                            <li><%= link_to t('home.general_resources.job_orders'), job_orders_path %></li>
                         </ul>
                     </div>
                 </div>
@@ -47,7 +47,7 @@
                             <li style="border-color:orange"><span class="list-header">Makerspace</span><br />Monday 4:00PM - 5:15PM</li>
                             <li style="border-color:red"><span class="list-header">Brunsfield</span><br />Monday 4:00PM - 5:15PM</li>
                         </ul>
-                        <a href=""><%= t('home.show_more') %></a>
+                        <%= link_to t('home.show_more'), shadowing_shifts_volunteers_path %>
                         <h3><%= t('home.volunteer_program.your_tasks') %>:</h3>
                         <ul class="list-unstyled list-box volunteer-task-list">
                             <!-- TODO This should be a loop -->
@@ -57,7 +57,8 @@
                             <li><i class="fa fa-circle"></i> <span class="list-header">Makerspace</span>: 10h30</li>
                             <li><i class="fa fa-circle"></i> <span class="list-header">Makerspace</span>: 10h30</li>
                         </ul>
-                        <a href="" class="me-5"><%= t('home.show_more') %></a><a href=""><%= t('home.volunteer_program.add_more_tasks') %></a>
+                        <%= link_to t('home.show_more'), my_tasks_volunteer_tasks_path, class: 'me-5' %>
+                        <%= link_to t('home.volunteer_program.add_more_tasks'), volunteer_tasks_path %>
                     </div>
                 </div>
                 <div class="card home-card">
@@ -68,7 +69,7 @@
                             <li><i class="fa fa-circle"></i> <span class="list-header">3D Printing</span> 10/10</li>
                             <li><i class="fa fa-circle"></i> <span class="list-header">Laser cutting Printing</span> 0/10</li>
                         </ul>
-                        <a href=""><%= t('home.show_more') %></a>
+                        <%= link_to t('home.show_more'), development_program_info_path %>
                     </div>
                 </div>
             </div>
