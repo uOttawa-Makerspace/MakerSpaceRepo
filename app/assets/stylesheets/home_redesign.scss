@@ -32,6 +32,10 @@ section#home {
   .shadowing-list li {
     border-left: 3px solid orange;
     padding-left: 1rem;
+    // Apply margin to all but first
+    + li {
+      margin-top: 0.5rem;
+    }
   }
   .volunteer-task-list {
     .fa {
