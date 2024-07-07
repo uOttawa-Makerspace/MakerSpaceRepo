@@ -1,0 +1,23 @@
+en:
+  home:
+    show_more: "Show more"
+    staff_resources:
+      header: "Staff Resources"
+      staff_area: "Staff Area"
+      shifts: "Shifts"
+      job_order_admin: "Job Order Admin"
+      admin_area: "Admin Area"
+    general_resources:
+      header: "General Resources"
+      makeroom: "Makeroom"
+      job_orders: "Job Orders"
+    shortcuts:
+      header: "Shortcuts"
+      recently_opened: "Recently Opened"
+    volunteer_program:
+      header: "Volunteer Program"
+      shadowing_scheduled: "Shadowing scheduled this week"
+      your_tasks: "Your tasks"
+      add_more_tasks: "Sign up for more tasks"
+    development_program:
+      header: "Development Program"

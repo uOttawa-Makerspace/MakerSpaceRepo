@@ -6,29 +6,29 @@
                 <!-- Staff Resources -->
                 <div class="card home-card">
                     <div class="card-body">
-                    <h2>Staff Resources</h2>
+                        <h2><%= t('home.staff_resources.header') %></h2>
                     <ul class="list-unstyled">
-                        <li><a href="">Staff Area</a></li>
-                        <li><a href="">Shifts</a></li>
-                        <li><a href="">Job Order Admin</a></li>
-                        <li><a href="">Admin Area</a></li>
+                        <li><a href=""><%= t('home.staff_resources.staff_area') %></a></li>
+                        <li><a href=""><%= t('home.staff_resources.shifts') %></a></li>
+                        <li><a href=""><%= t('home.staff_resources.job_order_admin') %></a></li>
+                        <li><a href=""><%= t('home.staff_resources.admin_area') %></a></li>
                     </ul>
                     </div>
                 </div>
                 <!-- General Resources -->
                 <div class="card home-card">
                     <div class="card-body">
-                    <h2>General resources</h2>
+                    <h2><%= t('home.general_resources.header') %></h2>
                         <ul class="list-unstyled">
-                            <li><a>Makeroom</a></li>
-                            <li><a>Job orders</a></li>
+                            <li><a href=""><%= t('home.general_resources.makeroom') %></a></li>
+                            <li><a href=""><%= t('home.general_resources.job_orders') %></a></li>
                         </ul>
                     </div>
                 </div>
                 <div class="card home-card">
                     <div class="card-body">
-                        <h2>Shortcuts</h2>
-                        <h3>Recently Opened</h3>
+                        <h2><%= t('home.shortcuts.header') %></h2>
+                        <h3><%= t('home.shortcuts.recently_opened') %></h3>
                         <ul class="list-unstyled">
                             <li><i class="fa fa-square text-secondary"></i> Project name - GNG1103</li>
                             <li><i class="fa fa-square text-secondary"></i> Project name - GNG1103</li>
@@ -40,15 +40,15 @@
                 </div>
                 <div class="card home-card">
                     <div class="card-body">
-                        <h2>Volunteer Program</h2>
-                        <h3>Shadowing scheduled this week:</h3>
+                        <h2><%= t('home.volunteer_program.header') %></h2>
+                        <h3><%= t('home.volunteer_program.shadowing_scheduled') %>:</h3>
                         <ul class="list-unstyled list-box shadowing-list">
                             <!-- TODO This should be a loop -->
                             <li style="border-color:orange"><span class="list-header">Makerspace</span><br />Monday 4:00PM - 5:15PM</li>
                             <li style="border-color:red"><span class="list-header">Brunsfield</span><br />Monday 4:00PM - 5:15PM</li>
                         </ul>
-                        <a href="">Show more</a>
-                        <h3>Your tasks:</h3>
+                        <a href=""><%= t('home.show_more') %></a>
+                        <h3><%= t('home.volunteer_program.your_tasks') %>:</h3>
                         <ul class="list-unstyled list-box volunteer-task-list">
                             <!-- TODO This should be a loop -->
                             <li><i class="fa fa-circle"></i> <span class="list-header">Makerspace</span>: 10h30</li>
@@ -57,18 +57,18 @@
                             <li><i class="fa fa-circle"></i> <span class="list-header">Makerspace</span>: 10h30</li>
                             <li><i class="fa fa-circle"></i> <span class="list-header">Makerspace</span>: 10h30</li>
                         </ul>
-                        <a href="" class="me-5">Show more</a><a href="">Sign up for more tasks</a>
+                        <a href="" class="me-5"><%= t('home.show_more') %></a><a href=""><%= t('home.volunteer_program.add_more_tasks') %></a>
                     </div>
                 </div>
                 <div class="card home-card">
                     <div class="card-body">
-                        <h2>Development Program</h2>
+                        <h2><%= t('home.development_program.header') %></h2>
                         <ul class="list-unstyled list-box volunteer-task-list">
                             <!-- TODO This should be a loop -->
                             <li><i class="fa fa-circle"></i> <span class="list-header">3D Printing</span> 10/10</li>
                             <li><i class="fa fa-circle"></i> <span class="list-header">Laser cutting Printing</span> 0/10</li>
                         </ul>
-                        <a href="">Show more</a>
+                        <a href=""><%= t('home.show_more') %></a>
                     </div>
                 </div>
             </div>

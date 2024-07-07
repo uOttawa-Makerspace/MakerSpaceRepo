@@ -1,0 +1,23 @@
+fr:
+  home:
+    show_more: "Voir en plus"
+    staff_resources:
+      header: Ressources des employés
+      staff_area: Zone des employés
+      shifts: Heures
+      job_order_admin: Administrateur de commande
+      admin_area: Zone des administrateurs
+    general_resources:
+      header: "Ressources générales"
+      makeroom: "Makeroom"
+      job_orders: "Commandes"
+    shortcuts:
+      header: "Raccourcis"
+      recently_opened: "Récemment consultés"
+    volunteer_program:
+      header: "Programme des bénévoles"
+      shadowing_scheduled: "Heures d'ombre assignés cette semaine"
+      your_tasks: "Vos tâches"
+      add_more_tasks: "S'inscrire pour d'autres tâches"
+    development_program:
+      header: "Programme de Développement"
