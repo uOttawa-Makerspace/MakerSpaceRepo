@@ -38,29 +38,7 @@
                         </ul>
                     </div>
                 </div>
-                <div class="card home-card">
-                    <div class="card-body">
-                        <h2><%= t('home.volunteer_program.header') %></h2>
-                        <h3><%= t('home.volunteer_program.shadowing_scheduled') %>:</h3>
-                        <ul class="list-unstyled list-box shadowing-list">
-                            <!-- TODO This should be a loop -->
-                            <li style="border-color:orange"><span class="list-header">Makerspace</span><br />Monday 4:00PM - 5:15PM</li>
-                            <li style="border-color:red"><span class="list-header">Brunsfield</span><br />Monday 4:00PM - 5:15PM</li>
-                        </ul>
-                        <%= link_to t('home.show_more'), shadowing_shifts_volunteers_path %>
-                        <h3><%= t('home.volunteer_program.your_tasks') %>:</h3>
-                        <ul class="list-unstyled list-box volunteer-task-list">
-                            <!-- TODO This should be a loop -->
-                            <li><i class="fa fa-circle"></i> <span class="list-header">Makerspace</span>: 10h30</li>
-                            <li><i class="fa fa-circle"></i> <span class="list-header">Makerspace</span>: 10h30</li>
-                            <li><i class="fa fa-circle"></i> <span class="list-header">Makerspace</span>: 10h30</li>
-                            <li><i class="fa fa-circle"></i> <span class="list-header">Makerspace</span>: 10h30</li>
-                            <li><i class="fa fa-circle"></i> <span class="list-header">Makerspace</span>: 10h30</li>
-                        </ul>
-                        <%= link_to t('home.show_more'), my_tasks_volunteer_tasks_path, class: 'me-5' %>
-                        <%= link_to t('home.volunteer_program.add_more_tasks'), volunteer_tasks_path %>
-                    </div>
-                </div>
+                <%= render 'static_pages/home_volunteer' %>
                 <div class="card home-card">
                     <div class="card-body">
                         <h2><%= t('home.development_program.header') %></h2>
