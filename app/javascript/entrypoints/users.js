@@ -150,7 +150,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 document.addEventListener('DOMContentLoaded', function() {
-  // Select/Deselect all checkboxes
+ 
   document.getElementById('select-all').addEventListener('click', function(event) {
     const checked = event.target.checked;
     document.querySelectorAll('.select-user').forEach(function(checkbox) {
@@ -165,3 +165,89 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('user_ids_field').value = selectedUserIds.join(',');
   });
 });
+
+//Staff
+
+const manageSpacesModal = document.getElementById('manageSpacesModal');
+  let staffId;
+
+  manageSpacesModal.addEventListener('show.bs.modal', function(event) {
+    const button = event.relatedTarget;
+    staffId = button.getAttribute('data-staff-id');
+    const modalBody = manageSpacesModal.querySelector('.modal-body');
+    
+    modalBody.innerHTML = '<p>Loading...</p>';
+
+    fetch(`/admin/users/${staffId}/fetch_spaces`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error, status = ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(spaces => {
+        modalBody.innerHTML = '';
+        spaces.forEach(space => {
+          const isChecked = space.is_assigned ? 'checked' : '';
+          const checkboxHTML = `
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="${space.id}" id="space_${space.id}" ${isChecked}>
+              <label class="form-check-label" for="space_${space.id}">
+                ${space.name}
+              </label>
+            </div>
+          `;
+          modalBody.innerHTML += checkboxHTML;
+        });
+      })
+      .catch(error => {
+        console.error('Error loading spaces:', error);
+        modalBody.innerHTML = `<p>Error loading spaces: ${error.message}. Please try again.</p>`;
+      });
+  });
+
+  document.getElementById('saveSpaceChangesButton').addEventListener('click', function() {
+    const checkedBoxes = manageSpacesModal.querySelectorAll('.form-check-input:checked');
+    const spaceIds = Array.from(checkedBoxes).map(cb => cb.value);
+
+    fetch(`/admin/users/${staffId}/update_spaces`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+      },
+      body: JSON.stringify({ space_ids: spaceIds })
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error, status = ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(data => {    
+     
+
+    })
+    .catch(error => {
+      console.error('Error updating spaces:', error);
+    });
+  });
+
+  document.addEventListener('DOMContentLoaded', function() {
+  
+  
+    // Select/Deselect all checkboxes for staff
+    document.getElementById('select-all-staff').addEventListener('click', function(event) {
+      const checked = event.target.checked;
+      document.querySelectorAll('.select-user-staff').forEach(function(checkbox) {
+        checkbox.checked = checked;
+      });
+    });
+  
+    // Update the hidden field with selected user IDs when the button is clicked for staff
+    document.getElementById('change-button-staff').addEventListener('click', function(event) {
+      console.log('Form submit event for staff'); // Debugging line to check if submit event is triggered
+      const selectedUserIds = Array.from(document.querySelectorAll('.select-user-staff:checked')).map(cb => cb.value);
+      console.log('Selected user IDs for staff:', selectedUserIds); // Debugging line to check the selected user IDs
+      document.getElementById('user_ids_field_staff').value = selectedUserIds.join(',');
+    })});
