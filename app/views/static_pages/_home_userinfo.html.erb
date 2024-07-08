@@ -1,0 +1,24 @@
+<div class="card home-card" id="home-userinfo">
+    <% if signed_in? %>
+        <div class="row">
+            <div class="col gy-5 text-center">
+                <%= image_tag current_user.display_avatar, alt: 'Avatar' %>
+                <%# why the '@', this isn't twitter%>
+                <p class="subtext">@<%= current_user.username %></p>
+                <a class="btn btn-primary w-100">Edit Profile</a>
+                <br />
+                <a class="btn btn-link">Sign out</a>
+            </div>
+            <div class="col gy-5">
+                <p class="full-name"><%= current_user.name %></p>
+                <p class="subtext"><%= current_user.email %></p>
+                <br />
+                <p class="subtext"><%= current_user.identity_readable %></p>
+                <p>am i student???</p>
+                <p>am i staff???</p>
+            </div>
+        </div>
+    <% else %>
+        <h2>Sign in</h2>
+    <% end %>
+</div>

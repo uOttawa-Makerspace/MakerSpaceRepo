@@ -43,4 +43,21 @@ section#home {
     }
     //list-style: circle;
   }
+
+  #home-userinfo {
+    img {
+      border-radius: 50%;
+      max-width: 80%;
+    }
+
+    .full-name {
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .subtext {
+      color: $secondary;
+    }
+  }
 }
