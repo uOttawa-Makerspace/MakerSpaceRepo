@@ -39,9 +39,5 @@ module MakerSpaceRepo
     # The default locale is :en and all translations from config/locales/*.rb,yml are auto loaded.
     # config.i18n.load_path += Dir[Rails.root.join('my', 'locales', '*.{rb,yml}').to_s]
     # config.i18n.default_locale = :de
-    # Raise an exception for non-existing translations
-    # should help catch any localization errors, on development only
-    config.i18n.raise_on_missing_translations =
-      (ENV["RAILS_ENV"] == "development")
   end
 end

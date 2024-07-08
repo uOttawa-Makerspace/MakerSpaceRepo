@@ -19,5 +19,7 @@ en:
       shadowing_scheduled: "Shadowing scheduled this week"
       your_tasks: "Your tasks"
       add_more_tasks: "Sign up for more tasks"
+      no_shifts_scheduled: "No shadowing shifts scheduled"
+      no_tasks_assigned: "No tasks assigned"
     development_program:
       header: "Development Program"
