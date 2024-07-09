@@ -402,7 +402,8 @@ class User < ApplicationRecord
   def department
     # HACK some programs include words like 'in' that aren't
     # in the program list. try to clean up before processing
-    program_alt = program.gsub(" in ", "")
+    # So this might return nil or 'Non-Engineering' too
+    program_alt = program.gsub(" in", "")
     UniProgram
       .where(program: program)
       .or(UniProgram.where(program: program_alt))
@@ -416,8 +417,12 @@ class User < ApplicationRecord
 
   def identity_readable
     if student?
-      # department + ' ' unless department.nil?
-      "#{year_of_study.to_i.ordinalize} year #{department&.+ " "}#{identity.titleize}uate"
+      if engineering?
+        # department + ' ' unless department.nil?
+        "#{year_of_study.to_i.ordinalize} year #{department&.+ " "}#{identity.titleize}uate"
+      else
+        "#{year_of_study.to_i.ordinalize} year #{identity.titleize}uate"
+      end
     else
       identity.titleize
     end
