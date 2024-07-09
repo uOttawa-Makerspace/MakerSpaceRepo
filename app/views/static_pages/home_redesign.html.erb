@@ -1,0 +1,81 @@
+<section id="home">
+    <div class="container-fluid">
+        <div class="row row-cols g-0">
+            <!--Left column -->
+            <div class="col-xl">
+                <!-- Staff Resources -->
+                <div class="card home-card">
+                    <div class="card-body">
+                        <h2><%= t('home.staff_resources.header') %></h2>
+                    <ul class="list-unstyled">
+                        <li><%= link_to t('home.staff_resources.staff_area'), staff_dashboard_index_path %></li>
+                        <li><%= link_to t('home.staff_resources.shifts'), shifts_admin_shifts_path %></li>
+                        <li><%= link_to t('home.staff_resources.job_order_admin'), admin_job_orders_path %></li>
+                        <li><%= link_to t('home.staff_resources.admin_area'), admin_settings_path %></li>
+                    </ul>
+                    </div>
+                </div>
+                <!-- General Resources -->
+                <div class="card home-card">
+                    <div class="card-body">
+                    <h2><%= t('home.general_resources.header') %></h2>
+                        <ul class="list-unstyled">
+                            <li><a href=""><%= t('home.general_resources.makeroom') %></a></li>
+                            <li><%= link_to t('home.general_resources.job_orders'), job_orders_path %></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card home-card">
+                    <div class="card-body">
+                        <h2><%= t('home.shortcuts.header') %></h2>
+                        <h3><%= t('home.shortcuts.recently_opened') %></h3>
+                        <ul class="list-unstyled">
+                            <li><i class="fa fa-square text-secondary"></i> Project name - GNG1103</li>
+                            <li><i class="fa fa-square text-secondary"></i> Project name - GNG1103</li>
+                            <li><i class="fa fa-square text-secondary"></i> Project name - GNG1103</li>
+                            <li></li>
+                            <li></li>
+                        </ul>
+                    </div>
+                </div>
+                <%= render 'static_pages/home_volunteer' %>
+                <div class="card home-card">
+                    <div class="card-body">
+                        <h2><%= t('home.development_program.header') %></h2>
+                        <ul class="list-unstyled list-box volunteer-task-list">
+                            <!-- TODO This should be a loop -->
+                            <li><i class="fa fa-circle"></i> <span class="list-header">3D Printing</span> 10/10</li>
+                            <li><i class="fa fa-circle"></i> <span class="list-header">Laser cutting Printing</span> 0/10</li>
+                        </ul>
+                        <%= link_to t('home.show_more'), development_program_info_path %>
+                    </div>
+                </div>
+            </div>
+            <!--Middle column -->
+            <div class="col-xl-6">
+                <div class="card home-card">
+                    <div class="card-body">
+                    <h2>Welcome to <b>CEED</b>Repo</h2>
+
+                    </div>
+                </div>
+            </div>
+            <!--Right column -->
+            <div class="col-xl">
+                <div class="card home-card">
+                    <div class="row">
+                        <div class="col">
+                            <img />
+                            <p>username</p>
+                            <a class="btn btn-primary">Edit Profile</a>
+                            <br />
+                            <a class="btn btn-link">Sign out</a>
+                        </div>
+                        <div class="col">
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+</section>

@@ -1,4 +1,4 @@
-<div class="sticky-top">
+<div class="sticky-top mb-5">
 <nav class="navbar navbar-expand-xl navbar-light <%= controller_name %> <%= action_name %> bg-primary shadow-lg" id="header-navbar">
   <div class="container-fluid m-2">
     <a class="navbar-brand ms-5" href="/"><strong>CEED</strong>Repo</a>
@@ -83,7 +83,6 @@
             <a class="dropdown-item" href="<%= user_path(@user.username) %>"><%= t('navbar.user.profile') %></a>
             <%= link_to(t('navbar.user.admin_area'), admin_settings_path, class: 'dropdown-item') if @user.admin? %>
             <%= link_to(t('navbar.user.staff_area'), staff_dashboard_index_path, class: 'dropdown-item') if @user.staff? %>
-            <%= link_to(t('navbar.user.joborder_admin'), admin_job_orders_path, class: 'dropdown-item') if @user.staff? || @user.admin? %>
             <a class="dropdown-item" href="<%= logout_path %>"><%= t('navbar.user.sign_out') %></a>
           </div>
 
@@ -108,10 +107,12 @@
   </div>
 </div>
 </nav>
-</div>
+<%# Set by layouts/volunteer.html.erb, sometimes not even set?%>
+<%= render 'layouts/volunteer_header' if (defined? with_volunteer) && with_volunteer %>
 
-<%= render 'static_pages/login_modal' unless signed_in? %>
 <%= render 'layouts/quick_access_link' if current_user.admin? %>
+</div>
+<%= render 'static_pages/login_modal' unless signed_in? %>
 
 <div class="flash" id="flash" style="padding-left: 20px; padding-right: 20px; z-index: 100;">
   <%= render 'layouts/flash' %>

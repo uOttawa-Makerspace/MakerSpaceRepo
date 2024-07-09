@@ -121,7 +121,8 @@ Rails.application.routes.draw do
 
   resources :printer_types, except: %i[show]
 
-  root "static_pages#home"
+  #root "static_pages#home"
+  root "static_pages#home_redesign"
 
   # STATIC PAGES
   namespace :static_pages, path: "/", as: nil do

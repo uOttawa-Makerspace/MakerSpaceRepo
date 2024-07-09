@@ -6,6 +6,22 @@ class StaticPagesController < SessionsController
   def home
   end
 
+  def home_redesign
+    @volunteer_program_shadowing_scheduled =
+      current_user.shadowing_hours.map do |hours|
+        end_time = hours.end_time.strftime "%H:%M"
+        formatted_time =
+          "#{I18n.l hours.start_time, format: "%A %H:%M"} - #{end_time}"
+        [hours.space.name, formatted_time]
+      end
+    @volunteer_program_your_tasks =
+      current_user.get_volunteer_tasks_from_volunteer_joins.map do |task|
+        space_name = task.volunteer_task.space.name
+        formatted_time = task.created_at.strftime "%H:%M"
+        [space_name, formatted_time]
+      end
+  end
+
   def about
   end
 
