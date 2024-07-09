@@ -417,11 +417,23 @@ class User < ApplicationRecord
 
   def identity_readable
     if student?
+      year = year_of_study.to_s
+      if I18n.locale == :fr
+        case year.last
+        when "1"
+          year += "ère"
+        else
+          year += "ème"
+        end
+      elsif I18n.locale == :en
+        year = year.to_i.ordinalize
+      end
+
       if engineering?
         # department + ' ' unless department.nil?
-        "#{year_of_study.to_i.ordinalize} year #{department&.+ " "}#{identity.titleize}uate"
+        "#{year} #{I18n.t "year"} #{department&.+ " "}#{identity}uate".titleize
       else
-        "#{year_of_study.to_i.ordinalize} year #{identity.titleize}uate"
+        "#{year} #{I18n.t "year"} #{identity}uate".titleize
       end
     else
       identity.titleize

@@ -30,9 +30,9 @@
         <div class="col align-middle">
             <%= image_tag @user.display_avatar, alt: 'Avatar' %>
         </div>
-        <div class="col d-flex flex-column justify-content-center text-center">
-            <p class="full-name">Sign in</p>
-            <p class="subtext">Not signed in</p>
+        <div class="col d-flex flex-column justify-content-center text-start">
+            <p class="full-name"><a class="nav-link" data-bs-toggle="modal" data-bs-target="#popUpWindow" href=""><%= t('home.userinfo.sign_in') %></a></p>
+            <p class="subtext"><%= t('home.userinfo.not_signed_in') %></p>
         </div>
     </div>
     <% end %>
