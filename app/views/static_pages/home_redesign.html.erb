@@ -70,11 +70,13 @@
                         <h2>Skills</h2><a href="">Show all</a>
                     </div>
                 </div>
-                <div class="card home-card">
+                <div class="card home-card" id="home-big-newsletter">
                     <div class="card-body">
                         <h2>Want to know when our next big event is happening?</h2>
-                        <input type="text" />
-                        <button class="btn btn-primary">Sign me up!</button>
+                        <%= form_with do |form| %>
+                            <%= form.email_field :signUpEmail, class: 'form-control email-input mb-2', placeholder: 'Enter email' %>
+                            <%= form.submit 'Sign Up', class: 'btn btn-primary' %>
+                        <% end %>
                     </div>
                 </div>
                 <div class="card home-card">

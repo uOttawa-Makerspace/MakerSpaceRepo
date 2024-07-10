@@ -60,4 +60,22 @@ section#home {
       color: $secondary;
     }
   }
+
+  #home-big-newsletter {
+    h2 {
+      font-size: 1.4em;
+    }
+    .email-input {
+      outline: 0;
+      border-width: 0 0 2px;
+      border-color: black;
+      border-radius: 0;
+      box-shadow: none;
+
+      &:focus {
+        border-color: $primary;
+        outline: 1px dotted $primary;
+      }
+    }
+  }
 }
