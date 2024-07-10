@@ -1,0 +1,10 @@
+<div class="card home-card">
+    <div class="card-body">
+        <h2 class="d-inline me-2">Badges</h2><%= link_to badges_path, 'Show all' %>
+        <div class="text-nowrap overflow-scroll">
+            <% @user.badges.each do |badge| %>
+                <%= image_tag badge.badge_template.image_url, style: 'width: 35%;' %>
+            <% end %>
+        </div>
+    </div>
+</div>

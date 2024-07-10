@@ -61,8 +61,27 @@
                 </div>
             </div>
             <!--Right column -->
-            <div class="col-xl">
+            <!-- Set a fixed column size to prevent Badges from expanding more -->
+            <div class="col-xl-3">
                 <%= render partial: 'home_userinfo' %>
+                <%= render partial: 'home_badges' %>
+                <div class="card home-card">
+                    <div class="card-body">
+                        <h2>Skills</h2><a href="">Show all</a>
+                    </div>
+                </div>
+                <div class="card home-card">
+                    <div class="card-body">
+                        <h2>Want to know when our next big event is happening?</h2>
+                        <input type="text" />
+                        <button class="btn btn-primary">Sign me up!</button>
+                    </div>
+                </div>
+                <div class="card home-card">
+                    <div class="card-body">
+                        <h2>Workshops this week</h2>
+                    </div>
+                </div>
             </div>
         </div>
 </section>
