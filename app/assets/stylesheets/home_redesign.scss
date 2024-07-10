@@ -61,6 +61,20 @@ section#home {
     }
   }
 
+  .home-badge {
+    background-color: $secondary;
+  }
+
+  .skill-pill {
+    display: inline;
+    font-size: 0.8rem;
+    //border: 1px solid $secondary;
+    background-color: lightgrey;
+    border-radius: 15px;
+    padding: 5px;
+    margin: 5px;
+  }
+
   #home-big-newsletter {
     h2 {
       font-size: 1.4em;
