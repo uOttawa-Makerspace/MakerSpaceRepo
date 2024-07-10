@@ -19,5 +19,10 @@ fr:
       shadowing_scheduled: "Heures d'ombre assignés cette semaine"
       your_tasks: "Vos tâches"
       add_more_tasks: "S'inscrire pour d'autres tâches"
+      no_shifts_scheduled: "Aucune heures d'ombre n'est assignée"
+      no_tasks_assigned: "Aucune tâche n'est assignée"
     development_program:
       header: "Programme de Développement"
+    userinfo:
+      sign_in: "Connexion"
+      not_signed_in: "Pas connecté"

@@ -20,6 +20,10 @@ class UniProgram < ApplicationRecord
     distinct.pluck :faculty
   end
 
+  def self.all_departments
+    distinct.pluck :department
+  end
+
   # Returns a list of programs managed by each faculty
   def self.programs_by_faculty
     select(:program, :faculty)
