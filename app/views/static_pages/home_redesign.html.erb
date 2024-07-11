@@ -47,7 +47,7 @@
                             <li><i class="fa fa-circle"></i> <span class="list-header">3D Printing</span> 10/10</li>
                             <li><i class="fa fa-circle"></i> <span class="list-header">Laser cutting Printing</span> 0/10</li>
                         </ul>
-                        <%= link_to t('home.show_more'), development_program_info_path %>
+                        <%= link_to t('home.show_more'), signed_in? ? development_programs_path : development_program_info_path %>
                     </div>
                 </div>
             </div>

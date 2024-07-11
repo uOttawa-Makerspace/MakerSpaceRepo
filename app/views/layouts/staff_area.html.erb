@@ -13,11 +13,9 @@
     <link href='http://fonts.googleapis.com/css?family=Raleway:700,300,400' rel='stylesheet' type='text/css'>
 </head>
 <body>
-	<%= render 'layouts/header' %>
+  <%= render 'layouts/header', with_staff: true %>
 
   <%= render partial: 'partials/announcements' %>
-
-  <%= render 'layouts/staff_area_header' %>
 
 	<section id="setting" style="width:100%">
 		<div class="setting-grid">

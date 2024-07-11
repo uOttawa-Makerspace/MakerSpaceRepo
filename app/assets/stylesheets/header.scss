@@ -176,50 +176,6 @@ span.menu-button {
   }
 }
 
-form.header-search {
-  display: inline-block;
-  line-height: 60px;
-  margin-left: 50px;
-
-  input {
-    @include transition(200ms);
-    border: none;
-    border-radius: 5px;
-    font-size: 0.9rem;
-    padding: 0.3rem 0.5rem;
-    color: #333;
-    font-weight: 300;
-    width: 100px;
-    @include prefixer(box-shadow, none);
-
-    &::-webkit-input-placeholder {
-      color: #366;
-      opacity: 0.5;
-    }
-    &:-moz-placeholder {
-      color: #366;
-      opacity: 0.5;
-    }
-    &::-moz-placeholder {
-      color: #366;
-      opacity: 0.5;
-    }
-    &:-ms-input-placeholder {
-      color: #366;
-      opacity: 0.5;
-    }
-
-    &:focus {
-      width: 200px;
-    }
-  }
-
-  i {
-    color: #fff;
-    padding-right: 10px;
-  }
-}
-
 @media screen and (max-width: 700px) {
   form.header-search {
     display: none;

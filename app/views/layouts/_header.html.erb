@@ -6,15 +6,6 @@
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
-      <!-- <form class="w-auto d-inline-block form-search" action="/search" method="get"> -->
-      <!--   <div class="input-group"> -->
-      <!--     <input class="form-control" name="q" id="q" placeholder="<%= t('navbar.search') %>" aria-label="Search"> -->
-      <!--     <button class="btn btn-primary" type="submit" style="height: auto" aria-label="Search"> -->
-      <!--       <i class="fa fa-search"></i> -->
-      <!--     </button> -->
-      <!--   </div> -->
-      <!-- </form> -->
-
       <ul class="navbar-nav ms-5 me-auto align-items-xl-baseline">
       <li class="nav-item">
         <a class="nav-link" href="/"><%= t('navbar.home') %></a>
@@ -99,16 +90,20 @@
         <!-- <li class="navbar-divider mx-5"></li> -->
 
         <% locales_change.each do |locale| %>
-        <li class="nav-item">
-          <%= link_to t('name', locale:), url_for(request.query_parameters.merge(locale:)), class: 'nav-link' %>
-        </li>
+          <li class="nav-item">
+            <%= link_to t('name', locale:), url_for(request.query_parameters.merge(locale:)), class: 'nav-link' %>
+          </li>
         <% end %>
-      </ul>
+    </ul>
+    </div>
   </div>
-</div>
 </nav>
 <%# Set by layouts/volunteer.html.erb, sometimes not even set?%>
 <%= render 'layouts/volunteer_header' if (defined? with_volunteer) && with_volunteer %>
+<%= render 'layouts/development_program_header' if (defined? with_development) && with_development %>
+<%= render 'layouts/admin_area_header' if (defined? with_admin) && with_admin %>
+<%= render 'layouts/staff_area_header' if (defined? with_staff) && with_staff %>
+
 
 <%= render 'layouts/quick_access_link' if current_user.admin? %>
 </div>
