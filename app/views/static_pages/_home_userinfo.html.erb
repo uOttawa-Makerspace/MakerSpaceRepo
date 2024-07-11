@@ -5,9 +5,9 @@
             <%= image_tag @user.display_avatar, alt: 'Avatar' %>
             <%# why the '@', this isn't twitter%>
                                       <p class="subtext">@<%= @user.username %></p>
-                                      <a class="btn btn-primary w-100">Edit Profile</a>
+                                      <a class="btn btn-primary w-100"><%= t('home.userinfo.edit_profile') %></a>
                                       <br />
-                                      <a class="btn btn-link">Sign out</a>
+                                      <a class="btn btn-link"><%= t('home.userinfo.sign_out') %></a>
         </div>
         <div class="col gy-5">
             <p class="full-name"><%= @user.name %></p>
@@ -15,13 +15,14 @@
             <br />
             <p class="subtext"><%= @user.identity_readable %></p>
             <% if @user.student? %>
-            <p><i class="fa fa-circle text-primary"></i> Student</p>
+                <% ending = case @user.gender[0] when 'M' then 'm' when 'F' then 'f' else 'o' end %>
+            <p><i class="fa fa-circle text-primary"></i> <%= t("home.userinfo.student.#{ending}") %></p>
             <% end %>
             <% if @user.staff? %>
-            <p><i class="fa fa-circle" style="color: blue;"></i> Staff</p>
+            <p><i class="fa fa-circle" style="color: blue;"></i> <%= t('home.userinfo.staff') %></p>
             <% end %>
             <% if @user.admin? %>
-            <p><i class="fa fa-circle" style="color: red;"></i> Staff</p>
+            <p><i class="fa fa-circle" style="color: red;"></i> <%= t('home.userinfo.admin') %></p>
             <% end %>
         </div>
     </div>

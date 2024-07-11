@@ -2,6 +2,16 @@ import TomSelect from "tom-select";
 import Rails from "@rails/ujs";
 
 document.addEventListener("turbo:load", function () {
+  // Find hash and manually click on load
+  // this only finds links within the #myTab element
+  // because having random links be clicked via a hash is a security nightmare
+  const profileTablist = document.getElementById("myTab");
+  if (profileTablist) {
+    [...profileTablist.querySelectorAll("a")].forEach((item) => {
+      if (item.getAttribute("href") == window.location.hash) item.click();
+    });
+  }
+
   const elements = document.querySelectorAll("[data-show], [data-hide]");
   for (let i = 0; i < elements.length; i++) {
     elements[i].addEventListener("change", function () {

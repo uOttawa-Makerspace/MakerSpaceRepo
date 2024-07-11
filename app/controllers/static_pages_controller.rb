@@ -20,6 +20,14 @@ class StaticPagesController < SessionsController
         formatted_time = task.created_at.strftime "%H:%M"
         [space_name, formatted_time]
       end
+
+    @user_skills =
+      @user
+        .certifications
+        .map do |cert|
+          [cert.training_session.training.name, cert.training_session.level]
+        end
+        .compact # remove nils
   end
 
   def about

@@ -26,3 +26,17 @@ en:
     userinfo:
       sign_in: "Sign in"
       not_signed_in: "Not signed in"
+      edit_profile: "Edit Profile"
+      sign_out: "Sign out"
+      student:
+        m: "Student"
+        f: "Student"
+        o: "Student"
+      staff: "Staff"
+      admin: "Administrator"
+    badges:
+      header: "Badges"
+      show_all: "Show All"
+    skills:
+      header: "Skills"
+      show_all: "Show All"

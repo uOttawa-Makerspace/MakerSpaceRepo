@@ -61,8 +61,37 @@
                 </div>
             </div>
             <!--Right column -->
-            <div class="col-xl">
+            <!-- Set a fixed column size to prevent Badges from expanding more -->
+            <div class="col-xl-3">
                 <%= render partial: 'home_userinfo' %>
+                <%= render partial: 'home_badges' if signed_in? %>
+                <%= render partial: 'home_skills' if signed_in? %>
+                <div class="card home-card" id="home-big-newsletter">
+                    <div class="card-body">
+                        <h2>Want to know when our next big event is happening?</h2>
+                        <%= form_with do |form| %>
+                            <%= form.email_field :signUpEmail, class: 'form-control email-input mb-2', placeholder: 'Enter email' %>
+                            <%= form.submit 'Sign Up', class: 'btn btn-primary' %>
+                        <% end %>
+                    </div>
+                </div>
+                <!-- Hidden for now :^) -->
+                <div class="card home-card" hidden>
+                    <div class="card-body">
+                        <h2>Workshops this week</h2>
+                        <div class="d-flex workshop-card">
+                            <div class="text-center workshop-date">
+                                <p style="font-size: 2rem;">22<br /> <span style="font-size: 1.5rem">Dec</span></p>
+                            </div>
+                            <div class="workshop-desc">
+                                <p class="workshop-title">Easter Themed 3D Printing Workshop - Beginner</p>
+                                <p class="workshop-date-side">Thu, Mar 28, 2:30 PM</p>
+                                <p class="workshop-cost">Free</p>
+                            </div>
+                        </div>
+                        <!-- <p> No workshops... yet</p> -->
+                    </div>
+                </div>
             </div>
         </div>
 </section>
