@@ -431,7 +431,7 @@ class User < ApplicationRecord
 
       if engineering?
         # department + ' ' unless department.nil?
-        "#{year} #{I18n.t "year"} #{department&.+ " "}#{identity}uate".titleize
+        "#{year} #{I18n.t "year"} #{department&.+ " "}#{identity.titleize}uate"
       else
         "#{year} #{I18n.t "year"} #{identity}uate".titleize
       end

@@ -26,3 +26,17 @@ fr:
     userinfo:
       sign_in: "Connexion"
       not_signed_in: "Pas connecté"
+      edit_profile: "Modifier profil"
+      sign_out: "Déconnexion"
+      student:
+        m: "Étudiant"
+        f: "Étudiante"
+        o: "Étudiant(e)"
+      staff: "Employé"
+      admin: "Administrateur"
+    badges:
+      header: "Badges"
+      show_all: "Voir tout"
+    skills:
+      header: "Compétences"
+      show_all: "Voir tout"
