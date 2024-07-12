@@ -21,10 +21,21 @@ class StaticPagesController < SessionsController
         [space_name, formatted_time]
       end
 
+
       @recent_projects = Repository
       .public_repos
       .order(created_at: :desc)
       .limit(6)
+
+
+    @user_skills =
+      @user
+        .certifications
+        .map do |cert|
+          [cert.training_session.training.name, cert.training_session.level]
+        end
+        .compact # remove nils
+
   end
 
   def about

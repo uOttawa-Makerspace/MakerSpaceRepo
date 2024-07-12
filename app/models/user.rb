@@ -398,4 +398,45 @@ class User < ApplicationRecord
     end
     badge
   end
+
+  def department
+    # HACK some programs include words like 'in' that aren't
+    # in the program list. try to clean up before processing
+    # So this might return nil or 'Non-Engineering' too
+    program_alt = program.gsub(" in", "")
+    UniProgram
+      .where(program: program)
+      .or(UniProgram.where(program: program_alt))
+      .take
+      &.department
+  end
+
+  def engineering?
+    student? and department != "Non-Engineering"
+  end
+
+  def identity_readable
+    if student?
+      year = year_of_study.to_s
+      if I18n.locale == :fr
+        case year.last
+        when "1"
+          year += "ère"
+        else
+          year += "ème"
+        end
+      elsif I18n.locale == :en
+        year = year.to_i.ordinalize
+      end
+
+      if engineering?
+        # department + ' ' unless department.nil?
+        "#{year} #{I18n.t "year"} #{department&.+ " "}#{identity.titleize}uate"
+      else
+        "#{year} #{I18n.t "year"} #{identity}uate".titleize
+      end
+    else
+      identity.titleize
+    end
+  end
 end

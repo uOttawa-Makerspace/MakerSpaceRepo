@@ -19,5 +19,24 @@ en:
       shadowing_scheduled: "Shadowing scheduled this week"
       your_tasks: "Your tasks"
       add_more_tasks: "Sign up for more tasks"
+      no_shifts_scheduled: "No shadowing shifts scheduled"
+      no_tasks_assigned: "No tasks assigned"
     development_program:
       header: "Development Program"
+    userinfo:
+      sign_in: "Sign in"
+      not_signed_in: "Not signed in"
+      edit_profile: "Edit Profile"
+      sign_out: "Sign out"
+      student:
+        m: "Student"
+        f: "Student"
+        o: "Student"
+      staff: "Staff"
+      admin: "Administrator"
+    badges:
+      header: "Badges"
+      show_all: "Show All"
+    skills:
+      header: "Skills"
+      show_all: "Show All"

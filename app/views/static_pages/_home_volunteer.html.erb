@@ -2,7 +2,7 @@
     <div class="card-body">
         <h2><%= t('home.volunteer_program.header') %></h2>
         <% if @volunteer_program_shadowing_scheduled.empty? %>
-            <p> No shadowing shifts scheduled - LOCALIZE ME</p>
+            <p><%= t('home.volunteer_program.no_shifts_scheduled') %></p>
         <% else %>
         <h3><%= t('home.volunteer_program.shadowing_scheduled') %>:</h3>
         <ul class="list-unstyled list-box shadowing-list">
@@ -15,7 +15,7 @@
         <% end %>
         <%= link_to t('home.show_more'), shadowing_shifts_volunteers_path %>
         <% if @volunteer_program_your_tasks.empty? %>
-            <p>No tasks assigned - LOCALIZE ME</p>
+            <p><%= t('home.volunteer_program.no_tasks_assigned') %></p>
         <% else @volunteer_program_your_tasks.each do |space_name, time_period| %>
         <h3><%= t('home.volunteer_program.your_tasks') %>:</h3>
         <ul class="list-unstyled list-box volunteer-task-list">

@@ -43,4 +43,85 @@ section#home {
     }
     //list-style: circle;
   }
+
+  #home-userinfo {
+    img {
+      border-radius: 50%;
+      max-width: 80%;
+    }
+
+    .full-name {
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .subtext {
+      color: $secondary;
+    }
+  }
+
+  .home-badge {
+    background-color: $secondary;
+  }
+
+  .skill-pill {
+    display: inline;
+    font-size: 0.8rem;
+    //border: 1px solid $secondary;
+    background-color: lightgrey;
+    border-radius: 15px;
+    padding: 5px;
+    margin: 5px;
+  }
+
+  #home-big-newsletter {
+    h2 {
+      font-size: 1.4em;
+    }
+    .email-input {
+      outline: 0;
+      border-width: 0 0 2px;
+      border-color: black;
+      border-radius: 0;
+      box-shadow: none;
+
+      &:focus {
+        border-color: $primary;
+        outline: 1px dotted $primary;
+      }
+    }
+  }
+
+  .workshop-card {
+    padding: 5px;
+    border: 1px solid $secondary;
+    border-radius: 15px;
+    p {
+      margin-bottom: 0;
+      margin-top: 0;
+    }
+    .workshop-date {
+      border: 1px solid lightgrey;
+      border-radius: 15px;
+      background-color: $secondary;
+      color: white;
+      margin-right: 1rem;
+      padding-left: 2rem;
+      padding-right: 2rem;
+      line-height: 1;
+      align-content: center;
+    }
+
+    .workshop-title {
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+    .workshop-date-side {
+    }
+
+    .workshop-cost {
+      font-weight: 700;
+    }
+  }
 }
