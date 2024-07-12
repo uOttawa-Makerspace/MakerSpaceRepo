@@ -2,11 +2,12 @@
 @import "./shared/variables";
 
 footer {
+  overflow: clip;
   margin-top: 3rem;
   font-size: 16px;
   color: #fff;
   background-color: #000;
-  padding: 5rem 10rem 3rem 10rem;
+  padding: 5% 10% 3% 10%;
   // Icons
   .fa {
     font-size: 20px;
@@ -19,9 +20,10 @@ footer {
   }
 
   ul {
+    display: inline-block;
     white-space: nowrap;
     // list-style: none;
-    column-count: 2;
+    //column-count: 2;
     li,
     a {
       color: #fff !important;
