@@ -78,12 +78,16 @@
           </div>
 
           <li class="nav-item">
-            <%= image_tag('cc_white.png', alt: 'CC', class: 'ccs', id: 'myCcWhite', style: 'display:none') %>
-            <%= image_tag('cc.png', alt: 'CC', class: 'ccs hidden', id: 'myCcBlack') %>
+            <a class="ccLink" href="<%= discount_codes_path %>">
+              <%= image_tag('cc_white.png', alt: 'CC', class: 'ccs', id: 'myCcWhite') %>
+              <%= image_tag('cc.png', alt: 'CC', class: 'ccs hidden', id: 'myCcBlack') %>
+            </a>
           </li>
-        <li class="nav-item">
-          <b class="nav-link"><%= current_user.get_total_cc %></b>
-        </li>
+          <li class="nav-item">
+            <a class="ccLink" href="<%= discount_codes_path %>">
+              <b class="nav-link"><%= current_user.get_total_cc %></b>
+            </a>
+          </li>
       </li>
         <% end %>
 
