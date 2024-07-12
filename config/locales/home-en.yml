@@ -14,6 +14,19 @@ en:
     shortcuts:
       header: "Shortcuts"
       recently_opened: "Recently Opened"
+      ask_for_sign_in: "Sign in to view recently opened tasks"
+      volunteer_program_header: "Volunteer Program"
+      volunteer_program_desc:
+        - Gain valuable experience with technology
+        - Meet people with similar interests
+        - Collaborate on cool new projects
+        - Get involved with the Maker network
+        - Receive awesome rewards!
+      development_program_header: "Development Program"
+      development_program_desc:
+        - Get industry-standard certificates that are easy to share and verify.
+        - Plan, track, and develop your abilities on your own schedule.
+        - Join now and enhance your employment opportunities with credentials that matter!
     volunteer_program:
       header: "Volunteer Program"
       shadowing_scheduled: "Shadowing scheduled this week"

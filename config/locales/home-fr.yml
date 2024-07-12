@@ -14,6 +14,19 @@ fr:
     shortcuts:
       header: "Raccourcis"
       recently_opened: "Récemment consultés"
+      ask_for_sign_in: "Se connecter pour voir les tâches récemment consultés"
+      volunteer_program_header: "Programme des Bénévoles"
+      volunteer_program_desc:
+        - Acquérir des expériences valable dans le domaine de la techologie
+        - Rencontrer des personnes parteagent des intérêts similaires
+        - Collaborer à des nouveaux projets
+        - S'impliquer dans le réseau de Maker
+        - Recevoirs des récompeneses géniales!
+      development_program_header: "Programme de Développement"
+      development_program_desc:
+        - Acquérir des certificats normalisés par l'industrie, façiles à partager et authentifier
+        - Planifier, suivre, et développer vos compétences selon votre horaire
+        - Joignez maintenant et améliorer vos possibilités d'emploi avec des qualifications qui comptent
     volunteer_program:
       header: "Programme des bénévoles"
       shadowing_scheduled: "Heures d'observation assignés cette semaine"

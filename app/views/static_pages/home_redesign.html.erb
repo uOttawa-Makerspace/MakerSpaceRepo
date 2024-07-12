@@ -4,17 +4,21 @@
             <!--Left column -->
             <div class="col-xl  order-xl-0 order-1">
                 <!-- Staff Resources -->
+                <% if @user.staff? %>
                 <div class="card home-card">
-                    <div class="card-body">
-                        <h2><%= t('home.staff_resources.header') %></h2>
-                        <ul class="list-unstyled">
-                            <li><%= link_to t('home.staff_resources.staff_area'), staff_dashboard_index_path %></li>
-                            <li><%= link_to t('home.staff_resources.shifts'), shifts_admin_shifts_path %></li>
-                            <li><%= link_to t('home.staff_resources.job_order_admin'), admin_job_orders_path %></li>
-                            <li><%= link_to t('home.staff_resources.admin_area'), admin_settings_path %></li>
-                        </ul>
-                    </div>
+                  <div class="card-body">
+                    <h2><%= t('home.staff_resources.header') %></h2>
+                    <ul class="list-unstyled">
+                      <% if @user.admin? %>
+                        <li><%= link_to t('home.staff_resources.admin_area'), admin_settings_path %></li>
+                      <% end %>
+                      <li><%= link_to t('home.staff_resources.staff_area'), staff_dashboard_index_path %></li>
+                      <li><%= link_to t('home.staff_resources.shifts'), shifts_admin_shifts_path %></li>
+                      <li><%= link_to t('home.staff_resources.job_order_admin'), admin_job_orders_path %></li>
+                    </ul>
+                  </div>
                 </div>
+                <% end %>
                 <!-- General Resources -->
                 <div class="card home-card">
                     <div class="card-body">
@@ -25,21 +29,9 @@
                         </ul>
                     </div>
                 </div>
-                <div class="card home-card">
-                    <div class="card-body">
-                        <h2><%= t('home.shortcuts.header') %></h2>
-                        <h3><%= t('home.shortcuts.recently_opened') %></h3>
-                        <ul class="list-unstyled">
-                            <li><i class="fa fa-square text-secondary"></i> Project name - GNG1103</li>
-                            <li><i class="fa fa-square text-secondary"></i> Project name - GNG1103</li>
-                            <li><i class="fa fa-square text-secondary"></i> Project name - GNG1103</li>
-                            <li></li>
-                            <li></li>
-                        </ul>
-                    </div>
-                </div>
-                <%= render 'static_pages/home_volunteer' %>
-                <%= render 'static_pages/home_development' %>
+                <%= render 'static_pages/home_shortcuts' %>
+                <%= render 'static_pages/home_volunteer' if signed_in? %>
+                <%= render 'static_pages/home_development' if signed_in? %>
             </div>
             
             <!--Middle column -->

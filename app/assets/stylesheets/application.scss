@@ -130,6 +130,7 @@ p {
 a {
   text-decoration: none;
   color: inherit;
+  font-weight: 550; // To make it stand out from the white background
   &:not(
       .btn,
       .nav-item,

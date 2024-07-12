@@ -124,4 +124,20 @@ section#home {
       font-weight: 700;
     }
   }
+
+  .home-shortcuts {
+    & > .card-body > * {
+      margin-top: 1rem;
+    }
+    .guest-shortcuts {
+      font-size: 1.3rem;
+      color: $secondary;
+    }
+
+    .explanation-list {
+      padding-left: 1.5rem;
+      outline: 1px solid $secondary;
+      border-radius: 5px;
+    }
+  }
 }
