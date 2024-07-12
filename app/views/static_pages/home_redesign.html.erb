@@ -7,18 +7,18 @@
                 <div class="card home-card">
                     <div class="card-body">
                         <h2><%= t('home.staff_resources.header') %></h2>
-                    <ul class="list-unstyled">
-                        <li><%= link_to t('home.staff_resources.staff_area'), staff_dashboard_index_path %></li>
-                        <li><%= link_to t('home.staff_resources.shifts'), shifts_admin_shifts_path %></li>
-                        <li><%= link_to t('home.staff_resources.job_order_admin'), admin_job_orders_path %></li>
-                        <li><%= link_to t('home.staff_resources.admin_area'), admin_settings_path %></li>
-                    </ul>
+                        <ul class="list-unstyled">
+                            <li><%= link_to t('home.staff_resources.staff_area'), staff_dashboard_index_path %></li>
+                            <li><%= link_to t('home.staff_resources.shifts'), shifts_admin_shifts_path %></li>
+                            <li><%= link_to t('home.staff_resources.job_order_admin'), admin_job_orders_path %></li>
+                            <li><%= link_to t('home.staff_resources.admin_area'), admin_settings_path %></li>
+                        </ul>
                     </div>
                 </div>
                 <!-- General Resources -->
                 <div class="card home-card">
                     <div class="card-body">
-                    <h2><%= t('home.general_resources.header') %></h2>
+                        <h2><%= t('home.general_resources.header') %></h2>
                         <ul class="list-unstyled">
                             <li><a href=""><%= t('home.general_resources.makeroom') %></a></li>
                             <li><%= link_to t('home.general_resources.job_orders'), job_orders_path %></li>
@@ -51,13 +51,14 @@
                     </div>
                 </div>
             </div>
+            
             <!--Middle column -->
             <div class="col-xl-6">
               <div class="card home-card">
                 <div class="card-body d-flex">
                   <div class="w-50">
                     <!--ADD USERNAME HERE -->
-                    <h2>Welcome to <b>CEED</b>Repo, <span style="color: red;">Christopher</span></h2>
+                    <h2>Welcome to <b>CEED</b>Repo, <span style="color: red;">John</span></h2>
                     <p>This is <b>CEED's</b> repository website</p>
                     <%= image_tag('redesign/site.png', alt: 'SITE', class: 'img-fluid') %>
                   </div>
@@ -105,39 +106,83 @@
                 </div>
               </div>
 
-         <!-- Instagram Section -->
-<div class="col-xl-12 mt-5">
-  <div class="card home-card">
-    <div class="card-body">
-      <h3><b>Instagram</b> <small class="text-muted"><a href="https://www.instagram.com/uoceed/" target="_blank">Follow us</a></small></h3>
-      <p>Stay up to date with our socials</p>
-      
-      <div id="carouselExampleControls" class="carousel slide" data-ride="carousel">
-        <div class="carousel-inner">
-          <div class="carousel-item active">
-           
-          </div>
-          <div class="carousel-item">
-           
-          </div>
-          <div class="carousel-item">
-          
-          </div>
-        </div>
-        <a class="carousel-control-prev" href="#carouselExampleControls" role="button" data-slide="prev">
-          <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-          <span class="sr-only">Previous</span>
-        </a>
-        <a class="carousel-control-next" href="#carouselExampleControls" role="button" data-slide="next">
-          <span class="carousel-control-next-icon" aria-hidden="true"></span>
-          <span class="sr-only">Next</span>
-        </a>
-      </div>
-    </div>
-  </div>
-</div>
- 
+              <!-- Instagram Section -->
+              <div class="card home-card mt-5">
+                <div class="card-body">
+               <h2>
+              <b>Instagram</b>
+              <small class="text-muted" style="font-size: 0.6em;">
+                <a href="https://www.instagram.com/uoceed/" target="_blank">Follow us</a>
+              </small>
+            </h2>
+                  <p>Stay up to date with our socials</p>
+                  
+                  <div id="carouselExampleControls" class="carousel slide" data-ride="carousel">
+                    <div class="carousel-inner">
+                      <div class="carousel-item active">
+                      
+                      </div>
+                      <div class="carousel-item">
+                       
+                      </div>
+                      <div class="carousel-item">
+                    
+                      </div>
+                    </div>
+                    <a class="carousel-control-prev" href="#carouselExampleControls" role="button" data-slide="prev">
+                      <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                      <span class="sr-only">Previous</span>
+                    </a>
+                    <a class="carousel-control-next" href="#carouselExampleControls" role="button" data-slide="next">
+                      <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                      <span class="sr-only">Next</span>
+                    </a>
+                  </div>
+                </div>
+              </div>
 
+            <!-- Explore Section -->
+            <div class="card home-card mt-5">
+              <div class="card-body">
+                <h2>
+                  <b>Explore</b>
+                  <small class="text-muted" style="font-size: 0.6em;">
+                    <a href="/explore">Show all</a>
+                  </small>
+                </h2>
+
+                <% if @recent_projects.present? %>
+                  <div id="carouselExampleControls" class="carousel slide" data-ride="carousel">
+                    <div class="carousel-inner">
+                      <% @recent_projects.each_with_index do |project, index| %>
+                        <div class="carousel-item <%= 'active' if index == 0 %>">
+                          <%= image_tag project.photos.first.image, class: 'd-block w-100', alt: project.title if project.photos.first.present? %>
+                          <div class="carousel-caption d-none d-md-block">
+                            <h5><%= project.title %></h5>
+                            <p><%= project.user_username %></p>
+                          </div>
+                        </div>
+                      <% end %>
+                    </div>
+                    <a class="carousel-control-prev" href="#carouselExampleControls" role="button" data-slide="prev">
+                      <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                      <span class="sr-only">Previous</span>
+                    </a>
+                    <a class="carousel-control-next" href="#carouselExampleControls" role="button" data-slide="next">
+                      <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                      <span class="sr-only">Next</span>
+                    </a>
+                  </div>
+                <% else %>
+                  <p>No recent projects available.</p>
+                <% end %>
+              </div>
+            </div>
+
+
+
+                </div>
+              </div>
             </div>
             
             <!--Right column -->
@@ -158,4 +203,5 @@
                 </div>
             </div>
         </div>
+    </div>
 </section>

@@ -20,6 +20,11 @@ class StaticPagesController < SessionsController
         formatted_time = task.created_at.strftime "%H:%M"
         [space_name, formatted_time]
       end
+
+      @recent_projects = Repository
+      .public_repos
+      .order(created_at: :desc)
+      .limit(6)
   end
 
   def about
