@@ -4,9 +4,6 @@ class StaticPagesController < SessionsController
   before_action :current_user, except: [:reset_password]
 
   def home
-  end
-
-  def home_redesign
     @volunteer_program_shadowing_scheduled =
       current_user.shadowing_hours.map do |hours|
         end_time = hours.end_time.strftime "%H:%M"
@@ -21,12 +18,7 @@ class StaticPagesController < SessionsController
         [space_name, formatted_time]
       end
 
-
-      @recent_projects = Repository
-      .public_repos
-      .order(created_at: :desc)
-      .limit(6)
-
+    @recent_projects = Repository.public_repos.order(created_at: :desc).limit(6)
 
     @user_skills =
       @user.certifications.map do |cert|
