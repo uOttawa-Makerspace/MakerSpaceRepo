@@ -35,8 +35,8 @@ The home page has it's own separate localization files, `locales/home-*.yml`. Ra
 ## Development/Volunteer program
 
 Badges and skills are lifted from the user profile page
-Skills are certifications?? Limit the count of skills, some have a lot of skills. Display level not number
-We do track progress, it is
+Skills are certifications? **Limit the count of skills**, some have a lot of skills. Display level not number
+We do track development program progress, it is the number of modules completed. Skills are just the level achieved
 
 All badges have a skill, not all skills have a badge associated. There should be one for every but we didn't create enough badges. Someone might have a skill with no badge to show for it :(.
 
@@ -58,5 +58,3 @@ You can be in progress of a development program skill, but not in progress in a 
 ## BUG HUNT DUTY
 
 Fix white links, headers are weird, roll them into one div. For non-engineering students show faculty instead of department, ARIA labels, responsive layout
-
-work term report, mdi term eval by supervisor, and update resume

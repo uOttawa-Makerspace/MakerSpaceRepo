@@ -416,7 +416,7 @@ fr:
         Le Programme de Développement use de certificats standardisés qui sont joignables aussi bien électroniquement que sur papier à vos futurs employeurs.
         Le Programme de Développement ne vous permettra pas seulement d’observer l’avancement de votre compétence à votre aise, mais il vous permettra aussi de :  "
     learning_area:
-      header: "<a href='#'>La zone d’apprentissage</a>"
+      header: "<a href='/learning_area'>La zone d’apprentissage</a>"
       paragraph: "Il est possible d’apprendre ces projects gratuitement. Certains d’entre sont des pré-requis pour les projets de la section d’Expertise."
     proficient_projects:
       header: "<a href='/proficient_projects'>Les projets d’Expertise</a>"

@@ -363,7 +363,7 @@ en:
         The Development program not only allows you to track your development on your own time, but it also
         allows you to:"
     learning_area:
-      header: "<a href='#'>Learning Area</a>"
+      header: "<a href='/learning_area'>Learning Area</a>"
       paragraph: "You can learn from all these projects for free. Some of them are a pre-requisite for other projects in the Proficient Projects Area."
     proficient_projects:
       header: "<a href='/proficient_projects'>Proficient Projects</a>"

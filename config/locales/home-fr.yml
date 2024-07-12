@@ -37,6 +37,8 @@ fr:
     badges:
       header: "Badges"
       show_all: "Voir tout"
+      no_badges: "Pas de badges, encore!"
+      no_badges_anchor: "Essayez le Programme de Développement"
     skills:
       header: "Compétences"
       show_all: "Voir tout"
