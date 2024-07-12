@@ -4,11 +4,12 @@
         <h3><%= t('home.shortcuts.recently_opened') %></h3>
         <% if signed_in? %>
             <ul class="list-unstyled">
-                <li><i class="fa fa-square text-secondary"></i> Project name - GNG1103</li>
-                <li><i class="fa fa-square text-secondary"></i> Project name - GNG1103</li>
-                <li><i class="fa fa-square text-secondary"></i> Project name - GNG1103</li>
-                <li></li>
-                <li></li>
+                <% begin JSON.parse(cookies[:recently_viewed]).each do |link, proj_name| %>
+                <li><a href="<%= link %>"><i class="fa fa-square text-secondary"></i> <%= proj_name %></a></li>
+                <% end %>
+                <% rescue %>
+                ...
+                <% end %>
             </ul>
         <% else %>
             <p class="guest-shortcuts"><%= t('home.shortcuts.ask_for_sign_in') %></p>
