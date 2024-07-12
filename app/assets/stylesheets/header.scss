@@ -2,7 +2,7 @@
 @import "./shared/variables";
 
 .navbar {
-  //position: relative;
+  background-color: $primary;
 
   .background {
     position: absolute;
@@ -38,15 +38,6 @@
     }
   }
 
-  //@include media-breakpoint-down(lg) {
-  //  .navbar-divider {
-  //    bottom: 0;
-  //    height: auto;
-  //    border-left: none;
-  //    border-bottom: 1px solid;
-  //  }
-  //}
-
   .nav-link {
     font-weight: 700;
     font-size: 15px;
@@ -68,6 +59,26 @@
 
   .navbar-brand {
     font-size: 2rem;
+  }
+
+  .ccLink {
+    #myCcWhite {
+      display: none;
+    }
+
+    #myCcBlack {
+      display: unset;
+    }
+
+    &:hover {
+      #myCcWhite {
+        display: unset;
+      }
+
+      #myCcBlack {
+        display: none;
+      }
+    }
   }
 
   &.transition {
@@ -173,50 +184,6 @@ span.menu-button {
         border: none;
       }
     }
-  }
-}
-
-form.header-search {
-  display: inline-block;
-  line-height: 60px;
-  margin-left: 50px;
-
-  input {
-    @include transition(200ms);
-    border: none;
-    border-radius: 5px;
-    font-size: 0.9rem;
-    padding: 0.3rem 0.5rem;
-    color: #333;
-    font-weight: 300;
-    width: 100px;
-    @include prefixer(box-shadow, none);
-
-    &::-webkit-input-placeholder {
-      color: #366;
-      opacity: 0.5;
-    }
-    &:-moz-placeholder {
-      color: #366;
-      opacity: 0.5;
-    }
-    &::-moz-placeholder {
-      color: #366;
-      opacity: 0.5;
-    }
-    &:-ms-input-placeholder {
-      color: #366;
-      opacity: 0.5;
-    }
-
-    &:focus {
-      width: 200px;
-    }
-  }
-
-  i {
-    color: #fff;
-    padding-right: 10px;
   }
 }
 

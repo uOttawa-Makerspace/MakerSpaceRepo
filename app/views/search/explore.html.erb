@@ -4,7 +4,7 @@
     <div class="col my-2">
       <section class="repository-filter">
         <div id="sort-header" class="dropdown text-center">
-          <button class="btn btn-outline-primary dropdown-toggle" type="button" id="sort-dropdown-menu" data-bs-toggle="dropdown">
+          <button class="btn btn-primary dropdown-toggle" type="button" id="sort-dropdown-menu" data-bs-toggle="dropdown">
             <%= t('home.sort.by') %>
             <%= t("home.sort.#{params[:sort]}") if params[:sort].present? %>
           </button>
@@ -21,7 +21,7 @@
     <div class="col my-2">
       <section class="repository-filter">
           <div id="category-header" class="dropdown text-center">
-          <button class="btn btn-outline-primary dropdown-toggle" type="button" id="category-dropdown-menu" data-bs-toggle="dropdown">
+          <button class="btn btn-primary dropdown-toggle" type="button" id="category-dropdown-menu" data-bs-toggle="dropdown">
             <%= t('home.categories.filter') %>
             <%= t("home.categories.#{params[:category]}") if params[:category].present? %>
           </button>

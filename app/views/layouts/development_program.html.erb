@@ -12,11 +12,9 @@
 <!--    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">-->
   </head>
   <body>
-    <%= render 'layouts/header' %>
+    <%= render 'layouts/header', with_development: true %>
 
     <%= render partial: 'partials/announcements' %>
-
-    <%= render 'layouts/development_program_header' %>
 
     <section>
       <div class="bg-white">

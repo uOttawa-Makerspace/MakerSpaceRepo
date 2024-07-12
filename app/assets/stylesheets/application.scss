@@ -56,13 +56,20 @@ h1 {
 }
 
 .dropdown-item {
-  :active {
-    color: #000 !important;
-    background-color: #497979 !important;
+  &:active {
+    color: #000; // !important;
+    background-color: $primary; // !important;
+  }
+  &:first-child:hover {
+    background-color: $primary; // !important;
   }
 
-  :hover {
-    background-color: rgba(59, 147, 147, 0.2) !important;
+  &:hover {
+    color: #fff; // !important;
+    background-color: $secondary; // !important;
+  }
+  &:first-child:hover {
+    background-color: $secondary; // !important;
   }
 
   font-weight: 700; // bold
@@ -92,9 +99,10 @@ $dropdown-connection-size: 12px;
 }
 
 .dropdown-menu {
-  border: none;
+  //border: none;
   border-radius: 4px;
   box-shadow: 4px blur;
+  padding-bottom: 0;
 }
 
 h2 {
@@ -122,6 +130,7 @@ p {
 a {
   text-decoration: none;
   color: inherit;
+  font-weight: 550; // To make it stand out from the white background
   &:not(
       .btn,
       .nav-item,
@@ -339,4 +348,8 @@ td > .btn:not(:last-of-type) {
 .checkbox-lg {
   width: 1.5rem;
   height: 1.5rem;
+}
+
+#userwayAccessibilityIcon {
+  margin-bottom: 100%;
 }

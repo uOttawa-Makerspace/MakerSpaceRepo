@@ -4,9 +4,6 @@ class StaticPagesController < SessionsController
   before_action :current_user, except: [:reset_password]
 
   def home
-  end
-
-  def home_redesign
     @volunteer_program_shadowing_scheduled =
       current_user.shadowing_hours.map do |hours|
         end_time = hours.end_time.strftime "%H:%M"
@@ -21,21 +18,25 @@ class StaticPagesController < SessionsController
         [space_name, formatted_time]
       end
 
-
-      @recent_projects = Repository
-      .public_repos
-      .order(created_at: :desc)
-      .limit(6)
-
+    @recent_projects = Repository.public_repos.order(created_at: :desc).limit(6)
 
     @user_skills =
-      @user
-        .certifications
-        .map do |cert|
-          [cert.training_session.training.name, cert.training_session.level]
-        end
-        .compact # remove nils
+      @user.certifications.map do |cert|
+        [cert.training_session.training.name, cert.training_session.level]
+      end #.compact # remove nils
 
+    # Get total tracks in all learning modules
+    total_tracks = LearningModule.all.map { |x| x.training.name }.tally
+    # get the total number of tracks completed
+    # and in progress under the user's name
+    @user_tracks =
+      @user
+        .learning_module_tracks
+        .group_by { |x| x.learning_module.training.name }
+        .transform_values { |x| x.map(&:status).tally }
+        .map do |key, value|
+          [key, "#{value["Completed"]}/#{total_tracks[key]}"]
+        end
   end
 
   def about

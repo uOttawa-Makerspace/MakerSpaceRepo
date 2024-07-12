@@ -1,11 +1,12 @@
 <footer>
   <div class="row g-0">
-    <div class="col-auto me-auto text-center">
-      <div class="row">
+    <div class="col-auto me-auto text-center flex-nowrap">
+      <div class="row text-nowrap">
         <div class="col-auto brand-separator">
           <p class="brand-tagline">ALIMENTÉ PAR</p>
           <%= image_tag 'logo/CGEC_LOGO_WHITE_ORANGE.png', alt: 'CGEC Logo', width: '125px' %>
         </div>
+        <!-- <div class="brand-separator"></div> -->
         <div class="col-auto">
           <p class="brand-tagline">POWERED BY</p>
           <%= image_tag 'logo/CEED_LOGO_WHITE_ORANGE.png', alt: 'CEED Logo', width: '125px' %>
@@ -26,11 +27,13 @@
         <%= form.submit 'Sign Up', class: 'btn btn-sm btn-primary' %>
       <% end %>
     </div>
-    <div class="col-auto align-text-top align-items-top ms-5">
+    <div class="col-auto align-text-top align-items-top gx-5">
       <ul class="card-columns list-unstyled">
         <li><%= link_to t('footer.contact_us'), contact_path %></li>
         <li><a href="https://www.uottawa.ca/about-us/administration-services/facilities/campus-maps/stem-complex">STEM Building, uOttawa</a></li>
         <li><a href="mailto:ceed@uottawa.ca">ceed@uottawa.ca</a></li>
+      </ul>
+      <ul class="card-columns list-unstyled">
         <!-- <li><%= link_to t('footer.hours'), hours_path %></li> -->
         <li><%= link_to t('footer.help'), help_path %></li>
         <li><%= link_to t('footer.tos'), tos_path %></li>
