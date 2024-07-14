@@ -61,6 +61,8 @@ class User < ApplicationRecord
   has_many :teams, through: :team_memberships
   has_many :space_manager_joins, dependent: :destroy
   has_many :supervised_spaces, through: :space_manager_joins, source: :space
+  has_many :staff_spaces, dependent: :destroy
+  has_many :spaces, through: :staff_spaces
 
   MAX_AUTH_ATTEMPTS = 5
 
