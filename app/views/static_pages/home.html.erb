@@ -51,44 +51,20 @@
             </div>
             <div class="w-50 text-center">
               <h3>Space hours this week</h3>
-              <table class="table table-bordered">
-                <thead>
-                  <tr>
-                    <th>Makerspace</th>
-                    <th>Brunsfield</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>Monday - 10am - 6pm </td>
-                    <td>Monday - 12pm - 8pm</td>
-                  </tr>
-                  <tr>
-                    <td>Tuesday - 10am - 6pm </td>
-                    <td>Tuesday - CLOSED</td>
-                  </tr>
-                  <tr>
-                    <td>Wednesday - 10am - 6pm </td>
-                    <td>Wednesday - 12pm - 8pm</td>
-                  </tr>
-                  <tr>
-                    <td>Thursday - 10 am - 6 pm </td>
-                    <td>Thursday - CLOSED</td>
-                  </tr>
-                  <tr>
-                    <td>Friday - 10am - 6pm </td>
-                    <td>Friday - 12pm - 8pm</td>
-                  </tr>
-                  <tr>
-                    <td>Saturday - 10am - 6pm</td>
-                    <td>Saturday - 12pm - 6pm</td>
-                  </tr>
-                  <tr>
-                    <td>Sunday - 11am - 5pm</td>
-                    <td>Sunday - CLOSED</td>
-                  </tr>
-                </tbody>
-              </table>
+
+               <div class="container">
+          <div class="row d-flex flex-row">
+            <% @contact_info.each do |space| %>
+              <div class="col">
+                <div class="card flex-column" style="margin: 10px; padding: 10px; border: 1px solid #ddd;">
+                  <h4><%= space.name %></h4>
+                  <div><%= space.opening_hour.students.html_safe %></div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+             
             </div>
           </div>
         </div>

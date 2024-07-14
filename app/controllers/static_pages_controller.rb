@@ -49,6 +49,10 @@ class StaticPagesController < SessionsController
   def terms_of_service
   end
 
+  def home 
+    @contact_info = ContactInfo.where(show_hours: true).order(name: :asc)
+
+  end
   def hours
     @contact_info = ContactInfo.where(show_hours: true).order(name: :asc)
 
