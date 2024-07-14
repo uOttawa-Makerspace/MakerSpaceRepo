@@ -283,7 +283,7 @@ def manage_roles
   @roles = %w[admin staff regular_user]
   @space_list = Space.all
 
-  # Fetching staff spaces for each admin
+  # Fetching admin spaces for each admin
   @admin_spaces = {}
   @admins.each do |admin|
     @admin_spaces[admin.id] = admin.staff_spaces.pluck(:space_id)

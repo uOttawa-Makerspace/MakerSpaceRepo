@@ -140,6 +140,8 @@ document.addEventListener('DOMContentLoaded', function() {
       return response.json();
     })
     .then(data => {    
+
+      location.reload();
      
 
     })
@@ -225,6 +227,7 @@ const manageSpacesModal = document.getElementById('manageSpacesModal');
       return response.json();
     })
     .then(data => {    
+      location.reload();
      
 
     })
