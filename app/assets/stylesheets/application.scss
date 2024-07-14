@@ -151,7 +151,10 @@ a {
   &::visited {
     color: #789;
   }
-
+  &:hover {
+    @include transition(100ms);
+    color: #000;
+  }
   //&:visited {
   //  color: #789;
   //}
@@ -173,7 +176,10 @@ u {
 }
 
 .btn {
-  color: #fff;
+  // Exclude outline btns
+  &:not(.btn-outline-primary, .btn-outline-secondary) {
+    color: #fff;
+  }
   font-weight: 700;
   font-size: 16px;
 }
