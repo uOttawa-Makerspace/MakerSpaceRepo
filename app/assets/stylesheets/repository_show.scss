@@ -1,4 +1,5 @@
 @import "lib";
+@import "shared/variables";
 
 section#show-repository {
   @include outer-container(70rem);
@@ -81,12 +82,13 @@ a#view-repo-link {
 }
 
 div#repo-title {
-  color: #366;
+  //color: #366;
+  color: $secondary;
   font: 600 1.6rem "Raleway", sans-serif;
 }
 
 div#misc {
-  border-bottom: 3px solid #366;
+  border-bottom: 3px solid $secondary;
   padding-left: 5%;
 
   span.misc-item {
@@ -96,7 +98,7 @@ div#misc {
     line-height: 60px !important;
     width: 30%;
     font: 300 1.1rem "Raleway", sans-serif;
-    color: #19c1a5;
+    color: $primary;
     cursor: pointer;
     i {
       padding-right: 10px;
@@ -111,7 +113,8 @@ div#misc {
     }
 
     &:hover {
-      color: #5f9ea0;
+      @include transition(100ms);
+      color: #000;
     }
   }
 }
@@ -120,14 +123,16 @@ div.repo-info-item {
   @include span-columns(6, 0);
   padding-top: 30px;
   font: 300 0.9rem "Raleway", sans-serif;
+  color: $secondary;
 
   table {
     margin-left: -3px;
     width: 101%;
   }
   .title {
+    // This is conflicting with printers.scss
+    color: $secondary;
     font-size: 1rem;
-    color: #366;
     text-align: left;
   }
 
@@ -154,7 +159,7 @@ div.repo-info-item {
 
   .bg-download {
     @include transition(100ms);
-    background-color: #5f9ea0;
+    background-color: $primary;
     color: #f9f9f9;
     cursor: pointer;
     border-radius: 6px;
@@ -164,7 +169,8 @@ div.repo-info-item {
     }
 
     &:hover {
-      background-color: #366;
+      // FIXME make this darker or smth
+      //background-color: $secondary;
       color: #f9f9f9;
     }
   }
@@ -221,13 +227,17 @@ div.repo-info-item {
   span.make {
     @include transition(100ms);
     display: inline-block;
-    background-color: #5f9ea0;
+    background-color: $primary;
     font-size: 1rem;
     color: white !important;
     border-radius: 1rem;
     margin-top: 0.5rem;
     padding: 0.5rem 1.25rem;
     margin-right: 0.75rem;
+
+    &.liked {
+      background-color: hotpink;
+    }
 
     a {
       display: block;

@@ -100,7 +100,7 @@
       <% end %>
 
       <div class="repo-info-item">
-        <span class="like<%= @liked ? ' bg-success' : '' %>" style="color: white;">
+        <span class="like<%= @liked ? ' liked' : '' %>" style="color: white;">
           <% like_text = @liked ? 'Unlike' : 'Like' %>
           <%= button_to(fa_icon('heart', text: like_text),
                         add_like_repository_path, class: 'like border-0 bg-transparent', remote: true, method: :post, style: 'color: inherit !important; padding: inherit !important;') %>

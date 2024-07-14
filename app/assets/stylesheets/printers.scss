@@ -2,16 +2,17 @@
 // They will automatically be included in application.css.
 // You can use Sass (SCSS) here: http://sass-lang.com/
 @import "lib";
+@import "shared/variables";
 
 div.title {
-  color: #366;
+  color: $primary;
   font-size: 2rem;
   padding-bottom: 0.5rem;
   text-align: center;
   max-width: 500px;
   margin: 0 auto;
   margin-bottom: 1rem;
-  border-bottom: 2px solid #366;
+  border-bottom: 2px solid $secondary;
 }
 
 .username {
