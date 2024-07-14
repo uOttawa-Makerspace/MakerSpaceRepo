@@ -38,8 +38,14 @@
         <div class="card home-card">
           <div class="card-body d-flex">
             <div class="w-50">
-              <!--ADD USERNAME HERE -->
-              <h2>Welcome to <b>CEED</b>Repo, <span style="color: red;">John</span></h2>
+             
+                <h2> <span style="font-weight: 450;"> Welcome to MakerRepo, </span>
+          <% if signed_in? %>
+           <span style="color: red;"> <%= @user.name %></span>
+          <% else %>
+           <span style="color: black;">Not signed in</span>
+          <% end %>
+        </h2>
               <p>This is <b>CEED's</b> repository website</p>
               <%= image_tag('redesign/site.png', alt: 'SITE', class: 'img-fluid') %>
             </div>
