@@ -38,33 +38,30 @@
         <div class="card home-card">
           <div class="card-body d-flex">
             <div class="w-50">
-             
-                <h2> <span style="font-weight: 450;"> Welcome to MakerRepo, </span>
-          <% if signed_in? %>
-           <span style="color: red;"> <%= @user.name %></span>
-          <% else %>
-           <span style="color: black;">Not signed in</span>
-          <% end %>
-        </h2>
-              <p>This is <b>CEED's</b> repository website</p>
+              <h2> <%= t('home.welcome.welcome_to') %>,
+                <% if signed_in? %>
+                <span class="text-primary"> <%= @user.name %></span>
+                <% else %>
+                <span class="text-secondary">Not signed in</span>
+                <% end %>
+              </h2>
+              <p><%= t('home.welcome.welcome_subheader').html_safe %></p>
               <%= image_tag('redesign/site.png', alt: 'SITE', class: 'img-fluid') %>
             </div>
             <div class="w-50 text-center">
-              <h3>Space hours this week</h3>
-
-               <div class="container">
-          <div class="row d-flex flex-row">
-            <% @contact_info.each do |space| %>
-              <div class="col">
-                <div class="card flex-column" style="margin: 10px; padding: 10px; border: 1px solid #ddd;">
-                  <h4><%= space.name %></h4>
-                  <div><%= space.opening_hour.students.html_safe %></div>
+              <h3><%= t('home.welcome.hour_header') %></h3>
+              <div class="container">
+                <div class="row d-flex flex-row">
+                  <% @contact_info.each do |space| %>
+                  <div class="col">
+                    <div class="card flex-column" style="margin: 10px; padding: 10px; border: 1px solid #ddd;">
+                      <h4><%= space.name %></h4>
+                      <div><%= space.opening_hour.students.html_safe %></div>
+                    </div>
+                  </div>
+                  <% end %>
                 </div>
               </div>
-            <% end %>
-          </div>
-        </div>
-             
             </div>
           </div>
         </div>

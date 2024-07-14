@@ -55,3 +55,7 @@ en:
     skills:
       header: "Skills"
       show_all: "Show All"
+    welcome:
+      welcome_to: "Welcome to MakeRepo"
+      welcome_subheader: "This is <b>CEED's</b> repository website"
+      hour_header: "Space hours this week"

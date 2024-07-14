@@ -55,3 +55,7 @@ fr:
     skills:
       header: "Compétences"
       show_all: "Voir tout"
+    welcome:
+      welcome_to: "Bienvenue à MakeRepo"
+      welcome_subheader: "Voici le site de dépôt du <b>CEED</b>"
+      hour_header: "Heures d'ouverture"

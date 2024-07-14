@@ -38,7 +38,7 @@ class StaticPagesController < SessionsController
           [key, "#{value["Completed"]}/#{total_tracks[key]}"]
         end
 
-        @contact_info = ContactInfo.where(show_hours: true).order(name: :asc)
+    @contact_info = ContactInfo.where(show_hours: true).order(name: :asc)
   end
 
   def about
@@ -50,7 +50,7 @@ class StaticPagesController < SessionsController
 
   def terms_of_service
   end
-  
+
   def hours
     @contact_info = ContactInfo.where(show_hours: true).order(name: :asc)
 
