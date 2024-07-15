@@ -62,7 +62,7 @@ Majeure en lettres françaises et Baccalauréat en éducation,Bachelor's,Educati
 Teacher Education - Intermediate/Senior division,Bachelor's,Education,Non-Engineering
 Teacher Education - Junior/Intermediate division,Bachelor's,Education,Non-Engineering
 Teacher Education - Primary/Junior division,Bachelor's,Education,Non-Engineering
-Bachelor of Multidisciplinary Design - Experiential Learning,Bachelor's,Engineering,Design
+Bachelor of Multidisciplinary Design - Experiential Learning,Bachelor's,Engineering,SEDTI
 BASc Biomedical Mechanical Engineering,Bachelor's,Engineering,Mechanical
 BASc Biomedical Mechanical Engineering and BSc Computing Technology,Bachelor's,Engineering,Mechanical
 BASc Chemical Engineering,Bachelor's,Engineering,Chemical
@@ -307,15 +307,15 @@ Doctorate in Philosophy Education,Doctorate,Education,Non-Engineering
 Doctorate in Philosophy Education (Educational Counselling),Doctorate,Education,Non-Engineering
 Doctorate in Philosophy Education (Health Professions Education),Doctorate,Education,Non-Engineering
 Doctorate in Philosophy Education and Specialization Canadian Studies,Doctorate,Education,Non-Engineering
-Doctorate in Philosophy Advanced Materials and Manufacturing,Doctorate,Engineering,Design
-Doctorate in Philosophy Biomedical Engineering,Doctorate,Engineering,Chemical
-Doctorate in Philosophy Biomedical Engineering and Specialization Bioinformatics,Doctorate,Engineering,Chemical
+Doctorate in Philosophy Advanced Materials and Manufacturing,Doctorate,Engineering,SEDTI
+Doctorate in Philosophy Biomedical Engineering,Doctorate,Engineering,SEDTI
+Doctorate in Philosophy Biomedical Engineering and Specialization Bioinformatics,Doctorate,Engineering,SEDTI
 Doctorate in Philosophy Chemical Engineering,Doctorate,Engineering,Chemical
 Doctorate in Philosophy Civil Engineering,Doctorate,Engineering,Civil
 Doctorate in Philosophy Computer Science,Doctorate,Engineering,EECS
-Doctorate in Philosophy Digital Transformation and Innovation,Doctorate,Engineering,Design
+Doctorate in Philosophy Digital Transformation and Innovation,Doctorate,Engineering,SEDTI
 Doctorate in Philosophy Electrical and Computer Engineering,Doctorate,Engineering,EECS
-Doctorate in Philosophy Environmental Engineering,Doctorate,Engineering,Design
+Doctorate in Philosophy Environmental Engineering,Doctorate,Engineering,Chemical
 Doctorate in Philosophy Mechanical Engineering,Doctorate,Engineering,Mechanical
 Doctorate in Philosophy Human Kinetics,Doctorate,Health Sciences,Non-Engineering
 Doctorate in Philosophy Human Kinetics and Specialization Canadian Studies,Doctorate,Health Sciences,Non-Engineering
@@ -445,8 +445,8 @@ Graduate Diploma Piano Pedagogy Research,Graduate diplomas,Arts,Non-Engineering
 Diplôme d’études supérieures Enseignement en santé,Graduate diplomas,Education,Non-Engineering
 Graduate Diploma Health Professions Education (Online),Graduate diplomas,Education,Non-Engineering
 Graduate Diploma Program Evaluation,Graduate diplomas,Education,Non-Engineering
-Graduate Diploma Engineering Management (Online),Graduate diplomas,Engineering,Design
-Graduate Diploma in Engineering Management,Graduate diplomas,Engineering,Design
+Graduate Diploma Engineering Management (Online),Graduate diplomas,Engineering,SEDTI
+Graduate Diploma in Engineering Management,Graduate diplomas,Engineering,SEDTI
 Graduate Diploma Primary Health Care for Nurse Practitioners,Graduate diplomas,Health Sciences,Non-Engineering
 Master of Science Nursing with Graduate Diploma Primary Health Care for Nurse Practitioners,Graduate diplomas,Health Sciences,Non-Engineering
 Graduate Diploma Chartered Professional Accountancy,Graduate diplomas,Telfer School of Management,Non-Engineering
@@ -581,9 +581,9 @@ Master of Education (Second Language Education) (Online),Master's,Education,Non-
 Master of Education (Societies Cultures and Languages),Master's,Education,Non-Engineering
 Master of Education (Studies in Teaching and Learning),Master's,Education,Non-Engineering
 Master of Education (Studies in Teaching and Learning) (Online),Master's,Education,Non-Engineering
-Master of Applied Science Advanced Materials and Manufacturing,Master's,Engineering,Design
-Master of Applied Science Biomedical Engineering,Master's,Engineering,Chemical
-Master of Applied Science Biomedical Engineering and Specialization Bioinformatics,Master's,Engineering,Chemical
+Master of Applied Science Advanced Materials and Manufacturing,Master's,Engineering,SEDTI
+Master of Applied Science Biomedical Engineering,Master's,Engineering,SEDTI
+Master of Applied Science Biomedical Engineering and Specialization Bioinformatics,Master's,Engineering,SEDTI
 Master of Applied Science Chemical Engineering,Master's,Engineering,Chemical
 Master of Applied Science Chemical Engineering and Specialization Science Society and Policy,Master's,Engineering,Chemical
 Master of Applied Science Civil Engineering,Master's,Engineering,Civil
@@ -592,33 +592,33 @@ Master of Applied Science Civil Engineering and Specialization Science Society a
 Master of Applied Science Electrical and Computer Engineering,Master's,Engineering,EECS
 Master of Applied Science Electrical and Computer Engineering and Concentration Applied Artificial Intelligence,Master's,Engineering,EECS
 Master of Applied Science Electrical and Computer Engineering and Specialization Science Society and Policy,Master's,Engineering,EECS
-Master of Applied Science Environmental Engineering,Master's,Engineering,Design
+Master of Applied Science Environmental Engineering,Master's,Engineering,Chemical
 Master of Applied Science Mechanical Engineering,Master's,Engineering,Mechanical
 Master of Computer Science,Master's,Engineering,EECS
 Master of Computer Science and Concentration Applied Artificial Intelligence,Master's,Engineering,EECS
 Master of Computer Science and Specialization Bioinformatics,Master's,Engineering,EECS
-Master of Digital Transformation and Innovation,Master's,Engineering,Design
-Master of Digital Transformation and Innovation (Online),Master's,Engineering,Design
-Master of Digital Transformation and Innovation and Concentration Applied Data Science,Master's,Engineering,Design
-Master of Digital Transformation and Innovation Concentration UX Design,Master's,Engineering,Design
-Master of Engineering Advanced Materials and Manufacturing,Master's,Engineering,Design
-Master of Engineering Biomedical Engineering,Master's,Engineering,Chemical
-Master of Engineering Biomedical Engineering and Concentration Clinical Engineering,Master's,Engineering,Chemical
+Master of Digital Transformation and Innovation,Master's,Engineering,SEDTI
+Master of Digital Transformation and Innovation (Online),Master's,Engineering,SEDTI
+Master of Digital Transformation and Innovation and Concentration Applied Data Science,Master's,Engineering,SEDTI
+Master of Digital Transformation and Innovation Concentration UX Design,Master's,Engineering,SEDTI
+Master of Engineering Advanced Materials and Manufacturing,Master's,Engineering,SEDTI
+Master of Engineering Biomedical Engineering,Master's,Engineering,SEDTI
+Master of Engineering Biomedical Engineering and Concentration Clinical Engineering,Master's,Engineering,SEDTI
 Master of Engineering Chemical Engineering,Master's,Engineering,Chemical
 Master of Engineering Civil Engineering,Master's,Engineering,Civil
 Master of Engineering Electrical and Computer Engineering,Master's,Engineering,EECS
 Master of Engineering Electrical and Computer Engineering and Concentration Applied Artificial Intelligence,Master's,Engineering,EECS
-Master of Engineering Engineering Management,Master's,Engineering,Design
-Master of Engineering Environmental Engineering,Master's,Engineering,Design
-Master of Engineering in Entrepreneurial Engineering Design,Master's,Engineering,Design
-Master of Engineering Management (Online),Master's,Engineering,Design
+Master of Engineering Engineering Management,Master's,Engineering,SEDTI
+Master of Engineering Environmental Engineering,Master's,Engineering,Chemical
+Master of Engineering in Entrepreneurial Engineering Design,Master's,Engineering,SEDTI
+Master of Engineering Management (Online),Master's,Engineering,SEDTI
 Master of Engineering Mechanical Engineering,Master's,Engineering,Mechanical
-Master of Interdisciplinary Applied Artificial Intelligence (Online),Master's,Engineering,Design
-Master of Science Digital Transformation and Innovation,Master's,Engineering,Design
-Master of Science Systems Science and Engineering,Master's,Engineering,Design
-Master of Science Systems Science and Engineering with Concentration in Interdisciplinary Artificial Intelligence,Master's,Engineering,Design
-Master of Systems Science and Engineering,Master's,Engineering,Design
-Master of Systems Science and Engineering with Concentration in Interdisciplinary Artificial Intelligence,Master's,Engineering,Design
+Master of Interdisciplinary Applied Artificial Intelligence (Online),Master's,Engineering,SEDTI
+Master of Science Digital Transformation and Innovation,Master's,Engineering,SEDTI
+Master of Science Systems Science and Engineering,Master's,Engineering,SEDTI
+Master of Science Systems Science and Engineering with Concentration in Interdisciplinary Artificial Intelligence,Master's,Engineering,SEDTI
+Master of Systems Science and Engineering,Master's,Engineering,SEDTI
+Master of Systems Science and Engineering with Concentration in Interdisciplinary Artificial Intelligence,Master's,Engineering,SEDTI
 Honours Bachelor of Health Sciences - Population and Public Health Option and Master of Health Sciences Occupational Therapy,Master's,Health Sciences,Non-Engineering
 Honours Bachelor of Health Sciences - Population and Public Health Option and Master of Health Sciences Physiotherapy,Master's,Health Sciences,Non-Engineering
 Honours Bachelor of Health Sciences - Technologies and Innovation in Healthcare Option and Master of Health Sciences Occupational Therapy,Master's,Health Sciences,Non-Engineering
@@ -759,7 +759,7 @@ Microprogram Vered Jewish Canadian Studies,Microprogram,Arts,Non-Engineering
 Microprogram Program Evaluation in Professional Contexts,Microprogram,Education,Non-Engineering
 Microprogram Science Education,Microprogram,Education,Non-Engineering
 Microprogram Cybersecurity,Microprogram,Engineering,EECS
-Microprogram Interdisciplinary Artificial Intelligence,Microprogram,Engineering,Design
+Microprogram Interdisciplinary Artificial Intelligence,Microprogram,Engineering,SEDTI
 Microprogram Law and Technology,Microprogram,Law,Non-Engineering
 Microprogram Capital Markets,Microprogram,Telfer School of Management,Non-Engineering
 Microprogram Complex Project and Procurement Leadership,Microprogram,Telfer School of Management,Non-Engineering
@@ -867,10 +867,10 @@ Master of Education (Education in Minority Language Contexts and Inclusion) (Onl
 Master of Education (Educational Leadership Policy and Evaluation) (Online),Online,Education,Non-Engineering
 Master of Education (Second Language Education) (Online),Online,Education,Non-Engineering
 Master of Education (Studies in Teaching and Learning) (Online),Online,Education,Non-Engineering
-Graduate Diploma Engineering Management (Online),Online,Engineering,Design
-Master of Digital Transformation and Innovation (Online),Online,Engineering,Design
-Master of Engineering Management (Online),Online,Engineering,Design
-Master of Interdisciplinary Applied Artificial Intelligence (Online),Online,Engineering,Design
+Graduate Diploma Engineering Management (Online),Online,Engineering,SEDTI
+Master of Digital Transformation and Innovation (Online),Online,Engineering,SEDTI
+Master of Engineering Management (Online),Online,Engineering,SEDTI
+Master of Interdisciplinary Applied Artificial Intelligence (Online),Online,Engineering,SEDTI
 Doctorate in Philosophy Nursing - Distance Option,Online,Health Sciences,Non-Engineering
 Master of Science Nursing - Distance Option,Online,Health Sciences,Non-Engineering
 Certificate Law,Online,Law,Non-Engineering

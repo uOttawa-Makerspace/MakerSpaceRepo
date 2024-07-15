@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require "date"
+
 class Admin::ShiftsController < AdminAreaController
   layout "admin_area"
 
@@ -14,7 +14,10 @@ class Admin::ShiftsController < AdminAreaController
     @staff = User.where(id: staff_ids).pluck(:name, :id)
 
     @staff.sort_by! do |name, id|
-      [name.downcase.gsub(" (unavailable)", ""), name.include?(" (unavailable)") ? 1 : 0]
+      [
+        name.downcase.gsub(" (unavailable)", ""),
+        name.include?(" (unavailable)") ? 1 : 0
+      ]
     end
 
     @spaces = Space.where(id: SpaceStaffHour.pluck(:space_id))
@@ -24,25 +27,27 @@ class Admin::ShiftsController < AdminAreaController
       .joins(:user)
       .where(space_id: @space_id)
       .each do |staff|
-      if !staff.nil? && !staff.user.nil?
-        @colors << {
-          id: staff.user.id,
-          name: staff.user.name,
-          color: staff.color
-        }
+        if !staff.nil? && !staff.user.nil?
+          @colors << {
+            id: staff.user.id,
+            name: staff.user.name,
+            color: staff.color
+          }
+        end
       end
-    end
   end
 
   def shifts
-
     @space_id = @user.space_id || Space.first.id
 
     staff_ids = StaffSpace.where(space_id: @space_id).pluck(:user_id)
     @staff = User.where(id: staff_ids).pluck(:name, :id)
 
     @staff.sort_by! do |name, id|
-      [name.downcase.gsub(" (unavailable)", ""), name.include?(" (unavailable)") ? 1 : 0]
+      [
+        name.downcase.gsub(" (unavailable)", ""),
+        name.include?(" (unavailable)") ? 1 : 0
+      ]
     end
 
     @spaces = Space.where(id: SpaceStaffHour.pluck(:space_id))
@@ -53,16 +58,17 @@ class Admin::ShiftsController < AdminAreaController
       .joins(:user)
       .where(space_id: @space_id)
       .each do |staff|
-      if !staff.nil? && !staff.user.nil?
-        @colors << {
-          id: staff.user.id,
-          name: staff.user.name,
-          color: staff.color
-        }
+        if !staff.nil? && !staff.user.nil?
+          @colors << {
+            id: staff.user.id,
+            name: staff.user.name,
+            color: staff.color
+          }
+        end
       end
-    end
-
     @colors.sort_by! { |color| color[:name].downcase }
+
+    @pending_shifts = Shift.where(space_id: @user.space_id, pending: true)
   end
 
   def pending_shifts
@@ -71,11 +77,13 @@ class Admin::ShiftsController < AdminAreaController
 
   def confirm_shifts
     if params[:shift_ids]
-      Shift.where(id: params[:shift_ids], space_id: @user.space_id).update_all(pending: false)
+      Shift.where(id: params[:shift_ids], space_id: @user.space_id).update_all(
+        pending: false
+      )
     end
-    redirect_to shifts_admin_shifts_path, notice: "Selected shifts have been successfully confirmed!"
+    redirect_to shifts_admin_shifts_path,
+                notice: "Selected shifts have been successfully confirmed!"
   end
-  
 
   def clear_pending_shifts
     Shift.where(space_id: @user.space_id, pending: true).destroy_all
@@ -97,10 +105,6 @@ class Admin::ShiftsController < AdminAreaController
     render json: { status: "ok" }
   end
 
-  def show_modal
-    @pending_shifts = Shift.where(space_id: @user.space_id, pending: true)
-  end
-  
   def create
     if params[:shift].present? && params[:user_id].present?
       @shift = Shift.new(shift_params.merge(space_id: @space_id))
@@ -409,7 +413,9 @@ class Admin::ShiftsController < AdminAreaController
       .where(
         space_id: @space_id,
         start_datetime:
-          Time.zone.parse(params[:start_date])..Time.zone.parse(params[:end_date])
+          Time.zone.parse(params[:start_date])..Time.zone.parse(
+            params[:end_date]
+          )
       )
       .each do |shift|
         duration = (shift.end_datetime - shift.start_datetime) / 3600

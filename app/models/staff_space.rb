@@ -1,6 +1,7 @@
 class StaffSpace < ApplicationRecord
   belongs_to :user, optional: true
   belongs_to :space, optional: true
+  
 
   before_create :create_color
   before_save :check_color

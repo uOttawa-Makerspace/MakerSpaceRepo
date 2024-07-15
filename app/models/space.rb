@@ -18,6 +18,7 @@ class Space < ApplicationRecord
   has_many :staff_needed_calendars, dependent: :destroy
   has_many :space_manager_joins, dependent: :destroy
   has_many :space_managers, through: :space_manager_joins, source: :user
+  has_many :users, through: :staff_spaces
 
   after_create :create_popular_hours
 

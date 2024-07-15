@@ -1,22 +1,78 @@
-    <thead class="table-primary">
-      <tr class="text-center">
-        <th class="name-header">Username</th>
-        <th class="name-header">Name</th>
-        <th class="email-header">Email</th>
-        <th class="email-header">Role</th>
-      </tr>
-    </thead>
-    <% @admins.each do |admin| %>
-    <tr>
-      <td class="username-cell"><%= link_to admin.username, user_url(admin.username) %></td>
-      <td class="name-cell"><%= admin.name %></td>
-      <td class="email-cell"><%= admin.email %></td>
-      <td class="w-auto">
-        <%= form_tag set_role_admin_users_path(id: admin.id), method: :patch, format: 'js', remote: true do %>
-          <% @roles = [%w[Admin admin], %w[Staff staff], %w[Regular regular_user]] %>
-          <%= select_tag(:role, options_for_select(@roles, selected: admin.role), class: 'form-control form-select d-inline w-auto') %>
-          <%= submit_tag 'Change', class: 'btn btn-primary btn-sm form-control d-inline w-auto' %>
+<thead class="table-primary">
+  <tr class="text-center">
+    <th class="select-header"><input type="checkbox" id="select-all"></th>
+    <th class="name-header">Username</th>
+    <th class="name-header">Name</th>
+    <th class="email-header">Email</th>
+    <th class="spaces-header">Spaces</th>
+    <th class="email-header">Role</th>
+  </tr>
+</thead>
+<% @admins.each do |admin| %>
+<tr>
+  <td class="select-cell"><input type="checkbox" name="user_ids[]" value="<%= admin.id %>" class="select-user"></td> <!-- Added this line -->
+  <td class="username-cell"><%= link_to admin.username, user_url(admin.username) %></td>
+  <td class="name-cell"><%= admin.name %></td>
+  <td class="email-cell"><%= admin.email %></td>
+  <td class="spaces-cell">
+    <div class="space-list">
+      <% admin_spaces = @admin_spaces[admin.id] || [] %>
+      <% @space_list.each do |space| %>
+        <% color = space.assigned_color %>
+        <% if admin_spaces.include?(space.id) %>
+          <div class="space-bubble" style="margin-right: 10px; border-color: <%= rgba(color, 1) %>; background-color: <%= rgba(color, 0.3) %>;">
+            <%= space.name %>
+          </div>
         <% end %>
-      </td>
-    </tr>
+      <% end %>
+
+      <div class="space-bubble add-space"
+           data-bs-toggle="modal"
+           data-bs-target="#manageSpacesModal"
+           data-admin-id="<%= admin.id %>"
+           style="margin-right: 10px; background-color: lightgray; color: black; cursor: pointer; border: 1px dotted black;">
+        MODIFY SPACES
+      </div>
+
+      <!-- Manage Spaces Modal -->
+      <div class="modal fade" id="manageSpacesModal" tabindex="-1" aria-labelledby="manageSpacesModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="manageSpacesModalLabel">Manage Spaces</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <% @space_list.each do |space| %>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" value="<%= space.id %>" id="space_<%= space.id %>"
+                         <%= 'checked' if @admin_spaces[admin.id].include?(space.id) %>>
+                  <label class="form-check-label" for="space_<%= space.id %>">
+                    <%= space.name %>
+                  </label>
+                </div>
+              <% end %>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              <button type="button" class="btn btn-primary" id="saveSpaceChangesButton" data-bs-dismiss="modal">Save Changes</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </td>
+  <td class="w-auto">
+    <%= admin.role %>
+  </td>
+</tr>
+<% end %>
+<tr>
+  <td colspan="6">
+    <%= form_tag mass_update_roles_admin_users_path, method: :patch, remote: true do %>
+      <%= hidden_field_tag :user_ids, '', id: 'user_ids_field' %>
+      <%= select_tag(:role, options_for_select(@roles), class: 'form-control form-select d-inline w-auto') %>
+    <%= submit_tag 'Change', id: 'change-button', class: 'btn btn-primary btn-sm form-control d-inline w-auto' %>
     <% end %>
+  </td>
+</tr>

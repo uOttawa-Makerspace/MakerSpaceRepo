@@ -35,10 +35,10 @@ function classify_program(program) {
       return "Civil";
     case /Software|Elec|Comp|Cyber/.test(program):
       return "EECS";
-    case /Chemical/.test(program):
+    case /Chemical|Environ/.test(program):
       return "Chemical";
     default:
-      return "Design";
+      return "SEDTI";
   }
 }
 
