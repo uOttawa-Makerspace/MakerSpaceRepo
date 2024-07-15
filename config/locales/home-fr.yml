@@ -55,6 +55,9 @@ fr:
     skills:
       header: "Compétences"
       show_all: "Voir tout"
+    newsletter:
+      header: "Voulez-vous savoir quand aura lieu le prochain événment?"
+      sign_up: "S'inscrire"
     welcome:
       welcome_to: "Bienvenue à MakeRepo"
       welcome_subheader: "Voici le site de dépôt du <b>CEED</b>"
