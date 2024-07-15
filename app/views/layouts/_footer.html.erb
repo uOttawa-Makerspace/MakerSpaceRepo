@@ -20,12 +20,23 @@
       </p>
     </div>
     <div class="col-auto">
-      <p class="mt-0"><b>Stay Connected</b></p>
-      <p>Sign up to our newsletter stay up to date <br /> with the latest news from CEED.</p>
-      <%= form_with class: 'form-inline' do |form| %>
-        <%= form.email_field :signUpEmail, class: 'form-control-sm', placeholder: 'Enter email' %>
-        <%= form.submit 'Sign Up', class: 'btn btn-sm btn-primary' %>
-      <% end %>
+      <p class="mt-0"><b><%= t('footer.newsletter_header') %></b></p>
+      <p><%= t('footer.newsletter_subtext').html_safe %></p>
+      <form target="_blank" class="form-inline"
+            action="https://uottawa.us15.list-manage.com/subscribe/post" method="POST">
+        <input type="hidden" name="u" value="42154e6ef1a0a78237b7bc641">
+        <% if I18n.locale == :en %>
+          <!-- English mailing list -->
+          <input type="hidden" name="id" value="4831770962">
+        <% else %>
+          <!-- French mailing list -->
+          <input type="hidden" name="id" value="e9f400f571">
+        <% end %>
+        <input type="email" autocapitalize="none" autocorrect="off"
+               name="MERGE0" id="MERGE0"
+               class="form-control-sm" placeholder="Enter email">
+        <%= submit_tag t('home.newsletter.sign_up'), class: 'btn btn-sm btn-primary' %>
+      </form>
     </div>
     <div class="col-auto align-text-top align-items-top gx-5">
       <ul class="card-columns list-unstyled">

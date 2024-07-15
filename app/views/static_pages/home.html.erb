@@ -145,11 +145,21 @@
         <%= render partial: 'home_skills' if signed_in? %>
         <div class="card home-card" id="home-big-newsletter">
           <div class="card-body">
-            <h2>Want to know when our next big event is happening?</h2>
-            <%= form_with do |form| %>
-            <%= form.email_field :signUpEmail, class: 'form-control email-input mb-2', placeholder: 'Enter email' %>
-            <%= form.submit 'Sign Up', class: 'btn btn-primary' %>
-            <% end %>
+            <h2><%= t('home.newsletter.header') %></h2>
+            <form target="_blank" action="https://uottawa.us15.list-manage.com/subscribe/post" method="POST">
+              <input type="hidden" name="u" value="42154e6ef1a0a78237b7bc641">
+              <% if I18n.locale == :en %>
+                <!-- English mailing list -->
+                <input type="hidden" name="id" value="4831770962">
+              <% else %>
+                <!-- French mailing list -->
+                <input type="hidden" name="id" value="e9f400f571">
+              <% end %>
+              <input type="email" autocapitalize="none" autocorrect="off"
+                     name="MERGE0" id="MERGE0" size="25" value=""
+                     class="form-control email-input mb-2" placeholder="mail@mail.com">
+              <%= submit_tag t('home.newsletter.sign_up'), class: 'btn btn-primary' %>
+            </form>
           </div>
         </div>
         <!-- Hidden for now :^) -->
