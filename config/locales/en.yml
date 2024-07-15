@@ -1,24 +1,35 @@
 en:
+  year: "year"
   name: "English"
   navbar:
+    home: "Home"
+    # explore section
     explore: "Explore"
+    projects: "Projects"
+    create_project: "New Project"
     project_proposals: "Project Proposals"
-    propose_project: "Propose new idea for project"
-    proposed_projects: "Proposed Projects"
+    propose_project: "Become A Client"
+    proposed_projects: "Project Proposals"
     your_projects: "Your Projects"
     assigned_projects: "Assigned Projects"
     completed_projects: "Completed Projects"
+    # Get involved
+    get_involved: "Get Involved"
+    workshops: "Workshops"
+    join_a_team: "Join A Team"
+    volunteering: "Volunteer Program"
+    makerlaunch: "Makerlaunch"
+    # Resources
+    resources: "Resources"
+    ceed_wiki: "CEED Wiki"
     more: "More"
     design_day: "Design Day"
     makerspace_events: "Makerspace Events"
     brunsfield_events: "Brunsfield Centre Events"
-    volunteering: "Volunteering"
-    resources: "Resources"
     makerstore: "MakerStore"
     sign_in: "Sign In"
     create_account: "Register"
     search: "Search"
-    create_project: "Document Project"
     buy_cc_money: "Buy CC"
     user:
       profile: "Profile"
@@ -72,6 +83,8 @@ en:
     hours: "Hours of Operation"
     contact_us: "Contact Us"
     help: "Help"
+    newsletter_header: "Stay Connected"
+    newsletter_subtext: "Sign up to our newsletter stay up to date <br /> with the latest news from CEED."
     copyright_html: 'Copyright &copy; %s <a href="https://engineering.uottawa.ca/CEED">Centre for Entrepreneurship and Engineering Design</a> and <a href="https://github.com/uOttawa-Makerspace/MakerSpaceRepo/graphs/contributors">MakerRepo Contributors</a>'
   users:
     reset_password: "Reset password"
@@ -352,7 +365,7 @@ en:
         The Development program not only allows you to track your development on your own time, but it also
         allows you to:"
     learning_area:
-      header: "<a href='#'>Learning Area</a>"
+      header: "<a href='/learning_area'>Learning Area</a>"
       paragraph: "You can learn from all these projects for free. Some of them are a pre-requisite for other projects in the Proficient Projects Area."
     proficient_projects:
       header: "<a href='/proficient_projects'>Proficient Projects</a>"

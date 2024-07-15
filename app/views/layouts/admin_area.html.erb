@@ -24,11 +24,9 @@
   <noscript><div id="noscript-warning">Please ensure Javascript is enabled for purposes of <a href="https://userway.org">website accessibility</a></div></noscript>
 </head>
 <body>
-	<%= render 'layouts/header' %>
+  <%= render 'layouts/header', with_admin: true %>
 
   <%= render partial: 'partials/announcements' %>
-
-  <%= render 'layouts/admin_area_header' %>
 
   <section>
     <div class="bg-white">

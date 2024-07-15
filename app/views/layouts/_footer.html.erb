@@ -1,12 +1,56 @@
-<footer class="footer">
-  <ul class="footer-items text-primary">
-    <li><%= link_to t('footer.about'), about_path %></li>
-    <li><%= link_to t('footer.tos'), tos_path %></li>
-    <li><%= link_to t('footer.hours'), hours_path %></li>
-    <li><%= link_to t('footer.contact_us'), contact_path %></li>
-    <li><%= link_to t('footer.help'), help_path %></li>
-  </ul>
-  <div class="copyright text-primary">
-    <%= t('footer.copyright_html') % Time.zone.now.year %>
+<footer>
+  <div class="row g-0">
+    <div class="col-auto me-auto text-center flex-nowrap">
+      <div class="row text-nowrap">
+        <div class="col-auto brand-separator">
+          <p class="brand-tagline">ALIMENTÉ PAR</p>
+          <%= image_tag 'logo/CGEC_LOGO_WHITE_ORANGE.png', alt: 'CGEC Logo', width: '125px' %>
+        </div>
+        <!-- <div class="brand-separator"></div> -->
+        <div class="col-auto">
+          <p class="brand-tagline">POWERED BY</p>
+          <%= image_tag 'logo/CEED_LOGO_WHITE_ORANGE.png', alt: 'CEED Logo', width: '125px' %>
+        </div>
+      </div>
+      <p>
+        <i class="fa fa-facebook" aria-hidden="true"></i>
+        <i class="fa fa-linkedin" aria-hidden="true"></i>
+        <i class="fa fa-youtube" aria-hidden="true"></i>
+        <i class="fa fa-instagram" aria-hidden="true"></i>
+      </p>
+    </div>
+    <div class="col-auto">
+      <p class="mt-0"><b><%= t('footer.newsletter_header') %></b></p>
+      <p><%= t('footer.newsletter_subtext').html_safe %></p>
+      <form target="_blank" class="form-inline"
+            action="https://uottawa.us15.list-manage.com/subscribe/post" method="POST">
+        <input type="hidden" name="u" value="42154e6ef1a0a78237b7bc641">
+        <% if I18n.locale == :en %>
+          <!-- English mailing list -->
+          <input type="hidden" name="id" value="4831770962">
+        <% else %>
+          <!-- French mailing list -->
+          <input type="hidden" name="id" value="e9f400f571">
+        <% end %>
+        <input type="email" autocapitalize="none" autocorrect="off"
+               name="MERGE0" id="MERGE0"
+               class="form-control-sm" placeholder="Enter email">
+        <%= submit_tag t('home.newsletter.sign_up'), class: 'btn btn-sm btn-primary' %>
+      </form>
+    </div>
+    <div class="col-auto align-text-top align-items-top gx-5">
+      <ul class="card-columns list-unstyled">
+        <li><%= link_to t('footer.contact_us'), contact_path %></li>
+        <li><a href="https://www.uottawa.ca/about-us/administration-services/facilities/campus-maps/stem-complex">STEM Building, uOttawa</a></li>
+        <li><a href="mailto:ceed@uottawa.ca">ceed@uottawa.ca</a></li>
+      </ul>
+      <ul class="card-columns list-unstyled">
+        <!-- <li><%= link_to t('footer.hours'), hours_path %></li> -->
+        <li><%= link_to t('footer.help'), help_path %></li>
+        <li><%= link_to t('footer.tos'), tos_path %></li>
+        <li><%= link_to t('footer.about'), about_path %></li>
+      </ul>
+    </div>
   </div>
+  <p class="text-center mt-5"><%= t('footer.copyright_html') % Time.zone.now.year %></p>
 </footer>

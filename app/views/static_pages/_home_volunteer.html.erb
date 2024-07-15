@@ -1,0 +1,31 @@
+<div class="card home-card">
+    <div class="card-body">
+        <h2><%= t('home.volunteer_program.header') %></h2>
+        <% if @volunteer_program_shadowing_scheduled.empty? %>
+            <p><%= t('home.volunteer_program.no_shifts_scheduled') %></p>
+        <% else %>
+        <h3><%= t('home.volunteer_program.shadowing_scheduled') %>:</h3>
+        <ul class="list-unstyled list-box shadowing-list">
+            <% @volunteer_program_shadowing_scheduled.each do |space_name, time_period| %>
+            <li style="border-color:orange">
+                <span class="list-header"><%= space_name %></span><br /><%= time_period %>
+            </li>
+            <% end %>
+        </ul>
+        <% end %>
+        <%= link_to t('home.show_more'), shadowing_shifts_volunteers_path %>
+        <% if @volunteer_program_your_tasks.empty? %>
+            <p><%= t('home.volunteer_program.no_tasks_assigned') %></p>
+        <% else @volunteer_program_your_tasks.each do |space_name, time_period| %>
+        <h3><%= t('home.volunteer_program.your_tasks') %>:</h3>
+        <ul class="list-unstyled list-box volunteer-task-list">
+            <!-- TODO This should be a loop -->
+            <li><i class="fa fa-circle"></i>
+                <span class="list-header"><%= space_name %></span>: <%= time_period %>
+            </li>
+        </ul>
+        <% end end %>
+        <%= link_to t('home.show_more'), my_tasks_volunteer_tasks_path, class: 'me-5' %>
+        <%= link_to t('home.volunteer_program.add_more_tasks'), volunteer_tasks_path %>
+    </div>
+</div>

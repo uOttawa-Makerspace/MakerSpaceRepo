@@ -4,6 +4,41 @@ class StaticPagesController < SessionsController
   before_action :current_user, except: [:reset_password]
 
   def home
+    @volunteer_program_shadowing_scheduled =
+      current_user.shadowing_hours.map do |hours|
+        end_time = hours.end_time.strftime "%H:%M"
+        formatted_time =
+          "#{I18n.l hours.start_time, format: "%A %H:%M"} - #{end_time}"
+        [hours.space.name, formatted_time]
+      end
+    @volunteer_program_your_tasks =
+      current_user.get_volunteer_tasks_from_volunteer_joins.map do |task|
+        space_name = task.volunteer_task.space.name
+        formatted_time = task.created_at.strftime "%H:%M"
+        [space_name, formatted_time]
+      end
+
+    @recent_projects = Repository.public_repos.order(created_at: :desc).limit(6)
+
+    @user_skills =
+      @user.certifications.map do |cert|
+        [cert.training_session.training.name, cert.training_session.level]
+      end #.compact # remove nils
+
+    # Get total tracks in all learning modules
+    total_tracks = LearningModule.all.map { |x| x.training.name }.tally
+    # get the total number of tracks completed
+    # and in progress under the user's name
+    @user_tracks =
+      @user
+        .learning_module_tracks
+        .group_by { |x| x.learning_module.training.name }
+        .transform_values { |x| x.map(&:status).tally }
+        .map do |key, value|
+          [key, "#{value["Completed"]}/#{total_tracks[key]}"]
+        end
+
+    @contact_info = ContactInfo.where(show_hours: true).order(name: :asc)
   end
 
   def about

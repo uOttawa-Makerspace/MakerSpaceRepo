@@ -1,84 +1,182 @@
-<section id="home-header">
-  <div class="container">
-    <div class="row">
-      <div class="col-12">
-        <div class="jumbotron card bg-light text-center">
-          <h1 class="title"><%= t('home.welcome_html') %></h1>
-
-          <%= render partial: 'partials/announcements' %>
-
-          <p class="lead mb-4"><%= t('home.welcome_desc_html') %></p>
-          <% if signed_in? %>
-            <p><%= link_to t('home.my_profile'), user_path(current_user.username), class: 'btn btn-primary btn-lg' %></p>
-            <hr class="my-3"/>
-            <%= render partial: 'programs', locals: { status: current_user.return_program_status } %>
-
-          <% else %>
-            <p><%= link_to t('home.sign_up'), user_path('new'), class: 'btn btn-primary btn-lg' %></p>
-            <hr class="my-3"/>
-            <%= render partial: 'interested_volunteer' %>
-            <hr />
-            <%= render partial: 'interested_dev_program' %>
+<section id="home">
+  <div class="container-fluid">
+    <div class="row row-cols-3 g-0">
+      <!--Left column -->
+      <div class="col-xl  order-xl-0 order-1">
+        <!-- Staff Resources -->
+        <% if @user.staff? %>
+        <div class="card home-card">
+          <div class="card-body">
+            <h2><%= t('home.staff_resources.header') %></h2>
+            <ul class="list-unstyled">
+              <% if @user.admin? %>
+              <li><%= link_to t('home.staff_resources.admin_area'), admin_settings_path %></li>
+              <% end %>
+              <li><%= link_to t('home.staff_resources.staff_area'), staff_dashboard_index_path %></li>
+              <li><%= link_to t('home.staff_resources.shifts'), shifts_admin_shifts_path %></li>
+              <li><%= link_to t('home.staff_resources.job_order_admin'), admin_job_orders_path %></li>
+            </ul>
+          </div>
+        </div>
         <% end %>
+        <!-- General Resources -->
+        <div class="card home-card">
+          <div class="card-body">
+            <h2><%= t('home.general_resources.header') %></h2>
+            <ul class="list-unstyled">
+              <li><a href=""><%= t('home.general_resources.makeroom') %></a></li>
+              <li><%= link_to t('home.general_resources.job_orders'), job_orders_path %></li>
+            </ul>
+          </div>
+        </div>
+        <%= render 'static_pages/home_shortcuts' %>
+        <%= render 'static_pages/home_volunteer' if signed_in? %>
+        <%= render 'static_pages/home_development' if signed_in? %>
+      </div>
+      <!--Middle column -->
+      <div class="col-xl-6 order-xl-1 order-0">
+        <div class="card home-card">
+          <div class="card-body d-flex">
+            <div class="w-50">
+              <h2> <%= t('home.welcome.welcome_to') %>,
+                <% if signed_in? %>
+                <span class="text-primary"> <%= @user.name %></span>
+                <% else %>
+                <span class="text-secondary">Not signed in</span>
+                <% end %>
+              </h2>
+              <p><%= t('home.welcome.welcome_subheader').html_safe %></p>
+              <%= image_tag('redesign/site.png', alt: 'SITE', class: 'img-fluid') %>
+            </div>
+            <div class="w-50 text-center">
+              <h3><%= t('home.welcome.hour_header') %></h3>
+              <div class="container">
+                <div class="row d-flex flex-row">
+                  <% @contact_info.each do |space| %>
+                  <div class="col">
+                    <div class="card flex-column" style="margin: 10px; padding: 10px; border: 1px solid #ddd;">
+                      <h4><%= space.name %></h4>
+                      <div><%= space.opening_hour.students.html_safe %></div>
+                    </div>
+                  </div>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Instagram Section -->
+        <div class="card home-card mt-5">
+          <div class="card-body">
+            <h2>
+              <b>Instagram</b>
+              <small class="text-muted" style="font-size: 0.6em;">
+                <a href="https://www.instagram.com/uoceed/" target="_blank">Follow us</a>
+              </small>
+            </h2>
+            <p>Stay up to date with our socials</p>
+
+            <div id="carouselExampleControls" class="carousel slide" data-ride="carousel">
+              <div class="carousel-inner">
+                <div class="carousel-item active">
+
+                </div>
+                <div class="carousel-item">
+
+                </div>
+                <div class="carousel-item">
+
+                </div>
+              </div>
+              <a class="carousel-control-prev" href="#carouselExampleControls" role="button" data-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                <span class="sr-only">Previous</span>
+              </a>
+              <a class="carousel-control-next" href="#carouselExampleControls" role="button" data-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                <span class="sr-only">Next</span>
+              </a>
+            </div>
+          </div>
+        </div>
+        <!-- Explore Section -->
+        <div class="card home-card mt-5">
+          <div class="card-body">
+            <h2>
+              <b>Explore</b>
+              <small class="text-muted" style="font-size: 0.6em;">
+                <a href="/explore">Show all</a>
+              </small>
+            </h2>
+
+            <% if @recent_projects.present? %>
+            <div id="carouselExampleControls" class="carousel slide" data-ride="carousel">
+              <div class="carousel-inner">
+                <% @recent_projects.each_with_index do |project, index| %>
+                <div class="carousel-item <%= 'active' if index == 0 %>">
+                  <%= image_tag project.photos.first.image, class: 'd-block w-100', alt: project.title if project.photos.first.present? %>
+                  <div class="carousel-caption d-none d-md-block">
+                    <h5><%= project.title %></h5>
+                    <p><%= project.user_username %></p>
+                  </div>
+                </div>
+                <% end %>
+              </div>
+              <a class="carousel-control-prev" href="#carouselExampleControls" role="button" data-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                <span class="sr-only">Previous</span>
+              </a>
+              <a class="carousel-control-next" href="#carouselExampleControls" role="button" data-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                <span class="sr-only">Next</span>
+              </a>
+            </div>
+            <% else %>
+            <p>No recent projects available.</p>
+            <% end %>
+          </div>
         </div>
       </div>
-    </div>
-  </div>
-
-  <a class="down-indicator" href="#under-top">
-    <i class="fa fa-chevron-down fa-5x chevron"></i>
-  </a>
-</section>
-
-<div id="under-top"></div>
-
-<section id="home-categories">
-  <div class="row items">
-    <div class="col-12 text-center mt-3">
-      <h1><%= t('home.categories_title') %></h1>
-    </div>
-    <div class="col-xl-4 col-sm-6 platform-item">
-      <%= image_tag 'wearables_optimized.jpg', class: 'background', alt: 'Wearable' %>
-      <%= link_to t('home.categories.wearables'), explore_path(category: 'wearable'), class: 'overlay' %>
-    </div>
-
-    <div class="col-xl-4 col-sm-6 platform-item">
-      <%= image_tag 'motherboard_optimized.jpg', class: 'background', alt: 'Mobile Development' %>
-      <%= link_to t('home.categories.mobile_development'), explore_path(category: 'mobile-development'), class: 'overlay' %>
-    </div>
-
-    <div class="col-xl-4 col-sm-6 platform-item">
-      <%= image_tag '2101_optimized.jpg', class: 'background', alt: 'GNG 2101' %>
-      <%= link_to t('home.categories.gng_2101'), explore_path(category: 'gng2101/gng2501'), class: 'overlay' %>
-    </div>
-
-    <div class="col-xl-4 col-sm-6 platform-item">
-      <%= image_tag 'bio-medical_optimized.jpg', class: 'background', alt: 'Health Sciences' %>
-      <%= link_to t('home.categories.health_sciences'), explore_path(category: 'health-sciences'), class: 'overlay' %>
-    </div>
-
-    <div class="col-xl-4 col-sm-6 platform-item">
-      <%= image_tag 'iot_optimized.jpg', class: 'background', alt: 'Internet of Things' %>
-      <%= link_to t('home.categories.iot'), explore_path(category: 'internet-of-things'), class: 'overlay' %>
-    </div>
-
-    <div class="col-xl-4 col-sm-6 platform-item">
-      <%= image_tag '1103_optimized.jpg', class: 'background', alt: 'GNG 1103' %>
-      <%= link_to t('home.categories.gng_1103'), explore_path(category: 'gng1103/gng1503'), class: 'overlay' %>
-    </div>
-
-    <div class="col-xl-4 col-sm-6 platform-item">
-      <%= image_tag 'vr_optimized.jpg', class: 'background', alt: 'Virtual Reality' %>
-      <%= link_to t('home.categories.vr'), explore_path(category: 'virtual-reality'), class: 'overlay' %>
-    </div>
-
-    <div class="col-xl-4 col-sm-6 platform-item">
-      <%= image_tag 'uoteams_optimized.jpg', class: 'background', alt: 'UOttawa Team Projects' %>
-      <%= link_to t('home.categories.team_projects'), explore_path(category: 'uottawa-team-projects'), class: 'overlay' %>
-    </div>
-    <div class="col-xl-4 col-sm-6 platform-item">
-      <%= image_tag 'other_optimized.jpg', class: 'background', alt: 'Other Projects' %>
-      <%= link_to t('home.categories.other_projects'), explore_path(category: 'other-projects'), class: 'overlay' %>
-    </div>
-  </div>
+      <!--Right column -->
+      <!-- Set a fixed column size to prevent Badges from expanding more -->
+      <div class="col-xl order-xl-2 order-1">
+        <%= render partial: 'home_userinfo' %>
+        <%= render partial: 'home_badges' if signed_in? %>
+        <%= render partial: 'home_skills' if signed_in? %>
+        <div class="card home-card" id="home-big-newsletter">
+          <div class="card-body">
+            <h2><%= t('home.newsletter.header') %></h2>
+            <form target="_blank" action="https://uottawa.us15.list-manage.com/subscribe/post" method="POST">
+              <input type="hidden" name="u" value="42154e6ef1a0a78237b7bc641">
+              <% if I18n.locale == :en %>
+                <!-- English mailing list -->
+                <input type="hidden" name="id" value="4831770962">
+              <% else %>
+                <!-- French mailing list -->
+                <input type="hidden" name="id" value="e9f400f571">
+              <% end %>
+              <input type="email" autocapitalize="none" autocorrect="off"
+                     name="MERGE0" id="MERGE0" size="25" value=""
+                     class="form-control email-input mb-2" placeholder="mail@mail.com">
+              <%= submit_tag t('home.newsletter.sign_up'), class: 'btn btn-primary' %>
+            </form>
+          </div>
+        </div>
+        <!-- Hidden for now :^) -->
+        <div class="card home-card" hidden>
+          <div class="card-body">
+            <h2>Workshops this week</h2>
+            <div class="d-flex workshop-card">
+              <div class="text-center workshop-date">
+                <p style="font-size: 2rem;">22<br /> <span style="font-size: 1.5rem">Dec</span></p>
+              </div>
+              <div class="workshop-desc">
+                <p class="workshop-title">Easter Themed 3D Printing Workshop - Beginner</p>
+                <p class="workshop-date-side">Thu, Mar 28, 2:30 PM</p>
+                <p class="workshop-cost">Free</p>
+              </div>
+            </div>
+            <!-- <p> No workshops... yet</p> -->
+          </div>
+        </div>
 </section>

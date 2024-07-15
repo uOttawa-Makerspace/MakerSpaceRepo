@@ -1,0 +1,32 @@
+<div class="card home-card home-shortcuts">
+    <div class="card-body">
+        <h2><%= t('home.shortcuts.header') %></h2>
+        <h3><%= t('home.shortcuts.recently_opened') %></h3>
+        <% if signed_in? %>
+            <ul class="list-unstyled">
+                <% begin JSON.parse(cookies[:recently_viewed]).each do |link, proj_name| %>
+                <li><a href="<%= link %>"><i class="fa fa-square text-secondary"></i> <%= proj_name %></a></li>
+                <% end %>
+                <% rescue %>
+                <%= link_to 'Explore more projects', explore_path %>
+                <% end %>
+            </ul>
+        <% else %>
+            <p class="guest-shortcuts"><%= t('home.shortcuts.ask_for_sign_in') %></p>
+            <h3><%= t('home.shortcuts.volunteer_program_header') %></h3>
+            <ul class="explanation-list">
+                <% t('home.shortcuts.volunteer_program_desc').each do |line| %>
+                    <li><%= line %></li>
+                <% end %>
+            </ul>
+            <%= link_to t('home.show_more'), volunteer_program_info_path, class: 'mb-3 d-block' %>
+            <h3><%= t('home.shortcuts.development_program_header') %></h3>
+            <ul class="explanation-list">
+                <% t('home.shortcuts.development_program_desc').each do |line| %>
+                    <li><%= line %></li>
+                <% end %>
+            </ul>
+            <%= link_to t('home.show_more'), development_program_info_path %>
+        <% end %>
+    </div>
+</div>

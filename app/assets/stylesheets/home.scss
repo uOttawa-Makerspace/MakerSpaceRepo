@@ -1,0 +1,143 @@
+@import "lib";
+@import "./shared/variables";
+
+section#home {
+  .home-card {
+    background-color: #fff;
+    box-shadow: 0px 4px 19px 0px rgba(0, 0, 0, 0.25);
+    border: none;
+    border-radius: 15px;
+    padding: 0rem 1rem 0.5rem 1rem;
+    margin: 1rem;
+  }
+
+  h2 {
+    font-weight: 700;
+  }
+
+  h3 {
+    font-size: 1.25rem;
+  }
+
+  .list-box {
+    border-radius: 16px;
+    border: 1px solid $secondary;
+    padding: 1rem;
+  }
+  // Headings in volunteer list box
+  .list-header {
+    font-size: 1.2rem;
+    //font-weight: 500;
+  }
+  .shadowing-list li {
+    border-left: 3px solid orange;
+    padding-left: 1rem;
+    // Apply margin to all but first
+    + li {
+      margin-top: 0.5rem;
+    }
+  }
+  .volunteer-task-list {
+    .fa {
+      color: $secondary;
+    }
+    //list-style: circle;
+  }
+
+  #home-userinfo {
+    img {
+      border-radius: 50%;
+      max-width: 80%;
+    }
+
+    .full-name {
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .subtext {
+      color: $secondary;
+    }
+  }
+
+  .home-badge {
+    background-color: $secondary;
+  }
+
+  .skill-pill {
+    display: inline;
+    font-size: 0.8rem;
+    //border: 1px solid $secondary;
+    background-color: lightgrey;
+    border-radius: 15px;
+    padding: 5px;
+    margin: 5px;
+  }
+
+  #home-big-newsletter {
+    h2 {
+      font-size: 1.4em;
+    }
+    .email-input {
+      outline: 0;
+      border-width: 0 0 2px;
+      border-color: black;
+      border-radius: 0;
+      box-shadow: none;
+
+      &:focus {
+        border-color: $primary;
+        outline: 1px dotted $primary;
+      }
+    }
+  }
+
+  .workshop-card {
+    padding: 5px;
+    border: 1px solid $secondary;
+    border-radius: 15px;
+    p {
+      margin-bottom: 0;
+      margin-top: 0;
+    }
+    .workshop-date {
+      border: 1px solid lightgrey;
+      border-radius: 15px;
+      background-color: $secondary;
+      color: white;
+      margin-right: 1rem;
+      padding-left: 2rem;
+      padding-right: 2rem;
+      line-height: 1;
+      align-content: center;
+    }
+
+    .workshop-title {
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+    .workshop-date-side {
+    }
+
+    .workshop-cost {
+      font-weight: 700;
+    }
+  }
+
+  .home-shortcuts {
+    & > .card-body > * {
+      margin-top: 1rem;
+    }
+    .guest-shortcuts {
+      font-size: 1.3rem;
+      color: $secondary;
+    }
+
+    .explanation-list {
+      padding-left: 1.5rem;
+      outline: 1px solid $secondary;
+      border-radius: 5px;
+    }
+  }
+}

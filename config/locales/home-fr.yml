@@ -1,0 +1,64 @@
+fr:
+  home:
+    show_more: "Voir en plus"
+    staff_resources:
+      header: Ressources des employés
+      staff_area: Zone des employés
+      shifts: Heures
+      job_order_admin: Administrateur de commande
+      admin_area: Zone des administrateurs
+    general_resources:
+      header: "Ressources générales"
+      makeroom: "Makeroom"
+      job_orders: "Commandes"
+    shortcuts:
+      header: "Raccourcis"
+      recently_opened: "Récemment consultés"
+      ask_for_sign_in: "Se connecter pour voir les tâches récemment consultés"
+      volunteer_program_header: "Programme des Bénévoles"
+      volunteer_program_desc:
+        - Acquérir des expériences valable dans le domaine de la techologie
+        - Rencontrer des personnes parteagent des intérêts similaires
+        - Collaborer à des nouveaux projets
+        - S'impliquer dans le réseau de Maker
+        - Recevoirs des récompeneses géniales!
+      development_program_header: "Programme de Développement"
+      development_program_desc:
+        - Acquérir des certificats normalisés par l'industrie, façiles à partager et authentifier
+        - Planifier, suivre, et développer vos compétences selon votre horaire
+        - Joignez maintenant et améliorer vos possibilités d'emploi avec des qualifications qui comptent
+    volunteer_program:
+      header: "Programme des bénévoles"
+      shadowing_scheduled: "Heures d'observation assignés cette semaine"
+      your_tasks: "Vos tâches"
+      add_more_tasks: "S'inscrire pour d'autres tâches"
+      no_shifts_scheduled: "Aucune heures d'observation n'est assignée"
+      no_tasks_assigned: "Aucune tâche n'est assignée"
+    development_program:
+      header: "Programme de Développement"
+    userinfo:
+      sign_in: "Connexion"
+      not_signed_in: "Pas connecté"
+      edit_profile: "Modifier profil"
+      sign_out: "Déconnexion"
+      student:
+        m: "Étudiant"
+        f: "Étudiante"
+        o: "Étudiant(e)"
+      staff: "Employé"
+      admin: "Administrateur"
+    badges:
+      header: "Badges"
+      show_all: "Voir tout"
+      no_badges: "Pas de badges, encore!"
+      no_badges_anchor: "Essayez le Programme de Développement"
+    skills:
+      header: "Compétences"
+      show_all: "Voir tout"
+    newsletter:
+      header: "Voulez-vous savoir quand aura lieu le prochain événment?"
+      sign_up: "S'inscrire"
+    welcome:
+      welcome_to: "Bienvenue à MakeRepo"
+      welcome_subheader: "Voici le site de dépôt du <b>CEED</b>"
+      hour_header: "Heures d'ouverture"

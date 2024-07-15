@@ -1,25 +1,36 @@
 fr:
+  year: "année"
   name: "Français"
   navbar:
+    home: "Accueil"
+    # explore section
     explore: "Explorer"
+    projects: "Projets"
+    create_project: "Nouveau Projet"
     project_proposals: "Propositions de projet"
-    propose_project: "Proposer une nouvelle idée pour un projet"
+    propose_project: "Devenir Client"
     proposed_projects: "Projets proposés"
     your_projects: "Vous Projets"
     assigned_projects: "Projets assignés"
     completed_projects: "Projets complétés"
+    # Get involved
+    get_involved: "Participez"
+    workshops: "Ateliers"
+    join_a_team: "Joindre un équipe"
+    volunteering: "Bénévolat"
+    makerlaunch: "Makerlaunch"
+    # Resources
+    resources: "Ressources"
+    ceed_wiki: "CEED Wiki"
     more: "Plus"
     design_day: "Journée du design Hiver"
     makerspace_events: "Événements au Makerspace"
     brunsfield_events: "Événements au centre Brunsfield"
-    volunteering: "Bénévolat"
-    resources: "Ressources"
     makerstore: "MakerStore"
     sign_in: "Connexion"
     create_account: "Créer un compte"
     search: "Rechercher"
     buy_cc_money: "Acheter des CC"
-    create_project: "Documenter un projet"
     user:
       profile: "Profil"
       liked: "Vos favoris"
@@ -72,6 +83,8 @@ fr:
     hours: "Heures d'ouverture"
     contact_us: "Contactez-nous"
     help: "Aide"
+    newsletter_header: "Restez Connecté"
+    newsletter_subtext: "Inscrivez-vous à notre infolettre pour rester à jour <br /> avec les dernières nouvelles dU CEED."
     copyright_html: 'Copyright &copy; %s <a href="https://genie.uottawa.ca/CGEC">Centre en génie entrepreneurial de la conception</a> et <a href="https://github.com/uOttawa-Makerspace/MakerSpaceRepo/graphs/contributors">les contributeurs MakerRepo</a>'
   users:
     reset_password: "Réinitialiser le mot de passe"
@@ -405,7 +418,7 @@ fr:
         Le Programme de Développement use de certificats standardisés qui sont joignables aussi bien électroniquement que sur papier à vos futurs employeurs.
         Le Programme de Développement ne vous permettra pas seulement d’observer l’avancement de votre compétence à votre aise, mais il vous permettra aussi de :  "
     learning_area:
-      header: "<a href='#'>La zone d’apprentissage</a>"
+      header: "<a href='/learning_area'>La zone d’apprentissage</a>"
       paragraph: "Il est possible d’apprendre ces projects gratuitement. Certains d’entre sont des pré-requis pour les projets de la section d’Expertise."
     proficient_projects:
       header: "<a href='/proficient_projects'>Les projets d’Expertise</a>"
