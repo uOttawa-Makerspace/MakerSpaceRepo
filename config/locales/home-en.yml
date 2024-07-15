@@ -36,6 +36,7 @@ en:
       no_tasks_assigned: "No tasks assigned"
     development_program:
       header: "Development Program"
+      no_devs: "No lessons completed"
     userinfo:
       sign_in: "Sign in"
       not_signed_in: "Not signed in"
