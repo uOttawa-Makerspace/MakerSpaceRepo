@@ -1,6 +1,7 @@
 <div class="card home-card">
     <div class="card-body">
         <h2><%= t('home.development_program.header') %></h2>
+        <% unless @user_tracks.empty? %>
         <ul class="list-unstyled list-box volunteer-task-list">
             <% @user_tracks.each do |track, completion, full| %>
             <li>
@@ -8,6 +9,9 @@
             </li>
             <% end %>
         </ul>
+        <% else %>
+        <p><%= t('home.development_program.no_devs') %></p>
+        <% end %>
         <%= link_to t('home.show_more'), signed_in? ? development_programs_path : development_program_info_path %>
     </div>
 </div>
