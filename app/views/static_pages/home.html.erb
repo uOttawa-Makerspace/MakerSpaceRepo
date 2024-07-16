@@ -114,7 +114,7 @@
               <div class="carousel-inner">
                 <% @recent_projects.each_with_index do |project, index| %>
                 <div class="carousel-item <%= 'active' if index == 0 %>">
-                 <%= image_tag project.photos.first.image, class: 'd-block w-100', alt: project.title, style: 'max-height: 225px; max-width: 225px%; width: auto; height: auto;' if project.photos.first.present? %>
+                 <%= image_tag project.photos.first.image, class: 'd-block w-100', alt: project.title, style: 'max-height: 225px; max-width: 225px; width: auto; height: auto;' if project.photos.first.present? %>
                   <div class="carousel-caption d-none d-md-block">
                     <h5><%= project.title %></h5>
                     <p><%= project.user_username %></p>
