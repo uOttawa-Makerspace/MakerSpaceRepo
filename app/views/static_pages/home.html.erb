@@ -110,7 +110,7 @@
     </h2>
     <p>Browse completed student projects.</p>
     <% if @recent_projects.present? %>
-      <div id="carouselExampleControls" class="carousel slide" data-ride="carousel">
+      <div id="carouselControls" class="carousel slide" data-bs-ride="carousel">
         <div class="carousel-inner">
           <% @recent_projects.each_slice(3).with_index do |projects, index| %>
             <div class="carousel-item <%= 'active' if index == 0 %>">
@@ -127,12 +127,12 @@
               </div>
             </div>
           <% end %>
-     </div>
-        <a class="carousel-control-prev" href="#carouselExampleControls" role="button" data-slide="prev">
+        </div>
+        <a class="carousel-control-prev" href="#carouselControls" role="button" data-bs-slide="prev">
           <span class="carousel-control-prev-icon" aria-hidden="true" style="background-color: black;"></span>
           <span class="sr-only">Previous</span>
         </a>
-        <a class="carousel-control-next" href="#carouselExampleControls" role="button" data-slide="next">
+        <a class="carousel-control-next" href="#carouselControls" role="button" data-bs-slide="next">
           <span class="carousel-control-next-icon" aria-hidden="true" style="background-color: black;"></span>
           <span class="sr-only">Next</span>
         </a>
@@ -141,7 +141,6 @@
       <p>No recent projects available.</p>
     <% end %>
   </div>
-</div>
 </div>
 
 
