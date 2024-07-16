@@ -99,44 +99,51 @@
             </div>
           </div>
         </div>
-        <!-- Explore Section -->
-        <div class="card home-card mt-5">
-          <div class="card-body">
-            <h2>
-              <b>Explore</b>
-              <small class="text-muted" style="font-size: 0.6em;">
-                <a href="/explore">Show all</a>
-              </small>
-            </h2>
-
-            <% if @recent_projects.present? %>
-            <div id="carouselExampleControls" class="carousel slide" data-ride="carousel">
-              <div class="carousel-inner">
-                <% @recent_projects.each_with_index do |project, index| %>
-                <div class="carousel-item <%= 'active' if index == 0 %>">
-                 <%= image_tag project.photos.first.image, class: 'd-block w-100', alt: project.title, style: 'max-height: 225px; max-width: 225px; width: auto; height: auto;' if project.photos.first.present? %>
-                  <div class="carousel-caption d-none d-md-block">
-                    <h5><%= project.title %></h5>
-                    <p><%= project.user_username %></p>
+     <!-- Explore Section -->
+<div class="card home-card mt-5">
+  <div class="card-body">
+    <h2>
+      <b>Explore</b>
+      <small class="text-muted" style="font-size: 0.6em;">
+        <a href="/explore">Show all</a>
+      </small>
+    </h2>
+    <p>Browse completed student projects.</p>
+    <% if @recent_projects.present? %>
+      <div id="carouselExampleControls" class="carousel slide" data-ride="carousel">
+        <div class="carousel-inner">
+          <% @recent_projects.each_slice(3).with_index do |projects, index| %>
+            <div class="carousel-item <%= 'active' if index == 0 %>" style="text-align: center;">
+              <div style="display: flex; justify-content: center;">
+                <% projects.each do |project| %>
+                  <div style="margin: 0 10px;">
+                    <%= image_tag project.photos.first.image, alt: project.title, style: 'max-height: 225px; max-width: 200px; width: auto; height: auto; display: inline-block;' if project.photos.first.present? %>
+                    <div class="carousel-caption d-none d-md-block">
+                      <h5><%= project.title %></h5>
+                      <p>by <%= project.user_username %></p>
+                    </div>
                   </div>
-                </div>
                 <% end %>
               </div>
-              <a class="carousel-control-prev" href="#carouselExampleControls" role="button" data-slide="prev">
-                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                <span class="sr-only">Previous</span>
-              </a>
-              <a class="carousel-control-next" href="#carouselExampleControls" role="button" data-slide="next">
-                <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                <span class="sr-only">Next</span>
-              </a>
             </div>
-            <% else %>
-            <p>No recent projects available.</p>
-            <% end %>
-          </div>
+          <% end %>
         </div>
+        <a class="carousel-control-prev" href="#carouselExampleControls" role="button" data-slide="prev">
+          <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+          <span class="sr-only">Previous</span>
+        </a>
+        <a class="carousel-control-next" href="#carouselExampleControls" role="button" data-slide="next">
+          <span class="carousel-control-next-icon" aria-hidden="true"></span>
+          <span class="sr-only">Next</span>
+        </a>
       </div>
+    <% else %>
+      <p>No recent projects available.</p>
+    <% end %>
+  </div>
+</div>
+</div>
+
       <!--Right column -->
       <!-- Set a fixed column size to prevent Badges from expanding more -->
       <div class="col-xl order-xl-2 order-1">
