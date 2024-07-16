@@ -18,7 +18,7 @@ class StaticPagesController < SessionsController
         [space_name, formatted_time]
       end
 
-    @recent_projects = Repository.public_repos.order(created_at: :desc).limit(6)
+    @recent_projects = Repository.public_repos.order(created_at: :desc).limit(15)
 
     @user_skills =
       @user.certifications.map do |cert|
