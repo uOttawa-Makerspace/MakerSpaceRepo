@@ -1,6 +1,8 @@
 en:
   home:
     show_more: "Show more"
+    follow_us: "Follow us"
+    explore: "Explore"
     staff_resources:
       header: "Staff Resources"
       staff_area: "Staff Area"
