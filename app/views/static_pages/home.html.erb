@@ -99,7 +99,7 @@
             </div>
           </div>
         </div>
-     <!-- Explore Section -->
+   <!-- Explore Section -->
 <div class="card home-card mt-5">
   <div class="card-body">
     <h2>
@@ -116,11 +116,11 @@
             <div class="carousel-item <%= 'active' if index == 0 %>" style="text-align: center;">
               <div style="display: flex; justify-content: center;">
                 <% projects.each do |project| %>
-                  <div style="margin: 0 10px;">
-                    <%= image_tag project.photos.first.image, alt: project.title, style: 'max-height: 225px; max-width: 200px; width: auto; height: auto; display: inline-block;' if project.photos.first.present? %>
-                    <div class="carousel-caption d-none d-md-block">
-                      <h5><%= project.title %></h5>
-                      <p>by <%= project.user_username %></p>
+                  <div style="margin: 0 10px; border: 1px solid #ddd; border-radius: 5px; padding: 10px; width: 200px;">
+                    <%= image_tag project.photos.first.image, alt: project.title, style: 'max-height: 225px; max-width: 100%; width: auto; height: auto; display: block; margin: 0 auto;' if project.photos.first.present? %>
+                    <div style="text-align: center; margin-top: 10px;">
+                      <h5 style="font-size: 1.1em; margin-bottom: 5px;"><%= project.title %></h5>
+                      <p style="color: #888; font-size: 0.9em;">by <%= project.user_username %></p>
                     </div>
                   </div>
                 <% end %>
@@ -143,6 +143,7 @@
   </div>
 </div>
 </div>
+
 
       <!--Right column -->
       <!-- Set a fixed column size to prevent Badges from expanding more -->
