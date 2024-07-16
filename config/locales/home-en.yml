@@ -55,6 +55,7 @@ en:
       no_badges_anchor: "Try the Development Program"
     skills:
       header: "Skills"
+      no_skills: "No skills achieved"
       show_all: "Show All"
     newsletter:
       header: "Want to know when our next big event is happening?"

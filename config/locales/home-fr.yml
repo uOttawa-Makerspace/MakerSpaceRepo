@@ -55,6 +55,7 @@ fr:
       no_badges_anchor: "Essayez le Programme de Développement"
     skills:
       header: "Compétences"
+      no_skills: "Aucune compétence acquise"
       show_all: "Voir tout"
     newsletter:
       header: "Voulez-vous savoir quand aura lieu le prochain événement?"
