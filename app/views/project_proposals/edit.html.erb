@@ -151,8 +151,9 @@
           </div>
 
           <div class="mb-5">
-            <%= f.label :equipments, 'Possible technologies involved', class: 'form-label' %>
-            <%= f.text_area :equipments, class: 'form-control' %>
+            <%= f.label :equipments, 'Possible technologies involved / Technologies possibles impliquées', class: 'form-label' %>
+            <%= f.hidden_field :equipments, id: 'project_proposal_technology_involved', class: 'form-control text-dark' %>
+            <trix-editor input="project_proposal_technology_involved"></trix-editor>
           </div>
 
           <%= f.label :youtube_link, 'Youtube Link', class: 'form-label' %>
@@ -161,7 +162,9 @@
 
           <div class="mb-5">
             <%= f.label :past_experiences, 'Past experiences / Tentatives précédentes', class: 'form-label' %>
-            <%= f.text_area :past_experiences, class: 'form-control', value: !f.object.past_experiences.nil? ? f.object.past_experiences.split('|')[0] : f.object.past_experiences %>
+<%= f.hidden_field :past_experiences, id: 'project_proposal_past_experiences', class: 'form-control text-dark', value: "There has been no previous attempt to solving this problem. / Il n'y a pas de tentatives précédentes pour résoudre ce problème." %>
+            <trix-editor input="project_proposal_past_experiences" class="mb-2"></trix-editor>
+
             <%= hidden_field_tag 'ignore_past_experiences', f.object.past_experiences.nil? ? '' : f.object.past_experiences %>
             <div id="linkRef" class="d-flex flex-row align-items-start justify-content-around">
               <button type="button" id="link-list" class="btn btn-primary link-list btn-sm">Ajouter un lien / Add a link</button>
