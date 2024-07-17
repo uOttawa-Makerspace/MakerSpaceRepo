@@ -99,6 +99,7 @@
             </div>
           </div>
         </div>
+
 <!-- Explore Section -->
 <div class="card home-card mt-5">
   <div class="card-body">
@@ -117,25 +118,27 @@
               <div style="display: flex; justify-content: center;">
                 <% projects.each do |project| %>
                   <div style="margin: 0 10px; border: 1px solid #ddd; border-radius: 5px; padding: 10px; width: 200px;">
-                    <%= image_tag project.photos.first.image, alt: project.title, style: 'max-height: 225px; max-width: 100%; width: auto; height: auto; display: block; margin: 0 auto;' if project.photos.first.present? %>
-                    <div style="text-align: center; margin-top: 10px;">
-                      <h5 style="font-size: 1.1em; margin-bottom: 5px;"><%= project.title %></h5>
-                      <p style="color: #888; font-size: 0.9em;">by <%= project.user_username %></p>
-                    </div>
+                    <%= link_to repository_path(project.user_username, project.slug), style: 'text-decoration: none; color: inherit;' do %>
+                      <%= image_tag project.photos.first.image, alt: project.title, style: 'max-height: 225px; max-width: 100%; width: auto; height: auto; display: block; margin: 0 auto;' if project.photos.first.present? %>
+                      <div style="text-align: center; margin-top: 10px;">
+                        <h5 style="font-size: 1.1em; margin-bottom: 5px;"><%= project.title %></h5>
+                        <p style="color: #888; font-size: 0.9em;">by <%= project.user_username %></p>
+                      </div>
+                    <% end %>
                   </div>
                 <% end %>
               </div>
             </div>
           <% end %>
         </div>
-        <a class="carousel-control-prev" href="#carouselControls" role="button" data-bs-slide="prev">
+        <button class="carousel-control-prev" type="button" data-bs-target="#carouselControls" data-bs-slide="prev">
           <span class="carousel-control-prev-icon" aria-hidden="true" style="background-color: black;"></span>
-          <span class="sr-only">Previous</span>
-        </a>
-        <a class="carousel-control-next" href="#carouselControls" role="button" data-bs-slide="next">
+          <span class="visually-hidden">Previous</span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#carouselControls" data-bs-slide="next">
           <span class="carousel-control-next-icon" aria-hidden="true" style="background-color: black;"></span>
-          <span class="sr-only">Next</span>
-        </a>
+          <span class="visually-hidden">Next</span>
+        </button>
       </div>
     <% else %>
       <p>No recent projects available.</p>
