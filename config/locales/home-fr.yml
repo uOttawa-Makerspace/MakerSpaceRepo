@@ -1,6 +1,8 @@
 fr:
   home:
     show_more: "Voir en plus"
+    follow_us: "Suivez-nous"
+    explore: "Découvrir"
     staff_resources:
       header: Ressources des employés
       staff_area: Zone des employés
@@ -55,6 +57,7 @@ fr:
       no_badges_anchor: "Essayez le Programme de Développement"
     skills:
       header: "Compétences"
+      no_skills: "Aucune compétence acquise"
       show_all: "Voir tout"
     newsletter:
       header: "Voulez-vous savoir quand aura lieu le prochain événement?"

@@ -1,6 +1,8 @@
 en:
   home:
     show_more: "Show more"
+    follow_us: "Follow us"
+    explore: "Explore"
     staff_resources:
       header: "Staff Resources"
       staff_area: "Staff Area"
@@ -55,6 +57,7 @@ en:
       no_badges_anchor: "Try the Development Program"
     skills:
       header: "Skills"
+      no_skills: "No skills achieved"
       show_all: "Show All"
     newsletter:
       header: "Want to know when our next big event is happening?"

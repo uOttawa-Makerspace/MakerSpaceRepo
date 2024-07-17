@@ -1,6 +1,6 @@
 <div class="card home-card">
     <div class="card-body">
-        <h2 class="d-inline me-2"><%= t('home.badges.header') %></h2><%= link_to 'Show all', "#{user_path(@user.username)}#badges-manager" %>
+        <h2 class="d-inline me-2"><%= t('home.badges.header') %></h2><%= link_to t('home.show_all'), "#{user_path(@user.username)}#badges-manager" %>
         <div class="text-nowrap overflow-scroll">
             <% if @user.badges.empty? %>
                 <p><%= t('home.badges.no_badges') %></p>
