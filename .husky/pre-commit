@@ -3,7 +3,8 @@
 bundle lock --add-platform aarch64-linux
 npx lint-staged
 printf "Changed Files:"
-changed_files=$(git diff --name-only HEAD | grep -E '\.(erb)$') && echo "$changed_files"
+# staged filenames, filter out deleted
+changed_files=$(git diff --name-only --staged HEAD --diff-filter=d | grep -E '\.(erb)$') && echo "$changed_files"
 if [ -n "$changed_files" ]; then
   printf "Running erblint..."
   bundle exec erblint $changed_files --autocorrect
