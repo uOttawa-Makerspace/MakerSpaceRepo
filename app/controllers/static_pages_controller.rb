@@ -4,57 +4,55 @@ class StaticPagesController < SessionsController
   before_action :current_user, except: [:reset_password]
 
   def home
-    # NOTE ADD exception handlers because some people make this explode
     @volunteer_program_shadowing_scheduled =
-      begin
-        current_user.shadowing_hours.map do |hours|
-          end_time = hours.end_time.strftime "%H:%M"
-          formatted_time =
-            "#{I18n.l hours.start_time, format: "%A %H:%M"} - #{end_time}"
-          [hours.space.name, formatted_time]
-        end
-      rescue StandardError
-        []
+      current_user.shadowing_hours.map do |hours|
+        end_time = hours.end_time.strftime "%H:%M"
+        formatted_time =
+          "#{I18n.l hours.start_time, format: "%A %H:%M"} - #{end_time}"
+        [hours.space.name, formatted_time]
       end
+
+    # NOTE: This crashed before, while using get_volunteer_tasks_from_volunteer_joins so
+    # It shouldn't happen again, but I added an exception handler just in case.
     @volunteer_program_your_tasks =
       begin
-        current_user.get_volunteer_tasks_from_volunteer_joins.map do |task|
-          space_name = task.volunteer_task.space.name
-          formatted_time = task.created_at.strftime "%H:%M"
-          [space_name, formatted_time]
-        end
+        current_user
+          .volunteer_task_joins
+          .active
+          .order(updated_at: :desc)
+          .joins(:volunteer_task)
+          .includes(volunteer_task: :space)
+          .where(volunteer_task: { status: "open" })
+          .map do |task|
+            task_name = task.volunteer_task.title
+            space_name = task.volunteer_task.space.name
+            formatted_time = task.created_at.strftime "%H:%M"
+            [task_name, space_name, formatted_time, task.volunteer_task_id]
+          end.take 5
       rescue StandardError
         []
-      end
+      end # five most recent
 
     @recent_projects =
       Repository.public_repos.order(created_at: :desc).limit(15)
 
     @user_skills =
-      begin
-        @user.certifications.map do |cert|
-          [cert.training_session.training.name, cert.training_session.level]
-        end
-      rescue StandardError
-        []
-      end #.compact # remove nils
+      current_user.certifications.map do |cert|
+        [cert.training_session.training.name, cert.training_session.level]
+      end #.sample 5
 
     # Get total tracks in all learning modules
     total_tracks = LearningModule.all.map { |x| x.training.name }.tally
     # get the total number of tracks completed
     # and in progress under the user's name
     @user_tracks =
-      begin
-        @user
-          .learning_module_tracks
-          .group_by { |x| x.learning_module.training.name }
-          .transform_values { |x| x.map(&:status).tally }
-          .map do |key, value|
-            [key, "#{value["Completed"]}/#{total_tracks[key]}"]
-          end
-      rescue StandardError
-        []
-      end
+      current_user
+        .learning_module_tracks
+        .group_by { |x| x.learning_module.training.name }
+        .transform_values { |x| x.map(&:status).tally }
+        .map do |key, value|
+          [key, "#{value["Completed"]}/#{total_tracks[key]}"]
+        end
 
     @contact_info = ContactInfo.where(show_hours: true).order(name: :asc)
   end
