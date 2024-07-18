@@ -7,7 +7,7 @@
                                       <p class="subtext">@<%= @user.username %></p>
                                       <a class="btn btn-primary w-100"><%= t('home.userinfo.edit_profile') %></a>
                                       <br />
-                                      <a class="btn btn-link"><%= t('home.userinfo.sign_out') %></a>
+                                      <%= link_to t('home.userinfo.sign_out'), logout_path, class: 'btn btn-link' %>
         </div>
         <div class="col gy-5">
             <p class="full-name"><%= @user.name %></p>
