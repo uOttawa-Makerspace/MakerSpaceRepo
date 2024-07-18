@@ -3,7 +3,7 @@
 class DevelopmentProgramsController < ApplicationController
   layout "development_program"
   before_action :current_user
-  before_action :grant_access, except: [:join_development_program]
+  before_action :grant_access, except: %i[join_development_program index]
 
   def index
   end

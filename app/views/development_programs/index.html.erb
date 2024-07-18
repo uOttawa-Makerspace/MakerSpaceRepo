@@ -5,12 +5,12 @@
     <h2 class="text-center"><%= t('development_program.header') %></h2>
     <br>
 
-    <% unless @user.dev_program? %>
+    <% unless not signed_in? or @user.dev_program? %>
 
-    <div class="h-100 p-4 bg-light border rounded-3 mb-2">
-      <h2><%= t('development_program.not_in_dev_program.header') %></h2>
-      <p><%= t('development_program.not_in_dev_program.content') %></p>
-      <p><%= t('development_program.not_in_dev_program.link') %></p>
+    <div class="h-100 p-4 bg-light border rounded-3 mb-2 text-center">
+      <h2><%= t('development_program.not_in_dev_program.header').html_safe %></h2>
+      <p><%= t('development_program.not_in_dev_program.content').html_safe %></p>
+      <p><%= t('development_program.not_in_dev_program.link').html_safe %></p>
     </div>
 
     <% end %>
