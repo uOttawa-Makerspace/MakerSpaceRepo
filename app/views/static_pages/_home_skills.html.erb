@@ -1,15 +1,18 @@
-<div class="card home-card">
+<div class="card home-card" id="home-skills">
     <div class="card-body">
         <h2 class="d-inline me-3"><%= t('home.skills.header') %></h2><%= link_to t('home.show_all'), "#{user_path(@user.username)}#profile-skills" %>
-        <div class="d-flex flex-row flex-wrap mt-3">
+        <div class="mt-3">
             <% if @user_skills.empty? %>
                 <p><%= t('home.skills.no_skills') %></p>
-            <% end %>
-            <% @user_skills.each do |skill, level| %>
-                <p class="d-inline"><%= skill %>
-                    <span class="skill-pill">
-                        <i class="fa fa-circle" style="color: green"></i> <%= level %>
-                    </span></p>
+            <% else %>
+                <div class="row row-cols-2 g-0">
+                    <% @user_skills.each do |skill, level| %>
+                        <div class="col skill-name"><p><%= skill %></p></div>
+                        <div class="col">
+                            <span class="skill-pill"><i class="fa fa-circle" style="color: green"></i> <%= level %></span>
+                        </div>
+                    <% end %>
+                </div>
             <% end %>
         </div>
     </div>

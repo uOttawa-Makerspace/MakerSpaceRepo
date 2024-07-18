@@ -65,14 +65,22 @@ section#home {
     background-color: $secondary;
   }
 
-  .skill-pill {
-    display: inline;
-    font-size: 0.8rem;
-    //border: 1px solid $secondary;
-    background-color: lightgrey;
-    border-radius: 15px;
-    padding: 5px;
-    margin: 5px;
+  #home-skills {
+    .skill-name p {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .skill-pill {
+      //display: inline;
+      font-size: 0.8rem;
+      //border: 1px solid $secondary;
+      background-color: lightgrey;
+      border-radius: 15px;
+      padding: 5px;
+      //margin: 5px;
+    }
   }
 
   #home-big-newsletter {

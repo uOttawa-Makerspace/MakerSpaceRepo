@@ -28,10 +28,10 @@ class StaticPagesController < SessionsController
             space_name = task.volunteer_task.space.name
             formatted_time = task.created_at.strftime "%H:%M"
             [task_name, space_name, formatted_time, task.volunteer_task_id]
-          end.take 5
+          end.take 5 # five most recent
       rescue StandardError
         []
-      end # five most recent
+      end
 
     @recent_projects =
       Repository.public_repos.order(created_at: :desc).limit(15)
@@ -39,7 +39,7 @@ class StaticPagesController < SessionsController
     @user_skills =
       current_user.certifications.map do |cert|
         [cert.training_session.training.name, cert.training_session.level]
-      end #.sample 5
+      end.sample 5
 
     # Get total tracks in all learning modules
     total_tracks = LearningModule.all.map { |x| x.training.name }.tally
