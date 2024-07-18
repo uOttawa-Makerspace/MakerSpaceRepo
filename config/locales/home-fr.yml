@@ -61,6 +61,7 @@ fr:
       show_all: "Voir tout"
     newsletter:
       header: "Voulez-vous savoir quand aura lieu le prochain événement?"
+      subtext: "Entrez votre email pour vous inscrire à notre infolettre"
       sign_up: "S'inscrire"
     welcome:
       welcome_to: "Bienvenue à MakerRepo"
