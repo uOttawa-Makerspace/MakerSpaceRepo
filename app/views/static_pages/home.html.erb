@@ -2,7 +2,7 @@
   <div class="container-fluid">
     <div class="row row-cols-3 g-0">
       <!--Left column -->
-      <div class="col-xl  order-xl-0 order-1">
+      <div class="col-auto col-xl-3 order-xl-0 order-1">
         <!-- Staff Resources -->
         <% if @user.staff? %>
         <div class="card home-card">
@@ -34,7 +34,7 @@
         <%= render 'static_pages/home_development' if signed_in? %>
       </div>
       <!--Middle column -->
-      <div class="col-xl-6 order-xl-1 order-0">
+      <div class="col-auto col-xl-6 order-xl-1 order-0">
         <div class="card home-card">
           <div class="card-body">
             <h2> <%= t('home.welcome.welcome_to') %>,
@@ -147,7 +147,7 @@
 
       <!--Right column -->
       <!-- Set a fixed column size to prevent Badges from expanding more -->
-      <div class="col-xl order-xl-2 order-1">
+      <div class="col-auto col-xl-3 order-xl-2 order-1">
         <%= render partial: 'home_userinfo' %>
         <%= render partial: 'home_badges' if signed_in? %>
         <%= render partial: 'home_skills' if signed_in? %>
