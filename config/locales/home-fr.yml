@@ -63,6 +63,6 @@ fr:
       header: "Voulez-vous savoir quand aura lieu le prochain événement?"
       sign_up: "S'inscrire"
     welcome:
-      welcome_to: "Bienvenue à MakeRepo"
+      welcome_to: "Bienvenue à MakerRepo"
       welcome_subheader: "Voici le site de dépôt du <b>CEED</b>"
       hour_header: "Heures d'ouverture"

@@ -63,6 +63,6 @@ en:
       header: "Want to know when our next big event is happening?"
       sign_up: "Sign up"
     welcome:
-      welcome_to: "Welcome to MakeRepo"
+      welcome_to: "Welcome to MakerRepo"
       welcome_subheader: "This is <b>CEED's</b> repository website"
       hour_header: "Space hours this week"

@@ -37,13 +37,11 @@
       <div class="col-auto col-xl-6 order-xl-1 order-0">
         <div class="card home-card">
           <div class="card-body">
-            <h2> <%= t('home.welcome.welcome_to') %>,
-              <% if signed_in? %>
-                <span class="text-primary"> <%= @user.name %></span>
-              <% else %>
-                <span class="text-secondary">Not signed in</span>
-              <% end %>
-            </h2>
+            <% if signed_in? %>
+              <h2> <%= t('home.welcome.welcome_to') %>, <span class="text-primary"> <%= @user.name %></span></h2>
+            <% else %>
+              <h2> <%= t('home.welcome.welcome_to') %></h2>
+            <% end %>
             <div class="row">
               <div class="col-auto">
                 <p><%= t('home.welcome.welcome_subheader').html_safe %></p>
