@@ -3,7 +3,7 @@
         <h2><%= t('home.shortcuts.header') %></h2>
         <h3><%= t('home.shortcuts.recently_opened') %></h3>
         <% if signed_in? %>
-            <ul class="list-unstyled">
+            <ul class="list-unstyled mb-0">
                 <% begin JSON.parse(cookies[:recently_viewed]).each do |link, proj_name| %>
                 <li><a href="<%= link %>"><i class="fa fa-square text-secondary"></i> <%= proj_name %></a></li>
                 <% end %>
