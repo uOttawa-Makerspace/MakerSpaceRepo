@@ -36,7 +36,7 @@
       </div>
       <!--Middle column -->
       <div class="col-auto col-xl-6 order-xl-1 order-0">
-        <div class="card home-card">
+        <div class="card home-card" tabindex="0">
           <div class="card-body">
             <% if signed_in? %>
             <h2> <%= t('home.welcome.welcome_to') %>, <span class="text-primary"> <%= @user.name %></span></h2>
