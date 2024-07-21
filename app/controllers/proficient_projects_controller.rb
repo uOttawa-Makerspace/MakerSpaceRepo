@@ -231,7 +231,11 @@ class ProficientProjectsController < DevelopmentProgramsController
           space: space,
           course_name: course_name
         )
-      training_session.users << order_item.order.user
+      # Make sure we don't double add the HABTM relation
+      # In case badge fails somehow, at least we award the skill
+      unless training_session.users.exists? order_item.order.user.id
+        training_session.users << order_item.order.user
+      end
       if training_session.present?
         cert =
           Certification.find_or_create_by(
