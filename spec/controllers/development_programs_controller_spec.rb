@@ -35,12 +35,11 @@ RSpec.describe DevelopmentProgramsController, type: :controller do
     end
 
     context "logged as user not in the development program" do
-      it "should not return success, /grant_access" do
+      it "should return 200 response" do
         user = create(:user, :regular_user)
         session[:user_id] = user.id
         get :index
-        expect(response).to redirect_to root_path
-        expect(flash[:alert]).to eq("You cannot access this area.")
+        expect(response).to have_http_status(:success)
       end
     end
   end

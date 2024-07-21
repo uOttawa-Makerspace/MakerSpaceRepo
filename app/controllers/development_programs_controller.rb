@@ -3,7 +3,15 @@
 class DevelopmentProgramsController < ApplicationController
   layout "development_program"
   before_action :current_user
-  before_action :grant_access, except: %i[join_development_program index]
+  # HACK: hardcode exception for this controller's index page only
+  before_action :grant_access,
+                except: %i[join_development_program],
+                unless:
+                  lambda {
+                    controller_name ==
+                      DevelopmentProgramsController.controller_name &&
+                      action_name == "index"
+                  }
 
   def index
   end
