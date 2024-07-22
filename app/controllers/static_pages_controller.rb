@@ -40,7 +40,7 @@ class StaticPagesController < SessionsController
 
     @contact_info = ContactInfo.where(show_hours: true).order(name: :asc)
 
-    access_token = 'IGQWRNUk56b3VNWkx1N09pTGZAkYVd6dzJ0RUxRN1Q5OG90X1dmYkJ6VDVYRnNQMWJOS0ZAtTVRqMVlWNGQ0MGcwYXNhTHQ0blBkLUJvY0FGMHg4R1RzbmFWMUJ3WlprUHJrZAi13ZAmRoTzd1NUlBcUtYU0loNzhONFkZD'
+    access_token = ENV['INSTAGRAM_ACCESS_TOKEN']
     service = InstagramService.new(access_token)
     @posts = service.fetch_posts["data"]
   end
