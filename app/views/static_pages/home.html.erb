@@ -63,40 +63,47 @@
             </div>
           </div>
         </div>
-        <!-- Instagram Section -->
-        <div class="card home-card mt-5">
-          <div class="card-body">
-            <h2>
-              <b>Instagram</b>
-              <small class="text-muted" style="font-size: 0.6em;">
-                <a href="https://www.instagram.com/uoceed/" target="_blank"><%= t('home.follow_us') %></a>
-              </small>
-            </h2>
-            <p>Stay up to date with our socials</p>
+    <!-- Instagram Section -->
+<div class="card home-card mt-5">
+  <div class="card-body">
+    <h2>
+      <b>Instagram</b>
+      <small class="text-muted" style="font-size: 0.6em;">
+        <a href="https://www.instagram.com/uoceed/" target="_blank"><%= t('home.follow_us') %></a>
+      </small>
+    </h2>
+    <p>Stay up to date with our socials</p>
 
-            <div id="carouselExampleControls" class="carousel slide" data-ride="carousel">
-              <div class="carousel-inner">
-                <div class="carousel-item active">
-
-                </div>
-                <div class="carousel-item">
-
-                </div>
-                <div class="carousel-item">
-
-                </div>
-              </div>
-              <a class="carousel-control-prev" href="#carouselExampleControls" role="button" data-slide="prev">
-                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                <span class="sr-only">Previous</span>
-              </a>
-              <a class="carousel-control-next" href="#carouselExampleControls" role="button" data-slide="next">
-                <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                <span class="sr-only">Next</span>
-              </a>
+    <div id="carouselExampleControls" class="carousel slide" data-ride="carousel">
+      <div class="carousel-inner">
+        <% @posts.each_with_index do |post, index| %>
+          <div class="carousel-item <%= 'active' if index.zero? %>">
+            <% if post['media_type'] == 'IMAGE' || post['media_type'] == 'CAROUSEL_ALBUM' %>
+              <img src="<%= post['media_url'] %>" class="d-block w-100" alt="Instagram Image">
+            <% elsif post['media_type'] == 'VIDEO' %>
+              <video class="d-block w-100" controls>
+                <source src="<%= post['media_url'] %>" type="video/mp4">
+                Your browser does not support the video tag.
+              </video>
+            <% end %>
+            <div class="carousel-caption d-none d-md-block">
+              <p><%= post['caption'] %></p>
             </div>
           </div>
-        </div>
+        <% end %>
+      </div>
+      <a class="carousel-control-prev" href="#carouselExampleControls" role="button" data-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        <span class="sr-only">Previous</span>
+      </a>
+      <a class="carousel-control-next" href="#carouselExampleControls" role="button" data-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        <span class="sr-only">Next</span>
+      </a>
+    </div>
+  </div>
+</div>
+
 <!-- Explore Section -->
 <div class="card home-card mt-5">
   <div class="card-body">
