@@ -16,7 +16,15 @@ The docs are actually nice
 Students complete learning modules to gain basic badges, then create and submit proficiency project requests. Staff look at requests and approve them.
 
 Badges are based on three tables, the `badges` table and the `badge_templates` and the `certifications` table
-`badge_templates` contains
+`badge_templates` contains the acclaim template ID.
+
+Badge templates point to a training skill and level.
+
+Badges themselves store a badge template ID and an acclaim template ID? why?
+
+Requests are stored as `OrderItems`.
+
+**FIXME**badge template edit page sucks. We have duplicate templates, find and remove those
 
 ## ERROR
 
@@ -44,3 +52,24 @@ There isn't a corresponding project/badge/workshop for all skills, make that cle
 Maybe make a summary project? Step one was learning modules, step two was the projects, step three was the badges.
 
 You can be in progress of a development program skill, but not in progress in a workshop session. Skills should only display level instead.
+
+## Production badge apis as of Mon Jul 22 15:11:12 2024
+
+[["Shop Fundamentals || Principes fondamentaux de l’atelier d’usinage", "7fc522fa-0044-4a0e-a716-90b808260e6b"],
+["Beginner - Mill || Débutant - Fraiseuse", "6ecc14a7-265a-45bf-918d-ffdf5100f4b4"],
+["Beginner - Lathe || Débutant - Tour", "30e1b3ab-344c-4938-9236-5a03101b95a7"],
+["Beginner - MIG Welding || Débutant - Soudure", "a72405e1-46d5-4b8b-b216-98fc362d599b"],
+["Beginner - 3D printing || Débutant - Impression 3D", "79135bb6-a371-4871-853c-3e41f1724147"],
+["Beginner Laser cutting || Beginner - Laser cutting", "37a17118-9be4-438a-b012-a575f9d06a71"],
+["Beginner - Arduino || Débutant - Arduino", "d56b6e25-772b-48b1-a40e-b954b07c734d"],
+["Beginner - Soldering || Débutant – Soudure électrique", "ae2e68fc-404f-4a2f-9d34-e420aca5230a"],
+["Beginner - Embroidery || Débutant - Broderie", "86de7d36-cfed-4a3e-8998-fd7da1aee753"],
+["Beginner - Virtual Reality || Débutant - Réalité Virtuelle", "7b123b16-579d-4524-ac18-a0822973522a"],
+["Professional Development || Développement professionnel", "61edc16e-5fd0-402c-9c71-b96e7e27a3fb"],
+["Accessibility Make-a-thon || Accessibilité Make-a-thon", "a7fd74d9-56ba-4d33-b783-a0391bd11ab5"],
+["Simon Nehme Summer Entrepreneurship School", "1e91c9df-ff64-4cae-b298-b17e60869e18"],
+["Beginner - TIG Welding || Débutant - Soudure TIG", "ca22b099-6986-4400-9892-df9a5288163b"],
+["Beginner - 3D printing (resin) || Débutant - Impression 3D (résine)", "8ebd943f-baff-40c7-9cbb-fca2161064a6"],
+["Beginner - 3D scanning || Débutant - Numérisation 3D", "2aaf4070-5461-4fef-953a-1a3f8ebfceb2"],
+["Beginner - PCB Design || Débutant - Conception PCB", "404eb116-87e9-450a-99bd-c462a9823bc6"],
+["Beginner - PCB Milling || Débutant - Fraisage PCB", "bb739952-bf54-4644-bf4f-290301e2982d"]]

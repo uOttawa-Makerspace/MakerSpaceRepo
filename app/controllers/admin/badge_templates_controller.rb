@@ -4,7 +4,9 @@ class Admin::BadgeTemplatesController < AdminAreaController
   layout "admin_area"
 
   def index
-    @badge_template = BadgeTemplate.all.order(badge_name: :asc)
+    @badge_template =
+      BadgeTemplate.all.order(updated_at: :desc, badge_name: :asc)
+    @template_usage = Badge.group(:badge_template_id).count
   end
 
   def edit
