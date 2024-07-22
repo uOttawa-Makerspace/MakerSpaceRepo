@@ -36,7 +36,7 @@
                   <div class="row accordion" id="accordion-<%= training.id %>">
                     <% all_learning_modules = @all_learning_modules.call(training) %>
                     <% levels_ordered(training).each do |level| %>
-                      <% learning_modules_by_level = all_learning_modules.where(level: level) %>
+                      <% learning_modules_by_level = all_learning_modules.where(level:) %>
                       <div class="accordion item col-md-12">
                         <div class="accordion-header accordion-button" id="header-<%= training.id %>-<%= level %>" data-bs-toggle="collapse" data-bs-target="#training-training-<%= training.id %>-<%= level %>" aria-expanded="false" aria-controls="training-training-<%= training.id %>-<%= level %>">
                               <span class="btn-link col-4" type="button"><%= level %>
@@ -91,17 +91,12 @@
                                 </div>
                               </div>
                             <% end %>
-
                           </div>
                         </div>
-
                       </div>
-                      </div>
-
                     <% end %>
-
-                    </div>
-                <br/>
+                  </div>
+                </div>
               </div>
             </div>
           <% end %>
@@ -110,7 +105,5 @@
     </div>
   </div>
 </section>
-<br/>
-<br/>
 
 <%= vite_javascript_tag 'learning_modules' %>
