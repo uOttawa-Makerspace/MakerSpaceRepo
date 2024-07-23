@@ -242,6 +242,9 @@ class ProficientProjectsController < DevelopmentProgramsController
             training_session_id: training_session.id,
             user_id: order_item.order.user_id
           )
+        # Look for a badge template to award
+        # NOTE This will fail in development mode
+        # unless you award a badge that exists in sandbox mode
         badge_template = order_item.proficient_project.badge_template
         if badge_template.present?
           user = order_item.order.user
@@ -259,27 +262,24 @@ class ProficientProjectsController < DevelopmentProgramsController
               badge_template_id: badge_template.id,
               certification: cert
             )
-            order_item.update(order_item_params.merge({ status: "Awarded" }))
-            MsrMailer.send_results_pp(
-              order_item,
-              order_item.order.user,
-              "Passed"
-            ).deliver_now
             flash[:notice] = "A badge has been awarded to the user!"
           else
-            flash[
-              :alert
-            ] = "An error has occurred when creating the badge, this message might help : " +
-              JSON.parse(response.body)["data"]["message"]
+            log_string =
+              "Response code #{response.status}. " +
+                "An error has occurred when creating the badge, service return: #{JSON.parse(response.body)["data"]["message"]}" +
+                "Please note down this entire message. Try manually granting the badge later." # newlines work in double quotes only(?)
+            logger.error log_string
+            flash[:alert] = log_string
           end
-        else
-          order_item.update(order_item_params.merge({ status: "Awarded" }))
-          MsrMailer.send_results_pp(
-            order_item,
-            order_item.order.user,
-            "Passed"
-          ).deliver_now
         end
+        # Award project, even if badge fails.
+        # You can manually grant badge later
+        order_item.update(order_item_params.merge({ status: "Awarded" }))
+        MsrMailer.send_results_pp(
+          order_item,
+          order_item.order.user,
+          "Passed"
+        ).deliver_now
         flash[:notice] = "The project has been approved!"
       else
         flash[:error] = "An error has occurred, please try again later."

@@ -1,5 +1,3 @@
-# MAN WHAT THE FUCK
-
 Development program is buggy as hell
 
 The volunteer program is fine i guess.
@@ -22,7 +20,8 @@ Badge templates point to a training skill and level.
 
 Badges themselves store a badge template ID and an acclaim badge ID. The badge template ID refers to a local badge template, which in turn refers to a remote badge template. The acclaim badge ID refers to the remote badge ID.
 
-Project approval requests are stored as `OrderItems`.
+Project approval requests are stored as `OrderItems`. To get approved ones do
+`@repo_user.order_items.awarded.pluck(:proficient_project_id)`
 
 **FIXME**badge template edit page sucks. We have duplicate templates, find and remove those
 
