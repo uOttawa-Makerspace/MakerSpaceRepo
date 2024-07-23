@@ -20,20 +20,28 @@ Badges are based on three tables, the `badges` table and the `badge_templates` a
 
 Badge templates point to a training skill and level.
 
-Badges themselves store a badge template ID and an acclaim template ID? why?
+Badges themselves store a badge template ID and an acclaim badge ID. The badge template ID refers to a local badge template, which in turn refers to a remote badge template. The acclaim badge ID refers to the remote badge ID.
 
-Requests are stored as `OrderItems`.
+Project approval requests are stored as `OrderItems`.
 
 **FIXME**badge template edit page sucks. We have duplicate templates, find and remove those
 
-## ERROR
+## Training sessions
+
+People take a training session first. Staff create a training session from the dashboard, add attendees. They then click certify after they're done. Exams exist but IDK if anyone uses them really.
+
+## Sandbox sucks alot
 
 An error has occurred when creating the badge, this message might help : Invalid or missing Badge Template ID: d56b6e25-772b-48b1-a40e-b954b07c734d
+
+https://credlyissuer.zendesk.com/hc/en-us/articles/360027660512-Is-there-a-sandbox-staging-site-where-we-can-test-integrations
+
+That's because the credly sandbox is awful and has separate data from production. I'm not sure if there's a way to set the template ID for a badge manually, but the docs seem to imply it's a whole separate thing.
 
 ## Development/Volunteer program redesign
 
 Badges and skills are lifted from the user profile page
-Skills are certifications? **Limit the count of skills**, some have a lot of skills. Display level not number
+Skills are certifications? **Limit the count of skills when displaying them**, some have a lot of skills. Display level not number
 We do track development program progress, it is the number of modules completed. Skills are just the level achieved
 
 All badges have a skill, not all skills have a badge associated. There should be one for every but we didn't create enough badges. Someone might have a skill with no badge to show for it :(.

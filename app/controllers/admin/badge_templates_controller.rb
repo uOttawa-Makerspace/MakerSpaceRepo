@@ -7,10 +7,15 @@ class Admin::BadgeTemplatesController < AdminAreaController
     @badge_template =
       BadgeTemplate.all.order(updated_at: :desc, badge_name: :asc)
     @template_usage = Badge.group(:badge_template_id).count
+    @templates_at_service =
+      BadgeTemplate.acclaim_api_get_all_badge_templates["data"].map do |x|
+        x["id"]
+      end
   end
 
   def edit
     @badge_template = BadgeTemplate.find(params[:id])
+    @usage_count = Badge.where(badge_template_id: params[:id]).count
   end
 
   def update
@@ -21,6 +26,18 @@ class Admin::BadgeTemplatesController < AdminAreaController
       flash[:alert] = "Something went wrong"
     end
     redirect_to admin_badge_templates_path
+  end
+
+  def destroy
+    begin
+      BadgeTemplate.find(params[:id]).destroy!
+    rescue Error => e
+      flash[:alert] = "Error deleting template: #{e}"
+    else
+      flash[:notice] = "Badge deleted successfully"
+    end
+
+    redirect_to admin_badge_templates_path, status: :see_other
   end
 
   private

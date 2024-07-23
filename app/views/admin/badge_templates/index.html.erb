@@ -15,6 +15,7 @@
           <th>Last updated</th>
           <th>Badges awarded</th>
           <th>Template ID</th>
+          <th>Found at service?</th>
           <th class="action-header">Action</th>
         </tr>
       </thead>
@@ -28,6 +29,13 @@
               <td><%= bt.updated_at.to_fs :db %></td>
               <td><%= @template_usage[bt.id] || 'none' %></td>
               <td><%= bt.acclaim_template_id %></td>
+              <td>
+                <% if @templates_at_service.include? bt.acclaim_template_id %>
+                  <i class="fa fa-check text-success"></i> Yes
+                <% else %>
+                  <i class="fa fa-times text-danger"></i> No
+                <% end %>
+              </td>
               <td class="action-cell"><%= link_to 'Edit', edit_admin_badge_template_path(bt.id), class: 'btn btn-primary d-block w-100 btn-sm mb-1 mt-0' %></td>
             </tr>
           <% end %>
