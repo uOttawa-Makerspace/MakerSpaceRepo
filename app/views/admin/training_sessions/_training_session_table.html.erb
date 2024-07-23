@@ -101,22 +101,20 @@
         </td>
         <td class="py-2">
           <div class="inline-block">
-            <div class="inline-block">
-              <%= sesh.users.length %>
-              <div id="sesh-users" class="inline-block">
-                <% sesh.users.each do |user| %>
-                  <div class="clickable-username">
-                    <%= link_to user.name, user_url(user.username), class: 'text-blue-500 hover:underline' %><br>
-                  </div>
-                <% end %>
-              </div>
+            <%= sesh.users.length %>
+            <div id="sesh-users" class="inline-block">
+              <% sesh.users.each do |user| %>
+                <div class="clickable-username">
+                  <%= link_to user.name, user_url(user.username), class: 'text-blue-500 hover:underline' %><br>
+                </div>
+              <% end %>
             </div>
           </div>
         </td>
         <td class="py-2">
-          <%= link_to 'Visit', staff_training_session_url(sesh), class: 'block bg-blue-500 text-white py-1 rounded mb-1' %>
-          <%= link_to 'Download', training_report_staff_training_session_path(id: sesh.id, format: 'xlsx'), action: :training_report, class: 'block bg-blue-300 text-white py-1 rounded mb-1' %>
-          <%= button_to 'Destroy', { action: :destroy, id: sesh.id }, method: :delete, data: { confirm: 'Deleting a training session also deletes all corresponding certifications. OK to confirm.' }, class: 'block bg-red-500 text-white py-1 rounded' %>
+          <%= link_to 'Visit', staff_training_session_url(sesh), class: 'btn btn-link' %>
+          <%= link_to 'Download', training_report_staff_training_session_path(id: sesh.id, format: 'xlsx'), action: :training_report, class: 'btn btn-link' %>
+          <%= button_to 'Destroy', { action: :destroy, id: sesh.id }, method: :delete, data: { confirm: 'Deleting a training session also deletes all corresponding certifications. OK to confirm.' }, class: 'btn btn-danger' %>
         </td>
       </tr>
     <% end %>
