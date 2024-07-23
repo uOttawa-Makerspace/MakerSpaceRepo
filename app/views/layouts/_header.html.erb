@@ -34,7 +34,8 @@
         <div class="dropdown-menu">
           <a class="dropdown-item" href="https://www.eventbrite.ca/o/latelier-makerspace-richard-labbe-uottawa-uottawa-richard-labbe-makerspace-6930970537"><%= t('navbar.workshops') %></a>
           <a class="dropdown-item" ><%= t('navbar.join_a_team') %></a>
-          <a class="dropdown-item" href="volunteers" ><%= t('navbar.volunteering') %></a>
+          <%= link_to t('navbar.volunteering'), volunteers_path, class: 'dropdown-item' %>
+          <%= link_to t('navbar.user.development_program'), development_programs_path, class: 'dropdown-item' %>
           <a class="dropdown-item" ><%= t('navbar.makerlaunch') %></a>
         </div>
       </li>
