@@ -105,6 +105,13 @@ $dropdown-connection-size: 12px;
   padding-bottom: 0;
 }
 
+// Hide this element on screens smaller than xl
+@include media-breakpoint-down(xl) {
+  .hide-on-mobile {
+    display: none;
+  }
+}
+
 h2 {
   font-size: 1.75rem;
 }

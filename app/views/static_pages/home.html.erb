@@ -1,9 +1,17 @@
 <section id="home">
+  <button class="d-xl-none" id="ShortcutButton" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas-shortcuts" aria-controls="offcanvas-shortcuts">
+    Shortcuts
+  </button>
   <div class="container-fluid">
     <%= render partial: 'partials/announcements' %>
     <div class="row row-cols-3 g-0">
       <!--Left column -->
-      <div class="col-auto col-xl-3 order-xl-0 order-1">
+      <!-- This becomes an offcanvas on mobile -->
+      <div class="col-auto col-xl-3 order-xl-0 order-1 offcanvas-lg offcanvas-start" id="offcanvas-shortcuts" aria-labelledby="shortcutsOffcanvasLabel">
+        <div class="offcanvas-header pb-0">
+          <h2 class="offcanvas-title" id="shortcutsOffcanvasLabel">Shortcuts</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#offcanvas-shortcuts" aria-label="Close"></button>
+        </div>
         <!-- Staff Resources -->
         <% if @user.staff? %>
         <div class="card home-card">
@@ -43,10 +51,10 @@
             <% else %>
             <h2> <%= t('home.welcome.welcome_to') %></h2>
             <% end %>
+            <p><%= t('home.welcome.welcome_subheader').html_safe %></p>
             <div class="row">
               <div class="col-auto">
-                <p><%= t('home.welcome.welcome_subheader').html_safe %></p>
-                <%= image_tag('redesign/site.png', alt: 'SITE', class: 'img-fluid') %>
+                <%= image_tag('redesign/site.png', alt: 'SITE', class: 'img-fluid hide-on-mobile') %>
               </div>
               <div class="col text-start align-self-center">
                 <h3 class="fw-bold"><%= t('home.welcome.hour_header') %></h3>
@@ -107,7 +115,7 @@
             </h2>
             <p>Browse completed student projects.</p>
             <% if @recent_projects.present? %>
-            <div id="carouselControls" class="carousel slide" data-bs-ride="carousel">
+            <div id="carouselControls" class="carousel slide" data-bs-ride="false">
               <div class="carousel-inner">
                 <% @recent_projects.each_slice(3).with_index do |projects, index| %>
                 <div class="carousel-item <%= 'active' if index == 0 %>">
