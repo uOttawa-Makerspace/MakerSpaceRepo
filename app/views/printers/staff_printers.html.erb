@@ -13,7 +13,7 @@
       </div>
     <% end %>
 
-    <% @printer_types.each do |pt| %>
+    <% @printer_types.filter(&:available).each do |pt| %>
       <div>
         <h2><%= pt.name %></h2>
         <% latest_session = Printer.get_last_model_session(pt.name) %>
@@ -35,7 +35,11 @@
           </div>
         <% end %>
       </div>
-
+    <% end %>
+    <hr />
+    <h2>Unavailable printers:</h2>
+    <% @printer_types.reject(&:available).each do |pt| %>
+      <p><s><%= pt.name %></s></p>
     <% end %>
   </div>
 </section>
