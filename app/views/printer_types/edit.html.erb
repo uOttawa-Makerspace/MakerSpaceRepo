@@ -14,6 +14,10 @@
               <%= f.label :short_form, 'Short Form (Optional)', class: 'form-label' %>
               <%= f.text_field :short_form, class: 'form-control' %>
             </div>
+            <div class="mb-3">
+              <%= f.check_box :available, class: 'form-check-input' %>
+              <%= f.label :available, 'Is available for use?', class: 'form-label' %>
+            </div>
 
             <div class="text-center">
               <%= f.submit 'Update Printer Model', class: 'btn btn-primary' %>

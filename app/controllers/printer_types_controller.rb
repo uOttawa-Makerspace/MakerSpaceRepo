@@ -65,7 +65,7 @@ class PrinterTypesController < StaffAreaController
   private
 
   def printer_type_params
-    params.require(:printer_type).permit(:name, :short_form)
+    params.require(:printer_type).permit(:name, :short_form, :available)
   end
 
   def get_printer_type
