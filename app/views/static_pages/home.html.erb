@@ -178,7 +178,8 @@
               <% product_group.each do |product| %>
                 <a href="<%= product[:link] %>" style="text-decoration: none; color: inherit;">
                   <div style="margin: 0 10px; border: 1px solid #ddd; border-radius: 5px; padding: 10px; width: 200px;">
-                    <%= image_tag product[:image_url], alt: product[:title], style: 'max-height: 225px; max-width: 100%; width: auto; height: auto; display: block; margin: 0 auto;' %>
+                  <%= image_tag product[:image_url], alt: product[:title], style: 'height: 200px; width: 100%; object-fit: cover; display: block; margin: 0 auto;' %>
+
                     <div style="text-align: center; margin-top: 10px;">
                       <h5 style="font-size: 1.1em; margin-bottom: 5px;"><%= product[:title] %></h5>
                     </div>
