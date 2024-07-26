@@ -13,10 +13,9 @@ class InstagramService
     uri = URI("#{INSTAGRAM_API_URL}#{@access_token}")
     response = Net::HTTP.get(uri)
     parsed_response = JSON.parse(response)
-    Rails.logger.debug("Instagram API response: #{parsed_response}")
+
     parsed_response
   rescue => e
-    Rails.logger.error("Failed to fetch Instagram posts: #{e.message}")
     []
   end
 end
