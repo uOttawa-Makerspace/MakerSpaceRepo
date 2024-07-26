@@ -1,5 +1,5 @@
+<% provide(:title, 'Manage 3D-Printers Usage') %>
 <section class="padding mt-4">
-
     <div class="title">Manage 3D-Printers Usage</div>
 
     <div class="text-center my-3 d-flex flex-row justify-content-center align-items-center gap-2">
@@ -37,7 +37,9 @@
       </div>
     <% end %>
     <hr />
-    <h2>Unavailable printers:</h2>
+    <%= render partial: 'printers/send_print_failed_form' %>
+    <hr />
+    <h2>Unavailable printers</h2>
     <% @printer_types.reject(&:available).each do |pt| %>
       <p><s><%= pt.name %></s></p>
     <% end %>
