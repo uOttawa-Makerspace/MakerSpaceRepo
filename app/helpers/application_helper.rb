@@ -76,8 +76,8 @@ module ApplicationHelper
 
   private
 
-  def page_title(curr_page = "")
-    base_title = "MakerRepo"
+  def page_title(curr_page = "", base_title: "MakerRepo")
+    #base_title = "MakerRepo"
     curr_page.empty? ? base_title : curr_page + " | " + base_title
   end
 
