@@ -8,6 +8,7 @@ class Admin::SettingsController < AdminAreaController
     @cat_option = CategoryOption.new
     @pi_option = PiReader.new
     @job_order_processed_message = JobOrderMessage.find_by(name: "processed")
+    @print_failed_message = JobOrderMessage.print_failed
     @area_option = AreaOption.new
   end
 
@@ -153,12 +154,27 @@ class Admin::SettingsController < AdminAreaController
   end
 
   def update_job_order_processed
-    if params[:job_order_message].present? &&
-         params[:job_order_message][:message].present?
-      PrintOrderMessage.find_by(name: "processed").update(
-        message: params[:job_order_message][:message]
-      )
-      flash[:notice] = "Message updated successfully!"
+    msg = params.dig(:job_order_message, :message)
+    if msg
+      if JobOrderMessage.find_by(name: "processed").update(message: msg)
+        flash[:notice] = "Message updated successfully!"
+      else
+        flash[:alert] = "Message update failed."
+      end
+    else
+      flash[:alert] = "Please enter a message."
+    end
+    redirect_to admin_settings_path
+  end
+
+  def update_print_failed_message
+    msg = params.dig(:job_order_message, :message)
+    if msg
+      if JobOrderMessage.print_failed.update(message: msg)
+        flash[:notice] = "Message updated successfully!"
+      else
+        flash[:alert] = "Message update failed"
+      end
     else
       flash[:alert] = "Please enter a message."
     end

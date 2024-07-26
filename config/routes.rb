@@ -328,6 +328,7 @@ Rails.application.routes.draw do
 
         # post 'rename_category'
         patch "update_job_order_processed"
+        patch "update_print_failed_message"
         post "remove_category"
         post "remove_area"
         post "add_equipment"
