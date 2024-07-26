@@ -66,14 +66,24 @@
       <br><br>
     </div>
     <div class="col-md-6">
-      <h5>Job Order Processed default email</h5><hr>
-      <p>[QUOTED_BALANCE] = Balance given to user, [PRINT_ID] = Job Order ID</p>
-      <%= form_for @job_order_processed_message, url: { controller: 'admin/settings', action: 'update_job_order_processed' } do |f| %>
-        <%= f.trix_editor :message, class: 'repo form-control mb-2', style: 'height: auto!important;' %>
+      <div class="mb-5">
+        <h5>Job Order Processed default email</h5><hr/>
+        <p>[QUOTED_BALANCE] = Balance given to user, [PRINT_ID] = Job Order ID</p>
+        <%= form_for @job_order_processed_message, url: update_job_order_processed_admin_settings_path do |f| %>
+          <%= f.trix_editor :message, class: 'repo form-control mb-2', style: 'height: auto!important;' %>
 
-        <%= f.submit 'Update', class: 'btn btn-primary' %>
-      <% end %>
-      <br><br>
+          <%= f.submit 'Update', class: 'btn btn-primary' %>
+        <% end %>
+      </div>
+      <div>
+        <h5>Print Failed default email</h5><hr/>
+        <p>[PRINTER_NUMBER] = Printer number, [PRINT_OWNER_NAME] = Print owner full name,
+          [PRINT_OWNER_USERNAME] = Print owner username, [STAFF_NOTES] = Staff notes</p>
+        <%= form_for @print_failed_message, url: update_print_failed_message_admin_settings_path do |f| %>
+          <%= f.trix_editor :message, class: 'repo form-control mb-2', style: 'height: auto!important;' %>
+          <%= f.submit 'Update', class: 'btn btn-primary' %>
+        <% end %>
+      </div>
     </div>
     <div class="col-md-6">
       <h5>Course Options</h5><hr>
