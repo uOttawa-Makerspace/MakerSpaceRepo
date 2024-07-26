@@ -33,15 +33,15 @@ class JobOrderMessage < ApplicationRecord
   end
 
   # Generated formatted message for printer
-  def format_print_failed(printer_id, user_id, notes)
-    printer = Printer.find_by_id(printer_id)
-    print_owner = User.find_by_id(user_id)
-    if printer && print_owner
+  def format_print_failed(printer, user, notes)
+    if printer && user
       message
         .gsub("[PRINTER_NUMBER]", printer.number)
-        .gsub("[PRINT_OWNER_NAME]", print_owner.name)
-        .gsub("[PRINT_OWNER_USERNAME]", print_owner.username)
+        .gsub("[PRINT_OWNER_NAME]", user.name)
+        .gsub("[PRINT_OWNER_USERNAME]", user.username)
         .gsub("[STAFF_NOTES]", notes)
+    else
+      message
     end
   end
 end

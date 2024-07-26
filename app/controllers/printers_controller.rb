@@ -95,6 +95,17 @@ class PrintersController < StaffAreaController
     redirect_to staff_printers_printers_path
   end
 
+  def send_print_failed_message_to_user
+    msg_params = params[:print_failed_message]
+    print_owner = User.find_by(username: msg_params[:username])
+    printer = Printer.find_by(number: msg_params[:printer_number])
+    MsrMailer.print_failed(
+      printer,
+      print_owner,
+      msg_params[:staff_notes]
+    ).deliver_now
+  end
+
   private
 
   def ensure_admin

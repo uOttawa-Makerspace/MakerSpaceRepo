@@ -304,6 +304,23 @@ class MsrMailer < ApplicationMailer
     mail(to: "makerspace@uottawa.ca", subject: "Weekly Reports", bcc: to)
   end
 
+  # This is sent by staff when a printer fails and it has someone
+  # assigned to it, so they come back and restart it instead of waiting
+  # 7 hours to receive a pile of plastic
+  def print_failed(printer, user, notes)
+    @message =
+      JobOrderMessage
+        .print_failed
+        .format_print_failed(printer, user, notes)
+        .html_safe
+    mail(
+      to: user.email,
+      reply_to: "makerspace@uottawa.ca",
+      bcc: "uottawa.makerepo@gmail.com",
+      subject: "Your 3D print on #{printer.number} has failed"
+    )
+  end
+
   # Not in use currently
   # def send_checklist_reminder(email, master_email)
   #   @email = email

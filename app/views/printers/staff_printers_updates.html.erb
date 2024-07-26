@@ -12,6 +12,23 @@
       </div>
     <% end %>
 
+    <div class="modal" tabindex="-1" id="printFailedModal" aria-labelledby="modal-title" >
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="modal-title" id="modal-title">Send print failed email</h1>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <%= render partial: 'printers/send_print_failed_form' %>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <% @printer_types.each_with_index do |pt, index| %>
       <div class="mb-3">
         <h2><%= pt.name %></h2>
@@ -21,6 +38,7 @@
           <th>User<span onclick="sortTable('table-<%= index %>', 1)"><%= fa_icon('arrow-down') %></span></th>
           <th>Time<span onclick="sortTable('table-<%= index %>', 2)"><%= fa_icon('arrow-down') %></span></th>
           <th>In Use<span onclick="sortTable('table-<%= index %>', 3)"><%= fa_icon('arrow-down') %></span></th>
+          <th>Action</th>
           </thead>
           <tbody>
           <% Printer.get_printer_ids(pt.name).sort_by do |printer_id|
@@ -42,6 +60,7 @@
                 <td><%= link_to last_session.user.username, user_path(last_session.user.username) %></td>
                 <td><%= last_session&.created_at&.strftime('%a, %d %b %Y at %I:%M%p') %></td>
                 <td><%= last_session.in_use? ? 'Yes' : 'No' %></td>
+                <td><button type="button" class="btn btn-danger btn-block" data-bs-toggle="modal" data-bs-target="#printFailedModal">Notify failed</button></td>
               <% end %>
             </tr>
           <% end %>
