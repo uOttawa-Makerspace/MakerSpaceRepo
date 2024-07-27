@@ -7,6 +7,7 @@
         <%= fields.select :printer_number, options_for_select(Printer.all.map { |p| [p.number, p.number] }), { selected: '' }, { id: 'printerNumberSelect', class: 'form-control form-select', required: true } %>
         <%= fields.label :staff_notes, 'Staff notes (optional):', class: 'form-label' %>
         <%#= fields.text_area :staff_notes, class: 'form-control'  %>
+        <%# NOTE: doing fields.trix_editor gives an exception here, not sure why %>
         <%= trix_editor_tag 'print_failed_message[staff_notes]' %>
     <% end %>
     <%= f.submit 'Send message', class: 'btn btn-primary' %>
