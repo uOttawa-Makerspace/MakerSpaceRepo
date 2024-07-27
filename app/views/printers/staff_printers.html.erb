@@ -37,7 +37,8 @@
       </div>
     <% end %>
     <hr />
-    <%= render partial: 'printers/send_print_failed_form' %>
+    <h2 id="failedPrintHeader">Send Print Failed Emails</h2>
+    <%= render partial: 'printers/send_print_failed_form', locals: { sent_from: 'printers' } %>
     <hr />
     <h2>Unavailable printers</h2>
     <% @printer_types.reject(&:available).each do |pt| %>

@@ -99,11 +99,26 @@ class PrintersController < StaffAreaController
     msg_params = params[:print_failed_message]
     print_owner = User.find_by(username: msg_params[:username])
     printer = Printer.find_by(number: msg_params[:printer_number])
-    MsrMailer.print_failed(
-      printer,
-      print_owner,
-      msg_params[:staff_notes]
-    ).deliver_now
+
+    if printer.nil?
+      flash[:alert] = "Error sending message, printer not found"
+    elsif print_owner.nil?
+      flash[:alert] = "Error sending message, username not found"
+    else
+      MsrMailer.print_failed(
+        printer,
+        print_owner,
+        msg_params[:staff_notes]
+      ).deliver_now
+
+      flash[:notice] = "Email sent successfully"
+    end
+
+    if msg_params[:sent_from] == "updates"
+      redirect_to staff_printers_updates_printers_url
+    elsif msg_params[:sent_from] == "printers"
+      redirect_to staff_printers_printers_url #(anchor: 'failedPrintHeader')
+    end
   end
 
   private

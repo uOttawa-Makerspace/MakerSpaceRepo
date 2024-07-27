@@ -1,6 +1,8 @@
-<h2>Send Print Failed Messages</h2>
 <%= form_with url: send_print_failed_message_to_user_printers_path, method: :patch do |f| %>
     <%= fields_for :print_failed_message do |fields| %>
+        <% if local_assigns[:sent_from] or true %>
+            <%= fields.hidden_field :sent_from, value: sent_from %>
+        <% end %>
         <%= fields.label :username, 'Print Owner name', class: 'form-label' %>
         <%= fields.select :username, '', {}, { id: 'user_dashboard_select', class: 'form-label form-select', required: true } %>
         <%= fields.label :printer_number, 'Printer Number', class: 'form-label' %>
@@ -8,7 +10,7 @@
         <%= fields.label :staff_notes, 'Staff notes (optional):', class: 'form-label' %>
         <%#= fields.text_area :staff_notes, class: 'form-control'  %>
         <%# NOTE: doing fields.trix_editor gives an exception here, not sure why %>
-        <%= trix_editor_tag 'print_failed_message[staff_notes]' %>
+        <%= trix_editor_tag 'print_failed_message[staff_notes]', {}, { id: 'print_failed_message_staff_notes', class: 'form-control' } %>
     <% end %>
     <%= f.submit 'Send message', class: 'btn btn-primary' %>
 <% end %>

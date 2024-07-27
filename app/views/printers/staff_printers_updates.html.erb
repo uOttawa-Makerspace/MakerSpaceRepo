@@ -20,7 +20,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <%= render partial: 'printers/send_print_failed_form' %>
+            <%= render partial: 'printers/send_print_failed_form', locals: { sent_from: 'updates' } %>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -60,7 +60,7 @@
                 <td><%= link_to last_session.user.username, user_path(last_session.user.username) %></td>
                 <td><%= last_session&.created_at&.strftime('%a, %d %b %Y at %I:%M%p') %></td>
                 <td><%= last_session.in_use? ? 'Yes' : 'No' %></td>
-                <td><button type="button" class="btn btn-danger btn-block" data-bs-toggle="modal" data-bs-target="#printFailedModal">Notify failed</button></td>
+                <td><button type="button" class="btn btn-danger btn-block print-failed-button" data-bs-toggle="modal" data-bs-target="#printFailedModal" data-username="<%= last_session.user.username %>" data-printer-number="<%= Printer.find(printer_id).number %>">Notify failed</button></td>
               <% end %>
             </tr>
           <% end %>
@@ -70,3 +70,4 @@
     <% end %>
   </div>
 </section>
+<%= vite_javascript_tag 'staff_printers_updates' %>
