@@ -31,7 +31,7 @@ ssh deploy@wiki-server.makerepo.com
 rails c -e development
 ```
 
-If the console exits after each exception, try doing `$SAFE=0` first
+If the console exits after each exception, try doing `$SAFE=0` first or place it in your `.pryrc` file
 
 5. Launch Rails Console (Staging/Production Environment)
 
