@@ -61,8 +61,9 @@ en:
       show_all: "Show All"
     newsletter:
       header: "Want to know when our next big event is happening?"
+      subtext: "Enter your email to sign up to our newsletter"
       sign_up: "Sign up"
     welcome:
-      welcome_to: "Welcome to MakeRepo"
+      welcome_to: "Welcome to MakerRepo"
       welcome_subheader: "This is <b>CEED's</b> repository website"
       hour_header: "Space hours this week"

@@ -1,6 +1,7 @@
 fr:
   home:
     show_more: "Voir en plus"
+    show_all: "Voir tout"
     follow_us: "Suivez-nous"
     explore: "Découvrir"
     staff_resources:
@@ -61,8 +62,9 @@ fr:
       show_all: "Voir tout"
     newsletter:
       header: "Voulez-vous savoir quand aura lieu le prochain événement?"
+      subtext: "Entrez votre email pour vous inscrire à notre infolettre"
       sign_up: "S'inscrire"
     welcome:
-      welcome_to: "Bienvenue à MakeRepo"
+      welcome_to: "Bienvenue à MakerRepo"
       welcome_subheader: "Voici le site de dépôt du <b>CEED</b>"
       hour_header: "Heures d'ouverture"

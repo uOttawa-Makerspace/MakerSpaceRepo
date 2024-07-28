@@ -210,7 +210,7 @@ Rails.application.routes.draw do
 
     resources :announcements
 
-    resources :badge_templates, only: %i[index edit update]
+    resources :badge_templates, only: %i[index edit update destroy]
 
     resources :job_service_groups,
               only: %i[index new create edit update destroy]
@@ -240,12 +240,12 @@ Rails.application.routes.draw do
         patch "restore_user"
         put "toggle_lock_user"
         get "manage_roles"
-        patch 'mass_update_roles', to: 'users#mass_update_roles'
+        patch "mass_update_roles", to: "users#mass_update_roles"
       end
-    member do
-         get 'fetch_spaces'
-      patch 'update_spaces'
-    end
+      member do
+        get "fetch_spaces"
+        patch "update_spaces"
+      end
     end
 
     resources :spaces, only: %i[index create edit] do
@@ -648,4 +648,3 @@ Rails.application.routes.draw do
     delete :delete, path: "delete/:id", as: "delete"
   end
 end
-

@@ -6,22 +6,22 @@
         <% @skills.each do |skill| %>
           <div class="accordion" id="accordion-skill-<%= skill.id %>">
             <div class="accordion-item">
-                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#panel-<%= skill.id %>" aria-expanded="false" aria-controls="panel-<%= skill.id %>">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#panel-<%= skill.id %>" aria-expanded="false" aria-controls="panel-<%= skill.id %>">
                 <h6 class="accordion-header" id="header-skill-<%= skill.id %>">
                     <%= skill.name %>
                   </h6>
                 </button>
-              <div id="panel-<%= skill.id %>" class="accordion-collapse collapse" aria-labelledby="header-skill-<%= skill.id %>" data-bs-parent="accordion-skill-<%= skill.id %>">
+              <div id="panel-<%= skill.id %>" class="accordion-collapse collapse p-3" aria-labelledby="header-skill-<%= skill.id %>" data-bs-parent="accordion-skill-<%= skill.id %>">
                   <% skill.trainings.each do |training| %>
                     <div class="accordion" id="accordion-training-<%= training.id %>">
                       <div class="accordion-item">
                         <div class="accordion-header" id="header-training-<%= training.id %>">
-                          <div class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#training-<%= training.id %>" aria-expanded="false" aria-controls="training-<%= training.id %>">
+                          <div class="accordion-button collapsed px-5" type="button" data-bs-toggle="collapse" data-bs-target="#training-<%= training.id %>" aria-expanded="false" aria-controls="training-<%= training.id %>">
                             <div class="col-4 float-end"></div>
                             <div class="col-4 text-center">
                               <button class="btn btn-link" type="button"><%= training.name %></button>
                             </div>
-                            <div class="col-4">
+                            <div class="col-4 pe-3">
                               <%= training_status(training.id, current_user.id).html_safe %>
                             </div>
                           </div>
@@ -60,26 +60,25 @@
           </div>
         <% end %>
       </div>
-      <% @certifications.each do |cert| %>
-        <div class="col-md-3 text-center my-3">
-          <b><%= cert.training.name %> </b> <br/>
-          <%= image_tag(cert.get_badge_path, class: 'skills-badges', alt: 'Medal image') %>
-          <br/>
-          <%= cert.training_session.level %>
-        </div>
-        <br/>
-        <br/>
-        <br/>
-      <% end %>
+      <div class="mt-3 row row-cols-5">
+        <% @certifications.each do |cert| %>
+          <div class="col">
+            <b><%= cert.training.name %> </b> <br/>
+            <%= image_tag(cert.get_badge_path, class: 'skills-badges', alt: 'Medal image') %>
+            <br/>
+            <%= cert.training_session.level %>
+          </div>
+        <% end %>
 
-      <% @remaining_trainings.each do |training| %>
-        <div class="col-md-3 text-center my-3">
-          <b><%= training.name %> </b> <br/>
-          <%= image_tag('badges/none.png', class: 'skills-badges', alt: 'No medal picture') %>
-          <br/>
-          None
-        </div>
-      <% end %>
+        <% @remaining_trainings.each do |training| %>
+          <div class="col">
+            <b><%= training.name %> </b> <br/>
+            <%= image_tag('badges/none.png', class: 'skills-badges', alt: 'No medal picture') %>
+            <br/>
+            None
+          </div>
+        <% end %>
+      </div>
     </div>
   </div>
 </section>

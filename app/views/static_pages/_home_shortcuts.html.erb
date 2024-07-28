@@ -3,7 +3,7 @@
         <h2><%= t('home.shortcuts.header') %></h2>
         <h3><%= t('home.shortcuts.recently_opened') %></h3>
         <% if signed_in? %>
-            <ul class="list-unstyled">
+            <ul class="list-unstyled mb-0">
                 <% begin JSON.parse(cookies[:recently_viewed]).each do |link, proj_name| %>
                 <li><a href="<%= link %>"><i class="fa fa-square text-secondary"></i> <%= proj_name %></a></li>
                 <% end %>
@@ -19,14 +19,14 @@
                     <li><%= line %></li>
                 <% end %>
             </ul>
-            <%= link_to t('home.show_more'), volunteer_program_info_path, class: 'mb-3 d-block' %>
+            <%= link_to t('home.show_more'), volunteers_path, class: 'mb-3 d-block' %>
             <h3><%= t('home.shortcuts.development_program_header') %></h3>
             <ul class="explanation-list">
                 <% t('home.shortcuts.development_program_desc').each do |line| %>
                     <li><%= line %></li>
                 <% end %>
             </ul>
-            <%= link_to t('home.show_more'), development_program_info_path %>
+            <%= link_to t('home.show_more'), development_programs_path %>
         <% end %>
     </div>
 </div>

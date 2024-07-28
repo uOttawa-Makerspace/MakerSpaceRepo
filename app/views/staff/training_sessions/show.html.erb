@@ -1,4 +1,13 @@
 <section class="page-contents">
+  <% unless @current_training_session.completed? %>
+    <script>
+     window.addEventListener('beforeunload', (event) => {
+       event.preventDefault();
+       // Included for legacy support, e.g. Chrome/Edge < 119
+       event.returnValue = true;
+     });
+    </script>
+  <% end %>
   <div class="padding">
     <div style="font-weight:bold;font-size:1.4em;">Training Session #<%= @current_training_session.id %></div>
 

@@ -1,11 +1,19 @@
 # frozen_string_literal: true
+
 require "googleauth"
 require "google/apis/calendar_v3"
 
 class VolunteersController < ApplicationController
   layout "volunteer"
   before_action :current_user
-  before_action :grant_access, except: [:join_volunteer_program]
+  before_action :grant_access,
+                except: %i[join_volunteer_program],
+                unless:
+                  lambda {
+                    controller_name == VolunteersController.controller_name &&
+                      action_name == "index"
+                  }
+
   before_action :grant_access_list,
                 only: %i[volunteer_list create_event delete_event new_event]
 

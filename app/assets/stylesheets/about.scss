@@ -1,4 +1,5 @@
 @import "lib";
+@import "./shared/variables";
 
 section#about {
   @include outer-container(60rem);
@@ -7,9 +8,9 @@ section#about {
   min-height: 29rem;
 
   div.title {
-    color: #366;
+    color: $primary;
     max-width: 40vmax;
-    border-bottom: 2px solid #366;
+    border-bottom: 2px solid $secondary;
     font-size: 2rem;
     font-weight: 700;
     padding: 3rem 0 0.75rem;
@@ -19,11 +20,11 @@ section#about {
   div.header {
     font-size: 20px;
     font-weight: 700;
-    color: #666;
+    color: $secondary;
   }
 
   div.about {
-    color: #366;
+    //color: $primary;
     font-size: 16px;
     line-height: 8mm;
   }

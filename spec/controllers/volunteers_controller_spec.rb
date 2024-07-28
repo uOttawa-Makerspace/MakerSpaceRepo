@@ -11,12 +11,12 @@ RSpec.describe VolunteersController, type: :controller do
         expect(response).to have_http_status(:success)
       end
 
-      it "should redirect user to root (regular user)" do
+      it "should show the index page (regular user)" do
         user = create(:user, :regular_user)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
         get :index
-        expect(response).to redirect_to root_path
+        expect(response).to have_http_status(:success)
       end
     end
   end

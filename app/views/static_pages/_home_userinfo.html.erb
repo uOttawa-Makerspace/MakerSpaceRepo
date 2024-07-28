@@ -1,15 +1,14 @@
-<div class="card home-card" id="home-userinfo">
+<div class="card home-card hide-on-mobile" id="home-userinfo">
     <% if signed_in? %>
     <div class="row">
-        <div class="col gy-5 text-center">
+        <div class="col gy-3 text-center">
             <%= image_tag @user.display_avatar, alt: 'Avatar' %>
             <%# why the '@', this isn't twitter%>
-                                      <p class="subtext">@<%= @user.username %></p>
-                                      <a class="btn btn-primary w-100"><%= t('home.userinfo.edit_profile') %></a>
-                                      <br />
-                                      <a class="btn btn-link"><%= t('home.userinfo.sign_out') %></a>
+            <p class="subtext">@<%= @user.username %></p>
+            <%= link_to t('home.userinfo.edit_profile'), settings_profile_path, class: 'btn btn-primary w-100' %>
+            <%= link_to t('home.userinfo.sign_out'), logout_path, class: 'btn btn-link' %>
         </div>
-        <div class="col gy-5">
+        <div class="col gy-3">
             <p class="full-name"><%= @user.name %></p>
             <p class="subtext"><%= @user.email %></p>
             <br />
