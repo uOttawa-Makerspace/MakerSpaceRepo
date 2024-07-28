@@ -17,19 +17,10 @@ class PrintersController < StaffAreaController
   end
 
   def add_printer
-    printer_type = PrinterType.find_by(id: params[:model_id])
-
     if params[:printer][:number].blank? || params[:model_id].blank?
       flash[:alert] = "Invalid printer model or number"
     else
-      number =
-        (
-          if printer_type.short_form.blank?
-            params[:printer][:number]
-          else
-            "#{printer_type.short_form} - #{params[:printer][:number]}"
-          end
-        )
+      number = params[:printer][:number]
 
       @printer = Printer.new(number: number, printer_type_id: params[:model_id])
       if @printer.save
@@ -98,7 +89,7 @@ class PrintersController < StaffAreaController
   def send_print_failed_message_to_user
     msg_params = params[:print_failed_message]
     print_owner = User.find_by(username: msg_params[:username])
-    printer = Printer.find_by(number: msg_params[:printer_number])
+    printer = Printer.find_by(id: msg_params[:printer_number])
 
     if printer.nil?
       flash[:alert] = "Error sending message, printer not found"

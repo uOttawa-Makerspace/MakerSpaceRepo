@@ -7,8 +7,12 @@ class Printer < ApplicationRecord
 
   validates :number, presence: true, uniqueness: { scope: :printer_type_id }
 
+  def name
+    "#{printer_type&.short_form} - #{number}"
+  end
+
   def model_and_number
-    "#{printer_type.name}; Number #{number}"
+    "#{printer_type.name}; #{name}"
   end
 
   def self.get_printer_ids(model)

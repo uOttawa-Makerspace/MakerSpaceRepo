@@ -42,18 +42,14 @@
           </thead>
           <tbody>
           <% Printer.get_printer_ids(pt.name).sort_by do |printer_id|
-            number_str = Printer.find(printer_id).number
-            prefix, main_part = number_str.split(' - ', 2)
-            numeric_part = main_part.scan(/\d+/)[0].to_i
-            alphabetic_part = main_part.gsub(/\d+/, '')
-            [prefix, alphabetic_part, numeric_part]
+            Printer.find(printer_id).name
           end.each do |printer_id|
             last_session = Printer.get_last_number_session(printer_id)
           %>
             <tr>
-              <td><%= Printer.find(printer_id).number %></td>
+              <td><%= Printer.find(printer_id).name %></td>
               <% if last_session.nil? %>
-                <% 3.times do %>
+                <% 4.times do %>
                   <td>-------</td>
                 <% end %>
               <% else %>
