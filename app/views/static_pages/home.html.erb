@@ -73,30 +73,41 @@
               </small>
             </h2>
             <p>Stay up to date with our socials</p>
-
+        
             <div id="carouselExampleControls" class="carousel slide" data-ride="carousel">
               <div class="carousel-inner">
-                <div class="carousel-item active">
-
-                </div>
-                <div class="carousel-item">
-
-                </div>
-                <div class="carousel-item">
-
-                </div>
+                <% @posts.take(24).each_slice(3).with_index do |posts_slice, index| %>
+                  <div class="carousel-item <%= 'active' if index.zero? %>">
+                    <div class="d-flex justify-content-center">
+                      <% posts_slice.each do |post| %>
+                        <div style="flex: 0 0 30%; max-width: 30%; padding: 10px;">
+                          <% if post['media_type'] == 'IMAGE' || post['media_type'] == 'CAROUSEL_ALBUM' %>
+                            <img src="<%= post['media_url'] %>" class="d-block w-100" alt="Instagram Image" style="width: 100%; height: 100%; object-fit: cover;">
+                          <% elsif post['media_type'] == 'VIDEO' %>
+                            <video class="d-block w-100" controls style="width: 100%; height: 100%; object-fit: cover;">
+                              <source src="<%= post['media_url'] %>" type="video/mp4">
+                              Your browser does not support the video tag.
+                            </video>
+                          <% end %>
+                        </div>
+                      <% end %>
+                    </div>
+                  </div>
+                <% end %>
               </div>
-              <a class="carousel-control-prev" href="#carouselExampleControls" role="button" data-slide="prev">
-                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                <span class="sr-only">Previous</span>
-              </a>
-              <a class="carousel-control-next" href="#carouselExampleControls" role="button" data-slide="next">
-                <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                <span class="sr-only">Next</span>
-              </a>
+              <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleControls" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true" style="background-color: black;"></span>
+                <span class="visually-hidden">Previous</span>
+              </button>
+              <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleControls" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true" style="background-color: black;"></span>
+                <span class="visually-hidden">Next</span>
+              </button>
             </div>
           </div>
         </div>
+        
+
 <!-- Explore Section -->
 <div class="card home-card mt-5">
   <div class="card-body">
@@ -142,6 +153,57 @@
     <% end %>
   </div>
 </div>
+<!-- Makerstore Section -->
+<div class="card home-card mt-5">
+  <div class="card-body">
+    <h2>
+      <b>Makerstore</b>
+      <small class="text-muted" style="font-size: 0.6em;">
+        <a href="https://makerstore.ca/">Show all</a>
+      </small>
+    </h2>
+    <p>Our Best Sellers</p>
+    <div id="carouselControls1" class="carousel slide" data-bs-ride="carousel">
+      <div class="carousel-inner">
+        <% [
+             { title: 'CEED Merch', image_url: 'redesign/merch.png', link: 'https://makerstore.ca/shop/ols/categories/merch' },
+             { title: 'Cables', image_url: 'redesign/cables.png', link: 'https://makerstore.ca/shop/ols/categories/cables' },
+             { title: 'Micro Controllers', image_url: 'redesign/microcontrollers.png', link: 'https://makerstore.ca/shop/ols/categories/micro-controllers' },
+             { title: 'LEDs', image_url: 'redesign/leds.png', link: 'https://makerstore.ca/shop/ols/categories/leds' },
+             { title: 'Materials', image_url: 'redesign/materials.png', link: 'https://makerstore.ca/shop/ols/categories/materials' },
+             { title: 'Motors', image_url: 'redesign/motors.png', link: 'https://makerstore.ca/shop/ols/categories/motors' }
+           ].each_slice(3).with_index do |product_group, group_index| %>
+          <div class="carousel-item <%= 'active' if group_index == 0 %>">
+            <div style="display: flex; justify-content: center;">
+              <% product_group.each do |product| %>
+                <a href="<%= product[:link] %>" style="text-decoration: none; color: inherit;">
+                  <div style="margin: 0 10px; border: 1px solid #ddd; border-radius: 5px; padding: 10px; width: 200px;">
+                  <%= image_tag product[:image_url], alt: product[:title], style: 'height: 200px; width: 100%; object-fit: cover; display: block; margin: 0 auto;' %>
+
+                    <div style="text-align: center; margin-top: 10px;">
+                      <h5 style="font-size: 1.1em; margin-bottom: 5px;"><%= product[:title] %></h5>
+                    </div>
+                  </div>
+                </a>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+      <button class="carousel-control-prev" type="button" data-bs-target="#carouselControls1" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true" style="background-color: black;"></span>
+        <span class="visually-hidden">Previous</span>
+      </button>
+      <button class="carousel-control-next" type="button" data-bs-target="#carouselControls1" data-bs-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true" style="background-color: black;"></span>
+        <span class="visually-hidden">Next</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+
+
 </div>
 
 

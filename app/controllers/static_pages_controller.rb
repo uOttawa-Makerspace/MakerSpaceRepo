@@ -18,7 +18,8 @@ class StaticPagesController < SessionsController
         [space_name, formatted_time]
       end
 
-    @recent_projects = Repository.public_repos.order(created_at: :desc).limit(15)
+    @recent_projects =
+      Repository.public_repos.order(created_at: :desc).limit(15)
 
     @user_skills =
       @user.certifications.map do |cert|
@@ -39,6 +40,16 @@ class StaticPagesController < SessionsController
         end
 
     @contact_info = ContactInfo.where(show_hours: true).order(name: :asc)
+
+    access_token =
+      Rails.application.credentials[Rails.env.to_sym][:instagram][:access_token]
+    Rails.logger.debug("Access Token: #{access_token}")
+
+    service = InstagramService.new(access_token)
+    posts_response = service.fetch_posts
+    Rails.logger.debug("Posts Response: #{posts_response}")
+
+    @posts = posts_response["data"] || []
   end
 
   def about
