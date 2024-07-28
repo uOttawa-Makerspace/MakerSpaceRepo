@@ -22,7 +22,10 @@
 
       <div class="mb-3">
         <%= f.label 'Printer Number', class: 'form-label' %>
-        <%= f.text_field :number, class: 'form-control' %>
+        <div class="input-group">
+          <div class="input-group-text"><span id="newPrinterCode">PrinterCode</span>-</div>
+          <%= f.text_field :number, class: 'form-control' %>
+        </div>
       </div>
 
       <%= f.submit 'Add', class: 'btn btn-primary' %>

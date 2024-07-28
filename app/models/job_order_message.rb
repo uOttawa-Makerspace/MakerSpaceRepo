@@ -36,7 +36,7 @@ class JobOrderMessage < ApplicationRecord
   def format_print_failed(printer, user, notes)
     if printer && user
       message
-        .gsub("[PRINTER_NUMBER]", printer.number)
+        .gsub("[PRINTER_NUMBER]", printer.name)
         .gsub("[PRINT_OWNER_NAME]", user.name)
         .gsub("[PRINT_OWNER_USERNAME]", user.username)
         .gsub("[STAFF_NOTES]", notes)
