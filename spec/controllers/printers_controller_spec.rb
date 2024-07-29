@@ -160,4 +160,57 @@ RSpec.describe PrintersController, type: :controller do
       end
     end
   end
+
+  describe "Send print failed emails to print owners" do
+    before(:all) { @printer = create :printer, :UM2P_01 }
+    before(:each) do
+      @print_owner = create :user, :regular_user
+      staff = create :user, :staff
+      session[:user_id] = staff.id
+    end
+
+    context "Send email to regular user as staff member" do
+      it "should send email to user's email" do
+        patch :send_print_failed_message_to_user,
+              params: {
+                print_failed_message: {
+                  username: @print_owner.username,
+                  printer_number: @printer.id,
+                  staff_notes: "Testing staff notes."
+                }
+              }
+        expect(flash[:alert]).to be_nil
+        expect(flash[:notice]).to eq("Email sent successfully")
+        expect(response).to have_http_status(:no_content)
+      end
+
+      it "should fail on unknown printers" do
+        patch :send_print_failed_message_to_user,
+              params: {
+                print_failed_message: {
+                  username: @print_owner.username,
+                  printer_number: 515, # fake id
+                  staff_notes: "Testing staff notes."
+                }
+              }
+        expect(flash[:notice]).to be_nil
+        expect(flash[:alert]).to eq("Error sending message, printer not found")
+        expect(response).to have_http_status(:no_content)
+      end
+
+      it "should fail on unknown users" do
+        patch :send_print_failed_message_to_user,
+              params: {
+                print_failed_message: {
+                  username: "fakename",
+                  printer_number: @printer.id, # fake id
+                  staff_notes: "Testing staff notes."
+                }
+              }
+        expect(flash[:notice]).to be_nil
+        expect(flash[:alert]).to eq("Error sending message, username not found")
+        expect(response).to have_http_status(:no_content)
+      end
+    end
+  end
 end

@@ -7,50 +7,18 @@ RSpec.describe Printer, type: :model do
     @pt_3 = create(:printer_type, :Random)
     @pt_4 = create(:printer_type, :Random)
 
-    @pt_1_1 =
-      create(
-        :printer,
-        number: "#{@pt_1.short_form} - 1",
-        printer_type_id: @pt_1.id
-      )
-    @pt_1_2 =
-      create(
-        :printer,
-        number: "#{@pt_1.short_form} - 2",
-        printer_type_id: @pt_1.id
-      )
-    @pt_2_1 =
-      create(
-        :printer,
-        number: "#{@pt_2.short_form} - 1",
-        printer_type_id: @pt_2.id
-      )
-    @pt_3_1 =
-      create(
-        :printer,
-        number: "#{@pt_3.short_form} - 1",
-        printer_type_id: @pt_3.id
-      )
-    @pt_3_2 =
-      create(
-        :printer,
-        number: "#{@pt_3.short_form} - 2",
-        printer_type_id: @pt_3.id
-      )
-    @pt_4_1 =
-      create(
-        :printer,
-        number: "#{@pt_4.short_form} - 1",
-        printer_type_id: @pt_4.id
-      )
+    @pt_1_1 = create(:printer, number: "1", printer_type_id: @pt_1.id)
+    @pt_1_2 = create(:printer, number: "2", printer_type_id: @pt_1.id)
+    @pt_2_1 = create(:printer, number: "1", printer_type_id: @pt_2.id)
+    @pt_3_1 = create(:printer, number: "1", printer_type_id: @pt_3.id)
+    @pt_3_2 = create(:printer, number: "2", printer_type_id: @pt_3.id)
+    @pt_4_1 = create(:printer, number: "1", printer_type_id: @pt_4.id)
   end
 
   describe "model method" do
     context "model and number" do
       it "should return the model and number" do
-        expect(@pt_1_1.model_and_number).to eq(
-          "#{@pt_1.name}; Number #{@pt_1_1.number}"
-        )
+        expect(@pt_1_1.model_and_number).to eq("#{@pt_1.name}; #{@pt_1_1.name}")
       end
     end
 
