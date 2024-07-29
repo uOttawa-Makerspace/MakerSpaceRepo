@@ -1,5 +1,10 @@
 FactoryBot.define do
   factory :printer_type do
+    # Because setting the same association twice creates it twice
+    # unless we create ourselves
+    initialize_with do
+      PrinterType.find_or_create_by(name: name, short_form: short_form)
+    end
     trait :UM2P do
       name { "Ultimaker 2+" }
       short_form { "UM2P" }
