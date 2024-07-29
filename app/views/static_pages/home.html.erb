@@ -1,23 +1,14 @@
 <section id="home">
-  <button class="d-xl-none" id="ShortcutButton" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas-shortcuts" aria-controls="offcanvas-shortcuts">
-    Shortcuts
-  </button>
   <div class="container-fluid">
-    <%= render partial: 'partials/announcements' %>
     <div class="row row-cols-3 g-0">
       <!--Left column -->
-      <!-- This becomes an offcanvas on mobile -->
-      <div class="col-auto col-xl-3 order-xl-0 order-1 offcanvas-lg offcanvas-start" id="offcanvas-shortcuts" aria-labelledby="shortcutsOffcanvasLabel">
-        <div class="offcanvas-header pb-0">
-          <h2 class="offcanvas-title" id="shortcutsOffcanvasLabel">Shortcuts</h2>
-          <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#offcanvas-shortcuts" aria-label="Close"></button>
-        </div>
+      <div class="col-xl  order-xl-0 order-1">
         <!-- Staff Resources -->
         <% if @user.staff? %>
         <div class="card home-card">
           <div class="card-body">
             <h2><%= t('home.staff_resources.header') %></h2>
-            <ul class="list-unstyled mb-0">
+            <ul class="list-unstyled">
               <% if @user.admin? %>
               <li><%= link_to t('home.staff_resources.admin_area'), admin_settings_path %></li>
               <% end %>
@@ -32,8 +23,8 @@
         <div class="card home-card">
           <div class="card-body">
             <h2><%= t('home.general_resources.header') %></h2>
-            <ul class="list-unstyled mb-0">
-              <li><%= link_to t('home.general_resources.makeroom'), sub_space_booking_index_path %></li>
+            <ul class="list-unstyled">
+              <li><a href=""><%= t('home.general_resources.makeroom') %></a></li>
               <li><%= link_to t('home.general_resources.job_orders'), job_orders_path %></li>
             </ul>
           </div>
@@ -43,27 +34,29 @@
         <%= render 'static_pages/home_development' if signed_in? %>
       </div>
       <!--Middle column -->
-      <div class="col-auto col-xl-6 order-xl-1 order-0">
-        <div class="card home-card" tabindex="0">
+      <div class="col-xl-6 order-xl-1 order-0">
+        <div class="card home-card">
           <div class="card-body">
-            <% if signed_in? %>
-            <h2> <%= t('home.welcome.welcome_to') %>, <span class="text-primary"> <%= @user.name %></span></h2>
-            <% else %>
-            <h2> <%= t('home.welcome.welcome_to') %></h2>
-            <% end %>
-            <p><%= t('home.welcome.welcome_subheader').html_safe %></p>
+            <h2> <%= t('home.welcome.welcome_to') %>,
+              <% if signed_in? %>
+                <span class="text-primary"> <%= @user.name %></span>
+              <% else %>
+                <span class="text-secondary">Not signed in</span>
+              <% end %>
+            </h2>
             <div class="row">
               <div class="col-auto">
-                <%= image_tag('redesign/site.png', alt: 'SITE', class: 'img-fluid hide-on-mobile') %>
+                <p><%= t('home.welcome.welcome_subheader').html_safe %></p>
+                <%= image_tag('redesign/site.png', alt: 'SITE', class: 'img-fluid') %>
               </div>
               <div class="col text-start align-self-center">
                 <h3 class="fw-bold"><%= t('home.welcome.hour_header') %></h3>
                 <div class="row border rounded">
                   <% @contact_info.each do |space| %>
-                  <div class="w-auto">
-                    <h4><%= space.name %></h4>
-                    <p><%= space.opening_hour.students.html_safe %></p>
-                  </div>
+                    <div class="w-auto">
+                      <h4><%= space.name %></h4>
+                      <p><%= space.opening_hour.students.html_safe %></p>
+                    </div>
                   <% end %>
                 </div>
               </div>
@@ -71,7 +64,7 @@
           </div>
         </div>
         <!-- Instagram Section -->
-        <div class="card home-card">
+        <div class="card home-card mt-5">
           <div class="card-body">
             <h2>
               <b>Instagram</b>
@@ -112,7 +105,8 @@
               </button>
             </div>
           </div>
-        </div>        
+        </div>
+        
 
 <!-- Explore Section -->
 <div class="card home-card mt-5">
@@ -138,27 +132,21 @@
                         <h5 style="font-size: 1.1em; margin-bottom: 5px;"><%= project.title %></h5>
                         <p style="color: #888; font-size: 0.9em;">by <%= project.user_username %></p>
                       </div>
-                      <% end %>
-                    </div>
                     <% end %>
                   </div>
-                </div>
                 <% end %>
               </div>
-              <button class="carousel-control-prev" type="button" data-bs-target="#carouselControls" data-bs-slide="prev">
-                <span class="carousel-control-prev-icon" aria-hidden="true" style="background-color: black;"></span>
-                <span class="visually-hidden">Previous</span>
-              </button>
-              <button class="carousel-control-next" type="button" data-bs-target="#carouselControls" data-bs-slide="next">
-                <span class="carousel-control-next-icon" aria-hidden="true" style="background-color: black;"></span>
-                <span class="visually-hidden">Next</span>
-              </button>
             </div>
-            <% else %>
-            <p>No recent projects available.</p>
-            <% end %>
-          </div>
+          <% end %>
         </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#carouselControls" data-bs-slide="prev">
+          <span class="carousel-control-prev-icon" aria-hidden="true" style="background-color: black;"></span>
+          <span class="visually-hidden">Previous</span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#carouselControls" data-bs-slide="next">
+          <span class="carousel-control-next-icon" aria-hidden="true" style="background-color: black;"></span>
+          <span class="visually-hidden">Next</span>
+        </button>
       </div>
     <% else %>
       <p>No recent projects available.</p>
@@ -218,34 +206,34 @@
 
 </div>
 
+
       <!--Right column -->
       <!-- Set a fixed column size to prevent Badges from expanding more -->
-      <div class="col-auto col-xl-3 order-xl-2 order-1">
+      <div class="col-xl order-xl-2 order-1">
         <%= render partial: 'home_userinfo' %>
         <%= render partial: 'home_badges' if signed_in? %>
         <%= render partial: 'home_skills' if signed_in? %>
         <div class="card home-card" id="home-big-newsletter">
           <div class="card-body">
             <h2><%= t('home.newsletter.header') %></h2>
-            <p><%= t('home.newsletter.subtext') %></p>
-            <form class="form-inline" target="_blank" action="https://uottawa.us15.list-manage.com/subscribe/post" method="POST">
+            <form target="_blank" action="https://uottawa.us15.list-manage.com/subscribe/post" method="POST">
               <input type="hidden" name="u" value="42154e6ef1a0a78237b7bc641">
               <% if I18n.locale == :en %>
-              <!-- English mailing list -->
-              <input type="hidden" name="id" value="4831770962">
+                <!-- English mailing list -->
+                <input type="hidden" name="id" value="4831770962">
               <% else %>
-              <!-- French mailing list -->
-              <input type="hidden" name="id" value="e9f400f571">
+                <!-- French mailing list -->
+                <input type="hidden" name="id" value="e9f400f571">
               <% end %>
               <input type="email" autocapitalize="none" autocorrect="off"
                      name="MERGE0" id="MERGE0" size="25" value=""
-                     class="form-control-input email-input mb-2" placeholder="email@email.com">
-              <%= submit_tag t('home.newsletter.sign_up'), class: 'btn btn-primary btn-sm' %>
+                     class="form-control email-input mb-2" placeholder="mail@mail.com">
+              <%= submit_tag t('home.newsletter.sign_up'), class: 'btn btn-primary' %>
             </form>
           </div>
         </div>
         <!-- Hidden for now :^) -->
-        <div class="card home-card">
+        <div class="card home-card" hidden>
           <div class="card-body">
             <h2>Workshops this week</h2>
             <div class="d-flex workshop-card">
