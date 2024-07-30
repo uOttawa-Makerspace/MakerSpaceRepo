@@ -6,7 +6,7 @@ class KioskController < ApplicationController
   def index
     # BUG this isn't adequate, MTC doesn't have capacity
     # make a separate 'allowed' list, maybe a column in space?
-    @spaces = Space.where.not(max_capacity: nil).pluck(:name, :id)
+    @spaces = Space.pluck(:name, :id)
   end
 
   def show
@@ -27,25 +27,27 @@ class KioskController < ApplicationController
       return
     end
 
+    # Get last session (if it exists)
+    last_session = LabSession.where(user: visitor, space: space).last
+    # session has not ended yet if last sign out time is in future
+    still_in_session = last_session.sign_out_time > Time.zone.now
     if params[:leaving]
-      # Sign out of space
-      LabSession.where(user: visitor).last.update(sign_out_time: Time.zone.now)
-      flash[
-        :notice
-      ] = "Signing out #{visitor.username} from kiosk #{space.name}"
+      # If last session hasn't ended yet, end it now.
+      last_session.update(sign_out_time: Time.zone.now) if still_in_session
+      flash[:notice] = "Signing out"
     elsif params[:entering]
-      # Sign in to space
-      LabSession.create!(
-        user: visitor,
-        space_id: space.id,
-        sign_in_time: Time.zone.now,
-        sign_out_time: Time.zone.now + 8.hours
-      )
-
+      # create unless last session is still active
+      if not still_in_session
+        LabSession.create(
+          user: visitor,
+          space_id: space.id,
+          sign_in_time: Time.zone.now,
+          sign_out_time: Time.zone.now + 8.hours
+        )
+      end
       flash[:notice] = "Signing in "
     end
-    # TODO maybe send email link instead?
-    #send_sign_link params[:emal]
+
     redirect_to kiosk_path(params[:kiosk_id])
   end
 
