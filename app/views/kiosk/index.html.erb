@@ -1,0 +1,8 @@
+<% provide :title, 'Kiosk Selection' %>
+<section class="container text-center">
+    <h1>Kiosk</h1>
+    <p>Choose a space to sign in to</p>
+    <% @spaces.each do |name, id| %>
+        <%= link_to name, kiosk_path(id), class: 'btn btn-primary' %>
+    <% end %>
+</section>
