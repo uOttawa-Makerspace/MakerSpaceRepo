@@ -57,6 +57,6 @@
                 </div>
             </section>
         </main>
-        <%#= vite_javascript_tag controller_name if File.exist?("#{Rails.root}/app/javascript/entrypoints/#{controller_name}.js") %>
+        <%= vite_javascript_tag controller_name if File.exist?("#{Rails.root}/app/javascript/entrypoints/#{controller_name}.js") %>
     </body>
 </html>
