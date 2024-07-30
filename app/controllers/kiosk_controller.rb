@@ -11,6 +11,7 @@ class KioskController < ApplicationController
 
   def show
     @space = Space.find_by(id: params[:id])
+    redirect_to kiosk_index_path unless @space
   end
 
   def edit
@@ -27,10 +28,13 @@ class KioskController < ApplicationController
       return
     end
 
+    head :unprocessable_entity if space.nil?
+
     # Get last session (if it exists)
     last_session = LabSession.where(user: visitor, space: space).last
     # session has not ended yet if last sign out time is in future
-    still_in_session = last_session.sign_out_time > Time.zone.now
+    still_in_session = last_session and
+      last_session.sign_out_time > Time.zone.now
     if params[:leaving]
       # If last session hasn't ended yet, end it now.
       last_session.update(sign_out_time: Time.zone.now) if still_in_session
