@@ -121,6 +121,10 @@ Rails.application.routes.draw do
 
   resources :printer_types, except: %i[show]
 
+  resources :kiosk, only: %i[index show edit] do
+    post :sign_email
+  end
+
   root "static_pages#home"
 
   # STATIC PAGES
