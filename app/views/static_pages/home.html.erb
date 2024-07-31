@@ -47,7 +47,7 @@
             <div class="row">
               <div class="col-auto">
                 <p><%= t('home.welcome.welcome_subheader').html_safe %></p>
-                <%= image_tag('redesign/site.png', alt: 'SITE', class: 'img-fluid') %>
+                <%= image_tag('redesign/home_page/site.png', alt: 'SITE', class: 'img-fluid') %>
               </div>
               <div class="col text-start align-self-center">
                 <h3 class="fw-bold"><%= t('home.welcome.hour_header') %></h3>
@@ -166,12 +166,12 @@
     <div id="carouselControls1" class="carousel slide" data-bs-ride="carousel">
       <div class="carousel-inner">
         <% [
-             { title: 'CEED Merch', image_url: 'redesign/merch.png', link: 'https://makerstore.ca/shop/ols/categories/merch' },
-             { title: 'Cables', image_url: 'redesign/cables.png', link: 'https://makerstore.ca/shop/ols/categories/cables' },
-             { title: 'Micro Controllers', image_url: 'redesign/microcontrollers.png', link: 'https://makerstore.ca/shop/ols/categories/micro-controllers' },
-             { title: 'LEDs', image_url: 'redesign/leds.png', link: 'https://makerstore.ca/shop/ols/categories/leds' },
-             { title: 'Materials', image_url: 'redesign/materials.png', link: 'https://makerstore.ca/shop/ols/categories/materials' },
-             { title: 'Motors', image_url: 'redesign/motors.png', link: 'https://makerstore.ca/shop/ols/categories/motors' }
+             { title: 'CEED Merch', image_url: 'redesign/home_page/merch.png', link: 'https://makerstore.ca/shop/ols/categories/merch' },
+             { title: 'Cables', image_url: 'redesign/home_page/cables.png', link: 'https://makerstore.ca/shop/ols/categories/cables' },
+             { title: 'Micro Controllers', image_url: 'redesign/home_page/microcontrollers.png', link: 'https://makerstore.ca/shop/ols/categories/micro-controllers' },
+             { title: 'LEDs', image_url: 'redesign/home_page/leds.png', link: 'https://makerstore.ca/shop/ols/categories/leds' },
+             { title: 'Materials', image_url: 'redesign/home_page/materials.png', link: 'https://makerstore.ca/shop/ols/categories/materials' },
+             { title: 'Motors', image_url: 'redesign/home_page/motors.png', link: 'https://makerstore.ca/shop/ols/categories/motors' }
            ].each_slice(3).with_index do |product_group, group_index| %>
           <div class="carousel-item <%= 'active' if group_index == 0 %>">
             <div style="display: flex; justify-content: center;">
