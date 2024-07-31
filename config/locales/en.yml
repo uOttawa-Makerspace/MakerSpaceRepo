@@ -293,22 +293,22 @@ en:
         workshop_2:
           header: "MTC Workshops"
           overview: "Milling, Turning, Welding, and Machining"
-      programs:
-        header: "Hungry for more?"
-        overview: "Build your resume and skillset"
-        sections:
-          program_1:
-            header: "Volunteer Program"
-            overview: "Get involved in the maker network and collaborate on cool projects!"
-          program_2:
-            header: "Development Program"
-            overview: "Get industry-standard certificates that are easy to share and verify."
-          program_3:
-            header: "Makerlaunch"
-            overview: "Get involved in the maker network and collaborate on cool projects!"
-          program_4:
-            header: "Simon nehme Summer entrepreneurship school"
-            overview: "Build on your ideas through workshops, panel discussion, and mentorship."
+    programs:
+      header: "Hungry for more?"
+      overview: "Build your resume and skillset"
+      sections:
+        program_1:
+          header: "Volunteer Program"
+          overview: "Get involved in the maker network and collaborate on cool projects!"
+        program_2:
+          header: "Development Program"
+          overview: "Get industry-standard certificates that are easy to share and verify."
+        program_3:
+          header: "Makerlaunch"
+          overview: "Get involved in the maker network and collaborate on cool projects!"
+        program_4:
+          header: "Simon nehme Summer entrepreneurship school"
+          overview: "Build on your ideas through workshops, panel discussion, and mentorship."
       next:
         title: "What’s next?"
         subtitle:
