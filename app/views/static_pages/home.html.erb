@@ -5,19 +5,19 @@
       <div class="col-xl  order-xl-0 order-1">
         <!-- Staff Resources -->
         <% if @user.staff? %>
-        <div class="card home-card">
-          <div class="card-body">
-            <h2><%= t('home.staff_resources.header') %></h2>
-            <ul class="list-unstyled">
-              <% if @user.admin? %>
-              <li><%= link_to t('home.staff_resources.admin_area'), admin_settings_path %></li>
-              <% end %>
-              <li><%= link_to t('home.staff_resources.staff_area'), staff_dashboard_index_path %></li>
-              <li><%= link_to t('home.staff_resources.shifts'), shifts_admin_shifts_path %></li>
-              <li><%= link_to t('home.staff_resources.job_order_admin'), admin_job_orders_path %></li>
-            </ul>
+          <div class="card home-card">
+            <div class="card-body">
+              <h2><%= t('home.staff_resources.header') %></h2>
+              <ul class="list-unstyled">
+                <% if @user.admin? %>
+                  <li><%= link_to t('home.staff_resources.admin_area'), admin_settings_path %></li>
+                <% end %>
+                <li><%= link_to t('home.staff_resources.staff_area'), staff_dashboard_index_path %></li>
+                <li><%= link_to t('home.staff_resources.shifts'), shifts_admin_shifts_path %></li>
+                <li><%= link_to t('home.staff_resources.job_order_admin'), admin_job_orders_path %></li>
+              </ul>
+            </div>
           </div>
-        </div>
         <% end %>
         <!-- General Resources -->
         <div class="card home-card">
@@ -73,7 +73,7 @@
               </small>
             </h2>
             <p>Stay up to date with our socials</p>
-        
+
             <div id="carouselExampleControls" class="carousel slide" data-ride="carousel">
               <div class="carousel-inner">
                 <% @posts.take(24).each_slice(3).with_index do |posts_slice, index| %>
@@ -108,103 +108,103 @@
         </div>
         
 
-<!-- Explore Section -->
-<div class="card home-card mt-5">
-  <div class="card-body">
-    <h2>
-      <b>Explore</b>
-      <small class="text-muted" style="font-size: 0.6em;">
-        <a href="/explore">Show all</a>
-      </small>
-    </h2>
-    <p>Browse completed student projects.</p>
-    <% if @recent_projects.present? %>
-      <div id="carouselControls" class="carousel slide" data-bs-ride="carousel">
-        <div class="carousel-inner">
-          <% @recent_projects.each_slice(3).with_index do |projects, index| %>
-            <div class="carousel-item <%= 'active' if index == 0 %>">
-              <div style="display: flex; justify-content: center;">
-                <% projects.each do |project| %>
-                  <div style="margin: 0 10px; border: 1px solid #ddd; border-radius: 5px; padding: 10px; width: 200px;">
-                    <%= link_to repository_path(project.user_username, project.slug), style: 'text-decoration: none; color: inherit;' do %>
-                      <%= image_tag project.photos.first.image, alt: project.title, style: 'max-height: 225px; max-width: 100%; width: auto; height: auto; display: block; margin: 0 auto;' if project.photos.first.present? %>
-                      <div style="text-align: center; margin-top: 10px;">
-                        <h5 style="font-size: 1.1em; margin-bottom: 5px;"><%= project.title %></h5>
-                        <p style="color: #888; font-size: 0.9em;">by <%= project.user_username %></p>
+        <!-- Explore Section -->
+        <div class="card home-card mt-5">
+          <div class="card-body">
+            <h2>
+              <b>Explore</b>
+              <small class="text-muted" style="font-size: 0.6em;">
+                <a href="/explore">Show all</a>
+              </small>
+            </h2>
+            <p>Browse completed student projects.</p>
+            <% if @recent_projects.present? %>
+              <div id="carouselControls" class="carousel slide" data-bs-ride="carousel">
+                <div class="carousel-inner">
+                  <% @recent_projects.each_slice(3).with_index do |projects, index| %>
+                    <div class="carousel-item <%= 'active' if index == 0 %>">
+                      <div style="display: flex; justify-content: center;">
+                        <% projects.each do |project| %>
+                          <div style="margin: 0 10px; border: 1px solid #ddd; border-radius: 5px; padding: 10px; width: 200px;">
+                            <%= link_to repository_path(project.user_username, project.slug), style: 'text-decoration: none; color: inherit;' do %>
+                              <%= image_tag project.photos.first.image, alt: project.title, style: 'max-height: 225px; max-width: 100%; width: auto; height: auto; display: block; margin: 0 auto;' if project.photos.first.present? %>
+                              <div style="text-align: center; margin-top: 10px;">
+                                <h5 style="font-size: 1.1em; margin-bottom: 5px;"><%= project.title %></h5>
+                                <p style="color: #888; font-size: 0.9em;">by <%= project.user_username %></p>
+                              </div>
+                            <% end %>
+                          </div>
+                        <% end %>
                       </div>
-                    <% end %>
+                    </div>
+                  <% end %>
+                </div>
+                <button class="carousel-control-prev" type="button" data-bs-target="#carouselControls" data-bs-slide="prev">
+                  <span class="carousel-control-prev-icon" aria-hidden="true" style="background-color: black;"></span>
+                  <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#carouselControls" data-bs-slide="next">
+                  <span class="carousel-control-next-icon" aria-hidden="true" style="background-color: black;"></span>
+                  <span class="visually-hidden">Next</span>
+                </button>
+              </div>
+            <% else %>
+              <p>No recent projects available.</p>
+            <% end %>
+          </div>
+        </div>
+        <!-- Makerstore Section -->
+        <div class="card home-card mt-5">
+          <div class="card-body">
+            <h2>
+              <b>Makerstore</b>
+              <small class="text-muted" style="font-size: 0.6em;">
+                <a href="https://makerstore.ca/">Show all</a>
+              </small>
+            </h2>
+            <p>Our Best Sellers</p>
+            <div id="carouselControls1" class="carousel slide" data-bs-ride="carousel">
+              <div class="carousel-inner">
+                <% [
+                     { title: 'CEED Merch', image_url: 'redesign/merch.png', link: 'https://makerstore.ca/shop/ols/categories/merch' },
+                     { title: 'Cables', image_url: 'redesign/cables.png', link: 'https://makerstore.ca/shop/ols/categories/cables' },
+                     { title: 'Micro Controllers', image_url: 'redesign/microcontrollers.png', link: 'https://makerstore.ca/shop/ols/categories/micro-controllers' },
+                     { title: 'LEDs', image_url: 'redesign/leds.png', link: 'https://makerstore.ca/shop/ols/categories/leds' },
+                     { title: 'Materials', image_url: 'redesign/materials.png', link: 'https://makerstore.ca/shop/ols/categories/materials' },
+                     { title: 'Motors', image_url: 'redesign/motors.png', link: 'https://makerstore.ca/shop/ols/categories/motors' }
+                   ].each_slice(3).with_index do |product_group, group_index| %>
+                  <div class="carousel-item <%= 'active' if group_index == 0 %>">
+                    <div style="display: flex; justify-content: center;">
+                      <% product_group.each do |product| %>
+                        <a href="<%= product[:link] %>" style="text-decoration: none; color: inherit;">
+                          <div style="margin: 0 10px; border: 1px solid #ddd; border-radius: 5px; padding: 10px; width: 200px;">
+                            <%= image_tag product[:image_url], alt: product[:title], style: 'height: 200px; width: 100%; object-fit: cover; display: block; margin: 0 auto;' %>
+
+                            <div style="text-align: center; margin-top: 10px;">
+                              <h5 style="font-size: 1.1em; margin-bottom: 5px;"><%= product[:title] %></h5>
+                            </div>
+                          </div>
+                        </a>
+                      <% end %>
+                    </div>
                   </div>
                 <% end %>
               </div>
-            </div>
-          <% end %>
-        </div>
-        <button class="carousel-control-prev" type="button" data-bs-target="#carouselControls" data-bs-slide="prev">
-          <span class="carousel-control-prev-icon" aria-hidden="true" style="background-color: black;"></span>
-          <span class="visually-hidden">Previous</span>
-        </button>
-        <button class="carousel-control-next" type="button" data-bs-target="#carouselControls" data-bs-slide="next">
-          <span class="carousel-control-next-icon" aria-hidden="true" style="background-color: black;"></span>
-          <span class="visually-hidden">Next</span>
-        </button>
-      </div>
-    <% else %>
-      <p>No recent projects available.</p>
-    <% end %>
-  </div>
-</div>
-<!-- Makerstore Section -->
-<div class="card home-card mt-5">
-  <div class="card-body">
-    <h2>
-      <b>Makerstore</b>
-      <small class="text-muted" style="font-size: 0.6em;">
-        <a href="https://makerstore.ca/">Show all</a>
-      </small>
-    </h2>
-    <p>Our Best Sellers</p>
-    <div id="carouselControls1" class="carousel slide" data-bs-ride="carousel">
-      <div class="carousel-inner">
-        <% [
-             { title: 'CEED Merch', image_url: 'redesign/merch.png', link: 'https://makerstore.ca/shop/ols/categories/merch' },
-             { title: 'Cables', image_url: 'redesign/cables.png', link: 'https://makerstore.ca/shop/ols/categories/cables' },
-             { title: 'Micro Controllers', image_url: 'redesign/microcontrollers.png', link: 'https://makerstore.ca/shop/ols/categories/micro-controllers' },
-             { title: 'LEDs', image_url: 'redesign/leds.png', link: 'https://makerstore.ca/shop/ols/categories/leds' },
-             { title: 'Materials', image_url: 'redesign/materials.png', link: 'https://makerstore.ca/shop/ols/categories/materials' },
-             { title: 'Motors', image_url: 'redesign/motors.png', link: 'https://makerstore.ca/shop/ols/categories/motors' }
-           ].each_slice(3).with_index do |product_group, group_index| %>
-          <div class="carousel-item <%= 'active' if group_index == 0 %>">
-            <div style="display: flex; justify-content: center;">
-              <% product_group.each do |product| %>
-                <a href="<%= product[:link] %>" style="text-decoration: none; color: inherit;">
-                  <div style="margin: 0 10px; border: 1px solid #ddd; border-radius: 5px; padding: 10px; width: 200px;">
-                  <%= image_tag product[:image_url], alt: product[:title], style: 'height: 200px; width: 100%; object-fit: cover; display: block; margin: 0 auto;' %>
-
-                    <div style="text-align: center; margin-top: 10px;">
-                      <h5 style="font-size: 1.1em; margin-bottom: 5px;"><%= product[:title] %></h5>
-                    </div>
-                  </div>
-                </a>
-              <% end %>
+              <button class="carousel-control-prev" type="button" data-bs-target="#carouselControls1" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true" style="background-color: black;"></span>
+                <span class="visually-hidden">Previous</span>
+              </button>
+              <button class="carousel-control-next" type="button" data-bs-target="#carouselControls1" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true" style="background-color: black;"></span>
+                <span class="visually-hidden">Next</span>
+              </button>
             </div>
           </div>
-        <% end %>
+        </div>
+
+
+
       </div>
-      <button class="carousel-control-prev" type="button" data-bs-target="#carouselControls1" data-bs-slide="prev">
-        <span class="carousel-control-prev-icon" aria-hidden="true" style="background-color: black;"></span>
-        <span class="visually-hidden">Previous</span>
-      </button>
-      <button class="carousel-control-next" type="button" data-bs-target="#carouselControls1" data-bs-slide="next">
-        <span class="carousel-control-next-icon" aria-hidden="true" style="background-color: black;"></span>
-        <span class="visually-hidden">Next</span>
-      </button>
-    </div>
-  </div>
-</div>
-
-
-
-</div>
 
 
       <!--Right column -->
