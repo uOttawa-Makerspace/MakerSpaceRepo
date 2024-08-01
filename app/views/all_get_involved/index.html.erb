@@ -82,22 +82,38 @@
     <hr />
 
     <!-- Team Space Section -->
-    <div class="text-center">
-      <h4 class="fw-bold"><%= t('all_get_involved.team.title') %></h4>
-      <p>
-        <%= t('all_get_involved.team.overview') %>
-      </p>
-    </div>
-    <hr />
+<div class="text-center" style="background-image: url('<%= asset_path('redesign/all_get_involved/image 26.png') %>'); background-size: cover; background-position: center; width: 100%; padding: 50px 0; color: white;">
+  <h4 class="fw-bold"><%= t('all_get_involved.team.title') %></h4>
+  <p>
+    <%= t('all_get_involved.team.overview') %>
+  </p>
+</div>
+<hr />
 
-    <!-- Bottom Section -->
-    <div class="text-center">
-      <p>
-        <%= t('all_get_involved.bottom.overview') %>
-      </p>
-      <p class="fw-bold">
-        <%= t('all_get_involved.bottom.quote') %>
-      </p>
+ <!-- Bottom Section -->
+<div class="text-center" style="background-color: #f8f9fa; padding: 50px 0;">
+  <p>
+    <%= t('all_get_involved.bottom.overview') %>
+  </p>
+  <p class="fw-bold">
+    <%= t('all_get_involved.bottom.quote') %>
+  </p>
+
+  <div class="container">
+    <div class="row">
+      <div class="col-md-4">
+        <img src="<%= asset_path('redesign/all_get_involved/Rectangle 101.png') %>" class="img-fluid" alt="About teams">
+        <p>About teams</p>
+      </div>
+      <div class="col-md-4">
+        <img src="<%= asset_path('redesign/all_get_involved/Rectangle 102.png') %>" class="img-fluid" alt="Follow our socials">
+        <p>Follow our socials</p>
+      </div>
+      <div class="col-md-4">
+        <img src="<%= asset_path('redesign/all_get_involved/Rectangle 99.png') %>" class="img-fluid" alt="Join a team">
+        <p>Join a team</p>
+      </div>
     </div>
   </div>
-</section>
+</div>
+
