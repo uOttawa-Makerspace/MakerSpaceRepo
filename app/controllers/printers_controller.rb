@@ -16,20 +16,21 @@ class PrintersController < StaffAreaController
         end
   end
 
-  def add_printer
-    printer_type = PrinterType.find_by(id: params[:model_id])
+  def update
+    if Printer.find_by(id: params[:id]).update(printer_params)
+      flash[:notice] = "Printer updated"
+    else
+      flash[:alert] = "Failed to update printer"
+    end
 
+    redirect_to printers_path
+  end
+
+  def add_printer
     if params[:printer][:number].blank? || params[:model_id].blank?
       flash[:alert] = "Invalid printer model or number"
     else
-      number =
-        (
-          if printer_type.short_form.blank?
-            params[:printer][:number]
-          else
-            "#{printer_type.short_form} - #{params[:printer][:number]}"
-          end
-        )
+      number = params[:printer][:number]
 
       @printer = Printer.new(number: number, printer_type_id: params[:model_id])
       if @printer.save
@@ -38,7 +39,12 @@ class PrintersController < StaffAreaController
         flash[:alert] = "Printer number already exists"
       end
     end
-    redirect_to printers_path
+    # pass the model to keep selection
+    if params[:model_id]&.empty?
+      redirect_to printers_path
+    else
+      redirect_to printers_path(model_id: params[:model_id])
+    end
   end
 
   def remove_printer
@@ -66,6 +72,12 @@ class PrintersController < StaffAreaController
         .pluck(:name, :id)
     @list_users.unshift(%w[Clear clear])
     @printer_types = PrinterType.all.order("lower(name) ASC")
+    # Sort by length then by value, solves the "1 then 10" issue
+    @printers_by_type =
+      Printer
+        .all
+        .sort_by { |p| [p.number.length, p.number] }
+        .group_by(&:printer_type)
   end
 
   def staff_printers_updates
@@ -95,7 +107,41 @@ class PrintersController < StaffAreaController
     redirect_to staff_printers_printers_path
   end
 
+  def send_print_failed_message_to_user
+    msg_params = params[:print_failed_message]
+    print_owner = User.find_by(username: msg_params[:username])
+    printer = Printer.find_by(id: msg_params[:printer_number])
+
+    if printer.nil?
+      flash[:alert] = "Error sending message, printer not found"
+    elsif print_owner.nil?
+      flash[:alert] = "Error sending message, username not found"
+    else
+      MsrMailer.print_failed(
+        printer,
+        print_owner,
+        msg_params[:staff_notes]
+      ).deliver_now
+
+      flash[:notice] = "Email sent successfully"
+    end
+
+    if msg_params[:sent_from] == "updates"
+      redirect_to staff_printers_updates_printers_url
+    elsif msg_params[:sent_from] == "printers"
+      redirect_to staff_printers_printers_url #(anchor: 'failedPrintHeader')
+    end
+  end
+
   private
+
+  def printer_params
+    if current_user.admin?
+      params.require(:printer).permit(:number, :maintenance)
+    else
+      params.require(:printer).permit(:maintenance)
+    end
+  end
 
   def ensure_admin
     @user = current_user

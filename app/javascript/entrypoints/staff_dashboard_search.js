@@ -1,4 +1,6 @@
 import TomSelect from "tom-select";
+// This is also used in printers/_send_print_failed_form
+// make sure you don't break that too
 if (!document.getElementById("user_dashboard_select").tomsselect) {
   new TomSelect("#user_dashboard_select", {
     searchField: ["name"],
@@ -30,9 +32,11 @@ if (!document.getElementById("user_dashboard_select").tomsselect) {
   });
 }
 let form = document.getElementById("sign_in_user_fastsearch");
-form.onsubmit = function () {
-  document.getElementById("sign_in_user_fastsearch_username").value = [
-    document.getElementById("user_dashboard_select").value,
-  ];
-  form.submit();
-};
+if (form) {
+  form.onsubmit = function () {
+    document.getElementById("sign_in_user_fastsearch_username").value = [
+      document.getElementById("user_dashboard_select").value,
+    ];
+    form.submit();
+  };
+}

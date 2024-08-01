@@ -109,11 +109,12 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :printers, only: %i[index] do
+  resources :printers, only: %i[index update] do
     collection do
       get :staff_printers
       get :staff_printers_updates
       patch :link_printer_to_user
+      patch :send_print_failed_message_to_user
       post :add_printer
       post :remove_printer
     end
@@ -332,6 +333,7 @@ Rails.application.routes.draw do
 
         # post 'rename_category'
         patch "update_job_order_processed"
+        patch "update_print_failed_message"
         post "remove_category"
         post "remove_area"
         post "add_equipment"

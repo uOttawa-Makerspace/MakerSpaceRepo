@@ -15,12 +15,12 @@
 
     <div class="mt-5">
       <div class="text-center"><%= link_to 'New Printer Model', new_printer_type_path, class: 'btn btn-success mb-3' %></div>
-
       <table class="table table-striped">
         <thead class="table-primary text-center">
           <th>Model</th>
           <th>Short Form</th>
           <th>Number of Printers</th>
+          <th>Is Available?</th>
           <th>Actions</th>
         </thead>
         <tbody>
@@ -29,9 +29,13 @@
             <td><%= pt.name %></td>
             <td><%= pt.short_form.empty? ? 'None' : pt.short_form %></td>
             <td><%= pt.printers.length %></td>
+            <td><i class="fa <%= pt.available ? 'fa-check text-success' : 'fa-times text-danger' %>"></i> <%= pt.available ? 'Yes' : 'No' %></td>
             <td class="d-flex flex-column align-items-center gap-1">
-              <%= link_to 'Edit', edit_printer_type_path(pt.id), class: 'btn btn-secondary' %>
-              <%= button_to 'Delete', printer_type_path(pt.id), method: :delete, class: 'btn btn-danger', data: { confirm: "Are you sure you want to delete this printer model AND all of it's associated printers" } if @user.admin? %>
+              <div class="btn-group">
+                <%= button_to((pt.available ? 'Disable' : 'Enable'), printer_type_path(pt, printer_type: { available: !pt.available }), method: :patch, class: "btn #{pt.available ? 'btn-danger' : 'btn-success'}") %>
+                <%= link_to 'Edit', edit_printer_type_path(pt.id), class: 'btn btn-secondary' %>
+                <%= button_to 'Delete', printer_type_path(pt.id), method: :delete, class: 'btn btn-danger', data: { confirm: "Are you sure you want to delete this printer model AND all of it's associated printers" } if @user.admin? %>
+              </div>
             </td>
           </tr>
         <% end %>

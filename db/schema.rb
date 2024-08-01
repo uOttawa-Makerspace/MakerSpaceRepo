@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2024_06_23_173424) do
+ActiveRecord::Schema[7.0].define(version: 2024_08_01_135848) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -729,6 +729,7 @@ ActiveRecord::Schema[7.0].define(version: 2024_06_23_173424) do
     t.string "short_form", default: ""
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "available", default: true
   end
 
   create_table "printers", id: :serial, force: :cascade do |t|
@@ -736,6 +737,7 @@ ActiveRecord::Schema[7.0].define(version: 2024_06_23_173424) do
     t.datetime "updated_at", precision: nil, null: false
     t.string "number"
     t.bigint "printer_type_id"
+    t.boolean "maintenance", default: false
     t.index ["printer_type_id"], name: "index_printers_on_printer_type_id"
   end
 
