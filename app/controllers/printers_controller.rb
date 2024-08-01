@@ -17,7 +17,12 @@ class PrintersController < StaffAreaController
   end
 
   def update
-    Printer.find_by(id: params[:id]).update(printer_params)
+    if Printer.find_by(id: params[:id]).update(printer_params)
+      flash[:notice] = "Printer updated"
+    else
+      flash[:alert] = "Failed to update printer"
+    end
+
     redirect_to printers_path
   end
 
@@ -35,7 +40,11 @@ class PrintersController < StaffAreaController
       end
     end
     # pass the model to keep selection
-    redirect_to printers_path(model_id: params[:model_id])
+    if params[:model_id]&.empty?
+      redirect_to printers_path
+    else
+      redirect_to printers_path(model_id: params[:model_id])
+    end
   end
 
   def remove_printer

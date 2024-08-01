@@ -1,6 +1,60 @@
 require "rails_helper"
 
 RSpec.describe PrintersController, type: :controller do
+  describe "POST /printer" do
+    before(:each) do
+      @printer = create(:printer, :UM2P_01)
+      @staff = create :user, :staff
+      @admin = create :user, :admin
+    end
+
+    context "Update printer records" do
+      it "should allow staff to set maintenance flag" do
+        session[:user_id] = @staff.id
+        post :update,
+             params: {
+               id: @printer.id,
+               printer: {
+                 maintenance: true
+               }
+             }
+        expect(response).to redirect_to printers_path
+        expect(Printer.find_by_id(@printer.id).maintenance).to eq(true)
+      end
+
+      it "should not allow staff to change numbers" do
+        session[:user_id] = @staff.id
+        post :update,
+             params: {
+               id: @printer.id,
+               printer: {
+                 number: "1234",
+                 maintenance: true
+               }
+             }
+        expect(response).to redirect_to printers_path
+        expect(Printer.find_by_id(@printer.id).maintenance).to eq(true)
+        expect(Printer.find_by_id(@printer.id).number).to eq(@printer.number)
+        expect(Printer.find_by_id(@printer.id).number).to_not eq("1234")
+      end
+
+      it "should allow admin to change numbers and maintenance flag" do
+        session[:user_id] = @admin.id
+        post :update,
+             params: {
+               id: @printer.id,
+               printer: {
+                 number: "1234",
+                 maintenance: true
+               }
+             }
+        expect(response).to redirect_to printers_path
+        expect(Printer.find_by_id(@printer.id).maintenance).to eq(true)
+        expect(Printer.find_by_id(@printer.id).number).to eq("1234")
+      end
+    end
+  end
+
   describe "POST /add_printer" do
     before(:each) do
       @printer_type = create(:printer_type, :Random)
@@ -18,7 +72,9 @@ RSpec.describe PrintersController, type: :controller do
                },
                model_id: @printer_type.id
              }
-        expect(response).to redirect_to printers_path
+        expect(response).to redirect_to printers_path(
+                      model_id: @printer_type.id
+                    )
         expect(flash[:notice]).to eq("Printer added successfully!")
       end
 
@@ -30,7 +86,9 @@ RSpec.describe PrintersController, type: :controller do
                },
                model_id: @printer_type.id
              }
-        expect(response).to redirect_to printers_path
+        expect(response).to redirect_to printers_path(
+                      model_id: @printer_type.id
+                    )
         expect(flash[:alert]).to eq("Invalid printer model or number")
       end
 
@@ -40,7 +98,7 @@ RSpec.describe PrintersController, type: :controller do
         expect(flash[:alert]).to eq("Invalid printer model or number")
       end
 
-      it "should not add the printer" do
+      it "should not add the printer and not set model id" do
         post :add_printer, params: { printer: { number: "" }, model_id: "" }
         expect(response).to redirect_to printers_path
         expect(flash[:alert]).to eq("Invalid printer model or number")
