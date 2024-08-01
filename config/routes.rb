@@ -109,7 +109,7 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :printers, only: %i[index] do
+  resources :printers, only: %i[index update] do
     collection do
       get :staff_printers
       get :staff_printers_updates

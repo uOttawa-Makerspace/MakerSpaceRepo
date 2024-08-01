@@ -43,41 +43,4 @@
     <% end %>
   </div>
 
-  <div class="mb-4">
-    <h2 class="text-center">All Printers</h2>
-    <div class="accordion">
-      <% @printers_by_type.each do |printer_type, printers| %>
-        <div class="accordion-item">
-          <h3 class="accordion-header">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-<%= printer_type.id %>" aria-expanded="false" aria-controls="collapse-<%= printer_type.id %>">
-              <%= printer_type.name %>
-            </button>
-          </h3>
-          <div id="collapse-<%= printer_type.id %>", class="accordion accordion-collapse collapse">
-            <table class="table table-striped">
-              <thead class="table-primary">
-                <tr>
-                  <td class="name-header">Name</td>
-                  <td>Action</td>
-                </tr>
-              </thead>
-              <tbody>
-                <% printers.each do |printer| %>
-                  <tr>
-                    <td><%= printer.name %></td>
-                    <td>
-                      <div class="btn-group" role="group" aria-label="Printer actions">
-                        <%= button_to 'Delete', remove_printer_printers_path, params: { remove_printer: printer.id },
-                                                                              data: { confirm: "Are you sure you want to delete #{printer.name}?" }, class: 'btn btn-danger' %>
-                      </div>
-                    </td>
-                  </tr>
-                <% end %>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      <% end %>
-    </div>
-  </div>
 </section>

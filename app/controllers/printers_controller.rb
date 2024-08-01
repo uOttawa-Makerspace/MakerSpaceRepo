@@ -14,12 +14,11 @@ class PrintersController < StaffAreaController
         .map do |pt|
           [pt.name + (pt.short_form.blank? ? "" : " (#{pt.short_form})"), pt.id]
         end
-    # Sort by length then by value, solves the "1 then 10" issue
-    @printers_by_type =
-      Printer
-        .all
-        .sort_by { |p| [p.number.length, p.number] }
-        .group_by(&:printer_type)
+  end
+
+  def update
+    Printer.find_by(id: params[:id]).update(printer_params)
+    redirect_to printers_path
   end
 
   def add_printer
@@ -64,6 +63,12 @@ class PrintersController < StaffAreaController
         .pluck(:name, :id)
     @list_users.unshift(%w[Clear clear])
     @printer_types = PrinterType.all.order("lower(name) ASC")
+    # Sort by length then by value, solves the "1 then 10" issue
+    @printers_by_type =
+      Printer
+        .all
+        .sort_by { |p| [p.number.length, p.number] }
+        .group_by(&:printer_type)
   end
 
   def staff_printers_updates
@@ -120,6 +125,14 @@ class PrintersController < StaffAreaController
   end
 
   private
+
+  def printer_params
+    if current_user.admin?
+      params.require(:printer).permit(:number, :maintenance)
+    else
+      params.require(:printer).permit(:maintenance)
+    end
+  end
 
   def ensure_admin
     @user = current_user
