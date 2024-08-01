@@ -1,0 +1,47 @@
+<div class="card home-card">
+    <div class="card-body">
+        <h2>
+            <b>Makerstore</b>
+            <small class="text-muted" style="font-size: 0.6em;">
+                <a href="https://makerstore.ca/">Show all</a>
+            </small>
+        </h2>
+        <p>Our Best Sellers</p>
+        <div id="carouselControls1" class="carousel slide" data-bs-ride="carousel">
+            <div class="carousel-inner">
+                <% [
+                     { title: 'CEED Merch', image_url: 'redesign/merch.png', link: 'https://makerstore.ca/shop/ols/categories/merch' },
+                     { title: 'Cables', image_url: 'redesign/cables.png', link: 'https://makerstore.ca/shop/ols/categories/cables' },
+                     { title: 'Micro Controllers', image_url: 'redesign/microcontrollers.png', link: 'https://makerstore.ca/shop/ols/categories/micro-controllers' },
+                     { title: 'LEDs', image_url: 'redesign/leds.png', link: 'https://makerstore.ca/shop/ols/categories/leds' },
+                     { title: 'Materials', image_url: 'redesign/materials.png', link: 'https://makerstore.ca/shop/ols/categories/materials' },
+                     { title: 'Motors', image_url: 'redesign/motors.png', link: 'https://makerstore.ca/shop/ols/categories/motors' }
+                   ].each_slice(3).with_index do |product_group, group_index| %>
+                    <div class="carousel-item <%= 'active' if group_index == 0 %>">
+                        <div style="display: flex; justify-content: center;">
+                            <% product_group.each do |product| %>
+                                <a href="<%= product[:link] %>" style="text-decoration: none; color: inherit;">
+                                    <div style="margin: 0 10px; border: 1px solid #ddd; border-radius: 5px; padding: 10px; width: 200px;">
+                                        <%= image_tag product[:image_url], alt: product[:title], style: 'height: 200px; width: 100%; object-fit: cover; display: block; margin: 0 auto;' %>
+
+                                        <div style="text-align: center; margin-top: 10px;">
+                                            <h5 style="font-size: 1.1em; margin-bottom: 5px;"><%= product[:title] %></h5>
+                                        </div>
+                                    </div>
+                                </a>
+                            <% end %>
+                        </div>
+                    </div>
+                <% end %>
+            </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#carouselControls1" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true" style="background-color: black;"></span>
+                <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#carouselControls1" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true" style="background-color: black;"></span>
+                <span class="visually-hidden">Next</span>
+            </button>
+        </div>
+    </div>
+</div>
