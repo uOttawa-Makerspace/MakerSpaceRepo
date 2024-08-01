@@ -38,6 +38,7 @@ $enable-negative-margins: true;
 @import "lib";
 @import "font-awesome";
 html {
+  font-size: 95%;
   height: 100%;
   overflow: auto;
 }
@@ -112,9 +113,9 @@ $dropdown-connection-size: 12px;
   }
 }
 
-h2 {
-  font-size: 1.75rem;
-}
+// h2 {
+//   font-size: 1.75rem;
+// }
 
 h1,
 h2,
