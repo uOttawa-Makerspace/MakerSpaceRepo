@@ -14,6 +14,12 @@ class PrintersController < StaffAreaController
         .map do |pt|
           [pt.name + (pt.short_form.blank? ? "" : " (#{pt.short_form})"), pt.id]
         end
+    # Sort by length then by value, solves the "1 then 10" issue
+    @printers_by_type =
+      Printer
+        .all
+        .sort_by { |p| [p.number.length, p.number] }
+        .group_by(&:printer_type)
   end
 
   def add_printer
@@ -29,7 +35,8 @@ class PrintersController < StaffAreaController
         flash[:alert] = "Printer number already exists"
       end
     end
-    redirect_to printers_path
+    # pass the model to keep selection
+    redirect_to printers_path(model_id: params[:model_id])
   end
 
   def remove_printer

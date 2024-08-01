@@ -42,7 +42,8 @@
           </thead>
           <tbody>
           <% Printer.get_printer_ids(pt.name).sort_by do |printer_id|
-            Printer.find(printer_id).name
+            printer = Printer.find(printer_id)
+            [printer.name.length, printer.name]
           end.each do |printer_id|
             last_session = Printer.get_last_number_session(printer_id)
           %>

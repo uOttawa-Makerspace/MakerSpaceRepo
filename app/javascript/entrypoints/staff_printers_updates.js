@@ -9,6 +9,7 @@ window.populateMessageModal = function (element) {
   user_select.setValue(element.dataset.username); // Set that username
   document.getElementById("printerNumberSelect").value =
     element.dataset.printerNumber; // printers are already loaded - this isn't a tomselect i think
+  document.getElementById("print_failed_message_staff_notes").value = "";
 };
 document.querySelectorAll(".print-failed-button").forEach((e) => {
   e.addEventListener("click", (event) => populateMessageModal(event.target));
