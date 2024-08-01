@@ -1,8 +1,16 @@
 <section id="home">
+  <button class="d-xl-none" id="ShortcutButton" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas-shortcuts" aria-controls="offcanvas-shortcuts">
+    Shortcuts
+  </button>
   <div class="container-fluid">
+    <%= render 'partials/announcements' %>
     <div class="row g-0">
       <!--Left column -->
-      <div class="col-xl  order-xl-0 order-1">
+      <div class="col-xl  order-xl-0 order-1 offcanvas-lg offcanvas-start" id="offcanvas-shortcuts" aria-labelledby="shortcutsOffcanvasLabel">
+        <div class="offcanvas-header pb-0">
+          <h2 class="offcanvas-title" id="shortcutsOffcanvasLabel">Shortcuts</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#offcanvas-shortcuts" aria-label="Close"></button>
+        </div>
         <!-- Staff Resources -->
         <% if @user.staff? %>
           <div class="card home-card">
