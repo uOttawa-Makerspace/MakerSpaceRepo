@@ -6,6 +6,10 @@ Three columns, the middle one being wider than the others.
 
 Mobile view is implemented by hiding tiles based on screen size. Bootstrap offcanvas is used for the shortcuts link up top
 
+## PLEASE USE REM IN CSS, DO NOT USE PX
+
+It's <%= Date.today.year %>, use rem in your CSS and not px. It's responsive for mobile dev and is based on the parent's font size (16px default, but we mess with it a bit). You can use it for everything, margin, padding, line height, anywhere instead of px. A lot of legacy css still uses px, feel free to be a hero and calculate the equivalent rem value :^)
+
 ## Navbar:
 
 `app/javascript/entrypoints/header.js` contains scripts for scrolling the header navbar. It is currently disabled and really would rather refactor it than just re-enable and patch it.
