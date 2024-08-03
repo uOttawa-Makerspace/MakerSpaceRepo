@@ -8,11 +8,11 @@
         </h2>
         <p>Browse completed student projects.</p>
         <% if @recent_projects.present? %>
-            <div id="carouselControls" class="carousel slide" data-bs-ride="carousel">
+            <div id="exploreCarousel" class="carousel slide">
                 <div class="carousel-inner">
                     <% @recent_projects.each_slice(3).with_index do |projects, index| %>
                         <div class="carousel-item <%= 'active' if index == 0 %>">
-                            <div style="display: flex; justify-content: center;">
+                            <div class="d-flex justify-content-center">
                                 <% projects.each do |project| %>
                                     <div style="margin: 0 10px; border: 1px solid #ddd; border-radius: 5px; padding: 10px; width: 200px;">
                                         <%= link_to repository_path(project.user_username, project.slug), style: 'text-decoration: none; color: inherit;' do %>
@@ -28,11 +28,11 @@
                         </div>
                     <% end %>
                 </div>
-                <button class="carousel-control-prev" type="button" data-bs-target="#carouselControls" data-bs-slide="prev">
+                <button class="carousel-control-prev" type="button" data-bs-target="#exploreCarousel" data-bs-slide="prev">
                     <span class="carousel-control-prev-icon" aria-hidden="true" style="background-color: black;"></span>
                     <span class="visually-hidden">Previous</span>
                 </button>
-                <button class="carousel-control-next" type="button" data-bs-target="#carouselControls" data-bs-slide="next">
+                <button class="carousel-control-next" type="button" data-bs-target="#exploreCarousel" data-bs-slide="next">
                     <span class="carousel-control-next-icon" aria-hidden="true" style="background-color: black;"></span>
                     <span class="visually-hidden">Next</span>
                 </button>
