@@ -364,6 +364,7 @@ td > .btn:not(:last-of-type) {
   height: 1.5rem;
 }
 
-#userwayAccessibilityIcon {
-  margin-bottom: 100%;
-}
+// The button is annoying on mobile
+// .userway_buttons_wrapper {
+//   margin-bottom: 5rem;
+// }
