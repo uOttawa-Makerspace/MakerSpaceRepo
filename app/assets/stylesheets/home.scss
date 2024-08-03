@@ -56,8 +56,11 @@ section#home {
 
   #home-userinfo {
     img {
+      //display: block;
       border-radius: 50%;
-      max-width: 80%;
+      object-fit: cover;
+      width: 13rem;
+      height: 13rem;
     }
 
     .full-name {
