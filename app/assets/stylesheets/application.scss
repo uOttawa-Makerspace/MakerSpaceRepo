@@ -31,6 +31,9 @@ $body-top-padding: 4rem; // equivalent to navbar height
 $input-border-radius: 0.25rem !default;
 $enable-negative-margins: true;
 
+// I wish but not everything uses rem
+//$font-size-base: 0.95rem;
+
 @import "bootstrap/scss/bootstrap";
 @import "toastr";
 @import "./shared/variables";
@@ -38,7 +41,7 @@ $enable-negative-margins: true;
 @import "lib";
 @import "font-awesome";
 html {
-  font-size: 95%;
+  font-size: 90%;
   height: 100%;
   overflow: auto;
 }
@@ -64,7 +67,6 @@ h1 {
   &:first-child:hover {
     background-color: $primary; // !important;
   }
-
   &:hover {
     color: #fff; // !important;
     background-color: $secondary; // !important;
@@ -189,7 +191,6 @@ u {
     color: #fff;
   }
   font-weight: 700;
-  font-size: 16px;
 }
 
 .btn-link {
