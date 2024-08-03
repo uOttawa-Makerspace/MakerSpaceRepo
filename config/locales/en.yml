@@ -84,7 +84,7 @@ en:
     contact_us: "Contact Us"
     help: "Help"
     newsletter_header: "Stay Connected"
-    newsletter_subtext: "Sign up to our newsletter stay up to date <br /> with the latest news from CEED."
+    newsletter_subtext: "Sign up to our newsletter stay up to date with the latest news from CEED."
     copyright_html: 'Copyright &copy; %s <a href="https://engineering.uottawa.ca/CEED">Centre for Entrepreneurship and Engineering Design</a> and <a href="https://github.com/uOttawa-Makerspace/MakerSpaceRepo/graphs/contributors">MakerRepo Contributors</a>'
   users:
     reset_password: "Reset password"
