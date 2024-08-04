@@ -14,7 +14,7 @@ class InstagramService
     response = Net::HTTP.get(uri)
     parsed_response = JSON.parse(response)
 
-    parsed_response
+    parsed_response || {}
   rescue => e
     []
   end

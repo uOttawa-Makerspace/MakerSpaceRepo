@@ -58,11 +58,9 @@ class StaticPagesController < SessionsController
 
     access_token =
       Rails.application.credentials[Rails.env.to_sym][:instagram][:access_token]
-    Rails.logger.debug("Access Token: #{access_token}")
 
     service = InstagramService.new(access_token)
     posts_response = service.fetch_posts
-    Rails.logger.debug("Posts Response: #{posts_response}")
 
     @posts = posts_response["data"] || []
   end
