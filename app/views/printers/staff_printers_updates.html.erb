@@ -1,14 +1,15 @@
+<% provide :title, '3D-Printer Usage Log' %>
 <section class="padding-10 mt-4">
   <div>
-    <div class="title">Last Updates 3D-Printers Usage</div>
+    <div class="title">3D-Printer Usage Log</div>
     <div class="text-center my-3 d-flex flex-row justify-content-center align-items-center gap-2">
       <%= link_to 'Manage Printer Usage', staff_printers_printers_path, class: 'btn btn-secondary' %>
     </div>
 
     <% if @user.admin? %>
       <div class="text-center my-3 d-flex flex-row justify-content-center align-items-center gap-2">
-        <%= link_to 'Manage Printers', printers_path, class: 'btn btn-primary' %>
-        <%= link_to 'Manage Printer Models', printer_types_path, class: 'btn btn-primary' %>
+        <%= link_to 'Add and Remove Printers', printers_path, class: 'btn btn-primary' %>
+        <%= link_to 'Manage Printer Types', printer_types_path, class: 'btn btn-primary' %>
       </div>
     <% end %>
 
