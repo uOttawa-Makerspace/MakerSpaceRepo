@@ -1,7 +1,31 @@
-@import "lib";
+//@import "lib";
 @import "./shared/variables";
 
 section#home {
+  .carouselCardPack {
+    scroll-snap-type: x mandatory;
+    white-space: nowrap;
+    text-wrap: nowrap;
+    overflow-y: clip; // hide vertical scroll bar
+    overflow-x: scroll;
+  }
+
+  .carouselCard {
+    width: 18rem;
+    height: 18rem;
+    scroll-snap-align: start;
+    display: inline-block;
+    //border: 1px solid gray;
+    img,
+    video {
+      display: block; // To keep videos in line
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+    }
+  }
+
   #ShortcutButton {
     width: 100%;
     border: none;
