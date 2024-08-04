@@ -64,19 +64,20 @@ h1 {
     color: #000; // !important;
     background-color: $primary; // !important;
   }
-  &:first-child:hover {
-    background-color: $primary; // !important;
-  }
   &:hover {
     color: #fff; // !important;
     background-color: $secondary; // !important;
-  }
-  &:first-child:hover {
-    background-color: $secondary; // !important;
+    &.dropdown-item-danger {
+      color: #fff;
+      background-color: var(--bs-danger);
+    }
   }
 
   font-weight: 700; // bold
   color: $secondary;
+  &.dropdown-item-danger {
+    color: var(--bs-danger);
+  }
 }
 
 // Add the triangle between the menu and the dropdown button
