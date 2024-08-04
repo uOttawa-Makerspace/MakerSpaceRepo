@@ -17,6 +17,8 @@ fr:
     shortcuts:
       header: "Raccourcis"
       recently_opened: "Récemment consultés"
+      no_recently_opened: "Aucune projet n'a été vu"
+      explore_more: "Explorer en plus"
       ask_for_sign_in: "Se connecter pour voir les tâches récemment consultés"
       volunteer_program_header: "Programme des Bénévoles"
       volunteer_program_desc:

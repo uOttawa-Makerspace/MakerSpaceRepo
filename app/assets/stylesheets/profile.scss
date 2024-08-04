@@ -1,3 +1,5 @@
+@import "shared/variables";
+
 .emp-profile {
   padding: 3%;
   margin-top: 3%;
@@ -89,7 +91,7 @@
 }
 .profile-tab .right-side {
   font-weight: 600;
-  color: #0062cc;
+  color: $primary;
 }
 
 .profile-tab {

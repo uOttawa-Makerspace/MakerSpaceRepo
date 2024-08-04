@@ -16,6 +16,8 @@ en:
     shortcuts:
       header: "Shortcuts"
       recently_opened: "Recently Opened"
+      no_recently_opened: "No recently viewed projects"
+      explore_more: "Explore more projects"
       ask_for_sign_in: "Sign in to view recently opened tasks"
       volunteer_program_header: "Volunteer Program"
       volunteer_program_desc:
