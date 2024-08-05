@@ -58,7 +58,8 @@
                 <td><%= link_to last_session.user.username, user_path(last_session.user.username) %></td>
                 <td><%= last_session&.created_at&.strftime('%a, %d %b %Y at %I:%M%p') %></td>
                 <td><%= last_session.in_use? ? 'Yes' : 'No' %></td>
-                <td><button type="button" class="btn btn-danger btn-block print-failed-button" data-bs-toggle="modal" data-bs-target="#printFailedModal" data-username="<%= last_session.user.username %>" data-printer-number="<%= Printer.find(printer_id).number %>">Notify failed</button></td>
+                <td><button type="button" class="btn btn-danger btn-block print-failed-button" data-bs-toggle="modal" data-bs-target="#printFailedModal"
+                            data-username="<%= last_session.user.username %>" data-printer-number="<%= printer_id %>">Notify failed</button></td>
               <% end %>
             </tr>
           <% end %>
