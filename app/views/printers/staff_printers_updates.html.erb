@@ -65,13 +65,24 @@
                     <p><%= printer.printer_issues.count %> Issues</p>
                 </td>
                 <td>
-                  <div class="btn-group" role="group" aria-label="Printer actions">
+                  <div class="btn-group text-nowrap" role="group" aria-label="Printer actions">
                     <button type="button" class="btn btn-danger btn-block print-failed-button" data-bs-toggle="modal" data-bs-target="#printFailedModal"
                             data-username="<%= last_session.user.username %>" data-printer-number="<%= printer_id %>">Notify failed</button>
-                    <%= link_to 'Report issue', new_printer_issue_path(report_printer: printer.id), class: 'btn btn-secondary' %>
-                    <%= button_to "#{printer.maintenance ? 'Unflag' : 'Flag'} Maintenance",
-                                  printer_path(printer, printer: { maintenance: !printer.maintenance }), method: :patch,
-                                                                                                         class: 'btn btn-primary' %>
+                    <div class="btn-group" role="group">
+                      <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown">Maintenance</button>
+                      <ul class="dropdown-menu">
+                        <li>
+                          <%= button_to printer_path(printer, printer: { maintenance: !printer.maintenance }), method: :patch, class: 'dropdown-item' do %>
+                            <%= "#{printer.maintenance ? 'Unflag' : 'Flag'} Maintenance" %>
+                          <% end %>
+                        </li>
+                        <li><hr class="dropdown-divider" /></li>
+                        <% PrinterIssue.summaries.each do |key, summary| %>
+                          <li><%= link_to summary, new_printer_issue_path(report_printer: printer, summary:), method: :get, class: 'dropdown-item', target: :_blank, rel: :noopener %></li>
+                        <% end %>
+                        <li><%= link_to 'Report other issue', new_printer_issue_path(report_printer: printer.id), class: 'dropdown-item' %></li>
+                      </ul>
+                    </div>
                   </div>
                 </td>
               <% end %>
