@@ -4,7 +4,7 @@
         <div class="row row-cols-2">
             <div class="form-group">
                 <%= f.label :summary, class: 'form-label w-100' %>
-                <%= f.text_field :summary, class: 'form-control', required: 'required' %>
+                <%= f.text_field :summary, class: 'form-control', required: 'required', value: params[:summary] %>
             </div>
             <div class="form-group">
                 <%= f.label :printer, class: 'form-label w-100' %>
@@ -12,7 +12,7 @@
             </div>
         </div>
         <div class="form-group my-3">
-            <%= f.label :description, class: 'form-label' %>
+            <%= f.label :description, value: 'Issue description (optional)', class: 'form-label' %>
             <%= f.trix_editor :description, class: 'form-control' %>
         </div>
         <%= f.submit 'Submit issue', class: 'btn btn-primary' %>

@@ -29,7 +29,7 @@ class PrinterIssuesController < StaffAreaController
       redirect_to @issue
     else
       flash[:alert] = "Failed to create issue"
-      render :new, status: :unprocessable_entity
+      redirect_to printer_issues_path
     end
   end
 
