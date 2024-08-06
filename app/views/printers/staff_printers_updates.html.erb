@@ -39,6 +39,7 @@
           <th>User<span onclick="sortTable('table-<%= index %>', 1)"><%= fa_icon('arrow-down') %></span></th>
           <th>Time<span onclick="sortTable('table-<%= index %>', 2)"><%= fa_icon('arrow-down') %></span></th>
           <th>In Use<span onclick="sortTable('table-<%= index %>', 3)"><%= fa_icon('arrow-down') %></span></th>
+          <th>Maintainance<span onclick="sortTable('table-<%= index %>', 4)"><%= fa_icon('arrow-down') %></span></th>
           <th>Action</th>
           </thead>
           <tbody>
@@ -49,7 +50,8 @@
             last_session = Printer.get_last_number_session(printer_id)
           %>
             <tr>
-              <td><%= Printer.find(printer_id).name %></td>
+              <% printer = Printer.find(printer_id) %>
+              <td><%= printer.name %></td>
               <% if last_session.nil? %>
                 <% 4.times do %>
                   <td>-------</td>
@@ -58,8 +60,20 @@
                 <td><%= link_to last_session.user.username, user_path(last_session.user.username) %></td>
                 <td><%= last_session&.created_at&.strftime('%a, %d %b %Y at %I:%M%p') %></td>
                 <td><%= last_session.in_use? ? 'Yes' : 'No' %></td>
-                <td><button type="button" class="btn btn-danger btn-block print-failed-button" data-bs-toggle="modal" data-bs-target="#printFailedModal"
-                            data-username="<%= last_session.user.username %>" data-printer-number="<%= printer_id %>">Notify failed</button></td>
+                <td>
+                  <i class="fa <%= printer.maintenance ? 'fa-check text-success' : 'fa-times text-danger' %>"></i> <%= printer.maintenance ? 'Yes' : 'No' %>
+                    <p><%= printer.printer_issues.count %> Issues</p>
+                </td>
+                <td>
+                  <div class="btn-group" role="group" aria-label="Printer actions">
+                    <button type="button" class="btn btn-danger btn-block print-failed-button" data-bs-toggle="modal" data-bs-target="#printFailedModal"
+                            data-username="<%= last_session.user.username %>" data-printer-number="<%= printer_id %>">Notify failed</button>
+                    <%= link_to 'Report issue', new_printer_issue_path(report_printer: printer.id), class: 'btn btn-secondary' %>
+                    <%= button_to "#{printer.maintenance ? 'Unflag' : 'Flag'} Maintenance",
+                                  printer_path(printer, printer: { maintenance: !printer.maintenance }), method: :patch,
+                                                                                                         class: 'btn btn-primary' %>
+                  </div>
+                </td>
               <% end %>
             </tr>
           <% end %>
