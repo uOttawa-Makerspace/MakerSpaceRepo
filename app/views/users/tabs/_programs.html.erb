@@ -18,6 +18,9 @@
           <button type="submit" class="btn btn-success">Change Programs</button>
         <% end %>
       <% else %>
+        <% if @repo_user.programs.nil? or @repo_user.programs.empty? %>
+          <%= link_to 'View all available programs', '/getInvolved' %>
+        <% end %>
         <% @repo_user.programs.each do |p| %>
           <label>
             <%= p.program_type %>

@@ -2,6 +2,7 @@
 
 @import "lib";
 @import "bootstrap/scss/bootstrap";
+@import "shared/variables";
 
 div.setting-title {
   line-height: 5rem !important;
@@ -78,7 +79,7 @@ div.setting-side-panel {
 
       &:hover:not(.vp-button) {
         padding-left: 0.4rem;
-        border-left: 5px solid #5f9ea0;
+        border-left: 5px solid $secondary;
       }
     }
   }
@@ -171,7 +172,7 @@ div.section-desc {
   max-width: 400px;
   padding: 10px 0;
   margin: 10px 0;
-  color: #5f9ea0;
+  color: $primary;
 
   & span {
     font: 400 0.75rem "Raleway", helvetica, sans-serif;

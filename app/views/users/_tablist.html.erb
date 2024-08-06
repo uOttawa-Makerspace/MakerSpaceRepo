@@ -24,31 +24,31 @@
       <ul class="dropdown-menu">
         <li class="nav-item">
           <% if current_user.admin? %>
-            <%= link_to 'Staff Unavailabilities', admin_shifts_path, class: 'nav-link text-secondary' %>
+            <%= link_to 'Staff Unavailabilities', admin_shifts_path, class: 'dropdown-item' %>
           <% else %>
-            <%= link_to 'Staff Unavailabilities', staff_availabilities_path, class: 'nav-link text-secondary' %>
+            <%= link_to 'Staff Unavailabilities', staff_availabilities_path, class: 'dropdown-item' %>
           <% end %>
         </li>
 
         <li class="nav-item">
-          <a class="nav-link text-secondary" id="certifications-tab" data-bs-toggle="tab"
+          <a class="dropdown-item" id="certifications-tab" data-bs-toggle="tab"
             href="#certifications-manager" role="tab" aria-controls="profile"
             aria-selected="false">Certifications</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link text-secondary" id="keys-tab" data-bs-toggle="tab" href="#keys-manager" role="tab" aria-controls="profile" aria-selected="false">
+          <a class="dropdown-item" id="keys-tab" data-bs-toggle="tab" href="#keys-manager" role="tab" aria-controls="profile" aria-selected="false">
             Staff Keys
           </a>
         </li>
         <% if @user.eql?(@repo_user) || @user.admin? %>
           <li class="nav-item">
-            <a class="nav-link text-secondary" id="key-certs-tab" data-bs-toggle="tab" href="#key-certs-manager" role="tab" aria-controls="profile" aria-selected="false">
+            <a class="dropdown-item" id="key-certs-tab" data-bs-toggle="tab" href="#key-certs-manager" role="tab" aria-controls="profile" aria-selected="false">
               Key Certifications
             </a>
           </li>
           <% if @user.eql?(@repo_user) %>
             <li class="nav-item">
-              <%= link_to 'Request Keys', key_requests_path, class: 'nav-link text-secondary' %>
+              <%= link_to 'Request Keys', key_requests_path, class: 'dropdown-item' %>
             </li>
           <% end %>
         <% end %>
@@ -60,12 +60,12 @@
          aria-haspopup="true" aria-expanded="false">Teams</a>
       <ul class="dropdown-menu">
         <li class="nav-item">
-          <a class="nav-link text-secondary" id="key-certs-tab" data-bs-toggle="tab" href="#key-certs-manager" role="tab" aria-controls="profile" aria-selected="false">
+          <a class="dropdown-item" id="key-certs-tab" data-bs-toggle="tab" href="#key-certs-manager" role="tab" aria-controls="profile" aria-selected="false">
             Key Certifications
           </a>
         </li>
         <li class="nav-item">
-          <%= link_to 'Request Keys', key_requests_path, class: 'nav-link text-secondary' %>
+          <%= link_to 'Request Keys', key_requests_path, class: 'dropdown-item' %>
         </li>
       </ul>
     </div>
@@ -77,16 +77,16 @@
         aria-haspopup="true" aria-expanded="false">Admin</a>
       <ul class="dropdown-menu">
         <li class="nav-item">
-          <a class="nav-link text-danger" id="roles-tab" data-bs-toggle="tab" href="#role-manager"
+          <a class="dropdown-item dropdown-item-danger" id="roles-tab" data-bs-toggle="tab" href="#role-manager"
             role="tab" aria-controls="profile" aria-selected="false">Role
             Manager</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link text-danger" id="quick-access-tab" data-bs-toggle="tab" href="#quick-access-manager" role="tab"
+          <a class="dropdown-item dropdown-item-danger" id="quick-access-tab" data-bs-toggle="tab" href="#quick-access-manager" role="tab"
             aria-controls="profile" aria-selected="false">Quick Access</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link text-danger" id="users-tab" data-bs-toggle="tab" href="#user-delete"
+          <a class="dropdown-item dropdown-item-danger" id="users-tab" data-bs-toggle="tab" href="#user-delete"
             role="tab" aria-controls="profile" aria-selected="false">
             Delete User
           </a>
