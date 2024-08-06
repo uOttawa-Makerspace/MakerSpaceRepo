@@ -1,21 +1,16 @@
+# frozen_string_literal: true
+
 class InstagramService
-  require "net/http"
-  require "json"
-
   INSTAGRAM_API_URL =
-    "https://graph.instagram.com/me/media?fields=id,caption,media_type,media_url,permalink&access_token="
+    "https://graph.instagram.com/me/media?fields=media_type,media_url,permalink,thumbnail_url&access_token="
 
-  def initialize(access_token)
-    @access_token = access_token
-  end
-
-  def fetch_posts
-    uri = URI("#{INSTAGRAM_API_URL}#{@access_token}")
-    response = Net::HTTP.get(uri)
-    parsed_response = JSON.parse(response)
-
+  def self.fetch_posts
+    access_token =
+      Rails.application.credentials[Rails.env.to_sym][:instagram][:access_token]
+    response = Excon.get("#{INSTAGRAM_API_URL}#{access_token}")
+    parsed_response = JSON.parse(response.body)
     parsed_response || {}
-  rescue => e
-    []
+  rescue StandardError
+    {}
   end
 end
