@@ -2,6 +2,7 @@
 
 class Printer < ApplicationRecord
   has_many :printer_sessions, dependent: :destroy
+  has_many :printer_issues
   belongs_to :printer_type, optional: true
   scope :show_options,
         -> {
