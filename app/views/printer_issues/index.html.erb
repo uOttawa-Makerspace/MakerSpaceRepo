@@ -1,0 +1,32 @@
+<div class="text-center">
+    <h1>Printer Issues</h1>
+    <%= link_to new_printer_issue_path, class: 'btn btn-success mb-3' do %>
+        <i class="fa fa-plus"></i> New Issue
+    <% end %>
+    <table class="table table-striped">
+        <thead class="table-primary">
+            <tr>
+                <td>ID</td>
+                <td>Summary</td>
+                <td>Description</td>
+                <td>Reporter</td>
+                <td>Reported on</td>
+                <td>Last updated</td>
+                <td>Action</td>
+            </tr>
+        </thead>
+        <tbody>
+            <% @issues.each do |issue| %>
+                <tr>
+                    <td><%= issue.id %></td>
+                    <td><%= issue.summary %></td>
+                    <td><%= issue.description.html_safe %></td>
+                    <td><%= issue.reporter.name %></td>
+                    <td><%= issue.created_at %></td>
+                    <td><%= issue.updated_at %></td>
+                    <td><%= button_to issue.active ? 'Close' : 'Reopen', printer_issue_path(issue, params: { active: !issue.active }), method: :patch, class: 'btn btn-secondary' %></td>
+                </tr>
+            <% end %>
+        </tbody>
+    </table>
+</div>

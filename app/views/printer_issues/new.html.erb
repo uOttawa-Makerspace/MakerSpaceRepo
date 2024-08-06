@@ -1,0 +1,18 @@
+<div class="text-center">
+    <h1>Create new issue</h1>
+    <%= form_with model: @issue, class: 'text-start' do |f| %>
+        <div class="row row-cols-2">
+            <div class="col">
+            <%= f.label :printer, class: 'form-label' %>
+            <%= f.select :printer, options_from_collection_for_select(@printers, :id, :name, params['report_printer']), {}, { autocomplete: 'off', class: 'form-select' } %>
+            </div>
+            <div>
+            <%= f.label :summary, class: 'form-label' %>
+            <%= f.text_field :summary, class: 'form-control' %>
+            </div>
+        </div>
+        <%= f.label :description, class: 'form-label' %>
+        <%= f.trix_editor :description, class: 'form-control' %>
+        <%= f.submit 'Submit issue', class: 'btn btn-primary' %>
+    <% end %>
+</div>
