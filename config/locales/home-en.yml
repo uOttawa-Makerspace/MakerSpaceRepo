@@ -3,7 +3,12 @@ en:
     show_more: "Show more"
     show_all: "Show All"
     follow_us: "Follow us"
-    explore: "Explore"
+    explore:
+      header: "Explore"
+      subtext: "Browse completed student projects"
+      no_projects: "No recent projects available..."
+    makerstore:
+      subtext: "Our Best Sellers"
     staff_resources:
       header: "Staff Resources"
       staff_area: "Staff Area"
