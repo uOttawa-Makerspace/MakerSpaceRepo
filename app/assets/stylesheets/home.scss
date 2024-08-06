@@ -148,8 +148,14 @@ section#home {
 
   .workshop-card {
     padding: 5px;
+    margin-bottom: 0.5rem;
     border: 1px solid $secondary;
     border-radius: 15px;
+    color: inherit;
+    &:hover {
+      color: $primary;
+      border-color: $primary;
+    }
     p {
       margin-bottom: 0;
       margin-top: 0;
