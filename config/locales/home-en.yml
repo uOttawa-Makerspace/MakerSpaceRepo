@@ -71,6 +71,8 @@ en:
       header: "Want to know when our next big event is happening?"
       subtext: "Enter your email to sign up to our newsletter"
       sign_up: "Sign up"
+    workshops:
+      header: "Workshops this week"
     welcome:
       welcome_to: "Welcome to MakerRepo"
       welcome_subheader: "This is <b>CEED's</b> repository website"
