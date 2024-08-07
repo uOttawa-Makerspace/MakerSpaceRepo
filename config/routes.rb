@@ -510,6 +510,7 @@ Rails.application.routes.draw do
 
   resources :volunteers, only: [:index] do
     collection do
+      get :index_redesign
       get :emails
       get :volunteer_list
       get :join_volunteer_program

@@ -11,14 +11,21 @@ class VolunteersController < ApplicationController
                 unless:
                   lambda {
                     controller_name == VolunteersController.controller_name &&
-                      action_name == "index"
+                      %w[index index_redesign].include?(action_name)
                   }
 
   before_action :grant_access_list,
                 only: %i[volunteer_list create_event delete_event new_event]
+  skip_before_action :grant_access, only: [:index_redesign]
+
+  # A little bit special with headers and all
+  layout "application", only: :index_redesign
 
   def index
     @user = current_user
+  end
+
+  def index_redesign
   end
 
   def emails
