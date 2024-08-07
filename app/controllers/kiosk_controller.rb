@@ -4,8 +4,6 @@ class KioskController < ApplicationController
   before_action :grant_access
 
   def index
-    # BUG this isn't adequate, MTC doesn't have capacity
-    # make a separate 'allowed' list, maybe a column in space?
     @spaces = Space.pluck(:name, :id)
   end
 
@@ -33,12 +31,12 @@ class KioskController < ApplicationController
     # Get last session (if it exists)
     last_session = LabSession.where(user: visitor, space: space).last
     # session has not ended yet if last sign out time is in future
-    still_in_session = last_session and
-      last_session.sign_out_time > Time.zone.now
+    still_in_session =
+      last_session && (last_session.sign_out_time > Time.zone.now)
     if params[:leaving]
       # If last session hasn't ended yet, end it now.
       last_session.update(sign_out_time: Time.zone.now) if still_in_session
-      flash[:notice] = "Signing out, bye #{visitor.name}"
+      flash[:notice] = "Signing out from #{space.name}, bye #{visitor.name}"
     elsif params[:entering]
       # create unless last session is still active
       if not still_in_session
@@ -49,7 +47,7 @@ class KioskController < ApplicationController
           sign_out_time: Time.zone.now + 8.hours
         )
       end
-      flash[:notice] = "Signing in, hello #{visitor.name}"
+      flash[:notice] = "Signing in to #{space.name}, hello #{visitor.name}"
     end
 
     redirect_to kiosk_path(params[:kiosk_id])
