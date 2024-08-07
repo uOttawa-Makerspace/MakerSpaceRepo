@@ -36,7 +36,7 @@ class KioskController < ApplicationController
     if params[:leaving]
       # If last session hasn't ended yet, end it now.
       last_session.update(sign_out_time: Time.zone.now) if still_in_session
-      flash[:notice] = "Signing out, bye #{visitor.name}"
+      flash[:notice] = "Signing out from #{space.name}, bye #{visitor.name}"
     elsif params[:entering]
       # create unless last session is still active
       if not still_in_session
@@ -47,7 +47,7 @@ class KioskController < ApplicationController
           sign_out_time: Time.zone.now + 8.hours
         )
       end
-      flash[:notice] = "Signing in, hello #{visitor.name}"
+      flash[:notice] = "Signing in to #{space.name}, hello #{visitor.name}"
     end
 
     redirect_to kiosk_path(params[:kiosk_id])
