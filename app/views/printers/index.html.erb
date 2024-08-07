@@ -1,6 +1,6 @@
+<% provide :title, 'Add and Remove Printers' %>
 <section class="padding mt-4">
-
-  <div class="title">Manage 3D-Printers</div>
+  <div class="title">Add and Remove 3D-Printers</div>
 
   <div class="text-center my-3 d-flex flex-row justify-content-center align-items-center gap-2">
     <%= link_to 'Manage Printer Usage', staff_printers_printers_path, class: 'btn btn-secondary' %>
@@ -9,7 +9,7 @@
 
   <% if @user.admin? %>
     <div class="text-center my-3 d-flex flex-row justify-content-center align-items-center gap-2">
-      <%= link_to 'Manage Printer Models', printer_types_path, class: 'btn btn-primary' %>
+      <%= link_to 'Edit Printer Types', printer_types_path, class: 'btn btn-primary' %>
     </div>
   <% end %>
 

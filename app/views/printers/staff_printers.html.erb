@@ -1,6 +1,6 @@
-<% provide(:title, 'Manage 3D-Printers Usage') %>
+<% provide(:title, 'Assign 3D-Printers') %>
 <section class="padding mt-4">
-  <div class="title">Manage 3D-Printers Usage</div>
+  <div class="title">Assign 3D-Printers</div>
 
   <div class="text-center my-3 d-flex flex-row justify-content-center align-items-center gap-2">
     <%= link_to 'View Last Updates All 3D-Printers', staff_printers_updates_printers_path, class: 'btn btn-secondary' %>
@@ -8,8 +8,8 @@
 
   <% if @user.admin? %>
     <div class="text-center my-3 d-flex flex-row justify-content-center align-items-center gap-2">
-      <%= link_to 'Manage Printers', printers_path, class: 'btn btn-primary' %>
-      <%= link_to 'Manage Printer Models', printer_types_path, class: 'btn btn-primary' %>
+      <%= link_to 'Add and Remove Printers', printers_path, class: 'btn btn-primary' %>
+      <%= link_to 'Manage Printer Types', printer_types_path, class: 'btn btn-primary' %>
     </div>
   <% end %>
 
@@ -39,11 +39,6 @@
   <hr />
   <h2 id="failedPrintHeader">Send Print Failed Emails</h2>
   <%= render partial: 'printers/send_print_failed_form', locals: { sent_from: 'printers' } %>
-  <hr />
-  <h2>Unavailable printers</h2>
-  <% @printer_types.reject(&:available).each do |pt| %>
-    <p><s><%= pt.name %></s></p>
-  <% end %>
   <hr />
   <div class="mb-4">
     <h2 class="text-center">All Printers</h2>

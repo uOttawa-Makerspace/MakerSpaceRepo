@@ -63,6 +63,7 @@ class User < ApplicationRecord
   has_many :supervised_spaces, through: :space_manager_joins, source: :space
   has_many :staff_spaces, dependent: :destroy
   has_many :spaces, through: :staff_spaces
+  has_many :printer_issues # Don't delete issues when a user is deleted
 
   MAX_AUTH_ATTEMPTS = 5
 

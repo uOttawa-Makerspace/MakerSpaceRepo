@@ -121,6 +121,10 @@ Rails.application.routes.draw do
   end
 
   resources :printer_types, except: %i[show]
+  resources :printer_issues,
+            only: %i[index show new create edit update destroy] do
+    collection { get :history }
+  end
 
   resources :kiosk, only: %i[index show edit] do
     post :sign_email

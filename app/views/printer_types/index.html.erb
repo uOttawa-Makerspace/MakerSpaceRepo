@@ -1,6 +1,7 @@
+<% provide :title, 'Manage Printer Types' %>
 <section class="padding-10 mt-4">
   <div>
-    <div class="title">Printer Models</div>
+    <div class="title">Manage Printer Types</div>
 
     <div class="text-center my-3 d-flex flex-row justify-content-center align-items-center gap-2">
       <%= link_to 'Manage Printer Usage', staff_printers_printers_path, class: 'btn btn-secondary' %>
@@ -9,7 +10,7 @@
 
     <% if @user.admin? %>
       <div class="text-center my-3 d-flex flex-row justify-content-center align-items-center gap-2">
-        <%= link_to 'Manage Printers', printers_path, class: 'btn btn-primary' %>
+        <%= link_to 'Add and Remove Printers', printers_path, class: 'btn btn-primary' %>
       </div>
     <% end %>
 
