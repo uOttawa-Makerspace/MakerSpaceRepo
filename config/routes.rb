@@ -527,6 +527,10 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :all_get_involved, only: [:index] do
+    collection { get :sign_up }
+  end
+
   resources :questions do
     collection { delete :delete_individually }
   end
