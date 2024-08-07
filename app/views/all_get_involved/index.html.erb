@@ -46,7 +46,7 @@
             <div class="card mb-4 shadow-lg d-flex flex-row p-3">
               <%= image_tag('redesign/all_get_involved/image 22 (1).png', class: 'card-img-left', style: 'width: 60%; object-fit: cover;', alt: 'Workshop 1') %>
               <div class="card-body d-flex flex-column justify-content-center">
-                <h5 class="card-title"><%= t('all_get_involved.workshops.sections.workshop_1.header') %></h5>
+                <h5 class="card-title" style="font-weight: bold;"><%= t('all_get_involved.workshops.sections.workshop_1.header') %></h5>
                 <p class="card-text"><%= t('all_get_involved.workshops.sections.workshop_1.overview') %></p>
                 <button class="btn btn-primary mt-auto">Sign Up</button>
               </div>
@@ -56,7 +56,7 @@
             <div class="card mb-4 shadow-lg d-flex flex-row p-3">
               <%= image_tag('redesign/all_get_involved/image 22.png', class: 'card-img-left', style: 'width: 60%; object-fit: cover;', alt: 'Workshop 2') %>
               <div class="card-body d-flex flex-column justify-content-center">
-                <h5 class="card-title"><%= t('all_get_involved.workshops.sections.workshop_2.header') %></h5>
+                <h5 class="card-title" style="font-weight: bold;"><%= t('all_get_involved.workshops.sections.workshop_2.header') %></h5>
                 <p class="card-text"><%= t('all_get_involved.workshops.sections.workshop_2.overview') %></p>
                 <button class="btn btn-primary mt-auto">Sign Up</button>
               </div>
@@ -97,7 +97,7 @@
               <div class="card mb-4 shadow-lg d-flex flex-row p-3">
                 <%= image_tag('redesign/all_get_involved/image 22 (2).png', class: 'card-img-left', style: 'width: 60%; object-fit: cover;', alt: 'Program 1') %>
                 <div class="card-body d-flex flex-column justify-content-center">
-                  <h5 class="card-title"><%= t('all_get_involved.programs.sections.program_1.header') %></h5>
+                  <h5 class="card-title" style="font-weight: bold;"><%= t('all_get_involved.programs.sections.program_1.header') %></h5>
                   <p class="card-text"><%= t('all_get_involved.programs.sections.program_1.overview') %></p>
                   <button class="btn btn-primary mt-auto">Sign Up</button>
                 </div>
@@ -107,7 +107,7 @@
               <div class="card mb-4 shadow-lg d-flex flex-row p-3">
                 <%= image_tag('redesign/all_get_involved/image 22-1.png', class: 'card-img-left', style: 'width: 60%; object-fit: cover;', alt: 'Program 2') %>
                 <div class="card-body d-flex flex-column justify-content-center">
-                  <h5 class="card-title"><%= t('all_get_involved.programs.sections.program_2.header') %></h5>
+                  <h5 class="card-title" style="font-weight: bold;"><%= t('all_get_involved.programs.sections.program_2.header') %></h5>
                   <p class="card-text"><%= t('all_get_involved.programs.sections.program_2.overview') %></p>
                   <button class="btn btn-primary mt-auto">Sign Up</button>
                 </div>
@@ -125,7 +125,7 @@
         <div class="card mb-4 shadow-lg d-flex flex-column p-3">
           <%= image_tag('redesign/all_get_involved/image 22-3.png', class: 'card-img-top', style: 'object-fit: cover;', alt: 'Program 1') %>
           <div class="card-body d-flex flex-column justify-content-center">
-            <h5 class="card-title"><%= t('all_get_involved.programs.sections.program_3.header') %></h5>
+            <h5 class="card-title" style="font-weight: bold;"><%= t('all_get_involved.programs.sections.program_3.header') %></h5>
             <p class="card-text"><%= t('all_get_involved.programs.sections.program_3.overview') %></p>
             <button class="btn btn-primary mt-auto">Sign Up</button>
           </div>
@@ -135,7 +135,7 @@
         <div class="card mb-4 shadow-lg d-flex flex-column p-3">
           <%= image_tag('redesign/all_get_involved/image 22-4.png', class: 'card-img-top', style: 'object-fit: cover;', alt: 'Program 2') %>
           <div class="card-body d-flex flex-column justify-content-center">
-            <h5 class="card-title"><%= t('all_get_involved.programs.sections.program_4.header') %></h5>
+            <h5 class="card-title" style="font-weight: bold;"><%= t('all_get_involved.programs.sections.program_4.header') %></h5>
             <p class="card-text"><%= t('all_get_involved.programs.sections.program_4.overview') %></p>
             <button class="btn btn-primary mt-auto">Sign Up</button>
           </div>
@@ -186,7 +186,7 @@
 </section>
 
 
-
+c
 
 
 
@@ -198,40 +198,43 @@
     <!-- Team Space Section -->
     <div>
       <div class="text-center" style="background-image: url('<%= asset_path('redesign/all_get_involved/image 26.png') %>'); background-size: cover; background-position: center; width: 100%; padding: 50px 0; color: white;">
-        <h4 class="fw-bold"><%= t('all_get_involved.team.title') %></h4>
+        <h1 class="fw-bold" style="color: white"><%= t('all_get_involved.team.title') %></h1>
         <p>
           <%= t('all_get_involved.team.overview') %>
         </p>
       </div>
     </div>
 
-    <!-- Bottom Section -->
-    <div>
-      <div class="text-center" style="background-color: #f8f9fa; padding: 50px 0;">
-        <p>
-          <%= t('all_get_involved.bottom.overview') %>
-        </p>
-        <p class="fw-bold">
-          <%= t('all_get_involved.bottom.quote') %>
-        </p>
-        <div class="container">
-          <div class="row">
-            <div class="col-md-4">
-              <img src="<%= asset_path('redesign/all_get_involved/Rectangle 101.png') %>" class="img-fluid" alt="About teams">
-              <p>About teams</p>
-            </div>
-            <div class="col-md-4">
-              <img src="<%= asset_path('redesign/all_get_involved/Rectangle 102.png') %>" class="img-fluid" alt="Follow our socials">
-              <p>Follow our socials</p>
-            </div>
-            <div class="col-md-4">
-              <img src="<%= asset_path('redesign/all_get_involved/Rectangle 99.png') %>" class="img-fluid" alt="Join a team">
-              <p>Join a team</p>
-            </div>
-          </div>
+ <!-- Bottom Section -->
+<div>
+  <div class="text-center" style="background-color: #f8f9fa; padding: 50px 0;">
+    <p>
+      <%= t('all_get_involved.bottom.overview') %>
+    </p>
+    <div class="container">
+      <div class="row">
+        <div class="col-md-3 text-start d-flex align-items-center">
+          <h1 class="fw-bold">
+            <%= t('all_get_involved.bottom.quote') %>
+          </h1>
+        </div>
+        <div class="col-md-3 text-center" style="font-weight: bold;">
+          <img src="<%= asset_path('redesign/all_get_involved/Rectangle 101.png') %>" class="img-fluid" alt="About teams">
+          <p>About teams</p>
+        </div>
+        <div class="col-md-3 text-center" style="font-weight: bold;">
+          <img src="<%= asset_path('redesign/all_get_involved/Rectangle 102.png') %>" class="img-fluid" alt="Follow our socials">
+          <p>Follow our socials</p>
+        </div>
+        <div class="col-md-3 text-center" style="font-weight: bold;">
+          <img src="<%= asset_path('redesign/all_get_involved/Rectangle 99.png') %>" class="img-fluid" alt="Join a team">
+          <p>Join a team</p>
         </div>
       </div>
     </div>
+  </div>
+</div>
+
 
   </div>
 </section>
