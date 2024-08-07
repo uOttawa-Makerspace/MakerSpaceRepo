@@ -1,7 +1,7 @@
 <div class="card home-card hide-on-mobile">
     <div class="card-body">
         <h2 class="d-inline me-2"><%= t('home.badges.header') %></h2><%= link_to t('home.show_all'), "#{user_path(@user.username)}#badges-manager" %>
-        <div class="text-nowrap overflow-scroll">
+        <div class="text-nowrap overflow-auto">
             <% if @user.badges.empty? %>
                 <p><%= t('home.badges.no_badges') %></p>
                 <p><%= link_to t('home.badges.no_badges_anchor'), development_programs_path %></p>

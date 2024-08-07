@@ -30,30 +30,12 @@ class PrinterTypesController < StaffAreaController
   end
 
   def update
-    previous_short_form = @printer_type.short_form
-
     if @printer_type.update(printer_type_params)
-      if previous_short_form != @printer_type.short_form
-        new_short_form = @printer_type.short_form
-
-        new_short_form += " - " if previous_short_form.blank?
-        previous_short_form += " - " if new_short_form.blank?
-
-        @printer_type.printers.each do |printer|
-          unless printer.number.start_with?(new_short_form) &&
-                   previous_short_form.blank?
-            new_number = printer.number.sub(previous_short_form, new_short_form)
-            printer.update(number: new_number)
-          end
-        end
-      end
-
-      redirect_to printer_types_path,
-                  notice: "Successfully updated printer model"
+      flash[:notice] = "Successfully updated printer model"
     else
       flash[:alert] = "Failed to update printer model"
-      redirect_back(fallback_location: printer_types_path)
     end
+    redirect_to printer_types_path
   end
 
   def destroy
@@ -65,7 +47,7 @@ class PrinterTypesController < StaffAreaController
   private
 
   def printer_type_params
-    params.require(:printer_type).permit(:name, :short_form)
+    params.require(:printer_type).permit(:name, :short_form, :available)
   end
 
   def get_printer_type

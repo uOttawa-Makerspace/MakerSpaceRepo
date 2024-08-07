@@ -102,7 +102,7 @@
                       </button>
                       <div class="dropdown-menu" aria-labelledby="rfidUnregisterMenu">
                         <h5 class="dropdown-header">RFID Card Set</h5>
-                        <%= button_to 'Un-Register RFID', staff_dashboard_unlink_rfid_path(card_number: @repo_user.rfid.card_number), action: :link_rfid, method: :put, class: 'dropdown-item text-danger' %>
+                        <%= button_to 'Un-Register RFID', staff_dashboard_unlink_rfid_path(card_number: @repo_user.rfid.card_number), action: :link_rfid, method: :put, class: 'dropdown-item dropdown-item-danger' %>
                       </div>
                     </div>
                   <% else %>

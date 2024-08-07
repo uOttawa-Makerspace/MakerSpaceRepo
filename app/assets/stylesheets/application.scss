@@ -31,6 +31,9 @@ $body-top-padding: 4rem; // equivalent to navbar height
 $input-border-radius: 0.25rem !default;
 $enable-negative-margins: true;
 
+// I wish but not everything uses rem
+//$font-size-base: 0.95rem;
+
 @import "bootstrap/scss/bootstrap";
 @import "toastr";
 @import "./shared/variables";
@@ -38,6 +41,7 @@ $enable-negative-margins: true;
 @import "lib";
 @import "font-awesome";
 html {
+  font-size: 90%;
   height: 100%;
   overflow: auto;
 }
@@ -60,20 +64,20 @@ h1 {
     color: #000; // !important;
     background-color: $primary; // !important;
   }
-  &:first-child:hover {
-    background-color: $primary; // !important;
-  }
-
   &:hover {
     color: #fff; // !important;
     background-color: $secondary; // !important;
-  }
-  &:first-child:hover {
-    background-color: $secondary; // !important;
+    &.dropdown-item-danger {
+      color: #fff;
+      background-color: var(--bs-danger);
+    }
   }
 
   font-weight: 700; // bold
   color: $secondary;
+  &.dropdown-item-danger {
+    color: var(--bs-danger);
+  }
 }
 
 // Add the triangle between the menu and the dropdown button
@@ -112,9 +116,9 @@ $dropdown-connection-size: 12px;
   }
 }
 
-h2 {
-  font-size: 1.75rem;
-}
+// h2 {
+//   font-size: 1.75rem;
+// }
 
 h1,
 h2,
@@ -188,7 +192,6 @@ u {
     color: #fff;
   }
   font-weight: 700;
-  font-size: 16px;
 }
 
 .btn-link {
@@ -363,6 +366,7 @@ td > .btn:not(:last-of-type) {
   height: 1.5rem;
 }
 
-#userwayAccessibilityIcon {
-  margin-bottom: 100%;
-}
+// The button is annoying on mobile
+// .userway_buttons_wrapper {
+//   margin-bottom: 5rem;
+// }

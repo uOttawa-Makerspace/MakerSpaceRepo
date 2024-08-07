@@ -1,23 +1,31 @@
 <section id="home">
+  <button class="d-xl-none" id="ShortcutButton" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas-shortcuts" aria-controls="offcanvas-shortcuts">
+    Shortcuts
+  </button>
   <div class="container-fluid">
-    <div class="row row-cols-3 g-0">
+    <%= render 'partials/announcements' %>
+    <div class="row g-0">
       <!--Left column -->
-      <div class="col-xl  order-xl-0 order-1">
+      <div class="col-xl  order-xl-0 order-1 offcanvas-lg offcanvas-start" id="offcanvas-shortcuts" aria-labelledby="shortcutsOffcanvasLabel">
+        <div class="offcanvas-header pb-0">
+          <h2 class="offcanvas-title" id="shortcutsOffcanvasLabel">Shortcuts</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#offcanvas-shortcuts" aria-label="Close"></button>
+        </div>
         <!-- Staff Resources -->
         <% if @user.staff? %>
-        <div class="card home-card">
-          <div class="card-body">
-            <h2><%= t('home.staff_resources.header') %></h2>
-            <ul class="list-unstyled">
-              <% if @user.admin? %>
-              <li><%= link_to t('home.staff_resources.admin_area'), admin_settings_path %></li>
-              <% end %>
-              <li><%= link_to t('home.staff_resources.staff_area'), staff_dashboard_index_path %></li>
-              <li><%= link_to t('home.staff_resources.shifts'), shifts_admin_shifts_path %></li>
-              <li><%= link_to t('home.staff_resources.job_order_admin'), admin_job_orders_path %></li>
-            </ul>
+          <div class="card home-card">
+            <div class="card-body">
+              <h2><%= t('home.staff_resources.header') %></h2>
+              <ul class="list-unstyled">
+                <% if @user.admin? %>
+                  <li><%= link_to t('home.staff_resources.admin_area'), admin_settings_path %></li>
+                <% end %>
+                <li><%= link_to t('home.staff_resources.staff_area'), staff_dashboard_index_path %></li>
+                <li><%= link_to t('home.staff_resources.shifts'), shifts_admin_shifts_path %></li>
+                <li><%= link_to t('home.staff_resources.job_order_admin'), admin_job_orders_path %></li>
+              </ul>
+            </div>
           </div>
-        </div>
         <% end %>
         <!-- General Resources -->
         <div class="card home-card">
@@ -190,22 +198,6 @@
           </div>
         <% end %>
       </div>
-      <button class="carousel-control-prev" type="button" data-bs-target="#carouselControls1" data-bs-slide="prev">
-        <span class="carousel-control-prev-icon" aria-hidden="true" style="background-color: black;"></span>
-        <span class="visually-hidden">Previous</span>
-      </button>
-      <button class="carousel-control-next" type="button" data-bs-target="#carouselControls1" data-bs-slide="next">
-        <span class="carousel-control-next-icon" aria-hidden="true" style="background-color: black;"></span>
-        <span class="visually-hidden">Next</span>
-      </button>
-    </div>
-  </div>
-</div>
-
-
-
-</div>
-
 
       <!--Right column -->
       <!-- Set a fixed column size to prevent Badges from expanding more -->
@@ -216,6 +208,7 @@
         <div class="card home-card" id="home-big-newsletter">
           <div class="card-body">
             <h2><%= t('home.newsletter.header') %></h2>
+            <p><%= t('home.newsletter.subtext') %></p>
             <form target="_blank" action="https://uottawa.us15.list-manage.com/subscribe/post" method="POST">
               <input type="hidden" name="u" value="42154e6ef1a0a78237b7bc641">
               <% if I18n.locale == :en %>
@@ -233,20 +226,21 @@
           </div>
         </div>
         <!-- Hidden for now :^) -->
-        <div class="card home-card" hidden>
+        <div class="card home-card">
           <div class="card-body">
-            <h2>Workshops this week</h2>
-            <div class="d-flex workshop-card">
-              <div class="text-center workshop-date">
-                <p style="font-size: 2rem;">22<br /> <span style="font-size: 1.5rem">Dec</span></p>
-              </div>
-              <div class="workshop-desc">
-                <p class="workshop-title">Easter Themed 3D Printing Workshop - Beginner</p>
-                <p class="workshop-date-side">Thu, Mar 28, 2:30 PM</p>
-                <p class="workshop-cost">Free</p>
-              </div>
-            </div>
-            <!-- <p> No workshops... yet</p> -->
+            <h2><%= t('home.workshops.header') %></h2>
+            <% 5.times do %>
+              <a class="d-flex workshop-card" href="#">
+                <div class="text-center workshop-date">
+                  <p style="font-size: 2rem;">22<br /> <span style="font-size: 1.5rem">Dec</span></p>
+                </div>
+                <div class="workshop-desc">
+                  <p class="workshop-title">Easter Themed 3D Printing Workshop - Beginner</p>
+                  <p class="workshop-date-side">Thu, Mar 28, 2:30 PM</p>
+                  <p class="workshop-cost">Free</p>
+                </div>
+              </a>
+            <% end %>
           </div>
         </div>
 </section>

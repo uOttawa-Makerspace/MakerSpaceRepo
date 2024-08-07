@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="<%= I18n.locale %>">
+    <head>
+        <title><%= @space.name %> Kiosk</title>
+        <%= favicon_link_tag 'C_square.png' %>
+        <%= vite_javascript_tag 'application', media: 'all', 'data-turbo-track': 'reload' %>
+        <%= stylesheet_link_tag 'application', media: 'all', 'data-turbo-track': 'reload' %>
+        <%= vite_stylesheet_tag 'application.scss', media: 'all', 'data-turbo-track': 'reload' %>
+        <%= csrf_meta_tags %>
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <link href='http://fonts.googleapis.com/css?family=Raleway:700,300,400,600,500' rel='stylesheet' type='text/css'>
+        <!-- Global site tag (gtag.js) - Google Analytics -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id=UA-176144772-1"></script>
+        <script src="//www.google.com/recaptcha/api.js" async defer></script>
+        <script src="//unpkg.com/alpinejs" defer></script>
+        <script>
+         window.dataLayer = window.dataLayer || [];
+         function gtag(){dataLayer.push(arguments);}
+         gtag('js', new Date());
+
+         gtag('config', 'UA-176144772-1');
+        </script>
+        <script>(function(d){var s = d.createElement("script");s.setAttribute("data-account", "va12Fyrpbl");s.setAttribute("src", "https://cdn.userway.org/widget.js");(d.body || d.head).appendChild(s);})(document)</script>
+        <noscript><div id="noscript-warning">Please ensure Javascript is enabled for purposes of <a href="https://userway.org">website accessibility</a></div></noscript>
+        <%= vite_client_tag %>
+        <%= vite_javascript_tag 'application' %>
+        <!--
+             If using a TypeScript entrypoint file:
+             vite_typescript_tag 'application'
+
+             If using a .jsx or .tsx entrypoint, add the extension:
+             vite_javascript_tag 'application.jsx'
+
+             Visit the guide for more information: https://vite-ruby.netlify.app/guide/rails
+        -->
+
+    </head>
+    <body>
+        <%#= render 'layouts/header' %>
+        <main class="m-auto">
+            <div class="flash" id="flash" style="padding-left: 20px; padding-right: 20px; z-index: 100;">
+                <%= render 'layouts/flash' %>
+            </div>
+            <section class="container text-center">
+                <div>
+                    <h1>Welcome to <%= @space.name %></h1>
+                    <%= form_with url: kiosk_sign_email_path(@space.id), html: { autocomplete: 'off' } do |f| %>
+                        <%= f.label :visitor, 'Enter your email or username to sign in or sign out', class: 'form-label' %>
+                        <%# Modern browsers suck and keep auto filling this because it has the word 'username' in the label %>
+                        <%# If it keeps happening we might have to make a hidden input as a decoy for the password manager %>
+                        <%= f.text_field :visitor, class: 'form-control mb-2', autofocus: true, required: true, autocomplete: 'new-password' %>
+                        <%# We test for the presence of field in params, not value of submit%>
+                        <%= f.submit 'Sign in to space', class: 'btn btn-primary', name: 'entering' %>
+                        <%= f.submit 'Sign out of space', class: 'btn btn-danger', name: 'leaving' %>
+                        <div class="form-text">You must have a Makerepo account before signing in</div>
+                    <% end %>
+                </div>
+            </section>
+        </main>
+        <%= vite_javascript_tag controller_name if File.exist?("#{Rails.root}/app/javascript/entrypoints/#{controller_name}.js") %>
+    </body>
+</html>

@@ -102,10 +102,8 @@ RSpec.describe PrinterTypesController, type: :controller do
         session[:user_id] = @admin.id
         session[:expires_at] = Time.zone.now + 10_000
 
-        @um2p_1 =
-          create(:printer, printer_type_id: @um2p.id, number: "UM2P - 1")
-        @um2p_2 =
-          create(:printer, printer_type_id: @um2p.id, number: "UM2P - 2")
+        @um2p_1 = create(:printer, printer_type_id: @um2p.id, number: "1")
+        @um2p_2 = create(:printer, printer_type_id: @um2p.id, number: "2")
       end
 
       it "should update the printer type and its short form" do
@@ -119,7 +117,8 @@ RSpec.describe PrinterTypesController, type: :controller do
               }
 
         expect(flash[:notice]).to eq("Successfully updated printer model")
-        expect(Printer.find(@um2p_1.id).number).to eq("UM2+ - 1")
+        expect(Printer.find(@um2p_1.id).name).to eq("UM2+ - 1")
+        expect(Printer.find(@um2p_2.id).name).to eq("UM2+ - 2")
       end
     end
   end

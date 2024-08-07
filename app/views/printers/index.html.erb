@@ -1,6 +1,6 @@
+<% provide :title, 'Add and Remove Printers' %>
 <section class="padding mt-4">
-
-  <div class="title">Manage 3D-Printers</div>
+  <div class="title">Add and Remove 3D-Printers</div>
 
   <div class="text-center my-3 d-flex flex-row justify-content-center align-items-center gap-2">
     <%= link_to 'Manage Printer Usage', staff_printers_printers_path, class: 'btn btn-secondary' %>
@@ -9,7 +9,7 @@
 
   <% if @user.admin? %>
     <div class="text-center my-3 d-flex flex-row justify-content-center align-items-center gap-2">
-      <%= link_to 'Manage Printer Models', printer_types_path, class: 'btn btn-primary' %>
+      <%= link_to 'Edit Printer Types', printer_types_path, class: 'btn btn-primary' %>
     </div>
   <% end %>
 
@@ -17,12 +17,15 @@
     <%= form_for @printer, url: { controller: 'printers', action: 'add_printer' } do |f| %>
       <div class="mb-3">
         <%= label_tag :model_id, 'Printer Model', class: 'form-label' %><br>
-        <%= select_tag(:model_id, options_for_select(@printer_models), class: 'form-control form-select') %>
+        <%= select_tag(:model_id, options_for_select(@printer_models, selected: params[:model_id]), class: 'form-control form-select') %>
       </div>
 
       <div class="mb-3">
         <%= f.label 'Printer Number', class: 'form-label' %>
-        <%= f.text_field :number, class: 'form-control' %>
+        <div class="input-group">
+          <div class="input-group-text"><span id="newPrinterCode">PrinterCode</span>-</div>
+          <%= f.text_field :number, class: 'form-control' %>
+        </div>
       </div>
 
       <%= f.submit 'Add', class: 'btn btn-primary' %>
@@ -39,4 +42,5 @@
       <%= f.submit 'Remove', class: 'btn btn-primary' %>
     <% end %>
   </div>
+
 </section>

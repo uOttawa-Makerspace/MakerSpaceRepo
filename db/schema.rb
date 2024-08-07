@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2024_06_23_173424) do
+ActiveRecord::Schema[7.0].define(version: 2024_08_04_191845) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -716,6 +716,18 @@ ActiveRecord::Schema[7.0].define(version: 2024_06_23_173424) do
     t.string "comments_box"
   end
 
+  create_table "printer_issues", force: :cascade do |t|
+    t.bigint "printer_id", null: false
+    t.string "summary", null: false
+    t.string "description"
+    t.bigint "reporter_id", null: false
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["printer_id"], name: "index_printer_issues_on_printer_id"
+    t.index ["reporter_id"], name: "index_printer_issues_on_reporter_id"
+  end
+
   create_table "printer_sessions", id: :serial, force: :cascade do |t|
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
@@ -729,6 +741,7 @@ ActiveRecord::Schema[7.0].define(version: 2024_06_23_173424) do
     t.string "short_form", default: ""
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "available", default: true
   end
 
   create_table "printers", id: :serial, force: :cascade do |t|
@@ -736,6 +749,7 @@ ActiveRecord::Schema[7.0].define(version: 2024_06_23_173424) do
     t.datetime "updated_at", precision: nil, null: false
     t.string "number"
     t.bigint "printer_type_id"
+    t.boolean "maintenance", default: false
     t.index ["printer_type_id"], name: "index_printers_on_printer_type_id"
   end
 
@@ -1317,6 +1331,8 @@ ActiveRecord::Schema[7.0].define(version: 2024_06_23_173424) do
   add_foreign_key "photos", "repositories"
   add_foreign_key "pi_readers", "spaces"
   add_foreign_key "popular_hours", "spaces"
+  add_foreign_key "printer_issues", "printers"
+  add_foreign_key "printer_issues", "users", column: "reporter_id"
   add_foreign_key "printers", "printer_types"
   add_foreign_key "proficient_projects", "badge_templates"
   add_foreign_key "proficient_projects", "drop_off_locations"

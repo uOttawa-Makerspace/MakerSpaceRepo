@@ -1,6 +1,7 @@
-<div class="col-md-12">
+<div class="container">
+  <%= link_to 'View all skills', skills_development_programs_path, class: 'ms-1' %>
+  <hr/>
   <% @skills.each do |skill| %>
-
     <div class="accordion mb-3" id="accordion-skill-<%= skill.name %>">
       <div class="accordion-item">
         <button class="accordion-button" type="button" data-bs-toggle="collapse"

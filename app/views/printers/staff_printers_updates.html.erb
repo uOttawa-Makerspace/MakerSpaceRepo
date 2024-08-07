@@ -1,16 +1,34 @@
+<% provide :title, '3D-Printer Usage Log' %>
 <section class="padding-10 mt-4">
   <div>
-    <div class="title">Last Updates 3D-Printers Usage</div>
+    <div class="title">3D-Printer Usage Log</div>
     <div class="text-center my-3 d-flex flex-row justify-content-center align-items-center gap-2">
       <%= link_to 'Manage Printer Usage', staff_printers_printers_path, class: 'btn btn-secondary' %>
     </div>
 
     <% if @user.admin? %>
       <div class="text-center my-3 d-flex flex-row justify-content-center align-items-center gap-2">
-        <%= link_to 'Manage Printers', printers_path, class: 'btn btn-primary' %>
-        <%= link_to 'Manage Printer Models', printer_types_path, class: 'btn btn-primary' %>
+        <%= link_to 'Add and Remove Printers', printers_path, class: 'btn btn-primary' %>
+        <%= link_to 'Manage Printer Types', printer_types_path, class: 'btn btn-primary' %>
       </div>
     <% end %>
+
+    <div class="modal" tabindex="-1" id="printFailedModal" aria-labelledby="modal-title" >
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="modal-title" id="modal-title">Send print failed email</h1>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <%= render partial: 'printers/send_print_failed_form', locals: { sent_from: 'updates' } %>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <% @printer_types.each_with_index do |pt, index| %>
       <div class="mb-3">
@@ -21,27 +39,52 @@
           <th>User<span onclick="sortTable('table-<%= index %>', 1)"><%= fa_icon('arrow-down') %></span></th>
           <th>Time<span onclick="sortTable('table-<%= index %>', 2)"><%= fa_icon('arrow-down') %></span></th>
           <th>In Use<span onclick="sortTable('table-<%= index %>', 3)"><%= fa_icon('arrow-down') %></span></th>
+          <th>Maintainance<span onclick="sortTable('table-<%= index %>', 4)"><%= fa_icon('arrow-down') %></span></th>
+          <th>Action</th>
           </thead>
           <tbody>
           <% Printer.get_printer_ids(pt.name).sort_by do |printer_id|
-            number_str = Printer.find(printer_id).number
-            prefix, main_part = number_str.split(' - ', 2)
-            numeric_part = main_part.scan(/\d+/)[0].to_i
-            alphabetic_part = main_part.gsub(/\d+/, '')
-            [prefix, alphabetic_part, numeric_part]
+            printer = Printer.find(printer_id)
+            [printer.name.length, printer.name]
           end.each do |printer_id|
             last_session = Printer.get_last_number_session(printer_id)
           %>
             <tr>
-              <td><%= Printer.find(printer_id).number %></td>
+              <% printer = Printer.find(printer_id) %>
+              <td><%= printer.name %></td>
               <% if last_session.nil? %>
-                <% 3.times do %>
+                <% 4.times do %>
                   <td>-------</td>
                 <% end %>
               <% else %>
                 <td><%= link_to last_session.user.username, user_path(last_session.user.username) %></td>
                 <td><%= last_session&.created_at&.strftime('%a, %d %b %Y at %I:%M%p') %></td>
                 <td><%= last_session.in_use? ? 'Yes' : 'No' %></td>
+                <td>
+                  <i class="fa <%= printer.maintenance ? 'fa-check text-success' : 'fa-times text-danger' %>"></i> <%= printer.maintenance ? 'Yes' : 'No' %>
+                    <p><%= printer.printer_issues.count %> Issues</p>
+                </td>
+                <td>
+                  <div class="btn-group text-nowrap" role="group" aria-label="Printer actions">
+                    <button type="button" class="btn btn-danger btn-block print-failed-button" data-bs-toggle="modal" data-bs-target="#printFailedModal"
+                            data-username="<%= last_session.user.username %>" data-printer-number="<%= printer_id %>">Notify failed</button>
+                    <div class="btn-group" role="group">
+                      <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown">Maintenance</button>
+                      <ul class="dropdown-menu">
+                        <li>
+                          <%= button_to printer_path(printer, printer: { maintenance: !printer.maintenance }), method: :patch, class: 'dropdown-item' do %>
+                            <%= "#{printer.maintenance ? 'Unflag' : 'Flag'} Maintenance" %>
+                          <% end %>
+                        </li>
+                        <li><hr class="dropdown-divider" /></li>
+                        <% PrinterIssue.summaries.each do |key, summary| %>
+                          <li><%= link_to summary, new_printer_issue_path(report_printer: printer, summary:), method: :get, class: 'dropdown-item', target: :_blank, rel: :noopener %></li>
+                        <% end %>
+                        <li><%= link_to 'Report other issue', new_printer_issue_path(report_printer: printer.id), class: 'dropdown-item' %></li>
+                      </ul>
+                    </div>
+                  </div>
+                </td>
               <% end %>
             </tr>
           <% end %>
@@ -51,3 +94,4 @@
     <% end %>
   </div>
 </section>
+<%= vite_javascript_tag 'staff_printers_updates' %>

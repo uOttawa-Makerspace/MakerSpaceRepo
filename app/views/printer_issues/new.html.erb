@@ -1,0 +1,21 @@
+<div class="text-center">
+    <h1>Create new issue</h1>
+    <%= form_with model: @issue, class: 'text-start' do |f| %>
+        <div class="row row-cols-2">
+            <div class="form-group">
+                <%= f.label :summary, class: 'form-label w-100' %>
+                <%= f.text_field :summary, class: 'form-control', required: 'required', value: params[:summary] %>
+            </div>
+            <div class="form-group">
+                <%= f.label :printer, class: 'form-label w-100' %>
+                <%= f.select :printer, options_from_collection_for_select(@printers, :id, :name, params['report_printer']), {}, { autocomplete: 'off', class: 'form-select', required: 'required' } %>
+            </div>
+        </div>
+        <div class="form-group my-3">
+            <%= f.label :description, value: 'Issue description (optional)', class: 'form-label' %>
+            <%= f.trix_editor :description, class: 'form-control' %>
+        </div>
+        <%= f.submit 'Submit issue', class: 'btn btn-primary' %>
+        <%= link_to 'Back', printer_issues_path, class: 'btn btn-secondary float-end' %>
+    <% end %>
+</div>

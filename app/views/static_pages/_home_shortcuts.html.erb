@@ -1,14 +1,14 @@
 <div class="card home-card home-shortcuts">
     <div class="card-body">
-        <h2><%= t('home.shortcuts.header') %></h2>
-        <h3><%= t('home.shortcuts.recently_opened') %></h3>
+        <h2><%= t('home.shortcuts.recently_opened') %></h2>
         <% if signed_in? %>
             <ul class="list-unstyled mb-0">
                 <% begin JSON.parse(cookies[:recently_viewed]).each do |link, proj_name| %>
                 <li><a href="<%= link %>"><i class="fa fa-square text-secondary"></i> <%= proj_name %></a></li>
                 <% end %>
                 <% rescue %>
-                <%= link_to 'Explore more projects', explore_path %>
+                <p><%= t('home.shortcuts.no_recently_opened') %></p>
+                <%= link_to t('home.shortcuts.explore_more'), explore_path %>
                 <% end %>
             </ul>
         <% else %>
