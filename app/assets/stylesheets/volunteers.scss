@@ -1,9 +1,71 @@
-// Place all the styles related to the volunteers controller here.
-// They will automatically be included in application.css.
-// You can use Sass (SCSS) here: http://sass-lang.com/
+@import "./shared/variables";
 
 section#volunteersIndex {
-  .stepsCard {
+  .jumbotron {
+    background-image: linear-gradient(rgba(white, 0) 20%, $primary),
+      url("volunteer/jumbotron.png");
+    background-size: cover;
+    background-color: black;
+    background-position: center;
+
+    width: 100%;
+    // ~920px, size of background image
+    // actually don't set height, breaks mobile
+    //height: 55rem;
+    text-align: center;
+    padding-left: 20%;
+    padding-right: 20%;
+    padding-top: 15%;
+
+    & > * {
+      margin-bottom: 3rem;
+    }
+
+    h1 {
+      color: white;
+      font-weight: 700;
+      font-size: 5rem;
+      line-height: 1.2;
+      text-shadow: 0 3px 4px black;
+    }
+
+    p {
+      color: white;
+      font-size: 1.2rem;
+      text-shadow: 0 4px 4px black;
+    }
+
+    .btn-primary {
+      color: $primary;
+      background-color: white;
+      border-color: white;
+      font-size: 1.4rem;
+      padding: 1rem 2rem 1rem 2rem;
+    }
+  }
+
+  h2 {
+    text-transform: capitalize;
+    font-size: 2.5rem;
+    font-weight: 700;
+    //margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  i.fa {
+    font-size: 4rem;
+    color: $primary;
+  }
+
+  .subtext-primary {
+    color: $primary;
+    font-weight: 700;
+  }
+
+  .numberedCard {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    border: 2px solid $secondary;
   }
 }
 

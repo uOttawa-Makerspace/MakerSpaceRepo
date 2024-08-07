@@ -1,92 +1,109 @@
-<section class="container mt-5">
-    <h1>Enrich your experience by volunteering with <span class="text-primary">CEED</span></h1>
-    <p>The volunteer program allows members to become more involved in the Makerspace. This program is a great way to meet new people, and work on fun projects.</p>
-    <%= link_to 'Join the volunteering program', class: 'btn btn-primary' %>
-    <p>Why volunteer with CEED</p>
-    <div class="row row-cols-5">
-        <div>
-            <p>Gain valuable experience with technology</p>
-        </div>
-        <div>
-            <p>Meet people with similar interests</p>
-        </div>
-        <div>
-            <p>Collaborate on cool new projects</p>
-        </div>
-        <div>
-            <p>Get involved with the Maker network</p>
-        </div>
-        <div>
-            <p>Receive awesome rewards!</p>
-        </div>
+<section id="volunteersIndex">
+    <div class="jumbotron">
+        <h1>Enrich your experience by volunteering with <span class="text-primary">CEED</span></h1>
+        <p>The volunteer program allows members to become more involved in the Makerspace.<br />This program is a great way to meet new people, and work on fun projects.</p>
+        <%= link_to 'Join the volunteering program', join_volunteer_program_volunteers_path, class: 'btn btn-primary' %>
     </div>
-
-    <div class="row row-cols-2">
-        <div>
+    <div class="shadow">
+        <%= render partial: 'layouts/volunteer_header' %>
+    </div>
+    <div class="container mt-5">
+        <h2 class="my-5">Why volunteer with <span class="text-primary">CEED</span></h2>
+        <div class="row row-cols-5 mb-5">
+            <div>
+                <i class="fa fa-floppy-o" aria-hidden="true"></i>
+                <p>Gain valuable experience with technology</p>
+            </div>
+            <div>
+                <i class="fa fa-users" aria-hidden="true"></i>
+                <p>Meet people with similar interests</p>
+            </div>
+            <div>
+                <i class="fa fa-comments-o" aria-hidden="true"></i>
+                <p>Collaborate on cool new projects</p>
+            </div>
+            <div>
+                <i class="fa fa-cloud" aria-hidden="true"></i>
+                <p>Get involved with the Maker network</p>
+            </div>
+            <div>
+                <i class="fa fa-gift" aria-hidden="true"></i>
+                <p>Receive awesome rewards!</p>
+            </div>
+        </div>
+        <div class="gx-5 mb-5">
             <h2>Volunteer opportunities</h2>
-            <p class="text-primary fw-bold">How you can help out</p>
-            <ul class="" style="column-count: 2">
-                <li>Welcome newcomers and give tours of the Makerspace</li>
-                <li>Help during workshops</li>
-                <li>Help with on campus events such as Design day, Makerspace challenges, clubs' day, entrepreneurship week.</li>
-                <li>Help with off campus events such as conferences and festivals.</li>
-                <li>Promote the Makerspace through class presentations and table events in UCU to further increase our outreach efforts</li>
-                <li>Help maintain equipment</li>
-                <li>Provide training for those who wish to learn more about the technology in the Makerspace</li>
-                <li>Create and design projects requested by the community</li>
-            </ul>
-        </div>
-    </div>
-    <!-- FIXME make this the secondary color(?) -->
-    <div style="background-color: #F7F7F7">
-        <div class="row row-cols-2">
-            <!-- card list column -->
-            <div>
-                <div class="border row row-cols-2">
-                    <p>1</p>
-                    <div>
-                        <h3>Mandatory Trainings</h3>
-                        <ul>
-                            <li>Complete a Makerspace workshop</li>
-                            <li>Complete basic training in the MTC</li>
-                        </ul>
-                    </div>
+            <h3 class="subtext-primary">How you can help out</h3>
+            <div class="row row-cols-2">
+                <div class="row row-cols-2">
+                    <ul>
+                        <li><b>Welcome newcomers</b> and <b>give tours</b> of the Makerspace</li>
+                        <li>Help during <b>workshops</b></li>
+                        <li>Help with <b>on campus events</b> such as Design day, Makerspace challenges, clubs' day, entrepreneurship week.</li>
+                        <li>Help with <b>off campus events</b> such as conferences and festivals.</li>
+                    </ul>
+                    <ul>
+                        <li><b>Promote</b> the Makerspace through class presentations and table events in UCU to further <b>increase our outreach</b> efforts</li>
+                        <li>Help <b>maintain</b> equipment</li>
+                        <li><b>Provide training</b> for those who wish to learn more about the technology in the Makerspace</li>
+                        <li><b>Create and design projects</b> requested by the community</li>
+                    </ul>
                 </div>
-                <div class="border row row-cols-2">
-                    <p>2</p>
-                    <div>
-                        <h3>Shadowing</h3>
-                        <ul>
-                            <li>6 hours of shadowing in the Makerspace</li>
-                            <li>6 hours of shadowing in Brunsfield</li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="border row row-cols-2">
-                    <p>2</p>
-                    <div>
-                        <h3>Shadowing</h3>
-                        <ul>
-                            <li>6 hours of shadowing in the Makerspace</li>
-                            <li>6 hours of shadowing in Brunsfield</li>
-                        </ul>
-                    </div>
+                <div class="align-content-center">
+                    <%= image_tag 'volunteer/opportunities.png', class: 'img-fluid' %>
                 </div>
             </div>
-            <div>
-                <h3>Build skills in either the Makerspace or Brunsfield by completing tasks generated by the space managers.</h3>
+        </div>
+        <!-- FIXME make this the secondary color(?) -->
+        <div class="bg-body-tertiary">
+            <div class="row row-cols-2">
+                <div class="p-5">
+                    <div class="numberedCard">
+                        <p>1</p>
+                        <div>
+                            <h3>Mandatory Trainings</h3>
+                            <ul>
+                                <li>Complete a Makerspace workshop</li>
+                                <li>Complete basic training in the MTC</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="numberedCard">
+                        <p>2</p>
+                        <div>
+                            <h3>Shadowing</h3>
+                            <ul>
+                                <li>6 hours of shadowing in the Makerspace</li>
+                                <li>6 hours of shadowing in Brunsfield</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="numberedCard">
+                        <p>2</p>
+                        <div>
+                            <h3>Shadowing</h3>
+                            <ul>
+                                <li>6 hours of shadowing in the Makerspace</li>
+                                <li>6 hours of shadowing in Brunsfield</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3>Build skills in either the Makerspace or Brunsfield by completing tasks generated by the space managers.</h3>
+                </div>
             </div>
+            <div class="bg-white m-5">
+                <p>Test project students can complete once they have completed a suggested number of hours building the skill of their choice and feel they are ready to move up to the next level.</p>
+                <p>Upon successful completion of the proficiency project, they will receive a badge which will be visible on their Linkedin profile.</p>
+                <p>They start at basic proficiency upon completing the workshop, and can move up all the way to Mastery.</p>
+            </div>
+            <a href="#">Use your CC points to pay for proficiency projects! Learn more.</a>
         </div>
-        <div class="bg-white m-5">
-            <p>Test project students can complete once they have completed a suggested number of hours building the skill of their choice and feel they are ready to move up to the next level.</p>
-            <p>Upon successful completion of the proficiency project, they will receive a badge which will be visible on their Linkedin profile.</p>
-            <p>They start at basic proficiency upon completing the workshop, and can move up all the way to Mastery.</p>
+        <div>
+            <h2>Interested in volunteering?</h2>
+            <p>The process of volunteering is flexible. Talk to us about accommodations. </p>
+            <p>For any questions, email us at: <b>volunteer@makerepo.com</b></p>
         </div>
-        <a href="#">Use your CC points to pay for proficiency projects! Learn more.</a>
-    </div>
-    <div>
-        <h2>Interested in volunteering?</h2>
-        <p>The process of volunteering is flexible. Talk to us about accommodations. </p>
-        <p>For any questions, email us at: <b>volunteer@makerepo.com</b></p>
     </div>
 </section>
