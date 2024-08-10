@@ -53,21 +53,27 @@
               <% printer = Printer.find(printer_id) %>
               <td><%= printer.name %></td>
               <% if last_session.nil? %>
-                <% 4.times do %>
+                <% 3.times do %>
                   <td>-------</td>
                 <% end %>
               <% else %>
                 <td><%= link_to last_session.user.username, user_path(last_session.user.username) %></td>
                 <td><%= last_session&.created_at&.strftime('%a, %d %b %Y at %I:%M%p') %></td>
                 <td><%= last_session.in_use? ? 'Yes' : 'No' %></td>
+              <% end %>
                 <td>
                   <i class="fa <%= printer.maintenance ? 'fa-check text-success' : 'fa-times text-danger' %>"></i> <%= printer.maintenance ? 'Yes' : 'No' %>
-                    <p><%= printer.printer_issues.count %> Issues</p>
+                  <% printer.group_printer_issues.each do |summary, issues| %>
+                    <p><%= issues.count %> <%= summary.pluralize issues.count %></p>
+                    <!-- <p><%= printer.active_printer_issues.count %> Issues</p> -->
+                  <% end %>
                 </td>
                 <td>
                   <div class="btn-group text-nowrap" role="group" aria-label="Printer actions">
+                    <% unless last_session.nil? %>
                     <button type="button" class="btn btn-danger btn-block print-failed-button" data-bs-toggle="modal" data-bs-target="#printFailedModal"
                             data-username="<%= last_session.user.username %>" data-printer-number="<%= printer_id %>">Notify failed</button>
+                    <% end %>
                     <div class="btn-group" role="group">
                       <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown">Maintenance</button>
                       <ul class="dropdown-menu">
@@ -87,7 +93,6 @@
                 </td>
               <% end %>
             </tr>
-          <% end %>
           </tbody>
         </table>
       </div>

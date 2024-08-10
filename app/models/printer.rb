@@ -34,4 +34,18 @@ class Printer < ApplicationRecord
   def self.get_last_number_session(printer_id)
     PrinterSession.order(created_at: :desc).where(printer_id: printer_id).first
   end
+
+  def active_printer_issues
+    printer_issues.where(active: true)
+  end
+
+  def group_printer_issues
+    active_printer_issues.group_by do |issue|
+      if (PrinterIssue.summaries.values.include? issue.summary)
+        issue.summary
+      else
+        "Other"
+      end
+    end
+  end
 end
