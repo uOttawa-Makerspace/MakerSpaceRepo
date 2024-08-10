@@ -1,31 +1,23 @@
 <section id="home">
-  <button class="d-xl-none" id="ShortcutButton" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas-shortcuts" aria-controls="offcanvas-shortcuts">
-    Shortcuts
-  </button>
   <div class="container-fluid">
-    <%= render 'partials/announcements' %>
-    <div class="row g-0">
+    <div class="row row-cols-3 g-0">
       <!--Left column -->
-      <div class="col-xl  order-xl-0 order-1 offcanvas-lg offcanvas-start" id="offcanvas-shortcuts" aria-labelledby="shortcutsOffcanvasLabel">
-        <div class="offcanvas-header pb-0">
-          <h2 class="offcanvas-title" id="shortcutsOffcanvasLabel">Shortcuts</h2>
-          <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#offcanvas-shortcuts" aria-label="Close"></button>
-        </div>
+      <div class="col-xl  order-xl-0 order-1">
         <!-- Staff Resources -->
         <% if @user.staff? %>
-          <div class="card home-card">
-            <div class="card-body">
-              <h2><%= t('home.staff_resources.header') %></h2>
-              <ul class="list-unstyled">
-                <% if @user.admin? %>
-                  <li><%= link_to t('home.staff_resources.admin_area'), admin_settings_path %></li>
-                <% end %>
-                <li><%= link_to t('home.staff_resources.staff_area'), staff_dashboard_index_path %></li>
-                <li><%= link_to t('home.staff_resources.shifts'), shifts_admin_shifts_path %></li>
-                <li><%= link_to t('home.staff_resources.job_order_admin'), admin_job_orders_path %></li>
-              </ul>
-            </div>
+        <div class="card home-card">
+          <div class="card-body">
+            <h2><%= t('home.staff_resources.header') %></h2>
+            <ul class="list-unstyled">
+              <% if @user.admin? %>
+              <li><%= link_to t('home.staff_resources.admin_area'), admin_settings_path %></li>
+              <% end %>
+              <li><%= link_to t('home.staff_resources.staff_area'), staff_dashboard_index_path %></li>
+              <li><%= link_to t('home.staff_resources.shifts'), shifts_admin_shifts_path %></li>
+              <li><%= link_to t('home.staff_resources.job_order_admin'), admin_job_orders_path %></li>
+            </ul>
           </div>
+        </div>
         <% end %>
         <!-- General Resources -->
         <div class="card home-card">
@@ -55,7 +47,7 @@
             <div class="row">
               <div class="col-auto">
                 <p><%= t('home.welcome.welcome_subheader').html_safe %></p>
-                <%= image_tag('redesign/site.png', alt: 'SITE', class: 'img-fluid') %>
+                <%= image_tag('redesign/home_page/site.png', alt: 'SITE', class: 'img-fluid') %>
               </div>
               <div class="col text-start align-self-center">
                 <h3 class="fw-bold"><%= t('home.welcome.hour_header') %></h3>
@@ -72,12 +64,148 @@
           </div>
         </div>
         <!-- Instagram Section -->
-        <%= render 'static_pages/home_socials' %>
-        <!-- Explore Section -->
-        <%= render 'static_pages/home_explore' %>
-        <!-- Makerstore Section -->
-        <%= render 'static_pages/home_makerstore' %>
+        <div class="card home-card mt-5">
+          <div class="card-body">
+            <h2>
+              <b>Instagram</b>
+              <small class="text-muted" style="font-size: 0.6em;">
+                <a href="https://www.instagram.com/uoceed/" target="_blank"><%= t('home.follow_us') %></a>
+              </small>
+            </h2>
+            <p>Stay up to date with our socials</p>
+        
+            <div id="carouselExampleControls" class="carousel slide" data-ride="carousel">
+              <div class="carousel-inner">
+                <% @posts.take(24).each_slice(3).with_index do |posts_slice, index| %>
+                  <div class="carousel-item <%= 'active' if index.zero? %>">
+                    <div class="d-flex justify-content-center">
+                      <% posts_slice.each do |post| %>
+                        <div style="flex: 0 0 30%; max-width: 30%; padding: 10px;">
+                          <% if post['media_type'] == 'IMAGE' || post['media_type'] == 'CAROUSEL_ALBUM' %>
+                            <img src="<%= post['media_url'] %>" class="d-block w-100" alt="Instagram Image" style="width: 100%; height: 100%; object-fit: cover;">
+                          <% elsif post['media_type'] == 'VIDEO' %>
+                            <video class="d-block w-100" controls style="width: 100%; height: 100%; object-fit: cover;">
+                              <source src="<%= post['media_url'] %>" type="video/mp4">
+                              Your browser does not support the video tag.
+                            </video>
+                          <% end %>
+                        </div>
+                      <% end %>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+              <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleControls" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true" style="background-color: black;"></span>
+                <span class="visually-hidden">Previous</span>
+              </button>
+              <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleControls" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true" style="background-color: black;"></span>
+                <span class="visually-hidden">Next</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        
+
+<!-- Explore Section -->
+<div class="card home-card mt-5">
+  <div class="card-body">
+    <h2>
+      <b>Explore</b>
+      <small class="text-muted" style="font-size: 0.6em;">
+        <a href="/explore">Show all</a>
+      </small>
+    </h2>
+    <p>Browse completed student projects.</p>
+    <% if @recent_projects.present? %>
+      <div id="carouselControls" class="carousel slide" data-bs-ride="carousel">
+        <div class="carousel-inner">
+          <% @recent_projects.each_slice(3).with_index do |projects, index| %>
+            <div class="carousel-item <%= 'active' if index == 0 %>">
+              <div style="display: flex; justify-content: center;">
+                <% projects.each do |project| %>
+                  <div style="margin: 0 10px; border: 1px solid #ddd; border-radius: 5px; padding: 10px; width: 200px;">
+                    <%= link_to repository_path(project.user_username, project.slug), style: 'text-decoration: none; color: inherit;' do %>
+                      <%= image_tag project.photos.first.image, alt: project.title, style: 'max-height: 225px; max-width: 100%; width: auto; height: auto; display: block; margin: 0 auto;' if project.photos.first.present? %>
+                      <div style="text-align: center; margin-top: 10px;">
+                        <h5 style="font-size: 1.1em; margin-bottom: 5px;"><%= project.title %></h5>
+                        <p style="color: #888; font-size: 0.9em;">by <%= project.user_username %></p>
+                      </div>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#carouselControls" data-bs-slide="prev">
+          <span class="carousel-control-prev-icon" aria-hidden="true" style="background-color: black;"></span>
+          <span class="visually-hidden">Previous</span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#carouselControls" data-bs-slide="next">
+          <span class="carousel-control-next-icon" aria-hidden="true" style="background-color: black;"></span>
+          <span class="visually-hidden">Next</span>
+        </button>
       </div>
+    <% else %>
+      <p>No recent projects available.</p>
+    <% end %>
+  </div>
+</div>
+<!-- Makerstore Section -->
+<div class="card home-card mt-5">
+  <div class="card-body">
+    <h2>
+      <b>Makerstore</b>
+      <small class="text-muted" style="font-size: 0.6em;">
+        <a href="https://makerstore.ca/">Show all</a>
+      </small>
+    </h2>
+    <p>Our Best Sellers</p>
+    <div id="carouselControls1" class="carousel slide" data-bs-ride="carousel">
+      <div class="carousel-inner">
+        <% [
+             { title: 'CEED Merch', image_url: 'redesign/home_page/merch.png', link: 'https://makerstore.ca/shop/ols/categories/merch' },
+             { title: 'Cables', image_url: 'redesign/home_page/cables.png', link: 'https://makerstore.ca/shop/ols/categories/cables' },
+             { title: 'Micro Controllers', image_url: 'redesign/home_page/microcontrollers.png', link: 'https://makerstore.ca/shop/ols/categories/micro-controllers' },
+             { title: 'LEDs', image_url: 'redesign/home_page/leds.png', link: 'https://makerstore.ca/shop/ols/categories/leds' },
+             { title: 'Materials', image_url: 'redesign/home_page/materials.png', link: 'https://makerstore.ca/shop/ols/categories/materials' },
+             { title: 'Motors', image_url: 'redesign/home_page/motors.png', link: 'https://makerstore.ca/shop/ols/categories/motors' }
+           ].each_slice(3).with_index do |product_group, group_index| %>
+          <div class="carousel-item <%= 'active' if group_index == 0 %>">
+            <div style="display: flex; justify-content: center;">
+              <% product_group.each do |product| %>
+                <a href="<%= product[:link] %>" style="text-decoration: none; color: inherit;">
+                  <div style="margin: 0 10px; border: 1px solid #ddd; border-radius: 5px; padding: 10px; width: 200px;">
+                  <%= image_tag product[:image_url], alt: product[:title], style: 'height: 200px; width: 100%; object-fit: cover; display: block; margin: 0 auto;' %>
+
+                    <div style="text-align: center; margin-top: 10px;">
+                      <h5 style="font-size: 1.1em; margin-bottom: 5px;"><%= product[:title] %></h5>
+                    </div>
+                  </div>
+                </a>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+      <button class="carousel-control-prev" type="button" data-bs-target="#carouselControls1" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true" style="background-color: black;"></span>
+        <span class="visually-hidden">Previous</span>
+      </button>
+      <button class="carousel-control-next" type="button" data-bs-target="#carouselControls1" data-bs-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true" style="background-color: black;"></span>
+        <span class="visually-hidden">Next</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
 
       <!--Right column -->
       <!-- Set a fixed column size to prevent Badges from expanding more -->
@@ -88,7 +216,6 @@
         <div class="card home-card" id="home-big-newsletter">
           <div class="card-body">
             <h2><%= t('home.newsletter.header') %></h2>
-            <p><%= t('home.newsletter.subtext') %></p>
             <form target="_blank" action="https://uottawa.us15.list-manage.com/subscribe/post" method="POST">
               <input type="hidden" name="u" value="42154e6ef1a0a78237b7bc641">
               <% if I18n.locale == :en %>
@@ -106,21 +233,20 @@
           </div>
         </div>
         <!-- Hidden for now :^) -->
-        <div class="card home-card">
+        <div class="card home-card" hidden>
           <div class="card-body">
-            <h2><%= t('home.workshops.header') %></h2>
-            <% 5.times do %>
-              <a class="d-flex workshop-card" href="#">
-                <div class="text-center workshop-date">
-                  <p style="font-size: 2rem;">22<br /> <span style="font-size: 1.5rem">Dec</span></p>
-                </div>
-                <div class="workshop-desc">
-                  <p class="workshop-title">Easter Themed 3D Printing Workshop - Beginner</p>
-                  <p class="workshop-date-side">Thu, Mar 28, 2:30 PM</p>
-                  <p class="workshop-cost">Free</p>
-                </div>
-              </a>
-            <% end %>
+            <h2>Workshops this week</h2>
+            <div class="d-flex workshop-card">
+              <div class="text-center workshop-date">
+                <p style="font-size: 2rem;">22<br /> <span style="font-size: 1.5rem">Dec</span></p>
+              </div>
+              <div class="workshop-desc">
+                <p class="workshop-title">Easter Themed 3D Printing Workshop - Beginner</p>
+                <p class="workshop-date-side">Thu, Mar 28, 2:30 PM</p>
+                <p class="workshop-cost">Free</p>
+              </div>
+            </div>
+            <!-- <p> No workshops... yet</p> -->
           </div>
         </div>
 </section>
