@@ -9,6 +9,7 @@ class PrinterIssue < ApplicationRecord
   # enum :summary, { nozzle_clogged: 'Nozzle clogged',
   #                 extrude_issue: 'Extrude issue',
   #                 bed_issue: 'Bed issue' }, validate: false
+  # I wish we had normalization here, that's 7.1+ too
 
   def self.summaries
     {
