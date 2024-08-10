@@ -2,7 +2,15 @@ class PrinterIssuesController < StaffAreaController
   layout "staff_area"
 
   def index
-    @issues = PrinterIssue.all
+    @issues = PrinterIssue.all.order(:printer_id)
+    @issues_summary =
+      @issues.group_by do |issue|
+        if (PrinterIssue.summaries.values.include? issue.summary)
+          issue.summary
+        else
+          "Other"
+        end
+      end
   end
 
   def show
@@ -37,6 +45,11 @@ class PrinterIssuesController < StaffAreaController
   end
 
   def update
+    issue = PrinterIssue.find_by(id: params[:id])
+    unless issue.update(printer_issue_params)
+      flash[:alert] = "Failed to update printer issue #{params[:id]}"
+    end
+    redirect_back fallback_location: printer_issues_path
   end
 
   def destroy
@@ -48,6 +61,11 @@ class PrinterIssuesController < StaffAreaController
   private
 
   def printer_issue_params
-    params.require(:printer_issue).permit(:printer, :summary, :description)
+    params.require(:printer_issue).permit(
+      :printer,
+      :summary,
+      :description,
+      :active
+    )
   end
 end
