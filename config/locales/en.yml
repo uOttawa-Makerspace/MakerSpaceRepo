@@ -17,7 +17,6 @@ en:
     get_involved: "Get Involved"
     workshops: "Workshops"
     join_a_team: "Join A Team"
-    all_get_involved: "All Get Involved"
     volunteering: "Volunteer Program"
     makerlaunch: "Makerlaunch"
     # Resources
@@ -279,48 +278,6 @@ en:
         no_options: "There are no options available to you right now. Please continue to the next step."
       step_4:
         additional_comments: "Additional Comments"
-  all_get_involved:
-    info:
-      header: "Get Involved"
-      overview: "Skill development is all about experience. CEED has you covered. Join workshops and events to earn certificates and make projects!"
-    workshops:
-      header: "From Beginner to Master"
-      overview: "Elaborate workshops and courses to learn and develop all sorts of hands on skills. Our beginner’s workshops will teach you all the essential fundamentals."
-      sections:
-        workshop_1:
-          header: "Makerlab Workshops"
-          overview: "3D Printing, Laser cutting, soldering, arts & crafts, and more"
-        workshop_2:
-          header: "MTC Workshops"
-          overview: "Milling, Turning, Welding, and Machining"
-    programs:
-      header: "Hungry for more?"
-      overview: "Build your resume and skillset"
-      sections:
-        program_1:
-          header: "Volunteer Program"
-          overview: "Get involved in the maker network and collaborate on cool projects!"
-        program_2:
-          header: "Development Program"
-          overview: "Get industry-standard certificates that are easy to share and verify."
-        program_3:
-          header: "Makerlaunch"
-          overview: "Get involved in the maker network and collaborate on cool projects!"
-        program_4:
-          header: "Simon nehme Summer entrepreneurship school"
-          overview: "Build on your ideas through workshops, panel discussion, and mentorship."
-    next:
-      title: "What’s next?"
-      subtitle:
-        part_1: "Learn, build, now "
-        part_2: "launch."
-      overview: "So you’ve brought your ideas to life, can you do more? Launch your projects and share your ideas with the industry."
-    team:
-      title: "John McEntyre Team Space"
-      overview: "Expand your knowledge beyond the classroom and apply your skills to build and compete with other engineering students"
-    bottom:
-      overview: "Inside the John McEntyre Team Space, involve yourself creatively and have fun while doing so! Join a team and meet like-minded individuals."
-      quote: "Push your limits. Design engineering solutions."
   volunteer_program:
     welcome:
       header: "Welcome to the Volunteer Program"
