@@ -4,12 +4,12 @@
 @import "lib";
 @import "shared/variables";
 
-div.title {
+h1.title {
   color: $primary;
-  font-size: 2rem;
   padding-bottom: 0.5rem;
   text-align: center;
-  max-width: 500px;
+  max-width: 32rem;
+  font-size: 2rem;
   margin: 0 auto;
   margin-bottom: 1rem;
   border-bottom: 2px solid $secondary;

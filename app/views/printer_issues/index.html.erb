@@ -1,6 +1,7 @@
 <% provide(:title, 'Printer Issues') %>
 <div class="text-center">
-    <h1>Issue summary</h1>
+    <h1 class="title">Issue summary</h1>
+    <%= render partial: 'printers/link_box', locals: { printer_issues_index: true } %>
     <div class="row">
         <% @issues_summary.each do |summary, issues| %>
             <div class="col">
@@ -14,7 +15,7 @@
         <% end %>
     </div>
     <hr />
-    <h1>Active Issues</h1>
+    <h1 class="title">Active Issues</h1>
     <%= link_to new_printer_issue_path, class: 'btn btn-success mb-3' do %>
         <i class="fa fa-plus"></i> New Issue
     <% end %>
@@ -48,8 +49,8 @@
             <% end %>
         </tbody>
     </table>
-    <hr />
-    <h1>Issue History</h1>
+    <!-- <hr /> -->
+    <h1 class="title">Issue History</h1>
     <table class="table table-striped">
         <thead class="table-primary">
             <tr>
