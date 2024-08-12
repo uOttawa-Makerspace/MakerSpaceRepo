@@ -48,4 +48,8 @@ class Printer < ApplicationRecord
       end
     end
   end
+
+  def count_printer_issues
+    group_printer_issues.transform_values { |issues| issues.count }
+  end
 end
