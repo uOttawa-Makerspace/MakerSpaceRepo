@@ -1,14 +1,15 @@
 <div class="text-center">
     <h1 class="title">Create new issue</h1>
-    <%= form_with model: @issue, class: 'text-start' do |f| %>
+    <%= form_with model: @issue, class: 'text-start', autocomplete: 'off' do |f| %>
         <div class="row row-cols-2">
             <div class="form-group">
-                <%= f.label :summary, class: 'form-label w-100' %>
-                <%= f.text_field :summary, class: 'form-control', required: 'required', value: params[:summary] %>
+                <%= f.label :summary, class: 'form-label' %>
+                <%= f.text_field :summary, class: 'form-control', required: 'required', value: (params[:summary] or @issue.summary), autocomplete: 'off' %>
+                <div class="invalid-feedback">A similar issue might exist for this printer!</div>
             </div>
             <div class="form-group">
                 <%= f.label :printer, class: 'form-label w-100' %>
-                <%= f.select :printer, options_from_collection_for_select(@printers, :id, :name, params['report_printer']), {}, { autocomplete: 'off', class: 'form-select', required: 'required' } %>
+                <%= f.select :printer, options_from_collection_for_select(@printers, :id, :name, (params['report_printer'] or @issue.printer&.id)), {}, { autocomplete: 'off', class: 'form-select', required: 'required' } %>
             </div>
         </div>
         <div class="form-group my-3">
@@ -19,3 +20,7 @@
         <%= link_to 'Back', printer_issues_path, class: 'btn btn-secondary float-end' %>
     <% end %>
 </div>
+<script>
+ <%# this is begging for an XSS, https://apidock.com/rails/ERB/Util/json_escape %>
+ issueSummary = <%= raw json_escape(@issueSummary.to_json) %>
+</script>

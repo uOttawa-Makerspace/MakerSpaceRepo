@@ -4,13 +4,15 @@ class PrinterIssuesController < StaffAreaController
   def index
     @issues = PrinterIssue.all.order(:printer_id)
     @issues_summary =
-      @issues.group_by do |issue|
-        if (PrinterIssue.summaries.values.include? issue.summary)
-          issue.summary
-        else
-          "Other"
+      @issues
+        .filter(&:active)
+        .group_by do |issue|
+          if (PrinterIssue.summaries.values.include? issue.summary)
+            issue.summary
+          else
+            "Other"
+          end
         end
-      end
   end
 
   def show
@@ -18,12 +20,19 @@ class PrinterIssuesController < StaffAreaController
   end
 
   def new
-    @issue = PrinterIssue.new
+    @issue ||= PrinterIssue.new
     @printers = Printer.show_options.all
+    @issueSummary =
+      @printers
+        .filter_map do |printer|
+          count = printer.count_printer_issues.count
+          [printer.id, printer.count_printer_issues] if count.positive?
+        end
+        .to_h
   end
 
   def create
-    printer = Printer.find_by_id(printer_issue_params[:printer])
+    printer = Printer.find_by(id: printer_issue_params[:printer])
     @issue =
       PrinterIssue.new(
         printer: printer,
@@ -36,8 +45,12 @@ class PrinterIssuesController < StaffAreaController
     if @issue.save
       redirect_to @issue
     else
-      flash[:alert] = "Failed to create issue"
-      redirect_to printer_issues_path
+      new # set previous variables
+      flash[
+        :alert
+      ] = "Failed to create issue: #{@issue.errors.full_messages.join("<br />")}".html_safe
+      # All this to keep form data on error
+      render :new, status: :unprocessable_entity
     end
   end
 
@@ -47,7 +60,9 @@ class PrinterIssuesController < StaffAreaController
   def update
     issue = PrinterIssue.find_by(id: params[:id])
     unless issue.update(printer_issue_params)
-      flash[:alert] = "Failed to update printer issue #{params[:id]}"
+      flash[
+        :alert
+      ] = "Failed to update printer issue #{params[:id]}, #{issue.errors.first.message}"
     end
     redirect_back fallback_location: printer_issues_path
   end
