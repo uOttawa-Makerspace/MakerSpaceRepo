@@ -370,3 +370,14 @@ td > .btn:not(:last-of-type) {
 // .userway_buttons_wrapper {
 //   margin-bottom: 5rem;
 // }
+
+.btn-dark-orange {
+  background-color: #e67e22; /* Darker orange color */
+  border-color: #e67e22; /* Make sure the border matches */
+  color: #fff; /* White text color */
+}
+
+.btn-dark-orange:hover {
+  background-color: #d35400; /* Even darker orange on hover */
+  border-color: #d35400;
+}
