@@ -518,7 +518,9 @@ Rails.application.routes.draw do
   end
 
   resources :all_get_involved, only: [:index] do
-    collection { get :sign_up }
+  end
+
+  resources :all_resources, only: [:index] do
   end
 
   resources :questions do
