@@ -103,6 +103,9 @@ class StaticPagesController < SessionsController
   def development_program_info
   end
 
+  def get_involved
+  end
+
   def join_team_program
     if signed_in?
       if current_user.programs.exists?(program_type: Program::TEAMS)
