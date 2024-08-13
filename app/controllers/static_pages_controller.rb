@@ -157,4 +157,10 @@ class StaticPagesController < SessionsController
     end
     redirect_back(fallback_location: root_path)
   end
+
+  def all_get_involved
+  end
+
+  def all_resources
+  end
 end

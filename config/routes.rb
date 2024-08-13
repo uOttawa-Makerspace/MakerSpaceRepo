@@ -138,6 +138,8 @@ Rails.application.routes.draw do
     get "volunteer_program_info"
     get "development_program_info"
     post "join_team_program"
+    get "all_get_involved"
+    get "all_resources"
   end
 
   # RFID
@@ -515,12 +517,6 @@ Rails.application.routes.draw do
       get :new_event
       get :populate_users
     end
-  end
-
-  resources :all_get_involved, only: [:index] do
-  end
-
-  resources :all_resources, only: [:index] do
   end
 
   resources :questions do
