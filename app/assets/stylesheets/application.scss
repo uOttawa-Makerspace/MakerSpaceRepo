@@ -372,12 +372,30 @@ td > .btn:not(:last-of-type) {
 // }
 
 .btn-dark-orange {
-  background-color: #e67e22; /* Darker orange color */
-  border-color: #e67e22; /* Make sure the border matches */
+  background-color: #f2994a; /* Default button color */
+  border-color: #f2994a; /* Match border color */
   color: #fff; /* White text color */
 }
 
 .btn-dark-orange:hover {
-  background-color: #d35400; /* Even darker orange on hover */
-  border-color: #d35400;
+  background-color: #e67e22; /* Darker orange on hover */
+  border-color: #e67e22;
+}
+
+.btn-darker-orange {
+  background-color: #e24829; /* Default button color */
+  border-color: #e24829;
+  color: #fff;
+}
+
+.btn-darker-orange:hover {
+  background-color: #c0392b; /* Darker shade on hover */
+  border-color: #c0392b;
+}
+
+.underline {
+  width: 50px; /* Adjust the width as needed */
+  height: 3px; /* Adjust the thickness as needed */
+  background-color: #e24829; /* Color of the underline */
+  margin-bottom: 1rem; /* Space between underline and the next element */
 }
