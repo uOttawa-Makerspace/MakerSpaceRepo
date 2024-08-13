@@ -393,9 +393,45 @@ td > .btn:not(:last-of-type) {
   border-color: #c0392b;
 }
 
+.makerstore-content {
+  max-width: 500px; /* Replaces inline style */
+}
+
+.btn-shop-now {
+  width: 200px; /* Replaces inline style */
+}
+
 .underline {
-  width: 50px; /* Adjust the width as needed */
-  height: 3px; /* Adjust the thickness as needed */
-  background-color: #e24829; /* Color of the underline */
-  margin-bottom: 1rem; /* Space between underline and the next element */
+  width: 50px;
+  height: 3px;
+  background-color: #e24829;
+}
+
+.overview-text {
+  margin: 0;
+  color: white;
+  font-size: 1.5vw;
+}
+
+.header-title {
+  margin: 0;
+  color: white;
+  font-size: 3.8vw;
+}
+
+.centered-content {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  padding: 20px 0;
+  max-width: 50%;
+}
+
+.background-overlay {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.3);
+  width: 100%;
+  height: 90%;
 }

@@ -2,16 +2,17 @@
   <div class="d-flex flex-column gap-5">
     
     <!-- Header Section -->
-    <div style="padding: 0;">
+   <div class="p-0">
+
       <div class="text-center" style="position: relative; background-image: url('<%= asset_path('redesign/all_resources/image 27.png') %>'); background-size: cover; background-position: center; background-repeat: no-repeat; width: 100%; padding-bottom: 22.53%;">
-        <div style="position: absolute; background: rgba(0, 0, 0, 0.3); width: 100%; height: 90%;">
-          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%; padding: 20px 0; max-width: 50%;">
-            <h1 class="fw-bold" style="margin: 0; color: white; font-size: 3.8vw;">
-              <%= t('all_resources.info.header') %>
-            </h1>
-            <p style="margin: 0; color: white; font-size: 1.5vw;">
-              <%= t('all_resources.info.overview') %>
-            </p>
+        <div class="background-overlay">
+          <div class="centered-content">
+           <h1 class="fw-bold header-title">
+  <%= t('all_resources.info.header') %>
+</h1>
+      <p class="overview-text">
+  <%= t('all_resources.info.overview') %>
+</p>
           </div>
         </div>
       </div>
@@ -56,11 +57,8 @@
 
 
 <div class="d-flex flex-row justify-content-center mx-4">
-  
   <div class="d-flex flex-column justify-content-center align-items-center me-4">
-    
     <h4 class="mb-3 justify-content-center fw-bold">Your Bookings</h4>
-   
     <div class="card mb-4 shadow-lg p-3">
       <% if signed_in? %>
         <%= image_tag('redesign/all_resources/image 31.png', class: 'card-img-top', alt: 'Program 4') %>
@@ -115,22 +113,14 @@
     <%= image_tag('redesign/all_resources/image 9.png', class: 'card-img-top', alt: 'Program 4') %>
   </div>
 
-<div class="d-flex flex-column justify-content-center ms-5" style="width: 500px;">
-
-  <h3 class="fw-bold mb-2"><%= t('all_resources.makerstore.title') %></h3>
-  <div class="underline mb-3"></div>
-  <p class="mb-1 text-black fs-5"><%= t('all_resources.makerstore.overview') %></p>
- <a href="https://makerstore.ca/" target="_blank">
-  <button class="btn btn-darker-orange rounded-pill py-2 mt-3" style="width: 200px;">Shop now</button>
-</a>
-
-</div>
+  <div class="d-flex flex-column justify-content-center ms-5 makerstore-content">
+    <h3 class="fw-bold mb-2"><%= t('all_resources.makerstore.title') %></h3>
+    <div class="underline mb-3"></div>
+    <p class="mb-1 text-black fs-5"><%= t('all_resources.makerstore.overview') %></p>
+    <a href="https://makerstore.ca/" target="_blank">
+      <button class="btn btn-darker-orange rounded-pill py-2 mt-3 btn-shop-now">Shop now</button>
+    </a>
 
 
 
-
-
-
-
-  </div>
 </section>
