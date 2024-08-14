@@ -106,7 +106,13 @@ class PrintersController < StaffAreaController
     else
       flash[:alert] = "Something went wrong"
     end
-    redirect_to staff_printers_printers_path
+    respond_to do |format|
+      # blame the client if something goes wrong
+      format.json do
+        render json: flash, status: flash[:alert] ? :bad_request : :ok
+      end
+      format.html { redirect_to staff_printers_printers_path }
+    end
   end
 
   def send_print_failed_message_to_user
@@ -132,6 +138,36 @@ class PrintersController < StaffAreaController
       redirect_to staff_printers_updates_printers_url
     elsif msg_params[:sent_from] == "printers"
       redirect_to staff_printers_printers_url #(anchor: 'failedPrintHeader')
+    end
+  end
+
+  # Keep it all in one to reduce network requests
+  def printer_data
+    data =
+      PrinterType
+        .includes(printers: :printer_issues)
+        .all
+        .map do |type|
+          {
+            id: type.id,
+            name: type.name,
+            short_form: type.short_form,
+            available: type.available,
+            printers:
+              type.printers.map do |p|
+                {
+                  id: p.id,
+                  number: p.number,
+                  maintenance: p.maintenance,
+                  has_issues: !p.printer_issues.empty?
+                }
+              end
+          }
+        end
+
+    respond_to do |format|
+      format.html { redirect_to root_path }
+      format.json { render json: data }
     end
   end
 

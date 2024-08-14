@@ -32,6 +32,7 @@ class Space < ApplicationRecord
 
   def signed_in_users
     lab_sessions
+      .includes(:user)
       .where("sign_out_time > ?", Time.zone.now)
       .order(sign_out_time: :desc)
       .map(&:user)
