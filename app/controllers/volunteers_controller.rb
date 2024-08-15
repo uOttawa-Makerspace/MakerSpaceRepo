@@ -11,7 +11,7 @@ class VolunteersController < ApplicationController
                 unless:
                   lambda {
                     controller_name == VolunteersController.controller_name &&
-                      %w[index index_redesign].include?(action_name)
+                      "index" == action_name
                   }
 
   before_action :grant_access_list,

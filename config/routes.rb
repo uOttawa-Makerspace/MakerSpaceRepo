@@ -140,7 +140,6 @@ Rails.application.routes.draw do
     get "report_repository/:repository_id",
         as: "report_repository",
         action: "report_repository"
-    get "volunteer_program_info"
     get "development_program_info"
     post "join_team_program"
   end
@@ -510,7 +509,6 @@ Rails.application.routes.draw do
 
   resources :volunteers, only: [:index] do
     collection do
-      get :index_redesign
       get :emails
       get :volunteer_list
       get :join_volunteer_program
