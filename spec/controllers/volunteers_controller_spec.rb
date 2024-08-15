@@ -3,6 +3,11 @@ require "rails_helper"
 RSpec.describe VolunteersController, type: :controller do
   describe "#index" do
     context "index" do
+      it "should show the index page (guest user)" do
+        get :index
+        expect(response).to have_http_status(:success)
+      end
+
       it "should show the index page (volunteer)" do
         user = create(:user, :volunteer_with_volunteer_program)
         session[:user_id] = user.id
