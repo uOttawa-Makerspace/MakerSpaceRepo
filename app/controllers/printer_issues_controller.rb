@@ -7,11 +7,9 @@ class PrinterIssuesController < StaffAreaController
       @issues
         .filter(&:active)
         .group_by do |issue|
-          if (PrinterIssue.summaries.values.include? issue.summary)
-            issue.summary
-          else
-            "Other"
-          end
+          PrinterIssue.summaries.values.detect do |s|
+            issue.summary.include? s
+          end || "Other"
         end
   end
 
@@ -32,7 +30,7 @@ class PrinterIssuesController < StaffAreaController
   end
 
   def create
-    printer = Printer.find_by(id: printer_issue_params[:printer])
+    printer = Printer.find_by(id: printer_issue_params[:printer_id])
     @issue =
       PrinterIssue.new(
         printer: printer,
@@ -55,6 +53,9 @@ class PrinterIssuesController < StaffAreaController
   end
 
   def edit
+    new
+    @issue = PrinterIssue.find(params[:id])
+    render :new, locals: { is_edit: true }
   end
 
   def update
@@ -68,16 +69,21 @@ class PrinterIssuesController < StaffAreaController
   end
 
   def destroy
-  end
-
-  def history
+    unless current_user.admin?
+      redirect_to printer_issues_path
+      return
+    end
+    unless PrinterIssue.find_by(id: params[:id]).destroy
+      flash[:alert] = "Failed to destroy issue"
+    end
+    redirect_to printer_issues_path, status: :see_other
   end
 
   private
 
   def printer_issue_params
     params.require(:printer_issue).permit(
-      :printer,
+      :printer_id,
       :summary,
       :description,
       :active

@@ -6,14 +6,21 @@
     <div>
       <h2><%= pt.name %></h2>
       <% latest_session = Printer.get_last_model_session(pt.name) %>
+      <% printers = pt.printers.reject(&:maintenance) %>
       <% if latest_session.present? %>
-        <div class="mb-2"><%= "Last Update: Printer Number: #{latest_session.printer.number} |
-                           User: #{latest_session.user.username.capitalize}" %></div>
+        <div class="mb-2">
+          <p>
+          <%= "Last Update: Printer Number: #{latest_session.printer.number} | User: #{latest_session.user.username.capitalize}" %>
+          <br />
+          <%= 'All printers are under maintenance!' if printers.blank? %>
+          </p>
+        </div>
       <% end %>
       <%= form_for :printer, url: { controller: 'printers', action: 'link_printer_to_user' }, method: :patch do |f| %>
         <div class="row mb-3">
           <div class="col-md-5">
-            <%= f.select(:printer_id, pt.printers.order(number: :asc).map { |p| [p.name + (p.maintenance ? ' - Maintenance' : ''), p.id] }, { prompt: 'Choose Number...' }, { class: 'link_pp form-control form-select', id: 'options' }) %>
+            <%= f.select(:printer_id, printers.map { |p| [p.name, p.id] },
+                         { prompt: 'Choose Number...' }, { class: 'link_pp form-control form-select', id: 'options' }) %>
           </div>
           <div class="col-md-5">
             <%= f.select(:user_id, @list_users, { prompt: 'Choose User...' }, { class: 'link_pp form-control form-select', id: pt.name.gsub(' ', '_') }) %>
@@ -22,7 +29,7 @@
             <%= f.submit 'Submit', class: 'btn btn-secondary' %>
           </div>
         </div>
-      <% end %>
+      <% end unless printers.blank? %>
     </div>
   <% end %>
   <hr />

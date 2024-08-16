@@ -60,7 +60,6 @@ class PrintersController < StaffAreaController
   end
 
   def staff_printers
-    @printers = Printer.all
     @list_users =
       User
         .joins(lab_sessions: :space)
