@@ -1,0 +1,40 @@
+<div class="card home-card">
+    <div class="card-body">
+        <h2 class="d-inline"><%= t('home.explore.header') %></h2>
+        <%= link_to t('home.show_all'), explore_path %>
+        <p><%= t('home.explore.subtext') %></p>
+        <% if @recent_projects.present? %>
+            <div id="exploreCarousel" class="carousel slide">
+                <div class="carousel-inner">
+                    <% @recent_projects.each_slice(3).with_index do |projects, index| %>
+                        <div class="carousel-item <%= 'active' if index == 0 %>">
+                            <div class="d-flex justify-content-center">
+                                <% projects.each do |project| %>
+                                    <div style="margin: 0 10px; border: 1px solid #ddd; border-radius: 5px; padding: 10px; width: 200px;">
+                                        <%= link_to repository_path(project.user_username, project.slug), style: 'text-decoration: none; color: inherit;' do %>
+                                            <%= image_tag project.photos.first.image, alt: project.title, style: 'max-height: 225px; max-width: 100%; width: auto; height: auto; display: block; margin: 0 auto;' if project.photos.first.present? %>
+                                            <div style="text-align: center; margin-top: 10px;">
+                                                <h5 style="font-size: 1.1em; margin-bottom: 5px;"><%= project.title %></h5>
+                                                <p style="color: #888; font-size: 0.9em;">by <%= project.user_username %></p>
+                                            </div>
+                                        <% end %>
+                                    </div>
+                                <% end %>
+                            </div>
+                        </div>
+                    <% end %>
+                </div>
+                <button class="carousel-control-prev" type="button" data-bs-target="#exploreCarousel" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true" style="background-color: black;"></span>
+                    <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#exploreCarousel" data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true" style="background-color: black;"></span>
+                    <span class="visually-hidden">Next</span>
+                </button>
+            </div>
+        <% else %>
+            <p><%= t('home.explore.no_socials') %></p>
+        <% end %>
+    </div>
+</div>

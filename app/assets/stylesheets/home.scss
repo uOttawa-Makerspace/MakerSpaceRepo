@@ -1,7 +1,39 @@
-@import "lib";
+//@import "lib";
 @import "./shared/variables";
 
 section#home {
+  .carouselCardPack {
+    scroll-snap-type: x mandatory;
+    white-space: nowrap;
+    text-wrap: nowrap;
+    overflow-y: clip; // hide vertical scroll bar
+    overflow-x: scroll;
+  }
+
+  .carouselCard {
+    width: 18rem;
+    height: 18rem;
+    scroll-snap-align: start;
+    display: inline-block;
+    //border: 1px solid gray;
+    img,
+    video {
+      display: block; // To keep videos in line
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+    }
+
+    &:hover {
+      @media screen and (prefers-reduced-motion: no-preference) {
+        transition: 100ms;
+      }
+      border: 10px solid white;
+      padding: 10px;
+    }
+  }
+
   #ShortcutButton {
     width: 100%;
     border: none;
@@ -56,8 +88,11 @@ section#home {
 
   #home-userinfo {
     img {
+      //display: block;
       border-radius: 50%;
-      max-width: 80%;
+      object-fit: cover;
+      width: 13rem;
+      height: 13rem;
     }
 
     .full-name {
@@ -113,8 +148,14 @@ section#home {
 
   .workshop-card {
     padding: 5px;
+    margin-bottom: 0.5rem;
     border: 1px solid $secondary;
     border-radius: 15px;
+    color: inherit;
+    &:hover {
+      color: $primary;
+      border-color: $primary;
+    }
     p {
       margin-bottom: 0;
       margin-top: 0;
@@ -129,6 +170,8 @@ section#home {
       padding-right: 2rem;
       line-height: 1;
       align-content: center;
+      background-image: url("assets/vr.jpg");
+      background-size: cover;
     }
 
     .workshop-title {

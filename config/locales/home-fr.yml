@@ -3,7 +3,12 @@ fr:
     show_more: "Voir en plus"
     show_all: "Voir tout"
     follow_us: "Suivez-nous"
-    explore: "Découvrir"
+    explore:
+      header: "Découvrir"
+      subtext: "Explorer des projects réalisés par les étudiants"
+      no_projects: "Pas de projects récents disponible maintenant..."
+    makerstore:
+      subtext: "Nos meilleures ventes"
     staff_resources:
       header: Ressources des employés
       staff_area: Zone des employés
@@ -17,6 +22,8 @@ fr:
     shortcuts:
       header: "Raccourcis"
       recently_opened: "Récemment consultés"
+      no_recently_opened: "Aucune projet n'a été vu"
+      explore_more: "Explorer en plus"
       ask_for_sign_in: "Se connecter pour voir les tâches récemment consultés"
       volunteer_program_header: "Programme des Bénévoles"
       volunteer_program_desc:
@@ -64,7 +71,11 @@ fr:
       header: "Voulez-vous savoir quand aura lieu le prochain événement?"
       subtext: "Entrez votre email pour vous inscrire à notre infolettre"
       sign_up: "S'inscrire"
+    workshops:
+      header: "Ateliers cette semaine"
     welcome:
       welcome_to: "Bienvenue à MakerRepo"
       welcome_subheader: "Voici le site de dépôt du <b>CEED</b>"
       hour_header: "Heures d'ouverture"
+    socials:
+      subtext: "Restez informé avec notre reseaux sociaux"

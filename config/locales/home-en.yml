@@ -1,8 +1,14 @@
 en:
   home:
     show_more: "Show more"
+    show_all: "Show All"
     follow_us: "Follow us"
-    explore: "Explore"
+    explore:
+      header: "Explore"
+      subtext: "Browse completed student projects"
+      no_projects: "No recent projects available..."
+    makerstore:
+      subtext: "Our Best Sellers"
     staff_resources:
       header: "Staff Resources"
       staff_area: "Staff Area"
@@ -16,6 +22,8 @@ en:
     shortcuts:
       header: "Shortcuts"
       recently_opened: "Recently Opened"
+      no_recently_opened: "No recently viewed projects"
+      explore_more: "Explore more projects"
       ask_for_sign_in: "Sign in to view recently opened tasks"
       volunteer_program_header: "Volunteer Program"
       volunteer_program_desc:
@@ -63,7 +71,11 @@ en:
       header: "Want to know when our next big event is happening?"
       subtext: "Enter your email to sign up to our newsletter"
       sign_up: "Sign up"
+    workshops:
+      header: "Workshops this week"
     welcome:
       welcome_to: "Welcome to MakerRepo"
       welcome_subheader: "This is <b>CEED's</b> repository website"
       hour_header: "Space hours this week"
+    socials:
+      subtext: "Stay up to date with our socials"

@@ -6,16 +6,20 @@ require "google/apis/calendar_v3"
 class VolunteersController < ApplicationController
   layout "volunteer"
   before_action :current_user
+  before_action :signed_in, only: :join_volunteer_program
   before_action :grant_access,
                 except: %i[join_volunteer_program],
                 unless:
                   lambda {
                     controller_name == VolunteersController.controller_name &&
-                      action_name == "index"
+                      "index" == action_name
                   }
 
   before_action :grant_access_list,
                 only: %i[volunteer_list create_event delete_event new_event]
+
+  # A little bit special with headers and all
+  layout "application", only: :index_redesign
 
   def index
     @user = current_user

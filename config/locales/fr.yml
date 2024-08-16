@@ -17,6 +17,7 @@ fr:
     get_involved: "Participez"
     workshops: "Ateliers"
     join_a_team: "Joindre un équipe"
+    all_get_involved: "Tous impliqués"
     volunteering: "Bénévolat"
     makerlaunch: "Makerlaunch"
     # Resources
@@ -84,7 +85,7 @@ fr:
     contact_us: "Contactez-nous"
     help: "Aide"
     newsletter_header: "Restez Connecté"
-    newsletter_subtext: "Inscrivez-vous à notre infolettre pour rester à jour <br /> avec les dernières nouvelles du CEED."
+    newsletter_subtext: "Inscrivez-vous à notre infolettre pour rester à jour avec les dernières nouvelles du CEED."
     copyright_html: 'Copyright &copy; %s <a href="https://genie.uottawa.ca/CGEC">Centre en génie entrepreneurial de la conception</a> et <a href="https://github.com/uOttawa-Makerspace/MakerSpaceRepo/graphs/contributors">les contributeurs MakerRepo</a>'
   users:
     reset_password: "Réinitialiser le mot de passe"

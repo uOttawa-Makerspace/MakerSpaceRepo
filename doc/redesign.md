@@ -6,6 +6,18 @@ Three columns, the middle one being wider than the others.
 
 Mobile view is implemented by hiding tiles based on screen size. Bootstrap offcanvas is used for the shortcuts link up top
 
+## Please use decent, modern CSS
+
+User accessibility is required by the law :^).
+
+It's <%= Date.today.year %>, use rem in your CSS and not px. It's responsive for mobile dev and is based on the parent's font size (16px default, but we mess with it a bit). You can use it for everything, margin, padding, line height, anywhere instead of px. Padding and margins are usually nicer with percentage values instead. A lot of legacy css still uses px, convert to rem and test on mobile.
+
+Do NOT use `style=''` attributes under any circumstance, not even for one off elements. Use bootstrap utilities or make a special class in the stylesheet. Always 'namespace' stylesheets by targeting a section with an ID to prevent class conflict and accidentally targeting another element in another page with the same name. There's a lot of unused and rarely used classes, not all properly namespaced.
+
+If you need to work on CSS, most likely Bootstrap already has a page explaining how to do it in a responsive and accessible way. Always consult the docs, research before starting. There's nothing wrong with custom CSS, but it's not worth it if it's already available and installed.
+
+https://getbootstrap.com/docs/5.3/getting-started/introduction/
+
 ## Navbar:
 
 `app/javascript/entrypoints/header.js` contains scripts for scrolling the header navbar. It is currently disabled and really would rather refactor it than just re-enable and patch it.
