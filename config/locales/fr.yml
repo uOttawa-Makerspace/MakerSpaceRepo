@@ -17,9 +17,10 @@ fr:
     get_involved: "Participez"
     workshops: "Ateliers"
     join_a_team: "Joindre un équipe"
-    all_get_involved: "Tous impliqués"
+    join_a_team_url: "https://www.uottawa.ca/faculte-genie/experience-etudiante/equipes-competitives"
     volunteering: "Bénévolat"
     makerlaunch: "Makerlaunch"
+    makerlaunch_url: "https://www.uottawa.ca/notre-universite/makerlaunch-au-service-de-lentrepreneuriat-en-genie"
     # Resources
     resources: "Ressources"
     ceed_wiki: "CEED Wiki"

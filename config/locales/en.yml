@@ -17,9 +17,10 @@ en:
     get_involved: "Get Involved"
     workshops: "Workshops"
     join_a_team: "Join A Team"
-    all_get_involved: "All Get Involved"
+    join_a_team_url: "https://www.uottawa.ca/faculty-engineering/student-experience/competitive-teams"
     volunteering: "Volunteer Program"
     makerlaunch: "Makerlaunch"
+    makerlaunch_url: "https://www.uottawa.ca/about-us/makerlaunch-boosting-engineering-entrepreneurs"
     # Resources
     resources: "Resources"
     ceed_wiki: "CEED Wiki"
