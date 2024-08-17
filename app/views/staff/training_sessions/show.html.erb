@@ -1,12 +1,12 @@
 <section class="page-contents">
   <% unless @current_training_session.completed? %>
-    <script>
-     window.addEventListener('beforeunload', (event) => {
-       event.preventDefault();
-       // Included for legacy support, e.g. Chrome/Edge < 119
-       event.returnValue = true;
-     });
-    </script>
+    <!-- <script>
+         window.addEventListener('beforeunload', (event) => {
+         event.preventDefault();
+         // Included for legacy support, e.g. Chrome/Edge < 119
+         event.returnValue = true;
+         });
+         </script> -->
   <% end %>
   <div class="padding">
     <div style="font-weight:bold;font-size:1.4em;">Training Session #<%= @current_training_session.id %></div>
@@ -197,11 +197,11 @@
     <br />
       <% if @user.admin? || @current_training_session.user == @user %>
       <div class="text-center">
-    <%= link_to 'Destroy', { action: :destroy },
-                method: :delete,
-                data: { confirm: 'Cancelling a training session also deletes all corresponding certifications. OK to confirm.' },
-                class: 'btn btn-danger',
-                style: 'color: #fff;' %>
+    <%= button_to 'Destroy', { action: :destroy },
+                  method: :delete,
+                  data: { confirm: 'Cancelling a training session also deletes all corresponding certifications. OK to confirm.' },
+                  class: 'btn btn-danger',
+                  style: 'color: #fff;' %>
                 </div>
   <% end %>
   </div>
