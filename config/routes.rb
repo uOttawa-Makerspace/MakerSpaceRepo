@@ -121,6 +121,10 @@ Rails.application.routes.draw do
   end
 
   resources :printer_types, except: %i[show]
+  resources :printer_issues,
+            only: %i[index show new create edit update destroy] do
+    collection { get :history }
+  end
 
   resources :kiosk, only: %i[index show edit] do
     post :sign_email
@@ -140,9 +144,9 @@ Rails.application.routes.draw do
     get "report_repository/:repository_id",
         as: "report_repository",
         action: "report_repository"
-    get "volunteer_program_info"
     get "development_program_info"
     post "join_team_program"
+    get "get_involved"
   end
 
   # RFID

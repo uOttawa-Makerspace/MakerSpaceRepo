@@ -1,6 +1,122 @@
-// Place all the styles related to the volunteers controller here.
-// They will automatically be included in application.css.
-// You can use Sass (SCSS) here: http://sass-lang.com/
+@import "./shared/variables";
+
+section#volunteersIndex {
+  .jumbotron {
+    background-image: linear-gradient(rgba(white, 0) 20%, $primary),
+      url("volunteer/jumbotron.png");
+    background-size: cover;
+    background-color: black;
+    background-position: center;
+
+    width: 100%;
+    // ~920px, size of background image
+    // actually don't set height, breaks mobile
+    //height: 55rem;
+    text-align: center;
+    padding-left: 20%;
+    padding-right: 20%;
+    padding-top: 15%;
+
+    & > * {
+      margin-bottom: 3rem;
+    }
+
+    h1 {
+      color: white;
+      font-weight: 700;
+      //font-size: 5rem;
+      line-height: 1.2;
+      text-shadow: 0 3px 4px black;
+    }
+
+    p {
+      color: white;
+      font-size: 1.2rem;
+      text-shadow: 0 4px 4px black;
+    }
+
+    .btn-primary {
+      color: $primary;
+      background-color: white;
+      border-color: white;
+      font-size: 1.4rem;
+      padding: 2%;
+    }
+  }
+
+  h2 {
+    text-transform: capitalize;
+    //font-size: 2.5rem;
+    font-weight: 700;
+    //margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  i.fa {
+    font-size: 4rem;
+    color: $primary;
+  }
+
+  .subtext-primary {
+    color: $primary;
+    font-weight: 700;
+  }
+
+  .numberedCard {
+    // The big number
+    & > p {
+      background-color: $primary;
+      width: 5rem;
+      height: 5rem;
+      line-height: 5rem;
+      text-align: center;
+      color: white;
+      font-size: 3rem;
+      font-family: sans-serif;
+      border-radius: 50%;
+      margin-top: auto;
+      margin-bottom: auto;
+    }
+
+    // Padding and background card
+    border: 2px solid $secondary;
+    border-radius: 25px;
+    background-color: white;
+    margin-bottom: 1rem;
+    padding: 1% 5%;
+
+    // Text body
+    .numberedBody {
+      width: 75%; // Keeps ul from breaking
+      // Card header
+      & > p:first-child {
+        font-size: 1.5rem;
+        font-weight: 700;
+      }
+      // The square lists
+      // fa-ul is broken, im doing it myself
+      .fa {
+        font-size: 3rem;
+        color: $primary;
+        vertical-align: middle;
+        padding-right: 1rem;
+      }
+    }
+  }
+
+  .box-subtext {
+    background-color: white;
+    padding: 5%;
+    border-radius: 16px;
+    box-shadow: 0px 4px 24.1px 0px #00000040;
+    h3 {
+      font-weight: 700;
+    }
+    p {
+      font-size: 1.5rem;
+    }
+  }
+}
 
 .x-button {
   color: #af0000;

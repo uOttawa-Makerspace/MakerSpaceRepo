@@ -1,0 +1,33 @@
+<div class="text-center">
+    <% if local_assigns[:is_edit] == true %>
+    <h1 class="title">Edit issue #<%= @issue.id %></h1>
+    <% else %>
+    <h1 class="title">Create new issue</h1>
+    <% end %>
+    <%= form_with model: @issue, class: 'text-start', autocomplete: 'off' do |f| %>
+        <div class="row row-cols-2">
+            <div class="form-group">
+                <%= f.label :summary, class: 'form-label' %>
+                <%= f.text_field :summary, class: 'form-control', required: 'required', value: (params[:summary] or @issue.summary), autocomplete: 'off' %>
+                <div class="invalid-feedback">A similar issue might exist for this printer!</div>
+            </div>
+            <div class="form-group">
+                <%= f.label :printer_id, class: 'form-label w-100' %>
+                <%= f.select :printer_id, options_from_collection_for_select(@printers, :id, :name, (params['report_printer'] or @issue.printer&.id)), {}, { autocomplete: 'off', class: 'form-select', required: 'required' } %>
+            </div>
+        </div>
+        <div class="form-group my-3">
+            <%= f.label :description, value: 'Issue description (optional)', class: 'form-label' %>
+            <%= f.trix_editor :description, class: 'form-control' %>
+        </div>
+        <%= f.submit 'Submit issue', class: 'btn btn-primary' %>
+        <%= link_to 'Back', printer_issues_path, class: 'btn btn-secondary float-end' %>
+    <% end %>
+    <% if local_assigns[:is_edit] && current_user.admin? %>
+    <%= button_to 'Destroy issue', @issue, class: 'btn btn-danger', method: :delete %>
+    <% end %>
+</div>
+<script>
+ <%# this is begging for an XSS, https://apidock.com/rails/ERB/Util/json_escape %>
+ issueSummary = <%= raw json_escape(@issueSummary.to_json) %>
+</script>

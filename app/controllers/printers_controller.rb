@@ -18,12 +18,14 @@ class PrintersController < StaffAreaController
 
   def update
     if Printer.find_by(id: params[:id]).update(printer_params)
-      flash[:notice] = "Printer updated"
+      flash[
+        :notice
+      ] = "Printer #{Printer.find_by(id: params[:id]).name} updated"
     else
       flash[:alert] = "Failed to update printer"
     end
 
-    redirect_to printers_path
+    redirect_back fallback_location: printers_path
   end
 
   def add_printer
@@ -58,7 +60,6 @@ class PrintersController < StaffAreaController
   end
 
   def staff_printers
-    @printers = Printer.all
     @list_users =
       User
         .joins(lab_sessions: :space)

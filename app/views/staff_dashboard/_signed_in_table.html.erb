@@ -37,7 +37,7 @@
             <% if @space.makerspace? %>
               <td class="printers-cell">
                 <% @printers_in_use.where(user_id: user.id).each do |printer_session| %>
-                  <p class="m-0"><%= printer_session.printer.number %></p>
+                  <p class="m-0"><%= printer_session.printer.name %></p>
                 <% end %>
               </td>
             <% end %>
