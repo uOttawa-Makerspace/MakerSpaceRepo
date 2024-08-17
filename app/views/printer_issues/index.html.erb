@@ -81,7 +81,7 @@
                     <td>
                         <div class="btn-group" role="group">
                             <%= link_to 'Open', issue, class: 'btn btn-primary' %>
-                            <%= button_to issue.active ? 'Close' : 'Reopen', printer_issue_path(issue, params: { printer_issue: { active: !issue.active } }), method: :patch, class: 'btn btn-secondary' %>
+                            <%= button_to issue.active ? 'Close' : 'Reopen', printer_issue_path(issue), params: { printer_issue: { active: !issue.active } }, method: :patch, class: 'btn btn-secondary' %>
                         </div>
                     </td>
                 </tr>

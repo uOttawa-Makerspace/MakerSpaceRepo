@@ -24,5 +24,9 @@ FactoryBot.define do
       association :printer_type, :Dremel
       number { "17" }
     end
+    trait :Random do
+      association :printer_type, :Random
+      sequence(:number)
+    end
   end
 end
