@@ -8,6 +8,7 @@ class Printer < ApplicationRecord
         -> {
           order("printer_type_id ASC, length(number) ASC, lower(number) ASC")
         }
+  default_scope { show_options }
 
   validates :number, presence: true, uniqueness: { scope: :printer_type_id }
 
@@ -40,12 +41,12 @@ class Printer < ApplicationRecord
   end
 
   def group_printer_issues
+    # NOTE this might cause performance issues
+    # what is this, O(n^2)?
+    # If you ever touch this, checkout the one in printer_issues_controller#index
     active_printer_issues.group_by do |issue|
-      if (PrinterIssue.summaries.values.include? issue.summary)
-        issue.summary
-      else
+      PrinterIssue.summaries.values.detect { |s| issue.summary.include? s } ||
         "Other"
-      end
     end
   end
 

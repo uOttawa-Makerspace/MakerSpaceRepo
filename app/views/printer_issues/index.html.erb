@@ -40,10 +40,14 @@
                     <td><%= issue.summary %></td>
                     <td><%= issue.description.html_safe %></td>
                     <td><%= issue.reporter.name %></td>
-                    <td><%= issue.created_at %></td>
-                    <td><%= issue.updated_at %></td>
+                    <td><%= issue.created_at.to_formatted_s :db %></td>
+                    <td><%= issue.updated_at.to_formatted_s :db %></td>
                     <td>
-                        <%= button_to issue.active ? 'Close' : 'Reopen', printer_issue_path(issue), method: :patch, params: { printer_issue: { active: !issue.active } }, class: 'btn btn-primary' %>
+                        <div class="btn-group" role="group">
+                            <%= link_to 'Show', issue, class: 'btn btn-primary' %>
+                            <%= link_to 'Edit', edit_printer_issue_path(issue), class: 'btn btn-secondary' %>
+                            <%= button_to issue.active ? 'Close' : 'Reopen', printer_issue_path(issue), method: :patch, params: { printer_issue: { active: !issue.active } }, class: 'btn btn-danger' %>
+                        </div>
                     </td>
                 </tr>
             <% end %>
@@ -72,10 +76,13 @@
                     <td><%= issue.summary %></td>
                     <td><%= issue.description.html_safe %></td>
                     <td><%= issue.reporter.name %></td>
-                    <td><%= issue.created_at %></td>
-                    <td><%= issue.updated_at %></td>
+                    <td><%= issue.created_at.to_formatted_s :db %></td>
+                    <td><%= issue.updated_at.to_formatted_s :db %></td>
                     <td>
-                        <%= button_to issue.active ? 'Close' : 'Reopen', printer_issue_path(issue, params: { printer_issue: { active: !issue.active } }), method: :patch, class: 'btn btn-secondary' %>
+                        <div class="btn-group" role="group">
+                            <%= link_to 'Open', issue, class: 'btn btn-primary' %>
+                            <%= button_to issue.active ? 'Close' : 'Reopen', printer_issue_path(issue), params: { printer_issue: { active: !issue.active } }, method: :patch, class: 'btn btn-secondary' %>
+                        </div>
                     </td>
                 </tr>
             <% end %>
