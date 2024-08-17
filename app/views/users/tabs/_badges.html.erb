@@ -17,6 +17,7 @@
       <% end %>
     </div>
     <% elsif @repo_user.eql?(@user) %>
+    <p>You don't have any badges.</p>
     <%= link_to 'Get a badge from the learning area', learning_area_index_path %>
     <% else %>
     <p>No badges to show...</p>
