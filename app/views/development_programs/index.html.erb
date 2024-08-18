@@ -1,155 +1,153 @@
-<section>
-  <div class="col-lg-10 mx-auto">
-    <br/>
-
-    <h2 class="text-center"><%= t('development_program.header') %></h2>
-    <br>
-
-    <% unless not signed_in? or @user.dev_program? %>
-
-    <div class="h-100 p-4 bg-light border rounded-3 mb-2 text-center">
-      <h2><%= t('development_program.not_in_dev_program.header').html_safe %></h2>
-      <p><%= t('development_program.not_in_dev_program.content').html_safe %></p>
-      <p><%= t('development_program.not_in_dev_program.link').html_safe %></p>
+<section id="volunteersIndex">
+    <div class="jumbotron">
+        <h1 class="display-1">Enrich your experience by volunteering with <span class="text-primary">CEED</span></h1>
+        <p>The volunteer program allows members to become more involved in the Makerspace.<br />This program is a great way to meet new people, and work on fun projects.</p>
+        <%= link_to 'Join the volunteering program', join_volunteer_program_volunteers_path, class: 'btn btn-primary' %>
     </div>
-
-    <% end %>
-
-    <h3 class="text-center text-muted"><%= t('development_program.overview.header') %></h3>
-    <p>
-      <%= t('development_program.overview.paragraph') %>
-
-      <%= image_tag('development_program/ceed_volunteering.png', class: 'img-fluid', alt: 'Diagram for the steps of volunteering') %>
-
-    </p>
-
-    <h4 class="mt-3 text-center text-muted"><%= t('development_program.learning_area.header').html_safe %></h4>
-
-    <p>
-      <%= t('development_program.learning_area.paragraph') %>
-    </p>
-
-    <h4 class="mt-3 mt-3 text-center text-muted"><%= t('development_program.proficient_projects.header').html_safe %></h4>
-
-    <p>
-      <%= t('development_program.proficient_projects.paragraph') %>
-    </p>
-
-    <h4 class="mt-3 mt-3 text-center text-muted"><%= t('development_program.skills_badges.header').html_safe %></h4>
-
-    <p>
-      <%= t('development_program.skills_badges.paragraph') %>
-    </p>
-    <p><b><%= t('development_program.skills_badges.footer').html_safe %>.</b></p>
-
-    <h3 class="mt-3 mt-3 text-center text-muted"><%= t('development_program.digital_badges.header') %></h3>
-    <p class="text-center"><b>
-      <%= t('development_program.digital_badges.example').html_safe %>
-    </b></p>
-    <div class="text-center">
-    <%= image_tag('development_program/1.png', class: 'img-fluid mx-auto', alt: 'Diagram explaining the steps for the badges, Learn it, Earn it, Share it') %>
+    <div class="shadow">
+        <%= render partial: 'layouts/development_program_header' %>
     </div>
-    <br/>
-    <br>
-    <div class="row">
-      <div class="col-md-4">
-        <div class="card">
-          <div class="card-header">
-            <%= t('development_program.digital_badges.tables.digital_technologies.title') %>
-          </div>
-          <ul class="list-group list-group-flush">
-            <li class="list-group-item"><%= t('development_program.digital_badges.tables.digital_technologies.3d_printing') %></li>
-            <li class="list-group-item"><%= t('development_program.digital_badges.tables.digital_technologies.laser_cutting') %></li>
-            <li class="list-group-item"><%= t('development_program.digital_badges.tables.digital_technologies.arduino') %></li>
-            <li class="list-group-item"><%= t('development_program.digital_badges.tables.digital_technologies.soldering') %></li>
-            <li class="list-group-item"><%= t('development_program.digital_badges.tables.digital_technologies.virtual_reality') %></li>
-            <li class="list-group-item"><%= t('development_program.digital_badges.tables.digital_technologies.embroidery') %></li>
-          </ul>
+    <div class="p-3 container-lg">
+        <div class="row">
+            <div class="col-lg-6">
+                <p class="fs-4 text-primary fw-bold text-uppercase">Hungry for more: What's next?</p>
+                <h2 class="my-5 display-5">Expand employment opportunities by earning certificates with <span class="text-primary">CEED</span></h2>
+            </div>
+            <div class="offset-lg-1 col-lg-5">
+                <div>
+                    <i class="fa fa-floppy-o" aria-hidden="true"></i>
+                    <p>Gain valuable experience with technology</p>
+                </div>
+                <div>
+                    <i class="fa fa-users" aria-hidden="true"></i>
+                    <p>Meet people with similar interests</p>
+                </div>
+                <div>
+                    <i class="fa fa-comments-o" aria-hidden="true"></i>
+                    <p>Collaborate on cool new projects</p>
+                </div>
+                <div>
+                    <i class="fa fa-cloud" aria-hidden="true"></i>
+                    <p>Get involved with the Maker network</p>
+                </div>
+                <div>
+                    <i class="fa fa-gift" aria-hidden="true"></i>
+                    <p>Receive awesome rewards!</p>
+                </div>
+            </div>
         </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card">
-          <div class="card-header">
-            <%= t('development_program.digital_badges.tables.professional_development.title') %>
-          </div>
-          <ul class="list-group list-group-flush">
-            <li class="list-group-item"><%= t('development_program.digital_badges.tables.professional_development.design_thinking') %></li>
-            <li class="list-group-item"><%= t('development_program.digital_badges.tables.professional_development.entrepreneurship_basics') %></li>
-            <li class="list-group-item"><%= t('development_program.digital_badges.tables.professional_development.project_management') %></li>
-            <li class="list-group-item"><%= t('development_program.digital_badges.tables.professional_development.effective_communication') %></li>
-          </ul>
+        <!-- This block has awful layout, hope it works on safari :^) -->
+        <div class="row g-3 my-5">
+            <div class="col-lg-4">
+                <div class="linkBox">
+                    <h2>Learning Area</h2>
+                    <p>You can learn from all these projects for free. Some of them are a pre-requisite for other projects in the Proficient Projects Area.</p>
+                    <a class="linkPill" href="#">New module</a>
+                    <a class="linkPill" href="#">All module</a>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="linkBox">
+                    <h2>Proficient Projects</h2>
+                    <p>These projects are more advanced and not free. You can either purchase it with your credit card or use your CC points.</p>
+                    <a class="linkPill" href="#">Requests</a>
+                    <a class="linkPill" href="#">New project</a>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="linkBox">
+                    <h2>Learning Area</h2>
+                    <p>Enhance your technical skills with our development program. Unlock new challenges as you progress, and earn digital badges for completing proficiency projects.</p>
+                    <a class="linkPill" href="#">Skills</a>
+                    <a class="linkPill" href="#">Badges</a>
+                    <a class="linkPill" href="#">Badges <br /> Requests</a>
+                    <a class="linkPill" href="#">Grant/Revoke <br /> badge to user</a>
+                </div>
+            </div>
         </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card">
-          <div class="card-header">
-            <%= t('development_program.digital_badges.tables.manufacturing_technologies.title') %>
-          </div>
-          <ul class="list-group list-group-flush">
-            <li class="list-group-item"><%= t('development_program.digital_badges.tables.manufacturing_technologies.shop_fundamentals') %></li>
-            <li class="list-group-item"><%= t('development_program.digital_badges.tables.manufacturing_technologies.lathe') %></li>
-            <li class="list-group-item"><%= t('development_program.digital_badges.tables.manufacturing_technologies.mill') %></li>
-            <li class="list-group-item"><%= t('development_program.digital_badges.tables.manufacturing_technologies.cnc') %></li>
-            <li class="list-group-item"><%= t('development_program.digital_badges.tables.manufacturing_technologies.welding') %></li>
-          </ul>
-        </div>
-      </div>
+        <p class="fs-3 fw-bold m-3">Our modular Development Program is designed to plan, track, and accredit your skill development effortlessly. The Development Program will make use of industry standardized certificates that are convenient to share, and electronically verifiable for your future employers.</p>
     </div>
-
-    <h3 class="mt-3 mt-3 text-center text-muted"><%= t('development_program.volunteer.header') %></h3>
-    <p>
-      <%= t('development_program.volunteer.paragraph_1') %>
-    </p>
-    <p>
-      <%= t('development_program.volunteer.paragraph_2') %>
-    </p>
-    <p><b><%= t('development_program.volunteer.list.title') %></b></p>
-    <ul style="list-style-type: disc!important;">
-      <li><%= t('development_program.volunteer.list.point_1') %></li>
-      <li><%= t('development_program.volunteer.list.point_2') %></li>
-      <li><%= t('development_program.volunteer.list.point_3') %></li>
-      <li><%= t('development_program.volunteer.list.point_4') %></li>
-    </ul>
-    <p>
-      <%= t('development_program.volunteer.paragraph_3').html_safe %>
-    </p>
-
-    <h3 class="mt-3 mt-3 text-center text-muted"><%= t('development_program.courses.header') %></h3>
-    <p><%= t('development_program.courses.paragraph_1') %></p>
-    <p>
-      <%= t('development_program.courses.paragraph_2') %>
-    </p>
-    <br>
-    <p><b><%= t('development_program.courses.requirement_list.title') %></b></p>
-    <ul style="list-style-type: disc!important;">
-      <li><%= t('development_program.courses.requirement_list.point_1') %></li>
-      <li><%= t('development_program.courses.requirement_list.point_2') %></li>
-      <li><%= t('development_program.courses.requirement_list.point_3') %></li>
-      <li><%= t('development_program.courses.requirement_list.point_4') %></li>
-    </ul>
-    <br>
-    <p><b><%= t('development_program.courses.on_completion_list.title') %></b></p>
-    <ul style="list-style-type: disc!important;">
-      <li><%= t('development_program.courses.on_completion_list.point_1') %></li>
-      <li><%= t('development_program.courses.on_completion_list.point_2') %></li>
-    </ul>
-    <p>
-      <%= t('development_program.courses.paragraph_3').html_safe %>
-    </p>
-
-    <h3 class="mt-3 mt-3 text-center text-muted"><%= t('development_program.employment.header') %></h3>
-    <p>
-      <%= t('development_program.employment.paragraph_1') %>
-    </p>
-    <p>
-      <%= t('development_program.employment.paragraph_2') %>
-    </p>
-
-    <h3 class="mt-3 mt-3 text-center text-muted"><%= t('development_program.contact.header') %></h3>
-    <p><%= t('development_program.contact.paragraph_1') %></p>
-    <p><%= t('development_program.contact.contact_1').html_safe %></p>
-    <p><%= t('development_program.contact.contact_2').html_safe %></p>
-    <br>
-  </div>
+    <!-- FIXME make this the secondary color(?) -->
+    <div class="bg-body-tertiary p-3 text-center text-uppercase">
+        <h2 class="text-uppercase">Digital Badges</h2>
+        <p class="fs-3 fw-bold text-primary">Example of what employeers see on each badge profile</p>
+        <div class="row">
+            <div class="col-lg-6">
+                <%= image_tag 'development_program/1.png', class: 'w-100' %>
+            </div>
+            <div class="col-lg-6">
+                <div class="row row-cols-lg-3 g-3">
+                    <div class="col">
+                        <div class="linkBox">
+                            <h4>Digital Technologies</h4>
+                            <a class="linkPill" href="#">3D Printing</a>
+                            <a class="linkPill" href="#">Laser Cutting</a>
+                            <a class="linkPill" href="#">Arduino</a>
+                            <a class="linkPill" href="#">Soldering</a>
+                            <a class="linkPill" href="#">Virtual Reality</a>
+                            <a class="linkPill" href="#">Embroidery</a>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="linkBox">
+                            <h4>Professional Development</h4>
+                            <a class="linkPill" href="#">Design Thinking</a>
+                            <a class="linkPill" href="#">Entrepreneurship basics</a>
+                            <a class="linkPill" href="#">Project Management</a>
+                            <a class="linkPill" href="#">Effective Communication (Written and Oral)</a>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="linkBox">
+                            <h4>Manufacturing Technologies</h4>
+                            <a class="linkPill" href="#">Shop Fundamentals</a>
+                            <a class="linkPill" href="#">Lathe</a>
+                            <a class="linkPill" href="#">Mill</a>
+                            <a class="linkPill" href="#">CNC</a>
+                            <a class="linkPill" href="#">Welding</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container-lg">
+        <div class="row row-cols-lg-2">
+            <div class="col">
+                <h2>Volunteer</h2>
+                <p>Volunteering is a great way to gain valuable skills and boost self-confidence while making a difference. Our enhanced development program will guide volunteers through more challenging tasks, helping them grow and earn rewards along the way. Learn more about how the volunteer program works by clicking here.</p>
+                <a class="btn btn-secondary">More about volunteering</a>
+            </div>
+            <div class="col">
+                <h3>Volunteers can now:</h3>
+                <ul style="list-style-position: inside;">
+                    <li class="linkBox">Unlock different tasks based on their skill level</li>
+                    <li class="linkBox">Track their skill progress through their MakerRepo account.</li>
+                    <li class="linkBox">Each task will reward CEED Credit (CC) to be used in our makerstore</li>
+                    <li class="linkBox">Each task will have predetermined hours to be rewarded upon completion</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="bg-body-tertiary p-3">
+<div class="container-lg">
+        <h2 class="text-center text-uppercase">Unemployment</h2>
+        <p class="text-center text-primary">CEED development program will make you more attractive to employers. </p>
+        <div class="row row-cols-lg-2">
+            <div>
+            <p>Proficiency badges and trainings will offer you an opportunity to find employment opportunities within CEED and other organizations. CEED hires over 50 students every term in addition to 15 TAs for the courses.</p>
+            </div>
+            <div style="max-width: 100%; background-color: grey; max-height: 75%;">
+                image lol
+            </div>
+        </div>
+</div>
+    </div>
+    <div class="container">
+        <div class="box-subtext mt-5">
+            <h2>Interested in volunteering?</h2>
+            <p>The process of volunteering is flexible. Talk to us about accommodations. </p>
+            <p>For any questions, email us at: <a href="mailto:volunteer@makerepo.com">volunteer@makerepo.com</a></p>
+        </div>
+    </div>
 </section>
-

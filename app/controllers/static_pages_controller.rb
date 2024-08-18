@@ -97,9 +97,6 @@ class StaticPagesController < SessionsController
   def forgot_password
   end
 
-  def development_program_info
-  end
-
   def get_involved
   end
 
