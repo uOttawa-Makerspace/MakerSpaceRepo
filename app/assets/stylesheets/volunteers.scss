@@ -114,9 +114,6 @@ section#volunteersIndex {
     h3 {
       font-weight: 700;
     }
-    h2 {
-      color: $primary;
-    }
     p {
       font-size: 1.5rem;
     }
@@ -139,19 +136,19 @@ section#volunteersIndex {
     h2 {
       color: $primary;
     }
-  }
 
-  .linkPill {
-    display: block;
-    text-transform: uppercase;
-    padding: 0.8rem;
-    border-radius: 0.5rem;
-    font-size: 700;
-    background-color: white;
-    box-shadow: 0px 4px 14px 0px #00000040;
-    color: black;
-    &:hover {
-      color: $primary;
+    a {
+      display: block;
+      text-transform: uppercase;
+      padding: 0.8rem;
+      border-radius: 0.5rem;
+      font-size: 700;
+      background-color: white;
+      box-shadow: 0px 4px 14px 0px #00000040;
+      color: black;
+      &:hover {
+        color: $primary;
+      }
     }
   }
 }

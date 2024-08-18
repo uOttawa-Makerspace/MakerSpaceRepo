@@ -7,33 +7,14 @@
     <div class="shadow">
         <%= render partial: 'layouts/development_program_header' %>
     </div>
-    <div class="p-3 container-lg">
+    <div class="p-3 my-5 container-lg">
         <div class="row">
             <div class="col-lg-6">
                 <p class="fs-4 text-primary fw-bold text-uppercase">Hungry for more: What's next?</p>
-                <h2 class="my-5 display-5">Expand employment opportunities by earning certificates with <span class="text-primary">CEED</span></h2>
+                <h2 class="mb-5 display-5">Expand employment opportunities by earning certificates with <span class="text-primary">CEED</span></h2>
             </div>
             <div class="offset-lg-1 col-lg-5">
-                <div>
-                    <i class="fa fa-floppy-o" aria-hidden="true"></i>
-                    <p>Gain valuable experience with technology</p>
-                </div>
-                <div>
-                    <i class="fa fa-users" aria-hidden="true"></i>
-                    <p>Meet people with similar interests</p>
-                </div>
-                <div>
-                    <i class="fa fa-comments-o" aria-hidden="true"></i>
-                    <p>Collaborate on cool new projects</p>
-                </div>
-                <div>
-                    <i class="fa fa-cloud" aria-hidden="true"></i>
-                    <p>Get involved with the Maker network</p>
-                </div>
-                <div>
-                    <i class="fa fa-gift" aria-hidden="true"></i>
-                    <p>Receive awesome rewards!</p>
-                </div>
+                <div class="w-auto h-100 bg-secondary">a</div>
             </div>
         </div>
         <!-- This block has awful layout, hope it works on safari :^) -->
@@ -42,26 +23,26 @@
                 <div class="linkBox">
                     <h2>Learning Area</h2>
                     <p>You can learn from all these projects for free. Some of them are a pre-requisite for other projects in the Proficient Projects Area.</p>
-                    <a class="linkPill" href="#">New module</a>
-                    <a class="linkPill" href="#">All module</a>
+                    <%= link_to 'New module', new_learning_area_path %>
+                    <%= link_to 'All modules', learning_area_index_path %>
                 </div>
             </div>
             <div class="col-lg-4">
                 <div class="linkBox">
                     <h2>Proficient Projects</h2>
                     <p>These projects are more advanced and not free. You can either purchase it with your credit card or use your CC points.</p>
-                    <a class="linkPill" href="#">Requests</a>
-                    <a class="linkPill" href="#">New project</a>
+                    <%= link_to 'Requests', requests_proficient_projects_path %>
+                    <%= link_to 'New project', new_proficient_project_path %>
                 </div>
             </div>
             <div class="col-lg-4">
                 <div class="linkBox">
                     <h2>Learning Area</h2>
                     <p>Enhance your technical skills with our development program. Unlock new challenges as you progress, and earn digital badges for completing proficiency projects.</p>
-                    <a class="linkPill" href="#">Skills</a>
-                    <a class="linkPill" href="#">Badges</a>
-                    <a class="linkPill" href="#">Badges <br /> Requests</a>
-                    <a class="linkPill" href="#">Grant/Revoke <br /> badge to user</a>
+                    <%= link_to 'Skills', skills_development_programs_path %>
+                    <%= link_to 'Badges', badges_path %>
+                    <%= link_to 'Badges requests', admin_badges_path %>
+                    <%= link_to 'Grant/Revoke badge to user', new_badge_badges_path %>
                 </div>
             </div>
         </div>
@@ -69,9 +50,9 @@
     </div>
     <!-- FIXME make this the secondary color(?) -->
     <div class="bg-body-tertiary p-3 text-center text-uppercase">
-        <h2 class="text-uppercase">Digital Badges</h2>
+        <h2 class="text-uppercase mt-5">Digital Badges</h2>
         <p class="fs-3 fw-bold text-primary">Example of what employeers see on each badge profile</p>
-        <div class="row">
+        <div class="row mb-5">
             <div class="col-lg-6">
                 <%= image_tag 'development_program/1.png', class: 'w-100' %>
             </div>
@@ -80,46 +61,46 @@
                     <div class="col">
                         <div class="linkBox">
                             <h4>Digital Technologies</h4>
-                            <a class="linkPill" href="#">3D Printing</a>
-                            <a class="linkPill" href="#">Laser Cutting</a>
-                            <a class="linkPill" href="#">Arduino</a>
-                            <a class="linkPill" href="#">Soldering</a>
-                            <a class="linkPill" href="#">Virtual Reality</a>
-                            <a class="linkPill" href="#">Embroidery</a>
+                            <a class="linkPill">3D Printing</a>
+                            <a class="linkPill">Laser Cutting</a>
+                            <a class="linkPill">Arduino</a>
+                            <a class="linkPill">Soldering</a>
+                            <a class="linkPill">Virtual Reality</a>
+                            <a class="linkPill" >Embroidery</a>
                         </div>
                     </div>
                     <div class="col">
                         <div class="linkBox">
                             <h4>Professional Development</h4>
-                            <a class="linkPill" href="#">Design Thinking</a>
-                            <a class="linkPill" href="#">Entrepreneurship basics</a>
-                            <a class="linkPill" href="#">Project Management</a>
-                            <a class="linkPill" href="#">Effective Communication (Written and Oral)</a>
+                            <a class="linkPill">Design Thinking</a>
+                            <a class="linkPill">Entrepreneurship basics</a>
+                            <a class="linkPill">Project Management</a>
+                            <a class="linkPill">Effective Communication (Written and Oral)</a>
                         </div>
                     </div>
                     <div class="col">
                         <div class="linkBox">
                             <h4>Manufacturing Technologies</h4>
-                            <a class="linkPill" href="#">Shop Fundamentals</a>
-                            <a class="linkPill" href="#">Lathe</a>
-                            <a class="linkPill" href="#">Mill</a>
-                            <a class="linkPill" href="#">CNC</a>
-                            <a class="linkPill" href="#">Welding</a>
+                            <a class="linkPill">Shop Fundamentals</a>
+                            <a class="linkPill">Lathe</a>
+                            <a class="linkPill">Mill</a>
+                            <a class="linkPill">CNC</a>
+                            <a class="linkPill">Welding</a>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="container-lg">
+    <div class="container-lg mt-5">
         <div class="row row-cols-lg-2">
-            <div class="col">
-                <h2>Volunteer</h2>
-                <p>Volunteering is a great way to gain valuable skills and boost self-confidence while making a difference. Our enhanced development program will guide volunteers through more challenging tasks, helping them grow and earn rewards along the way. Learn more about how the volunteer program works by clicking here.</p>
-                <a class="btn btn-secondary">More about volunteering</a>
+            <div class="">
+                <p class="fs-2 fw-bold text-uppercase">Volunteer</p>
+                <p class="fs-5">Volunteering is a great way to gain valuable skills and boost self-confidence while making a difference. Our enhanced development program will guide volunteers through more challenging tasks, helping them grow and earn rewards along the way. Learn more about how the volunteer program works by clicking here.</p>
+                <%= link_to 'More about volunteering', volunteers_path, class: 'btn btn-secondary w-100' %>
             </div>
-            <div class="col">
-                <h3>Volunteers can now:</h3>
+            <div class="">
+                <h3 class="ms-5">Volunteers can now:</h3>
                 <ul style="list-style-position: inside;">
                     <li class="linkBox">Unlock different tasks based on their skill level</li>
                     <li class="linkBox">Track their skill progress through their MakerRepo account.</li>
@@ -131,22 +112,21 @@
     </div>
     <div class="bg-body-tertiary p-3">
 <div class="container-lg">
-        <h2 class="text-center text-uppercase">Unemployment</h2>
-        <p class="text-center text-primary">CEED development program will make you more attractive to employers. </p>
-        <div class="row row-cols-lg-2">
-            <div>
-            <p>Proficiency badges and trainings will offer you an opportunity to find employment opportunities within CEED and other organizations. CEED hires over 50 students every term in addition to 15 TAs for the courses.</p>
-            </div>
-            <div style="max-width: 100%; background-color: grey; max-height: 75%;">
-                image lol
-            </div>
+    <p class="fs-2 fw-bold text-center text-uppercase">Employment</p>
+    <p class="fs-3 fw-bold text-center text-primary">CEED development program will make you more attractive to employers. </p>
+    <div class="row row-cols-lg-2 my-5">
+        <div>
+            <p class="fs-3 fw-bold m-3">Proficiency badges and trainings will offer you an opportunity to find employment opportunities within CEED and other organizations. CEED hires over 50 students every term in addition to 15 TAs for the courses.</p>
         </div>
+        <div style="max-width: 100%; background-color: grey; max-height: 75%; min-width: 25%;">
+            image lol
+        </div>
+    </div>
 </div>
     </div>
     <div class="container">
         <div class="box-subtext mt-5">
-            <h2>Interested in volunteering?</h2>
-            <p>The process of volunteering is flexible. Talk to us about accommodations. </p>
+            <h2>Do you want to know more?</h2>
             <p>For any questions, email us at: <a href="mailto:volunteer@makerepo.com">volunteer@makerepo.com</a></p>
         </div>
     </div>
