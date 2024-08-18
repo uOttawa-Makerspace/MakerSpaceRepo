@@ -69,14 +69,7 @@ class User < ApplicationRecord
 
   validates :avatar,
             file_content_type: {
-              allow: %w[
-                image/jpeg
-                image/png
-                image/gif
-                image/x-icon
-                image/svg+xml
-                image/webp
-              ],
+              allow: %w[image/jpeg image/png image/webp],
               if: -> { avatar.attached? }
             }
 

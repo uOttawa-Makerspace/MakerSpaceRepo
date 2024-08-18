@@ -1,12 +1,29 @@
+<% provide(:title, 'Printer Issues') %>
 <div class="text-center">
-    <h1>Printer Issues</h1>
+    <h1 class="title">Issue summary</h1>
+    <%= render partial: 'printers/link_box', locals: { printer_issues_index: true } %>
+    <div class="row">
+        <% @issues_summary.each do |summary, issues| %>
+            <div class="col">
+                <h2 class="d-inline"><%= summary %></h2><p class="d-inline fs-3"> (<%= issues.count %>)</p>
+                <ul class="list-unstyled">
+                    <% issues.each do |issue| %>
+                        <li class="list-group-item"><%= issue.printer.name %></li>
+                    <% end %>
+                </ul>
+            </div>
+        <% end %>
+    </div>
+    <hr />
+    <h1 class="title">Active Issues</h1>
     <%= link_to new_printer_issue_path, class: 'btn btn-success mb-3' do %>
         <i class="fa fa-plus"></i> New Issue
     <% end %>
     <table class="table table-striped">
         <thead class="table-primary">
             <tr>
-                <td>ID</td>
+                <td>Issue ID</td>
+                <td>Printer</td>
                 <td>Summary</td>
                 <td>Description</td>
                 <td>Reporter</td>
@@ -16,15 +33,57 @@
             </tr>
         </thead>
         <tbody>
-            <% @issues.each do |issue| %>
+            <% @issues.filter(&:active).each do |issue| %>
                 <tr>
                     <td><%= issue.id %></td>
+                    <td><%= issue.printer.name %></td>
                     <td><%= issue.summary %></td>
                     <td><%= issue.description.html_safe %></td>
                     <td><%= issue.reporter.name %></td>
-                    <td><%= issue.created_at %></td>
-                    <td><%= issue.updated_at %></td>
-                    <td><%= button_to issue.active ? 'Close' : 'Reopen', printer_issue_path(issue, params: { active: !issue.active }), method: :patch, class: 'btn btn-secondary' %></td>
+                    <td><%= issue.created_at.to_formatted_s :db %></td>
+                    <td><%= issue.updated_at.to_formatted_s :db %></td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            <%= link_to 'Show', issue, class: 'btn btn-primary' %>
+                            <%= link_to 'Edit', edit_printer_issue_path(issue), class: 'btn btn-secondary' %>
+                            <%= button_to issue.active ? 'Close' : 'Reopen', printer_issue_path(issue), method: :patch, params: { printer_issue: { active: !issue.active } }, class: 'btn btn-danger' %>
+                        </div>
+                    </td>
+                </tr>
+            <% end %>
+        </tbody>
+    </table>
+    <!-- <hr /> -->
+    <h1 class="title">Issue History</h1>
+    <table class="table table-striped">
+        <thead class="table-primary">
+            <tr>
+                <td>Issue ID</td>
+                <td>Printer</td>
+                <td>Summary</td>
+                <td>Description</td>
+                <td>Reporter</td>
+                <td>Reported on</td>
+                <td>Last updated</td>
+                <td>Action</td>
+            </tr>
+        </thead>
+        <tbody>
+            <% @issues.reject(&:active).each do |issue| %>
+                <tr>
+                    <td><%= issue.id %></td>
+                    <td><%= issue.printer.name %></td>
+                    <td><%= issue.summary %></td>
+                    <td><%= issue.description.html_safe %></td>
+                    <td><%= issue.reporter.name %></td>
+                    <td><%= issue.created_at.to_formatted_s :db %></td>
+                    <td><%= issue.updated_at.to_formatted_s :db %></td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            <%= link_to 'Open', issue, class: 'btn btn-primary' %>
+                            <%= button_to issue.active ? 'Close' : 'Reopen', printer_issue_path(issue), params: { printer_issue: { active: !issue.active } }, method: :patch, class: 'btn btn-secondary' %>
+                        </div>
+                    </td>
                 </tr>
             <% end %>
         </tbody>

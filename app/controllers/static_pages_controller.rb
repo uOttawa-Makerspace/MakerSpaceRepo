@@ -97,10 +97,10 @@ class StaticPagesController < SessionsController
   def forgot_password
   end
 
-  def volunteer_program_info
+  def development_program_info
   end
 
-  def development_program_info
+  def get_involved
   end
 
   def join_team_program

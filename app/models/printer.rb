@@ -8,6 +8,7 @@ class Printer < ApplicationRecord
         -> {
           order("printer_type_id ASC, length(number) ASC, lower(number) ASC")
         }
+  default_scope { show_options }
 
   validates :number, presence: true, uniqueness: { scope: :printer_type_id }
 
@@ -33,5 +34,23 @@ class Printer < ApplicationRecord
 
   def self.get_last_number_session(printer_id)
     PrinterSession.order(created_at: :desc).where(printer_id: printer_id).first
+  end
+
+  def active_printer_issues
+    printer_issues.where(active: true)
+  end
+
+  def group_printer_issues
+    # NOTE this might cause performance issues
+    # what is this, O(n^2)?
+    # If you ever touch this, checkout the one in printer_issues_controller#index
+    active_printer_issues.group_by do |issue|
+      PrinterIssue.summaries.values.detect { |s| issue.summary.include? s } ||
+        "Other"
+    end
+  end
+
+  def count_printer_issues
+    group_printer_issues.transform_values { |issues| issues.count }
   end
 end

@@ -1,5 +1,5 @@
 class TimePeriod < ApplicationRecord
-  has_many :staff_availabilities
+  has_many :staff_availabilities, dependent: :destroy
 
   default_scope -> { order(start_date: :desc) }
 

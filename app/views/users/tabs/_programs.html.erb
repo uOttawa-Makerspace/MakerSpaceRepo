@@ -19,7 +19,8 @@
         <% end %>
       <% else %>
         <% if @repo_user.programs.nil? or @repo_user.programs.empty? %>
-          <%= link_to 'View all available programs', '/getInvolved' %>
+          <p>You are not enrolled in any programs</p>
+          <%= link_to 'View all available programs', get_involved_path %>
         <% end %>
         <% @repo_user.programs.each do |p| %>
           <label>
