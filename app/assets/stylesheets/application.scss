@@ -445,3 +445,13 @@ td > .btn:not(:last-of-type) {
   width: 100%;
   padding-bottom: 22.53%;
 }
+
+.fixed-card-height {
+  max-height: 400px; /* Set a maximum height for the card */
+  overflow: hidden; /* Ensure that any content beyond the max height is hidden */
+}
+
+.card-img-top {
+  object-fit: cover;
+  height: 100%;
+}
