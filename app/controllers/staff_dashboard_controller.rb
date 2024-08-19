@@ -20,7 +20,11 @@ class StaffDashboardController < StaffAreaController
       format.json do
         render json: {
                  space: @space.as_json,
-                 space_users: @space.signed_in_users.as_json,
+                 space_users:
+                   @space
+                     .signed_in_users
+                     .map { |u| u.attributes.except "password" }
+                     .as_json,
                  space_list: Space.all.pluck(:name, :id)
                }
       end
