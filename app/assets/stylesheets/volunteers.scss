@@ -1,3 +1,4 @@
+@import "bootstrap/scss/bootstrap";
 @import "./shared/variables";
 
 // This is also used by development program index
@@ -112,9 +113,11 @@ section#developmentIndex {
 
   .box-subtext {
     background-color: white;
-    padding: 3%;
-    border-radius: 16px;
-    box-shadow: 0px 4px 24.1px 0px #00000040;
+    @include media-breakpoint-up(lg) {
+      padding: 3%;
+      border-radius: 16px;
+      box-shadow: 0px 4px 24.1px 0px #00000040;
+    }
     h3 {
       font-weight: 700;
     }
