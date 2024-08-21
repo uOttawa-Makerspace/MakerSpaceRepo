@@ -6,7 +6,7 @@
     <%= render 'partials/announcements' %>
     <div class="row g-0">
       <!--Left column -->
-      <div class="col-xl  order-xl-0 order-1 offcanvas-lg offcanvas-start" id="offcanvas-shortcuts" aria-labelledby="shortcutsOffcanvasLabel">
+      <div class="col-xl-3  order-xl-0 order-1 offcanvas-lg offcanvas-start" id="offcanvas-shortcuts" aria-labelledby="shortcutsOffcanvasLabel">
         <div class="offcanvas-header pb-0">
           <h2 class="offcanvas-title" id="shortcutsOffcanvasLabel">Shortcuts</h2>
           <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#offcanvas-shortcuts" aria-label="Close"></button>
@@ -81,7 +81,7 @@
 
       <!--Right column -->
       <!-- Set a fixed column size to prevent Badges from expanding more -->
-      <div class="col-xl order-xl-2 order-1">
+      <div class="col-xl-3 order-xl-2 order-1">
         <%= render partial: 'home_userinfo' %>
         <%= render partial: 'home_badges' if signed_in? %>
         <%= render partial: 'home_skills' if signed_in? %>
