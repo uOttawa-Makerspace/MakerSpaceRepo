@@ -7,7 +7,7 @@ section#volunteersIndex,
 section#developmentIndex {
   .jumbotron {
     &.volunteerJumbotron {
-      background-image: linear-gradient(rgba(white, 0) 20%, $primary),
+      background-image: linear-gradient(rgba(black, 0.3) 20%, $primary),
         url("volunteer/jumbotron.png");
     }
     background-size: cover;
@@ -21,8 +21,8 @@ section#developmentIndex {
     text-align: center;
     padding-left: 20%;
     padding-right: 20%;
-    padding-top: 15%;
-
+    padding-bottom: 5%;
+    padding-top: 10%;
     & > * {
       margin-bottom: 3rem;
     }
