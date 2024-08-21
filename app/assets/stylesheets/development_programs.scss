@@ -1,3 +1,40 @@
-//li {
-//  display: list-item!important;
-//}
+@import "./shared/variables";
+
+section#developmentIndex {
+  .jumbotron.developmentJumbotron {
+    background-image: linear-gradient(rgba(white, 0) 20%, $primary),
+      url("development_program/jumbotron.png");
+  }
+
+  .header1 {
+    background-image: url("development_program/header1.png");
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+  }
+
+  .header2 {
+    display: block;
+    background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
+      url("development_program/header2.png");
+    background-size: cover;
+    background-position: center;
+    text-align: center;
+    color: white;
+    &:hover {
+      color: $primary;
+      outline: 2px solid $primary;
+    }
+    font-size: 2rem;
+    padding: 5%;
+    margin: 5%;
+    font-weight: 700;
+  }
+
+  .header3 {
+    background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
+      url("development_program/header3.png");
+    background-size: cover;
+    background-position: center;
+  }
+}

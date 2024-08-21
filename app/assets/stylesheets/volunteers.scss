@@ -1,10 +1,14 @@
 @import "./shared/variables";
 
-// This is also used by development program index, whatever
-section#volunteersIndex {
+// This is also used by development program index
+// TODO Should maybe split the common parts into a separate file
+section#volunteersIndex,
+section#developmentIndex {
   .jumbotron {
-    background-image: linear-gradient(rgba(white, 0) 20%, $primary),
-      url("volunteer/jumbotron.png");
+    &.volunteerJumbotron {
+      background-image: linear-gradient(rgba(white, 0) 20%, $primary),
+        url("volunteer/jumbotron.png");
+    }
     background-size: cover;
     background-color: black;
     background-position: center;

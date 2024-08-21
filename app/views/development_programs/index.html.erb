@@ -1,7 +1,7 @@
-<section id="volunteersIndex">
-    <div class="jumbotron">
-        <h1 class="display-1">Enrich your experience by volunteering with <span class="text-primary">CEED</span></h1>
-        <p>The volunteer program allows members to become more involved in the Makerspace.<br />This program is a great way to meet new people, and work on fun projects.</p>
+<section id="developmentIndex">
+    <div class="jumbotron developmentJumbotron">
+        <h1 class="display-1">Earn officially credited certificates with <span class="text-primary">CEED</span></h1>
+        <p>The development program...</p>
         <%= link_to 'Join the volunteering program', join_volunteer_program_volunteers_path, class: 'btn btn-primary' %>
     </div>
     <div class="shadow">
@@ -14,7 +14,8 @@
                 <h2 class="mb-5 display-5">Expand employment opportunities by earning certificates with <span class="text-primary">CEED</span></h2>
             </div>
             <div class="offset-lg-1 col-lg-5">
-                <div class="w-auto h-100 bg-secondary">a</div>
+                <div class="header1"></div>
+                <%#= image_tag 'development_program/header1.png'%>
             </div>
         </div>
         <!-- This block has awful layout, hope it works on safari :^) -->
@@ -93,15 +94,15 @@
         </div>
     </div>
     <div class="container-lg mt-5">
-        <div class="row row-cols-lg-2">
-            <div class="">
+        <div class="row row-cols-lg-2 mb-5">
+            <div>
                 <p class="fs-2 fw-bold text-uppercase">Volunteer</p>
                 <p class="fs-5">Volunteering is a great way to gain valuable skills and boost self-confidence while making a difference. Our enhanced development program will guide volunteers through more challenging tasks, helping them grow and earn rewards along the way. Learn more about how the volunteer program works by clicking here.</p>
-                <%= link_to 'More about volunteering', volunteers_path, class: 'btn btn-secondary w-100' %>
+                <%= link_to 'More about volunteering', volunteers_path, class: 'header2' %>
             </div>
-            <div class="">
-                <h3 class="ms-5">Volunteers can now:</h3>
-                <ul style="list-style-position: inside;">
+            <div>
+                <h3>Volunteers can now:</h3>
+                <ul class="ps-0" style="list-style-position: inside;">
                     <li class="linkBox">Unlock different tasks based on their skill level</li>
                     <li class="linkBox">Track their skill progress through their MakerRepo account.</li>
                     <li class="linkBox">Each task will reward CEED Credit (CC) to be used in our makerstore</li>
@@ -111,23 +112,23 @@
         </div>
     </div>
     <div class="bg-body-tertiary p-3">
-<div class="container-lg">
-    <p class="fs-2 fw-bold text-center text-uppercase">Employment</p>
-    <p class="fs-3 fw-bold text-center text-primary">CEED development program will make you more attractive to employers. </p>
-    <div class="row row-cols-lg-2 my-5">
-        <div>
-            <p class="fs-3 fw-bold m-3">Proficiency badges and trainings will offer you an opportunity to find employment opportunities within CEED and other organizations. CEED hires over 50 students every term in addition to 15 TAs for the courses.</p>
+        <div class="container-lg">
+            <p class="fs-2 fw-bold text-center text-uppercase">Employment</p>
+            <p class="fs-3 fw-bold text-center text-primary">CEED development program will make you more attractive to employers. </p>
+            <div class="row row-cols-lg-2 my-5">
+                <div class="align-content-center">
+                    <p class="fs-3 fw-bold m-3">Proficiency badges and trainings will offer you an opportunity to find employment opportunities within CEED and other organizations. CEED hires over 50 students every term in addition to 15 TAs for the courses.</p>
+                </div>
+                <!-- <div class="header3">
+                     </div> -->
+                <%= image_tag 'development_program/header3.png', class: 'img-fluid' %>
+            </div>
         </div>
-        <div style="max-width: 100%; background-color: grey; max-height: 75%; min-width: 25%;">
-            image lol
-        </div>
-    </div>
-</div>
     </div>
     <div class="container">
         <div class="box-subtext mt-5">
             <h2>Do you want to know more?</h2>
-            <p>For any questions, email us at: <a href="mailto:volunteer@makerepo.com">volunteer@makerepo.com</a></p>
+            <p>For any questions, email us at: <a href="mailto:volunteer@makerepo.com">lolmail@makerepo.com</a></p>
         </div>
     </div>
 </section>
