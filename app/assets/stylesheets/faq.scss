@@ -1,0 +1,22 @@
+@import "./shared/variables";
+
+section#faq {
+  #faqJumbotron {
+    background-image: linear-gradient(rgba(black, 0.4), rgba(black, 0.4)),
+      url("faq/jumbotron.jpg");
+    padding-top: 8%;
+  }
+  .accordion-header button {
+    border: none;
+    border-bottom: 3px solid;
+    border-radius: 4px;
+    padding-left: 5%;
+    font-size: 2rem;
+    font-weight: 700;
+    color: black;
+  }
+
+  .accordion-body {
+    font-size: 1.3rem;
+  }
+}

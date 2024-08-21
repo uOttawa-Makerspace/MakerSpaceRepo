@@ -1,6 +1,8 @@
 fr:
   year: "année"
   name: "Français"
+  faq:
+    header: "Foire Aux Questions"
   navbar:
     home: "Accueil"
     # explore section

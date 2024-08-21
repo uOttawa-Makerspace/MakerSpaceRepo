@@ -1,6 +1,8 @@
 en:
   year: "year"
   name: "English"
+  faq:
+    header: "Frequently Asked Questions"
   navbar:
     home: "Home"
     # explore section

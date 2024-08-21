@@ -1,0 +1,27 @@
+<% provide :title, t('faq.header') %>
+
+<section id="faq">
+    <div class="jumbotron" id="faqJumbotron">
+        <h1 class="display-1"><%= t('faq.header') %></h1>
+        <p>Here's what you need to know about CEED</p>
+    </div>
+    <div class="container mt-5">
+    <%= link_to 'New Entry', new_faq_path, class: 'btn btn-success' if current_user.admin? %>
+        <div class="accordion" id="faqAccordion">
+            <% @faqs.each.with_index do |faq, index| %>
+                <% accordion_target = "accordion-#{index}" %>
+                <div class="accordion-item">
+                    <h2 class="accordion-header d-flex">
+                        <%= tag.button faq.title_en, class: 'accordion-button', type: 'button', data: { bs_toggle: 'collapse', bs_target: "##{accordion_target}" }, aria_expanded: 'true', aria_controls: accordion_target %>
+                    </h2>
+                    <%= tag.div id: accordion_target, class: 'accordion-collapse collapse show', data: { bs_parent: 'faqAccordion' } do %>
+                        <div class="accordion-body">
+                            <%= link_to 'Edit', edit_faq_path(faq) if current_user.admin? %>
+                            <%= faq.body_en.html_safe %>
+                        </div>
+                    <% end %>
+                </div>
+            <% end %>
+        </div>
+    </div>
+</section>
