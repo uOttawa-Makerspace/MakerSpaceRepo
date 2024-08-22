@@ -1,0 +1,35 @@
+<% provide :title, t('faq.header') %>
+
+<section id="faq">
+    <div class="jumbotron" id="faqJumbotron">
+        <h1 class="display-1"><%= t('faq.header') %></h1>
+        <p><%= t('faq.subtext') %></p>
+    </div>
+    <div class="container mt-5">
+        <% if current_user.admin? %>
+            <div class="d-flex mb-3">
+                <%= link_to 'New Entry', new_faq_path, class: 'btn btn-success' %>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" id="reorderSwitch" autocomplete="off">
+                    <label class="form-check-label" for="reorderSwitch">Edit Order</label>
+                </div>
+            </div>
+        <% end %>
+        <div class="accordion" id="faqAccordion">
+            <% @faqs.each do |faq| %>
+                <%# Just use the accordion for styling, people aren't going to click on every single header%>
+                <div class="accordion-item" data-faq-id="<%= faq.id %>">
+                    <h2 class="accordion-header mb-0">
+                        <div class="accordion-button">
+                            <%= faq.localized_title %>
+                            <%= link_to 'Edit', edit_faq_path(faq) if current_user.admin? %>
+                        </div>
+                    </h2>
+                    <div class="accordion-body">
+                        <%= faq.localized_body.html_safe %>
+                    </div>
+                </div>
+            <% end %>
+        </div>
+    </div>
+</section>

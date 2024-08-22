@@ -1,6 +1,9 @@
 fr:
   year: "année"
   name: "Français"
+  faq:
+    header: "Foire Aux Questions"
+    subtext: "Voici tout ce qu'il faut savoir sur CEED"
   navbar:
     home: "Accueil"
     # explore section

@@ -1,115 +1,12 @@
-@import "lib";
+@import "./shared/variables";
 
 section#help-center {
-  @include outer-container(60rem);
-  background-color: #fff;
-  padding: 0 5% 2rem;
-
-  div.title {
-    color: #366;
-    max-width: 40vmax;
-    border-bottom: 2px solid #366;
+  h1 {
+    color: $primary;
+    border-bottom: 2px solid $primary;
     font-size: 2rem;
     font-weight: 700;
     padding: 3rem 0 0.75rem;
     margin-bottom: 4rem;
-  }
-
-  div.container {
-    @include outer-container(100%);
-  }
-
-  div.category {
-    color: #366;
-    font-weight: 500;
-    margin-bottom: 0.5rem;
-  }
-
-  li {
-    color: #666;
-    font-size: 0.9rem;
-  }
-
-  div.col {
-    @include span-columns(4, 0.25);
-    display: inline-block;
-    margin-bottom: 2rem;
-
-    &:last-child {
-      white-space: nowrap;
-    }
-  }
-
-  a:hover {
-    text-decoration: underline;
-    color: teal;
-  }
-
-  div.issue-report {
-    input.submit-button {
-      width: 150px;
-      letter-spacing: 1px;
-      background-color: #4bbc9c;
-      color: #fff;
-      border: none !important;
-      margin: 0 120px;
-      font: 600 1.2rem "Raleway", helvetica, sans-serif;
-
-      &:hover {
-        cursor: pointer;
-      }
-    }
-
-    form {
-      margin: 0 20px;
-    }
-
-    label {
-      font: 400 0.9rem "Raleway", helvetica, sans-serif;
-      color: #777;
-    }
-
-    input,
-    textarea {
-      display: block;
-      padding: 0.5rem;
-      width: 400px;
-      border-radius: 2px;
-      border: 1px solid #aaa;
-      margin: 0.5rem 0 1rem;
-      font: 300 1rem "Raleway", helvetica, sans-serif;
-    }
-  }
-}
-
-.faq {
-  counter-reset: my-badass-counter;
-
-  img {
-    max-width: 100%;
-    border: 1px solid #366;
-  }
-}
-
-.faq dt {
-  position: relative;
-  padding: 1rem 0 1.5rem 3rem;
-}
-
-.faq dt:before {
-  content: counter(my-badass-counter);
-  counter-increment: my-badass-counter;
-  font-size: 3rem;
-  color: #366;
-  position: absolute;
-  top: 0;
-  left: 0;
-  display: inline-block;
-}
-
-@media screen and (max-width: 800px) {
-  section#help-center div.col {
-    float: none;
-    width: 100%;
   }
 }
