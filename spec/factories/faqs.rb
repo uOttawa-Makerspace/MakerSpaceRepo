@@ -1,8 +1,9 @@
 FactoryBot.define do
   factory :faq do
-    title { "MyString" }
-    body_en { "MyText" }
-    body_fr { "MyText" }
-    order { 1 }
+    title_en { Faker::Alphanumeric.alphanumeric(number: 10) }
+    title_fr { Faker::Alphanumeric.alphanumeric(number: 10) }
+    body_en { Faker::Alphanumeric.alphanumeric(number: 50) }
+    body_fr { Faker::Alphanumeric.alphanumeric(number: 50) }
+    order {}
   end
 end
