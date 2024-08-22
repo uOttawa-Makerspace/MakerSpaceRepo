@@ -204,7 +204,11 @@ Rails.application.routes.draw do
 
   # keep index singular, rename path
   # don't define second resourece, that breaks HTTP verbs
-  resources :faqs, only: %i[index new create edit update destroy], path: "faq"
+  resources :faqs,
+            only: %i[index new create edit update destroy],
+            path: "faq" do
+    collection { put "reorder" }
+  end
 
   namespace :licenses do
     get "common_creative_attribution", as: "cca"

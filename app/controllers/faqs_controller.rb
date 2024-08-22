@@ -45,8 +45,25 @@ class FaqsController < ApplicationController
     end
   end
 
+  def reorder
+    # Ensure we only receive cold hard integers
+    # Because we're essentially trusting the client
+    # Anything that's missing, we ignore
+    # spooky scary internet
+    # Create full order list
+    # New entries don't have an order yet
+    if params[:data].present?
+      ordered_faq = (params[:data].map(&:to_i) + Faq.all.pluck(:id)).uniq
+      ordered_faq.each_with_index do |id, index|
+        Faq.find(id).update(order: index)
+      end
+    end
+    respond_to { |format| format.json { render json: "ping" } }
+  end
+
   private
 
+  # reorder doesn't use this
   def faq_params
     params.require(:faq).permit(
       :title_en,
