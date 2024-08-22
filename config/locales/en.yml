@@ -3,6 +3,7 @@ en:
   name: "English"
   faq:
     header: "Frequently Asked Questions"
+    subtext: "Here's what you need to know about CEED"
   navbar:
     home: "Home"
     # explore section
