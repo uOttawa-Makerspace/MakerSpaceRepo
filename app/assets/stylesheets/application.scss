@@ -55,6 +55,14 @@ body {
   flex-direction: column;
 }
 
+// Don't cover element with header when auto scrolling
+// https://css-tricks.com/hash-tag-links-padding/
+// Select all elements with an id
+*[id] {
+  scroll-margin-top: 15rem;
+  scroll-snap-margin-top: 15rem; /* iOS 11 and older */
+}
+
 h1 {
   font-size: 2.25rem;
 }

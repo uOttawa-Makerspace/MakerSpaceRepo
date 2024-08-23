@@ -1,0 +1,44 @@
+@import "./shared/variables";
+
+section#faq {
+  #faqJumbotron {
+    background-image: linear-gradient(rgba(black, 0.4), rgba(black, 0.4)),
+      url("faq/jumbotron.jpg");
+    padding-top: 8%;
+  }
+  .accordion-button {
+    .accordion-body {
+      font-size: 1.3rem;
+    }
+    border: none;
+    border-bottom: 3px solid;
+    border-radius: 4px;
+    padding-left: 5%;
+    font-size: 2rem;
+    font-weight: 700;
+    color: black;
+    // Hide the accordion arrow
+    &::after {
+      content: none;
+    }
+    // Put the links away
+    a {
+      margin-left: auto;
+    }
+  }
+
+  .sortEnable {
+    .accordion-button {
+      &::before {
+        // Fontawesome really sucks dude
+        color: $primary;
+        font-family: FontAwesome;
+        content: "\f047 ";
+      }
+      cursor: grab;
+      &::active {
+        cursor: grabbing;
+      }
+    }
+  }
+}

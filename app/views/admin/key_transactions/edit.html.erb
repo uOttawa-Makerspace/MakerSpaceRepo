@@ -7,8 +7,8 @@
         <div class="mb-5">
           <%= f.label :deposit_return_date, class: 'form-label' %>
           <div class="input-group">
-            <%= f.text_field :deposit_return_date, id: 'deposit-return-date', autocomplete: 'off', class: 'form-control inanimate', required: true %>
-            <button class="btn btn-outline-danger" id="deposit-return-date-clear" type="button">
+            <%= f.text_field :deposit_return_date, value: Time.zone.today.to_s, id: 'deposit-return-date', autocomplete: 'off', class: 'form-control inanimate', required: true %>
+            <button class="btn btn-danger" id="deposit-return-date-clear" type="button">
               <i class="fa fa-times"></i>
             </button>
           </div>

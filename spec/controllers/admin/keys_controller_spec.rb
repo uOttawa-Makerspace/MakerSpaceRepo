@@ -336,6 +336,35 @@ RSpec.describe Admin::KeysController, type: :controller do
         expect(KeyTransaction.last.deposit_return_date).not_to eq(nil)
       end
 
+      it "should not expect a deposit if amount is zero" do
+        key =
+          create(
+            :key,
+            :inventory_status,
+            :regular_key_type,
+            space_id: @space.id
+          )
+        patch :assign_key,
+              params: {
+                key_id: key.id,
+                key: {
+                  key_request_id: @key_request.id,
+                  supervisor_id: @admin.id
+                },
+                deposit_amount: 0
+              }
+
+        patch :revoke_key,
+              params: {
+                key_id: key.id
+                #deposit_return_date: Time.zone.now
+              }
+
+        expect(flash[:notice]).to eq("Successfully revoked key")
+        expect(Key.last.status).to eq("inventory")
+        expect(KeyTransaction.last.deposit_return_date).not_to eq(nil)
+      end
+
       it "should not revoke keys in inventory" do
         key =
           create(

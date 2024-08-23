@@ -103,7 +103,14 @@ class Admin::KeysController < AdminAreaController
          @key.update(user_id: nil, key_request_id: nil, status: :inventory) &&
          @key.get_latest_key_transaction.update(
            return_date: Date.today,
-           deposit_return_date: params[:deposit_return_date]
+           # Set deposit return date to today if deposit is zero
+           deposit_return_date:
+             params[:deposit_return_date]&.to_date ||
+               (
+                 if @key.get_latest_key_transaction.deposit_amount.zero?
+                   Time.zone.today
+                 end
+               )
          )
       redirect_to admin_keys_path, notice: "Successfully revoked key"
     else

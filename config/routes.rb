@@ -149,7 +149,6 @@ Rails.application.routes.draw do
     post "join_team_program"
     get "all_get_involved"
     get "all_resources"
-
   end
 
   # RFID
@@ -202,6 +201,14 @@ Rails.application.routes.draw do
 
   get "help", to: "help#main"
   post "send_email", to: "help#send_email"
+
+  # keep index singular, rename path
+  # don't define second resourece, that breaks HTTP verbs
+  resources :faqs,
+            only: %i[index new create edit update destroy],
+            path: "faq" do
+    collection { put "reorder" }
+  end
 
   namespace :licenses do
     get "common_creative_attribution", as: "cca"
