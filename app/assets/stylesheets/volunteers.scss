@@ -144,6 +144,16 @@ section#developmentIndex {
       color: $primary;
     }
 
+    ul {
+      height: 100%;
+      text-align: start;
+      li {
+        font-weight: 500;
+        list-style-type: none;
+        margin-top: 1rem;
+      }
+    }
+
     a {
       display: block;
       text-transform: uppercase;

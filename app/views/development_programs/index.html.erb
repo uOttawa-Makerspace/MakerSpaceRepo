@@ -1,8 +1,9 @@
+<% provide :title, t('devprog.title') %>
 <section id="developmentIndex">
     <div class="jumbotron developmentJumbotron">
-        <h1 class="display-1">Earn officially credited certificates with <span class="text-primary">CEED</span></h1>
-        <p>The development program...</p>
-        <%= link_to 'Join the volunteering program', join_volunteer_program_volunteers_path, class: 'btn btn-primary' %>
+        <h1 class="display-1"><%= t('devprog.header').html_safe %></h1>
+        <%= tag.p t('devprog.subtext') %>
+        <%= link_to t('devprog.join_button'), join_volunteer_program_volunteers_path, class: 'btn btn-primary' %>
     </div>
     <div class="shadow">
         <%= render partial: 'layouts/development_program_header' %>
@@ -10,8 +11,8 @@
     <div class="p-3 my-5 container-lg">
         <div class="row">
             <div class="col-lg-6">
-                <p class="fs-4 text-primary fw-bold text-uppercase">Hungry for more: What's next?</p>
-                <h2 class="mb-5 display-5">Expand employment opportunities by earning certificates with <span class="text-primary">CEED</span></h2>
+                <p class="fs-4 text-primary fw-bold text-uppercase"><%= t('devprog.block1.title') %></p>
+                <h2 class="mb-5 display-5"><%= t('devprog.block1.subtext').html_safe %></h2>
             </div>
             <div class="offset-lg-1 col-lg-5">
                 <div class="header1"></div>
@@ -22,37 +23,37 @@
         <div class="row g-3 my-5">
             <div class="col-lg-4">
                 <div class="linkBox">
-                    <h2>Learning Area</h2>
-                    <p>You can learn from all these projects for free. Some of them are a pre-requisite for other projects in the Proficient Projects Area.</p>
-                    <%= link_to 'New module', new_learning_area_path %>
-                    <%= link_to 'All modules', learning_area_index_path %>
+                    <h2><%= t('devprog.nav.learning_area') %></h2>
+                    <p><%= t('devprog.block1.learning_area') %></p>
+                    <!-- Use the navbar localizations, I think this is just the navbar in block form -->
+                    <%= link_to t('devprog.nav.new_module'), new_learning_area_path %>
+                    <%= link_to t('devprog.nav.all_modules'), learning_area_index_path %>
                 </div>
             </div>
             <div class="col-lg-4">
                 <div class="linkBox">
-                    <h2>Proficient Projects</h2>
-                    <p>These projects are more advanced and not free. You can either purchase it with your credit card or use your CC points.</p>
-                    <%= link_to 'Requests', requests_proficient_projects_path %>
-                    <%= link_to 'New project', new_proficient_project_path %>
+                    <h2><%= t('devprog.nav.proficient_projects') %></h2>
+                    <p><%= t('devprog.block1.proficient_projects') %></p>
+                    <%= link_to t('devprog.nav.requests'), requests_proficient_projects_path %>
+                    <%= link_to t('devprog.nav.new_project'), new_proficient_project_path %>
                 </div>
             </div>
             <div class="col-lg-4">
                 <div class="linkBox">
-                    <h2>Learning Area</h2>
-                    <p>Enhance your technical skills with our development program. Unlock new challenges as you progress, and earn digital badges for completing proficiency projects.</p>
-                    <%= link_to 'Skills', skills_development_programs_path %>
-                    <%= link_to 'Badges', badges_path %>
-                    <%= link_to 'Badges requests', admin_badges_path %>
-                    <%= link_to 'Grant/Revoke badge to user', new_badge_badges_path %>
+                    <h2><%= t('devprog.nav.skills_badges') %></h2>
+                    <p><%= t('devprog.block1.skills_badges') %></p>
+                    <%= link_to t('devprog.nav.skills'), skills_development_programs_path %>
+                    <%= link_to t('devprog.nav.badges'), badges_path %>
+                    <%= link_to t('devprog.nav.badge_requets'), admin_badges_path %>
+                    <%= link_to t('devprog.nav.grant_revoke_badge'), new_badge_badges_path %>
                 </div>
             </div>
         </div>
-        <p class="fs-3 fw-bold m-3">Our modular Development Program is designed to plan, track, and accredit your skill development effortlessly. The Development Program will make use of industry standardized certificates that are convenient to share, and electronically verifiable for your future employers.</p>
+        <p class="fs-3 fw-bold m-3"><%= t('devprog.block1.footer') %></p>
     </div>
-    <!-- FIXME make this the secondary color(?) -->
     <div class="bg-body-tertiary p-3 text-center text-uppercase">
-        <h2 class="text-uppercase mt-5">Digital Badges</h2>
-        <p class="fs-3 fw-bold text-primary">Example of what employeers see on each badge profile</p>
+        <h2 class="text-uppercase mt-5"><%= t('devprog.digital_badges.title') %></h2>
+        <p class="fs-3 fw-bold text-primary"><%= t('devprog.digital_badges.subtitle') %></p>
         <div class="row mb-5">
             <div class="col-lg-6">
                 <%= image_tag 'development_program/1.png', class: 'w-100' %>
@@ -62,31 +63,37 @@
                     <div class="col">
                         <div class="linkBox">
                             <h4>Digital Technologies</h4>
-                            <a class="linkPill">3D Printing</a>
-                            <a class="linkPill">Laser Cutting</a>
-                            <a class="linkPill">Arduino</a>
-                            <a class="linkPill">Soldering</a>
-                            <a class="linkPill">Virtual Reality</a>
-                            <a class="linkPill" >Embroidery</a>
+                            <ul>
+                              <li>3D Printing</li>
+                              <li>Laser Cutting</li>
+                              <li>Arduino</li>
+                              <li>Soldering</li>
+                              <li>Virtual Reality</li>
+                              <li>Embroidery</li>
+                            </ul>
                         </div>
                     </div>
                     <div class="col">
                         <div class="linkBox">
                             <h4>Professional Development</h4>
-                            <a class="linkPill">Design Thinking</a>
-                            <a class="linkPill">Entrepreneurship basics</a>
-                            <a class="linkPill">Project Management</a>
-                            <a class="linkPill">Effective Communication (Written and Oral)</a>
+                            <ul>
+                              <li>Design Thinking</li>
+                              <li>Entrepreneurship basics</li>
+                              <li>Project Management</li>
+                              <li>Effective Communication (Written and Oral)</li>
+                            </ul>
                         </div>
                     </div>
                     <div class="col">
                         <div class="linkBox">
                             <h4>Manufacturing Technologies</h4>
-                            <a class="linkPill">Shop Fundamentals</a>
-                            <a class="linkPill">Lathe</a>
-                            <a class="linkPill">Mill</a>
-                            <a class="linkPill">CNC</a>
-                            <a class="linkPill">Welding</a>
+                            <ul>
+                              <li>Shop Fundamentals</li>
+                              <li>Lathe</li>
+                              <li>Mill</li>
+                              <li>CNC</li>
+                              <li>Welding</li>
+                            </ul>
                         </div>
                     </div>
                 </div>
@@ -96,28 +103,27 @@
     <div class="container-lg mt-5">
         <div class="row row-cols-lg-2 mb-5">
             <div>
-                <p class="fs-2 fw-bold text-uppercase">Volunteer</p>
-                <p class="fs-5">Volunteering is a great way to gain valuable skills and boost self-confidence while making a difference. Our enhanced development program will guide volunteers through more challenging tasks, helping them grow and earn rewards along the way. Learn more about how the volunteer program works by clicking here.</p>
+                <p class="fs-2 fw-bold text-uppercase"><%= t('devprog.volunteer.title') %></p>
+                <p class="fs-5"><%= t('devprog.volunteer.text') %></p>
                 <%= link_to 'More about volunteering', volunteers_path, class: 'header2' %>
             </div>
             <div>
-                <h3>Volunteers can now:</h3>
+                <h3><%= t('devprog.volunteer.list_header') %></h3>
                 <ul class="ps-0" style="list-style-position: inside;">
-                    <li class="linkBox">Unlock different tasks based on their skill level</li>
-                    <li class="linkBox">Track their skill progress through their MakerRepo account.</li>
-                    <li class="linkBox">Each task will reward CEED Credit (CC) to be used in our makerstore</li>
-                    <li class="linkBox">Each task will have predetermined hours to be rewarded upon completion</li>
+                    <% t('devprog.volunteer.list').each do |l| %>
+                        <li class="linkBox"><%= l %></li>
+                    <% end %>
                 </ul>
             </div>
         </div>
     </div>
     <div class="bg-body-tertiary p-3">
         <div class="container-lg">
-            <p class="fs-2 fw-bold text-center text-uppercase">Employment</p>
-            <p class="fs-3 fw-bold text-center text-primary">CEED development program will make you more attractive to employers. </p>
+            <p class="fs-2 fw-bold text-center text-uppercase"><%= t('devprog.employment.title') %></p>
+            <p class="fs-3 fw-bold text-center text-primary"><%= t('devprog.employment.subtitle') %></p>
             <div class="row row-cols-lg-2 my-5">
                 <div class="align-content-center">
-                    <p class="fs-3 fw-bold m-3">Proficiency badges and trainings will offer you an opportunity to find employment opportunities within CEED and other organizations. CEED hires over 50 students every term in addition to 15 TAs for the courses.</p>
+                    <p class="fs-3 fw-bold m-3"><%= t('devprog.employment.text') %></p>
                 </div>
                 <!-- <div class="header3">
                      </div> -->
@@ -127,8 +133,8 @@
     </div>
     <div class="container">
         <div class="box-subtext mt-5">
-            <h2>Do you want to know more?</h2>
-            <p>For any questions, email us at: <a href="mailto:volunteer@makerepo.com">lolmail@makerepo.com</a></p>
+            <h2><%= t('devprog.more.header') %></h2>
+            <p><%= t('devprog.more.text').html_safe %></p>
         </div>
     </div>
 </section>
