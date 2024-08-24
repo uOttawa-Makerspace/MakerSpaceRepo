@@ -1,8 +1,18 @@
 @import "lib";
 @import "./shared/variables";
 
+$ceed-maroon: #8f001a;
+
 .navbar {
   background-color: $primary;
+  padding: 0.5rem;
+
+  &.navbar-staff {
+    background: black;
+    .navbar-toggler {
+      background-color: white;
+    }
+  }
 
   .nav-link {
     font-weight: 700;
@@ -11,6 +21,13 @@
 
     &:hover {
       color: #fff;
+    }
+  }
+
+  &.navbar-staff .nav-link {
+    color: white;
+    &:hover {
+      color: $primary;
     }
   }
 
@@ -25,6 +42,10 @@
 
   .navbar-brand {
     font-size: 2rem;
+  }
+
+  &.navbar-staff .navbar-brand {
+    color: white;
   }
 
   .ccLink {
