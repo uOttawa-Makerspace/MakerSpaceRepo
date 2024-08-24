@@ -37,4 +37,24 @@ section#developmentIndex {
     background-size: cover;
     background-position: center;
   }
+
+  .sequence {
+    img {
+      max-width: 30%;
+    }
+    p {
+      //display: block;
+      color: $primary;
+      padding: 1rem;
+      max-height: 100vh;
+      font-size: 1.3rem;
+      font-weight: 700;
+      border: 5px solid $primary;
+      border-radius: 32px;
+    }
+    i {
+      font-weight: unset;
+      font-size: 0.5rem;
+    }
+  }
 }

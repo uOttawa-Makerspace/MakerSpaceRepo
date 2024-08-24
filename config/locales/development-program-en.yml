@@ -23,6 +23,11 @@ en:
       proficient_projects: "These projects are more advanced and not free. You can either purchase it with your credit card or use your CC points."
       skills_badges: "Enhance your technical skills with our development program. Unlock new challenges as you progress, and earn digital badges for completing proficiency projects."
       footer: "Our modular Development Program is designed to plan, track, and accredit your skill development effortlessly. The Development Program will make use of industry standardized certificates that are convenient to share, and electronically verifiable for your future employers."
+      sequence:
+        one: "Develop Skills and earn digital badges"
+        two: "Accumulate officially extracurricular Volunteering"
+        three: "Employment opportunities with CEED and other organizations"
+        text: "Progress from beginner, intermediate, advanced, to master."
     digital_badges:
       title: "Digital Badges"
       subtitle: "Example of what employeers see on each badge profile"
