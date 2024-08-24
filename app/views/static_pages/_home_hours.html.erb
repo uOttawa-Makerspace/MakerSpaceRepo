@@ -1,0 +1,26 @@
+<div class="card home-card">
+    <div class="card-body">
+        <h2> <%= t('home.welcome.welcome_to') %>
+            <% if signed_in? %>
+                <span class="text-primary"><%= @user.name %></span>
+            <% end %>
+        </h2>
+        <div class="row">
+            <div class="col-auto">
+                <p><%= t('home.welcome.welcome_subheader').html_safe %></p>
+                <%= image_tag('redesign/site.png', alt: 'SITE', class: 'img-fluid') %>
+            </div>
+            <div class="col text-start align-self-center">
+                <h3 class="fw-bold"><%= t('home.welcome.hour_header') %></h3>
+                <div class="row border rounded">
+                    <% @contact_info.each do |space| %>
+                        <div class="w-auto">
+                            <h4><%= space.name %></h4>
+                            <p><%= space.opening_hour.students.html_safe %></p>
+                        </div>
+                    <% end %>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
