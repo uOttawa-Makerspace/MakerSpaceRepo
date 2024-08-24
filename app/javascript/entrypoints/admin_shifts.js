@@ -52,18 +52,24 @@ function makeModalDraggable(shiftModal) {
     isDragging = true;
     offsetX = e.clientX - shiftModal.getBoundingClientRect().left;
     offsetY = e.clientY - shiftModal.getBoundingClientRect().top;
+
+    document.body.style.userSelect = "none";
   });
 
   document.addEventListener("mousemove", function (e) {
     if (isDragging) {
+      const newLeft = e.clientX - offsetX + window.scrollX;
+      const newTop = e.clientY - offsetY + window.scrollY;
+
       shiftModal.style.position = "absolute";
-      shiftModal.style.left = e.clientX - offsetX + "px";
-      shiftModal.style.top = e.clientY - offsetY + "px";
+      shiftModal.style.left = newLeft + "px";
+      shiftModal.style.top = newTop + "px";
     }
   });
 
   document.addEventListener("mouseup", function () {
     isDragging = false;
+    document.body.style.userSelect = "";
   });
 
   shiftModal.addEventListener("hidden.bs.modal", function () {
