@@ -1,37 +1,34 @@
 <% provide(:title, 'Hours of Operation') %>
 <section id="hours-of-operation">
+  <div class="container col-lg-5">
+    <h1 class="text-center text-primary">Hours of Operation</h1>
 
-  <div class="title">Hours of Operation</div>
-  <div class="container">
-    <div class="row">
-
+    <div class="row justify-content-center">
       <% @contact_info.each do |space| %>
-      <div class="col-md-6">
-        <div class="card" style="width: 100%;">
-          <div class="card-body">
-            <h4 class="card-title"><%= space.name %></h4>
-          </div>
-          <div class="card-body pt-0">
-            <p><b>Registered students and faculty members</b></p>
-            <%= space.opening_hour.students.html_safe %>
-          </div>
-          <div class="card-body pt-0">
-            <p><b>General Public</b></p>
-            <%= space.opening_hour.public.html_safe %>
-          </div>
-          <div class="card-body pt-0">
-            <p><b>Summer Hours</b></p>
-            <%= space.opening_hour.summer.html_safe %>
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-body">
+              <h4 class="card-title"><%= space.name %></h4>
+            </div>
+            <div class="card-body pt-0">
+              <p><b>Registered students and faculty members</b></p>
+              <%= space.opening_hour.formatted(:students).html_safe %>
+            </div>
+            <div class="card-body pt-0">
+              <p><b>General Public</b></p>
+              <%= space.opening_hour.formatted(:public).html_safe %>
+            </div>
+            <div class="card-body pt-0">
+              <p><b>Summer Hours</b></p>
+              <%= space.opening_hour.formatted(:summer).html_safe %>
+            </div>
           </div>
         </div>
-      </div>
       <% end %>
     </div>
-  </div>
-  <br>
-  <div class="container">
-    <p><i class="fa fa-asterisk li" aria-hidden="true"></i> Schedules are subject to change at any time, without notice.</p>
-  </div>
 
+    <div class="container">
+      <p><i class="fa fa-asterisk li" aria-hidden="true"></i> Schedules are subject to change at any time, without notice.</p>
+    </div>
   </div>
 </section>
