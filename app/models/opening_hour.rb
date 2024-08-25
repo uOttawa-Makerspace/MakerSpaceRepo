@@ -1,13 +1,29 @@
 class OpeningHour < ApplicationRecord
   belongs_to :contact_info, optional: true
 
+  delegate :tag, to: "ApplicationController.helpers"
+
   # this returns html
   def formatted(field)
-    tag_map = I18n.t("hours.tags").transform_keys { |k| "[#{k.upcase}]" }
     # copy field
     formatted = self[field]
     # transform simple tags
-    tag_map.each { |tag, value| formatted.gsub!(tag, value) }
+    tag_map = I18n.t("hours.tags").transform_keys &:to_s
+    tag_map.each { |tag, value| formatted.gsub!("[#{tag.upcase}]", value) }
+
+    # tags in the form of [SUNDAY | 9am - 5pm]
+    # are split into two spans and put in a div
+    # the div is later justified with a global css
+    time_day_splitter = /\[(.+?)\|(.+?)\]/
+    formatted.gsub!(time_day_splitter) do
+      left = $1.squish
+      right = $2.squish
+      tag.div class: "formatted-hour-row" do
+        tag.span(tag_map[left.downcase] || left) +
+          tag.span(tag_map[right.downcase] || right)
+      end
+    end
+
     # transform locale specific tags [EN=text text] or [FR=text text]
     # This uses a regex, searched for a pattern replaces with
     # a captured group note text text

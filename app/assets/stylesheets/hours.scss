@@ -10,3 +10,12 @@ section#hours-of-operation {
     margin-bottom: 2rem;
   }
 }
+
+.formatted-hour-row {
+  display: inline-block;
+  width: 100%;
+  span {
+    display: inline-block;
+    width: 50%;
+  }
+}
