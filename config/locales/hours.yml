@@ -1,20 +1,28 @@
 en:
   hours:
-    sunday: "Sunday" # first day of the week :)
-    monday: "Monday"
-    tuesday: "Tuesday"
-    wednesday: "Wednesday"
-    thursday: "Thursday"
-    friday: "Friday"
-    saturday: "Saturday"
-    closed: "CLOSED"
+    title: "Hours of Operation"
+    disclaimer: "Schedules are subject to change at any time, without notice."
+    # used by models/OpeningHour
+    # simple substitution tags
+    tags:
+      sunday: "Sunday" # first day of the week :)
+      monday: "Monday"
+      tuesday: "Tuesday"
+      wednesday: "Wednesday"
+      thursday: "Thursday"
+      friday: "Friday"
+      saturday: "Saturday"
+      closed: "CLOSED"
 fr:
   hours:
-    sunday: "Dimanche"
-    monday: "Lundi"
-    tuesday: "Mardi"
-    wednesday: "Mercredi"
-    thursday: "Jeudi"
-    friday: "Vendredi"
-    saturday: "Samedi"
-    closed: "FERMÉ"
+    title: "Heures d'Ouverture"
+    disclaimer: "Les horaires sont susceptibles d'être modifiés à tout moment, sans préavis."
+    tags:
+      sunday: "Dimanche"
+      monday: "Lundi"
+      tuesday: "Mardi"
+      wednesday: "Mercredi"
+      thursday: "Jeudi"
+      friday: "Vendredi"
+      saturday: "Samedi"
+      closed: "FERMÉ"

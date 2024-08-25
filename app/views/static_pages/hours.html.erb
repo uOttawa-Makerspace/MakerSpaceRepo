@@ -1,23 +1,17 @@
-<% provide(:title, 'Hours of Operation') %>
+<% provide(:title, t('hours.title')) %>
 <section id="hours-of-operation">
   <div class="container col-lg-5">
-    <h1 class="text-center text-primary">Hours of Operation</h1>
+    <h1 class="text-center text-primary"><%= t('hours.title') %></h1>
     <div class="row justify-content-center">
       <% @contact_info.each do |space| %>
         <div class="col-md-6">
-          <div class="card">
+          <div class="card h-100">
             <div class="card-body">
-              <h4 class="card-title"><%= space.name %></h4>
-            </div>
-            <div class="card-body pt-0">
+              <h4 class="card-title mb-4"><%= space.name %></h4>
               <p><b>Registered students and faculty members</b></p>
               <%= space.opening_hour.formatted(:students).html_safe %>
-            </div>
-            <div class="card-body pt-0">
               <p><b>General Public</b></p>
               <%= space.opening_hour.formatted(:public).html_safe %>
-            </div>
-            <div class="card-body pt-0">
               <p><b>Summer Hours</b></p>
               <%= space.opening_hour.formatted(:summer).html_safe %>
             </div>
@@ -25,9 +19,8 @@
         </div>
       <% end %>
     </div>
-
     <div class="container">
-      <p><i class="fa fa-asterisk li" aria-hidden="true"></i> Schedules are subject to change at any time, without notice.</p>
+      <p><i class="fa fa-asterisk li" aria-hidden="true"></i> <%= t('hours.disclaimer') %></p>
       <%= link_to 'Edit Contact Infos', admin_contact_infos_path if current_user.admin? %>
     </div>
   </div>

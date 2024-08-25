@@ -1,8 +1,9 @@
 class OpeningHour < ApplicationRecord
   belongs_to :contact_info, optional: true
 
+  # this returns html
   def formatted(field)
-    tag_map = I18n.t("hours").transform_keys { |k| "[#{k.upcase}]" }
+    tag_map = I18n.t("hours.tags").transform_keys { |k| "[#{k.upcase}]" }
     # copy field
     formatted = self[field]
     # transform simple tags
