@@ -2,6 +2,9 @@ en:
   hours:
     title: "Hours of Operation"
     disclaimer: "Schedules are subject to change at any time, without notice."
+    student_title: "Student hours"
+    public_title: "Community hours"
+    summer_title: "Summer hours"
     # used by models/OpeningHour
     # simple substitution tags
     tags:
@@ -17,6 +20,9 @@ fr:
   hours:
     title: "Heures d'Ouverture"
     disclaimer: "Les horaires sont susceptibles d'être modifiés à tout moment, sans préavis."
+    student_title: "Heures des étudiants"
+    public_title: "Heures de la communauté"
+    summer_title: "Heures de l'été"
     tags:
       sunday: "Dimanche"
       monday: "Lundi"
