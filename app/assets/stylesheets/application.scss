@@ -34,6 +34,14 @@ $enable-negative-margins: true;
 // I wish but not everything uses rem
 //$font-size-base: 0.95rem;
 
+// Just to add overflow-clip, used in the home page hours column
+$utilities: (
+  "overflow": (
+    property: overflow,
+    values: visible hidden clip scroll auto,
+  ),
+);
+
 @import "bootstrap/scss/bootstrap";
 @import "toastr";
 @import "./shared/variables";
