@@ -2,7 +2,6 @@
 <section id="hours-of-operation">
   <div class="container col-lg-5">
     <h1 class="text-center text-primary">Hours of Operation</h1>
-
     <div class="row justify-content-center">
       <% @contact_info.each do |space| %>
         <div class="col-md-6">
@@ -29,6 +28,7 @@
 
     <div class="container">
       <p><i class="fa fa-asterisk li" aria-hidden="true"></i> Schedules are subject to change at any time, without notice.</p>
+      <%= link_to 'Edit Contact Infos', admin_contact_infos_path if current_user.admin? %>
     </div>
   </div>
 </section>
