@@ -14,6 +14,9 @@ section#hours-of-operation {
 .formatted-hour-row {
   display: inline-block;
   width: 100%;
+  &:nth-of-type(even) {
+    background-color: $tertiary;
+  }
   span {
     display: inline-block;
     width: 50%;

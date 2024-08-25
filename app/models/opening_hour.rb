@@ -7,6 +7,7 @@ class OpeningHour < ApplicationRecord
   def formatted(field)
     # copy field
     formatted = self[field]
+    formatted.gsub!(/&nbsp;/i, "")
     # transform simple tags
     tag_map = I18n.t("hours.tags").transform_keys &:to_s
     tag_map.each { |tag, value| formatted.gsub!("[#{tag.upcase}]", value) }
@@ -16,6 +17,7 @@ class OpeningHour < ApplicationRecord
     # the div is later justified with a global css
     time_day_splitter = /\[(.+?)\|(.+?)\]/
     formatted.gsub!(time_day_splitter) do
+      # catch extra spaces, trix keeps them.
       left = $1.squish
       right = $2.squish
       tag.div class: "formatted-hour-row" do
