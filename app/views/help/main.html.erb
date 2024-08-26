@@ -1,32 +1,26 @@
 <% provide(:title, 'Help Center') %>
-<section id="help-center">
+<section id="help-center" class="container text-center">
 
-  <div class="title">Help Center</div>
+  <h1 class="title">Help Center</h1>
+  <p class="text-center">If you're facing technical issues, please contact us.</p>
 
-  <div class="container">
-
-    <div class="col">
-      <div class="category">If you're facing technical issues, please contact us.</div>
-    </div>
-
-  </div>
-  <div class="issue-report">
+  <div class="col-lg-6 text-center mx-auto">
     <%= form_for @help, url: '/send_email', html: { multipart: true } do |f| %>
       <div class="mb-3 required">
-      <%= label_tag :name, 'Full Name', class: 'form-label' %>
-      <%= f.text_field :name, autofocus: true, class: 'form-control' %>
+        <%= label_tag :name, 'Full Name', class: 'form-label' %>
+        <%= f.text_field :name, autofocus: true, class: 'form-control' %>
       </div>
       <div class="mb-3 required">
-      <%= label_tag :email, 'Email', class: 'form-label' %>
-      <%= f.text_field :email, class: 'form-control' %>
+        <%= label_tag :email, 'Email', class: 'form-label' %>
+        <%= f.text_field :email, class: 'form-control' %>
       </div>
       <div class="mb-3 required">
-      <%= label_tag :subject, 'Subject', class: 'form-label' %>
-      <%= f.text_field :subject, class: 'form-control' %>
+        <%= label_tag :subject, 'Subject', class: 'form-label' %>
+        <%= f.text_field :subject, class: 'form-control' %>
       </div>
       <div class="mb-3 required">
-      <%= label_tag :comments, 'Comments', class: 'form-label' %>
-      <%= f.text_area :comments, placeholder: 'Please explain your issue.', class: 'form-control' %>
+        <%= label_tag :comments, 'Comments', class: 'form-label' %>
+        <%= f.text_area :comments, placeholder: 'Please explain your issue.', class: 'form-control' %>
       </div>
 
       <div class="mb-3">

@@ -6,18 +6,17 @@
         <div class="row flex-nowrap">
             <button class="col-auto btn btn-link text-secondary fs-1" onclick="document.getElementById('socialCarousel').scrollBy({left: -250, behavior: 'smooth'})"><i class="fa fa-angle-left"></i></button>
             <div class="col carouselCardPack" id="socialCarousel">
-                <% @posts.take(8).each do |post| %>
-                    <%= link_to post['permalink'], class: 'carouselCard', target: '_blank', rel: 'noopener' do %>
-                        <% if post['media_type'] == 'IMAGE' || post['media_type'] == 'CAROUSEL_ALBUM' %>
-                            <%= image_tag post['media_url'] %>
-                        <% elsif post['media_type'] == 'VIDEO' %>
-                            <!-- <video controls>
-                                 <source src="<%= post['media_url'] %>" type="video/mp4">
-                                 </video> -->
-                            <%= image_tag post['thumbnail_url'] %>
+                <div class="row g-0 flex-nowrap">
+                    <% @posts.take(8).each do |post| %>
+                        <%= link_to post['permalink'], class: 'carouselCard', target: '_blank', rel: 'noopener' do %>
+                            <% if post['media_type'] == 'IMAGE' || post['media_type'] == 'CAROUSEL_ALBUM' %>
+                                <%= image_tag post['media_url'] %>
+                            <% elsif post['media_type'] == 'VIDEO' %>
+                                <%= image_tag post['thumbnail_url'] %>
+                            <% end %>
                         <% end %>
                     <% end %>
-                <% end %>
+                </div>
             </div>
             <button class="col-auto btn btn-link text-secondary fs-1" onclick="document.getElementById('socialCarousel').scrollBy({left: 250, behavior: 'smooth'})"><i class="fa fa-angle-right"></i></button>
         </div>

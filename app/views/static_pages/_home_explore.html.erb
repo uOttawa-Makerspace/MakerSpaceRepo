@@ -6,15 +6,17 @@
         <div class="row flex-nowrap">
             <button class="col-auto btn btn-link text-secondary fs-1" onclick="document.getElementById('exploreCarousel').scrollBy({left: -250, behavior: 'smooth'})"><i class="fa fa-angle-left"></i></button>
             <div class="col carouselCardPack" id="exploreCarousel">
-                <% @recent_projects.take(8).each do |project| %>
-                    <%= link_to repository_path(project.user_username, project.slug), class: 'carouselCard', target: '_blank', rel: 'noopener' do %>
-                        <%= image_tag project.photos.first.image, alt: project.title if project.photos.first.present? %>
-                        <div class="text-center">
-                            <p class="fs-5"><%= project.title %></p>
-                            <p>by <%= project.user_username %></p>
-                        </div>
+                <div class="card-group d-flex flex-nowrap">
+                    <% @recent_projects.take(8).each do |project| %>
+                        <%= link_to repository_path(project.user_username, project.slug), class: 'card link-dark', target: '_blank', rel: 'noopener' do %>
+                            <%= image_tag project.photos.first.image, alt: project.title, class: 'card-img-top' %>
+                            <div class="card-body">
+                                <p class="fs-5 card-title"><%= project.title.squish %></p>
+                                <p class="card-text">by <%= project.user_username %></p>
+                            </div>
+                        <% end %>
                     <% end %>
-                <% end %>
+                </div>
             </div>
             <button class="col-auto btn btn-link text-secondary fs-1" onclick="document.getElementById('exploreCarousel').scrollBy({left: 250, behavior: 'smooth'})"><i class="fa fa-angle-right"></i></button>
         </div>

@@ -55,6 +55,14 @@ body {
   flex-direction: column;
 }
 
+// Don't cover element with header when auto scrolling
+// https://css-tricks.com/hash-tag-links-padding/
+// Select all elements with an id
+*[id] {
+  scroll-margin-top: 15rem;
+  scroll-snap-margin-top: 15rem; /* iOS 11 and older */
+}
+
 h1 {
   font-size: 2.25rem;
 }
@@ -370,3 +378,137 @@ td > .btn:not(:last-of-type) {
 // .userway_buttons_wrapper {
 //   margin-bottom: 5rem;
 // }
+
+.btn-dark-orange {
+  background-color: #f2994a; /* Default button color */
+  border-color: #f2994a; /* Match border color */
+  color: #fff; /* White text color */
+}
+
+.btn-dark-orange:hover {
+  background-color: #e67e22; /* Darker orange on hover */
+  border-color: #e67e22;
+}
+
+.btn-darker-orange {
+  background-color: #e24829; /* Default button color */
+  border-color: #e24829;
+  color: #fff;
+}
+
+.btn-darker-orange:hover {
+  background-color: #c0392b; /* Darker shade on hover */
+  border-color: #c0392b;
+}
+
+.makerstore-content {
+  max-width: 678px; /* Replaces inline style */
+}
+
+.btn-shop-now {
+  width: 200px; /* Replaces inline style */
+}
+
+.underline {
+  width: 50px;
+  height: 4px;
+  background-color: #e24829;
+}
+
+.overview-text {
+  margin: 0;
+  color: white;
+  font-size: 1.5vw;
+}
+
+.header-title {
+  margin: 0;
+  color: white;
+  font-size: 3.8vw;
+}
+
+.centered-content {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  padding: 20px 0;
+  max-width: 50%;
+}
+
+.background-overlay {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.3);
+  width: 100%;
+  height: 90%;
+}
+
+.header-background {
+  position: relative;
+  background-image: url("redesign/all_resources/image 27.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  width: 100%;
+  padding-bottom: 22.53%;
+}
+
+.shrink-screen-size {
+  transform: scale(0.95);
+}
+
+.custom-card-size {
+  width: 783px;
+  height: 434px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.logo-text-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.vertical-underline {
+  width: 15px;
+  background-color: #e24829;
+  margin-right: 20px;
+  height: 100%;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+}
+
+.margin-spacing-bottom {
+  margin-bottom: 200px;
+}
+
+@media (max-width: 1200px) {
+  .margin-spacing-bottom {
+    margin-bottom: 150px;
+  }
+}
+
+@media (max-width: 992px) {
+  .margin-spacing-bottom {
+    margin-bottom: 100px;
+  }
+}
+
+@media (max-width: 768px) {
+  .margin-spacing-bottom {
+    margin-bottom: 50px;
+  }
+}
+
+@media (max-width: 576px) {
+  .margin-spacing-bottom {
+    margin-bottom: 25px;
+  }
+}

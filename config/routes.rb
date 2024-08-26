@@ -113,6 +113,7 @@ Rails.application.routes.draw do
     collection do
       get :staff_printers
       get :staff_printers_updates
+      get :printer_data
       patch :link_printer_to_user
       patch :send_print_failed_message_to_user
       post :add_printer
@@ -145,7 +146,8 @@ Rails.application.routes.draw do
         as: "report_repository",
         action: "report_repository"
     post "join_team_program"
-    get "get_involved"
+    get "all_get_involved"
+    get "all_resources"
   end
 
   # RFID
@@ -198,6 +200,14 @@ Rails.application.routes.draw do
 
   get "help", to: "help#main"
   post "send_email", to: "help#send_email"
+
+  # keep index singular, rename path
+  # don't define second resourece, that breaks HTTP verbs
+  resources :faqs,
+            only: %i[index new create edit update destroy],
+            path: "faq" do
+    collection { put "reorder" }
+  end
 
   namespace :licenses do
     get "common_creative_attribution", as: "cca"

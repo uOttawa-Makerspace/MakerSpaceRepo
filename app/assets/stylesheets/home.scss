@@ -4,18 +4,31 @@
 section#home {
   .carouselCardPack {
     scroll-snap-type: x mandatory;
-    white-space: nowrap;
-    text-wrap: nowrap;
     overflow-y: clip; // hide vertical scroll bar
     overflow-x: scroll;
+
+    .card {
+      width: 16rem;
+      .card-img-top {
+        height: 16rem;
+        // Setting width off-centers the image
+        // Hopefully card width keeps it contained?
+        //width: 16rem;
+        padding: 0.5rem;
+      }
+      scroll-snap-align: start;
+      flex: 0 0 15rem;
+      .card-body {
+        text-align: center;
+      }
+    }
   }
 
+  // Social media gets these flush cards
+  // fixed size
   .carouselCard {
-    width: 18rem;
     height: 18rem;
-    scroll-snap-align: start;
-    display: inline-block;
-    //border: 1px solid gray;
+    width: 18rem;
     img,
     video {
       display: block; // To keep videos in line
@@ -30,7 +43,6 @@ section#home {
         transition: 100ms;
       }
       border: 10px solid white;
-      padding: 10px;
     }
   }
 

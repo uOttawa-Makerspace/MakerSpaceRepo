@@ -5,23 +5,25 @@
         <p><%= t('home.makerstore.subtext') %></p>
         <div class="row flex-nowrap">
             <button class="col-auto btn btn-link text-secondary fs-1" onclick="document.getElementById('storeCarousel').scrollBy({left: -250, behavior: 'smooth'})"><i class="fa fa-angle-left"></i></button>
+            <% merch = [
+                 { title: 'CEED Merch', image_url: 'redesign/merch.png', link: 'https://makerstore.ca/shop/ols/categories/merch' },
+                 { title: 'Cables', image_url: 'redesign/cables.png', link: 'https://makerstore.ca/shop/ols/categories/cables' },
+                 { title: 'Micro Controllers', image_url: 'redesign/microcontrollers.png', link: 'https://makerstore.ca/shop/ols/categories/micro-controllers' },
+                 { title: 'LEDs', image_url: 'redesign/leds.png', link: 'https://makerstore.ca/shop/ols/categories/leds' },
+                 { title: 'Materials', image_url: 'redesign/materials.png', link: 'https://makerstore.ca/shop/ols/categories/materials' },
+                 { title: 'Motors', image_url: 'redesign/motors.png', link: 'https://makerstore.ca/shop/ols/categories/motors' }
+               ] %>
             <div class="col carouselCardPack" id="storeCarousel">
-                <% merch = [
-                     { title: 'CEED Merch', image_url: 'redesign/merch.png', link: 'https://makerstore.ca/shop/ols/categories/merch' },
-                     { title: 'Cables', image_url: 'redesign/cables.png', link: 'https://makerstore.ca/shop/ols/categories/cables' },
-                     { title: 'Micro Controllers', image_url: 'redesign/microcontrollers.png', link: 'https://makerstore.ca/shop/ols/categories/micro-controllers' },
-                     { title: 'LEDs', image_url: 'redesign/leds.png', link: 'https://makerstore.ca/shop/ols/categories/leds' },
-                     { title: 'Materials', image_url: 'redesign/materials.png', link: 'https://makerstore.ca/shop/ols/categories/materials' },
-                     { title: 'Motors', image_url: 'redesign/motors.png', link: 'https://makerstore.ca/shop/ols/categories/motors' }
-                   ] %>
-                <% merch.each do |item| %>
-                    <%= link_to item[:link], class: 'carouselCard p-4', target: '_blank', rel: 'noopener' do %>
-                        <%= image_tag item[:image_url], alt: item[:title] %>
-                        <div class="text-center">
-                            <p class="fs-5"><%= item[:title] %></p>
-                        </div>
+                <div class="card-group d-flex flex-nowrap">
+                    <% merch.each do |item| %>
+                        <%= link_to item[:link], class: 'card link-dark', target: '_blank', rel: 'noopener' do %>
+                            <%= image_tag item[:image_url], alt: item[:title], class: 'card-img-top' %>
+                            <div class="card-body">
+                                <p class="fs-5 card-title"><%= item[:title] %></p>
+                            </div>
+                        <% end %>
                     <% end %>
-                <% end %>
+                </div>
             </div>
             <button class="col-auto btn btn-link text-secondary fs-1" onclick="document.getElementById('storeCarousel').scrollBy({left: 250, behavior: 'smooth'})"><i class="fa fa-angle-right"></i></button>
         </div>

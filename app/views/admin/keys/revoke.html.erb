@@ -7,8 +7,8 @@
         <div class="mb-5">
           <label for="deposit_return_date">Deposit Return Date - $<%= @key.get_latest_key_transaction.deposit_amount %></label>
           <div class="input-group">
-            <%= text_field_tag 'Deposit Return Date', '', id: 'deposit-return-date', autocomplete: 'off', class: 'form-control inanimate', required: true %>
-            <button class="btn btn-outline-danger" id="deposit-return-date-clear" type="button">
+            <%= text_field_tag :deposit_return_date, (Time.zone.today.to_s if @key.get_latest_key_transaction.deposit_amount.zero?), id: 'deposit-return-date', autocomplete: 'off', class: 'form-control inanimate', required: true %>
+            <button class="btn btn-danger" id="deposit-return-date-clear" type="button">
               <i class="fa fa-times"></i>
             </button>
           </div>

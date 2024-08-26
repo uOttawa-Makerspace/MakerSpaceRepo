@@ -1,0 +1,7 @@
+<section id="faq-new">
+    <div class="container">
+        <h1 class="text-center">Edit FAQ</h1>
+        <%= render 'form', faq: @faq %>
+        <%= button_to 'Delete entry', @faq, method: :delete, class: 'btn btn-danger' %>
+    </div>
+</section>

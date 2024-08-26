@@ -1,6 +1,9 @@
 en:
   year: "year"
   name: "English"
+  faq:
+    header: "Frequently Asked Questions"
+    subtext: "Here's what you need to know about CEED"
   navbar:
     home: "Home"
     # explore section
@@ -25,6 +28,7 @@ en:
     resources: "Resources"
     ceed_wiki: "CEED Wiki"
     more: "More"
+    all_resources: "All Resources"
     design_day: "Design Day"
     makerspace_events: "Makerspace Events"
     brunsfield_events: "Brunsfield Centre Events"
@@ -280,6 +284,30 @@ en:
         no_options: "There are no options available to you right now. Please continue to the next step."
       step_4:
         additional_comments: "Additional Comments"
+  all_resources:
+    info:
+      header: "Resources"
+      overview: "The tools you need to build your imagination."
+    wiki:
+      header: "Your go-to guide for CEED facilities and services"
+      point_1:
+        title: "Resources & Guides: "
+        overview: "Detailed guides on engineering design and entrepreneurship."
+      point_2:
+        title: "Project Showcases: "
+        overview: "Innovative projects by CEED members."
+      point_3:
+        title: "Community: "
+        overview: "Engage with like-minded individuals and collaborate."
+      point_4:
+        title: "Events & Workshops: "
+        overview: "Information on upcoming events and workshops."
+      point_5:
+        title: "Support: "
+        overview: "Mentorship programs and support services."
+    makerstore:
+      title: "Makerstore"
+      overview: "Your ultimate destination for all your creative needs. Explore our CEED merchandise, filaments, and a wide range of materials essential for bringing your ideas to life."
   all_get_involved:
     info:
       header: "Get Involved"

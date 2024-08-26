@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2024_08_04_191845) do
+ActiveRecord::Schema[7.0].define(version: 2024_08_21_160015) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -281,6 +281,16 @@ ActiveRecord::Schema[7.0].define(version: 2024_08_04_191845) do
     t.integer "score"
     t.integer "training_session_id"
     t.datetime "expired_at", precision: nil
+  end
+
+  create_table "faqs", force: :cascade do |t|
+    t.string "title_en"
+    t.string "title_fr"
+    t.text "body_en"
+    t.text "body_fr"
+    t.integer "order"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "friendly_id_slugs", id: :serial, force: :cascade do |t|
