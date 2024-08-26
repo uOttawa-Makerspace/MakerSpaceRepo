@@ -402,7 +402,7 @@ td > .btn:not(:last-of-type) {
 }
 
 .makerstore-content {
-  max-width: 500px; /* Replaces inline style */
+  max-width: 678px; /* Replaces inline style */
 }
 
 .btn-shop-now {
@@ -411,7 +411,7 @@ td > .btn:not(:last-of-type) {
 
 .underline {
   width: 50px;
-  height: 3px;
+  height: 4px;
   background-color: #e24829;
 }
 
@@ -454,12 +454,61 @@ td > .btn:not(:last-of-type) {
   padding-bottom: 22.53%;
 }
 
-.fixed-card-height {
-  max-height: 400px; /* Set a maximum height for the card */
-  overflow: hidden; /* Ensure that any content beyond the max height is hidden */
+.shrink-screen-size {
+  transform: scale(0.95);
 }
 
-.card-img-top {
-  object-fit: cover;
+.custom-card-size {
+  width: 783px;
+  height: 434px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.logo-text-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.vertical-underline {
+  width: 15px;
+  background-color: #e24829;
+  margin-right: 20px;
   height: 100%;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+}
+
+.margin-spacing-bottom {
+  margin-bottom: 200px;
+}
+
+@media (max-width: 1200px) {
+  .margin-spacing-bottom {
+    margin-bottom: 150px;
+  }
+}
+
+@media (max-width: 992px) {
+  .margin-spacing-bottom {
+    margin-bottom: 100px;
+  }
+}
+
+@media (max-width: 768px) {
+  .margin-spacing-bottom {
+    margin-bottom: 50px;
+  }
+}
+
+@media (max-width: 576px) {
+  .margin-spacing-bottom {
+    margin-bottom: 25px;
+  }
 }
