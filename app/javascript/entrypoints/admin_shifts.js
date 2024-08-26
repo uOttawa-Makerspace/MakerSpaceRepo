@@ -234,10 +234,16 @@ document.addEventListener("turbo:load", () => {
               confirmCurrentWeekShifts();
             },
           },
+          deleteMultipleShifts: {
+            text: "Select multiple shifts",
+            click: () => {
+              selectDeleteMultipleShifts();
+            },
+          },
         },
         headerToolbar: {
           left: "prev,today,next",
-          center: "copyToNextWeek,confirmCurrentWeek",
+          center: "copyToNextWeek,confirmCurrentWeek,deleteMultipleShifts",
           right: "addNewEvent,timeGridWeek,timeGridDay",
         },
         contentHeight: "auto",
@@ -581,6 +587,42 @@ const confirmCurrentWeekShifts = () => {
     });
   }
 };
+
+let isSelectingShifts = false;
+
+const selectDeleteMultipleShifts = () => {
+  isSelectingShifts = !isSelectingShifts; // Toggle the selection mode
+
+  const deleteButton = document.querySelector(
+    ".fc-deleteMultipleShifts-button"
+  );
+  if (deleteButton) {
+    deleteButton.textContent = isSelectingShifts
+      ? "Delete selected shifts"
+      : "Select multiple shifts";
+  }
+};
+
+const toggleShiftSelection = (eventElement) => {
+  if (eventElement.classList.contains("selected-shift")) {
+    // If already selected, deselect it
+    eventElement.classList.remove("selected-shift");
+  } else {
+    // Otherwise, select it by making it brighter
+    eventElement.classList.add("selected-shift");
+  }
+};
+
+// Modify the eventClick handler to incorporate shift selection
+calendar.on("eventClick", (arg) => {
+  if (isSelectingShifts) {
+    // If in selection mode, toggle the selection of the shift
+    toggleShiftSelection(arg.el);
+  } else {
+    // Otherwise, proceed with the normal logic to open the modal
+    editShift(arg);
+  }
+});
 
 const openModal = (arg) => {
   if (!arg) {

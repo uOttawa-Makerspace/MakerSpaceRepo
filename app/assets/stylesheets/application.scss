@@ -463,3 +463,8 @@ td > .btn:not(:last-of-type) {
   object-fit: cover;
   height: 100%;
 }
+
+.selected-shift {
+  background-color: rgba(255, 255, 255, 0.7) !important;
+  border-color: #ccc !important;
+}
