@@ -67,4 +67,19 @@ $ceed-maroon: #8f001a;
       }
     }
   }
+
+  transition: margin 150ms;
+  transition: padding 150ms;
+  &.header-small {
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    .navbar-brand {
+      padding-top: 0;
+      padding-bottom: 0;
+      margin-top: 0;
+      margin-bottom: 0;
+    }
+  }
 }
