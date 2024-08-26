@@ -16,6 +16,8 @@ class FaqsController < ApplicationController
     @faq = Faq.new(faq_params)
     if @faq.save
       flash[:notice] = "Created FAQ successfully"
+      # make way for new faq
+      @faq = Faq.new
       render :new
     else
       flash[:alert] = "Created FAQ successfully"
