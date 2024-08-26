@@ -1,155 +1,162 @@
-<section>
-  <div class="col-lg-10 mx-auto">
-    <br/>
-
-    <h2 class="text-center"><%= t('development_program.header') %></h2>
-    <br>
-
-    <% unless not signed_in? or @user.dev_program? %>
-
-    <div class="h-100 p-4 bg-light border rounded-3 mb-2 text-center">
-      <h2><%= t('development_program.not_in_dev_program.header').html_safe %></h2>
-      <p><%= t('development_program.not_in_dev_program.content').html_safe %></p>
-      <p><%= t('development_program.not_in_dev_program.link').html_safe %></p>
+<% provide :title, t('devprog.title') %>
+<section id="developmentIndex">
+    <div class="jumbotron developmentJumbotron">
+        <h1 class="display-1"><%= t('devprog.header').html_safe %></h1>
+        <%= tag.p t('devprog.subtext') %>
+        <%= link_to t('devprog.join_button'), join_volunteer_program_volunteers_path, class: 'btn btn-primary' %>
     </div>
-
-    <% end %>
-
-    <h3 class="text-center text-muted"><%= t('development_program.overview.header') %></h3>
-    <p>
-      <%= t('development_program.overview.paragraph') %>
-
-      <%= image_tag('development_program/ceed_volunteering.png', class: 'img-fluid', alt: 'Diagram for the steps of volunteering') %>
-
-    </p>
-
-    <h4 class="mt-3 text-center text-muted"><%= t('development_program.learning_area.header').html_safe %></h4>
-
-    <p>
-      <%= t('development_program.learning_area.paragraph') %>
-    </p>
-
-    <h4 class="mt-3 mt-3 text-center text-muted"><%= t('development_program.proficient_projects.header').html_safe %></h4>
-
-    <p>
-      <%= t('development_program.proficient_projects.paragraph') %>
-    </p>
-
-    <h4 class="mt-3 mt-3 text-center text-muted"><%= t('development_program.skills_badges.header').html_safe %></h4>
-
-    <p>
-      <%= t('development_program.skills_badges.paragraph') %>
-    </p>
-    <p><b><%= t('development_program.skills_badges.footer').html_safe %>.</b></p>
-
-    <h3 class="mt-3 mt-3 text-center text-muted"><%= t('development_program.digital_badges.header') %></h3>
-    <p class="text-center"><b>
-      <%= t('development_program.digital_badges.example').html_safe %>
-    </b></p>
-    <div class="text-center">
-    <%= image_tag('development_program/1.png', class: 'img-fluid mx-auto', alt: 'Diagram explaining the steps for the badges, Learn it, Earn it, Share it') %>
+    <div class="shadow">
+        <%= render partial: 'layouts/development_program_header' %>
     </div>
-    <br/>
-    <br>
-    <div class="row">
-      <div class="col-md-4">
-        <div class="card">
-          <div class="card-header">
-            <%= t('development_program.digital_badges.tables.digital_technologies.title') %>
-          </div>
-          <ul class="list-group list-group-flush">
-            <li class="list-group-item"><%= t('development_program.digital_badges.tables.digital_technologies.3d_printing') %></li>
-            <li class="list-group-item"><%= t('development_program.digital_badges.tables.digital_technologies.laser_cutting') %></li>
-            <li class="list-group-item"><%= t('development_program.digital_badges.tables.digital_technologies.arduino') %></li>
-            <li class="list-group-item"><%= t('development_program.digital_badges.tables.digital_technologies.soldering') %></li>
-            <li class="list-group-item"><%= t('development_program.digital_badges.tables.digital_technologies.virtual_reality') %></li>
-            <li class="list-group-item"><%= t('development_program.digital_badges.tables.digital_technologies.embroidery') %></li>
-          </ul>
+    <div class="p-3 my-5 container-lg">
+        <div class="row">
+            <div class="col-lg-6">
+                <p class="fs-4 text-primary fw-bold text-uppercase"><%= t('devprog.block1.title') %></p>
+                <h2 class="mb-5 display-5"><%= t('devprog.block1.subtext').html_safe %></h2>
+            </div>
+            <div class="offset-lg-1 col-lg-5">
+                <div class="header1"></div>
+                <%#= image_tag 'development_program/header1.png'%>
+            </div>
         </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card">
-          <div class="card-header">
-            <%= t('development_program.digital_badges.tables.professional_development.title') %>
-          </div>
-          <ul class="list-group list-group-flush">
-            <li class="list-group-item"><%= t('development_program.digital_badges.tables.professional_development.design_thinking') %></li>
-            <li class="list-group-item"><%= t('development_program.digital_badges.tables.professional_development.entrepreneurship_basics') %></li>
-            <li class="list-group-item"><%= t('development_program.digital_badges.tables.professional_development.project_management') %></li>
-            <li class="list-group-item"><%= t('development_program.digital_badges.tables.professional_development.effective_communication') %></li>
-          </ul>
+        <!-- This block has awful layout, hope it works on safari :^) -->
+        <div class="row g-3 my-5">
+            <div class="col-lg-4">
+                <div class="linkBox">
+                    <h2><%= t('devprog.nav.learning_area') %></h2>
+                    <p><%= t('devprog.block1.learning_area') %></p>
+                    <!-- Use the navbar localizations, I think this is just the navbar in block form -->
+                    <%= link_to t('devprog.nav.new_module'), new_learning_area_path %>
+                    <%= link_to t('devprog.nav.all_modules'), learning_area_index_path %>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="linkBox">
+                    <h2><%= t('devprog.nav.proficient_projects') %></h2>
+                    <p><%= t('devprog.block1.proficient_projects') %></p>
+                    <%= link_to t('devprog.nav.requests'), requests_proficient_projects_path %>
+                    <%= link_to t('devprog.nav.new_project'), new_proficient_project_path %>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="linkBox">
+                    <h2><%= t('devprog.nav.skills_badges') %></h2>
+                    <p><%= t('devprog.block1.skills_badges') %></p>
+                    <%= link_to t('devprog.nav.skills'), skills_development_programs_path %>
+                    <%= link_to t('devprog.nav.badges'), badges_path %>
+                    <%= link_to t('devprog.nav.badge_requets'), admin_badges_path %>
+                    <%= link_to t('devprog.nav.grant_revoke_badge'), new_badge_badges_path %>
+                </div>
+            </div>
         </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card">
-          <div class="card-header">
-            <%= t('development_program.digital_badges.tables.manufacturing_technologies.title') %>
-          </div>
-          <ul class="list-group list-group-flush">
-            <li class="list-group-item"><%= t('development_program.digital_badges.tables.manufacturing_technologies.shop_fundamentals') %></li>
-            <li class="list-group-item"><%= t('development_program.digital_badges.tables.manufacturing_technologies.lathe') %></li>
-            <li class="list-group-item"><%= t('development_program.digital_badges.tables.manufacturing_technologies.mill') %></li>
-            <li class="list-group-item"><%= t('development_program.digital_badges.tables.manufacturing_technologies.cnc') %></li>
-            <li class="list-group-item"><%= t('development_program.digital_badges.tables.manufacturing_technologies.welding') %></li>
-          </ul>
+        <div class="row mt-5 g-5 text-center justify-content-center sequence">
+            <div class="col-lg-3">
+
+                <%= image_tag 'development_program/seq-1.png', class: 'img-fluid' %>
+                <p><%= t('devprog.block1.sequence.one') %></p>
+            </div>
+            <div class="col-lg-1 align-content-center">
+                <i class="fa fa-long-arrow-right"></i>
+            </div>
+            <div class="col-lg-3">
+                <%= image_tag 'development_program/seq-2.png', class: 'img-fluid' %>
+                <p><%= t('devprog.block1.sequence.two') %></p>
+            </div>
+            <div class="col-lg-1 align-content-center">
+                <i class="fa fa-long-arrow-right"></i>
+            </div>
+            <div class="col-lg-3">
+                <%= image_tag 'development_program/seq-3.png', class: 'img-fluid' %>
+                <p><%= t('devprog.block1.sequence.three') %></p>
+            </div>
         </div>
-      </div>
+        <p class="text-primary text-center fw-bold fs-3 mb-5"><%= t('devprog.block1.sequence.text') %></p>
+        <p class="fs-3 fw-bold m-3"><%= t('devprog.block1.footer') %></p>
     </div>
-
-    <h3 class="mt-3 mt-3 text-center text-muted"><%= t('development_program.volunteer.header') %></h3>
-    <p>
-      <%= t('development_program.volunteer.paragraph_1') %>
-    </p>
-    <p>
-      <%= t('development_program.volunteer.paragraph_2') %>
-    </p>
-    <p><b><%= t('development_program.volunteer.list.title') %></b></p>
-    <ul style="list-style-type: disc!important;">
-      <li><%= t('development_program.volunteer.list.point_1') %></li>
-      <li><%= t('development_program.volunteer.list.point_2') %></li>
-      <li><%= t('development_program.volunteer.list.point_3') %></li>
-      <li><%= t('development_program.volunteer.list.point_4') %></li>
-    </ul>
-    <p>
-      <%= t('development_program.volunteer.paragraph_3').html_safe %>
-    </p>
-
-    <h3 class="mt-3 mt-3 text-center text-muted"><%= t('development_program.courses.header') %></h3>
-    <p><%= t('development_program.courses.paragraph_1') %></p>
-    <p>
-      <%= t('development_program.courses.paragraph_2') %>
-    </p>
-    <br>
-    <p><b><%= t('development_program.courses.requirement_list.title') %></b></p>
-    <ul style="list-style-type: disc!important;">
-      <li><%= t('development_program.courses.requirement_list.point_1') %></li>
-      <li><%= t('development_program.courses.requirement_list.point_2') %></li>
-      <li><%= t('development_program.courses.requirement_list.point_3') %></li>
-      <li><%= t('development_program.courses.requirement_list.point_4') %></li>
-    </ul>
-    <br>
-    <p><b><%= t('development_program.courses.on_completion_list.title') %></b></p>
-    <ul style="list-style-type: disc!important;">
-      <li><%= t('development_program.courses.on_completion_list.point_1') %></li>
-      <li><%= t('development_program.courses.on_completion_list.point_2') %></li>
-    </ul>
-    <p>
-      <%= t('development_program.courses.paragraph_3').html_safe %>
-    </p>
-
-    <h3 class="mt-3 mt-3 text-center text-muted"><%= t('development_program.employment.header') %></h3>
-    <p>
-      <%= t('development_program.employment.paragraph_1') %>
-    </p>
-    <p>
-      <%= t('development_program.employment.paragraph_2') %>
-    </p>
-
-    <h3 class="mt-3 mt-3 text-center text-muted"><%= t('development_program.contact.header') %></h3>
-    <p><%= t('development_program.contact.paragraph_1') %></p>
-    <p><%= t('development_program.contact.contact_1').html_safe %></p>
-    <p><%= t('development_program.contact.contact_2').html_safe %></p>
-    <br>
-  </div>
+    <div class="bg-body-tertiary p-3 text-center text-uppercase">
+        <h2 class="text-uppercase mt-5"><%= t('devprog.digital_badges.title') %></h2>
+        <p class="fs-3 fw-bold text-primary"><%= t('devprog.digital_badges.subtitle') %></p>
+        <div class="row mb-5">
+            <div class="col-lg-6">
+                <%= image_tag 'development_program/1.png', class: 'w-100' %>
+            </div>
+            <div class="col-lg-6">
+                <div class="row row-cols-lg-3 g-3">
+                    <div class="col">
+                        <div class="linkBox">
+                            <h4>Digital Technologies</h4>
+                            <ul>
+                              <li>3D Printing</li>
+                              <li>Laser Cutting</li>
+                              <li>Arduino</li>
+                              <li>Soldering</li>
+                              <li>Virtual Reality</li>
+                              <li>Embroidery</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="linkBox">
+                            <h4>Professional Development</h4>
+                            <ul>
+                              <li>Design Thinking</li>
+                              <li>Entrepreneurship basics</li>
+                              <li>Project Management</li>
+                              <li>Effective Communication (Written and Oral)</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="linkBox">
+                            <h4>Manufacturing Technologies</h4>
+                            <ul>
+                              <li>Shop Fundamentals</li>
+                              <li>Lathe</li>
+                              <li>Mill</li>
+                              <li>CNC</li>
+                              <li>Welding</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container-lg mt-5">
+        <div class="row row-cols-lg-2 mb-5">
+            <div>
+                <p class="fs-2 fw-bold text-uppercase"><%= t('devprog.volunteer.title') %></p>
+                <p class="fs-5"><%= t('devprog.volunteer.text') %></p>
+                <%= link_to 'More about volunteering', volunteers_path, class: 'header2' %>
+            </div>
+            <div>
+                <h3><%= t('devprog.volunteer.list_header') %></h3>
+                <ul class="ps-0" style="list-style-position: inside;">
+                    <% t('devprog.volunteer.list').each do |l| %>
+                        <li class="linkBox"><%= l %></li>
+                    <% end %>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="bg-body-tertiary p-3">
+        <div class="container-lg">
+            <p class="fs-2 fw-bold text-center text-uppercase"><%= t('devprog.employment.title') %></p>
+            <p class="fs-3 fw-bold text-center text-primary"><%= t('devprog.employment.subtitle') %></p>
+            <div class="row row-cols-lg-2 my-5">
+                <div class="align-content-center">
+                    <p class="fs-3 fw-bold m-3"><%= t('devprog.employment.text') %></p>
+                </div>
+                <!-- <div class="header3">
+                     </div> -->
+                <%= image_tag 'development_program/header3.png', class: 'img-fluid' %>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <div class="box-subtext mt-5">
+            <h2><%= t('devprog.more.header') %></h2>
+            <p><%= t('devprog.more.text').html_safe %></p>
+        </div>
+    </div>
 </section>
-
