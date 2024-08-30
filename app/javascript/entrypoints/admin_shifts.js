@@ -331,12 +331,26 @@ document.addEventListener("turbo:load", () => {
           openModal(arg);
         },
         eventClick: (arg) => {
-          if (arg.event.source.id === "shifts") {
+          if (isSelectingShifts) {
+            const shiftIndex = selectedShifts.findIndex(
+              (shift) => shift.id === arg.event.id
+            );
+
+            if (shiftIndex > -1) {
+              selectedShifts.splice(shiftIndex, 1);
+              arg.el.classList.remove("selected-shift");
+            } else {
+              // Otherwise, select the shift
+              selectedShifts.push({ id: arg.event.id, element: arg.el });
+              arg.el.classList.add("selected-shift");
+            }
+          } else if (arg.event.source.id === "shifts") {
             editShift(arg);
           } else if (arg.event.source.id === "staffNeeded") {
             staffNeededEvent(arg);
           }
         },
+
         eventDrop: (arg) => {
           let shiftStartHour = new Date(
             Date.parse(arg.event.start.toString()) +
@@ -589,40 +603,60 @@ const confirmCurrentWeekShifts = () => {
 };
 
 let isSelectingShifts = false;
+let selectedShifts = [];
 
 const selectDeleteMultipleShifts = () => {
-  isSelectingShifts = !isSelectingShifts; // Toggle the selection mode
+  isSelectingShifts = !isSelectingShifts;
 
   const deleteButton = document.querySelector(
     ".fc-deleteMultipleShifts-button"
   );
+
   if (deleteButton) {
-    deleteButton.textContent = isSelectingShifts
-      ? "Delete selected shifts"
-      : "Select multiple shifts";
+    if (isSelectingShifts) {
+      deleteButton.textContent = "Delete selected shifts";
+    } else {
+      deleteButton.textContent = "Select multiple shifts";
+
+      if (selectedShifts.length > 0) {
+        if (confirm("Are you sure you want to delete the selected shifts?")) {
+          selectedShifts.forEach((shift) => {
+            calendar.getEventById(shift.id).remove();
+            fetch(`/admin/shifts/${shift.id}`, {
+              method: "DELETE",
+              headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ format: "json" }),
+            })
+              .then((response) => {
+                if (response.ok) {
+                  console.log(
+                    `Shift with ID ${shift.id} deleted successfully.`
+                  );
+                } else {
+                  console.error(`Failed to delete shift with ID ${shift.id}.`);
+                }
+              })
+              .catch((error) => {
+                console.error(
+                  "An error occurred while deleting shifts:",
+                  error
+                );
+              });
+          });
+
+          selectedShifts = [];
+        }
+      }
+    }
+  } else {
+    console.error(
+      "Button with class 'fc-deleteMultipleShifts-button' not found."
+    );
   }
 };
-
-const toggleShiftSelection = (eventElement) => {
-  if (eventElement.classList.contains("selected-shift")) {
-    // If already selected, deselect it
-    eventElement.classList.remove("selected-shift");
-  } else {
-    // Otherwise, select it by making it brighter
-    eventElement.classList.add("selected-shift");
-  }
-};
-
-// Modify the eventClick handler to incorporate shift selection
-calendar.on("eventClick", (arg) => {
-  if (isSelectingShifts) {
-    // If in selection mode, toggle the selection of the shift
-    toggleShiftSelection(arg.el);
-  } else {
-    // Otherwise, proceed with the normal logic to open the modal
-    editShift(arg);
-  }
-});
 
 const openModal = (arg) => {
   if (!arg) {
