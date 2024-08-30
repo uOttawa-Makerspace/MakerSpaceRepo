@@ -491,6 +491,10 @@ td > .btn:not(:last-of-type) {
   height: 100%;
 }
 
+.selected-shift {
+  background-color: rgba(128, 128, 128, 0.3) !important;
+  border-color: #ccc !important;
+}
 .logo-container {
   display: flex;
   align-items: center;
@@ -522,4 +526,4 @@ td > .btn:not(:last-of-type) {
   .margin-spacing-bottom {
     margin-bottom: 25px;
   }
-}
+

@@ -52,18 +52,24 @@ function makeModalDraggable(shiftModal) {
     isDragging = true;
     offsetX = e.clientX - shiftModal.getBoundingClientRect().left;
     offsetY = e.clientY - shiftModal.getBoundingClientRect().top;
+
+    document.body.style.userSelect = "none";
   });
 
   document.addEventListener("mousemove", function (e) {
     if (isDragging) {
+      const newLeft = e.clientX - offsetX + window.scrollX;
+      const newTop = e.clientY - offsetY + window.scrollY;
+
       shiftModal.style.position = "absolute";
-      shiftModal.style.left = e.clientX - offsetX + "px";
-      shiftModal.style.top = e.clientY - offsetY + "px";
+      shiftModal.style.left = newLeft + "px";
+      shiftModal.style.top = newTop + "px";
     }
   });
 
   document.addEventListener("mouseup", function () {
     isDragging = false;
+    document.body.style.userSelect = "";
   });
 
   shiftModal.addEventListener("hidden.bs.modal", function () {
@@ -228,10 +234,16 @@ document.addEventListener("turbo:load", () => {
               confirmCurrentWeekShifts();
             },
           },
+          deleteMultipleShifts: {
+            text: "Select multiple shifts",
+            click: () => {
+              selectDeleteMultipleShifts();
+            },
+          },
         },
         headerToolbar: {
           left: "prev,today,next",
-          center: "copyToNextWeek,confirmCurrentWeek",
+          center: "copyToNextWeek,confirmCurrentWeek,deleteMultipleShifts",
           right: "addNewEvent,timeGridWeek,timeGridDay",
         },
         contentHeight: "auto",
@@ -319,12 +331,26 @@ document.addEventListener("turbo:load", () => {
           openModal(arg);
         },
         eventClick: (arg) => {
-          if (arg.event.source.id === "shifts") {
+          if (isSelectingShifts) {
+            const shiftIndex = selectedShifts.findIndex(
+              (shift) => shift.id === arg.event.id
+            );
+
+            if (shiftIndex > -1) {
+              selectedShifts.splice(shiftIndex, 1);
+              arg.el.classList.remove("selected-shift");
+            } else {
+              // Otherwise, select the shift
+              selectedShifts.push({ id: arg.event.id, element: arg.el });
+              arg.el.classList.add("selected-shift");
+            }
+          } else if (arg.event.source.id === "shifts") {
             editShift(arg);
           } else if (arg.event.source.id === "staffNeeded") {
             staffNeededEvent(arg);
           }
         },
+
         eventDrop: (arg) => {
           let shiftStartHour = new Date(
             Date.parse(arg.event.start.toString()) +
@@ -573,6 +599,62 @@ const confirmCurrentWeekShifts = () => {
         );
       }
     });
+  }
+};
+
+let isSelectingShifts = false;
+let selectedShifts = [];
+
+const selectDeleteMultipleShifts = () => {
+  isSelectingShifts = !isSelectingShifts;
+
+  const deleteButton = document.querySelector(
+    ".fc-deleteMultipleShifts-button"
+  );
+
+  if (deleteButton) {
+    if (isSelectingShifts) {
+      deleteButton.textContent = "Delete selected shifts";
+    } else {
+      deleteButton.textContent = "Select multiple shifts";
+
+      if (selectedShifts.length > 0) {
+        if (confirm("Are you sure you want to delete the selected shifts?")) {
+          selectedShifts.forEach((shift) => {
+            calendar.getEventById(shift.id).remove();
+            fetch(`/admin/shifts/${shift.id}`, {
+              method: "DELETE",
+              headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ format: "json" }),
+            })
+              .then((response) => {
+                if (response.ok) {
+                  console.log(
+                    `Shift with ID ${shift.id} deleted successfully.`
+                  );
+                } else {
+                  console.error(`Failed to delete shift with ID ${shift.id}.`);
+                }
+              })
+              .catch((error) => {
+                console.error(
+                  "An error occurred while deleting shifts:",
+                  error
+                );
+              });
+          });
+
+          selectedShifts = [];
+        }
+      }
+    }
+  } else {
+    console.error(
+      "Button with class 'fc-deleteMultipleShifts-button' not found."
+    );
   }
 };
 
