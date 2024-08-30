@@ -12,6 +12,6 @@
         <% else %>
         <p><%= t('home.development_program.no_devs') %></p>
         <% end %>
-        <%= link_to t('home.show_more'), signed_in? ? development_programs_path : development_program_info_path %>
+        <%= link_to t('home.show_more'), development_programs_path %>
     </div>
 </div>

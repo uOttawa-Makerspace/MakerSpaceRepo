@@ -13,6 +13,8 @@ class DevelopmentProgramsController < ApplicationController
                       action_name == "index"
                   }
 
+  layout "application", only: :index
+
   def index
   end
 
