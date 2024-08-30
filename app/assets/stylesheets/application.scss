@@ -375,7 +375,10 @@ td > .btn:not(:last-of-type) {
 }
 
 .subtitle {
-  font: 400 0.75rem "Raleway", helvetica, sans-serif;
+  font:
+    400 0.75rem "Raleway",
+    helvetica,
+    sans-serif;
   color: #aaa;
   margin-bottom: 0.5rem;
 }
@@ -526,4 +529,4 @@ td > .btn:not(:last-of-type) {
   .margin-spacing-bottom {
     margin-bottom: 25px;
   }
-
+}
