@@ -23,6 +23,11 @@ fr:
       proficient_projects: "Ces projets sont plus avancées mais ne sont pas gratuits. Vous pouvez les acheter avec une carte ou avec vos points CC"
       skills_badges: "Augmentez vos compétences téchnique avec notre programme de développement. Déverrouillez de nouveaux défis, et obtenez des badges numérique en complétant de projets de compétence "
       footer: "Notre programme de dévelopemment modulaire est conçu pour planifier, suivre, et accrediter le dévelopemment de vos compétences sans effort. Le Programme de Dévelopemment utilise des certifications normalisé par l'industrie qui sont pratique à partager, et sont vérifiable électroniquement pour vos futurs employeurs"
+      sequence:
+        one: "Développer des compétences et obtenir des badges numériques"
+        two: "Accumuler des heures de bénévolat officiellement extrascolaire"
+        three: "Des opportunites d'emploi avec CGEC et avec d'autres organizations"
+        text: "Progresser de débutant à maître, en passant par intermédiaire et avancé."
     digital_badges:
       title: "Badges Numériques"
       subtitle: "Un example de ce que les employeurs voient sur chaque profil de badge"
