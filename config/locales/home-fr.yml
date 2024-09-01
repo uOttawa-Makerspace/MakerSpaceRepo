@@ -73,6 +73,7 @@ fr:
       sign_up: "S'inscrire"
     workshops:
       header: "Ateliers cette semaine"
+      link: "Visiter notre page d'événments ici."
     welcome:
       welcome_to: "Bienvenue à MakerRepo"
       welcome_subheader: "Voici le site de dépôt du <b>CEED</b>"
