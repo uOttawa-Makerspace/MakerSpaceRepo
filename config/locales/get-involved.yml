@@ -1,0 +1,95 @@
+en:
+  all_get_involved:
+    sign_up: "Sign up"
+    info:
+      header: "Get Involved"
+      overview: "Skill development is all about experience. CEED has you covered. Join workshops and events to earn certificates and make projects!"
+    workshops:
+      banner: "Workshops"
+      header: "From Beginner to Master"
+      overview: "Elaborate workshops and courses to learn and develop all sorts of hands on skills. Our beginner’s workshops will teach you all the essential fundamentals."
+      sections:
+        workshop_1:
+          header: "Makerlab Workshops"
+          overview: "3D Printing, Laser cutting, soldering, arts & crafts, and more"
+        workshop_2:
+          header: "MTC Workshops"
+          overview: "Milling, Turning, Welding, and Machining"
+    programs:
+      banner: "Programs"
+      header: "Hungry for more?"
+      overview: "Build your resume and skillset"
+      sections:
+        program_1:
+          header: "Volunteer Program"
+          overview: "Get involved in the maker network and collaborate on cool projects!"
+        program_2:
+          header: "Development Program"
+          overview: "Get industry-standard certificates that are easy to share and verify."
+        program_3:
+          header: "Makerlaunch"
+          overview: "Get involved in the maker network and collaborate on cool projects!"
+        program_4:
+          header: "Simon nehme Summer entrepreneurship school"
+          overview: "Build on your ideas through workshops, panel discussion, and mentorship."
+    next:
+      title: "What’s next?"
+      subtitle:
+        part_1: "Learn, build, now "
+        part_2: "launch."
+      overview: "So you’ve brought your ideas to life, can you do more? Launch your projects and share your ideas with the industry."
+    team:
+      title: "John McEntyre Team Space"
+      overview: "Expand your knowledge beyond the classroom and apply your skills to build and compete with other engineering students"
+    bottom:
+      overview: "Inside the John McEntyre Team Space, involve yourself creatively and have fun while doing so! Join a team and meet like-minded individuals."
+      quote: "Push your limits. Design engineering solutions."
+      about_teams: "About Teams"
+      follow_socials: "Follow our socials"
+      join_a_team: "Join a team"
+fr:
+  all_get_involved:
+    sign_up: "S'inscrire"
+    info:
+      header: "Participez"
+      overview: "Le développement des compétences est une question d'expérience. Le CEED s'occupe de vous. Participez à des ateliers et à des événements pour obtenir des certificats et réaliser des projets!"
+    workshops:
+      banner: "Ateliers"
+      header: "Du débutant au maître"
+      overview: "Des ateliers et des cours élaborés pour apprendre et développer toutes sortes de compétences pratiques. Nos ateliers pour débutants vous apprendront toutes les bases essentielles."
+      sections:
+        workshop_1:
+          header: "Ateliers Makerlab"
+          overview: "Impression 3D, découpe au laser, soudure, bricolage, etc."
+        workshop_2:
+          header: "Ateliers MTC"
+          overview: "Fraisage, tournage, soudage et usinage"
+    programs:
+      banner: "Programmes"
+      header: "Vous en voulez encore?"
+      overview: "Développer votre CV et vos compétences"
+      sections:
+        program_1:
+          header: "Programme de bénévolat"
+          overview: "Participez au réseau Maker et collaborez à des projets intéressants!"
+        program_2:
+          header: "Programme de développement"
+          overview: "Obtenez des certificats conformes aux normes de l'industrie, faciles à partager et à vérifier."
+        program_3:
+          header: "Makerlaunch"
+          overview: "Participez au réseau des créateurs et collaborez à des projets intéressants!"
+        program_4:
+          header: "École d’été en entrepreneuriat Simon-Nehme"
+          overview: "Développez vos idées par le biais d'ateliers, de tables rondes et de mentorat."
+    next:
+      title_html: "Quelle est la suite? <br /> Apprendre, construire, <span class='text-primary'>lancer</span>."
+      overview: "Vous avez donné vie à vos idées, mais pouvez-vous faire plus ? Lancez vos projets et partagez vos idées avec le secteur."
+    team:
+      title: "Espace de collaboration John McEntyre"
+      overview: "Développez vos connaissances au-delà de la salle de classe et appliquez vos compétences à la construction et à la compétition avec d'autres étudiants en ingénierie."
+    bottom:
+      overview: "Au sein de l'espace John McEntyre Team Space, impliquez-vous de manière créative tout en vous amusant ! Rejoignez une équipe et rencontrez des personnes partageant les mêmes idées."
+      quote: "Repoussez vos limites. Concevoir des solutions d'ingénierie."
+      about_teams: "Sur nos équipes"
+      follow_socials: "Suivez nos réseaux sociaux"
+      join_a_team: "Rejoindre une équipe"

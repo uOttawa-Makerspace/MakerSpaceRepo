@@ -1,15 +1,15 @@
 <section id="getInvolved">
   <!-- Header Section -->
   <div id="jumbotron" class="text-center">
-    <h1><%= t('all_get_involved.info.header') %></h1>
-    <p><%= t('all_get_involved.info.overview') %></p>
+    <h1 class="display-1"><%= t('all_get_involved.info.header') %></h1>
+    <p class="display-6"><%= t('all_get_involved.info.overview') %></p>
   </div>
 
   <div class="container-fluid">
     <!-- Workshops Section -->
     <div class="row my-5">
       <div class="col-lg-6 section-image section-workshops">
-        <h2>Workshops</h2>
+        <h2><%= t('all_get_involved.workshops.banner') %></h2>
       </div>
       <div class="col-lg-4 align-content-center">
         <p class="fw-bold fs-3"><%= t('all_get_involved.workshops.header') %></p>
@@ -27,7 +27,7 @@
               <div class="link-card-text">
                 <h5><%= t('all_get_involved.workshops.sections.workshop_1.header') %></h5>
                 <p><%= t('all_get_involved.workshops.sections.workshop_1.overview') %></p>
-                <a class="btn btn-primary">Sign Up</a>
+                <a class="btn btn-primary"><%= t('all_get_involved.sign_up') %></a>
               </div>
             </div>
           </div>
@@ -43,7 +43,7 @@
               <div class="link-card-text">
                 <h5><%= t('all_get_involved.workshops.sections.workshop_2.header') %></h5>
                 <p><%= t('all_get_involved.workshops.sections.workshop_2.overview') %></p>
-                <a class="btn btn-primary">Sign Up</a>
+                <a class="btn btn-primary"><%= t('all_get_involved.sign_up') %></a>
               </div>
             </div>
           </div>
@@ -53,7 +53,7 @@
     <!-- Programs Section -->
     <div class="row my-5">
       <div class="col-lg-6 section-image section-workshops">
-        <h2>Programs</h2>
+        <h2><%= t('all_get_involved.programs.banner') %></h2>
       </div>
       <div class="col-lg-4 align-content-center">
         <p class="fw-bold fs-3"><%= t('all_get_involved.programs.header') %></p>
@@ -70,9 +70,9 @@
             </div>
             <div class="col-lg-6">
               <div class="link-card-text">
-                <h5><%= t('all_get_involved.workshops.sections.workshop_1.header') %></h5>
-                <p><%= t('all_get_involved.workshops.sections.workshop_1.overview') %></p>
-                <a class="btn btn-primary">Sign Up</a>
+                <h5><%= t('all_get_involved.programs.sections.program_1.header') %></h5>
+                <p><%= t('all_get_involved.programs.sections.program_1.overview') %></p>
+                <a class="btn btn-primary"><%= t('all_get_involved.sign_up') %></a>
               </div>
             </div>
           </div>
@@ -86,9 +86,9 @@
             </div>
             <div class="col-lg-6">
               <div class="link-card-text">
-                <h5><%= t('all_get_involved.workshops.sections.workshop_2.header') %></h5>
-                <p><%= t('all_get_involved.workshops.sections.workshop_2.overview') %></p>
-                <a class="btn btn-primary">Sign Up</a>
+                <h5><%= t('all_get_involved.programs.sections.program_2.header') %></h5>
+                <p><%= t('all_get_involved.programs.sections.program_2.overview') %></p>
+                <a class="btn btn-primary"><%= t('all_get_involved.sign_up') %></a>
               </div>
             </div>
           </div>
@@ -99,8 +99,8 @@
     <div class="me-0 mt-5">
       <div class="row">
         <div class="col-lg-6 order-lg-last gx-0 section-image whats-next-banner">
-          <h2>What's next?<br />Learn, build, now <span class="text-primary">launch</span>.</h2>
-          <p>So you’ve brought your ideas to life, can you do more? Launch your projects and share your ideas with the industry.</p>
+          <h2 class="text-start"><%= t('all_get_involved.next.title_html') %></h2>
+          <p><%= t('all_get_involved.next.overview') %></p>
         </div>
         <div class="col-lg-2 offset-lg-1">
           <div class="link-card d-flex flex-column">
@@ -108,7 +108,7 @@
             <div class="link-card-text">
               <h5 class="fw-bold"><%= t('all_get_involved.programs.sections.program_3.header') %></h5>
               <p><%= t('all_get_involved.programs.sections.program_3.overview') %></p>
-              <button class="btn btn-primary">Sign Up</button>
+              <button class="btn btn-primary"><%= t('all_get_involved.sign_up') %></button>
             </div>
           </div>
         </div>
@@ -118,13 +118,12 @@
             <div class="link-card-text">
               <h5 class="fw-bold"><%= t('all_get_involved.programs.sections.program_4.header') %></h5>
               <p><%= t('all_get_involved.programs.sections.program_4.overview') %></p>
-              <button class="btn btn-primary">Sign Up</button>
+              <button class="btn btn-primary"><%= t('all_get_involved.sign_up') %></button>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
 
   <!-- Team Space Section -->
   <div class="section-image team-space mt-5">
@@ -139,19 +138,24 @@
     <div class="col-lg-8">
       <p class="fs-3"><%= t('all_get_involved.bottom.overview') %></p>
       <div class="row">
-        <div class="col-lg-4 text-center">
+        <a href="https://www.uottawa.ca/faculty-engineering/spaces/john-mcentrye-team-space" class="col-lg-4 text-center">
           <%= image_tag 'get_involved/aboutteams.png', class: 'img-fluid', alt: 'uOttawa Rocketry team posing with a sounding rocket' %>
-          <p class="fw-bold">About teams</p>
-        </div>
-        <div class="col-md-4 text-center">
+          <p class="fs-4"><%= t('all_get_involved.bottom.about_teams') %></p>
+        </a>
+        <div class="col-lg-4 text-center">
           <%= image_tag 'get_involved/followsocials.png', class: 'img-fluid', alt: 'UORover team posing with the rover' %>
-          <p class="fw-bold">Follow our socials</p>
+          <p class="fs-4"><%= t('all_get_involved.bottom.follow_socials') %><br />
+            <a class="me-4" href="https://www.facebook.com/uOCEED"><i class="fa fa-facebook"></i></a>
+            <a class="me-4" href="https://www.instagram.com/uottawaceed/"><i class="fa fa-instagram"></i></a>
+            <a href="https://www.linkedin.com/company/the-centre-for-entrepreneurship-and-engineering-design/"><i class="fa fa-linkedin"></i></a>
+          </p>
         </div>
-        <div class="col-md-4 text-center">
+        <a href="https://www.uottawa.ca/faculty-engineering/student-experience/competitive-teams" class="col-lg-4 text-center">
           <%= image_tag 'get_involved/joinateam.png', class: 'img-fluid', alt: 'Formula uOttawa team working on their car' %>
-          <p class="fw-bold">Join a team</p>
-        </div>
+          <p class="fs-4"><%= t('all_get_involved.bottom.join_a_team') %></p>
+        </a>
       </div>
     </div>
+  </div>
   </div>
 </section>
