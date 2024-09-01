@@ -1,0 +1,30 @@
+@import "./shared/variables";
+
+section#resources {
+  div.separator {
+    border-left: 10px solid $primary;
+    padding-left: 15%;
+  }
+  span.separator {
+    border-bottom: 5px solid $primary;
+  }
+  .underline {
+    width: 50px;
+    height: 4px;
+    background-color: $primary;
+  }
+  .room-pill {
+    background-color: #f2994a; /* Default button color */
+    border-color: #f2994a; /* Match border color */
+    color: #fff; /* White text color */
+
+    border-radius: 40px;
+    width: 100%;
+    padding: 1rem;
+
+    &:hover {
+      background-color: #e67e22; /* Darker orange on hover */
+      border-color: #e67e22;
+    }
+  }
+}
