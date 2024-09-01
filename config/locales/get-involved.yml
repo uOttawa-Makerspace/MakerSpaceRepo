@@ -33,10 +33,7 @@ en:
           header: "Simon nehme Summer entrepreneurship school"
           overview: "Build on your ideas through workshops, panel discussion, and mentorship."
     next:
-      title: "What’s next?"
-      subtitle:
-        part_1: "Learn, build, now "
-        part_2: "launch."
+      title_html: "What’s next? <br /> Learn, build, now <span class='text-primary'>launch</span>."
       overview: "So you’ve brought your ideas to life, can you do more? Launch your projects and share your ideas with the industry."
     team:
       title: "John McEntyre Team Space"

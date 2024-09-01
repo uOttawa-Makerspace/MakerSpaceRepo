@@ -1,6 +1,7 @@
+<%= provide :title, t('all_get_involved.info.header') %>
 <section id="getInvolved">
   <!-- Header Section -->
-  <div id="jumbotron" class="text-center">
+  <div id="jumbotron" class="jumbotron-get-involved">
     <h1 class="display-1"><%= t('all_get_involved.info.header') %></h1>
     <p class="display-6"><%= t('all_get_involved.info.overview') %></p>
   </div>
@@ -124,38 +125,38 @@
         </div>
       </div>
     </div>
-
+  </div>
   <!-- Team Space Section -->
   <div class="section-image team-space mt-5">
     <h2 class="fw-bold"><%= t('all_get_involved.team.title') %></h1>
       <p><%= t('all_get_involved.team.overview') %></p>
   </div>
-
-  <div class="row m-5">
-    <div class="col-lg-3 offset-lg-1 align-content-center">
-      <p class="fs-1 fw-bold"><%= t('all_get_involved.bottom.quote') %></p>
-    </div>
-    <div class="col-lg-8">
-      <p class="fs-3"><%= t('all_get_involved.bottom.overview') %></p>
-      <div class="row">
-        <a href="https://www.uottawa.ca/faculty-engineering/spaces/john-mcentrye-team-space" class="col-lg-4 text-center">
-          <%= image_tag 'get_involved/aboutteams.png', class: 'img-fluid', alt: 'uOttawa Rocketry team posing with a sounding rocket' %>
-          <p class="fs-4"><%= t('all_get_involved.bottom.about_teams') %></p>
-        </a>
-        <div class="col-lg-4 text-center">
-          <%= image_tag 'get_involved/followsocials.png', class: 'img-fluid', alt: 'UORover team posing with the rover' %>
-          <p class="fs-4"><%= t('all_get_involved.bottom.follow_socials') %><br />
-            <a class="me-4" href="https://www.facebook.com/uOCEED"><i class="fa fa-facebook"></i></a>
-            <a class="me-4" href="https://www.instagram.com/uottawaceed/"><i class="fa fa-instagram"></i></a>
-            <a href="https://www.linkedin.com/company/the-centre-for-entrepreneurship-and-engineering-design/"><i class="fa fa-linkedin"></i></a>
-          </p>
+  <div class="container">
+    <div class="row m-5">
+      <div class="col-lg-4 align-content-center">
+        <p class="fs-1 fw-bold"><%= t('all_get_involved.bottom.quote') %></p>
+      </div>
+      <div class="col-lg-8">
+        <p class="fs-3"><%= t('all_get_involved.bottom.overview') %></p>
+        <div class="row">
+          <a href="https://www.uottawa.ca/faculty-engineering/spaces/john-mcentrye-team-space" class="col-lg-4 text-center">
+            <%= image_tag 'get_involved/aboutteams.png', class: 'img-fluid', alt: 'uOttawa Rocketry team posing with a sounding rocket' %>
+            <p class="fs-4"><%= t('all_get_involved.bottom.about_teams') %></p>
+          </a>
+          <div class="col-lg-4 text-center">
+            <%= image_tag 'get_involved/followsocials.png', class: 'img-fluid', alt: 'UORover team posing with the rover' %>
+            <p class="fs-4"><%= t('all_get_involved.bottom.follow_socials') %><br />
+              <a class="me-4" href="https://www.facebook.com/uOCEED"><i class="fa fa-facebook"></i></a>
+              <a class="me-4" href="https://www.instagram.com/uottawaceed/"><i class="fa fa-instagram"></i></a>
+              <a href="https://www.linkedin.com/company/the-centre-for-entrepreneurship-and-engineering-design/"><i class="fa fa-linkedin"></i></a>
+            </p>
+          </div>
+          <a href="https://www.uottawa.ca/faculty-engineering/student-experience/competitive-teams" class="col-lg-4 text-center">
+            <%= image_tag 'get_involved/joinateam.png', class: 'img-fluid', alt: 'Formula uOttawa team working on their car' %>
+            <p class="fs-4"><%= t('all_get_involved.bottom.join_a_team') %></p>
+          </a>
         </div>
-        <a href="https://www.uottawa.ca/faculty-engineering/student-experience/competitive-teams" class="col-lg-4 text-center">
-          <%= image_tag 'get_involved/joinateam.png', class: 'img-fluid', alt: 'Formula uOttawa team working on their car' %>
-          <p class="fs-4"><%= t('all_get_involved.bottom.join_a_team') %></p>
-        </a>
       </div>
     </div>
-  </div>
   </div>
 </section>
