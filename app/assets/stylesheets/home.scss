@@ -98,6 +98,20 @@ section#home {
     //list-style: circle;
   }
 
+  #home-hours {
+    h3 {
+      margin-bottom: 1rem;
+    }
+    img {
+      border-radius: 0.5rem;
+      border: 1px solid $secondary;
+      //margin-top: 2.15rem;
+      object-fit: cover;
+      height: 100%;
+      max-width: 100%;
+    }
+  }
+
   #home-userinfo {
     img {
       //display: block;
