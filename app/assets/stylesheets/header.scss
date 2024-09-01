@@ -1,40 +1,16 @@
 @import "lib";
 @import "./shared/variables";
 
+$ceed-maroon: #8f001a;
+
 .navbar {
   background-color: $primary;
+  padding: 0.5rem;
 
-  .background {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: -1;
-  }
-
-  .navbar-divider {
-    position: relative;
-    bottom: -0.4rem;
-    height: 1.5rem;
-    border-left: 1px solid;
-    margin: 0 0.25rem;
-  }
-
-  &.navbar-light .navbar-divider {
-    border-color: $navbar-light-color;
-  }
-
-  &.navbar-dark .navbar-divider {
-    border-color: $navbar-dark-color;
-  }
-
-  @media (max-width: 1199.98px) {
-    .navbar-divider {
-      bottom: 0;
-      height: auto;
-      border-left: none;
-      border-bottom: 1px solid;
+  &.navbar-staff {
+    background: black;
+    .navbar-toggler {
+      background-color: white;
     }
   }
 
@@ -45,6 +21,13 @@
 
     &:hover {
       color: #fff;
+    }
+  }
+
+  &.navbar-staff .nav-link {
+    color: white;
+    &:hover {
+      color: $primary;
     }
   }
 
@@ -59,6 +42,10 @@
 
   .navbar-brand {
     font-size: 2rem;
+  }
+
+  &.navbar-staff .navbar-brand {
+    color: white;
   }
 
   .ccLink {
@@ -81,189 +68,18 @@
     }
   }
 
-  &.transition {
-    $transition-duration: 0.35s; // from bootstrap variable $transition-collapse
-
-    transition: all ease-in-out $transition-duration;
-
-    .navbar-brand,
-    .nav-link,
-    .navbar-divider,
-    .background {
-      transition: all ease-in-out $transition-duration;
+  transition: margin 150ms;
+  transition: padding 150ms;
+  &.header-small {
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    .navbar-brand {
+      padding-top: 0;
+      padding-bottom: 0;
+      margin-top: 0;
+      margin-bottom: 0;
     }
   }
-
-  @media (min-width: 1200px) {
-    .form-search {
-      margin: 0 1rem 0 2rem;
-    }
-  }
-
-  //@include media-breakpoint-up(xl) {
-  //  .form-search {
-  //    margin: 0 1rem 0 2rem;
-  //  }
-  //}
-}
-
-span.msr-logo a {
-  @include transition(200ms);
-  display: block;
-  height: 60px;
-  padding-left: 1rem;
-  line-height: 60px !important;
-  font: 300 2rem "Raleway", helvetica, sans-serif;
-  float: left;
-  color: #fff;
-}
-
-span.header-menu-item {
-  width: auto;
-  display: inline-block;
-  float: right;
-  color: #fff;
-  font: 400 1rem "Raleway", helvetica, sans-serif;
-  line-height: 60px !important;
-
-  > a {
-    @include transition(200ms);
-    display: block;
-    float: right;
-    height: 60px;
-    text-align: center;
-    padding: 4px 20px;
-    line-height: 25px;
-
-    img {
-      height: 40px;
-      width: 40px;
-      border-radius: 20px;
-      vertical-align: middle;
-      margin-right: 10px;
-    }
-    &:hover {
-      color: #a3e6db;
-    }
-  }
-}
-
-span.menu-button {
-  position: relative;
-  z-index: 10;
-  padding-top: 5px;
-  ul {
-    display: none;
-    background-color: #fff;
-    position: absolute;
-    top: 50px;
-    right: 20px;
-    z-index: 1;
-    width: 150px;
-    @include prefixer(box-shadow, 0 5px 20px rgba(0, 0, 0, 0.2));
-
-    li {
-      @include transition(50ms);
-      font-size: 0.8rem;
-      padding-left: 15px;
-      height: 35px;
-      line-height: 35px;
-      color: #555;
-      border-bottom: 1px solid #eee;
-
-      a {
-        display: block;
-      }
-
-      &:hover {
-        background-color: #a3e6db;
-        color: #366;
-      }
-
-      &:nth-last-child(1) {
-        border: none;
-      }
-    }
-  }
-}
-
-@media screen and (max-width: 700px) {
-  form.header-search {
-    display: none;
-  }
-}
-
-@media screen and (max-width: 550px) {
-  span.msr-logo {
-    display: none;
-  }
-}
-
-// Sidenav Menu
-.sidenav {
-  height: 100%;
-  width: 0;
-  position: fixed;
-  z-index: 1;
-  top: 65px;
-  left: 0;
-  background-color: #f8f9fa;
-  overflow-x: hidden;
-  transition: 0.5s;
-  padding-top: 60px;
-}
-
-.sidenav a {
-  padding: 8px 8px 8px 8px;
-  text-decoration: none;
-  font-size: 20px;
-  color: #000;
-  display: block;
-  transition: 0.3s;
-  white-space: nowrap;
-  margin-left: 10px;
-}
-
-.sidenav a:hover,
-.offcanvas a:focus {
-  color: #000;
-}
-a#item:hover {
-  color: #000;
-  border-left: 5px solid #366;
-}
-
-.sidenav .closebtn {
-  position: absolute;
-  top: 0;
-  right: 25px;
-  font-size: 36px;
-  margin-left: 50px;
-}
-#side-menu {
-  font-size: 30px;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  color: #000;
-  float: left;
-  padding-right: 30px;
-  padding-top: 8px;
-
-  &:hover {
-    color: #47474b;
-  }
-}
-
-@media screen and (max-height: 450px) {
-  .sidenav {
-    padding-top: 15px;
-  }
-  .sidenav a {
-    font-size: 18px;
-  }
-}
-
-span.no-padding {
-  padding: 0px;
 }

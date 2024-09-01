@@ -1,0 +1,77 @@
+<%= provide :title, t('resources.header') %>
+<section id="resources">
+  <!-- Header Section -->
+  <div id="jumbotron" class="jumbotron-resources">
+    <h1 class="display-1"><%= t('resources.header') %></h1>
+    <p class="display-6"><%= t('resources.subtitle') %></p>
+  </div>
+  <div class="container-fluid">
+    <div class="row g-3 align-items-center mt-5">
+      <div class="offset-lg-1 col-lg-4">
+        <a href="https://wiki.makerepo.com" class="d-block shadow rounded p-5 text-center">
+          <div class="separator">
+            <%= image_tag 'resources/wiki.png', class: 'img-fluid', alt: 'CEED/CGEC Logo' %>
+            <p class="fs-3 mt-3 fw-bold text-center"><%= t('resources.wiki.caption') %></p>
+          </div>
+        </a>
+      </div>
+
+      <div class="offset-lg-1 col-lg-6">
+        <h3 class="mb-3 fw-bold"><%= t('resources.wiki.header') %></h3>
+        <div class="underline mb-3"></div>
+        <ul class="list-unstyled fs-5">
+          <li>
+            <b><%= t('resources.wiki.point_1.title') %></b>
+            <%= t('resources.wiki.point_1.overview') %>
+          </li>
+          <li>
+            <strong><%= t('resources.wiki.point_2.title') %></strong>
+            <%= t('resources.wiki.point_2.overview') %>
+          </li>
+          <li>
+            <strong><%= t('resources.wiki.point_3.title') %></strong>
+            <%= t('resources.wiki.point_3.overview') %>
+          </li>
+          <li>
+            <strong><%= t('resources.wiki.point_4.title') %></strong>
+            <%= t('resources.wiki.point_4.overview') %>
+          </li>
+          <li>
+            <strong><%= t('resources.wiki.point_5.title') %></strong>
+            <%= t('resources.wiki.point_5.overview') %>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <% if signed_in? %>
+      <div class="conainer mt-5">
+        <h4 class="fw-bold mb-4 text-center">Book a Room</h4>
+        <div class="row row-cols-lg-3 g-3">
+          <% SubSpace.all.pluck(:name, :id).each do |space, id| %>
+            <div class="">
+              <%= link_to space, sub_space_booking_index_path(room: id), class: 'room-pill btn' %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% else %>
+      <div class="border mt-5 shadow p-4 text-center col-lg-4 mx-auto">
+        <h4 class="fw-bold mb-4"><%= t('resources.sign_in_prompt.header') %></h4>
+        <p><%= t('resources.sign_in_prompt.subtext') %></p>
+      </div>
+    <% end %>
+    <div class="row g-3 mt-5 align-items-center">
+      <div class="offset-lg-1 col-lg-4">
+        <%= image_tag 'resources/wood.png', class: 'shadow rounded p-5 text-center img-fluid', alt: 'Wood panels' %>
+      </div>
+      <div class="offset-lg-1 col-lg-3">
+        <h3 class="fw-bold mb-2"><%= t('resources.makerstore.title') %></h3>
+        <div class="underline mb-3"></div>
+        <p class="mb-1 fs-5"><%= t('resources.makerstore.overview') %></p>
+        <a href="https://makerstore.ca/" class="btn btn-primary rounded-pill py-2 mt-3" target="_blank">
+          Shop now
+        </a>
+      </div>
+    </div>
+  </div>
+</section>

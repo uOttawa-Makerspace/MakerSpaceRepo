@@ -17,9 +17,8 @@ class VolunteersController < ApplicationController
 
   before_action :grant_access_list,
                 only: %i[volunteer_list create_event delete_event new_event]
-
   # A little bit special with headers and all
-  layout "application", only: :index_redesign
+  layout "application", only: :index
 
   def index
     @user = current_user

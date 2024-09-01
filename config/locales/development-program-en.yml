@@ -1,0 +1,49 @@
+en:
+  devprog:
+    nav:
+      learning_area: "Learning area"
+      new_module: "New module"
+      all_modules: "All modules"
+      proficient_projects: "Proficient Projects"
+      requests: "Requests"
+      new_project: "New project"
+      skills_badges: "Skills & Badges"
+      skills: "Skills"
+      badges: "Badges"
+      badge_requests: "Badge requests"
+      grant_revoke_badge: "Grant/Revoke badge to user"
+    title: "Development Program"
+    header: "Earn officially credited certificates with <span class='text-primary'>CEED</span>"
+    subtext: "Welcome to the Development Program area"
+    join_button: "Join the development program"
+    block1:
+      title: "Hungry for more: What's next?"
+      subtext: "Expand employment opportunities by earning certificates with <span class='text-primary'>CEED</span>"
+      learning_area: "You can learn from all these projects for free. Some of them are a pre-requisite for other projects in the Proficient Projects Area."
+      proficient_projects: "These projects are more advanced and not free. You can either purchase it with your credit card or use your CC points."
+      skills_badges: "Enhance your technical skills with our development program. Unlock new challenges as you progress, and earn digital badges for completing proficiency projects."
+      footer: "Our modular Development Program is designed to plan, track, and accredit your skill development effortlessly. The Development Program will make use of industry standardized certificates that are convenient to share, and electronically verifiable for your future employers."
+      sequence:
+        one: "Develop Skills and earn digital badges"
+        two: "Accumulate officially extracurricular Volunteering"
+        three: "Employment opportunities with CEED and other organizations"
+        text: "Progress from beginner, intermediate, advanced, to master."
+    digital_badges:
+      title: "Digital Badges"
+      subtitle: "Example of what employeers see on each badge profile"
+    volunteer:
+      title: "Volunteer"
+      text: "Volunteering is a great way to gain valuable skills and boost self-confidence while making a difference. Our enhanced development program will guide volunteers through more challenging tasks, helping them grow and earn rewards along the way. Learn more about how the volunteer program works by clicking here."
+      list_header: "Volunteers can now:"
+      list:
+        - Unlock different tasks based on their skill level
+        - Track their skill progress through their MakerRepo account.
+        - Each task will reward CEED Credit (CC) to be used in our makerstore
+        - Each task will have predetermined hours to be rewarded upon completion
+    employment:
+      title: "Employment"
+      subtitle: "CEED development program will make you more attractive to employers."
+      text: "Proficiency badges and trainings will offer you an opportunity to find employment opportunities within CEED and other organizations. CEED hires over 50 students every term in addition to 15 TAs for the courses."
+    more:
+      header: "Do you want to know more?"
+      text: "For any questions, email us at: <a href='mailto:volunteer@makerepo.com'>volunteer@makerepo.com</a>"

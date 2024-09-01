@@ -1,0 +1,56 @@
+en:
+  resources:
+    header: "Resources"
+    subtitle: "The tools you need to build your imagination."
+    sign_in_prompt:
+      header: "Want to book a room?"
+      subtext: "You need to be signed in to book a room. Please sign in or create an account to continue."
+    wiki:
+      caption: "CEED Wiki"
+      header: "Your go-to guide for CEED facilities and services"
+      point_1:
+        title: "Resources & Guides: "
+        overview: "Detailed guides on engineering design and entrepreneurship."
+      point_2:
+        title: "Project Showcases: "
+        overview: "Innovative projects by CEED members."
+      point_3:
+        title: "Community: "
+        overview: "Engage with like-minded individuals and collaborate."
+      point_4:
+        title: "Events & Workshops: "
+        overview: "Information on upcoming events and workshops."
+      point_5:
+        title: "Support: "
+        overview: "Mentorship programs and support services."
+    makerstore:
+      title: "Makerstore"
+      overview: "Your ultimate destination for all your creative needs. Explore our CEED merchandise, filaments, and a wide range of materials essential for bringing your ideas to life."
+fr:
+  resources:
+    header: "Ressources"
+    subtitle: "Les outils pour développer votre imagination."
+    sign_in_prompt:
+      header: "Voulez-vous réserver une chambre?"
+      subtext: "Vous devez se connecter pour afin de réserver une chambre. Connectez-vous ou Créez une compte pour continuer."
+    wiki:
+      caption: "Wiki du CGEC"
+      header: "Votre guide direct pour les installations et services du CGEC"
+      point_1:
+        title: "Ressources & Guides: "
+        overview: "Guides détaillés sur la conception technique et l'entrepreneuriat."
+      point_2:
+        title: "Présentations de Projets: "
+        overview: "Des projects innovants par les membres du CGEC."
+      point_3:
+        title: "Communauté: "
+        overview: "S'engager avec des gens personnes et se collaborer."
+      point_4:
+        title: "Evenments & Ateliers: "
+        overview: "Des informations sur les événements et les ateliers à venir."
+      point_5:
+        title: "Soutien"
+        overview: "Programmes de mentorat et services de soutien."
+    makerstore:
+      title: "Makerstore"
+      overview: "Votre destination ultime pour tous vos besoins créatifs. Découvrez nos produits CEED, nos filaments et une large gamme de matériaux essentiels pour donner vie à vos idées."

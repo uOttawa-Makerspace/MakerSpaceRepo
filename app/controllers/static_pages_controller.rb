@@ -97,10 +97,10 @@ class StaticPagesController < SessionsController
   def forgot_password
   end
 
-  def development_program_info
+  def get_involved
   end
 
-  def get_involved
+  def resources
   end
 
   def join_team_program
@@ -156,11 +156,5 @@ class StaticPagesController < SessionsController
       flash[:alert] = "Please login if you wish to report this repository"
     end
     redirect_back(fallback_location: root_path)
-  end
-
-  def all_get_involved
-  end
-
-  def all_resources
   end
 end

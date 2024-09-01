@@ -14,6 +14,24 @@ RSpec.describe StaticPagesController, type: :controller do
     end
   end
 
+  describe "GET /get_involved" do
+    context "logged as regular user" do
+      it "should return 200 response" do
+        get :get_involved
+        expect(response).to have_http_status(:success)
+      end
+    end
+  end
+
+  describe "GET /resources" do
+    context "logged as regular user" do
+      it "should return 200 response" do
+        get :resources
+        expect(response).to have_http_status(:success)
+      end
+    end
+  end
+
   describe "GET /about" do
     context "logged as regular user" do
       it "should return 200 response" do
@@ -116,15 +134,6 @@ RSpec.describe StaticPagesController, type: :controller do
           "Please login if you wish to report this repository"
         )
         expect(response).to redirect_to root_path
-      end
-    end
-  end
-
-  describe "GET /development_program_info" do
-    context "logged as regular user" do
-      it "should get 200" do
-        get :development_program_info
-        expect(response).to have_http_status(:success)
       end
     end
   end

@@ -145,10 +145,9 @@ Rails.application.routes.draw do
     get "report_repository/:repository_id",
         as: "report_repository",
         action: "report_repository"
-    get "development_program_info"
     post "join_team_program"
-    get "all_get_involved"
-    get "all_resources"
+    get "get_involved"
+    get "resources"
   end
 
   # RFID

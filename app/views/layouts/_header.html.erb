@@ -1,6 +1,6 @@
 <div class="sticky-top">
 <nav class="navbar navbar-expand-xl navbar-light <%= controller_name %> <%= action_name %> bg-primary shadow-lg" id="header-navbar">
-  <div class="container-fluid m-2">
+  <div class="container-fluid">
     <a class="navbar-brand ms-5" href="/"><strong>Maker</strong>Repo</a>
     <button class="navbar-toggler" id="navbar-toggle-button" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
@@ -27,12 +27,15 @@
         </div>
       </li>
 
-      <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle" href="" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+      <li class="nav-item dropdown d-flex align-items-center">
+        <%= link_to get_involved_path, class: 'nav-link custom-hover' do %>
           <%= t('navbar.get_involved') %>
+        <% end %>
+        <a class="nav-link dropdown-toggle dropdown-toggle-split custom-hover" href="#" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="padding-left: 0.75rem; padding-right: 0.75rem;">
+          <span class="visually-hidden">Toggle Dropdown</span>
         </a>
         <div class="dropdown-menu">
-          <%= link_to t('navbar.all_get_involved'), all_get_involved_path, class: 'dropdown-item' %>
+          <%= link_to t('navbar.get_involved'), get_involved_path, class: 'dropdown-item' %>
           <a class="dropdown-item" href="https://www.eventbrite.ca/o/latelier-makerspace-richard-labbe-uottawa-uottawa-richard-labbe-makerspace-6930970537"><%= t('navbar.workshops') %></a>
           <%= link_to t('navbar.join_a_team'), t('navbar.join_a_team_url'), class: 'dropdown-item' %>
           <%= link_to t('navbar.volunteering'), volunteers_path, class: 'dropdown-item' %>
@@ -41,18 +44,21 @@
         </div>
       </li>
 
-      <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle" href="" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+      <li class="nav-item dropdown d-flex align-items-center">
+        <a class="nav-link custom-hover" href="<%= resources_path %>">
           <%= t('navbar.resources') %>
         </a>
+        <a class="nav-link dropdown-toggle dropdown-toggle-split custom-hover" href="#" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="padding-left: 0.75rem; padding-right: 0.75rem;">
+          <span class="visually-hidden">Toggle Dropdown</span>
+        </a>
         <div class="dropdown-menu">
-        <%= link_to t('navbar.all_resources'), all_resources_path, class: 'dropdown-item' %>
+        <%= link_to t('navbar.resources'), resources_path, class: 'dropdown-item' %>
           <a class="dropdown-item" href="https://wiki.makerepo.com/wiki/Main_Page"><%= t('navbar.ceed_wiki') %></a>
           <a class="dropdown-item" href="https://makerstore.ca/"><%= t('navbar.makerstore') %></a>
           <%= link_to('MakerRoom', sub_space_booking_index_path, class: 'dropdown-item') %>
         </div>
       </li>
-      
+
       <li class="nav-item">
         <a class="nav-link" href="<%= job_orders_path %>"><%= t('navbar.user.joborder') %></a>
       </li>

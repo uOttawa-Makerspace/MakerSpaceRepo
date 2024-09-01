@@ -34,6 +34,14 @@ $enable-negative-margins: true;
 // I wish but not everything uses rem
 //$font-size-base: 0.95rem;
 
+// Just to add overflow-clip, used in the home page hours column
+$utilities: (
+  "overflow": (
+    property: overflow,
+    values: visible hidden clip scroll auto,
+  ),
+);
+
 @import "bootstrap/scss/bootstrap";
 @import "toastr";
 @import "./shared/variables";
@@ -117,16 +125,23 @@ $dropdown-connection-size: 12px;
   padding-bottom: 0;
 }
 
+.custom-hover:hover {
+  background-color: rgba(0, 0, 0, 0.3);
+  color: #ffffff;
+}
+
+.nav-item.dropdown .dropdown-toggle-split {
+  margin-left: 0;
+  padding-left: 0;
+  padding-right: 0.75rem;
+}
+
 // Hide this element on screens smaller than xl
 @include media-breakpoint-down(xl) {
   .hide-on-mobile {
     display: none;
   }
 }
-
-// h2 {
-//   font-size: 1.75rem;
-// }
 
 h1,
 h2,
@@ -379,87 +394,7 @@ td > .btn:not(:last-of-type) {
 //   margin-bottom: 5rem;
 // }
 
-.btn-dark-orange {
-  background-color: #f2994a; /* Default button color */
-  border-color: #f2994a; /* Match border color */
-  color: #fff; /* White text color */
-}
-
-.btn-dark-orange:hover {
-  background-color: #e67e22; /* Darker orange on hover */
-  border-color: #e67e22;
-}
-
-.btn-darker-orange {
-  background-color: #e24829; /* Default button color */
-  border-color: #e24829;
-  color: #fff;
-}
-
-.btn-darker-orange:hover {
-  background-color: #c0392b; /* Darker shade on hover */
-  border-color: #c0392b;
-}
-
-.makerstore-content {
-  max-width: 500px; /* Replaces inline style */
-}
-
-.btn-shop-now {
-  width: 200px; /* Replaces inline style */
-}
-
-.underline {
-  width: 50px;
-  height: 3px;
-  background-color: #e24829;
-}
-
-.overview-text {
-  margin: 0;
-  color: white;
-  font-size: 1.5vw;
-}
-
-.header-title {
-  margin: 0;
-  color: white;
-  font-size: 3.8vw;
-}
-
-.centered-content {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 100%;
-  padding: 20px 0;
-  max-width: 50%;
-}
-
-.background-overlay {
-  position: absolute;
-  background: rgba(0, 0, 0, 0.3);
-  width: 100%;
-  height: 90%;
-}
-
-.header-background {
-  position: relative;
-  background-image: url("redesign/all_resources/image 27.png");
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  width: 100%;
-  padding-bottom: 22.53%;
-}
-
-.fixed-card-height {
-  max-height: 400px; /* Set a maximum height for the card */
-  overflow: hidden; /* Ensure that any content beyond the max height is hidden */
-}
-
-.card-img-top {
-  object-fit: cover;
-  height: 100%;
+.selected-shift {
+  background-color: rgba(128, 128, 128, 0.3) !important;
+  border-color: #ccc !important;
 }

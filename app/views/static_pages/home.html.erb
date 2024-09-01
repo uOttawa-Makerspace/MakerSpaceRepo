@@ -43,34 +43,7 @@
       </div>
       <!--Middle column -->
       <div class="col-xl-6 order-xl-1 order-0">
-        <div class="card home-card">
-          <div class="card-body">
-            <h2> <%= t('home.welcome.welcome_to') %>,
-              <% if signed_in? %>
-                <span class="text-primary"> <%= @user.name %></span>
-              <% else %>
-                <span class="text-secondary">Not signed in</span>
-              <% end %>
-            </h2>
-            <div class="row">
-              <div class="col-auto">
-                <p><%= t('home.welcome.welcome_subheader').html_safe %></p>
-                <%= image_tag('redesign/site.png', alt: 'SITE', class: 'img-fluid') %>
-              </div>
-              <div class="col text-start align-self-center">
-                <h3 class="fw-bold"><%= t('home.welcome.hour_header') %></h3>
-                <div class="row border rounded">
-                  <% @contact_info.each do |space| %>
-                    <div class="w-auto">
-                      <h4><%= space.name %></h4>
-                      <p><%= space.opening_hour.students.html_safe %></p>
-                    </div>
-                  <% end %>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <%= render 'static_pages/home_hours' %>
         <!-- Instagram Section -->
         <%= render 'static_pages/home_socials' %>
         <!-- Explore Section -->
@@ -109,7 +82,7 @@
         <div class="card home-card">
           <div class="card-body">
             <h2><%= t('home.workshops.header') %></h2>
-            <p>No workshops just yet!</p>
+            <a href="https://simpli.events/u/uottawaceed"><%= t('home.workshops.link') %></a>
             <% 5.times do next %>
               <a class="d-flex workshop-card" href="#">
                 <div class="text-center workshop-date">

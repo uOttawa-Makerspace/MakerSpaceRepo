@@ -42,6 +42,14 @@
                 <%= f.check_box(:show_hours, class: 'form-check-input') %>
               </div>
 
+              <details class="mb-3">
+                <summary><b>Hour syntax:</b></summary>
+                <p><code>[SUNDAY]</code> becomes 'Sunday' or 'Dimanche'. <code>[CLOSED]</code> becomes 'CLOSED' or 'FERMÉ' <br />
+                  <code>[MONDAY | 12 pm - 8 pm]</code> becomes Monday 12 pm - 8 pm, justified with similar codes <br />
+                  <code>[FR=Voici une remarque]</code> shows the text 'Voici une remarque' for french locales only <br />
+                  <code>[EN=Here's a note]</code> shows the text 'Voici une remarque' for english locales only</p>
+              </details>
+
               <div class="mb-3">
                 <%= f.fields_for :opening_hour do |h| %>
                   <%= h.label :students, 'Opening Hours for Students', class: 'form-label' %>

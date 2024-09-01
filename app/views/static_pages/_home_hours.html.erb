@@ -1,0 +1,50 @@
+<div class="card home-card" id="home-hours">
+    <div class="card-body">
+        <h2 class="mb-3"> <%= t('home.welcome.welcome_to') %>
+            <% if signed_in? %>
+                <span class="text-primary"><%= @user.name %></span>
+            <% end %>
+        </h2>
+        <div class="row g-5">
+            <div class="col-lg-4 overflow-clip hide-on-mobile">
+                <%= image_tag('redesign/site.png', alt: 'People watching a project demonstration in SITE') %>
+            </div>
+            <div class="col-lg-8 text-start align-self-center">
+                <h3 class="fw-bold"><%= t('home.welcome.hour_header') %></h3>
+                <details <%= 'open' if current_user.student? %>>
+                    <summary><%= t('hours.student_title') %></summary>
+                    <div class="row border rounded p-3">
+                        <% @contact_info.each do |space| %>
+                            <div class="col-lg-6">
+                                <h4><%= space.name %></h4>
+                                <p><%= space.opening_hour.formatted(:students).html_safe %></p>
+                            </div>
+                        <% end %>
+                    </div>
+                </details>
+                <details <%= 'open' unless current_user.student? %>>
+                    <summary><%= t('hours.public_title') %></summary>
+                    <div class="row border rounded p-3">
+                        <% @contact_info.each do |space| %>
+                            <div class="col-lg-6">
+                                <h4><%= space.name %></h4>
+                                <p><%= space.opening_hour.formatted(:public).html_safe %></p>
+                            </div>
+                        <% end %>
+                    </div>
+                </details>
+                <details>
+                    <summary><%= t('hours.summer_title') %></summary>
+                    <div class="row border rounded p-3">
+                        <% @contact_info.each do |space| %>
+                            <div class="col-lg-6">
+                                <h4><%= space.name %></h4>
+                                <p><%= space.opening_hour.formatted(:summer).html_safe %></p>
+                            </div>
+                        <% end %>
+                    </div>
+                </details>
+            </div>
+        </div>
+    </div>
+</div>

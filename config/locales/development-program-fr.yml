@@ -1,0 +1,49 @@
+fr:
+  devprog:
+    nav:
+      learning_area: "Zone d'apprentissage"
+      new_module: "Nouveau module"
+      all_modules: "Tous les modules"
+      proficient_projects: "Projets de compétence"
+      requests: "Commandes"
+      new_project: "Nouveau projet"
+      skills_badges: "Compétences & badges"
+      skills: "Compétences"
+      badges: "Badges"
+      badge_requests: "Demandes de badges"
+      grant_revoke_badge: "Accorder/Revoker des badges"
+    title: "Programme de développement"
+    header: "Obtenir des badges officiellement accrédités avec <span class='text-primary'>CGEC</span>"
+    subtext: "Bienvenue à la Programme de Développement"
+    join_button: "Rejoindre la Programme de Développement"
+    block1:
+      title: "Vous en voulez encore: Quelle est la suite?"
+      subtext: "Augmenter les opportunités d'emploi en obtenant des certifications avec CGEC"
+      learning_area: "Vous pouvez apprendre de ces projects gratuit. Certains d'eux sont de pre-requisites pour des autres projets dans le zone de projets de compétences"
+      proficient_projects: "Ces projets sont plus avancées mais ne sont pas gratuits. Vous pouvez les acheter avec une carte ou avec vos points CC"
+      skills_badges: "Augmentez vos compétences téchnique avec notre programme de développement. Déverrouillez de nouveaux défis, et obtenez des badges numérique en complétant de projets de compétence "
+      footer: "Notre programme de dévelopemment modulaire est conçu pour planifier, suivre, et accrediter le dévelopemment de vos compétences sans effort. Le Programme de Dévelopemment utilise des certifications normalisé par l'industrie qui sont pratique à partager, et sont vérifiable électroniquement pour vos futurs employeurs"
+      sequence:
+        one: "Développer des compétences et obtenir des badges numériques"
+        two: "Accumuler des heures de bénévolat officiellement extrascolaire"
+        three: "Des opportunites d'emploi avec CGEC et avec d'autres organizations"
+        text: "Progresser de débutant à maître, en passant par intermédiaire et avancé."
+    digital_badges:
+      title: "Badges Numériques"
+      subtitle: "Un example de ce que les employeurs voient sur chaque profil de badge"
+    volunteer:
+      title: "Bénévolat"
+      text: "Le bénévolat est une bonne façon d'obtenir des compétences valables et de renforcer la confiance en soi en faisiant une difference. Notre programme améliorée guidera les bénévolats à travers des tâches plus difficiles, en les aident à agrandir et à gaigner des récompenses tout au long"
+      list_header: "Les bénévoles peuvent maintenant:"
+      list:
+        - Déverrouiller des tâches divers selon leur niveau de compétence
+        - Suivre le progress de leur compétence via leur profil de MakeRepo
+        - Chaque tâche récompensera le crédit de CGEC (CC) pour être utilisé dans notre magasin
+        - Chaque tâche récompensera des heures prédéterminé à l'issue de la tâche.
+    employment:
+      title: "L'emploi"
+      subtitle: "Le programme de dévelopemment de CGEC vous rendra plus attrayants pour les employeurs"
+      text: "a whole lot of text dude"
+    more:
+      header: "Voulez-vous savoir en plus?"
+      text: "Pour toute questions, envoyez-nous à <a href='mailto:volunteer@makerepo.com'>volunteer@makerepo.com</a>"

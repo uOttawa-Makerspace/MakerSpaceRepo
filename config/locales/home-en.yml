@@ -73,6 +73,7 @@ en:
       sign_up: "Sign up"
     workshops:
       header: "Workshops this week"
+      link: "Visit our events page here."
     welcome:
       welcome_to: "Welcome to MakerRepo"
       welcome_subheader: "This is <b>CEED's</b> repository website"
