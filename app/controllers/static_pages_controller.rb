@@ -100,7 +100,7 @@ class StaticPagesController < SessionsController
   def get_involved
   end
 
-  def all_resources
+  def resources
   end
 
   def join_team_program

@@ -147,7 +147,7 @@ Rails.application.routes.draw do
         action: "report_repository"
     post "join_team_program"
     get "get_involved"
-    get "all_resources"
+    get "resources"
   end
 
   # RFID

@@ -45,14 +45,14 @@
       </li>
 
       <li class="nav-item dropdown d-flex align-items-center">
-        <a class="nav-link custom-hover" href="<%= all_resources_path %>">
+        <a class="nav-link custom-hover" href="<%= resources_path %>">
           <%= t('navbar.resources') %>
         </a>
         <a class="nav-link dropdown-toggle dropdown-toggle-split custom-hover" href="#" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="padding-left: 0.75rem; padding-right: 0.75rem;">
           <span class="visually-hidden">Toggle Dropdown</span>
         </a>
         <div class="dropdown-menu">
-        <%= link_to t('navbar.resources'), all_resources_path, class: 'dropdown-item' %>
+        <%= link_to t('navbar.resources'), resources_path, class: 'dropdown-item' %>
           <a class="dropdown-item" href="https://wiki.makerepo.com/wiki/Main_Page"><%= t('navbar.ceed_wiki') %></a>
           <a class="dropdown-item" href="https://makerstore.ca/"><%= t('navbar.makerstore') %></a>
           <%= link_to('MakerRoom', sub_space_booking_index_path, class: 'dropdown-item') %>
