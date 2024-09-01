@@ -1,10 +1,11 @@
 @import "./shared/variables";
+@import "bootstrap/scss/bootstrap";
 
 section#getInvolved {
   #jumbotron {
     width: 100%;
     background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
-      url("redesign/get_involved/jumbotron.png");
+      url("get_involved/jumbotron.png");
     background-size: cover;
     background-color: $primary;
     margin: 0;
@@ -46,32 +47,43 @@ section#getInvolved {
     padding: 2%;
     &.section-workshops {
       background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
-        url("redesign/get_involved/workshops.png");
+        url("get_involved/workshops.png");
     }
     &.section-programs {
       background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
-        url("redesign/get_involved/workshops.png");
+        url("get_involved/programs.png");
     }
     &.whats-next-banner {
       background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
-        url("redesign/image 25.png");
+        url("get_involved/next.png");
     }
     &.team-space {
       padding: 4%;
       background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
-        url("redesign/image 26.png");
+        url("get_involved/teams.png");
     }
-  }
-  .section-subtext {
-    padding-right: 15%;
   }
 
   .link-card {
-    max-width: 34rem;
+    @include media-breakpoint-up(lg) {
+      box-shadow: 4px 4px 8px 2px #aaa;
+    }
+    img {
+      object-fit: cover;
+    }
     padding: 1rem;
     height: 100%;
-    //border: 1px solid #aaa;
     border-radius: 5px;
-    box-shadow: 4px 4px 8px 2px #aaa;
+    .link-card-text {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      justify-content: space-evenly;
+      h5 {
+        padding-top: 1rem;
+        font-size: 1.5rem;
+        font-weight: 700;
+      }
+    }
   }
 }

@@ -8,103 +8,119 @@
   <div class="container-fluid">
     <!-- Workshops Section -->
     <div class="row my-5">
-      <div class="col section-image section-workshops">
+      <div class="col-lg-6 section-image section-workshops">
         <h2>Workshops</h2>
       </div>
-      <div class="col section-subtext">
+      <div class="col-lg-4 align-content-center">
         <p class="fw-bold fs-3"><%= t('all_get_involved.workshops.header') %></p>
         <p><%= t('all_get_involved.workshops.overview') %></p>
       </div>
     </div>
-    <div class="row justify-content-around">
-      <div class="card link-card">
-        <div class="row">
-          <div class="col-lg-4">
-            <%= image_tag('redesign/image 22 (1).png', alt: 'Workshop 1', class: 'img-fluid') %>
-          </div>
-          <div class="col-lg-7 offset-lg-1">
-            <h5><%= t('all_get_involved.workshops.sections.workshop_1.header') %></h5>
-            <p><%= t('all_get_involved.workshops.sections.workshop_1.overview') %></p>
-            <a class="btn btn-primary mt-auto">Sign Up</a>
+    <div class="row g-lg-3 justify-content-around">
+      <div class="col-lg-3">
+        <div class="link-card">
+          <div class="row py-3">
+            <div class="col-lg-6">
+              <%= image_tag('get_involved/makerlab.png', alt: 'Student using a soldering station', class: 'img-fluid') %>
+            </div>
+            <div class="col-lg-6">
+              <div class="link-card-text">
+                <h5><%= t('all_get_involved.workshops.sections.workshop_1.header') %></h5>
+                <p><%= t('all_get_involved.workshops.sections.workshop_1.overview') %></p>
+                <a class="btn btn-primary">Sign Up</a>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-      <div class="card link-card">
-        <div class="row">
-          <div class="col-lg-4">
-            <%= image_tag('redesign/image 22.png', alt: 'Workshop 2', class: 'img-fluid') %>
-          </div>
-          <div class="col-lg-7">
-            <h5><%= t('all_get_involved.workshops.sections.workshop_2.header') %></h5>
-            <p><%= t('all_get_involved.workshops.sections.workshop_2.overview') %></p>
-            <a class="btn btn-primary mt-auto">Sign Up</a>
+      <div class="col-lg-3">
+        <div class="link-card">
+          <div class="row py-3">
+            <div class="col-lg-6">
+              <%= image_tag('get_involved/workshop.png', alt: 'Students using woodworking machines', class: 'img-fluid') %>
+            </div>
+            <div class="col-lg-6">
+              <div class="link-card-text">
+                <h5><%= t('all_get_involved.workshops.sections.workshop_2.header') %></h5>
+                <p><%= t('all_get_involved.workshops.sections.workshop_2.overview') %></p>
+                <a class="btn btn-primary">Sign Up</a>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
     <!-- Programs Section -->
     <div class="row my-5">
-      <div class="col section-image section-workshops">
+      <div class="col-lg-6 section-image section-workshops">
         <h2>Programs</h2>
       </div>
-      <div class="col section-subtext">
+      <div class="col-lg-4 align-content-center">
         <p class="fw-bold fs-3"><%= t('all_get_involved.programs.header') %></p>
         <p><%= t('all_get_involved.programs.overview') %></p>
       </div>
     </div>
 
-    <div class="row justify-content-around mb-5">
-      <div class="card link-card">
-        <div class="row">
-          <div class="col-lg-4">
-            <%= image_tag('redesign/image 22 (2).png', alt: 'Program 1', class: 'img-fluid') %>
-          </div>
-          <div class="col-lg-7 offset-lg-1">
-            <h5><%= t('all_get_involved.workshops.sections.workshop_1.header') %></h5>
-            <p><%= t('all_get_involved.workshops.sections.workshop_1.overview') %></p>
-            <a class="btn btn-primary mt-auto">Sign Up</a>
+    <div class="row g-lg-3 justify-content-around">
+      <div class="col-lg-3">
+        <div class="link-card">
+          <div class="row">
+            <div class="col-lg-6">
+              <%= image_tag('get_involved/volunteer.png', alt: 'Students attending a lecture', class: 'img-fluid') %>
+            </div>
+            <div class="col-lg-6">
+              <div class="link-card-text">
+                <h5><%= t('all_get_involved.workshops.sections.workshop_1.header') %></h5>
+                <p><%= t('all_get_involved.workshops.sections.workshop_1.overview') %></p>
+                <a class="btn btn-primary">Sign Up</a>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-      <div class="card link-card">
-        <div class="row">
-          <div class="col-lg-4">
-            <%= image_tag('redesign/image 22-1.png', alt: 'Program 2', class: 'img-fluid') %>
-          </div>
-          <div class="col-lg-7 offset-lg-1">
-            <h5><%= t('all_get_involved.workshops.sections.workshop_2.header') %></h5>
-            <p><%= t('all_get_involved.workshops.sections.workshop_2.overview') %></p>
-            <a class="btn btn-primary mt-auto">Sign Up</a>
+      <div class="col-lg-3">
+        <div class="link-card">
+          <div class="row">
+            <div class="col-lg-6">
+              <%= image_tag('get_involved/devprog.png', alt: 'CEED Employee using a drill press', class: 'img-fluid') %>
+            </div>
+            <div class="col-lg-6">
+              <div class="link-card-text">
+                <h5><%= t('all_get_involved.workshops.sections.workshop_2.header') %></h5>
+                <p><%= t('all_get_involved.workshops.sections.workshop_2.overview') %></p>
+                <a class="btn btn-primary">Sign Up</a>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="me-0">
+    <div class="me-0 mt-5">
       <div class="row">
+        <div class="col-lg-6 order-lg-last gx-0 section-image whats-next-banner">
+          <h2>What's next?<br />Learn, build, now <span class="text-primary">launch</span>.</h2>
+          <p>So you’ve brought your ideas to life, can you do more? Launch your projects and share your ideas with the industry.</p>
+        </div>
         <div class="col-lg-2 offset-lg-1">
-          <div class="card link-card p-5">
-            <%= image_tag('redesign/image 22-3.png', class: 'img-card-top', alt: 'Program 1') %>
-            <div class="card-body">
-              <h5 class="card-title fw-bold"><%= t('all_get_involved.programs.sections.program_3.header') %></h5>
-              <p class="card-text"><%= t('all_get_involved.programs.sections.program_3.overview') %></p>
-              <button class="btn btn-primary mt-auto">Sign Up</button>
+          <div class="link-card d-flex flex-column">
+            <%= image_tag('get_involved/makerlaunch.png', class: 'img-fluid', alt: 'Students attending a Makerlaunch seminar') %>
+            <div class="link-card-text">
+              <h5 class="fw-bold"><%= t('all_get_involved.programs.sections.program_3.header') %></h5>
+              <p><%= t('all_get_involved.programs.sections.program_3.overview') %></p>
+              <button class="btn btn-primary">Sign Up</button>
             </div>
           </div>
         </div>
         <div class="col-lg-2 me-auto">
-          <div class="card link-card p-5">
-            <%= image_tag('redesign/image 22-4.png', class: 'img-card-top', alt: 'Program 2') %>
-            <div class="card-body">
-              <h5 class="card-title fw-bold"><%= t('all_get_involved.programs.sections.program_4.header') %></h5>
-              <p class="card-text"><%= t('all_get_involved.programs.sections.program_4.overview') %></p>
-              <button class="btn btn-primary mt-auto">Sign Up</button>
+          <div class="link-card d-flex flex-column">
+            <%= image_tag('get_involved/simonnehme.png', class: 'img-fluid', alt: 'Group photo of students') %>
+            <div class="link-card-text">
+              <h5 class="fw-bold"><%= t('all_get_involved.programs.sections.program_4.header') %></h5>
+              <p><%= t('all_get_involved.programs.sections.program_4.overview') %></p>
+              <button class="btn btn-primary">Sign Up</button>
             </div>
           </div>
-        </div>
-        <div class="col-lg-6 gx-0 section-image whats-next-banner">
-          <h2>What's next?<br />Learn, build, now <span class="text-primary">launch</span>.</h2>
-          <p>So you’ve brought your ideas to life, can you do more? Launch your projects and share your ideas with the industry.</p>
         </div>
       </div>
     </div>
@@ -116,23 +132,23 @@
       <p><%= t('all_get_involved.team.overview') %></p>
   </div>
 
-  <div class="row m-5 ">
-    <div class="col-lg-4">
+  <div class="row m-5">
+    <div class="col-lg-3 offset-lg-1 align-content-center">
       <p class="fs-1 fw-bold"><%= t('all_get_involved.bottom.quote') %></p>
     </div>
-    <div class="col">
+    <div class="col-lg-8">
       <p class="fs-3"><%= t('all_get_involved.bottom.overview') %></p>
       <div class="row">
         <div class="col-lg-4 text-center">
-          <img src="<%= asset_path('redesign/Rectangle 101.png') %>" class="img-fluid" alt="About teams">
+          <%= image_tag 'get_involved/aboutteams.png', class: 'img-fluid', alt: 'uOttawa Rocketry team posing with a sounding rocket' %>
           <p class="fw-bold">About teams</p>
         </div>
         <div class="col-md-4 text-center">
-          <img src="<%= asset_path('redesign/Rectangle 102.png') %>" class="img-fluid" alt="Follow our socials">
+          <%= image_tag 'get_involved/followsocials.png', class: 'img-fluid', alt: 'UORover team posing with the rover' %>
           <p class="fw-bold">Follow our socials</p>
         </div>
         <div class="col-md-4 text-center">
-          <img src="<%= asset_path('redesign/Rectangle 99.png') %>" class="img-fluid" alt="Join a team">
+          <%= image_tag 'get_involved/joinateam.png', class: 'img-fluid', alt: 'Formula uOttawa team working on their car' %>
           <p class="fw-bold">Join a team</p>
         </div>
       </div>

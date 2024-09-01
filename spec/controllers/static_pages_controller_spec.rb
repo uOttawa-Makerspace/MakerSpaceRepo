@@ -14,6 +14,15 @@ RSpec.describe StaticPagesController, type: :controller do
     end
   end
 
+  describe "GET /get_involved" do
+    context "logged as regular user" do
+      it "should return 200 response" do
+        get :get_involved
+        expect(response).to have_http_status(:success)
+      end
+    end
+  end
+
   describe "GET /about" do
     context "logged as regular user" do
       it "should return 200 response" do

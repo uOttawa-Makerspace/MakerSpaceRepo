@@ -28,14 +28,14 @@
       </li>
 
       <li class="nav-item dropdown d-flex align-items-center">
-        <a class="nav-link custom-hover" href="/all_get_involved">
+        <%= link_to get_involved_path, class: 'nav-link custom-hover' do %>
           <%= t('navbar.get_involved') %>
-        </a>
+        <% end %>
         <a class="nav-link dropdown-toggle dropdown-toggle-split custom-hover" href="#" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="padding-left: 0.75rem; padding-right: 0.75rem;">
           <span class="visually-hidden">Toggle Dropdown</span>
         </a>
         <div class="dropdown-menu">
-          <%= link_to t('navbar.get_involved'), all_get_involved_path, class: 'dropdown-item' %>
+          <%= link_to t('navbar.get_involved'), get_involved_path, class: 'dropdown-item' %>
           <a class="dropdown-item" href="https://www.eventbrite.ca/o/latelier-makerspace-richard-labbe-uottawa-uottawa-richard-labbe-makerspace-6930970537"><%= t('navbar.workshops') %></a>
           <%= link_to t('navbar.join_a_team'), t('navbar.join_a_team_url'), class: 'dropdown-item' %>
           <%= link_to t('navbar.volunteering'), volunteers_path, class: 'dropdown-item' %>

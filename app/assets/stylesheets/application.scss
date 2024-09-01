@@ -143,10 +143,6 @@ $dropdown-connection-size: 12px;
   }
 }
 
-// h2 {
-//   font-size: 1.75rem;
-// }
-
 h1,
 h2,
 h3,
@@ -383,10 +379,7 @@ td > .btn:not(:last-of-type) {
 }
 
 .subtitle {
-  font:
-    400 0.75rem "Raleway",
-    helvetica,
-    sans-serif;
+  font: 400 0.75rem "Raleway", helvetica, sans-serif;
   color: #aaa;
   margin-bottom: 0.5rem;
 }

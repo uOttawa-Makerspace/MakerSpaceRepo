@@ -146,7 +146,7 @@ Rails.application.routes.draw do
         as: "report_repository",
         action: "report_repository"
     post "join_team_program"
-    get "all_get_involved"
+    get "get_involved"
     get "all_resources"
   end
 

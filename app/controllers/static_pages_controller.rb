@@ -100,6 +100,9 @@ class StaticPagesController < SessionsController
   def get_involved
   end
 
+  def all_resources
+  end
+
   def join_team_program
     if signed_in?
       if current_user.programs.exists?(program_type: Program::TEAMS)
@@ -153,11 +156,5 @@ class StaticPagesController < SessionsController
       flash[:alert] = "Please login if you wish to report this repository"
     end
     redirect_back(fallback_location: root_path)
-  end
-
-  def all_get_involved
-  end
-
-  def all_resources
   end
 end
