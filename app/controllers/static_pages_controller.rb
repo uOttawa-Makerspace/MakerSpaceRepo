@@ -55,8 +55,16 @@ class StaticPagesController < SessionsController
         end
 
     @contact_info = ContactInfo.where(show_hours: true).order(name: :asc)
-
     @posts = InstagramService.fetch_posts["data"] || []
+    @workshops = {}
+    begin
+      @workshops =
+        Excon.get(
+          "https://simpli.events/api/collection/ec2440ab-1015-43d1-81a5-6382a14f50f1"
+        )
+      @workshops = JSON.parse(@workshops.body)["events"]
+    rescue StandardError # eh
+    end
   end
 
   def about
