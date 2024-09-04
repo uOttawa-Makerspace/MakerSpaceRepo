@@ -83,15 +83,16 @@
           <div class="card-body">
             <h2><%= t('home.workshops.header') %></h2>
             <a href="https://simpli.events/u/uottawaceed"><%= t('home.workshops.link') %></a>
-            <% 5.times do next %>
-              <a class="d-flex workshop-card" href="#">
-                <div class="text-center workshop-date">
-                  <p style="font-size: 2rem;">22<br /> <span style="font-size: 1.5rem">Dec</span></p>
+            <% @workshops.each do |w| %>
+              <% start = Time.zone.at(w['startTime'].to_i / 1000) %>
+              <a class="d-flex workshop-card" href="<%= w['link'] %>">
+                <div class="text-center workshop-date" style="background-image: url('<%= w['picture'] %>')">
+                  <p style="font-size: 2rem;"><%= start.day %><br /> <span style="font-size: 1.5rem"><%= start.strftime '%b' %></span></p>
                 </div>
                 <div class="workshop-desc">
-                  <p class="workshop-title">Easter Themed 3D Printing Workshop - Beginner</p>
-                  <p class="workshop-date-side">Thu, Mar 28, 2:30 PM</p>
-                  <p class="workshop-cost">Free</p>
+                  <p class="workshop-title"><%= w['name'] %></p>
+                  <p class="workshop-date-side"><%= start.strftime '%a, %b %d, %l:%M %p' %></p>
+                  <p class="workshop-cost">Free?</p>
                 </div>
               </a>
             <% end %>
