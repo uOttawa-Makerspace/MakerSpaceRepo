@@ -1,51 +1,50 @@
 <section id="volunteersIndex">
     <div class="jumbotron volunteerJumbotron">
-        <h1 class="display-1">Enrich your experience by volunteering with <span class="text-primary">CEED</span></h1>
-        <p>The volunteer program allows members to become more involved in the Makerspace.<br />This program is a great way to meet new people, and work on fun projects.</p>
-        <%= link_to 'Join the volunteering program', join_volunteer_program_volunteers_path, class: 'btn btn-primary' %>
+        <h1 class="display-1"><%= t('volunteers.header_html') %></h1>
+        <p><%= t('volunteers.subtitle_html') %></p>
+        <%= link_to t('volunteers.join_button'), join_volunteer_program_volunteers_path, class: 'btn btn-primary' %>
     </div>
     <div class="shadow">
         <%= render partial: 'layouts/volunteer_header' %>
     </div>
     <div class="container p-4">
-        <h2 class="my-5 display-5">Why volunteer with <span class="text-primary">CEED</span></h2>
+        <h2 class="my-5 display-5"><%= t('volunteers.why_volunteer.header_html') %></h2>
         <div class="row row-cols-5 mb-5">
             <div>
                 <i class="fa fa-floppy-o" aria-hidden="true"></i>
-                <p>Gain valuable experience with technology</p>
+                <p><%= t('volunteers.why_volunteer.floppy') %></p>
             </div>
             <div>
                 <i class="fa fa-users" aria-hidden="true"></i>
-                <p>Meet people with similar interests</p>
+                <p><%= t('volunteers.why_volunteer.users') %></p>
             </div>
             <div>
                 <i class="fa fa-comments-o" aria-hidden="true"></i>
-                <p>Collaborate on cool new projects</p>
+                <p><%= t('volunteers.why_volunteer.comments') %></p>
             </div>
             <div>
                 <i class="fa fa-cloud" aria-hidden="true"></i>
-                <p>Get involved with the Maker network</p>
+                <p><%= t('volunteers.why_volunteer.cloud') %></p>
             </div>
             <div>
                 <i class="fa fa-gift" aria-hidden="true"></i>
-                <p>Receive awesome rewards!</p>
+                <p><%= t('volunteers.why_volunteer.gift') %></p>
             </div>
         </div>
         <div class="gx-5 mb-5">
-            <h2>Volunteer opportunities</h2>
-            <h3 class="subtext-primary">How you can help out</h3>
+            <h2><%= t('volunteers.volunteer_opportunities.header') %></h2>
+            <h3 class="subtext-primary"><%= t('volunteers.volunteer_opportunities.subheader') %></h3>
             <div class="row ps-3">
                 <ul class="col-lg-3">
-                    <li><b>Welcome newcomers</b> and <b>give tours</b> of the Makerspace</li>
-                    <li>Help during <b>workshops</b></li>
-                    <li>Help with <b>on campus events</b> such as Design day, Makerspace challenges, clubs' day, entrepreneurship week.</li>
-                    <li>Help with <b>off campus events</b> such as conferences and festivals.</li>
+                    <% t('volunteers.volunteer_opportunities.points')[0..3].each do |point| %>
+                        <li><%= point.html_safe %></li>
+                    <% end %>
+                    <% t('volunteers') %>
                 </ul>
                 <ul class="col-lg-3">
-                    <li><b>Promote</b> the Makerspace through class presentations and table events in UCU to further <b>increase our outreach</b> efforts</li>
-                    <li>Help <b>maintain</b> equipment</li>
-                    <li><b>Provide training</b> for those who wish to learn more about the technology in the Makerspace</li>
-                    <li><b>Create and design projects</b> requested by the community</li>
+                    <% t('volunteers.volunteer_opportunities.points')[4..8].each do |point| %>
+                        <li><%= point.html_safe %></li>
+                    <% end %>
                 </ul>
                 <div class="align-content-center col-lg-6">
                     <%= image_tag 'volunteer/opportunities.png', class: 'img-fluid' %>
@@ -58,32 +57,28 @@
         <div class="container pb-3">
             <div class="row p-3">
                 <div class="col-lg-6">
-                    <div class="numberedCard row row-cols-2">
-                        <p>1</p>
-                        <div class="numberedBody">
-                            <p>Mandatory Training</p>
-                            <p><i class="fa fa-square-o"></i>Complete a Makerspace workshop</p>
-                            <p><i class="fa fa-square-o"></i>Complete basic training in the MTC</p>
+                    <% t('volunteers.skills.steps')[0, 2].each.with_index(1) do |step, index| %>
+                        <div class="numberedCard row row-cols-2">
+                            <p><%= index %></p>
+                            <div class="numberedBody">
+                                <p><%= step[:header] %></p>
+                                <p><i class="fa fa-square-o"></i><%= step[:points][0] %></p>
+                                <p><i class="fa fa-square-o"></i><%= step[:points][1] %></p>
+                            </div>
                         </div>
-                    </div>
-                    <div class="numberedCard row row-cols-2">
-                        <p>2</p>
-                        <div class="numberedBody">
-                            <p>Shadowing</p>
-                            <p><i class="fa fa-square-o"></i>6 hours of shadowing in the Makerspace</p>
-                            <p><i class="fa fa-square-o"></i>6 hours of shadowing in Brunsfield</p>
+                    <% end %>
+                    <% t('volunteers.skills.steps')[2].tap do |step| %>
+                        <div class="numberedCard row row-cols-2">
+                            <p>3</p>
+                            <div class="numberedBody">
+                                <p><%= step[:header] %></p>
+                                <ul>
+                                    <li><%= step[:points][0] %></li>
+                                    <li><%= step[:points][1] %></li>
+                                </ul>
+                            </div>
                         </div>
-                    </div>
-                    <div class="numberedCard row row-cols-2">
-                        <p>3</p>
-                        <div class="numberedBody">
-                            <p>Complete Tasks list</p>
-                            <ul>
-                                <li>Earn CC points from task completion: redeemable for Makerstore items or proficiency projects</li>
-                                <li>Gain access to task list once accepted as a volunteer</li>
-                            </ul>
-                        </div>
-                    </div>
+                    <% end %>
                 </div>
                 <div class="offset-lg-1 col-lg-5">
                     <h3 class="display-6 fw-bold lh-base">Build skills in either the Makerspace or Brunsfield by completing tasks generated by the space managers.</h3>
@@ -91,19 +86,19 @@
                 </div>
             </div>
             <div class="box-subtext mt-5">
-                <h3>Proficiency Projects</h3>
-                <p>Test project students can complete once they have completed a suggested number of hours building the skill of their choice and feel they are ready to move up to the next level.</p>
-                <p>Upon successful completion of the proficiency project, they will receive a badge which will be visible on their Linkedin profile.</p>
-                <p>They start at basic proficiency upon completing the workshop, and can move up all the way to Mastery.</p>
+                <h3><%= t('volunteers.proficiency_projects.header') %></h3>
+                <p><%= t('volunteers.proficiency_projects.line_1') %></p>
+                <p><%= t('volunteers.proficiency_projects.line_2') %></p>
+                <p><%= t('volunteers.proficiency_projects.line_3') %></p>
             </div>
-            <p class="fw-bold ms-5">Use your CC points to pay for proficiency projects! <a href="#">Learn more.</a></p>
+            <p class="fw-bold ms-5"><%= t('volunteers.proficiency_projects.prelink') %> <a href="#"><%= t('volunteers.proficiency_projects.link') %></a></p>
         </div>
     </div>
     <div class="container">
         <div class="box-subtext mt-5">
-            <h2>Interested in volunteering?</h2>
-            <p>The process of volunteering is flexible. Talk to us about accommodations. </p>
-            <p>For any questions, email us at: <a href="mailto:volunteer@makerepo.com">volunteer@makerepo.com</a></p>
+            <h2><%= t('volunteers.how_volunteering.header') %></h2>
+            <p><%= t('volunteers.how_volunteering.line_1') %></p>
+            <p><%= t('volunteers.how_volunteering.line_2') %> <a href="mailto:volunteer@makerepo.com">volunteer@makerepo.com</a></p>
         </div>
     </div>
 </section>
