@@ -25,7 +25,6 @@ import "./direct_uploads";
 import "./effects";
 import "./forms";
 import "./header";
-import "./page_jumping";
 import "./photo_gallery";
 import "./requests";
 import "./settings";
