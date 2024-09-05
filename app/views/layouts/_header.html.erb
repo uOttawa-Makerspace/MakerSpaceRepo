@@ -116,6 +116,7 @@
 <%= render 'layouts/development_program_header' if (defined? with_development) && with_development %>
 <%= render 'layouts/admin_area_header' if (defined? with_admin) && with_admin %>
 <%= render 'layouts/staff_area_header' if (defined? with_staff) && with_staff %>
+<%= render 'layouts/sub_space_header' if @with_sub_space %>
 
 
 <%= render 'layouts/quick_access_link' if current_user.admin? %>
