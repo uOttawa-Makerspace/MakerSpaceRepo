@@ -14,6 +14,10 @@ class SubSpaceBookingController < ApplicationController
                 ]
   before_action :user_admin, only: [:publish]
   before_action :user_booking_belongs, only: %i[delete edit update]
+
+  # We're using the standard layout, no real control over the partial rendering
+  before_action -> { @with_sub_space = true }
+
   def index
     if params[:room].present?
       @subspace = SubSpace.find(params[:room])
