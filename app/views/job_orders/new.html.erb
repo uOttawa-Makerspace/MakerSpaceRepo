@@ -5,7 +5,7 @@
 
       <h2><%= t('job_orders.wizard.title', step: 1) %></h2>
 
-      <div class="alert alert-info text-center">
+      <div class="alert alert-secondary text-center">
         <i class="fa fa-bell"></i>
         <%= t('job_orders.wizard.deprecated_message') %>
         <i class="fa fa-bell"></i>
@@ -23,7 +23,7 @@
       <% JobType.all.each do |jt| %>
         <template x-if="job_type_id == <%= jt.id %>">
           <% if jt.description.present? %>
-            <div class="alert alert-info my-2 col-lg-6 mx-auto">
+            <div class="alert alert-secondary my-2 col-lg-6 mx-auto">
               <%= jt.description %>
             </div>
           <% end %>
