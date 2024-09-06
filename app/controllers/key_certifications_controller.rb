@@ -23,7 +23,12 @@ class KeyCertificationsController < ApplicationController
       end
     end
 
-    render json: { message: "Successfully updated key certifications" }
+    respond_to do |format|
+      format.html { redirect_back_or_to @user }
+      format.json do
+        render json: { message: "Successfully updated key certifications" }
+      end
+    end
   end
 
   def destroy_pdf
