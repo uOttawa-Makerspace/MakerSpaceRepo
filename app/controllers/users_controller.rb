@@ -149,12 +149,6 @@ class UsersController < SessionsController
 
   def new
     redirect_to root_path if signed_in?
-
-    # append "No program" to each choice
-    @programs_by_faculty =
-      UniProgram.programs_by_faculty.transform_values do |x|
-        [UniProgram.no_program] + x
-      end
     @new_user = User.new
   end
 

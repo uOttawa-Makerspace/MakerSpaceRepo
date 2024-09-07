@@ -79,7 +79,10 @@
           </div>
 
           <fieldset id="students-only">
-
+            <div class="mb-3">
+              <%= form.label :student_id, t('users.new.form.student_id'), class: 'required' %>
+              <%= form.text_field :student_id, { class: 'form-control', inputmode: 'numeric', autocomplete: 'off', minlength: '9', maxlength: '9', size: '9', pattern: '[0-9]{9}', title: 'Enter your uOttawa student number, a 9 digit number' } %>
+            </div>
             <div class="mb-3">
               <%= form.label :faculty, t('users.new.form.faculty'), class: 'required' %>
               <%= form.select :faculty, [
@@ -92,8 +95,14 @@
             </div>
 
             <div class="mb-3">
+# append "No program" to each choice
+              # Keep temp variables in view, really
+              programs_by_faculty = UniProgram.programs_by_faculty.transform_values do |x|
+                [UniProgram.no_program] + x
+              end
+              %>
               <%= form.label :program, t('users.new.form.program'), class: 'required' %>
-              <%= form.select :program, @programs_by_faculty, { prompt: t('users.new.form.choose.program') }, { class: 'form-control form-select', 'data-live-search': 'true' } %>
+              <%= form.select :program, programs_by_faculty, { prompt: t('users.new.form.choose.program') }, { class: 'form-control form-select', 'data-live-search': 'true' } %>
             </div>
 
             <div class="mb-3">
