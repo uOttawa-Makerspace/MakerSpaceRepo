@@ -11,6 +11,7 @@ FactoryBot.define do
     role { "regular_user" }
     identity { "community_member" }
     gender { "Male" }
+    student_id { Faker::Number.number(digits: 9) }
 
     trait :regular_user do
     end

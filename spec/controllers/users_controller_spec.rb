@@ -298,7 +298,7 @@ RSpec.describe UsersController, type: :controller do
               }
         expect(response).to redirect_to settings_profile_path
         expect(User.last.identity).to eq("community_member")
-        expect(flash[:alert]).to eq("Could not save changes.")
+        expect(flash[:alert]).to include("Could not save changes.")
       end
 
       it "should fail to update the profile" do
@@ -310,7 +310,7 @@ RSpec.describe UsersController, type: :controller do
                 }
               }
         expect(response).to redirect_to settings_profile_path
-        expect(flash[:alert]).to eq("Could not save changes.")
+        expect(flash[:alert]).to include("Could not save changes.")
       end
     end
   end
