@@ -53,6 +53,5 @@ bundle exec rails c -e staging
 ```bash
 cd ~
 
-# password: beceedy
 sh backup-db.sh
 ```
