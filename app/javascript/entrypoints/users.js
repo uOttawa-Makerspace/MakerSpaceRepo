@@ -1,5 +1,4 @@
 import TomSelect from "tom-select";
-import Rails from "@rails/ujs";
 
 document.addEventListener("turbo:load", function () {
   // Find hash and manually click on load
@@ -40,26 +39,26 @@ document.addEventListener("turbo:load", function () {
       maxOptions: null,
       searchOnKeyUp: true,
     });
-  }
-  // this is a non-live NodeList, we store it for later use
-  const optgroups = Array.from(programSelect.querySelectorAll("optgroup"));
-  const facultySelect = document.getElementById("user_faculty");
-  if (facultySelect) {
-    facultySelect.addEventListener("change", function () {
-      // https://tom-select.js.org/docs/api/
-      programSelect.querySelectorAll("optgroup").forEach((e) => e.remove());
-      // Add allowed programs
-      let target_label = facultySelect.value;
-      for (let i = 0; i < optgroups.length; i++) {
-        let option = optgroups[i];
-        if (option.getAttribute("label") == target_label)
-          programSelect.appendChild(option);
-      }
+    // this is a non-live NodeList, we store it for later use
+    const optgroups = Array.from(programSelect.querySelectorAll("optgroup"));
+    const facultySelect = document.getElementById("user_faculty");
+    if (facultySelect) {
+      facultySelect.addEventListener("change", function () {
+        // https://tom-select.js.org/docs/api/
+        programSelect.querySelectorAll("optgroup").forEach((e) => e.remove());
+        // Add allowed programs
+        let target_label = facultySelect.value;
+        for (let i = 0; i < optgroups.length; i++) {
+          let option = optgroups[i];
+          if (option.getAttribute("label") == target_label)
+            programSelect.appendChild(option);
+        }
 
-      programSelect.tomselect.clear();
-      programSelect.tomselect.clearOptions();
-      programSelect.tomselect.sync();
-    });
+        programSelect.tomselect.clear();
+        programSelect.tomselect.clearOptions();
+        programSelect.tomselect.sync();
+      });
+    }
   }
 
   const staffRoleButtons = document.querySelectorAll(".role-button");
@@ -89,22 +88,26 @@ document.addEventListener("turbo:load", function () {
         formData.append(e.target.id, uploadedFile);
         formData.append("authenticity_token", authToken);
 
-        Rails.ajax({
-          url: url,
-          type: "PATCH",
-          data: formData,
-          success: function (data) {
-            document.getElementById(e.target.id + "_show").style.display =
-              "none";
-            document.getElementById(e.target.id + "_hide").style.display =
-              "block";
+        fetch(url, {
+          method: "PATCH",
+          headers: {
+            Accept: "application/json",
+            //'Content-Type': 'application/json',
           },
-          error: function (data) {
-            alert(
-              "Something went wrong when uploading the file, please try again later"
-            );
-          },
-        });
+          body: formData,
+        })
+          .then((response) => {
+            if (response.ok) {
+              document.getElementById(e.target.id + "_show").style.display =
+                "none";
+              document.getElementById(e.target.id + "_hide").style.display =
+                "block";
+            }
+          })
+          .catch((err) => {
+            console.error(err);
+            alert("Something went wrong uploading");
+          });
       } else {
         alert("Please attach a pdf file only");
       }
@@ -112,28 +115,28 @@ document.addEventListener("turbo:load", function () {
   });
 });
 
-document.addEventListener('DOMContentLoaded', function() {
-  const manageSpacesModal = document.getElementById('manageSpacesModal');
-  let adminId;
-  manageSpacesModal.addEventListener('show.bs.modal', function(event) {
-    const button = event.relatedTarget;
-    adminId = button.getAttribute('data-admin-id');
-    const modalBody = manageSpacesModal.querySelector('.modal-body');
-    
-    modalBody.innerHTML = '<p>Loading...</p>';
+document.addEventListener("DOMContentLoaded", function () {
+  const manageSpacesModal = document.getElementById("manageSpacesModal");
+  if (manageSpacesModal) {
+    manageSpacesModal.addEventListener("show.bs.modal", function (event) {
+      const button = event.relatedTarget;
+      let adminId = button.dataset.adminId || button.dataset.staffId;
+      const modalBody = manageSpacesModal.querySelector(".modal-body");
 
-    fetch(`/admin/users/${adminId}/fetch_spaces`)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error, status = ${response.status}`);
-        }
-        return response.json();
-      })
-      .then(spaces => {
-        modalBody.innerHTML = '';
-        spaces.forEach(space => {
-          const isChecked = space.is_assigned ? 'checked' : '';
-          const checkboxHTML = `
+      modalBody.innerHTML = "<p>Loading...</p>";
+
+      fetch(`/admin/users/${adminId}/fetch_spaces`)
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error, status = ${response.status}`);
+          }
+          return response.json();
+        })
+        .then((spaces) => {
+          modalBody.innerHTML = "";
+          spaces.forEach((space) => {
+            const isChecked = space.is_assigned ? "checked" : "";
+            const checkboxHTML = `
             <div class="form-check">
               <input class="form-check-input" type="checkbox" value="${space.id}" id="space_${space.id}" ${isChecked}>
               <label class="form-check-label" for="space_${space.id}">
@@ -141,146 +144,173 @@ document.addEventListener('DOMContentLoaded', function() {
               </label>
             </div>
           `;
-          modalBody.innerHTML += checkboxHTML;
+            modalBody.innerHTML += checkboxHTML;
+          });
+        })
+        .catch((error) => {
+          console.error("Error loading spaces:", error);
+          modalBody.innerHTML = `<p>Error loading spaces: ${error.message}. Please try again.</p>`;
         });
+    });
+  }
+
+  const saveSpaceChangesButton = document.getElementById(
+    "saveSpaceChangesButton"
+  );
+  if (saveSpaceChangesButton) {
+    saveSpaceChangesButton.addEventListener("click", function () {
+      const checkedBoxes = manageSpacesModal.querySelectorAll(
+        ".form-check-input:checked"
+      );
+      const spaceIds = Array.from(checkedBoxes).map((cb) => cb.value);
+
+      fetch(`/admin/users/${adminId}/update_spaces`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": document
+            .querySelector('meta[name="csrf-token"]')
+            .getAttribute("content"),
+        },
+        body: JSON.stringify({ space_ids: spaceIds }),
       })
-      .catch(error => {
-        console.error('Error loading spaces:', error);
-        modalBody.innerHTML = `<p>Error loading spaces: ${error.message}. Please try again.</p>`;
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error, status = ${response.status}`);
+          }
+          return response.json();
+        })
+        .then((data) => {
+          location.reload();
+        })
+        .catch((error) => {
+          console.error("Error updating spaces:", error);
+        });
+    });
+  }
+  // I give up fixing this
+  try {
+    document
+      .getElementById("select-all")
+      .addEventListener("click", function (event) {
+        const checked = event.target.checked;
+        document.querySelectorAll(".select-user").forEach(function (checkbox) {
+          checkbox.checked = checked;
+        });
       });
-  });
 
-
-  document.getElementById('saveSpaceChangesButton').addEventListener('click', function() {
-    const checkedBoxes = manageSpacesModal.querySelectorAll('.form-check-input:checked');
-    const spaceIds = Array.from(checkedBoxes).map(cb => cb.value);
-
-    fetch(`/admin/users/${adminId}/update_spaces`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-      },
-      body: JSON.stringify({ space_ids: spaceIds })
-    })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(`HTTP error, status = ${response.status}`);
-      }
-      return response.json();
-    })
-    .then(data => {    
-
-      location.reload();
-     
-
-    })
-    .catch(error => {
-      console.error('Error updating spaces:', error);
-    });
-  });
-});
-
-document.addEventListener('DOMContentLoaded', function() {
- 
-  document.getElementById('select-all').addEventListener('click', function(event) {
-    const checked = event.target.checked;
-    document.querySelectorAll('.select-user').forEach(function(checkbox) {
-      checkbox.checked = checked;
-    });
-  });
-
-  document.getElementById('change-button').addEventListener('click', function(event) {
-    console.log('Form submit event'); // Debugging line to check if submit event is triggered
-    const selectedUserIds = Array.from(document.querySelectorAll('.select-user:checked')).map(cb => cb.value);
-    console.log('Selected user IDs:', selectedUserIds); // Debugging line to check the selected user IDs
-    document.getElementById('user_ids_field').value = selectedUserIds.join(',');
-  });
+    document
+      .getElementById("change-button")
+      .addEventListener("click", function (event) {
+        console.log("Form submit event"); // Debugging line to check if submit event is triggered
+        const selectedUserIds = Array.from(
+          document.querySelectorAll(".select-user:checked")
+        ).map((cb) => cb.value);
+        console.log("Selected user IDs:", selectedUserIds); // Debugging line to check the selected user IDs
+        document.getElementById("user_ids_field").value =
+          selectedUserIds.join(",");
+      });
+  } catch (e) {
+    console.error(e);
+  }
 });
 
 //Staff
-
-const manageSpacesModal = document.getElementById('manageSpacesModal');
+/*
+  const manageSpacesModal = document.getElementById("manageSpacesModal");
   let staffId;
 
-  manageSpacesModal.addEventListener('show.bs.modal', function(event) {
-    const button = event.relatedTarget;
-    staffId = button.getAttribute('data-staff-id');
-    const modalBody = manageSpacesModal.querySelector('.modal-body');
-    
-    modalBody.innerHTML = '<p>Loading...</p>';
+  manageSpacesModal.addEventListener("show.bs.modal", function (event) {
+  const button = event.relatedTarget;
+  staffId = button.getAttribute("data-staff-id");
+  const modalBody = manageSpacesModal.querySelector(".modal-body");
 
-    fetch(`/admin/users/${staffId}/fetch_spaces`)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error, status = ${response.status}`);
-        }
-        return response.json();
-      })
-      .then(spaces => {
-        modalBody.innerHTML = '';
-        spaces.forEach(space => {
-          const isChecked = space.is_assigned ? 'checked' : '';
-          const checkboxHTML = `
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" value="${space.id}" id="space_${space.id}" ${isChecked}>
-              <label class="form-check-label" for="space_${space.id}">
-                ${space.name}
-              </label>
-            </div>
-          `;
-          modalBody.innerHTML += checkboxHTML;
-        });
-      })
-      .catch(error => {
-        console.error('Error loading spaces:', error);
-        modalBody.innerHTML = `<p>Error loading spaces: ${error.message}. Please try again.</p>`;
-      });
+  modalBody.innerHTML = "<p>Loading...</p>";
+
+  fetch(`/admin/users/${staffId}/fetch_spaces`)
+  .then((response) => {
+  if (!response.ok) {
+  throw new Error(`HTTP error, status = ${response.status}`);
+  }
+  return response.json();
+  })
+  .then((spaces) => {
+  modalBody.innerHTML = "";
+  spaces.forEach((space) => {
+  const isChecked = space.is_assigned ? "checked" : "";
+  const checkboxHTML = `
+  <div class="form-check">
+  <input class="form-check-input" type="checkbox" value="${space.id}" id="space_${space.id}" ${isChecked}>
+  <label class="form-check-label" for="space_${space.id}">
+  ${space.name}
+  </label>
+  </div>
+  `;
+  modalBody.innerHTML += checkboxHTML;
+  });
+  })
+  .catch((error) => {
+  console.error("Error loading spaces:", error);
+  modalBody.innerHTML = `<p>Error loading spaces: ${error.message}. Please try again.</p>`;
+  });
   });
 
-  document.getElementById('saveSpaceChangesButton').addEventListener('click', function() {
-    const checkedBoxes = manageSpacesModal.querySelectorAll('.form-check-input:checked');
-    const spaceIds = Array.from(checkedBoxes).map(cb => cb.value);
+  document
+  .getElementById("saveSpaceChangesButton")
+  .addEventListener("click", function () {
+  const checkedBoxes = manageSpacesModal.querySelectorAll(
+  ".form-check-input:checked"
+  );
+  const spaceIds = Array.from(checkedBoxes).map((cb) => cb.value);
 
-    fetch(`/admin/users/${staffId}/update_spaces`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-      },
-      body: JSON.stringify({ space_ids: spaceIds })
-    })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(`HTTP error, status = ${response.status}`);
-      }
-      return response.json();
-    })
-    .then(data => {    
-      location.reload();
-     
-
-    })
-    .catch(error => {
-      console.error('Error updating spaces:', error);
-    });
+  fetch(`/admin/users/${staffId}/update_spaces`, {
+  method: "PATCH",
+  headers: {
+  "Content-Type": "application/json",
+  "X-CSRF-Token": document
+  .querySelector('meta[name="csrf-token"]')
+  .getAttribute("content"),
+  },
+  body: JSON.stringify({ space_ids: spaceIds }),
+  })
+  .then((response) => {
+  if (!response.ok) {
+  throw new Error(`HTTP error, status = ${response.status}`);
+  }
+  return response.json();
+  })
+  .then((data) => {
+  location.reload();
+  })
+  .catch((error) => {
+  console.error("Error updating spaces:", error);
+  });
   });
 
-  document.addEventListener('DOMContentLoaded', function() {
-  
-  
-    // Select/Deselect all checkboxes for staff
-    document.getElementById('select-all-staff').addEventListener('click', function(event) {
-      const checked = event.target.checked;
-      document.querySelectorAll('.select-user-staff').forEach(function(checkbox) {
-        checkbox.checked = checked;
-      });
-    });
-  
-    // Update the hidden field with selected user IDs when the button is clicked for staff
-    document.getElementById('change-button-staff').addEventListener('click', function(event) {
-      console.log('Form submit event for staff'); // Debugging line to check if submit event is triggered
-      const selectedUserIds = Array.from(document.querySelectorAll('.select-user-staff:checked')).map(cb => cb.value);
-      console.log('Selected user IDs for staff:', selectedUserIds); // Debugging line to check the selected user IDs
-      document.getElementById('user_ids_field_staff').value = selectedUserIds.join(',');
-    })});
+  document.addEventListener("DOMContentLoaded", function () {
+  // Select/Deselect all checkboxes for staff
+  document
+  .getElementById("select-all-staff")
+  .addEventListener("click", function (event) {
+  const checked = event.target.checked;
+  document
+  .querySelectorAll(".select-user-staff")
+  .forEach(function (checkbox) {
+  checkbox.checked = checked;
+  });
+  });
+
+  // Update the hidden field with selected user IDs when the button is clicked for staff
+  document
+  .getElementById("change-button-staff")
+  .addEventListener("click", function (event) {
+  console.log("Form submit event for staff"); // Debugging line to check if submit event is triggered
+  const selectedUserIds = Array.from(
+  document.querySelectorAll(".select-user-staff:checked")
+  ).map((cb) => cb.value);
+  console.log("Selected user IDs for staff:", selectedUserIds); // Debugging line to check the selected user IDs
+  document.getElementById("user_ids_field_staff").value =
+  selectedUserIds.join(",");
+  });
+  });
+*/

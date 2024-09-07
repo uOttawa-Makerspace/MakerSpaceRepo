@@ -1,4 +1,4 @@
-<div class="sticky-top">
+<div class="sticky-top" id="sticky-header">
 <nav class="navbar navbar-expand-xl navbar-light <%= controller_name %> <%= action_name %> bg-primary shadow-lg" id="header-navbar">
   <div class="container-fluid">
     <a class="navbar-brand ms-5" href="/"><strong>Maker</strong>Repo</a>
@@ -116,6 +116,7 @@
 <%= render 'layouts/development_program_header' if (defined? with_development) && with_development %>
 <%= render 'layouts/admin_area_header' if (defined? with_admin) && with_admin %>
 <%= render 'layouts/staff_area_header' if (defined? with_staff) && with_staff %>
+<%= render 'layouts/sub_space_header' if @with_sub_space %>
 
 
 <%= render 'layouts/quick_access_link' if current_user.admin? %>

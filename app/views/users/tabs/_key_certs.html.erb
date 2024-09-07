@@ -11,10 +11,11 @@
               <% (1..KeyCertification::NUMBER_OF_STAFF_FILES).each do |i| %>
                 <% unless @key_cert.send("pdf_file_#{i}").attached? %>
                   <%= form_with url: key_certification_path(@key_cert.id), method: :patch, html: { id: "pdf_file_#{i}_form" } do |f| %>
-                    <div class="mb-3" id="pdf_file_<%= i %>_show">
-                      <%= f.label "pdf_file_#{i}", KeyCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize.to_s, class: 'form-label mb-1' %>
-                      <br><a href="<%= KeyCertification::FILE_URLS[i - 1] %>"><%= KeyCertification::FILE_URLS[i - 1] %></a>
-                      <%= f.file_field "pdf_file_#{i}", multiple: false, class: 'form-control w-50 mt-2 key-cert-file' %>
+                    <%= f.label "pdf_file_#{i}", KeyCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize.to_s, class: 'form-label mb-1' %>
+                    <br><a href="<%= KeyCertification::FILE_URLS[i - 1] %>"><%= KeyCertification::FILE_URLS[i - 1] %></a>
+                    <div class="mb-3 w-50 input-group" id="pdf_file_<%= i %>_show">
+                      <%= f.file_field "pdf_file_#{i}", multiple: false, class: 'form-control w-50 key-cert-file' %>
+                      <%= f.submit 'Submit', class: 'btn btn-primary' %>
                     </div>
                   <% end %>
                 <% end %>
@@ -33,10 +34,11 @@
                 <% ((KeyCertification::NUMBER_OF_STAFF_FILES + 1)..KeyCertification::TOTAL_NUMBER_OF_FILES).each do |i| %>
                   <% unless @key_cert.send("pdf_file_#{i}").attached? %>
                     <%= form_with url: key_certification_path(@key_cert.id), method: :patch, html: { id: "pdf_file_#{i}_form" } do |f| %>
-                      <div class="mb-3" id="pdf_file_<%= i %>_show">
                         <%= f.label "pdf_file_#{i}", KeyCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize.to_s, class: 'form-label mb-1' %>
                         <br><a href="<%= KeyCertification::FILE_URLS[i - 1] %>"><%= KeyCertification::FILE_URLS[i - 1] %></a>
-                        <%= f.file_field "pdf_file_#{i}", multiple: false, class: 'form-control w-50 mt-2 key-cert-file' %>
+                      <div class="mb-3 w-50 input-group" id="pdf_file_<%= i %>_show">
+                        <%= f.file_field "pdf_file_#{i}", multiple: false, class: 'form-control key-cert-file' %>
+                        <%= f.submit 'Submit', class: 'btn btn-primary' %>
                       </div>
                     <% end %>
                   <% end %>

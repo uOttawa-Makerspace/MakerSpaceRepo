@@ -34,8 +34,8 @@ en:
         - header: "Shadowing"
           points:
             [
-              "6 hours of shadowing in the Makerspace",
-              "6 hours of shadowing in Brunsfield",
+              "3 hours of shadowing in the Makerspace",
+              "3 hours of shadowing in Brunsfield",
             ]
         - header: "Complete Tasks list"
           points:
@@ -90,8 +90,8 @@ fr:
         - header: "Observation"
           points:
             [
-              "6 heures d'observation dans le Makerspace",
-              "6 heures d'observation à Brunsfield",
+              "3 heures d'observation dans le Makerspace",
+              "3 heures d'observation à Brunsfield",
             ]
         - header: "Liste des tâches complètes"
           points:

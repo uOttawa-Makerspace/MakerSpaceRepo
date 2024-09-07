@@ -55,6 +55,7 @@ RSpec.describe KeyCertificationsController, type: :controller do
             Rails.root.join("spec/support/assets", "RepoFile1.pdf"),
             "application/pdf"
           )
+        request.accept = "application/json"
         patch :update, params: { id: sc.id, pdf_file_1: pdf_file }
 
         expect(response.body).to eql(

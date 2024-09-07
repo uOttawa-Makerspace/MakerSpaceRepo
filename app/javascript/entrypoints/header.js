@@ -12,12 +12,15 @@ document.addEventListener("turbo:load", function () {
   document.addEventListener("scroll", function () {
     // Add a small buffer between triggers
     // So header doesn't jump around when exactly on the edge
-    if (document.documentElement.scrollTop > 120) {
-      document
+    // And actually get height of banner
+    let header = document.querySelector("#sticky-header");
+    let threshold = header.clientHeight;
+    if (document.documentElement.scrollTop > threshold) {
+      header
         .querySelectorAll(".navbar")
         .forEach((header) => header.classList.add("header-small"));
-    } else if (document.documentElement.scrollTop < 80) {
-      document
+    } else if (document.documentElement.scrollTop < threshold / 2) {
+      header
         .querySelectorAll(".navbar")
         .forEach((header) => header.classList.remove("header-small"));
     }

@@ -1,0 +1,24 @@
+<nav class="navbar navbar-staff navbar-expand-xl navbar-light w-100">
+    <div class="container-fluid justify-content-start ">
+        <a class="navbar-brand" href="<%= sub_space_booking_index_path %>">Maker<strong>Room</strong></a>
+        <% Space.all.order(:name).each do |space| %>
+            <% subspaces = SubSpace.where(space_id: space.id).order(:name) %>
+            <% if subspaces.length > 0 %>
+                <% if subspaces.length == 1 %>
+                    <div class="nav-item ms-4"><%= link_to(subspaces.last.name, sub_space_booking_index_path(room: subspaces.last.id), class: 'nav-link') %></div>
+                <% else %>
+                    <div class="nav-item dropdown ms-4">
+                        <a class="nav-link dropdown-toggle" role="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <%= space.name %>
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                            <% subspaces.each do |subspace| %>
+                                <a class="dropdown-item" href="<%= sub_space_booking_index_path(room: subspace.id) %>"><%= subspace.name %></a>
+                            <% end %>
+                        </div>
+                    </div>
+                <% end %>
+            <% end %>
+        <% end %>
+    </div>
+</nav>
