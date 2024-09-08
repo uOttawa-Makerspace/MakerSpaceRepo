@@ -1,0 +1,29 @@
+<h1 class="text-center">CSV dumps</h1>
+<%= form_with url: admin_cdel_reports_generate_path, method: :get, id: 'CSVDumpForm', html: { autocomplete: 'off' } do |form| %>
+    <div class="row mb-3">
+        <div class="col-lg-4">
+            <div class="form-check">
+                <%= form.radio_button :date_format, 'range', class: 'form-check-input', data: { show: '#dateRange' }, checked: true %>
+                <%= form.label :date_format_range, 'Date Range', class: 'form-check-label' %>
+            </div>
+            <div class="form-check">
+                <%= form.radio_button :date_format, 'semester', label: 'Semester', class: 'form-check-input', data: { show: '#dateSemester' } %>
+                <%= form.label :date_format_semester, 'Semester', class: 'form-check-label' %>
+            </div>
+        </div>
+        <fieldset class="col-lg-8 date-fieldset" id="dateRange">
+            <%= form.label :start_date, 'From', class: 'form-label' %>
+            <%= form.date_field :start_date, class: 'form-control', value: '2023-09-01' %>
+            <%= form.label :end_date, 'To', class: 'form-label' %>
+            <%= form.date_field :end_date, class: 'form-control', value: '2024-04-30' %>
+        </fieldset>
+        <fieldset class="col-lg-8 date-fieldset" id="dateSemester" disabled hidden>
+            <%= form.label :semester_term, 'Semester term', class: 'form-label' %>
+            <%= form.select :semester_term, %w[Winter Fall Summer], {}, { class: 'form-select form-control' } %>
+            <%= form.label :semester_year, 'Semester year', class: 'form-label' %>
+            <%= form.select :semester_year, (2015..DateTime.now.year + 1).to_a.reverse, {}, { class: 'form-select form-control' } %>
+        </fieldset>
+    </div>
+    <%= form.submit 'Dump visitors', name: 'visitors', class: 'btn btn-primary me-3' %>
+    <%= form.submit 'Dump certifications', name: 'certifications', class: 'btn btn-primary' %>
+<% end %>
