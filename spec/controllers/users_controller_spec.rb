@@ -279,7 +279,8 @@ RSpec.describe UsersController, type: :controller do
                   identity: "undergrad",
                   program: "BASc in Software Engineering",
                   faculty: "Engineering",
-                  year_of_study: 1
+                  year_of_study: 1,
+                  student_id: Faker::Number.number(digits: 9)
                 }
               }
         expect(response).to redirect_to settings_profile_path

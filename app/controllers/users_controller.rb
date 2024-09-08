@@ -507,6 +507,7 @@ class UsersController < SessionsController
       :how_heard_about_us,
       :year_of_study,
       :identity,
+      :student_id,
       :read_and_accepted_waiver_form
     )
   end
