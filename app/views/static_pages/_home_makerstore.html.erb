@@ -17,7 +17,7 @@
                 <div class="card-group d-flex flex-nowrap">
                     <% merch.each do |item| %>
                         <%= link_to item[:link], class: 'card link-dark', target: '_blank', rel: 'noopener' do %>
-                            <%= image_tag item[:image_url], alt: item[:title], class: 'card-img-top' %>
+                            <%= image_tag item[:image_url], alt: item[:title], class: 'card-img-top', loading: 'lazy' %>
                             <div class="card-body">
                                 <p class="fs-5 card-title"><%= item[:title] %></p>
                             </div>
