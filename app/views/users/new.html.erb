@@ -95,11 +95,9 @@
             </div>
 
             <div class="mb-3">
-# append "No program" to each choice
-              # Keep temp variables in view, really
-              programs_by_faculty = UniProgram.programs_by_faculty.transform_values do |x|
-                [UniProgram.no_program] + x
-              end
+              <% programs_by_faculty = UniProgram.programs_by_faculty.transform_values do |x|
+                   [UniProgram.no_program] + x
+                 end
               %>
               <%= form.label :program, t('users.new.form.program'), class: 'required' %>
               <%= form.select :program, programs_by_faculty, { prompt: t('users.new.form.choose.program') }, { class: 'form-control form-select', 'data-live-search': 'true' } %>
