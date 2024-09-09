@@ -69,7 +69,7 @@ class User < ApplicationRecord
 
   validates :avatar,
             file_content_type: {
-              allow: %w[image/jpeg image/png image/webp],
+              allow: %w[image/jpeg image/png image/webp image/gif],
               if: -> { avatar.attached? }
             }
 
@@ -180,11 +180,12 @@ class User < ApplicationRecord
   validates :student_id,
             format: {
               with: /[0-9]/,
-              message: "Student number must be numeric and 9 digits"
+              message: "Student id must be numeric and 9 digits"
             },
             length: {
               is: 9
             },
+            allow_blank: true,
             presence: true,
             if: :student?
 
