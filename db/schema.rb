@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2024_08_21_160015) do
+ActiveRecord::Schema[7.0].define(version: 2024_09_07_191211) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -1232,6 +1232,7 @@ ActiveRecord::Schema[7.0].define(version: 2024_08_21_160015) do
     t.boolean "locked", default: false
     t.datetime "locked_until", precision: nil
     t.integer "auth_attempts", default: 0
+    t.string "student_id"
     t.index ["space_id"], name: "index_users_on_space_id"
   end
 

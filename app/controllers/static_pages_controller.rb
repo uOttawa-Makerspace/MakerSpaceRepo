@@ -42,7 +42,8 @@ class StaticPagesController < SessionsController
       end.sample 5
 
     # Get total tracks in all learning modules
-    total_tracks = LearningModule.all.map { |x| x.training.name }.tally
+    total_tracks =
+      LearningModule.all.includes(:training).map { |x| x.training.name }.tally
     # get the total number of tracks completed
     # and in progress under the user's name
     @user_tracks =

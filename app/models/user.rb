@@ -177,6 +177,17 @@ class User < ApplicationRecord
               ]
             }
 
+  validates :student_id,
+            format: {
+              with: /[0-9]/,
+              message: "Student number must be numeric and 9 digits"
+            },
+            length: {
+              is: 9
+            },
+            presence: true,
+            if: :student?
+
   default_scope { where(deleted: false) }
   scope :no_waiver_users, -> { where("read_and_accepted_waiver_form = false") }
   scope :between_dates_picked,

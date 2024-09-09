@@ -149,12 +149,6 @@ class UsersController < SessionsController
 
   def new
     redirect_to root_path if signed_in?
-
-    # append "No program" to each choice
-    @programs_by_faculty =
-      UniProgram.programs_by_faculty.transform_values do |x|
-        [UniProgram.no_program] + x
-      end
     @new_user = User.new
   end
 
@@ -208,7 +202,8 @@ class UsersController < SessionsController
       flash[:notice] = "Profile updated successfully."
       redirect_to settings_profile_path
     else
-      flash[:alert] = "Could not save changes."
+      flash[:alert] = "Could not save changes." +
+        @user.errors.full_messages.join("; ")
       redirect_to settings_profile_path
     end
   end
@@ -512,6 +507,7 @@ class UsersController < SessionsController
       :how_heard_about_us,
       :year_of_study,
       :identity,
+      :student_id,
       :read_and_accepted_waiver_form
     )
   end

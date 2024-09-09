@@ -96,6 +96,7 @@ FactoryBot.define do
       faculty { "Engineering" }
       year_of_study { 2020 }
       gender { "Female" }
+      student_id { Faker::Number.number(digits: 9) }
     end
 
     factory :user_with_announcements do

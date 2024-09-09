@@ -248,6 +248,11 @@ Rails.application.routes.draw do
           format: :xlsx
     end
 
+    namespace :cdel_reports do
+      get "/", as: "index", action: "index"
+      get "/generate_output", as: "generate", action: "generate", format: :csv
+    end
+
     resources :users, only: %i[index edit update show] do
       collection do
         get "search"

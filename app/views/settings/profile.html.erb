@@ -9,7 +9,6 @@
       <span><%= t('settings.profile.public_information_desc') %></span>
     </div>
 
-
     <div class="mb-3">
       <%= f.label :avatar, t('settings.profile.avatar'), class: 'form-label profile-label' %>
 
@@ -66,9 +65,19 @@
 
     <fieldset id="students-only">
       <div class="mb-3">
-        <%= f.label :faculty, t('settings.profile.faculty'), class: 'form-label profile-label' %>
-        <%= tag.span(@user.errors[:faculty].first, class: 'form-error') %>
-        <%= f.select :faculty, %w[arts law education engineering health_sciences medicine science social_sciences telfer].map { |faculty| t("settings.profile.#{faculty}") }, { prompt: t('settings.profile.choose') }, { class: 'form-control form-select selectpicker' } %>
+        <%= f.label :student_id, t('users.new.form.student_id'), class: 'required' %>
+        <%= f.text_field :student_id, { class: 'form-control', inputmode: 'numeric', autocomplete: 'off', minlength: '9', maxlength: '9', size: '9', pattern: '[0-9]{9}', title: 'Enter your uOttawa student number, a 9 digit number' } %>
+      </div>
+
+      <div class="mb-3">
+        <%= f.label :faculty, t('users.new.form.faculty'), class: 'required' %>
+        <%= f.select :faculty, [
+              [t('users.new.form.arts'), 'Arts'],
+              [t('users.new.form.law'), 'Law'], [t('users.new.form.education'), 'Education'],
+              [t('users.new.form.engineering'), 'Engineering'], [t('users.new.form.health_sciences'), 'Health Sciences'],
+              [t('users.new.form.medicine'), 'Medicine'], [t('users.new.form.science'), 'Science'],
+              [t('users.new.form.social_sciences'), 'Social Sciences'], [t('users.new.form.telfer'), 'Telfer School of Management']
+            ], { prompt: t('users.new.form.choose.faculty') }, { class: 'form-control form-select' } %>
       </div>
 
       <div class="mb-3">

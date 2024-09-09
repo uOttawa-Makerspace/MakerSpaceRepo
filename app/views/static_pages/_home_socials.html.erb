@@ -10,9 +10,9 @@
                     <% @posts.take(8).each do |post| %>
                         <%= link_to post['permalink'], class: 'carouselCard', target: '_blank', rel: 'noopener' do %>
                             <% if post['media_type'] == 'IMAGE' || post['media_type'] == 'CAROUSEL_ALBUM' %>
-                                <%= image_tag post['media_url'] %>
+                                <%= image_tag post['media_url'], loading: 'lazy' %>
                             <% elsif post['media_type'] == 'VIDEO' %>
-                                <%= image_tag post['thumbnail_url'] %>
+                                <%= image_tag post['thumbnail_url'], loading: 'lazy' %>
                             <% end %>
                         <% end %>
                     <% end %>
