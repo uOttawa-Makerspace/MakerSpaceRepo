@@ -49,11 +49,11 @@ fr:
     sign_up: "S'inscrire"
     info:
       header: "Participez"
-      overview: "Le développement des compétences est une question d'expérience. Le CEED s'occupe de vous. Participez à des ateliers et à des événements pour obtenir des certificats et réaliser des projets!"
+      overview: "Le développement des compétences repose sur l'expérience. Le CGEC est là pour vous accompagner. Participez à des ateliers et à des événements pour obtenir des certificats et réaliser des projets !"
     workshops:
       banner: "Ateliers"
       header: "Du débutant au maître"
-      overview: "Des ateliers et des cours élaborés pour apprendre et développer toutes sortes de compétences pratiques. Nos ateliers pour débutants vous apprendront toutes les bases essentielles."
+      overview: "Des ateliers et des cours élaborés pour apprendre et développer toutes sortes de compétences pratiques. Nos ateliers pour débutants vous enseigneront toutes les notions essentielles."
       sections:
         workshop_1:
           header: "Ateliers Makerlab"
@@ -68,7 +68,7 @@ fr:
       sections:
         program_1:
           header: "Programme de bénévolat"
-          overview: "Participez au réseau Maker et collaborez à des projets intéressants!"
+          overview: "Impliquez-vous dans le réseau Maker et collaborez sur des projets passionnants !"
         program_2:
           header: "Programme de développement"
           overview: "Obtenez des certificats conformes aux normes de l'industrie, faciles à partager et à vérifier."
@@ -79,14 +79,14 @@ fr:
           header: "École d’été en entrepreneuriat Simon-Nehme"
           overview: "Développez vos idées par le biais d'ateliers, de tables rondes et de mentorat."
     next:
-      title_html: "Quelle est la suite? <br /> Apprendre, construire, <span class='text-primary'>lancer</span>."
-      overview: "Vous avez donné vie à vos idées, mais pouvez-vous faire plus ? Lancez vos projets et partagez vos idées avec le secteur."
+      title_html: "Quelle est la prochaine étape? <br /> Apprenez, construisez, puis <span class='text-primary'>réalisez</span>."
+      overview: "Vous avez donné vie à vos idées, mais pouvez-vous faire plus ? Déployez vos projets et partagez vos idées avec l'industrie."
     team:
       title: "Espace de collaboration John McEntyre"
-      overview: "Développez vos connaissances au-delà de la salle de classe et appliquez vos compétences à la construction et à la compétition avec d'autres étudiants en ingénierie."
+      overview: "Élargissez vos connaissances au-delà de la salle de classe et appliquez vos compétences pour construire et rivaliser avec d'autres étudiants en ingénierie."
     bottom:
       overview: "Au sein de l'espace John McEntyre Team Space, impliquez-vous de manière créative tout en vous amusant ! Rejoignez une équipe et rencontrez des personnes partageant les mêmes idées."
       quote: "Repoussez vos limites. Concevoir des solutions d'ingénierie."
       about_teams: "Sur nos équipes"
       follow_socials: "Suivez nos réseaux sociaux"
-      join_a_team: "Rejoindre une équipe"
+      join_a_team: "Rejoindez une équipe"

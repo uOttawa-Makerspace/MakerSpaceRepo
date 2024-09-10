@@ -20,9 +20,9 @@ fr:
   hours:
     title: "Heures d'Ouverture"
     disclaimer: "Les horaires sont susceptibles d'être modifiés à tout moment, sans préavis."
-    student_title: "Heures des étudiants"
-    public_title: "Heures de la communauté"
-    summer_title: "Heures de l'été"
+    student_title: "Horaires pour les étudiants"
+    public_title: "Horaires pour la communauté"
+    summer_title: "Horaires d'été"
     tags:
       sunday: "Dimanche"
       monday: "Lundi"

@@ -1,6 +1,6 @@
 <nav class="navbar navbar-expand-xl navbar-light">
 <div class="container-fluid">
-  <a class="navbar-brand" href="<%= volunteers_path %>">Volunteer <strong>Program</strong></a>
+  <a class="navbar-brand" href="<%= volunteers_path %>"><%= t('volunteers.navbar.brand_html') %></a>
   <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent2" aria-controls="navbarSupportedContent2" aria-expanded="false" aria-label="Toggle navigation">
     <span class="navbar-toggler-icon"></span>
   </button>
@@ -8,64 +8,64 @@
 
     <% if current_user.volunteer? && !current_user.staff? %>
       <ul class="navbar-nav mx-auto">
-        <li class="nav-item"><%= link_to 'Getting Started', volunteers_path, class: 'nav-link' %></li>
-        <li class="nav-item"><%= link_to 'My Stats', my_stats_volunteers_path, class: 'nav-link' %></li>
-        <li class="nav-item"><%= link_to 'Volunteer Tasks', volunteer_tasks_path, class: 'nav-link' %></li>
-        <li class="nav-item"><%= link_to 'My Tasks', my_tasks_volunteer_tasks_path, class: 'nav-link' %></li>
-        <li class="nav-item"><%= link_to 'Requests', volunteer_task_requests_path, class: 'nav-link' %></li>
+        <li class="nav-item"><%= link_to t('volunteers.navbar.getting_started'), volunteers_path, class: 'nav-link' %></li>
+        <li class="nav-item"><%= link_to t('volunteers.navbar.my_stats'), my_stats_volunteers_path, class: 'nav-link' %></li>
+        <li class="nav-item"><%= link_to t('volunteers.navbar.volunteer_tasks'), volunteer_tasks_path, class: 'nav-link' %></li>
+        <li class="nav-item"><%= link_to t('volunteers.navbar.my_tasks'), my_tasks_volunteer_tasks_path, class: 'nav-link' %></li>
+        <li class="nav-item"><%= link_to t('volunteers.navbar.requests'), volunteer_task_requests_path, class: 'nav-link' %></li>
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" id="calendar" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            Calendar
+            <%= t('volunteers.navbar.calendar') %>
           </a>
           <div class="dropdown-menu" aria-labelledby="calendar">
-            <%= link_to 'Calendar', calendar_volunteers_path, class: 'dropdown-item' %>
-            <%= link_to 'Next Shadowing Shifts', shadowing_shifts_volunteers_path, class: 'dropdown-item' %>
+            <%= link_to t('volunteers.navbar.calendar'), calendar_volunteers_path, class: 'dropdown-item' %>
+            <%= link_to t('volunteers.navbar.next_shadowing_shifts'), shadowing_shifts_volunteers_path, class: 'dropdown-item' %>
           </div>
         </li>
       </ul>
     <% elsif current_user.staff? %>
       <ul class="navbar-nav mx-auto">
-        <li class="nav-item"><%= link_to 'Getting Started', volunteers_path, class: 'nav-link' %></li>
-        <li class="nav-item"><%= link_to 'My Stats', my_stats_volunteers_path, class: 'nav-link' %></li>
-        <li class="nav-item"><%= link_to 'My Tasks', my_tasks_volunteer_tasks_path, class: 'nav-link' %></li>
+        <li class="nav-item"><%= link_to t('volunteers.navbar.getting_started'), volunteers_path, class: 'nav-link' %></li>
+        <li class="nav-item"><%= link_to t('volunteers.navbar.my_stats'), my_stats_volunteers_path, class: 'nav-link' %></li>
+        <li class="nav-item"><%= link_to t('volunteers.navbar.my_tasks'), my_tasks_volunteer_tasks_path, class: 'nav-link' %></li>
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" id="calendar" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            Calendar
+            <%= t('volunteers.navbar.calendar') %>
           </a>
           <div class="dropdown-menu" aria-labelledby="calendar">
-            <%= link_to 'Calendar', calendar_volunteers_path, class: 'dropdown-item' %>
-            <%= link_to 'Next Shadowing Shifts', shadowing_shifts_volunteers_path, class: 'dropdown-item' %>
-            <%= link_to 'Add Shadowing Shift', new_event_volunteers_path, class: 'dropdown-item' %>
+            <%= link_to t('volunteers.navbar.calendar'), calendar_volunteers_path, class: 'dropdown-item' %>
+            <%= link_to t('volunteers.navbar.next_shadowing_shifts'), shadowing_shifts_volunteers_path, class: 'dropdown-item' %>
+            <%= link_to t('volunteers.navbar.add_shadowing_shifts'), new_event_volunteers_path, class: 'dropdown-item' %>
           </div>
         </li>
       </ul>
       <ul class="navbar-nav mx-auto">
-        <li class="nav-item"><%= link_to 'Requests', volunteer_task_requests_path, class: 'nav-link' %></li>
+        <li class="nav-item"><%= link_to t('volunteers.navbar.requests'), volunteer_task_requests_path, class: 'nav-link' %></li>
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            Tasks
+            <%= t('volunteers.navbar.tasks') %>
           </a>
           <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
-            <%= link_to 'New', new_volunteer_task_path, class: 'dropdown-item' %>
-            <%= link_to 'Tasks', volunteer_tasks_path, class: 'dropdown-item' %>
+            <%= link_to t('volunteers.navbar.new_task'), new_volunteer_task_path, class: 'dropdown-item' %>
+            <%= link_to t('volunteers.navbar.tasks'), volunteer_tasks_path, class: 'dropdown-item' %>
           </div>
         </li>
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            Announcements
+            <%= t('volunteers.navbar.announcements') %>
           </a>
           <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
-            <%= link_to 'New', new_announcement_path, class: 'dropdown-item' %>
-            <%= link_to 'Announcements', announcements_path, class: 'dropdown-item' %>
+            <%= link_to t('volunteers.navbar.new_announcement'), new_announcement_path, class: 'dropdown-item' %>
+            <%= link_to t('volunteers.navbar.announcements'), announcements_path, class: 'dropdown-item' %>
           </div>
         </li>
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            Lists
+            <%= t('volunteers.navbar.lists') %>
           </a>
           <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
-            <%= link_to 'List of Emails', emails_volunteers_path, class: 'dropdown-item' %>
-            <%= link_to 'List of Users in Program', volunteer_list_volunteers_path, class: 'dropdown-item' %>
+            <%= link_to t('volunteers.navbar.list_of_emails'), emails_volunteers_path, class: 'dropdown-item' %>
+            <%= link_to t('volunteers.navbar.list_of_users'), volunteer_list_volunteers_path, class: 'dropdown-item' %>
           </div>
         </li>
       </ul>

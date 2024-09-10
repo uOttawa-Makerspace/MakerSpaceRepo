@@ -1,11 +1,11 @@
 fr:
   home:
-    show_more: "Voir en plus"
+    show_more: "Voir plus"
     show_all: "Voir tout"
     follow_us: "Suivez-nous"
     explore:
       header: "Découvrir"
-      subtext: "Explorer des projects réalisés par les étudiants"
+      subtext: "Explorez des projects réalisés par les étudiants"
       no_projects: "Pas de projects récents disponible maintenant..."
     makerstore:
       subtext: "Nos meilleures ventes"
@@ -22,10 +22,10 @@ fr:
     shortcuts:
       header: "Raccourcis"
       recently_opened: "Récemment consultés"
-      no_recently_opened: "Aucune projet n'a été vu"
-      explore_more: "Explorer en plus"
+      no_recently_opened: "Aucune projet consulté récemment"
+      explore_more: "Explorer plus"
       ask_for_sign_in: "Se connecter pour voir les tâches récemment consultés"
-      volunteer_program_header: "Programme des Bénévoles"
+      volunteer_program_header: "Programme de Bénévolat"
       volunteer_program_desc:
         - Acquérir des expériences valable dans le domaine de la techologie
         - Rencontrer des personnes parteagent des intérêts similaires
@@ -39,10 +39,10 @@ fr:
         - Joignez maintenant et améliorer vos possibilités d'emploi avec des qualifications qui comptent
     volunteer_program:
       header: "Programme des bénévoles"
-      shadowing_scheduled: "Heures d'observation assignés cette semaine"
+      shadowing_scheduled: "Périodes d'observation assignés cette semaine"
       your_tasks: "Vos tâches"
       add_more_tasks: "S'inscrire à d'autres tâches"
-      no_shifts_scheduled: "Aucune heures d'observation n'est assignée"
+      no_shifts_scheduled: "Aucune périodes d'observation n'est assignée"
       no_tasks_assigned: "Aucune tâche n'est assignée"
     development_program:
       header: "Programme de Développement"
@@ -68,15 +68,15 @@ fr:
       no_skills: "Aucune compétence acquise"
       show_all: "Voir tout"
     newsletter:
-      header: "Voulez-vous savoir quand aura lieu le prochain événement?"
+      header: "Voulez-vous savoir quand notre prochain événement aura lieu?"
       subtext: "Entrez votre email pour vous inscrire à notre infolettre"
       sign_up: "S'inscrire"
     workshops:
-      header: "Ateliers cette semaine"
+      header: "Ateliers de la semaine"
       link: "Visiter notre page d'événments ici."
     welcome:
       welcome_to: "Bienvenue à MakerRepo"
       welcome_subheader: "Voici le site de dépôt du <b>CEED</b>"
-      hour_header: "Heures d'ouverture"
+      hour_header: "Heures d'ouverture des espaces de la semaine"
     socials:
-      subtext: "Restez informé avec notre reseaux sociaux"
+      subtext: "Restez informé grâce a nos réseaux sociaux"

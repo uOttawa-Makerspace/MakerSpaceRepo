@@ -7,7 +7,7 @@ fr:
   navbar:
     home: "Accueil"
     # explore section
-    explore: "Explorer"
+    explore: "Explorez"
     projects: "Projets"
     create_project: "Nouveau Projet"
     project_proposals: "Propositions de projet"
@@ -17,9 +17,9 @@ fr:
     assigned_projects: "Projets assignés"
     completed_projects: "Projets complétés"
     # Get involved
-    get_involved: "Participez"
+    get_involved: "S'engagez"
     workshops: "Ateliers"
-    join_a_team: "Joindre un équipe"
+    join_a_team: "Rejoindre une équipe"
     join_a_team_url: "https://www.uottawa.ca/faculte-genie/experience-etudiante/equipes-competitives"
     volunteering: "Bénévolat"
     makerlaunch: "Makerlaunch"

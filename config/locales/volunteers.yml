@@ -1,7 +1,24 @@
 en:
   volunteers:
+    navbar:
+      brand_html: "Volunteer <strong>Program</strong>"
+      getting_started: "Getting Started"
+      my_stats: "My Stats"
+      volunteer_tasks: "Volunteer Tasks"
+      my_tasks: "My Tasks"
+      calendar: "Calendar"
+      next_shadowing_shifts: "Next Shadowing Shifts"
+      add_shadowing_shifts: "Add Shadowing Shifts"
+      requests: "Requests"
+      tasks: "Tasks"
+      new_task: "New Task"
+      announcements: "Announcements"
+      new_announcement: "New Announcement"
+      lists: "Lists"
+      list_of_emails: "List of Emails"
+      list_of_users: "List of Users in Program"
     header_html: "Enrich your experience by volunteering with <span class='text-primary'>CEED</span>"
-    subtitle_html: "The volunteer program allows members to become more involved in the Makerspace.<br />This program is a great way to meet new people, and work on fun projects."
+    subtitle_html: "The volunteer program allows students to become more involved in the different CEED spaces. <br /> This program is a great way to meet new people, learn new technical skills and develop existing ones."
     join_button: "Join the volunteering program"
     why_volunteer:
       header_html: "Why volunteer with <span class='text-primary'>CEED</span>"
@@ -56,30 +73,47 @@ en:
       line_2: "For any questions, email us at:"
 fr:
   volunteers:
-    header_html: "Enrichissez votre éxperience en devenant bénévole au <span class='text-primary'>CGEC</span>"
-    subtitle_html: "Le programme permet aux membres de s'impliquer davantage dans le Makerspace.<br /> Ce programme est un excellent moyen de rencontrer de nouvelles personnes, et travailler sur des projets intéressants."
+    navbar:
+      brand_html: "<strong>Programme</strong> de Bénévolat"
+      getting_started: "Lancez vous"
+      my_stats: "Mes Stats"
+      my_tasks: "Mes Tâches"
+      volunteer_tasks: "Tâches de bénévolat"
+      calendar: "Calendrier"
+      next_shadowing_shifts: "Prochaines périodes d'observation"
+      add_shadowing_shifts: "Ajouter des périodes d'observation"
+      requests: "Demandes"
+      tasks: "Tâches"
+      new_task: "Nouvelle Tâche"
+      announcements: "Annonces"
+      new_announcement: "Nouvelle Annonce"
+      lists: "Listes"
+      list_of_emails: "Liste d'Emails"
+      list_of_users: "Liste de bénévoles"
+    header_html: "Enrichissez votre experience en devenant bénévole au <span class='text-primary'>CGEC</span>"
+    subtitle_html: "Le programme de bénévolat permet aux étudiants de s'impliquer d’avantage dans les différents espaces du CGEC. <br /> Ce programme est une excellente opportunité pour rencontrer de nouvelles personnes, acquérir de nouvelles compétences techniques et développer celles déjà existantes."
     join_button: "Rejoindre le programme de bénévolat"
     why_volunteer:
       header_html: "Pourquoi faire du bénévolat avec le <span class='text-primary'>CGEC</span>"
       floppy: "Acquérir une expérience précieuse en matière de technologie"
       users: "Rencontrer des personnes ayant des intérêts similaires"
-      comments: "Collaborer à de nouveaux projets intéressants"
-      cloud: "Get involved with the Maker network"
+      comments: "Collaborer sur de nouveaux projets intéressants"
+      cloud: "Impliquez-vous dans le réseau des Makers"
       gift: "Recevez de superbes récompenses!"
     volunteer_opportunities:
-      header: "Possibilités de bénévolat"
-      subheader: "Comment vous pouvez aider"
+      header: "Opportunités de bénévolat"
+      subheader: "Comment pouvez-vous aider"
       points:
         - <b>Accueillir les nouveaux arrivants</b> et faire visiter le Makerspace
         - Aider pendant <b>les ateliers</b>
-        - Aider lors <b>d'événements sur le campus</b> tels que la journée du design, les défis du Makerspace, la journée des clubs, la semaine de l'entrepreneuriat.
+        - Aider lors <b>d'événements sur le campus</b> tels que la journée de la conception, les défis du Makerspace, la journée des clubs, la semaine de l'entrepreneuriat.
         - Participer à <b>des événements hors campus</b> tels que des conférences et des festivals.
         - <b>Promouvoir</b> le Makerspace par le biais de présentations en classe et d'événements à l'UCU afin d'accroître nos efforts de sensibilisation.
         - Aider à <b>l'entretien</b> de l'équipement
         - <b>Fournir une formation</b> à ceux qui souhaitent en savoir plus sur la technologie du Makerspace.
         - <b>Créer et concevoir des projets</b> demandés par la communauté
     skills:
-      header: "Développez vos compétences dans le Makerspace ou Brunsfield en accomplissant des tâches générées par les gestionnaires de l'espace."
+      header: "Développez des compétences dans le Makerspace ou à Brunsfield en accomplissant des tâches générées par les responsables des espaces."
       steps:
         - header: Formation obligatoire
           points:
@@ -108,5 +142,5 @@ fr:
       link: "En savoir plus."
     how_volunteering:
       header: "Intéressé par le bénévolat?"
-      line_1: "Le processus de volontariat est flexible. Discutez avec nous des possibilités d'adaptation."
+      line_1: "Le processus de volontariat est flexible. Discutez avec nous des aménagements possibles."
       line_2: "Pour toute question, envoyez-nous un courriel à: "
