@@ -29,6 +29,9 @@ $ceed-maroon: #8f001a;
     &:hover {
       color: $primary;
     }
+    &.show {
+      color: white;
+    }
   }
 
   .avatar {

@@ -1,74 +1,77 @@
 <nav class="navbar navbar-expand-xl navbar-light navbar-staff">
-<div class="container-fluid">
-  <a class="navbar-brand" href="<%= admin_settings_path %>">Admin <strong>Area</strong></a>
-  <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent2" aria-controls="navbarSupportedContent2" aria-expanded="false" aria-label="Toggle navigation">
-    <span class="navbar-toggler-icon"></span>
-  </button>
-  <div class="collapse navbar-collapse" id="navbarSupportedContent2">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="<%= admin_settings_path %>">Admin <strong>Area</strong></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent2" aria-controls="navbarSupportedContent2" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent2">
 
       <ul class="navbar-nav mx-auto">
-        <li class="nav-item"><%= link_to 'General', admin_settings_path, class: 'nav-link' %></li>
-        <li class="nav-item"><%= link_to 'Announcements', admin_announcements_path, class: 'nav-link' %></li>
-        <li class="nav-item"><%= link_to 'Reports', admin_report_generator_index_path, class: 'nav-link' %></li>
-        <li class="nav-item"><%= link_to 'Booking Admin', sub_space_booking_index_path(anchor: 'booking-admin-tab'), class: 'nav-link' %></li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownGeneral" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <%= t('admin.general') %>
+          </a>
+          <div class="dropdown-menu" aria-labelledby="navbarDropdownGeneral">
+            <%= link_to t('admin.settings'), admin_settings_path, id: 'navbarDropdownGeneral', class: 'dropdown-item' %>
+            <%= link_to t('admin.uni_programs'), admin_uni_programs_index_path, class: 'dropdown-item' %>
+            <%= link_to t('admin.drop_off_locations'), admin_drop_off_locations_path, class: 'dropdown-item' %>
+          </div>
+        </li>
+        <li class="nav-item"><%= link_to t('admin.announcements'), admin_announcements_path, class: 'nav-link' %></li>
+        <li class="nav-item"><%= link_to t('admin.reports'), admin_report_generator_index_path, class: 'nav-link' %></li>
+        <li class="nav-item"><%= link_to t('admin.booking_admin'), sub_space_booking_index_path(anchor: 'booking-admin-tab'), class: 'nav-link' %></li>
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#", id="navbarDropdown1" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            Trainings
+            <%= t('admin.trainings') %>
           </a>
           <div class="dropdown-menu" aria-labelledby="navbarDropdown1">
-            <%= link_to 'Trainings', admin_trainings_path, class: 'dropdown-item' %>
-            <%= link_to 'Training Sessions', admin_training_sessions_path, class: 'dropdown-item' %>
+            <%= link_to t('admin.trainings'), admin_trainings_path, class: 'dropdown-item' %>
+            <%= link_to t('admin.training_sessions'), admin_training_sessions_path, class: 'dropdown-item' %>
             <div class="dropdown-divider"></div>
-            <%= link_to 'Skills', admin_skills_path, class: 'dropdown-item' %>
+            <%= link_to t('admin.skills'), admin_skills_path, class: 'dropdown-item' %>
             <div class="dropdown-divider"></div>
-            <%= link_to 'Questions', questions_path, class: 'dropdown-item' %>
+            <%= link_to t('admin.questions'), questions_path, class: 'dropdown-item' %>
           </div>
         </li>
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#", id="navbarDropdown4" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            Spaces
+            <%= t('admin.spaces') %>
           </a>
           <div class="dropdown-menu" aria-labelledby="navbarDropdown4">
-            <%= link_to 'Spaces', admin_spaces_path, class: 'dropdown-item' %>
-            <%= link_to 'Contact', admin_contact_infos_path, class: 'dropdown-item' %>
+            <%= link_to t('admin.spaces'), admin_spaces_path, class: 'dropdown-item' %>
+            <%= link_to t('admin.teams'), admin_teams_path, class: 'dropdown-item' %>
+            <%= link_to t('admin.contact'), admin_contact_infos_path, class: 'dropdown-item' %>
           </div>
         </li>
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown3" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            Staff Management
+            <%= t('admin.staff_management') %>
           </a>
           <div class="dropdown-menu" aria-labelledby="navbarDropdown3">
-            <%= link_to 'Roles', manage_roles_admin_users_path, class: 'dropdown-item' %>
-            <%= link_to 'Add New Staff', admin_add_new_staff_index_path, class: 'dropdown-item' %>
+            <%= link_to t('admin.roles'), manage_roles_admin_users_path, class: 'dropdown-item' %>
+            <%= link_to t('admin.add_new_staff'), admin_add_new_staff_index_path, class: 'dropdown-item' %>
             <div class="dropdown-divider"></div>
-            <%= link_to 'Unavailabilities', admin_shifts_path, class: 'dropdown-item' %>
-            <%= link_to 'Shifts', shifts_admin_shifts_path, class: 'dropdown-item' %>
+            <%= link_to t('admin.unavailabilities'), admin_shifts_path, class: 'dropdown-item' %>
+            <%= link_to t('admin.shifts'), shifts_admin_shifts_path, class: 'dropdown-item' %>
             <div class="dropdown-divider"></div>
-            <%= link_to 'Time Periods', admin_time_periods_path, class: 'dropdown-item' %>
+            <%= link_to t('admin.time_periods'), admin_time_periods_path, class: 'dropdown-item' %>
             <div class="dropdown-divider"></div>
-            <%= link_to 'Keys', admin_keys_path, class: 'dropdown-item' %>
-            <%= link_to 'Key Requests', requests_admin_keys_path, class: 'dropdown-item' %>
-            <%= link_to 'Key Transactions', admin_key_transactions_path, class: 'dropdown-item' %>
+            <%= link_to t('admin.keys'), admin_keys_path, class: 'dropdown-item' %>
+            <%= link_to t('admin.key_requests'), requests_admin_keys_path, class: 'dropdown-item' %>
+            <%= link_to t('admin.key_transactions'), admin_key_transactions_path, class: 'dropdown-item' %>
           </div>
         </li>
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            Badges
+            <%= t('admin.badges') %>
           </a>
           <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
-            <%= link_to 'Refresh Badges Data', admin_manage_badges_path, class: 'dropdown-item' %>
+            <%= link_to t('admin.refresh_badge_data'), admin_manage_badges_path, class: 'dropdown-item' %>
             <div class="dropdown-divider"></div>
-            <%= link_to 'Badges Template', admin_badge_templates_path, class: 'dropdown-item' %>
+            <%= link_to t('admin.badge_templates'), admin_badge_templates_path, class: 'dropdown-item' %>
           </div>
         </li>
-        <li class="nav-item"><%= link_to 'Drop-Off Locations', admin_drop_off_locations_path, class: 'nav-link' %></li>
-        <li class="nav-item"><%= link_to 'Teams', admin_teams_path, class: 'nav-link' %></li>
-        <li class="nav-item"><%= link_to 'University Programs', admin_uni_programs_index_path, class: 'nav-link' %></li>
       </ul>
-  </div>
+    </div>
   </div>
 </nav>
-
-
-
-
