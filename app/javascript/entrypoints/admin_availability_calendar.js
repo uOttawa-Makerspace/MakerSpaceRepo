@@ -104,6 +104,17 @@ recurringInput.addEventListener("change", function () {
 
 recurringInput.addEventListener("change", checkDate);
 
+// Disable time fields if block is whole day
+wholeDayCheckbox.addEventListener("change", function () {
+  if (this.checked) {
+    startTimeInput.setAttribute("disabled", "");
+    endTimeInput.setAttribute("disabled", "");
+  } else {
+    startTimeInput.removeAttribute("disabled");
+    endTimeInput.removeAttribute("disabled");
+  }
+});
+
 document.getElementById("start-time-clear").addEventListener("click", () => {
   startTimePicker.clear();
 });
@@ -373,10 +384,14 @@ const createCalendarEvent = () => {
       staff_availability: {
         day: dayInput.value,
         time_period_id: timePeriodIdInput.value,
-        start_time: startTimeInput.value,
+        // If whole day, put in 00:00
+        start_time: wholeDayCheckbox.checked ? "00:00" : startTimeInput.value,
         start_date: startDateInput.value,
-        end_time: endTimeInput.value,
-        end_date: endDateInput.value,
+        end_time: wholeDayCheckbox.checked ? "23:59" : endTimeInput.value,
+        // If checked, don't span multiple days - keep the start day only
+        end_date: wholeDayCheckbox.checked
+          ? startDateInput.value
+          : endDateInput.value,
         recurring: recurringInput.checked,
       },
       staff_id: userIdInput.value,
@@ -499,7 +514,7 @@ const openModal = (arg) => {
   modalTitle.innerText = "New Unavailability";
   modalDelete.style.display = "none";
   unavailabilityId.value = "";
-  wholeDayCheckbox.checked = false;  // Reset checkbox state
+  wholeDayCheckbox.checked = false; // Reset checkbox state
 
   // Set default visibility based on whether the event is recurring or whole day
   if (arg !== undefined && arg !== null) {
@@ -508,11 +523,13 @@ const openModal = (arg) => {
     endTimePicker.setDate(Date.parse(arg.endStr));
     endDatePicker.setDate(Date.parse(arg.endStr));
     dayInput.value = new Date(Date.parse(arg.startStr)).getDay();
-    wholeDayCheckbox.checked = (new Date(Date.parse(arg.endStr)).getHours() === 23 && new Date(Date.parse(arg.endStr)).getMinutes() === 59);
+    wholeDayCheckbox.checked =
+      new Date(Date.parse(arg.endStr)).getHours() === 23 &&
+      new Date(Date.parse(arg.endStr)).getMinutes() === 59;
   }
 
   // Apply the whole day settings if needed
-  wholeDayCheckbox.dispatchEvent(new Event('change'));
+  wholeDayCheckbox.dispatchEvent(new Event("change"));
 
   unavailabilityModal.show();
 };
@@ -522,7 +539,6 @@ const editModal = (arg) => {
   modalDelete.style.display = "block";
 
   if (arg !== undefined && arg !== null) {
-
     startTimePicker.setDate(Date.parse(arg.event.startStr));
     startDatePicker.setDate(Date.parse(arg.event.startStr));
     endTimePicker.setDate(Date.parse(arg.event.endStr));
@@ -545,40 +561,19 @@ const editModal = (arg) => {
 
     let eventStart = new Date(Date.parse(arg.event.startStr));
     let eventEnd = new Date(Date.parse(arg.event.endStr));
-    wholeDayCheckbox.checked = eventStart.getHours() === 0 && eventStart.getMinutes() === 0 &&
-                              eventEnd.getHours() === 23 && eventEnd.getMinutes() === 59;
+    wholeDayCheckbox.checked =
+      eventStart.getHours() === 0 &&
+      eventStart.getMinutes() === 0 &&
+      eventEnd.getHours() === 23 &&
+      eventEnd.getMinutes() === 59;
 
-    recurringInput.dispatchEvent(new Event('change'));
-    wholeDayCheckbox.dispatchEvent(new Event('change'));
+    recurringInput.dispatchEvent(new Event("change"));
+    wholeDayCheckbox.dispatchEvent(new Event("change"));
   }
 
   unavailabilityModal.show();
 };
 
-
 modalDelete.addEventListener("click", () => {
   removeEvent(parseInt(unavailabilityId.value), false);
-});
-
-
-
-wholeDayCheckbox.addEventListener("change", function() {
-  if (this.checked) {
-   
-    startTimeContainer.style.display = 'none';
-    endTimeContainer.style.display = 'none';
-    startTimeInput.value = "00:00";
-    endTimeInput.value = "23:59";
-
-
-  } else {
-  
-    startTimeContainer.style.display = 'block';
-    endTimeContainer.style.display = 'block';
-
-    
-    startTimeInput.value = "";
-    endTimeInput.value = "";
-
-  }
 });
