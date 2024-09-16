@@ -430,6 +430,9 @@ const refreshPendingShifts = () => {
 
 const populateUsers = (arg) => {
   return new Promise((resolve, reject) => {
+    // make sure to clear inputs
+    userIdInput.tomselect.clear();
+    userIdInput.tomselect.clearOptions();
     let startDate, endDate;
     if (arg.event) {
       startDate = arg.event.start;
@@ -469,11 +472,20 @@ const populateUsers = (arg) => {
         Accept: "application/json",
         "Content-Type": "application/json",
       },
-    }).then((res) => res.json());
-
-    resolve();
-  }).catch((err) => {
-    reject(err);
+    })
+      .then((res) => res.json())
+      .then((res) => {
+        res.forEach((user) => {
+          userIdInput.tomselect.addOption({
+            value: user.id,
+            text: `${user.name} ${user.acceptable ? "" : "(unavailable)"}`,
+          });
+        });
+        resolve();
+      })
+      .catch((err) => {
+        reject(err);
+      });
   });
 };
 
