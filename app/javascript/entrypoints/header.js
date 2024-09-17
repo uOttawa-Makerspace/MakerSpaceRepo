@@ -1,11 +1,11 @@
 import { Turbo } from "@hotwired/turbo-rails";
 /**
  *
- * This JS deals with the navbar
+ * This JS deals with the navbar and login modal
  * Reduce padding on scroll
  * Previously this dealt with dark mode, but the redesign does not include it
  * If needed, it must be implemented using bootstrap instead
- *
+ * Autofocus on the login modal
  */
 
 document.addEventListener("turbo:load", function () {
@@ -25,4 +25,10 @@ document.addEventListener("turbo:load", function () {
         .forEach((header) => header.classList.remove("header-small"));
     }
   });
+  const loginModal = document.getElementById("loginModal");
+  if (loginModal) {
+    loginModal.addEventListener("shown.bs.modal", () => {
+      loginModal.querySelector("#username_email").focus();
+    });
+  }
 });
