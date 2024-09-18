@@ -207,14 +207,25 @@ class Admin::UsersController < AdminAreaController
     end
   end
 
+  # FIXME This is used by makerapp, you just broke it
+  # Sets spaces too, because why not
+  # for user roles:
+  #   Takes an array of user ids
+  #   and a role to set for each
+  # for space management:
+  #   Takes a hash of { user_id: [space_id array]}
   def set_role
+    raise "huh"
     # Update user roles
-    @user = User.find(params[:id])
-    @user.role = params[:role]
-    @user.save
+    params["user_ids"].each do |user_id|
+      user = User.find(user_id)
+      user.role = params[:role]
+      user.save
+    end
 
     # Keep staff spaces attached, even if demoted
     #@user.staff_spaces.destroy_all if params[:role] == "regular_user"
+    #@roles = %w[admin staff regular_user]
     @admins = User.where(role: "admin").order("lower(name) ASC")
     @staff = User.where(role: "staff").order("lower(name) ASC")
     @volunteers =
@@ -222,7 +233,6 @@ class Admin::UsersController < AdminAreaController
         .joins(:programs)
         .where(programs: { program_type: Program::VOLUNTEER })
         .order("lower(name) ASC")
-    @roles = %w[admin staff regular_user]
 
     # Update user staff spaces
     if @user.present? && @user.staff?
@@ -243,33 +253,6 @@ class Admin::UsersController < AdminAreaController
       format.js { render layout: false }
       format.all { redirect_back(fallback_location: root_path) }
     end
-  end
-
-  def mass_update_roles
-    user_ids = params[:user_ids]
-    role = params[:role]
-
-    User
-      .where(id: user_ids)
-      .each do |user|
-        user.role = role
-        user.save
-
-        user.staff_spaces.destroy_all if role == "regular_user"
-
-        if user.staff?
-          space_list = params[:space].present? ? params[:space] : []
-
-          space_list.each do |space|
-            StaffSpace.find_or_create_by(space_id: space, user: user)
-          end
-
-          user.staff_spaces.where.not(space_id: space_list).destroy_all
-        end
-      end
-
-    flash[:notice] = "Selected user IDs: #{user_ids}"
-    redirect_to manage_roles_admin_users_path
   end
 
   def manage_roles
@@ -294,41 +277,6 @@ class Admin::UsersController < AdminAreaController
     @staff.each do |staff|
       @staff_spaces[staff.id] = staff.staff_spaces.pluck(:space_id)
     end
-  end
-
-  def fetch_spaces
-    user = User.find_by(id: params[:id])
-    if user
-      all_spaces = Space.select(:id, :name)
-      user_space_ids = user.spaces.pluck(:id).to_set
-
-      spaces =
-        all_spaces.map do |space|
-          {
-            id: space.id,
-            name: space.name,
-            is_assigned: user_space_ids.include?(space.id)
-          }
-        end
-
-      render json: spaces
-    else
-      render json: { error: "User not found" }, status: :not_found
-    end
-  rescue StandardError => e
-    render json: { error: e.message }, status: :internal_server_error
-  end
-
-  def update_spaces
-    user = User.find_by(id: params[:id])
-    if user
-      user.space_ids = params[:space_ids]
-      render json: { message: "Spaces updated successfully" }
-    else
-      render json: { error: "User not found" }, status: :not_found
-    end
-  rescue StandardError => e
-    render json: { error: e.message }, status: :internal_server_error
   end
 
   private

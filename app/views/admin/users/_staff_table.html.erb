@@ -68,7 +68,7 @@
 <% end %>
 <tr>
   <td colspan="6">
-    <%= form_tag mass_update_roles_admin_users_path, method: :patch, remote: true, id: 'mass-update-form-staff' do %>
+    <%= form_tag set_role_admin_users_path, method: :patch, remote: true, id: 'role-update-form-staff' do %>
       <%= hidden_field_tag :user_ids, '', id: 'user_ids_field_staff' %> <!-- Hidden field to store selected user IDs -->
       <%= select_tag(:role, options_for_select(@roles), class: 'form-control form-select d-inline w-auto') %>
       <%= submit_tag 'Change', id: 'change-button-staff', class: 'btn btn-primary btn-sm form-control d-inline w-auto' %>
