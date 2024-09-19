@@ -41,61 +41,13 @@ class SubSpaceBookingController < ApplicationController
     @bookings =
       SubSpaceBooking.where(user_id: current_user.id).order(start_time: :desc)
     if current_user.admin?
-      space_booking_includes = {
-        sub_space_booking: %i[approved_by user sub_space]
-      }
       # Need to get the booking status from the sub space booking status table for the booking
-      @pending_bookings =
-        SubSpaceBookingStatus
-          .includes(space_booking_includes)
-          .where(booking_status_id: BookingStatus::PENDING.id)
-          .map { |booking_status| booking_status.sub_space_booking }
-          .select { |booking| booking.end_time > Time.now }
-          .sort_by { |booking| booking.start_time }
-          .paginate(page: params[:pending_page], per_page: 15)
-      @approved_bookings =
-        SubSpaceBookingStatus
-          .includes(space_booking_includes)
-          .where(booking_status_id: BookingStatus::APPROVED.id)
-          .map { |booking_status| booking_status.sub_space_booking }
-          .select { |booking| booking.end_time > Time.now }
-          .sort_by { |booking| booking.start_time }
-          .paginate(page: params[:approved_page], per_page: 15)
-      @declined_bookings =
-        SubSpaceBookingStatus
-          .includes(space_booking_includes)
-          .where(booking_status_id: BookingStatus::DECLINED.id)
-          .map { |booking_status| booking_status.sub_space_booking }
-          .select { |booking| booking.end_time > Time.now }
-          .sort_by { |booking| booking.start_time }
-          .paginate(page: params[:denied_page], per_page: 15)
-      @old_pending_bookings =
-        SubSpaceBookingStatus
-          .includes(space_booking_includes)
-          .where(booking_status_id: BookingStatus::PENDING.id)
-          .map { |booking_status| booking_status.sub_space_booking }
-          .select { |booking| booking.end_time < Time.now }
-          .sort_by { |booking| booking.start_time }
-          .reverse
-          .paginate(page: params[:old_pending_page], per_page: 15)
-      @old_approved_bookings =
-        SubSpaceBookingStatus
-          .includes(space_booking_includes)
-          .where(booking_status_id: BookingStatus::APPROVED.id)
-          .map { |booking_status| booking_status.sub_space_booking }
-          .select { |booking| booking.end_time < Time.now }
-          .sort_by { |booking| booking.start_time }
-          .reverse
-          .paginate(page: params[:old_approved_page], per_page: 15)
-      @old_declined_bookings =
-        SubSpaceBookingStatus
-          .includes(space_booking_includes)
-          .where(booking_status_id: BookingStatus::DECLINED.id)
-          .map { |booking_status| booking_status.sub_space_booking }
-          .select { |booking| booking.end_time < Time.now }
-          .sort_by { |booking| booking.start_time }
-          .reverse
-          .paginate(page: params[:old_denied_page], per_page: 15)
+      @pending_bookings = current_bookings(BookingStatus::PENDING.id)
+      @approved_bookings = current_bookings(BookingStatus::APPROVED.id)
+      @declined_bookings = current_bookings(BookingStatus::DECLINED.id)
+      @old_pending_bookings = old_bookings(BookingStatus::PENDING.id)
+      @old_approved_bookings = old_bookings(BookingStatus::APPROVED.id)
+      @old_declined_bookings = old_bookings(BookingStatus::DECLINED.id)
     end
 
     @supervisors = []
@@ -695,6 +647,29 @@ class SubSpaceBookingController < ApplicationController
   end
 
   private
+
+  def current_bookings(booking_status_id)
+    SubSpaceBookingStatus
+      .includes(sub_space_booking: %i[approved_by user sub_space])
+      .where(booking_status_id: booking_status_id)
+      .order("sub_space_bookings.start_time": :asc)
+      .map { |booking_status| booking_status.sub_space_booking }
+      .select { |booking| booking.end_time > Time.now }
+      #.sort_by { |booking| booking.start_time }
+      .paginate(page: params[:pending_page], per_page: 15)
+  end
+
+  def old_bookings(booking_status_id)
+    SubSpaceBookingStatus
+      .includes(sub_space_booking: %i[approved_by user sub_space])
+      .where(booking_status_id: booking_status_id)
+      .order("sub_space_bookings.start_time": :asc)
+      .map { |booking_status| booking_status.sub_space_booking }
+      .select { |booking| booking.end_time < Time.now }
+      #.sort_by { |booking| booking.start_time }
+      .reverse
+      .paginate(page: params[:old_approved_page], per_page: 15)
+  end
 
   def user_account
     unless !current_user.nil?
