@@ -29,9 +29,11 @@ en:
         program_3:
           header: "Makerlaunch"
           overview: "Get involved in the maker network and collaborate on cool projects!"
+          link: "https://www.uottawa.ca/about-us/makerlaunch-boosting-engineering-entrepreneurs"
         program_4:
-          header: "Simon nehme Summer entrepreneurship school"
+          header: "Simon Nehme Summer Entrepreneurship School"
           overview: "Build on your ideas through workshops, panel discussion, and mentorship."
+          link: "https://www.uottawa.ca/faculty-engineering/centre-entrepreneurship-engineering-design/simon-nehme-summer-entrepreneurship-school"
     next:
       title_html: "What’s next? <br /> Learn, build, now <span class='text-primary'>launch</span>."
       overview: "So you’ve brought your ideas to life, can you do more? Launch your projects and share your ideas with the industry."
@@ -75,9 +77,11 @@ fr:
         program_3:
           header: "Makerlaunch"
           overview: "Participez au réseau des créateurs et collaborez à des projets intéressants!"
+          link: "https://www.uottawa.ca/notre-universite/makerlaunch-au-service-de-lentrepreneuriat-en-genie"
         program_4:
           header: "École d’été en entrepreneuriat Simon-Nehme"
           overview: "Développez vos idées par le biais d'ateliers, de tables rondes et de mentorat."
+          link: "https://www.uottawa.ca/faculte-genie/centre-genie-entrepreneurial-conception/ecole-ete-entrepreneuriat-simon-nehme"
     next:
       title_html: "Quelle est la prochaine étape? <br /> Apprenez, construisez, puis <span class='text-primary'>réalisez</span>."
       overview: "Vous avez donné vie à vos idées, mais pouvez-vous faire plus ? Déployez vos projets et partagez vos idées avec l'industrie."
