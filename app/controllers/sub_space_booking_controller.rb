@@ -39,7 +39,7 @@ class SubSpaceBookingController < ApplicationController
       end
     end
     @bookings =
-      SubSpaceBooking.where(user_id: current_user.id).order(:start_time)
+      SubSpaceBooking.where(user_id: current_user.id).order(start_time: :desc)
     if current_user.admin?
       space_booking_includes = {
         sub_space_booking: %i[approved_by user sub_space]
