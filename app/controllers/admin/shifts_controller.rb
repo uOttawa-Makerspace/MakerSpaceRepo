@@ -94,6 +94,8 @@ class Admin::ShiftsController < AdminAreaController
   end
 
   def create
+    # calendar events are emailed and synced with google calendar
+    # on model save, see models/shifts.rb
     if params[:shift].present? && params[:user_id].present?
       @shift = Shift.new(shift_params.merge(space_id: @space_id))
       params[:user_id].each { |user_id| @shift.users << User.find(user_id) }
