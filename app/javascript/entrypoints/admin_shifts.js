@@ -332,10 +332,12 @@ document.addEventListener("turbo:load", () => {
         },
         eventClick: (arg) => {
           if (isSelectingShifts) {
+            // Find the target shift in the selected list
             const shiftIndex = selectedShifts.findIndex(
               (shift) => shift.id === arg.event.id
             );
 
+            // If found, remove from list
             if (shiftIndex > -1) {
               selectedShifts.splice(shiftIndex, 1);
               arg.el.classList.remove("selected-shift");
@@ -344,6 +346,12 @@ document.addEventListener("turbo:load", () => {
               selectedShifts.push({ id: arg.event.id, element: arg.el });
               arg.el.classList.add("selected-shift");
             }
+            document.querySelector(
+              ".fc-deleteMultipleShifts-button"
+            ).textContent =
+              selectedShifts.length > 0
+                ? "Delete selected Shifts"
+                : "Cancel selecting Shifts";
           } else if (arg.event.source.id === "shifts") {
             editShift(arg);
           } else if (arg.event.source.id === "staffNeeded") {
@@ -624,49 +632,38 @@ const selectDeleteMultipleShifts = () => {
     ".fc-deleteMultipleShifts-button"
   );
 
-  if (deleteButton) {
-    if (isSelectingShifts) {
-      deleteButton.textContent = "Delete selected shifts";
-    } else {
-      deleteButton.textContent = "Select multiple shifts";
+  if (isSelectingShifts) {
+    deleteButton.textContent = "Cancel selecting shifts";
+  } else {
+    deleteButton.textContent = "Select multiple shifts";
 
-      if (selectedShifts.length > 0) {
-        if (confirm("Are you sure you want to delete the selected shifts?")) {
-          selectedShifts.forEach((shift) => {
-            calendar.getEventById(shift.id).remove();
-            fetch(`/admin/shifts/${shift.id}`, {
-              method: "DELETE",
-              headers: {
-                Accept: "application/json",
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ format: "json" }),
+    if (selectedShifts.length > 0) {
+      if (confirm("Are you sure you want to delete the selected shifts?")) {
+        selectedShifts.forEach((shift) => {
+          calendar.getEventById(shift.id).remove();
+          fetch(`/admin/shifts/${shift.id}`, {
+            method: "DELETE",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ format: "json" }),
+          })
+            .then((response) => {
+              if (response.ok) {
+                console.log(`Shift with ID ${shift.id} deleted successfully.`);
+              } else {
+                console.error(`Failed to delete shift with ID ${shift.id}.`);
+              }
             })
-              .then((response) => {
-                if (response.ok) {
-                  console.log(
-                    `Shift with ID ${shift.id} deleted successfully.`
-                  );
-                } else {
-                  console.error(`Failed to delete shift with ID ${shift.id}.`);
-                }
-              })
-              .catch((error) => {
-                console.error(
-                  "An error occurred while deleting shifts:",
-                  error
-                );
-              });
-          });
+            .catch((error) => {
+              console.error("An error occurred while deleting shifts:", error);
+            });
+        });
 
-          selectedShifts = [];
-        }
+        selectedShifts = [];
       }
     }
-  } else {
-    console.error(
-      "Button with class 'fc-deleteMultipleShifts-button' not found."
-    );
   }
 };
 
