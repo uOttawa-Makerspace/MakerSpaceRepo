@@ -59,6 +59,7 @@ class Admin::ShiftsController < AdminAreaController
   end
 
   def pending_shifts
+    @pending_shifts = Shift.where(space_id: @user.space_id, pending: true)
     render partial: "admin/shifts/pending_shifts"
   end
 

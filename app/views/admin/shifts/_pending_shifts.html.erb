@@ -1,9 +1,53 @@
-<% if Shift.where(space_id: @user.space_id, pending: true).count > 0 %>
-  <div class="alert alert-warning text-center">
-    <p class="mb-2">There are currently pending shifts for this space. Do you want to confirm them?</p>
-    <div class="d-flex justify-content-center gap-2">
-      <%= button_tag "Confirm Shifts", type: "button", id: "confirmShiftsButton", class: "btn btn-primary", data: { toggle: "modal" } %>
-      <%= button_to "Clear Pending Shifts", clear_pending_shifts_admin_shifts_path, class: "btn btn-danger", method: :post, data: {confirm: "Are you sure you want to clear pending shifts?"} %>
+<div class="alert alert-warning text-center" <%= 'hidden' unless Shift.where(space_id: @user.space_id, pending: true).count > 0 %>>
+  <p class="mb-2">There are currently pending shifts for this space. Do you want to confirm them?</p>
+  <div class="d-flex justify-content-center gap-2">
+    <%= button_tag 'Confirm Shifts', type: 'button', id: 'confirmShiftsButton', class: 'btn btn-primary', 'data-bs-toggle': 'modal', 'data-bs-target': '#pendingShiftsModal' %>
+    <%= button_to 'Clear Pending Shifts', clear_pending_shifts_admin_shifts_path, class: 'btn btn-danger', method: :post, data: { confirm: 'Are you sure you want to clear pending shifts?' } %>
+  </div>
+</div>
+
+<!-- Modal for Pending Shifts -->
+<div class="modal fade" id="pendingShiftsModal" tabindex="-1" aria-labelledby="pendingShiftsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title" id="pendingShiftsModalLabel">Pending Shifts</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <!-- Start of form -->
+      <%= form_tag(confirm_shifts_admin_shifts_path, method: :post) do %>
+        <div class="modal-body">
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="selectAllShifts">
+            <label class="form-check-label" for="selectAllShifts">Select All</label>
+          </div>
+          <ul id="pendingShiftsList" class="list-group">
+            <% @pending_shifts.each do |shift| %>
+              <li class="list-group-item">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <h6 class="mb-1"><%= shift.reason %></h6> <!-- Display the reason for the shift prominently -->
+                    <p class="mb-1">
+                      <strong>From:</strong> <%= shift.start_datetime.strftime('%d/%m/%Y %I:%M %p') %><br>
+                      <strong>To:</strong> <%= shift.end_datetime.strftime('%d/%m/%Y %I:%M %p') %>
+                    </p>
+                    <p class="mb-0"><strong>Participants:</strong> <%= shift.users.map(&:name).join(', ') %></p> <!-- Assuming users have a name attribute -->
+                  </div>
+                  <div class="form-check">
+                    <%= check_box_tag 'shift_ids[]', shift.id, false, id: "shift_#{shift.id}", class: 'form-check-input' %>
+                    <%= label_tag "shift_#{shift.id}", 'Select', class: 'form-check-label' %>
+                  </div>
+                </div>
+              </li>
+            <% end %>
+          </ul>
+        </div>
+        <div class="modal-footer">
+          <%= submit_tag 'Confirm Selected Shifts', class: 'btn btn-primary' %>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      <% end %>
+      <!-- End of form -->
     </div>
   </div>
-<% end %>
+</div>

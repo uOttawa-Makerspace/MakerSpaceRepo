@@ -689,27 +689,14 @@ const openModal = (arg) => {
   });
 };
 
-document.addEventListener("DOMContentLoaded", function () {
-  const selectAllCheckbox = document.getElementById("selectAllShifts");
-  const shiftCheckboxes = document.querySelectorAll(
-    'input[type="checkbox"][id^="shift_"]'
-  );
-
-  selectAllCheckbox.addEventListener("change", function () {
-    shiftCheckboxes.forEach((checkbox) => {
-      checkbox.checked = this.checked;
-    });
-  });
-});
-
-function openPendingModal() {
-  pendingShiftsModal.show();
-}
-
-document.addEventListener("DOMContentLoaded", function () {
-  const confirmShiftsButton = document.getElementById("confirmShiftsButton");
-  confirmShiftsButton.addEventListener("click", function () {
-    openPendingModal();
+// The 'Select All' modal checkbox when confirming shifts
+const selectAllCheckbox = document.getElementById("selectAllShifts");
+const shiftCheckboxes = document.querySelectorAll(
+  'input[type="checkbox"][id^="shift_"]'
+);
+selectAllCheckbox.addEventListener("change", function () {
+  shiftCheckboxes.forEach((checkbox) => {
+    checkbox.checked = this.checked;
   });
 });
 
@@ -841,27 +828,6 @@ const updateHours = () => {
       console.log("An error occurred: " + error.message);
     });
 };
-
-document.addEventListener("DOMContentLoaded", function () {
-  const selectAllCheckbox = document.getElementById("selectAllShifts");
-  const shiftCheckboxes = document.querySelectorAll(
-    'input[type="checkbox"][id^="shift_"]'
-  );
-
-  selectAllCheckbox.addEventListener("change", function () {
-    shiftCheckboxes.forEach((checkbox) => {
-      checkbox.checked = this.checked;
-    });
-  });
-
-  document
-    .getElementById("confirmSelectedShiftsButton")
-    .addEventListener("click", () => {
-      const selectedShiftIds = Array.from(shiftCheckboxes)
-        .filter((chk) => chk.checked)
-        .map((chk) => chk.value);
-    });
-});
 
 const staffNeededEvent = (arg) => {
   openModal(arg);
