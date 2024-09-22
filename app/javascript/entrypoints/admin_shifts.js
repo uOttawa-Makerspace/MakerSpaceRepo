@@ -183,6 +183,8 @@ new TomSelect("#user-id", {
   placeholder: "Select users",
   search: true,
   plugins: ["remove_button"],
+  // Takes the name of a field to sort.
+  sortField: [{ field: "text", direction: "asc" }],
 });
 
 let events = 0;
@@ -332,10 +334,12 @@ document.addEventListener("turbo:load", () => {
         },
         eventClick: (arg) => {
           if (isSelectingShifts) {
+            // Find the target shift in the selected list
             const shiftIndex = selectedShifts.findIndex(
               (shift) => shift.id === arg.event.id
             );
 
+            // If found, remove from list
             if (shiftIndex > -1) {
               selectedShifts.splice(shiftIndex, 1);
               arg.el.classList.remove("selected-shift");
@@ -344,6 +348,12 @@ document.addEventListener("turbo:load", () => {
               selectedShifts.push({ id: arg.event.id, element: arg.el });
               arg.el.classList.add("selected-shift");
             }
+            document.querySelector(
+              ".fc-deleteMultipleShifts-button"
+            ).textContent =
+              selectedShifts.length > 0
+                ? "Delete selected Shifts"
+                : "Cancel selecting Shifts";
           } else if (arg.event.source.id === "shifts") {
             editShift(arg);
           } else if (arg.event.source.id === "staffNeeded") {
@@ -430,6 +440,9 @@ const refreshPendingShifts = () => {
 
 const populateUsers = (arg) => {
   return new Promise((resolve, reject) => {
+    // make sure to clear inputs
+    userIdInput.tomselect.clear();
+    userIdInput.tomselect.clearOptions();
     let startDate, endDate;
     if (arg.event) {
       startDate = arg.event.start;
@@ -469,11 +482,20 @@ const populateUsers = (arg) => {
         Accept: "application/json",
         "Content-Type": "application/json",
       },
-    }).then((res) => res.json());
-
-    resolve();
-  }).catch((err) => {
-    reject(err);
+    })
+      .then((res) => res.json())
+      .then((res) => {
+        res.forEach((user) => {
+          userIdInput.tomselect.addOption({
+            value: user.id,
+            text: `${user.name} ${user.acceptable ? "" : "(unavailable)"}`,
+          });
+        });
+        resolve();
+      })
+      .catch((err) => {
+        reject(err);
+      });
   });
 };
 
@@ -612,49 +634,38 @@ const selectDeleteMultipleShifts = () => {
     ".fc-deleteMultipleShifts-button"
   );
 
-  if (deleteButton) {
-    if (isSelectingShifts) {
-      deleteButton.textContent = "Delete selected shifts";
-    } else {
-      deleteButton.textContent = "Select multiple shifts";
+  if (isSelectingShifts) {
+    deleteButton.textContent = "Cancel selecting shifts";
+  } else {
+    deleteButton.textContent = "Select multiple shifts";
 
-      if (selectedShifts.length > 0) {
-        if (confirm("Are you sure you want to delete the selected shifts?")) {
-          selectedShifts.forEach((shift) => {
-            calendar.getEventById(shift.id).remove();
-            fetch(`/admin/shifts/${shift.id}`, {
-              method: "DELETE",
-              headers: {
-                Accept: "application/json",
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ format: "json" }),
+    if (selectedShifts.length > 0) {
+      if (confirm("Are you sure you want to delete the selected shifts?")) {
+        selectedShifts.forEach((shift) => {
+          calendar.getEventById(shift.id).remove();
+          fetch(`/admin/shifts/${shift.id}`, {
+            method: "DELETE",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ format: "json" }),
+          })
+            .then((response) => {
+              if (response.ok) {
+                console.log(`Shift with ID ${shift.id} deleted successfully.`);
+              } else {
+                console.error(`Failed to delete shift with ID ${shift.id}.`);
+              }
             })
-              .then((response) => {
-                if (response.ok) {
-                  console.log(
-                    `Shift with ID ${shift.id} deleted successfully.`
-                  );
-                } else {
-                  console.error(`Failed to delete shift with ID ${shift.id}.`);
-                }
-              })
-              .catch((error) => {
-                console.error(
-                  "An error occurred while deleting shifts:",
-                  error
-                );
-              });
-          });
+            .catch((error) => {
+              console.error("An error occurred while deleting shifts:", error);
+            });
+        });
 
-          selectedShifts = [];
-        }
+        selectedShifts = [];
       }
     }
-  } else {
-    console.error(
-      "Button with class 'fc-deleteMultipleShifts-button' not found."
-    );
   }
 };
 
@@ -677,27 +688,14 @@ const openModal = (arg) => {
   });
 };
 
-document.addEventListener("DOMContentLoaded", function () {
-  const selectAllCheckbox = document.getElementById("selectAllShifts");
-  const shiftCheckboxes = document.querySelectorAll(
-    'input[type="checkbox"][id^="shift_"]'
-  );
-
-  selectAllCheckbox.addEventListener("change", function () {
-    shiftCheckboxes.forEach((checkbox) => {
-      checkbox.checked = this.checked;
-    });
-  });
-});
-
-function openPendingModal() {
-  pendingShiftsModal.show();
-}
-
-document.addEventListener("DOMContentLoaded", function () {
-  const confirmShiftsButton = document.getElementById("confirmShiftsButton");
-  confirmShiftsButton.addEventListener("click", function () {
-    openPendingModal();
+// The 'Select All' modal checkbox when confirming shifts
+const selectAllCheckbox = document.getElementById("selectAllShifts");
+const shiftCheckboxes = document.querySelectorAll(
+  'input[type="checkbox"][id^="shift_"]'
+);
+selectAllCheckbox.addEventListener("change", function () {
+  shiftCheckboxes.forEach((checkbox) => {
+    checkbox.checked = this.checked;
   });
 });
 
@@ -829,27 +827,6 @@ const updateHours = () => {
       console.log("An error occurred: " + error.message);
     });
 };
-
-document.addEventListener("DOMContentLoaded", function () {
-  const selectAllCheckbox = document.getElementById("selectAllShifts");
-  const shiftCheckboxes = document.querySelectorAll(
-    'input[type="checkbox"][id^="shift_"]'
-  );
-
-  selectAllCheckbox.addEventListener("change", function () {
-    shiftCheckboxes.forEach((checkbox) => {
-      checkbox.checked = this.checked;
-    });
-  });
-
-  document
-    .getElementById("confirmSelectedShiftsButton")
-    .addEventListener("click", () => {
-      const selectedShiftIds = Array.from(shiftCheckboxes)
-        .filter((chk) => chk.checked)
-        .map((chk) => chk.value);
-    });
-});
 
 const staffNeededEvent = (arg) => {
   openModal(arg);

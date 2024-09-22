@@ -263,12 +263,12 @@ Rails.application.routes.draw do
         patch "restore_user"
         put "toggle_lock_user"
         get "manage_roles"
-        patch "mass_update_roles", to: "users#mass_update_roles"
+        #   patch "mass_update_roles", to: "users#mass_update_roles"
       end
-      member do
-        get "fetch_spaces"
-        patch "update_spaces"
-      end
+      # member do
+      #   get "fetch_spaces"
+      #   patch "update_spaces"
+      # end
     end
 
     resources :spaces, only: %i[index create edit] do

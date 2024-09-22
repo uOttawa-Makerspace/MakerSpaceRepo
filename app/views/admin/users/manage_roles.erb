@@ -1,4 +1,4 @@
-<% provide(:title, "Manage Roles") %>
+<% provide(:title, 'Manage Roles') %>
 
 <section>
   <div class="text-center">
@@ -7,27 +7,27 @@
   </div>
   <br>
   <div>
-  <h3>Admins on Makerepo</h3>
-  <table class="table table-striped" id="admin_table">
-    <%= render partial:"admin_table", locals:{admins: @admins}%>
-  </table>
+    <h3>Admins on Makerepo</h3>
+    <table class="table table-striped" id="admin_table">
+      <%= render partial: 'admin_table', locals: { admins: @admins } %>
+    </table>
     <br /><br />
 
-  <h3>Staff on Makerepo</h3>
-  <table class="table table-striped" id="staff_table">
-    <%= render partial:"staff_table", locals:{staff: @staff}%>
-  </table>
+    <h3>Staff on Makerepo</h3>
+    <table class="table table-striped" id="staff_table">
+      <%= render partial: 'staff_table', locals: { staff: @staff } %>
+    </table>
     <br /><br />
 
     <table class="table table-striped">
       <h3>Volunteers on Makerepo</h3>
       <thead class="table-primary">
-      <tr class="text-center">
-        <th class="name-header">Username</th>
-        <th class="name-header">Name</th>
-        <th class="email-header">Email</th>
-      </tr>
-</thead>
+        <tr class="text-center">
+          <th class="name-header">Username</th>
+          <th class="name-header">Name</th>
+          <th class="email-header">Email</th>
+        </tr>
+      </thead>
       <% @volunteers.each do |volunteer| %>
         <tr>
           <td class="username-cell"><%= link_to volunteer.username, user_url(volunteer.username) %></td>
