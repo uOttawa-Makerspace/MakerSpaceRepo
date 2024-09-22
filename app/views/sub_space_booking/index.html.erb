@@ -83,6 +83,7 @@
                     </div>
                   </div>
                   <div class="modal-footer">
+                    <button type="button" id="bookDelete" class="btn btn-danger me-auto">Delete</button>
                     <button type="button" id="bookCancel" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                     <button type="button" id="bookSave" class="btn btn-primary">Book</button>
                     <button type="button" id="bookUpdate" class="btn btn-primary">Update</button>
@@ -116,8 +117,8 @@
                   <td><%= booking.sub_space.name %></td>
                   <td><%= booking.name %></td>
                   <td><%= booking.description %></td>
-                  <td><%= booking.start_time.to_formatted_s(:short) %></td>
-                  <td><%= booking.end_time.to_formatted_s(:short) %></td>
+                  <td><%= booking.start_time.to_formatted_s(:long) %></td>
+                  <td><%= booking.end_time.to_formatted_s(:long) %></td>
                   <td><%= booking.sub_space_booking_status.booking_status_id == BookingStatus::APPROVED.id ? 'Approved' : 'Not Approved' %></td>
                   <td class="input-group">
                     <%= button_to 'Edit', sub_space_booking_edit_path(booking.id), method: :get, class: 'btn btn-secondary', form_style: 'border: none;background: none;', form_class: '' if @user.admin? || booking.sub_space_booking_status.booking_status_id != BookingStatus::APPROVED.id %>

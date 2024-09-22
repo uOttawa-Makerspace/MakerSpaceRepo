@@ -40,7 +40,7 @@
                       <td><%= booking.description %></td>
                       <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
                       <td><%= booking.user.email %></td>
-                      <td><%= booking.start_time.to_formatted_s(:short) %> to <%= booking.end_time.to_fs(:time) %></td>
+                      <td><%= booking.start_time.to_formatted_s(:long) %> to <%= booking.end_time.to_fs(:time) %></td>
                       <td>
                         <div class="btn-group" role="group">
                           <%= button_to 'Approve', sub_space_booking_approve_path(booking), method: :put, class: 'btn btn-success' %>
@@ -90,10 +90,10 @@
                       <td><%= booking.description %></td>
                       <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
                       <td><%= booking.user.email %></td>
-                      <td><%= booking.start_time.to_formatted_s(:short) %> to <%= booking.end_time.to_fs(:time) %></td>
+                      <td><%= booking.start_time.to_formatted_s(:long) %> to <%= booking.end_time.to_fs(:time) %></td>
                       <td><%= booking.public ? 'Public' : 'Private' %></td>
                       <td><%= booking.approved_by.nil? ? 'N/A' : link_to(booking.approved_by.name, user_path(booking.approved_by.username)) %></td>
-                      <td><%= booking.approved_at.nil? ? 'N/A' : booking.approved_at.to_formatted_s(:short) %></td>
+                      <td><%= booking.approved_at.nil? ? 'N/A' : booking.approved_at.to_formatted_s(:long) %></td>
                       <td>
                         <div class="btn-group" role="group">
                           <%= button_to booking.public ? 'Make Private' : 'Make Public', sub_space_booking_publish_path(booking), method: :put, class: "btn text-nowrap#{booking.public ? ' btn-secondary' : ' btn-primary'}" %>
@@ -140,7 +140,7 @@
                       <td><%= booking.description %></td>
                       <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
                       <td><%= booking.user.email %></td>
-                      <td><%= booking.start_time.to_formatted_s(:short) %> to <%= booking.end_time.to_fs(:time) %></td>
+                      <td><%= booking.start_time.to_formatted_s(:long) %> to <%= booking.end_time.to_fs(:time) %></td>
                       <td>
                         <div class="btn-group" role="group">
                           <%= button_to 'Approve', sub_space_booking_approve_path(booking), method: :put, class: 'btn btn-success' %>
@@ -191,11 +191,11 @@
                   <tbody>
                   <% UserBookingApproval.includes(:user).where(approved: false).each_with_index do |user_booking_approval, index| %>
                     <tr>
-                      <td><%= check_box_tag 'user_booking_approval_ids[]', user_booking_approval.id, false, id: "user_booking_approval_ids_#{index}", style: "transform: scale(1.5); margin: 10px;" %></td>
+                      <td><%= check_box_tag 'user_booking_approval_ids[]', user_booking_approval.id, false, id: "user_booking_approval_ids_#{index}", style: 'transform: scale(1.5); margin: 10px;' %></td>
                       <td><%= user_booking_approval.user.name %></td>
                       <td><%= user_booking_approval.user.email %></td>
                       <td><%= user_booking_approval.comments %></td>
-                      <td><%= user_booking_approval.created_at.to_formatted_s(:short) %></td>
+                      <td><%= user_booking_approval.created_at.to_formatted_s(:long) %></td>
                       <td>
                         <div class="btn-group" role="group">
                           <%= button_to 'Approve', approve_access_sub_space_booking_index_path(id: user_booking_approval), method: :put, class: 'btn btn-success' %>
@@ -239,7 +239,7 @@
                     <td><%= user_booking_approval.user.name %></td>
                     <td><%= user_booking_approval.user.email %></td>
                     <td><%= user_booking_approval.comments %></td>
-                    <td><%= user_booking_approval.created_at.to_formatted_s(:short) %></td>
+                    <td><%= user_booking_approval.created_at.to_formatted_s(:long) %></td>
                     <td><%= user_booking_approval.staff.name %></td>
                     <td>
                       <div class="btn-group" role="group">
@@ -293,7 +293,7 @@
                       <td><%= booking.description %></td>
                       <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
                       <td><%= booking.user.email %></td>
-                      <td><%= booking.start_time.to_formatted_s(:short) %> to <%= booking.end_time.to_fs(:time) %></td>
+                      <td><%= booking.start_time.to_formatted_s(:long) %> to <%= booking.end_time.to_fs(:time) %></td>
                     </tr>
                   <% end %>
                   </table>
@@ -335,9 +335,9 @@
                       <td><%= booking.description %></td>
                       <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
                       <td><%= booking.user.email %></td>
-                      <td><%= booking.start_time.to_formatted_s(:short) %> to <%= booking.end_time.to_fs(:time) %></td>
+                      <td><%= booking.start_time.to_formatted_s(:long) %> to <%= booking.end_time.to_fs(:time) %></td>
                       <td><%= booking.approved_by.nil? ? 'N/A' : link_to(booking.approved_by.name, user_path(booking.approved_by.username)) %></td>
-                      <td><%= booking.approved_at.nil? ? 'N/A' : booking.approved_at.to_formatted_s(:short) %></td>
+                      <td><%= booking.approved_at.nil? ? 'N/A' : booking.approved_at.to_formatted_s(:long) %></td>
                     </tr>
                   <% end %>
                   </table>
@@ -377,7 +377,7 @@
                       <td><%= booking.description %></td>
                       <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
                       <td><%= booking.user.email %></td>
-                      <td><%= booking.start_time.to_formatted_s(:short) %> to <%= booking.end_time.to_fs(:time) %></td>
+                      <td><%= booking.start_time.to_formatted_s(:long) %> to <%= booking.end_time.to_fs(:time) %></td>
                     </tr>
                   <% end %>
                   </table>
