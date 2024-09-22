@@ -38,8 +38,8 @@
           </div>
         </div>
         <%= render 'static_pages/home_shortcuts' %>
-        <%= render 'static_pages/home_volunteer' if signed_in? %>
-        <%= render 'static_pages/home_development' if signed_in? %>
+        <%= render 'static_pages/home_volunteer' if signed_in? && current_user.volunteer? %>
+        <%= render 'static_pages/home_development' if signed_in? && current_user.dev_program? %>
       </div>
       <!--Middle column -->
       <div class="col-xl-6 order-xl-1 order-0">
