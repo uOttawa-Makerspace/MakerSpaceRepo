@@ -4,8 +4,8 @@
   <p class='text-center'>
     <%= "#{@repositories.count} repositories were found" %>
   </p>
+  <%= will_paginate @repositories, inner_window: 2, outer_window: 1, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
   <section id="repositories-container">
-    <div class="pagination"><%= will_paginate @repositories, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %></div><br>
     <% @repositories.each_with_index do |repository, i| %>
       <div class="repository-container">
         <div class="repo-display-wrapper" <%= "style=background-image:url('#{url_for(repository.photos.first.image) if repository.photos.first.present?}')" %> >
@@ -21,7 +21,7 @@
         </div>
       </div>
     <% end %>
-    <br></br>
   </section>
 
+  <%= will_paginate @repositories, inner_window: 2, outer_window: 1, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
 </section>
