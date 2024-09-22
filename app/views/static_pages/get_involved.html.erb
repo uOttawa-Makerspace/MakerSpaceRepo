@@ -28,7 +28,7 @@
               <div class="link-card-text">
                 <h5><%= t('all_get_involved.workshops.sections.workshop_1.header') %></h5>
                 <p><%= t('all_get_involved.workshops.sections.workshop_1.overview') %></p>
-                <a class="btn btn-primary"><%= t('all_get_involved.sign_up') %></a>
+                <a class="btn btn-primary" href="https://simpli.events/u/uottawaceed"><%= t('all_get_involved.sign_up') %></a>
               </div>
             </div>
           </div>
@@ -44,7 +44,7 @@
               <div class="link-card-text">
                 <h5><%= t('all_get_involved.workshops.sections.workshop_2.header') %></h5>
                 <p><%= t('all_get_involved.workshops.sections.workshop_2.overview') %></p>
-                <a class="btn btn-primary"><%= t('all_get_involved.sign_up') %></a>
+                <a class="btn btn-primary" href="https://simpli.events/u/uottawaceed"><%= t('all_get_involved.sign_up') %></a>
               </div>
             </div>
           </div>
@@ -73,7 +73,7 @@
               <div class="link-card-text">
                 <h5><%= t('all_get_involved.programs.sections.program_1.header') %></h5>
                 <p><%= t('all_get_involved.programs.sections.program_1.overview') %></p>
-                <a class="btn btn-primary"><%= t('all_get_involved.sign_up') %></a>
+                <%= link_to t('all_get_involved.sign_up'), volunteers_path, class: 'btn btn-primary' %>
               </div>
             </div>
           </div>
@@ -89,7 +89,7 @@
               <div class="link-card-text">
                 <h5><%= t('all_get_involved.programs.sections.program_2.header') %></h5>
                 <p><%= t('all_get_involved.programs.sections.program_2.overview') %></p>
-                <a class="btn btn-primary"><%= t('all_get_involved.sign_up') %></a>
+                <%= link_to t('all_get_involved.sign_up'), development_programs_path, class: 'btn btn-primary' %>
               </div>
             </div>
           </div>
@@ -109,7 +109,7 @@
             <div class="link-card-text">
               <h5 class="fw-bold"><%= t('all_get_involved.programs.sections.program_3.header') %></h5>
               <p><%= t('all_get_involved.programs.sections.program_3.overview') %></p>
-              <button class="btn btn-primary"><%= t('all_get_involved.sign_up') %></button>
+              <%= link_to t('all_get_involved.sign_up'), t('all_get_involved.programs.sections.program_3.link'), class: 'btn btn-primary' %>
             </div>
           </div>
         </div>
@@ -119,7 +119,7 @@
             <div class="link-card-text">
               <h5 class="fw-bold"><%= t('all_get_involved.programs.sections.program_4.header') %></h5>
               <p><%= t('all_get_involved.programs.sections.program_4.overview') %></p>
-              <button class="btn btn-primary"><%= t('all_get_involved.sign_up') %></button>
+              <%= link_to t('all_get_involved.sign_up'), t('all_get_involved.programs.sections.program_4.link'), class: 'btn btn-primary' %>
             </div>
           </div>
         </div>

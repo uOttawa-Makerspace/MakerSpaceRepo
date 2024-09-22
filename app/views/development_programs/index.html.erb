@@ -3,7 +3,7 @@
     <div class="jumbotron developmentJumbotron">
         <h1 class="display-1"><%= t('devprog.header').html_safe %></h1>
         <%= tag.p t('devprog.subtext') %>
-        <%= link_to t('devprog.join_button'), join_development_program_development_programs_url, class: 'btn btn-primary' %>
+        <%= link_to t('devprog.join_button'), join_development_program_development_programs_path, class: 'btn btn-primary' %>
     </div>
     <div class="shadow">
         <%= render partial: 'layouts/development_program_header' %>
