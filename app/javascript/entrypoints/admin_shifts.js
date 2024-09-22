@@ -183,6 +183,8 @@ new TomSelect("#user-id", {
   placeholder: "Select users",
   search: true,
   plugins: ["remove_button"],
+  // Takes the name of a field to sort.
+  sortField: [{ field: "text", direction: "asc" }],
 });
 
 let events = 0;
