@@ -1,42 +1,4 @@
-<div class="row g-3">
-    <div class="col-lg-2">
-        <div class="dropdown">
-            <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                <%= t('home.sort.by') %>
-                <%= t("home.sort.#{params[:sort]}") if params[:sort].present? %>
-            </button>
-            <ul class="dropdown-menu">
-                <li><%= link_to t('home.sort.newest'), explore_path(sort: :newest, category: params[:category]), class: 'dropdown-item' %></li>
-                <li><%= link_to t('home.sort.most_likes'), explore_path(sort: :most_likes, category: params[:category]), class: 'dropdown-item' %></li>
-                <li><%= link_to t('home.sort.most_makes'), explore_path(sort: :most_makes, category: params[:category]), class: 'dropdown-item' %></li>
-                <li><%= link_to t('home.sort.recently_updated'), explore_path(sort: :recently_updated, category: params[:category]), class: 'dropdown-item' %></li>
-            </ul>
-        </div>
-        <% sort_type = params[:sort].present? ? params[:sort].gsub('_', ' ').titleize : 'Newest/Plus récent' %>
-    </div>
-    <div class="col-lg-2">
-        <div class="dropdown">
-            <button class="btn btn-primary dropdown-toggle" type="button" id="category-dropdown-menu" data-bs-toggle="dropdown">
-                <%= t('home.categories.filter') %>
-                <%= t("home.categories.#{params[:category]}") if params[:category].present? %>
-            </button>
-            <ul id="category-filter" class="dropdown-menu">
-                <li><%= link_to 'All / Tous', explore_path(category: nil), class: 'dropdown-item' %></li>
-                <li><%= link_to t('home.categories.wearables'), explore_path(category: 'wearable'), class: 'dropdown-item' %></li>
-                <li><%= link_to t('home.categories.mobile_development'), explore_path(category: 'mobile-development'), class: 'dropdown-item' %></li>
-                <li><%= link_to t('home.categories.gng_2101'), explore_path(category: 'gng2101/gng2501'), class: 'dropdown-item' %></li>
-                <li><%= link_to t('home.categories.health_sciences'), explore_path(category: 'health-sciences'), class: 'dropdown-item' %></li>
-                <li><%= link_to t('home.categories.iot'), explore_path(category: 'internet-of-things'), class: 'dropdown-item' %></li>
-                <li><%= link_to t('home.categories.gng_1103'), explore_path(category: 'gng1103/gng1503'), class: 'dropdown-item' %></li>
-                <li><%= link_to t('home.categories.vr'), explore_path(category: 'virtual-reality'), class: 'dropdown-item' %></li>
-                <li><%= link_to t('home.categories.team_projects'), explore_path(category: 'uottawa-team-projects'), class: 'dropdown-item' %></li>
-                <li><%= link_to t('home.categories.other_projects'), explore_path(category: 'other-projects'), class: 'dropdown-item' %></li>
-                <% if !@user.nil? && !@user.username.nil? %>
-                    <li><%= link_to t('navbar.user.liked'), likes_user_path(@user.username), class: 'dropdown-item' %></li>
-                <% end %>
-            </ul>
-        </div>
-    </div>
+<div class="row g-3 justify-content-center">
     <div class="col-lg-8">
         <%= form_with url: search_url, method: 'GET' do |form| %>
             <div class="input-group">
@@ -44,5 +6,43 @@
                 <%= form.submit 'Search', name: '', class: 'btn btn-primary' %>
             </div>
         <% end %>
+    </div>
+    <div class="col-lg-2">
+        <div class="btn-group">
+            <div class="btn-group">
+                <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <%= t('home.sort.by') %>
+                    <%= t("home.sort.#{params[:sort]}") if params[:sort].present? %>
+                </button>
+                <ul class="dropdown-menu">
+                    <li><%= link_to t('home.sort.newest'), explore_path(sort: :newest, category: params[:category]), class: 'dropdown-item' %></li>
+                    <li><%= link_to t('home.sort.most_likes'), explore_path(sort: :most_likes, category: params[:category]), class: 'dropdown-item' %></li>
+                    <li><%= link_to t('home.sort.most_makes'), explore_path(sort: :most_makes, category: params[:category]), class: 'dropdown-item' %></li>
+                    <li><%= link_to t('home.sort.recently_updated'), explore_path(sort: :recently_updated, category: params[:category]), class: 'dropdown-item' %></li>
+                </ul>
+            </div>
+            <% sort_type = params[:sort].present? ? params[:sort].gsub('_', ' ').titleize : 'Newest/Plus récent' %>
+            <div class="btn-group">
+                <button class="btn btn-primary dropdown-toggle" type="button" id="category-dropdown-menu" data-bs-toggle="dropdown">
+                    <%= t('home.categories.filter') %>
+                    <%= t("home.categories.#{params[:category]}") if params[:category].present? %>
+                </button>
+                <ul id="category-filter" class="dropdown-menu">
+                    <li><%= link_to 'All / Tous', explore_path(category: nil), class: 'dropdown-item' %></li>
+                    <li><%= link_to t('home.categories.wearables'), explore_path(category: 'wearable'), class: 'dropdown-item' %></li>
+                    <li><%= link_to t('home.categories.mobile_development'), explore_path(category: 'mobile-development'), class: 'dropdown-item' %></li>
+                    <li><%= link_to t('home.categories.gng_2101'), explore_path(category: 'gng2101/gng2501'), class: 'dropdown-item' %></li>
+                    <li><%= link_to t('home.categories.health_sciences'), explore_path(category: 'health-sciences'), class: 'dropdown-item' %></li>
+                    <li><%= link_to t('home.categories.iot'), explore_path(category: 'internet-of-things'), class: 'dropdown-item' %></li>
+                    <li><%= link_to t('home.categories.gng_1103'), explore_path(category: 'gng1103/gng1503'), class: 'dropdown-item' %></li>
+                    <li><%= link_to t('home.categories.vr'), explore_path(category: 'virtual-reality'), class: 'dropdown-item' %></li>
+                    <li><%= link_to t('home.categories.team_projects'), explore_path(category: 'uottawa-team-projects'), class: 'dropdown-item' %></li>
+                    <li><%= link_to t('home.categories.other_projects'), explore_path(category: 'other-projects'), class: 'dropdown-item' %></li>
+                    <% if !@user.nil? && !@user.username.nil? %>
+                        <li><%= link_to t('navbar.user.liked'), likes_user_path(@user.username), class: 'dropdown-item' %></li>
+                    <% end %>
+                </ul>
+            </div>
+        </div>
     </div>
 </div>

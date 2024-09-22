@@ -1,16 +1,10 @@
 <% provide(:title, 'Explore') %>
 <section class="container mt-5">
   <%= render partial: 'search_bar' %>
+  <%= will_paginate @repositories, inner_window: 2, outer_window: 1, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
   <section id="repositories-container">
-
-    <div>
-      <%= will_paginate @repositories, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
-    </div>
-    <br />
-
     <% @repositories.each do |repository| %>
       <div class="repository-container">
-
         <div class="repo-display-wrapper" <%= "style=background-image:url('#{url_for(repository.photos.first.image) if repository.photos.first.present?}')" %> >
           <%= link_to '', repository_path(repository.user_username, repository.slug), class: 'link' %>
         </div>
@@ -29,9 +23,5 @@
     <% end %>
   </section>
 
-  <br />
-
-  <div>
-    <%= will_paginate @repositories, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
-  </div>
+  <%= will_paginate @repositories, inner_window: 2, outer_window: 1, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
 </section>
