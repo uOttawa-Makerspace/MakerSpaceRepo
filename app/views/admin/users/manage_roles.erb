@@ -9,15 +9,14 @@
   <div>
     <h3>Admins on Makerepo</h3>
     <table class="table table-striped" id="admin_table">
-      <%= render partial: 'admin_table', locals: { admins: @admins } %>
+      <%= render partial: 'user_table', locals: { users: @admins, user_spaces: @admin_spaces, role_form_id: 'updateRoleAdmin', space_form_id: 'updateSpaceAdmin' } %>
     </table>
     <br /><br />
 
     <h3>Staff on Makerepo</h3>
     <table class="table table-striped" id="staff_table">
-      <%= render partial: 'staff_table', locals: { staff: @staff } %>
+      <%= render partial: 'user_table', locals: { users: @staff, user_spaces: @staff_spaces, role_form_id: 'updateRoleStaff', space_form_id: 'updateSpaceStaff' } %>
     </table>
-    <br /><br />
 
     <table class="table table-striped">
       <h3>Volunteers on Makerepo</h3>

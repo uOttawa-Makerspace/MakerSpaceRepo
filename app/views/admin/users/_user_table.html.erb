@@ -7,7 +7,8 @@
     <th>Role</th>
   </tr>
 </thead>
-<% @admins.each do |admin| %>
+<%# Passed as partial local (users and user_spaces)%>
+<% users.each do |admin| %>
   <tr>
     <td><%= admin.name %></td>
     <td><%= link_to admin.username, user_url(admin.username) %></td>
@@ -16,7 +17,7 @@
       <div class="row row-cols-lg-2 justify-content-center">
         <% @space_list.each do |space| %>
           <%# use check_box_tag, not check_box, to avoid sending a 'ghost value'. In this case we do want values to be left out%>
-          <%= check_box_tag "spaces[#{admin.id}][]", space.id, (@admin_spaces[admin.id].include? space.id), form: 'updateSpaceAdmin', class: 'btn-check', id: "space-#{space.name.parameterize.underscore}-#{admin.id}" %>
+          <%= check_box_tag "spaces[#{admin.id}][]", space.id, (user_spaces[admin.id].include? space.id), form: space_form_id, class: 'btn-check', id: "space-#{space.name.parameterize.underscore}-#{admin.id}" %>
           <%= label_tag "space-#{space.name.parameterize.underscore}-#{admin.id}", space.name, class: "btn btn-outline-primary btn-outline-#{space.name}" %>
       <% end %>
       </div>
@@ -25,7 +26,7 @@
       <%# Add padding to the label to fill the table cell. Yes you can put inputs inside labels %>
       <label>
         <%# include the user ID %>
-        <input type="checkbox" name="user_ids[]" value="<%= admin.id %>" form="updateRoleAdmin"/>
+        <input type="checkbox" name="user_ids[]" value="<%= admin.id %>" form="<%= role_form_id %>"/>
         <%= admin.role.humanize %>
       </label>
     </td>
@@ -34,12 +35,12 @@
 <tr>
   <td colspan="3"></td>
   <td colspan="1">
-    <%= form_tag set_role_admin_users_path, method: :patch, id: 'updateSpaceAdmin' do %>
+    <%= form_tag set_role_admin_users_path, method: :patch, id: space_form_id do %>
       <%= submit_tag 'Change spaces', class: 'btn btn-primary' %>
     <% end %>
   </td>
   <td colspan="1">
-    <%= form_tag set_role_admin_users_path, method: :patch, id: 'updateRoleAdmin' do %>
+    <%= form_tag set_role_admin_users_path, method: :patch, id: role_form_id do %>
       <div class="input-group">
         <%= select_tag(:role, options_for_select(@roles.map { |r| [r.humanize, r] }), class: 'form-control form-select') %>
         <%= submit_tag 'Commit', id: 'change-button', class: 'btn btn-primary form-control' %>
