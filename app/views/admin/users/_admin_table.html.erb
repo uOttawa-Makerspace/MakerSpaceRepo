@@ -13,26 +13,37 @@
     <td><%= link_to admin.username, user_url(admin.username) %></td>
     <td><%= admin.email %></td>
     <td>
-      <%# TODO: Make the bubbles colored lol %>
-      <%= form_with url: set_role_admin_users_path, method: :patch do |f| %>
-        <%= select :spaces, :, options_for_select(@space_list.map { |s| [s.name, s.id] }, @admin_spaces[admin.id]), {}, { multiple: true, class: 'role-space-select form-control' } %>
-        <%= f.submit 'Commit', class: 'btn btn-primary' %>
+      <% @space_list.each do |space| %>
+        <label>
+          <%# use check_box_tag, not check_box, to avoid sending a 'ghost value'. In this case we do want values to be left out%>
+          <%= check_box_tag "spaces[#{admin.id}][]", space.id, (@admin_spaces[admin.id].include? space.id), form: 'updateSpaceAdmin', class: '' %>
+          <%= space.name %>
+        </label>
       <% end %>
     </td>
-    <td class="w-auto">
-      <%= admin.role %>
+    <td>
       <%# Add padding to the label to fill the table cell. Yes you can put inputs inside labels %>
-      <label class="w-100 py-4">
+      <label>
+        <%# include the user ID %>
         <input type="checkbox" name="user_ids[]" value="<%= admin.id %>" form="updateRoleAdmin"/>
+        <%= admin.role.humanize %>
       </label>
     </td>
   </tr>
 <% end %>
 <tr>
-  <td colspan="6">
+  <td colspan="3"></td>
+  <td colspan="1">
+    <%= form_tag set_role_admin_users_path, method: :patch, id: 'updateSpaceAdmin' do %>
+      <%= submit_tag 'Change spaces', class: 'btn btn-primary' %>
+    <% end %>
+  </td>
+  <td colspan="1">
     <%= form_tag set_role_admin_users_path, method: :patch, id: 'updateRoleAdmin' do %>
-      <%= select_tag(:role, options_for_select(@roles), class: 'form-control form-select d-inline w-auto') %>
-      <%= submit_tag 'Change', id: 'change-button', class: 'btn btn-primary btn-sm form-control d-inline w-auto' %>
+      <div class="input-group">
+        <%= select_tag(:role, options_for_select(@roles.map { |r| [r.humanize, r] }), class: 'form-control form-select') %>
+        <%= submit_tag 'Commit', id: 'change-button', class: 'btn btn-primary form-control' %>
+      </div>
     <% end %>
   </td>
 </tr>
