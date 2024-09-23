@@ -1,0 +1,61 @@
+<thead class="table-primary">
+  <tr class="text-center">
+    <th>Name</th>
+    <th>Username</th>
+    <th>Email</th>
+    <th>Spaces</th>
+    <th>Role</th>
+  </tr>
+</thead>
+<%# Passed as partial local (users and user_spaces)%>
+<% users.each do |admin| %>
+  <tr>
+    <td><%= admin.name %></td>
+    <td><%= link_to admin.username, user_url(admin.username) %></td>
+    <td><%= admin.email %></td>
+    <td>
+      <div class="row row-cols-lg-2 justify-content-center">
+        <% @space_list.each do |space| %>
+          <%# use check_box_tag, not check_box, to avoid sending a 'ghost value'. In this case we do want values to be left out%>
+          <%= check_box_tag "spaces[#{admin.id}][]", space.id, (user_spaces[admin.id].include? space.id), form: space_form_id, class: 'btn-check', id: "space-#{space.name.parameterize.underscore}-#{admin.id}" %>
+          <%= label_tag "space-#{space.name.parameterize.underscore}-#{admin.id}", space.name, class: "btn btn-outline-primary btn-outline-#{space.name}" %>
+      <% end %>
+      </div>
+    </td>
+    <td>
+      <%# Add padding to the label to fill the table cell. Yes you can put inputs inside labels %>
+      <label>
+        <%# include the user ID %>
+        <input type="checkbox" name="user_ids[]" value="<%= admin.id %>" form="<%= role_form_id %>"/>
+        <%= admin.role.humanize %>
+      </label>
+    </td>
+  </tr>
+<% end %>
+<tr>
+  <td colspan="3"></td>
+  <td colspan="1">
+    <%= form_tag set_role_admin_users_path, method: :patch, id: space_form_id do %>
+      <%= submit_tag 'Change spaces', class: 'btn btn-primary' %>
+    <% end %>
+  </td>
+  <td colspan="1">
+    <%= form_tag set_role_admin_users_path, method: :patch, id: role_form_id do %>
+      <div class="input-group">
+        <%= select_tag(:role, options_for_select(@roles.map { |r| [r.humanize, r] }), class: 'form-control form-select') %>
+        <%= submit_tag 'Commit', id: 'change-button', class: 'btn btn-primary form-control' %>
+      </div>
+    <% end %>
+  </td>
+</tr>
+<style>
+ <% @space_list.each do |space| %>
+ .btn-outline-<%= space.name %> {
+   <% hex_color = space.assigned_color.map { |x| x.to_s(16).rjust(2, '0') }.join('') %>
+   --bs-btn-color: #<%= hex_color %>;
+   --bs-btn-border-color: #<%= hex_color %>;
+   --bs-btn-active-bg: #<%= hex_color %>;
+   --bs-btn-active-border-color: #<%= hex_color %>;
+ }
+ <% end %>
+</style>

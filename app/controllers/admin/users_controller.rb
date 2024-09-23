@@ -212,39 +212,33 @@ class Admin::UsersController < AdminAreaController
   # for user roles:
   #   Takes an array of user ids
   #   and a role to set for each
+  #   user_ids: [array of ids], role: role
   # for space management:
   #   Takes a hash of { user_id: [space_id array]}
+
   def set_role
-    raise "huh"
     # Update user roles
-    params["user_ids"].each do |user_id|
+    # Keep staff spaces attached, even if demoted
+    params["user_ids"]&.each do |user_id|
       user = User.find(user_id)
       user.role = params[:role]
       user.save
     end
 
-    # Keep staff spaces attached, even if demoted
-    #@user.staff_spaces.destroy_all if params[:role] == "regular_user"
-    #@roles = %w[admin staff regular_user]
-    @admins = User.where(role: "admin").order("lower(name) ASC")
-    @staff = User.where(role: "staff").order("lower(name) ASC")
-    @volunteers =
-      User
-        .joins(:programs)
-        .where(programs: { program_type: Program::VOLUNTEER })
-        .order("lower(name) ASC")
-
     # Update user staff spaces
-    if @user.present? && @user.staff?
-      space_list = params[:space].present? ? params[:space] : []
+    params["spaces"]&.each do |user_id, spaces|
+      user = User.find(user_id)
+      if user.present? && user.staff?
+        space_list = spaces.present? ? spaces : []
 
-      space_list.each do |space|
-        StaffSpace.find_or_create_by(space_id: space, user: @user)
+        space_list.each do |space|
+          StaffSpace.find_or_create_by(space_id: space, user: user)
+        end
+
+        user.staff_spaces.where.not(space_id: space_list).destroy_all
+
+        flash[:notice] = "Successfully changed spaces for the user."
       end
-
-      @user.staff_spaces.where.not(space_id: space_list).destroy_all
-
-      flash[:notice] = "Successfully changed spaces for the user."
     end
 
     # response is js
