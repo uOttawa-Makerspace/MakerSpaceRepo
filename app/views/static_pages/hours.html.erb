@@ -8,19 +8,12 @@
           <div class="card h-100">
             <div class="card-body">
               <h4 class="card-title mb-4"><%= space.name %></h4>
-              <p><b>Registered students and faculty members</b></p>
-              <%= space.opening_hour.formatted(:students).html_safe %>
-              <p><b>General Public</b></p>
-              <%= space.opening_hour.formatted(:public).html_safe %>
-              <p><b>Summer Hours</b></p>
-              <%= space.opening_hour.formatted(:summer).html_safe %>
+              <%= render partial: 'hours_embed', locals: { space: } %>
             </div>
           </div>
         </div>
       <% end %>
-    </div>
-    <div class="container">
-      <p><i class="fa fa-asterisk li" aria-hidden="true"></i> <%= t('hours.disclaimer') %></p>
+      <p><i class="fa fa-asterisk mt-3" aria-hidden="true"></i> <%= t('hours.disclaimer') %></p>
       <%= link_to 'Edit Contact Infos', admin_contact_infos_path if current_user.admin? %>
     </div>
   </div>

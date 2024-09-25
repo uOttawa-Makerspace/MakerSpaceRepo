@@ -5,34 +5,22 @@
                 <span class="text-primary"><%= @user.name %></span>
             <% end %>
         </h2>
-        <div class="row g-5">
+        <div class="row g-3">
             <div class="col-lg-4 overflow-clip hide-on-mobile">
                 <%= image_tag('redesign/site.jpg', alt: 'People watching a project demonstration in SITE', loading: 'lazy') %>
             </div>
             <div class="col-lg-8 text-start align-self-start">
                 <h3 class="fw-bold"><%= t('home.welcome.hour_header') %></h3>
-                <details open>
-                    <summary><%= t('hours.student_title') %></summary>
-                    <div class="row border rounded p-3">
-                        <% @contact_info.each do |space| %>
-                            <div class="col-lg-6">
-                                <h4><%= space.name %></h4>
-                                <p><%= space.opening_hour.formatted(:students).html_safe %></p>
+                <div class="row g-2">
+                    <% @contact_info.each do |space| %>
+                        <div class="col-lg">
+                            <div class="border rounded p-3">
+                            <h4><%= space.name %></h4>
+                            <%= render partial: 'hours_embed', locals: { space: } %>
                             </div>
-                        <% end %>
-                    </div>
-                </details>
-                <details open>
-                    <summary><%= t('hours.public_title') %></summary>
-                    <div class="row border rounded p-3">
-                        <% @contact_info.each do |space| %>
-                            <div class="col-lg-6">
-                                <h4><%= space.name %></h4>
-                                <p><%= space.opening_hour.formatted(:public).html_safe %></p>
-                            </div>
-                        <% end %>
-                    </div>
-                </details>
+                        </div>
+                    <% end %>
+                </div>
             </div>
         </div>
     </div>

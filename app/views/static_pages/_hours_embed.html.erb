@@ -1,0 +1,10 @@
+<% space.opening_hours.each do |hour| %>
+    <p><b><%= hour.target %></b></p>
+    <% days = %i[monday tuesday wednesday thursday friday saturday sunday] %>
+    <% days.each do |day| %>
+        <div class="formatted-hour-row">
+            <span><%= t('hours.tags')[day] %></span><span><%= hour[day]&.to_formatted_s(:time) || t('hours.tags.closed') %></span>
+        </div>
+    <% end %>
+    <p><%= hour.notes&.html_safe %></p>
+<% end %>
