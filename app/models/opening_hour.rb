@@ -1,10 +1,11 @@
 class OpeningHour < ApplicationRecord
-  belongs_to :contact_info, optional: true
+  belongs_to :contact_info
 
   delegate :tag, to: "ApplicationController.helpers"
 
   # this returns html
   def formatted(field)
+    return "" # nah
     # copy field
     formatted = self[field]
     formatted.gsub!(/&nbsp;/i, "")

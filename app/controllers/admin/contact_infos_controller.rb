@@ -5,7 +5,7 @@ class Admin::ContactInfosController < AdminAreaController
 
   def new
     @contact_info = ContactInfo.new
-    @contact_info.build_opening_hour
+    #@contact_info.build_opening_hours
   end
 
   def create
@@ -26,7 +26,7 @@ class Admin::ContactInfosController < AdminAreaController
 
   def edit
     @contact_info = ContactInfo.find(params[:id])
-    @contact_info.build_opening_hour if @contact_info.opening_hour.blank?
+    #@contact_info.build_opening_hours if @contact_info.opening_hours.blank?
   end
 
   def update
@@ -58,7 +58,21 @@ class Admin::ContactInfosController < AdminAreaController
       :url,
       :show_hours,
       :space_id,
-      opening_hour_attributes: %i[students public summer]
+      # https://api.rubyonrails.org/classes/ActiveRecord/NestedAttributes/ClassMethods.html
+      # neat stuff really
+      opening_hours_attributes: %i[
+        id
+        target
+        notes
+        sunday
+        monday
+        tuesday
+        wednesday
+        thursday
+        friday
+        saturday
+        _destroy
+      ]
     )
   end
 end

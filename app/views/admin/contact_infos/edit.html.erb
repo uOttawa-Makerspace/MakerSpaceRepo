@@ -42,22 +42,30 @@
                 <%= f.check_box(:show_hours, class: 'form-check-input') %>
               </div>
 
-              <details class="mb-3">
-                <summary><b>Hour syntax:</b></summary>
-                <p><code>[SUNDAY]</code> becomes 'Sunday' or 'Dimanche'. <code>[CLOSED]</code> becomes 'CLOSED' or 'FERMÉ' <br />
-                  <code>[MONDAY | 12 pm - 8 pm]</code> becomes Monday 12 pm - 8 pm, justified with similar codes <br />
-                  <code>[FR=Voici une remarque]</code> shows the text 'Voici une remarque' for french locales only <br />
-                  <code>[EN=Here's a note]</code> shows the text 'Voici une remarque' for english locales only</p>
-              </details>
-
               <div class="mb-3">
-                <%= f.fields_for :opening_hour do |h| %>
-                  <%= h.label :students, 'Opening Hours for Students', class: 'form-label' %>
-                  <%= h.trix_editor :students, class: 'repo form-control', style: 'height: auto!important;' %>
-                  <%= h.label :public, 'Opening Hours for the public', class: 'form-label' %>
-                  <%= h.trix_editor :public, class: 'repo form-control', style: 'height: auto!important;' %>
-                  <%= h.label :summer, 'Opening Hours for Summer', class: 'form-label' %>
-                  <%= h.trix_editor :summer, class: 'repo form-control', style: 'height: auto!important;' %>
+                <% (@contact_info.opening_hours + [OpeningHour.new]).each do |hour| %>
+                  <%= f.fields_for :opening_hours, hour do |h| %>
+                    <hr />
+                    <%= h.hidden_field :id %>
+                    <div class="row align-items-baseline mb-3">
+                      <%= h.label :target, 'Hours apply for: ', class: 'form-label col-auto' %>
+                      <%= h.text_field :target, class: 'form-control col' %>
+                    </div>
+                    <div class="row align-items-end">
+                      <% %i[sunday monday tuesday wednesday thursday friday saturday].each do |day| %>
+                        <div class="col">
+                          <%= h.label day, day.to_s.humanize, class: 'form-label' %>
+                          <%= h.time_field day, class: 'form-control' %>
+                        </div>
+                      <% end %>
+                      <div class="col">
+                        <%= h.check_box :_destroy, class: 'btn-check' %>
+                        <%= h.label :_destroy, 'Mark for deletion?', class: 'btn btn-outline-danger' %>
+                      </div>
+                    </div>
+                    <%= h.label :notes, 'Footer notes', class: 'form-label' %>
+                    <%= h.trix_editor :notes, class: 'form-control' %>
+                  <% end %>
                 <% end %>
               </div>
             </div>

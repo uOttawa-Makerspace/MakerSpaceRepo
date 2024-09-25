@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2024_09_07_191211) do
+ActiveRecord::Schema[7.0].define(version: 2024_09_24_193746) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -598,12 +598,18 @@ ActiveRecord::Schema[7.0].define(version: 2024_09_07_191211) do
   end
 
   create_table "opening_hours", force: :cascade do |t|
-    t.string "students"
-    t.string "public"
-    t.string "summer"
     t.bigint "contact_info_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "target"
+    t.time "sunday"
+    t.time "monday"
+    t.time "tuesday"
+    t.time "wednesday"
+    t.time "thursday"
+    t.time "friday"
+    t.time "saturday"
+    t.text "notes"
     t.index ["contact_info_id"], name: "index_opening_hours_on_contact_info_id"
   end
 
