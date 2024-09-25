@@ -601,7 +601,8 @@ ActiveRecord::Schema[7.0].define(version: 2024_09_24_193746) do
     t.bigint "contact_info_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.string "target"
+    t.string "target_en"
+    t.string "target_fr"
     t.time "sunday"
     t.time "monday"
     t.time "tuesday"
@@ -609,7 +610,8 @@ ActiveRecord::Schema[7.0].define(version: 2024_09_24_193746) do
     t.time "thursday"
     t.time "friday"
     t.time "saturday"
-    t.text "notes"
+    t.text "notes_en"
+    t.text "notes_fr"
     t.index ["contact_info_id"], name: "index_opening_hours_on_contact_info_id"
   end
 

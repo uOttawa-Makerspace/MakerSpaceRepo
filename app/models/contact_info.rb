@@ -4,6 +4,7 @@ class ContactInfo < ApplicationRecord
                                 allow_destroy: true, # add '_destroy': true to destroy a record
                                 reject_if:
                                   lambda { |attributes|
-                                    attributes["target"].blank?
+                                    attributes["target_en"].blank? ||
+                                      attributes["target_fr"].blank?
                                   }
 end

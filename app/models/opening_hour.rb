@@ -3,6 +3,14 @@ class OpeningHour < ApplicationRecord
 
   delegate :tag, to: "ApplicationController.helpers"
 
+  def notes
+    I18n.locale == :fr ? notes_fr : notes_en
+  end
+
+  def target
+    I18n.locale == :fr ? target_fr : target_en
+  end
+
   # this returns html
   def formatted(field)
     return "" # nah

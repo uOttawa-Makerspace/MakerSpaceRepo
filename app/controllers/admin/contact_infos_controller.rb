@@ -62,8 +62,10 @@ class Admin::ContactInfosController < AdminAreaController
       # neat stuff really
       opening_hours_attributes: %i[
         id
-        target
-        notes
+        target_en
+        target_fr
+        notes_en
+        notes_fr
         sunday
         monday
         tuesday
