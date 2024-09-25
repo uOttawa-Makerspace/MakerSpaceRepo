@@ -47,10 +47,21 @@
                 <%= render partial: 'opening_hour_form', locals: { f:, opening_hours: @contact_info.opening_hours } %>
               </div>
               <hr />
-              <div class="accordion" id="newOpeningHourAccordion">
+              <div class="accordion mb-3">
+                <div class="accordion-item">
+                  <h2 class="accordion-header">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#newOpeningHourAccordion" aria-expanded="false" aria-controls="openingHourAccordionCollapse">
+                      New Opening Hour
+                    </button>
+                  </h2>
+                  <div class="accordion-collapse collapse" id="newOpeningHourAccordion">
+                    <div class="accordion-body">
+                      <%= render partial: 'opening_hour_form', locals: { f:, opening_hours: [OpeningHour.new] } %>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <h3>New Opening Hour</h3>
-              <%= render partial: 'opening_hour_form', locals: { f:, opening_hours: [OpeningHour.new] } %>
+
             </div>
 
             <div class="col-lg-12 text-center">
