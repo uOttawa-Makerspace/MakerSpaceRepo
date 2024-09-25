@@ -1,0 +1,35 @@
+<% opening_hours.each do |hour| %>
+    <%= f.fields_for :opening_hours, hour do |h| %>
+        <%= h.hidden_field :id %>
+        <div class="input-group mb-3">
+            <%= h.label :target_en, 'English table header: ', class: 'input-group-text' %>
+            <%= h.text_field :target_en, class: 'form-control fw-bold' %>
+        </div>
+        <div class="input-group mb-3">
+            <%= h.label :target_fr, 'French table header: ', class: 'input-group-text' %>
+            <%= h.text_field :target_fr, class: 'form-control fw-bold' %>
+        </div>
+        <div class="row align-items-end">
+            <% %i[sunday monday tuesday wednesday thursday friday saturday].each do |day| %>
+                <div class="col">
+                    <%= h.label day, day.to_s.humanize, class: 'form-label' %>
+                    <%= h.time_field day, class: 'form-control' %>
+                </div>
+            <% end %>
+            <div class="col">
+                <%= h.check_box :_destroy, class: 'btn-check' %>
+                <%= h.label :_destroy, 'Mark for deletion?', class: 'btn btn-outline-danger' %>
+            </div>
+        </div>
+        <div class="row row-cols-lg-2 mt-3">
+            <div>
+                <%= h.label :notes_en, 'English footer notes', class: 'form-label' %>
+                <%= h.trix_editor :notes_en, class: 'form-control' %>
+            </div>
+            <div>
+                <%= h.label :notes_fr, 'French footer notes', class: 'form-label' %>
+                <%= h.trix_editor :notes_fr, class: 'form-control' %>
+            </div>
+        </div>
+    <% end %>
+<% end %>
