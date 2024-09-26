@@ -43,11 +43,23 @@
       </div>
       <!--Middle column -->
       <div class="col-xl-6 order-xl-1 order-0">
-        <%= render 'static_pages/home_hours' %>
+        <%= begin
+              render 'static_pages/home_hours'
+            rescue StandardError
+              nil
+            end %>
         <!-- Instagram Section -->
-        <%= render 'static_pages/home_socials' %>
+        <%= begin
+              render 'static_pages/home_socials'
+            rescue StandardError
+              nil
+            end %>
         <!-- Explore Section -->
-        <%= render 'static_pages/home_explore' %>
+        <%= begin
+              render 'static_pages/home_explore'
+            rescue StandardError
+              nil
+            end %>
         <!-- Makerstore Section -->
         <%= render 'static_pages/home_makerstore' %>
       </div>
