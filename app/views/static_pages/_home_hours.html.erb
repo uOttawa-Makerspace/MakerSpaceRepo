@@ -2,7 +2,7 @@
     <div class="card-body">
         <h2 class="mb-3"> <%= t('home.welcome.welcome_to') %>
             <% if signed_in? %>
-                <span class="text-primary"><%= @user.name %></span>
+                <span class="text-secondary"><%= @user.name %></span>
             <% end %>
         </h2>
         <div class="row g-3">
@@ -10,7 +10,7 @@
                 <%= image_tag('redesign/site.jpg', alt: 'People watching a project demonstration in SITE', loading: 'lazy') %>
             </div>
             <div class="col-lg-8 text-start align-self-start">
-                <h3 class="fw-bold"><%= t('home.welcome.hour_header') %></h3>
+                    <h3 class="fw-bold"><%= link_to t('home.welcome.hour_header'), hours_url %></h3>
                 <div class="row g-2">
                     <% @contact_info.each do |space| %>
                         <div class="col-lg">
