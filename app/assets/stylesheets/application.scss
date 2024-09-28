@@ -211,7 +211,12 @@ u {
 
 .btn {
   // Exclude outline btns
-  &:not(.btn-outline-primary, .btn-outline-secondary, .btn-link) {
+  &:not(
+      .btn-outline-primary,
+      .btn-outline-secondary,
+      .btn-outline-danger,
+      .btn-link
+    ) {
     color: #fff;
   }
   font-weight: 700;

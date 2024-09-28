@@ -1,5 +1,5 @@
 <section>
-  <h2 class="fw-bold text-center py-3"><%= link_to "Spaces' Manager", admin_spaces_path %></h2><br/>
+  <h2 class="fw-bold text-center py-3"><%= link_to 'Spaces Manager', admin_spaces_path %></h2><br/>
   <h1 style="font-weight:bold;text-align:center;"><%= @space.name.upcase %></h1><br>
 
   <h4>Max Capacity</h4>
@@ -20,7 +20,7 @@
     <%= form_for update_keycode_admin_spaces_path, url: { controller: 'admin/spaces', action: 'update_keycode' }, method: :patch do |f| %>
       <div class="input-group">
         <%= hidden_field_tag :space_id, @space.id %> <br>
-        <%= text_field_tag :keycode, '', { class: 'form-control' } %>
+        <%= text_field_tag :keycode, @space.keycode, { class: 'form-control' } %>
         <%= f.submit 'Update Keycode', class: 'btn btn-primary', data: { confirm: 'Are your sure you want to update the keycode of the space?' } %>
       </div>
     <% end %>
@@ -79,12 +79,12 @@
           <td><%= needed_staff.week_day %></td>
           <td><%= needed_staff.start_time.strftime('%H:%M') %></td>
           <td><%= needed_staff.end_time.strftime('%H:%M') %></td>
-          <td><%= button_to 'Delete', { controller: 'admin/spaces', action: :delete_space_hour, space_staff_hour_id: needed_staff.id }, method: :delete,
-                                                                                                                                        data: { confirm: 'Are you sure that you want to delete this slot?' },
-                                                                                                                                        class: 'btn btn-danger btn-sm d-block w-100 mb-1 me-0' %></td>
           <td><%= needed_staff.language %></td>
           <td><%= needed_staff.course_name_id ? CourseName.find(needed_staff.course_name_id).name.capitalize : 'No Course' %></td>
           <td><%= needed_staff.training_level_id ? TrainingLevel.find(needed_staff.training_level_id).name.capitalize : 'None' %></td>
+          <td><%= button_to 'Delete', { controller: 'admin/spaces', action: :delete_space_hour, space_staff_hour_id: needed_staff.id }, method: :delete,
+                                                                                                                                        data: { confirm: 'Are you sure that you want to delete this slot?' },
+                                                                                                                                        class: 'btn btn-danger btn-sm d-block w-100 mb-1 me-0' %></td>
         </tr>
       <% end %>
       </tbody>
@@ -156,7 +156,6 @@
 
   <br><br>
 
-  <h2 class="mb-3 fw-bold">Manage RFID Readers</h2>
   <div class="mb-3">
     <h4>Staff Needed Calendar</h4>
     <p>You can add here all the Public Google Calendars or ICS files you want to be displayed as Staff Needed.</p>
@@ -190,9 +189,7 @@
 
   <br><br>
 
-  <table class="table table-striped">
-    <th class="section-header">Manage RFID Readers</th>
-  </table>
+  <h2 class="mb-3 fw-bold">Manage RFID Readers</h2>
   <br>
   <div>
     <h3><%= @space.name %> RFID Readers</h3>

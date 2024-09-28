@@ -12,6 +12,7 @@ document.addEventListener("turbo:load", function () {
 
       document.getElementById("bookSave").style.display = "block";
       document.getElementById("bookUpdate").style.display = "none";
+      document.getElementById("bookDelete").style.display = "none";
       document.getElementById("bookingModalLabel").innerText = "New Booking";
       document.getElementById("book-recurring").style.display = "inline-block";
       document.getElementById("book-recurring-label").style.display =
@@ -32,6 +33,7 @@ document.addEventListener("turbo:load", function () {
 
       document.getElementById("bookSave").style.display = "none";
       document.getElementById("bookUpdate").style.display = "block";
+      document.getElementById("bookDelete").style.display = "block";
       document.getElementById("bookingModalLabel").innerText = "Update Booking";
       document.getElementById("sub_space_booking_id").value =
         arg.event.id.split("_")[1];
@@ -48,7 +50,7 @@ document.addEventListener("turbo:load", function () {
               Accept: "application/json",
               "Content-Type": "application/json",
             },
-          },
+          }
         )
           .then((response) => response.json())
           .then((data) => {
@@ -97,6 +99,9 @@ document.addEventListener("turbo:load", function () {
     document
       .getElementById("bookUpdate")
       .addEventListener("click", updateEvent);
+    document
+      .getElementById("bookDelete")
+      .addEventListener("click", deleteEvent);
     document
       .getElementById("book-recurring")
       .addEventListener("change", toggleRecurring);
@@ -199,7 +204,7 @@ document.addEventListener("turbo:load", function () {
       };
 
       let sub_space_booking_id = document.getElementById(
-        "sub_space_booking_id",
+        "sub_space_booking_id"
       ).value;
       let url = `/sub_space_booking/${sub_space_booking_id}/update`;
 
@@ -210,6 +215,22 @@ document.addEventListener("turbo:load", function () {
           Accept: "application/json",
         },
         body: JSON.stringify(data),
+      });
+
+      makeRequest(request);
+    }
+    function deleteEvent() {
+      let sub_space_booking_id = document.getElementById(
+        "sub_space_booking_id"
+      ).value;
+      let url = `/sub_space_booking/${sub_space_booking_id}/delete/${sub_space_booking_id}`;
+      let request = new Request(url, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        // No body needed
       });
 
       makeRequest(request);
@@ -246,7 +267,7 @@ document.addEventListener("turbo:load", function () {
                 feedback.classList.add("invalid-feedback");
                 feedback.innerText = errorText;
                 let errorEl = document.getElementById(
-                  "book-" + errorInput.toLowerCase(),
+                  "book-" + errorInput.toLowerCase()
                 );
                 if (errorEl && !errorEl.classList.contains("is-invalid")) {
                   errorEl.classList.add("is-invalid");
@@ -310,7 +331,7 @@ document.addEventListener("turbo:load", function () {
         {
           id: "booked",
           url: `/sub_space_booking/bookings?room=${new URLSearchParams(
-            window.location.search,
+            window.location.search
           ).get("room")}`,
         },
       ],
@@ -394,22 +415,22 @@ document.addEventListener("turbo:render", ready);
 function ready() {
   const anchor = window.location.hash.substring(1);
   const pending_table = new URLSearchParams(window.location.search).get(
-    "pending_page",
+    "pending_page"
   );
   const approved_table = new URLSearchParams(window.location.search).get(
-    "approved_page",
+    "approved_page"
   );
   const denied_table = new URLSearchParams(window.location.search).get(
-    "denied_page",
+    "denied_page"
   );
   const old_pending_table = new URLSearchParams(window.location.search).get(
-    "old_pending_page",
+    "old_pending_page"
   );
   const old_approved_table = new URLSearchParams(window.location.search).get(
-    "old_approved_page",
+    "old_approved_page"
   );
   const old_denied_table = new URLSearchParams(window.location.search).get(
-    "old_denied_page",
+    "old_denied_page"
   );
   const urls = [
     pending_table,
@@ -422,16 +443,16 @@ function ready() {
   const param = pending_table
     ? "pending-accordion"
     : approved_table
-      ? "approved-accordion"
-      : denied_table
-        ? "declined-accordion"
-        : old_pending_table
-          ? "past-pending-accordion"
-          : old_approved_table
-            ? "past-approved-accordion"
-            : old_denied_table
-              ? "past-declined-accordion"
-              : null;
+    ? "approved-accordion"
+    : denied_table
+    ? "declined-accordion"
+    : old_pending_table
+    ? "past-pending-accordion"
+    : old_approved_table
+    ? "past-approved-accordion"
+    : old_denied_table
+    ? "past-declined-accordion"
+    : null;
   if (anchor === "") {
     if (param) {
       makeActive("booking-admin-tab", param);
@@ -477,7 +498,7 @@ function makeActive(tab, param) {
     });
     window.scrollBy(
       0,
-      -7 * parseFloat(getComputedStyle(document.documentElement).fontSize),
+      -7 * parseFloat(getComputedStyle(document.documentElement).fontSize)
     );
   }
 }
@@ -496,7 +517,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const selectAllCheckbox = document.getElementById("select-all");
   selectAllCheckbox.addEventListener("change", function () {
     const checkboxes = document.querySelectorAll(
-      'input[type="checkbox"][name="user_booking_approval_ids[]"]',
+      'input[type="checkbox"][name="user_booking_approval_ids[]"]'
     );
     checkboxes.forEach(function (checkbox) {
       checkbox.checked = selectAllCheckbox.checked;

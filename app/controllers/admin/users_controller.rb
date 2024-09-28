@@ -207,33 +207,38 @@ class Admin::UsersController < AdminAreaController
     end
   end
 
+  # FIXME This is used by makerapp, you just broke it
+  # Sets spaces too, because why not
+  # for user roles:
+  #   Takes an array of user ids
+  #   and a role to set for each
+  #   user_ids: [array of ids], role: role
+  # for space management:
+  #   Takes a hash of { user_id: [space_id array]}
+
   def set_role
     # Update user roles
-    @user = User.find(params[:id])
-    @user.role = params[:role]
-    @user.save
-
-    @user.staff_spaces.destroy_all if params[:role] == "regular_user"
-    @admins = User.where(role: "admin").order("lower(name) ASC")
-    @staff = User.where(role: "staff").order("lower(name) ASC")
-    @volunteers =
-      User
-        .joins(:programs)
-        .where(programs: { program_type: Program::VOLUNTEER })
-        .order("lower(name) ASC")
-    @roles = %w[admin staff regular_user]
+    # Keep staff spaces attached, even if demoted
+    params["user_ids"]&.each do |user_id|
+      user = User.find(user_id)
+      user.role = params[:role]
+      user.save
+    end
 
     # Update user staff spaces
-    if @user.present? && @user.staff?
-      space_list = params[:space].present? ? params[:space] : []
+    params["spaces"]&.each do |user_id, spaces|
+      user = User.find(user_id)
+      if user.present? && user.staff?
+        space_list = spaces.present? ? spaces : []
 
-      space_list.each do |space|
-        StaffSpace.find_or_create_by(space_id: space, user: @user)
+        space_list.each do |space|
+          StaffSpace.find_or_create_by(space_id: space, user: user)
+        end
+
+        user.staff_spaces.where.not(space_id: space_list).destroy_all
+
+        flash[:notice] = "Successfully changed spaces for the user."
       end
-
-      @user.staff_spaces.where.not(space_id: space_list).destroy_all
-
-      flash[:notice] = "Successfully changed spaces for the user."
     end
 
     # response is js
@@ -244,87 +249,29 @@ class Admin::UsersController < AdminAreaController
     end
   end
 
-  def mass_update_roles
-    user_ids = params[:user_ids]
-    role = params[:role]
+  def manage_roles
+    @admins = User.where(role: "admin").order("lower(name) ASC")
+    @staff = User.where(role: "staff").order("lower(name) ASC")
+    @volunteers =
+      User
+        .joins(:programs)
+        .where(programs: { program_type: Program::VOLUNTEER })
+        .order("lower(name) ASC")
+    @roles = %w[admin staff regular_user]
+    @space_list = Space.all
 
-    User.where(id: user_ids).each do |user|
-      user.role = role
-      user.save
-
-      if role == "regular_user"
-        user.staff_spaces.destroy_all
-      end
-
-      if user.staff?
-        space_list = params[:space].present? ? params[:space] : []
-        
-        space_list.each do |space|
-          StaffSpace.find_or_create_by(space_id: space, user: user)
-        end
-
-        user.staff_spaces.where.not(space_id: space_list).destroy_all
-      end
+    # Fetching admin spaces for each admin
+    @admin_spaces = {}
+    @admins.each do |admin|
+      @admin_spaces[admin.id] = admin.staff_spaces.pluck(:space_id)
     end
 
-    flash[:notice] = "Selected user IDs: #{user_ids}"
-    redirect_to manage_roles_admin_users_path
-  end
-
-
-def manage_roles
-  @admins = User.where(role: "admin").order("lower(name) ASC")
-  @staff = User.where(role: "staff").order("lower(name) ASC")
-  @volunteers =
-  User
-    .joins(:programs)
-    .where(programs: { program_type: Program::VOLUNTEER })
-    .order("lower(name) ASC")
-  @roles = %w[admin staff regular_user]
-  @space_list = Space.all
-
-  # Fetching admin spaces for each admin
-  @admin_spaces = {}
-  @admins.each do |admin|
-    @admin_spaces[admin.id] = admin.staff_spaces.pluck(:space_id)
-  end
-
-  # Fetching staff spaces for each staff
-  @staff_spaces = {}
-  @staff.each do |staff|
-    @staff_spaces[staff.id] = staff.staff_spaces.pluck(:space_id)
-  end
-end
-
-def fetch_spaces
-  user = User.find_by(id: params[:id])
-  if user
-    all_spaces = Space.select(:id, :name)
-    user_space_ids = user.spaces.pluck(:id).to_set
-
-    spaces = all_spaces.map do |space|
-      { id: space.id, name: space.name, is_assigned: user_space_ids.include?(space.id) }
+    # Fetching staff spaces for each staff
+    @staff_spaces = {}
+    @staff.each do |staff|
+      @staff_spaces[staff.id] = staff.staff_spaces.pluck(:space_id)
     end
-
-    render json: spaces
-  else
-    render json: { error: "User not found" }, status: :not_found
   end
-rescue StandardError => e
-  render json: { error: e.message }, status: :internal_server_error
-end
-
-def update_spaces
-  user = User.find_by(id: params[:id])
-  if user
-    user.space_ids = params[:space_ids]
-    render json: { message: "Spaces updated successfully" }
-  else
-    render json: { error: "User not found" }, status: :not_found
-  end
-rescue StandardError => e
-  render json: { error: e.message }, status: :internal_server_error
-end
 
   private
 

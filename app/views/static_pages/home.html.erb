@@ -38,8 +38,8 @@
           </div>
         </div>
         <%= render 'static_pages/home_shortcuts' %>
-        <%= render 'static_pages/home_volunteer' if signed_in? %>
-        <%= render 'static_pages/home_development' if signed_in? %>
+        <%= render 'static_pages/home_volunteer' if signed_in? && current_user.volunteer? %>
+        <%= render 'static_pages/home_development' if signed_in? && current_user.dev_program? %>
       </div>
       <!--Middle column -->
       <div class="col-xl-6 order-xl-1 order-0">
@@ -83,7 +83,8 @@
           <div class="card-body">
             <h2><%= t('home.workshops.header') %></h2>
             <a href="https://simpli.events/u/uottawaceed"><%= t('home.workshops.link') %></a>
-            <% @workshops&.each do |w| %>
+            <% begin %>
+            <% @workshops.each do |w| %>
               <% start = Time.zone.at(w['startTime'].to_i / 1000) %>
               <a class="d-flex workshop-card" href="<%= w['link'] %>">
                 <div class="text-center workshop-date" style="background-image: url('<%= w['picture'] %>')">
@@ -92,9 +93,11 @@
                 <div class="workshop-desc">
                   <p class="workshop-title"><%= w['name'] %></p>
                   <p class="workshop-date-side"><%= start.strftime '%a, %b %d, %l:%M %p' %></p>
-                  <p class="workshop-cost">Free?</p>
+                  <!-- <p class="workshop-cost">Free</p> -->
                 </div>
               </a>
+            <% end %>
+            <% rescue %>
             <% end %>
           </div>
         </div>
