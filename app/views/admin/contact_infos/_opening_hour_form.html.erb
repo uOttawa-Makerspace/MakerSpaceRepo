@@ -11,12 +11,13 @@
         </div>
         <div class="row align-items-end">
             <% %i[sunday monday tuesday wednesday thursday friday saturday].each do |day| %>
-                <div class="col">
+                <div class="col-lg-auto">
                     <%= h.label "#{day}_opening".to_s, "#{day}_opening".humanize, class: 'form-label' %>
-                    <%= h.time_field "#{day}_opening".to_s, class: 'form-control' %>
+                    <%# To remove the seconds and milliseconds option%>
+                    <%= h.time_field "#{day}_opening".to_s, class: 'form-control', value: hour["#{day}_opening"]&.to_formatted_s(:time) %>
 
                     <%= h.label "#{day}_closing".to_s, "#{day}_closing".humanize, class: 'form-label' %>
-                    <%= h.time_field "#{day}_closing".to_s, class: 'form-control' %>
+                    <%= h.time_field "#{day}_closing".to_s, class: 'form-control', value: hour["#{day}_closing"]&.to_formatted_s(:time) %>
                 </div>
             <% end %>
             <div class="col">
