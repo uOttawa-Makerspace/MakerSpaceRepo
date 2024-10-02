@@ -37,12 +37,12 @@
                 <%= f.label :phone_number, 'Phone Number', class: 'form-label' %>
               </div>
 
-              <hr />
               <div class="mb-3">
                 <%= f.label :show_hours, 'Show Hours', class: 'form-check-label' %>
                 <%= f.check_box(:show_hours, class: 'form-check-input') %>
               </div>
 
+              <hr />
               <div class="mb-3">
                 <%= render partial: 'opening_hour_form', locals: { f:, opening_hours: @contact_info.opening_hours } %>
               </div>

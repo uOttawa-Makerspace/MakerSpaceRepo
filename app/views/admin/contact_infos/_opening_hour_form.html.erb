@@ -9,6 +9,10 @@
             <%= h.label :target_fr, 'French table header: ', class: 'input-group-text' %>
             <%= h.text_field :target_fr, class: 'form-control fw-bold' %>
         </div>
+        <div class="form-check">
+            <%= h.label :closed_all_day, class: 'form-check-label' %>
+            <%= h.check_box :closed_all_day, class: 'form-check-input' %>
+        </div>
         <div>
             <% %i[sunday monday tuesday wednesday thursday friday saturday].each do |day| %>
                 <div class="row row-cols-5">
