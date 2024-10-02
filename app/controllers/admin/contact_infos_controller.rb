@@ -66,13 +66,20 @@ class Admin::ContactInfosController < AdminAreaController
         target_fr
         notes_en
         notes_fr
-        sunday
-        monday
-        tuesday
-        wednesday
-        thursday
-        friday
-        saturday
+        sunday_opening
+        sunday_closing
+        monday_opening
+        monday_closing
+        tuesday_opening
+        tuesday_closing
+        wednesday_opening
+        wednesday_closing
+        thursday_opening
+        thursday_closing
+        friday_opening
+        friday_closing
+        saturday_opening
+        saturday_closing
         _destroy
       ]
     )

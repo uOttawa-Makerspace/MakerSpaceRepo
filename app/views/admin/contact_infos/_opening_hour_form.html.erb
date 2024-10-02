@@ -12,8 +12,11 @@
         <div class="row align-items-end">
             <% %i[sunday monday tuesday wednesday thursday friday saturday].each do |day| %>
                 <div class="col">
-                    <%= h.label day, day.to_s.humanize, class: 'form-label' %>
-                    <%= h.time_field day, class: 'form-control' %>
+                    <%= h.label "#{day}_opening".to_s, "#{day}_opening".humanize, class: 'form-label' %>
+                    <%= h.time_field "#{day}_opening".to_s, class: 'form-control' %>
+
+                    <%= h.label "#{day}_closing".to_s, "#{day}_closing".humanize, class: 'form-label' %>
+                    <%= h.time_field "#{day}_closing".to_s, class: 'form-control' %>
                 </div>
             <% end %>
             <div class="col">
