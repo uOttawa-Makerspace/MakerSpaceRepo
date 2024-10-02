@@ -605,18 +605,26 @@ ActiveRecord::Schema[7.0].define(version: 2024_09_24_193746) do
     t.string "target_fr"
     t.time "sunday_opening"
     t.time "sunday_closing"
+    t.boolean "sunday_closed_all_day", default: false
     t.time "monday_opening"
     t.time "monday_closing"
+    t.boolean "monday_closed_all_day", default: false
     t.time "tuesday_opening"
     t.time "tuesday_closing"
+    t.boolean "tuesday_closed_all_day", default: false
     t.time "wednesday_opening"
     t.time "wednesday_closing"
+    t.boolean "wednesday_closed_all_day", default: false
     t.time "thursday_opening"
     t.time "thursday_closing"
+    t.boolean "thursday_closed_all_day", default: false
     t.time "friday_opening"
     t.time "friday_closing"
+    t.boolean "friday_closed_all_day", default: false
     t.time "saturday_opening"
     t.time "saturday_closing"
+    t.boolean "saturday_closed_all_day", default: false
+    t.boolean "closed_all_day", default: false
     t.text "notes_en"
     t.text "notes_fr"
     t.index ["contact_info_id"], name: "index_opening_hours_on_contact_info_id"

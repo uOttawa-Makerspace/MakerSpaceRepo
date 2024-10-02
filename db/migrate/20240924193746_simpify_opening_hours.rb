@@ -9,7 +9,9 @@ class SimpifyOpeningHours < ActiveRecord::Migration[7.0]
       %i[sunday monday tuesday wednesday thursday friday saturday].each do |day|
         t.column "#{day}_opening", :time, default: nil, null: true
         t.column "#{day}_closing", :time, default: nil, null: true
+        t.column "#{day}_closed_all_day", :boolean, default: false
       end
+      t.column :closed_all_day, :boolean, default: false
       # Notes at the bottom. Is text not string!
       t.column :notes_en, :text
       t.column :notes_fr, :text

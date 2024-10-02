@@ -9,15 +9,18 @@
             <%= h.label :target_fr, 'French table header: ', class: 'input-group-text' %>
             <%= h.text_field :target_fr, class: 'form-control fw-bold' %>
         </div>
-        <div class="row align-items-end">
+        <div>
             <% %i[sunday monday tuesday wednesday thursday friday saturday].each do |day| %>
-                <div class="col-lg-auto">
-                    <%= h.label "#{day}_opening".to_s, "#{day}_opening".humanize, class: 'form-label' %>
+                <div class="row row-cols-5">
                     <%# To remove the seconds and milliseconds option%>
-                    <%= h.time_field "#{day}_opening".to_s, class: 'form-control', value: hour["#{day}_opening"]&.to_formatted_s(:time) %>
-
-                    <%= h.label "#{day}_closing".to_s, "#{day}_closing".humanize, class: 'form-label' %>
-                    <%= h.time_field "#{day}_closing".to_s, class: 'form-control', value: hour["#{day}_closing"]&.to_formatted_s(:time) %>
+                    <%= h.label "#{day}_opening", day.to_s.humanize, class: 'form-label' %>
+                    <div class="form-check">
+                        <%= h.check_box "#{day}_closed_all_day", class: 'form-check-input' %>
+                        <%= h.label "#{day}_closed_all_day", 'Closed all day?'.humanize, class: 'form-check-label' %>
+                    </div>
+                    <%= h.time_field "#{day}_opening", class: 'form-control w-auto', value: hour["#{day}_opening"]&.to_formatted_s(:time) %>
+                    <%= h.label "#{day}_closing", 'to', class: 'form-label' %>
+                    <%= h.time_field "#{day}_closing".to_s, class: 'form-control w-auto', value: hour["#{day}_closing"]&.to_formatted_s(:time) %>
                 </div>
             <% end %>
             <div class="col">
