@@ -624,7 +624,7 @@ ActiveRecord::Schema[7.0].define(version: 2024_09_24_193746) do
     t.time "saturday_opening"
     t.time "saturday_closing"
     t.boolean "saturday_closed_all_day", default: false
-    t.boolean "closed_all_day", default: false
+    t.boolean "closed_all_week", default: false
     t.text "notes_en"
     t.text "notes_fr"
     t.index ["contact_info_id"], name: "index_opening_hours_on_contact_info_id"

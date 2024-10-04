@@ -1,38 +1,50 @@
 <% opening_hours.each do |hour| %>
     <%= f.fields_for :opening_hours, hour do |h| %>
         <%= h.hidden_field :id %>
-        <div class="input-group mb-3">
-            <%= h.label :target_en, 'English table header: ', class: 'input-group-text' %>
-            <%= h.text_field :target_en, class: 'form-control fw-bold' %>
-        </div>
-        <div class="input-group mb-3">
-            <%= h.label :target_fr, 'French table header: ', class: 'input-group-text' %>
-            <%= h.text_field :target_fr, class: 'form-control fw-bold' %>
-        </div>
-        <div class="form-check">
-            <%= h.label :closed_all_day, class: 'form-check-label' %>
-            <%= h.check_box :closed_all_day, class: 'form-check-input' %>
-        </div>
-        <div>
-            <% %i[sunday monday tuesday wednesday thursday friday saturday].each do |day| %>
-                <div class="row row-cols-5">
-                    <%# To remove the seconds and milliseconds option%>
-                    <%= h.label "#{day}_opening", day.to_s.humanize, class: 'form-label' %>
-                    <div class="form-check">
-                        <%= h.check_box "#{day}_closed_all_day", class: 'form-check-input' %>
-                        <%= h.label "#{day}_closed_all_day", 'Closed all day?'.humanize, class: 'form-check-label' %>
-                    </div>
-                    <%= h.time_field "#{day}_opening", class: 'form-control w-auto', value: hour["#{day}_opening"]&.to_formatted_s(:time) %>
-                    <%= h.label "#{day}_closing", 'to', class: 'form-label' %>
-                    <%= h.time_field "#{day}_closing".to_s, class: 'form-control w-auto', value: hour["#{day}_closing"]&.to_formatted_s(:time) %>
-                </div>
-            <% end %>
-            <div class="col">
+        <div class="row">
+            <div class="col-lg-8">
+                <fieldset class="input-group mb-3" data-toggled-by="<%= h.field_id :_destroy, index: nil %>">
+                    <%= h.label :target_en, 'English table header: ', class: 'input-group-text' %>
+                    <%= h.text_field :target_en, class: 'form-control fw-bold' %>
+                    <%= h.label :target_fr, 'French table header: ', class: 'input-group-text' %>
+                    <%= h.text_field :target_fr, class: 'form-control fw-bold' %>
+                </fieldset>
+            </div>
+            <div class="form-check form-switch col-lg-2">
+                <%= h.label :closed_all_week, class: 'form-check-label' %>
+                <%= h.check_box :closed_all_week, class: 'form-check-input' %>
+            </div>
+            <div class="col-lg-2">
                 <%= h.check_box :_destroy, class: 'btn-check' %>
                 <%= h.label :_destroy, 'Mark for deletion?', class: 'btn btn-outline-danger' %>
             </div>
         </div>
-        <div class="row row-cols-lg-2 mt-3">
+        <fieldset data-toggled-by="#<%= h.field_id :closed_all_week, index: nil %> #<%= h.field_id :_destroy, index: nil %>">
+            <div>
+                <% %i[sunday monday tuesday wednesday thursday friday saturday].each do |day| %>
+                    <div class="row">
+                        <%# To remove the seconds and milliseconds option%>
+                        <%= h.label "#{day}_opening", day.to_s.humanize, class: 'form-label col-3' %>
+                        <div class="form-check col-2">
+                            <%= h.check_box "#{day}_closed_all_day", class: 'form-check-input' %>
+                            <%= h.label "#{day}_closed_all_day", 'Closed all day?'.humanize, class: 'form-check-label' %>
+                        </div>
+                        <fieldset class="col-7 row row-cols-3" data-toggled-by="#<%= h.field_id("#{day}_closed_all_day", index: nil) %>">
+                            <div>
+                                <%= h.time_field "#{day}_opening", class: 'form-control', value: hour["#{day}_opening"]&.to_formatted_s(:time) %>
+                            </div>
+                            <div>
+                                <%= h.label "#{day}_closing", 'to', class: 'form-label' %>
+                            </div>
+                            <div>
+                                <%= h.time_field "#{day}_closing".to_s, class: 'form-control', value: hour["#{day}_closing"]&.to_formatted_s(:time) %>
+                            </div>
+                        </fieldset>
+                    </div>
+                <% end %>
+            </div>
+        </fieldset>
+        <div class="row row-cols-lg-2 my-3">
             <div>
                 <%= h.label :notes_en, 'English footer notes', class: 'form-label' %>
                 <%= h.trix_editor :notes_en, class: 'form-control' %>

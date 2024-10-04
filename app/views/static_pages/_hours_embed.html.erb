@@ -5,7 +5,7 @@
         <% closing = hour["#{day}_closing"] %>
         <% closed_all_day = hour["#{day}_closed_all_day"] || hour['closed_all_day'] %>
         <div class="formatted-hour-row">
-            <span><%= t('hours.tags')[day] %></span><span><%= opening && closing && !closed_all_day ? "#{opening.to_formatted_s(:time)} - #{closing.to_formatted_s(:time)}" : t('hours.tags.closed') %></span>
+            <span><%= t('hours.tags')[day] %></span><span><%= opening && closing && !closed_all_day ? "#{opening.strftime('%I:%M %p')} - #{closing.strftime('%I:%M %p')}" : t('hours.tags.closed') %></span>
         </div>
     <% end %>
     <p><%= hour.notes&.html_safe %></p>

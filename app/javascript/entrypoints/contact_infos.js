@@ -9,4 +9,19 @@ document.addEventListener("turbo:load", function () {
       });
     }
   }
+
+  document.querySelectorAll("fieldset[data-toggled-by]").forEach((fields) => {
+    // Fieldset gives checkboxes to listen to
+    fields.dataset.toggledBy.split(" ").forEach((checkid) => {
+      // Get the checkbox
+      let check = document.querySelector(checkid);
+      if (check) {
+        check.addEventListener("change", () => {
+          // Update the field
+          fields.disabled = check.checked;
+        });
+        check.dispatchEvent(new Event("change"));
+      }
+    });
+  });
 });
