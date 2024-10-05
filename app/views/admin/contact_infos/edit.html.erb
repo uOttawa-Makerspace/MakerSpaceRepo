@@ -42,25 +42,14 @@
                 <%= f.check_box(:show_hours, class: 'form-check-input') %>
               </div>
 
-              <hr />
-              <div class="mb-3">
-                <%= render partial: 'opening_hour_form', locals: { f:, opening_hours: @contact_info.opening_hours } %>
-              </div>
-              <hr />
-              <div class="accordion mb-3">
-                <div class="accordion-item">
-                  <h2 class="accordion-header">
-                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#newOpeningHourAccordion" aria-expanded="false" aria-controls="openingHourAccordionCollapse">
-                      New Opening Hour
-                    </button>
-                  </h2>
-                  <div class="accordion-collapse collapse" id="newOpeningHourAccordion">
-                    <div class="accordion-body">
-                      <%= render partial: 'opening_hour_form', locals: { f:, opening_hours: [OpeningHour.new] } %>
-                    </div>
-                  </div>
+              <div class="mb-3" id="openingHours">
+                <%= render partial: 'opening_hour_form', locals: { f: } %>
+                <%# Should not be submit if title is kept blank, used as a template for new hours%>
+                <div id="newOpeningHourSubForm" hidden>
+                  <%= render partial: 'opening_hour_form', locals: { f:, child_index: 'CHILDINDEX' } %>
                 </div>
               </div>
+              <a id="addNewOpeningHour" class="btn btn-outline-success">New opening hour</a>
             </div>
 
             <div class="col-lg-12 text-center">

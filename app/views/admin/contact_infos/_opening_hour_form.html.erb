@@ -1,19 +1,21 @@
-<% opening_hours.each do |hour| %>
-    <%= f.fields_for :opening_hours, hour do |h| %>
+<hr />
+<div>
+    <%# Set child index to something we can replace with JS regex quickly %>
+    <%= f.fields_for :opening_hours, child_index: local_assigns[:child_index] do |h| %>
         <%= h.hidden_field :id %>
         <div class="row">
             <div class="col-lg-8">
-                <fieldset class="input-group mb-3" data-toggled-by="<%= h.field_id :_destroy, index: nil %>">
+                <fieldset class="input-group mb-3" data-toggled-by="#<%= h.field_id :_destroy, index: nil %>">
                     <%= h.label :target_en, 'English table header: ', class: 'input-group-text' %>
                     <%= h.text_field :target_en, class: 'form-control fw-bold' %>
                     <%= h.label :target_fr, 'French table header: ', class: 'input-group-text' %>
                     <%= h.text_field :target_fr, class: 'form-control fw-bold' %>
                 </fieldset>
             </div>
-            <div class="form-check form-switch col-lg-2">
+            <fieldset class="form-check form-switch col-lg-2" data-toggled-by="#<%= h.field_id :_destroy, index: nil %>">
                 <%= h.label :closed_all_week, class: 'form-check-label' %>
                 <%= h.check_box :closed_all_week, class: 'form-check-input' %>
-            </div>
+            </fieldset>
             <div class="col-lg-2">
                 <%= h.check_box :_destroy, class: 'btn-check' %>
                 <%= h.label :_destroy, 'Mark for deletion?', class: 'btn btn-outline-danger' %>
@@ -31,13 +33,13 @@
                         </div>
                         <fieldset class="col-7 row row-cols-3" data-toggled-by="#<%= h.field_id("#{day}_closed_all_day", index: nil) %>">
                             <div>
-                                <%= h.time_field "#{day}_opening", class: 'form-control', value: hour["#{day}_opening"]&.to_formatted_s(:time) %>
+                                <%= h.time_field "#{day}_opening", class: 'form-control', value: h.object["#{day}_opening"]&.to_formatted_s(:time) %>
                             </div>
                             <div>
                                 <%= h.label "#{day}_closing", 'to', class: 'form-label' %>
                             </div>
                             <div>
-                                <%= h.time_field "#{day}_closing".to_s, class: 'form-control', value: hour["#{day}_closing"]&.to_formatted_s(:time) %>
+                                <%= h.time_field "#{day}_closing".to_s, class: 'form-control', value: h.object["#{day}_closing"]&.to_formatted_s(:time) %>
                             </div>
                         </fieldset>
                     </div>
@@ -55,4 +57,4 @@
             </div>
         </div>
     <% end %>
-<% end %>
+</div>

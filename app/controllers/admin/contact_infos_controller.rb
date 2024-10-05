@@ -5,7 +5,7 @@ class Admin::ContactInfosController < AdminAreaController
 
   def new
     @contact_info = ContactInfo.new
-    #@contact_info.build_opening_hours
+    @contact_info.opening_hours.build
   end
 
   def create
@@ -26,7 +26,7 @@ class Admin::ContactInfosController < AdminAreaController
 
   def edit
     @contact_info = ContactInfo.find(params[:id])
-    #@contact_info.build_opening_hours if @contact_info.opening_hours.blank?
+    @contact_info.opening_hours.build if @contact_info.opening_hours.blank?
   end
 
   def update
