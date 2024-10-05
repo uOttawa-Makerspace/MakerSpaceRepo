@@ -1,6 +1,8 @@
 class OpeningHour < ApplicationRecord
   belongs_to :contact_info
 
+  default_scope -> { order(:id) }
+
   delegate :tag, to: "ApplicationController.helpers"
 
   def notes
