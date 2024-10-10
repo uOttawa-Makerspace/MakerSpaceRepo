@@ -66,7 +66,7 @@ class Admin::ContactInfosController < AdminAreaController
         target_fr
         notes_en
         notes_fr
-        closed_all_day
+        closed_all_week
         sunday_opening
         sunday_closing
         sunday_closed_all_day
