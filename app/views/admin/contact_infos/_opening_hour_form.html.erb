@@ -1,8 +1,8 @@
 <hr />
 <div>
     <%# Set child index to something we can replace with JS regex quickly %>
-    <%= f.fields_for :opening_hours, child_index: local_assigns[:child_index], models: (f.object.opening_hours.empty? ? OpeningHour.new : f.object.opening_hours) do |h| %>
-        <%= h.hidden_field :id %>
+    <%= f.fields_for :opening_hours, child_index: local_assigns[:child_index], models: local_assigns[:models] do |h| %>
+        <%= h.hidden_field(:id) %>
         <div class="row">
             <div class="col-lg-8">
                 <fieldset class="input-group mb-3" data-toggled-by="#<%= h.field_id :_destroy, index: nil %>">
@@ -13,7 +13,7 @@
                 </fieldset>
             </div>
             <fieldset class="col-lg-2" data-toggled-by="#<%= h.field_id :_destroy, index: nil %>">
-                <%= h.label :closed_all_week, 'Hide closed weeks?', class: 'form-label' %>
+                <%= h.label :closed_all_week, 'Display week?', class: 'form-label' %>
                 <%= h.select :closed_all_week, OpeningHour.closed_all_weeks.keys, {}, { class: 'form-select' } %>
             </fieldset>
             <div class="col-lg-2">
@@ -27,7 +27,7 @@
                     <div class="row">
                         <%# To remove the seconds and milliseconds option%>
                         <div class="col-2">
-                            <%= h.label "#{day}_closed_all_day", 'Closed all day?'.humanize, class: 'form-label' %>
+                            <%#%= h.label "#{day}_closed_all_day", 'Closed all day?'.humanize, class: 'form-label' %>
                             <%= h.select "#{day}_closed_all_day", OpeningHour.defined_enums["#{day}_closed_all_day"].keys, {}, { class: 'form-select w-auto' } %>
                         </div>
                         <%= h.label "#{day}_opening", day.to_s.humanize, class: 'form-label col-3' %>

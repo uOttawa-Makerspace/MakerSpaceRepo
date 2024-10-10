@@ -46,7 +46,7 @@
                 <%= render partial: 'opening_hour_form', locals: { f: } %>
                 <%# Should not be submit if title is kept blank, used as a template for new hours%>
                 <div id="newOpeningHourSubForm" hidden>
-                  <%= render partial: 'opening_hour_form', locals: { f:, child_index: 'CHILDINDEX' } %>
+                  <%= render partial: 'opening_hour_form', locals: { f:, child_index: 'CHILDINDEX', models: [OpeningHour.new] } %>
                 </div>
               </div>
               <a id="addNewOpeningHour" class="btn btn-outline-success">New opening hour</a>
