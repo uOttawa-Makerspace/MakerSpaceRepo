@@ -19,6 +19,12 @@ section#hours-of-operation {
   }
   span {
     display: inline-block;
-    width: 50%;
+    white-space: nowrap;
+    &:first-child {
+      width: 40%;
+    }
+    &:last-child {
+      width: 60%;
+    }
   }
 }
