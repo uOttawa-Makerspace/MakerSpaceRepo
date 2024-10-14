@@ -26,7 +26,7 @@ window.findSession = function (table_class, id = "query") {
 
 var sort_direction = 1;
 window.sortTable = function (table_name, col, isDateColumn = false) {
-  console.log(`sortTable(${table_name}, ${col}, ${isDateColumn})`);
+  //console.log(`sortTable(${table_name}, ${col}, ${isDateColumn})`);
   const table = document.getElementsByClassName(table_name)[0];
   let rows;
   let swapElement, currentElement;
@@ -40,8 +40,11 @@ window.sortTable = function (table_name, col, isDateColumn = false) {
 
         for (let j = i + 1; j < rows.length; j++) {
           currentElement = rows[j].getElementsByTagName("td")[col];
-          const swapElStr = swapElement.innerText;
-          const currElStr = currentElement.innerText;
+          // sub_space_booking has date ranges, we can't parse the whole thing as a date
+          // So we specify the start date as the sort key
+          const swapElStr = swapElement.dataset.sortAs || swapElement.innerText;
+          const currElStr =
+            currentElement.dataset.sortAs || currentElement.innerText;
 
           if (
             !isDateColumn &&
