@@ -1,6 +1,6 @@
 <section>
-  <div class="title">Booking Admin Panel</div>
-  <div class="container mx-auto">
+  <h3 class="text-center my-3">Booking Admin Panel</h3>
+  <div class="mx-auto">
     <div class="card mb-3">
       <div class="card-header" type="button" data-bs-toggle="collapse" data-bs-target="#booking-body" aria-expanded="true" aria-controls="booking-body">
         <h5 class="card-title">Manage Bookings</h5>
@@ -20,16 +20,16 @@
                   <%= page_entries_info @pending_bookings, model: 'subspace_booking' %>
                   <%= will_paginate @pending_bookings, container: false, param_name: 'pending_page' %>
                 </div>
-                <table class="table table-striped">
+                <table class="table table-striped table-sub-space-booking-pending">
                   <thead class="text-center  table-primary">
                   <tr>
-                    <th>Room</th>
-                    <th>Name</th>
-                    <th>Description</th>
-                    <th>User</th>
-                    <th>Email</th>
-                    <th>Booking Time</th>
-                    <th>Actions</th>
+                    <th>Room <span onclick="sortTable('table-sub-space-booking-pending', 0)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>Name <span onclick="sortTable('table-sub-space-booking-pending', 1)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>Description <span onclick="sortTable('table-sub-space-booking-pending', 2)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>User <span onclick="sortTable('table-sub-space-booking-pending', 3)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>Email <span onclick="sortTable('table-sub-space-booking-pending', 4)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>Booking Time <span onclick="sortTable('table-sub-space-booking-pending', 5, true)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>Actions <span onclick="sortTable('table-sub-space-booking-pending', 6)"><%= fa_icon('arrow-down') %></span></th>
                   </tr>
                   </thead>
                   <tbody>
@@ -40,7 +40,7 @@
                       <td><%= booking.description %></td>
                       <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
                       <td><%= booking.user.email %></td>
-                      <td><%= booking.start_time.to_formatted_s(:long) %> to <%= booking.end_time.to_fs(:time) %></td>
+                      <td data-sort-as="<%= booking.start_time %>"><%= booking.start_time.to_formatted_s(:long) %> to <%= booking.end_time.to_fs(:time) %></td>
                       <td>
                         <div class="btn-group" role="group">
                           <%= button_to 'Approve', sub_space_booking_approve_path(booking), method: :put, class: 'btn btn-success' %>
@@ -67,18 +67,18 @@
                   <%= page_entries_info @approved_bookings, model: 'subspace_booking' %>
                   <%= will_paginate @approved_bookings, container: false, param_name: 'approved_page' %>
                 </div>
-                <table class="table table-striped">
+                <table class="table table-striped table-sub-space-booking-accepted">
                   <thead class="text-center  table-primary">
                   <tr>
-                    <th>Room</th>
-                    <th>Name</th>
-                    <th>Description</th>
-                    <th>User</th>
-                    <th>Email</th>
-                    <th>Booking Time</th>
-                    <th>Booking Privacy</th>
-                    <th>Approved By</th>
-                    <th>Approved At</th>
+                    <th>Room <span onclick="sortTable('table-sub-space-booking-accepted', 0)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>Name <span onclick="sortTable('table-sub-space-booking-accepted', 1)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>Description <span onclick="sortTable('table-sub-space-booking-accepted', 2)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>User <span onclick="sortTable('table-sub-space-booking-accepted', 3)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>Email <span onclick="sortTable('table-sub-space-booking-accepted', 4)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>Booking Time <span onclick="sortTable('table-sub-space-booking-accepted', 5, true)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>Booking Privacy <span onclick="sortTable('table-sub-space-booking-accepted', 6)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>Approved By <span onclick="sortTable('table-sub-space-booking-accepted', 7)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>Approved At <span onclick="sortTable('table-sub-space-booking-accepted', 8, true)"><%= fa_icon('arrow-down') %></span></th>
                     <th>Actions</th>
                   </tr>
                   </thead>
@@ -90,7 +90,7 @@
                       <td><%= booking.description %></td>
                       <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
                       <td><%= booking.user.email %></td>
-                      <td><%= booking.start_time.to_formatted_s(:long) %> to <%= booking.end_time.to_fs(:time) %></td>
+                      <td data-sort-as="<%= booking.start_time %>"><%= booking.start_time.to_formatted_s(:long) %> to <%= booking.end_time.to_fs(:time) %></td>
                       <td><%= booking.public ? 'Public' : 'Private' %></td>
                       <td><%= booking.approved_by.nil? ? 'N/A' : link_to(booking.approved_by.name, user_path(booking.approved_by.username)) %></td>
                       <td><%= booking.approved_at.nil? ? 'N/A' : booking.approved_at.to_formatted_s(:long) %></td>
@@ -120,15 +120,15 @@
                   <%= page_entries_info @declined_bookings, model: 'subspace_booking' %>
                   <%= will_paginate @declined_bookings, container: false, param_name: 'denied_page' %>
                 </div>
-                <table class="table table-striped">
-                  <thead class="text-center  table-primary">
+                <table class="table table-striped table-sub-space-booking-declined">
+                  <thead class="text-center table-primary">
                   <tr>
-                    <th>Room</th>
-                    <th>Name</th>
-                    <th>Description</th>
-                    <th>User</th>
-                    <th>Email</th>
-                    <th>Booking Time</th>
+                    <th>Room <span onclick="sortTable('table-sub-space-booking-declined', 0)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>Name <span onclick="sortTable('table-sub-space-booking-declined', 1)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>Description <span onclick="sortTable('table-sub-space-booking-declined', 2)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>User <span onclick="sortTable('table-sub-space-booking-declined', 3)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>Email <span onclick="sortTable('table-sub-space-booking-declined', 4)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>Booking Time <span onclick="sortTable('table-sub-space-booking-declined', 5, true)"><%= fa_icon('arrow-down') %></span></th>
                     <th>Actions</th>
                   </tr>
                   </thead>
@@ -140,7 +140,7 @@
                       <td><%= booking.description %></td>
                       <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
                       <td><%= booking.user.email %></td>
-                      <td><%= booking.start_time.to_formatted_s(:long) %> to <%= booking.end_time.to_fs(:time) %></td>
+                      <td data-sort-as="<%= booking.start_time %>"><%= booking.start_time.to_formatted_s(:long) %> to <%= booking.end_time.to_fs(:time) %></td>
                       <td>
                         <div class="btn-group" role="group">
                           <%= button_to 'Approve', sub_space_booking_approve_path(booking), method: :put, class: 'btn btn-success' %>
@@ -177,14 +177,14 @@
             </div>
             <div class="accordion-body collapse show" aria-labelledby="user-approval-header" data-bs-parent="#user-approval-accordion" id="userApprovalBody">
               <%= form_with url: bulk_approve_access_sub_space_booking_index_path, method: :put, id: 'bulk-approve-form' do |f| %>
-                <table class="table table-striped">
+                <table class="table table-striped table-sub-space-booking-pending-approved">
                   <thead class="text-center table-primary">
                   <tr>
                     <th><input type="checkbox" class="form-check-input" id="select-all" /><label for="select-all" class="form-check-label">Select</label></th>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Comments</th>
-                    <th>Date of Request</th>
+                    <th>Name <span onclick="sortTable('table-sub-space-booking-pending-approved', 1)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>Email <span onclick="sortTable('table-sub-space-booking-pending-approved', 2)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>Comments <span onclick="sortTable('table-sub-space-booking-pending-approved', 3)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>Date of Request <span onclick="sortTable('table-sub-space-booking-pending-approved', 4, true)"><%= fa_icon('arrow-down') %></span></th>
                     <th>Actions</th>
                   </tr>
                   </thead>
@@ -222,14 +222,14 @@
               </h5>
             </div>
             <div class="accordion-body collapse show" aria-labelledby="user-approved-header" data-bs-parent="#user-approved-accordion" id="userApprovedBody">
-              <table class="table table-striped">
+              <table class="table table-striped table-sub-space-booking-users-approved">
                 <thead class="text-center  table-primary">
                 <tr>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Comments</th>
-                  <th>Date of Request</th>
-                  <th>Approved by</th>
+                  <th>Name <span onclick="sortTable('table-sub-space-booking-users-approved', 0)"><%= fa_icon('arrow-down') %></span></th>
+                  <th>Email <span onclick="sortTable('table-sub-space-booking-users-approved', 1)"><%= fa_icon('arrow-down') %></span></th>
+                  <th>Comments <span onclick="sortTable('table-sub-space-booking-users-approved', 2)"><%= fa_icon('arrow-down') %></span></th>
+                  <th>Date of Request <span onclick="sortTable('table-sub-space-booking-users-approved', 3)"><%= fa_icon('arrow-down') %></span></th>
+                  <th>Approved by <span onclick="sortTable('table-sub-space-booking-users-approved', 4, true)"><%= fa_icon('arrow-down') %></span></th>
                   <th>Actions</th>
                 </tr>
                 </thead>
@@ -274,15 +274,15 @@
                   <%= page_entries_info @old_pending_bookings, model: 'subspace_booking' %>
                   <%= will_paginate @old_pending_bookings, container: false, param_name: 'old_pending_page' %>
                 </div>
-                <table class="table table-striped">
-                  <thead class="text-center  table-primary">
+                <table class="table table-striped table-sub-space-booking-old-pending">
+                  <thead class="text-center table-primary">
                   <tr>
-                    <th>Room</th>
-                    <th>Name</th>
-                    <th>Description</th>
-                    <th>User</th>
-                    <th>Email</th>
-                    <th>Booking Time</th>
+                    <th>Room <span onclick="sortTable('table-sub-space-booking-old-pending', 0)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>Name <span onclick="sortTable('table-sub-space-booking-old-pending', 1)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>Description <span onclick="sortTable('table-sub-space-booking-old-pending', 2)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>User <span onclick="sortTable('table-sub-space-booking-old-pending', 3)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>Email <span onclick="sortTable('table-sub-space-booking-old-pending', 4)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>Booking Time <span onclick="sortTable('table-sub-space-booking-old-pending', 5, true)"><%= fa_icon('arrow-down') %></span></th>
                   </tr>
                   </thead>
                   <tbody>
@@ -293,7 +293,7 @@
                       <td><%= booking.description %></td>
                       <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
                       <td><%= booking.user.email %></td>
-                      <td><%= booking.start_time.to_formatted_s(:long) %> to <%= booking.end_time.to_fs(:time) %></td>
+                      <td data-sort-as="<%= booking.start_time %>"><%= booking.start_time.to_formatted_s(:long) %> to <%= booking.end_time.to_fs(:time) %></td>
                     </tr>
                   <% end %>
                   </table>
@@ -314,17 +314,17 @@
                   <%= page_entries_info @old_approved_bookings, model: 'subspace_booking' %>
                   <%= will_paginate @old_approved_bookings, container: false, param_name: 'old_approved_page' %>
                 </div>
-                <table class="table table-striped">
-                  <thead class="text-center  table-primary">
+                <table class="table table-striped table-sub-space-booking-expired-accepted">
+                  <thead class="text-center table-primary">
                   <tr>
-                    <th>Room</th>
-                    <th>Name</th>
-                    <th>Description</th>
-                    <th>User</th>
-                    <th>Email</th>
-                    <th>Booking Time</th>
-                    <th>Approved by</th>
-                    <th>Approved at</th>
+                    <th>Room <span onclick="sortTable('table-sub-space-booking-expired-accepted', 0)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>Name <span onclick="sortTable('table-sub-space-booking-expired-accepted', 1)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>Description <span onclick="sortTable('table-sub-space-booking-expired-accepted', 2)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>User <span onclick="sortTable('table-sub-space-booking-expired-accepted', 3)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>Email <span onclick="sortTable('table-sub-space-booking-expired-accepted', 4)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>Booking Time <span onclick="sortTable('table-sub-space-booking-expired-accepted', 5, true)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>Approved by <span onclick="sortTable('table-sub-space-booking-expired-accepted', 6)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>Approved at <span onclick="sortTable('table-sub-space-booking-expired-accepted', 7, true)"><%= fa_icon('arrow-down') %></span></th>
                   </tr>
                   </thead>
                   <tbody>
@@ -335,7 +335,7 @@
                       <td><%= booking.description %></td>
                       <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
                       <td><%= booking.user.email %></td>
-                      <td><%= booking.start_time.to_formatted_s(:long) %> to <%= booking.end_time.to_fs(:time) %></td>
+                      <td data-sort-as="<%= booking.start_time %>"><%= booking.start_time.to_formatted_s(:long) %> to <%= booking.end_time.to_fs(:time) %></td>
                       <td><%= booking.approved_by.nil? ? 'N/A' : link_to(booking.approved_by.name, user_path(booking.approved_by.username)) %></td>
                       <td><%= booking.approved_at.nil? ? 'N/A' : booking.approved_at.to_formatted_s(:long) %></td>
                     </tr>
@@ -358,15 +358,15 @@
                   <%= page_entries_info @old_declined_bookings, model: 'subspace_booking' %>
                   <%= will_paginate @old_declined_bookings, container: false, param_name: 'old_denied_page' %>
                 </div>
-                <table class="table table-striped">
-                  <thead class="text-center  table-primary">
+                <table class="table table-striped table-sub-space-booking-old-declined">
+                  <thead class="text-center table-primary">
                   <tr>
-                    <th>Room</th>
-                    <th>Name</th>
-                    <th>Description</th>
-                    <th>User</th>
-                    <th>Email</th>
-                    <th>Booking Time</th>
+                    <th>Room <span onclick="sortTable('table-sub-space-booking-old-declined', 0)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>Name <span onclick="sortTable('table-sub-space-booking-old-declined', 1)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>Description <span onclick="sortTable('table-sub-space-booking-old-declined', 2)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>User <span onclick="sortTable('table-sub-space-booking-old-declined', 3)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>Email <span onclick="sortTable('table-sub-space-booking-old-declined', 4)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>Booking Time <span onclick="sortTable('table-sub-space-booking-old-declined', 5, true)"><%= fa_icon('arrow-down') %></span></th>
                   </tr>
                   </thead>
                   <tbody>
@@ -377,7 +377,7 @@
                       <td><%= booking.description %></td>
                       <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
                       <td><%= booking.user.email %></td>
-                      <td><%= booking.start_time.to_formatted_s(:long) %> to <%= booking.end_time.to_fs(:time) %></td>
+                      <td data-sort-as="<%= booking.start_time %>"><%= booking.start_time.to_formatted_s(:long) %> to <%= booking.end_time.to_fs(:time) %></td>
                     </tr>
                   <% end %>
                   </table>
