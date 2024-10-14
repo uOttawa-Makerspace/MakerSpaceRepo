@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2024_09_07_191211) do
+ActiveRecord::Schema[7.0].define(version: 2024_09_24_193746) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -598,12 +598,35 @@ ActiveRecord::Schema[7.0].define(version: 2024_09_07_191211) do
   end
 
   create_table "opening_hours", force: :cascade do |t|
-    t.string "students"
-    t.string "public"
-    t.string "summer"
     t.bigint "contact_info_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "target_en"
+    t.string "target_fr"
+    t.time "sunday_opening"
+    t.time "sunday_closing"
+    t.integer "sunday_closed_all_day", default: 0
+    t.time "monday_opening"
+    t.time "monday_closing"
+    t.integer "monday_closed_all_day", default: 0
+    t.time "tuesday_opening"
+    t.time "tuesday_closing"
+    t.integer "tuesday_closed_all_day", default: 0
+    t.time "wednesday_opening"
+    t.time "wednesday_closing"
+    t.integer "wednesday_closed_all_day", default: 0
+    t.time "thursday_opening"
+    t.time "thursday_closing"
+    t.integer "thursday_closed_all_day", default: 0
+    t.time "friday_opening"
+    t.time "friday_closing"
+    t.integer "friday_closed_all_day", default: 0
+    t.time "saturday_opening"
+    t.time "saturday_closing"
+    t.integer "saturday_closed_all_day", default: 0
+    t.integer "closed_all_week", default: 0
+    t.text "notes_en"
+    t.text "notes_fr"
     t.index ["contact_info_id"], name: "index_opening_hours_on_contact_info_id"
   end
 
