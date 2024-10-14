@@ -344,8 +344,11 @@ class ReportGenerator
                           ["Total", ""],
                         style: centered_style
           # merge subheaders
-          (courses.count + 2).times do |n|
+          # Plus the total header
+          (courses.count + 1).times do |n|
             n = n * 2 + 1
+            # NOTE Merging non-existent cells is bad.
+            # https://github.com/randym/axlsx/issues/189
             sheet.merge_cells sheet.rows.last.cells[(n..n + 1)]
           end
 
