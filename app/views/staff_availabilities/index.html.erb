@@ -7,7 +7,7 @@
       <% if @user.admin? %>
         Please create a valid <%= link_to 'Time Period', admin_time_periods_path %> to continue.
       <% else %>
-        Please ask your manage to create a valid time period first.
+        Please ask your manager to create a valid time period first.
       <% end %>
     </div>
   <% else %>
@@ -16,7 +16,7 @@
 
     <% if @user.admin? %>
       <div class="col-md-12 col-lg-6 text-center mx-auto mb-3">
-      <%= form_tag staff_availabilities_path, method: :get do %>
+        <%= form_tag staff_availabilities_path, method: :get do %>
           <div class="input-group mb-3">
             <%= label_tag :staff_id, 'User', class: 'input-group-text' %>
             <%= select_tag :staff_id, options_for_select(StaffSpace.all.joins(:user).order('users.name ASC').distinct.pluck('users.name', 'users.id'), selected: (params[:staff_id].presence || @user.id.to_s)), class: 'form-select', include_blank: 'Select Staff' %>
@@ -62,84 +62,84 @@
       <h3>Staff unavailabilities</h3>
       <%= render 'staff_availabilities/staff_table', availabilities: @staff_availabilities %>
     <% end %>
-    </div>
-  <% end %>
+</div>
 
-  <!-- Modal -->
-  <div class="modal fade" id="unavailabilityModal" tabindex="-1" role="dialog" aria-labelledby="unavailabilityModal" aria-hidden="true">
-    <%= hidden_field_tag :unavailability_id, nil, id: 'unavailability-id' %>
-    <div class="modal-dialog" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="modal-title">New Unavailability</h5>
-          <button type="button" class="btn-close shift-cancel" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3 text-center row">
-            <div class="col-md-12 mb-3">
-              <%= label_tag :day, 'Day of the week', class: 'form-label' %>
-              <%= select_tag :day, options_for_select(Hash[Date::DAYNAMES.zip([0, 1, 2, 3, 4, 5, 6])]), class: 'form-control form-select', id: 'day' %>
-            </div>
-
-            <div class="col-md-6 mb-3" style="display: none;">
-              <label for="start-date">Start Date</label>
-              <div class="input-group">
-                <%= text_field_tag 'start_date', '', id: 'start-date', autocomplete: 'off', class: 'form-control inanimate', required: false %>
-                <button class="btn btn-outline-danger" id="start-date-clear" type="button">
-                  <i class="fa fa-times"></i>
-                </button>
-              </div>
-            </div>
-
-            <div class="col-md-6 mb-3">
-              <label for="start-datetime">Start Time</label>
-              <div class="input-group">
-                <%= text_field_tag 'start_time', '', id: 'start-time', autocomplete: 'off', class: 'form-control inanimate', required: true %>
-                <button class="btn btn-outline-danger" id="start-time-clear" type="button">
-                  <i class="fa fa-times"></i>
-                </button>
-              </div>
-            </div>
-
-            <div class="col-md-6 mb-3" style="display: none;">
-              <label for="end-date">End Date</label>
-              <div class="input-group">
-                <%= text_field_tag 'end_date', '', id: 'end-date', autocomplete: 'off', class: 'form-control inanimate', required: false %>
-                <button class="btn btn-outline-danger" id="end-date-clear" type="button">
-                  <i class="fa fa-times"></i>
-                </button>
-              </div>
-            </div>
-
-            <div class="col-md-6 mb-3">
-              <label for="end-datetime">End Time</label>
-              <div class="input-group">
-                <%= text_field_tag 'end_time', '', id: 'end-time', autocomplete: 'off', class: 'form-control inanimate', required: true %>
-                <button class="btn btn-outline-danger" id="end-time-clear" type="button">
-                  <i class="fa fa-times"></i>
-                </button>
-              </div>
-            </div>
-
-            <div class="col-md-12 mb-3">
-              <%= label_tag :recurring, 'Recurring' %>
-              <%= check_box_tag :recurring, true, true, id: 'recurring', class: 'form-check-input', required: true %>
-            </div>
-
-            <div class="mb-3 text-center">
-              <%= label_tag :time_period_id, 'Time Period', class: 'form-label' %>
-              <%= select_tag :time_period_id, options_for_select(TimePeriod.all.pluck(:name, :id), selected: @time_period.id), { id: 'time-period-id', autocomplete: 'off', class: 'form-control form-select', required: true } %>
-            </div>
-
+<!-- Modal -->
+<div class="modal fade" id="unavailabilityModal" tabindex="-1" role="dialog" aria-labelledby="unavailabilityModal" aria-hidden="true">
+  <%= hidden_field_tag :unavailability_id, nil, id: 'unavailability-id' %>
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modal-title">New Unavailability</h5>
+        <button type="button" class="btn-close shift-cancel" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3 text-center row">
+          <div class="col-md-12 mb-3">
+            <%= label_tag :day, 'Day of the week', class: 'form-label' %>
+            <%= select_tag :day, options_for_select(Hash[Date::DAYNAMES.zip([0, 1, 2, 3, 4, 5, 6])]), class: 'form-control form-select', id: 'day' %>
           </div>
+
+          <div class="col-md-6 mb-3" style="display: none;">
+            <label for="start-date">Start Date</label>
+            <div class="input-group">
+              <%= text_field_tag 'start_date', '', id: 'start-date', autocomplete: 'off', class: 'form-control inanimate', required: false %>
+              <button class="btn btn-outline-danger" id="start-date-clear" type="button">
+                <i class="fa fa-times"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <label for="start-datetime">Start Time</label>
+            <div class="input-group">
+              <%= text_field_tag 'start_time', '', id: 'start-time', autocomplete: 'off', class: 'form-control inanimate', required: true %>
+              <button class="btn btn-outline-danger" id="start-time-clear" type="button">
+                <i class="fa fa-times"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="col-md-6 mb-3" style="display: none;">
+            <label for="end-date">End Date</label>
+            <div class="input-group">
+              <%= text_field_tag 'end_date', '', id: 'end-date', autocomplete: 'off', class: 'form-control inanimate', required: false %>
+              <button class="btn btn-outline-danger" id="end-date-clear" type="button">
+                <i class="fa fa-times"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <label for="end-datetime">End Time</label>
+            <div class="input-group">
+              <%= text_field_tag 'end_time', '', id: 'end-time', autocomplete: 'off', class: 'form-control inanimate', required: true %>
+              <button class="btn btn-outline-danger" id="end-time-clear" type="button">
+                <i class="fa fa-times"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="col-md-12 mb-3">
+            <%= label_tag :recurring, 'Recurring' %>
+            <%= check_box_tag :recurring, true, true, id: 'recurring', class: 'form-check-input', required: true %>
+          </div>
+
+          <div class="mb-3 text-center">
+            <%= label_tag :time_period_id, 'Time Period', class: 'form-label' %>
+            <%= select_tag :time_period_id, options_for_select(TimePeriod.all.pluck(:name, :id), selected: @time_period.id), { id: 'time-period-id', autocomplete: 'off', class: 'form-control form-select', required: true } %>
+          </div>
+
         </div>
-        <div class="modal-footer">
-          <button type="button" id="modal-delete" class="btn btn-danger" style="display: none;">Delete</button>
-          <button type="button" class="btn btn-secondary shift-cancel" data-bs-dismiss="modal">Close</button>
-          <button type="button" id="modal-save" class="btn btn-primary">Save changes</button>
-        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="modal-delete" class="btn btn-danger" style="display: none;">Delete</button>
+        <button type="button" class="btn btn-secondary shift-cancel" data-bs-dismiss="modal">Close</button>
+        <button type="button" id="modal-save" class="btn btn-primary">Save changes</button>
       </div>
     </div>
   </div>
+</div>
 
 <%= vite_javascript_tag 'staff_availability_calendar', 'data-turbo-track': 'reload' %>
+  <% end %>
