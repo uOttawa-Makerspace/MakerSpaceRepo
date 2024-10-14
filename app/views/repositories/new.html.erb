@@ -6,6 +6,7 @@
         <div class="title border-0 mt-4"><b>New Project<br>Nouveau Projet</b></div>
 
         <%= form_for @repository, url: { controller: 'repositories', action: 'create' }, html: { multipart: true } do |f| %>
+          <%= text_field_tag :username_dont_autofill, {}, { hidden: true } %>
           <div class="mb-5 required">
           <%= f.label :title, 'Title/Titre', class: 'form-label' %>
           <div>Great project titles are short and memorable.<br>Des titres de projets génial sont court et mémorable.</div>
