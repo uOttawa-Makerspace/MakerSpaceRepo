@@ -1,3 +1,13 @@
+<% if @missing_time_period %>
+  <div class="alert alert-danger">
+    <% if @user.admin? %>
+      Please create a valid <%= link_to 'Time Period', admin_time_periods_path %> to continue.
+    <% else %>
+      Please ask your manager to create a valid time period first.
+    <% end %>
+  </div>
+<% else %>
+
 <div class="mt-4">
   <div class="row">
     <div class="col-md-2 scroll-col">
@@ -79,3 +89,4 @@
         padding-right: 3%;
     }
 </style>
+<% end %>
