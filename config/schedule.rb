@@ -29,6 +29,15 @@ every 1.month do
   rake "increment_year:increment_one_year"
 end
 
+# Send CDEL Reports to sharepoint folder
+# The receiving mail inbox has a 'Power Automation' that grabs all
+# emails with a subject line containing "CDEL Report" from ceedinfo@makerepo.com
+# and places the attachments in a sharepoint folder. The CDEL people have access
+# to that sharepoint folder, and they do as they like with it.
+every :month do
+  rake "reports:send_cdel_report_to_sharepoint"
+end
+
 # every 1.month do
 #   runner "MsrMailer.send_monthly_report(['hanis@uottawa.ca', 'bruno.mrlima@gmail.com']).deliver_now"
 # end
