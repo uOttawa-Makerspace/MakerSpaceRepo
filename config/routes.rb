@@ -465,6 +465,8 @@ Rails.application.routes.draw do
     patch :update
     delete :delete, path: "delete/:sub_space_booking_id"
     collection do
+      # for /approve and /decline
+      put :bulk_approve_decline
       put :request_access
       put :deny_access
       put :approve_access
