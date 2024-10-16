@@ -26,6 +26,7 @@ document.addEventListener("turbo:load", function () {
           start_picker.setDate(Date.parse(arg.startStr));
           end_picker.setDate(Date.parse(arg.endStr));
         }
+        modal.querySelector("#book-name").focus();
       }
     }
     function editEvent(arg) {
