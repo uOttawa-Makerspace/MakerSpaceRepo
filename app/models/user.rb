@@ -161,7 +161,7 @@ class User < ApplicationRecord
 
   validates :role,
             inclusion: {
-              in: %w[regular_user admin staff]
+              in: %w[regular_user admin staff volunteer]
             },
             allow_blank: true
 
