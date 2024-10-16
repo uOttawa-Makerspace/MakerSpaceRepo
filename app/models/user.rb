@@ -159,6 +159,8 @@ class User < ApplicationRecord
     end
   end
 
+  validates :role, inclusion: { in: %w[regular_user admin staff] }
+
   validates :program, presence: true, if: :student?
 
   validates :year_of_study, presence: true, if: :student?

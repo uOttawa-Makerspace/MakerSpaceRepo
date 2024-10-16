@@ -610,6 +610,26 @@ class SubSpaceBookingController < ApplicationController
                   "Booking for #{SubSpaceBooking.find(params[:sub_space_booking_id]).sub_space.name} declined successfully."
   end
 
+  def bulk_approve_decline
+    bulk_status = params[:bulk_status]
+    booking_statuses =
+      SubSpaceBookingStatus.joins(:sub_space_booking).where(
+        sub_space_booking: {
+          id: params[:sub_space_booking_ids]
+        }
+      )
+    if bulk_status == "approve"
+      booking_statuses.update_all(booking_status_id: BookingStatus::APPROVED.id)
+      flash[:notice] = "Bookings approved"
+    elsif bulk_status == "decline"
+      booking_statuses.update_all(booking_status_id: BookingStatus::DECLINED.id)
+      flash[:notice] = "Bookings declined"
+    else
+      flash[:alert] = "Failed to bulk update booking status"
+    end
+    redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab")
+  end
+
   def publish
     booking = SubSpaceBooking.find(params[:sub_space_booking_id])
     booking.public = !booking.public

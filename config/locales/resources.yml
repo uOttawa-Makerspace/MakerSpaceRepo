@@ -1,7 +1,7 @@
 en:
   resources:
     header: "Resources"
-    subtitle: "The tools you need to build your imagination."
+    subtitle: "The tools you need to build your imagination"
     sign_in_prompt:
       header: "Want to book a room?"
       subtext: "You need to be signed in to book a room. Please sign in or create an account to continue."
@@ -29,7 +29,7 @@ en:
 fr:
   resources:
     header: "Ressources"
-    subtitle: "Les outils pour développer votre imagination."
+    subtitle: "Les outils pour développer votre imagination"
     sign_in_prompt:
       header: "Voulez-vous réserver une chambre?"
       subtext: "Vous devez se connecter pour afin de réserver une chambre. Connectez-vous ou Créez une compte pour continuer."

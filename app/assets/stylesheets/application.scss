@@ -215,6 +215,8 @@ u {
       .btn-outline-primary,
       .btn-outline-secondary,
       .btn-outline-danger,
+      .btn-outline-success,
+      .btn-outline-warning,
       .btn-link
     ) {
     color: #fff;
@@ -380,7 +382,7 @@ textarea:not(.form-control) {
 }
 
 td > .btn:not(:last-of-type) {
-  margin-bottom: 0.5rem;
+  //margin-bottom: 0.5rem;
 }
 
 .subtitle {

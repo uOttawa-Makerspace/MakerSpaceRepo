@@ -68,41 +68,40 @@
   <% end %>
 </div>
 <div class="w-full lg:w-auto p-4">
-  <table class="sessions-table table-auto w-full text-center">
-    <thead class="bg-blue-100">
+  <table class="sessions-table table table-striped w-full text-center">
+    <thead class="table-primary">
     <tr>
-      <th class="py-2">Date <span onclick="sortTable('sessions-table', 0, true)"><%= fa_icon('arrow-down') %></span></th>
-      <th class="py-2">Training <span onclick="sortTable('sessions-table', 1)"><%= fa_icon('arrow-down') %></span></th>
-      <th class="py-2">Trainer <span onclick="sortTable('sessions-table', 2)"><%= fa_icon('arrow-down') %></span></th>
-      <th class="py-2">Course <span onclick="sortTable('sessions-table', 3)"><%= fa_icon('arrow-down') %></span></th>
-      <th class="py-2">Status <span onclick="sortTable('sessions-table', 4)"><%= fa_icon('arrow-down') %></span></th>
-      <th class="py-2">Users <span onclick="sortTable('sessions-table', 5)"><%= fa_icon('arrow-down') %></span></th>
-      <th class="py-2 action-header">Action</th>
+      <th>Date <span onclick="sortTable('sessions-table', 0, true)"><%= fa_icon('arrow-down') %></span></th>
+      <th>Training <span onclick="sortTable('sessions-table', 1)"><%= fa_icon('arrow-down') %></span></th>
+      <th>Trainer <span onclick="sortTable('sessions-table', 2)"><%= fa_icon('arrow-down') %></span></th>
+      <th>Course <span onclick="sortTable('sessions-table', 3)"><%= fa_icon('arrow-down') %></span></th>
+      <th>Status <span onclick="sortTable('sessions-table', 4)"><%= fa_icon('arrow-down') %></span></th>
+      <th>Users <span onclick="sortTable('sessions-table', 5)"><%= fa_icon('arrow-down') %></span></th>
+      <th class="action-header">Action</th>
     </tr>
     </thead>
     <tbody>
     <% @sessions.each do |sesh| %>
       <tr>
-        <td class="py-2">
-          <%= sesh.created_at.strftime('%I:%M %p').downcase %><br>
-          <%= sesh.created_at.strftime('%b %e %Y').downcase %>
+        <td>
+          <%= sesh.created_at.to_formatted_s :long %>
         </td>
-        <td class="py-2"><%= sesh.training.name %></td>
-        <td class="py-2">
+        <td><%= sesh.training.name %></td>
+        <td>
           <%= link_to sesh.user.name, user_url(sesh.user.username), class: 'text-blue-500 hover:underline' %>
         </td>
-        <td class="py-2"><%= sesh.course %></td>
-        <td class="py-2">
+        <td><%= sesh.course %></td>
+        <td>
           <% if sesh.completed? %>
             COMPLETED
           <% else %>
             NOT COMPLETED
           <% end %>
         </td>
-        <td class="py-2">
+        <td>
           <div class="inline-block">
             <%= sesh.users.length %>
-            <div id="sesh-users" class="inline-block">
+            <div class="inline-block">
               <% sesh.users.each do |user| %>
                 <div class="clickable-username">
                   <%= link_to user.name, user_url(user.username), class: 'text-blue-500 hover:underline' %><br>
@@ -111,7 +110,7 @@
             </div>
           </div>
         </td>
-        <td class="py-2">
+        <td>
           <%= link_to 'Visit', staff_training_session_url(sesh), class: 'btn btn-link' %>
           <%= link_to 'Download', training_report_staff_training_session_path(id: sesh.id, format: 'xlsx'), action: :training_report, class: 'btn btn-link' %>
           <%= button_to 'Destroy', { action: :destroy, id: sesh.id }, method: :delete, data: { confirm: 'Deleting a training session also deletes all corresponding certifications. OK to confirm.' }, class: 'btn btn-danger' %>

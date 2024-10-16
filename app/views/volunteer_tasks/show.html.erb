@@ -2,7 +2,7 @@
   <div class="text-center">
 
     <h2>Volunteer Task: <%= @volunteer_task.title.capitalize %></h2>
-    <%= link_to 'Edit', edit_volunteer_task_path(@volunteer_task), class: 'btn btn-primary' %>
+    <%= link_to 'Edit', edit_volunteer_task_path(@volunteer_task), class: 'btn btn-primary' if current_user.staff? %>
     <br><br>
 
     <h6><b>Category:</b> <%= @volunteer_task.category.capitalize %></h6>

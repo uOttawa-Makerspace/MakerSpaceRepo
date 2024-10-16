@@ -304,6 +304,32 @@ class MsrMailer < ApplicationMailer
     mail(to: "makerspace@uottawa.ca", subject: "Weekly Reports", bcc: to)
   end
 
+  # Sends a raw csv dump to someone
+  def send_cdel_monthly_report(to)
+    start_date = 1.month.ago.beginning_of_month
+    end_date = 1.month.ago.end_of_month
+
+    attachments[
+      "CEED_visitors_dump-#{start_date.to_date}-#{end_date.to_date}.csv"
+    ] = {
+      mime_type: "text/csv",
+      content:
+        CdelReportGenerator.generate_visitors_report(start_date, end_date)
+    }
+    attachments[
+      "CEED_certifications_dump-#{start_date.to_date}-#{end_date.to_date}.csv"
+    ] = {
+      mime_type: "text/csv",
+      content:
+        CdelReportGenerator.generate_certifications_report(start_date, end_date)
+    }
+    mail(
+      to: to,
+      subject: "CDEL Reports from #{start_date.to_date} to #{end_date.to_date}",
+      body: ""
+    )
+  end
+
   # This is sent by staff when a printer fails and it has someone
   # assigned to it, so they come back and restart it instead of waiting
   # 7 hours to receive a pile of plastic

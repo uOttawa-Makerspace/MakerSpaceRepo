@@ -1,0 +1,17 @@
+<% space.opening_hours.each do |opening_hour| %>
+    <p><b><%= opening_hour.target %></b></p>
+    <%# Skip this week if hidden %>
+    <% unless opening_hour.hidden_closed_all_week? %>
+        <% %i[monday tuesday wednesday thursday friday saturday sunday].each do |day| %>
+            <%# Skip this row if hidden %>
+            <% next if opening_hour["#{day}_closed_all_day"] == 'hidden' %>
+            <% opening = opening_hour["#{day}_opening"] %>
+            <% closing = opening_hour["#{day}_closing"] %>
+            <% closed_all_day = opening_hour["#{day}_closed_all_day"] == 'closed' || opening_hour.closed_closed_all_week? %>
+            <div class="formatted-hour-row">
+                <span><%= t('hours.tags')[day] %></span><span><%= opening && closing && !closed_all_day ? "#{opening.strftime('%I:%M %p')} - #{closing.strftime('%I:%M %p')}" : t('hours.tags.closed') %></span>
+            </div>
+        <% end %>
+    <% end %>
+    <p><%= opening_hour.notes&.html_safe %></p>
+<% end %>

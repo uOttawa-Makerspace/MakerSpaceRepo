@@ -26,6 +26,7 @@ document.addEventListener("turbo:load", function () {
           start_picker.setDate(Date.parse(arg.startStr));
           end_picker.setDate(Date.parse(arg.endStr));
         }
+        modal.querySelector("#book-name").focus();
       }
     }
     function editEvent(arg) {
@@ -410,6 +411,24 @@ document.addEventListener("turbo:load", function () {
       });
     });
   }
+
+  const selectAllUsersCheckbox = document.getElementById(
+    "userRequestSelectAll"
+  );
+  selectAllUsersCheckbox.addEventListener("change", function () {
+    const checkboxes = document.querySelectorAll(".user-request-select");
+    checkboxes.forEach(function (checkbox) {
+      checkbox.checked = selectAllUsersCheckbox.checked;
+    });
+  });
+
+  document
+    .getElementById("pending_bookings_select_all")
+    .addEventListener("change", (e) => {
+      document.querySelectorAll(".pending-booking-select").forEach((c) => {
+        c.checked = e.currentTarget.checked;
+      });
+    });
 });
 document.addEventListener("turbo:render", ready);
 function ready() {
@@ -513,14 +532,4 @@ let tabButtons = document.getElementsByClassName("tab-link");
 });
 ready();
 
-document.addEventListener("DOMContentLoaded", function () {
-  const selectAllCheckbox = document.getElementById("select-all");
-  selectAllCheckbox.addEventListener("change", function () {
-    const checkboxes = document.querySelectorAll(
-      'input[type="checkbox"][name="user_booking_approval_ids[]"]'
-    );
-    checkboxes.forEach(function (checkbox) {
-      checkbox.checked = selectAllCheckbox.checked;
-    });
-  });
-});
+document.addEventListener("DOMContentLoaded", function () {});

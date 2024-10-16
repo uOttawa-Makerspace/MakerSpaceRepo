@@ -8,6 +8,7 @@ class CdelReportGenerator
       LabSession
         .where(created_at: start_date..end_date)
         .joins(:user, :space)
+        .order(:created_at)
         .pluck(*headers)
     make_into_csv headers, query
   end
@@ -19,6 +20,7 @@ class CdelReportGenerator
           spaces.name
           training_sessions.course
           training_sessions.level
+          training_sessions.created_at
           trainings.name
           skills.name
         ]
@@ -26,6 +28,7 @@ class CdelReportGenerator
       Certification
         .where(created_at: start_date..end_date)
         .joins(:user, :training_session, { training: :skill }, :space)
+        .order(:created_at)
         .pluck(*headers)
     make_into_csv headers, query
   end
