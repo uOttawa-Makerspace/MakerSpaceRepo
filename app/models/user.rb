@@ -159,7 +159,11 @@ class User < ApplicationRecord
     end
   end
 
-  validates :role, inclusion: { in: %w[regular_user admin staff] }
+  validates :role,
+            inclusion: {
+              in: %w[regular_user admin staff volunteer]
+            },
+            allow_blank: true
 
   validates :program, presence: true, if: :student?
 
