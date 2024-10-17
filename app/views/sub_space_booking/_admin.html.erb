@@ -34,20 +34,42 @@
                   </tr>
                   </thead>
                   <tbody>
-                  <% @pending_bookings.each do |booking| %>
+                    <% grouped_pending_bookings = @pending_bookings.group_by(&:recurring_booking_id).except(nil) %>
+                    <% @pending_bookings.each do |booking| %>
+                      <%# If there's a recurring booking attached and it's in the hash, that means we havent displayed it yet %>
+                      <% next if booking.recurring_booking.present? && grouped_pending_bookings[booking.recurring_booking_id].nil? %>
                     <tr>
-                      <td><%= check_box_tag booking.id, booking.id, false, { class: 'pending-booking-select', name: 'sub_space_booking_ids[]', value: booking.id, form: 'bulkApproveDeclineForm' } %></td>
+                      <td class="w-auto"><%= check_box_tag booking.id, booking.id, false, { class: 'pending-booking-select', name: 'sub_space_booking_ids[]', value: booking.id, form: 'bulkApproveDeclineForm' } %></td>
                       <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : "#{booking.sub_space.space.name} - #{booking.sub_space.name}" %></td>
                       <td><%= booking.name %></td>
                       <td><%= booking.description %></td>
                       <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
                       <td><%= booking.user.email %></td>
-                      <td data-sort-as="<%= booking.start_time %>"><%= booking.start_time.to_formatted_s(:long) %> to <%= booking.end_time.to_fs(:time) %></td>
+                      <td data-sort-as="<%= booking.start_time %>">
+                        <% if booking.recurring_booking.present? %>
+                          <%# show rest of bookings sharing the same recurring handler %>
+                          <% grouped_pending_bookings[booking.recurring_booking_id].each do |booking| %>
+                            <%= booking.start_time.to_formatted_s(:long) %> to <%= booking.end_time.to_fs(:time) %><br />
+                          <% end %>
+                        <% else %>
+                          <%# It's a single booking, show as normal %>
+                          <%= booking.start_time.to_formatted_s(:long) %> to <%= booking.end_time.to_fs(:time) %>
+                        <% end %>
+                      </td>
                       <td>
-                        <div class="btn-group" role="group">
-                          <%= button_to 'Approve', sub_space_booking_approve_path(booking), method: :put, class: 'btn btn-success' %>
-                          <%= button_to 'Reject', sub_space_booking_decline_path(booking), method: :put, class: 'btn btn-danger' %>
-                        </div>
+                        <% if booking.recurring_booking.present? %>
+                          <div class="btn-group" role="group">
+                            <% booking_ids = grouped_pending_bookings.delete(booking.recurring_booking_id).map(&:id) %>
+                            <%= button_to 'Approve All', bulk_approve_decline_sub_space_booking_index_path, method: :put, params: { bulk_status: 'approve', sub_space_booking_ids: booking_ids }, class: 'btn btn-success' %>
+                            <%= button_to 'Select..', nil, class: 'btn btn-primary' %>
+                            <%= button_to 'Reject All', nil, bulk_approve_decline_sub_space_booking_index_path, method: :put, params: { bulk_status: 'decline', sub_space_booking_ids: booking_ids }, class: 'btn btn-danger' %>
+                          </div>
+                        <% else %>
+                          <div class="btn-group" role="group">
+                            <%= button_to 'Approve', sub_space_booking_approve_path(booking), method: :put, class: 'btn btn-success' %>
+                            <%= button_to 'Reject', sub_space_booking_decline_path(booking), method: :put, class: 'btn btn-danger' %>
+                          </div>
+                        <% end %>
                       </td>
                     </tr>
                   <% end %>

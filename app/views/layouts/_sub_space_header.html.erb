@@ -1,9 +1,9 @@
 <nav class="navbar navbar-staff navbar-expand-xl navbar-light w-100">
     <div class="container-fluid justify-content-start ">
         <a class="navbar-brand" href="<%= sub_space_booking_index_path %>">Maker<strong>Room</strong></a>
-        <% Space.all.joins(:sub_spaces).order(:name).each do |space| %>
-            <% subspaces = space.sub_spaces.order(:name) %>
-            <% if subspaces.count > 0 %>
+        <% Space.all.order(:name).each do |space| %>
+            <% subspaces = SubSpace.where(space_id: space.id).order(:name) %>
+            <% if subspaces.length > 0 %>
                 <% if subspaces.length == 1 %>
                     <div class="nav-item ms-4"><%= link_to(subspaces.last.name, sub_space_booking_index_path(room: subspaces.last.id), class: 'nav-link') %></div>
                 <% else %>
