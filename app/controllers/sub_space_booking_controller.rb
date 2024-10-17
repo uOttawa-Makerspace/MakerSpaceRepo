@@ -39,7 +39,11 @@ class SubSpaceBookingController < ApplicationController
       end
     end
     @bookings =
-      SubSpaceBooking.where(user_id: current_user.id).order(start_time: :desc)
+      SubSpaceBooking
+        .where(user_id: current_user.id)
+        .joins(:user)
+        .includes(:sub_space, :sub_space_booking_status)
+        .order(start_time: :desc)
     if current_user.admin?
       # Need to get the booking status from the sub space booking status table for the booking
       @pending_bookings = current_bookings(BookingStatus::PENDING.id)
@@ -182,11 +186,13 @@ class SubSpaceBookingController < ApplicationController
   end
 
   def bookings
+    current_user
     @bookings = []
     if params[:room].present?
       SubSpaceBooking
         .where(sub_space_id: params[:room])
-        .each do |booking|
+        .joins(:user)
+        .find_each do |booking|
           booking_status =
             SubSpaceBookingStatus.find(booking.sub_space_booking_status_id)
           unless booking_status.booking_status_id ==
@@ -196,8 +202,7 @@ class SubSpaceBookingController < ApplicationController
           end
           title = "#{booking.name} - #{booking.description}"
           title =
-            if current_user.admin? || booking.user == current_user ||
-                 booking.public
+            if @user.admin? || booking.user == @user || booking.public
               title
             else
               booking.public ? title : "Space Booked"
@@ -208,12 +213,11 @@ class SubSpaceBookingController < ApplicationController
             else
               title
             end
-          title += " - #{booking.user.name}" if current_user.admin? &&
-            booking.user != current_user
+          title += " - #{booking.user.name}" if @user.admin? &&
+            booking.user != @user
           if booking.blocking
             title = "Space Blocked" if (
-              !booking.public &&
-                ((!current_user.admin?) || booking.user != current_user)
+              !booking.public && ((!@user.admin?) || booking.user != @user)
             )
           end
           event = {
@@ -221,7 +225,7 @@ class SubSpaceBookingController < ApplicationController
             title: title,
             start: booking.start_time,
             end: booking.end_time,
-            color: booking.color(current_user.id)
+            color: booking.color(@user.id)
           }
           @bookings << event
         end
@@ -335,26 +339,11 @@ class SubSpaceBookingController < ApplicationController
     start_time = Time.parse(params[:sub_space_booking][:start_time])
     end_time = Time.parse(params[:sub_space_booking][:end_time])
 
+    # postgres stores these without a timezone
     start_datetime =
-      DateTime.new(
-        start_date.year,
-        start_date.month,
-        start_date.day,
-        start_time.hour,
-        start_time.min,
-        0,
-        "EST"
-      )
+      DateTime.parse(params[:sub_space_booking][:start_time]).change(offset: 0)
     end_datetime =
-      DateTime.new(
-        end_date.year,
-        end_date.month,
-        end_date.day,
-        end_time.hour,
-        end_time.min,
-        0,
-        "EST"
-      )
+      DateTime.parse(params[:sub_space_booking][:end_time]).change(offset: 0)
 
     if params[:sub_space_booking][:blocking] != "true" &&
          SubSpaceBooking
@@ -363,8 +352,8 @@ class SubSpaceBookingController < ApplicationController
            .where.not(id: booking.id)
            .where(
              "(start_time, end_time) OVERLAPS (?,?)",
-             start_datetime,
-             end_datetime
+             start_datetime.utc + 1.minute,
+             end_datetime.utc - 1.minute
            )
            .any?
       booking.destroy
@@ -540,8 +529,8 @@ class SubSpaceBookingController < ApplicationController
          .where.not(id: @sub_space_booking.id)
          .where(
            "(start_time, end_time) OVERLAPS (?,?)",
-           start_datetime,
-           end_datetime
+           start_datetime + 1.minute,
+           end_datetime - 1.minute
          )
          .any?
       flash[:alert] = "This time slot is already booked."
@@ -670,7 +659,7 @@ class SubSpaceBookingController < ApplicationController
 
   def current_bookings(booking_status_id)
     SubSpaceBookingStatus
-      .includes(sub_space_booking: %i[approved_by user sub_space])
+      .includes(sub_space_booking: [:approved_by, :user, sub_space: :space])
       .where(booking_status_id: booking_status_id)
       .order("sub_space_bookings.start_time": :asc)
       .map { |booking_status| booking_status.sub_space_booking }
@@ -681,7 +670,7 @@ class SubSpaceBookingController < ApplicationController
 
   def old_bookings(booking_status_id)
     SubSpaceBookingStatus
-      .includes(sub_space_booking: %i[approved_by user sub_space])
+      .includes(sub_space_booking: [:approved_by, :user, sub_space: :space])
       .where(booking_status_id: booking_status_id)
       .order("sub_space_bookings.start_time": :asc)
       .map { |booking_status| booking_status.sub_space_booking }
