@@ -334,16 +334,18 @@ class SubSpaceBookingController < ApplicationController
       return
     end
 
-    start_date = Date.parse(params[:sub_space_booking][:start_time])
-    end_date = Date.parse(params[:sub_space_booking][:end_time])
-    start_time = Time.parse(params[:sub_space_booking][:start_time])
-    end_time = Time.parse(params[:sub_space_booking][:end_time])
-
-    # postgres stores these without a timezone
+    # NOTE postgres stores these without a timezone
+    # So we receive time with no timezone, replace the time offset with the default one
+    # Then convert to utc when doing comparaisons
+    # This may explode once daylight savings are over...
     start_datetime =
-      DateTime.parse(params[:sub_space_booking][:start_time]).change(offset: 0)
+      DateTime.parse(params[:sub_space_booking][:start_time]).change(
+        offset: DateTime.now.offset
+      ) # Rewrite timezone
     end_datetime =
-      DateTime.parse(params[:sub_space_booking][:end_time]).change(offset: 0)
+      DateTime.parse(params[:sub_space_booking][:end_time]).change(
+        offset: DateTime.now.offset
+      )
 
     if params[:sub_space_booking][:blocking] != "true" &&
          SubSpaceBooking
@@ -352,7 +354,7 @@ class SubSpaceBookingController < ApplicationController
            .where.not(id: booking.id)
            .where(
              "(start_time, end_time) OVERLAPS (?,?)",
-             start_datetime.utc + 1.minute,
+             start_datetime.utc + 1.minute, # OVERLAPS performs half-open intersection
              end_datetime.utc - 1.minute
            )
            .any?
@@ -497,30 +499,13 @@ class SubSpaceBookingController < ApplicationController
       return
     end
 
-    start_date = Date.parse(params[:sub_space_booking][:start_time])
-    end_date = Date.parse(params[:sub_space_booking][:end_time])
-    start_time = Time.parse(params[:sub_space_booking][:start_time])
-    end_time = Time.parse(params[:sub_space_booking][:end_time])
-
     start_datetime =
-      DateTime.new(
-        start_date.year,
-        start_date.month,
-        start_date.day,
-        start_time.hour,
-        start_time.min,
-        0,
-        "EST"
-      )
+      DateTime.parse(params[:sub_space_booking][:start_time]).change(
+        offset: DateTime.now.offset
+      ) # Rewrite timezone
     end_datetime =
-      DateTime.new(
-        end_date.year,
-        end_date.month,
-        end_date.day,
-        end_time.hour,
-        end_time.min,
-        0,
-        "EST"
+      DateTime.parse(params[:sub_space_booking][:end_time]).change(
+        offset: DateTime.now.offset
       )
 
     if SubSpaceBooking
@@ -529,8 +514,8 @@ class SubSpaceBookingController < ApplicationController
          .where.not(id: @sub_space_booking.id)
          .where(
            "(start_time, end_time) OVERLAPS (?,?)",
-           start_datetime + 1.minute,
-           end_datetime - 1.minute
+           start_datetime.utc + 1.minute,
+           end_datetime.utc - 1.minute
          )
          .any?
       flash[:alert] = "This time slot is already booked."
