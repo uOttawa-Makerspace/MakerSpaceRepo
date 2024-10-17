@@ -34,8 +34,10 @@ end
 # emails with a subject line containing "CDEL Report" from ceedinfo@makerepo.com
 # and places the attachments in a sharepoint folder. The CDEL people have access
 # to that sharepoint folder, and they do as they like with it.
-every :month do
-  rake "reports:send_cdel_report_to_sharepoint"
+if @environment == "production"
+  every :month do
+    rake "reports:send_cdel_report_to_sharepoint"
+  end
 end
 
 # every 1.month do
