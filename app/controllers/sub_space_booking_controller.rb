@@ -284,7 +284,9 @@ class SubSpaceBookingController < ApplicationController
               end_date_r.day
             ).beginning_of_day
 
-          book(params)
+          # book first one
+          recurring_booking = RecurringBooking.new
+          book(params, recurring_booking)
 
           while start_time < end_date_recurring
             params[:sub_space_booking][:start_time] = (
@@ -313,16 +315,16 @@ class SubSpaceBookingController < ApplicationController
                 end_time_str.hour,
                 end_time_str.min
               )
-            book(params)
+            book(params, recurring_booking) # book rest of recurring
           end
         end
       end
     else
-      book(params)
+      book(params) # book single
     end
   end
 
-  def book(params)
+  def book(params, recurring_booking = nil)
     booking = SubSpaceBooking.new(sub_space_booking_params)
     booking.sub_space = SubSpace.find(params[:sub_space_booking][:sub_space_id])
     booking.user_id = current_user.id
@@ -455,6 +457,7 @@ class SubSpaceBookingController < ApplicationController
     booking.sub_space_booking_status_id = status.id
     booking.public =
       SubSpace.find(params[:sub_space_booking][:sub_space_id]).default_public
+    booking.recurring_booking = recurring_booking # Attach the RecurringBooking handle, is saved with the booking itself
     booking.save
     flash[
       :notice
