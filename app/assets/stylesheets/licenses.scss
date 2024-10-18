@@ -17,7 +17,7 @@ section#help {
   }
 
   div.sub-title {
-    font: 400 1.5rem "Raleway", helvetica, sans-serif;
+    font: 400 1.5rem "Open Sans", helvetica, sans-serif;
     color: #366;
     padding: 2rem 0 1rem;
   }
@@ -61,7 +61,7 @@ div.help-side-panel {
 
   div.title {
     color: #555;
-    font: 700 1.2rem "Raleway", helvetica, sans-serif;
+    font: 700 1.2rem "Open Sans", helvetica, sans-serif;
     border-bottom: 1px solid #aaa;
     padding-left: 1rem;
     padding-bottom: 1rem;
@@ -78,7 +78,7 @@ div.help-side-panel {
 
   li {
     @include transition(200ms);
-    font: 700 0.7rem "Raleway", helvetica, sans-serif;
+    font: 700 0.7rem "Open Sans", helvetica, sans-serif;
     padding: 0.5rem 0;
     padding-left: 1rem;
     color: #777;

@@ -5,7 +5,7 @@
 /* SETTING LAYOUT */
 
 div#space-top-corner {
-  font: 400 0.75rem "Raleway", helvetica, sans-serif;
+  font: 400 0.75rem "Open Sans", helvetica, sans-serif;
   display: inline;
   float: right;
   padding-left: 3px;
@@ -17,7 +17,7 @@ div.setting-top-panel {
   position: center;
   padding: 3rem 1rem 0;
   color: #333;
-  font: 400 1.2rem "Raleway", helvetica, sans-serif;
+  font: 400 1.2rem "Open Sans", helvetica, sans-serif;
 
   li.setting-menu-item {
     padding-top: 5px;
@@ -33,7 +33,7 @@ div.panel-title:hover {
 
 .download-button {
   float: right;
-  font: 300 10px "Raleway", sans-serif;
+  font: 300 10px "Open Sans", sans-serif;
   padding: 0.5rem 0.34rem;
   border: none;
   text-transform: uppercase;
@@ -52,7 +52,7 @@ div.panel-title:hover {
 }
 
 .update-button {
-  font: 300 1em "Raleway", sans-serif;
+  font: 300 1em "Open Sans", sans-serif;
   padding: 0.5rem 1rem;
   border: none;
   text-transform: uppercase;
@@ -128,7 +128,7 @@ table {
     }
 
     .visit-button {
-      font: 300 10px "Raleway", sans-serif;
+      font: 300 10px "Open Sans", sans-serif;
       padding: 0.5rem 1.6rem;
       margin-top: 0.65rem;
       margin-bottom: 0.88rem;
@@ -145,7 +145,7 @@ table {
     }
 
     .destroy-button {
-      font: 300 10px "Raleway", sans-serif;
+      font: 300 10px "Open Sans", sans-serif;
       padding: 0.5rem 0.8rem;
       margin-top: 0.65rem;
       margin-bottom: 0.88rem;
@@ -191,7 +191,7 @@ div#staff-buttons {
   float: left;
 
   .staff-button {
-    font: 300 2.4em "Raleway", sans-serif;
+    font: 300 2.4em "Open Sans", sans-serif;
     letter-spacing: 0.15em;
     padding-left: 1rem;
     border-left: 3px solid transparentize(#5f9ea0, 0.4);
@@ -245,7 +245,7 @@ div#notice {
   height: 2rem;
   line-height: 2rem !important;
   font-size: 75%;
-  font: 300 1.1rem "Raleway", sans-serif;
+  font: 300 1.1rem "Open Sans", sans-serif;
   background-color: #5cb85c;
   color: #fff;
   z-index: 2;
@@ -262,7 +262,7 @@ div#alert {
   margin: 0 auto;
   height: 2rem;
   line-height: 2rem !important;
-  font: 300 1.1rem "Raleway", sans-serif;
+  font: 300 1.1rem "Open Sans", sans-serif;
   background-color: #cd5c5c;
   color: #fff;
   z-index: 2;

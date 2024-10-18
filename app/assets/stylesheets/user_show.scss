@@ -136,7 +136,7 @@ div#rfid-thing.user-info {
   }
 
   .unregister {
-    font: 300 0.4em "Raleway", sans-serif;
+    font: 300 0.4em "Open Sans", sans-serif;
     float: bottom;
     padding: 0.5rem 1rem;
     border: none;
@@ -200,12 +200,12 @@ section#user-show-links {
 }
 
 div#role-container {
-  font: "Raleway", sans-serif;
+  font: "Open Sans", sans-serif;
   font-size: 1.1rem;
   color: #366;
 
   .update-button {
-    font: 300 0.7em "Raleway", sans-serif;
+    font: 300 0.7em "Open Sans", sans-serif;
     padding: 0.3rem 0.13em;
     border: none;
     text-transform: uppercase;
@@ -266,7 +266,7 @@ section#repositories-container {
     }
 
     div.repo-info {
-      font: 400 0.7rem "Raleway", helvetica, sans-serif;
+      font: 400 0.7rem "Open Sans", helvetica, sans-serif;
       padding: 5%;
       @include outer-container(90%);
       background-color: #fff;
