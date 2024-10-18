@@ -59,10 +59,10 @@
                       <td>
                         <% if booking.recurring_booking.present? %>
                           <div class="btn-group" role="group">
-                            <% booking_ids = grouped_pending_bookings.delete(booking.recurring_booking_id).map(&:id) %>
-                            <%= button_to 'Approve All', bulk_approve_decline_sub_space_booking_index_path, method: :put, params: { bulk_status: 'approve', sub_space_booking_ids: booking_ids }, class: 'btn btn-success' %>
-                            <%= button_to 'Select..', nil, class: 'btn btn-primary' %>
-                            <%= button_to 'Reject All', nil, bulk_approve_decline_sub_space_booking_index_path, method: :put, params: { bulk_status: 'decline', sub_space_booking_ids: booking_ids }, class: 'btn btn-danger' %>
+                            <% bookings = grouped_pending_bookings.delete(booking.recurring_booking_id) %>
+                            <%= button_to 'Approve All', bulk_approve_decline_sub_space_booking_index_path, method: :put, params: { bulk_status: 'approve', sub_space_booking_ids: bookings.map(&:id) }, class: 'btn btn-success' %>
+                            <%= button_tag 'Select..', class: 'btn btn-primary', data: { bs_toggle: 'modal', bs_target: '#approveRecurringModal', dates: bookings.map { |b| [b.id, "#{b.start_time.to_formatted_s(:long)} to #{b.end_time.to_fs(:time)}"] } } %>
+                            <%= button_to 'Reject All', bulk_approve_decline_sub_space_booking_index_path, method: :put, params: { bulk_status: 'decline', sub_space_booking_ids: bookings.map(&:id) }, class: 'btn btn-danger' %>
                           </div>
                         <% else %>
                           <div class="btn-group" role="group">

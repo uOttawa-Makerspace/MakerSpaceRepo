@@ -5,6 +5,26 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import listPlugin from "@fullcalendar/list";
 import TomSelect from "tom-select";
 document.addEventListener("turbo:load", function () {
+  // For the recurring booking approval modal
+  let approveRecurringModal = document.getElementById("approveRecurringModal");
+  if (approveRecurringModal) {
+    approveRecurringModal.addEventListener("shown.bs.modal", (e) => {
+      // Get Ids represented by modal button
+      let dates = JSON.parse(e.relatedTarget.dataset.dates);
+      let modalBody = approveRecurringModal.querySelector(".modal-body");
+      let checkbox_template = modalBody.querySelector("label").cloneNode(true); // grab first checkbox
+      // Convert them into checkboxes
+      let newOptions = dates.map((date) => {
+        let o = checkbox_template.cloneNode(true);
+        o.querySelector("input").value = date[0];
+        o.querySelector("span").innerText = date[1];
+        return o;
+      });
+      // Replace them into the form body
+      modalBody.replaceChildren(...newOptions);
+    });
+  }
+
   let bookedCalendarEl = document.getElementById("booked-calendar");
   if (bookedCalendarEl) {
     function createEvent(arg) {

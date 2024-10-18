@@ -83,6 +83,7 @@
         <% if current_user.admin? %>
           <div class="tab-pane fade" id="booking-admin-tab" role="tabpanel" aria-labelledby="tab-admin">
             <%= render 'admin' %>
+            <%= render 'approve_recurring_modal' %>
           </div>
         <% end %>
       </div>

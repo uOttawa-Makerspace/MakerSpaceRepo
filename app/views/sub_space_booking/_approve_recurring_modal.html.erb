@@ -1,0 +1,20 @@
+<div class="modal" tabindex="-1" id="approveRecurringModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title">Approve Recurring Booking</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <%= form_with url: bulk_approve_decline_sub_space_booking_index_path, method: :put do |f| %>
+                <%= f.hidden_field :bulk_status, value: 'approve' %>
+                <div class="modal-body">
+                    <label class='w-100'><input type="checkbox" name="sub_space_booking_ids[]" value=""> <span>Template checkbox</span></label>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <%= f.submit 'Approve Selected', class: 'btn btn-success' %>
+                </div>
+            <% end %>
+        </div>
+    </div>
+</div>
