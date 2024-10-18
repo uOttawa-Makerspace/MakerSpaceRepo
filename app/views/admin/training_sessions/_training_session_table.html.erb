@@ -67,17 +67,17 @@
     </div>
   <% end %>
 </div>
-<div class="w-full lg:w-auto p-4">
-  <table class="sessions-table table-auto w-full text-center">
-    <thead class="bg-blue-100">
+<div>
+  <table class="table table-striped text-center mt-3">
+    <thead class="table-primary">
     <tr>
-      <th class="py-2">Date <span onclick="sortTable('sessions-table', 0, true)"><%= fa_icon('arrow-down') %></span></th>
-      <th class="py-2">Training <span onclick="sortTable('sessions-table', 1)"><%= fa_icon('arrow-down') %></span></th>
-      <th class="py-2">Trainer <span onclick="sortTable('sessions-table', 2)"><%= fa_icon('arrow-down') %></span></th>
-      <th class="py-2">Course <span onclick="sortTable('sessions-table', 3)"><%= fa_icon('arrow-down') %></span></th>
-      <th class="py-2">Status <span onclick="sortTable('sessions-table', 4)"><%= fa_icon('arrow-down') %></span></th>
-      <th class="py-2">Users <span onclick="sortTable('sessions-table', 5)"><%= fa_icon('arrow-down') %></span></th>
-      <th class="py-2 action-header">Action</th>
+      <th>Date <span onclick="sortTable('sessions-table', 0, true)"><%= fa_icon('arrow-down') %></span></th>
+      <th>Training <span onclick="sortTable('sessions-table', 1)"><%= fa_icon('arrow-down') %></span></th>
+      <th>Trainer <span onclick="sortTable('sessions-table', 2)"><%= fa_icon('arrow-down') %></span></th>
+      <th>Course <span onclick="sortTable('sessions-table', 3)"><%= fa_icon('arrow-down') %></span></th>
+      <th>Status <span onclick="sortTable('sessions-table', 4)"><%= fa_icon('arrow-down') %></span></th>
+      <th>Users <span onclick="sortTable('sessions-table', 5)"><%= fa_icon('arrow-down') %></span></th>
+      <th class="action-header">Action</th>
     </tr>
     </thead>
     <tbody>
@@ -121,7 +121,7 @@
     </tbody>
   </table>
 
-  <div class="mt-4">
+  <div class="mt-4 text-center">
     <%= page_entries_info @sessions %>
     <%= will_paginate @sessions, container: false %>
   </div>
