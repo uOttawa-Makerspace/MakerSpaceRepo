@@ -126,21 +126,6 @@ div.declined {
   }
 }
 
-.admin_username {
-  @include transition(100ms);
-  color: #357777 !important;
-  font-weight: 500;
-
-  i {
-    padding-right: 5px;
-    color: #777;
-  }
-
-  &:hover {
-    color: dodgerblue !important;
-  }
-}
-
 .spacing_table td {
   padding: 10px;
 }

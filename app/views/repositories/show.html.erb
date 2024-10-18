@@ -1,8 +1,8 @@
 <% provide(:title, @repository.title.to_s) %>
 
-<section id="show-repository">
+<section id="show-repository" class="row">
 
-  <section id="repository-photos">
+  <section id="repository-photos" class="col-lg-8 order-lg-first order-last">
     <% if @repository.youtube_link.present? %>
       <%= youtube_video(@repository.youtube_link) %>
     <% end %>
@@ -37,7 +37,7 @@
     <% end %>
   </section>
 
-  <section id="info">
+  <section id="info" class="col-lg-4">
 
   <% if @repository.users.pluck(:email).include?(@user.email) || @user.role.eql?("admin") %>
     <%= link_to fa_icon('pencil', text: 'Edit project'),
@@ -196,8 +196,7 @@
       <% end %>
 
   </section>
-
-  <section id="repo-comments">
+  <section id="repo-comments" class="order-last col-12">
     <div class="title">Comments</div>
     <%= form_for('Comments', url: comments_create_path, id: 'comment', remote: true) do %>
       <div class="mb-3">
@@ -248,5 +247,6 @@
     </div>
   </section>
 </section>
+
 
 <%= render 'layouts/photoswipe' %>

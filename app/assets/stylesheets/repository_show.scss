@@ -10,11 +10,6 @@ section#show-repository {
   background-color: #fff;
 }
 
-section#repository-photos {
-  @include span-columns(8, 4);
-  padding-bottom: 3rem;
-}
-
 div#show-photo img {
   display: block;
   max-width: 100%;
@@ -53,11 +48,6 @@ span.forward {
   margin: 0 0.2rem;
   padding: 0 0.3rem;
   line-height: 100px;
-}
-
-section#info {
-  @include span-columns(4, 4);
-  padding-bottom: 3rem;
 }
 
 a.edit-repo-link {
