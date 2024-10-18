@@ -40,57 +40,7 @@
                 <div id="booked-calendar"></div>
               </div>
             </div>
-            <div class="modal fade" id="bookModal" tabindex="-1" role="dialog" aria-labelledby="bookModal" aria-hidden="true">
-              <%= hidden_field_tag :sub_space_booking_id, nil, id: 'sub_space_booking_id' %>
-              <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                  <div class="modal-header">
-                    <h5 class="modal-title" id="bookingModalLabel">New Booking</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" id="bookClose" aria-label="Close"></button>
-                  </div>
-                  <div class="modal-body">
-                    <div class="mb-3 text-center">
-                      <label for="book-name" class="form-label">Name</label>
-                      <input type="text" class="form-control" id="book-name" placeholder="John Doe">
-                      <br>
-                      <div id="TimeSlot"></div>
-                      <label for="book-description" class="form-label">Description</label>
-                      <input type="text" class="form-control" id="book-description" placeholder="Meeting with John Doe">
-                      <br>
-                      <label for="book-start">Start Date</label>
-                      <input id="book-start" autocomplete="false" class="form-control inanimate">
-                      <br>
-                      <label for="book-end">End Date</label>
-                      <input id="book-end" autocomplete="false" class="form-control inanimate">
-                      <span class="invalid-feedback d-none" id="end-date-validation" >The End Date needs to be greater than the Start Date.</span>
-                      <br>
-                      <input type="checkbox" id="book-recurring" class="form-check-input">
-                      <label for="book-recurring" id="book-recurring-label">Is this a recurring booking?</label>
-                      <br>
-                      <div class="flatpickr">
-                        <label for="book-recurring-end" id="book-recurring-end-label">Recurring End Date</label>
-                        <input id="book-recurring-end" autocomplete="false" class="form-control inanimate">
-                      </div>
-                      <label for="book-recurring-type" id="book-recurring-type-label">Recurring Frequency</label>
-                      <select id="book-recurring-type" class="form-select form-control">
-                        <option value="weekly">Weekly</option>
-                        <option value="monthly">Monthly</option>
-                      </select>
-                      <% if current_user.admin? %>
-                        <input type="checkbox" id="book-blocking" !checked class="form-check-input">
-                        <label for="book-blocking">Block from booking in this timeframe?</label>
-                      <% end %>
-                    </div>
-                  </div>
-                  <div class="modal-footer">
-                    <button type="button" id="bookDelete" class="btn btn-danger me-auto">Delete</button>
-                    <button type="button" id="bookCancel" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" id="bookSave" class="btn btn-primary">Book</button>
-                    <button type="button" id="bookUpdate" class="btn btn-primary">Update</button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <%= render partial: 'book_modal' %>
           <% else %>
             <div class="alert mt-3 alert-warning text-center" role="alert">
               Please select a room to view the calendar
