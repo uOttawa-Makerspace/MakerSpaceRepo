@@ -100,7 +100,7 @@
             Past attempts / Tentatives précédentes
           </div>
           <div class="card-body">
-            <% if @project_proposal.past_experiences.split("|")[0] != "" %>
+            <% if @project_proposal.past_experiences.split("|")[0].present? %>
               <%= @project_proposal.past_experiences.split('|')[0].html_safe %><!-- <br> -->
             <% end %>
             <% if @project_proposal.past_experiences.split("|")[1].present? %>
