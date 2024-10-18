@@ -315,7 +315,7 @@ class SubSpaceBookingController < ApplicationController
                 end_time_str.hour,
                 end_time_str.min
               )
-            book(params, recurring_booking) # book rest of recurring
+            book(params, recurring_booking, false) # book rest of recurring, don't send email for those
           end
         end
       end
@@ -324,7 +324,7 @@ class SubSpaceBookingController < ApplicationController
     end
   end
 
-  def book(params, recurring_booking = nil)
+  def book(params, recurring_booking = nil, send_email = true)
     booking = SubSpaceBooking.new(sub_space_booking_params)
     booking.sub_space = SubSpace.find(params[:sub_space_booking][:sub_space_id])
     booking.user_id = current_user.id
@@ -462,15 +462,19 @@ class SubSpaceBookingController < ApplicationController
     flash[
       :notice
     ] = "Booking for #{booking.sub_space.name} created successfully."
-    if booking.sub_space.approval_required &&
-         booking.sub_space_booking_status.booking_status_id ==
-           BookingStatus::PENDING.id
-      BookingMailer.send_booking_needs_approval(booking.id).deliver_now
-    elsif !booking.sub_space.approval_required &&
-          booking.sub_space_booking_status.booking_status_id ==
-            BookingStatus::APPROVED.id
-      BookingMailer.send_booking_automatically_approved(booking.id).deliver_now
-      BookingMailer.send_booking_approved(booking.id).deliver_now
+    if send_email
+      if booking.sub_space.approval_required &&
+           booking.sub_space_booking_status.booking_status_id ==
+             BookingStatus::PENDING.id
+        BookingMailer.send_booking_needs_approval(booking.id).deliver_now
+      elsif !booking.sub_space.approval_required &&
+            booking.sub_space_booking_status.booking_status_id ==
+              BookingStatus::APPROVED.id
+        BookingMailer.send_booking_automatically_approved(
+          booking.id
+        ).deliver_now
+        BookingMailer.send_booking_approved(booking.id).deliver_now
+      end
     end
   end
 
