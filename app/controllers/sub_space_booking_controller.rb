@@ -625,17 +625,45 @@ class SubSpaceBookingController < ApplicationController
                     alert: "You are not authorized to view this page."
       )
     end
+
     booking = SubSpaceBooking.find(params[:sub_space_booking_id])
     subspaceName = booking.sub_space.name
-    status = SubSpaceBookingStatus.find(booking.sub_space_booking_status_id)
-    status.sub_space_booking_id = nil
-    status.save
-    booking.sub_space_booking_status_id = nil
-    booking.save
-    status.destroy
-    booking.destroy
+    destroy_booking(booking)
     redirect_to sub_space_booking_index_path(anchor: "booking-tab"),
                 notice: "Booking for #{subspaceName} deleted successfully."
+  end
+
+  def delete_remaining_recurring
+    booking = SubSpaceBooking.find(params[:id])
+    unless current_user.admin? || booking.user_id == current_user.id
+      return(
+        redirect_to root_path,
+                    alert: "You are not authorized to view this page."
+      )
+    end
+
+    unless booking.recurring_booking.present?
+      return(
+        redirect_to sub_space_booking_index_path(anchor: "booking-tab"),
+                    notice: "Booking is not attached to a recurring booking."
+      )
+    end
+
+    subspaceName = booking.sub_space.name
+    # Get this and rest of bookings
+    # NOTE: if booking.recurring_booking is ever somehow null
+    # the whole table would get destroyed :^)
+    remaining_bookings =
+      SubSpaceBooking.where(recurring_booking: booking.recurring_booking).where(
+        start_time: booking.start_time..
+      ) # endless range
+    # Is a transaction necessary here?
+    ActiveRecord::Base.transaction do
+      remaining_bookings.each { |remaining| destroy_booking(remaining) }
+    end
+    redirect_to sub_space_booking_index_path(anchor: "booking-tab"),
+                notice:
+                  "Remaining bookings for #{subspaceName} deleted successfully."
   end
 
   def get_sub_space_booking
@@ -644,6 +672,19 @@ class SubSpaceBookingController < ApplicationController
   end
 
   private
+
+  def destroy_booking(booking)
+    # FIXME This is a one to one relation, so we have to unset
+    # the relation before deleting to avoid foreign key issues.
+    # Status should be a column in SubSpaceBooking, not in a separate table
+    status = booking.sub_space_booking_status
+    status.sub_space_booking_id = nil
+    status.save
+    booking.sub_space_booking_status_id = nil
+    booking.save
+    status.destroy!
+    booking.destroy!
+  end
 
   def current_bookings(booking_status_id)
     SubSpaceBookingStatus

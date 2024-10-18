@@ -41,8 +41,17 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" id="bookDelete" class="btn btn-danger me-auto">Delete</button>
-                <button type="button" id="bookCancel" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" id="bookDelete" class="btn btn-danger">Delete</button>
+                <div class="dropdown" id="bookDeleteRecurringDropdown">
+                    <button class="btn btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        Delete...
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><button class="dropdown-item" id="bookRecurringDeleteOne">This only</button></li>
+                        <li><button class="dropdown-item" id="bookRecurringDeleteRest">This and rest</button></li>
+                    </ul>
+                </div>
+                <button type="button" id="bookCancel" class="btn btn-secondary ms-auto" data-bs-dismiss="modal">Close</button>
                 <button type="button" id="bookSave" class="btn btn-primary">Book</button>
                 <button type="button" id="bookUpdate" class="btn btn-primary">Update</button>
             </div>

@@ -464,6 +464,7 @@ Rails.application.routes.draw do
     get :edit
     patch :update
     delete :delete, path: "delete/:sub_space_booking_id"
+    member { delete :delete_remaining_recurring }
     collection do
       # for /approve and /decline
       put :bulk_approve_decline
