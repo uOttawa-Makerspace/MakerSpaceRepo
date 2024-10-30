@@ -600,7 +600,11 @@ class SubSpaceBookingController < ApplicationController
         }
       )
     if bulk_status == "approve"
-      booking_statuses.update_all(booking_status_id: BookingStatus::APPROVED.id)
+      booking_statuses.update_all(
+        booking_status_id: BookingStatus::APPROVED.id,
+        approved_at: DateTime.now,
+        approved_by: current_user.id
+      )
       flash[:notice] = "Bookings approved"
     elsif bulk_status == "decline"
       booking_statuses.update_all(booking_status_id: BookingStatus::DECLINED.id)
