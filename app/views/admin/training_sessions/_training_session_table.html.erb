@@ -67,8 +67,8 @@
     </div>
   <% end %>
 </div>
-<div class="w-full lg:w-auto p-4">
-  <table class="sessions-table table table-striped w-full text-center">
+<div>
+  <table class="table table-striped text-center mt-3">
     <thead class="table-primary">
     <tr>
       <th>Date <span onclick="sortTable('sessions-table', 0, true)"><%= fa_icon('arrow-down') %></span></th>
@@ -120,7 +120,7 @@
     </tbody>
   </table>
 
-  <div class="mt-4">
+  <div class="mt-4 text-center">
     <%= page_entries_info @sessions %>
     <%= will_paginate @sessions, container: false %>
   </div>
