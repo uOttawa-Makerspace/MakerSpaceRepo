@@ -230,6 +230,7 @@ class SubSpaceBookingController < ApplicationController
           @bookings << event
         end
     end
+    # TODO: Allow search by recurring id
     render json: @bookings
   end
 
@@ -242,82 +243,91 @@ class SubSpaceBookingController < ApplicationController
              status: :unprocessable_entity
       return
     end
-    if params[:sub_space_booking][:blocking] && !current_user.admin?
+    if params[:sub_space_booking][:blocking] == true && !current_user.admin?
       flash[:alert] = "You do not have permission to block a space."
       redirect_to sub_space_booking_index_path
     end
-    if params[:sub_space_booking][:recurring].present?
-      if params[:sub_space_booking][:recurring] == true
-        if params[:sub_space_booking][:recurring_end].present? &&
-             params[:sub_space_booking][:recurring_frequency].present?
-          params[:sub_space_booking][:recurring_frequency] == "weekly" ?
-            recurrence = 7.days :
-            recurrence = 1.month
-          start_date = Date.parse(params[:sub_space_booking][:start_time])
-          end_date = Date.parse(params[:sub_space_booking][:end_time])
 
-          start_time_str = Time.parse(params[:sub_space_booking][:start_time])
-          end_time_str = Time.parse(params[:sub_space_booking][:end_time])
-
-          end_date_r = Date.parse(params[:sub_space_booking][:recurring_end])
-
-          start_time =
-            DateTime.new(
-              start_date.year,
-              start_date.month,
-              start_date.day,
-              start_time_str.hour,
-              start_time_str.min
-            )
-          end_time =
-            DateTime.new(
-              end_date.year,
-              end_date.month,
-              end_date.day,
-              end_time_str.hour,
-              end_time_str.min
-            )
-          end_date_recurring =
-            DateTime.new(
-              end_date_r.year,
-              end_date_r.month,
-              end_date_r.day
-            ).beginning_of_day
-
-          # book first one
-          recurring_booking = RecurringBooking.new
-          book(params, recurring_booking)
-
-          while start_time < end_date_recurring
-            params[:sub_space_booking][:start_time] = (
-              start_time + recurrence
-            ).strftime("%Y-%m-%d %H:%M")
-            params[:sub_space_booking][:end_time] = (
-              end_time + recurrence
-            ).strftime("%Y-%m-%d %H:%M")
-
-            start_date = Date.parse(params[:sub_space_booking][:start_time])
-            end_date = Date.parse(params[:sub_space_booking][:end_time])
-
-            start_time =
-              DateTime.new(
-                start_date.year,
-                start_date.month,
-                start_date.day,
-                start_time_str.hour,
-                start_time_str.min
-              )
-            end_time =
-              DateTime.new(
-                end_date.year,
-                end_date.month,
-                end_date.day,
-                end_time_str.hour,
-                end_time_str.min
-              )
-            book(params, recurring_booking, false) # book rest of recurring, don't send email for those
+    if params[:sub_space_booking][:recurring] == true
+      unless params[:sub_space_booking][:recurring_end].present? &&
+               params[:sub_space_booking][:recurring_frequency].present?
+        render json: {
+                 errors: "Invalid recurring parameters"
+               },
+               status: :unprocessable_entity
+        return
+      end
+      recurrence =
+        (
+          if params[:sub_space_booking][:recurring_frequency] == "weekly"
+            7.days
+          else
+            1.month
           end
-        end
+        )
+      start_date = Date.parse(params[:sub_space_booking][:start_time])
+      end_date = Date.parse(params[:sub_space_booking][:end_time])
+
+      start_time_str = Time.parse(params[:sub_space_booking][:start_time])
+      end_time_str = Time.parse(params[:sub_space_booking][:end_time])
+
+      end_date_r = Date.parse(params[:sub_space_booking][:recurring_end])
+
+      start_time =
+        DateTime.new(
+          start_date.year,
+          start_date.month,
+          start_date.day,
+          start_time_str.hour,
+          start_time_str.min
+        )
+      end_time =
+        DateTime.new(
+          end_date.year,
+          end_date.month,
+          end_date.day,
+          end_time_str.hour,
+          end_time_str.min
+        )
+      end_date_recurring =
+        DateTime.new(
+          end_date_r.year,
+          end_date_r.month,
+          end_date_r.day
+        ).beginning_of_day
+
+      # book first one
+      recurring_booking = RecurringBooking.new
+      book(params, recurring_booking)
+
+      while start_time < end_date_recurring
+        params[:sub_space_booking][:start_time] = (
+          start_time + recurrence
+        ).strftime("%Y-%m-%d %H:%M")
+        params[:sub_space_booking][:end_time] = (
+          end_time + recurrence
+        ).strftime("%Y-%m-%d %H:%M")
+
+        start_date = Date.parse(params[:sub_space_booking][:start_time])
+        end_date = Date.parse(params[:sub_space_booking][:end_time])
+
+        start_time =
+          DateTime.new(
+            start_date.year,
+            start_date.month,
+            start_date.day,
+            start_time_str.hour,
+            start_time_str.min
+          )
+        end_time =
+          DateTime.new(
+            end_date.year,
+            end_date.month,
+            end_date.day,
+            end_time_str.hour,
+            end_time_str.min
+          )
+        book(params, recurring_booking, false) # book rest of recurring, don't send email for those
       end
     else
       book(params) # book single
@@ -600,10 +610,10 @@ class SubSpaceBookingController < ApplicationController
         }
       )
     if bulk_status == "approve"
-      booking_statuses.update_all(
-        booking_status_id: BookingStatus::APPROVED.id,
+      booking_statuses.update_all(booking_status_id: BookingStatus::APPROVED.id)
+      SubSpaceBooking.where(id: params[:sub_space_booking_ids]).update_all(
         approved_at: DateTime.now,
-        approved_by: current_user.id
+        approved_by_id: current_user.id
       )
       flash[:notice] = "Bookings approved"
     elsif bulk_status == "decline"
