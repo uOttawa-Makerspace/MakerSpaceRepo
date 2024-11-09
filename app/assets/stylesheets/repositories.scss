@@ -23,19 +23,19 @@ section#new-repo {
 
   label {
     display: block;
-    font: 400 1em "Raleway", sans-serif;
+    font: 400 1em "Roboto", sans-serif;
     margin: 10px 0 5px;
   }
 
   label + div {
-    font: 400 0.85rem "Raleway", helvetica, sans-serif;
+    font: 400 0.85rem "Roboto", helvetica, sans-serif;
     margin-bottom: 0.5rem;
   }
 
   input.repo,
   textarea,
   input#tag {
-    font: 300 0.9em "Raleway", sans-serif;
+    font: 300 0.9em "Roboto", sans-serif;
     color: #555;
     width: 100%;
     padding: 0.5rem;
@@ -76,7 +76,7 @@ ul.ui-menu {
 
 li.ui-menu-item {
   padding: 0.5rem;
-  font: 300 0.9em "Raleway", sans-serif;
+  font: 300 0.9em "Roboto", sans-serif;
   cursor: pointer;
 
   &:hover {
@@ -86,7 +86,7 @@ li.ui-menu-item {
 }
 
 .ui-autocomplete-input {
-  font: 300 0.9em "Raleway", sans-serif;
+  font: 300 0.9em "Roboto", sans-serif;
   background-color: #fff;
   width: calc(400px + 1rem);
   @include prefixer(box-shadow, 0 1px 2px rgba(0, 0, 0, 0.2));
@@ -117,7 +117,7 @@ select:not(.form-control) {
   width: 100%;
   max-width: calc(400px + 1rem);
   height: 2.4rem;
-  font: 300 0.9em "Raleway", sans-serif;
+  font: 300 0.9em "Roboto", sans-serif;
   border: 1px solid #aaa;
   border-top-left-radius: 3px;
   border-top-right-radius: 3px;
@@ -169,7 +169,7 @@ div#dragndrop {
   height: 100%;
   color: #aaa;
   padding-top: 40px;
-  font: 300 2em "Raleway", sans-serif;
+  font: 300 2em "Roboto", sans-serif;
   text-align: center;
 
   p {
@@ -198,7 +198,7 @@ label.custom-image-upload {
   padding: 10px 0;
   text-align: center;
   background-color: #eee;
-  font: 300 0.8em "Raleway", sans-serif !important;
+  font: 300 0.8em "Roboto", sans-serif !important;
   color: #4682b4 !important;
   margin: 0 !important;
   &:hover {
@@ -236,7 +236,7 @@ div#image-container {
       background-color: #222;
       cursor: pointer;
       &:after {
-        font: 300 1em "Raleway", sans-serif !important;
+        font: 300 1em "Roboto", sans-serif !important;
         content: "remove";
       }
     }
@@ -250,7 +250,7 @@ div#equipment-container {
     padding: 0.25rem 0.7rem;
     background-color: #4682b4;
     color: #eee;
-    font: 300 0.8em "Raleway", sans-serif !important;
+    font: 300 0.8em "Roboto", sans-serif !important;
     margin-top: 0.2rem;
     margin-right: 0.2rem;
     cursor: default;
@@ -267,7 +267,7 @@ div#share_option {
     padding: 0.25rem 0.7rem;
     background-color: #4682b4;
     color: #555;
-    font: 300 0.8em "Raleway", sans-serif !important;
+    font: 300 0.8em "Roboto", sans-serif !important;
     margin-top: 0.2rem;
     margin-right: 0.2rem;
     cursor: default;
@@ -275,7 +275,7 @@ div#share_option {
 
   label#type {
     color: #555;
-    font: 300 0.9em "Raleway", sans-serif;
+    font: 300 0.9em "Roboto", sans-serif;
   }
   div#description {
     text-indent: 5mm;
@@ -304,7 +304,7 @@ label.custom-instructable-upload {
   font-size: 10px;
   display: inline-block !important;
   background-color: rgba(238, 238, 238, 0.3);
-  font: 300 0.8em "Raleway", sans-serif !important;
+  font: 300 0.8em "Roboto", sans-serif !important;
   color: #4682b4 !important;
   padding: 5px 10px;
   border-radius: 3px;
@@ -339,7 +339,7 @@ div.redactor-editor {
   padding: 10px;
   border: 1px solid #aaa;
   border-top: 1px solid #eee;
-  font: 300 0.9em "Raleway", sans-serif;
+  font: 300 0.9em "Roboto", sans-serif;
   color: #555;
 
   & h1,
@@ -361,7 +361,7 @@ div.redactor-editor {
 }
 
 .pin-button {
-  font: 300 1em "Raleway", sans-serif;
+  font: 300 1em "Roboto", sans-serif;
   padding: 0.5rem 1rem;
   border: none;
   text-transform: uppercase;
@@ -374,7 +374,7 @@ div.redactor-editor {
 }
 
 .delete-button {
-  font: 300 1em "Raleway", sans-serif;
+  font: 300 1em "Roboto", sans-serif;
   padding: 0.4rem 0.6rem;
   border: none;
   text-transform: uppercase;

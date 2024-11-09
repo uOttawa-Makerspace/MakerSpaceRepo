@@ -39,7 +39,11 @@ class SubSpaceBookingController < ApplicationController
       end
     end
     @bookings =
-      SubSpaceBooking.where(user_id: current_user.id).order(start_time: :desc)
+      SubSpaceBooking
+        .where(user_id: current_user.id)
+        .joins(:user)
+        .includes(:sub_space, :sub_space_booking_status)
+        .order(start_time: :desc)
     if current_user.admin?
       # Need to get the booking status from the sub space booking status table for the booking
       @pending_bookings = current_bookings(BookingStatus::PENDING.id)
@@ -182,11 +186,13 @@ class SubSpaceBookingController < ApplicationController
   end
 
   def bookings
+    current_user
     @bookings = []
     if params[:room].present?
       SubSpaceBooking
         .where(sub_space_id: params[:room])
-        .each do |booking|
+        .joins(:user)
+        .find_each do |booking|
           booking_status =
             SubSpaceBookingStatus.find(booking.sub_space_booking_status_id)
           unless booking_status.booking_status_id ==
@@ -196,8 +202,7 @@ class SubSpaceBookingController < ApplicationController
           end
           title = "#{booking.name} - #{booking.description}"
           title =
-            if current_user.admin? || booking.user == current_user ||
-                 booking.public
+            if @user.admin? || booking.user == @user || booking.public
               title
             else
               booking.public ? title : "Space Booked"
@@ -208,12 +213,11 @@ class SubSpaceBookingController < ApplicationController
             else
               title
             end
-          title += " - #{booking.user.name}" if current_user.admin? &&
-            booking.user != current_user
+          title += " - #{booking.user.name}" if @user.admin? &&
+            booking.user != @user
           if booking.blocking
             title = "Space Blocked" if (
-              !booking.public &&
-                ((!current_user.admin?) || booking.user != current_user)
+              !booking.public && ((!@user.admin?) || booking.user != @user)
             )
           end
           event = {
@@ -221,11 +225,12 @@ class SubSpaceBookingController < ApplicationController
             title: title,
             start: booking.start_time,
             end: booking.end_time,
-            color: booking.color(current_user.id)
+            color: booking.color(@user.id)
           }
           @bookings << event
         end
     end
+    # TODO: Allow search by recurring id
     render json: @bookings
   end
 
@@ -238,87 +243,98 @@ class SubSpaceBookingController < ApplicationController
              status: :unprocessable_entity
       return
     end
-    if params[:sub_space_booking][:blocking] && !current_user.admin?
+    if params[:sub_space_booking][:blocking] == true && !current_user.admin?
       flash[:alert] = "You do not have permission to block a space."
       redirect_to sub_space_booking_index_path
     end
-    if params[:sub_space_booking][:recurring].present?
-      if params[:sub_space_booking][:recurring] == true
-        if params[:sub_space_booking][:recurring_end].present? &&
-             params[:sub_space_booking][:recurring_frequency].present?
-          params[:sub_space_booking][:recurring_frequency] == "weekly" ?
-            recurrence = 7.days :
-            recurrence = 1.month
-          start_date = Date.parse(params[:sub_space_booking][:start_time])
-          end_date = Date.parse(params[:sub_space_booking][:end_time])
 
-          start_time_str = Time.parse(params[:sub_space_booking][:start_time])
-          end_time_str = Time.parse(params[:sub_space_booking][:end_time])
-
-          end_date_r = Date.parse(params[:sub_space_booking][:recurring_end])
-
-          start_time =
-            DateTime.new(
-              start_date.year,
-              start_date.month,
-              start_date.day,
-              start_time_str.hour,
-              start_time_str.min
-            )
-          end_time =
-            DateTime.new(
-              end_date.year,
-              end_date.month,
-              end_date.day,
-              end_time_str.hour,
-              end_time_str.min
-            )
-          end_date_recurring =
-            DateTime.new(
-              end_date_r.year,
-              end_date_r.month,
-              end_date_r.day
-            ).beginning_of_day
-
-          book(params)
-
-          while start_time < end_date_recurring
-            params[:sub_space_booking][:start_time] = (
-              start_time + recurrence
-            ).strftime("%Y-%m-%d %H:%M")
-            params[:sub_space_booking][:end_time] = (
-              end_time + recurrence
-            ).strftime("%Y-%m-%d %H:%M")
-
-            start_date = Date.parse(params[:sub_space_booking][:start_time])
-            end_date = Date.parse(params[:sub_space_booking][:end_time])
-
-            start_time =
-              DateTime.new(
-                start_date.year,
-                start_date.month,
-                start_date.day,
-                start_time_str.hour,
-                start_time_str.min
-              )
-            end_time =
-              DateTime.new(
-                end_date.year,
-                end_date.month,
-                end_date.day,
-                end_time_str.hour,
-                end_time_str.min
-              )
-            book(params)
+    if params[:sub_space_booking][:recurring] == true
+      unless params[:sub_space_booking][:recurring_end].present? &&
+               params[:sub_space_booking][:recurring_frequency].present?
+        render json: {
+                 errors: "Invalid recurring parameters"
+               },
+               status: :unprocessable_entity
+        return
+      end
+      recurrence =
+        (
+          if params[:sub_space_booking][:recurring_frequency] == "weekly"
+            7.days
+          else
+            1.month
           end
-        end
+        )
+      start_date = Date.parse(params[:sub_space_booking][:start_time])
+      end_date = Date.parse(params[:sub_space_booking][:end_time])
+
+      start_time_str = Time.parse(params[:sub_space_booking][:start_time])
+      end_time_str = Time.parse(params[:sub_space_booking][:end_time])
+
+      end_date_r = Date.parse(params[:sub_space_booking][:recurring_end])
+
+      start_time =
+        DateTime.new(
+          start_date.year,
+          start_date.month,
+          start_date.day,
+          start_time_str.hour,
+          start_time_str.min
+        )
+      end_time =
+        DateTime.new(
+          end_date.year,
+          end_date.month,
+          end_date.day,
+          end_time_str.hour,
+          end_time_str.min
+        )
+      end_date_recurring =
+        DateTime.new(
+          end_date_r.year,
+          end_date_r.month,
+          end_date_r.day
+        ).beginning_of_day
+
+      # book first one
+      recurring_booking = RecurringBooking.new
+      book(params, recurring_booking)
+
+      while start_time < end_date_recurring
+        params[:sub_space_booking][:start_time] = (
+          start_time + recurrence
+        ).strftime("%Y-%m-%d %H:%M")
+        params[:sub_space_booking][:end_time] = (
+          end_time + recurrence
+        ).strftime("%Y-%m-%d %H:%M")
+
+        start_date = Date.parse(params[:sub_space_booking][:start_time])
+        end_date = Date.parse(params[:sub_space_booking][:end_time])
+
+        start_time =
+          DateTime.new(
+            start_date.year,
+            start_date.month,
+            start_date.day,
+            start_time_str.hour,
+            start_time_str.min
+          )
+        end_time =
+          DateTime.new(
+            end_date.year,
+            end_date.month,
+            end_date.day,
+            end_time_str.hour,
+            end_time_str.min
+          )
+        book(params, recurring_booking, false) # book rest of recurring, don't send email for those
       end
     else
-      book(params)
+      book(params) # book single
     end
   end
 
-  def book(params)
+  def book(params, recurring_booking = nil, send_email = true)
     booking = SubSpaceBooking.new(sub_space_booking_params)
     booking.sub_space = SubSpace.find(params[:sub_space_booking][:sub_space_id])
     booking.user_id = current_user.id
@@ -330,30 +346,17 @@ class SubSpaceBookingController < ApplicationController
       return
     end
 
-    start_date = Date.parse(params[:sub_space_booking][:start_time])
-    end_date = Date.parse(params[:sub_space_booking][:end_time])
-    start_time = Time.parse(params[:sub_space_booking][:start_time])
-    end_time = Time.parse(params[:sub_space_booking][:end_time])
-
+    # NOTE postgres stores these without a timezone
+    # So we receive time with no timezone, replace the time offset with the default one
+    # Then convert to utc when doing comparaisons
+    # This may explode once daylight savings are over...
     start_datetime =
-      DateTime.new(
-        start_date.year,
-        start_date.month,
-        start_date.day,
-        start_time.hour,
-        start_time.min,
-        0,
-        "EST"
-      )
+      DateTime.parse(params[:sub_space_booking][:start_time]).change(
+        offset: DateTime.now.offset
+      ) # Rewrite timezone
     end_datetime =
-      DateTime.new(
-        end_date.year,
-        end_date.month,
-        end_date.day,
-        end_time.hour,
-        end_time.min,
-        0,
-        "EST"
+      DateTime.parse(params[:sub_space_booking][:end_time]).change(
+        offset: DateTime.now.offset
       )
 
     if params[:sub_space_booking][:blocking] != "true" &&
@@ -363,8 +366,8 @@ class SubSpaceBookingController < ApplicationController
            .where.not(id: booking.id)
            .where(
              "(start_time, end_time) OVERLAPS (?,?)",
-             start_datetime,
-             end_datetime
+             start_datetime.utc + 1.minute, # OVERLAPS performs half-open intersection
+             end_datetime.utc - 1.minute
            )
            .any?
       booking.destroy
@@ -464,19 +467,24 @@ class SubSpaceBookingController < ApplicationController
     booking.sub_space_booking_status_id = status.id
     booking.public =
       SubSpace.find(params[:sub_space_booking][:sub_space_id]).default_public
+    booking.recurring_booking = recurring_booking # Attach the RecurringBooking handle, is saved with the booking itself
     booking.save
     flash[
       :notice
     ] = "Booking for #{booking.sub_space.name} created successfully."
-    if booking.sub_space.approval_required &&
-         booking.sub_space_booking_status.booking_status_id ==
-           BookingStatus::PENDING.id
-      BookingMailer.send_booking_needs_approval(booking.id).deliver_now
-    elsif !booking.sub_space.approval_required &&
-          booking.sub_space_booking_status.booking_status_id ==
-            BookingStatus::APPROVED.id
-      BookingMailer.send_booking_automatically_approved(booking.id).deliver_now
-      BookingMailer.send_booking_approved(booking.id).deliver_now
+    if send_email
+      if booking.sub_space.approval_required &&
+           booking.sub_space_booking_status.booking_status_id ==
+             BookingStatus::PENDING.id
+        BookingMailer.send_booking_needs_approval(booking.id).deliver_now
+      elsif !booking.sub_space.approval_required &&
+            booking.sub_space_booking_status.booking_status_id ==
+              BookingStatus::APPROVED.id
+        BookingMailer.send_booking_automatically_approved(
+          booking.id
+        ).deliver_now
+        BookingMailer.send_booking_approved(booking.id).deliver_now
+      end
     end
   end
 
@@ -508,30 +516,13 @@ class SubSpaceBookingController < ApplicationController
       return
     end
 
-    start_date = Date.parse(params[:sub_space_booking][:start_time])
-    end_date = Date.parse(params[:sub_space_booking][:end_time])
-    start_time = Time.parse(params[:sub_space_booking][:start_time])
-    end_time = Time.parse(params[:sub_space_booking][:end_time])
-
     start_datetime =
-      DateTime.new(
-        start_date.year,
-        start_date.month,
-        start_date.day,
-        start_time.hour,
-        start_time.min,
-        0,
-        "EST"
-      )
+      DateTime.parse(params[:sub_space_booking][:start_time]).change(
+        offset: DateTime.now.offset
+      ) # Rewrite timezone
     end_datetime =
-      DateTime.new(
-        end_date.year,
-        end_date.month,
-        end_date.day,
-        end_time.hour,
-        end_time.min,
-        0,
-        "EST"
+      DateTime.parse(params[:sub_space_booking][:end_time]).change(
+        offset: DateTime.now.offset
       )
 
     if SubSpaceBooking
@@ -540,8 +531,8 @@ class SubSpaceBookingController < ApplicationController
          .where.not(id: @sub_space_booking.id)
          .where(
            "(start_time, end_time) OVERLAPS (?,?)",
-           start_datetime,
-           end_datetime
+           start_datetime.utc + 1.minute,
+           end_datetime.utc - 1.minute
          )
          .any?
       flash[:alert] = "This time slot is already booked."
@@ -620,6 +611,10 @@ class SubSpaceBookingController < ApplicationController
       )
     if bulk_status == "approve"
       booking_statuses.update_all(booking_status_id: BookingStatus::APPROVED.id)
+      SubSpaceBooking.where(id: params[:sub_space_booking_ids]).update_all(
+        approved_at: DateTime.now,
+        approved_by_id: current_user.id
+      )
       flash[:notice] = "Bookings approved"
     elsif bulk_status == "decline"
       booking_statuses.update_all(booking_status_id: BookingStatus::DECLINED.id)
@@ -648,17 +643,45 @@ class SubSpaceBookingController < ApplicationController
                     alert: "You are not authorized to view this page."
       )
     end
+
     booking = SubSpaceBooking.find(params[:sub_space_booking_id])
     subspaceName = booking.sub_space.name
-    status = SubSpaceBookingStatus.find(booking.sub_space_booking_status_id)
-    status.sub_space_booking_id = nil
-    status.save
-    booking.sub_space_booking_status_id = nil
-    booking.save
-    status.destroy
-    booking.destroy
+    destroy_booking(booking)
     redirect_to sub_space_booking_index_path(anchor: "booking-tab"),
                 notice: "Booking for #{subspaceName} deleted successfully."
+  end
+
+  def delete_remaining_recurring
+    booking = SubSpaceBooking.find(params[:id])
+    unless current_user.admin? || booking.user_id == current_user.id
+      return(
+        redirect_to root_path,
+                    alert: "You are not authorized to view this page."
+      )
+    end
+
+    unless booking.recurring_booking.present?
+      return(
+        redirect_to sub_space_booking_index_path(anchor: "booking-tab"),
+                    notice: "Booking is not attached to a recurring booking."
+      )
+    end
+
+    subspaceName = booking.sub_space.name
+    # Get this and rest of bookings
+    # NOTE: if booking.recurring_booking is ever somehow null
+    # the whole table would get destroyed :^)
+    remaining_bookings =
+      SubSpaceBooking.where(recurring_booking: booking.recurring_booking).where(
+        start_time: booking.start_time..
+      ) # endless range
+    # Is a transaction necessary here?
+    ActiveRecord::Base.transaction do
+      remaining_bookings.each { |remaining| destroy_booking(remaining) }
+    end
+    redirect_to sub_space_booking_index_path(anchor: "booking-tab"),
+                notice:
+                  "Remaining bookings for #{subspaceName} deleted successfully."
   end
 
   def get_sub_space_booking
@@ -668,9 +691,22 @@ class SubSpaceBookingController < ApplicationController
 
   private
 
+  def destroy_booking(booking)
+    # FIXME This is a one to one relation, so we have to unset
+    # the relation before deleting to avoid foreign key issues.
+    # Status should be a column in SubSpaceBooking, not in a separate table
+    status = booking.sub_space_booking_status
+    status.sub_space_booking_id = nil
+    status.save
+    booking.sub_space_booking_status_id = nil
+    booking.save
+    status.destroy!
+    booking.destroy!
+  end
+
   def current_bookings(booking_status_id)
     SubSpaceBookingStatus
-      .includes(sub_space_booking: %i[approved_by user sub_space])
+      .includes(sub_space_booking: [:approved_by, :user, sub_space: :space])
       .where(booking_status_id: booking_status_id)
       .order("sub_space_bookings.start_time": :asc)
       .map { |booking_status| booking_status.sub_space_booking }
@@ -681,7 +717,7 @@ class SubSpaceBookingController < ApplicationController
 
   def old_bookings(booking_status_id)
     SubSpaceBookingStatus
-      .includes(sub_space_booking: %i[approved_by user sub_space])
+      .includes(sub_space_booking: [:approved_by, :user, sub_space: :space])
       .where(booking_status_id: booking_status_id)
       .order("sub_space_bookings.start_time": :asc)
       .map { |booking_status| booking_status.sub_space_booking }

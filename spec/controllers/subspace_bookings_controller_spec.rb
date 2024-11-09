@@ -89,6 +89,63 @@ RSpec.describe SubSpaceBookingController, type: :controller do
     end
   end
 
+  describe "PUT/bulk_approve_decline" do
+    context "create some bookings" do
+      it "should create some bookings" do
+        post :create,
+             params: {
+               sub_space_booking: {
+                 sub_space_id: @subspace.id,
+                 start_time: DateTime.now + 1.hour,
+                 end_time: DateTime.now + 2.hour,
+                 name: Faker::Lorem.word,
+                 description: Faker::Lorem.sentence,
+                 recurring: true,
+                 blocking: false,
+                 recurring_end: DateTime.now + 2.weeks, # 1 now + 2 later
+                 recurring_frequency: "weekly"
+               }
+             },
+             as: :json # json so booleans dont get quoted
+        expect(SubSpaceBooking.all.count).to eq(3)
+        expect(response).to have_http_status(:success)
+        get :bookings, params: { room: @subspace.id }
+        expect(JSON.parse(response.body).length).to eq(3)
+
+        booking_ids = SubSpaceBooking.pluck(:id)
+        # approve first two
+        first_two_ids = booking_ids.first(2)
+        put :bulk_approve_decline,
+            params: {
+              bulk_status: "approve",
+              sub_space_booking_ids: first_two_ids
+            }
+        first_two_ids.each do |b_id|
+          expect(
+            SubSpaceBooking
+              .find(b_id)
+              .sub_space_booking_status
+              .booking_status_id
+          ).to eq(BookingStatus::APPROVED.id)
+
+          #decline the last one
+          last_id = booking_ids.last
+          put :bulk_approve_decline,
+              params: {
+                bulk_status: "decline",
+                sub_space_booking_ids: [last_id]
+              }
+          expect(
+            SubSpaceBooking
+              .find(last_id)
+              .sub_space_booking_status
+              .booking_status_id
+          ).to eq(BookingStatus::DECLINED.id)
+        end
+      end
+    end
+  end
+
   describe "POST/create" do
     context "create booking" do
       it "should return 204 and create a booking" do

@@ -7,19 +7,27 @@ class Admin::CdelReportsController < AdminAreaController
   def generate
     # We test for the *presence* of a value to determine
     # which button was clicked. Is this a bad idea? We'll never know...
+    report = nil
+
+    # Get data
     if params[:visitors]
-      send_data CdelReportGenerator.generate_visitors_report(
-                  start_date,
-                  end_date
-                ),
-                filename: "CEED_visitors_dump-#{start_date}-#{end_date}.csv"
+      report =
+        CdelReportGenerator.generate_visitors_report(start_date, end_date)
     elsif params[:certifications]
       send_data CdelReportGenerator.generate_certifications_report(
                   start_date,
                   end_date
-                ),
-                filename:
-                  "CEED_certifications_dump-#{start_date}-#{end_date}.csv"
+                )
+    elsif params[:new_users]
+      report =
+        CdelReportGenerator.generate_new_users_report(start_date, end_date)
+    end
+
+    # error checking
+    if report.present?
+      send_data report[:data], filename: report[:filename]
+    else
+      head :bad_request
     end
   end
 

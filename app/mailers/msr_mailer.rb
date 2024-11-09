@@ -305,24 +305,25 @@ class MsrMailer < ApplicationMailer
   end
 
   # Sends a raw csv dump to someone
+  # 'someone' should have a script running that grabs this email
+  # and passes the attachments to CDEL
+  # Power Automate grabs and sends to a folder on the CEED sharepoint
   def send_cdel_monthly_report(to)
+    # last month
     start_date = 1.month.ago.beginning_of_month
     end_date = 1.month.ago.end_of_month
 
-    attachments[
-      "CEED_visitors_dump-#{start_date.to_date}-#{end_date.to_date}.csv"
-    ] = {
-      mime_type: "text/csv",
-      content:
-        CdelReportGenerator.generate_visitors_report(start_date, end_date)
-    }
-    attachments[
-      "CEED_certifications_dump-#{start_date.to_date}-#{end_date.to_date}.csv"
-    ] = {
-      mime_type: "text/csv",
-      content:
-        CdelReportGenerator.generate_certifications_report(start_date, end_date)
-    }
+    # List of {data: csv, filename: string}
+    # Look into CdelReportGenerator for details
+    CdelReportGenerator
+      .generate_all_reports(start_date, end_date)
+      .each do |report|
+        attachments[report[:filename]] = {
+          mime_type: "text/csv",
+          content: report[:data]
+        }
+      end
+
     mail(
       to: to,
       subject: "CDEL Reports from #{start_date.to_date} to #{end_date.to_date}",

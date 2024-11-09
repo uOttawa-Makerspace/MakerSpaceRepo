@@ -10,11 +10,6 @@ section#show-repository {
   background-color: #fff;
 }
 
-section#repository-photos {
-  @include span-columns(8, 4);
-  padding-bottom: 3rem;
-}
-
 div#show-photo img {
   display: block;
   max-width: 100%;
@@ -55,11 +50,6 @@ span.forward {
   line-height: 100px;
 }
 
-section#info {
-  @include span-columns(4, 4);
-  padding-bottom: 3rem;
-}
-
 a.edit-repo-link {
   @include transition(100ms);
   position: absolute;
@@ -84,7 +74,7 @@ a#view-repo-link {
 div#repo-title {
   //color: #366;
   color: $secondary;
-  font: 600 1.6rem "Raleway", sans-serif;
+  font: 600 1.6rem "Roboto", sans-serif;
 }
 
 div#misc {
@@ -97,7 +87,7 @@ div#misc {
     height: 60px;
     line-height: 60px !important;
     width: 30%;
-    font: 300 1.1rem "Raleway", sans-serif;
+    font: 300 1.1rem "Roboto", sans-serif;
     color: $primary;
     cursor: pointer;
     i {
@@ -122,7 +112,7 @@ div#misc {
 div.repo-info-item {
   @include span-columns(6, 0);
   padding-top: 30px;
-  font: 300 0.9rem "Raleway", sans-serif;
+  font: 300 0.9rem "Roboto", sans-serif;
   color: $secondary;
 
   table {
@@ -317,7 +307,7 @@ section#repo-comments {
   padding: 3rem;
 
   div.title {
-    font: 400 2rem "Raleway", sans-serif;
+    font: 400 2rem "Roboto", sans-serif;
     color: #555;
     padding: 0 2rem 2rem;
   }
@@ -327,14 +317,14 @@ section#repo-comments {
     display: block;
     width: 70%;
     padding: 0.5rem;
-    font: 400 1rem "Raleway", sans-serif;
+    font: 400 1rem "Roboto", sans-serif;
     margin-left: 1rem;
     border-radius: 3px;
   }
 
   input {
     margin: 0.5rem 1rem;
-    font: 400 1rem "Raleway", sans-serif;
+    font: 400 1rem "Roboto", sans-serif;
     padding: 0.5rem 0.7rem;
     border: none;
   }
@@ -345,14 +335,14 @@ section#repo-comments {
     a {
       display: inline-block;
       margin: 0 1%;
-      font: 400 1rem "Raleway", sans-serif;
+      font: 400 1rem "Roboto", sans-serif;
       color: #555;
     }
   }
 
   div#comment-container {
     @include outer-container(75%);
-    font: 400 1rem "Raleway", sans-serif;
+    font: 400 1rem "Roboto", sans-serif;
     margin: 0;
     div.comment {
       @include outer-container(100%);

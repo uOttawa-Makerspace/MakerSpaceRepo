@@ -1,7 +1,7 @@
 <% provide(:title, @project_proposal.title.to_s) %>
 
-<section id="show-repository">
-  <section id="repository-photos">
+<section id="show-repository" class="row">
+  <section id="repository-photos" class="col-lg-8 order-lg-first order-last">
     <% if @project_proposal.youtube_link.present? %>
       <%= youtube_video(@project_proposal.youtube_link) %>
     <% end %>
@@ -45,41 +45,41 @@
     </div>
 
     <div class="repo-desc">
-        <div class="card">
-          <div class="card-header">
-            Client Information / Information sur le client
-          </div>
-          <div class="card-body">
-            <% if signed_in? %>
-              <div class="word-break">
-                <b>Client:</b> <%= @project_proposal.client %>
-                <br>
-                <b>Client type / Type de client :</b> <%= @project_proposal.client_type %>
-                <br>
-                <b>Client interest / Interets du client :</b> <%= @project_proposal.client_interest %>
-                <br>
-                <b>Client Background / Contexte du client :</b>
-                <span style="word-break: break-word">
-                  <%= @project_proposal.client_background.html_safe %>
-                </span>
-              </div>
-
-              <% if @project_proposal.supervisor_background.present? %>
-                <b>Supervisor Background:</b>
-                <span style="word-break: break-word">
-                  <%= @project_proposal.supervisor_background.html_safe %>
-                </span>
-              <% end %>
-            <% else %>
-              <div class="word-break">
-                <div class="alert alert-info">
-                  Please <%= link_to 'sign in', login_path, class: 'text-decoration-underline' %> to view client info.
-                </div>
-              </div>
-            <% end %>
-          </div>
+      <div class="card">
+        <div class="card-header">
+          Client Information / Information sur le client
         </div>
-        <br>
+        <div class="card-body">
+          <% if signed_in? %>
+            <div class="word-break">
+              <b>Client:</b> <%= @project_proposal.client %>
+              <br>
+              <b>Client type / Type de client :</b> <%= @project_proposal.client_type %>
+              <br>
+              <b>Client interest / Interets du client :</b> <%= @project_proposal.client_interest %>
+              <br>
+              <b>Client Background / Contexte du client :</b>
+              <span style="word-break: break-word">
+                <%= @project_proposal.client_background.html_safe %>
+              </span>
+            </div>
+
+            <% if @project_proposal.supervisor_background.present? %>
+              <b>Supervisor Background:</b>
+              <span style="word-break: break-word">
+                <%= @project_proposal.supervisor_background.html_safe %>
+              </span>
+            <% end %>
+          <% else %>
+            <div class="word-break">
+              <div class="alert alert-info">
+                Please <%= link_to 'sign in', login_path, class: 'text-decoration-underline' %> to view client info.
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+      <br>
 
       <% if @project_proposal.description.present? %>
         <div class="card">
@@ -156,7 +156,6 @@
       <% if @user.admin? %>
         <%= button_to 'Delete / Supprimer', destroy_project_proposals_path(id: @project_proposal.id), method: :delete,
                                                                                                       class: 'btn btn-danger', data: { confirm: 'Are you sure?' } %>
-        <br><br>
         <% if @project_proposal.approved.present? && @project_proposal.admin_id.present? %>
           <% admin_username = @project_proposal.admin.username %>
           <div> This project was reviewed by / Ce projet a été revu par:
@@ -171,7 +170,7 @@
 
     </div>
   </section>
-  <section id="info">
+  <section id="info" class="col-lg-4">
     <% if @project_proposal.user_id.eql?(@user.id) || @user.role.eql?("admin") %>
       <%= link_to fa_icon('pencil', text: 'Edit project proposal'),
                   edit_project_proposal_path(@project_proposal), class: 'edit-repo-link' %>
@@ -204,7 +203,7 @@
             <% @project_files.each do |f| %>
               <div class="file-item-show">
                 <u><%= fa_icon 'file-text-o' %> <%= link_to f.file.filename, rails_blob_path(f.file), download: 'download' %></u><span><%= f.file.byte_size / 1000 %>
-                KB</span>
+                  KB</span>
               </div>
             <% end %>
           </div>
@@ -214,7 +213,7 @@
         <div class="repo-info-item">
           <div class="title">VALIDATION</div>
           <% case @project_proposal.approved
-             when 0 %>
+          when 0 %>
             <div class="declined"><%= 'Désapprouvé / Declined' %></div>
           <% when 1 %>
             <div class="approved"><%= 'Approuvé / Approved' %></div>
@@ -233,9 +232,9 @@
       <% end %>
       <% if @user.id.present? %>
         <div class="repo-info-item">
-          <%= button_to 'Document Project / Documenter un projet', new_repository_path(@user.username, project_proposal_id: @project_proposal.id), method: :get,
-                                                                                                                                                   class: 'btn btn-success',
-                                                                                                                                                   data: { confirm: 'This action will create a repository related to this project proposal' } %>
+          <%= link_to 'Document Project / Documenter un projet', new_repository_path(@user.username, project_proposal_id: @project_proposal.id), method: :get,
+                                                                                                                                                 class: 'btn btn-success',
+                                                                                                                                                 data: { confirm: 'This action will create a repository related to this project proposal' } %>
         </div>
       <% end %>
       <% if @user.admin? %>
@@ -270,10 +269,8 @@
 </section>
 
 <% if @repositories.present? %>
-  <section id="repositories-index">
-    <div class="title" style="max-width: fit-content;">REPOSITORIES CREATED FROM THIS PROJECT PROPOSAL / PROJET CRÉÉ A
-      PARTIR DE CETTE PROPOSITION:
-    </div>
+  <section id="repositories-index" class="mt-3">
+    <h3>REPOSITORIES CREATED FROM THIS PROJECT PROPOSAL / PROJET CRÉÉ A PARTIR DE CETTE PROPOSITION:</h3>
     <br>
     <section class="repository-filter">
       <div class="sort">sort by/trier par</div>
