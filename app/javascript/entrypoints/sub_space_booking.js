@@ -5,6 +5,26 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import listPlugin from "@fullcalendar/list";
 import TomSelect from "tom-select";
 document.addEventListener("turbo:load", function () {
+  // For the recurring booking approval modal
+  let approveRecurringModal = document.getElementById("approveRecurringModal");
+  if (approveRecurringModal) {
+    approveRecurringModal.addEventListener("shown.bs.modal", (e) => {
+      // Get Ids represented by modal button
+      let dates = JSON.parse(e.relatedTarget.dataset.dates);
+      let modalBody = approveRecurringModal.querySelector(".modal-body");
+      let checkbox_template = modalBody.querySelector("label").cloneNode(true); // grab first checkbox
+      // Convert them into checkboxes
+      let newOptions = dates.map((date) => {
+        let o = checkbox_template.cloneNode(true);
+        o.querySelector("input").value = date[0];
+        o.querySelector("span").innerText = date[1];
+        return o;
+      });
+      // Replace them into the form body
+      modalBody.replaceChildren(...newOptions);
+    });
+  }
+
   let bookedCalendarEl = document.getElementById("booked-calendar");
   if (bookedCalendarEl) {
     function createEvent(arg) {
@@ -34,7 +54,6 @@ document.addEventListener("turbo:load", function () {
 
       document.getElementById("bookSave").style.display = "none";
       document.getElementById("bookUpdate").style.display = "block";
-      document.getElementById("bookDelete").style.display = "block";
       document.getElementById("bookingModalLabel").innerText = "Update Booking";
       document.getElementById("sub_space_booking_id").value =
         arg.event.id.split("_")[1];
@@ -66,6 +85,11 @@ document.addEventListener("turbo:load", function () {
             if (blockingElement) {
               blockingElement.checked = data.blocking;
             }
+
+            document.getElementById("bookDelete").style.display =
+              data.recurring_booking_id == null ? "block" : "none";
+            bookDeleteRecurringDropdown.style.display =
+              data.recurring_booking_id == null ? "none" : "block";
 
             modal.style.display = "block";
             modal.classList.add("show");
@@ -103,6 +127,14 @@ document.addEventListener("turbo:load", function () {
     document
       .getElementById("bookDelete")
       .addEventListener("click", deleteEvent);
+    // Same functionality, just a different label
+    document
+      .getElementById("bookRecurringDeleteOne")
+      .addEventListener("click", deleteEvent);
+    // This calls a different REST endpoint
+    document
+      .getElementById("bookRecurringDeleteRest")
+      .addEventListener("click", deleteRecurringEvent);
     document
       .getElementById("book-recurring")
       .addEventListener("change", toggleRecurring);
@@ -232,6 +264,23 @@ document.addEventListener("turbo:load", function () {
           Accept: "application/json",
         },
         // No body needed
+      });
+
+      makeRequest(request);
+    }
+    function deleteRecurringEvent() {
+      //let recurring_booking_id = document.getElementById("recurring_booking_id").value
+      let sub_space_booking_id = document.getElementById(
+        "sub_space_booking_id"
+      ).value;
+      let url = `/sub_space_booking/${sub_space_booking_id}/delete_remaining_recurring`;
+      let request = new Request(url, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        // Server doesn't allow body for HTTP DELETE
       });
 
       makeRequest(request);

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2024_09_24_193746) do
+ActiveRecord::Schema[7.0].define(version: 2024_10_17_195150) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -901,6 +901,11 @@ ActiveRecord::Schema[7.0].define(version: 2024_09_24_193746) do
     t.index ["user_id"], name: "index_quick_access_links_on_user_id"
   end
 
+  create_table "recurring_bookings", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "repo_files", id: :serial, force: :cascade do |t|
     t.integer "repository_id"
     t.datetime "created_at", precision: nil, null: false
@@ -1101,8 +1106,11 @@ ActiveRecord::Schema[7.0].define(version: 2024_09_24_193746) do
     t.boolean "blocking", default: false
     t.bigint "approved_by_id"
     t.datetime "approved_at"
+    t.bigint "recurring_booking_id"
     t.index ["approved_by_id"],
             name: "index_sub_space_bookings_on_approved_by_id"
+    t.index ["recurring_booking_id"],
+            name: "index_sub_space_bookings_on_recurring_booking_id"
     t.index ["sub_space_booking_status_id"],
             name: "index_sub_space_bookings_on_sub_space_booking_status_id"
     t.index ["sub_space_id"], name: "index_sub_space_bookings_on_sub_space_id"
@@ -1393,6 +1401,7 @@ ActiveRecord::Schema[7.0].define(version: 2024_09_24_193746) do
   add_foreign_key "sub_space_booking_statuses",
                   "sub_space_bookings",
                   on_delete: :cascade
+  add_foreign_key "sub_space_bookings", "recurring_bookings"
   add_foreign_key "sub_space_bookings", "sub_space_booking_statuses"
   add_foreign_key "sub_space_bookings", "sub_spaces", on_delete: :cascade
   add_foreign_key "sub_space_bookings", "users"
