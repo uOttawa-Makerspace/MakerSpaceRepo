@@ -40,6 +40,7 @@ class StaffAvailabilitiesController < ApplicationController
           event["end"] = a.end_datetime
         end
         event["recurring"] = a.recurring?
+        event["exceptions"] = a.exceptions || false
         staff_availabilities << event
       end
 
@@ -368,7 +369,8 @@ class StaffAvailabilitiesController < ApplicationController
       :end_date,
       :user_id,
       :time_period_id,
-      :recurring
+      :recurring,
+      :exceptions
     )
   end
 

@@ -142,6 +142,18 @@ let calendar = new Calendar(calendarEl, {
       }`,
     },
   ],
+  // https://fullcalendar.io/docs/eventSourceSuccess
+  // https://fullcalendar.io/docs/eventDataTransform
+  eventDataTransform(eventData) {
+    console.log(eventData);
+    if (eventData.exception) {
+      eventData.display = "none";
+      console.log("excepted");
+    } else {
+      console.log("no exceptions");
+    }
+    return eventData;
+  },
   select: function (arg) {
     openModal(arg);
   },
