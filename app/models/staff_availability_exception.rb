@@ -1,6 +1,6 @@
 class StaffAvailabilityException < ApplicationRecord
   belongs_to :staff_availability
-  validates :type, :start_at, presence: true
+  validates :covers, :start_at, presence: true
 
-  enum type: %i[one_time all_after]
+  enum covers: %i[one_time all_after]
 end

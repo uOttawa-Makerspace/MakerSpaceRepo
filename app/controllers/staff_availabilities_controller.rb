@@ -19,7 +19,7 @@ class StaffAvailabilitiesController < ApplicationController
 
   def get_availabilities
     staff_availabilities = []
-    puts(@time_period.id)
+    #puts(@time_period.id)
     @selected_user
       .staff_availabilities
       .where(time_period: @time_period)
@@ -115,8 +115,10 @@ class StaffAvailabilitiesController < ApplicationController
       # From admin area unavailability form
     elsif params[:staff_availability].present? && time_period_id.present?
       unless params[:staff_availability][:recurring]
-        params_start_time = Time.parse(params[:staff_availability][:start_time])
-        params_end_time = Time.parse(params[:staff_availability][:end_time])
+        params_start_time =
+          Time.zone.parse(params[:staff_availability][:start_time])
+        params_end_time =
+          Time.zone.parse(params[:staff_availability][:end_time])
         params_start_date = Date.parse(params[:staff_availability][:start_date])
         params_end_date = Date.parse(params[:staff_availability][:end_date])
         @staff_availability =
@@ -306,6 +308,12 @@ class StaffAvailabilitiesController < ApplicationController
           }
         end
 
+        if params[:staff_availability][:exceptions_attributes].present?
+          @staff_availability.update staff_availability_params.slice(
+                                       :exceptions_attributes
+                                     )
+        end
+
         if @staff_availability.update(update_params)
           format.html do
             redirect_to staff_availabilities_path,
@@ -370,7 +378,7 @@ class StaffAvailabilitiesController < ApplicationController
       :user_id,
       :time_period_id,
       :recurring,
-      :exceptions
+      exceptions_attributes: [%i[covers start_at]]
     )
   end
 

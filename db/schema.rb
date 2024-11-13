@@ -1065,7 +1065,7 @@ ActiveRecord::Schema[7.0].define(version: 2024_11_09_230344) do
   create_table "staff_availability_exceptions", force: :cascade do |t|
     t.bigint "staff_availability_id"
     t.datetime "start_at"
-    t.integer "type", default: 0
+    t.integer "covers", default: 0
     t.index ["staff_availability_id"],
             name: "index_staff_availability_exceptions_on_staff_availability_id"
   end
