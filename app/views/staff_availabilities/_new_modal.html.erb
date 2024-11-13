@@ -66,6 +66,16 @@
                 </div>
             </div>
             <div class="modal-footer">
+                <div class="dropdown" id="modal-delete-recurring">
+                    <button class="btn btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Delete...
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" id="modal-delete-recurring-this-only">This only</a></li>
+                        <li><a class="dropdown-item" href="#" id="modal-delete-recurring-this-and-rest">This and rest</a></li>
+                        <li><a class="dropdown-item" href="#" id="modal-delete-recurring-all">All</a></li>
+                    </ul>
+                </div>
                 <button type="button" id="modal-delete" class="btn btn-danger" style="display: none;">Delete</button>
                 <button type="button" class="btn btn-secondary shift-cancel" data-bs-dismiss="modal">Close</button>
                 <button type="button" id="modal-save" class="btn btn-primary">Save changes</button>
