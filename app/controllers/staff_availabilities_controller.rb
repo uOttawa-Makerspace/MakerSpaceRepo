@@ -280,8 +280,8 @@ class StaffAvailabilitiesController < ApplicationController
       respond_to do |format|
         params_start_date = Date.parse(params[:staff_availability][:start_date])
         params_end_date = Date.parse(params[:staff_availability][:end_date])
-        params_start_time = Time.parse(params[:staff_availability][:start_date])
-        params_end_time = Time.parse(params[:staff_availability][:end_date])
+        params_start_time = Time.parse(params[:staff_availability][:start_time])
+        params_end_time = Time.parse(params[:staff_availability][:end_time])
 
         if @staff_availability.recurring?
           update_params = {
