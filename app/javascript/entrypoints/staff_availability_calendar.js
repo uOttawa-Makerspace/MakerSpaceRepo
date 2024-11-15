@@ -155,14 +155,18 @@ window.calendar = new Calendar(calendarEl, {
   eventDataTransform(eventData) {
     if (eventData.exceptions && eventData.exceptions.length > 0) {
       for (let { covers, start_at } of eventData.exceptions) {
-        //console.log(eventData)
-        //console.log(new Date(start_at))
-        //console.log(calendar.view.activeStart)
+        // One time and today is the day
         if (
           covers == "one_time" &&
           new Date(start_at).getTime() === calendar.view.activeStart.getTime()
         ) {
-          //console.log("covering this one time id: " + eventData.id)
+          eventData.display = "none";
+        }
+        // All after the start day
+        if (
+          covers == "all_after" &&
+          new Date(start_at) <= calendar.view.activeStart
+        ) {
           eventData.display = "none";
         }
       }
@@ -186,7 +190,6 @@ calendar.render();
 
 let createEvent = (exceptionType) => {
   let eventId = parseInt(unavailabilityId.value) || undefined;
-  console.log(exceptionType);
   fetch(`/staff_availabilities/${eventId || ""}`, {
     method: eventId ? "PUT" : "POST",
     headers: {
@@ -391,6 +394,7 @@ document
   .addEventListener("click", () => createEvent());
 
 modalDeleteRecThis.addEventListener("click", () => createEvent("one_time"));
+modalDeleteRecRest.addEventListener("click", () => createEvent("all_after"));
 
 modalDelete.addEventListener("click", () => {
   removeEvent(parseInt(unavailabilityId.value), false);
