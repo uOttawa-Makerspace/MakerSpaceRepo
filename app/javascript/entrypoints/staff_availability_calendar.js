@@ -66,15 +66,7 @@ const endDatePicker = endDateInput.flatpickr({
 
 const switchInputVisibility = (recurring) => {
   // Recurring input
-  dayInput.parentElement.style.display = recurring ? "block" : "none";
   modalDeleteRecurring.style.display = recurring ? "block" : "none";
-  // Single time event
-  startDateInput.parentElement.parentElement.style.display = recurring
-    ? "none"
-    : "block";
-  endDateInput.parentElement.parentElement.style.display = recurring
-    ? "none"
-    : "block";
   modalDelete.style.display = recurring ? "none" : "block";
 };
 
@@ -99,7 +91,7 @@ document.getElementById("end-date-clear").addEventListener("click", () => {
   endDatePicker.clear();
 });
 
-window.calendar = new Calendar(calendarEl, {
+let calendar = new Calendar(calendarEl, {
   plugins: [interactionPlugin, timeGridPlugin, listPlugin],
   customButtons: {
     addNewEvent: {
@@ -227,44 +219,24 @@ let createEvent = (exceptionType) => {
   })
     .then((response) => response.json())
     .then((data) => {
-      if (data.recurring) {
-        calendar.addEvent(
-          {
-            title: data.title,
-            startTime: data.startTime,
-            endTime: data.endTime,
-            daysOfWeek: data.daysOfWeek,
-            allDay: false,
-            id: data.id,
-            color: data.color,
-            userId: data.userId,
-            recurring: true,
-            startRecur: data.timePeriodStart,
-            endRecur: data.timePeriodEnd,
-          },
-          "unavailabilities"
-        );
-      } else {
-        calendar.addEvent(
-          {
-            title: data.title,
-            start: data.startTime,
-            end: data.endTime,
-            allDay: false,
-            id: data.id,
-            color: data.color,
-            userId: data.userId,
-            recurring: false,
-          },
-          "unavailabilities"
-        );
-      }
-
-      // Events are now edited in place, no longer deleted
-      // Same might be needed for admin calendar
-      //if (modalDelete.style.display === "block") {
-      //  removeEvent(parseInt(unavailabilityId.value), true);
-      //}
+      calendar.addEvent(
+        {
+          title: data.title,
+          start: data.startTime,
+          end: data.endTime,
+          startTime: data.startTime,
+          endTime: data.endTime,
+          daysOfWeek: data.daysOfWeek,
+          allDay: false,
+          id: data.id,
+          color: data.color,
+          userId: data.userId,
+          recurring: data.recurring,
+          startRecur: data.timePeriodStart,
+          endRecur: data.timePeriodEnd,
+        },
+        "unavailabilities"
+      );
 
       calendar.unselect();
       unavailabilityModal.hide();
