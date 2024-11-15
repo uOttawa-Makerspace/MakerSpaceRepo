@@ -64,16 +64,23 @@ const endDatePicker = endDateInput.flatpickr({
   dateFormat: "Y-m-d",
 });
 
+const switchInputVisibility = (recurring) => {
+  // Recurring input
+  dayInput.parentElement.style.display = recurring ? "block" : "none";
+  modalDeleteRecurring.style.display = recurring ? "block" : "none";
+  // Single time event
+  startDateInput.parentElement.parentElement.style.display = recurring
+    ? "none"
+    : "block";
+  endDateInput.parentElement.parentElement.style.display = recurring
+    ? "none"
+    : "block";
+  modalDelete.style.display = recurring ? "none" : "block";
+};
+
 recurringInput.addEventListener("change", function () {
-  if (this.checked) {
-    dayInput.parentElement.style.display = "block";
-    startDateInput.parentElement.parentElement.style.display = "none";
-    endDateInput.parentElement.parentElement.style.display = "none";
-  } else {
-    dayInput.parentElement.style.display = "none";
-    startDateInput.parentElement.parentElement.style.display = "block";
-    endDateInput.parentElement.parentElement.style.display = "block";
-  }
+  // this.checked == true if recurring
+  switchInputVisibility(this.checked);
 });
 
 document.getElementById("start-time-clear").addEventListener("click", () => {
@@ -342,9 +349,7 @@ const openModal = (arg) => {
   unavailabilityId.value = "";
 
   recurringInput.checked = true;
-  dayInput.parentElement.style.display = "block";
-  startDateInput.parentElement.parentElement.style.display = "none";
-  endDateInput.parentElement.parentElement.style.display = "none";
+  switchInputVisibility(recurringInput.checked);
 
   if (arg !== undefined && arg !== null) {
     startTimePicker.setDate(Date.parse(arg.startStr));
@@ -359,13 +364,6 @@ const openModal = (arg) => {
 
 const editModal = (arg) => {
   modalTitle.innerText = "Edit Unavailability";
-  if (arg.event.extendedProps.recurring) {
-    modalDeleteRecurring.style.display = "block";
-    modalDelete.style.display = "none";
-  } else {
-    modalDeleteRecurring.style.display = "none";
-    modalDelete.style.display = "block";
-  }
 
   if (arg !== undefined && arg !== null) {
     startTimePicker.setDate(Date.parse(arg.event.startStr));
@@ -377,15 +375,7 @@ const editModal = (arg) => {
     unavailabilityId.value = arg.event.id;
     recurringInput.checked = arg.event.extendedProps.recurring;
 
-    if (arg.event.extendedProps.recurring) {
-      dayInput.parentElement.style.display = "block";
-      startDateInput.parentElement.parentElement.style.display = "none";
-      endDateInput.parentElement.parentElement.style.display = "none";
-    } else {
-      dayInput.parentElement.style.display = "none";
-      startDateInput.parentElement.parentElement.style.display = "block";
-      endDateInput.parentElement.parentElement.style.display = "block";
-    }
+    switchInputVisibility(arg.event.extendedProps.recurring);
   }
 
   unavailabilityModal.show();
