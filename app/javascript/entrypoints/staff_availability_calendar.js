@@ -191,6 +191,7 @@ calendar.render();
 let createEvent = (exceptionType) => {
   let eventId = parseInt(unavailabilityId.value) || undefined;
   fetch(`/staff_availabilities/${eventId || ""}`, {
+    // If an ID exists we're editing not creating
     method: eventId ? "PUT" : "POST",
     headers: {
       Accept: "application/json",
@@ -208,6 +209,7 @@ let createEvent = (exceptionType) => {
         // undefined values are not stringified
         exceptions_attributes: exceptionType && {
           0: {
+            // Make sure this doesn't have an ID to have it appended
             covers: exceptionType,
             start_at: calendar.view.activeStart, // Send first day of week
           },
@@ -395,6 +397,9 @@ document
 
 modalDeleteRecThis.addEventListener("click", () => createEvent("one_time"));
 modalDeleteRecRest.addEventListener("click", () => createEvent("all_after"));
+modalDeleteRecAll.addEventListener("click", () =>
+  removeEvent(parseInt(unavailabilityId.value), false)
+);
 
 modalDelete.addEventListener("click", () => {
   removeEvent(parseInt(unavailabilityId.value), false);
