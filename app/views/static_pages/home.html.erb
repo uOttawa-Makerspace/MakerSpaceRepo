@@ -32,7 +32,7 @@
           <div class="card-body">
             <h2><%= t('home.general_resources.header') %></h2>
             <ul class="list-unstyled">
-              <li><a href=""><%= t('home.general_resources.makeroom') %></a></li>
+              <li><%= link_to t('home.general_resources.makeroom'), sub_space_booking_index_url %></li>
               <li><%= link_to t('home.general_resources.job_orders'), job_orders_path %></li>
             </ul>
           </div>
