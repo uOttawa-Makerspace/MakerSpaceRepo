@@ -29,8 +29,6 @@ class StaffAvailabilitiesController < ApplicationController
         ] = "#{a.user.name} is unavailable (#{a.recurring? ? "Recurring" : "One-Time"})"
         event["id"] = a.id
         event["daysOfWeek"] = [a.day]
-        event["start_date"] = a.start_datetime
-        event["end_date"] = a.end_datetime
         event["startTime"] = a.start_time.strftime("%H:%M")
         event["endTime"] = a.end_time.strftime("%H:%M")
         event["startRecur"] = (

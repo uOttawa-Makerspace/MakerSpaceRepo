@@ -65,7 +65,6 @@ const endDatePicker = endDateInput.flatpickr({
 });
 
 const switchInputVisibility = (recurring) => {
-  // Recurring input
   modalDeleteRecurring.style.display = recurring ? "block" : "none";
   modalDelete.style.display = recurring ? "none" : "block";
 };
@@ -152,6 +151,10 @@ let calendar = new Calendar(calendarEl, {
   // https://fullcalendar.io/docs/eventSourceSuccess
   // https://fullcalendar.io/docs/eventDataTransform
   eventDataTransform(eventData) {
+    // Because fullcalendar doesn't expose these variables
+    // we keep them for later
+    eventData.start_date = eventData.startRecur;
+    eventData.end_date = eventData.endRecur;
     if (eventData.exceptions && eventData.exceptions.length > 0) {
       for (let { covers, start_at } of eventData.exceptions) {
         // One time and today is the day
@@ -325,9 +328,11 @@ const openModal = (arg) => {
 
   if (arg !== undefined && arg !== null) {
     startTimePicker.setDate(Date.parse(arg.startStr));
-    startDatePicker.setDate(Date.parse(arg.startStr));
+    //startDatePicker.setDate(Date.parse(arg.startStr));
+    startDatePicker.clear();
     endTimePicker.setDate(Date.parse(arg.endStr));
-    endDatePicker.setDate(Date.parse(arg.endStr));
+    //endDatePicker.setDate(Date.parse(arg.endStr));
+    endDatePicker.clear();
     dayInput.value = new Date(Date.parse(arg.startStr)).getDay();
   }
 

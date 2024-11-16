@@ -291,8 +291,6 @@ class Admin::ShiftsController < AdminAreaController
         event["id"] = sa.id
 
         event["daysOfWeek"] = [sa.day]
-        event["start_date"] = sa.start_datetime
-        event["end_date"] = sa.end_datetime
         event["startTime"] = sa.start_time.strftime("%H:%M")
         event["endTime"] = sa.end_time.strftime("%H:%M")
         event["startRecur"] = (
@@ -307,9 +305,9 @@ class Admin::ShiftsController < AdminAreaController
           opacity
         )
         event["recurring"] = sa.recurring?
-        event["exceptions"] = sa.exceptions || false
         event["userId"] = sa.user.id
         event["className"] = sa.user.name.strip.downcase.gsub(" ", "-")
+        event["exceptions"] = sa.exceptions || false
         staff_availabilities << event
       end
 

@@ -272,6 +272,8 @@ const calendar = new Calendar(calendarEl, {
     },
   ],
   eventDataTransform(eventData) {
+    eventData.start_date = eventData.startRecur;
+    eventData.end_date = eventData.endRecur;
     // Place defaut value
     eventData.display = "block";
     if (
@@ -536,9 +538,11 @@ const openModal = (arg) => {
   // Set default visibility based on whether the event is recurring or whole day
   if (arg !== undefined && arg !== null) {
     startTimePicker.setDate(Date.parse(arg.startStr));
-    startDatePicker.setDate(Date.parse(arg.startStr));
+    //startDatePicker.setDate(Date.parse(arg.startStr));
+    startDatePicker.clear();
     endTimePicker.setDate(Date.parse(arg.endStr));
-    endDatePicker.setDate(Date.parse(arg.endStr));
+    //endDatePicker.setDate(Date.parse(arg.endStr));
+    endDatePicker.clear();
     dayInput.value = new Date(Date.parse(arg.startStr)).getDay();
     wholeDayCheckbox.checked =
       new Date(Date.parse(arg.endStr)).getHours() === 23 &&
