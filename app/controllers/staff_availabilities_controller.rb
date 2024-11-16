@@ -85,6 +85,7 @@ class StaffAvailabilitiesController < ApplicationController
     end
 
     # From staff availability form
+    # FIXME converge this if statement into one
     if params[:start_date].present? && params[:end_date].present? &&
          time_period_id.present?
       params_start_time = Time.parse(params[:staff_availability][:start_time])
@@ -92,66 +93,44 @@ class StaffAvailabilitiesController < ApplicationController
       params_start_date = Date.parse(params[:start_date])
       params_end_date = Date.parse(params[:end_date])
 
-      if params[:staff_availability][:recurring].to_i == 0
-        @staff_availability =
-          StaffAvailability.new(
-            user_id: @selected_user.id,
+      @staff_availability =
+        StaffAvailability.new(
+          user_id: @selected_user.id,
+          start_datetime:
+            params_start_date +
+              params_start_time.seconds_since_midnight.seconds,
+          end_datetime:
+            params_end_date + params_end_time.seconds_since_midnight.seconds,
+          time_period_id: time_period_id,
+          recurring: params[:staff_availability][:recurring].to_i.zero?,
+          day: params_start_date.wday,
+          start_time: params_start_time.strftime("%H:%M"),
+          end_time: params_end_time.strftime("%H:%M")
+        )
+      # From admin area unavailability form
+    elsif params[:staff_availability].present? && time_period_id.present?
+      params_start_time =
+        Time.zone.parse(params[:staff_availability][:start_time])
+      params_end_time = Time.zone.parse(params[:staff_availability][:end_time])
+      params_start_date = Date.parse(params[:staff_availability][:start_date])
+      params_end_date = Date.parse(params[:staff_availability][:end_date])
+      @staff_availability =
+        StaffAvailability.new(
+          staff_availability_params# Remove start_date and end_date in all cases
+          # we convert those to datetime objects
+          .
+            except(:start_date, :end_date).merge(
+            # For single-time: set start and end of unavailability as datetime
+            # For recurring: set datetime when to start and stop recurring
             start_datetime:
               params_start_date +
                 params_start_time.seconds_since_midnight.seconds,
             end_datetime:
               params_end_date + params_end_time.seconds_since_midnight.seconds,
-            time_period_id: time_period_id,
-            recurring: false
-          )
-      else
-        @staff_availability =
-          StaffAvailability.new(
             user_id: @selected_user.id,
-            day: params_start_date.wday,
-            start_time: params_start_time.strftime("%H:%M"),
-            end_time: params_end_time.strftime("%H:%M"),
-            time_period_id: time_period_id,
-            recurring: true
+            time_period_id: time_period_id
           )
-      end
-      # From admin area unavailability form
-    elsif params[:staff_availability].present? && time_period_id.present?
-      unless params[:staff_availability][:recurring]
-        params_start_time =
-          Time.zone.parse(params[:staff_availability][:start_time])
-        params_end_time =
-          Time.zone.parse(params[:staff_availability][:end_time])
-        params_start_date = Date.parse(params[:staff_availability][:start_date])
-        params_end_date = Date.parse(params[:staff_availability][:end_date])
-        @staff_availability =
-          StaffAvailability.new(
-            staff_availability_params.except(
-              :start_time,
-              :start_date,
-              :end_time,
-              :end_date,
-              :day
-            ).merge(
-              start_datetime:
-                params_start_date +
-                  params_start_time.seconds_since_midnight.seconds,
-              end_datetime:
-                params_end_date +
-                  params_end_time.seconds_since_midnight.seconds,
-              user_id: @selected_user.id,
-              time_period_id: time_period_id
-            )
-          )
-      else
-        @staff_availability =
-          StaffAvailability.new(
-            staff_availability_params.except(:start_date, :end_date).merge(
-              user_id: @selected_user.id,
-              time_period_id: time_period_id
-            )
-          )
-      end
+        )
     else
       respond_to do |format|
         format.html { render :new }
@@ -373,11 +352,11 @@ class StaffAvailabilitiesController < ApplicationController
 
   def staff_availability_params
     params.require(:staff_availability).permit(
-      :day,
+      :day, # recur on which day?
       :start_time,
-      :start_date,
+      :start_date, # excepted
       :end_time,
-      :end_date,
+      :end_date, # excepted
       :user_id,
       :time_period_id,
       :recurring,
