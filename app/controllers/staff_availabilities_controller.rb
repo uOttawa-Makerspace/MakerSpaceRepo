@@ -112,14 +112,23 @@ class StaffAvailabilitiesController < ApplicationController
       params_start_time =
         Time.zone.parse(params[:staff_availability][:start_time])
       params_end_time = Time.zone.parse(params[:staff_availability][:end_time])
-      params_start_date = Date.parse(params[:staff_availability][:start_date])
-      params_end_date = Date.parse(params[:staff_availability][:end_date])
+      params_start_date =
+        begin
+          Date.parse(params[:staff_availability][:start_date])
+        rescue StandardError
+          @time_period.start_date
+        end
+      params_end_date =
+        begin
+          Date.parse(params[:staff_availability][:end_date])
+        rescue StandardError
+          @time_period.end_date
+        end
+      # Remove start_date and end_date in all cases
+      # we convert those to datetime objects
       @staff_availability =
         StaffAvailability.new(
-          staff_availability_params# Remove start_date and end_date in all cases
-          # we convert those to datetime objects
-          .
-            except(:start_date, :end_date).merge(
+          staff_availability_params.except(:start_date, :end_date).merge(
             # For single-time: set start and end of unavailability as datetime
             # For recurring: set datetime when to start and stop recurring
             start_datetime:
