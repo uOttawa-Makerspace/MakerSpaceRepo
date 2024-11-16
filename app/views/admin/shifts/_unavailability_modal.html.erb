@@ -15,7 +15,7 @@
                         <%= select_tag :day, options_for_select(Hash[Date::DAYNAMES.zip([0, 1, 2, 3, 4, 5, 6])]), class: 'form-control form-select', id: 'day' %>
                     </div>
 
-                    <div class="col-md-6 mb-3" style="display: none;" id="start-date-container">
+                    <div class="col-md-6 mb-3" id="start-date-container">
                         <label for="start-date">Start Date</label>
                         <div class="input-group">
                             <%= text_field_tag 'start_date', '', id: 'start-date', autocomplete: 'off', class: 'form-control inanimate', required: false %>
@@ -35,7 +35,7 @@
                         </div>
                     </div>
 
-                    <div class="col-md-6 mb-3" style="display: none;" id="end-date-container">
+                    <div class="col-md-6 mb-3" id="end-date-container">
                         <label for="end-date">End Date</label>
                         <div class="input-group">
                             <%= text_field_tag 'end_date', '', id: 'end-date', autocomplete: 'off', class: 'form-control inanimate', required: false %>
@@ -83,6 +83,16 @@
                 </div>
             </div>
             <div class="modal-footer">
+                <div class="dropdown" id="modal-delete-recurring">
+                    <button class="btn btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Delete...
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" id="modal-delete-recurring-this-only">This only</a></li>
+                        <li><a class="dropdown-item" href="#" id="modal-delete-recurring-this-and-rest">This and rest</a></li>
+                        <li><a class="dropdown-item" href="#" id="modal-delete-recurring-all">All</a></li>
+                    </ul>
+                </div>
                 <button type="button" id="modal-delete" class="btn btn-danger" style="display: none;">Delete</button>
                 <button type="button" class="btn btn-secondary shift-cancel" data-bs-dismiss="modal">Close</button>
                 <button type="button" id="modal-save" class="btn btn-primary">Save changes</button>
