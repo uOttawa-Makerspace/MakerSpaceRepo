@@ -273,7 +273,13 @@ const calendar = new Calendar(calendarEl, {
   ],
   eventDataTransform(eventData) {
     // Place defaut value
-    eventData.display = hiddenIds[eventData.userId] || showUnavailabilities;
+    eventData.display = "block";
+    if (
+      showUnavailabilities == "none" ||
+      hiddenIds[eventData.userId] == "none"
+    ) {
+      eventData.display = "none";
+    }
     // Exceptions come in
     if (eventData.exceptions && eventData.exceptions.length > 0) {
       // For each exception
@@ -302,20 +308,21 @@ calendar.render();
 
 // Hide/Show Events
 const hideShowEvents = (event, eventName) => {
-  let allEvents = calendar.getEvents();
-  for (let ev of allEvents) {
-    if (eventName === "id") {
-      if (ev.extendedProps.userId === event) {
-        ev.setProp("display", hiddenIds[event] === "block" ? "block" : "none");
-      }
-    } else {
-      if (hiddenIds[ev.extendedProps.userId] === "none") {
-        ev.setProp("display", "none");
-        continue;
-      }
-      ev.setProp("display", showUnavailabilities);
-    }
-  }
+  calendar.refetchEvents();
+  // let allEvents = calendar.getEvents();
+  // for (let ev of allEvents) {
+  //   if (eventName === "id") {
+  //     if (ev.extendedProps.userId === event) {
+  //       ev.setProp("display", hiddenIds[event] === "block" ? "block" : "none");
+  //     }
+  //   } else {
+  //     if (hiddenIds[ev.extendedProps.userId] === "none") {
+  //       ev.setProp("display", "none");
+  //       continue;
+  //     }
+  //     ev.setProp("display", showUnavailabilities);
+  //   }
+  // }
   // Update UI buttons
   if (eventName === "unavailabilities") {
     [...document.getElementsByClassName("shift-hide-button")].forEach((el) => {
