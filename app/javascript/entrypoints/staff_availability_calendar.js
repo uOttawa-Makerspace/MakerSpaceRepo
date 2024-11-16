@@ -222,8 +222,8 @@ let createEvent = (exceptionType) => {
       calendar.addEvent(
         {
           title: data.title,
-          start: data.startTime,
-          end: data.endTime,
+          start: data.start,
+          end: data.end,
           startTime: data.startTime,
           endTime: data.endTime,
           daysOfWeek: data.daysOfWeek,
@@ -339,9 +339,9 @@ const editModal = (arg) => {
 
   if (arg !== undefined && arg !== null) {
     startTimePicker.setDate(Date.parse(arg.event.startStr));
-    startDatePicker.setDate(Date.parse(arg.event.startStr));
+    startDatePicker.setDate(Date.parse(arg.event.extendedProps.start_date));
     endTimePicker.setDate(Date.parse(arg.event.endStr));
-    endDatePicker.setDate(Date.parse(arg.event.endStr));
+    endDatePicker.setDate(Date.parse(arg.event.extendedProps.end_date));
     dayInput.value = new Date(Date.parse(arg.event.startStr)).getDay();
 
     unavailabilityId.value = arg.event.id;

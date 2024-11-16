@@ -28,20 +28,17 @@ class StaffAvailabilitiesController < ApplicationController
           "title"
         ] = "#{a.user.name} is unavailable (#{a.recurring? ? "Recurring" : "One-Time"})"
         event["id"] = a.id
-        if a.recurring?
-          event["daysOfWeek"] = [a.day]
-          event["startTime"] = a.start_time.strftime("%H:%M")
-          event["endTime"] = a.end_time.strftime("%H:%M")
-          event["startRecur"] = (
-            a.start_datetime || a.time_period.start_date
-          ).beginning_of_day
-          event["endRecur"] = (
-            a.end_datetime || a.time_period.end_date
-          ).end_of_day
-        else
-          event["start"] = a.start_datetime
-          event["end"] = a.end_datetime
-        end
+        event["daysOfWeek"] = [a.day]
+        event["start_date"] = a.start_datetime
+        event["end_date"] = a.end_datetime
+        event["startTime"] = a.start_time.strftime("%H:%M")
+        event["endTime"] = a.end_time.strftime("%H:%M")
+        event["startRecur"] = (
+          a.start_datetime || a.time_period.start_date
+        ).beginning_of_day
+        event["endRecur"] = (
+          a.end_datetime || a.time_period.end_date
+        ).end_of_day
         event["recurring"] = a.recurring?
         event["exceptions"] = a.exceptions || false
         staff_availabilities << event
@@ -273,31 +270,22 @@ class StaffAvailabilitiesController < ApplicationController
       respond_to do |format|
         params_start_date = Date.parse(params[:staff_availability][:start_date])
         params_end_date = Date.parse(params[:staff_availability][:end_date])
+
         params_start_time = Time.parse(params[:staff_availability][:start_time])
         params_end_time = Time.parse(params[:staff_availability][:end_time])
+        params_start_time = Time.parse(params_start_time.strftime("%H:%M"))
+        params_end_time = Time.parse(params_end_time.strftime("%H:%M"))
 
-        if @staff_availability.recurring?
-          update_params = {
-            start_time: params_start_time.strftime("%H:%M"),
-            end_time: params_end_time.strftime("%H:%M"),
-            day: Time.parse(params[:staff_availability][:start_date]).wday,
-            start_datetime: nil,
-            end_datetime: nil
-          }
-        else
-          params_start_time = Time.parse(params_start_time.strftime("%H:%M"))
-          params_end_time = Time.parse(params_end_time.strftime("%H:%M"))
-          update_params = {
-            start_datetime:
-              params_start_date +
-                params_start_time.seconds_since_midnight.seconds,
-            end_datetime:
-              params_end_date + params_end_time.seconds_since_midnight.seconds,
-            start_time: nil,
-            end_time: nil,
-            day: nil
-          }
-        end
+        update_params = {
+          day: Time.parse(params[:staff_availability][:start_date]).wday,
+          start_time: params_start_time.strftime("%H:%M"),
+          end_time: params_end_time.strftime("%H:%M"),
+          start_datetime:
+            params_start_date +
+              params_start_time.seconds_since_midnight.seconds,
+          end_datetime:
+            params_end_date + params_end_time.seconds_since_midnight.seconds
+        }
 
         if params[:staff_availability][:exceptions_attributes].present?
           @staff_availability.update staff_availability_params.slice(

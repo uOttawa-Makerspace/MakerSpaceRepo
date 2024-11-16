@@ -400,7 +400,7 @@ const showToast = (id) => {
 // Calendar CRUD
 const createCalendarEvent = (exceptionType) => {
   let eventId = parseInt(unavailabilityId.value) || undefined;
-  fetch("/staff_availabilities", {
+  fetch(`/staff_availabilities/${eventId || ""}`, {
     method: eventId ? "PUT" : "POST",
     headers: {
       Accept: "application/json",
@@ -556,9 +556,10 @@ const editModal = (arg) => {
 
   if (arg !== undefined && arg !== null) {
     startTimePicker.setDate(Date.parse(arg.event.startStr));
-    startDatePicker.setDate(Date.parse(arg.event.startStr));
+    startDatePicker.setDate(Date.parse(arg.event.extendedProps.start_date));
     endTimePicker.setDate(Date.parse(arg.event.endStr));
-    endDatePicker.setDate(Date.parse(arg.event.endStr));
+    endDatePicker.setDate(Date.parse(arg.event.extendedProps.end_date));
+    console.log(arg.event);
     dayInput.value = new Date(Date.parse(arg.event.startStr)).getDay();
 
     unavailabilityId.value = arg.event.id;

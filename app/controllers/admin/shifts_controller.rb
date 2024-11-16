@@ -289,21 +289,25 @@ class Admin::ShiftsController < AdminAreaController
           "title"
         ] = "#{sa.user.name} is unavailable (#{sa.recurring? ? "Recurring" : "One-Time"})"
         event["id"] = sa.id
-        if sa.recurring?
-          event["daysOfWeek"] = [sa.day]
-          event["startTime"] = sa.start_time.strftime("%H:%M")
-          event["endTime"] = sa.end_time.strftime("%H:%M")
-          event["startRecur"] = sa.time_period.start_date.beginning_of_day
-          event["endRecur"] = sa.time_period.end_date.end_of_day
-        else
-          event["start"] = sa.start_datetime
-          event["end"] = sa.end_datetime
-        end
+
+        event["daysOfWeek"] = [sa.day]
+        event["start_date"] = sa.start_datetime
+        event["end_date"] = sa.end_datetime
+        event["startTime"] = sa.start_time.strftime("%H:%M")
+        event["endTime"] = sa.end_time.strftime("%H:%M")
+        event["startRecur"] = (
+          sa.start_datetime || sa.time_period.start_date
+        ).beginning_of_day
+        event["endRecur"] = (
+          sa.end_datetime || sa.time_period.end_date
+        ).end_of_day
+
         event["color"] = hex_color_to_rgba(
           sa.user.staff_spaces.find_by(space_id: @space_id).color,
           opacity
         )
         event["recurring"] = sa.recurring?
+        event["exceptions"] = sa.exceptions || false
         event["userId"] = sa.user.id
         event["className"] = sa.user.name.strip.downcase.gsub(" ", "-")
         staff_availabilities << event
