@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2024_10_17_195150) do
+ActiveRecord::Schema[7.0].define(version: 2024_11_09_230344) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -1060,6 +1060,14 @@ ActiveRecord::Schema[7.0].define(version: 2024_10_17_195150) do
     t.index ["time_period_id"],
             name: "index_staff_availabilities_on_time_period_id"
     t.index ["user_id"], name: "index_staff_availabilities_on_user_id"
+  end
+
+  create_table "staff_availability_exceptions", force: :cascade do |t|
+    t.bigint "staff_availability_id"
+    t.datetime "start_at"
+    t.integer "covers", default: 0
+    t.index ["staff_availability_id"],
+            name: "index_staff_availability_exceptions_on_staff_availability_id"
   end
 
   create_table "staff_needed_calendars", force: :cascade do |t|
