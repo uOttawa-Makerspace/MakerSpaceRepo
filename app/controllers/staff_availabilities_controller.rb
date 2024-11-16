@@ -19,7 +19,6 @@ class StaffAvailabilitiesController < ApplicationController
 
   def get_availabilities
     staff_availabilities = []
-    #puts(@time_period.id)
     @selected_user
       .staff_availabilities
       .where(time_period: @time_period)
@@ -33,8 +32,12 @@ class StaffAvailabilitiesController < ApplicationController
           event["daysOfWeek"] = [a.day]
           event["startTime"] = a.start_time.strftime("%H:%M")
           event["endTime"] = a.end_time.strftime("%H:%M")
-          event["startRecur"] = a.time_period.start_date.beginning_of_day
-          event["endRecur"] = a.time_period.end_date.end_of_day
+          event["startRecur"] = (
+            a.start_datetime || a.time_period.start_date
+          ).beginning_of_day
+          event["endRecur"] = (
+            a.end_datetime || a.time_period.end_date
+          ).end_of_day
         else
           event["start"] = a.start_datetime
           event["end"] = a.end_datetime
