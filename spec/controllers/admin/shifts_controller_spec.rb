@@ -84,7 +84,8 @@ RSpec.describe Admin::ShiftsController, type: :controller do
                 "rgba(#{ss1.color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)",
               recurring: sa1.recurring?,
               userId: sa1.user.id,
-              className: sa1.user.name.strip.downcase.gsub(" ", "-")
+              className: sa1.user.name.strip.downcase.gsub(" ", "-"),
+              exceptions: []
             },
             {
               title:
@@ -99,7 +100,8 @@ RSpec.describe Admin::ShiftsController, type: :controller do
                 "rgba(#{ss2.color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)",
               recurring: sa2.recurring?,
               userId: sa2.user.id,
-              className: sa2.user.name.strip.downcase.gsub(" ", "-")
+              className: sa2.user.name.strip.downcase.gsub(" ", "-"),
+              exceptions: []
             }
           ].to_json
         )
@@ -126,7 +128,8 @@ RSpec.describe Admin::ShiftsController, type: :controller do
                 "rgba(#{ss1.color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 0.25)",
               recurring: sa1.recurring?,
               userId: sa1.user.id,
-              className: sa1.user.name.strip.downcase.gsub(" ", "-")
+              className: sa1.user.name.strip.downcase.gsub(" ", "-"),
+              exceptions: []
             },
             {
               title:
@@ -141,7 +144,8 @@ RSpec.describe Admin::ShiftsController, type: :controller do
                 "rgba(#{ss2.color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 0.25)",
               recurring: sa2.recurring?,
               userId: sa2.user.id,
-              className: sa2.user.name.strip.downcase.gsub(" ", "-")
+              className: sa2.user.name.strip.downcase.gsub(" ", "-"),
+              exceptions: []
             }
           ].to_json
         )

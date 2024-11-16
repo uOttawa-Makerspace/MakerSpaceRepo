@@ -14,6 +14,14 @@ const unavailabilityModal = new Modal(
 
 const modalTitle = document.getElementById("modal-title");
 const modalDelete = document.getElementById("modal-delete");
+const modalDeleteRecurring = document.getElementById("modal-delete-recurring");
+const modalDeleteRecThis = document.getElementById(
+  "modal-delete-recurring-this-only"
+);
+const modalDeleteRecRest = document.getElementById(
+  "modal-delete-recurring-this-and-rest"
+);
+const modalDeleteRecAll = document.getElementById("modal-delete-recurring-all");
 const unavailabilityId = document.getElementById("unavailability-id");
 
 // Inputs
@@ -56,16 +64,14 @@ const endDatePicker = endDateInput.flatpickr({
   dateFormat: "Y-m-d",
 });
 
+const switchInputVisibility = (recurring) => {
+  modalDeleteRecurring.style.display = recurring ? "block" : "none";
+  modalDelete.style.display = recurring ? "none" : "block";
+};
+
 recurringInput.addEventListener("change", function () {
-  if (this.checked) {
-    dayInput.parentElement.style.display = "block";
-    startDateInput.parentElement.parentElement.style.display = "none";
-    endDateInput.parentElement.parentElement.style.display = "none";
-  } else {
-    dayInput.parentElement.style.display = "none";
-    startDateInput.parentElement.parentElement.style.display = "block";
-    endDateInput.parentElement.parentElement.style.display = "block";
-  }
+  // this.checked == true if recurring
+  switchInputVisibility(this.checked);
 });
 
 document.getElementById("start-time-clear").addEventListener("click", () => {
@@ -142,6 +148,33 @@ let calendar = new Calendar(calendarEl, {
       }`,
     },
   ],
+  // https://fullcalendar.io/docs/eventSourceSuccess
+  // https://fullcalendar.io/docs/eventDataTransform
+  eventDataTransform(eventData) {
+    // Because fullcalendar doesn't expose these variables
+    // we keep them for later
+    eventData.start_date = eventData.startRecur;
+    eventData.end_date = eventData.endRecur;
+    if (eventData.exceptions && eventData.exceptions.length > 0) {
+      for (let { covers, start_at } of eventData.exceptions) {
+        // One time and today is the day
+        if (
+          covers == "one_time" &&
+          new Date(start_at).getTime() === calendar.view.activeStart.getTime()
+        ) {
+          eventData.display = "none";
+        }
+        // All after the start day
+        if (
+          covers == "all_after" &&
+          new Date(start_at) <= calendar.view.activeStart
+        ) {
+          eventData.display = "none";
+        }
+      }
+    }
+    return eventData;
+  },
   select: function (arg) {
     openModal(arg);
   },
@@ -157,9 +190,11 @@ let calendar = new Calendar(calendarEl, {
 });
 calendar.render();
 
-let createEvent = () => {
-  fetch("/staff_availabilities", {
-    method: "POST",
+let createEvent = (exceptionType) => {
+  let eventId = parseInt(unavailabilityId.value) || undefined;
+  fetch(`/staff_availabilities/${eventId || ""}`, {
+    // If an ID exists we're editing not creating
+    method: eventId ? "PUT" : "POST",
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
@@ -173,48 +208,38 @@ let createEvent = () => {
         end_time: endTimeInput.value,
         end_date: endDateInput.value,
         recurring: recurringInput.checked,
+        // undefined values are not stringified
+        exceptions_attributes: exceptionType && {
+          0: {
+            // Make sure this doesn't have an ID to have it appended
+            covers: exceptionType,
+            start_at: calendar.view.activeStart, // Send first day of week
+          },
+        },
       },
       format: "json",
     }),
   })
     .then((response) => response.json())
     .then((data) => {
-      if (data.recurring) {
-        calendar.addEvent(
-          {
-            title: data.title,
-            startTime: data.startTime,
-            endTime: data.endTime,
-            daysOfWeek: data.daysOfWeek,
-            allDay: false,
-            id: data.id,
-            color: data.color,
-            userId: data.userId,
-            recurring: true,
-            startRecur: data.timePeriodStart,
-            endRecur: data.timePeriodEnd,
-          },
-          "unavailabilities"
-        );
-      } else {
-        calendar.addEvent(
-          {
-            title: data.title,
-            start: data.startTime,
-            end: data.endTime,
-            allDay: false,
-            id: data.id,
-            color: data.color,
-            userId: data.userId,
-            recurring: false,
-          },
-          "unavailabilities"
-        );
-      }
-
-      if (modalDelete.style.display === "block") {
-        removeEvent(parseInt(unavailabilityId.value), true);
-      }
+      calendar.addEvent(
+        {
+          title: data.title,
+          start: data.start,
+          end: data.end,
+          startTime: data.startTime,
+          endTime: data.endTime,
+          daysOfWeek: data.daysOfWeek,
+          allDay: false,
+          id: data.id,
+          color: data.color,
+          userId: data.userId,
+          recurring: data.recurring,
+          startRecur: data.timePeriodStart,
+          endRecur: data.timePeriodEnd,
+        },
+        "unavailabilities"
+      );
 
       calendar.unselect();
       unavailabilityModal.hide();
@@ -295,18 +320,19 @@ if (document.getElementById("staff_id")) {
 const openModal = (arg) => {
   modalTitle.innerText = "New Unavailability";
   modalDelete.style.display = "none";
+  modalDeleteRecurring.style.display = "none";
   unavailabilityId.value = "";
 
   recurringInput.checked = true;
-  dayInput.parentElement.style.display = "block";
-  startDateInput.parentElement.parentElement.style.display = "none";
-  endDateInput.parentElement.parentElement.style.display = "none";
+  switchInputVisibility(recurringInput.checked);
 
   if (arg !== undefined && arg !== null) {
     startTimePicker.setDate(Date.parse(arg.startStr));
-    startDatePicker.setDate(Date.parse(arg.startStr));
+    //startDatePicker.setDate(Date.parse(arg.startStr));
+    startDatePicker.clear();
     endTimePicker.setDate(Date.parse(arg.endStr));
-    endDatePicker.setDate(Date.parse(arg.endStr));
+    //endDatePicker.setDate(Date.parse(arg.endStr));
+    endDatePicker.clear();
     dayInput.value = new Date(Date.parse(arg.startStr)).getDay();
   }
 
@@ -315,27 +341,18 @@ const openModal = (arg) => {
 
 const editModal = (arg) => {
   modalTitle.innerText = "Edit Unavailability";
-  modalDelete.style.display = "block";
 
   if (arg !== undefined && arg !== null) {
     startTimePicker.setDate(Date.parse(arg.event.startStr));
-    startDatePicker.setDate(Date.parse(arg.event.startStr));
+    startDatePicker.setDate(Date.parse(arg.event.extendedProps.start_date));
     endTimePicker.setDate(Date.parse(arg.event.endStr));
-    endDatePicker.setDate(Date.parse(arg.event.endStr));
+    endDatePicker.setDate(Date.parse(arg.event.extendedProps.end_date));
     dayInput.value = new Date(Date.parse(arg.event.startStr)).getDay();
 
     unavailabilityId.value = arg.event.id;
     recurringInput.checked = arg.event.extendedProps.recurring;
 
-    if (arg.event.extendedProps.recurring) {
-      dayInput.parentElement.style.display = "block";
-      startDateInput.parentElement.parentElement.style.display = "none";
-      endDateInput.parentElement.parentElement.style.display = "none";
-    } else {
-      dayInput.parentElement.style.display = "none";
-      startDateInput.parentElement.parentElement.style.display = "block";
-      endDateInput.parentElement.parentElement.style.display = "block";
-    }
+    switchInputVisibility(arg.event.extendedProps.recurring);
   }
 
   unavailabilityModal.show();
@@ -344,6 +361,12 @@ const editModal = (arg) => {
 document
   .getElementById("modal-save")
   .addEventListener("click", () => createEvent());
+
+modalDeleteRecThis.addEventListener("click", () => createEvent("one_time"));
+modalDeleteRecRest.addEventListener("click", () => createEvent("all_after"));
+modalDeleteRecAll.addEventListener("click", () =>
+  removeEvent(parseInt(unavailabilityId.value), false)
+);
 
 modalDelete.addEventListener("click", () => {
   removeEvent(parseInt(unavailabilityId.value), false);

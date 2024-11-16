@@ -1,7 +1,7 @@
 <section class="page-contents">
 
   <%= hidden_field_tag 'space_id', @space.id %>
-  <div class="padding-10">
+  <div>
 
     <br>
 
@@ -13,7 +13,7 @@
       Welcome to <strong><%= select_tag :space_id, options_from_collection_for_select(Space.order(:name), :id, :name, @space.id), id: 'set_space_id', class: 'form-select', onchange: 'setSpace()', style: 'padding: 2px;' %></strong>
     </h2>
 
-    <div style="float:right;">
+    <div class="btn-group float-end">
       <%= link_to 'Download Excel Template', asset_path('excel/ImportUsersTemplate.xlsx', skip_pipeline: true), download: 'ImportUsersTemplate.xlsx', class: 'btn btn-secondary' %>
       <%= link_to 'Download Summary',
                   staff_dashboard_present_users_report_path(format: 'xlsx'),

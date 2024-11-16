@@ -61,7 +61,8 @@ RSpec.describe StaffAvailabilitiesController, type: :controller do
               endTime: sa1.end_time.strftime("%H:%M"),
               startRecur: @time_period.start_date.beginning_of_day,
               endRecur: @time_period.end_date.end_of_day,
-              recurring: sa1.recurring?
+              recurring: sa1.recurring?,
+              exceptions: []
             },
             {
               title:
@@ -72,7 +73,8 @@ RSpec.describe StaffAvailabilitiesController, type: :controller do
               endTime: sa2.end_time.strftime("%H:%M"),
               startRecur: @time_period.start_date.beginning_of_day,
               endRecur: @time_period.end_date.end_of_day,
-              recurring: sa2.recurring?
+              recurring: sa2.recurring?,
+              exceptions: []
             }
           ].to_json
         )

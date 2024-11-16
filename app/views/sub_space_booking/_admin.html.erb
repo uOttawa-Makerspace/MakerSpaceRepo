@@ -211,7 +211,7 @@
               </h5>
             </div>
             <div class="accordion-body collapse show" aria-labelledby="user-approval-header" data-bs-parent="#user-approval-accordion" id="userApprovalBody">
-              <%= form_with url: bulk_approve_access_sub_space_booking_index_path, method: :put, id: 'bulk-approve-form' do |f| %>
+              <%= form_with url: bulk_approve_access_sub_space_booking_index_path, method: :put, id: 'bulk-approve-form', class: 'table-responsive' do |f| %>
                 <table class="table table-striped table-sub-space-booking-pending-approved">
                   <thead class="text-center table-primary">
                   <tr>
@@ -260,7 +260,7 @@
                 Users with Booking Approval
               </h5>
             </div>
-            <div class="accordion-body collapse show" aria-labelledby="user-approved-header" data-bs-parent="#user-approved-accordion" id="userApprovedBody">
+            <div class="accordion-body collapse show table-responsive" aria-labelledby="user-approved-header" data-bs-parent="#user-approved-accordion" id="userApprovedBody">
               <table class="table table-striped table-sub-space-booking-users-approved">
                 <thead class="text-center  table-primary">
                 <tr>
