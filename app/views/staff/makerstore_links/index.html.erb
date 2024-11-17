@@ -1,9 +1,40 @@
 <section class="container">
     <h1 class="text-center">Makerstore Ads running</h1>
-    <%= link_to 'Create new link', new_staff_makerstore_link_path, class: 'btn btn-primary' %>
+    <%= link_to 'Create new link', new_staff_makerstore_link_path, class: 'btn btn-primary mb-3' %>
     <div class="table-responsive">
-        <table class="table table-primary">
-
+        <table class="table table-striped-primary">
+            <thead class="table-primary">
+                <tr>
+                    <th>Order</th>
+                    <th>Title</th>
+                    <th>Links to</th>
+                    <th>Shown?</th>
+                    <th>Image</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% @makerstore_links.each do |link| %>
+                    <tr>
+                        <td><%= link.order %></td>
+                        <td><%= link.title %></td>
+                        <td><%= link_to link.url, link.url, class: 'btn btn-link' %></td>
+                        <td><%= link.shown ? 'Shown' : 'Hidden' %></td>
+                        <td><details>
+                            <summary>Display image
+                            </summary>
+                            <%= image_tag link.image %>
+                        </details>
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <%= link_to 'Edit', edit_staff_makerstore_link_path(link), class: 'btn btn-secondary' %>
+                                <%= button_to 'Delete', staff_makerstore_link_path(link), method: :delete, class: 'btn btn-danger' %>
+                            </div>
+                        </td>
+                    </tr>
+                <% end %>
+            </tbody>
         </table>
     </div>
 </section>
