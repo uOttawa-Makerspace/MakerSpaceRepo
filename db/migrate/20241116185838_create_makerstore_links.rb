@@ -4,7 +4,7 @@ class CreateMakerstoreLinks < ActiveRecord::Migration[7.0]
       t.integer :order, default: 0
       t.string :title
       t.string :url
-      t.string :image_url
+      #t.string :image_url
       t.boolean :shown, default: true
     end
   end

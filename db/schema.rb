@@ -601,7 +601,6 @@ ActiveRecord::Schema[7.0].define(version: 2024_11_16_185838) do
     t.integer "order", default: 0
     t.string "title"
     t.string "url"
-    t.string "image_url"
     t.boolean "shown", default: true
   end
 
