@@ -14,10 +14,8 @@ class Admin::CdelReportsController < AdminAreaController
       report =
         CdelReportGenerator.generate_visitors_report(start_date, end_date)
     elsif params[:certifications]
-      send_data CdelReportGenerator.generate_certifications_report(
-                  start_date,
-                  end_date
-                )
+      report =
+        CdelReportGenerator.generate_certifications_report(start_date, end_date)
     elsif params[:new_users]
       report =
         CdelReportGenerator.generate_new_users_report(start_date, end_date)
