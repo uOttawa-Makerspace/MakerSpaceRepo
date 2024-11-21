@@ -438,7 +438,9 @@ Rails.application.routes.draw do
       collection { get :get_shifts }
     end
 
-    resources :makerstore_links
+    resources :makerstore_links, only: %i[index edit update create new] do
+      collection { put :reorder }
+    end
   end
 
   namespace :staff_dashboard do

@@ -34,6 +34,21 @@ class Staff::MakerstoreLinksController < StaffAreaController
   end
 
   def edit
+    @makerstore_link = MakerstoreLink.find(params[:id])
+    render :new
+  end
+
+  def reorder
+    if params[:data].present?
+      ordered_link =
+        (params[:data].map(&:to_i) + MakerstoreLink.all.pluck(:id)).uniq
+      ordered_link.each_with_index do |id, index|
+        MakerstoreLink.find(id).update(order: index)
+      end
+    end
+    respond_to do |format|
+      format.json { render json: MakerstoreLink.all.pluck(:id, :order) }
+    end
   end
 
   def destroy
@@ -50,6 +65,12 @@ class Staff::MakerstoreLinksController < StaffAreaController
   private
 
   def makerstore_link_params
-    params.require(:makerstore_link).permit(:title, :url, :image, :order)
+    params.require(:makerstore_link).permit(
+      :title,
+      :url,
+      :image,
+      :shown,
+      :order
+    )
   end
 end
