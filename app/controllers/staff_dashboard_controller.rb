@@ -205,7 +205,7 @@ class StaffDashboardController < StaffAreaController
             user_id: user.id,
             space_id: @space.id,
             sign_in_time: Time.zone.now,
-            sign_out_time: Time.zone.now + 8.hours
+            sign_out_time: Time.zone.now + 6.hours
           )
         alert << user.name unless lab_session.save
       end
