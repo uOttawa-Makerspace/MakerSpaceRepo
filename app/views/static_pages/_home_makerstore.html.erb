@@ -2,18 +2,21 @@
     <div class="card-body">
         <h2 class="d-inline">Makerstore</h2>
         <a href="https://makerstore.ca/"><%= t('home.show_all') %></a>
+        <%= link_to('Edit', staff_makerstore_links_path, class: 'ms-3') if current_user.staff? %>
         <p><%= t('home.makerstore.subtext') %></p>
         <div class="row flex-nowrap">
             <button class="col-auto btn btn-link text-secondary fs-1" onclick="document.getElementById('storeCarousel').scrollBy({left: -250, behavior: 'smooth'})"><i class="fa fa-angle-left"></i></button>
             <div class="col carouselCardPack" id="storeCarousel">
                 <div class="card-group d-flex flex-nowrap">
                     <% @makerstore_links.each do |item| %>
+                        <% begin %>
                         <%= link_to item.url, class: 'card link-dark', target: '_blank', rel: 'noopener' do %>
                             <%= image_tag item.image, alt: item.title, class: 'card-img-top', loading: 'lazy' %>
                             <div class="card-body">
                                 <p class="fs-5 card-title"><%= item.title %></p>
                             </div>
                         <% end %>
+                        <% rescue next end %>
                     <% end %>
                 </div>
             </div>
