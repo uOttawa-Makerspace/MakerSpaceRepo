@@ -9,14 +9,18 @@
             <div class="col carouselCardPack" id="storeCarousel">
                 <div class="card-group d-flex flex-nowrap">
                     <% @makerstore_links.each do |item| %>
-                        <% begin %>
                         <%= link_to item.url, class: 'card link-dark', target: '_blank', rel: 'noopener' do %>
                             <%= image_tag item.image, alt: item.title, class: 'card-img-top', loading: 'lazy' %>
                             <div class="card-body">
                                 <p class="fs-5 card-title"><%= item.title %></p>
                             </div>
-                        <% end %>
-                        <% rescue next end %>
+                        <% end rescue next %>
+                    <% end %>
+                    <%= link_to 'https://makerstore.ca', class: 'card link-dark', target: '_blank', rel: 'noopener' do %>
+                        <%= image_tag 'C_square.png', alt: 'The Makerstore', class: 'card-img-top', loading: 'lazy' %>
+                        <div class="card-body">
+                            <p class="fs-5 card-title">Makerstore</p>
+                        </div>
                     <% end %>
                 </div>
             </div>
