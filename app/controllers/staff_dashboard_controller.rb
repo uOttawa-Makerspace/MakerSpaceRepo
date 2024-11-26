@@ -136,15 +136,12 @@ class StaffDashboardController < StaffAreaController
             .where(trainings: { spaces: { id: space_id } })
         end
       @all_user_certs = Proc.new { |user| user.certifications }
+      # Search user by username
       User
         .where(username: params[:dropped_users])
-        .pluck(:id)
-        .each do |uid|
+        .each do |user|
           # get only the latest session, if they're not signed out yet
-          LabSession
-            .where(user_id: uid, sign_out_time: Time.zone.now..)
-            .last
-            &.update(sign_out_time: Time.zone.now)
+          LabSession.active_for_user(user).last.sign_out
         end
     end
     respond_to do |format|
@@ -182,10 +179,7 @@ class StaffDashboardController < StaffAreaController
 
     space.signed_in_users.each do |user|
       # Lab sessions where sign out did not happen yet (greater than time now)
-      LabSession
-        .where(user_id: user.id, sign_out_time: Time.zone.now..)
-        .last
-        &.update(sign_out_time: Time.zone.now)
+      LabSession.active_for_user(user).last.sign_out
     end
     respond_to do |format|
       format.html do
