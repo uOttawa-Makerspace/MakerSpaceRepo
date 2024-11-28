@@ -1,0 +1,2 @@
+class LockerType < ApplicationRecord
+end

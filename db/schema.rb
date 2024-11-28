@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2024_11_09_230344) do
+ActiveRecord::Schema[7.0].define(version: 2024_11_27_234144) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -595,6 +595,35 @@ ActiveRecord::Schema[7.0].define(version: 2024_11_09_230344) do
     t.datetime "updated_at", precision: nil, null: false
     t.index ["repository_id"], name: "index_likes_on_repository_id"
     t.index ["user_id"], name: "index_likes_on_user_id"
+  end
+
+  create_table "locker_rentals", force: :cascade do |t|
+    t.bigint "locker_type_id"
+    t.bigint "rented_by_id"
+    t.string "state"
+    t.datetime "owned_until"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["locker_type_id"], name: "index_locker_rentals_on_locker_type_id"
+    t.index ["rented_by_id"], name: "index_locker_rentals_on_rented_by_id"
+  end
+
+  create_table "locker_types", force: :cascade do |t|
+    t.string "short_form"
+    t.string "description"
+    t.boolean "available", default: true
+    t.string "available_for"
+    t.integer "quantity", default: 0
+    t.decimal "cost", default: "0.0"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "makerstore_links", force: :cascade do |t|
+    t.integer "order", default: 0
+    t.string "title"
+    t.string "url"
+    t.boolean "shown", default: true
   end
 
   create_table "opening_hours", force: :cascade do |t|
