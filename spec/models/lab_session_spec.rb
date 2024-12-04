@@ -46,5 +46,41 @@ RSpec.describe LabSession, type: :model do
         ).to eq(3)
       end
     end
+
+    context "#active_for_user" do
+      it "should return only active lab sessions" do
+        lab_user = create(:user, :regular_user)
+        current_session =
+          create(
+            :lab_session,
+            user: lab_user,
+            sign_in_time: DateTime.now - 3.hours,
+            # Still signed in to space
+            sign_out_time: DateTime.now + -3.hours + 8.hours
+          )
+        old_session =
+          create(
+            :lab_session,
+            user: lab_user,
+            # signed in yesterday
+            sign_in_time: DateTime.now - 1.day,
+            sign_out_time: DateTime.now - 1.day + 3.hours
+          )
+        expect(LabSession.active_for_user(lab_user).count).to eq(1)
+        LabSession.active_for_user(lab_user).last.sign_out
+        current_session.reload
+        old_session.reload
+        # sign out now in the past
+        expect(current_session.sign_out_time).to be <= DateTime.now
+        # Make sure we don't affect other records ;-;
+        expect(
+          current_session.sign_out_time
+        ).to_not eq old_session.sign_out_time
+      end
+    end
+  end
+
+  describe "Methods" do
+    context "#"
   end
 end

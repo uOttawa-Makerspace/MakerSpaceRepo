@@ -87,33 +87,13 @@ RSpec.describe StaffDashboardController, type: :controller do
             sign_in_time: 1.hour.ago,
             sign_out_time: DateTime.now.tomorrow
           )
-        put :sign_out_all_users
-        expect(response).to redirect_to staff_dashboard_index_path(
-                      space_id: Space.first.id
-                    )
-        expect(LabSession.find(lab1.id).sign_out_time < DateTime.now)
-        expect(LabSession.find(lab2.id).sign_out_time < DateTime.now)
-      end
-    end
-  end
-
-  describe "PUT /sign_out_all_users" do
-    context "sign out all users" do
-      it "should sign out all users" do
-        user = create(:user, :regular_user)
-        lab1 =
-          LabSession.create(
-            user_id: @admin.id,
-            space_id: @space.id,
-            sign_in_time: 1.hour.ago,
-            sign_out_time: DateTime.now.tomorrow
-          )
-        lab2 =
+        # Previous session
+        lab3 =
           LabSession.create(
             user_id: user.id,
             space_id: @space.id,
-            sign_in_time: 1.hour.ago,
-            sign_out_time: DateTime.now.tomorrow
+            sign_in_time: 1.day.ago,
+            sign_out_time: 1.day.ago + 3.hours
           )
         put :sign_out_all_users
         expect(response).to redirect_to staff_dashboard_index_path(
@@ -121,6 +101,13 @@ RSpec.describe StaffDashboardController, type: :controller do
                     )
         expect(LabSession.find(lab1.id).sign_out_time < DateTime.now)
         expect(LabSession.find(lab2.id).sign_out_time < DateTime.now)
+        # ensure previous lab sessions are left intact
+        expect(
+          LabSession.find(lab3.id).sign_out_time
+        ).to_not eq lab2.sign_out_time
+        expect(
+          LabSession.find(lab3.id).sign_out_time
+        ).to_not eq lab1.sign_out_time
       end
     end
   end
@@ -134,6 +121,33 @@ RSpec.describe StaffDashboardController, type: :controller do
                       space_id: Space.first.id
                     )
         expect(LabSession.last.sign_out_time > DateTime.now)
+      end
+    end
+  end
+
+  describe "PUT /sign_out_users" do
+    context "sign out" do
+      it "should sign out one user only" do
+        user1 = create(:user, :regular_user)
+        user2 = create(:user, :regular_user)
+        keep_signed = create(:user, :regular_user)
+        put :sign_in_users,
+            params: {
+              added_users: [
+                user1.username,
+                user2.username,
+                keep_signed.username
+              ]
+            }
+
+        put :sign_out_users,
+            params: {
+              dropped_users: [user1.username, user2.username]
+            }
+        expect(response).to redirect_to staff_dashboard_index_path
+        expect(LabSession.active_for_user(user1).count).to eq 0
+        expect(LabSession.active_for_user(user2).count).to eq 0
+        expect(LabSession.active_for_user(keep_signed).count).to eq 1
       end
     end
   end

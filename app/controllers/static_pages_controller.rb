@@ -70,6 +70,8 @@ class StaticPagesController < SessionsController
     rescue StandardError
       @workshops = [] # eh
     end
+
+    @makerstore_links = MakerstoreLink.all
   end
 
   def about

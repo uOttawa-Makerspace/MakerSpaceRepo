@@ -437,6 +437,10 @@ Rails.application.routes.draw do
     resources :shifts_schedule, except: %i[new show destroy] do
       collection { get :get_shifts }
     end
+
+    resources :makerstore_links, only: %i[index edit update create new] do
+      collection { put :reorder }
+    end
   end
 
   namespace :staff_dashboard do

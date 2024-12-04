@@ -29,17 +29,15 @@ class KioskController < ApplicationController
     head :unprocessable_entity if space.nil?
 
     # Get last session (if it exists)
-    last_session = LabSession.where(user: visitor, space: space).last
     # session has not ended yet if last sign out time is in future
-    still_in_session =
-      last_session && (last_session.sign_out_time > Time.zone.now)
+    last_session = LabSession.where(space: space).active_for_user(visitor).last
     if params[:leaving]
       # If last session hasn't ended yet, end it now.
-      last_session.update(sign_out_time: Time.zone.now) if still_in_session
+      last_session.sign_out if last_session
       flash[:notice] = "Signing out from #{space.name}, bye #{visitor.name}"
     elsif params[:entering]
       # create unless last session is still active
-      if not still_in_session
+      unless last_session
         LabSession.create(
           user: visitor,
           space_id: space.id,

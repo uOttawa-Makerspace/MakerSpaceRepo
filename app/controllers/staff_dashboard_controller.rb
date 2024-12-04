@@ -136,9 +136,13 @@ class StaffDashboardController < StaffAreaController
             .where(trainings: { spaces: { id: space_id } })
         end
       @all_user_certs = Proc.new { |user| user.certifications }
-      users = User.where(username: params[:dropped_users]).map(&:id)
-      lab_sessions = LabSession.where(user_id: users)
-      lab_sessions.update_all(sign_out_time: Time.zone.now)
+      # Search user by username
+      User
+        .where(username: params[:dropped_users])
+        .each do |user|
+          # get only the latest session, if they're not signed out yet
+          LabSession.active_for_user(user).last.sign_out
+        end
     end
     respond_to do |format|
       format.html { redirect_to staff_dashboard_index_path }
@@ -174,8 +178,8 @@ class StaffDashboardController < StaffAreaController
     @users = User.order(id: :desc).limit(10)
 
     space.signed_in_users.each do |user|
-      lab_session = LabSession.where(user_id: user.id)
-      lab_session.update_all(sign_out_time: Time.zone.now)
+      # Lab sessions where sign out did not happen yet (greater than time now)
+      LabSession.active_for_user(user).last.sign_out
     end
     respond_to do |format|
       format.html do
