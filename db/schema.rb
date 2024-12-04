@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2024_11_09_230344) do
+ActiveRecord::Schema[7.0].define(version: 2024_11_16_185838) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -595,6 +595,13 @@ ActiveRecord::Schema[7.0].define(version: 2024_11_09_230344) do
     t.datetime "updated_at", precision: nil, null: false
     t.index ["repository_id"], name: "index_likes_on_repository_id"
     t.index ["user_id"], name: "index_likes_on_user_id"
+  end
+
+  create_table "makerstore_links", force: :cascade do |t|
+    t.integer "order", default: 0
+    t.string "title"
+    t.string "url"
+    t.boolean "shown", default: true
   end
 
   create_table "opening_hours", force: :cascade do |t|
