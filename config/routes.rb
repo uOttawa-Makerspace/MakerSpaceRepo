@@ -127,6 +127,10 @@ Rails.application.routes.draw do
     collection { get :history }
   end
 
+  resources :lockers, only: :index
+  resources :locker_types
+  resources :locker_rentals
+
   resources :kiosk, only: %i[index show edit] do
     post :sign_email
   end

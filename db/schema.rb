@@ -600,6 +600,7 @@ ActiveRecord::Schema[7.0].define(version: 2024_11_27_234144) do
   create_table "locker_rentals", force: :cascade do |t|
     t.bigint "locker_type_id"
     t.bigint "rented_by_id"
+    t.string "locker_specifier"
     t.string "state"
     t.datetime "owned_until"
     t.datetime "created_at", null: false

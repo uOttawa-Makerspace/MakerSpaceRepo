@@ -1,0 +1,54 @@
+<h1 class="text-center my-5">New locker type</h1>
+<%= form_with model: @locker_type, class: 'container col-md-4' do |f| %>
+    <div class="row">
+        <%= f.label :short_form, 'Short form (prefix)', class: 'form-label col-md-6' %>
+        <div class="col-md-6">
+            <%= f.text_field :short_form, class: 'form-control' %>
+        </div>
+    </div>
+
+    <div class="row">
+        <%= f.label :description, 'Short description', class: 'form-label col-md-6' %>
+        <div class="col-md-6">
+            <%= f.text_field :description, class: 'form-control' %>
+        </div>
+    </div>
+
+    <div class="row">
+        <%= f.label :quantity, 'Initial amount', class: 'form-label col-md-6' %>
+        <div class="col-md-6">
+            <%= f.number_field :quantity, class: 'form-control', value: 10 %>
+        </div>
+    </div>
+
+    <div class="row">
+        <%= f.label :available_for, class: 'form-label col-md-6' %>
+        <div class="col-md-6">
+            <%= f.select :available_for, LockerType.available_fors.transform_keys(&:humanize), {}, { class: 'form-select' } %>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <%= f.label :cost, class: 'form-label col-md-6' %>
+        <div class="col-md-6">
+            <%= f.number_field :cost, class: 'form-control', value: 0 %>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between">
+        <div class="form-check">
+            <%= f.label :available, class: 'form-check-label' %>
+            <%= f.check_box :available, class: 'form-check-input' %>
+        </div>
+        <%= f.submit 'Create', class: 'btn btn-success' %>
+    </div>
+    <% if @locker_type.errors.any? %>
+        <ul>
+            <% @locker_type.errors.each do |error| %>
+                <li><%= error.full_message %></li>
+            <% end %>
+        </ul>
+    <% end %>
+<% end %>
+<hr />
+<h1 class="text-center my-5">New Lockers</h1>

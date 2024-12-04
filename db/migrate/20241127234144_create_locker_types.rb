@@ -13,6 +13,7 @@ class CreateLockerTypes < ActiveRecord::Migration[7.0]
     create_table :locker_rentals do |t|
       t.references :locker_type
       t.references :rented_by # user
+      t.string :locker_specifier # concat with short_form for full locker ID
       t.string :state # not approved, ask for payment, paid
       t.datetime :owned_until # NOTE should this be a string or a datetime?
       t.timestamps
