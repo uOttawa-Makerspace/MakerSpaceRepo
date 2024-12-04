@@ -13,6 +13,12 @@ class Staff::MakerstoreLinksController < StaffAreaController
 
   def create
     @makerstore_link = MakerstoreLink.new(makerstore_link_params)
+    unless makerstore_link_params[:image]
+      render :new,
+             status: :unprocessable_entity,
+             alert: "Cannot create makerstore link without an image"
+      return
+    end
     # file is uploaded to temporary storage
     temp_filepath = makerstore_link_params[:image].tempfile.path
     # compress the temporary file before upload
@@ -48,6 +54,16 @@ class Staff::MakerstoreLinksController < StaffAreaController
     end
     respond_to do |format|
       format.json { render json: MakerstoreLink.all.pluck(:id, :order) }
+    end
+  end
+
+  def update
+    @makerstore_link = MakerstoreLink.find(params[:id])
+    if @makerstore_link.update(makerstore_link_params)
+      flash[:notice] = "Link updated"
+      redirect_to staff_makerstore_links_path
+    else
+      render :edit, status: :unprocessable_entity
     end
   end
 
