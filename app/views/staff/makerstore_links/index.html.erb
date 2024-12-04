@@ -1,5 +1,5 @@
 <section class="container">
-    <h1 class="text-center">Makerstore Links on show</h1>
+    <h1 class="text-center mt-3">Makerstore Links on show</h1>
     <%= link_to 'Create new link', new_staff_makerstore_link_path, class: 'btn btn-primary mb-3' %>
     <div class="table-responsive">
         <table class="table table-striped-primary table-hover">
@@ -20,8 +20,13 @@
                         <td class="handle"><i class="fa fa-arrows"></i></td>
                         <td><%= link.order + 1 %></td>
                         <td><%= link.title %></td>
-                        <td><%= link_to link.url, link.url, class: 'btn btn-link', loading: 'lazy' %></td>
-                        <td><%= link.shown ? 'Shown' : 'Hidden' %></td>
+                        <td><%= link_to link.url, link.url, loading: 'lazy' %></td>
+                        <td>
+                            <div class="form-check d-inline-block">
+                                <%= check_box_tag "shown_#{link.id}", '', link.shown, class: 'form-check-input', data: { link_id: link.id }, disabled: true %>
+                                <%= label_tag "shown_#{link.id}", '', class: 'form-check-label' %>
+                            </div>
+                        </td>
                         <td><details>
                             <summary>Display image
                             </summary>
