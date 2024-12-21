@@ -33,10 +33,8 @@ class LockerRentalsController < ApplicationController
   end
 
   def create
-    # TODO missing state, owned by
-    # also the damn user search returns the username not the id, wtf???
     @locker_rental = LockerRental.new(locker_rental_params)
-    if @locker_rental.valid?
+    if @locker_rental.save
       head :ok
     else
       head :unprocessable_entity
@@ -60,14 +58,22 @@ class LockerRentalsController < ApplicationController
 
   def locker_rental_params
     if current_user.admin?
-      params.require(:locker_rental).permit(
-        :locker_type_id,
-        # admin can assign and approve requests
-        :rented_by_id,
-        :locker_specifier,
-        :state,
-        :owned_until
-      )
+      params
+        .require(:locker_rental)
+        .permit(
+          :locker_type_id,
+          # admin can assign and approve requests
+          :rented_by_id,
+          :locker_specifier,
+          :state,
+          :owned_until
+        )
+        .reverse_merge(
+          rented_by_id:
+            User.find_by(
+              username: params.dig(:locker_rental, :rented_by_username)
+            )&.id
+        )
     else
       # people pick where they want a locker
       params

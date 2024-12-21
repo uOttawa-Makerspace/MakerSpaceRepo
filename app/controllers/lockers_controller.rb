@@ -1,4 +1,7 @@
 class LockersController < ApplicationController
+  before_action :current_user
+  before_action :signed_in
+
   def index
     @locker_types = LockerType.all
     @all_locker_rentals = LockerRental.all

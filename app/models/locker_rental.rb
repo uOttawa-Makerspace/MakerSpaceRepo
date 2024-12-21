@@ -12,7 +12,7 @@ class LockerRental < ApplicationRecord
        }
 
   validates :locker_type, :state, presence: true
-  with_options if: :status_active? do |rental|
+  with_options if: :active? do |rental|
     rental.validates :rented_by, :owned_until, presence: true
   end
 end
