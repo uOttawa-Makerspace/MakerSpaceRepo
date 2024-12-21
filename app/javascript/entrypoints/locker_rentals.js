@@ -24,7 +24,7 @@ function disableAllExcept(shortForm) {
   locker_specifier.sync();
 }
 
-const locker_type = new TomSelect("#locker_rental_locker_type", {
+const locker_type = new TomSelect("#locker_rental_locker_type_id", {
   onChange: (value) => {
     disableAllExcept(locker_type.options[value].text);
   },

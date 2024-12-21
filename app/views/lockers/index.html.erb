@@ -1,48 +1,56 @@
 <div class="text-center mx-auto col-xl-11">
     <h1>Lockers Available</h1>
     <%= link_to 'New lockers', new_locker_type_path, class: 'btn btn-success mb-3' %>
-    <div class="table-responsive">
-        <table class="table table-striped">
-            <thead class="table-primary">
-                <tr>
-                    <th>Short code</th>
-                    <th>Location</th>
-                    <th>Assigned/Total</th>
-                    <th>Available for request?</th>
-                    <th>Cost if applicable</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                <% @locker_types.each do |type| %>
+    <div class="row border-bottom">
+        <div class='border-end col-md-3'>
+            <h2>New locker type</h2>
+            <%= render partial: 'locker_types/new_locker_type_form' %>
+        </div>
+        <div class="table-responsive col-md-9">
+            <table class="table table-striped">
+                <thead class="table-primary">
                     <tr>
-                        <td><%= type.short_form %></td>
-                        <td><%= type.description %></td>
-                        <td><%= 'BIG QUERY LOL' %> assigned / <%= type.quantity %> total</td>
-                        <td><%= type.available ? type.available_for.humanize : 'No' %></td>
-                        <td>$<%= type.cost %></td>
-                        <td><%= link_to 'Edit', nil, class: 'btn btn-primary' %></td>
+                        <th>Short code</th>
+                        <th>Location</th>
+                        <th>Assigned/Total</th>
+                        <th>Available for request?</th>
+                        <th>Cost if applicable</th>
+                        <th>Actions</th>
                     </tr>
-                <% end %>
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    <% @locker_types.each do |type| %>
+                        <tr>
+                            <td><%= type.short_form %></td>
+                            <td><%= type.description %></td>
+                            <td><%= 'BIG QUERY LOL' %> assigned / <%= type.quantity %> total</td>
+                            <td><%= type.available ? type.available_for.humanize : 'No' %></td>
+                            <td>$<%= type.cost %></td>
+                            <td><%= link_to 'Edit', nil, class: 'btn btn-primary' %></td>
+                        </tr>
+                    <% end %>
+                </tbody>
+            </table>
+        </div>
     </div>
 
-    <h1>Locker requests</h1>
-    <%= link_to 'Assign locker', '', class: 'btn btn-success mb-3' %>
+    <h1>Locker rentals</h1>
+    <%= link_to 'Assign locker', new_locker_rental_path, class: 'btn btn-success mb-3' %>
     <div class="table-responsive">
         <table class="table table-striped">
             <thead class="table-primary">
                 <tr>
-                    <th>Short code</th>
+                    <th>Locker ID</th>
                     <th>Location</th>
                     <th>Available/Total</th>
                     <th>Available for request?</th>
                 </tr>
             </thead>
             <tbody>
-                <% @locker_types.each do |type| %>
-
+                <% @all_locker_rentals.each do |rental| %>
+                    <tr>
+                        <td>rental.locker_type.short_code</td>
+                    </tr>
                 <% end %>
             </tbody>
         </table>

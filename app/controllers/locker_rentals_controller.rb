@@ -1,14 +1,13 @@
 # frozen_string_literal: true
 
 class LockerRentalsController < ApplicationController
-  # TODO
-  # before_action admin, except index
+  before_action :current_user
+  before_action :signed_in
 
   def new
     @locker_rental = LockerRental.new
     @locker_types =
       LockerType.select(:short_form, :id).distinct.pluck(:short_form, :id)
-    # this doesn't work BTW
     @assigned_lockers =
       LockerRental
         .all
@@ -28,35 +27,53 @@ class LockerRentalsController < ApplicationController
         ]
       end
 
-    if current_user.admin?
-      new_admin
-      return
-    end
+    @end_of_this_semester = end_of_this_semester.to_date
     # If user already has an active or pending request
     # don't allow new request
   end
 
   def create
+    # TODO missing state, owned by
+    # also the damn user search returns the username not the id, wtf???
+    @locker_rental = LockerRental.new(locker_rental_params)
+    if @locker_rental.valid?
+      head :ok
+    else
+      head :unprocessable_entity
+    end
   end
 
   private
 
-  def new_admin
+  def end_of_this_semester
+    if DateTime.now.month in 9..12
+      # End of Fall
+      DateTime.new(DateTime.now.year, 12).end_of_month
+    elsif DateTime.now.month in 1..4
+      # End of Winter
+      DateTime.new(DateTime.now.year, 4).end_of_month
+    elsif DateTime.now.month in 5..8
+      # End of Summer
+      DateTime.new(DateTime.now.year, 8).end_of_month
+    end
   end
 
   def locker_rental_params
     if current_user.admin?
       params.require(:locker_rental).permit(
-        :locker_type,
+        :locker_type_id,
         # admin can assign and approve requests
-        :rented_by,
+        :rented_by_id,
         :locker_specifier,
         :state,
         :owned_until
       )
     else
       # people pick where they want a locker
-      params.require(:locker_rental).permit(:locker_type)
+      params
+        .require(:locker_rental)
+        .permit(:locker_type)
+        .merge({ state: :reviewing })
     end
   end
 end
