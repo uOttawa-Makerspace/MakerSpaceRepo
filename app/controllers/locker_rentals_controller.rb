@@ -4,7 +4,16 @@ class LockerRentalsController < ApplicationController
   before_action :current_user
   before_action :signed_in
 
+  def index
+    @locker_types = LockerType.all
+    @locker_rentals =
+      LockerRental.includes(:locker_type, :rented_by).order(
+        locker_type_id: :asc
+      )
+  end
+
   def new
+    # TODO are these still being used? clean up
     @locker_rental = LockerRental.new
     @locker_types =
       LockerType.select(:short_form, :id).distinct.pluck(:short_form, :id)

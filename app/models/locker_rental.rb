@@ -16,6 +16,25 @@ class LockerRental < ApplicationRecord
     rental.validates :rented_by, :owned_until, presence: true
   end
 
+  def full_locker_name
+    "#{locker_type.short_form}##{locker_specifier}"
+  end
+
+  def state_icon
+    LockerRental.state_icon(state)
+  end
+
+  def self.state_icon(state)
+    case state
+    when "active"
+      "fa-lock"
+    when "cancelled"
+      "fa-clock-o text-danger"
+    else
+      ""
+    end
+  end
+
   def self.get_assigned_lockers
     LockerRental
       .all

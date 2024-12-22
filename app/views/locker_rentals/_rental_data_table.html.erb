@@ -1,0 +1,29 @@
+<div class="table-responsive">
+    <h3 class="text-center"><%= header_title %></h3>
+    <table class="table table-striped">
+        <thead class="table-primary text-center">
+            <tr>
+                <th>Locker ID</th>
+                <th>Rented by</th>
+                <th>State</th>
+                <th>Until</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% if locker_rentals.present? %>
+                <% locker_rentals.each do |rental| %>
+                    <tr>
+                        <td><%= rental.full_locker_name %></td>
+                        <td><%= link_to rental.rented_by.username, user_path(rental.rented_by) %></td>
+                        <td><%= tag.i class: "fa #{rental.state_icon}" %> <%= rental.state.humanize %></td>
+                        <td><%= rental.owned_until&.to_date %></td>
+                    </tr>
+                <% end %>
+            <% else %>
+                <tr>
+                    <td colspan="4" class="fw-bold">No locker rentals</td>
+                </tr>
+            <% end %>
+        </tbody>
+    </table>
+</div>

@@ -1,4 +1,5 @@
 class LockerType < ApplicationRecord
+  has_many :locker_rentals
   enum available_for: { staff: "staff", student: "student", general: "general" }
 
   validates :short_form,

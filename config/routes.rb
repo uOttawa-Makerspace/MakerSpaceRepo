@@ -128,8 +128,8 @@ Rails.application.routes.draw do
   end
 
   resources :lockers, only: :index
-  resources :locker_types
-  resources :locker_rentals
+  resources :locker_types, only: %i[new create edit update destroy]
+  resources :locker_rentals #, only: %i[index show new create update destroy]
 
   resources :kiosk, only: %i[index show edit] do
     post :sign_email
