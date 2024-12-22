@@ -8,11 +8,7 @@ class LockerRentalsController < ApplicationController
     @locker_rental = LockerRental.new
     @locker_types =
       LockerType.select(:short_form, :id).distinct.pluck(:short_form, :id)
-    @assigned_lockers =
-      LockerRental
-        .all
-        .select(:locker_specifier, :locker_type_id)
-        .group_by(&:locker_type_id)
+    @assigned_lockers = LockerRental.get_assigned_lockers
     # We're faking lockers existing
     @available_lockers =
       LockerType.all.map do |type|
@@ -27,7 +23,7 @@ class LockerRentalsController < ApplicationController
         ]
       end
 
-    @end_of_this_semester = end_of_this_semester.to_date
+    #@end_of_this_semester = end_of_this_semester.to_date
     # If user already has an active or pending request
     # don't allow new request
   end
@@ -42,19 +38,6 @@ class LockerRentalsController < ApplicationController
   end
 
   private
-
-  def end_of_this_semester
-    if DateTime.now.month in 9..12
-      # End of Fall
-      DateTime.new(DateTime.now.year, 12).end_of_month
-    elsif DateTime.now.month in 1..4
-      # End of Winter
-      DateTime.new(DateTime.now.year, 4).end_of_month
-    elsif DateTime.now.month in 5..8
-      # End of Summer
-      DateTime.new(DateTime.now.year, 8).end_of_month
-    end
-  end
 
   def locker_rental_params
     if current_user.admin?

@@ -20,6 +20,14 @@ function disableAllExcept(shortForm) {
     optgroup.disabled = !(optgroup.label == shortForm);
     optgroup.hidden = !(optgroup.label == shortForm);
   });
+
+  // Some options are now removed, reselect new value
+  try {
+    let newVal = locker_specifier.input.querySelector(
+      `optgroup[label="${shortForm}"]`
+    ).children[0].value;
+    locker_specifier.setValue(newVal);
+  } catch (e) {}
   // re-render
   locker_specifier.sync();
 }
@@ -32,4 +40,4 @@ const locker_type = new TomSelect("#locker_rental_locker_type_id", {
 
 locker_type.trigger("change", locker_type.getValue());
 // window.locker_type = locker_type
-// window.locker_specifier = locker_specifier
+window.locker_specifier = locker_specifier;

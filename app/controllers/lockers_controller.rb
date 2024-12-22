@@ -9,8 +9,10 @@ class LockersController < ApplicationController
     @locker_request_await_payment = LockerRental.where(state: :await_payment)
     @locker_request_active = LockerRental.where(state: :active)
 
-    # For the locker rental form
+    # For the locker type form
     @locker_type = LockerType.new
+    # For the locker rental form
+    @locker_rental = LockerRental.new
   end
 
   def new
