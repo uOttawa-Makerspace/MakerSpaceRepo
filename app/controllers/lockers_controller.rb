@@ -2,6 +2,13 @@ class LockersController < ApplicationController
   before_action :current_user
   before_action :signed_in
 
+  before_action do
+    unless current_user.admin?
+      flash[:alert] = "You cannot access this area"
+      redirect_back(fallback_location: root_path)
+    end
+  end
+
   helper_method :rental_state_icon
 
   def index

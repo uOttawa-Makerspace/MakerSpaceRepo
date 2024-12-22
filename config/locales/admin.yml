@@ -2,6 +2,7 @@ en:
   # These are used in the navbar and in page titles, headers
   admin:
     general: "General"
+    lockers: "Lockers"
     settings: "Settings"
     announcements: "Announcements"
     reports: "Reports"
@@ -30,6 +31,7 @@ en:
 fr:
   admin:
     general: "Général"
+    lockers: "Casiers"
     settings: "Préférences"
     announcements: "Annonces"
     reports: "Rapports"
