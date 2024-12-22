@@ -57,12 +57,13 @@
                         <tr>
                             <td><%= "#{rental.locker_type.short_form}##{rental.locker_specifier}" %></td>
                             <td><%= link_to rental.rented_by.username, user_path(rental.rented_by) %></td>
-                            <td><%= rental.state.humanize %></td>
+                            <td><%= tag.i class: "fa #{rental_state_icon(rental.state)}" %> <%= rental.state.humanize %></td>
                             <td><%= rental.updated_at&.to_date %></td>
                             <td><%= rental.owned_until&.to_date || 'Unapproved yet' %></td>
                             <td><%= button_to 'End rental',
-                                              locker_rental_path(rental, params: { locker_rental: { id: rental.id, state: :cancelled } }),
+                                              locker_rental_path(rental),
                                               data: { confirm: 'Are you sure you want to cancel this locker rental?' },
+                                              params: { locker_rental: { state: :cancelled } },
                                               method: :put,
                                               class: 'btn btn-danger' %></td>
                         </tr>

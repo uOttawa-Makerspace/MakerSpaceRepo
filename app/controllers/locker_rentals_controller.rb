@@ -37,13 +37,21 @@ class LockerRentalsController < ApplicationController
     end
   end
 
+  def update
+    @locker_rental = LockerRental.find(params[:id])
+    if @locker_rental.update(locker_rental_params)
+      flash[:notice] = "Locker rental updated"
+    else
+      flash[:alert] = "Failed to update locker rental"
+    end
+  end
+
   private
 
   def locker_rental_params
     if current_user.admin?
-      params
-        .require(:locker_rental)
-        .permit(
+      admin_params =
+        params.require(:locker_rental).permit(
           :locker_type_id,
           # admin can assign and approve requests
           :rented_by_id,
@@ -51,12 +59,16 @@ class LockerRentalsController < ApplicationController
           :state,
           :owned_until
         )
-        .reverse_merge(
-          rented_by_id:
-            User.find_by(
-              username: params.dig(:locker_rental, :rented_by_username)
-            )&.id
-        )
+
+      # FIXME replace that search with a different one, return ID instead
+      # If username is given (since search can do that)
+      rented_by_user =
+        User.find_by(username: params.dig(:locker_rental, :rented_by_username))
+      if rented_by_user
+        # then convert to user id
+        admin_params.reverse_merge!(rented_by_id: rented_by_user.id)
+      end
+      admin_params
     else
       # people pick where they want a locker
       params
