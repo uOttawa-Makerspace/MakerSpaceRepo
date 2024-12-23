@@ -1,7 +1,4 @@
 class LockerTypesController < ApplicationController
-  def index
-  end
-
   def new
     @locker_type = LockerType.new
   end
@@ -19,12 +16,28 @@ class LockerTypesController < ApplicationController
   end
 
   def edit
+    @locker_type = LockerType.find(params[:id])
   end
 
   def update
+    @locker_type = LockerType.find(params[:id])
+    if @locker_type.update(locker_type_params)
+      redirect_to lockers_path, notice: "Locker updated"
+    else
+      render :edit, status: :unprocessable_entity
+    end
   end
 
   def destroy
+    @locker_type = LockerType.find(params[:id])
+    if @locker_type.destroy
+      flash[:notice] = "Locker type removed"
+    else
+      flash[
+        :alert
+      ] = "Failed to delete locker type, records probably exist in history"
+    end
+    redirect_to lockers_path
   end
 
   private

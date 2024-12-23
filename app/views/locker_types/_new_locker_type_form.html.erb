@@ -14,7 +14,7 @@
     </div>
 
     <div class="row">
-        <%= f.label :quantity, 'Initial amount', class: 'form-label col-md-6' %>
+        <%= f.label :quantity, 'Total amount', class: 'form-label col-md-6' %>
         <div class="col-md-6">
             <%= f.number_field :quantity, class: 'form-control', value: 10 %>
         </div>
@@ -28,7 +28,7 @@
     </div>
 
     <div class="row mb-3">
-        <%= f.label :cost, class: 'form-label col-md-6' %>
+        <%= f.label :cost, 'Cost if applicable', class: 'form-label col-md-6' %>
         <div class="col-md-6">
             <%= f.number_field :cost, class: 'form-control', value: 0 %>
         </div>
@@ -38,7 +38,7 @@
         <%= f.label :available, class: 'form-check-label' %>
         <%= f.check_box :available, class: 'form-check-input' %>
     </div>
-    <%= f.submit 'Create', class: 'btn btn-success' %>
+    <%= f.submit (local_assigns[:is_edit] ? 'Edit' : 'Create'), class: 'btn btn-success' %>
     <% if @locker_type.errors.any? %>
         <ul>
             <% @locker_type.errors.each do |error| %>

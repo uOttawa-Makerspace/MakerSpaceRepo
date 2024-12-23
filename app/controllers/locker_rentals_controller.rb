@@ -40,9 +40,9 @@ class LockerRentalsController < ApplicationController
   def create
     @locker_rental = LockerRental.new(locker_rental_params)
     if @locker_rental.save
-      head :ok
+      redirect_back fallback_location: lockers_path
     else
-      head :unprocessable_entity
+      render :new, status: :unprocessable_entity
     end
   end
 

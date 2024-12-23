@@ -2,7 +2,7 @@
     <div class="row row-cols-md-2">
         <%= f.label :locker_type_id, class: 'form-label' %>
         <div>
-            <%= f.select :locker_type_id, options_for_select(LockerType.select(:short_form, :id).distinct.pluck(:short_form, :id)), {}, { class: 'form-select' } %>
+            <%= f.select :locker_type_id, options_for_select(LockerType.available.select(:short_form, :id).distinct.pluck(:short_form, :id)), {}, { class: 'form-select' } %>
         </div>
     </div>
     <div class="row row-cols-md-2">
@@ -24,7 +24,7 @@
         </div>
     </div>
     <%= f.hidden_field :state, value: LockerRental.states[:active] %>
-    <%= f.submit 'Assign locker', class: 'btn btn-success' %>
+    <%= f.submit 'Assign locker', class: 'btn btn-success mt-3' %>
 <% end %>
 <%= vite_javascript_tag 'staff_dashboard_search', 'data-turbo-track': 'reload' %>
 <%= vite_javascript_tag 'locker_rental_form', 'data-turbo-track': 'reload' %>
