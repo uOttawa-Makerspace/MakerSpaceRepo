@@ -13,32 +13,20 @@ class LockerRentalsController < ApplicationController
   end
 
   def new
-    # TODO are these still being used? clean up
-    @locker_rental = LockerRental.new
-    @locker_types =
-      LockerType.select(:short_form, :id).distinct.pluck(:short_form, :id)
-    @assigned_lockers = LockerRental.get_assigned_lockers
-    # We're faking lockers existing
-    @available_lockers =
-      LockerType.all.map do |type|
-        [
-          type.short_form,
-          # 1. Make a list based of max quantity (so BRUNS-1, BRUNS-2, ..., BRUNS-99)
-          ("1"..type.quantity.to_s) # 2. Subtract specifiers already assigned to active rentals
-            .reject do |specifier|
-            @assigned_lockers[type.id] &&
-              @assigned_lockers[type.id].includes?(specifier)
-          end
-        ]
-      end
-
-    #@end_of_this_semester = end_of_this_semester.to_date
-    # If user already has an active or pending request
-    # don't allow new request
+    # fun fact this isn't used at all by the view
+    # because all the fields are given default values
+    # but we keep it in case something changes to avoid breakage
+    @locker_request = LockerRental.new
+    # Don't allow new request if user already has an active or pending request
   end
 
   def create
     @locker_rental = LockerRental.new(locker_rental_params)
+    # if not a staff member or has debug value set
+    if !current_user.staff? || params[:locker_request][:ask]
+      # Wait for admin approval
+      @locker_rental.state = :reviewing
+    end
     if @locker_rental.save
       redirect_back fallback_location: lockers_path
     else
@@ -80,10 +68,8 @@ class LockerRentalsController < ApplicationController
       admin_params
     else
       # people pick where they want a locker
-      params
-        .require(:locker_rental)
-        .permit(:locker_type)
-        .merge({ state: :reviewing })
+      params.require(:locker_rental).permit(:locker_type)
+      #.merge({ state: :reviewing })
     end
   end
 end

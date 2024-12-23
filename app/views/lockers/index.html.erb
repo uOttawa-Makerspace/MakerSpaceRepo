@@ -1,3 +1,5 @@
+<% provide :title, 'Locker dashboard' %>
+
 <div class="text-center mx-auto col-xl-11">
     <h1>Locker Management</h1>
     <%#%= link_to 'New lockers', new_locker_type_path, class: 'btn btn-success mb-3' %>
@@ -24,7 +26,7 @@
                         <tr>
                             <td><%= type.short_form %></td>
                             <td><%= type.description %></td>
-                            <td><%= LockerRental.where(locker_type: type).count %> assigned / <%= type.quantity %> total</td>
+                            <td><%= type.active_locker_rentals.count %> assigned / <%= type.quantity %> total</td>
                             <td><%= type.available ? type.available_for.humanize : 'No' %></td>
                             <td>$<%= type.cost %></td>
                             <td><%= link_to 'Edit', edit_locker_type_path(type), class: 'btn btn-primary' %></td>
@@ -55,7 +57,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <% @all_locker_rentals.each do |rental| %>
+                    <% @locker_request_active.each do |rental| %>
                         <tr>
                             <td><%= rental.full_locker_name %></td>
                             <td><%= link_to rental.rented_by.username, user_path(rental.rented_by) %></td>

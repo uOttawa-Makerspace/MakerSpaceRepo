@@ -5,15 +5,28 @@ class LockerRental < ApplicationRecord
   belongs_to :rented_by, class_name: "User"
 
   enum state: {
+         # Users submitted, not approved by admin
          reviewing: "reviewing",
+         # Approved by admin, waiting for payment confirm
          await_payment: "await_payment",
+         # Approved and paid, or assigned directly by admin
          active: "active",
+         # Cancelled, no longer assigned
          cancelled: "cancelled"
        }
 
   validates :locker_type, :state, presence: true
+
   with_options if: :active? do |rental|
-    rental.validates :rented_by, :owned_until, presence: true
+    # Don't double assign lockers of same locker type if full assigned
+    # TODO upgrade Rails and add normalization to trim spaces
+    # or change column type to integer not string
+    validates :locker_specifier,
+              uniqueness: {
+                scope: :locker_type
+              },
+              allow_nil: true
+    rental.validates :rented_by, :owned_until, :locker_specifier, presence: true
   end
 
   def full_locker_name
@@ -37,7 +50,7 @@ class LockerRental < ApplicationRecord
 
   def self.get_assigned_lockers
     LockerRental
-      .all
+      .where(state: :active)
       .pluck(:locker_type_id, :locker_specifier)
       .group_by(&:shift)
       .transform_values(&:flatten)

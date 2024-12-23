@@ -14,6 +14,7 @@ class LockerType < ApplicationRecord
   validates :short_form, uniqueness: { case_sensitive: false }
   validates :cost, :quantity, comparison: { greater_than_or_equal_to: 0 }
 
+  default_scope { order(:id) }
   scope :available, -> { where(available: true) }
 
   def active_locker_rentals
