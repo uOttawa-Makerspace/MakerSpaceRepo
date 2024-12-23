@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2024_11_27_234144) do
+ActiveRecord::Schema[7.0].define(version: 2024_12_23_024505) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -602,6 +602,7 @@ ActiveRecord::Schema[7.0].define(version: 2024_11_27_234144) do
     t.bigint "rented_by_id"
     t.string "locker_specifier"
     t.string "state"
+    t.string "notes"
     t.datetime "owned_until"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false

@@ -5,6 +5,9 @@ class LockerRentalsController < ApplicationController
   before_action :signed_in
 
   def index
+    # Only admin can see index list
+    redirect_to :new_locker_rental unless current_user.admin?
+
     @locker_types = LockerType.all
     @locker_rentals =
       LockerRental.includes(:locker_type, :rented_by).order(
@@ -13,23 +16,24 @@ class LockerRentalsController < ApplicationController
   end
 
   def new
-    # fun fact this isn't used at all by the view
-    # because all the fields are given default values
-    # but we keep it in case something changes to avoid breakage
-    @locker_request = LockerRental.new
-    # Don't allow new request if user already has an active or pending request
+    @locker_rental = LockerRental.new
+    # Only locker types enabled by admin
+    new_instance_attributes
   end
 
   def create
     @locker_rental = LockerRental.new(locker_rental_params)
-    # if not a staff member or has debug value set
-    if !current_user.staff? || params[:locker_request][:ask]
-      # Wait for admin approval
+    # if not admin member or has debug value set
+    # then force to wait for admin approval
+    if !current_user.admin? || params.dig(:locker_rental, :ask)
       @locker_rental.state = :reviewing
+      @locker_rental.rented_by = current_user
     end
+
     if @locker_rental.save
-      redirect_back fallback_location: lockers_path
+      redirect_back fallback_location: :new_locker_rental
     else
+      new_instance_attributes
       render :new, status: :unprocessable_entity
     end
   end
@@ -45,8 +49,21 @@ class LockerRentalsController < ApplicationController
 
   private
 
+  def new_instance_attributes
+    @available_locker_types = LockerType.available
+    # Who users can request as
+    # because we want to localize later
+    @available_fors = {
+      staff: ("CEED staff member" if current_user.staff?),
+      student: ("GNG student" if current_user.student?),
+      general: "community member"
+    }.compact.invert
+    # Don't allow new request if user already has an active or pending request
+    @pending_locker_request = current_user.locker_rentals.under_review.first
+  end
+
   def locker_rental_params
-    if current_user.admin?
+    if current_user.admin? && !params.dig(:locker_rental, :ask)
       admin_params =
         params.require(:locker_rental).permit(
           :locker_type_id,
@@ -68,7 +85,7 @@ class LockerRentalsController < ApplicationController
       admin_params
     else
       # people pick where they want a locker
-      params.require(:locker_rental).permit(:locker_type)
+      params.require(:locker_rental).permit(:locker_type_id)
       #.merge({ state: :reviewing })
     end
   end

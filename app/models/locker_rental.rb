@@ -15,8 +15,23 @@ class LockerRental < ApplicationRecord
          cancelled: "cancelled"
        }
 
+  # Locker type and state always present
   validates :locker_type, :state, presence: true
 
+  # When submitting a request, ensure only one is present
+  validate :only_one_request_per_user, on: :create
+
+  def only_one_request_per_user
+    # If this request is under review, and another by same user is also under review
+    if under_review? &&
+         LockerRental.where(rented_by: rented_by).exists?(
+           state: %i[reviewing await_payment]
+         )
+      errors.add(:rented_by, "already has a request under review")
+    end
+  end
+
+  # If set to active
   with_options if: :active? do |rental|
     # Don't double assign lockers of same locker type if full assigned
     # TODO upgrade Rails and add normalization to trim spaces
@@ -29,10 +44,17 @@ class LockerRental < ApplicationRecord
     rental.validates :rented_by, :owned_until, :locker_specifier, presence: true
   end
 
+  scope :under_review, -> { where(state: %i[reviewing cancelled]) }
+
   def full_locker_name
     "#{locker_type.short_form}##{locker_specifier}"
   end
 
+  def under_review?
+    state == :reviewing || state == :await_payment
+  end
+
+  # For the view
   def state_icon
     LockerRental.state_icon(state)
   end

@@ -27,13 +27,34 @@
     </ul>
     <p>For any questions, contact us at <a href="mailto:ceed@uottawa.ca">ceed@uottawa.ca</a></p>
     <p>You may have only one pending request at a time.</p>
-    <%= form_with model: @locker_rental do |f| %>
-        <div class="row row-cols-auto align-items-center mb-3">
-            <%= f.label :locker_type, 'Request locker for', class: 'd-inline' %>
-            <%= f.select :locker_type, options_for_select(LockerType.available.pluck(:short_form, :id)), {}, { class: 'form-select w-auto d-inline' } %>
+    <% if @pending_locker_request %>
+        <hr />
+        <p>You have a pending request for a locker at <%= @pending_locker_request.locker_type.short_form %>, submitted on <%= @pending_locker_request.created_at.to_date %>.
+        You will receive a response shortly from administration.</p>
+    <% else %>
+        <%= form_with model: @locker_rental do |f| %>
+            <div class="row row-cols-auto align-items-center">
+                <%= f.label :locker_type_id, 'Request locker for', class: 'd-inline' %>
+                <%= f.select :locker_type_id, options_for_select(@available_locker_types.pluck(:short_form, :id)), {}, { class: 'form-select w-auto' } %>
+                <%= f.label :as_a, 'as a', class: 'd-inline' %>
+                <%= f.select :as_a, options_for_select(@available_fors), {}, { class: 'form-select w-auto' } %>
+            </div>
+            <%= f.label :notes, 'Notes with request:' %>
+            <%= f.text_area :notes, class: 'form-control' %>
+            <!-- This hidden field is for testing/debug purposes only, we're still checking credentials you skiddie -->
+            <%= f.hidden_field :ask %>
+            <%= f.submit 'Submit request', class: 'btn btn-primary my-3' %>
+        <% end %>
+    <% end %>
+
+    <% if @locker_rental.errors.any? %>
+        <div class="border">
+            <p class="fw-bold">Errors:</p>
+            <ul>
+                <% @locker_rental.errors.each do |error| %>
+                    <li><%= error.full_message %></li>
+                <% end %>
+            </ul>
         </div>
-        <!-- This hidden field is for testing/debug purposes only, we're still checking credentials you skiddie -->
-        <%= f.hidden_field :ask %>
-        <%= f.submit 'Submit request', class: 'btn btn-primary mb-3' %>
     <% end %>
 </div>
