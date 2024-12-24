@@ -10,7 +10,7 @@
             <td class="action-cell" >
                 <% if user.lab_sessions.last %>
                     <% if user.lab_sessions.sort_by(&:sign_out_time).last.sign_out_time > Time.zone.now && user.lab_sessions.sort_by(&:sign_out_time).last.space_id == @space.id %>
-                        <%#%= button_to fa_icon('times'), { controller: :staff_dashboard, action: :sign_out_users, dropped_users: [user.username] }, method: :put, class: 'btn btn-default x-button', remote: true %>
+                        <%= button_to fa_icon('times'), { controller: :staff_dashboard, action: :sign_out_users, dropped_users: [user.username] }, method: :put, class: 'btn btn-default x-button', remote: true %>
                     <% else %>
                         <%= button_to fa_icon('check'), { controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username] }, method: :put, class: 'btn btn-default check-button', remote: true %>
                     <% end %>
