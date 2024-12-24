@@ -4,15 +4,14 @@
     <br/>
     <%= link_to 'Back', lockers_path, class: 'fs-4' %>
 </h1>
-<hr />
+<hr class="w-50 mx-auto"/>
 <div class="container-fluid">
     <% @locker_types.each do |type| %>
         <h2 class="text-center"><%= type.short_form %></h2>
         <%= render partial: 'rental_data_table',
                    locals: { locker_rentals: type.locker_rentals.where(state: :active),
                              header_title: 'Assigned lockers' } %>
-        <hr class="w-50 mx-auto"/>
-        <div class="row row-cols-md-3">
+        <div class="row row-cols-md-3 g-1">
             <%= render partial: 'rental_data_table',
                        locals: { locker_rentals: type.locker_rentals.where(state: :reviewing),
                                  header_title: 'Requests' } %>
@@ -21,7 +20,7 @@
                                  header_title: 'Unpaid' } %>
             <%= render partial: 'rental_data_table',
                        locals: { locker_rentals: type.locker_rentals.where(state: :cancelled),
-                                 header_title: 'Cancelled' } %>
+                                 header_title: 'Cancelled', hide_actions: true } %>
         </div>
         <hr />
     <% end %>

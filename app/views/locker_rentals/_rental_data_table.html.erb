@@ -3,10 +3,14 @@
     <table class="table table-striped">
         <thead class="table-primary text-center">
             <tr>
-                <th>Locker ID</th>
-                <th>Rented by</th>
-                <th>State</th>
-                <th>Until</th>
+                <th class="w-auto">Locker ID</th>
+                <th class="w-auto">Renter</th>
+                <th class="w-auto">State</th>
+                <th class="w-auto">Assigned</th>
+                <th class="w-auto">Until</th>
+                <% unless local_assigns[:hide_actions] %>
+                <th class="w-auto">Actions</th>
+                <% end %>
             </tr>
         </thead>
         <tbody>
@@ -14,14 +18,21 @@
                 <% locker_rentals.each do |rental| %>
                     <tr>
                         <td><%= rental.full_locker_name %></td>
-                        <td><%= link_to rental.rented_by.username, user_path(rental.rented_by) %></td>
-                        <td><%= tag.i class: "fa #{rental.state_icon}" %> <%= rental.state.humanize %></td>
-                        <td><%= rental.owned_until&.to_date %></td>
+                        <td><%= link_to rental.rented_by.username, user_path(rental.rented_by) %> <i><%= rental.rented_by.role.humanize %></i></td>
+                        <td><%= tag.i class: "fa #{rental.state_icon}" %><%= rental.state.humanize %>
+                            <br />
+                            <a href="">Show notes</a>
+                        </td>
+                        <td><%= rental.updated_at&.to_date %></td>
+                        <td><%= rental.owned_until&.to_date || 'Unapproved yet' %></td>
+                        <% unless local_assigns[:hide_actions] %>
+                            <td><%= locker_rental_actions(rental) %></td>
+                        <% end %>
                     </tr>
                 <% end %>
             <% else %>
                 <tr>
-                    <td colspan="4" class="fw-bold">No locker rentals</td>
+                    <td colspan="6" class="fw-bold">No locker rentals</td>
                 </tr>
             <% end %>
         </tbody>

@@ -14,7 +14,7 @@
                 <thead class="table-primary">
                     <tr>
                         <th>Short code</th>
-                        <th>Location</th>
+                        <th>Description</th>
                         <th>Assigned/Total</th>
                         <th>Available for request?</th>
                         <th>Cost if applicable</th>
@@ -44,37 +44,31 @@
             <%= render partial: 'locker_rentals/assign_locker_form' %>
         </div>
         <div class="table-responsive col-md-9">
-            <h2 class="mt-3">Active locker rentals <%= link_to 'See all', locker_rentals_path, class: 'fs-4' %></h2>
+            <h2 class="mt-3">Requests requiring action <%= link_to 'See all', locker_rentals_path, class: 'fs-4' %></h2>
             <table class="table table-striped">
                 <thead class="table-primary">
                     <tr>
-                        <th>Locker ID</th>
+                        <th class="w-auto">Locker ID</th>
                         <th>Rented by</th>
-                        <th>State</th>
+                        <th class="w-auto">State</th>
                         <th>Assigned on</th>
-                        <th>Until</th>
-                        <th>Actions</th>
+                        <th class="w-auto">Until</th>
+                        <th class="w-auto">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <% @locker_request_active.each do |rental| %>
+                    <% @locker_requests_pending&.each do |rental| %>
                         <tr>
                             <td><%= rental.full_locker_name %></td>
-                            <td><%= link_to rental.rented_by.username, user_path(rental.rented_by) %></td>
+                            <td><%= link_to rental.rented_by.username, user_path(rental.rented_by) %> <i><%= rental.rented_by.role.humanize %></i></td>
                             <td><%= tag.i class: "fa #{rental_state_icon(rental.state)}" %> <%= rental.state.humanize %></td>
                             <td><%= rental.updated_at&.to_date %></td>
                             <td><%= rental.owned_until&.to_date || 'Unapproved yet' %></td>
-                            <td><%= button_to 'End rental',
-                                              locker_rental_path(rental),
-                                              data: { confirm: 'Are you sure you want to cancel this locker rental?' },
-                                              params: { locker_rental: { state: :cancelled } },
-                                              method: :put,
-                                              class: 'btn btn-danger' %></td>
+                            <td><%= locker_rental_actions(rental) %></td>
                         </tr>
                     <% end %>
                 </tbody>
             </table>
         </div>
     </div>
-
 </div>
