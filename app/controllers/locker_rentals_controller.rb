@@ -40,11 +40,25 @@ class LockerRentalsController < ApplicationController
 
   def update
     @locker_rental = LockerRental.find(params[:id])
+
+    # NOTE move this line to model maybe?
+    # if changing state to 'active'
+    if locker_rental_params[:state] == "active"
+      # default to end of semester
+      @locker_rental.owned_until ||= end_of_this_semester
+      # Get first available locker specifier if not set
+      @locker_rental.locker_specifier ||=
+        @locker_rental.locker_type.get_available_lockers.first
+    end
+
     if @locker_rental.update(locker_rental_params)
       flash[:notice] = "Locker rental updated"
     else
-      flash[:alert] = "Failed to update locker rental"
+      flash[:alert] = "Failed to update locker rental" + helpers.tag.br +
+        @locker_rental.errors.full_messages.join(helpers.tag.br)
     end
+
+    redirect_back fallback_location: :locker_rentals
   end
 
   private

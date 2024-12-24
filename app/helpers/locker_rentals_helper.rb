@@ -39,7 +39,7 @@ module LockerRentalsHelper
         },
         params: {
           locker_rental: {
-            state: :await_payment
+            state: :active
           }
         },
         method: :put,

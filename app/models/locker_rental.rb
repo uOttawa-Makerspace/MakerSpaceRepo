@@ -4,6 +4,8 @@ class LockerRental < ApplicationRecord
   belongs_to :locker_type
   belongs_to :rented_by, class_name: "User"
 
+  after_save :send_email_notification, if: :state_changed?
+
   enum state: {
          # Users submitted, not approved by admin
          reviewing: "reviewing",
@@ -17,10 +19,8 @@ class LockerRental < ApplicationRecord
 
   # Locker type and state always present
   validates :locker_type, :state, presence: true
-
   # When submitting a request, ensure only one is present
   validate :only_one_request_per_user, on: :create
-
   def only_one_request_per_user
     # If this request is under review, and another by same user is also under review
     if under_review? &&
@@ -33,25 +33,39 @@ class LockerRental < ApplicationRecord
 
   # If set to active
   with_options if: :active? do |rental|
-    # Don't double assign lockers of same locker type if full assigned
+    # Don't double assign lockers of same locker type if assigned
     # TODO upgrade Rails and add normalization to trim spaces
     # or change column type to integer not string
     validates :locker_specifier,
               uniqueness: {
-                scope: :locker_type
+                scope: :locker_type,
+                conditions: -> { assigned }
               },
-              allow_nil: true
+              allow_nil: true # Skip validation if nil, caught below anyways
     rental.validates :rented_by, :owned_until, :locker_specifier, presence: true
   end
 
-  scope :under_review, -> { where(state: %i[reviewing cancelled]) }
+  scope :under_review, -> { where(state: %i[reviewing await_payment]) }
+  scope :assigned, -> { where(state: :active) }
 
   def full_locker_name
     "#{locker_type.short_form}##{locker_specifier}"
   end
 
+  # FIXME rename to .pending?
   def under_review?
     state == :reviewing || state == :await_payment
+  end
+
+  def send_email_notification
+    case state.to_sym
+    when :await_payment
+      raise "Send checkout link"
+    when :active
+      LockerMailer.with(locker_rental: self).locker_assigned.deliver_later
+    when :cancelled
+      raise "Send cancelled email"
+    end
   end
 
   # For the view
@@ -80,6 +94,7 @@ class LockerRental < ApplicationRecord
 
   def self.get_available_lockers
     assigned_lockers = get_assigned_lockers
+    # FIXME this should be in LockerType no?
     LockerType.all.map do |type|
       [
         type.short_form,
