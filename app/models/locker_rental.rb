@@ -54,7 +54,7 @@ class LockerRental < ApplicationRecord
 
   # FIXME rename to .pending?
   def under_review?
-    state == :reviewing || state == :await_payment
+    reviewing? || await_payment?
   end
 
   def send_email_notification
