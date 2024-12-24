@@ -54,11 +54,12 @@ class SessionsController < ApplicationController
       if @user
         if @user.confirmed?
           @user.update(last_signed_in_time: DateTime.now)
-          if request.env["HTTP_REFERER"] == login_authentication_url
-            format.html { redirect_to root_path }
-          else
-            format.html { redirect_back(fallback_location: root_path) }
-          end
+          # if request.env["HTTP_REFERER"] == login_authentication_url
+          #   format.html { redirect_to root_path }
+          # else
+          #   format.html { redirect_back(fallback_location: root_path) }
+          # end
+          format.html { redirect_to params[:back_to] || root_path }
           format.json do
             render json: {
                      user: @user.as_json,
@@ -123,8 +124,7 @@ class SessionsController < ApplicationController
 
   def login
     redirect_to root_path if signed_in?
-    @user = User.new
-    session[:back] = request.referer
+    #@user = User.new
   end
 
   def signed_in
