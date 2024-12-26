@@ -3,16 +3,23 @@
 class LockerRentalsController < ApplicationController
   before_action :current_user
   before_action :signed_in, except: %i[stripe_success stripe_cancelled]
+  # Also sets @locker_rental
+  before_action :check_permission,
+                except: %i[index new stripe_success stripe_cancelled]
 
   def index
     # Only admin can see index list
-    redirect_to :new_locker_rental unless current_user.admin?
+    #redirect_to :new_locker_rental unless current_user.admin?
 
+    @own_locker_rentals = current_user.locker_rentals
     @locker_types = LockerType.all
     @locker_rentals =
       LockerRental.includes(:locker_type, :rented_by).order(
         locker_type_id: :asc
       )
+  end
+
+  def show
   end
 
   def new
@@ -40,7 +47,6 @@ class LockerRentalsController < ApplicationController
 
   def update
     @locker_rental = LockerRental.find(params[:id])
-
     # NOTE move this line to model maybe?
     # if changing state to 'active'
     if locker_rental_params[:state] == "active"
@@ -69,10 +75,25 @@ class LockerRentalsController < ApplicationController
 
   private
 
+  def check_permission
+    # If user gives a request id
+    if params[:id].present?
+      @locker_rental = LockerRental.find(params[:id])
+      # Allow if getting own locker rental
+      return if @locker_rental.rented_by == current_user
+    end
+    # Always allow admin
+    return if current_user.admin?
+
+    # Else redirect to only page with no auth (new page takes no ID)
+    redirect_to :new_locker_rental
+  end
+
   def new_instance_attributes
     @available_locker_types = LockerType.available
     # Who users can request as
     # because we want to localize later
+    # FIXME this is not used for anything, pretty useless
     @available_fors = {
       staff: ("CEED staff member" if current_user.staff?),
       student: ("GNG student" if current_user.student?),
@@ -80,7 +101,7 @@ class LockerRentalsController < ApplicationController
     }.compact.invert
     # Don't allow new request if user already has an active or pending request
     @pending_locker_request = current_user.locker_rentals.under_review.first
-    if @pending_locker_request.await_payment?
+    if @pending_locker_request&.await_payment?
       @stripe_session =
         Stripe::Checkout::Session.create(
           success_url: stripe_success_locker_rentals_url,

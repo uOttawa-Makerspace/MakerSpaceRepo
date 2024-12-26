@@ -21,7 +21,7 @@
                         <td><%= link_to rental.rented_by.username, user_path(rental.rented_by) %> <i><%= rental.rented_by.role.humanize %></i></td>
                         <td><%= tag.i class: "fa #{rental.state_icon}" %><%= rental.state.humanize %>
                             <br />
-                            <a href="">Show notes</a>
+                            <%= link_to 'Show notes', rental %>
                         </td>
                         <td><%= rental.updated_at&.to_date %></td>
                         <td><%= rental.owned_until&.to_date || 'Unapproved yet' %></td>

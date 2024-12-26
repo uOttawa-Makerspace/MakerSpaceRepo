@@ -1,0 +1,7 @@
+<h1 class="text-center">Locker rental request</h1>
+<div class="container border">
+    <p>Submitted on <b><%= @locker_rental.created_at.to_date %></b> for <%= link_to @locker_rental.rented_by.username, @locker_rental.rented_by %></p>
+    <p><b>Locker type:</b> <%= @locker_rental.locker_type.short_form %></p>
+    <p><b>Status:</b> <%= @locker_rental.state.humanize %></p>
+    <p><b>Notes:</b> <%= @locker_rental.notes %></p>
+</div>
