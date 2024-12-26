@@ -20,8 +20,9 @@ StripeEvent.configure do |events|
   end
 
   events.subscribe "checkout.session.completed" do |event|
-    if event.data.object.payment_status === "paid" &&
-         event.data.object.client_reference_id.include?("job-order-")
+    return unless event.data.object.payment_status === "paid"
+    # job orders
+    if event.data.object.client_reference_id.include?("job-order-")
       jo =
         JobOrder.find(
           event.data.object.client_reference_id.gsub("job-order-", "")
@@ -35,6 +36,13 @@ StripeEvent.configure do |events|
         jo.job_order_quote.update(stripe_transaction_id: event.data.object.id)
         JobOrderMailer.payment_succeeded(jo.id).deliver_now
       end
+    elsif event.data.object.client_reference_id.include?("locker-rental-")
+      locker_rental =
+        LockerRental.find(
+          event.data.object.client_reference_id.gsub("locker-rental-", "")
+        )
+      # state change, auto assign, and sends mail
+      locker_rental.auto_assign if locker_rental.present?
     end
   end
 
@@ -54,6 +62,13 @@ StripeEvent.configure do |events|
         jo.job_order_quote.update(stripe_transaction_id: event.data.object.id)
         JobOrderMailer.payment_succeeded(jo.id).deliver_now
       end
+    elsif event.data.object.client_reference_id.include?("locker-rental-")
+      locker_rental =
+        LockerRental.find(
+          event.data.object.client_reference_id.gsub("locker-rental-", "")
+        )
+      # state change, auto assign, and sends mail
+      locker_rental.auto_assign if locker_rental.present?
     end
   end
 

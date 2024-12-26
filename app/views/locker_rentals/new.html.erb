@@ -27,10 +27,13 @@
     </ul>
     <p>For any questions, contact us at <a href="mailto:ceed@uottawa.ca">ceed@uottawa.ca</a></p>
     <p>You may have only one pending request at a time.</p>
-    <% if @pending_locker_request %>
+    <% if @pending_locker_request&.reviewing? %>
         <hr />
         <p>You have a pending request for a locker at <%= @pending_locker_request.locker_type.short_form %>, submitted on <%= @pending_locker_request.created_at.to_date %>.
         You will receive a response shortly from administration.</p>
+    <% elsif @pending_locker_request&.await_payment? %>
+        <hr />
+        <p>Your request has been accepted, and now is pending payment to be finalized <%= link_to 'Click here to proceed to checkout', @stripe_session.url, class: 'btn btn-link' %></p>
     <% else %>
         <%= form_with model: @locker_rental do |f| %>
             <div class="row row-cols-auto align-items-center">

@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class LockerRental < ApplicationRecord
+  include ApplicationHelper
+
   belongs_to :locker_type
   belongs_to :rented_by, class_name: "User"
 
@@ -48,6 +50,16 @@ class LockerRental < ApplicationRecord
   scope :under_review, -> { where(state: %i[reviewing await_payment]) }
   scope :assigned, -> { where(state: :active) }
 
+  # Used by the automated payment system, picks the first available
+  # specifier and owned until end of this semester
+  def auto_assign
+    update(
+      state: :active,
+      owned_until: end_of_this_semester,
+      locker_specifier: locker_type.get_available_lockers.first
+    )
+  end
+
   def full_locker_name
     "#{locker_type.short_form}##{locker_specifier}"
   end
@@ -60,7 +72,7 @@ class LockerRental < ApplicationRecord
   def send_email_notification
     case state.to_sym
     when :await_payment
-      raise "Send checkout link"
+      LockerMailer.with(locker_rental: self).locker_checkout.deliver_later
     when :active
       LockerMailer.with(locker_rental: self).locker_assigned.deliver_later
     when :cancelled

@@ -27,4 +27,20 @@ class LockerType < ApplicationRecord
     ("1"..self.quantity.to_s) # 2. Subtract specifiers already assigned to active rentals
       .reject { |specifier| assigned_lockers.include?(specifier) }
   end
+
+  def generate_line_items
+    [
+      {
+        quantity: 1,
+        price_data: {
+          currency: "cad",
+          product_data: {
+            name: "Locker rental",
+            description: "#{short_form}"
+          },
+          unit_amount: (cost * 100.0).to_i
+        }
+      }
+    ]
+  end
 end

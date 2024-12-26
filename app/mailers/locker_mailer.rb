@@ -14,4 +14,12 @@ class LockerMailer < ApplicationMailer
       subject: "Locker #{@locker_rental.full_locker_name} assigned"
     )
   end
+
+  def locker_checkout
+    mail(
+      to: @user.email,
+      subject:
+        "Your locker rental for #{@locker_rental.locker_type.short_form} is ready for checkout"
+    )
+  end
 end
