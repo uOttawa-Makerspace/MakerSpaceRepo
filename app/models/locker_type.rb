@@ -23,7 +23,7 @@ class LockerType < ApplicationRecord
 
   def get_available_lockers
     # 1. Make a list based of max quantity (so BRUNS-1, BRUNS-2, ..., BRUNS-99)
-    assigned_lockers = locker_rentals.pluck(:locker_specifier)
+    assigned_lockers = locker_rentals.assigned.pluck(:locker_specifier)
     ("1"..self.quantity.to_s) # 2. Subtract specifiers already assigned to active rentals
       .reject { |specifier| assigned_lockers.include?(specifier) }
   end

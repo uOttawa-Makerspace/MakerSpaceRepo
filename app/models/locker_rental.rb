@@ -103,20 +103,4 @@ class LockerRental < ApplicationRecord
       .group_by(&:shift)
       .transform_values(&:flatten)
   end
-
-  def self.get_available_lockers
-    assigned_lockers = get_assigned_lockers
-    # FIXME this should be in LockerType no?
-    LockerType.all.map do |type|
-      [
-        type.short_form,
-        # 1. Make a list based of max quantity (so BRUNS-1, BRUNS-2, ..., BRUNS-99)
-        ("1"..type.quantity.to_s) # 2. Subtract specifiers already assigned to active rentals
-          .reject do |specifier|
-          assigned_lockers[type.id] &&
-            assigned_lockers[type.id].include?(specifier)
-        end
-      ]
-    end
-  end
 end
