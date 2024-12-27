@@ -1,10 +1,5 @@
-<br>
-<div class="titlepp"><%= title %></div>
-
 <% if project_proposals.present? %>
-
   <div><%= will_paginate project_proposals, renderer: WillPaginate::ActionView::BootstrapLinkRenderer, param_name: (local_variables.include?(:param_name) ? param_name : 'page') %></div>
-
   <table class="spacing_table text-center table table-striped">
     <thead class="table-primary">
       <tr>
@@ -21,7 +16,7 @@
         <th>Categories</th>
         <th>Proposed on</th>
         <% if @user.admin? && title == "Pending Project Proposals" %>
-            <th>Approval</th>
+          <th>Approval</th>
         <% end %>
         <th>Action</th>
       </tr>
@@ -54,15 +49,15 @@
                 <%= button_to 'Approve', approve_project_proposals_path(id: project_proposal.id), method: :post, class: 'btn btn-success d-block w-100 btn-sm my-2', data: { confirm: 'Are you sure?' } %>
                 <%= button_to 'Disapprove', decline_project_proposals_path(id: project_proposal.id), method: :post, class: 'btn btn-danger d-block w-100 btn-sm', data: { confirm: 'Are you sure?' } %>
               </td>
-              <% end %>
-              <td>
+            <% end %>
+            <td>
               <%= link_to 'Show', project_proposal_path(project_proposal.slug), class: 'btn btn-success d-block w-100 btn-sm' %>
               <%= link_to 'Edit', edit_project_proposal_path(project_proposal), class: 'btn btn-primary d-block w-100 btn-sm' %>
               <%= button_to 'Delete', project_proposal, method: :delete,
                                                         class: 'btn btn-danger d-block w-100 btn-sm my-2', data: { confirm: 'Are you sure?' } %>
-              </td>
+            </td>
           <% elsif project_proposal.user.eql?(@user) || project_proposal.approved == 1 %>
-              <td><%= link_to 'Show', project_proposal, class: 'btn btn-success d-block w-100 btn-sm' %></td>
+            <td><%= link_to 'Show', project_proposal, class: 'btn btn-success d-block w-100 btn-sm' %></td>
           <% else %>
             <td></td>
           <% end %>
@@ -72,7 +67,7 @@
   </table>
   <br>
 <% else %>
-    <br>
-    <h5 class="text-center">No Projects Here</h5>
+  <div class="m-3">
+    <p class="fs-5 text-center"> No projects here</p>
+  </div>
 <% end %>
-

@@ -3,6 +3,18 @@
 // You can use Sass (SCSS) here: http://sass-lang.com/
 @import "lib";
 
+#projectProposals {
+  details {
+    //margin-bottom: 1.5rem;
+    summary {
+      text-align: center;
+      width: 25%;
+      margin: 0 auto 1rem auto;
+      border-bottom: 1px solid;
+    }
+  }
+}
+
 .checkbox-list {
   label#type {
     color: black;
