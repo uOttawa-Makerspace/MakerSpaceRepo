@@ -1,5 +1,5 @@
 module LockerRentalsHelper
-  def locker_rental_actions(rental)
+  def locker_rental_actions(rental, for_admin = true)
     end_rental_button =
       button_to(
         "Cancel",
@@ -45,13 +45,18 @@ module LockerRentalsHelper
         method: :put,
         class: "btn btn-info btn-sm"
       )
+
+    return end_rental_button unless for_admin
+
     case rental.state.to_sym
     when :reviewing
       tag.div class: "btn-group p-0 m-0" do
         ask_payment_button + instant_approve_button + end_rental_button
       end
     when :await_payment
-      end_rental_button
+      tag.div class: "btn-group p-0 m-0" do
+        instant_approve_button + end_rental_button
+      end
     when :active
       end_rental_button
       #when :cancelled

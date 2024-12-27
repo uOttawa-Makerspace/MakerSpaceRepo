@@ -1,7 +1,21 @@
-<h1 class="text-center">Locker rental request</h1>
-<div class="container border">
-    <p>Submitted on <b><%= @locker_rental.created_at.to_date %></b> for <%= link_to @locker_rental.rented_by.username, @locker_rental.rented_by %></p>
-    <p><b>Locker type:</b> <%= @locker_rental.locker_type.short_form %></p>
+<% provide :title, 'View locker request' %>
+<div class="container border p-3">
+    <h1 class="text-center">Locker rental request</h1>
+    <hr class="w-50 mx-auto"/>
+    <p>Submitted on <b><%= @locker_rental.created_at.to_date %></b> for <%= link_to @locker_rental.rented_by.username, @locker_rental.rented_by %> <%= tag.span(@locker_rental.rented_by.role.humanize, class: 'badge text-bg-primary') if @locker_rental.rented_by.staff? %></p>
+    <p><b>Locker type:</b> <%= @locker_rental.locker_type.short_form %> - <i><%= @locker_rental.locker_type.description %></i></p>
     <p><b>Status:</b> <%= @locker_rental.state.humanize %></p>
-    <p><b>Notes:</b> <%= @locker_rental.notes %></p>
+    <p><b>Notes:</b> <%= @locker_rental.notes || '---' %></p>
+    <% if @locker_rental.under_review? %>
+        <% if @locker_rental.reviewing? %>
+            <p>This request has not been approved yet</p>
+        <% elsif @locker_rental.await_payment? %>
+            <p>This request is awaiting payment. <%= link_to 'Click here to proceed to checkout', @stripe_checkout_session.url %></p>
+        <% end %>
+        <p>To cancel this request, click on <b>Cancel</b> below.</p>
+    <% end %>
+    <div>
+        <%= locker_rental_actions(@locker_rental, current_user.admin?) %>
+        <%= link_to 'Back to locker rentals', locker_rentals_path, class: 'btn btn-secondary' %>
+    </div>
 </div>

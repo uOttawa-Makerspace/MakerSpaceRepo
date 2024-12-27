@@ -2,12 +2,13 @@
 
 <h1 class="text-center">All Rentals
     <br/>
-    <%= link_to 'Back', lockers_path, class: 'fs-4' %>
+    <%= link_to 'Back', lockers_path, class: 'fs-4' if current_user.admin? %>
 </h1>
 <div class="container">
     <%= render partial: 'rental_data_table',
                locals: { locker_rentals: @own_locker_rentals.order(:state),
                          header_title: 'Your locker requests', hide_actions: true } %>
+    <%= link_to 'New request', new_locker_rental_path, class: 'btn btn-primary' %>
 </div>
 <hr class="w-50 mx-auto"/>
 <% if current_user.admin? %>

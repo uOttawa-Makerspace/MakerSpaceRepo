@@ -20,6 +20,15 @@ class LockerRentalsController < ApplicationController
   end
 
   def show
+    @stripe_checkout_session =
+      Stripe::Checkout::Session.create(
+        success_url: stripe_success_locker_rentals_url,
+        cancel_url: stripe_cancelled_locker_rentals_url,
+        mode: "payment",
+        line_items: @locker_rental.locker_type.generate_line_items,
+        billing_address_collection: "required",
+        client_reference_id: "locker-rental-#{@locker_rental.id}"
+      )
   end
 
   def new
@@ -101,17 +110,6 @@ class LockerRentalsController < ApplicationController
     }.compact.invert
     # Don't allow new request if user already has an active or pending request
     @pending_locker_request = current_user.locker_rentals.under_review.first
-    if @pending_locker_request&.await_payment?
-      @stripe_session =
-        Stripe::Checkout::Session.create(
-          success_url: stripe_success_locker_rentals_url,
-          cancel_url: stripe_cancelled_locker_rentals_url,
-          mode: "payment",
-          line_items: @pending_locker_request.locker_type.generate_line_items,
-          billing_address_collection: "required",
-          client_reference_id: "locker-rental-#{@pending_locker_request.id}"
-        )
-    end
   end
 
   def locker_rental_params

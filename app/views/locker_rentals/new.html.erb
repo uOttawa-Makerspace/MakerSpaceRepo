@@ -33,7 +33,7 @@
         You will receive a response shortly from administration.</p>
     <% elsif @pending_locker_request&.await_payment? %>
         <hr />
-        <p>Your request has been accepted, and now is pending payment to be finalized <%= link_to 'Click here to proceed to checkout', @stripe_session.url, class: 'btn btn-link' %></p>
+        <p>Your request has been accepted, and now is pending payment to be finalized. <%= link_to 'Click here to view your request and to proceed to checkout', @pending_locker_request, class: '' %></p>
     <% else %>
         <%= form_with model: @locker_rental do |f| %>
             <div class="row row-cols-auto align-items-center">
