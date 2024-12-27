@@ -72,11 +72,11 @@ class LockerRental < ApplicationRecord
   def send_email_notification
     case state.to_sym
     when :await_payment
-      LockerMailer.with(locker_rental: self).locker_checkout.deliver_later
+      LockerMailer.with(locker_rental: self).locker_checkout.deliver_now
     when :active
-      LockerMailer.with(locker_rental: self).locker_assigned.deliver_later
+      LockerMailer.with(locker_rental: self).locker_assigned.deliver_now
     when :cancelled
-      raise "Send cancelled email"
+      LockerMailer.with(locker_rental: self).locker_cancelled.deliver_now
     end
   end
 

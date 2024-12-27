@@ -5,7 +5,7 @@ class LockerMailer < ApplicationMailer
 
   before_action do
     @locker_rental = params[:locker_rental]
-    @user = params[:user]
+    @user = @locker_rental.rented_by
   end
 
   def locker_assigned
@@ -20,6 +20,14 @@ class LockerMailer < ApplicationMailer
       to: @user.email,
       subject:
         "Your locker rental for #{@locker_rental.locker_type.short_form} is ready for checkout"
+    )
+  end
+
+  def locker_cancelled
+    mail(
+      to: @user.email,
+      subject:
+        "Your locker rental for #{@locker_rental.locker_type.short_form} has been cancelled"
     )
   end
 end

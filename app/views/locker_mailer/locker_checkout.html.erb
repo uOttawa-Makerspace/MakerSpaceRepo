@@ -1,3 +1,4 @@
 <% provide :why_received, 'You have received this email because you have requested a locker' %>
 Hello <%= @user.name %>,
-Your locker request has been approved. To finalize, you need to checkout. Click <%= link_to 'here', new_locker_rental_path %> to pay or cancel your locker request.
+<br />
+Your locker request has been approved, and is pending payment to be assigned. Go to <%= link_to 'your locker request', @locker_rental %> to pay or cancel your request.
