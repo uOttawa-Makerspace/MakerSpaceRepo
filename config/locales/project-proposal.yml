@@ -1,0 +1,68 @@
+en:
+  project_proposal:
+    project_proposals: "Project Proposals"
+    project_proposal: "Project proposal"
+    edit_proposal: "Edit project proposal"
+    project_information: "Project information"
+    possible_tech: Possible technologies involved
+    project_type: Project Type
+    expected_budget: Expected prototype budget
+    expected_cost: Expected project cost
+
+    client_infomation: "Client information"
+    client_type: Client type
+    client_interest: Client interest
+    client_background: Client background
+
+    project_background: Project background
+    past_attempts: Past attempts
+    linked_proposal: Linked project proposal
+    linked_proposal_button: Check out the linked proposition
+
+    users_joined: Users that joined this project
+
+    reviewed_by: This project was reviewed by
+
+    proposed_by: "Proposed by"
+    proposed_on: "Proposed on"
+    contact: "Contact"
+    project_files: "Project files"
+    report_inappropriate: "Report inappropriate"
+    admin:
+      approve: "Approve"
+      decline: "Decline"
+      delete: "Delete"
+fr:
+  project_proposal:
+    project_proposals: "Propositions de projet"
+    project_proposal: "Proposition de projet"
+    edit_proposal: "Modifier le proposition de projet"
+    project_information: "Information sur le projet"
+    possible_tech: Technologies possibles impliquées
+    project_type: Type de projet
+    expected_budget: Budget prévu pour le prototype
+    expected_cost: Coût prévu du projet cost
+
+    client_information: Information sur le client
+    client_type: Type de client
+    client_interest: Interets du client
+    client_background: Contexte du client
+
+    project_background: Contexte du projet
+    past_attempts: Tentatives précédentes
+    linked_proposal: Proposition de project liée
+    linked_proposal_button: Aller voir la proposition liée
+
+    users_joined: Utilisateurs qui ont joins le projet
+
+    reviewed_by: Ce projet a été revu par
+
+    proposed_by: "Proposé par"
+    proposed_on: "Proposé le"
+    contact: "Contact"
+    project_files: "Fichiers du projet"
+    report_inappropriate: "Reporter comme inapproprié"
+    admin:
+      approve: "Approuver"
+      decline: "Désapprouver"
+      delete: "Supprimer"

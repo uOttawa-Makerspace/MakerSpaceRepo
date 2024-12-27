@@ -21,39 +21,30 @@
 
     <div class="card mb-3">
       <div class="card-header">
-        Project Information / Information sur le projet
+        <%= t('project_proposal.project_information') %>
       </div>
       <div class="card-body">
-        <b>Possible technologies involved / Technologies possibles impliquées</b>: <%= @project_proposal.equipments.html_safe %>
-        <!-- <br> -->
-        <b>Project Type / Type de projet</b> : <%= @project_proposal.project_type %>
-        <br>
-        <b>Expected prototype budget / Budget prévu pour le prototype:</b> <%= @project_proposal.prototype_cost.present? ? "$#{@project_proposal.prototype_cost}" : 'Not available' %>
-        <br>
-        <b>Expected project cost / Coût prévu du projet
-          cost</b>: <%= @project_proposal.project_cost.present? ? "$#{@project_proposal.project_cost}" : 'Not available' %>
+        <ul class="list-unstyled">
+          <li><b><%= t('project_proposal.possible_tech') %>:</b> <%= @project_proposal.equipments.html_safe %></li>
+          <li><b><%= t('project_proposal.project_type') %>:</b> <%= @project_proposal.project_type %></li>
+          <li><b><%= t('project_proposal.expected_budget') %>:</b> <%= @project_proposal.prototype_cost.present? ? "$#{@project_proposal.prototype_cost}" : 'Not available' %></li>
+          <li><b><%= t('project_proposal.expected_cost') %>:</b> <%= @project_proposal.project_cost.present? ? "$#{@project_proposal.project_cost}" : 'Not available' %></li>
+        </ul>
       </div>
     </div>
 
     <div class="card mb-3">
-      <div class="card-header">
-        Client Information / Information sur le client
-      </div>
+      <div class="card-header"><%= t('project_proposal.client_information') %></div>
       <div class="card-body">
         <% if signed_in? %>
-          <div class="word-break">
-            <b>Client:</b> <%= @project_proposal.client %>
-            <br>
-            <b>Client type / Type de client :</b> <%= @project_proposal.client_type %>
-            <br>
-            <b>Client interest / Interets du client :</b> <%= @project_proposal.client_interest %>
-            <br>
-            <b>Client Background / Contexte du client :</b>
-            <span style="word-break: break-word">
-              <%= @project_proposal.client_background.html_safe %>
-            </span>
+          <div>
+            <ul class="list-unstyled">
+              <li><b>Client:</b> <%= @project_proposal.client %></li>
+              <li><b><%= t('project_proposal.client_type') %>:</b> <%= @project_proposal.client_type %></li>
+              <li><b><%= t('project_proposal.client_interest') %>:</b> <%= @project_proposal.client_interest %></li>
+              <li><b><%= t('project_proposa.client_background') %>:</b> <%= @project_proposal.client_background.html_safe %></li>
+            </ul>
           </div>
-
           <% if @project_proposal.supervisor_background.present? %>
             <span style="word-break: break-word">
               <b>Supervisor Background:</b>
@@ -71,23 +62,17 @@
     </div>
 
     <% if @project_proposal.description.present? %>
-      <div class="card">
-        <div class="card-header">
-          Project background / Contexte du projet
-        </div>
+      <div class="card mb-3">
+        <div class="card-header"><%= t('project_proposal.client_information') %></div>
         <div class="card-body">
           <div style="word-break: break-word;"><%= @project_proposal.description.html_safe %></div>
         </div>
       </div>
     <% end %>
 
-    <br>
-
     <% unless @project_proposal.past_experiences.nil? %>
-      <div class="card">
-        <div class="card-header">
-          Past attempts / Tentatives précédentes
-        </div>
+      <div class="card mb-3">
+        <div class="card-header"><%= t('project_proposal.past_attempts') %></div>
         <div class="card-body">
           <% if @project_proposal.past_experiences.split("|")[0].present? %>
             <%= @project_proposal.past_experiences.split('|')[0].html_safe %><!-- <br> -->
@@ -102,20 +87,16 @@
     <% end %>
 
     <% unless @linked_pp.nil? %>
-      <br>
-      <div class="card">
-        <div class="card-header">
-          Linked Project proposal / Proposition de projet liée
-        </div>
+      <div class="card mb-3">
+        <div class="card-header"><%= t('project_proposal.linked_proposal') %></div>
         <div class="card-body">
-          <%= link_to 'Check out the linked proposition / Aller voir la proposition liée', project_proposal_path(@linked_pp.slug), class: 'btn btn-primary' %>
+          <%= link_to t('project_proposal.linked_proposal_button'), project_proposal_path(@linked_pp.slug), class: 'btn btn-primary' %>
         </div>
       </div>
     <% end %>
 
     <% if @revisions.present? %>
-      <br>
-      <div class="card">
+      <div class="card mb-3">
         <div class="card-header">
           Revision(s) of the project proposal / Revision(s) de la proposition de projet
         </div>
@@ -128,10 +109,8 @@
       </div>
     <% end %>
 
-    <br>
-
     <% if @project_proposal.project_joins.present? %>
-      <div>Users that joined this project / Utilisateurs qui ont joins le projet:</div>
+      <p><%= t('project_proposal.users_joined') %>:</p>
       <div>
         <% @project_proposal.project_joins.find_each do |pj| %>
           <% user_pj = User.find(pj.user_id).username %>
@@ -141,28 +120,28 @@
     <% end %>
 
     <% if @user.admin? %>
-      <%= button_to 'Delete / Supprimer', destroy_project_proposals_path(id: @project_proposal.id), method: :delete,
-                                                                                                    class: 'btn btn-danger', data: { confirm: 'Are you sure?' } %>
-      <% if @project_proposal.approved.present? && @project_proposal.admin_id.present? %>
-        <% admin_username = @project_proposal.admin.username %>
-        <div> This project was reviewed by / Ce projet a été revu par:
-          <p><%= link_to admin_username, user_path(admin_username), class: 'admin_username' %></p>
-        </div>
-      <% elsif @project_proposal.approved.present? %>
-        <div class="title">This project was reviewed.</div>
-      <% else %>
-        <div class="title">This project was not reviewed yet.</div>
-      <% end %>
+      <div class="mt-3">
+        <%= button_to t('project_proposal.delete'), destroy_project_proposals_path(id: @project_proposal.id), method: :delete,
+                                                                                                              class: 'btn btn-danger', data: { confirm: 'Are you sure?' } %>
+        <% if @project_proposal.approved.present? && @project_proposal.admin_id.present? %>
+          <% admin_username = @project_proposal.admin.username %>
+          <p><%= t('project_proposal.reviewed_by') %>: <%= link_to admin_username, user_path(admin_username), class: 'admin_username' %></p>
+        <% elsif @project_proposal.approved.present? %>
+          <div class="title">This project was reviewed.</div>
+        <% else %>
+          <div class="title">This project was not reviewed yet.</div>
+        <% end %>
+      </div>
     <% end %>
-
   </section>
-  <section id="info" class="col-lg-4">
 
+  <section id="info" class="col-lg-4">
     <h1><%= @project_proposal.title %></h1>
     <% if @project_proposal.user_id.eql?(@user.id) || @user.role.eql?("admin") %>
-      <%= link_to fa_icon('pencil', text: 'Edit project proposal'), edit_project_proposal_path(@project_proposal), class: 'btn btn-secondary mb-3' %>
+      <%= link_to fa_icon('pencil', text: t('project_proposal.edit_proposal')), edit_project_proposal_path(@project_proposal), class: 'btn btn-secondary mb-3' %>
     <% end %>
     <% if @user.admin? %>
+      <br />
       <div class="btn-group mb-3">
         <%= button_to t('project_proposal.admin.approve'), approve_project_proposals_path(id: @project_proposal.id), method: :post,
                                                                                                                      class: 'btn btn-success', data: { confirm: 'Are you sure? This will approve the project.' } %>
@@ -258,6 +237,8 @@
     </div>
   </section>
 </section>
+
+<hr class="w-50 mx-auto"/>
 
 <% if @repositories.present? %>
   <section id="repositories-index" class="mt-3">
