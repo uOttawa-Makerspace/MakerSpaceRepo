@@ -45,6 +45,6 @@ class LockerType < ApplicationRecord
   end
 
   def rgb
-    (short_form.hash % 0xFFFFFF).to_s(16)
+    (short_form.sum % 0xFFFFFF).to_s(16)
   end
 end
