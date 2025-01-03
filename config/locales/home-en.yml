@@ -19,6 +19,7 @@ en:
       header: "General Resources"
       makeroom: "Makeroom"
       job_orders: "Job Orders"
+      locker_rentals: "Locker rentals"
     shortcuts:
       header: "Shortcuts"
       recently_opened: "Recently Opened"

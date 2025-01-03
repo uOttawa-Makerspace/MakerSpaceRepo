@@ -1,4 +1,4 @@
-class LockersController < ApplicationController
+class LockersController < AdminAreaController
   before_action :current_user
   before_action :signed_in
 
@@ -19,15 +19,6 @@ class LockersController < ApplicationController
     @locker_type = LockerType.new
     # For the locker rental form
     @locker_rental = LockerRental.new
-  end
-
-  def new
-  end
-
-  def create
-  end
-
-  def types
   end
 
   private
