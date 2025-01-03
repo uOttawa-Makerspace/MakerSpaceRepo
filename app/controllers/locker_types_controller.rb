@@ -1,4 +1,4 @@
-class LockerTypesController < ApplicationController
+class LockerTypesController < AdminAreaController
   def new
     @locker_type = LockerType.new
   end
