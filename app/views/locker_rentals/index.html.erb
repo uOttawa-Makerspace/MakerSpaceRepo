@@ -2,7 +2,7 @@
 
 <h1 class="text-center">All Rentals
     <br/>
-    <%= link_to 'Back', lockers_path, class: 'fs-4' if current_user.admin? %>
+    <%= link_to 'Locker dashboard', lockers_path, class: 'fs-4 btn btn-link' if current_user.admin? %>
 </h1>
 <div class="container">
     <%= render partial: 'rental_data_table',
