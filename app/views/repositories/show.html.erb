@@ -1,7 +1,6 @@
 <% provide(:title, @repository.title.to_s) %>
 
-<section id="show-repository" class="row">
-
+<section class="row container mx-auto mt-3">
   <section id="repository-photos" class="col-lg-8 order-lg-first order-last">
     <% if @repository.youtube_link.present? %>
       <%= youtube_video(@repository.youtube_link) %>
@@ -194,8 +193,8 @@
 
           </div>
       <% end %>
-
   </section>
+
   <section id="repo-comments" class="order-last col-12">
     <div class="title">Comments</div>
     <%= form_for('Comments', url: comments_create_path, id: 'comment', remote: true) do %>

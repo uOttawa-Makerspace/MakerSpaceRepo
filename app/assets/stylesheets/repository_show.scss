@@ -1,15 +1,6 @@
 @import "lib";
 @import "shared/variables";
 
-section#show-repository {
-  @include outer-container(70rem);
-  left: 0;
-  right: 0;
-  position: relative;
-  padding: 3rem 0 0;
-  background-color: #fff;
-}
-
 div#show-photo img {
   display: block;
   max-width: 100%;

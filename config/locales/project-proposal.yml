@@ -28,10 +28,27 @@ en:
     contact: "Contact"
     project_files: "Project files"
     report_inappropriate: "Report inappropriate"
+
+    validation:
+      approved: Approved
+      declined: Declined
+      not_validated: Not validated
     admin:
       approve: "Approve"
       decline: "Decline"
       delete: "Delete"
+
+    document_project: Document project
+    create_revision: Create Revision
+    join_project: Join project
+    leave_project: Leave project
+
+    repos_related: Repositories Created From This Project Proposal
+    sort_by: Sort by
+    newest: Newest
+    most_likes: Most Likes
+    most_makes: Most Makes
+    recently_updated: Recently Updated
 fr:
   project_proposal:
     project_proposals: "Propositions de projet"
@@ -62,7 +79,24 @@ fr:
     contact: "Contact"
     project_files: "Fichiers du projet"
     report_inappropriate: "Reporter comme inapproprié"
+
+    validation:
+      approved: Approuvé
+      declined: Désapprouvé
+      not_validated: Pas validé
     admin:
       approve: "Approuver"
       decline: "Désapprouver"
       delete: "Supprimer"
+
+    document_project: Documenter un projet
+    create_revision: Créer une révision
+    join_project: Se joindre au projet
+    leave_project: Partir du projet
+
+    repos_related: Projet Créé A Partir De Cette Proposition
+    sort_by: Trier par
+    newest: Plus récent
+    most_likes: Plus d'Aimes
+    most_makes: Plus de fabrications
+    recently_updated: Récemment mis à jour
