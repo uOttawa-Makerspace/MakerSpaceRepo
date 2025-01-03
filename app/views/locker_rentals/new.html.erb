@@ -1,6 +1,6 @@
 <% provide :title, 'Request a locker' %>
 <% if current_user.admin? %>
-    <details>
+    <details open>
         <summary class="text-center fs-underline text-primary">Seen by administration only</summary>
         <h1 class="text-center my-3">Assign locker to user</h1>
         <%= render partial: 'assign_locker_form' %>

@@ -65,7 +65,7 @@
                             <td><%= tag.i class: "fa #{rental_state_icon(rental.state)}" %> <%= rental.state.humanize %></td>
                             <td><%= rental.updated_at&.to_date %></td>
                             <td><%= rental.owned_until&.to_date || 'Unapproved yet' %></td>
-                            <td><%= locker_rental_actions(rental) %></td>
+                            <td><%= link_to 'Show', locker_rental_path(rental), class: 'btn btn-primary' %><%#%= locker_rental_actions(rental) %></td>
                         </tr>
                     <% end %>
                 </tbody>
