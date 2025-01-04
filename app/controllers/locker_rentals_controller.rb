@@ -56,6 +56,7 @@ class LockerRentalsController < ApplicationController
 
   def update
     @locker_rental = LockerRental.find(params[:id])
+
     # NOTE move this line to model maybe?
     # if changing state to 'active'
     if locker_rental_params[:state] == "active"
@@ -121,9 +122,9 @@ class LockerRentalsController < ApplicationController
           :rented_by_id,
           :locker_specifier,
           :state,
-          :owned_until
+          :owned_until,
+          :notes
         )
-
       # FIXME replace that search with a different one, return ID instead
       # If username is given (since search can do that)
       rented_by_user =
@@ -132,11 +133,14 @@ class LockerRentalsController < ApplicationController
         # then convert to user id
         admin_params.reverse_merge!(rented_by_id: rented_by_user.id)
       end
-      admin_params
+      return admin_params
     else
       # people pick where they want a locker
-      params.require(:locker_rental).permit(:locker_type_id)
-      #.merge({ state: :reviewing })
+      # prevent user from editing rental notes after first submit
+      params
+        .require(:locker_rental)
+        .permit(:locker_type_id)
+        .tap { |p| p.permit(:notes) unless params[:id] }
     end
   end
 end

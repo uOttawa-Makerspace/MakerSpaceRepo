@@ -5,7 +5,13 @@
     <p>Submitted on <b><%= @locker_rental.created_at.to_date %></b> for <%= link_to @locker_rental.rented_by.username, @locker_rental.rented_by %> <%= tag.span(@locker_rental.rented_by.role.humanize, class: 'badge text-bg-primary') if @locker_rental.rented_by.staff? %></p>
     <p><b>Locker type:</b> <%= @locker_rental.locker_type.short_form %> - <i><%= @locker_rental.locker_type.description %></i></p>
     <p><b>Status:</b> <%= @locker_rental.state.humanize %></p>
-    <p><b>Notes:</b> <%= @locker_rental.notes || '---' %></p>
+    <p><b>Notes:</b> <%#%= @locker_rental.notes || '---' %></p>
+    <% if current_user.admin? %>
+        <%= form_with model: @locker_rental do |f| %>
+            <%= f.text_area :notes, class: 'form-control w-25' %>
+            <%= f.submit 'Update notes', class: 'btn btn-primary' %>
+        <% end %>
+    <% end %>
     <% if @locker_rental.under_review? %>
         <% if @locker_rental.reviewing? %>
             <p>This request has not been approved yet</p>
