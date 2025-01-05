@@ -1,0 +1,60 @@
+en:
+  lockers:
+    locker_type: Locker type
+    locker_number: Locker number
+    locker_rentals: Locker rentals
+    locker_request: Locker request
+
+    new_locker_request: New locker request
+
+    locker_dashboard: Locker dashboard
+    all_locker_rentals: All locker rentals
+    your_locker_requests: Your locker requests
+    assigned_lockers: Assigned lockers
+
+    locker_id: Locker ID
+    rented_by: Rented by
+    details: Details
+    submitted_on_for: Submitted on
+    for: for
+
+    state:
+      state: State
+      reviewing: Reviewing
+      await_payment: Await payment
+      active: Active
+      cancelled: Cancelled
+    assigned_on: Assigned on
+    owned_until: Owned until
+
+    new_request: New request
+fr:
+  lockers:
+    locker_type: Type de casier
+    locker_number: Numéro de casier
+    locker_rentals: Locations de casiers
+    locker_request: Demande de casier
+
+    new_locker_request: Nouvelle demande de casier
+
+    locker_dashboard: Gestion des casiers
+    all_locker_rentals: Toutes les locations de casier
+    your_locker_requests: Votre demandes de casiers
+    assigned_lockers: Casiers assignés
+
+    locker_id: ID de casier
+    rented_by: Loué par
+    details: Détails
+    submitted_on: Soumise le
+    for: par
+
+    state:
+      state: État
+      reviewing: Révision
+      await_payment: Attendre le paiement
+      assigned: Active
+      cancelled: Annulée
+    assigned_on: Assigné le
+    owned_until: Possédée jusqu'à
+
+    new_request: Nouvelle demande

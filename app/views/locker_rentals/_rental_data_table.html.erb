@@ -3,11 +3,11 @@
     <table class="table table-striped">
         <thead class="table-primary text-center">
             <tr>
-                <th class="w-auto">Locker ID</th>
-                <th class="w-auto">Renter</th>
-                <th class="w-auto">State</th>
-                <th class="w-auto">Assigned</th>
-                <th class="w-auto">Until</th>
+                <th class="w-auto"><%= t('lockers.locker_id') %></th>
+                <th class="w-auto"><%= t('lockers.rented_by') %></th>
+                <th class="w-auto"><%= t('lockers.state.state') %></th>
+                <th class="w-auto"><%= t('lockers.assigned_on') %></th>
+                <th class="w-auto"><%= t('lockers.owned_until') %></th>
                 <% unless local_assigns[:hide_actions] %>
                     <th class="w-auto">Actions</th>
                 <% end %>
@@ -20,8 +20,8 @@
                         <td><span class="badge fs-6" style="background-color: #<%= rental.locker_type.rgb %>"><%= rental.full_locker_name %></span></td>
                         <td><%= link_to rental.rented_by.username, user_path(rental.rented_by) %>
                             <%= tag.span(rental.rented_by.role.humanize, class: 'badge text-bg-primary') if rental.rented_by.staff? %></td>
-                        <td><%= tag.i class: "fa #{rental.state_icon}" %> <%= rental.state.humanize %>
-                            <%= link_to 'Details', rental %>
+                        <td><%= tag.i class: "fa #{rental.state_icon}" %> <%= t("lockers.state.#{rental.state}") %>
+                            <%= link_to "(#{t('lockers.details')})", rental %>
                         </td>
                         <td><%= rental.updated_at&.to_date %></td>
                         <td><%= rental.owned_until&.to_date || 'Unapproved yet' %></td>
