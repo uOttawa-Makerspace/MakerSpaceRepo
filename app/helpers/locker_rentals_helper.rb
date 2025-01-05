@@ -13,7 +13,7 @@ module LockerRentalsHelper
           }
         },
         method: :put,
-        class: "btn btn-danger btn-sm"
+        class: "btn btn-danger"
       )
     ask_payment_button =
       button_to(
@@ -28,7 +28,7 @@ module LockerRentalsHelper
           }
         },
         method: :put,
-        class: "btn btn-success btn-sm"
+        class: "btn btn-success"
       )
     instant_approve_button =
       button_to(
@@ -43,22 +43,22 @@ module LockerRentalsHelper
           }
         },
         method: :put,
-        class: "btn btn-info btn-sm"
+        class: "btn btn-info"
       )
 
     return end_rental_button unless for_admin
 
     case rental.state.to_sym
     when :reviewing
-      tag.div class: "btn-group p-0 m-0" do
+      tag.div class: "btn-group" do
         ask_payment_button + instant_approve_button + end_rental_button
       end
     when :await_payment
-      tag.div class: "btn-group p-0 m-0" do
+      tag.div class: "btn-group" do
         instant_approve_button + end_rental_button
       end
     when :active
-      tag.div class: "btn-group p-0 m-0" do
+      tag.div class: "btn-group" do
         end_rental_button
       end
       #when :cancelled
