@@ -9,14 +9,14 @@
     <div class="row">
         <%= f.label :description, 'Short description', class: 'form-label col-md-6' %>
         <div class="col-md-6">
-            <%= f.text_field :description, class: 'form-control' %>
+            <%= f.text_area :description, class: 'form-control' %>
         </div>
     </div>
 
     <div class="row">
         <%= f.label :quantity, 'Total amount', class: 'form-label col-md-6' %>
         <div class="col-md-6">
-            <%= f.number_field :quantity, class: 'form-control', value: 10 %>
+            <%= f.number_field :quantity, class: 'form-control' %>
         </div>
     </div>
 
