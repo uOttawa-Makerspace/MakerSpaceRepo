@@ -1,27 +1,38 @@
-<% provide :title, 'View locker request' %>
-<div class="container border p-3">
-    <h1 class="text-center"><%= t('lockers.locker_request') %></h1>
-    <hr class="w-50 mx-auto"/>
-    <p><%= t('lockers.submitted_on') %> <b><%= @locker_rental.created_at.to_date %></b> for <%= link_to @locker_rental.rented_by.username, @locker_rental.rented_by %> <%= tag.span(@locker_rental.rented_by.role.humanize, class: 'badge text-bg-primary') if @locker_rental.rented_by.staff? %></p>
-    <p><b>Locker type:</b> <%= @locker_rental.locker_type.short_form %> - <i><%= @locker_rental.locker_type.description %></i></p>
-    <p><b>Status:</b> <%= @locker_rental.state.humanize %></p>
-    <p><b>Notes:</b> <%#%= @locker_rental.notes || '---' %></p>
-    <% if current_user.admin? %>
-        <%= form_with model: @locker_rental do |f| %>
-            <%= f.text_area :notes, class: 'form-control w-25' %>
-            <%= f.submit 'Update notes', class: 'btn btn-primary' %>
+<% provide :title, t('lockers.view_locker_request') %>
+<div class="container">
+    <div class="mx-auto col-md-8">
+        <h1 class="text-center"><%= t('lockers.locker_request') %> #<%= @locker_rental.id %> - <%= t("lockers.state.#{@locker_rental.state}") %></h1>
+        <h2 class="fs-4"><%= t('lockers.details') %></h2>
+        <p><%= t('lockers.submitted_on') %> <b><%= @locker_rental.created_at.to_date %></b> <%= t('lockers.for') %> <%= link_to @locker_rental.rented_by.username, @locker_rental.rented_by %> <%= tag.span(@locker_rental.rented_by.role.humanize, class: 'badge text-bg-primary') if @locker_rental.rented_by.staff? %></p>
+        <p><b><%= t('lockers.locker_type') %>:</b> <%= @locker_rental.locker_type.short_form %> - <i><%= @locker_rental.locker_type.description %></i></p>
+        <p><b><%= t('lockers.state.state') %>:</b> <%= @locker_rental.state.humanize %></p>
+        <p><b><%= t('lockers.paid_on') %>:</b></p>
+        <% if !current_user.admin? %>
+            <%= form_with model: @locker_rental do |f| %>
+                <%= f.text_area :notes, class: 'form-control w-25' %>
+                <%= f.submit 'Update notes', class: 'btn btn-primary' %>
+            <% end %>
+        <% else %>
+            <div class="card mb-3">
+                <div class="card-header bg-primary text-light">
+                    <%= t('lockers.notes') %>
+                </div>
+                <div class="card-body">
+                    <%= @locker_rental.notes %>
+                </div>
+            </div>
         <% end %>
-    <% end %>
-    <% if @locker_rental.under_review? %>
-        <% if @locker_rental.reviewing? %>
-            <p>This request has not been approved yet</p>
-        <% elsif @locker_rental.await_payment? %>
-            <p>This request is awaiting payment. <%= link_to 'Click here to proceed to checkout', @stripe_checkout_session.url %></p>
+        <% if @locker_rental.under_review? %>
+            <% if @locker_rental.reviewing? %>
+                <p>This request has not been approved yet</p>
+            <% elsif @locker_rental.await_payment? %>
+                <p>This request is awaiting payment. <%= link_to 'Click here to proceed to checkout', @stripe_checkout_session.url %></p>
+            <% end %>
+            <p>To cancel this request, click on <b>Cancel</b> below.</p>
         <% end %>
-        <p>To cancel this request, click on <b>Cancel</b> below.</p>
-    <% end %>
-    <div>
-        <%= locker_rental_actions(@locker_rental, current_user.admin?) %>
-        <%= link_to 'Back to locker rentals', locker_rentals_path, class: 'btn btn-secondary' %>
+        <div>
+            <%= locker_rental_actions(@locker_rental, current_user.admin?) %>
+            <%= link_to 'Back to locker rentals', locker_rentals_path, class: 'btn btn-secondary float-end' %>
+        </div>
     </div>
 </div>

@@ -6,6 +6,7 @@ en:
     locker_request: Locker request
 
     new_locker_request: New locker request
+    view_locker_request: Locker request details
 
     locker_dashboard: Locker dashboard
     all_locker_rentals: All locker rentals
@@ -17,6 +18,8 @@ en:
     details: Details
     submitted_on_for: Submitted on
     for: for
+    paid_on: Paid on
+    notes: Notes
 
     state:
       state: State
@@ -28,6 +31,9 @@ en:
     owned_until: Owned until
 
     new_request: New request
+
+    actions:
+      cancel_request: Cancel request
 fr:
   lockers:
     locker_type: Type de casier
@@ -36,6 +42,7 @@ fr:
     locker_request: Demande de casier
 
     new_locker_request: Nouvelle demande de casier
+    view_locker_request: Détails de la demande de casier
 
     locker_dashboard: Gestion des casiers
     all_locker_rentals: Toutes les locations de casier
@@ -47,14 +54,18 @@ fr:
     details: Détails
     submitted_on: Soumise le
     for: par
+    paid_on: Payé le
+    notes: Remarques
 
     state:
       state: État
       reviewing: Révision
       await_payment: Attendre le paiement
-      assigned: Active
+      active: Active
       cancelled: Annulée
     assigned_on: Assigné le
     owned_until: Possédée jusqu'à
 
     new_request: Nouvelle demande
+    actions:
+      cancel_rental: Annuler la demande

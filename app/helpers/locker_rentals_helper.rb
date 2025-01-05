@@ -2,7 +2,7 @@ module LockerRentalsHelper
   def locker_rental_actions(rental, for_admin = true)
     end_rental_button =
       button_to(
-        "Cancel",
+        t("lockers.actions.cancel_rental"),
         locker_rental_path(rental),
         data: {
           confirm: "Are you sure you want to cancel this locker rental?"
@@ -58,7 +58,9 @@ module LockerRentalsHelper
         instant_approve_button + end_rental_button
       end
     when :active
-      end_rental_button
+      tag.div class: "btn-group p-0 m-0" do
+        end_rental_button
+      end
       #when :cancelled
     end
   end
