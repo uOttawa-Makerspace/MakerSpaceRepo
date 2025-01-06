@@ -1,0 +1,31 @@
+<%= form_with model: @locker_rental, class: 'container' do |f| %>
+    <div class="row row-cols-md-2">
+        <%= f.label :locker_type_id, class: 'form-label' %>
+        <div>
+            <%= f.select :locker_type_id, options_for_select(LockerType.available.select(:short_form, :id).distinct.pluck(:short_form, :id)), {}, { class: 'form-select' } %>
+        </div>
+    </div>
+    <div class="row row-cols-md-2">
+        <%= f.label :locker_specifier, 'Locker number' %>
+        <div>
+            <% locker_specifier_options = LockerType.all.map { |type| [type.short_form, type.get_available_lockers] } %>
+            <%= f.select :locker_specifier, grouped_options_for_select(locker_specifier_options), {}, { class: 'form-select' } %>
+        </div>
+    </div>
+    <div class="row row-cols-md-2">
+        <%= f.label :rented_by_username, class: 'form-label' %>
+        <div>
+            <%= f.select :rented_by_username, options_for_select([]), { prompt: 'Select user...' }, { class: 'form-select', id: 'user_dashboard_select' } %>
+        </div>
+    </div>
+    <div class="row row-cols-md-2">
+        <%= f.label :owned_until, class: 'form-label' %>
+        <div>
+            <%= f.date_field :owned_until, { value: end_of_this_semester.to_date, class: 'form-control' } %>
+        </div>
+    </div>
+    <%= f.hidden_field :state, value: LockerRental.states[:active] %>
+    <%= f.submit 'Assign locker', class: 'btn btn-success mt-3' %>
+<% end %>
+<%= vite_javascript_tag 'staff_dashboard_search', 'data-turbo-track': 'reload' %>
+<%= vite_javascript_tag 'locker_rental_form', 'data-turbo-track': 'reload' %>

@@ -17,6 +17,7 @@
             <%= link_to t('admin.drop_off_locations'), admin_drop_off_locations_path, class: 'dropdown-item' %>
           </div>
         </li>
+        <li class="nav-item"><%= link_to t('admin.lockers'), lockers_path, class: 'nav-link' %></li>
         <li class="nav-item"><%= link_to t('admin.announcements'), admin_announcements_path, class: 'nav-link' %></li>
         <li class="nav-item"><%= link_to t('admin.reports'), admin_report_generator_index_path, class: 'nav-link' %></li>
         <li class="nav-item"><%= link_to t('admin.booking_admin'), sub_space_booking_index_path(anchor: 'booking-admin-tab'), class: 'nav-link' %></li>

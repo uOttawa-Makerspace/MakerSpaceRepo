@@ -1,0 +1,4 @@
+<% provide :why_received, 'You have received this email because you have requested a locker' %>
+Hello <%= @user.username %>,
+<br />
+Your request has been completed, and you have been assigned a locker. Your locker is <b><%= @locker_rental.full_locker_name %></b> and is valid until <b><%= @locker_rental.owned_until.to_date %></b>.

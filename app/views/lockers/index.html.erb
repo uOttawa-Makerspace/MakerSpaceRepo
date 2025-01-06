@@ -1,0 +1,75 @@
+<% provide :title, 'Locker dashboard' %>
+
+<div class="text-center">
+    <h1>Locker Management</h1>
+    <!-- <hr /> -->
+    <%#%= link_to 'New lockers', new_locker_type_path, class: 'btn btn-success mb-3' %>
+    <div class="row border-top border-bottom">
+        <div class='border-end col-md-3'>
+            <h2 class="mt-3">New locker type</h2>
+            <%= render partial: 'locker_types/new_locker_type_form' %>
+        </div>
+        <div class="table-responsive col-md-9">
+            <h2 class="mt-3">Locker types defined</h2>
+            <table class="table table-striped">
+                <thead class="table-primary">
+                    <tr>
+                        <th>Short code</th>
+                        <th>Description</th>
+                        <th>Assigned/Total</th>
+                        <th>Available for request?</th>
+                        <th>Cost if applicable</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% @locker_types.each do |type| %>
+                        <tr>
+                            <td><%= type.short_form %></td>
+                            <td><%= type.description %></td>
+                            <td><%= type.active_locker_rentals.count %> assigned / <%= type.quantity %> total</td>
+                            <td><%= type.available ? type.available_for.humanize : 'No' %></td>
+                            <td>$<%= type.cost %></td>
+                            <td><%= link_to 'Edit', edit_locker_type_path(type), class: 'btn btn-primary' %></td>
+                        </tr>
+                    <% end %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <%#%= link_to 'Assign locker', new_locker_rental_path, class: 'btn btn-success mb-3' %>
+    <div class="row">
+        <div class='border-end col-md-3'>
+            <h2 class="mt-3">Assign locker</h2>
+            <%= render partial: 'locker_rentals/assign_locker_form' %>
+        </div>
+        <div class="table-responsive col-md-9">
+            <h2 class="mt-3">Requests requiring action <%= link_to 'See all rentals', locker_rentals_path, class: 'fs-4 btn btn-link p-0' %></h2>
+            <table class="table table-striped">
+                <thead class="table-primary">
+                    <tr>
+                        <th class="w-auto">Locker ID</th>
+                        <th>Rented by</th>
+                        <th class="w-auto">State</th>
+                        <th>Assigned on</th>
+                        <th class="w-auto">Until</th>
+                        <th class="w-auto">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% @locker_requests_pending&.each do |rental| %>
+                        <tr>
+                            <td><%= rental.full_locker_name %></td>
+                            <td><%= link_to rental.rented_by.username, user_path(rental.rented_by) %> <i><%= rental.rented_by.role.humanize %></i></td>
+                            <td><%= tag.i class: "fa #{rental_state_icon(rental.state)}" %> <%= rental.state.humanize %></td>
+                            <td><%= rental.updated_at&.to_date %></td>
+                            <td><%= rental.owned_until&.to_date || 'Unapproved yet' %></td>
+                            <td><%= link_to 'Show', locker_rental_path(rental), class: 'btn btn-primary' %><%#%= locker_rental_actions(rental) %></td>
+                        </tr>
+                    <% end %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

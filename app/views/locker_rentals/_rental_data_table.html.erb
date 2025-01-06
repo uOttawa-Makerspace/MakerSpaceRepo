@@ -1,0 +1,40 @@
+<div class="table-responsive">
+    <h3 class="text-center"><%= header_title %></h3>
+    <table class="table table-striped">
+        <thead class="table-primary text-center">
+            <tr>
+                <th class="w-auto"><%= t('lockers.locker_id') %></th>
+                <th class="w-auto"><%= t('lockers.rented_by') %></th>
+                <th class="w-auto"><%= t('lockers.state.state') %></th>
+                <th class="w-auto"><%= t('lockers.assigned_on') %></th>
+                <th class="w-auto"><%= t('lockers.owned_until') %></th>
+                <% unless local_assigns[:hide_actions] %>
+                    <th class="w-auto">Actions</th>
+                <% end %>
+            </tr>
+        </thead>
+        <tbody>
+            <% if locker_rentals.present? %>
+                <% locker_rentals.each do |rental| %>
+                    <tr>
+                        <td><span class="badge fs-6" style="background-color: #<%= rental.locker_type.rgb %>"><%= rental.full_locker_name %></span></td>
+                        <td><%= link_to rental.rented_by.username, user_path(rental.rented_by) %>
+                            <%= tag.span(rental.rented_by.role.humanize, class: 'badge text-bg-primary') if rental.rented_by.staff? %></td>
+                        <td><%= tag.i class: "fa #{rental.state_icon}" %> <%= t("lockers.state.#{rental.state}") %>
+                            <%= link_to "(#{t('lockers.details')})", rental %>
+                        </td>
+                        <td><%= rental.updated_at&.to_date %></td>
+                        <td><%= rental.owned_until&.to_date || 'Unapproved yet' %></td>
+                        <% unless local_assigns[:hide_actions] %>
+                            <td><%= locker_rental_actions(rental) %></td>
+                        <% end %>
+                    </tr>
+                <% end %>
+            <% else %>
+                <tr>
+                    <td colspan="6" class="fw-bold">No locker rentals</td>
+                </tr>
+            <% end %>
+        </tbody>
+    </table>
+</div>
