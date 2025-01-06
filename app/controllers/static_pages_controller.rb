@@ -56,7 +56,6 @@ class StaticPagesController < SessionsController
         end
 
     @contact_info = ContactInfo.where(show_hours: true).order(name: :asc)
-    @posts = InstagramService.fetch_posts["data"] || []
     begin
       @workshops =
         Excon.get(
@@ -70,6 +69,8 @@ class StaticPagesController < SessionsController
     rescue StandardError
       @workshops = [] # eh
     end
+
+    @makerstore_links = MakerstoreLink.all
   end
 
   def about
