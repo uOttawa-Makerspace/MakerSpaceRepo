@@ -219,31 +219,36 @@ class Admin::UsersController < AdminAreaController
     # Update user roles
     # All user ids sent in this query get set to the same role
     # Keep staff spaces attached, even if demoted
-    params["user_ids"]&.each do |user_id|
-      user = User.find(user_id)
-      user.role = params[:role]
-      user.save
+    if params[:role].present? && params[:user_ids].is_a?(Array)
+      params[:user_ids].each do |user_id|
+        user = User.find(user_id)
+        user.role = params[:role]
+        user.save
+      end
     end
 
     # Update user staff spaces
-    params["spaces"]&.each do |user_id, spaces|
-      user = User.find(user_id)
-      if user.present? && user.staff?
-        space_list = spaces.present? ? spaces : []
+    if params[:spaces].present?
+      params["spaces"]&.each do |user_id, spaces|
+        user = User.find(user_id)
+        if user.present? && user.staff?
+          space_list = spaces.present? ? spaces : []
 
-        space_list.each do |space|
-          StaffSpace.find_or_create_by(space_id: space, user: user)
+          space_list.each do |space|
+            StaffSpace.find_or_create_by(space_id: space, user: user)
+          end
+
+          user.staff_spaces.where.not(space_id: space_list).destroy_all
+
+          flash[:notice] = "Successfully changed spaces for the user."
         end
-
-        user.staff_spaces.where.not(space_id: space_list).destroy_all
-
-        flash[:notice] = "Successfully changed spaces for the user."
       end
     end
 
     # response is js
     respond_to do |format|
       format.html { redirect_back(fallback_location: root_path) }
+      format.json { head :ok }
       format.js { render layout: false }
       format.all { redirect_back(fallback_location: root_path) }
     end
