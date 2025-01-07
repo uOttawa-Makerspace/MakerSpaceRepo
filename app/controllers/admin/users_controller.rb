@@ -215,9 +215,9 @@ class Admin::UsersController < AdminAreaController
   #   user_ids: [array of ids], role: role
   # for space management:
   #   Takes a hash of { user_id: [space_id array]}
-
   def set_role
     # Update user roles
+    # All user ids sent in this query get set to the same role
     # Keep staff spaces attached, even if demoted
     params["user_ids"]&.each do |user_id|
       user = User.find(user_id)
