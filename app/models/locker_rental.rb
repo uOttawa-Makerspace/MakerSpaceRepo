@@ -6,7 +6,7 @@ class LockerRental < ApplicationRecord
   belongs_to :locker_type
   belongs_to :rented_by, class_name: "User"
 
-  after_save :send_email_notification, if: :state_changed?
+  after_save :send_email_notification
 
   enum state: {
          # Users submitted, not approved by admin
@@ -70,13 +70,19 @@ class LockerRental < ApplicationRecord
   end
 
   def send_email_notification
-    case state.to_sym
-    when :await_payment
-      LockerMailer.with(locker_rental: self).locker_checkout.deliver_now
-    when :active
-      LockerMailer.with(locker_rental: self).locker_assigned.deliver_now
-    when :cancelled
-      LockerMailer.with(locker_rental: self).locker_cancelled.deliver_now
+    if saved_change_to_state?
+      case state.to_sym
+      when :await_payment
+        LockerMailer.with(locker_rental: self).locker_checkout.deliver_now
+      when :active
+        LockerMailer.with(locker_rental: self).locker_assigned.deliver_now
+      when :cancelled
+        LockerMailer.with(locker_rental: self).locker_cancelled.deliver_now
+      when :reviewing
+        nil # do nothing
+      else
+        raise "Unknown state #{state.to_sym}"
+      end
     end
   end
 
