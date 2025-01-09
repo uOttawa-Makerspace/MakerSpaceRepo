@@ -530,7 +530,7 @@ saveButton.addEventListener("click", () => createCalendarEvent());
 const openModal = (arg) => {
   // Reset defaults
   modalTitle.innerText = "New Unavailability";
-  recurringInput.checked = false;
+  recurringInput.checked = true;
   wholeDayCheckbox.checked = false; // Reset checkbox state
   unavailabilityId.value = "";
   switchInputVisibility(recurringInput.checked);

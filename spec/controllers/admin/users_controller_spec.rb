@@ -1,6 +1,13 @@
 require "rails_helper"
 
 RSpec.describe Admin::UsersController, type: :controller do
+  before(:each) do
+    @admin = create(:user, :admin)
+    session[:user_id] = @admin.id
+    session[:expires_at] = Time.zone.now + 10_000
+    @space = create(:space)
+  end
+
   describe "GET /index" do
     context "logged in as regular user" do
       it "should redirect to root" do
@@ -14,10 +21,6 @@ RSpec.describe Admin::UsersController, type: :controller do
 
     context "logged in as admin" do
       before(:each) do
-        @admin = create(:user, :admin)
-        session[:user_id] = @admin.id
-        session[:expires_at] = Time.zone.now + 10_000
-        @space = create(:space)
         PiReader.create(
           pi_mac_address: "12:34:56:78:90",
           pi_location: @space.name
@@ -93,6 +96,69 @@ RSpec.describe Admin::UsersController, type: :controller do
       #     expect(response).to redirect_to admin_users_path
       #     expect(flash[:alert]).to eq('Invalid parameters!')
       #   end
+    end
+  end
+
+  describe "PATCH /set_role" do
+    context "setting roles" do
+      it "should make one user into staff" do
+        @user = create(:user, :regular_user)
+        patch :set_role, params: { user_ids: [@user.id], role: "staff" }
+
+        @user.reload
+        # keep staff role
+        expect(@user.role).to eq "staff"
+        # no spaces
+        expect(@user.staff_spaces).not_to exist
+      end
+
+      it "should make multiple users into staff" do
+        @user_one = create :user, :regular_user
+        @user_two = create :user, :regular_user
+        patch :set_role,
+              params: {
+                user_ids: [@user_one.id, @user_two.id],
+                role: "staff"
+              }
+
+        [@user_one, @user_two].each do |user|
+          user.reload
+          expect(user.role).to eq "staff"
+          expect(user.staff_spaces).not_to exist
+        end
+      end
+
+      it "should keep assigned spaces when demoted" do
+        user = create :user, :staff, :with_staff_spaces
+        assigned_spaces = user.staff_spaces
+        patch :set_role, params: { user_ids: [user.id], role: "regular_user" }
+        user.reload
+        expect(user.role).to eq "regular_user"
+        expect(user.staff_spaces).to eq assigned_spaces
+      end
+    end
+
+    context "assigning spaces to staff" do
+      it "should assign and remove a space to different users" do
+        @user_one = create :user, :with_staff_spaces, :staff
+        @user_two = create :user, :with_staff_spaces, :staff
+        prev_staff_spaces = @user_one.staff_spaces.pluck(:space_id)
+        additional_space = create(:space).id
+        patch :set_role,
+              params: {
+                spaces: {
+                  @user_two.id => [],
+                  @user_one.id => prev_staff_spaces << additional_space
+                }
+              },
+              as: :json # to keep the empty array
+        [@user_one, @user_two].each do |user|
+          user.reload
+          expect(user.role).to eq "staff"
+        end
+        expect(@user_one.staff_spaces.pluck :space_id).to eq(prev_staff_spaces)
+        expect(@user_two.staff_spaces.pluck :space_id).to eq []
+      end
     end
   end
 end

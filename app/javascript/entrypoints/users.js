@@ -126,4 +126,28 @@ document.addEventListener("turbo:load", function () {
       },
     });
   });
+
+  document.querySelectorAll("input.set-user-space-button").forEach((i) => {
+    i.addEventListener("change", (event) => {
+      // Get total space list
+      let space_list = [
+        ...i.parentElement.querySelectorAll("input.set-user-space-button"),
+      ].reduce(function (result, element) {
+        if (element.checked) {
+          result.push(element.dataset.spaceId);
+        }
+        return result;
+      }, []);
+      let body = { user_ids: [i.dataset.userId], spaces: {} };
+      body["spaces"][i.dataset.userId] = space_list;
+      fetch("/admin/users/set_role/", {
+        method: "PATCH",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+    });
+  });
 });

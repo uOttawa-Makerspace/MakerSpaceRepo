@@ -10,6 +10,7 @@ class Admin::ShiftsController < AdminAreaController
   def index
     @staff =
       User
+        .staff
         .where(id: StaffSpace.where(space_id: @space_id).pluck(:user_id))
         .order("LOWER(name) ASC")
         .pluck(:name, :id)
@@ -20,14 +21,13 @@ class Admin::ShiftsController < AdminAreaController
     StaffSpace
       .joins(:user)
       .where(space_id: @space_id)
+      .merge(
+        User.staff
+      ) # NOTE why isn't this the default scope? Ask Alex *again* sometime later lol
       .order("users.name")
       .each do |staff|
         if !staff.nil? && !staff.user.nil?
-          @colors << {
-            id: staff.user.id,
-            name: staff.user.name,
-            color: staff.color
-          }
+          @colors << { user: staff.user, color: staff.color }
         end
       end
   end
@@ -35,6 +35,7 @@ class Admin::ShiftsController < AdminAreaController
   def shifts
     @staff =
       User
+        .staff
         .where(id: StaffSpace.where(space_id: @space_id).pluck(:user_id))
         .order("LOWER(name) ASC")
         .pluck(:name, :id)
@@ -44,6 +45,7 @@ class Admin::ShiftsController < AdminAreaController
     StaffSpace
       .joins(:user)
       .where(space_id: @space_id)
+      .merge(User.staff)
       .order("users.name")
       .each do |staff|
         if !staff.nil? && !staff.user.nil? && !staff.user_id.nil?

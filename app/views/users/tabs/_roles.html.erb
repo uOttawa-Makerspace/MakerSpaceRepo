@@ -3,7 +3,8 @@
     <div class="container" style="max-width: 600px;"> <!-- Adjust max-width as needed -->
       <div class="row">
         <div class="col-md-12">
-          <%= form_tag set_role_admin_users_path(@user, user_ids: [@repo_user.id]), method: :patch do %>
+          <%= form_tag set_role_admin_users_path, method: :patch do %>
+            <%= hidden_field_tag :'user_ids[]', @repo_user.id %>
             <div class="mb-3">
               <label>Role</label><br>
               <%= radio_button_tag :role, 'admin', @repo_user.admin?, class: 'form-check-input role-button', id: 'role_admin' %>
@@ -19,7 +20,7 @@
                 <% @space_list.each do |space| %>
                   <% color = space.assigned_color %>
                   <div class="space-bubble" style="margin-right: 10px; border-color: <%= rgba(color, 1) %>; background-color: <%= rgba(color, 0.3) %>;">
-                    <%= check_box_tag 'space[]', space.id, @staff_spaces.include?(space.id), class: 'form-check-input', id: "space_#{space.id}" %>
+                    <%= check_box_tag "spaces[#{@repo_user.id}][]", space.id, @staff_spaces.include?(space.id), class: 'form-check-input', id: "space_#{space.id}" %>
                     <%= label_tag "space_#{space.id}", space.name, class: 'form-check-label' %>
                   </div>
                 <% end %>
