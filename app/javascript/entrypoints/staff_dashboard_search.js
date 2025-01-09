@@ -1,5 +1,6 @@
 import TomSelect from "tom-select";
 // This is also used in printers/_send_print_failed_form
+// and in locker_rentals/new
 // make sure you don't break that too
 if (!document.getElementById("user_dashboard_select").tomsselect) {
   new TomSelect("#user_dashboard_select", {

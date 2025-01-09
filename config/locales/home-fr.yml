@@ -19,6 +19,7 @@ fr:
       header: "Ressources générales"
       makeroom: "Makeroom"
       job_orders: "Commandes"
+      locker_rentals: Location de casiers
     shortcuts:
       header: "Raccourcis"
       recently_opened: "Récemment consultés"

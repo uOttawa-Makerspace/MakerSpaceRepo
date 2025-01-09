@@ -20,7 +20,7 @@
 
       <% @colors.each do |user| %>
         <div class="pb-2">
-          <label><%= user[:name] %></label>
+          <label><%= link_to user[:user].name, user_path(user[:user].username), target: :_blank, rel: :noopener %></label>
           <br>
           <div class="d-flex">
             <input type="color" name="color" onchange="updateColor(<%= user[:id] %>, this.value)" class="form-control form-control-color-shift" value="<%= user[:color] %>" title="Choose your color">
