@@ -12,23 +12,27 @@ class LockerRentalsController < ApplicationController
     #redirect_to :new_locker_rental unless current_user.admin?
 
     @own_locker_rentals = current_user.locker_rentals
-    @locker_types = LockerType.all
-    @locker_rentals =
-      LockerRental.includes(:locker_type, :rented_by).order(
-        locker_type_id: :asc
-      )
+    if current_user.admin?
+      @locker_types = LockerType.all
+      @locker_rentals =
+        LockerRental.includes(:locker_type, :rented_by).order(
+          locker_type_id: :asc
+        )
+    end
   end
 
   def show
-    @stripe_checkout_session =
-      Stripe::Checkout::Session.create(
-        success_url: stripe_success_locker_rentals_url,
-        cancel_url: stripe_cancelled_locker_rentals_url,
-        mode: "payment",
-        line_items: @locker_rental.locker_type.generate_line_items,
-        billing_address_collection: "required",
-        client_reference_id: "locker-rental-#{@locker_rental.id}"
-      )
+    if @locker_rental.await_payment?
+      @stripe_checkout_session =
+        Stripe::Checkout::Session.create(
+          success_url: stripe_success_locker_rentals_url,
+          cancel_url: stripe_cancelled_locker_rentals_url,
+          mode: "payment",
+          line_items: @locker_rental.locker_type.generate_line_items,
+          billing_address_collection: "required",
+          client_reference_id: "locker-rental-#{@locker_rental.id}"
+        )
+    end
   end
 
   def new

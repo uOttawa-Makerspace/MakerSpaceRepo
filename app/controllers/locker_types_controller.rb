@@ -7,7 +7,7 @@ class LockerTypesController < AdminAreaController
     # the params might come with an :amount field, use that
     # to create locker instances
     @locker_type = LockerType.new(locker_type_params)
-    if @locker_type.save
+    if @locker_type.save!
       flash[:notice] = "Locker type #{@locker_type.short_form} created"
       redirect_to lockers_path
     else
