@@ -99,6 +99,15 @@ FactoryBot.define do
       student_id { Faker::Number.number(digits: 9) }
     end
 
+    trait :with_staff_spaces do
+      # https://thoughtbot.github.io/factory_bot/cookbook/has_many-associations.html
+      # Make two spaces
+      #create_list(:staff_spaces, 2, user: instance)
+      after(:create) do |user|
+        2.times { StaffSpace.new(user:, space: create(:space)).save! }
+      end
+    end
+
     factory :user_with_announcements do
       transient { announcements_count { 5 } }
       after(:create) do |user, evaluator|
