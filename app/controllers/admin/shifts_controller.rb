@@ -10,6 +10,7 @@ class Admin::ShiftsController < AdminAreaController
   def index
     @staff =
       User
+        .staff
         .where(id: StaffSpace.where(space_id: @space_id).pluck(:user_id))
         .order("LOWER(name) ASC")
         .pluck(:name, :id)
@@ -35,6 +36,7 @@ class Admin::ShiftsController < AdminAreaController
   def shifts
     @staff =
       User
+        .staff
         .where(id: StaffSpace.where(space_id: @space_id).pluck(:user_id))
         .order("LOWER(name) ASC")
         .pluck(:name, :id)
