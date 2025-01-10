@@ -1,5 +1,5 @@
 <% if @user.admin? %>
-  <details <%= :open unless params[:search].present? && @pending_project_proposals.count > 0 %>>
+  <details <%= :open if params[:search].present? || @pending_project_proposals.count > 0 %>>
     <summary class="fs-2">Pending Project Proposals</summary>
     <div class="card-body border">
       <%= render partial: 'listing', locals: { title: 'Pending Project Proposals', project_proposals: @pending_project_proposals, param_name: 'page_pending' } %>
@@ -7,12 +7,14 @@
   </details>
 <% end %>
 
-<details <%= :open unless params[:search].present? && @approved_project_proposals.count > 0 %>>
+<details <%= :open if params[:search].present? || @approved_project_proposals.count > 0 %>>
   <summary class="fs-2">Approved Project Proposals</summary>
   <%= render partial: 'listing', locals: { title: 'Approved Project Proposals', project_proposals: @approved_project_proposals, param_name: 'page_approved' } %>
 </details>
 
-<details <%= :open unless params[:search].present? && @not_approved_project_proposals.count > 0 %>>
+<% if @user.admin? %>
+<details <%= :open if params[:search].present? || @not_approved_project_proposals.count > 0 %>>
   <summary class="fs-2">Project Proposals not approved</summary>
   <%= render partial: 'listing', locals: { title: 'Project Proposals not approved', project_proposals: @not_approved_project_proposals, param_name: 'page_not_approved' } if @user.admin? %>
 </details>
+<% end %>
