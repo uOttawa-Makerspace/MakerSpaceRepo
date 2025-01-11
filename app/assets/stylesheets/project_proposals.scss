@@ -3,107 +3,107 @@
 // You can use Sass (SCSS) here: http://sass-lang.com/
 @import "lib";
 
-#projectProposals {
-  details {
-    //margin-bottom: 1.5rem;
-    summary {
-      text-align: center;
-      width: 25%;
-      margin: 0 auto 1rem auto;
-      border-bottom: 1px solid;
-    }
-  }
-}
+// #projectProposals {
+//   details {
+//     //margin-bottom: 1.5rem;
+//     summary {
+//       text-align: center;
+//       width: 25%;
+//       margin: 0 auto 1rem auto;
+//       border-bottom: 1px solid;
+//     }
+//   }
+// }
 
-.checkbox-list {
-  label#type {
-    color: black;
-    font: 300 0.9em "Roboto", sans-serif;
-  }
-}
+// .checkbox-list {
+//   label#type {
+//     color: black;
+//     font: 300 0.9em "Roboto", sans-serif;
+//   }
+// }
 
-div.titlepp {
-  color: #366;
-  font-size: 2rem;
-  padding-bottom: 0.5rem;
-  text-align: center;
-  max-width: 500px;
-  margin: 0 auto;
-  margin-bottom: 1rem;
-  border-bottom: 2px solid #366;
-}
+// div.titlepp {
+//   color: #366;
+//   font-size: 2rem;
+//   padding-bottom: 0.5rem;
+//   text-align: center;
+//   max-width: 500px;
+//   margin: 0 auto;
+//   margin-bottom: 1rem;
+//   border-bottom: 2px solid #366;
+// }
 
-.blue-button {
-  font: 300 1em "Roboto", sans-serif;
-  padding: 0.4rem 0.6rem;
-  border: none;
-  text-transform: uppercase;
-  color: #777;
-  letter-spacing: 0.15em;
-  border-radius: 10px;
-  background-color: darkblue;
-  color: #fff;
-  margin-bottom: 20px;
+// .blue-button {
+//   font: 300 1em "Roboto", sans-serif;
+//   padding: 0.4rem 0.6rem;
+//   border: none;
+//   text-transform: uppercase;
+//   color: #777;
+//   letter-spacing: 0.15em;
+//   border-radius: 10px;
+//   background-color: darkblue;
+//   color: #fff;
+//   margin-bottom: 20px;
 
-  &:hover {
-    cursor: pointer;
-    color: aquamarine;
-  }
-}
+//   &:hover {
+//     cursor: pointer;
+//     color: aquamarine;
+//   }
+// }
 
-.green-button {
-  font: 300 1em "Roboto", sans-serif;
-  padding: 0.4rem 0.6rem;
-  border: none;
-  text-transform: uppercase;
-  color: #777;
-  letter-spacing: 0.15em;
-  border-radius: 10px;
-  background-color: forestgreen;
-  color: #fff;
-  margin-bottom: 20px;
+// .green-button {
+//   font: 300 1em "Roboto", sans-serif;
+//   padding: 0.4rem 0.6rem;
+//   border: none;
+//   text-transform: uppercase;
+//   color: #777;
+//   letter-spacing: 0.15em;
+//   border-radius: 10px;
+//   background-color: forestgreen;
+//   color: #fff;
+//   margin-bottom: 20px;
 
-  &:hover {
-    cursor: pointer;
-    color: aquamarine;
-  }
-}
+//   &:hover {
+//     cursor: pointer;
+//     color: aquamarine;
+//   }
+// }
 
-.coldblue-button {
-  font: 300 1em "Roboto", sans-serif;
-  padding: 0.4rem 0.6rem;
-  border: none;
-  text-transform: uppercase;
-  color: #777;
-  letter-spacing: 0.15em;
-  border-radius: 10px;
-  background-color: #1155cc;
-  color: #fff;
-  margin-bottom: 20px;
+// .coldblue-button {
+//   font: 300 1em "Roboto", sans-serif;
+//   padding: 0.4rem 0.6rem;
+//   border: none;
+//   text-transform: uppercase;
+//   color: #777;
+//   letter-spacing: 0.15em;
+//   border-radius: 10px;
+//   background-color: #1155cc;
+//   color: #fff;
+//   margin-bottom: 20px;
 
-  &:hover {
-    cursor: pointer;
-    color: aquamarine;
-  }
-}
+//   &:hover {
+//     cursor: pointer;
+//     color: aquamarine;
+//   }
+// }
 
-.coldgreen-button {
-  font: 300 1em "Roboto", sans-serif;
-  padding: 0.4rem 0.6rem;
-  border: none;
-  text-transform: uppercase;
-  color: #777;
-  letter-spacing: 0.15em;
-  border-radius: 10px;
-  background-color: #357777;
-  color: #fff;
-  margin-bottom: 20px;
+// .coldgreen-button {
+//   font: 300 1em "Roboto", sans-serif;
+//   padding: 0.4rem 0.6rem;
+//   border: none;
+//   text-transform: uppercase;
+//   color: #777;
+//   letter-spacing: 0.15em;
+//   border-radius: 10px;
+//   background-color: #357777;
+//   color: #fff;
+//   margin-bottom: 20px;
 
-  &:hover {
-    cursor: pointer;
-    color: aquamarine;
-  }
-}
+//   &:hover {
+//     cursor: pointer;
+//     color: aquamarine;
+//   }
+// }
 
 div.approved {
   color: #19c1a5;
