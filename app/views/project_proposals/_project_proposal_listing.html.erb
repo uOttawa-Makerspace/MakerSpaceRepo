@@ -1,20 +1,54 @@
-<% if @user.admin? %>
-  <details <%= :open if params[:search].present? || @pending_project_proposals.count > 0 %>>
-    <summary class="fs-2">Pending Project Proposals</summary>
-    <div class="card-body border">
-      <%= render partial: 'listing', locals: { title: 'Pending Project Proposals', project_proposals: @pending_project_proposals, param_name: 'page_pending' } %>
+<div class="accordion" id="proposalAccordion">
+  <% if @user.admin? %>
+    <div class="accordion-item">
+      <h2 class="accordion-header">
+        <button class="accordion-button d-inline text-center fs-2" type="button" data-bs-toggle="collapse"
+                data-bs-target="#pendingAccordion" aria-expanded="true" aria-controls="pendingAccordion">
+          Pending Project Proposals
+        </button>
+      </h2>
+      <div id="pendingAccordion" class="accordion-collapse collapse <%= 'show' if params[:search] %>" data-bs-parent="proposalAccordion">
+        <%= render partial: 'listing', locals: { title: 'Pending Project Proposals', project_proposals: @pending_project_proposals, param_name: 'page_pending' } %>
+      </div>
     </div>
-  </details>
-<% end %>
+  <% end %>
 
-<details <%= :open if params[:search].present? || @approved_project_proposals.count > 0 %>>
-  <summary class="fs-2">Approved Project Proposals</summary>
-  <%= render partial: 'listing', locals: { title: 'Approved Project Proposals', project_proposals: @approved_project_proposals, param_name: 'page_approved' } %>
-</details>
+  <div class="accordion-item">
+    <h2 class="accordion-header">
+      <button class="accordion-button d-inline text-center fs-2" type="button" data-bs-toggle="collapse"
+              data-bs-target="#approvedAccordion" aria-expanded="true" aria-controls="approvedAccordion">
+        Approved Project Proposals
+      </button>
+    </h2>
+    <div id="approvedAccordion" class="accordion-collapse collapse <%= 'show' if params[:search] %>" data-bs-parent="proposalAccordion">
+      <%= render partial: 'listing', locals: { title: 'Approved Project Proposals', project_proposals: @approved_project_proposals, param_name: 'page_approved' } %>
+    </div>
+  </div>
 
-<% if @user.admin? %>
-<details <%= :open if params[:search].present? || @not_approved_project_proposals.count > 0 %>>
-  <summary class="fs-2">Project Proposals not approved</summary>
-  <%= render partial: 'listing', locals: { title: 'Project Proposals not approved', project_proposals: @not_approved_project_proposals, param_name: 'page_not_approved' } if @user.admin? %>
-</details>
-<% end %>
+  <div class="accordion-item">
+    <h2 class="accordion-header">
+      <button class="accordion-button d-inline text-center fs-2" type="button" data-bs-toggle="collapse"
+              data-bs-target="#declinedAccordion" aria-expanded="true" aria-controls="declinedAccordion">
+        Project Proposals not approved
+      </button>
+    </h2>
+    <div id="declinedAccordion" class="accordion-collapse collapse <%= 'show' if params[:search] %>" data-bs-parent="proposalAccordion">
+      <%= render partial: 'listing', locals: { title: 'Project Proposals not approved', project_proposals: @not_approved_project_proposals, param_name: 'page_not_approved' } %>
+    </div>
+  </div>
+
+  <%# Testing out new accordion style, using the details html tag %>
+  <% if @user.admin? && false %>
+    <details class="accordion-item" <%= :open if params[:search].present? || @not_approved_project_proposals.count > 0 %>>
+      <summary data-bs-toggle="collapse" data-bs-target="#declinedProposals"
+               class="accordion-button d-inline-block text-center w-100 fs-2">
+        <div class="accordion-header">
+          Project Proposals not approved
+        </div>
+      </summary>
+      <div class="collapse accordion-body" id="declinedProposals">
+        <%= render partial: 'listing', locals: { title: 'Project Proposals not approved', project_proposals: @not_approved_project_proposals, param_name: 'page_not_approved' } %>
+      </div>
+    </details>
+  <% end %>
+</div>
