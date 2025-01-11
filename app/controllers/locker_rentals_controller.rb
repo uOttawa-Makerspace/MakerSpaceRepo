@@ -54,6 +54,7 @@ class LockerRentalsController < ApplicationController
     # then force to wait for admin approval
     if !current_user.admin? || params.dig(:locker_rental, :ask)
       @locker_rental.state = :reviewing
+      # If not admin, only create request for self
       @locker_rental.rented_by = current_user
     elsif current_user.admin? && locker_rental_params[:state] == "active"
       # if acting as admin
@@ -152,10 +153,9 @@ class LockerRentalsController < ApplicationController
     else
       # people pick where they want a locker
       # prevent user from editing rental notes after first submit
-      params
-        .require(:locker_rental)
-        .permit(:locker_type_id)
-        .tap { |p| p.permit(:notes) unless params[:id] }
+      permits = [:locker_type_id]
+      permits << :notes unless params[:id]
+      params.require(:locker_rental).permit(*permits)
     end
   end
 end
