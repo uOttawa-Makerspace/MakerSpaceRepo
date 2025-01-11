@@ -8,11 +8,12 @@ FactoryBot.define do
     end
 
     trait :active do
+      transient { locker_specifier { locker_type.get_available_lockers.first } }
       state { :active }
-      after(:create) do
-        locker_specifier do
-          Faker::Alphanumeric.unique.numeric(from: 1, to: locker_type.quantity)
-        end
+      before(:create) do |rental, context|
+        rental.locker_specifier = context.locker_specifier
+        # This throws a retry limit error after it passes the locker_type limit
+        #Faker::Number.unique.between(from: 1, to: rental.locker_type.quantity)
       end
       owned_until { Faker::Date.forward }
     end
