@@ -3,7 +3,7 @@ FactoryBot.define do
     locker_type
     rented_by factory: :user
     state { :reviewing }
-    trait :with_notes do
+    trait :notes do
       notes { Faker::Alphanumeric.alpha }
     end
 

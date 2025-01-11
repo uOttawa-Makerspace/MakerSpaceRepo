@@ -62,6 +62,22 @@ class LockerRentalsController < ApplicationController
       @locker_rental.auto_assign
     end
 
+    # validate locker type if not administration
+    unless current_user.admin?
+      # not an admin, asking for an unavailable locker
+      unless @locker_rental.locker_type.available
+        new_instance_attributes
+        render :new, status: :unprocessable_entity
+        return
+      end
+
+      if @locker_rental.locker_type.get_available_lockers.empty?
+        new_instance_attributes
+        render :new, status: :unprocessable_entity
+        return
+      end
+    end
+
     if @locker_rental.save
       redirect_back fallback_location: :new_locker_rental
     else

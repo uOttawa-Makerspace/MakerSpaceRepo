@@ -332,34 +332,150 @@ RSpec.describe LockerRentalsController, type: :controller do
       end
 
       it "should only allow requests for self" do
-        expect { post :create, params: {} }
+        other_user = create :user, :admin
+        expect {
+          post :create,
+               params: {
+                 locker_rental: {
+                   locker_type_id: @locker_type.id,
+                   rented_by_id: other_user.id
+                 }
+               }
+        }.to change { LockerRental.count }.by(1)
+        expect(LockerRental.last.rented_by_id).to eq @current_user.id
       end
 
       it "should only allow one request per user" do
+        prev_rental =
+          create :locker_rental, :reviewing, rented_by: @current_user
+        expect {
+          post :create,
+               params: {
+                 locker_rental: {
+                   locker_type_id: @locker_type.id
+                 }
+               }
+        }.to change { LockerRental.count }.by(0)
+        prev_rental.auto_assign
+        expect {
+          post :create,
+               params: {
+                 locker_rental: {
+                   locker_type_id: @locker_type.id
+                 }
+               }
+        }.to change { LockerRental.count }.by(1)
       end
 
       it "should not allow requesting unavailable locker types" do
+        unavailable_type = create :locker_type, :not_available
+        expect {
+          post :create,
+               params: {
+                 locker_rental: {
+                   locker_type_id: unavailable_type.id
+                 }
+               }
+        }.to change { LockerRental.count }.by(0)
       end
 
-      it "should not allow requesting full locker types" do
+      it "should only count active requests" do
+        # Fill up a locker type
+        full_locker_type = create :locker_type, quantity: 2
+        create(:locker_rental, locker_type: full_locker_type)
+        create(:locker_rental, locker_type: full_locker_type)
+        expect {
+          post :create,
+               params: {
+                 locker_rental: {
+                   locker_type_id: @locker_type.id
+                 }
+               }
+        }.to change { LockerRental.count }.by(1)
+      end
+
+      it "should now allow requesting fully booked locker types" do
+        # Fill up a locker type
+        full_locker_type = create :locker_type, quantity: 2
+        create(:locker_rental, :active, locker_type: full_locker_type)
+        create(:locker_rental, :active, locker_type: full_locker_type)
+        #binding.pry
+        expect {
+          post :create,
+               params: {
+                 locker_rental: {
+                   locker_type_id: full_locker_type.id
+                 }
+               }
+        }.to change { LockerRental.count }.by(0)
       end
 
       it "should not allow changing state after requesting" do
+        locker_rental = create :locker_rental, :reviewing
+        patch :update,
+              params: {
+                id: locker_rental.id,
+                locker_rental: {
+                  state: :active
+                }
+              }
+        expect(locker_rental.reload.state).to eq "reviewing"
       end
 
       it "should not allow changing notes after requesting" do
+        locker_rental = create :locker_rental, :reviewing, :notes
+        prev_notes = locker_rental.notes
+        patch :update,
+              params: {
+                id: locker_rental.id,
+                locker_rental: {
+                  notes: "changing notes!"
+                }
+              }
+        expect(locker_rental.reload.notes).to eq prev_notes
       end
 
       it "should not allow changing type after requesting" do
+        locker_rental = create :locker_rental, :await_payment, :notes
+      end
+
+      it "should not allow modifying requests of other users" do
       end
     end
 
     context "locker request checkout" do
+      it "should send emails reminding of checkout" do
+      end
+
       it "should auto assign after checkout" do
       end
 
       it "should not auto assign after failed checkout" do
       end
+    end
+
+    context "locker request cancellation" do
+      it "should send a cancellation email" do
+      end
+
+      it "should prevent cancelling others requests" do
+      end
+
+      it "should prevent reopening requests" do
+      end
+    end
+
+    context "state keeps going one way" do
+      it "can't move from active to await_payment" do
+      end
+
+      it "can't move from active to reviewing" do
+      end
+
+      it "can't move from await_payment to reviewing" do
+      end
+
+      it "can't move from cancelled to reviewing"
     end
   end
 end
