@@ -50,13 +50,23 @@ class LockerRental < ApplicationRecord
   scope :under_review, -> { where(state: %i[reviewing await_payment]) }
   scope :assigned, -> { where(state: :active) }
 
+  def auto_assign_parameters
+    {
+      state: (:active unless active?),
+      owned_until: (end_of_this_semester if owned_until.blank?),
+      locker_specifier:
+        (locker_type.get_available_lockers.first if locker_specifier.blank?)
+    }.compact
+  end
+
   # Used by the automated payment system, picks the first available
   # specifier and owned until end of this semester
   def auto_assign
     update(
-      state: :active,
-      owned_until: end_of_this_semester,
-      locker_specifier: locker_type.get_available_lockers.first
+      auto_assign_parameters
+      # state: :active,
+      # owned_until: end_of_this_semester,
+      # locker_specifier: locker_type.get_available_lockers.first
     )
   end
 

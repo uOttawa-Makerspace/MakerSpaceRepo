@@ -48,6 +48,10 @@ class LockerRentalsController < ApplicationController
     if !current_user.admin? || params.dig(:locker_rental, :ask)
       @locker_rental.state = :reviewing
       @locker_rental.rented_by = current_user
+    elsif current_user.admin? && locker_rental_params[:state] == "active"
+      # if acting as admin
+      # save down later
+      @locker_rental.auto_assign
     end
 
     if @locker_rental.save
