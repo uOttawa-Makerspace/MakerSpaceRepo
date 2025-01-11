@@ -5,7 +5,14 @@ class LockerRentalsController < ApplicationController
   before_action :signed_in, except: %i[stripe_success stripe_cancelled]
   # Also sets @locker_rental
   before_action :check_permission,
-                except: %i[index new stripe_success stripe_cancelled]
+                except: %i[
+                  index
+                  new
+                  create
+                  update
+                  stripe_success
+                  stripe_cancelled
+                ]
 
   def index
     # Only admin can see index list
