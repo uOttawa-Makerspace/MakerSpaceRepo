@@ -17,7 +17,9 @@
       <div class="row row-cols-lg-2 justify-content-center">
         <% @space_list.each do |space| %>
           <%# use check_box_tag, not check_box, to avoid sending a 'ghost value'. In this case we do want values to be left out%>
-          <%= check_box_tag "spaces[#{admin.id}][]", space.id, (user_spaces[admin.id].include? space.id), form: space_form_id, class: 'btn-check', id: "space-#{space.name.parameterize.underscore}-#{admin.id}" %>
+          <%= check_box_tag "spaces[#{admin.id}][]", space.id, (user_spaces[admin.id].include? space.id),
+                            form: space_form_id, class: 'btn-check set-user-space-button', id: "space-#{space.name.parameterize.underscore}-#{admin.id}",
+                            data: { user_id: admin.id, space_id: space.id } %>
           <%= label_tag "space-#{space.name.parameterize.underscore}-#{admin.id}", space.name, class: "btn btn-outline-primary btn-outline-#{space.name}" %>
       <% end %>
       </div>

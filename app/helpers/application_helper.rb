@@ -89,6 +89,19 @@ module ApplicationHelper
     require "rake"
     MakerSpaceRepo::Application.load_tasks if Rake::Task.tasks.empty?
   end
+
+  def end_of_this_semester
+    if DateTime.now.month in 9..12
+      # End of Fall
+      DateTime.new(DateTime.now.year, 12).end_of_month
+    elsif DateTime.now.month in 1..4
+      # End of Winter
+      DateTime.new(DateTime.now.year, 4).end_of_month
+    elsif DateTime.now.month in 5..8
+      # End of Summer
+      DateTime.new(DateTime.now.year, 8).end_of_month
+    end
+  end
 end
 
 def rgba(color, opacity)

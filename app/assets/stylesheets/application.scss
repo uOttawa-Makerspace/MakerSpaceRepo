@@ -229,6 +229,26 @@ u {
   color: $primary;
 }
 
+// Buttons created with button_to are actually a form tag with a single button inside
+// Those don't act normally inside button groups, so try to clean those up a bit
+.btn-group {
+  // Select all form buttons inside groups
+  form.button_to {
+    // if form butotn has anything to right
+    &:has(+ *) > .btn {
+      border-right: 0;
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+    // if form button has anything to left
+    & + * > .btn {
+      border-lelft: 0;
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+    }
+  }
+}
+
 // These are used everywhere, only reason they're kept as legacy
 .x-button {
   color: #af0000;

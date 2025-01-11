@@ -127,6 +127,16 @@ Rails.application.routes.draw do
     collection { get :history }
   end
 
+  resources :lockers, only: :index
+  resources :locker_types, only: %i[new create edit update destroy]
+  resources :locker_rentals do
+    #, only: %i[index show new create update destroy]
+    collection do
+      get :stripe_success
+      get :stripe_cancelled
+    end
+  end
+
   resources :kiosk, only: %i[index show edit] do
     post :sign_email
   end
