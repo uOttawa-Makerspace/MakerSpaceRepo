@@ -424,7 +424,8 @@ RSpec.describe LockerRentalsController, type: :controller do
       end
 
       it "should not allow changing notes after requesting" do
-        locker_rental = create :locker_rental, :reviewing, :notes
+        locker_rental =
+          create :locker_rental, :reviewing, :notes, rented_by: @current_user
         prev_notes = locker_rental.notes
         patch :update,
               params: {
@@ -484,22 +485,65 @@ RSpec.describe LockerRentalsController, type: :controller do
     # end
 
     context "locker request cancellation" do
-      # before(:each) do
-      #   @locker_rental = create :locker_rental, :active
-      # end
-      it "should send a cancellation email" do
+      before(:each) do
+        @locker_rental =
+          create :locker_rental, :reviewing, rented_by: @current_user
       end
 
-      it "should prevent cancelling others requests" do
+      it "should send a cancellation email" do
+        patch :update,
+              params: {
+                id: @locker_rental.id,
+                locker_rental: {
+                  state: :cancelled
+                }
+              }
+        expect(@locker_rental.reload.state).to eq "cancelled"
+        last_mail = ActionMailer::Base.deliveries.last
+        expect(last_mail.to).to eq [@current_user.email]
+        expect(last_mail.subject).to include("cancel")
+      end
+
+      it "should prevent cancelling requests not owned" do
+        @locker_rental = create :locker_rental, :reviewing
+        patch :update,
+              params: {
+                id: @locker_rental.id,
+                locker_rental: {
+                  state: :cancelled
+                }
+              }
+        expect(@locker_rental.reload.state).to eq "reviewing"
+        last_mail = ActionMailer::Base.deliveries.last
+        expect(last_mail).to eq nil
       end
 
       it "should prevent reopening requests" do
-        create :locker_request, :cancelled
+        @locker_rental = create :locker_rental, :active
+        @locker_rental.update(state: :cancelled)
+        patch :update,
+              params: {
+                id: @locker_rental.id,
+                locker_rental: {
+                  state: :active
+                }
+              }
+        expect(@locker_rental.reload.state).to eq "cancelled"
       end
 
       it "should not allow users to cancel active rentals" do
-        @current_user = create :user
-        session[:user_id] = @current_user.id
+        # make sure we're not admin
+        expect(@current_user.admin?).to eq false
+        @locker_rental.auto_assign
+        expect(@locker_rental.reload.state).to eq "active"
+        patch :update,
+              params: {
+                id: @locker_rental.id,
+                locker_rental: {
+                  state: "cancelled"
+                }
+              }
+        expect(@locker_rental.reload.state).to eq "active"
       end
     end
 
