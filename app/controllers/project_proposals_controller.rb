@@ -27,21 +27,22 @@ class ProjectProposalsController < ApplicationController
     else
       @pending_project_proposals =
         ProjectProposal
-          .joins(:user)
+          .left_outer_joins(:user)
           .filter_by_attribute(params[:search])
           .order(created_at: :desc)
           .where(approved: nil)
           .paginate(per_page: 15, page: params[:page_pending])
       @approved_project_proposals =
         ProjectProposal
-          .joins(:user)
+          .left_outer_joins(:user)
           .filter_by_attribute(params[:search])
           .order(created_at: :desc)
           .where(approved: 1)
           .paginate(per_page: 15, page: params[:page_approved])
+      #raise 'huh'
       @not_approved_project_proposals =
         ProjectProposal
-          .joins(:user)
+          .left_outer_joins(:user)
           .filter_by_attribute(params[:search])
           .order(created_at: :desc)
           .where(approved: 0)

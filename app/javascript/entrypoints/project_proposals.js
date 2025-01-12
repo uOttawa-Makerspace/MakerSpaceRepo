@@ -17,7 +17,7 @@ if (document.getElementById("link-list")) {
       listDiv.classList.add("mb-3");
       listInput.classList.add("form-control");
       listInput.setAttribute("type", "text");
-      listInput.placeholder = "Ajoutez un lien / Add a link";
+      listInput.placeholder = "https://...";
       listDiv.appendChild(listInput);
       listItem.appendChild(listDiv);
       document.getElementsByClassName("main_ul")[0].appendChild(listItem);

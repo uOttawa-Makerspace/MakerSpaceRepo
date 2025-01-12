@@ -1,28 +1,20 @@
-<div>
-  <% provide(:title, 'Project Proposals') %>
-  <div class="by-5">
+<% provide(:title, 'Project Proposals') %>
+<div id="projectProposals">
+  <h1 class="text-center mt-3">Project Proposals</h1>
+  <div class="my-3">
     <%= form_tag(project_proposals_path, method: :get) do %>
       <div class="d-flex justify-content-center">
         <%= fa_icon 'search', class: 'fa-2x pe-2' %>
         <div class="col-md-4 search_bar" >
-        <%= text_field_tag(:search, '', placeholder: 'Search', class: 'form-control') %>
+          <%= text_field_tag(:search, '', placeholder: 'Search', class: 'form-control') %>
         </div>
         <%# If search exists in the params, display back button %>
         <% if params[:search] && !params[:search].empty? %>
-        <button class="btn btn-secondary">
-          <%= link_to 'Back', project_proposals_path %>
-        </button>
+          <%= link_to 'Back', project_proposals_path, class: 'btn btn-secondary' %>
         <% end %>
       </div>
     <% end %>
   </div>
 
-  <br>
-
-  <div class="accordion">
-    <div class="project_proposals_listing">
-      <%= render 'project_proposal_listing' %>
-    </div>
-  </div>
-
+  <%= render 'project_proposal_listing' %>
 </div>

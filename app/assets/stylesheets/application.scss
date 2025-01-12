@@ -259,17 +259,9 @@ u {
   font-size: 1.4em;
 }
 
-// TODO figure out why this is here and move it to the right place
-//ul{
-//  list-style-type: none;
-//  margin:0;
-//  padding:0;
-//}
-//
-//// TODO figure out why this is here and move it to the right place
-//li{
-//  display: block;
-//}
+.youtube-embed {
+  width: 100%;
+}
 
 :focus {
   outline: -webkit-focus-ring-color auto 1px;
@@ -300,6 +292,7 @@ div.form-error {
 }
 
 .main {
+  margin-top: 2rem;
   flex-shrink: 0;
   margin-bottom: auto;
 }

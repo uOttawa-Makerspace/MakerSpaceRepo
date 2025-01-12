@@ -1,0 +1,210 @@
+en:
+  project_proposal:
+    project_proposals: "Project Proposals"
+    project_proposal: "Project proposal"
+    edit_proposal: "Edit project proposal"
+    project_information: "Project information"
+    possible_tech: Possible technologies involved
+    project_type: Project Type
+    expected_budget: Expected prototype budget
+    expected_cost: Expected project cost
+
+    client_infomation: "Client information"
+    client_type: Client type
+    client_interest: Client interest
+    client_background: Client background
+
+    project_background: Project background
+    past_attempts: Past attempts
+    linked_proposal: Linked project proposal
+    linked_proposal_button: Check out the linked proposition
+
+    users_joined: Users that joined this project
+
+    reviewed_by: This project was reviewed by
+
+    proposed_by: "Proposed by"
+    proposed_on: "Proposed on"
+    contact: "Contact"
+    project_files: "Project files"
+    report_inappropriate: "Report inappropriate"
+
+    validation:
+      approved: Approved
+      declined: Declined
+      not_validated: Not validated
+    admin:
+      approve: "Approve"
+      decline: "Decline"
+      delete: "Delete"
+
+    document_project: Document project
+    create_revision: Create Revision
+    join_project: Join project
+    leave_project: Leave project
+
+    repos_related: Repositories Created From This Project Proposal
+    sort_by: Sort by
+    newest: Newest
+    most_likes: Most Likes
+    most_makes: Most Makes
+    recently_updated: Recently Updated
+
+    new:
+      header: New Project Proposal
+      name: Name
+      name_sub: What is your name?
+      email: Email address
+      email_sub: What is your email?
+      title: Title
+      title_sub: Great project titles are short and memorable.
+
+      client_type: Client Type
+      client_type_sub: Who are you answering on behalf of?
+      organisation: Organization
+      individual: Individual
+
+      client: Client
+      client_sub: Who is the client?
+
+      client_level_of_interest: Client Level of Interest
+      client_level_of_interest_sub: How interested is the client?
+      low: Low
+      medium: Medium
+      high: High
+
+      client_background: Client Background
+      client_background_sub: What is the client background?
+      supervisor_background: Supervisor Background
+      supervisor_background_sub: What is the supervisor background?
+      project_background: Project Background
+      project_files: Project Files
+      gallery: Gallery
+      gallery_aria_label: Select pictures
+      possible_tech_involved: Possible technologies involved
+      video_link: YouTube Link
+      video_link_sub: Similar projects on YouTube
+
+      past_experiences: Past Experiences
+      add_link: Add a link
+      remove_link: Remove last link
+
+      prototype_budget: Prototype Budget
+      expected_cost: Expected cost of the project
+
+      project_type: Project Type
+      project_type_sub: Choose a project type
+      general: General
+      client_specific: Client Specific
+      not_applicable: Not Available
+
+      categories: Categories
+      categories_sub: Choose at most 5 categories that fit your project.
+      categories_placeholder: Select a category...
+
+      create_proposal: Create Project Proposal
+fr:
+  project_proposal:
+    project_proposals: "Propositions de projet"
+    project_proposal: "Proposition de projet"
+    edit_proposal: "Modifier le proposition de projet"
+    project_information: "Information sur le projet"
+    possible_tech: Technologies possibles impliquées
+    project_type: Type de projet
+    expected_budget: Budget prévu pour le prototype
+    expected_cost: Coût prévu du projet cost
+
+    client_information: Information sur le client
+    client_type: Type de client
+    client_interest: Interets du client
+    client_background: Contexte du client
+
+    project_background: Contexte du projet
+    past_attempts: Tentatives précédentes
+    linked_proposal: Proposition de project liée
+    linked_proposal_button: Aller voir la proposition liée
+
+    users_joined: Utilisateurs qui ont joins le projet
+
+    reviewed_by: Ce projet a été revu par
+
+    proposed_by: "Proposé par"
+    proposed_on: "Proposé le"
+    contact: "Contact"
+    project_files: "Fichiers du projet"
+    report_inappropriate: "Reporter comme inapproprié"
+
+    validation:
+      approved: Approuvé
+      declined: Désapprouvé
+      not_validated: Pas validé
+    admin:
+      approve: "Approuver"
+      decline: "Désapprouver"
+      delete: "Supprimer"
+
+    document_project: Documenter un projet
+    create_revision: Créer une révision
+    join_project: Se joindre au projet
+    leave_project: Partir du projet
+
+    repos_related: Projet Créé A Partir De Cette Proposition
+    sort_by: Trier par
+    newest: Plus récent
+    most_likes: Plus d'Aimes
+    most_makes: Plus de fabrications
+    recently_updated: Récemment mis à jour
+
+    new:
+      header: Nouvelle Proposition de Projet
+      name: Nom
+      name_sub: Quel est votre nom?
+      email: Adresse Courriel
+      email_sub: Quel est votre adresse courriel?
+      title: Titre
+      title_sub: Des titres de projets génial sont court et mémorable.
+
+      client_type: Type de Client
+      client_type_sub: Vous répondez de la part de qui?
+      organisation: Organisation
+      individual: Individuel
+
+      client: Client
+      client_sub: Qui est le client?
+
+      client_level_of_interest: Niveau d'intérêt du Client
+      client_level_of_interest_sub: Comment êtes-vous intéressé client?
+      low: Faible
+      medium: Moyen
+      high: Élevé
+
+      client_background: Contexte du Client
+      client_background_sub: Quel est le contexte du client?
+      supervisor_background: Contexte du Superviseur
+      supervisor_background_sub: Quel est le contexte du superviseur
+      project_background: Contexte du Projet
+      project_files: Fichiers du Projet
+      gallery: Galerie
+      gallery_aria_label: Selectionner des images
+      possible_tech_involved: Technologies possibles impliquées
+      video_link: Youtube link
+      video_link_sub: Projet similaire sur YouTube
+
+      past_experiences: Tentatives Précédentes
+      add_link: Ajouter un lien
+      remove_link: Retirer le dernier lien
+
+      prototype_budget: Budget du Prototype
+      expected_cost: Coût Prevu du Projet
+
+      project_type: Type de Projet
+      project_type_sub: Choisissez un type de projet
+      general: General
+      client_specific: Spécifique au client
+      not_applicable: S.O.
+
+      categories: Catégories
+      categories_sub: Choisissez un maximium de 5 catégories qui convent à ton projet
+      categories_placeholder: Sélectionner une catégorie...
+
+      create_proposal: Créer une proposition de projet
