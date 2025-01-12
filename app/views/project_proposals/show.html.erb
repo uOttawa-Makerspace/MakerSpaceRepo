@@ -2,7 +2,7 @@
 
 <section class="row container mx-auto">
   <section class="col-lg-8 order-lg-first order-last">
-    <h1 class="border-bottom d-lg-block d-none"><%= @project_proposal.title %></h1>
+    <h1 class="border-bottom d-lg-block d-none mb-3"><%= @project_proposal.title %></h1>
     <% if @project_proposal.youtube_link.present? %>
       <%= youtube_video(@project_proposal.youtube_link) %>
     <% end %>

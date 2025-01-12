@@ -1,8 +1,9 @@
+<div class="container-fluid">
 <div class="accordion" id="proposalAccordion">
   <% if @user.admin? %>
     <div class="accordion-item">
       <h2 class="accordion-header">
-        <button class="accordion-button d-inline text-center fs-2" type="button" data-bs-toggle="collapse"
+        <button class="accordion-button d-inline text-center fs-3" type="button" data-bs-toggle="collapse"
                 data-bs-target="#pendingAccordion" aria-expanded="true" aria-controls="pendingAccordion">
           Pending Project Proposals
         </button>
@@ -15,7 +16,7 @@
 
   <div class="accordion-item">
     <h2 class="accordion-header">
-      <button class="accordion-button d-inline text-center fs-2" type="button" data-bs-toggle="collapse"
+      <button class="accordion-button d-inline text-center fs-3" type="button" data-bs-toggle="collapse"
               data-bs-target="#approvedAccordion" aria-expanded="true" aria-controls="approvedAccordion">
         Approved Project Proposals
       </button>
@@ -27,7 +28,7 @@
 
   <div class="accordion-item">
     <h2 class="accordion-header">
-      <button class="accordion-button d-inline text-center fs-2" type="button" data-bs-toggle="collapse"
+      <button class="accordion-button d-inline text-center fs-3" type="button" data-bs-toggle="collapse"
               data-bs-target="#declinedAccordion" aria-expanded="true" aria-controls="declinedAccordion">
         Project Proposals not approved
       </button>
@@ -51,4 +52,5 @@
       </div>
     </details>
   <% end %>
+</div>
 </div>
