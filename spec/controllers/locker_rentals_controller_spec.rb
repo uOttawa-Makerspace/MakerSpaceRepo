@@ -394,7 +394,7 @@ RSpec.describe LockerRentalsController, type: :controller do
         }.to change { LockerRental.count }.by(1)
       end
 
-      it "should now allow requesting fully booked locker types" do
+      it "should not allow requesting fully booked locker types" do
         # Fill up a locker type
         full_locker_type = create :locker_type, quantity: 2
         create(:locker_rental, :active, locker_type: full_locker_type)
@@ -411,7 +411,8 @@ RSpec.describe LockerRentalsController, type: :controller do
       end
 
       it "should not allow changing state after requesting" do
-        locker_rental = create :locker_rental, :reviewing
+        locker_rental =
+          create :locker_rental, :reviewing, rented_by: @current_user
         patch :update,
               params: {
                 id: locker_rental.id,
@@ -437,24 +438,55 @@ RSpec.describe LockerRentalsController, type: :controller do
 
       it "should not allow changing type after requesting" do
         locker_rental = create :locker_rental, :await_payment, :notes
+        other_locker_type = create :locker_type
+        expect do
+          patch :update,
+                params: {
+                  id: locker_rental.id,
+                  locker_rental: {
+                    locker_type_id: other_locker_type.id
+                  }
+                }
+        end.not_to(change { locker_rental.locker_type })
       end
 
       it "should not allow modifying requests of other users" do
+        locker_rental =
+          create(:locker_rental, :await_payment, rented_by: @current_user)
+        session[:user_id] = create(:user).id
+        patch :update,
+              params: {
+                id: locker_rental.id,
+                locker_rental: {
+                  state: :cancelled
+                }
+              }
+        # stays the same
+        expect(locker_rental.reload.state).to eq("await_payment")
       end
     end
 
-    context "locker request checkout" do
-      it "should send emails reminding of checkout" do
-      end
+    # Rather hard to test stripe in here really
 
-      it "should auto assign after checkout" do
-      end
+    # context "locker request checkout" do
+    #   it "should send emails reminding of checkout" do
+    #     locker_rental = create(:locker_rental, :reviewing)
+    #     patch :update, params: {
+    #             id: locker_rental.id
+    #           }
+    #   end
 
-      it "should not auto assign after failed checkout" do
-      end
-    end
+    #   it "should auto assign after checkout" do
+    #   end
+
+    #   it "should not auto assign after failed checkout" do
+    #   end
+    # end
 
     context "locker request cancellation" do
+      # before(:each) do
+      #   @locker_rental = create :locker_rental, :active
+      # end
       it "should send a cancellation email" do
       end
 
@@ -462,6 +494,12 @@ RSpec.describe LockerRentalsController, type: :controller do
       end
 
       it "should prevent reopening requests" do
+        create :locker_request, :cancelled
+      end
+
+      it "should not allow users to cancel active rentals" do
+        @current_user = create :user
+        session[:user_id] = @current_user.id
       end
     end
 
