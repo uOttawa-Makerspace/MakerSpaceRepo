@@ -5,30 +5,34 @@ class LockerRentalsController < ApplicationController
   before_action :signed_in, except: %i[stripe_success stripe_cancelled]
   # Also sets @locker_rental
   before_action :check_permission,
-                except: %i[index new stripe_success stripe_cancelled]
+                except: %i[index new create stripe_success stripe_cancelled]
 
   def index
     # Only admin can see index list
     #redirect_to :new_locker_rental unless current_user.admin?
 
     @own_locker_rentals = current_user.locker_rentals
-    @locker_types = LockerType.all
-    @locker_rentals =
-      LockerRental.includes(:locker_type, :rented_by).order(
-        locker_type_id: :asc
-      )
+    if current_user.admin?
+      @locker_types = LockerType.all
+      @locker_rentals =
+        LockerRental.includes(:locker_type, :rented_by).order(
+          locker_type_id: :asc
+        )
+    end
   end
 
   def show
-    @stripe_checkout_session =
-      Stripe::Checkout::Session.create(
-        success_url: stripe_success_locker_rentals_url,
-        cancel_url: stripe_cancelled_locker_rentals_url,
-        mode: "payment",
-        line_items: @locker_rental.locker_type.generate_line_items,
-        billing_address_collection: "required",
-        client_reference_id: "locker-rental-#{@locker_rental.id}"
-      )
+    if @locker_rental.await_payment?
+      @stripe_checkout_session =
+        Stripe::Checkout::Session.create(
+          success_url: stripe_success_locker_rentals_url,
+          cancel_url: stripe_cancelled_locker_rentals_url,
+          mode: "payment",
+          line_items: @locker_rental.locker_type.generate_line_items,
+          billing_address_collection: "required",
+          client_reference_id: "locker-rental-#{@locker_rental.id}"
+        )
+    end
   end
 
   def new
@@ -43,7 +47,28 @@ class LockerRentalsController < ApplicationController
     # then force to wait for admin approval
     if !current_user.admin? || params.dig(:locker_rental, :ask)
       @locker_rental.state = :reviewing
+      # If not admin, only create request for self
       @locker_rental.rented_by = current_user
+    elsif current_user.admin? && locker_rental_params[:state] == "active"
+      # if acting as admin
+      # save down later
+      @locker_rental.auto_assign
+    end
+
+    # validate locker type if not administration
+    unless current_user.admin?
+      # not an admin, asking for an unavailable locker
+      unless @locker_rental.locker_type.available
+        new_instance_attributes
+        render :new, status: :unprocessable_entity
+        return
+      end
+
+      if @locker_rental.locker_type.get_available_lockers.empty?
+        new_instance_attributes
+        render :new, status: :unprocessable_entity
+        return
+      end
     end
 
     if @locker_rental.save
@@ -56,15 +81,28 @@ class LockerRentalsController < ApplicationController
 
   def update
     @locker_rental = LockerRental.find(params[:id])
-
     # NOTE move this line to model maybe?
     # if changing state to 'active'
-    if locker_rental_params[:state] == "active"
+    if current_user.admin? && locker_rental_params[:state] == "active"
       # default to end of semester
       @locker_rental.owned_until ||= end_of_this_semester
       # Get first available locker specifier if not set
       @locker_rental.locker_specifier ||=
         @locker_rental.locker_type.get_available_lockers.first
+    end
+
+    # Only admins can cancel active rentals
+    # If current user is attempting to change state
+    if !current_user.admin? && locker_rental_params[:state].present?
+      # prevent if not cancelling a non-active rental
+      unless locker_rental_params[:state] == "cancelled" &&
+               @locker_rental.under_review?
+        flash[
+          :alert
+        ] = "Cannot cancel active locker rental, contact administration for cancellation"
+        render :show, status: :unprocessable_entity
+        return
+      end
     end
 
     if @locker_rental.update(locker_rental_params)
@@ -113,34 +151,39 @@ class LockerRentalsController < ApplicationController
     @pending_locker_request = current_user.locker_rentals.under_review.first
   end
 
+  def admin_locker_rental_params
+    admin_params =
+      params.require(:locker_rental).permit(
+        :locker_type_id,
+        # admin can assign and approve requests
+        :rented_by_id,
+        :locker_specifier,
+        :state,
+        :owned_until,
+        :notes
+      )
+    # FIXME replace that search with a different one, return ID instead
+    # If username is given (since search can do that)
+    rented_by_user =
+      User.find_by(username: params.dig(:locker_rental, :rented_by_username))
+    if rented_by_user
+      # then convert to user id
+      admin_params.reverse_merge!(rented_by_id: rented_by_user.id)
+    end
+    return admin_params
+  end
+
   def locker_rental_params
     if current_user.admin? && !params.dig(:locker_rental, :ask)
-      admin_params =
-        params.require(:locker_rental).permit(
-          :locker_type_id,
-          # admin can assign and approve requests
-          :rented_by_id,
-          :locker_specifier,
-          :state,
-          :owned_until,
-          :notes
-        )
-      # FIXME replace that search with a different one, return ID instead
-      # If username is given (since search can do that)
-      rented_by_user =
-        User.find_by(username: params.dig(:locker_rental, :rented_by_username))
-      if rented_by_user
-        # then convert to user id
-        admin_params.reverse_merge!(rented_by_id: rented_by_user.id)
-      end
-      return admin_params
+      admin_locker_rental_params
     else
       # people pick where they want a locker
+      permits = [:locker_type_id]
       # prevent user from editing rental notes after first submit
-      params
-        .require(:locker_rental)
-        .permit(:locker_type_id)
-        .tap { |p| p.permit(:notes) unless params[:id] }
+      permits << :notes unless params[:id]
+      # For user cancellations
+      permits << :state
+      params.require(:locker_rental).permit(*permits)
     end
   end
 end
