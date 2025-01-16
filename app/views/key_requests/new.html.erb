@@ -19,15 +19,15 @@
     <div class="row">
       <div class="col-xl-6 offset-xl-3 col-lg-8 offset-lg-2 col-md-10 offset-md-1 col-12">
         <div class="mb-3">
-          <%= f.label :student_number, 'Student/Employee Number', class: 'form-label' %>
+          <%= f.label :student_number, 'Student/Employee Number', class: 'form-label' %> <%= fa_icon('asterisk', class: 'text-danger') %>
           <%= f.text_field :student_number, class: 'form-control', required: true %>
         </div>
         <div class="mb-3">
-          <%= f.label :phone_number, class: 'form-label' %>
+          <%= f.label :phone_number, class: 'form-label' %> <%= fa_icon('asterisk', class: 'text-danger') %>
           <%= f.text_field :phone_number, class: 'form-control', required: true %>
         </div>
         <div class="mb-3">
-          <%= f.label :emergency_contact, class: 'form-label' %>
+          <%= f.label :emergency_contact, class: 'form-label' %> <%= fa_icon('asterisk', class: 'text-danger') %>
           <%= f.text_field :emergency_contact, class: 'form-control', required: true %>
         </div>
         <div class="mb-3">
@@ -35,7 +35,7 @@
           <%= f.text_field :emergency_contact_relation, class: 'form-control' %>
         </div>
         <div class="mb-3">
-          <%= f.label :emergency_contact_phone_number, class: 'form-label' %>
+          <%= f.label :emergency_contact_phone_number, class: 'form-label' %> <%= fa_icon('asterisk', class: 'text-danger') %>
           <%= f.text_field :emergency_contact_phone_number, class: 'form-control', required: true %>
         </div>
         <div class="mb-3">
