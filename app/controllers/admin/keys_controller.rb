@@ -112,8 +112,7 @@ class Admin::KeysController < AdminAreaController
   end
 
   def revoke_key
-    if @key.status_held? &&
-         @key.update(user_id: nil, key_request_id: nil, status: :inventory) &&
+    if @key.status_held? && @key.update(user_id: nil, status: :inventory) &&
          @key.get_latest_key_transaction.update(
            return_date: Date.today,
            # Set deposit return date to today if deposit is zero
