@@ -80,7 +80,16 @@ class Admin::KeysController < AdminAreaController
   end
 
   def assign_key
-    user = KeyRequest.find(params[:key][:key_request_id]).user
+    if params[:key][:key_request_id].present?
+      # old way, through a key request
+      user = KeyRequest.find(params[:key][:key_request_id]).user
+    elsif params[:key][:staff_id].present?
+      user = User.find(params[:key][:staff_id])
+    else
+      flash[:alert] = "User not found"
+      render :assign, status: :not_found
+      return
+    end
 
     key_transaction =
       KeyTransaction.new(

@@ -25,11 +25,11 @@ class Key < ApplicationRecord
               message: "A space is required"
             },
             if: :key_type_regular?
-  validates :key_request,
-            presence: {
-              message: "A key request is required"
-            },
-            if: :status_held?
+  # validates :key_request,
+  #           presence: {
+  #             message: "A key request is required"
+  #           },
+  #           if: :status_held?
 
   validates :number,
             presence: {
