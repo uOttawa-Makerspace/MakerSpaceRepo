@@ -1,19 +1,19 @@
 <section>
-  <h2 class="mb-3 fw-bold py-3 text-center">Assign key</h2>
+  <div class="mb-3 py-3 text-center">
+  <h2 class="fw-bold">Assign key #<%= @key.number %></h2>
+  <p class="fs-4"><%= @key.get_keycode %> - <%= @key.key_type.humanize %></p>
+  </div>
 
   <%= form_with model: @key, url: { controller: 'admin/keys', action: 'assign_key' } do |f| %>
     <div class="row">
       <div class="col-xl-6 offset-xl-3 col-lg-8 offset-lg-2 col-md-10 offset-md-1 col-12">
         <div class="mb-3">
           <%= f.label :supervisor_id, 'Supervisor', class: 'form-label' %>
-          <%= f.select :supervisor_id, options_for_select(User.where(role: 'admin').order('LOWER(name) ASC').pluck(:name, :id), selected: @user.id), { prompt: 'Choose Supervisor...' }, { class: 'form-control', id: 'supervisor-select' } %>
+          <%= f.select :supervisor_id, options_for_select(@admin_options, selected: @user.id), { prompt: 'Choose Supervisor...' }, { class: 'form-control', id: 'supervisor-select' } %>
         </div>
         <div class="mb-3">
-          <%#%= f.label :key_request_id, 'User', class: 'form-label' %>
-          <%#%= f.select :key_request_id, options_for_select(KeyRequest.where(status: :approved).joins(:user).order('LOWER(users.name) ASC').pluck('users.name', 'key_requests.id')), { prompt: 'Choose User...' }, { class: 'form-control', id: 'key-request-select' } %>
-          <%# Get all staff, not just those who did the form %>
-          <%= f.label :staff_id, 'User', class: 'form-label' %>
-          <%= f.select :staff_id, options_for_select(User.staff.order('LOWER(name) ASC').pluck(:name, :id)), { prompt: 'Choose User...' }, { class: 'form-control', id: 'key-request-select' } %>
+          <%= f.label :user_id, 'User', class: 'form-label' %>
+          <%= f.select :user_id, options_for_select(@staff_options), { prompt: 'Choose User...' }, { class: 'form-control', id: 'key-request-select' } %>
         </div>
         <div class="mb-5">
           <%= label_tag :deposit_amount, 'Deposit Amount', class: 'form-label' %>

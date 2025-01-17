@@ -2,7 +2,7 @@ class Key < ApplicationRecord
   belongs_to :user, class_name: "User", optional: true
   belongs_to :supervisor, class_name: "User", optional: true
   belongs_to :space, optional: true
-  belongs_to :key_request, optional: true
+  # belongs_to :key_request, optional: true
   has_many :key_transactions, dependent: :destroy
 
   enum :status,
@@ -56,6 +56,10 @@ class Key < ApplicationRecord
               message: "A keycode is required"
             },
             unless: :key_type_regular?
+
+  def key_request
+    user&.key_request
+  end
 
   def get_latest_key_transaction
     KeyTransaction.where(key_id: id).order(created_at: :desc).first
