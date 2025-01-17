@@ -87,6 +87,7 @@ class ProjectProposal < ApplicationRecord
     !self.user_id.nil?
   end
 
+  # FIXME make this an enum
   def approval_status
     case self.approved
     when 0

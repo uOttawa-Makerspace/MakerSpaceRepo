@@ -9,7 +9,9 @@
       <div>
         <% (1..KeyRequest::NUMBER_OF_QUESTIONS).each do |i| %>
           <div class="mb-5">
-            <%= f.label "question_#{i}", "Question #{i}: #{KeyRequest::QUESTIONS[i - 1]}", class: 'form-label' %>
+            <%= f.label "question_#{i}", class: 'form-label' do %>
+              <%= "Question #{i}: #{KeyRequest::QUESTIONS[i - 1]}" %> <%= fa_icon('asterisk', class: 'text-danger') %>
+            <% end %>
             <%= f.text_field "question_#{i}", required: true, class: 'form-control' %>
           </div>
         <% end %>

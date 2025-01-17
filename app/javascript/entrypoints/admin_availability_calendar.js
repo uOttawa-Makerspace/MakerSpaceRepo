@@ -332,11 +332,11 @@ const hideShowEvents = (event, eventName) => {
       if (!(hiddenIds[id] === "none")) {
         el.checked = showUnavailabilities === "block";
       }
-      showUnavailabilities = document.getElementById(
-        "hide-show-unavailabilities"
-      ).checked
-        ? "block"
-        : "none";
+      // showUnavailabilities = document.getElementById(
+      //   "hide-show-unavailabilities"
+      // ).checked
+      //   ? "block"
+      //   : "none";
     });
   } else if (eventName === "id") {
     document.querySelectorAll(`[data-user-id="${event}"]`).forEach((el) => {
@@ -345,17 +345,20 @@ const hideShowEvents = (event, eventName) => {
   }
   if (eventName === "check") {
     for (let e of calendar.getEvents()) {
-      e.setProp("display", showUnavailabilities);
+      //e.setProp("display", showUnavailabilities);
     }
   }
 };
 
 // Hide/Show unavailabilities toggle
+// FIXME This whole thing is a disaster, get rid of it
 document
   .getElementById("hide-show-unavailabilities")
-  .addEventListener("click", () => {
-    showUnavailabilities = showUnavailabilities === "block" ? "none" : "block";
-    hideShowEvents(showUnavailabilities, "unavailabilities");
+  .addEventListener("change", (total) => {
+    document.querySelectorAll(".shift-hide-button").forEach((i) => {
+      i.checked = total.target.checked;
+      i.dispatchEvent(new Event("click"));
+    });
   });
 
 // Hide/Show unavailabilities for a single staff
@@ -538,11 +541,11 @@ const openModal = (arg) => {
   // Set default visibility based on whether the event is recurring or whole day
   if (arg !== undefined && arg !== null) {
     startTimePicker.setDate(Date.parse(arg.startStr));
-    //startDatePicker.setDate(Date.parse(arg.startStr));
-    startDatePicker.clear();
+    startDatePicker.setDate(Date.parse(arg.startStr));
+    //startDatePicker.clear();
     endTimePicker.setDate(Date.parse(arg.endStr));
-    //endDatePicker.setDate(Date.parse(arg.endStr));
-    endDatePicker.clear();
+    endDatePicker.setDate(Date.parse(arg.endStr));
+    //endDatePicker.clear();
     dayInput.value = new Date(Date.parse(arg.startStr)).getDay();
     wholeDayCheckbox.checked =
       new Date(Date.parse(arg.endStr)).getHours() === 23 &&
