@@ -14,12 +14,7 @@ class Admin::KeysController < AdminAreaController
   before_action :set_key_request, only: %i[approve_key_request deny_key_request]
 
   def index
-    @keys =
-      Key.all.sort_by do |key|
-        value = key.number
-
-        value =~ /\A\d+\z/ ? value.to_i * -1 : Float::INFINITY
-      end
+    @keys = Key.includes(:space, :user, :supervisor).order(updated_at: :desc)
 
     @spaces = Space.order(name: :asc)
   end
@@ -79,8 +74,26 @@ class Admin::KeysController < AdminAreaController
     redirect_to admin_keys_path
   end
 
+  def assign
+    @admin_options =
+      User.where(role: "admin").order("LOWER(name) ASC").pluck(:name, :id)
+    @staff_options =
+      User
+        .staff
+        .order("LOWER(name) ASC")
+        .map do |user|
+          label = ""
+          if user.key_request.blank?
+            label = " (No request form)"
+          elsif user.key_request.status_waiting_for_approval?
+            label = " (Request form awaiting approval)"
+          end
+          ["#{user.name} #{label}", user.id]
+        end
+  end
+
   def assign_key
-    user = KeyRequest.find(params[:key][:key_request_id]).user
+    user = User.find(params[:key][:user_id])
 
     key_transaction =
       KeyTransaction.new(
@@ -99,8 +112,7 @@ class Admin::KeysController < AdminAreaController
   end
 
   def revoke_key
-    if @key.status_held? &&
-         @key.update(user_id: nil, key_request_id: nil, status: :inventory) &&
+    if @key.status_held? && @key.update(user_id: nil, status: :inventory) &&
          @key.get_latest_key_transaction.update(
            return_date: Date.today,
            # Set deposit return date to today if deposit is zero
@@ -151,8 +163,8 @@ class Admin::KeysController < AdminAreaController
     params.require(:key).permit(
       :number,
       :space_id,
+      :user_id,
       :supervisor_id,
-      :key_request_id,
       :status,
       :key_type,
       :custom_keycode,
