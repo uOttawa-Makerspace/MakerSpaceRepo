@@ -1,0 +1,14 @@
+<div class="tab-content">
+    <div class="tab-pane active" role="tabpanel">
+        <%= form_with url: rename_user_admin_users_path, method: :patch, autocomplete: :off do |f| %>
+            <%= f.hidden_field :id, value: @repo_user.id %>
+            <div class="row">
+                <%= f.label :rename, 'Rename user to:', class: 'col-form-label col-lg-auto' %>
+                <div class="input-group col-lg-4">
+                    <%= f.text_field :rename, placeholder: @repo_user.username, autocomplete: :off, class: 'form-control' %>
+                    <%= f.submit 'Update username', class: 'btn btn-primary' %>
+                </div>
+            </div>
+        <% end %>
+    </div>
+</div>

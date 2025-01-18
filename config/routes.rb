@@ -273,6 +273,7 @@ Rails.application.routes.draw do
         patch "restore_user"
         put "toggle_lock_user"
         get "manage_roles"
+        patch :rename_user
         #   patch "mass_update_roles", to: "users#mass_update_roles"
       end
       # member do
