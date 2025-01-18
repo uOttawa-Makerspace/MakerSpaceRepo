@@ -818,9 +818,12 @@ const updateHours = () => {
     .then((res) => res.json())
     .then((data) => {
       Object.keys(data).map((u) => {
-        document.getElementById(
-          `user-hour-counter-${u}`
-        ).innerText = `${data[u]} hour(s)`;
+        let counter = document.getElementById(`user-hour-counter-${u}`);
+        if (counter) {
+          counter.innerText = `${data[u]} hour(s)`;
+        } else {
+          console.log("Counter for ID " + u + " not found");
+        }
       });
     })
     .catch((error) => {
