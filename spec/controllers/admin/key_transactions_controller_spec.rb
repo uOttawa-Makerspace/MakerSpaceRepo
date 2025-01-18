@@ -53,8 +53,7 @@ RSpec.describe Admin::KeyTransactionsController, type: :controller do
             :regular_key_type,
             user_id: @admin.id,
             supervisor_id: @admin.id,
-            space_id: @space.id,
-            key_request_id: @key_request.id
+            space_id: @space.id
           )
         @key_transaction =
           create(
