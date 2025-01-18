@@ -281,10 +281,12 @@ class Admin::ShiftsController < AdminAreaController
     staff_availabilities = []
     @space_id = params[:space_id] if params[:space_id].present?
     StaffAvailability
+      .includes(:user, :exceptions)
       .where(
         user_id: StaffSpace.where(space_id: @space_id).pluck(:user_id),
         time_period: @time_period
       )
+      .all
       .each do |sa|
         event = {}
         event[
@@ -322,7 +324,8 @@ class Admin::ShiftsController < AdminAreaController
     shifts = []
 
     Shift
-      .includes(:users)
+      .includes(users: :staff_spaces)
+      .includes(:space, :training)
       .where(
         "users.id": StaffSpace.where(space_id: @space_id).pluck(:user_id),
         space_id: @space_id
@@ -402,10 +405,13 @@ class Admin::ShiftsController < AdminAreaController
     end
 
     hours = {}
-    StaffSpace.where(space_id: @space_id).each { |ss| hours[ss.user_id] = 0 }
+    StaffSpace
+      .includes(:user)
+      .where(space_id: @space_id)
+      .each { |ss| hours[ss.user_id] = 0 }
 
     Shift
-      .all
+      .includes(:users)
       .where(
         space_id: @space_id,
         start_datetime:
