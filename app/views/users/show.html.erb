@@ -171,6 +171,9 @@
             <div class="tab-pane fade" id="quick-access-manager" role="tabpanel" aria-labelledby="quick-access-tab">
               <%= render partial: 'users/tabs/quick_access', locals: { user: @user, repo_user: @repo_user } %>
             </div>
+            <div class="tab-pane fade" id="user-rename" role="tabpanel" aria-labelledby="user-rename-tab">
+              <%= render partial: 'users/tabs/rename', locals: { user: @user, repo_user: @repo_user } %>
+            </div>
             <% unless @repo_user.deleted? %>
               <div class="tab-pane fade" id="user-delete" role="tabpanel" aria-labelledby="profile-tab">
                 <%= render partial: 'users/tabs/delete' %>
