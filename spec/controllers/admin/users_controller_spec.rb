@@ -160,5 +160,28 @@ RSpec.describe Admin::UsersController, type: :controller do
         expect(@user_two.staff_spaces.pluck :space_id).to eq []
       end
     end
+
+    context "renaming users" do
+      it "should rename users" do
+        @user = create :user
+        new_name = "newName"
+        patch :rename_user, params: { id: @user.id, rename: new_name }
+        expect(response).not_to have_http_status :not_found
+        expect(response).to redirect_to user_path(new_name)
+        expect(flash[:alert]).to be_nil
+        expect(@user.reload.username).to eq new_name
+      end
+
+      it "should error if username is already in use" do
+        @user = create :user
+        existing_username = "existingUsername"
+        @prev_user = create :user, username: existing_username
+        patch :rename_user, params: { id: @user.id, rename: existing_username }
+        expect(response).to redirect_to(user_path(@user.username))
+        expect(flash[:alert]).not_to be_nil
+        expect(flash[:notice]).to be_nil
+        expect(@user.reload.username).not_to eq existing_username
+      end
+    end
   end
 end

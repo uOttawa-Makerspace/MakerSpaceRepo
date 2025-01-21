@@ -6,7 +6,6 @@ RSpec.describe Key, type: :model do
       it { should belong_to(:user).without_validating_presence }
       it { should belong_to(:supervisor).without_validating_presence }
       it { should belong_to(:space).without_validating_presence }
-      it { should belong_to(:key_request).without_validating_presence }
     end
 
     context "has_many" do
@@ -37,8 +36,7 @@ RSpec.describe Key, type: :model do
             :held_status,
             space_id: @space.id,
             user_id: @user.id,
-            supervisor_id: @user.id,
-            key_request_id: @kr.id
+            supervisor_id: @user.id
           )
         expect(key.valid?).to be_truthy
       end

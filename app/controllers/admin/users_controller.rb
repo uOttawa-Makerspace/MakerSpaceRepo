@@ -278,6 +278,28 @@ class Admin::UsersController < AdminAreaController
     end
   end
 
+  def rename_user
+    user = User.find(params[:id])
+    if user.blank?
+      head status: :not_found
+      return
+    end
+
+    unless params[:rename].present?
+      flash[:alert] = "No username provided"
+      redirect_to user_path(user.username)
+      return
+    end
+
+    if user.update(username: params[:rename])
+      flash[:notice] = "User renamed successfully"
+    else
+      flash[:alert] = "Username invalid: " +
+        user.errors.full_messages.join("</br>")
+    end
+    redirect_to user_path(user.reload.username)
+  end
+
   private
 
   def user_params

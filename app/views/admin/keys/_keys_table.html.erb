@@ -45,6 +45,18 @@
               0/<%= KeyCertification::NUMBER_OF_STAFF_FILES %> (staff)<br>
               0/<%= KeyCertification::NUMBER_OF_SUPERVISOR_FILES %> (supervisor)
             <% end %>
+            <% if key.user.present? %>
+              <% if key.key_request.present? %>
+                <% if key.key_request.status_approved? %>
+                  1/1 (form)
+                <% else %>
+                  <span class="fw-bold text-danger">0/1 (form)</span>
+                  <%= link_to 'pending', key_request_path(key.key_request) %>
+                <% end %>
+              <% else %>
+                0/1 (form)
+              <% end %>
+            <% end %>
           </td>
           <td>
             <%= link_to 'Show', admin_key_path(key.id), class: 'w-100 py-1 mb-1 btn btn-secondary' %>

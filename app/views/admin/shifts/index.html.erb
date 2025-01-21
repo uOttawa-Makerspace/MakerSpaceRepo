@@ -20,12 +20,13 @@
 
       <% @colors.each do |user| %>
         <div class="pb-2">
-          <label><%= link_to user[:user].name, user_path(user[:user].username), target: :_blank, rel: :noopener %></label>
-          <br>
+          <label for="user-<%= user[:user].id %>"><%= user[:user].name %> <%= link_to "(#{user[:user].role.humanize})", user_path(user[:user].username), target: :_blank, rel: :noopener %>
+            <!-- <br> -->
           <div class="d-flex">
             <input type="color" name="color" onchange="updateColor(<%= user[:id] %>, this.value)" class="form-control form-control-color-shift" value="<%= user[:color] %>" title="Choose your color">
             <input class="form-check-input checkbox-lg ms-1 shift-hide-button" id="user-<%= user[:user].id %>" type="checkbox" onclick="toggleVisibility(<%= user[:user].id %>)" checked>
           </div>
+          </label>
         </div>
       <% end %>
     </div>

@@ -182,8 +182,7 @@ RSpec.describe Admin::KeysController, type: :controller do
             :regular_key_type,
             space_id: @space.id,
             user_id: @user.id,
-            supervisor_id: @user.id,
-            key_request_id: kr.id
+            supervisor_id: @user.id
           )
 
         patch :update,
@@ -252,7 +251,32 @@ RSpec.describe Admin::KeysController, type: :controller do
               params: {
                 key_id: key.id,
                 key: {
-                  key_request_id: @key_request.id,
+                  user_id: @key_request.user.id,
+                  supervisor_id: @admin.id
+                },
+                deposit_amount: 20
+              }
+
+        expect(flash[:notice]).to eq("Successfully assigned key")
+        expect(KeyTransaction.last.deposit_amount).to eq(20)
+        expect(KeyTransaction.last.user_id).to eq(@staff.id)
+        expect(KeyTransaction.last.key_id).to eq(key.id)
+        expect(Key.last.status).to eq("held")
+      end
+
+      it "should assign a key to staff even with no form completed" do
+        key =
+          create(
+            :key,
+            :inventory_status,
+            :regular_key_type,
+            space_id: @space.id
+          )
+        patch :assign_key,
+              params: {
+                key_id: key.id,
+                key: {
+                  user_id: @staff.id,
                   supervisor_id: @admin.id
                 },
                 deposit_amount: 20
@@ -273,7 +297,7 @@ RSpec.describe Admin::KeysController, type: :controller do
               params: {
                 key_id: key.id,
                 key: {
-                  key_request_id: @key_request.id,
+                  user_id: @key_request.user.id,
                   supervisor_id: @admin.id
                 },
                 deposit_amount: 20
@@ -319,7 +343,7 @@ RSpec.describe Admin::KeysController, type: :controller do
               params: {
                 key_id: key.id,
                 key: {
-                  key_request_id: @key_request.id,
+                  user_id: @key_request.user.id,
                   supervisor_id: @admin.id
                 },
                 deposit_amount: 20
@@ -348,7 +372,7 @@ RSpec.describe Admin::KeysController, type: :controller do
               params: {
                 key_id: key.id,
                 key: {
-                  key_request_id: @key_request.id,
+                  user_id: @key_request.user.id,
                   supervisor_id: @admin.id
                 },
                 deposit_amount: 0
