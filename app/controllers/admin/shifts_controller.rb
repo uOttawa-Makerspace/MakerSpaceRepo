@@ -282,6 +282,7 @@ class Admin::ShiftsController < AdminAreaController
     @space_id = params[:space_id] if params[:space_id].present?
     StaffAvailability
       .includes(:user, :exceptions)
+      .includes(user: :staff_spaces)
       .where(
         user_id: StaffSpace.where(space_id: @space_id).pluck(:user_id),
         time_period: @time_period
