@@ -1,54 +1,49 @@
-<div class="tab-content" style="display: flex; justify-content: center; align-items: center; height: 100%;">
-  <div class="tab-pane active" id="your-tab-id" role="tabpanel">
-    <div class="container" style="max-width: 600px;"> <!-- Adjust max-width as needed -->
-      <div class="row">
-        <div class="col-md-12">
-          <%= form_tag set_role_admin_users_path, method: :patch do %>
-            <%= hidden_field_tag :'user_ids[]', @repo_user.id %>
-            <div class="mb-3">
-              <label>Role</label><br>
-              <%= radio_button_tag :role, 'admin', @repo_user.admin?, class: 'form-check-input role-button', id: 'role_admin' %>
-              <%= label_tag :role_admin, 'Admin', class: 'form-label' %><br>
-              <%= radio_button_tag :role, 'staff', @repo_user.staff? && !@repo_user.admin?, class: 'form-check-input role-button', id: 'role_staff' %>
-              <%= label_tag :role_staff, 'Staff', class: 'form-label' %><br>
-              <%= radio_button_tag :role, 'regular_user', !(@repo_user.staff? || @repo_user.admin?), class: 'form-check-input role-button', id: 'role_regular_user' %>
-              <%= label_tag :role_regular_user, 'Regular', class: 'form-label' %><br>
+<div class="tab-pane fade show active" id="admin-roles" role="tabpanel" aria-labelledby="admin-roles-tab">
+  <div class="row">
+    <%= form_tag set_role_admin_users_path, method: :patch, class: 'row' do %>
+      <%= hidden_field_tag :'user_ids[]', @repo_user.id %>
+      <div class="col-md-2">
+          <label>Role</label><br>
+          <%= radio_button_tag :role, 'admin', @repo_user.admin?, class: 'form-check-input role-button', id: 'role_admin' %>
+          <%= label_tag :role_admin, 'Admin', class: 'form-label' %><br>
+          <%= radio_button_tag :role, 'staff', @repo_user.staff? && !@repo_user.admin?, class: 'form-check-input role-button', id: 'role_staff' %>
+          <%= label_tag :role_staff, 'Staff', class: 'form-label' %><br>
+          <%= radio_button_tag :role, 'regular_user', !(@repo_user.staff? || @repo_user.admin?), class: 'form-check-input role-button', id: 'role_regular_user' %>
+          <%= label_tag :role_regular_user, 'Regular', class: 'form-label' %><br>
+          <br />
+          <%= submit_tag 'Update', class: 'btn btn-primary' %>
+      </div>
+      <div class="field form-group col-md-8" id="staff-space-changer" style="display: <%= @repo_user.staff? ? 'block' : 'none' %>;">
+        <label>Manage Spaces</label>
+        <div class="checkbox-inline">
+          <% @space_list.each do |space| %>
+            <% color = space.assigned_color %>
+            <div class="space-bubble" style="margin-right: 10px; border-color: <%= rgba(color, 1) %>; background-color: <%= rgba(color, 0.3) %>;">
+              <%= check_box_tag "spaces[#{@repo_user.id}][]", space.id, @staff_spaces.include?(space.id), class: 'form-check-input', id: "space_#{space.id}" %>
+              <%= label_tag "space_#{space.id}", space.name, class: 'form-check-label' %>
             </div>
-            <div class="field form-group" id="staff-space-changer" style="display: <%= @repo_user.staff? ? 'block' : 'none' %>; margin-bottom: 5px;">
-              <label>Manage Spaces</label>
-              <div class="checkbox-inline">
-                <% @space_list.each do |space| %>
-                  <% color = space.assigned_color %>
-                  <div class="space-bubble" style="margin-right: 10px; border-color: <%= rgba(color, 1) %>; background-color: <%= rgba(color, 0.3) %>;">
-                    <%= check_box_tag "spaces[#{@repo_user.id}][]", space.id, @staff_spaces.include?(space.id), class: 'form-check-input', id: "space_#{space.id}" %>
-                    <%= label_tag "space_#{space.id}", space.name, class: 'form-check-label' %>
-                  </div>
-                <% end %>
-              </div>
-            </div>
-            <%= submit_tag 'Update', class: 'btn btn-primary' %>
           <% end %>
         </div>
       </div>
-    </div>
+    <% end %>
   </div>
 </div>
 
 <style>
-    .space-bubble {
-        display: inline-block;
-        padding: 5px 10px;
-        margin-right: 5px;
-        margin-bottom: 5px;
-        border-radius: 20px;
-        border: 2px solid #ddd;
-        background-color: #f2f2f2;
-        color: #333;
-        font-size: 14px;
-        white-space: nowrap;
-    }
+ .space-bubble {
+   display: inline-block;
+   padding: 5px 10px;
+   margin-right: 5px;
+   margin-bottom: 5px;
+   border-radius: 20px;
+   border: 2px solid #ddd;
+   background-color: #f2f2f2;
+   color: #333;
+   font-size: 14px;
+   white-space: nowrap;
+ }
 
-    .space-bubble:hover {
-        background-color: #e2e2e2;
-    }
+ .space-bubble:hover {
+   background-color: #e2e2e2;
+ }
 </style>
