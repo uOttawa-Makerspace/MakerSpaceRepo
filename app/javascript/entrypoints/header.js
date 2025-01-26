@@ -31,4 +31,28 @@ document.addEventListener("turbo:load", function () {
       loginModal.querySelector("#username_email").focus();
     });
   }
+
+  if (document.getElementById("add-new-quick-access")) {
+    document
+      .getElementById("add-new-quick-access")
+      .addEventListener("click", () => {
+        // Get window title and path
+        let title = document.title.split("|").at(0).trim();
+        let path = window.location.pathname;
+        // Send request to server
+        fetch("/quick_access_links/create", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            accept: "application/json",
+          },
+          body: JSON.stringify({
+            name: title,
+            path: path,
+          }),
+        }).then((response) => {
+          Turbo.visit(window.location.href);
+        });
+      });
+  }
 });

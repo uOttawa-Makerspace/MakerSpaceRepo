@@ -9,6 +9,19 @@
 #quick-access-container {
   display: flex;
   transition: display 0.15s ease-in-out;
+
+  .btn-link {
+    text-decoration: none;
+  }
+
+  .nav-link {
+    &:hover {
+      color: $primary;
+    }
+  }
+  .nav-item + .nav-item {
+    border-left: 1px solid black;
+  }
 }
 #add-new-quick-access {
   cursor: pointer;
