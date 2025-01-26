@@ -271,6 +271,16 @@ const calendar = new Calendar(calendarEl, {
       }`,
     },
   ],
+  // HACK this thing is a disaster
+  // Fullcalendar uses absolute positioning with precomputed dimensions
+  // so hiding the topmost element with css still leaves the gap
+  // https://stackoverflow.com/q/65414252
+  // The only proper way to hide an event seems to be to set the display property but we use that for applying event exceptions.
+  // So we add a second marker class called 'event-excepted' to tell the visibility checkboxes to leave the event display alone
+  // TODO: Make the server implement the exceptions, instead of having clients interpret and render them. That would be an actual fix
+  // NOTE: This runs for each event. Recurring and single-day events are separate data objects. This event targets recurring events
+  // Recurring objects mean they recur on the same day of the week, between a start and end date. Used for putting in your class schedule
+  // This runs on every event data fetch, so when we change the active view start and end date, it triggers an event refetch
   eventDataTransform(eventData) {
     eventData.start_date = eventData.startRecur;
     eventData.end_date = eventData.endRecur;
@@ -302,6 +312,7 @@ const calendar = new Calendar(calendarEl, {
         }
       }
     }
+    eventData.eventExcepted = eventData.display == "none";
     return eventData;
   },
 });
@@ -310,21 +321,7 @@ calendar.render();
 
 // Hide/Show Events
 const hideShowEvents = (event, eventName) => {
-  calendar.refetchEvents();
-  // let allEvents = calendar.getEvents();
-  // for (let ev of allEvents) {
-  //   if (eventName === "id") {
-  //     if (ev.extendedProps.userId === event) {
-  //       ev.setProp("display", hiddenIds[event] === "block" ? "block" : "none");
-  //     }
-  //   } else {
-  //     if (hiddenIds[ev.extendedProps.userId] === "none") {
-  //       ev.setProp("display", "none");
-  //       continue;
-  //     }
-  //     ev.setProp("display", showUnavailabilities);
-  //   }
-  // }
+  //calendar.refetchEvents();
   // Update UI buttons
   if (eventName === "unavailabilities") {
     [...document.getElementsByClassName("shift-hide-button")].forEach((el) => {
@@ -338,11 +335,11 @@ const hideShowEvents = (event, eventName) => {
       //   ? "block"
       //   : "none";
     });
-  } else if (eventName === "id") {
+  } /*else if (eventName === "id") {
     document.querySelectorAll(`[data-user-id="${event}"]`).forEach((el) => {
       el.checked = hiddenIds[event] === "block";
     });
-  }
+  }*/
   if (eventName === "check") {
     for (let e of calendar.getEvents()) {
       //e.setProp("display", showUnavailabilities);
@@ -350,23 +347,36 @@ const hideShowEvents = (event, eventName) => {
   }
 };
 
-// Hide/Show unavailabilities toggle
-// FIXME This whole thing is a disaster, get rid of it
+// Hide/Show all unavailabilities toggle
 document
   .getElementById("hide-show-unavailabilities")
   .addEventListener("change", (total) => {
     document.querySelectorAll(".shift-hide-button").forEach((i) => {
       i.checked = total.target.checked;
-      i.dispatchEvent(new Event("click"));
+      toggleVisibility(i.dataset.userId, false);
     });
+    calendar.getEvents()[0].setExtendedProp("", "");
   });
 
 // Hide/Show unavailabilities for a single staff
-window.toggleVisibility = (id) => {
+window.toggleVisibility = (id, rerender = true) => {
   hiddenIds[id] = document.getElementById(`user-${id}`).checked
     ? "block"
     : "none";
-  hideShowEvents(id, "id");
+  // Find all events with user id (and not excepted)
+  calendar.getEvents().forEach((ev) => {
+    if (ev.extendedProps.userId == id && !ev.extendedProps.eventExcepted) {
+      // this triggers a render, and there are around a hundred event per week
+      //ev.setProp('display', hiddenIds[id])
+      // so this slows down the loop. Not sure if this is fixable without editing library source
+      // HACK set the internal property directly. Good luck if you upgrade the library lol
+      ev._def.ui.display = hiddenIds[id];
+    }
+  });
+  // then trigger a 'property update' to rerender
+  if (rerender) {
+    calendar.getEvents()[0].setExtendedProp("", "");
+  }
 };
 
 // Update the user's color
@@ -385,7 +395,8 @@ window.updateColor = (userId, color) => {
   })
     .then((response) => {
       if (response.ok) {
-        Turbo.visit(window.location, { action: "replace" });
+        //Turbo.visit(window.location, { action: "replace" });
+        calendar.refetchEvents();
       } else {
         showToast("toast-color-update-failed");
       }
