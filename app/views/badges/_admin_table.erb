@@ -10,12 +10,12 @@
   </div>
   <% if @order_items.present? %>
     <div class="text-center">
-      <table class="table table-striped">
+      <table class="table table-striped pending-badge-requests-table">
          <thead class="table-primary"><tr>
-          <th>Date Updated</th>
-          <th>Name</th>
-          <th>Badge</th>
-          <th>Project</th>
+          <th>Date Updated <span onclick="sortTable('pending-badge-requests-table', 0)"><%= fa_icon('arrow-down') %></span></th>
+          <th>Name <span onclick="sortTable('pending-badge-requests-table', 1)"><%= fa_icon('arrow-down') %></span></th>
+          <th>Badge <span onclick="sortTable('pending-badge-requests-table', 2)"><%= fa_icon('arrow-down') %></span></th>
+          <th>Project <span onclick="sortTable('pending-badge-requests-table', 3)"><%= fa_icon('arrow-down') %></span></th>
           <th>Certify</th>
           <th>Revoke</th>
         </tr></thead>
