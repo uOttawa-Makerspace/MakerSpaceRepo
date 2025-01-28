@@ -39,7 +39,7 @@
 
       <% @colors.each do |user| %>
         <div class="pb-2">
-          <label><%= user[:name] %></label>
+          <label for="user-<%= user[:id] %>" ><%= user[:name] %>
           <br>
           <div class="d-flex">
             <input type="color" name="color" onchange="updateColor(<%= user[:id] %>, this.value)" class="form-control form-control-color-shift" value="<%= user[:color] %>" title="Choose your color">
@@ -47,6 +47,7 @@
             <div id="user-hour-counter-<%= user[:id] %>" class="d-flex align-items-center text-bg-primary ms-1 py-1 px-2 rounded">
               0 hour(s)
             </div>
+          </label>
           </div>
         </div>
       <% end %>
