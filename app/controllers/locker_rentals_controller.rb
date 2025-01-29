@@ -12,13 +12,14 @@ class LockerRentalsController < ApplicationController
     #redirect_to :new_locker_rental unless current_user.admin?
 
     @own_locker_rentals = current_user.locker_rentals
-    if current_user.admin?
-      @locker_types = LockerType.all
-      @locker_rentals =
-        LockerRental.includes(:locker_type, :rented_by).order(
-          locker_type_id: :asc
-        )
-    end
+  end
+
+  def admin
+    @locker_types = LockerType.all
+    @locker_rentals =
+      LockerRental.includes(:locker_type, :rented_by).order(
+        locker_type_id: :asc
+      )
   end
 
   def show
