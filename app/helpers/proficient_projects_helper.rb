@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 module ProficientProjectsHelper
+  # FIXME we removed w3 lib, get rid of this
   def return_hover_and_text_colors(level)
     case level
     when "Beginner"
