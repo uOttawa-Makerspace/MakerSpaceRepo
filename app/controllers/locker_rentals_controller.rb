@@ -16,6 +16,13 @@ class LockerRentalsController < ApplicationController
 
   def admin
     @locker_types = LockerType.all
+    if params[:locker_type]
+      @current_locker_type = LockerType.find(params[:locker_type])
+    else
+      @current_locker_type = LockerType.first
+    end
+    @current_rental_state = params[:rental_state] || "reviewing"
+
     @locker_rentals =
       LockerRental.includes(:locker_type, :rented_by).order(
         locker_type_id: :asc

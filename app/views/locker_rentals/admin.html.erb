@@ -1,20 +1,26 @@
-<div class="container-fluid">
-    <% @locker_types.each do |type| %>
-        <h2 class="text-center"><%= type.short_form %></h2>
-        <%= render partial: 'rental_data_table',
-                   locals: { locker_rentals: type.locker_rentals.where(state: :active),
-                             header_title: t('lockers.assigned_lockers') } %>
-        <div class="row row-cols-md-3 g-1">
+<div class="mx-md-3 pt-3">
+    <h1 class="text-center">Locker Rentals</h1>
+    <ul class="nav nav-tabs nav-fill">
+        <% @locker_types.each do |locker_type| %>
+            <li class="nav-item">
+                <%= link_to locker_type.short_form, admin_locker_rentals_path(locker_type:, rental_state: @current_rental_state), class: "nav-link tab-link #{'active' if @current_locker_type == locker_type}" %>
+            </li>
+        <% end %>
+    </ul>
+    <div class="tab-pane border-start border-end border-bottom px-md-3 pt-3">
+        <h2 class="text-center">Rentals in <%= @current_locker_type.short_form %></h2>
+        <ul class="nav nav-tabs nav-fill mt-3">
+            <% LockerRental.states.keys.each do |state| %>
+                <li class="nav-item">
+                    <%= link_to state.humanize, admin_locker_rentals_path(locker_type: @current_locker_type, rental_state: state), class: "nav-link tab-link #{'active' if @current_rental_state == state}" %>
+                </li>
+            <% end %>
+        </ul>
+
+        <div class="tab-pane border-start border-end border-bottom pt-3">
             <%= render partial: 'rental_data_table',
-                       locals: { locker_rentals: type.locker_rentals.where(state: :reviewing),
-                                 header_title: 'Requests' } %>
-            <%= render partial: 'rental_data_table',
-                       locals: { locker_rentals: type.locker_rentals.where(state: :await_payment),
-                                 header_title: 'Unpaid' } %>
-            <%= render partial: 'rental_data_table',
-                       locals: { locker_rentals: type.locker_rentals.where(state: :cancelled),
-                                 header_title: 'Cancelled', hide_actions: true } %>
+                       locals: { locker_rentals: @current_locker_type.locker_rentals.where(state: @current_rental_state),
+                                 header_title: t('lockers.assigned_lockers') } %>
         </div>
-        <hr />
-    <% end %>
+    </div>
 </div>
