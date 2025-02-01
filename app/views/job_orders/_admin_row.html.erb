@@ -15,7 +15,7 @@
           jo.user.internal? ? 'Internal' : 'External'
         end %></td>
 <td><%= jo.id %></td>
-<td><%= jo.created_at.to_formatted_s(:long_ordinal) %></td></td>
+<td data-sort="<%= jo.created_at %>"><%= jo.created_at.to_formatted_s(:long_ordinal) %></td></td>
 <td>
   <%= jo.job_type.name %>
   <%= jo.job_service_group.name if jo.job_service_group.present? %>
@@ -73,7 +73,7 @@
     <a class="btn btn-primary btn-sm mt-1" data-action="click->launch-custom-modal#launchJobOrderCommentsModal" data-id="<%= jo.id %>" data-comments="<%= jo.staff_comments %>">Staff Msg</a>
   <% end %>
 </td>
-<td>
+<td data-sort="<%= jo&.job_order_quote&.total_price %>">
   <% if jo.job_order_statuses.last.job_status == JobStatus::STAFF_APPROVAL %>
     <button 
       class="btn btn-primary btn-sm btn-block" 
