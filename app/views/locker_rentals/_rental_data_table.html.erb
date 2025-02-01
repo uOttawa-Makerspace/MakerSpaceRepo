@@ -1,6 +1,6 @@
 <div class="table-responsive">
     <h3 class="text-center"><%= header_title %></h3>
-    <table class="table table-striped" id="rental-data-table">
+    <table class="table table-striped" id="rental-data-table" data-datatables-enabled="true">
         <thead class="table-primary text-center">
             <tr>
                 <th class="w-auto"><%= t('lockers.locker_id') %></th>
@@ -30,10 +30,6 @@
                         <% end %>
                     </tr>
                 <% end %>
-            <% else %>
-                <tr>
-                    <td colspan="6" class="fw-bold">No locker rentals</td>
-                </tr>
             <% end %>
         </tbody>
     </table>

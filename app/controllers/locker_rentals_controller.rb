@@ -27,6 +27,11 @@ class LockerRentalsController < ApplicationController
       LockerRental.includes(:locker_type, :rented_by).order(
         locker_type_id: :asc
       )
+
+    respond_to do |format|
+      format.json { render json: @locker_rentals }
+      format.all
+    end
   end
 
   def show
