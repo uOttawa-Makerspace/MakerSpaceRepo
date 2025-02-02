@@ -331,6 +331,7 @@ class Admin::ShiftsController < AdminAreaController
         "users.id": StaffSpace.where(space_id: @space_id).pluck(:user_id),
         space_id: @space_id
       )
+      .where(start_datetime: (params[:start]..params[:end]))
       .each do |shift|
         event = {}
         event["title"] = shift.return_event_title
