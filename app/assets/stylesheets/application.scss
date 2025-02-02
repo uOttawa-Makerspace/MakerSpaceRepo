@@ -89,6 +89,11 @@ h1 {
     }
   }
 
+  &.active {
+    color: #fff;
+    background-color: var(--bs-secondary);
+  }
+
   font-weight: 700; // bold
   color: $secondary;
   &.dropdown-item-danger {
