@@ -72,9 +72,7 @@ RSpec.describe LearningAreaController, type: :controller do
         expect(flash[:notice]).to eq(
           "Learning Module has been successfully created."
         )
-        expect(response.body).to include(
-          learning_area_path(LearningModule.last.id).to_s
-        )
+        expect(response).to redirect_to learning_area_path(LearningModule.last)
       end
 
       it "should create the learning module with images and files" do
@@ -99,9 +97,9 @@ RSpec.describe LearningAreaController, type: :controller do
         }.to change(LearningModule, :count).by(1)
         expect(RepoFile.count).to eq(1)
         expect(Photo.count).to eq(1)
-        expect(response.body).to include(
-          learning_area_path(LearningModule.last.id).to_s
-        )
+        expect(response.body).to redirect_to learning_area_path(
+                      LearningModule.last
+                    )
       end
 
       it "should fail to create the learning module" do
@@ -164,9 +162,9 @@ RSpec.describe LearningAreaController, type: :controller do
                   title: "abc"
                 }
               }
-        expect(response.body).to include(
-          learning_area_path(LearningModule.last.id).to_s
-        )
+        expect(response.body).to redirect_to learning_area_path(
+                      LearningModule.last
+                    )
         expect(flash[:notice]).to eq("Learning module successfully updated.")
       end
 
@@ -193,9 +191,9 @@ RSpec.describe LearningAreaController, type: :controller do
                 deleteimages: [Photo.last.image.filename.to_s],
                 deletefiles: [RepoFile.last.file.filename.to_s]
               }
-        expect(response.body).to include(
-          learning_area_path(LearningModule.last.id).to_s
-        )
+        expect(response.body).to redirect_to learning_area_path(
+                      LearningModule.last
+                    )
         expect(RepoFile.count).to eq(1)
         expect(Photo.count).to eq(1)
         expect(flash[:notice]).to eq("Learning module successfully updated.")

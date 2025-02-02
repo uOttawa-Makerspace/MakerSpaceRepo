@@ -138,11 +138,12 @@ RSpec.describe RepositoriesController, type: :controller do
         }.to change(Repository, :count).by(1)
         expect(Repository.last.users.first.id).to eq(User.last.id)
         expect(User.last.reputation).to eq(25)
-        expect(response.body).to include(
+        expect(response.body).to redirect_to(
           repository_path(
             Repository.last.user_username,
-            Repository.last.id
-          ).to_s
+            Repository.last.id,
+            Repository.last.title
+          )
         )
       end
 
@@ -171,11 +172,12 @@ RSpec.describe RepositoriesController, type: :controller do
         expect(User.last.reputation).to eq(25)
         expect(RepoFile.count).to eq(1)
         expect(Photo.count).to eq(1)
-        expect(response.body).to include(
+        expect(response.body).to redirect_to(
           repository_path(
             Repository.last.user_username,
-            Repository.last.id
-          ).to_s
+            Repository.last.id,
+            Repository.last.title
+          )
         )
       end
 
@@ -194,11 +196,12 @@ RSpec.describe RepositoriesController, type: :controller do
         expect(User.last.reputation).to eq(25)
         expect(Repository.last.categories.count).to eq(2)
         expect(Repository.last.equipments.count).to eq(2)
-        expect(response.body).to include(
+        expect(response.body).to redirect_to(
           repository_path(
             Repository.last.user_username,
-            Repository.last.id
-          ).to_s
+            Repository.last.id,
+            Repository.last.title
+          )
         )
       end
 
@@ -214,11 +217,8 @@ RSpec.describe RepositoriesController, type: :controller do
         expect(Repository.last.users.first.id).to eq(User.last.id)
         expect(User.last.reputation).to eq(25)
         expect(Repository.last.password).not_to be_nil
-        expect(response.body).to include(
-          repository_path(
-            Repository.last.user_username,
-            Repository.last.slug
-          ).to_s
+        expect(response.body).to redirect_to(
+          repository_path(Repository.last.user_username, Repository.last.slug)
         )
       end
     end
@@ -242,11 +242,12 @@ RSpec.describe RepositoriesController, type: :controller do
                   title: "abc"
                 }
               }
-        expect(response.body).to include(
+        expect(response.body).to redirect_to(
           repository_path(
             Repository.last.user_username,
-            Repository.last.id
-          ).to_s
+            Repository.last.id,
+            Repository.last.title
+          )
         )
         expect(flash[:notice]).to eq("Project updated successfully!")
       end
@@ -275,11 +276,12 @@ RSpec.describe RepositoriesController, type: :controller do
                 deleteimages: [Photo.last.image.filename.to_s],
                 deletefiles: [RepoFile.last.file.id.to_s]
               }
-        expect(response.body).to include(
+        expect(response.body).to redirect_to(
           repository_path(
             Repository.last.user_username,
-            Repository.last.id
-          ).to_s
+            Repository.last.id,
+            Repository.last.title
+          )
         )
         expect(RepoFile.count).to eq(1)
         expect(Photo.count).to eq(1)
@@ -298,11 +300,12 @@ RSpec.describe RepositoriesController, type: :controller do
                   title: "abc"
                 }
               }
-        expect(response.body).to include(
+        expect(response.body).to redirect_to(
           repository_path(
             Repository.last.user_username,
-            Repository.last.id
-          ).to_s
+            Repository.last.id,
+            Repository.last.title
+          )
         )
         expect(Repository.last.password).not_to eq(old_pass)
         expect(

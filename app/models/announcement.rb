@@ -5,10 +5,8 @@ class Announcement < ApplicationRecord
   belongs_to :user
   scope :active,
         -> {
-          where(active: true).where(
-            "(end_date >= ?) OR (end_date IS ?)",
-            Date.today,
-            nil
+          where(end_date: Time.zone.today..).or(where(end_date: nil)).where(
+            active: :true
           )
         }
   scope :volunteers, -> { where(public_goal: "volunteer") }

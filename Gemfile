@@ -1,8 +1,12 @@
 # frozen_string_literal: true
 
 source "https://rubygems.org"
-ruby "3.1.2"
-gem "rails", "~> 7.0.2.2"
+ruby "3.4.1"
+gem "rails", "~> 7.2.0"
+
+# no longer standard since 3.4
+gem "abbrev"
+gem "csv"
 
 gem "aws-sdk", "~> 3.0.1"
 gem "aws-sdk-s3", require: false
@@ -18,10 +22,10 @@ gem "jbuilder"
 gem "kaminari"
 gem "mocha"
 gem "octokit", "~> 4.21.0"
-gem "pg", "~> 1.1"
+gem "pg", "~> 1.5"
 gem "progress_bar", "~> 1.0.3"
-gem "pry", "~> 0.10.4"
-gem "pry-rails", "~> 0.3.9", group: :development
+gem "pry", "~> 0.15.0"
+gem "pry-rails", "~> 0.3.11", group: :development
 gem "quick_random_records", "~> 0.3.2"
 gem "rubyzip", "~> 2.1", require: "zip"
 gem "saml_idp", "~> 0.9.0"
@@ -30,7 +34,7 @@ gem "sdoc", "~> 1.1.0", group: :doc
 gem "shopify_app", "~> 18.1.2"
 gem "sidekiq", "~> 6.4.0"
 gem "simplecov", "~> 0.21.2"
-gem "thin", "~> 1.8.1"
+gem "thin", "~> 1.8.2"
 gem "toastr-rails"
 gem "uglifier", ">= 1.3.0"
 gem "unicorn-worker-killer", "~> 0.4.5"
@@ -47,7 +51,7 @@ gem "trix-rails", "~> 2.4.0", require: "trix"
 gem "zip-zip"
 gem "concurrent-ruby", "~> 1.1", ">= 1.1.6"
 gem "net-ssh"
-gem "roo", "~> 2.8.3"
+gem "roo", "~> 2.10.0"
 gem "roo-xls"
 gem "googleauth", "~> 0.15.0"
 gem "google-api-client", "~> 0.53.0", require: ["google/apis/calendar_v3"]
@@ -64,7 +68,7 @@ gem "syntax_tree-rbs"
 gem "stimulus-rails"
 gem "graphlient"
 gem "sprockets-rails"
-gem "psych", "~> 4.0.0"
+gem "psych", "~> 4.0"
 gem "vite_rails"
 gem "nobspw_rails7"
 gem "chartkick"
@@ -72,7 +76,7 @@ gem "groupdate"
 
 group :development, :test do
   gem "byebug", platform: :mri
-  gem "rspec-rails", "~> 5.0.0"
+  gem "rspec-rails", "~> 7.0.0"
   gem "rspec-json_expectations"
   gem "faker", "~> 3.1.0"
   gem "railroady"
