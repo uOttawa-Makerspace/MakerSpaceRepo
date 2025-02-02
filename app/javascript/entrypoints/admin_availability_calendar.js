@@ -103,7 +103,22 @@ document.addEventListener("turbo:load", function () {
     dateFormat: "Y-m-d",
   });
 
+  let prevStartDate = timePeriodStart;
+  let prevEndDate = timePeriodEnd;
   const switchInputVisibility = (recurring) => {
+    if (recurring) {
+      prevStartDate = startDateInput.value;
+      prevEndDate = endDateInput.value;
+      startDateInput.labels[0].textContent = "Repeat from...";
+      endDateInput.labels[0].textContent = "...Until";
+      startDatePicker.setDate(timePeriodStart);
+      endDatePicker.setDate(timePeriodEnd);
+    } else {
+      startDateInput.labels[0].textContent = "Start Date";
+      endDateInput.labels[0].textContent = "End Date";
+      startDatePicker.setDate(prevStartDate);
+      endDatePicker.setDate(prevEndDate);
+    }
     // Recurring input
     modalDeleteRecurring.style.display = recurring ? "block" : "none";
     modalDelete.style.display = recurring ? "none" : "block";
@@ -557,7 +572,6 @@ document.addEventListener("turbo:load", function () {
     recurringInput.checked = true;
     wholeDayCheckbox.checked = false; // Reset checkbox state
     unavailabilityId.value = "";
-    switchInputVisibility(recurringInput.checked);
 
     // Set default visibility based on whether the event is recurring or whole day
     if (arg !== undefined && arg !== null) {
@@ -573,6 +587,12 @@ document.addEventListener("turbo:load", function () {
         new Date(Date.parse(arg.endStr)).getMinutes() === 59;
     }
 
+    // Toggle recurring, and save start and end dates
+    switchInputVisibility(recurringInput.checked);
+    // But that function shows the delete button, so we use the html hidden attribute as an override
+    modalDelete.hidden = true;
+    modalDeleteRecurring.hidden = true;
+
     // Apply the whole day settings if needed
     wholeDayCheckbox.dispatchEvent(new Event("change"));
 
@@ -587,7 +607,6 @@ document.addEventListener("turbo:load", function () {
       startDatePicker.setDate(Date.parse(arg.event.extendedProps.start_date));
       endTimePicker.setDate(Date.parse(arg.event.endStr));
       endDatePicker.setDate(Date.parse(arg.event.extendedProps.end_date));
-      console.log(arg.event);
       dayInput.value = new Date(Date.parse(arg.event.startStr)).getDay();
 
       unavailabilityId.value = arg.event.id;
@@ -607,6 +626,9 @@ document.addEventListener("turbo:load", function () {
       recurringInput.dispatchEvent(new Event("change"));
       wholeDayCheckbox.dispatchEvent(new Event("change"));
     }
+
+    modalDelete.hidden = false;
+    modalDeleteRecurring.hidden = false;
 
     unavailabilityModal.show();
   };
