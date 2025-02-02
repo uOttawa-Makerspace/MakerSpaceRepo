@@ -313,7 +313,7 @@ document.addEventListener("turbo:load", () => {
           },
           ...res.map((cal) => {
             return {
-              id: "staffNeeded",
+              id: "google",
               color: cal.color,
               editable: false,
               ...(cal.calendar_url.includes(".ics")
