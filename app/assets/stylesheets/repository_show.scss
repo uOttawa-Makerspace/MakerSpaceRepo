@@ -43,9 +43,9 @@ span.forward {
 
 a.edit-repo-link {
   @include transition(100ms);
-  position: absolute;
-  right: 0;
-  top: 0;
+  // position: absolute;
+  // right: 0;
+  // top: 0;
   background-color: #789;
   color: #fff;
   padding: 0.25rem 0.5rem;
