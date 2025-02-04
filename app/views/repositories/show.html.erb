@@ -37,15 +37,13 @@
   </section>
 
   <section id="info" class="col-lg-4">
-
-  <% if @repository.users.pluck(:email).include?(@user.email) || @user.role.eql?("admin") %>
-    <%= link_to fa_icon('pencil', text: 'Edit project'),
-                edit_repository_path(@repository.user_username, @repository.id), class: 'edit-repo-link' %>
-  <% end %>
-
-    <div id="repo-title">
+    <div id="repo-title" class="mb-2">
       <%= @repository.title %>
     </div>
+    <% if @repository.users.pluck(:email).include?(@user.email) || @user.role.eql?("admin") %>
+      <%= link_to fa_icon('pencil', text: 'Edit project'),
+                  edit_repository_path(@repository.user_username, @repository.id), class: 'btn btn-sm btn-secondary' %>
+    <% end %>
     <div id="misc">
       <span class="misc-item"><%= fa_icon 'heart' %><span class="like-count"><%= @repository.like %></span></span>
       <span class="misc-item"><%= fa_icon 'code-fork', text: @repository.makes.count %></span>

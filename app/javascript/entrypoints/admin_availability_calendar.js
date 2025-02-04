@@ -242,6 +242,7 @@ document.addEventListener("turbo:load", function () {
     },
     contentHeight: "auto",
     allDaySlot: false,
+    eventStartEditable: false,
     timeZone: "America/New_York",
     initialView: "timeGridWeek",
     navLinks: true,
