@@ -1,3 +1,5 @@
+<% provide :title, 'Unavailabilities' %>
+
 <% if @missing_time_period %>
   <div class="alert alert-danger">
     <% if @user.admin? %>
@@ -23,8 +25,8 @@
           <label for="user-<%= user[:user].id %>"><%= user[:user].name %> <%= link_to "(#{user[:user].role.humanize})", user_path(user[:user].username), target: :_blank, rel: :noopener %>
             <!-- <br> -->
           <div class="d-flex">
-            <input type="color" name="color" onchange="updateColor(<%= user[:id] %>, this.value)" class="form-control form-control-color-shift" value="<%= user[:color] %>" title="Choose your color">
-            <input class="form-check-input checkbox-lg ms-1 shift-hide-button" id="user-<%= user[:user].id %>" type="checkbox" onclick="toggleVisibility(<%= user[:user].id %>)" checked>
+            <input type="color" name="color" onchange="updateColor(<%= user[:user].id %>, this.value)" class="form-control form-control-color-shift" value="<%= user[:color] %>" title="Choose your color">
+            <input class="form-check-input checkbox-lg ms-1 shift-hide-button" data-user-id="<%= user[:user].id %>" id="user-<%= user[:user].id %>" type="checkbox" onclick="toggleVisibility(<%= user[:user].id %>)" checked>
           </div>
           </label>
         </div>
@@ -35,7 +37,7 @@
         <%= form_tag staff_dashboard_change_space_path, method: :put do %>
           <div class="input-group mb-3">
             <%= label_tag :space_id, 'Space', class: 'input-group-text' %>
-            <%= select_tag :space_id, options_for_select(Space.all.pluck(:name, :id), selected: @space_id), class: 'form-select' %>
+            <%= select_tag :space_id, options_for_select(Space.all.pluck(:name, :id), selected: @space_id), class: 'form-select', onchange: 'this.form.submit()' %>
             <%= hidden_field_tag :shifts, true %>
             <button class="btn btn-outline-secondary" type="submit">Go</button>
           </div>
@@ -44,7 +46,7 @@
         <%= form_tag admin_shifts_path, method: :get do %>
           <div class="input-group mb-3">
             <%= label_tag :time_period_id, 'Time Period', class: 'input-group-text' %>
-            <%= select_tag :time_period_id, options_for_select(TimePeriod.all.pluck(:name, :id), selected: (params[:time_period_id].presence || TimePeriod.current.id)), class: 'form-select' %>
+            <%= select_tag :time_period_id, options_for_select(TimePeriod.all.pluck(:name, :id), selected: (params[:time_period_id].presence || TimePeriod.current.id)), class: 'form-select', onchange: 'this.form.submit()' %>
             <button class="btn btn-outline-secondary" type="submit">Go</button>
           </div>
         <% end %>

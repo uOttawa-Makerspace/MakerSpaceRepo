@@ -1,3 +1,5 @@
+<% provide :title, 'Shifts' %>
+
 <% if @missing_time_period %>
   <div class="alert alert-danger">
     <% if @user.admin? %>
@@ -37,7 +39,7 @@
 
       <% @colors.each do |user| %>
         <div class="pb-2">
-          <label><%= user[:name] %></label>
+          <label for="user-<%= user[:id] %>" ><%= user[:name] %>
           <br>
           <div class="d-flex">
             <input type="color" name="color" onchange="updateColor(<%= user[:id] %>, this.value)" class="form-control form-control-color-shift" value="<%= user[:color] %>" title="Choose your color">
@@ -45,6 +47,7 @@
             <div id="user-hour-counter-<%= user[:id] %>" class="d-flex align-items-center text-bg-primary ms-1 py-1 px-2 rounded">
               0 hour(s)
             </div>
+          </label>
           </div>
         </div>
       <% end %>
@@ -55,7 +58,7 @@
         <%= form_tag staff_dashboard_change_space_path, method: :put do %>
           <div class="input-group mb-3">
             <%= label_tag :space_id, 'Space', class: 'input-group-text' %>
-            <%= select_tag :space_id, options_for_select(Space.all.pluck(:name, :id), selected: @space_id), class: 'form-select' %>
+            <%= select_tag :space_id, options_for_select(Space.all.pluck(:name, :id), selected: @space_id), class: 'form-select', onchange: 'this.form.submit()' %>
             <%= hidden_field_tag :shifts, true %>
             <button class="btn btn-outline-secondary" type="submit">Go</button>
           </div>
@@ -64,7 +67,7 @@
         <%= form_tag shifts_admin_shifts_path, method: :get do %>
           <div class="input-group mb-3">
             <%= label_tag :time_period_id, 'Time Period', class: 'input-group-text' %>
-            <%= select_tag :time_period_id, options_for_select(TimePeriod.all.pluck(:name, :id), selected: (params[:time_period_id].presence || TimePeriod.current.id)), class: 'form-select' %>
+            <%= select_tag :time_period_id, options_for_select(TimePeriod.all.pluck(:name, :id), selected: (params[:time_period_id].presence || TimePeriod.current.id)), class: 'form-select', onchange: 'this.form.submit()' %>
             <button class="btn btn-outline-secondary" type="submit">Go</button>
           </div>
         <% end %>

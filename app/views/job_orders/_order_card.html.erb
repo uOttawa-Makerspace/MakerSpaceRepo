@@ -8,7 +8,7 @@
         </div>
         <div class="pt-2 pt-md-0">
           <% if jo.allow_edit? %>
-            <%= link_to t('job_orders.public_page.edit'), job_order_steps_path(job_order_id: jo.id), class: 'btn btn-outline-dark mb-1' %>
+            <%= link_to t('job_orders.public_page.edit'), job_order_steps_path(job_order_id: jo.id), class: 'btn btn-secondary mb-1' %>
           <% else %>
             <span class="d-inline-block mb-1" tabindex="0" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="bottom" data-bs-content="<%= t('job_orders.public_page.cannot_edit_this_order') %>">
               <button class="btn btn-primary" style="pointer-events: none;" type="button" disabled><%= t('job_orders.public_page.edit') %></button>

@@ -89,6 +89,11 @@ h1 {
     }
   }
 
+  &.active {
+    color: #fff;
+    background-color: var(--bs-secondary);
+  }
+
   font-weight: 700; // bold
   color: $secondary;
   &.dropdown-item-danger {
@@ -292,7 +297,7 @@ div.form-error {
 }
 
 .main {
-  margin-top: 2rem;
+  //margin-top: 2rem;
   flex-shrink: 0;
   margin-bottom: auto;
 }

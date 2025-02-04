@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Admin Area | <%= page_title(yield(:title)) %></title>
+  <title><%= page_title(yield(:title), base_title: 'Admin Area | MakerRepo') %></title>
   <%= favicon_link_tag 'C_square.png' %>
   <%= vite_javascript_tag 'application', 'data-turbo-track': 'reload' %>
   <%= stylesheet_link_tag 'application', media: 'all', 'data-turbo-track': 'reload' %>

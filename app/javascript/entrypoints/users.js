@@ -5,9 +5,42 @@ document.addEventListener("turbo:load", function () {
   // this only finds links within the #myTab element
   // because having random links be clicked via a hash is a security nightmare
   const profileTablist = document.getElementById("myTab");
+
   if (profileTablist) {
-    [...profileTablist.querySelectorAll("a")].forEach((item) => {
-      if (item.getAttribute("href") == window.location.hash) item.click();
+    const adminTab = profileTablist.querySelector("#admin-tab");
+
+    if (adminTab) {
+      // Get all admin sub tabs
+      const adminTablist = document
+        .getElementById("adminTabPane")
+        .querySelectorAll(".nav-link");
+      adminTablist.forEach((el) => {
+        // on click, change hash
+        el.addEventListener("click", (ev) => {
+          window.location.hash = el.getAttribute("href");
+          console.log(el);
+        });
+
+        // If hash linking to this tab, click
+        if (window.location.hash == el.getAttribute("href")) {
+          el.click();
+        }
+      });
+    }
+
+    // Add the hash on click
+    profileTablist.querySelectorAll(".nav-link").forEach((el) => {
+      el.addEventListener("click", (ev) => {
+        window.location.hash = el.getAttribute("href");
+      });
+      if (window.location.hash.startsWith("#admin-")) {
+        // This is an admin pane
+        if (adminTab) {
+          adminTab.click();
+        }
+      } else if (el.getAttribute("href") == window.location.hash) {
+        el.click();
+      }
     });
   }
 
