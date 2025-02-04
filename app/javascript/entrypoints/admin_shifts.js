@@ -255,6 +255,7 @@ document.addEventListener("turbo:load", () => {
         initialView: "timeGridWeek",
         navLinks: true,
         selectable: true,
+        eventStartEditable: false,
         selectMirror: true,
         slotMinTime: SLOT_MIN_TIME.toTimeString().split(" ")[0],
         slotMaxTime: SLOT_MAX_TIME.toTimeString().split(" ")[0],
