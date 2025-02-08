@@ -1,3 +1,6 @@
+import DataTable from "datatables.net-bs5";
+import "datatables.net-bs5/css/dataTables.bootstrap5.min.css";
+
 var form = document.getElementById("sign_in_user_fastsearch");
 form.onsubmit = function () {
   document.getElementById("sign_in_user_fastsearch_username").value = [
@@ -34,7 +37,7 @@ function refreshCapacity() {
 function refreshTables() {
   let token = Array.from(
     document.querySelectorAll(`[data-user-id]`),
-    (el) => el.dataset.userId
+    (el) => el.dataset.userId,
   ).join("");
   let url = "/staff_dashboard/refresh_tables?token=" + token;
   fetch(url)
@@ -55,3 +58,9 @@ function refreshTables() {
 setInterval(refreshCapacity, 60000);
 refreshCapacity();
 setInterval(refreshTables, 15000);
+
+// Attach table plugin to tables
+
+document.addEventListener("turbo:load", () => {
+  new DataTable("table");
+});
