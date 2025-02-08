@@ -1,5 +1,4 @@
 import PhotoSwipe from "photoswipe";
-import PhotoSwipeUI_Default from "photoswipe/dist/photoswipe-ui-default";
 
 document.addEventListener("DOMContentLoaded", function () {
   const pswpElement = document.querySelectorAll(".pswp")[0];
@@ -40,7 +39,7 @@ document.addEventListener("DOMContentLoaded", function () {
         mainImageDiv.children[0].tagName === "IMG"
       ) {
         mainImageDiv.children[0].addEventListener("click", () =>
-          openPhotoSwipe(0)
+          openPhotoSwipe(0),
         );
       }
     }
@@ -70,7 +69,7 @@ document.addEventListener("DOMContentLoaded", function () {
       pswpElement,
       PhotoSwipeUI_Default,
       images,
-      options
+      options,
     );
 
     gallery.init();

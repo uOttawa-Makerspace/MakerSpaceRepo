@@ -24,32 +24,32 @@ document.addEventListener("turbo:load", function () {
 
   // Modal
   const unavailabilityModal = new Modal(
-    document.getElementById("unavailabilityModal")
+    document.getElementById("unavailabilityModal"),
   );
 
   const modalTitle = document.getElementById("modal-title");
   const modalDelete = document.getElementById("modal-delete");
   const modalDeleteRecurring = document.getElementById(
-    "modal-delete-recurring"
+    "modal-delete-recurring",
   );
   const modalDeleteRecThis = document.getElementById(
-    "modal-delete-recurring-this-only"
+    "modal-delete-recurring-this-only",
   );
   const modalDeleteRecRest = document.getElementById(
-    "modal-delete-recurring-this-and-rest"
+    "modal-delete-recurring-this-and-rest",
   );
   const modalDeleteRecAll = document.getElementById(
-    "modal-delete-recurring-all"
+    "modal-delete-recurring-all",
   );
   const unavailabilityId = document.getElementById("unavailability-id");
 
   const timePeriodStart = parseDateString(
     document.getElementById("time-period-start").value,
-    false
+    false,
   );
   const timePeriodEnd = parseDateString(
     document.getElementById("time-period-end").value,
-    true
+    true,
   );
 
   // Show state
@@ -58,7 +58,7 @@ document.addEventListener("turbo:load", function () {
   const urlParams = new URLSearchParams(window.location.search);
   const time_period_id = urlParams.get("time_period_id");
   const timePeriodWarningContainer = document.getElementById(
-    "time-period-warning-container"
+    "time-period-warning-container",
   );
 
   // Inputs
@@ -154,10 +154,10 @@ document.addEventListener("turbo:load", function () {
       const endTimeZoneOffsetMinutes = selectedEndDate.getTimezoneOffset();
 
       const adjustedStartDate = new Date(
-        selectedStartDate.getTime() + startTimeZoneOffsetMinutes * 60000
+        selectedStartDate.getTime() + startTimeZoneOffsetMinutes * 60000,
       );
       const adjustedEndDate = new Date(
-        selectedEndDate.getTime() + endTimeZoneOffsetMinutes * 60000
+        selectedEndDate.getTime() + endTimeZoneOffsetMinutes * 60000,
       );
 
       let startDateInRange = true;
@@ -246,7 +246,7 @@ document.addEventListener("turbo:load", function () {
       const originalDate = info.date;
       const timeZoneOffsetMinutes = originalDate.getTimezoneOffset();
       const adjustedDate = new Date(
-        originalDate.getTime() + timeZoneOffsetMinutes * 60000
+        originalDate.getTime() + timeZoneOffsetMinutes * 60000,
       );
 
       // gray out days that are not in the range of the time period
@@ -343,7 +343,7 @@ document.addEventListener("turbo:load", function () {
           // ).checked
           //   ? "block"
           //   : "none";
-        }
+        },
       );
     } /*else if (eventName === "id") {
         document.querySelectorAll(`[data-user-id="${event}"]`).forEach((el) => {
@@ -476,7 +476,7 @@ document.addEventListener("turbo:load", function () {
             startRecur: data.timePeriodStart,
             endRecur: data.timePeriodEnd,
           },
-          "unavailabilities"
+          "unavailabilities",
         );
 
         calendar.unselect();
@@ -587,7 +587,6 @@ document.addEventListener("turbo:load", function () {
       startDatePicker.setDate(Date.parse(arg.event.extendedProps.start_date));
       endTimePicker.setDate(Date.parse(arg.event.endStr));
       endDatePicker.setDate(Date.parse(arg.event.extendedProps.end_date));
-      console.log(arg.event);
       dayInput.value = new Date(Date.parse(arg.event.startStr)).getDay();
 
       unavailabilityId.value = arg.event.id;
@@ -617,12 +616,12 @@ document.addEventListener("turbo:load", function () {
   });
   // Delete options for recurring events
   modalDeleteRecThis.addEventListener("click", () =>
-    createCalendarEvent("one_time")
+    createCalendarEvent("one_time"),
   );
   modalDeleteRecRest.addEventListener("click", () =>
-    createCalendarEvent("all_after")
+    createCalendarEvent("all_after"),
   );
   modalDeleteRecAll.addEventListener("click", () =>
-    removeEvent(parseInt(unavailabilityId.value), false)
+    removeEvent(parseInt(unavailabilityId.value), false),
   );
 });
