@@ -1,6 +1,7 @@
 class LockerType < ApplicationRecord
   has_many :locker_rentals, dependent: :destroy
-  enum available_for: { staff: "staff", student: "student", general: "general" }
+  enum :available_for,
+       { staff: "staff", student: "student", general: "general" }
 
   validates :short_form,
             :description,

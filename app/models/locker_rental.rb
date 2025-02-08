@@ -8,7 +8,8 @@ class LockerRental < ApplicationRecord
 
   after_save :send_email_notification
 
-  enum state: {
+  enum :state,
+       {
          # Users submitted, not approved by admin
          reviewing: "reviewing",
          # Approved by admin, waiting for payment confirm
