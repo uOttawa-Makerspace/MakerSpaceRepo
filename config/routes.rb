@@ -134,6 +134,7 @@ Rails.application.routes.draw do
     collection do
       get :stripe_success
       get :stripe_cancelled
+      get :admin
     end
   end
 

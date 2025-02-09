@@ -125,8 +125,8 @@ RSpec.describe ProficientProjectsController, type: :controller do
         }.to change(ProficientProject, :count).by(1)
         expect(RepoFile.count).to eq(1)
         expect(Photo.count).to eq(1)
-        expect(response.body).to include(
-          proficient_project_path(ProficientProject.last.id).to_s
+        expect(response.body).to redirect_to(
+          proficient_project_path(ProficientProject.last.id)
         )
       end
 
@@ -189,8 +189,8 @@ RSpec.describe ProficientProjectsController, type: :controller do
                   title: "abc"
                 }
               }
-        expect(response.body).to include(
-          proficient_project_path(ProficientProject.last.id).to_s
+        expect(response.body).to redirect_to(
+          proficient_project_path(ProficientProject.last.id)
         )
         expect(flash[:notice]).to eq("Proficient Project successfully updated.")
       end
@@ -207,8 +207,8 @@ RSpec.describe ProficientProjectsController, type: :controller do
                 },
                 badge_requirements_id: [1, 2]
               }
-        expect(response.body).to include(
-          proficient_project_path(ProficientProject.last.id).to_s
+        expect(response.body).to redirect_to(
+          proficient_project_path(ProficientProject.last.id)
         )
         expect(
           BadgeRequirement.where(
@@ -241,8 +241,8 @@ RSpec.describe ProficientProjectsController, type: :controller do
                 deleteimages: [Photo.last.image.filename.to_s],
                 deletefiles: [RepoFile.last.file.filename.to_s]
               }
-        expect(response.body).to include(
-          proficient_project_path(ProficientProject.last.id).to_s
+        expect(response.body).to redirect_to(
+          proficient_project_path(ProficientProject.last.id)
         )
         expect(RepoFile.count).to eq(1)
         expect(Photo.count).to eq(1)

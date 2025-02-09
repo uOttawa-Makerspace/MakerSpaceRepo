@@ -14,24 +14,5 @@
 </div>
 <hr />
 <% if current_user.admin? %>
-    <div class="container-fluid">
-        <% @locker_types.each do |type| %>
-            <h2 class="text-center"><%= type.short_form %></h2>
-            <%= render partial: 'rental_data_table',
-                       locals: { locker_rentals: type.locker_rentals.where(state: :active),
-                                 header_title: t('lockers.assigned_lockers') } %>
-            <div class="row row-cols-md-3 g-1">
-                <%= render partial: 'rental_data_table',
-                           locals: { locker_rentals: type.locker_rentals.where(state: :reviewing),
-                                     header_title: 'Requests' } %>
-                <%= render partial: 'rental_data_table',
-                           locals: { locker_rentals: type.locker_rentals.where(state: :await_payment),
-                                     header_title: 'Unpaid' } %>
-                <%= render partial: 'rental_data_table',
-                           locals: { locker_rentals: type.locker_rentals.where(state: :cancelled),
-                                     header_title: 'Cancelled', hide_actions: true } %>
-            </div>
-            <hr />
-        <% end %>
-    </div>
+
 <% end %>

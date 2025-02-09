@@ -1,33 +1,18 @@
 $pswp__assets-path: "photoswipe/src/css/default-skin/";
 
 @import "shared/variables";
-@import "photoswipe/src/css/main";
-@import "photoswipe/src/css/default-skin/default-skin";
-// @import "~progress-tracker/src/styles/progress-tracker";
 @import "toastr/build/toastr.min";
 @import "flatpickr/dist/flatpickr";
-@import "@fullcalendar/common/main";
 @import "tom-select/dist/css/tom-select.bootstrap5";
 
-// .progress-step {
-//   &.is-declined {
-//     @include progress-state(#FF4F37);
-//   }
+// a {
+//   text-decoration: none;
 // }
-a {
-  text-decoration: none;
-}
 .turbo-progress-bar {
-  background-color: #497979;
+  background-color: black;
   // background-color: theme-color("primary");
 }
 
-// .dropdown-item:hover {
-//   background-color: rgba(59, 147, 147, 0.2) !important;
-// }
-// .dropdown-item:active {
-//   background-color: #497979 !important;
-// }
 @media (prefers-reduced-motion: reduce) {
   .form-control:not(#q, .inanimate) {
     transition: none;

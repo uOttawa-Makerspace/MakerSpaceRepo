@@ -17,7 +17,6 @@ import "regenerator-runtime/runtime";
 import "trix";
 import "@shopify/buy-button-js";
 import "photoswipe";
-import "photoswipe/dist/photoswipe-ui-default";
 import "clipboard";
 import "flatpickr";
 import "./validation";
@@ -35,12 +34,6 @@ import "../controllers";
 
 import "bootstrap";
 import "toastr/toastr";
-
-import "@fullcalendar/core/vdom";
-import { Calendar } from "@fullcalendar/core";
-import interactionPlugin from "@fullcalendar/interaction";
-import timeGridPlugin from "@fullcalendar/timegrid";
-import listPlugin from "@fullcalendar/list";
 
 import "@hotwired/turbo-rails";
 import { Turbo } from "@hotwired/turbo-rails";
@@ -158,11 +151,11 @@ document.addEventListener("turbo:load", () => {
     });
   });
 });
-document.addEventListener("turbo:load", () => {
-  document.querySelectorAll("form").forEach(function (el) {
-    el.dataset.turbo = false;
-  });
-  document.querySelectorAll("a").forEach(function (el) {
-    el.dataset.turbo = false;
-  });
-});
+// document.addEventListener("turbo:load", () => {
+//   document.querySelectorAll("form").forEach(function (el) {
+//     el.dataset.turbo = false;
+//   });
+//   document.querySelectorAll("a").forEach(function (el) {
+//     el.dataset.turbo = false;
+//   });
+// });

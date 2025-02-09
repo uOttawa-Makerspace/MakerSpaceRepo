@@ -303,7 +303,7 @@ class PrintOrdersController < ApplicationController
 
   def show
     @print_order = PrintOrder.find(params[:id])
-    render pdf: "file_name", template: "print_orders/pdf", formats: [:html]
+    render pdf: "file_name", template: "print_orders/pdf" #, formats: :html
   end
 
   private
