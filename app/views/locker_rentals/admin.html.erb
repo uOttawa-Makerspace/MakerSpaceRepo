@@ -1,26 +1,27 @@
 <div class="mx-md-3 pt-3">
     <h1 class="text-center">Locker Rentals</h1>
-    <ul class="nav nav-tabs nav-fill">
-        <% @locker_types.each do |locker_type| %>
-            <li class="nav-item">
-                <%= link_to locker_type.short_form, admin_locker_rentals_path(locker_type:, rental_state: @current_rental_state), class: "nav-link tab-link #{'active' if @current_locker_type == locker_type}" %>
-            </li>
-        <% end %>
-    </ul>
-    <div class="tab-pane border-start border-end border-bottom px-md-3 pt-3">
-        <h2 class="text-center">Rentals in <%= @current_locker_type.short_form %></h2>
-        <ul class="nav nav-tabs nav-fill mt-3">
-            <% LockerRental.states.keys.each do |state| %>
-                <li class="nav-item">
-                    <%= link_to state.humanize, admin_locker_rentals_path(locker_type: @current_locker_type, rental_state: state), class: "nav-link tab-link #{'active' if @current_rental_state == state}" %>
-                </li>
+    <div class="d-flex">
+        <div class="p-3" id="filter-locker-types">
+            <span class="p-3 fw-bold">Locker ID:</span>
+            <% @locker_types.each do |locker_type| %>
+                <div class="form-check form-check-inline">
+                    <%= check_box_tag :locker_type, locker_type.id, {}, { id: "locker_type_#{locker_type.id}", class: 'form-check-input checkbox-lg', data: { type: locker_type.short_form } } %>
+                    <%= label :locker_type, locker_type.id, locker_type.short_form, class: 'form-check-label' %>
+                </div>
             <% end %>
-        </ul>
-
-        <div class="tab-pane border-start border-end border-bottom pt-3">
-            <%= render partial: 'rental_data_table',
-                       locals: { locker_rentals: @current_locker_type.locker_rentals.where(state: @current_rental_state),
-                                 header_title: t('lockers.assigned_lockers') } %>
+        </div>
+        <div class="vr">
+        </div>
+        <div class="p-3 filter-rental-state" id="filter-locker-states">
+            <span class="fw-bold me-3">Rental states</span>
+            <% LockerRental.states.keys.each do |state| %>
+                <div class="form-check form-check-inline">
+                    <%= check_box_tag :rental_state, state, {}, { id: "rental_state_#{state}", class: 'form-check-input checkbox-lg', data: { type: state } } %>
+                    <%= label :rental_state, state, state.humanize, class: 'form-check-label' %>
+                </div>
+            <% end %>
         </div>
     </div>
+    <%= render partial: 'rental_data_table',
+               locals: { locker_rentals: LockerRental.all } %>
 </div>
