@@ -30,13 +30,14 @@
       </div>
     <% end %>
     <br />
-    <div class="table-responsive">
-      <p id="user-count" class="text-center">Users inside <%= @space.name %>:  <%= @space.signed_in_users.count %></p>
-      <div class="container text-center mx-auto">
-        <%= link_to 'Sign Out All Users', staff_dashboard_sign_out_all_users_path, class: 'btn btn-secondary mx-auto text-center' %>
-        <%= button_to 'Add Signed In Users to Teams Program', staff_dashboard_add_signed_in_users_to_teams_path, method: :patch, class: 'btn btn-primary mx-auto text-center mt-1', data: { confirm: 'Are you sure you want to add all signed in users to the teams program?' } if @space.jmts? %>
-      </div>
-      <table class="staff-users-table text-center mb-5 table table-striped" >
+    <div class="table-responsive border">
+      <table class="staff-users-table text-center table table-striped" >
+        <caption id="user-count" class="text-center fs-3" align="top">Users inside <%= @space.name %>:  <%= @space.signed_in_users.count %>
+        <div class="container text-center mx-auto">
+          <%= link_to 'Sign Out All Users', staff_dashboard_sign_out_all_users_path, class: 'btn btn-secondary mx-auto text-center' %>
+          <%= button_to 'Add Signed In Users to Teams Program', staff_dashboard_add_signed_in_users_to_teams_path, method: :patch, class: 'btn btn-primary mx-auto text-center mt-1', data: { confirm: 'Are you sure you want to add all signed in users to the teams program?' } if @space.jmts? %>
+        </div>
+        </caption>
         <thead class="table-primary">
           <tr>
             <th class="name-header">
@@ -74,10 +75,10 @@
         <%= render partial: 'signed_in_table', locals: { space: @space, all_user_certs: @all_user_certs, certifications_on_space: @certifications_on_space } %>
       </table>
     </div>
-
-    <div class="table-responsive">
-      <p class="text-center">Users recently signed out of <%= @space.name %></p>
-      <table class="staff-recent-users-table text-center mb-5 table table-striped table-sort table-arrows">
+    <br />
+    <div class="table-responsive border">
+      <table class="staff-recent-users-table text-center table table-striped table-sort table-arrows">
+        <caption class="text-center fs-3" align="top">Users recently signed out of <%= @space.name %></caption>
         <thead class="table-primary">
           <tr>
             <th class="name-header">Name<span onclick="sortTable('staff-recent-users-table', 0)"><%= fa_icon('arrow-down') %></span></th>
@@ -89,10 +90,10 @@
         <%= render partial: 'signed_out_table', locals: { space: @space, all_user_certs: @all_user_certs, certifications_on_space: @certifications_on_space } %>
       </table>
     </div>
-    <br>
-    <div class="table-responsive">
-      <p class="text-center">Newly signed up users on Maker<strong>Repo</strong></p>
-      <table class="text-center table table-striped staff-newly-signed-up-users-table mb-5 table-sort table-arrows">
+    <br />
+    <div class="table-responsive border">
+      <table class="text-center table table-striped staff-newly-signed-up-users-table table-sort table-arrows">
+        <caption class="text-center fs-3" align="top">Newly signed up users on Maker<strong>Repo</strong></caption>
         <thead class="table-primary">
           <tr>
             <th class="name-header">Name<span onclick="sortTable('staff-newly-signed-up-users-table', 0)"><%= fa_icon('arrow-down') %></span></th>

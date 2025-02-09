@@ -415,7 +415,10 @@ td > .btn:not(:last-of-type) {
 }
 
 .subtitle {
-  font: 400 0.75rem "Roboto", helvetica, sans-serif;
+  font:
+    400 0.75rem "Roboto",
+    helvetica,
+    sans-serif;
   color: #aaa;
   margin-bottom: 0.5rem;
 }
@@ -423,6 +426,8 @@ td > .btn:not(:last-of-type) {
 .checkbox-lg {
   width: 1.5rem;
   height: 1.5rem;
+  margin-right: 1rem;
+  margin-top: 0;
 }
 
 // The button is annoying on mobile
