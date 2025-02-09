@@ -5,6 +5,9 @@ class QuickAccessLinksController < ApplicationController
     if current_user.nil?
       redirect_to root_path, notice: "You must be logged in to do that"
     end
+    unless current_user.admin?
+      redirect_to root_path, notice: "You can't do that"
+    end
     if params[:id].present?
       if QuickAccessLink.find(params[:id]).user_id != current_user.id
         redirect_to root_path, notice: "You can't do that"
@@ -20,11 +23,11 @@ class QuickAccessLinksController < ApplicationController
         path: params[:path]
       )
     if qal.save
-      redirect_back fallback_location: root_path,
-                    notice: "Quick access link created"
+      # no response to trigger default reload
+      # redirect_back fallback_location: root_path
     else
       redirect_back fallback_location: root_path,
-                    notice:
+                    alert:
                       "Quick access link not created, #{qal.errors.full_messages.join(", ")}"
     end
   end
@@ -35,15 +38,18 @@ class QuickAccessLinksController < ApplicationController
       redirect_to user_path(current_user.username)
       return
     end
-    QuickAccessLink.find(params[:id]).update(
-      name: params[:name],
-      path: params[:path]
-    )
-    redirect_to user_path(current_user.username), notice: "Link updated"
+    quick_link = QuickAccessLink.find(params[:id])
+    if quick_link.update(name: params[:name], path: params[:path])
+      #redirect_back fallback_location: user_path(current_user.username), notice: "Link updated"
+    else
+      redirect_back fallback_location: user_path(current_user.username), alert: "Link not valid"
+    end
   end
 
   def delete
     QuickAccessLink.find(params[:id]).destroy
-    redirect_back fallback_location: root_path, notice: "Link deleted"
+    # For delete we want to redirect, because for some reason turbo does not reload on delete methods
+    # Might be something application side that disables that for some reason, but I haven't been able to find it.
+    redirect_back fallback_location: root_path
   end
 end
