@@ -1,3 +1,5 @@
 <div class="cart-text" aria-label="cart">
-  <%= link_to "<i class='fa fa-shopping-cart fa-lg'> #{current_order.order_items.size}</i>".html_safe, carts_path, 'aria-label': 'cart' %>
+    <%= link_to carts_path, aria: { label: 'cart' }, class: 'nav-link' do %>
+        <%= fa_icon 'shopping-cart', class: 'fs-2 me-1' %> <span class="fs-4"><%= current_order.order_items.size %></span>
+    <% end %>
 </div>

@@ -1,8 +1,8 @@
 <div class="tab-pane fade" id="admin-quick-access" role="tabpanel" aria-labelledby="admin-quick-access-pill">
   <p>Current Quick Access Paths:</p>
-  <% QuickAccessLink.where(user_id: current_user).each do |quick_access| %>
+  <% QuickAccessLink.where(user_id: current_user).find_each do |quick_access| %>
     <div class="row">
-      <%= form_with url: quick_access_links_update_path(quick_access.id), method: 'post', controller: 'quick_access_links', class: 'col-md-10' do %>
+      <%= form_with url: quick_access_links_update_path(quick_access.id, anchor: 'admin-quick-access'), method: 'post', controller: 'quick_access_links', class: 'col-md-10' do %>
         <div class="input-group mb-1">
           <label class="input-group-text" for="name">Name</label>
           <%= text_field_tag :name, quick_access.name, class: 'form-control' %>
@@ -20,7 +20,8 @@
     </div>
   <% end %>
   <p>New Quick Access Path:</p>
-  <%= form_with url: quick_access_links_create_path, method: 'post', controller: 'quick_access_links', class: 'col-md-10' do %>
+  <%# Add the anchor in the POST request, so it gets preserved on redirect %>
+  <%= form_with url: quick_access_links_create_path(anchor: 'admin-quick-access'), method: 'post', controller: 'quick_access_links', class: 'col-md-10' do %>
     <div class="input-group mb-1">
       <label class="input-group-text" for="name">Name</label>
       <%= text_field_tag :name, nil, class: 'form-control' %>

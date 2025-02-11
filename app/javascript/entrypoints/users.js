@@ -1,12 +1,21 @@
 import TomSelect from "tom-select";
 
+let prev_anchor = "";
+document.addEventListener("turbo:submit-start", function () {
+  prev_anchor = window.location.hash;
+});
+
 document.addEventListener("turbo:load", function () {
+  if (prev_anchor) {
+    window.location.hash = prev_anchor;
+    prev_anchor = "";
+  }
   // Find hash and manually click on load
   // this only finds links within the #myTab element
   // because having random links be clicked via a hash is a security nightmare
   const profileTablist = document.getElementById("myTab");
-
   if (profileTablist) {
+    // Find admin tab, exists if user is an admin
     const adminTab = profileTablist.querySelector("#admin-tab");
 
     if (adminTab) {
@@ -18,7 +27,6 @@ document.addEventListener("turbo:load", function () {
         // on click, change hash
         el.addEventListener("click", (ev) => {
           window.location.hash = el.getAttribute("href");
-          console.log(el);
         });
 
         // If hash linking to this tab, click
@@ -28,15 +36,19 @@ document.addEventListener("turbo:load", function () {
       });
     }
 
-    // Add the hash on click
     profileTablist.querySelectorAll(".nav-link").forEach((el) => {
+      // Add the hash on click on any outer tab
       el.addEventListener("click", (ev) => {
         window.location.hash = el.getAttribute("href");
       });
+      // special case for admin.
       if (window.location.hash.startsWith("#admin-")) {
         // This is an admin pane
         if (adminTab) {
+          // preserve this hash
+          let this_hash = window.location.hash;
           adminTab.click();
+          window.location.hash = this_hash;
         }
       } else if (el.getAttribute("href") == window.location.hash) {
         el.click();
