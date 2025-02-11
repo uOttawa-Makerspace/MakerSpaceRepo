@@ -207,7 +207,7 @@ document.addEventListener("turbo:load", function () {
   // Calendar Config
   const calendarEl = document.getElementById("calendar");
 
-  calendar = new Calendar(calendarEl, {
+  const calendar = new Calendar(calendarEl, {
     plugins: [interactionPlugin, timeGridPlugin, listPlugin],
     customButtons: {
       addNewEvent: {
