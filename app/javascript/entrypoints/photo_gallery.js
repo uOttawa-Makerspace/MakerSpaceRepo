@@ -1,79 +1,34 @@
-import PhotoSwipe from "photoswipe";
+import PhotoSwipeLightbox from "photoswipe/lightbox";
+import "photoswipe/style.css";
 
-document.addEventListener("DOMContentLoaded", function () {
-  const pswpElement = document.querySelectorAll(".pswp")[0];
-  const imageGallery = document.getElementById("photo-slide");
-  let images = [];
-  let image_tags = [];
+document.addEventListener("turbo:load", function () {
+  const lightbox = new PhotoSwipeLightbox({
+    gallery: "#photo-slide",
+    children: "img",
+    bgOpacity: 0.7,
+    wheelToZoom: true,
+    hideAnimationDuration: 0,
+    showAnimationDuration: 0,
+    zoomAnimationDuration: 100,
+    pswpModule: () => import("photoswipe"),
+  });
 
-  const parseImages = function (el) {
-    if (el) {
-      const childNodes = el.children;
-      let items = [];
-
-      if (childNodes === undefined) {
-        return;
-      }
-
-      Array.from(childNodes).forEach(function (node, index) {
-        if (node.tagName === "IMG") {
-          const item = {
-            src: node.src,
-            w: node.getAttribute("data-width"),
-            h: node.getAttribute("data-height"),
-          };
-          items.push(item);
-          image_tags.push(node);
-
-          node.addEventListener("click", () => openPhotoSwipe(index));
-        }
-      });
-
-      images = items;
-
-      const mainImageDiv = document.getElementById("show-photo");
-
-      if (
-        mainImageDiv &&
-        mainImageDiv.children[0] &&
-        mainImageDiv.children[0].tagName === "IMG"
-      ) {
-        mainImageDiv.children[0].addEventListener("click", () =>
-          openPhotoSwipe(0),
-        );
-      }
-    }
-  };
-
-  const openPhotoSwipe = function (startIndex) {
-    const options = {
-      index: startIndex,
-      getThumbBoundsFn: function (index) {
-        const currentImage = image_tags[index];
-        const pageYScroll =
-          window.scrollY || document.documentElement.scrollTop;
-        const boundingRect = currentImage.getBoundingClientRect();
-
-        const rect = {
-          x: boundingRect.left,
-          y: boundingRect.top + pageYScroll,
-          w: boundingRect.width,
-        };
-
-        return rect;
-      },
-      bgOpacity: 0.7,
+  // Grab data from each image
+  lightbox.addFilter("itemData", (itemData, index) => {
+    return {
+      src: itemData.element.src,
+      width: itemData.element.dataset.width,
+      height: itemData.element.dataset.height,
     };
+  });
 
-    let gallery = new PhotoSwipe(
-      pswpElement,
-      PhotoSwipeUI_Default,
-      images,
-      options,
-    );
-
-    gallery.init();
-  };
-
-  parseImages(imageGallery);
+  // Add a handler to the big image
+  const bigImage = document.querySelector("#show-photo img");
+  if (bigImage) {
+    bigImage.addEventListener("click", function () {
+      lightbox.loadAndOpen(0);
+    });
+  }
+  // TODO add captions
+  lightbox.init();
 });
