@@ -15,6 +15,7 @@ document.addEventListener("turbo:load", function () {
       new TomSelect("#task_certifications", {
         plugins: ["remove_button"],
         maxItems: null,
+        sortField: [{ field: "text" }],
       });
     }
   }
@@ -23,6 +24,7 @@ document.addEventListener("turbo:load", function () {
       new TomSelect("#volunteer_id", {
         plugins: ["remove_button"],
         maxItems: null,
+        sortField: [{ field: "text" }],
       });
     }
   }
@@ -30,6 +32,7 @@ document.addEventListener("turbo:load", function () {
     if (!document.getElementById("staff_id").tomselect) {
       new TomSelect("#staff_id", {
         maxItems: 1,
+        sortField: [{ field: "text" }],
       });
     }
   }
@@ -58,11 +61,11 @@ window.addEventListener(
           }
           form.classList.add("was-validated");
         },
-        false
+        false,
       );
     });
   },
-  false
+  false,
 );
 if (document.getElementById("remove_staff_id")) {
   if (!document.getElementById("remove_staff_id").tomselect) {
