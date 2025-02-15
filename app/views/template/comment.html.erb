@@ -12,7 +12,7 @@ link_to fa_icon('angle-down'), vote_path(comment_id: params['comment_id'],
     <%= link_to params['user_url'] do %>
       <div><%= params['username'] %><div class="rep"><%= params['rep'] %></div> </div>
      <% end %>
-    <%= tag.div(time_ago_in_words(params['created_at'].to_datetime) << ' ago', class: 'time') %>
+    <%= tag.div("#{time_ago_in_words(params['created_at'].to_datetime)} ago", class: 'time') %>
   </div>
   <div class="comment-content">
     <%= params['content'].html_safe %>

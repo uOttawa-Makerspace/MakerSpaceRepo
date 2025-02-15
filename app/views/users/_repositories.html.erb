@@ -41,7 +41,7 @@
                     <div>by <%= link_to repository.user_username, user_path(repository.user_username) %>
                     </div>
                     <div>
-                        <%= time_ago_in_words(repository.created_at) << ' ago' %>
+                        <%= time_ago_in_words(repository.created_at) %> ago
                     </div>
                 </div>
             </div>
@@ -67,7 +67,7 @@
                         <% end %>
                     </div>
                     <div>
-                        <%= time_ago_in_words(project_proposal.created_at) << ' ago' %>
+                        <%= time_ago_in_words(project_proposal.created_at) %> ago
                     </div>
                 </div>
             </div>
