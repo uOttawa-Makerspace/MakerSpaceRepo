@@ -43,10 +43,11 @@ section#faq {
       text-shadow: 0 4px 4px black;
     }
 
+    // Big "join now" button
     .btn-primary {
-      color: $primary;
-      background-color: white;
-      border-color: white;
+      color: white;
+      background-color: $primary;
+      border-color: $primary;
       font-size: 1.4rem;
       padding: 2%;
     }
