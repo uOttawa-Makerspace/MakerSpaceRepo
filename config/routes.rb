@@ -114,6 +114,7 @@ Rails.application.routes.draw do
       get :staff_printers
       get :staff_printers_updates
       get :printer_data
+      get :last_user_assigned_to_printer
       patch :link_printer_to_user
       patch :send_print_failed_message_to_user
       post :add_printer
