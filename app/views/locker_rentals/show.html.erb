@@ -7,13 +7,21 @@
         <p><b><%= t('lockers.locker_type') %>:</b> <%= @locker_rental.locker_type.short_form %> - <i><%= @locker_rental.locker_type.description %></i></p>
         <p><b><%= t('lockers.state.state') %>:</b> <%= @locker_rental.state.humanize %></p>
         <p><b><%= t('lockers.paid_on') %>:</b></p>
+        <p><b>Requested as:</b> <%= @locker_rental.requested_as %></p>
+        <% if @locker_rental.repository %>
+            <b>Repository linked to this locker rental request:</b>
+            <%= link_to @locker_rental.repository.title, repository_path(@locker_rental.rented_by.username, @locker_rental.repository.id) %>
+        <% else %>
+            No repository linked with this student request
+        <% end if @locker_rental.requested_as_student? %>
+
         <% if !current_user.admin? %>
             <%= form_with model: @locker_rental do |f| %>
                 <%= f.text_area :notes, class: 'form-control w-25' %>
                 <%= f.submit 'Update notes', class: 'btn btn-primary' %>
             <% end %>
         <% else %>
-            <div class="card mb-3">
+            <div class="card my-3">
                 <div class="card-header bg-primary text-light">
                     <%= t('lockers.notes') %>
                 </div>

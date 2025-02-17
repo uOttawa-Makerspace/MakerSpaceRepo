@@ -8,7 +8,7 @@
     </details>
 <% end %>
 
-<div class="border container">
+<div class="border container mt-5">
     <h1 class="text-center mt-3">New Locker Request</h1>
     <hr class="w-50 mx-auto" />
     <p>Here you can submit a request for a locker. Once sent, you'll be notified once your request is approved and payment is received.
@@ -39,9 +39,16 @@
             <div class="row row-cols-auto align-items-center">
                 <%= f.label :locker_type_id, 'Request locker for', class: 'd-inline' %>
                 <%= f.select :locker_type_id, options_for_select(@available_locker_types.pluck(:short_form, :id)), {}, { class: 'form-select w-auto' } %>
-                <%= f.label :as_a, 'as a', class: 'd-inline' %>
-                <%= f.select :as_a, options_for_select(@available_fors), {}, { class: 'form-select w-auto' } %>
+                <%= f.label :requested_as, 'as a', class: 'd-inline' %>
+                <%= f.select :requested_as, options_for_select(@available_fors), {}, { class: 'form-select w-auto', required: true } %>
             </div>
+            <fieldset id="repo-select" hidden disabled>
+                <p class="mb-3">If applying as a GNG student, please provide a link to your repository page here to help speed up your application</p>
+                <%= f.select :repository_id, options_for_select(@user_repositories),
+                 {prompt: @user_repositories.empty? ? 'No repositories are linked to your account' : 'Select a repository'},
+                 {class: 'form-select mb-3', disabled: @user_repositories.empty?} %>
+            </fieldset>
+            <% %>
             <%= f.label :notes, 'Notes with request:' %>
             <%= f.text_area :notes, class: 'form-control' %>
             <!-- This hidden field is for testing/debug purposes only, we're still checking credentials you skiddie -->
