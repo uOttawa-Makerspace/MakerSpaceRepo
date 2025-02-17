@@ -46,22 +46,23 @@ module LockerRentalsHelper
         class: "btn btn-info"
       )
 
-    return end_rental_button unless for_admin
-
-    case rental.state.to_sym
-    when :reviewing
-      tag.div class: "btn-group" do
-        ask_payment_button + instant_approve_button + end_rental_button
+    if for_admin
+      case rental.state.to_sym
+      when :reviewing
+        tag.div class: "btn-group" do
+          ask_payment_button + instant_approve_button + end_rental_button
+        end
+      when :await_payment
+        tag.div class: "btn-group" do
+          instant_approve_button + end_rental_button
+        end
+      when :active
+        tag.div class: "btn-group" do
+          end_rental_button
+        end
       end
-    when :await_payment
-      tag.div class: "btn-group" do
-        instant_approve_button + end_rental_button
-      end
-    when :active
-      tag.div class: "btn-group" do
-        end_rental_button
-      end
-      #when :cancelled
+    elsif !rental.cancelled?
+      end_rental_button
     end
   end
 end
