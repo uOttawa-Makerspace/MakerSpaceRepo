@@ -139,11 +139,11 @@ class LockerRentalsController < ApplicationController
     redirect_to :new_locker_rental
   end
 
+  # FIXME: these three functions below are too big and complicated
   def new_instance_attributes
     @available_locker_types = LockerType.available
-    # Who users can request as
-    # because we want to localize later
-    # FIXME this is not used for anything, pretty useless
+    @user_repositories = current_user.repositories.pluck(:title, :id)
+    # FIXME localize this later
     @available_fors = {
       staff: ("CEED staff member" if current_user.staff?),
       student: ("GNG student" if current_user.student?),
@@ -181,8 +181,12 @@ class LockerRentalsController < ApplicationController
     else
       # people pick where they want a locker
       permits = [:locker_type_id]
-      # prevent user from editing rental notes after first submit
-      permits << :notes unless params[:id]
+      unless params[:id]
+        # prevent user from editing rental notes after first submit
+        permits << :notes
+        permits << :requested_as
+        permits << :repository_id
+      end
       # For user cancellations
       permits << :state
       params.require(:locker_rental).permit(*permits)

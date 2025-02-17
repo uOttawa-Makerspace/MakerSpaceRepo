@@ -659,8 +659,11 @@ ActiveRecord::Schema[7.2].define(version: 2025_07_31_163455) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "shopify_draft_order_id"
+    t.bigint "repository_id"
+    t.string "requested_as"
     t.index ["locker_type_id"], name: "index_locker_rentals_on_locker_type_id"
     t.index ["rented_by_id"], name: "index_locker_rentals_on_rented_by_id"
+    t.index ["repository_id"], name: "index_locker_rentals_on_repository_id"
   end
 
   create_table "locker_types", force: :cascade do |t|

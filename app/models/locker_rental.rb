@@ -6,6 +6,8 @@ class LockerRental < ApplicationRecord
 
   belongs_to :locker_type
   belongs_to :rented_by, class_name: "User"
+  # optional because some students don't always have a repository ready beforehand
+  belongs_to :repository, optional: true
 
   after_save :send_email_notification
   after_save :sync_shopify_draft_order
@@ -20,7 +22,12 @@ class LockerRental < ApplicationRecord
          active: "active",
          # Cancelled, no longer assigned
          cancelled: "cancelled"
-       }
+       }, validate: true
+
+  # Shares the enum with the other class,
+  # not really work making a whole concern for one enum
+  enum :requested_as, LockerType.available_fors, prefix: true
+  validates :requested_as, presence: true
 
   # Locker type and state always present
   validates :locker_type, :state, presence: true
