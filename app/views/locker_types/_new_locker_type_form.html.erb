@@ -34,11 +34,11 @@
         </div>
     </div>
 
-    <div class="form-check-reverse">
+    <div class="form-check-reverse mb-3">
         <%= f.label :available, class: 'form-check-label' %>
         <%= f.check_box :available, class: 'form-check-input' %>
     </div>
-    <%= f.submit (local_assigns[:is_edit] ? 'Edit' : 'Create'), class: 'btn btn-success' %>
+    <%= f.submit (local_assigns[:is_edit] ? 'Edit' : 'Create'), class: 'btn btn-success float-end' %>
     <% if @locker_type.errors.any? %>
         <ul>
             <% @locker_type.errors.each do |error| %>
