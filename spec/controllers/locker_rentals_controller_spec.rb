@@ -84,13 +84,15 @@ RSpec.describe LockerRentalsController, type: :controller do
         expect {
           post :create,
                params: {
-                 locker_rental: {
-                   locker_type_id: @locker_type.id,
-                   rented_by_id: target_user.id,
-                   locker_specifier: "1",
-                   state: :active,
-                   owned_until: end_of_this_semester
-                 }
+                 locker_rental:
+                   attributes_for(
+                     :locker_rental,
+                     locker_type_id: @locker_type.id,
+                     rented_by_id: target_user.id,
+                     locker_specifier: "1",
+                     state: :active,
+                     owned_until: end_of_this_semester
+                   )
                }
         }.to change(LockerRental, :count).by(1).and change {
                 ActionMailer::Base.deliveries.count
@@ -103,15 +105,16 @@ RSpec.describe LockerRentalsController, type: :controller do
       it "should ensure specifiers are unique" do
         target_user = create :user
         post_body = {
-          locker_rental: {
-            locker_type_id: @locker_type.id,
-            rented_by_id: target_user.id,
-            locker_specifier: "1",
-            state: :active,
-            owned_until: end_of_this_semester
-          }
+          locker_rental:
+            attributes_for(
+              :locker_rental,
+              locker_type_id: @locker_type.id,
+              rented_by_id: target_user.id,
+              locker_specifier: "1",
+              state: :active,
+              owned_until: end_of_this_semester
+            )
         }
-
         # Make a rental
         expect { post :create, params: post_body }.to change(
           LockerRental,
@@ -176,15 +179,15 @@ RSpec.describe LockerRentalsController, type: :controller do
         # Re-assign specifier
         expect {
           post :create,
-               params: {
-                 locker_rental: {
+               params:
+                 attributes_for(
+                   :locker_rental,
                    locker_type_id: active_request.locker_type.id,
                    rented_by_id: active_request.rented_by.id,
                    locker_specifier: active_request.locker_specifier,
                    # owned until is auto filled by controller
                    state: :active
-                 }
-               }
+                 )
         }.to change { LockerRental.count }.by(1)
 
         # specifier should be reused
@@ -303,10 +306,12 @@ RSpec.describe LockerRentalsController, type: :controller do
         expect {
           post :create,
                params: {
-                 locker_rental: {
-                   locker_type_id: @locker_type.id,
-                   notes: request_note
-                 }
+                 locker_rental:
+                   attributes_for(
+                     :locker_rental,
+                     locker_type_id: @locker_type.id,
+                     notes: request_note
+                   )
                }
         }.to change { LockerRental.count }.by(1)
         #.and change {ActionMailer::Base.deliveries.count}.by(1)
@@ -321,10 +326,12 @@ RSpec.describe LockerRentalsController, type: :controller do
         expect {
           post :create,
                params: {
-                 locker_rental: {
-                   state: "active",
-                   locker_type_id: @locker_type.id
-                 }
+                 locker_rental:
+                   attributes_for(
+                     :locker_rental,
+                     state: "active",
+                     locker_type_id: @locker_type.id
+                   )
                }
         }.to change { LockerRental.count }.by(1)
         expect(LockerRental.last.state).to eq "reviewing"
@@ -336,10 +343,12 @@ RSpec.describe LockerRentalsController, type: :controller do
         expect {
           post :create,
                params: {
-                 locker_rental: {
-                   locker_type_id: @locker_type.id,
-                   rented_by_id: other_user.id
-                 }
+                 locker_rental:
+                   attributes_for(
+                     :locker_rental,
+                     locker_type_id: @locker_type.id,
+                     rented_by_id: other_user.id
+                   )
                }
         }.to change { LockerRental.count }.by(1)
         expect(LockerRental.last.rented_by_id).to eq @current_user.id
@@ -351,18 +360,22 @@ RSpec.describe LockerRentalsController, type: :controller do
         expect {
           post :create,
                params: {
-                 locker_rental: {
-                   locker_type_id: @locker_type.id
-                 }
+                 locker_rental:
+                   attributes_for(
+                     :locker_rental,
+                     locker_type_id: @locker_type.id
+                   )
                }
         }.to change { LockerRental.count }.by(0)
         prev_rental.auto_assign
         expect {
           post :create,
                params: {
-                 locker_rental: {
-                   locker_type_id: @locker_type.id
-                 }
+                 locker_rental:
+                   attributes_for(
+                     :locker_rental,
+                     locker_type_id: @locker_type.id
+                   )
                }
         }.to change { LockerRental.count }.by(1)
       end
@@ -387,9 +400,11 @@ RSpec.describe LockerRentalsController, type: :controller do
         expect {
           post :create,
                params: {
-                 locker_rental: {
-                   locker_type_id: @locker_type.id
-                 }
+                 locker_rental:
+                   attributes_for(
+                     :locker_rental,
+                     locker_type_id: @locker_type.id
+                   )
                }
         }.to change { LockerRental.count }.by(1)
       end

@@ -45,7 +45,7 @@ class LockerRental < ApplicationRecord
   # Make sure the locker type requested has quantity available on request
   validate :locker_type_requested_is_available, on: :create
   def locker_type_requested_is_available
-    return if locker_type.quantity_available.positive?
+    return if locker_type&.quantity_available&.positive?
     errors.add(:locker_type, "No lockers of this type are available for request")
   end
 

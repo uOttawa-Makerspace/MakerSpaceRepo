@@ -163,6 +163,8 @@ class LockerRentalsController < ApplicationController
         # admin can assign and approve requests
         :rented_by_id,
         :locker_specifier,
+        :repository,
+        :requested_as,
         :state,
         :owned_until,
         :notes
