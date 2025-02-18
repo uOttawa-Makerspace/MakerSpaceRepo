@@ -22,6 +22,11 @@ class LockerType < ApplicationRecord
     locker_rentals.where(state: :active)
   end
 
+  # Returns number of lockers available for assignment
+  def quantity_available
+    quantity - locker_rentals.active.count
+  end
+
   def get_available_lockers
     # 1. Make a list based of max quantity (so BRUNS-1, BRUNS-2, ..., BRUNS-99)
     assigned_lockers = locker_rentals.assigned.pluck(:locker_specifier)
