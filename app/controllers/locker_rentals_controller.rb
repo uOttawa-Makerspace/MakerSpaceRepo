@@ -141,7 +141,10 @@ class LockerRentalsController < ApplicationController
 
   # FIXME: these three functions below are too big and complicated
   def new_instance_attributes
-    @available_locker_types = LockerType.available
+    @available_locker_types = LockerType.available.map do |t|
+      ["#{t.short_form}#{' - none available' if t.quantity_available.zero?}",
+       t.id, {disabled: t.quantity_available.zero?}]
+    end
     @user_repositories = current_user.repositories.pluck(:title, :id)
     # FIXME localize this later
     @available_fors = {

@@ -27,10 +27,9 @@ class LockerRental < ApplicationRecord
   # Shares the enum with the other class,
   # not really work making a whole concern for one enum
   enum :requested_as, LockerType.available_fors, prefix: true
-  validates :requested_as, presence: true
 
-  # Locker type and state always present
-  validates :locker_type, :state, presence: true
+  # Locker type and state and request_as always present
+  validates :locker_type, :state, :requested_as, presence: true
   # When submitting a request, ensure only one is present
   validate :only_one_request_per_user, on: :create
   def only_one_request_per_user
@@ -41,6 +40,13 @@ class LockerRental < ApplicationRecord
        )
       errors.add(:rented_by, "already has a request under review")
     end
+  end
+
+  # Make sure the locker type requested has quantity available on request
+  validate :locker_type_requested_is_available, on: :create
+  def locker_type_requested_is_available
+    return if locker_type.quantity_available.positive?
+    errors.add(:locker_type, "No lockers of this type are available for request")
   end
 
   # If set to active
@@ -57,6 +63,7 @@ class LockerRental < ApplicationRecord
     rental.validates :rented_by, :owned_until, :locker_specifier, presence: true
   end
 
+  # Scopes to aid sorting rentals
   scope :under_review, -> { where(state: %i[reviewing await_payment]) }
   scope :assigned, -> { where(state: :active) }
 
@@ -89,6 +96,7 @@ class LockerRental < ApplicationRecord
     reviewing? || await_payment?
   end
 
+  # Send emails when state changes
   def send_email_notification
     return unless saved_change_to_state?
     case state.to_sym
