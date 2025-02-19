@@ -170,6 +170,15 @@ class PrintersController < StaffAreaController
     end
   end
 
+  def last_user_assigned_to_printer
+    printer_users = {}
+    Printer.includes(printer_sessions: :user).find_each do |printer|
+      printer_users[printer.id] = printer.printer_sessions.last.user.slice(:id, :username, :name)
+    end
+
+    render json: printer_users
+  end
+
   private
 
   def printer_params

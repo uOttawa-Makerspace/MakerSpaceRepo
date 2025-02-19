@@ -1,6 +1,6 @@
 import "flatpickr";
 import { Calendar } from "@fullcalendar/core";
-import "@fullcalendar/common/main.css";
+//import "@fullcalendar/common/main.css";
 import interactionPlugin from "@fullcalendar/interaction";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import listPlugin from "@fullcalendar/list";
@@ -310,6 +310,7 @@ document.addEventListener("turbo:load", function () {
       eventData.end_date = eventData.endRecur;
       // Place defaut value
       eventData.display = "block";
+      eventData.eventExcepted = false;
       if (
         showUnavailabilities == "none" ||
         hiddenIds[eventData.userId] == "none"
@@ -321,10 +322,12 @@ document.addEventListener("turbo:load", function () {
         // For each exception
         for (let { covers, start_at } of eventData.exceptions) {
           // One time and today is the day
+          // look at the time component of it only
           if (
             covers == "one_time" &&
             new Date(start_at).getTime() === calendar.view.activeStart.getTime()
           ) {
+            eventData.eventExcepted = true;
             eventData.display = "none";
           }
           // All after the start day
@@ -332,11 +335,12 @@ document.addEventListener("turbo:load", function () {
             covers == "all_after" &&
             new Date(start_at) <= calendar.view.activeStart
           ) {
+            eventData.eventExcepted = true;
             eventData.display = "none";
           }
         }
       }
-      eventData.eventExcepted = eventData.display == "none";
+
       return eventData;
     },
   });
@@ -381,6 +385,7 @@ document.addEventListener("turbo:load", function () {
         i.checked = total.target.checked;
         toggleVisibility(i.dataset.userId, false);
       });
+      // HACK to trigger render
       calendar.getEvents()[0].setExtendedProp("", "");
     });
 

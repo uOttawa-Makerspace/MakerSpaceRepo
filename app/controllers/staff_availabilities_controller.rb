@@ -277,7 +277,7 @@ class StaffAvailabilitiesController < ApplicationController
         params_end_time = Time.parse(params_end_time.strftime("%H:%M"))
 
         update_params = {
-          day: Time.parse(params[:staff_availability][:start_date]).wday,
+          day: params[:staff_availability][:day],
           start_time: params_start_time.strftime("%H:%M"),
           end_time: params_end_time.strftime("%H:%M"),
           start_datetime:
