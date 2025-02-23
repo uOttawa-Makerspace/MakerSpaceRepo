@@ -34,7 +34,8 @@
             <% if @locker_rental.reviewing? %>
                 <p>This request has not been approved yet</p>
             <% elsif @locker_rental.await_payment? %>
-                <p>This request is awaiting payment. <%= link_to 'Click here to proceed to checkout', @locker_rental.checkout_link %></p>
+                <p>This request is awaiting payment. <%= link_to 'Click here to proceed to checkout',
+                                                                 "https://makerstore.ca/products/ceed-locker-rental-per-trimester" %></p>
             <% end %>
             <p>To cancel this request, click on <b>Cancel</b> below.</p>
         <% end %>
