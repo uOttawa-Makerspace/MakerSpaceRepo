@@ -20,13 +20,6 @@
         </div>
     </div>
 
-    <div class="row">
-        <%= f.label :available_for, class: 'form-label col-md-6' %>
-        <div class="col-md-6">
-            <%= f.select :available_for, LockerType.available_fors.transform_keys(&:humanize), {}, { class: 'form-select' } %>
-        </div>
-    </div>
-
     <div class="row mb-3">
         <%= f.label :cost, 'Cost if applicable', class: 'form-label col-md-6' %>
         <div class="col-md-6">

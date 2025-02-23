@@ -1,15 +1,11 @@
 <% provide :title, 'Request a locker' %>
-<% if false && current_user.admin? %>
-    <details open>
-        <summary class="text-center fs-underline text-primary">Seen by administration only</summary>
-        <h1 class="text-center my-3">Assign locker to user</h1>
-        <%= render partial: 'assign_locker_form' %>
-        <hr />
-    </details>
-<% end %>
-<%= render 'locker_rentals/nav_tabs', selected: :new_rental %>
-<div class="border container mt-5">
-    <h1 class="text-center mt-3">New Locker Request</h1>
+
+<div class="mt-3">
+    <%= render 'locker_rentals/nav_tabs', selected: :new_rental %>
+</div>
+
+<div class="border container">
+    <h1 class="text-center pt-3">New Locker Request</h1>
     <hr class="w-50 mx-auto" />
     <p>Here you can submit a request for a locker. Once sent, you'll be notified once your request is approved and payment is received.
         You may cancel your request before it is paid, however once paid the locker rental fee is non-refundable.</p>
@@ -30,7 +26,7 @@
     <% if @pending_locker_request&.reviewing? %>
         <hr />
         <p>You have a pending request for a locker at <%= @pending_locker_request.locker_type.short_form %>, submitted on <%= @pending_locker_request.created_at.to_date %>.
-        You will receive a response shortly from administration.</p>
+            You will receive a response shortly from administration.</p>
     <% elsif @pending_locker_request&.await_payment? %>
         <hr />
         <p>Your request has been accepted, and now is pending payment to be finalized. <%= link_to 'Click here to view your request and to proceed to checkout', @pending_locker_request, class: '' %></p>
