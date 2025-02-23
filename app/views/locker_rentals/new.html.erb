@@ -1,5 +1,5 @@
 <% provide :title, 'Request a locker' %>
-<% if current_user.admin? %>
+<% if false && current_user.admin? %>
     <details open>
         <summary class="text-center fs-underline text-primary">Seen by administration only</summary>
         <h1 class="text-center my-3">Assign locker to user</h1>
@@ -7,7 +7,7 @@
         <hr />
     </details>
 <% end %>
-
+<%= render 'locker_rentals/nav_tabs', selected: :new_rental %>
 <div class="border container mt-5">
     <h1 class="text-center mt-3">New Locker Request</h1>
     <hr class="w-50 mx-auto" />
