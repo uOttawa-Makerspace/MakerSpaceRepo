@@ -1,5 +1,6 @@
 <% provide :title, t('lockers.all_locker_rentals') %>
 
+<%= render 'locker_rentals/nav_tabs', selected: :my_rentals %>
 <h1 class="text-center"><%= t('lockers.all_locker_rentals') %>
     <br/>
     <%= link_to t('lockers.locker_dashboard'), lockers_path, class: 'fs-4 btn btn-link' if current_user.admin? %>
