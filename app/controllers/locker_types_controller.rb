@@ -1,4 +1,10 @@
 class LockerTypesController < AdminAreaController
+  def index
+    @locker_types = LockerType.all
+    # For the locker type form
+    @locker_type = LockerType.new
+  end
+
   def new
     @locker_type = LockerType.new
   end

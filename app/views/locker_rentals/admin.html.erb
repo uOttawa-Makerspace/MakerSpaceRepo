@@ -1,29 +1,35 @@
 <% provide :title, "Locker Admin" %>
 
-<div class="mx-md-3 pt-3">
-    <h1 class="text-center">Locker Rentals</h1>
-    <div class="d-flex">
-        <div class="p-3" id="filter-locker-types">
-            <span class="p-3 fw-bold">Locker ID:</span>
-            <% @locker_types.each do |locker_type| %>
-                <div class="form-check form-check-inline">
-                    <%= check_box_tag :locker_type, locker_type.id, {}, { id: "locker_type_#{locker_type.id}", class: 'form-check-input checkbox-lg', data: { type: locker_type.short_form } } %>
-                    <%= label :locker_type, locker_type.id, locker_type.short_form, class: 'form-check-label' %>
-                </div>
-            <% end %>
+<%# HACK to get out of the forced admin container div and reclaim some horizontal space %>
+<% content_for :before_container do %>
+    <%= render 'locker_rentals/nav_tabs', selected: :admin_rental %>
+    <%= render 'lockers/admin_nav_tabs', selected: :rentals %>
+
+    <div class="mx-md-3 pt-3">
+        <h1 class="text-center">Locker Rentals</h1>
+        <div class="d-flex">
+            <div class="p-3" id="filter-locker-types">
+                <span class="p-3 fw-bold">Locker ID:</span>
+                <% @locker_types.each do |locker_type| %>
+                    <div class="form-check form-check-inline">
+                        <%= check_box_tag :locker_type, locker_type.id, {}, { id: "locker_type_#{locker_type.id}", class: 'form-check-input checkbox-lg', data: { type: locker_type.short_form } } %>
+                        <%= label :locker_type, locker_type.id, locker_type.short_form, class: 'form-check-label' %>
+                    </div>
+                <% end %>
+            </div>
+            <div class="vr">
+            </div>
+            <div class="p-3 filter-rental-state" id="filter-locker-states">
+                <span class="fw-bold me-3">Rental states</span>
+                <% LockerRental.states.keys.each do |state| %>
+                    <div class="form-check form-check-inline">
+                        <%= check_box_tag :rental_state, state, {}, { id: "rental_state_#{state}", class: 'form-check-input checkbox-lg', data: { type: state } } %>
+                        <%= label :rental_state, state, state.humanize, class: 'form-check-label' %>
+                    </div>
+                <% end %>
+            </div>
         </div>
-        <div class="vr">
-        </div>
-        <div class="p-3 filter-rental-state" id="filter-locker-states">
-            <span class="fw-bold me-3">Rental states</span>
-            <% LockerRental.states.keys.each do |state| %>
-                <div class="form-check form-check-inline">
-                    <%= check_box_tag :rental_state, state, {}, { id: "rental_state_#{state}", class: 'form-check-input checkbox-lg', data: { type: state } } %>
-                    <%= label :rental_state, state, state.humanize, class: 'form-check-label' %>
-                </div>
-            <% end %>
-        </div>
+        <%= render partial: 'rental_data_table',
+                   locals: { locker_rentals: LockerRental.all } %>
     </div>
-    <%= render partial: 'rental_data_table',
-               locals: { locker_rentals: LockerRental.all } %>
-</div>
+<% end %>

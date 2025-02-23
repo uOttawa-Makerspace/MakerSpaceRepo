@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 class LockerRentalsController < ApplicationController
   before_action :current_user
   before_action :signed_in, except: %i[stripe_success stripe_cancelled]
@@ -15,12 +13,13 @@ class LockerRentalsController < ApplicationController
   end
 
   def admin
+
     @locker_types = LockerType.all
-    if params[:locker_type]
-      @current_locker_type = LockerType.find(params[:locker_type])
-    else
-      @current_locker_type = LockerType.first
-    end
+    @current_locker_type = if params[:locker_type]
+                             LockerType.find(params[:locker_type])
+                           else
+                             LockerType.first
+                           end
     @current_rental_state = params[:rental_state] || "reviewing"
 
     @locker_rentals =
@@ -30,11 +29,23 @@ class LockerRentalsController < ApplicationController
 
     respond_to do |format|
       format.json { render json: @locker_rentals }
-      format.all
+      format.all {render layout: 'admin_area'}
     end
   end
 
   def show
+    # return unless @locker_rental.await_payment?
+
+    @stripe_checkout_session = nil
+    # @stripe_checkout_session =
+    #   Stripe::Checkout::Session.create(
+    #     success_url: stripe_success_locker_rentals_url,
+    #     cancel_url: stripe_cancelled_locker_rentals_url,
+    #     mode: "payment",
+    #     line_items: @locker_rental.locker_type.generate_line_items,
+    #     billing_address_collection: "required",
+    #     client_reference_id: "locker-rental-#{@locker_rental.id}"
+    #   )
   end
 
   def new
