@@ -2011,7 +2011,7 @@ GEM
     quick_random_records (0.3.2)
       activerecord (>= 3)
     racc (1.8.1)
-    rack (2.2.10)
+    rack (2.2.13)
     rack-cors (2.0.2)
       rack (>= 2.0.0)
     rack-protection (3.2.0)
