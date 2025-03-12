@@ -1855,7 +1855,7 @@ GEM
       faraday
       faraday_middleware
       graphql-client
-    graphql (2.4.9)
+    graphql (2.4.13)
       base64
       fiber-storage
       logger
@@ -1910,7 +1910,7 @@ GEM
     listen (3.7.1)
       rb-fsevent (~> 0.10, >= 0.10.3)
       rb-inotify (~> 0.9, >= 0.9.10)
-    logger (1.6.5)
+    logger (1.6.6)
     loofah (2.24.0)
       crass (~> 1.0.2)
       nokogiri (>= 1.12.0)
