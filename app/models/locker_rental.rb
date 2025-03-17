@@ -2,6 +2,28 @@
 
 class LockerRental < ApplicationRecord
   include ApplicationHelper
+def start_shopify_session
+      # shopify_api_key =
+      #   Rails.application.credentials[Rails.env.to_sym][:shopify][:api_key]
+      shopify_password =
+        Rails.application.credentials[Rails.env.to_sym][:shopify][:password]
+      shopify_shop_name =
+        Rails.application.credentials[Rails.env.to_sym][:shopify][:shop_name]
+
+      # ShopifyAPI::Base.api_version =
+      #   Rails.application.credentials[Rails.env.to_sym][:shopify][:api_version]
+
+      session = ShopifyAPI::Auth::Session.new(
+        shop: "#{shopify_shop_name}.myshopify.com",
+        access_token: shopify_password
+      )
+
+      # Activate session to be used in all API calls
+      # session must be type `ShopifyAPI::Auth::Session`
+      ShopifyAPI::Context.activate_session(session)
+
+      session
+    end
 
   belongs_to :locker_type
   belongs_to :rented_by, class_name: "User"
@@ -75,13 +97,13 @@ class LockerRental < ApplicationRecord
     "#{locker_type.short_form}##{locker_specifier}"
   end
 
-  # FIXME rename to .pending?
+  # FIXME: rename to .pending?
   def under_review?
     reviewing? || await_payment?
   end
 
   def send_email_notification
-    if saved_change_to_state?
+    return unless saved_change_to_state?
       case state.to_sym
       when :await_payment
         LockerMailer.with(locker_rental: self).locker_checkout.deliver_now
@@ -94,7 +116,15 @@ class LockerRental < ApplicationRecord
       else
         raise "Unknown state #{state.to_sym}"
       end
-    end
+
+  end
+
+  # Fetch checkout link from shopify draft order, if not found create a draft
+  # order. Returns nil if API call fails or checkout is not possible now.
+  def checkout_link
+    return nil unless await_payment?  # checkout only if await payment
+
+    shopify_draft_order['data']['draftOrder']['invoiceUrl']
   end
 
   # For the view
@@ -119,5 +149,85 @@ class LockerRental < ApplicationRecord
       .pluck(:locker_type_id, :locker_specifier)
       .group_by(&:shift)
       .transform_values(&:flatten)
+  end
+
+  private
+
+  # FIXME: wrap in a API cache block
+  def shopify_draft_order
+    if shopify_draft_order_id.blank?
+      create_shopify_draft_order
+    else
+      fetch_shopify_draft_order
+    end
+  end
+
+  def create_shopify_draft_order
+    create_draft_order = <<~QUERY
+      mutation draftOrderCreate($input: DraftOrderInput!) {
+        draftOrderCreate(input: $input) {
+          draftOrder {
+            id
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    QUERY
+
+    start_shopify_session
+    admin_client = ShopifyAPI::Clients::Graphql::Admin.new(session: ShopifyAPI::Context.active_session)
+    resp = admin_client.query(query: create_draft_order, variables: draft_order_input)
+
+    # save ID in database
+    update(shopify_draft_order_id: resp.body['data']['draftOrderCreate']['draftOrder']['id']) if resp.code == 200
+
+    fetch_shopify_draft_order
+  end
+
+  def fetch_shopify_draft_order
+        start_shopify_session
+    admin_client = ShopifyAPI::Clients::Graphql::Admin.new(session: ShopifyAPI::Context.active_session)
+    query_draft_order = <<~QUERY
+    query {
+      draftOrder(id: "#{shopify_draft_order_id}") {
+        id
+        name
+        invoiceUrl
+        status
+        metafields(first: 10) {
+          nodes {
+            key
+            value
+            type
+          }
+        }
+      }
+    }
+    QUERY
+
+    resp = admin_client.query(query: query_draft_order).body
+    #raise 'huh'
+  end
+
+  def draft_order_input
+    {"input" => locker_type.line_item.merge(draft_order_metafields)
+    }
+  end
+
+  # metafields to track this rental ID inside the webhook handler
+  def draft_order_metafields
+    {
+      "metafields": [
+          {
+            namespace: "makerepo",
+            key: "db_reference",
+            value: id.to_s, # attach this ID to the draft order
+            type: "string",
+          }
+        ],
+    }
   end
 end
