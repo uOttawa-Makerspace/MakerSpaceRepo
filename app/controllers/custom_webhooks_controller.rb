@@ -1,22 +1,32 @@
 # frozen_string_literal: true
 
 class CustomWebhooksController < ApplicationController
-  include ShopifyApp::WebhookVerification unless Rails.env == "test"
+  include ShopifyApp::WebhookVerification unless Rails.env.test?
 
   def orders_paid
-    params.permit!
-    discount_code_params = webhook_params.to_h
-    if discount_code_params["discount_codes"].present?
-      shopify_discount_code = discount_code_params["discount_codes"][0]["code"]
-      discount_code = DiscountCode.find_by(code: shopify_discount_code)
-      discount_code&.update(usage_count: 1)
-    end
+  #   params.permit!
+  #   discount_code_params = webhook_params.to_h
+  #   if discount_code_params["discount_codes"].present?
+  #     shopify_discount_code = discount_code_params["discount_codes"][0]["code"]
+  #     discount_code = DiscountCode.find_by(code: shopify_discount_code)
+  #     discount_code&.update(usage_count: 1)
+  #   end
 
-    if discount_code_params["line_items"].present?
-      discount_code_params["line_items"].each do |item|
-        increment_cc_money(item, discount_code_params["customer"]["email"])
-      end
-    end
+  #   if discount_code_params["line_items"].present?
+  #     discount_code_params["line_items"].each do |item|
+  #       increment_cc_money(item, discount_code_params["customer"]["email"])
+  #     end
+  #   end
+
+    head :ok
+  end
+
+  def draft_orders_update
+    params.permit!
+    draft_order = webhook_params.to_h
+    #Rails.logger.debug draft_order
+
+    process_locker_hook(draft_order) if draft_order['tags'].include? "MakerepoLocker"
 
     head :ok
   end
@@ -25,6 +35,17 @@ class CustomWebhooksController < ApplicationController
 
   def webhook_params
     params.except(:controller, :action, :type)
+  end
+
+  def process_locker_hook(draft_order)
+    # get order ID from metafields
+    draft_order['metafields']['makerepo']
+    locker_rental =
+        LockerRental.find(
+          event.data.object.client_reference_id.gsub("locker-rental-", "")
+        )
+      # state change, auto assign, and sends mail
+      locker_rental.auto_assign if locker_rental.present?
   end
 
   def increment_cc_money(product_params, email)
