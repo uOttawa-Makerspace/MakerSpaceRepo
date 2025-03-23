@@ -1,22 +1,23 @@
 # frozen_string_literal: true
 
+# Shopify webhooks
 class CustomWebhooksController < ApplicationController
   include ShopifyApp::WebhookVerification unless Rails.env.test?
 
   def orders_paid
-  #   params.permit!
-  #   discount_code_params = webhook_params.to_h
-  #   if discount_code_params["discount_codes"].present?
-  #     shopify_discount_code = discount_code_params["discount_codes"][0]["code"]
-  #     discount_code = DiscountCode.find_by(code: shopify_discount_code)
-  #     discount_code&.update(usage_count: 1)
-  #   end
+    params.permit!
+    discount_code_params = webhook_params.to_h
+    if discount_code_params["discount_codes"].present?
+      shopify_discount_code = discount_code_params["discount_codes"][0]["code"]
+      discount_code = DiscountCode.find_by(code: shopify_discount_code)
+      discount_code&.update(usage_count: 1)
+    end
 
-  #   if discount_code_params["line_items"].present?
-  #     discount_code_params["line_items"].each do |item|
-  #       increment_cc_money(item, discount_code_params["customer"]["email"])
-  #     end
-  #   end
+    if discount_code_params["line_items"].present?
+      discount_code_params["line_items"].each do |item|
+        increment_cc_money(item, discount_code_params["customer"]["email"])
+      end
+    end
 
     head :ok
   end
@@ -24,7 +25,8 @@ class CustomWebhooksController < ApplicationController
   def draft_orders_update
     params.permit!
     draft_order = webhook_params.to_h
-    #Rails.logger.debug draft_order
+
+    Rails.logger.debug draft_order if Rails.env.to_sym == :staging
 
     process_locker_hook(draft_order) if draft_order['tags'].include? "MakerepoLocker"
 
