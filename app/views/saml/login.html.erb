@@ -19,7 +19,7 @@
     </div>
 
     <div class="mb-3">
-      <button class="btn btn-light w-100" type="submit" name="submit" value="logout"><%= t('saml.login.use_another_account') %></button>
+      <button class="btn btn-secondary w-100" type="submit" name="submit" value="logout"><%= t('saml.login.use_another_account') %></button>
       <p class="small text-muted text-center"><%= t('saml.login.this_will_sign_you_out') %></p>
     </div>
   <% else %>
@@ -39,7 +39,7 @@
 
     <hr/>
 
-    <a class="btn btn-light w-100" href="<%= user_path 'new' %>"><%= t('saml.login.create_account') %></a>
+    <a class="btn btn-secondary w-100" href="<%= user_path 'new' %>"><%= t('saml.login.create_account') %></a>
   <% end %>
 <% end %>
 
