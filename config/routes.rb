@@ -8,7 +8,6 @@ Rails.application.routes.draw do
   resources :custom_webhooks do
     collection do
       post :orders_paid
-      post :draft_orders_update
     end
   end
 

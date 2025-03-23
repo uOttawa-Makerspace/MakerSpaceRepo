@@ -3,6 +3,21 @@ require "rails_helper"
 RSpec.describe CustomWebhooksController, type: :controller do
   describe "POST /orders_paid" do
     context "webhook from shopify when user pays an order" do
+      it "should mark a locker as paid" do
+        locker_rental = create(:locker_rental, :await_payment)
+        post :orders_paid,
+             params: {
+               "metafields": [
+                 {
+                   "namespace": "makerepo",
+                   "key": "locker_db_reference",
+                   "value": locker_rental.id.to_s
+                 }
+               ]
+             }
+        expect(locker_rental.reload.active?).to eq true
+      end
+
       it "should update discount code as used (usage count = 1)" do
         discount_code = create(:discount_code)
         post :orders_paid,

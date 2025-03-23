@@ -208,7 +208,7 @@ def start_shopify_session
     }
     QUERY
 
-    resp = admin_client.query(query: query_draft_order).body
+    admin_client.query(query: query_draft_order).body
     #raise 'huh'
   end
 
@@ -222,10 +222,10 @@ def start_shopify_session
     {
       "metafields": [
           {
-            namespace: "makerepo",
-            key: "db_reference",
-            value: id.to_s, # attach this ID to the draft order
-            type: "string",
+            "namespace": "makerepo",
+            "key": "locker_db_reference",
+            "value": id.to_s, # attach this ID to the draft order
+            "type": "string",
           }
         ],
     }
