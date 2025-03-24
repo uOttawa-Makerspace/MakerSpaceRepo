@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Badge < ApplicationRecord
+  include CredlyConcern
+
   belongs_to :user, optional: true
   belongs_to :badge_template, optional: true
   belongs_to :certification, optional: true
@@ -29,65 +31,32 @@ class Badge < ApplicationRecord
 
   def self.acclaim_api_get_all_badges(url = nil)
     options = "?filter=state::accepted,rejected,pending"
-    url =
-      "#{Rails.application.credentials[Rails.env.to_sym][:acclaim][:url]}/v1/organizations/#{Rails.application.credentials[Rails.env.to_sym][:acclaim][:organisation]}/high_volume_issued_badge_search#{options}" if url.blank?
-    response =
-      Excon.get(
-        url,
-        user: Rails.application.credentials[Rails.env.to_sym][:acclaim][:api],
-        password: "",
-        headers: {
-          "Content-type" => "application/json"
-        }
-      )
-    JSON.parse(response.body)
+    JSON.parse credly_api_call(:get,
+                               endpoint: "/high_volume_issued_badge_search#{options}",
+                               url: url).body
   end
 
   def acclaim_api_delete_badge
-    Excon.delete(
-      "#{Rails.application.credentials[Rails.env.to_sym][:acclaim][:url]}/v1/organizations/#{Rails.application.credentials[Rails.env.to_sym][:acclaim][:organisation]}/badges/" +
-        acclaim_badge_id,
-      user: Rails.application.credentials[Rails.env.to_sym][:acclaim][:api],
-      password: "",
-      headers: {
-        "Content-type" => "application/json"
-      }
-    )
+    Badge.credly_api_call(:delete, endpoint: "/badges/#{acclaim_badge_id}")
   end
 
   def acclaim_api_revoke_badge
-    Excon.put(
-      "#{Rails.application.credentials[Rails.env.to_sym][:acclaim][:url]}/v1/organizations/#{Rails.application.credentials[Rails.env.to_sym][:acclaim][:organisation]}/badges/" +
-        acclaim_badge_id + "/revoke",
-      user: Rails.application.credentials[Rails.env.to_sym][:acclaim][:api],
-      password: "",
-      headers: {
-        "Content-type" => "application/json"
-      },
-      query: {
-        reason: "Admin revoked badge",
-        suppress_revoke_notification_email: Rails.env.test? ? true : false
-      }
-    )
+    Badge.credly_api_call(:put, endpoint: "/badges/#{acclaim_badge_id}/revoke",
+                    body: {
+                      reason: "Admin revoked badge",
+                      suppress_revoke_notification_email: Rails.env.test? ? true : false
+                    })
   end
 
   def self.acclaim_api_create_badge(user, acclaim_template_id)
-    Excon.post(
-      "#{Rails.application.credentials[Rails.env.to_sym][:acclaim][:url]}/v1/organizations/#{Rails.application.credentials[Rails.env.to_sym][:acclaim][:organisation]}/badges",
-      user: Rails.application.credentials[Rails.env.to_sym][:acclaim][:api],
-      password: "",
-      headers: {
-        "Content-type" => "application/json"
-      },
-      query: {
+    credly_api_call(:post, endpoint: "/badges", body: {
         recipient_email: user.email,
         badge_template_id: acclaim_template_id,
         issued_to_first_name: user.name.split(" ", 2)[0],
         issued_to_last_name: user.name.split(" ", 2)[1],
         issued_at: Time.zone.now,
         suppress_revoke_notification_email: Rails.env.test? ? true : false
-      }
-    )
+      })
   end
 
   def self.create_badge(order_item_id)
@@ -117,10 +86,10 @@ class Badge < ApplicationRecord
   def create_certification
     user = self.user
     badge_template = self.badge_template
-    if (
-         self.certification.present? || badge_template.blank? ||
+    if
+         certification.present? || badge_template.blank? ||
            badge_template.training.blank?
-       )
+
       return
     end
     level =
@@ -132,11 +101,7 @@ class Badge < ApplicationRecord
         "Beginner"
       end
     admin =
-      if User.find_by(email: "mtc@uottawa.ca").present?
-        User.find_by(email: "mtc@uottawa.ca")
-      else
-        User.find_by(role: "admin")
-      end
+      User.find_by(email: "mtc@uottawa.ca").presence || User.find_by(role: "admin")
 
     cert =
       Certification.existent_certification(user, badge_template.training, level)
@@ -155,6 +120,6 @@ class Badge < ApplicationRecord
         )
     end
 
-    self.update(certification: cert)
+    update(certification: cert)
   end
 end
