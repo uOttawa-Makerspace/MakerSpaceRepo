@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_03_16_183631) do
+ActiveRecord::Schema[7.2].define(version: 2025_03_30_210138) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -385,6 +385,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_03_16_183631) do
     t.text "comments"
     t.text "user_comments"
     t.boolean "is_deleted", default: false
+    t.string "shopify_draft_order_id"
     t.index ["job_order_quote_id"], name: "index_job_orders_on_job_order_quote_id"
     t.index ["job_service_group_id"], name: "index_job_orders_on_job_service_group_id"
     t.index ["job_type_id"], name: "index_job_orders_on_job_type_id"
