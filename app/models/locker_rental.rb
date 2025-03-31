@@ -2,33 +2,13 @@
 
 class LockerRental < ApplicationRecord
   include ApplicationHelper
-def start_shopify_session
-      # shopify_api_key =
-      #   Rails.application.credentials[Rails.env.to_sym][:shopify][:api_key]
-      shopify_password =
-        Rails.application.credentials[Rails.env.to_sym][:shopify][:password]
-      shopify_shop_name =
-        Rails.application.credentials[Rails.env.to_sym][:shopify][:shop_name]
-
-      # ShopifyAPI::Base.api_version =
-      #   Rails.application.credentials[Rails.env.to_sym][:shopify][:api_version]
-
-      session = ShopifyAPI::Auth::Session.new(
-        shop: "#{shopify_shop_name}.myshopify.com",
-        access_token: shopify_password
-      )
-
-      # Activate session to be used in all API calls
-      # session must be type `ShopifyAPI::Auth::Session`
-      ShopifyAPI::Context.activate_session(session)
-
-      session
-    end
+  include ShopifyConcern
 
   belongs_to :locker_type
   belongs_to :rented_by, class_name: "User"
 
   after_save :send_email_notification
+  after_save :sync_shopify_draft_order
 
   enum :state,
        {
@@ -49,9 +29,9 @@ def start_shopify_session
   def only_one_request_per_user
     # If this request is under review, and another by same user is also under review
     if under_review? &&
-         LockerRental.where(rented_by: rented_by).exists?(
-           state: %i[reviewing await_payment]
-         )
+       LockerRental.where(rented_by: rented_by).exists?(
+         state: %i[reviewing await_payment]
+       )
       errors.add(:rented_by, "already has a request under review")
     end
   end
@@ -104,19 +84,27 @@ def start_shopify_session
 
   def send_email_notification
     return unless saved_change_to_state?
-      case state.to_sym
-      when :await_payment
-        LockerMailer.with(locker_rental: self).locker_checkout.deliver_now
-      when :active
-        LockerMailer.with(locker_rental: self).locker_assigned.deliver_now
-      when :cancelled
-        LockerMailer.with(locker_rental: self).locker_cancelled.deliver_now
-      when :reviewing
-        nil # do nothing
-      else
-        raise "Unknown state #{state.to_sym}"
-      end
+    case state.to_sym
+    when :await_payment
+      LockerMailer.with(locker_rental: self).locker_checkout.deliver_now
+    when :active
+      LockerMailer.with(locker_rental: self).locker_assigned.deliver_now
+    when :cancelled
+      LockerMailer.with(locker_rental: self).locker_cancelled.deliver_now
+    when :reviewing
+      nil # do nothing
+    else
+      raise "Unknown state #{state.to_sym}"
+    end
+  end
 
+  def sync_shopify_draft_order
+    return unless saved_change_to_state?
+    case state.to_sym
+    when :cancelled
+      # When a locker is cancelled, cancel draft order too
+      destroy_shopify_draft_order
+    end
   end
 
   # Fetch checkout link from shopify draft order, if not found create a draft
@@ -124,7 +112,7 @@ def start_shopify_session
   def checkout_link
     return nil unless await_payment?  # checkout only if await payment
 
-    shopify_draft_order['data']['draftOrder']['invoiceUrl']
+    shopify_draft_order['invoiceUrl']
   end
 
   # For the view
@@ -152,82 +140,24 @@ def start_shopify_session
   end
 
   private
+  # Definitions for the shopify concern:
 
-  # FIXME: wrap in a API cache block
-  def shopify_draft_order
-    if shopify_draft_order_id.blank?
-      create_shopify_draft_order
-    else
-      fetch_shopify_draft_order
-    end
-  end
-
-  def create_shopify_draft_order
-    create_draft_order = <<~QUERY
-      mutation draftOrderCreate($input: DraftOrderInput!) {
-        draftOrderCreate(input: $input) {
-          draftOrder {
-            id
-          }
-          userErrors {
-            field
-            message
-          }
-        }
+  def shopify_draft_order_line_items
+    [
+      {
+        "quantity": 1,
+        "title": "Locker Rental for one semester / Location de casier pour un trimestre",
+        "originalUnitPriceWithCurrency": {
+          "amount": locker_type.cost,
+          "currencyCode": "CAD",
+        },
       }
-    QUERY
-
-    start_shopify_session
-    admin_client = ShopifyAPI::Clients::Graphql::Admin.new(session: ShopifyAPI::Context.active_session)
-    resp = admin_client.query(query: create_draft_order, variables: draft_order_input)
-
-    # save ID in database
-    update(shopify_draft_order_id: resp.body['data']['draftOrderCreate']['draftOrder']['id']) if resp.code == 200
-
-    fetch_shopify_draft_order
+    ]
   end
 
-  def fetch_shopify_draft_order
-        start_shopify_session
-    admin_client = ShopifyAPI::Clients::Graphql::Admin.new(session: ShopifyAPI::Context.active_session)
-    query_draft_order = <<~QUERY
-    query {
-      draftOrder(id: "#{shopify_draft_order_id}") {
-        id
-        name
-        invoiceUrl
-        status
-        metafields(first: 10) {
-          nodes {
-            key
-            value
-            type
-          }
-        }
-      }
-    }
-    QUERY
-
-    admin_client.query(query: query_draft_order).body
-    #raise 'huh'
-  end
-
-  def draft_order_input
-    {"input" => locker_type.line_item.merge(draft_order_metafields)
-    }
-  end
-
-  # metafields to track this rental ID inside the webhook handler
-  def draft_order_metafields
-    {
-      "metafields": [
-          {
-            "namespace": "makerepo",
-            "key": "locker_db_reference",
-            "value": id.to_s, # attach this ID to the draft order
-            "type": "string",
-          }
-        ],
-    }
+  # name of the metafield key stored on shopify side
+  # This is constant per model, do not change at all please.
+  def shopify_draft_order_key_name
+    "locker"
   end
 end
