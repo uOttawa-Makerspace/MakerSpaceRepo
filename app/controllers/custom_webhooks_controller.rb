@@ -9,6 +9,13 @@ class CustomWebhooksController < ApplicationController
 
     # This is a locker marked as paid
     order_hook = webhook_params.to_h
+
+    # Filter out staging/production tags
+    unless order_hook['tags']&.include? ShopifyConcern.target_tag
+      head :ok
+      return
+    end
+
     # get order ID from metafields
     locker_id_metafield = order_hook['metafields']&.find do |m|
       m['namespace'] == 'makerepo' && m['key'] == 'locker_db_reference'
