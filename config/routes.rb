@@ -160,6 +160,7 @@ Rails.application.routes.draw do
     post "join_team_program"
     get "get_involved"
     get "resources"
+    get "labs"
   end
 
   # RFID
