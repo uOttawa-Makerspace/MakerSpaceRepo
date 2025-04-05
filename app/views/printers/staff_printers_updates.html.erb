@@ -54,7 +54,7 @@
                 <td>
                   <i class="fa <%= printer.maintenance ? 'fa-check text-success' : 'fa-times text-danger' %>"></i> <%= printer.maintenance ? 'Yes' : 'No' %>
                   <% printer.group_printer_issues.each do |summary, issues| %>
-                    <p><%= issues.count %> <%= summary.pluralize issues.count %></p>
+                    <p>(<%= issues.count %>) <%= summary %></p>
                     <!-- <p><%= printer.active_printer_issues.count %> Issues</p> -->
                   <% end %>
                 </td>

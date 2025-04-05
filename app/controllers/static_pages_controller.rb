@@ -70,7 +70,7 @@ class StaticPagesController < SessionsController
       @workshops = [] # eh
     end
 
-    @makerstore_links = MakerstoreLink.all
+    home_makerstore_links
   end
 
   def about
@@ -170,5 +170,52 @@ class StaticPagesController < SessionsController
       flash[:alert] = "Please login if you wish to report this repository"
     end
     redirect_back(fallback_location: root_path)
+  end
+
+  private
+
+  def home_makerstore_links
+    access_token =
+      Rails.application.credentials[Rails.env.to_sym][:shopify][:password]
+    shop_url = "uottawa-makerspace.myshopify.com"
+    sess =
+      ShopifyAPI::Auth::Session.new(shop: shop_url, access_token: access_token)
+    client = ShopifyAPI::Clients::Graphql::Admin.new(session: sess)
+
+    query = <<~QUERY
+query {
+  collections(first: 8) {
+      nodes {
+        id
+        handle
+        #onlineStoreUrl
+        description
+        title
+        image {
+          url
+        }
+      }
+  }
+}
+QUERY
+    items = client.query(query: query)
+    # TODO: Cache the response here, I do think shopify rate limits
+    @makerstore_links =
+      if items.code == 200
+        items.body["data"]["collections"]["nodes"].map do |node|
+          {
+            "title" => node["title"],
+            # HACK: Asking for the onlineStoreUrl errors out,
+            # so try and make it yourself from the handle
+            #"url" => node['onlineStoreUrl'],
+            "url" => "https://makerstore.ca/collections/#{node["handle"]}",
+            "image" => node["image"]["url"]
+          }
+        end
+      else
+        []
+      end
+  rescue
+    @makerstore_links = []
   end
 end

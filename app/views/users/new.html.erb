@@ -15,64 +15,64 @@
         <div class="col-xl-6 offset-xl-3 col-lg-8 offset-lg-2 col-md-10 offset-md-1 col-12">
           <div class="mb-3">
             <%= form.label :name, t('users.new.form.full_name'), class: 'required' %>
-            <%= form.text_field :name, class: 'form-control' %>
+            <%= form.text_field :name, class: 'form-control', required: true %>
           </div>
 
           <div class="mb-3">
             <%= form.label :email, t('users.new.form.email_address'), class: 'required' %>
-            <%= form.email_field :email, class: 'form-control' %>
+            <%= form.email_field :email, class: 'form-control', required: true %>
           </div>
 
           <div class="mb-3">
             <%= form.label :username, t('users.new.form.username'), class: 'required' %>
-            <%= form.text_field :username, class: 'form-control' %>
+            <%= form.text_field :username, class: 'form-control', required: true %>
           </div>
 
           <div class="mb-3">
             <%= form.label :password, t('users.new.form.password'), class: 'required' %>
-            <%= form.password_field :password, class: 'form-control' %>
+            <%= form.password_field :password, class: 'form-control', required: true %>
           </div>
 
           <div class="mb-3">
             <%= form.label :password_confirmation, t('users.new.form.password_confirmation'), class: 'required' %>
-            <%= form.password_field :password_confirmation, class: 'form-control' %>
+            <%= form.password_field :password_confirmation, class: 'form-control', required: true %>
           </div>
 
           <div class="mb-3">
             <%= form.label :gender, t('users.new.form.gender'), class: 'required' %>
-            <%= form.select :gender, [[t('users.new.form.male'), 'Male'], [t('users.new.form.female'), 'Female'], [t('users.new.form.other'), 'Other'], [t('users.new.form.no_specify'), 'Prefer not to specify']], { prompt: t('users.new.form.choose.gender') }, { class: 'form-control form-select' } %>
+            <%= form.select :gender, [[t('users.new.form.male'), 'Male'], [t('users.new.form.female'), 'Female'], [t('users.new.form.other'), 'Other'], [t('users.new.form.no_specify'), 'Prefer not to specify']], { prompt: t('users.new.form.choose.gender') }, { class: 'form-control form-select', required: true } %>
           </div>
 
           <div class="mb-3">
             <%= form.label :identity, t('users.new.form.i_am'), class: 'required' %>
 
             <div class="form-check">
-              <%= form.radio_button :identity, 'undergrad', class: 'form-check-input', 'data-show': '#students-only' %>
+              <%= form.radio_button :identity, 'undergrad', class: 'form-check-input', 'data-show': '#students-only', required: true %>
               <%= form.label :identity, t('users.new.form.undergrad'), class: 'form-check-label', value: 'undergrad' %>
             </div>
 
             <div class="form-check">
-              <%= form.radio_button :identity, 'international_undergrad', class: 'form-check-input', 'data-show': '#students-only' %>
+              <%= form.radio_button :identity, 'international_undergrad', class: 'form-check-input', 'data-show': '#students-only', required: true %>
               <%= form.label :identity, t('users.new.form.international_undergrad'), class: 'form-check-label', value: 'international_undergrad' %>
             </div>
 
             <div class="form-check">
-              <%= form.radio_button :identity, 'grad', class: 'form-check-input', 'data-show': '#students-only' %>
+              <%= form.radio_button :identity, 'grad', class: 'form-check-input', 'data-show': '#students-only', required: true %>
               <%= form.label :identity, t('users.new.form.grad'), class: 'form-check-label', value: 'grad' %>
             </div>
 
             <div class="form-check">
-              <%= form.radio_button :identity, 'international_grad', class: 'form-check-input', 'data-show': '#students-only' %>
+              <%= form.radio_button :identity, 'international_grad', class: 'form-check-input', 'data-show': '#students-only', required: true %>
               <%= form.label :identity, t('users.new.form.international_grad'), class: 'form-check-label', value: 'international_grad' %>
             </div>
 
             <div class="form-check">
-              <%= form.radio_button :identity, 'faculty_member', class: 'form-check-input', 'data-hide': '#students-only' %>
+              <%= form.radio_button :identity, 'faculty_member', class: 'form-check-input', 'data-hide': '#students-only', required: true %>
               <%= form.label :identity, t('users.new.form.faculty_member'), class: 'form-check-label', value: 'faculty_member' %>
             </div>
 
             <div class="form-check">
-              <%= form.radio_button :identity, 'community_member', class: 'form-check-input', 'data-hide': '#students-only' %>
+              <%= form.radio_button :identity, 'community_member', class: 'form-check-input', 'data-hide': '#students-only', required: true %>
               <%= form.label :identity, t('users.new.form.community_member'), class: 'form-check-label', value: 'community_member' %>
             </div>
 
