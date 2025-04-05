@@ -10,7 +10,7 @@ class CustomWebhooksController < ApplicationController
     # This is a locker marked as paid
     order_hook = webhook_params.to_h
     # get order ID from metafields
-    locker_id_metafield = order_hook['metafields'].find do |m|
+    locker_id_metafield = order_hook['metafields']&.find do |m|
       m['namespace'] == 'makerepo' && m['key'] == 'locker_db_reference'
     end
     process_locker_hook(locker_id_metafield['value']) unless locker_id_metafield.nil?
