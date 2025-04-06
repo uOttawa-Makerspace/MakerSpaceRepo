@@ -3,56 +3,54 @@
 module ShopifyConcern
   extend ActiveSupport::Concern
 
+  # Tag to identify staging/dev from prod
   def self.target_tag
-    if Rails.env.production?
-      "makerepo"
-    else
-      "makerepo_#{Rails.env}"
-    end
-  end
-
-  def self.start_shopify_session
-    shopify_api_key =
-      Rails.application.credentials[Rails.env.to_sym][:shopify][:api_key]
-    shopify_password =
-      Rails.application.credentials[Rails.env.to_sym][:shopify][:password]
-    shopify_shop_name =
-      Rails.application.credentials[Rails.env.to_sym][:shopify][:shop_name]
-    shopify_api_version = Rails.application.credentials[Rails.env.to_sym][:shopify][:api_version]
-
-    session = ShopifyAPI::Auth::Session.new(
-      shop: "#{shopify_shop_name}.myshopify.com",
-      access_token: shopify_password
-    )
-
-    ShopifyAPI::Context.setup(
-      api_key: shopify_api_key,
-      api_secret_key: shopify_password,
-      host: "#{shopify_shop_name}.myshopify.com",
-      is_embedded: false, # Not embedded in the Shopify admin UI
-      is_private: true,
-      api_version: shopify_api_version
-    )
-
-    # Activate session to be used in all API calls
-    # session must be type `ShopifyAPI::Auth::Session`
-    ShopifyAPI::Context.activate_session(session)
-
-    session
+    Rails.env.production? ? "makerepo" : "makerepo_#{Rails.env}"
   end
 
   class_methods do
-    ShopifyConcern.start_shopify_session
+    def start_shopify_session
+      shopify_api_key =
+        Rails.application.credentials[Rails.env.to_sym][:shopify][:api_key]
+      shopify_password =
+        Rails.application.credentials[Rails.env.to_sym][:shopify][:password]
+      shopify_shop_name =
+        Rails.application.credentials[Rails.env.to_sym][:shopify][:shop_name]
+      shopify_api_version =
+        Rails.application.credentials[Rails.env.to_sym][:shopify][:api_version]
+
+      session =
+        ShopifyAPI::Auth::Session.new(
+          shop: "#{shopify_shop_name}.myshopify.com",
+          access_token: shopify_password
+        )
+
+      ShopifyAPI::Context.setup(
+        api_key: shopify_api_key,
+        api_secret_key: shopify_password,
+        host: "#{shopify_shop_name}.myshopify.com",
+        is_embedded: false, # Not embedded in the Shopify admin UI
+        is_private: true,
+        api_version: shopify_api_version
+      )
+
+      # Activate session to be used in all API calls
+      # session must be type `ShopifyAPI::Auth::Session`
+      ShopifyAPI::Context.activate_session(session)
+
+      session
+    end
   end
 
   included do
     # NOTE: keep these methods private, if you need to access them from outside
     # then you're doing it wrong
+
     private
 
     # Authenticated a shopify session and returns it
     def start_shopify_session
-      ShopifyConcern.start_shopify_session
+      self.class.start_shopify_session
     end
 
     # Models that use this method must:
@@ -60,10 +58,14 @@ module ShopifyConcern
     # have a method called 'shopify_draft_order_line_items'
     # have a method called 'shopify_draft_order_key_name'
     def ensure_can_use_draft_order
-      raise "Model does not define a shopify_draft_order_id column" unless has_attribute? 'shopify_draft_order_id'
+      unless has_attribute? "shopify_draft_order_id"
+        raise "Model does not define a shopify_draft_order_id column"
+      end
 
-      raise 'Key name must not be blank' if shopify_draft_order_key_name.blank?
-      raise 'Line items must not be blank' if shopify_draft_order_line_items.blank?
+      raise "Key name must not be blank" if shopify_draft_order_key_name.blank?
+      if shopify_draft_order_line_items.blank?
+        raise "Line items must not be blank"
+      end
     end
 
     # Find a shopify draft order by metadata reference
@@ -85,7 +87,10 @@ module ShopifyConcern
       return false if shopify_draft_order_id.blank?
 
       start_shopify_session
-      admin_client = ShopifyAPI::Clients::Graphql::Admin.new(session: ShopifyAPI::Context.active_session)
+      admin_client =
+        ShopifyAPI::Clients::Graphql::Admin.new(
+          session: ShopifyAPI::Context.active_session
+        )
 
       delete_draft_order = <<~QUERY
       mutation draftOrderDelete($input: DraftOrderDeleteInput!) {
@@ -95,23 +100,24 @@ module ShopifyConcern
       }
       QUERY
 
-      input = {
-        "input": {
-          "id": shopify_draft_order_id
-        }
-      }
+      input = { input: { id: shopify_draft_order_id } }
 
       resp = admin_client.query(query: delete_draft_order, variables: input)
-      raise "Received HTTP #{resp.code} when deleting shopify draft order: #{resp.body}" unless resp.code == 200
+      unless resp.code == 200
+        raise "Received HTTP #{resp.code} when deleting shopify draft order: #{resp.body}"
+      end
 
       update(shopify_draft_order_id: nil)
       # deletedId is nil if nothing was deleted
-      resp.body.dig('data', 'draftOrderDelete', 'deletedId').present?
+      resp.body.dig("data", "draftOrderDelete", "deletedId").present?
     end
 
     def fetch_shopify_draft_order
       start_shopify_session
-      admin_client = ShopifyAPI::Clients::Graphql::Admin.new(session: ShopifyAPI::Context.active_session)
+      admin_client =
+        ShopifyAPI::Clients::Graphql::Admin.new(
+          session: ShopifyAPI::Context.active_session
+        )
       query_draft_order = <<~QUERY
     query {
       draftOrder(id: "#{shopify_draft_order_id}") {
@@ -131,9 +137,11 @@ module ShopifyConcern
     QUERY
 
       resp = admin_client.query(query: query_draft_order)
-      raise "Network Error: HTTP #{resp.code} while fetching shopify draft order" unless resp.code == 200
+      unless resp.code == 200
+        raise "Network Error: HTTP #{resp.code} while fetching shopify draft order"
+      end
 
-      resp.body['data']['draftOrder']
+      resp.body["data"]["draftOrder"]
     end
 
     def create_shopify_draft_order
@@ -152,16 +160,30 @@ module ShopifyConcern
     QUERY
 
       start_shopify_session
-      admin_client = ShopifyAPI::Clients::Graphql::Admin.new(session: ShopifyAPI::Context.active_session)
+      admin_client =
+        ShopifyAPI::Clients::Graphql::Admin.new(
+          session: ShopifyAPI::Context.active_session
+        )
 
-      resp = admin_client.query(query: create_draft_order, variables: shopify_draft_order_input)
+      resp =
+        admin_client.query(
+          query: create_draft_order,
+          variables: shopify_draft_order_input
+        )
 
-      raise "Network error: Received HTTP #{resp.code} while creating draft order" unless resp.code == 200
+      unless resp.code == 200
+        raise "Network error: Received HTTP #{resp.code} while creating draft order"
+      end
 
-      raise "No data received: #{resp.body}" unless resp.body.dig 'data', 'draftOrderCreate', 'draftOrder'
+      unless resp.body.dig "data", "draftOrderCreate", "draftOrder"
+        raise "No data received: #{resp.body}"
+      end
 
       # save ID in database
-      update(shopify_draft_order_id: resp.body['data']['draftOrderCreate']['draftOrder']['id'])
+      update(
+        shopify_draft_order_id:
+          resp.body["data"]["draftOrderCreate"]["draftOrder"]["id"]
+      )
       fetch_shopify_draft_order
     end
 
@@ -188,10 +210,10 @@ module ShopifyConcern
 
   # Returns a string to prefix the id metafield
   def shopify_draft_order_key_name
-    raise 'Did not define shopify_draft_order_key_name on model implementing concern'
+    raise "Did not define shopify_draft_order_key_name on model implementing concern"
   end
 
   def shopify_draft_order_line_items
-    raise 'Did not define shopify_draft_order_line_items on model implementing concern'
+    raise "Did not define shopify_draft_order_line_items on model implementing concern"
   end
 end
