@@ -26,7 +26,7 @@
             <% if @locker_rental.reviewing? %>
                 <p>This request has not been approved yet</p>
             <% elsif @locker_rental.await_payment? %>
-                <p>This request is awaiting payment. <%= link_to 'Click here to proceed to checkout', @stripe_checkout_session.url %></p>
+                <p>This request is awaiting payment. <%= link_to 'Click here to proceed to checkout', @locker_rental.checkout_link %></p>
             <% end %>
             <p>To cancel this request, click on <b>Cancel</b> below.</p>
         <% end %>

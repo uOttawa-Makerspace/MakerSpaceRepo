@@ -25,24 +25,8 @@ class LockerType < ApplicationRecord
   def get_available_lockers
     # 1. Make a list based of max quantity (so BRUNS-1, BRUNS-2, ..., BRUNS-99)
     assigned_lockers = locker_rentals.assigned.pluck(:locker_specifier)
-    ("1"..self.quantity.to_s) # 2. Subtract specifiers already assigned to active rentals
+    ("1"..quantity.to_s) # 2. Subtract specifiers already assigned to active rentals
       .reject { |specifier| assigned_lockers.include?(specifier) }
-  end
-
-  def generate_line_items
-    [
-      {
-        quantity: 1,
-        price_data: {
-          currency: "cad",
-          product_data: {
-            name: "Locker rental",
-            description: "#{short_form}"
-          },
-          unit_amount: (cost * 100.0).to_i
-        }
-      }
-    ]
   end
 
   def rgb

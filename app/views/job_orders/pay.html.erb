@@ -6,7 +6,7 @@
   <p class="lead">
     Total Quote: <%= number_to_currency(@job_order.total_price) %>
   <div class="mt-3">
-    <%= link_to 'Proceed to the payment page', @stripe_session.url, class: 'btn btn-primary' %>
+    <%= link_to 'Proceed to the payment page', @job_order.checkout_link, class: 'btn btn-primary' %>
   </div>
   </p>
   <hr>

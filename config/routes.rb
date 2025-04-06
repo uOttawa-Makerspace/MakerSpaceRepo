@@ -6,7 +6,9 @@ Rails.application.routes.draw do
   resources :coupon_codes, only: %i[index new create destroy edit update]
 
   resources :custom_webhooks do
-    collection { post :orders_paid }
+    collection do
+      post :orders_paid
+    end
   end
 
   resources :videos, only: %i[index new create destroy]

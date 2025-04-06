@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2025_01_17_010106) do
+ActiveRecord::Schema[7.2].define(version: 2025_03_30_210138) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -22,9 +22,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_17_010106) do
     t.bigint "record_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index %w[record_type record_id name],
-            name: "index_action_text_rich_texts_uniqueness",
-            unique: true
+    t.index ["record_type", "record_id", "name"], name: "index_action_text_rich_texts_uniqueness", unique: true
   end
 
   create_table "active_storage_attachments", force: :cascade do |t|
@@ -34,9 +32,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_17_010106) do
     t.bigint "blob_id", null: false
     t.datetime "created_at", precision: nil, null: false
     t.index ["blob_id"], name: "index_active_storage_attachments_on_blob_id"
-    t.index %w[record_type record_id name blob_id],
-            name: "index_active_storage_attachments_uniqueness",
-            unique: true
+    t.index ["record_type", "record_id", "name", "blob_id"], name: "index_active_storage_attachments_uniqueness", unique: true
   end
 
   create_table "active_storage_blobs", force: :cascade do |t|
@@ -54,9 +50,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_17_010106) do
   create_table "active_storage_variant_records", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
-    t.index %w[blob_id variation_digest],
-            name: "index_active_storage_variant_records_uniqueness",
-            unique: true
+    t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
   end
 
   create_table "announcement_dismisses", force: :cascade do |t|
@@ -64,8 +58,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_17_010106) do
     t.bigint "user_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["announcement_id"],
-            name: "index_announcement_dismisses_on_announcement_id"
+    t.index ["announcement_id"], name: "index_announcement_dismisses_on_announcement_id"
     t.index ["user_id"], name: "index_announcement_dismisses_on_user_id"
   end
 
@@ -97,10 +90,8 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_17_010106) do
     t.datetime "updated_at", precision: nil, null: false
     t.integer "badge_template_id"
     t.integer "proficient_project_id"
-    t.index ["badge_template_id"],
-            name: "index_badge_requirements_on_badge_template_id"
-    t.index ["proficient_project_id"],
-            name: "index_badge_requirements_on_proficient_project_id"
+    t.index ["badge_template_id"], name: "index_badge_requirements_on_badge_template_id"
+    t.index ["proficient_project_id"], name: "index_badge_requirements_on_proficient_project_id"
   end
 
   create_table "badge_templates", id: :serial, force: :cascade do |t|
@@ -144,8 +135,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_17_010106) do
     t.datetime "updated_at", precision: nil, null: false
     t.integer "category_option_id"
     t.integer "project_proposal_id"
-    t.index ["category_option_id"],
-            name: "index_categories_on_category_option_id"
+    t.index ["category_option_id"], name: "index_categories_on_category_option_id"
     t.index ["repository_id"], name: "index_categories_on_repository_id"
   end
 
@@ -167,8 +157,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_17_010106) do
     t.boolean "linked", default: true
     t.index ["discount_code_id"], name: "index_cc_moneys_on_discount_code_id"
     t.index ["order_id"], name: "index_cc_moneys_on_order_id"
-    t.index ["proficient_project_id"],
-            name: "index_cc_moneys_on_proficient_project_id"
+    t.index ["proficient_project_id"], name: "index_cc_moneys_on_proficient_project_id"
   end
 
   create_table "certifications", id: :serial, force: :cascade do |t|
@@ -179,8 +168,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_17_010106) do
     t.boolean "active", default: true
     t.string "demotion_reason"
     t.bigint "demotion_staff_id"
-    t.index ["demotion_staff_id"],
-            name: "index_certifications_on_demotion_staff_id"
+    t.index ["demotion_staff_id"], name: "index_certifications_on_demotion_staff_id"
     t.index ["user_id"], name: "index_certifications_on_user_id"
   end
 
@@ -299,15 +287,10 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_17_010106) do
     t.string "sluggable_type", limit: 50
     t.string "scope"
     t.datetime "created_at", precision: nil
-    t.index %w[slug sluggable_type scope],
-            name:
-              "index_friendly_id_slugs_on_slug_and_sluggable_type_and_scope",
-            unique: true
-    t.index %w[slug sluggable_type],
-            name: "index_friendly_id_slugs_on_slug_and_sluggable_type"
+    t.index ["slug", "sluggable_type", "scope"], name: "index_friendly_id_slugs_on_slug_and_sluggable_type_and_scope", unique: true
+    t.index ["slug", "sluggable_type"], name: "index_friendly_id_slugs_on_slug_and_sluggable_type"
     t.index ["sluggable_id"], name: "index_friendly_id_slugs_on_sluggable_id"
-    t.index ["sluggable_type"],
-            name: "index_friendly_id_slugs_on_sluggable_type"
+    t.index ["sluggable_type"], name: "index_friendly_id_slugs_on_sluggable_type"
   end
 
   create_table "job_options", force: :cascade do |t|
@@ -348,10 +331,8 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_17_010106) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "job_order_quote_id"
-    t.index ["job_option_id"],
-            name: "index_job_order_quote_options_on_job_option_id"
-    t.index ["job_order_quote_id"],
-            name: "index_job_order_quote_options_on_job_order_quote_id"
+    t.index ["job_option_id"], name: "index_job_order_quote_options_on_job_option_id"
+    t.index ["job_order_quote_id"], name: "index_job_order_quote_options_on_job_order_quote_id"
   end
 
   create_table "job_order_quote_services", force: :cascade do |t|
@@ -361,10 +342,8 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_17_010106) do
     t.bigint "job_order_quote_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["job_order_quote_id"],
-            name: "index_job_order_quote_services_on_job_order_quote_id"
-    t.index ["job_service_id"],
-            name: "index_job_order_quote_services_on_job_service_id"
+    t.index ["job_order_quote_id"], name: "index_job_order_quote_services_on_job_order_quote_id"
+    t.index ["job_service_id"], name: "index_job_order_quote_services_on_job_service_id"
   end
 
   create_table "job_order_quote_type_extras", force: :cascade do |t|
@@ -373,10 +352,8 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_17_010106) do
     t.decimal "price", precision: 10, scale: 2
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["job_order_quote_id"],
-            name: "index_job_order_quote_type_extras_on_job_order_quote_id"
-    t.index ["job_type_extra_id"],
-            name: "index_job_order_quote_type_extras_on_job_type_extra_id"
+    t.index ["job_order_quote_id"], name: "index_job_order_quote_type_extras_on_job_order_quote_id"
+    t.index ["job_type_extra_id"], name: "index_job_order_quote_type_extras_on_job_type_extra_id"
   end
 
   create_table "job_order_quotes", force: :cascade do |t|
@@ -408,10 +385,9 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_17_010106) do
     t.text "comments"
     t.text "user_comments"
     t.boolean "is_deleted", default: false
-    t.index ["job_order_quote_id"],
-            name: "index_job_orders_on_job_order_quote_id"
-    t.index ["job_service_group_id"],
-            name: "index_job_orders_on_job_service_group_id"
+    t.string "shopify_draft_order_id"
+    t.index ["job_order_quote_id"], name: "index_job_orders_on_job_order_quote_id"
+    t.index ["job_service_group_id"], name: "index_job_orders_on_job_service_group_id"
     t.index ["job_type_id"], name: "index_job_orders_on_job_type_id"
     t.index ["user_id"], name: "index_job_orders_on_user_id"
   end
@@ -420,8 +396,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_17_010106) do
     t.bigint "job_order_id", null: false
     t.bigint "job_service_id", null: false
     t.index ["job_order_id"], name: "index_job_orders_services_on_job_order_id"
-    t.index ["job_service_id"],
-            name: "index_job_orders_services_on_job_service_id"
+    t.index ["job_service_id"], name: "index_job_orders_services_on_job_service_id"
   end
 
   create_table "job_service_groups", force: :cascade do |t|
@@ -448,8 +423,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_17_010106) do
     t.bigint "job_order_id"
     t.boolean "user_created", default: false
     t.index ["job_order_id"], name: "index_job_services_on_job_order_id"
-    t.index ["job_service_group_id"],
-            name: "index_job_services_on_job_service_group_id"
+    t.index ["job_service_group_id"], name: "index_job_services_on_job_service_group_id"
   end
 
   create_table "job_statuses", force: :cascade do |t|
@@ -571,8 +545,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_17_010106) do
     t.bigint "user_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["learning_module_id"],
-            name: "index_learning_module_tracks_on_learning_module_id"
+    t.index ["learning_module_id"], name: "index_learning_module_tracks_on_learning_module_id"
     t.index ["user_id"], name: "index_learning_module_tracks_on_user_id"
   end
 
@@ -604,8 +577,12 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_17_010106) do
     t.datetime "owned_until"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "repository_id"
+    t.string "requested_as"
+    t.string "shopify_draft_order_id"
     t.index ["locker_type_id"], name: "index_locker_rentals_on_locker_type_id"
     t.index ["rented_by_id"], name: "index_locker_rentals_on_rented_by_id"
+    t.index ["repository_id"], name: "index_locker_rentals_on_repository_id"
   end
 
   create_table "locker_types", force: :cascade do |t|
@@ -827,10 +804,8 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_17_010106) do
     t.boolean "has_project_kit"
     t.bigint "drop_off_location_id"
     t.boolean "is_virtual", default: false
-    t.index ["badge_template_id"],
-            name: "index_proficient_projects_on_badge_template_id"
-    t.index ["drop_off_location_id"],
-            name: "index_proficient_projects_on_drop_off_location_id"
+    t.index ["badge_template_id"], name: "index_proficient_projects_on_badge_template_id"
+    t.index ["drop_off_location_id"], name: "index_proficient_projects_on_drop_off_location_id"
   end
 
   create_table "proficient_projects_users", id: false, force: :cascade do |t|
@@ -861,10 +836,8 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_17_010106) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "learning_module_id"
-    t.index ["learning_module_id"],
-            name: "index_project_kits_on_learning_module_id"
-    t.index ["proficient_project_id"],
-            name: "index_project_kits_on_proficient_project_id"
+    t.index ["learning_module_id"], name: "index_project_kits_on_learning_module_id"
+    t.index ["proficient_project_id"], name: "index_project_kits_on_proficient_project_id"
     t.index ["user_id"], name: "index_project_kits_on_user_id"
   end
 
@@ -892,8 +865,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_17_010106) do
     t.string "slug"
     t.bigint "linked_project_proposal_id"
     t.integer "prototype_cost"
-    t.index ["linked_project_proposal_id"],
-            name: "index_project_proposals_on_linked_project_proposal_id"
+    t.index ["linked_project_proposal_id"], name: "index_project_proposals_on_linked_project_proposal_id"
   end
 
   create_table "project_requirements", id: :serial, force: :cascade do |t|
@@ -1054,11 +1026,9 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_17_010106) do
     t.string "language"
     t.bigint "training_level_id"
     t.bigint "course_name_id"
-    t.index ["course_name_id"],
-            name: "index_space_staff_hours_on_course_name_id"
+    t.index ["course_name_id"], name: "index_space_staff_hours_on_course_name_id"
     t.index ["space_id"], name: "index_space_staff_hours_on_space_id"
-    t.index ["training_level_id"],
-            name: "index_space_staff_hours_on_training_level_id"
+    t.index ["training_level_id"], name: "index_space_staff_hours_on_training_level_id"
   end
 
   create_table "spaces", id: :serial, force: :cascade do |t|
@@ -1086,8 +1056,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_17_010106) do
     t.boolean "recurring", default: true
     t.datetime "start_datetime"
     t.datetime "end_datetime"
-    t.index ["time_period_id"],
-            name: "index_staff_availabilities_on_time_period_id"
+    t.index ["time_period_id"], name: "index_staff_availabilities_on_time_period_id"
     t.index ["user_id"], name: "index_staff_availabilities_on_user_id"
   end
 
@@ -1095,8 +1064,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_17_010106) do
     t.bigint "staff_availability_id"
     t.datetime "start_at"
     t.integer "covers", default: 0
-    t.index ["staff_availability_id"],
-            name: "index_staff_availability_exceptions_on_staff_availability_id"
+    t.index ["staff_availability_id"], name: "index_staff_availability_exceptions_on_staff_availability_id"
   end
 
   create_table "staff_needed_calendars", force: :cascade do |t|
@@ -1123,10 +1091,8 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_17_010106) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "booking_status_id"
-    t.index ["booking_status_id"],
-            name: "index_sub_space_booking_statuses_on_booking_status_id"
-    t.index ["sub_space_booking_id"],
-            name: "index_sub_space_booking_statuses_on_sub_space_booking_id"
+    t.index ["booking_status_id"], name: "index_sub_space_booking_statuses_on_booking_status_id"
+    t.index ["sub_space_booking_id"], name: "index_sub_space_booking_statuses_on_sub_space_booking_id"
   end
 
   create_table "sub_space_bookings", force: :cascade do |t|
@@ -1144,12 +1110,9 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_17_010106) do
     t.bigint "approved_by_id"
     t.datetime "approved_at"
     t.bigint "recurring_booking_id"
-    t.index ["approved_by_id"],
-            name: "index_sub_space_bookings_on_approved_by_id"
-    t.index ["recurring_booking_id"],
-            name: "index_sub_space_bookings_on_recurring_booking_id"
-    t.index ["sub_space_booking_status_id"],
-            name: "index_sub_space_bookings_on_sub_space_booking_status_id"
+    t.index ["approved_by_id"], name: "index_sub_space_bookings_on_approved_by_id"
+    t.index ["recurring_booking_id"], name: "index_sub_space_bookings_on_recurring_booking_id"
+    t.index ["sub_space_booking_status_id"], name: "index_sub_space_bookings_on_sub_space_booking_status_id"
     t.index ["sub_space_id"], name: "index_sub_space_bookings_on_sub_space_id"
     t.index ["user_id"], name: "index_sub_space_bookings_on_user_id"
   end
@@ -1215,8 +1178,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_17_010106) do
   create_table "training_sessions_users", id: false, force: :cascade do |t|
     t.integer "training_session_id"
     t.integer "user_id"
-    t.index ["training_session_id"],
-            name: "index_training_sessions_users_on_training_session_id"
+    t.index ["training_session_id"], name: "index_training_sessions_users_on_training_session_id"
     t.index ["user_id"], name: "index_training_sessions_users_on_user_id"
   end
 
@@ -1311,8 +1273,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_17_010106) do
     t.boolean "processed", default: false, null: false
     t.bigint "learning_module_id"
     t.index ["learning_module_id"], name: "index_videos_on_learning_module_id"
-    t.index ["proficient_project_id"],
-            name: "index_videos_on_proficient_project_id"
+    t.index ["proficient_project_id"], name: "index_videos_on_proficient_project_id"
   end
 
   create_table "volunteer_hours", id: :serial, force: :cascade do |t|
@@ -1356,12 +1317,8 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_17_010106) do
     t.decimal "hours", precision: 5, scale: 2, default: "0.0"
   end
 
-  add_foreign_key "active_storage_attachments",
-                  "active_storage_blobs",
-                  column: "blob_id"
-  add_foreign_key "active_storage_variant_records",
-                  "active_storage_blobs",
-                  column: "blob_id"
+  add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "announcement_dismisses", "announcements"
   add_foreign_key "announcement_dismisses", "users"
   add_foreign_key "badge_requirements", "badge_templates"
@@ -1435,9 +1392,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_01_17_010106) do
   add_foreign_key "staff_spaces", "spaces"
   add_foreign_key "staff_spaces", "users"
   add_foreign_key "sub_space_booking_statuses", "booking_statuses"
-  add_foreign_key "sub_space_booking_statuses",
-                  "sub_space_bookings",
-                  on_delete: :cascade
+  add_foreign_key "sub_space_booking_statuses", "sub_space_bookings", on_delete: :cascade
   add_foreign_key "sub_space_bookings", "recurring_bookings"
   add_foreign_key "sub_space_bookings", "sub_space_booking_statuses"
   add_foreign_key "sub_space_bookings", "sub_spaces", on_delete: :cascade

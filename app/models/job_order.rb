@@ -1,4 +1,6 @@
 class JobOrder < ApplicationRecord
+  include ShopifyConcern
+
   belongs_to :user, optional: true
   belongs_to :job_type, optional: true
   belongs_to :job_service_group, optional: true
@@ -158,11 +160,25 @@ class JobOrder < ApplicationRecord
     end
   end
 
+  def checkout_link
+    # @stripe_session =
+      #   Stripe::Checkout::Session.create(
+      #     success_url: stripe_success_job_orders_url,
+      #     cancel_url: stripe_cancelled_job_orders_url,
+      #     mode: "payment",
+      #     line_items: @job_order.generate_line_items,
+      #     billing_address_collection: "required",
+      #     client_reference_id: "job-order-#{@job_order.id}"
+      #   )
+
+    shopify_draft_order['invoiceUrl']
+  end
+
   def total_price
     job_order_quote.total_price
   end
 
-  def generate_line_items
+  def shopify_draft_order_line_items
     price_data = [
       self.generate_line_item("Service Fees", job_order_quote.service_fee)
     ]
@@ -195,13 +211,15 @@ class JobOrder < ApplicationRecord
   def generate_line_item(name, unit_amount)
     {
       quantity: 1,
-      price_data: {
-        currency: "cad",
-        product_data: {
-          name: name
-        },
-        unit_amount: (unit_amount.to_f * 100).to_i
+      title: name,
+      originalUnitPriceWithCurrency: {
+        amount: unit_amount,
+        currencyCode: "CAD",
       }
     }
+  end
+
+  def shopify_draft_order_key_name
+    'job_order'
   end
 end
