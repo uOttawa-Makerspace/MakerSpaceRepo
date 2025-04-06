@@ -48,6 +48,38 @@ module ShopifyConcern
 
     private
 
+    # Full gid://shopify/<...>
+    # Defaults to record attribute
+    def draft_order_metafields(gid = nil)
+      unless gid
+        ensure_can_use_draft_order
+        gid = shopify_draft_order_id
+      end
+      start_shopify_session
+
+      query = <<~QUERY
+  query OrderMetafields($ownerId: ID!) {
+    order(id: $ownerId) {
+      metafields(first: 50) {
+        edges {
+          node {
+            namespace
+            key
+            value
+          }
+        }
+      }
+    }
+  }
+QUERY
+      ShopifyAPI::Clients::Graphql::Admin
+        .new(session: ShopifyAPI::Context.active_session)
+        .query(query: query, variables: { ownerId: gid })
+        .body
+        &.dig("data", "order", "metafields", "edges")
+        &.map { |n| n["node"] }
+    end
+
     # Authenticated a shopify session and returns it
     def start_shopify_session
       self.class.start_shopify_session
@@ -125,6 +157,11 @@ module ShopifyConcern
         name
         invoiceUrl
         status
+        order {
+            id
+            fullyPaid
+            displayFinancialStatus
+        }
         metafields(first: 10) {
           nodes {
             key
@@ -206,6 +243,10 @@ module ShopifyConcern
         }
       }
     end
+  end
+
+  def shopify_is_paid
+    shopify_draft_order['order']['fullyPaid']
   end
 
   # Returns a string to prefix the id metafield
