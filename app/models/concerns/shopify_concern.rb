@@ -50,8 +50,8 @@ module ShopifyConcern
 
     # Full gid://shopify/<...>
     # Defaults to record attribute
-    def draft_order_metafields(gid = nil)
-      unless gid
+    def draft_order_metafields(gid = :auto)
+      if gid == :auto
         ensure_can_use_draft_order
         gid = shopify_draft_order_id
       end
