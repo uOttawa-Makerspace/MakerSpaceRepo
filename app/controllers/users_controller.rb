@@ -353,7 +353,8 @@ class UsersController < SessionsController
     end
 
     if @repo_user.nil?
-      redirect_to root_path, alert: "User not found."
+      raise ActiveRecord::RecordNotFound
+      #redirect_to root_path, alert: "User not found."
     else
       @programs = @repo_user.programs.pluck(:program_type)
       begin
