@@ -83,7 +83,7 @@
       <div class="repo-info-item">
         <div class="title">CATEGORIES</div>
         <% @categories.each do |t| %>
-          <span class="tags"><%= link_to t.name, category_path(slug: t.name.gsub(' ', '-').downcase) %></span>
+          <%= link_to t.name, category_path(slug: t.name.gsub(' ', '-').downcase), class: 'btn btn-secondary btn-sm m-1' %>
         <% end %>
       </div>
       <% end %>
@@ -91,7 +91,7 @@
       <div class="repo-info-item">
         <div class="title">EQUIPMENT</div>
         <% @equipments.each do |t| %>
-          <span class="tags"><%= link_to t.name, equipment_path(slug: t.name.gsub(' ', '-').downcase) %></span>
+          <%= link_to t.name, equipment_path(slug: t.name.gsub(' ', '-').downcase), class: 'btn btn-secondary btn-sm m-1' %>
         <% end %>
       </div>
       <% end %>
