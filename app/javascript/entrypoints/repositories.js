@@ -39,7 +39,7 @@ document.addEventListener("turbo:load", () => {
                 callback(
                   data.users.map((user) => {
                     return { id: user.id, username: user.username };
-                  })
+                  }),
                 );
               });
           }
@@ -71,7 +71,7 @@ document.addEventListener("turbo:load", () => {
                 callback(
                   data.users.map((user) => {
                     return { id: user.id, username: user.username };
-                  })
+                  }),
                 );
               });
           }
@@ -121,7 +121,7 @@ document.addEventListener("turbo:load", () => {
       new TomSelect("#repository_categories", {
         plugins: ["remove_button"],
         maxItems: 5,
-        openOnFocus: false,
+        openOnFocus: true,
       });
     }
   }
@@ -130,7 +130,7 @@ document.addEventListener("turbo:load", () => {
       new TomSelect("#repository_equipments", {
         plugins: ["remove_button"],
         maxItems: 5,
-        openOnFocus: false,
+        openOnFocus: true,
       });
     }
   }
