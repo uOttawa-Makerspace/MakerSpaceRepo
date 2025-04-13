@@ -64,7 +64,7 @@
 
     <% if @project_proposal.description.present? %>
       <div class="card mb-3">
-        <div class="card-header"><%= t('project_proposal.client_information') %></div>
+        <div class="card-header"><%= t('project_proposal.project_background') %></div>
         <div class="card-body">
           <div style="word-break: break-word;"><%= @project_proposal.description.html_safe %></div>
         </div>
