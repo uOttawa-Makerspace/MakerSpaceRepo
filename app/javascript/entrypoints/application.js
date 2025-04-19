@@ -28,6 +28,7 @@ import "./photo_gallery";
 import "./requests";
 import "./settings";
 import "./sorting";
+import "./tabledata";
 import "./accordion-load";
 import "./clipboard";
 import "../controllers";

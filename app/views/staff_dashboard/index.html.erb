@@ -31,7 +31,7 @@
     <% end %>
     <br />
     <div class="table-responsive border">
-      <table class="staff-users-table text-center table table-striped" >
+      <table class="staff-users-table text-center table table-striped" data-datatable data-page-length="50">
         <caption id="user-count" class="text-center fs-3" align="top">Users inside <%= @space.name %>:  <%= @space.signed_in_users.count %>
         <div class="container text-center mx-auto">
           <%= link_to 'Sign Out All Users', staff_dashboard_sign_out_all_users_path, class: 'btn btn-secondary mx-auto text-center' %>
@@ -41,31 +41,31 @@
         <thead class="table-primary">
           <tr>
             <th class="name-header">
-              Name<span onclick="sortTable('staff-users-table', <%= @table_column_count %>)"><%= fa_icon('arrow-down') %></span>
+              Name
               <% @table_column_count += 1 %>
             </th>
             <th class="email-header">
-              Email<span onclick="sortTable('staff-users-table', <%= @table_column_count %>)"><%= fa_icon('arrow-down') %></span>
+              Email
               <% @table_column_count += 1 %>
             </th>
             <th class="name-header">
-              Flagged?<span onclick="sortTable('staff-users-table', <%= @table_column_count %>)"><%= fa_icon('arrow-down') %></span>
+              Flagged?
               <% @table_column_count += 1 %>
             </th>
             <th class="certifications-header">
-              Certifications in <%= @space.name %><span onclick="sortTable('staff-users-table', <%= @table_column_count %>)"><%= fa_icon('arrow-down') %></span>
+              Certifications in <%= @space.name %>
               <% @table_column_count += 1 %>
             </th>
             <% if @space.makerspace? %>
-              <th class="printers-header">Assigned Printers<span onclick="sortTable('staff-users-table', <%= @table_column_count %>)"><%= fa_icon('arrow-down') %></span></th>
+              <th class="printers-header">Assigned Printers</th>
               <% @table_column_count += 1 %>
             <% end %>
             <th class="email-header">
-              # of visits <br> (Past 2 months)<span onclick="sortTable('staff-users-table', <%= @table_column_count %>)"><%= fa_icon('arrow-down') %></span>
+              # of visits <br> (Past 2 months)
               <% @table_column_count += 1 %>
             </th>
             <th class="last-seen-header">
-              Last Seen<span onclick="sortTable('staff-users-table', <%= @table_column_count %>)"><%= fa_icon('arrow-down') %></span>
+              Last Seen
               <% @table_column_count += 1 %>
             </th>
             <th class="action-header disable-sort">Sign Out of <%= @space.name %></th>
@@ -77,13 +77,13 @@
     </div>
     <br />
     <div class="table-responsive border">
-      <table class="staff-recent-users-table text-center table table-striped table-sort table-arrows">
+      <table class="staff-recent-users-table text-center table table-striped table-sort table-arrows" data-datatable>
         <caption class="text-center fs-3" align="top">Users recently signed out of <%= @space.name %></caption>
         <thead class="table-primary">
           <tr>
-            <th class="name-header">Name<span onclick="sortTable('staff-recent-users-table', 0)"><%= fa_icon('arrow-down') %></span></th>
-            <th class="email-header">Email<span onclick="sortTable('staff-recent-users-table', 1)"><%= fa_icon('arrow-down') %></span></th>
-            <th class="last-seen-header">Last Seen<span onclick="sortTable('staff-recent-users-table', 2)"><%= fa_icon('arrow-down') %></span></th>
+            <th class="name-header">Name</th>
+            <th class="email-header">Email</th>
+            <th class="last-seen-header">Last Seen</th>
             <th class="action-header disable-sort"><%= fa_icon('check') %>&nbsp; TO SIGN IN <br> <%= fa_icon('times') %>&nbsp; TO SIGN OUT</th>
           </tr>
         </thead>
@@ -92,12 +92,12 @@
     </div>
     <br />
     <div class="table-responsive border">
-      <table class="text-center table table-striped staff-newly-signed-up-users-table table-sort table-arrows">
+      <table class="text-center table table-striped staff-newly-signed-up-users-table table-sort table-arrows" data-datatable>
         <caption class="text-center fs-3" align="top">Newly signed up users on Maker<strong>Repo</strong></caption>
         <thead class="table-primary">
           <tr>
-            <th class="name-header">Name<span onclick="sortTable('staff-newly-signed-up-users-table', 0)"><%= fa_icon('arrow-down') %></span></th>
-            <th class="email-header">Email<span onclick="sortTable('staff-newly-signed-up-users-table', 1)"><%= fa_icon('arrow-down') %></span></th>
+            <th class="name-header">Name</th>
+            <th class="email-header">Email</th>
             <th class="action-header disable-sort">Sign In To <%= @space.name %></span></th>
           </tr>
         </thead>
