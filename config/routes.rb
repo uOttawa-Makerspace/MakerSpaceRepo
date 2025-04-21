@@ -268,6 +268,8 @@ Rails.application.routes.draw do
       get "/generate_output", as: "generate", action: "generate", format: :csv
     end
 
+    resource :design_day
+
     resources :users, only: %i[index edit update show] do
       collection do
         get "search"
@@ -429,6 +431,8 @@ Rails.application.routes.draw do
       post "import_programs"
     end
   end
+  # For singular routes
+  resolve('DesignDay') {[:admin, :design_day]}
 
   resources :key_requests, only: %i[index new create show] do
     get :steps
