@@ -1,0 +1,26 @@
+<div class="pt-3">
+    <h1 class="text-center">Design day slated for <%= @design_day.day %></h1>
+    <hr />
+    <%= form_with model: @design_day do |f| %>
+        <div class="input-group mb-3">
+            <%= f.label :day, "Design day starts at:", class: 'input-group-text' %>
+            <%= f.date_field :day, class: 'form-control' %>
+        </div>
+        <div class="input-group">
+            <%= f.label :sheet_key, "Google sheets ID (or url)", class: 'input-group-text' %>
+            <%= f.text_field :sheet_key, class: 'form-control' %>
+            <div class="input-group-text">
+                <%= fa_icon :check, class: 'text-success', id: 'sheet_key_verified_icon', hidden: false %>
+                <%= fa_icon :question, class: 'text-warning', id: 'sheet_key_maybe_icon', hidden: true %>
+                <%= fa_icon :times, class: 'text-danger', id: 'sheet_key_error_icon', hidden: true %>
+            </div>
+            <%= f.button "Convert URL to ID", class: 'btn btn-outline-success', id: 'verifyDesignDaySheet' %>
+        </div>
+        <div class="form-text ms-3">
+            Current sheet url is <a id="sheet_key_preview_url" href="https://docs.google.com/spreadsheets/d/<%= @design_day.sheet_key %>">https://docs.google.com/spreadsheets/d/<%= @design_day.sheet_key %></a>
+            <br />
+            <span id="sheet_key_may_be_invalid">Current key doesn't seem valid.</span>
+        </div>
+        <%= f.submit class: 'btn btn-primary mt-3' %>
+    <% end %>
+</div>
