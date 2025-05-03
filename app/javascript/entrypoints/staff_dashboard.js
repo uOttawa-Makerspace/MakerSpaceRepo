@@ -58,9 +58,3 @@ function refreshTables() {
 setInterval(refreshCapacity, 60000);
 refreshCapacity();
 setInterval(refreshTables, 15000);
-
-// Attach table plugin to tables
-
-document.addEventListener("turbo:load", () => {
-  new DataTable("table");
-});

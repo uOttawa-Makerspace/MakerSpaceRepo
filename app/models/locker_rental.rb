@@ -2,11 +2,13 @@
 
 class LockerRental < ApplicationRecord
   include ApplicationHelper
+  include ShopifyConcern
 
   belongs_to :locker_type
   belongs_to :rented_by, class_name: "User"
 
   after_save :send_email_notification
+  after_save :sync_shopify_draft_order
 
   enum :state,
        {
@@ -27,9 +29,9 @@ class LockerRental < ApplicationRecord
   def only_one_request_per_user
     # If this request is under review, and another by same user is also under review
     if under_review? &&
-         LockerRental.where(rented_by: rented_by).exists?(
-           state: %i[reviewing await_payment]
-         )
+       LockerRental.where(rented_by: rented_by).exists?(
+         state: %i[reviewing await_payment]
+       )
       errors.add(:rented_by, "already has a request under review")
     end
   end
@@ -75,26 +77,42 @@ class LockerRental < ApplicationRecord
     "#{locker_type.short_form}##{locker_specifier}"
   end
 
-  # FIXME rename to .pending?
+  # FIXME: rename to .pending?
   def under_review?
     reviewing? || await_payment?
   end
 
   def send_email_notification
-    if saved_change_to_state?
-      case state.to_sym
-      when :await_payment
-        LockerMailer.with(locker_rental: self).locker_checkout.deliver_now
-      when :active
-        LockerMailer.with(locker_rental: self).locker_assigned.deliver_now
-      when :cancelled
-        LockerMailer.with(locker_rental: self).locker_cancelled.deliver_now
-      when :reviewing
-        nil # do nothing
-      else
-        raise "Unknown state #{state.to_sym}"
-      end
+    return unless saved_change_to_state?
+    case state.to_sym
+    when :await_payment
+      LockerMailer.with(locker_rental: self).locker_checkout.deliver_now
+    when :active
+      LockerMailer.with(locker_rental: self).locker_assigned.deliver_now
+    when :cancelled
+      LockerMailer.with(locker_rental: self).locker_cancelled.deliver_now
+    when :reviewing
+      nil # do nothing
+    else
+      raise "Unknown state #{state.to_sym}"
     end
+  end
+
+  def sync_shopify_draft_order
+    return unless saved_change_to_state?
+    case state.to_sym
+    when :cancelled
+      # When a locker is cancelled, cancel draft order too
+      destroy_shopify_draft_order
+    end
+  end
+
+  # Fetch checkout link from shopify draft order, if not found create a draft
+  # order. Returns nil if API call fails or checkout is not possible now.
+  def checkout_link
+    return nil unless await_payment?  # checkout only if await payment
+
+    shopify_draft_order['invoiceUrl']
   end
 
   # For the view
@@ -119,5 +137,27 @@ class LockerRental < ApplicationRecord
       .pluck(:locker_type_id, :locker_specifier)
       .group_by(&:shift)
       .transform_values(&:flatten)
+  end
+
+  private
+  # Definitions for the shopify concern:
+
+  def shopify_draft_order_line_items
+    [
+      {
+        "quantity": 1,
+        "title": "Locker Rental for one semester / Location de casier pour un trimestre",
+        "originalUnitPriceWithCurrency": {
+          "amount": locker_type.cost,
+          "currencyCode": "CAD",
+        },
+      }
+    ]
+  end
+
+  # name of the metafield key stored on shopify side
+  # This is constant per model, do not change at all please.
+  def shopify_draft_order_key_name
+    "locker"
   end
 end

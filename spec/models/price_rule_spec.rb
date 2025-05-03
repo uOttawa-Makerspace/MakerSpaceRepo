@@ -37,7 +37,7 @@ RSpec.describe PriceRule, type: :model do
     context "#update_price_rule from shopify" do
       it "should update the price rule" do
         PriceRule.update_price_rule(@shopify_price_rule_id, "6$ Coupon", 6)
-        shopify_price_rule = ShopifyAPI::PriceRule.find(@shopify_price_rule_id)
+        shopify_price_rule = ShopifyAPI::PriceRule.find(id: @shopify_price_rule_id)
         expect(shopify_price_rule.value).to eq("-6.0")
         expect(shopify_price_rule.title).to eq("6$ Coupon")
       end
@@ -47,9 +47,9 @@ RSpec.describe PriceRule, type: :model do
       it "should be deleting the price rule" do
         shopify_price_rule_id = PriceRule.create_price_rule("7$ Coupon", 7)
         PriceRule.delete_price_rule_from_shopify(shopify_price_rule_id)
-        expect {
-          ShopifyAPI::PriceRule.find(shopify_price_rule_id)
-        }.to raise_error(ActiveResource::ResourceNotFound)
+        expect (
+          ShopifyAPI::PriceRule.find(id: shopify_price_rule_id)
+        ).to be_nil
       end
     end
 

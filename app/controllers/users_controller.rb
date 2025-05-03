@@ -26,9 +26,9 @@ class UsersController < SessionsController
   def create
     unless verify_recaptcha
       @new_user = User.new
-      redirect_to new_user_path,
-                  alert: "You failed the Captcha",
-                  status: :unprocessable_entity
+      render :new,
+             alert: "You failed the Captcha",
+             status: :unprocessable_entity
       return
     end
     @new_user = User.new(user_params)
@@ -353,7 +353,8 @@ class UsersController < SessionsController
     end
 
     if @repo_user.nil?
-      redirect_to root_path, alert: "User not found."
+      raise ActiveRecord::RecordNotFound
+      #redirect_to root_path, alert: "User not found."
     else
       @programs = @repo_user.programs.pluck(:program_type)
       begin

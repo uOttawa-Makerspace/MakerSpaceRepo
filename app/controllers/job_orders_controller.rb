@@ -492,15 +492,7 @@ class JobOrdersController < ApplicationController
              .job_status
       @job_order =
         JobOrder.where(id: verifier.verify(@token), is_deleted: false).first
-      @stripe_session =
-        Stripe::Checkout::Session.create(
-          success_url: stripe_success_job_orders_url,
-          cancel_url: stripe_cancelled_job_orders_url,
-          mode: "payment",
-          line_items: @job_order.generate_line_items,
-          billing_address_collection: "required",
-          client_reference_id: "job-order-#{@job_order.id}"
-        )
+      @payment_link = @job_order.checkout_link
       render "job_orders/pay"
     else
       flash[:alert] = t("job_orders.alerts.pay_magic_link_expired")

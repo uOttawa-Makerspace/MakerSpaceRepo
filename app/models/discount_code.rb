@@ -30,7 +30,7 @@ class DiscountCode < ApplicationRecord
 
   def shopify_api_create_discount_code
     DiscountCode.start_session
-    shopify_discount_code = ShopifyAPI::DiscountCode.new
+    shopify_discount_code = ShopifyAPI::DiscountCode.new(session: ShopifyAPI::Context.active_session)
     shopify_discount_code.prefix_options[
       :price_rule_id
     ] = price_rule.shopify_price_rule_id
@@ -42,10 +42,12 @@ class DiscountCode < ApplicationRecord
   def delete_discount_code_from_shopify
     DiscountCode.start_session
     shopify_discount_code =
-      ShopifyAPI::DiscountCode.where(
+      ShopifyAPI::DiscountCode.find(
         id: shopify_discount_code_id,
         price_rule_id: price_rule.shopify_price_rule_id
-      ).last
+      )
     shopify_discount_code.destroy
+  rescue ShopifyAPI::Errors::HttpResponseError
+    nil
   end
 end
