@@ -1,7 +1,9 @@
 class DesignDay < ApplicationRecord
   has_many :design_day_schedules, dependent: :destroy
+  accepts_nested_attributes_for :design_day_schedules
 
   default_scope { order(day: :desc) }
+
 
   def self.instance
     any? ? first : create(day: Time.zone.today, sheet_key: "", is_live: false)

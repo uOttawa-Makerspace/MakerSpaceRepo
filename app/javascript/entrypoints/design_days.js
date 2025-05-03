@@ -1,3 +1,4 @@
+// Verify sheet ID
 document.addEventListener("turbo:load", function () {
   let verifyDesignDaySheetButton = document.getElementById(
     "verifyDesignDaySheet",
@@ -32,9 +33,10 @@ document.addEventListener("turbo:load", function () {
 
   function verifySheetId() {
     // Crude test to make sure the sheet exists
-    let find_id = /[^/]{44}/;
+    // Assuming user copy/pastes a sheet directly into input field
+    let find_id = /[^/]{44}/; // Key is 44 characters long
     let url_or_key = sheetKeyInput.value;
-    let key = find_id.exec(url_or_key.split("?"));
+    let key = find_id.exec(url_or_key.split("?")[0]); // remove any GET queries
     console.log(`Potential key ${key}`);
 
     // Update url preview
@@ -67,3 +69,6 @@ document.addEventListener("turbo:load", function () {
     });
   }
 });
+
+// Add/delete fields
+document.addEventListener("turbo:load", function () {});

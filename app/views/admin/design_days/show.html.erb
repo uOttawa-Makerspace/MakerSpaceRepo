@@ -19,8 +19,26 @@
         <div class="form-text ms-3">
             Current sheet url is <a id="sheet_key_preview_url" href="https://docs.google.com/spreadsheets/d/<%= @design_day.sheet_key %>">https://docs.google.com/spreadsheets/d/<%= @design_day.sheet_key %></a>
             <br />
-            <span id="sheet_key_may_be_invalid">Current key doesn't seem valid.</span>
+            <span id="sheet_key_may_be_invalid" hidden="true">Current key doesn't seem valid.</span>
         </div>
+
+        <% [:student, :judge].each do |t| %>
+            <div>
+                <h2 class="text-center mt-3"><%= t.to_s.humanize %> schedules</h2>
+                <hr class="w-50 mx-auto my-0"/>
+                <%= f.fields_for :design_day_schedules, @design_day_schedules do |fs| %>
+                    <%= render partial: 'design_day_schedule_form', locals: {fs: fs, t: } %>
+                <% end %>
+                <div id="design_day_schedule_template_field" hidden="true" data-is-persisted="false">
+                    <%= f.fields_for :design_day_schedules, [DesignDaySchedule.new(event_for: t)] do |fs| %>
+                        <%= render partial: 'design_day_schedule_form', locals: {fs: fs, t: } %>
+                    <% end %>
+                </div>
+
+                <div class="btn btn-success float-end" data-template-fields="design_day_schedule_template_field"><%= fa_icon 'plus' %></div>
+            </div>
+        <% end %>
+        <br />
         <%= f.submit class: 'btn btn-primary mt-3' %>
     <% end %>
 </div>

@@ -268,7 +268,7 @@ Rails.application.routes.draw do
       get "/generate_output", as: "generate", action: "generate", format: :csv
     end
 
-    resource :design_day
+    resource :design_day, only: %i[show update]
 
     resources :users, only: %i[index edit update show] do
       collection do

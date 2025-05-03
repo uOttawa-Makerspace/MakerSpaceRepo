@@ -1,0 +1,22 @@
+<div class="row align-items-center mt-3">
+    <div class="col border-end">
+        <div class="input-group">
+            <%= fs.label :start, 'From', class: 'input-group-text' %>
+            <%= fs.time_field :start, class: 'form-control' %>
+            <%= fs.label :end, "until", class: 'input-group-text' %>
+            <%= fs.time_field :end, class: 'form-control' %>
+        </div>
+    </div>
+    <div class="col">
+        <%= fs.label :title_en, "English title of event", class: 'form-label', hidden: true %>
+        <%= fs.text_field :title_en, placeholder: 'English title', class: 'form-control' %>
+    </div>
+    <div class="col">
+        <div class="input-group">
+            <%= fs.label :title_fr, "French title of event", class: 'form-label', hidden: true %>
+            <%= fs.text_field :title_fr, placeholder: 'French title', class: 'form-control' %>
+            <div class="btn btn-danger"><%= fa_icon 'trash' %></div>
+        </div>
+    </div>
+</div>
+<%= fs.hidden_field :type, value: t %>
