@@ -18,6 +18,12 @@ class Admin::DesignDaysController < AdminAreaController
   private
 
   def design_day_params
-    params.require(:design_day).permit(:day, :sheet_key)
+    params.require(:design_day).permit(
+      :day,
+      :sheet_key,
+      design_day_schedules_attributes: [
+        :id, :start, :end, :ordering, :title_en, :title_fr, :event_for
+      ]
+    )
   end
 end

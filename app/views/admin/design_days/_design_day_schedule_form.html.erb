@@ -1,10 +1,10 @@
-<div class="row align-items-center mt-3">
+<div class="row align-items-center mb-3 gx-2">
     <div class="col border-end">
         <div class="input-group">
             <%= fs.label :start, 'From', class: 'input-group-text' %>
-            <%= fs.time_field :start, class: 'form-control' %>
+            <%= fs.time_field :start, class: 'form-control', include_seconds: false %>
             <%= fs.label :end, "until", class: 'input-group-text' %>
-            <%= fs.time_field :end, class: 'form-control' %>
+            <%= fs.time_field :end, class: 'form-control', include_seconds: false %>
         </div>
     </div>
     <div class="col">
@@ -12,11 +12,11 @@
         <%= fs.text_field :title_en, placeholder: 'English title', class: 'form-control' %>
     </div>
     <div class="col">
-        <div class="input-group">
-            <%= fs.label :title_fr, "French title of event", class: 'form-label', hidden: true %>
-            <%= fs.text_field :title_fr, placeholder: 'French title', class: 'form-control' %>
-            <div class="btn btn-danger"><%= fa_icon 'trash' %></div>
-        </div>
+        <%= fs.label :title_fr, "French title of event", class: 'form-label', hidden: true %>
+        <%= fs.text_field :title_fr, placeholder: 'French title', class: 'form-control' %>
+    </div>
+    <div class="col-auto">
+    <div class="btn btn-danger"><%= fa_icon 'trash' %></div>
     </div>
 </div>
-<%= fs.hidden_field :type, value: t %>
+<%= fs.hidden_field :event_for, value: t %>

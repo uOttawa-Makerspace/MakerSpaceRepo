@@ -70,5 +70,37 @@ document.addEventListener("turbo:load", function () {
   }
 });
 
+function addTemplateField(event) {
+  // Prevent form submit
+  event.preventDefault();
+
+  // Get actual button with selector
+  let btn = event.currentTarget;
+
+  // Find template and clone
+  let templateSelector = btn.dataset.templateFields;
+  let template = document.querySelector(templateSelector);
+
+  let newField = template.cloneNode(true);
+  // Remove template attributes
+  newField.removeAttribute("id");
+  newField.removeAttribute("disabled");
+  newField.hidden = false;
+
+  // Find all elements named with template and replace with a random name, to
+  // prevent conflicts
+  let newName = Date.now();
+  newField.querySelectorAll("[name]").forEach((el) => {
+    el.name = el.name.replaceAll("TEMPLATE", newName);
+  });
+
+  // Insert above target button
+  btn.insertAdjacentElement("beforebegin", newField);
+}
+
 // Add/delete fields
-document.addEventListener("turbo:load", function () {});
+document.addEventListener("turbo:load", function () {
+  document.querySelectorAll("[data-template-fields]").forEach((el) => {
+    el.addEventListener("click", addTemplateField);
+  });
+});

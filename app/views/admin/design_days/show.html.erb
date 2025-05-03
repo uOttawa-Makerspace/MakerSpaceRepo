@@ -25,17 +25,17 @@
         <% [:student, :judge].each do |t| %>
             <div>
                 <h2 class="text-center mt-3"><%= t.to_s.humanize %> schedules</h2>
-                <hr class="w-50 mx-auto my-0"/>
-                <%= f.fields_for :design_day_schedules, @design_day_schedules do |fs| %>
+                <hr class="w-50 mx-auto mb-3"/>
+                <%= f.fields_for :design_day_schedules, @design_day_schedules.where(event_for: t) do |fs| %>
                     <%= render partial: 'design_day_schedule_form', locals: {fs: fs, t: } %>
                 <% end %>
-                <div id="design_day_schedule_template_field" hidden="true" data-is-persisted="false">
-                    <%= f.fields_for :design_day_schedules, [DesignDaySchedule.new(event_for: t)] do |fs| %>
-                        <%= render partial: 'design_day_schedule_form', locals: {fs: fs, t: } %>
+                <fieldset id=<%= "design_day_schedule_template_#{t}_field" %> hidden="true" disabled data-is-persisted="false">
+                    <%= f.fields_for :design_day_schedules, [DesignDaySchedule.new(event_for: t)], child_index: 'TEMPLATE' do |fs| %>
+                        <%= render partial: 'design_day_schedule_form', locals: {fs: fs, t: t} %>
                     <% end %>
-                </div>
+                </fieldset>
 
-                <div class="btn btn-success float-end" data-template-fields="design_day_schedule_template_field"><%= fa_icon 'plus' %></div>
+                <button class="btn btn-success float-end" data-template-fields=<%= "#design_day_schedule_template_#{t}_field" %> ><%= fa_icon 'plus' %></button>
             </div>
         <% end %>
         <br />
