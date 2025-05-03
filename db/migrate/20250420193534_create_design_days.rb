@@ -13,7 +13,7 @@ class CreateDesignDays < ActiveRecord::Migration[7.2]
       t.integer :ordering
       t.string :title_en
       t.string :title_fr
-      t.integer :type
+      t.integer :event_for
     end
   end
 end

@@ -220,7 +220,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_04_20_193534) do
     t.integer "ordering"
     t.string "title_en"
     t.string "title_fr"
-    t.integer "type"
+    t.integer "event_for"
     t.index ["design_day_id"], name: "index_design_day_schedules_on_design_day_id"
   end
 
