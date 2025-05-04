@@ -22,18 +22,18 @@
             <span id="sheet_key_may_be_invalid" hidden="true">Current key doesn't seem valid.</span>
         </div>
 
-        <% [:student, :judge].each do |t| %>
+        <% @design_day_schedules.each do |t, schedules| %>
             <div>
                 <h2 class="text-center mt-3"><%= t.to_s.humanize %> schedules</h2>
                 <hr class="w-50 mx-auto mb-3"/>
-                <%= f.fields_for :design_day_schedules, @design_day_schedules.where(event_for: t) do |fs| %>
-                    <%= render partial: 'design_day_schedule_form', locals: {fs: fs, t: } %>
+                <%= f.fields_for :design_day_schedules, schedules do |fs| %>
+                    <%= render partial: 'design_day_schedule_form', locals: {fs: fs} %>
                 <% end %>
-                <fieldset id=<%= "design_day_schedule_template_#{t}_field" %> hidden="true" disabled data-is-persisted="false">
-                    <%= f.fields_for :design_day_schedules, [DesignDaySchedule.new(event_for: t)], child_index: 'TEMPLATE' do |fs| %>
-                        <%= render partial: 'design_day_schedule_form', locals: {fs: fs, t: t} %>
-                    <% end %>
-                </fieldset>
+
+                <%# Make a blank object to act as a template %>
+                <%= f.fields_for :design_day_schedules, [DesignDaySchedule.new(event_for: t)], child_index: 'TEMPLATE' do |fs| %>
+                    <%= render partial: 'design_day_schedule_form', locals: {fs: fs} %>
+                <% end %>
 
                 <button class="btn btn-success float-end" data-template-fields=<%= "#design_day_schedule_template_#{t}_field" %> ><%= fa_icon 'plus' %></button>
             </div>

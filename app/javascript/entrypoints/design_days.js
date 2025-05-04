@@ -90,17 +90,38 @@ function addTemplateField(event) {
   // Find all elements named with template and replace with a random name, to
   // prevent conflicts
   let newName = Date.now();
-  newField.querySelectorAll("[name]").forEach((el) => {
-    el.name = el.name.replaceAll("TEMPLATE", newName);
-  });
+  // XSS waiting to happen lol
+  newField.innerHTML = newField.innerHTML.replaceAll("TEMPLATE", newName);
+  // newField.querySelectorAll("[name], [for]").forEach((el) => {
+  //   el.name = el.name.replaceAll("TEMPLATE", newName);
+  // });
 
   // Insert above target button
   btn.insertAdjacentElement("beforebegin", newField);
+
+  // Attach event listeners
+  newField
+    .querySelectorAll("[data-delete-template]")
+    .forEach(attachRemoveTemplateField);
+}
+
+function attachRemoveTemplateField(target) {
+  console.log(target);
+  target.addEventListener("change", function (event) {
+    console.log("what");
+    if (event.currentTarget.checked) {
+      event.currentTarget.closest("fieldset").hidden = true;
+    }
+  });
 }
 
 // Add/delete fields
 document.addEventListener("turbo:load", function () {
   document.querySelectorAll("[data-template-fields]").forEach((el) => {
     el.addEventListener("click", addTemplateField);
+  });
+
+  document.querySelectorAll("[data-delete-template]").forEach((el) => {
+    attachRemoveTemplateField(el);
   });
 });
