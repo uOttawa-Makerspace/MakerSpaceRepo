@@ -36,3 +36,11 @@ to a design day.
 
 The controller exposes the usual CRUD routes, plus a route that would return the
 most recent active design day configuration.
+
+# Nested attributes
+
+A bit messy, I tried to separate it into a generic JS plugin you could use
+elsewhere. Currently written for design day only, if used elsewhere should be
+moved to application or a separate JS file.
+
+https://api.rubyonrails.org/classes/ActiveRecord/NestedAttributes/ClassMethods.html

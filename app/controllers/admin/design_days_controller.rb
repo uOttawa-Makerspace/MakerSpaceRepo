@@ -1,7 +1,18 @@
 class Admin::DesignDaysController < AdminAreaController
-  before_action :make_variables, only: %i[show update]
+  before_action :make_variables, only: %i[show update data]
+  skip_before_action :current_user, only: :data
+  skip_before_action :ensure_admin, only: :data
 
   def show
+  end
+
+  def data
+    # https://api.rubyonrails.org/classes/ActiveModel/Serializers/JSON.html#method-i-as_json
+    render json:
+             @design_day.as_json(
+               include: :design_day_schedules,
+               methods: %i[semester year]
+             )
   end
 
   def update
@@ -18,10 +29,11 @@ class Admin::DesignDaysController < AdminAreaController
 
   def make_variables
     @design_day ||= DesignDay.instance
-    @design_day_schedules = @design_day.design_day_schedules.group_by(&:event_for)
+    @design_day_schedules =
+      @design_day.design_day_schedules.group_by(&:event_for)
     DesignDaySchedule.event_fors.each_key do |t|
       # make sure the others exist
-        @design_day_schedules[t] ||= []
+      @design_day_schedules[t] ||= []
     end
 
     # DesignDaySchedule.event_fors.each_key do |t|
