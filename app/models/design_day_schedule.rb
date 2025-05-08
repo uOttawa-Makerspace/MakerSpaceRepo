@@ -11,6 +11,8 @@ class DesignDaySchedule < ApplicationRecord
               greater_than_or_equal_to: 0
             },
             allow_nil: true
+  validates :start, presence: true
+  validates :end, presence: true
   validates :title_en, presence: true
   validates :title_fr, presence: true
 end
