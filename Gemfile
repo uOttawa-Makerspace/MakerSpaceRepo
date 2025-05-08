@@ -76,7 +76,7 @@ gem "groupdate"
 
 group :development, :test do
   gem "byebug", platform: :mri
-  gem "rspec-rails", "~> 7.0.0"
+  gem "rspec-rails", "~> 7.1.0"
   gem "rspec-json_expectations"
   gem "faker", "~> 3.1.0"
   gem "railroady"

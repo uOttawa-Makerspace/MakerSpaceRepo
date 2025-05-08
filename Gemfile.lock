@@ -2087,7 +2087,7 @@ GEM
     rspec-mocks (3.13.2)
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.13.0)
-    rspec-rails (7.0.2)
+    rspec-rails (7.1.1)
       actionpack (>= 7.0)
       activesupport (>= 7.0)
       railties (>= 7.0)
@@ -2354,7 +2354,7 @@ DEPENDENCIES
   roo (~> 2.10.0)
   roo-xls
   rspec-json_expectations
-  rspec-rails (~> 7.0.0)
+  rspec-rails (~> 7.1.0)
   rspec-retry
   rubocop-rails
   rubyzip (~> 2.1)
