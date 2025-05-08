@@ -26,12 +26,13 @@
             <div>
                 <h2 class="text-center mt-3"><%= t.to_s.humanize %> schedules</h2>
                 <hr class="w-50 mx-auto mb-3"/>
-                <%= f.fields_for :design_day_schedules, schedules do |fs| %>
+                <%# fields_for puts the id hidden attribute outside the container element. disable and place manually %>
+                <%= f.fields_for :design_day_schedules, schedules, include_id: false do |fs| %>
                     <%= render partial: 'design_day_schedule_form', locals: {fs: fs} %>
                 <% end %>
 
                 <%# Make a blank object to act as a template %>
-                <%= f.fields_for :design_day_schedules, [DesignDaySchedule.new(event_for: t)], child_index: 'TEMPLATE' do |fs| %>
+                <%= f.fields_for :design_day_schedules, [DesignDaySchedule.new(event_for: t)], child_index: 'TEMPLATE', include_id: false do |fs| %>
                     <%= render partial: 'design_day_schedule_form', locals: {fs: fs} %>
                 <% end %>
 
