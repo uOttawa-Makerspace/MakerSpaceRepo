@@ -49,7 +49,7 @@
     "stimulus-vite-helpers": "^3.1.0",
     "toastr": "^2.1.4",
     "tom-select": "^2.4.2",
-    "trix": "^2.1.12"
+    "trix": "^2.1.15"
   },
   "devDependencies": {
     "@prettier/plugin-ruby": "^4.0.4",
