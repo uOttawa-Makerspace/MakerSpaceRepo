@@ -4,7 +4,7 @@ class DesignDaySchedule < ApplicationRecord
   enum :event_for, { student: 0, judge: 1 }, default: :student, validate: true
 
   # Order by start date then by custom-order
-  default_scope { order(start: :asc, ordering: :asc) }
+  default_scope { order(:event_for, ordering: :asc, start: :asc) }
 
   validates :ordering,
             comparison: {

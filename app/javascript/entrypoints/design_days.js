@@ -126,15 +126,43 @@ document.addEventListener("turbo:load", function () {
   });
 });
 
+function redoOrdering() {
+  // Set orderings first, as displayed client-side
+  // querySelectorAll guarantees document order
+  document
+    .querySelectorAll("input.ordering-attribute")
+    .forEach((el, index) => (el.value = index));
+}
+
 // Sorting schedules manually
 document.addEventListener("turbo:load", function () {
   const studentList = document
     .querySelectorAll(".design-day-schedule-sort-list")
     .forEach((el) => {
       const studentSortable = new Sortable(el, {
+        group: "design_day_schedule", // Same group for all
         handle: ".sort-handle",
+        swapThreshold: 0.3,
+        onSort: function (evt) {
+          let toEventForValue = evt.to.dataset.eventFor;
+          // Update event_for of dragged schedule
+          let eventForInput = evt.item.querySelector(
+            "input.event-for-attribute",
+          );
+          eventForInput.value = toEventForValue;
+
+          // Update ordering of dragged schedule
+          let orderingInput = evt.item.querySelector(
+            "input.ordering-attribute",
+          );
+          // orderingInput.value = evt.newIndex;
+          redoOrdering();
+
+          console.log(
+            `Moving to ${toEventForValue}: new event_for: ${eventForInput.value}, new order: ${orderingInput.value}`,
+          );
+        },
       });
     });
-  // We have two sortable list groups
-  // On receiving an
+  redoOrdering();
 });

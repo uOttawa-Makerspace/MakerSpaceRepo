@@ -22,21 +22,21 @@
             <span id="sheet_key_may_be_invalid" hidden="true">Current key doesn't seem valid.</span>
         </div>
 
-        <% @design_day_schedules.each do |t, schedules| %>
-            <div class="design-day-schedule-sort-list">
-                <h2 class="text-center mt-3"><%= t.to_s.humanize %> schedules</h2>
-                <hr class="w-50 mx-auto mb-3"/>
+        <% @design_day_schedules.each do |event_for, schedules| %>
+            <h2 class="text-center mt-3"><%= event_for.to_s.humanize %> schedules</h2>
+            <hr class="w-50 mx-auto mb-3"/>
+            <div class="design-day-schedule-sort-list", data-event-for="<%= event_for %>">
                 <%# fields_for puts the id hidden attribute outside the container element. disable and place manually %>
                 <%= f.fields_for :design_day_schedules, schedules, include_id: false do |fs| %>
                     <%= render partial: 'design_day_schedule_form', locals: {fs: fs} %>
                 <% end %>
 
                 <%# Make a blank object to act as a template %>
-                <%= f.fields_for :design_day_schedules, [DesignDaySchedule.new(event_for: t)], child_index: 'TEMPLATE', include_id: false do |fs| %>
+                <%= f.fields_for :design_day_schedules, [DesignDaySchedule.new(event_for: )], child_index: 'TEMPLATE', include_id: false do |fs| %>
                     <%= render partial: 'design_day_schedule_form', locals: {fs: fs} %>
                 <% end %>
 
-                <button class="btn btn-success float-end" data-template-fields=<%= "#design_day_schedule_template_#{t}_field" %> ><%= fa_icon 'plus' %></button>
+                <button class="btn btn-success float-end" data-template-fields=<%= "#design_day_schedule_template_#{event_for}_field" %> ><%= fa_icon 'plus' %></button>
             </div>
         <% end %>
         <br />
