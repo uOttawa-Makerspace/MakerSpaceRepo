@@ -23,7 +23,7 @@
         </div>
 
         <% @design_day_schedules.each do |t, schedules| %>
-            <div>
+            <div class="design-day-schedule-sort-list">
                 <h2 class="text-center mt-3"><%= t.to_s.humanize %> schedules</h2>
                 <hr class="w-50 mx-auto mb-3"/>
                 <%# fields_for puts the id hidden attribute outside the container element. disable and place manually %>

@@ -5,6 +5,9 @@
     <% end %>
 > <%# Mind the bracket here! %>
     <div class="row align-items-center mb-3 gx-2">
+        <div class="col-auto sort-handle">
+            <%= fa_icon 'bars', class: 'm-2' %>
+        </div>
         <div class="col border-end">
             <div class="input-group">
                 <%= fs.label :start, 'From', class: 'input-group-text' %>

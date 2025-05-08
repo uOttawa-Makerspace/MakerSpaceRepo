@@ -1,3 +1,5 @@
+import Sortable from "sortablejs";
+
 // Verify sheet ID
 document.addEventListener("turbo:load", function () {
   let verifyDesignDaySheetButton = document.getElementById(
@@ -37,7 +39,7 @@ document.addEventListener("turbo:load", function () {
     let find_id = /[^/]{44}/; // Key is 44 characters long
     let url_or_key = sheetKeyInput.value;
     let key = find_id.exec(url_or_key.split("?")[0]); // remove any GET queries
-    console.log(`Potential key ${key}`);
+    //console.log(`Potential key ${key}`);
 
     // Update url preview
     let urlStub = `https://docs.google.com/spreadsheets/d/${key || sheetKeyInput.value}`;
@@ -106,9 +108,7 @@ function addTemplateField(event) {
 }
 
 function attachRemoveTemplateField(target) {
-  console.log(target);
   target.addEventListener("change", function (event) {
-    console.log("what");
     if (event.currentTarget.checked) {
       event.currentTarget.closest("fieldset").hidden = true;
     }
@@ -124,4 +124,17 @@ document.addEventListener("turbo:load", function () {
   document.querySelectorAll("[data-delete-template]").forEach((el) => {
     attachRemoveTemplateField(el);
   });
+});
+
+// Sorting schedules manually
+document.addEventListener("turbo:load", function () {
+  const studentList = document
+    .querySelectorAll(".design-day-schedule-sort-list")
+    .forEach((el) => {
+      const studentSortable = new Sortable(el, {
+        handle: ".sort-handle",
+      });
+    });
+  // We have two sortable list groups
+  // On receiving an
 });
