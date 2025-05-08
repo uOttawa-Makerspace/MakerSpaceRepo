@@ -105,6 +105,9 @@ function addTemplateField(event) {
   newField
     .querySelectorAll("[data-delete-template]")
     .forEach(attachRemoveTemplateField);
+
+  // Redo ordering
+  redoOrdering();
 }
 
 function attachRemoveTemplateField(target) {
