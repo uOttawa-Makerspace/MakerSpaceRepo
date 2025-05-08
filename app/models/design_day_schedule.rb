@@ -6,6 +6,11 @@ class DesignDaySchedule < ApplicationRecord
   # Order by start date then by custom-order
   default_scope { order(start: :asc, ordering: :asc) }
 
+  validates :ordering,
+            comparison: {
+              greater_than_or_equal_to: 0
+            },
+            allow_nil: true
   validates :title_en, presence: true
   validates :title_fr, presence: true
 end

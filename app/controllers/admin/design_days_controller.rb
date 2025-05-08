@@ -3,6 +3,9 @@ class Admin::DesignDaysController < AdminAreaController
   skip_before_action :current_user, only: :data
   skip_before_action :ensure_admin, only: :data
 
+  # This is a singular resource: create, index, delete are disabled.
+  # only show and update are supported.
+
   def show
   end
 
@@ -44,6 +47,7 @@ class Admin::DesignDaysController < AdminAreaController
   def design_day_params
     params.require(:design_day).permit(
       :day,
+      :is_live,
       :sheet_key,
       design_day_schedules_attributes: %i[
         id
