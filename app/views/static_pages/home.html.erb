@@ -1,4 +1,5 @@
 <section id="home">
+  <button id="tour">Start Tour</button>
   <button class="d-xl-none" id="ShortcutButton" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas-shortcuts" aria-controls="offcanvas-shortcuts">
     Shortcuts
   </button>
@@ -11,7 +12,8 @@
           <h2 class="offcanvas-title" id="shortcutsOffcanvasLabel">Shortcuts</h2>
           <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#offcanvas-shortcuts" aria-label="Close"></button>
         </div>
-        <!-- Staff Resources -->
+
+                <!-- Staff Resources -->
         <% if @user.staff? %>
           <div class="card home-card">
             <div class="card-body">
@@ -41,7 +43,7 @@
         <%= render 'static_pages/home_volunteer' if signed_in? && current_user.volunteer? %>
         <%= render 'static_pages/home_development' if signed_in? && current_user.dev_program? %>
       </div>
-      <!--Middle column -->
+        <!--Middle column -->
       <div class="col-xl-6 order-xl-1 order-0">
         <%= begin
               render 'static_pages/home_hours'
@@ -57,6 +59,8 @@
         <!-- Makerstore Section -->
         <%= render 'static_pages/home_makerstore' %>
       </div>
+
+      
 
       <!--Right column -->
       <!-- Set a fixed column size to prevent Badges from expanding more -->

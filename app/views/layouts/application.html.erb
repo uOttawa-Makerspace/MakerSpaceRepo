@@ -35,7 +35,7 @@
 
       Visit the guide for more information: https://vite-ruby.netlify.app/guide/rails
     -->
-
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@latest/dist/driver.css"/>
   </head>
 	<body>
 		<%= render 'layouts/header' %>
@@ -44,5 +44,9 @@
     </main>
 		<%= render 'layouts/footer' %>
     <%= vite_javascript_tag controller_name if File.exist?("#{Rails.root}/app/javascript/entrypoints/#{controller_name}.js") %>
+    
+    <script src="https://cdn.jsdelivr.net/npm/driver.js@latest/dist/driver.js.iife.js"></script>
+    
+    <%= abraham_tour %>
 	</body>
 </html>

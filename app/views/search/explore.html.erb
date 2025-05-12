@@ -1,5 +1,5 @@
 <% provide(:title, 'Explore') %>
-<section class="container mt-5">
+<section class="container mt-5" id="explore">
   <%= render partial: 'search_bar' %>
   <%= will_paginate @repositories, inner_window: 2, outer_window: 1, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
   <section id="repositories-container">
