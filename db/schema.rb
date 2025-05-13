@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_03_30_210138) do
+ActiveRecord::Schema[7.2].define(version: 2025_05_13_145411) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -577,12 +577,9 @@ ActiveRecord::Schema[7.2].define(version: 2025_03_30_210138) do
     t.datetime "owned_until"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.bigint "repository_id"
-    t.string "requested_as"
     t.string "shopify_draft_order_id"
     t.index ["locker_type_id"], name: "index_locker_rentals_on_locker_type_id"
     t.index ["rented_by_id"], name: "index_locker_rentals_on_rented_by_id"
-    t.index ["repository_id"], name: "index_locker_rentals_on_repository_id"
   end
 
   create_table "locker_types", force: :cascade do |t|
@@ -976,6 +973,15 @@ ActiveRecord::Schema[7.2].define(version: 2025_03_30_210138) do
     t.bigint "space_id"
     t.index ["space_id"], name: "index_shadowing_hours_on_space_id"
     t.index ["user_id"], name: "index_shadowing_hours_on_user_id"
+  end
+
+  create_table "shared_calendars", force: :cascade do |t|
+    t.string "name"
+    t.string "url"
+    t.bigint "space_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["space_id"], name: "index_shared_calendars_on_space_id"
   end
 
   create_table "shifts", force: :cascade do |t|
@@ -1381,6 +1387,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_03_30_210138) do
   add_foreign_key "rfids", "users"
   add_foreign_key "shadowing_hours", "spaces"
   add_foreign_key "shadowing_hours", "users"
+  add_foreign_key "shared_calendars", "spaces"
   add_foreign_key "shifts", "spaces"
   add_foreign_key "shifts", "trainings"
   add_foreign_key "space_staff_hours", "course_names"

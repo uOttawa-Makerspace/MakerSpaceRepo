@@ -29,7 +29,7 @@ class Admin::SpacesController < AdminAreaController
           space: Space.find(params[:space_id])
         )
       sub_space.approval_required =
-        params[:approval_required] == "1" ? true : false
+        params[:approval_required] == "1"
       sub_space.save
       flash[:notice] = "Sub Space created!"
     else
@@ -65,7 +65,7 @@ class Admin::SpacesController < AdminAreaController
   end
 
   def change_sub_space_approval
-    if params[:id].present?
+    return unless params[:id].present?
       subspace = SubSpace.find(params[:id])
       if ContactInfo.where(space_id: subspace.space.id).blank?
         flash[
@@ -82,11 +82,11 @@ class Admin::SpacesController < AdminAreaController
         fallback_location:
           edit_admin_space_path(id: params[:space_id], anchor: "sub_space_area")
       )
-    end
+    
   end
 
   def change_sub_space_default_public
-    if params[:id].present?
+    return unless params[:id].present?
       subspace = SubSpace.find(params[:id])
       subspace.update(default_public: !subspace.default_public)
       flash[
@@ -96,7 +96,7 @@ class Admin::SpacesController < AdminAreaController
         fallback_location:
           edit_admin_space_path(id: params[:space_id], anchor: "sub_space_area")
       )
-    end
+    
   end
 
   def edit
@@ -107,19 +107,20 @@ class Admin::SpacesController < AdminAreaController
     admins = User.where(role: "admin").order("LOWER(name) ASC")
     @admin_options = admins.map { |admin| [admin.name, admin.id] }
     @admin_options.unshift(["Select an Admin", -1])
+    @shared_calendars = SharedCalendar.where(space_id: params[:id])
 
-    unless @space = Space.find(params[:id])
+    return if @space = Space.find(params[:id])
       flash[:alert] = "Not Found"
       redirect_back(fallback_location: root_path)
-    end
+    
   end
 
   def update_name
     @space = Space.find(params[:space_id])
-    if @space.update(name: params[:name])
+    return unless @space.update(name: params[:name])
       flash[:notice] = "Space Name updated !"
       redirect_back(fallback_location: root_path)
-    end
+    
   end
 
   def update_max_capacity
@@ -136,10 +137,10 @@ class Admin::SpacesController < AdminAreaController
 
   def update_keycode
     @space = Space.find(params[:space_id])
-    if @space.update(keycode: params[:keycode])
+    return unless @space.update(keycode: params[:keycode])
       flash[:notice] = "Space keycode updated!"
       redirect_back(fallback_location: root_path)
-    end
+    
   end
 
   def add_space_manager
@@ -278,11 +279,11 @@ class Admin::SpacesController < AdminAreaController
         space: Space.find(params[:space_id]),
         name: params[:name]
       )
-    if training_level.save
-      flash[:notice] = "Training Level added !"
+    flash[:notice] = if training_level.save
+      "Training Level added !"
     else
-      flash[:notice] = "An issue occurred while adding the training level."
-    end
+      "An issue occurred while adding the training level."
+                     end
     redirect_to edit_admin_space_path(
                   params[:space_id],
                   fallback_location: root_path
@@ -299,7 +300,7 @@ class Admin::SpacesController < AdminAreaController
       else
         flash[
           :notice
-        ] = "The destroy request has been submitted, a second admin will need to approve it for the space to be destroyed." if space.update(
+        ] = "The destroy request has been submitted, a second admin will need to approve it for the space to be destroyed." if space.update( # rubocop:disable Layout/LineLength,Style/IfInsideElse
           destroy_admin_id: @user.id
         )
       end
@@ -317,27 +318,67 @@ class Admin::SpacesController < AdminAreaController
     end
     StaffNeededCalendar.where(space_id: params[:space_id]).destroy_all
     (
-      if (params[:staff_needed_calendar].is_a? Array)
+      if params[:staff_needed_calendar].is_a? Array
         params[:staff_needed_calendar]
       else
         [params[:staff_needed_calendar]]
       end
     ).each_with_index do |snc, i|
-      unless snc.blank?
-        StaffNeededCalendar.create(
-          color:
-            (
-              if (params[:staff_needed_calendar_color].is_a? Array)
-                params[:staff_needed_calendar_color][i]
-              else
-                params[:staff_needed_calendar_color]
-              end
-            ),
-          space_id: params[:space_id],
-          calendar_url: snc
-        )
-      end
+      next if snc.blank?
+      StaffNeededCalendar.create(
+        color:
+          (
+            if params[:staff_needed_calendar_color].is_a? Array
+              params[:staff_needed_calendar_color][i]
+            else
+              params[:staff_needed_calendar_color]
+            end
+          ),
+        space_id: params[:space_id],
+        calendar_url: snc
+      )
     end
+    redirect_back(fallback_location: root_path)
+  end
+
+  def create_shared_calendar
+    if params[:name].blank? || params[:url].blank?
+      flash[:alert] = "Please enter a name and URL for the shared calendar"
+      redirect_back(fallback_location: root_path)
+      return
+    end
+
+    # log name and url
+    Rails.logger.info("Creating shared calendar with name: #{params[:name]} and url: #{params[:url]}")
+    Rails.logger.info("Space ID: #{params[:space_id]}")
+
+
+    shared_calendar = SharedCalendar.new(name: params[:name], url: params[:url], space_id: params[:space_id])
+
+    if shared_calendar.save
+      flash[:notice] = "Shared calendar created!"
+    else
+      flash[:alert] = "Something went wrong."
+    end
+
+    redirect_back(fallback_location: root_path)
+  end
+
+  def delete_shared_calendar
+    if params[:id].blank?
+      flash[:alert] = "Something went wrong."
+      redirect_back(fallback_location: root_path)
+      return
+    end
+
+    shared_calendar = SharedCalendar.find(params[:id])
+
+    if shared_calendar.destroy
+      flash[:notice] = "Shared calendar deleted!"
+    else
+      flash[:alert] = "Something went wrong."
+    end
+
     redirect_back(fallback_location: root_path)
   end
 

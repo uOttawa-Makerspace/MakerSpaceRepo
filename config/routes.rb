@@ -315,6 +315,8 @@ Rails.application.routes.draw do
         delete :delete_space_hour
         post :add_training_levels
         put :update_staff_needed_calendars
+        post :create_shared_calendar
+        delete :delete_shared_calendar
       end
     end
 
@@ -452,6 +454,9 @@ Rails.application.routes.draw do
     end
     resources :shifts_schedule, except: %i[new show destroy] do
       collection { get :get_shifts }
+    end
+    resources :shared_calendars do
+      collection { get :get_calendars }
     end
 
     resources :makerstore_links, only: %i[index edit update create new] do
