@@ -7,6 +7,9 @@ Disallow: /explore
 User-agent: SemrushBot
 Disallow: /
 
+User-agent: AhrefsBot
+Disallow: /
+
 # Cloudflare Managed Robots.txt to block AI related bots.
 
 User-agent: AI2Bot
