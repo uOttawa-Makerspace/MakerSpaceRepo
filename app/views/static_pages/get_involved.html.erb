@@ -1,3 +1,7 @@
+<% if params[:tour] = 1 %>
+  <script>console.log("test")</script>
+  <%= vite_javascript_tag 'get_involved_tour' %>
+<% end %>
 <%= provide :title, t('all_get_involved.info.header') %>
 <section id="getInvolved">
   <!-- Header Section -->
@@ -28,7 +32,7 @@
               <div class="link-card-text">
                 <h5><%= t('all_get_involved.workshops.sections.workshop_1.header') %></h5>
                 <p><%= t('all_get_involved.workshops.sections.workshop_1.overview') %></p>
-                <a class="btn btn-primary" href="https://simpli.events/u/uottawaceed"><%= t('all_get_involved.sign_up') %></a>
+                <a class="btn btn-primary" id="tour-signup"href="https://simpli.events/u/uottawaceed"><%= t('all_get_involved.sign_up') %></a>
               </div>
             </div>
           </div>

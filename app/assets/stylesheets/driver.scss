@@ -1,0 +1,78 @@
+.driver-popover.makerepo-theme {
+  background-color: #e24829;
+  color: "#000";
+}
+
+.driver-popover.makerepo-theme .driver-popover-title {
+  font-size: 20px;
+}
+
+.driver-popover.makerepo-theme {
+  min-width: 500px;
+  min-height: 100px;
+}
+
+.driver-popover.makerepo-theme .driver-popover-title,
+.driver-popover.makerepo-theme .driver-popover-description,
+.driver-popover.makerepo-theme .driver-popover-progress-text {
+  color: #ffffff;
+}
+
+.driver-popover.makerepo-theme .driver-popover-description {
+  font-size: 16px;
+}
+
+.driver-popover.makerepo-theme button {
+  flex: 1;
+  text-align: center;
+  background-color: #000;
+  color: #ffffff;
+  border: 2px solid #000;
+  text-shadow: none;
+  font-size: 14px;
+  padding: 5px 8px;
+  border-radius: 6px;
+}
+
+.driver-popover.makerepo-theme button:hover {
+  background-color: #000;
+  color: #ffffff;
+}
+
+.driver-popover.makerepo-theme .driver-popover-navigation-btns {
+  justify-content: space-between;
+  gap: 5px;
+}
+
+.driver-popover.makerepo-theme .driver-popover-close-btn {
+  color: #000;
+  background: none;
+}
+
+.driver-popover.makerepo-theme .driver-popover-close-btn:hover {
+  color: #000;
+}
+
+.driver-popover.makerepo-theme
+  .driver-popover-arrow-side-left.driver-popover-arrow {
+  border-left-color: #e24829;
+}
+
+.driver-popover.makerepo-theme
+  .driver-popover-arrow-side-right.driver-popover-arrow {
+  border-right-color: #e24829;
+}
+
+.driver-popover.makerepo-theme
+  .driver-popover-arrow-side-top.driver-popover-arrow {
+  border-top-color: #e24829;
+}
+
+.driver-popover.makerepo-theme
+  .driver-popover-arrow-side-bottom.driver-popover-arrow {
+  border-bottom-color: #e24829;
+}
+
+.driver-popover.makerepo-theme .driver-popover-footer {
+  background: none;
+}

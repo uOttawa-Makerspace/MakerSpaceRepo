@@ -12,11 +12,11 @@
       </li>
 
       <li class="nav-item dropdown" id="projects">
-        <a class="nav-link dropdown-toggle" href="/explore" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        <a class="nav-link dropdown-toggle" id = "projects-toggle" href="/explore" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
           <%= t('navbar.projects') %> 
         </a>
-        <div class="dropdown-menu" id="explore-projects">
-          <a class="dropdown-item" href="/explore"><%= t('navbar.explore') %></a>
+        <div class="dropdown-menu" id="projects-menu">
+          <a class="dropdown-item" id="explore-projects" href="/explore"><%= t('navbar.explore') %></a>
           <% if signed_in? %>
           <a class="dropdown-item" href="<%= new_repository_path(@user.username) %>"><%= t('navbar.create_project') %></a>
           <% end %>
@@ -27,7 +27,7 @@
         </div>
       </li>
 
-      <li class="nav-item dropdown d-flex align-items-center">
+      <li class="nav-item dropdown d-flex align-items-center" id="get-involved-menu">
         <%= link_to get_involved_path, class: 'nav-link custom-hover' do %>
           <%= t('navbar.get_involved') %>
         <% end %>
@@ -76,7 +76,7 @@
       <li class="nav-item"><a class="nav-link" href="/new"><%= t('navbar.create_account') %></a></li>
         <% else %>
         <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href=" <%= user_path(@user.username) %>" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="text-transform: none;">
+          <a class="nav-link dropdown-toggle" id="profile-icon" href=" <%= user_path(@user.username) %>" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="text-transform: none;">
             <%= image_tag @user.display_avatar, class: 'avatar', alt: 'Avatar' %>
             <%= @user.username %>
           </a>

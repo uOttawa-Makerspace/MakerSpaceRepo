@@ -30,8 +30,8 @@
           </div>
         <% end %>
         <!-- General Resources -->
-        <div class="card home-card">
-          <div class="card-body">
+        <div class="card home-card" id="home-gen-res">
+          <div class="card-body" id="home-rec-opened">
             <h2><%= t('home.general_resources.header') %></h2>
             <ul class="list-unstyled">
               <li><%= link_to t('home.general_resources.makeroom'), sub_space_booking_index_url %></li>
@@ -89,7 +89,7 @@
           </div>
         </div>
         <!-- Hidden for now :^) -->
-        <div class="card home-card">
+        <div class="card home-card" id="home-workshops">
           <div class="card-body">
             <h2><%= t('home.workshops.header') %></h2>
             <a href="https://simpli.events/u/uottawaceed"><%= t('home.workshops.link') %></a>

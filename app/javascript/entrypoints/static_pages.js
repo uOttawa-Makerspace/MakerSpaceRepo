@@ -2,11 +2,11 @@ import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
 
 const driverObj = driver({
-  showProgress: true,
+  popoverClass: "makerepo-theme",
   steps: [
     {
-      side: "top",
-      element: "#home",
+      // side: "top",
+      // element: "#home",
       popover: {
         title: "Home Page",
         description:
@@ -42,24 +42,49 @@ const driverObj = driver({
       popover: {
         title: "Makerstore",
         description:
-          "Purchase useful materials for your projects at our MakerStore!",
+          "Or what materials are being sold at affordable prices in our Makerstore.",
+        //onNextClick: () =>{
+
+        // var x = document.querySelector("#projects-toggle");
+        // if (x.style.display === "none") {
+        //   console.log("about to display the dropdown")
+        //   x.style.display = "block";
+        // }
+        // driverObj.moveNext();
+        //}
       },
     },
     {
-      element: "#projects",
+      element: "#home-workshops",
       popover: {
-        title: "Projects",
+        title: "Workshops",
         description:
-          "CEED takes pride in providing students with the necessary tools to make their ideas come to life. Let’s take a look at what’s being made.",
+          "Be sure to check in here at the start of each week to find out what workshops will be happening.",
+      },
+    },
+    {
+      element: "#home-gen-res",
+      popover: {
+        title: "General Resources",
+        description:
+          "Request access to one of our spaces using the Makeroom page. Request us to build something using our tools and machinery using the Job Orders page.",
         onNextClick: () => {
-          //Turbo.visit('/explore')
+          document.querySelector("#projects-toggle").click();
           driverObj.moveNext();
         },
       },
     },
     {
-      element: "#explore",
-      popover: { title: "Explore Page", description: "test." },
+      element: "#projects-menu",
+      popover: {
+        title: "Projects",
+        description:
+          "CEED takes pride in providing students with the necessary tools to make their ideas come to life. Let’s take a look at what’s being made.",
+        onNextClick: () => {
+          Turbo.visit("/explore?tour=1");
+          driverObj.moveNext();
+        },
+      },
     },
   ],
 });
@@ -69,37 +94,3 @@ const btnTour = document.querySelector("#tour");
 btnTour.addEventListener("click", () => {
   driverObj.drive();
 });
-
-/*
-const driverObj1 = driver({
-  showProgress: true,
-  steps: [
-        {
-          element: "#explore",
-          popover: { title: "Explore Page", description: "test."}
-        },
-  ],
-});*/
-
-/*
-document.addEventListener("turbo:load", function () {
-  const testButton = document.getElementById("tour");
-  if (testButton) {
-    testButton.addEventListener("click", () => {
-      const driver = new Driver();
-      driver.defineSteps([
-        {
-          element: "#test",
-          popover: {
-            title: "Test Button",
-            description: "This starts the website tour.",
-            position: "bottom"
-          }
-        }
-      ]);
-      driver.start();
-    });
-  } else {
-    console.warn("Button with ID 'test' not found.");
-  }
-});*/
