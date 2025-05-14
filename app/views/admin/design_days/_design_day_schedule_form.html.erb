@@ -1,0 +1,37 @@
+<fieldset
+    <%# If object isn't written to DB, then it would be a 'template' object %>
+    <% unless fs.object.persisted? %>
+        id=<%= "design_day_schedule_template_#{fs.object.event_for}_field" %> hidden='true' disabled data-is-persisted="false"
+    <% end %>
+> <%# Mind the bracket here! %>
+    <div class="row align-items-center mb-3 gx-2">
+        <div class="col-auto sort-handle">
+            <%= fa_icon 'bars', class: 'm-2' %>
+        </div>
+        <div class="col border-end">
+            <div class="input-group">
+                <%= fs.label :start, 'From', class: 'input-group-text' %>
+                <%= fs.time_field :start, class: 'form-control', include_seconds: false %>
+                <%= fs.label :end, "until", class: 'input-group-text' %>
+                <%= fs.time_field :end, class: 'form-control', include_seconds: false %>
+            </div>
+        </div>
+        <div class="col">
+            <%= fs.label :title_en, "English title of event", class: 'form-label', hidden: true %>
+            <%= fs.text_field :title_en, placeholder: 'English title', class: 'form-control' %>
+        </div>
+        <div class="col">
+            <%= fs.label :title_fr, "French title of event", class: 'form-label', hidden: true %>
+            <%= fs.text_field :title_fr, placeholder: 'French title', class: 'form-control' %>
+        </div>
+        <div class="col-auto">
+            <%= fs.check_box :_destroy, class: 'btn-check', checked: false, autocomplete: 'off', include_hidden: false, data: { delete_template: '' } %>
+            <%= fs.label :_destroy, class: 'btn btn-danger' do %>
+                <%= fa_icon 'trash' %>
+            <% end %>
+        </div>
+    </div>
+    <%= fs.hidden_field :ordering, class: 'ordering-attribute' %>
+    <%= fs.hidden_field :event_for, class: 'event-for-attribute' %>
+    <%= fs.hidden_field :id %>
+</fieldset>

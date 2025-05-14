@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_03_30_210138) do
+ActiveRecord::Schema[7.2].define(version: 2025_04_20_193534) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -211,6 +211,23 @@ ActiveRecord::Schema[7.2].define(version: 2025_03_30_210138) do
     t.string "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "design_day_schedules", force: :cascade do |t|
+    t.bigint "design_day_id"
+    t.time "start"
+    t.time "end"
+    t.integer "ordering"
+    t.string "title_en"
+    t.string "title_fr"
+    t.integer "event_for"
+    t.index ["design_day_id"], name: "index_design_day_schedules_on_design_day_id"
+  end
+
+  create_table "design_days", force: :cascade do |t|
+    t.date "day"
+    t.string "sheet_key"
+    t.boolean "is_live"
   end
 
   create_table "discount_codes", id: :serial, force: :cascade do |t|
