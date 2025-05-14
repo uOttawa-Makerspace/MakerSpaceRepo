@@ -83,6 +83,18 @@
           }
       }
 
+   @media print {
+     .print-button{
+       display: none;
+     }
+
+     .invoice-box {
+       max-width: unset;
+       border: unset;
+       box-shadow: unset;
+     }
+   }
+
       /** RTL **/
       .rtl {
           direction: rtl;
@@ -97,6 +109,9 @@
           text-align: left;
       }
   </style>
+  <script>
+   window.print();
+  </script>
 </head>
 
 <body>
@@ -106,13 +121,8 @@
       <td colspan="2">
         <table>
           <tr>
-            <td class="title">
-              <%= wicked_pdf_image_tag 'ceed.png' %>
-            </td>
-
-            <td>
-              Invoice #<%= @job_order.id %>
-            </td>
+            <td class="title"><%= image_tag 'ceed.png' %></td>
+            <td>Invoice #<%= @job_order.id %></td>
           </tr>
         </table>
       </td>
@@ -219,6 +229,7 @@
   <% if @job_order.user_comments.present? %>
     <p>Comments to the user : <%= @job_order.user_comments %></p>
   <% end %>
+  <button class="print-button" onclick="window.print()">Print this page</button>
 </div>
 </body>
 </html>
