@@ -123,6 +123,14 @@ $dropdown-connection-size: 12px;
   left: 10%;
 }
 
+.sort-handle {
+  cursor: move;
+  cursor: grab;
+  &:active {
+    cursor: grabbing;
+  }
+}
+
 .dropdown-menu {
   //border: none;
   border-radius: 4px;

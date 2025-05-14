@@ -1,0 +1,10 @@
+en:
+  semester:
+    fall: "Fall"
+    winter: "Winter"
+    summer: "Spring-Summer"
+fr:
+  semester:
+    fall: "Automne"
+    winter: "Hiver"
+    summer: "Printemps-Été"
