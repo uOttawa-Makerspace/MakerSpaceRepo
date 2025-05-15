@@ -19,6 +19,18 @@ const driverObj = driver({
         title: "Search",
         description:
           "You can search by the username of the creator or the name of the project.",
+        onNextClick: () => {
+          driverObj.moveNext();
+          document.querySelector("#projects-toggle").click();
+        },
+      },
+    },
+    {
+      element: "#become-a-client",
+      popover: {
+        title: "Project Proposals",
+        description:
+          "Want to make something of your own? You can submit a proposal right here.",
       },
     },
     {

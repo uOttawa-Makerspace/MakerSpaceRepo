@@ -20,7 +20,7 @@
           <% if signed_in? %>
           <a class="dropdown-item" href="<%= new_repository_path(@user.username) %>"><%= t('navbar.create_project') %></a>
           <% end %>
-          <a class="dropdown-item" href="/project_proposals/new"><%= t('navbar.propose_project') %></a>
+          <a class="dropdown-item" id="become-a-client" href="/project_proposals/new"><%= t('navbar.propose_project') %></a>
           <% if signed_in? and @user.staff? %>
           <a class="dropdown-item" href="/project_proposals"><%= t('navbar.proposed_projects') %></a>
           <% end %>
