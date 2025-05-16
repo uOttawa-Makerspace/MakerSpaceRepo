@@ -1,9 +1,37 @@
 import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
 
-const locale = "en";
+console.log(getCookie("tour_started"));
 
+// Keeps track of the current step the tour is on incase a user switches the language mid-tour
 let curStep = 0;
+
+function getCookie(cname) {
+  let name = cname + "=";
+  let decodedCookie = decodeURIComponent(document.cookie);
+  let ca = decodedCookie.split(";");
+  for (let i = 0; i < ca.length; i++) {
+    let c = ca[i];
+    while (c.charAt(0) == " ") {
+      c = c.substring(1);
+    }
+    if (c.indexOf(name) == 0) {
+      return c.substring(name.length, c.length);
+    }
+  }
+  return "";
+}
+
+function setCookie(cname, cvalue) {
+  document.cookie = cname + "=" + cvalue;
+}
+
+function setCookieWithExp(cname, cvalue, exdays) {
+  const d = new Date();
+  d.setTime(d.getTime() + exdays * 24 * 60 * 60 * 1000);
+  let expires = "expires=" + d.toUTCString();
+  document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+}
 
 // Translations for each piece of text (will not be finalized until tour structure is decided upon)
 const translations = {
@@ -54,12 +82,13 @@ function toggleLocale(urlParams) {
   }
 }
 
+// Tour translate buttpn
+const translateButton = document.createElement("button");
 //Tour Steps
 const driverObj = driver({
   popoverClass: "makerepo-theme",
-  //Adding the Translate button
+  // Adding the Translate button
   onPopoverRender: (popover, { config, state }) => {
-    const translateButton = document.createElement("button");
     if (window.location.search.includes("locale=en")) {
       translateButton.innerText = "FR";
     } else if (window.location.search.includes("locale=fr")) {
@@ -71,11 +100,8 @@ const driverObj = driver({
     popover.footerButtons.appendChild(translateButton);
 
     translateButton.addEventListener("click", () => {
-      //toggleLocale(window.location.search.substr(1));
       const urlParams = new URLSearchParams(window.location.search);
-
       toggleLocale(urlParams);
-
       window.location.search = urlParams;
     });
   },
@@ -87,6 +113,7 @@ const driverObj = driver({
         onNextClick: () => {
           curStep++;
           driverObj.moveNext();
+          translateButton.hidden = true;
           console.log(curStep);
         },
       },
@@ -100,6 +127,7 @@ const driverObj = driver({
         onPrevClick: () => {
           curStep--;
           driverObj.movePrevious();
+          translateButton.hidden = false;
           console.log(curStep);
         },
         onNextClick: () => {
@@ -230,15 +258,20 @@ btnTour.addEventListener("click", () => {
   window.location.search = urlParams;
 });
 
-// If the query tour = 1 then start the tour. The locale parameter is always first, so we read from character 11
-// to find the value of the tour param.
-//console.log(window.location.search.substr(11));
-if (
-  window.location.search.substr(11, 4) === "tour" ||
-  window.location.search.substr(1, 4) === "tour"
+if (getCookie("tour_started") === "") {
+  setCookieWithExp("tour_started", "true", 1000);
+  const urlParams = new URLSearchParams(window.location.search);
+  curStep = Number(urlParams.get("tour"));
+  driverObj.drive(Number(curStep));
+} else if (window.location.search.includes("tour=0")) {
+  const urlParams = new URLSearchParams(window.location.search);
+  curStep = Number(urlParams.get("tour"));
+  driverObj.drive(Number(curStep));
+} else if (
+  getCookie("tour_started") === "true" &&
+  window.location.search.includes("tour")
 ) {
   const urlParams = new URLSearchParams(window.location.search);
   curStep = Number(urlParams.get("tour"));
-  console.log(curStep);
   driverObj.drive(Number(curStep));
 }

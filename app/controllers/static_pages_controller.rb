@@ -2,8 +2,13 @@
 
 class StaticPagesController < SessionsController
   before_action :current_user, except: [:reset_password]
+  
 
   def home
+    if cookies[:tour_started] != "true"
+      cookies[:tour_started] = { expires: 1.minutes.from_now }
+      @cookie_value = cookies[:tour_started]
+    end
     @volunteer_program_shadowing_scheduled =
       current_user.shadowing_hours.map do |hours|
         end_time = hours.end_time.strftime "%H:%M"

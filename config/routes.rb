@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 Rails.application.routes.draw do
+  # get 'cookies/home', as: 'set_cookie'
+  # get 'cookies/home', as: 'get_cookie'
+
   resources :price_rules, only: %i[index new create destroy edit update]
   resources :discount_codes, only: %i[new index create]
   resources :coupon_codes, only: %i[index new create destroy edit update]
@@ -694,4 +697,5 @@ Rails.application.routes.draw do
     post :update, path: "update/:id", as: "update"
     delete :delete, path: "delete/:id", as: "delete"
   end
+
 end
