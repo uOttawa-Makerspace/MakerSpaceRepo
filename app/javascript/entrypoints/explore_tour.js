@@ -1,6 +1,6 @@
 import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
-//import "./static_pages.js";
+import "./static_pages.js";
 
 //console.log("Hello world!");
 

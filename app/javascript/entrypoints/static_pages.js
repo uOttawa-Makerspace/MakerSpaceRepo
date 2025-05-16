@@ -1,37 +1,17 @@
 import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
+import {
+  getCookie,
+  setCookie,
+  setCookieWithExp,
+  translate,
+  toggleLocale,
+} from "./tour_utilities.js";
 
 console.log(getCookie("tour_started"));
 
 // Keeps track of the current step the tour is on incase a user switches the language mid-tour
 let curStep = 0;
-
-function getCookie(cname) {
-  let name = cname + "=";
-  let decodedCookie = decodeURIComponent(document.cookie);
-  let ca = decodedCookie.split(";");
-  for (let i = 0; i < ca.length; i++) {
-    let c = ca[i];
-    while (c.charAt(0) == " ") {
-      c = c.substring(1);
-    }
-    if (c.indexOf(name) == 0) {
-      return c.substring(name.length, c.length);
-    }
-  }
-  return "";
-}
-
-function setCookie(cname, cvalue) {
-  document.cookie = cname + "=" + cvalue;
-}
-
-function setCookieWithExp(cname, cvalue, exdays) {
-  const d = new Date();
-  d.setTime(d.getTime() + exdays * 24 * 60 * 60 * 1000);
-  let expires = "expires=" + d.toUTCString();
-  document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
-}
 
 // Translations for each piece of text (will not be finalized until tour structure is decided upon)
 const translations = {
@@ -53,36 +33,7 @@ const translations = {
   },
 };
 
-// Uses translations to find the according text given a key and a query parameter
-function translate(text) {
-  if (window.location.search.includes("locale=en")) {
-    return translations.en[text];
-  } else if (window.location.search.includes("locale=fr")) {
-    return translations.fr[text];
-  } else {
-    return translations.en[text];
-  }
-}
-
-// Toggles the locale of the entire site by changing the query parameter
-function toggleLocale(urlParams) {
-  console.log("0");
-  if (window.location.search.includes("locale=en")) {
-    console.log("1");
-    urlParams.set("locale", "fr");
-    urlParams.set("tour", curStep);
-  } else if (window.location.search.includes("locale=fr")) {
-    urlParams.set("locale", "en");
-    console.log("2");
-    urlParams.set("tour", curStep);
-  } else {
-    urlParams.set("locale", "fr");
-    console.log("3");
-    urlParams.set("tour", curStep);
-  }
-}
-
-// Tour translate buttpn
+// Tour translate button
 const translateButton = document.createElement("button");
 //Tour Steps
 const driverObj = driver({
@@ -101,15 +52,15 @@ const driverObj = driver({
 
     translateButton.addEventListener("click", () => {
       const urlParams = new URLSearchParams(window.location.search);
-      toggleLocale(urlParams);
+      toggleLocale(urlParams, curStep);
       window.location.search = urlParams;
     });
   },
   steps: [
     {
       popover: {
-        title: translate("start-title"),
-        description: translate("start-desc"),
+        title: translate("start-title", translations),
+        description: translate("start-desc", translations),
         onNextClick: () => {
           curStep++;
           driverObj.moveNext();
@@ -122,8 +73,8 @@ const driverObj = driver({
       // side: "top",
       // element: "#home",
       popover: {
-        title: translate("step1-title"),
-        description: translate("step1-desc"),
+        title: translate("step1-title", translations),
+        description: translate("step1-desc", translations),
         onPrevClick: () => {
           curStep--;
           driverObj.movePrevious();
@@ -271,6 +222,7 @@ if (getCookie("tour_started") === "") {
   getCookie("tour_started") === "true" &&
   window.location.search.includes("tour")
 ) {
+  console.log("made it");
   const urlParams = new URLSearchParams(window.location.search);
   curStep = Number(urlParams.get("tour"));
   driverObj.drive(Number(curStep));
