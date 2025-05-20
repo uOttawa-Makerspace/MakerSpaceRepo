@@ -49,6 +49,7 @@ fr:
       joborder_admin: "Administrateur de commande"
       help: "Aide"
       sign_out: "Déconnexion"
+    tour: "Commencer Tour"
   home:
     welcome_html: "Bienvenue sur Maker<strong>Repo</strong>&#8201;!"
     welcome_desc_html: "Parcourez des projets créés dans les espaces du CGEC et publiez les vôtres&#8201;!"

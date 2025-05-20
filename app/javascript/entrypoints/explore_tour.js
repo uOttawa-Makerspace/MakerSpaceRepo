@@ -3,6 +3,7 @@ import "driver.js/dist/driver.css";
 import "./static_pages.js";
 
 //console.log("Hello world!");
+let curStep = 0;
 
 const driverObj = driver({
   popoverClass: "makerepo-theme",
@@ -12,6 +13,10 @@ const driverObj = driver({
         title: "Explore Page",
         description:
           "This is where you can search for every student project ever posted to MakerRepo!",
+        onPrevClick: () => {
+          curStep--;
+          Turbo.visit("./?tour=5");
+        },
       },
     },
     {

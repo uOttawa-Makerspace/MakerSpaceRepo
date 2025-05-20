@@ -51,6 +51,7 @@ en:
       sign_out: "Sign Out"
       joborder: "Job Order Request"
       joborder_admin: "Job Order Admin"
+    tour: "Start Tour"
   home:
     welcome_html: "Welcome to Maker<strong>Repo</strong>!"
     welcome_desc_html: "Browse projects built using spaces provided by CEED & publish your own!"

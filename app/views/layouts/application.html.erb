@@ -36,7 +36,6 @@
       Visit the guide for more information: https://vite-ruby.netlify.app/guide/rails
     -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@latest/dist/driver.css"/>
-    #<link rel="stylesheet" href="shepherd.js/dist/css/shepherd.css"/>
   </head>
 	<body>
 		<%= render 'layouts/header' %>
@@ -47,6 +46,5 @@
     <%= vite_javascript_tag controller_name if File.exist?("#{Rails.root}/app/javascript/entrypoints/#{controller_name}.js") %>
     
     <script src="https://cdn.jsdelivr.net/npm/driver.js@latest/dist/driver.js.iife.js"></script>
-    #<script type="module" src="shepherd.js/dist/shepherd.mjs"></script>
 	</body>
 </html>
