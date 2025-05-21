@@ -513,7 +513,7 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :badges, only: [:index] do
+  resources :badges, only: [:index,:show] do
     collection do
       get :admin
       get :new_badge

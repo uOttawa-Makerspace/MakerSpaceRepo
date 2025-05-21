@@ -1,0 +1,18 @@
+<div class="container">
+    <div class="row align-items-start">
+        <div class="col-4 py-3 px-my-5">
+            <a style="width: 300px;" target="_blank">
+                <%= image_tag(@badge.badge_template.image_url, style: 'width: inherit;display:block; margin:0 auto;', alt: "Badge image: #{@badge.badge_template.badge_name}") %>
+            </a>
+        </div>
+        <div class="col-8 py-3 px-my-5">
+            <h1><%= @badge.badge_template.badge_name %></h1>
+            <h5 class="my-3">Issued by CEED/CGEC - uOttawa to <%= @badge.issued_to %> on <%= @badge.created_at.to_date.to_fs :long_ordinal %></h5>
+            <p><%= @badge.badge_template.badge_description %></p>
+
+            <h5 class="my-3">Skills</h5>
+
+        </div> 
+
+    </div>
+</div>

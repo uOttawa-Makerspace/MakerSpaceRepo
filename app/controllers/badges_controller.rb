@@ -16,28 +16,31 @@ class BadgesController < DevelopmentProgramsController
   before_action :set_orders, only: [:admin]
 
   include BadgesHelper
+  
+  def show
+    @badge = Badge.includes(:badge_template).find(params[:id])
+    @trainings = TrainingSession.includes(:trainings).find_by(user_id: @badge.user_id)
+  end
 
   def index
     @order_items =
       @user.order_items.completed_order.in_progress.joins(
         proficient_project: :badge_template
       )
-    if @user.admin? || @user.staff?
-      @acclaim_data =
-        Badge
+    @acclaim_data = if @user.admin? || @user.staff?
+      Badge
           .joins(:badge_template)
           .filter_by_attribute(params[:search])
           .order(user_id: :asc)
           .paginate(page: params[:page], per_page: 20)
           .all
     else
-      @acclaim_data =
-        Badge
+      Badge
           .joins(:badge_template)
           .filter_by_attribute(params[:search])
           .where(user: @user)
           .paginate(page: params[:page], per_page: 20)
-    end
+                    end
     respond_to do |format|
       format.js
       format.html
@@ -220,10 +223,10 @@ class BadgesController < DevelopmentProgramsController
   private
 
   def only_admin_access
-    unless current_user.admin?
+    return if current_user.admin?
       redirect_to development_programs_path
       flash[:alert] = "Only admin members can access this area."
-    end
+    
   end
 
   def set_orders
