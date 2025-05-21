@@ -7,7 +7,8 @@
         </div>
         <div class="col-8 py-3 px-my-5">
             <h1><%= @badge.badge_template.badge_name %></h1>
-            <h5 class="my-3">Issued by CEED/CGEC - uOttawa to <%= @badge.issued_to %> on <%= @badge.created_at.to_date.to_fs :long_ordinal %></h5>
+            <h5 class="my-3">Owned by: <%= @badge.issued_to %></h5>
+            <h5 class="my-3">Issued by CEED/CGEC - uOttawa on <%= @badge.created_at.to_date.to_fs :long_ordinal %></h5>
             <p><%= @badge.badge_template.badge_description %></p>
 
             <h5 class="my-3">Skills</h5>

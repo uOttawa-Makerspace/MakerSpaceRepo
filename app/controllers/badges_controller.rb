@@ -19,7 +19,7 @@ class BadgesController < DevelopmentProgramsController
   
   def show
     @badge = Badge.includes(:badge_template).find(params[:id])
-    @trainings = TrainingSession.includes(:trainings).find_by(user_id: @badge.user_id)
+    #@trainings = TrainingSession.includes(:trainings).find_by(user_id: @badge.user_id)
   end
 
   def index
