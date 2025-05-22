@@ -19,7 +19,8 @@ class BadgesController < DevelopmentProgramsController
   
   def show
     @badge = Badge.includes(:badge_template).find(params[:id])
-    #@trainings = TrainingSession.includes(:trainings).find_by(user_id: @badge.user_id)
+    #@skills = @badge.skills 
+    #@trainings = TrainingSession.includes(:training).all.find_by(user_id: @badge.user_id)
   end
 
   def index

@@ -7,12 +7,19 @@
         </div>
         <div class="col-8 py-3 px-my-5">
             <h1><%= @badge.badge_template.badge_name %></h1>
-            <h5 class="my-3">Owned by: <%= @badge.issued_to %></h5>
+            <h4 class="my-3 fw-bold">Badge Owner: <%= @badge.issued_to %></h4>
             <h5 class="my-3">Issued by CEED/CGEC - uOttawa on <%= @badge.created_at.to_date.to_fs :long_ordinal %></h5>
             <p><%= @badge.badge_template.badge_description %></p>
 
-            <h5 class="my-3">Skills</h5>
+            <a class="my-4 text-decoration-underline" href="https://www.uottawa.ca/faculty-engineering/">Learn more</a>
 
+            <div class="my-5">
+                <h5>Skills</h5>
+                <p><%= @badge.badge_template.list_of_skills %></p>
+            </div>
+            
+
+            <h5 class="my-5">Earning Criteria</h5>
         </div> 
 
     </div>
