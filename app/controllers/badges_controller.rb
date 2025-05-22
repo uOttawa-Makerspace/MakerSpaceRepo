@@ -14,14 +14,9 @@ class BadgesController < DevelopmentProgramsController
                 ]
   after_action :set_orders, only: [:reinstate]
   before_action :set_orders, only: [:admin]
+  skip_before_action :grant_access, only: [:show]
 
   include BadgesHelper
-  
-  def show
-    @badge = Badge.includes(:badge_template).find(params[:id])
-    #@skills = @badge.skills 
-    #@trainings = TrainingSession.includes(:training).all.find_by(user_id: @badge.user_id)
-  end
 
   def index
     @order_items =
@@ -46,6 +41,12 @@ class BadgesController < DevelopmentProgramsController
       format.js
       format.html
     end
+  end
+
+  def show
+    @badge = Badge.includes(:badge_template).find(params[:id])
+    #@skills = @badge.skills 
+    #@trainings = TrainingSession.includes(:training).all.find_by(user_id: @badge.user_id)
   end
 
   def new_badge

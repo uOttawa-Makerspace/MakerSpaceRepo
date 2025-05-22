@@ -21,7 +21,7 @@
       </p>
 
       <% if badges.badge_url.present? %>
-        <a style="width: 150px;" target="_blank" href="/badges/<%= badges.id %>">
+        <a style="width: 150px;" target="_blank" href="./badges/<%= badges.id %>">
           <%= image_tag(badges.badge_template.image_url, style: 'width: inherit;display:block; margin:0 auto;', alt: "Badge image: #{badges.badge_template.badge_name}") %>
         </a>
       <% else %>

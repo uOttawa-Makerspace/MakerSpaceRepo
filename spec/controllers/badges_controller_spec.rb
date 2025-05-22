@@ -31,6 +31,30 @@ RSpec.describe BadgesController, type: :controller do
         get :index, format: "js"
         expect(response).to have_http_status(:success)
       end
+
+      it "should prevent unauthenticated users" do
+        session[:user_id] = nil
+        get :index
+        expect(response).to redirect_to root_path
+      end
+    end
+  end
+
+  describe "#show" do
+    context "show" do
+      it "should allow non-authenticated" do
+        session[:user_id] = nil
+        badge = create(:badge)
+        expect(get(:show, params: {id: badge.id})).to have_http_status(:success)
+      end
+
+      it "should allow authenticated users" do
+        user = create(:user)
+        session[:user_id] = user.id
+        session[:expires_at] = Time.zone.now + 10_000
+        badge = create(:badge)
+        expect(get(:show, params: {id: badge.id})).to have_http_status(:success)
+      end
     end
   end
 
@@ -66,7 +90,7 @@ RSpec.describe BadgesController, type: :controller do
       end
 
       it "should grant a badge" do
-        expect {
+        expect do
           post :grant_badge,
                params: {
                  badge: {
@@ -74,7 +98,7 @@ RSpec.describe BadgesController, type: :controller do
                    user_id: User.last.id
                  }
                }
-        }.to change(Order, :count).by(1)
+        end.to change(Order, :count).by(1)
         expect(response).to redirect_to certify_badges_path(
                       coming_from: "grant",
                       user_id: User.last.id
@@ -82,7 +106,7 @@ RSpec.describe BadgesController, type: :controller do
       end
 
       it "should not grant a badge (error)" do
-        expect {
+        expect do
           post :grant_badge,
                params: {
                  badge: {
@@ -90,7 +114,7 @@ RSpec.describe BadgesController, type: :controller do
                    user_id: ""
                  }
                }
-        }.to change(Order, :count).by(1)
+        end.to change(Order, :count).by(1)
         expect(response).to redirect_to new_badge_badges_path
         expect(flash[:alert]).to include(
           "An error has occurred when granting the badge"
@@ -103,7 +127,7 @@ RSpec.describe BadgesController, type: :controller do
           badge_template_id: BadgeTemplate.last.id,
           acclaim_badge_id: "abc"
         )
-        expect {
+        expect do
           post :grant_badge,
                params: {
                  badge: {
@@ -111,7 +135,7 @@ RSpec.describe BadgesController, type: :controller do
                    user_id: User.last.id
                  }
                }
-        }.to change(Order, :count).by(0)
+        end.to change(Order, :count).by(0)
         expect(response).to redirect_to new_badge_badges_path
       end
     end
@@ -253,26 +277,26 @@ RSpec.describe BadgesController, type: :controller do
       it "should certify the badge" do
         user = create(:user, :volunteer_with_dev_program)
         Order.last.update(user_id: user.id)
-        expect {
+        expect do
           post :certify,
                params: {
                  order_item_id: OrderItem.last.id
                },
                format: "js"
-        }.to change(Badge, :count).by(1)
+        end.to change(Badge, :count).by(1)
         expect(flash[:notice]).to eq("The badge has been sent to the user !")
       end
 
       it "should certify the badge when coming from grant" do
         user = create(:user, :volunteer_with_dev_program)
         Order.last.update(user_id: user.id)
-        expect {
+        expect do
           post :certify,
                params: {
                  order_item_id: OrderItem.last.id,
                  coming_from: "grant"
                }
-        }.to change(Badge, :count).by(1)
+        end.to change(Badge, :count).by(1)
         expect(flash[:notice]).to eq("The badge has been sent to the user !")
         expect(response).to redirect_to new_badge_badges_path
       end
@@ -280,9 +304,9 @@ RSpec.describe BadgesController, type: :controller do
       it "should not certify the badge (error)" do
         user = create(:user, :volunteer_with_dev_program)
         Order.last.update(user_id: user.id)
-        expect {
+        expect do
           post :certify, params: { order_item_id: "", coming_from: "grant" }
-        }.to change(Badge, :count).by(0)
+        end.to change(Badge, :count).by(0)
         expect(flash[:alert]).to include(
           "An error has occurred when creating the badge"
         )
