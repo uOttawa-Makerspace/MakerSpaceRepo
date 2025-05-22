@@ -16,9 +16,9 @@ let curStep = 0;
 // Translations for each piece of text (will not be finalized until tour structure is decided upon)
 const translations = {
   en: {
-    "start-title": "Getting Started // Avant de commencer",
+    "start-title": "Avant de commencer // Getting Started",
     "start-desc":
-      "Please select your language of choice using the rightmost button. // Veuillez sélectionner la langue de votre choix en utilisant le bouton le plus à droite.",
+      "Veuillez sélectionner la langue de votre choix en utilisant le bouton le plus à droite. // Please select your language of choice using the rightmost button.",
     "step1-title": "Home Page",
     "step1-desc":
       "Welcome to MakerRepo. Please enjoy this tour of the website's basic functionalities.",
