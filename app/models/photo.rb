@@ -7,7 +7,9 @@ class Photo < ApplicationRecord
   belongs_to :project_proposal, optional: true
   belongs_to :volunteer_task, optional: true
 
-  has_one_attached :image
+  has_one_attached :image do |attachable|
+    attachable.variant :explore, resize_to_limit: [210, 230]
+  end
 
   ALLOWED_CONTENT_TYPES = %w[
     image/jpeg
