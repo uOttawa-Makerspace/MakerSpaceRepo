@@ -45,8 +45,6 @@ class BadgesController < DevelopmentProgramsController
 
   def show
     @badge = Badge.includes(:badge_template).find(params[:id])
-    #@skills = @badge.skills 
-    #@trainings = TrainingSession.includes(:training).all.find_by(user_id: @badge.user_id)
   end
 
   def new_badge
@@ -92,9 +90,10 @@ class BadgesController < DevelopmentProgramsController
   def admin
   end
 
-  def revoke_badge
+  def destroy
+    # Currently not working due to detechment from the Credly Service
     if params[:badge].present?
-      badge = Badge.find_by(acclaim_badge_id: params[:badge][:acclaim_badge_id])
+      badge = Badge.find_by(badge_params)
       order_item =
         badge
           .user
@@ -112,15 +111,8 @@ class BadgesController < DevelopmentProgramsController
       user = order_item.order.user
       badge = user.badges.where(badge_template: badge_template).last
     end
-    response = badge.acclaim_api_revoke_badge
-    if response.status == 200
-      order_item.update(status: "Revoked")
-      badge.destroy
-      flash[:notice] = "The badge has been revoked"
-    else
-      flash[:alert] = "An error has occurred when removing the badge: " +
-        JSON.parse(response.body)["data"]["message"]
-    end
+    order_item.update(status: "Revoked")
+    badge.destroy
   rescue StandardError => e
     flash[:alert] = "An error has occurred when removing the badge: #{e}"
   ensure
@@ -138,8 +130,6 @@ class BadgesController < DevelopmentProgramsController
           .badges
           .where(badge_template: order_item.proficient_project.badge_template)
           .last
-      badge.acclaim_api_delete_badge
-      badge.destroy
     end
     order_item.update(status: "In progress")
     flash[:notice] = "Badge Restored"
@@ -155,24 +145,15 @@ class BadgesController < DevelopmentProgramsController
     order_item = OrderItem.find(params["order_item_id"])
     badge_template = order_item.proficient_project.badge_template
     user = order_item.order.user
-    response =
-      Badge.acclaim_api_create_badge(user, badge_template.acclaim_template_id)
-    if response.status == 201
-      badge_data = JSON.parse(response.body)["data"]
+      #badge_data = JSON.parse(response.body)["data"]
       Badge.create(
         user_id: user.id,
         issued_to: user.name,
-        acclaim_badge_id: badge_data["id"],
+        acclaim_badge_id: nil,
         badge_template_id: badge_template.id
       )
       order_item.update(status: "Awarded")
       flash[:notice] = "The badge has been sent to the user !"
-    else
-      flash[
-        :alert
-      ] = "An error has occurred when creating the badge, this message might help : " +
-        JSON.parse(response.body)["data"]["message"]
-    end
   rescue StandardError => e
     flash[:alert] = "An error has occurred when creating the badge: #{e}"
   ensure

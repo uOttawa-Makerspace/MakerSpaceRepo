@@ -47,7 +47,7 @@ Rails.application.routes.draw do
 
   resources :carts, only: [:index]
   resources :order_items, only: %i[create update destroy] do
-    get :revoke, path: "revoke"
+    get :destroy, path: "revoke"
     get :order_item_modal
     get :approve_order_item_modal
     get :revoke_order_item_modal
@@ -513,11 +513,10 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :badges, only: [:index,:show] do
+  resources :badges, only: [:index,:show,:destroy] do
     collection do
       get :admin
       get :new_badge
-      get :revoke_badge
       get :populate_badge_list
       get :certify
       get "grant", as: "grant_badge", action: "grant_badge"

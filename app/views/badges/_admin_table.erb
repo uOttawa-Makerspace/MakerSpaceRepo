@@ -17,7 +17,7 @@
           <th>Badge <span onclick="sortTable('pending-badge-requests-table', 2)"><%= fa_icon('arrow-down') %></span></th>
           <th>Project <span onclick="sortTable('pending-badge-requests-table', 3)"><%= fa_icon('arrow-down') %></span></th>
           <th>Certify</th>
-          <th>Revoke</th>
+          <th>Destroy</th>
         </tr></thead>
         <tbody>
         <% @order_items.each do |order_item| %>
@@ -27,7 +27,7 @@
             <td><%= order_item.proficient_project.badge_template.badge_name %></td>
             <td><%= order_item.proficient_project.title %></td>
             <td><%= link_to 'Award', certify_badges_path(order_item_id: order_item.id), data: { confirm: 'Are you sure? This will give the badge to the user' }, remote: true, class: 'btn btn-primary' %></td>
-            <td><%= link_to 'Revoke', order_item_revoke_path(order_item.id), { data: { confirm: 'Are you sure?' }, remote: true, class: 'btn btn-danger' } %></td>
+            <td><%= link_to 'Destroy', order_item_destroy_path(order_item.id), { data: { confirm: 'Are you sure?' }, remote: true, class: 'btn btn-danger' } %></td>
           </tr>
         <% end %>
         </tbody>
@@ -64,10 +64,10 @@
             <td><%= order_item.proficient_project.badge_template.badge_name %></td>
             <td><%= order_item.proficient_project.title %></td>
             <td><%= order_item.status %></td>
-            <% if order_item.status == "Revoked" %>
+            <% if order_item.status == "Destroyed" %>
               <td><%= link_to 'Award', certify_badges_path(order_item_id: order_item.id), data: { confirm: 'Are you sure? This will give the badge to the user' }, remote: true, class: 'btn btn-primary' %></td>
             <% else %>
-              <td><%= link_to 'Revoke', revoke_badge_badges_path(order_item_id: order_item.id), data: { confirm: 'Are you sure? This will revoke the badge that the user received.' }, class: 'btn btn-danger' %></td>
+              <td><%= button_to 'Destroy', badge_path(order_item), method: :delete, data: { confirm: 'Are you sure? This will revoke the badge that the user received.' }, class: 'btn btn-danger' %></td>
             <% end %>
             <td><%= link_to 'Reinstate', reinstate_badges_path(order_item_id: order_item.id), class: 'btn btn-secondary', data: { confirm: "Are you sure? This will delete eventual badges awarded and restore it to badges' requests." } %></td>
           </tr>
