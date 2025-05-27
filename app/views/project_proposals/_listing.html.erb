@@ -29,7 +29,7 @@
           <% if @user.admin? %>
             <% username = project_proposal.user&.username %>
             <% if username %>
-              <td><%= link_to username, user_path(username), class: 'username' %></td>
+              <td><%= link_to username, user_path(username) %></td>
             <% else %>
               <td><%= project_proposal.username %></td>
             <% end %>
