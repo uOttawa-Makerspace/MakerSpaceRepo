@@ -9,6 +9,10 @@ class Photo < ApplicationRecord
 
   has_one_attached :image do |attachable|
     attachable.variant :explore, resize_to_limit: [210, 230]
+    # There's no way to specify height only, so I made the width twice the
+    # actual max height of 65
+    attachable.variant :photo_slide, resize_to_limit: [65*3, 65]
+    attachable.variant :photo_slide_first, resize_to_limit: [500*2, 500]
   end
 
   ALLOWED_CONTENT_TYPES = %w[
