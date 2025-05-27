@@ -7,6 +7,7 @@ class Certification < ApplicationRecord
   has_one :space, through: :training_session
   has_one :training, through: :training_session
   has_many :badges
+  has_many :badge_templates, through: :training
 
   validates :user, presence: { message: "A user is required." }
   validates :training_session,
@@ -32,17 +33,16 @@ class Certification < ApplicationRecord
 
   def unique_cert
     @user_certs = user.certifications if user
-    if @user_certs
+    return false unless @user_certs
       @user_certs.each do |cert|
-        if (cert.training.id == training.id) &&
+        next unless (cert.training.id == training.id) &&
              (cert.training_session.level == training_session.level)
-          errors.add(:string, "Certification already exists.")
-          return false
-        end
+        errors.add(:string, "Certification already exists.")
+        return false
       end
-    else
-      return false
-    end
+    
+      
+    
     true
   end
 
@@ -63,18 +63,18 @@ class Certification < ApplicationRecord
   end
 
   def self.highest_certifications(user_id)
-    training_ids = self.joins(:training).pluck(:training_id)
+    training_ids = joins(:training).pluck(:training_id)
     trainings = Training.where(id: training_ids)
     certs = []
     trainings.each do |training|
-      certs << self.certification_highest_level(training.id, user_id)
+      certs << certification_highest_level(training.id, user_id)
     end
     certs
   end
 
   def self.certification_highest_level(training_id, user_id)
     certifications =
-      self.joins(:user, :training_session).where(
+      joins(:user, :training_session).where(
         training_sessions: {
           training_id: training_id
         },
@@ -116,8 +116,8 @@ class Certification < ApplicationRecord
 
   def self.highest_level
     high_certs = []
-    self
-      .all
+    
+      all
       .joins(:training_session)
       .group_by(&:training)
       .each do |_, certs|

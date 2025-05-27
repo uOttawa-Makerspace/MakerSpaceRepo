@@ -16,15 +16,15 @@
           <th>Name <span onclick="sortTable('pending-badge-requests-table', 1)"><%= fa_icon('arrow-down') %></span></th>
           <th>Badge <span onclick="sortTable('pending-badge-requests-table', 2)"><%= fa_icon('arrow-down') %></span></th>
           <th>Project <span onclick="sortTable('pending-badge-requests-table', 3)"><%= fa_icon('arrow-down') %></span></th>
-          <th>Certify</th>
-          <th>Destroy</th>
+          <th>Certify <span onclick="sortTable('pending-badge-requests-table', 3)"><%= fa_icon('arrow-down') %></span></th>
+          <th>Destroy <span onclick="sortTable('pending-badge-requests-table', 3)"><%= fa_icon('arrow-down') %></span></th>
         </tr></thead>
         <tbody>
         <% @order_items.each do |order_item| %>
           <tr>
             <td><%= order_item.updated_at.strftime('%Y/%m/%d - %H:%M') %></td>
-            <td><%= link_to order_item.order.user.name, order_item.order.user.username %></td>
-            <td><%= order_item.proficient_project.badge_template.badge_name %></td>
+            <td><%= link_to order_item.order.user.name, user_path(order_item.order.user.username, anchor: "badges-manager") %></td>
+            <td><%= order_item.proficient_project.badge_template.name %></td>
             <td><%= order_item.proficient_project.title %></td>
             <td><%= link_to 'Award', certify_badges_path(order_item_id: order_item.id), data: { confirm: 'Are you sure? This will give the badge to the user' }, remote: true, class: 'btn btn-primary' %></td>
             <td><%= link_to 'Destroy', order_item_destroy_path(order_item.id), { data: { confirm: 'Are you sure?' }, remote: true, class: 'btn btn-danger' } %></td>
@@ -60,8 +60,8 @@
         <% @order_items_done.each do |order_item| %>
           <tr>
             <td><%= order_item.updated_at.strftime('%Y/%m/%d - %H:%M') %></td>
-            <td><%= link_to order_item.order.user.name, order_item.order.user.username %></td>
-            <td><%= order_item.proficient_project.badge_template.badge_name %></td>
+            <td><%= link_to order_item.order.user.name, user_path(order_item.order.user.username, anchor: "badges-manager") %></td>
+            <td><%= order_item.proficient_project.badge_template.name %></td>
             <td><%= order_item.proficient_project.title %></td>
             <td><%= order_item.status %></td>
             <% if order_item.status == "Destroyed" %>

@@ -10,6 +10,7 @@ class Training < ApplicationRecord
   has_many :learning_modules, dependent: :destroy
   has_many :shifts, dependent: :nullify
   belongs_to :skill, optional: true
+  has_many :badge_templates
 
   validates :name, presence: true, uniqueness: true
 

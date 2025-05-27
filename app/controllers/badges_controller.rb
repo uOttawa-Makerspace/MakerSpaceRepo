@@ -52,7 +52,7 @@ class BadgesController < DevelopmentProgramsController
     @all_users = User.all.pluck(:name, :id)
     @users_with_badges = User.all.joins(:badges).distinct.pluck(:name, :id)
     @badge_templates =
-      BadgeTemplate.joins(:proficient_projects).pluck(:badge_name, :id)
+      BadgeTemplate.joins(:proficient_projects).pluck(:name, :id)
   end
 
   def grant_badge
@@ -106,12 +106,12 @@ class BadgesController < DevelopmentProgramsController
           )
           .last
     else
-      order_item = OrderItem.find(params[:order_item_id])
+      order_item = OrderItem.find(params[:id])
       badge_template = order_item.proficient_project.badge_template
       user = order_item.order.user
       badge = user.badges.where(badge_template: badge_template).last
     end
-    order_item.update(status: "Revoked")
+    order_item.destroy
     badge.destroy
   rescue StandardError => e
     flash[:alert] = "An error has occurred when removing the badge: #{e}"

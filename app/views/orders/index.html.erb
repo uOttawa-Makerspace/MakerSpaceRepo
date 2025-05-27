@@ -44,7 +44,7 @@
                     <% order.order_items.each do |order_item| %>
                       <p><%= order_item.status %></p>
                       <% badge_template = order_item.proficient_project.badge_template %>
-                      <p><%= badge_template.badge_name if badge_template.present? %></p>
+                      <p><%= badge_template.name if badge_template.present? %></p>
                     <% end %>
                   </td>
                   <td><p><%= order.total %></p></td>
@@ -90,7 +90,7 @@
               <tbody>
               <% @all_orders.each do |order| %>
                 <tr>
-                  <td class="username"><p> <%= link_to order.user.username, order.user.username %></p></td>
+                  <td class="username"><p> <%= link_to order.user&.username, order.user&.username %></p></td>
                   <td>
                     <% order.order_items.each do |order_item| %>
                       <p><b><%= link_to order_item.proficient_project.title, proficient_project_path(order_item.proficient_project.id) %></b> / <%= order_item.quantity %></p>
@@ -103,7 +103,7 @@
                     <% order.order_items.each do |order_item| %>
                       <p><%= order_item.status %></p>
                       <% badge_template = order_item.proficient_project.badge_template %>
-                      <p><%= badge_template.badge_name if badge_template.present? %></p>
+                      <p><%= badge_template.name if badge_template.present? %></p>
                     <% end %>
                   </td>
                   <td><p><%= order.total %></p></td>

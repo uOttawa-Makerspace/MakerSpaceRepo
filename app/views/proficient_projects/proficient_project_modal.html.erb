@@ -40,7 +40,7 @@
         <div class="card-header bg-primary text-light">Badge Awarded Upon Completion</div>
         <div class="card-body">
             <% if badge_template.present? %>
-                <%= badge_template.badge_name %>
+                <%= badge_template.name %>
                 <% if badge_template.badge_url != nil %>
                     <%= link_to image_tag(badge_template.image_url, style: 'width: 80px;', alt: 'Badge image', class: 'd-block'), badge_template.badge_url, target: '_blank', class: 'd-block', rel: 'noopener' %>
                 <% else %>

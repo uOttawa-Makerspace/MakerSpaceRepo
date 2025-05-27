@@ -45,6 +45,7 @@ class OrderItemsController < DevelopmentProgramsController
     @order_item.destroy
     @order_items = @order.order_items
     redirect_to carts_path, notice: "Successfully removed item from cart"
+    
   end
 
   def revoke
