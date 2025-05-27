@@ -37,6 +37,8 @@ module MakerSpaceRepo
     config.time_zone = "Eastern Time (US & Canada)"
 
     config.active_storage.variant_processor = :mini_magick
+    # Proxy active storage downloads through the server (and so through the CDN)
+    config.active_storage.resolve_model_to_route = :rails_storage_proxy
 
     # The default locale is :en and all translations from config/locales/*.rb,yml are auto loaded.
     # config.i18n.load_path += Dir[Rails.root.join('my', 'locales', '*.{rb,yml}').to_s]
