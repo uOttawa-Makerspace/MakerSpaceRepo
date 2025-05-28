@@ -1,4 +1,6 @@
 import TomSelect from "tom-select";
+import DataTable from "datatables.net-bs5";
+import "datatables.net-bs5/css/dataTables.bootstrap5.min.css";
 
 let linkPP = document.querySelectorAll(".link-pp");
 linkPP.forEach((link) => {
@@ -27,7 +29,7 @@ if (document.getElementById("grant_user_select")) {
               callback(
                 data.users.map((user) => {
                   return { id: user.id, name: user.name };
-                })
+                }),
               );
             });
         }
@@ -83,7 +85,7 @@ if (document.getElementById("revoke_user_select")) {
               callback(
                 data.users.map((user) => {
                   return { id: user.id, name: user.name };
-                })
+                }),
               );
             });
         }
@@ -94,3 +96,6 @@ if (document.getElementById("revoke_user_select")) {
     });
   }
 }
+
+new DataTable("#badge-table");
+new DataTable("#awarded-badge-table");
