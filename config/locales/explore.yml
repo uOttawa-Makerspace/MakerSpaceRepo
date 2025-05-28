@@ -4,3 +4,32 @@ en:
     search: "Search"
     sort_by: "Sort By"
     filter_by: "Filter By"
+  repository:
+    by: "PROJECT BY"
+    pub: "PUBLISHED ON"
+    files: "PROJECT FILES"
+    cat: "CATEGORIES"
+    equip: "EQUIPMENT"
+    like: "Like"
+    make: "Make"
+    report: "Report inappropriate"
+    license: "License"
+    link: "Linked to Project Proposal:"
+
+fr:
+  explore:
+    explore: "Explorez"
+    search: "Recherche"
+    sort_by: "Trier par"
+    filter_by: "Filtrer par"
+  repository:
+    by: "PROJET DE"
+    pub: "PUBLIÉ LE"
+    files: "FICHIERS DE PROJET"
+    cat: "CATÉGORIES"
+    equip: "ÉQUIPEMENT"
+    like: "J'aime"
+    make: "Créer"
+    report: "Signalement inapproprié"
+    license: "Licence"
+    link: "Lié à la proposition de projet:"
