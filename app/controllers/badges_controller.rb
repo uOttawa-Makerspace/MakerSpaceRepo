@@ -23,7 +23,7 @@ class BadgesController < DevelopmentProgramsController
       @user.order_items.completed_order.in_progress.joins(
         proficient_project: :badge_template
       )
-    @acclaim_data = if @user.admin? || @user.staff?
+    @badge_data = if @user.admin? || @user.staff?
       Badge
           .joins(:badge_template)
           .filter_by_attribute(params[:search])

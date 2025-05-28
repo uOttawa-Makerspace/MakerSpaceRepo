@@ -14,7 +14,7 @@ class Badge < ApplicationRecord
       else
         value = value.split("=").last.gsub("+", " ")
         where(
-          "LOWER(badge_templates.badge_name) like LOWER(?) OR
+          "LOWER(badge_templates.localized_name) like LOWER(?) OR
                  LOWER(issued_to) like LOWER(?) OR
                  LOWER(badge_templates.badge_description) like LOWER(?) OR
                  LOWER(badge_templates.acclaim_template_id) like LOWER(?)",
@@ -93,9 +93,9 @@ class Badge < ApplicationRecord
       return
     end
     level =
-      if badge_template.badge_name.include?("Advanced")
+      if badge_template.name_en.include?("Advanced")
         "Advanced"
-      elsif badge_template.badge_name.include?("Intermediate")
+      elsif badge_template.name_en.include?("Intermediate")
         "Intermediate"
       else
         "Beginner"

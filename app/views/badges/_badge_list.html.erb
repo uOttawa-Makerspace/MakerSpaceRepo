@@ -3,13 +3,13 @@
   <h2 style="text-align: center"><b>Badges</b></h2>
 
   <div class="apple_pagination">
-  <%= page_entries_info @acclaim_data, model: 'badge' %>
-  <%= will_paginate @acclaim_data, container: false %>
+  <%= page_entries_info @badge_data, model: 'badge' %>
+  <%= will_paginate @badge_data, container: false %>
 </div>
 <br>
 <div style="width: 100%;" class="row">
 
-  <% @acclaim_data.each do |badges| %>
+  <% @badge_data.each do |badges| %>
 
     <div class="col-md-3">
       <p style="text-align: center">
@@ -33,8 +33,8 @@
 </div>
 <br>
 <div class="apple_pagination">
-  <%= page_entries_info @acclaim_data, model: 'badge' %>
-  <%= will_paginate @acclaim_data, container: false %>
+  <%= page_entries_info @badge_data, model: 'badge' %>
+  <%= will_paginate @badge_data, container: false %>
 </div>
 
 <% rescue %>
