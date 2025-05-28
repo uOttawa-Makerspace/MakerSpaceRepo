@@ -15,4 +15,8 @@ class BadgeTemplate < ApplicationRecord
   def acclaim_api_get_badge_template
     JSON.parse credly_api_call(:get, endpoint: "/badge_templates/#{acclaim_template_id}").body
   end
+
+  def localized_name
+    I18n.locale == :fr ? name_fr : name_en
+  end
 end

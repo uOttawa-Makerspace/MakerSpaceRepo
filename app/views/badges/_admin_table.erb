@@ -24,7 +24,7 @@
           <tr>
             <td><%= order_item.updated_at.strftime('%Y/%m/%d - %H:%M') %></td>
             <td><%= link_to order_item.order.user.name, user_path(order_item.order.user.username, anchor: "badges-manager") %></td>
-            <td><%= order_item.proficient_project.badge_template.name %></td>
+            <td><%= order_item.proficient_project.badge_template.localized_name %></td>
             <td><%= order_item.proficient_project.title %></td>
             <td><%= link_to 'Award', certify_badges_path(order_item_id: order_item.id), data: { confirm: 'Are you sure? This will give the badge to the user' }, remote: true, class: 'btn btn-primary' %></td>
             <td><%= link_to 'Destroy', order_item_destroy_path(order_item.id), { data: { confirm: 'Are you sure?' }, remote: true, class: 'btn btn-danger' } %></td>
@@ -61,7 +61,7 @@
           <tr>
             <td><%= order_item.updated_at.strftime('%Y/%m/%d - %H:%M') %></td>
             <td><%= link_to order_item.order.user.name, user_path(order_item.order.user.username, anchor: "badges-manager") %></td>
-            <td><%= order_item.proficient_project.badge_template.name %></td>
+            <td><%= order_item.proficient_project.badge_template.localized_name %></td>
             <td><%= order_item.proficient_project.title %></td>
             <td><%= order_item.status %></td>
             <% if order_item.status == "Destroyed" %>

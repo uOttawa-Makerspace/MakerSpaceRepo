@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_05_26_194624) do
+ActiveRecord::Schema[7.2].define(version: 2025_05_28_143439) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -97,7 +97,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_05_26_194624) do
   create_table "badge_templates", id: :serial, force: :cascade do |t|
     t.text "acclaim_template_id"
     t.text "badge_description"
-    t.text "name"
+    t.text "name_en"
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
     t.string "image_url"
@@ -105,6 +105,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_05_26_194624) do
     t.bigint "training_id"
     t.string "training_level"
     t.string "badge_url"
+    t.string "name_fr"
     t.index ["training_id"], name: "index_badge_templates_on_training_id"
   end
 

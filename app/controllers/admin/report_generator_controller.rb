@@ -29,7 +29,7 @@ class Admin::ReportGeneratorController < AdminAreaController
       popular_hours
     ]
 
-    if params[:report_type].present?
+    return unless params[:report_type].present?
       set_date_specified
 
       case params[:report_type]
@@ -53,9 +53,9 @@ class Admin::ReportGeneratorController < AdminAreaController
         popular_hours
       else
         render plain: "Unknown report type", status: :bad_request
-        return
+        nil
       end
-    end
+    
   end
 
   # generate report as an html graph
@@ -144,7 +144,7 @@ class Admin::ReportGeneratorController < AdminAreaController
     start_date =
       (
         if params[:start_date].nil?
-          DateTime.new(2015, 06, 01).beginning_of_day
+          DateTime.new(2015, 0o6, 0o1).beginning_of_day
         else
           Date.parse(params[:start_date]).to_datetime
         end
@@ -152,7 +152,7 @@ class Admin::ReportGeneratorController < AdminAreaController
     end_date =
       (
         if params[:end_date].nil?
-          DateTime.now()
+          DateTime.now
         else
           Date.parse(params[:end_date]).to_datetime
         end
@@ -239,17 +239,17 @@ class Admin::ReportGeneratorController < AdminAreaController
         .includes(:space)
         .includes(training_session: %i[course_name training])
         .includes(training: [:skill])
-    @space_count = Hash.new
+    @space_count = {}
     @space_count["unknown"] = 0
 
-    @course_count = Hash.new
+    @course_count = {}
     @course_count["unknown"] = 0
 
-    @skill_count = Hash.new
+    @skill_count = {}
 
-    @badge_count = Hash.new
+    @badge_count = {}
 
-    @training_count = Hash.new
+    @training_count = {}
 
     # For each certification in our database
     @certs.each do |cert|
@@ -298,7 +298,7 @@ class Admin::ReportGeneratorController < AdminAreaController
 
       # number of badges handed out
       cert.badges.each do |badge|
-        badge_name = badge.badge_template.badge_name
+        badge_name = badge.badge_template.localized_name
         if !@badge_count.has_key?(badge_name)
           @badge_count[badge_name] = 1
         else
@@ -322,12 +322,12 @@ class Admin::ReportGeneratorController < AdminAreaController
 
     @training_sessions = @training_sessions.unscope(:order)
 
-    @space_count = Hash.new
+    @space_count = {}
     @space_count["unknown"] = 0
 
-    @trainings_count = Hash.new
+    @trainings_count = {}
 
-    @attendance_count = Hash.new
+    @attendance_count = {}
 
     @training_sessions.each do |training_session|
       if training_session.space.present?
@@ -361,8 +361,8 @@ class Admin::ReportGeneratorController < AdminAreaController
           Repository.all
         end
       )
-    @category_count = Hash.new
-    @equipment_count = Hash.new
+    @category_count = {}
+    @equipment_count = {}
 
     @repos.each do |repo|
       repo.categories.each do |category|
@@ -393,8 +393,8 @@ class Admin::ReportGeneratorController < AdminAreaController
         end
       ).includes(:user)
 
-    @space_total_count = Hash.new
-    @space_unique_count = Hash.new
+    @space_total_count = {}
+    @space_unique_count = {}
 
     Space.all.each do |space|
       lab_session_count = space.lab_sessions
@@ -411,11 +411,11 @@ class Admin::ReportGeneratorController < AdminAreaController
       )
     end
 
-    @identity_total_count = Hash.new
-    @identity_unique_count = Hash.new
+    @identity_total_count = {}
+    @identity_unique_count = {}
 
-    @faculty_total_count = Hash.new
-    @faculty_unique_count = Hash.new
+    @faculty_total_count = {}
+    @faculty_unique_count = {}
 
     @lab_sessions.each do |lab_session|
       if lab_session.user.present?
@@ -443,29 +443,28 @@ class Admin::ReportGeneratorController < AdminAreaController
     User
       .where(id: all_users)
       .each do |user|
-        unless user.nil?
-          faculty = user.faculty
-          identity = user.identity
+        next if user.nil?
+        faculty = user.faculty
+        identity = user.identity
 
-          if !@identity_unique_count.has_key?(identity)
-            @identity_unique_count[identity] = 1
-          else
-            @identity_unique_count[identity] += 1
-          end
+        if !@identity_unique_count.has_key?(identity)
+          @identity_unique_count[identity] = 1
+        else
+          @identity_unique_count[identity] += 1
+        end
 
-          if !@faculty_unique_count.has_key?(faculty)
-            @faculty_unique_count[faculty] = 1
-          else
-            @faculty_unique_count[faculty] += 1
-          end
+        if !@faculty_unique_count.has_key?(faculty)
+          @faculty_unique_count[faculty] = 1
+        else
+          @faculty_unique_count[faculty] += 1
         end
       end
-    @identity_total_count = @identity_total_count.transform_keys &:humanize
-    @identity_unique_count = @identity_unique_count.transform_keys &:humanize
+    @identity_total_count = @identity_total_count.transform_keys(&:humanize)
+    @identity_unique_count = @identity_unique_count.transform_keys(&:humanize)
   end
 
   def visits_by_hour
-    @lab_hash = Hash.new
+    @lab_hash = {}
 
     lab_sessions =
       (
@@ -480,14 +479,13 @@ class Admin::ReportGeneratorController < AdminAreaController
     @lab_hash["all"] = lab_sessions
 
     Space.all.each do |space|
-      if @date_specified
-        sessions =
-          space.lab_sessions.where(
+      sessions = if @date_specified
+        space.lab_sessions.where(
             created_at: params[:start_date]..params[:end_date]
           )
       else
-        sessions = space.lab_sessions
-      end
+        space.lab_sessions
+                 end
 
       @lab_hash[space.name.gsub(" ", "-")] = sessions
     end
@@ -503,7 +501,7 @@ class Admin::ReportGeneratorController < AdminAreaController
         end
       )
 
-    @pp_hash = Hash.new
+    @pp_hash = {}
 
     @project_kits.each do |pk|
       pp_name = pk.proficient_project.title
@@ -528,9 +526,9 @@ class Admin::ReportGeneratorController < AdminAreaController
       ).includes(:users, :user, :trainings)
     @spaces = Space.order(name: :asc).includes(:certifications)
 
-    total_certs = Hash.new
-    total_sessions = Hash.new
-    @monthly_average = Hash.new
+    total_certs = {}
+    total_sessions = {}
+    @monthly_average = {}
 
     (1..12).each do |m|
       month_name = Date::MONTHNAMES[m]
@@ -554,7 +552,7 @@ class Admin::ReportGeneratorController < AdminAreaController
             .count
         end
     else
-      (DateTime.new(2015, 06, 01).beginning_of_day..DateTime.now)
+      (DateTime.new(2015, 0o6, 0o1).beginning_of_day..DateTime.now)
         .select { |date| date.day == 1 }
         .map do |date|
           month_name = date.end_of_month.strftime("%B")
@@ -584,13 +582,13 @@ class Admin::ReportGeneratorController < AdminAreaController
     @spaces = Space.all.order(name: :asc)
     @weekdays = Date::DAYNAMES
 
-    if @date_specified
+    return unless @date_specified
       @info =
         PopularHour.popular_hours_per_period(
           params[:start_date].to_date,
           params[:end_date].to_date
         )
       params[:report_type] = "popular_hours_per_period"
-    end
+    
   end
 end

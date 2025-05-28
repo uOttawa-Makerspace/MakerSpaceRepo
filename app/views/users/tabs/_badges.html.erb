@@ -7,7 +7,7 @@
               <a target="_blank" class="w-100" href="/badges/<%= badges.id %>">
                 <%= image_tag(badges.badge_template.image_url, style: 'width: inherit', alt: 'Badge') %>
               </a>
-            <p class="text-center"><%= badges.badge_template.name %></p>
+            <p class="text-center"><%= badges.badge_template.localized_name %></p>
           </div>
         <% end %>
       <% end %>

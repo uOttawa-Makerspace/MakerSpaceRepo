@@ -22,7 +22,7 @@
         <tbody>
           <% @badge_template.each do |bt| %>
             <tr>
-              <td><%= bt.badge_name %></td>
+              <td><%= bt.localized_name %></td>
               <td><%= bt.training.present? ? bt.training.name : 'No related trainings' %></td>
               <td><%= bt.training_level.presence || 'No training level' %></td>
               <td><%= bt.created_at.to_fs :db %></td>

@@ -22,7 +22,7 @@
 
       <% if badges.badge_url.present? %>
         <a style="width: 150px;" target="_blank" href="./badges/<%= badges.id %>">
-          <%= image_tag(badges.badge_template.image_url, style: 'width: inherit;display:block; margin:0 auto;', alt: "Badge image: #{badges.badge_template.name}") %>
+          <%= image_tag(badges.badge_template.image_url, style: 'width: inherit;display:block; margin:0 auto;', alt: "Badge image: #{badges.badge_template.localized_name}") %>
         </a>
       <% else %>
         <%= image_tag(badges.badge_template.image_url, :style => 'width: 150px; display:block; margin:0 auto;', 'data-bs-toggle' => 'tooltip', :title => "#{badges.issued_to} didn't accept the badge yet", :alt => "#{badges.issued_to} didn't accept the badge yet") %>
