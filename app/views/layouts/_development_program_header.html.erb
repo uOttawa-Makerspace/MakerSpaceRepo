@@ -45,7 +45,7 @@
             <div class="dropdown-divider"></div>
           <%= link_to 'Badges', badges_path, class: 'dropdown-item' %>
           <% if current_user.admin? %>
-            <%= link_to 'Badges Requests', admin_badges_path, class: 'dropdown-item' %>
+            <%= link_to 'Badge Requests', admin_badges_path, class: 'dropdown-item' %>
             <%= link_to 'Grant/Revoke badge to user', new_badge_badges_path, class: 'dropdown-item' %>
           <% end %>
         </div>

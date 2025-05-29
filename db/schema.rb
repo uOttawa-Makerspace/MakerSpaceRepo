@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_05_28_143439) do
+ActiveRecord::Schema[7.2].define(version: 2025_05_29_163034) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -1204,6 +1204,9 @@ ActiveRecord::Schema[7.2].define(version: 2025_05_28_143439) do
     t.integer "space_id"
     t.bigint "skill_id"
     t.string "description"
+    t.string "list_of_skills"
+    t.string "training_level"
+    t.string "name_fr"
     t.index ["skill_id"], name: "index_trainings_on_skill_id"
     t.index ["space_id"], name: "index_trainings_on_space_id"
   end

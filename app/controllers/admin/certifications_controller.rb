@@ -1,6 +1,11 @@
 class Admin::CertificationsController < AdminAreaController
   before_action :set_certification, only: %i[update destroy]
 
+  def show
+    @certification = Certification.includes(:training_session).includes(:training).find(params[:id])
+    @earner = User.find(@certification.user_id)
+  end
+
   def update
     past_demotion_reason = @cert.demotion_reason
     if @cert.update(certification_params)
@@ -28,9 +33,7 @@ class Admin::CertificationsController < AdminAreaController
     else
       flash[:alert] = "Something went wrong. Try again later."
     end
-    @cert.active ?
-      redirection = demotions_admin_certifications_path :
-      redirection = user_path(@cert.user.username)
+    redirection = @cert.active ? demotions_admin_certifications_path : user_path(@cert.user.username)
     redirect_to redirection
   end
 

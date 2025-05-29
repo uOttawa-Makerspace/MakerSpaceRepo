@@ -45,6 +45,8 @@ class BadgesController < DevelopmentProgramsController
 
   def show
     @badge = Badge.includes(:badge_template).find(params[:id])
+    @certification = Certification.includes(:training_session).includes(:training).find(@badge.certification_id)
+    @earner = User.find(@certification.user_id)
   end
 
   def new_badge

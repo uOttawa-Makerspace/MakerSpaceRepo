@@ -388,7 +388,7 @@ Rails.application.routes.draw do
       end
     end
 
-    resources :certifications, only: %i[update destroy] do
+    resources :certifications, only: %i[show update destroy] do
       collection do
         get :open_modal
         get :demotions

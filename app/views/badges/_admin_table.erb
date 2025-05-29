@@ -1,42 +1,8 @@
 <div class="container">
   <div class="row">
     <div class="col-lg-12 text-center mb-4">
-      <h2><b>Badge Requests</b></h2>
-      <div class="apple_pagination">
-        <%= page_entries_info @order_items, model: 'badge' %>
-        <%= will_paginate @order_items, container: false %>
-      </div>
     </div>
   </div>
-  <% if @order_items.present? %>
-    <div class="text-center">
-      <table class="table table-striped pending-badge-requests-table" id="badge-table">
-         <thead class="table-primary"><tr>
-          <th>Date Updated <span onclick="sortTable('pending-badge-requests-table', 0)"><%= fa_icon('arrow-down') %></span></th>
-          <th>Name <span onclick="sortTable('pending-badge-requests-table', 1)"><%= fa_icon('arrow-down') %></span></th>
-          <th>Badge <span onclick="sortTable('pending-badge-requests-table', 2)"><%= fa_icon('arrow-down') %></span></th>
-          <th>Project <span onclick="sortTable('pending-badge-requests-table', 3)"><%= fa_icon('arrow-down') %></span></th>
-          <th>Certify <span onclick="sortTable('pending-badge-requests-table', 3)"><%= fa_icon('arrow-down') %></span></th>
-          <th>Destroy <span onclick="sortTable('pending-badge-requests-table', 3)"><%= fa_icon('arrow-down') %></span></th>
-        </tr></thead>
-        <tbody>
-        <% @order_items.each do |order_item| %>
-          <tr>
-            <td><%= order_item.updated_at.strftime('%Y/%m/%d - %H:%M') %></td>
-            <td><%= link_to order_item.order.user.name, user_path(order_item.order.user.username, anchor: "badges-manager") %></td>
-            <td><%= order_item.proficient_project.badge_template.localized_name %></td>
-            <td><%= order_item.proficient_project.title %></td>
-            <td><%= link_to 'Award', certify_badges_path(order_item_id: order_item.id), data: { confirm: 'Are you sure? This will give the badge to the user' }, remote: true, class: 'btn btn-primary' %></td>
-            <td><%= link_to 'Destroy', order_item_destroy_path(order_item.id), { data: { confirm: 'Are you sure?' }, remote: true, class: 'btn btn-danger' } %></td>
-          </tr>
-        <% end %>
-        </tbody>
-      </table>
-    </div>
-  <% else %>
-    <p class="text-center">No Requests made.</p>
-  <% end %>
-  <br />
   <h2 class="text-center">Awarded and Revoked Badges</h2>
   <div class="apple_pagination">
     <%= page_entries_info @order_items_done, model: 'badge' %>
@@ -53,7 +19,6 @@
           <th>Project</th>
           <th>Status</th>
           <th>Action</th>
-          <th>Reinstate</th>
         </tr>
       </thead>
         <tbody>
@@ -69,7 +34,6 @@
             <% else %>
               <td><%= button_to 'Destroy', badge_path(order_item), method: :delete, data: { confirm: 'Are you sure? This will revoke the badge that the user received.' }, class: 'btn btn-danger' %></td>
             <% end %>
-            <td><%= link_to 'Reinstate', reinstate_badges_path(order_item_id: order_item.id), class: 'btn btn-secondary', data: { confirm: "Are you sure? This will delete eventual badges awarded and restore it to badges' requests." } %></td>
           </tr>
         <% end %>
         </tbody>
