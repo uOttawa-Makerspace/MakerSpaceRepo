@@ -12,7 +12,7 @@
                             <% if project.photos.empty? %>
                                 <%= image_tag 'C_square.png', alt: project.title, class: 'card-img-top', loading: 'lazy' %>
                             <% else %>
-                                <%= image_tag project.photos.first.image, alt: project.title, class: 'card-img-top object-fit-cover', loading: 'lazy' %>
+                                <%= image_tag project.photos.first.image.variant(:explore), alt: project.title, class: 'card-img-top object-fit-cover', loading: 'lazy' %>
                             <% end %>
                             <div class="card-body">
                                 <p class="fs-5 card-title"><%= project.title.squish %></p>
