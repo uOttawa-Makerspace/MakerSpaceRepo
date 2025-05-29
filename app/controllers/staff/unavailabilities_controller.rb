@@ -6,9 +6,15 @@ class Staff::UnavailabilitiesController < StaffAreaController
       :title, :description, :utc_start_time, :utc_end_time, :recurrence_rule
     )
 
+    title = if staff_params[:title].blank? || staff_params[:title].strip.empty?
+      "Unavailable"
+    else 
+      staff_params[:title]
+    end 
+
     @staff_unavailability = StaffUnavailability.new(
-      title: staff_params[:title] || "Unavailable",
-      description: staff_params[:description],
+      title: title,
+      description: ActionController::Base.helpers.strip_tags(staff_params[:description]),
       # the dates are already in utc but for consistent formatting with @staff_unavailability, we will do it explicitly
       start_time: Time.parse(staff_params[:utc_start_time]).utc,
       end_time: Time.parse(staff_params[:utc_end_time]).utc,
@@ -41,7 +47,7 @@ class Staff::UnavailabilitiesController < StaffAreaController
     when "non-recurring"
       if @staff_unavailability.update(
           title: staff_params[:title] || "Unavailable",
-          description: staff_params[:description],
+          description: ActionController::Base.helpers.strip_tags(staff_params[:description]),
           start_time: staff_params[:utc_start_time],
           end_time: staff_params[:utc_end_time],
           recurrence_rule: staff_params[:recurrence_rule]

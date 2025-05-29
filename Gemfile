@@ -28,7 +28,7 @@ gem "google-api-client", "~> 0.53.0", require: ["google/apis/calendar_v3"]
 gem "googleauth", "~> 0.15.0"
 gem "graphlient"
 gem "groupdate"
-gem 'ice_cube'
+gem 'icalendar'
 gem "image_processing"
 gem "jbuilder"
 gem "kaminari"

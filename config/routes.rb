@@ -434,6 +434,23 @@ Rails.application.routes.draw do
           format: :csv
       post "import_programs"
     end
+
+    resources :calendar do
+      collection do
+        get 'json/:id', to: 'calendar#json', as: :json
+        get 'ics_to_json', to: 'calendar#ics_to_json', as: :ics_to_json 
+      end
+    end
+
+    resources :events, only: [:create, :update] do
+      collection do
+        get 'json/:id', to: 'events#json', as: :json
+      end
+      member do
+        patch :publish
+        delete :delete_with_scope
+      end
+    end
   end
   # For singular routes
   resolve('DesignDay') {[:admin, :design_day]}

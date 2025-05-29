@@ -278,8 +278,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_05_15_181738) do
     t.datetime "end_time"
     t.string "recurrence_rule"
     t.boolean "draft", default: true
-    t.string "external_calendar_id"
-    t.jsonb "metadata"
+    t.string "event_type"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end

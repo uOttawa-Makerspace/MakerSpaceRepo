@@ -10,7 +10,7 @@ class CreateStaffUnavailabilitiesAndEventsAndEventAssignments < ActiveRecord::Mi
       t.timestamps
     end
 
-    create_table :events do |t|
+    create_table :events, force: true do |t| 
       t.bigint :created_by_id
       t.bigint :space_id
       t.string :title
@@ -19,8 +19,7 @@ class CreateStaffUnavailabilitiesAndEventsAndEventAssignments < ActiveRecord::Mi
       t.datetime :end_time
       t.string :recurrence_rule
       t.boolean :draft, default: true
-      t.string :external_calendar_id
-      t.jsonb :metadata
+      t.string :event_type
       t.timestamps
     end
 

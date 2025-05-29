@@ -1877,6 +1877,11 @@ GEM
     httpclient (2.8.3)
     i18n (1.14.7)
       concurrent-ruby (~> 1.0)
+    icalendar (2.11.0)
+      base64
+      ice_cube (~> 0.16)
+      logger
+      ostruct
     ice_cube (0.17.0)
     image_processing (1.13.0)
       mini_magick (>= 4.9.5, < 5)
@@ -2332,7 +2337,7 @@ DEPENDENCIES
   googleauth (~> 0.15.0)
   graphlient
   groupdate
-  ice_cube
+  icalendar
   image_processing
   jbuilder
   kaminari
