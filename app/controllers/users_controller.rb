@@ -369,7 +369,7 @@ class UsersController < SessionsController
           "https://www.youracclaim.com/badges/"
         end
 
-      @acclaim_data = @repo_user.badges
+      @acclaim_data = @repo_user.certifications
       @makes =
         @repo_user.repositories.where.not(make_id: nil).page params[:page]
       @joined_projects = @repo_user.project_joins

@@ -25,6 +25,16 @@
             <%= f.select :skill_id, options_for_select(@skills, selected: f.object.skill_id), { include_blank: false }, { class: 'form-control form-select' } %>
           </div>
 
+        <div class="col-md-12 form-floating my-2">
+            <%= f.label(:training_level, 'Training Level', class: 'form-label') %>
+            <%= f.select :training_level, options_for_select(["I", "II", "III"]), { include_blank: false }, { class: 'form-control form-select' } %>
+          </div>
+
+          <div class="col-md-12 form-floating my-2">
+            <%= f.text_area :list_of_skills, placeholder: 'Write the list of skills which this badge describes...', class: 'form-control', required: true %>
+            <%= f.label 'List of Skills', class: 'form-label' %>
+          </div>
+
         <div class="col-md-12 form-group my-3 text-center">
           <%= f.submit 'Update Training', class: 'btn btn-secondary btn-xl text-uppercase' %>
 

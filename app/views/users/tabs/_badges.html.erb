@@ -5,9 +5,9 @@
         <% begin %>
           <div class="col-md-3 border-bottom">
               <a target="_blank" class="w-100" href="/badges/<%= badges.id %>">
-                <%= image_tag(badges.badge_template.image_url, style: 'width: inherit', alt: 'Badge') %>
+                <%= render "badge_icon", width: 230, height: 230, level: badges.training_session.training.training_level, name_en: badges.training_session.training.name, name_fr: badges.training_session.training.name_fr %>
               </a>
-            <p class="text-center"><%= badges.badge_template.localized_name %></p>
+            <p class="text-center"><%= badges.id %></p>
           </div>
         <% end %>
       <% end %>

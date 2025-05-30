@@ -24,28 +24,28 @@ class BadgesController < DevelopmentProgramsController
         proficient_project: :badge_template
       )
     @badge_data = if @user.admin? || @user.staff?
-      Badge
-          .joins(:badge_template)
-          .filter_by_attribute(params[:search])
+      Certification
+          .joins(:training)
           .order(user_id: :asc)
           .paginate(page: params[:page], per_page: 20)
           .all
+          
     else
-      Badge
-          .joins(:badge_template)
-          .filter_by_attribute(params[:search])
+      Certification
+          .joins(:training)
           .where(user: @user)
           .paginate(page: params[:page], per_page: 20)
-                    end
+          .all
+    end
     respond_to do |format|
       format.js
       format.html
     end
+    Rails.logger.warn("HI WORLD#{@badge_data.inspect}")
   end
 
   def show
-    @badge = Badge.includes(:badge_template).find(params[:id])
-    @certification = Certification.includes(:training_session).includes(:training).find(@badge.certification_id)
+    @certification = Certification.includes(:training_session).includes(:training).find(params[:id])
     @earner = User.find(@certification.user_id)
   end
 

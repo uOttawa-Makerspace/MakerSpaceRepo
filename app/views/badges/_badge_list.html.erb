@@ -3,7 +3,7 @@
   <h2 style="text-align: center"><b>Badges</b></h2>
 
   <div class="apple_pagination">
-  <%= page_entries_info @badge_data, model: 'badge' %>
+  <%= page_entries_info @badge_data, model: 'badges' %>
   <%= will_paginate @badge_data, container: false %>
 </div>
 <br>
@@ -14,26 +14,22 @@
     <div class="col-md-3">
       <p style="text-align: center">
         <% if badges.user_id.present? %>
-          <%= link_to(badges.issued_to, user_path(User.find(badges.user_id).username)) %>
+          <%= link_to(badges.user.name, user_path(User.find(badges.user_id).username)) %>
         <% else %>
-          <%= badges.issued_to %>
+          <%= badges.user.name %>
         <% end %>
       </p>
 
-      <% if badges.badge_url.present? %>
-        <a style="width: 150px;" target="_blank" href="./badges/<%= badges.id %>">
-          <%= image_tag(badges.badge_template.image_url, style: 'width: inherit;display:block; margin:0 auto;', alt: "Badge image: #{badges.badge_template.localized_name}") %>
-        </a>
-      <% else %>
-        <%= image_tag(badges.badge_template.image_url, :style => 'width: 150px; display:block; margin:0 auto;', 'data-bs-toggle' => 'tooltip', :title => "#{badges.issued_to} didn't accept the badge yet", :alt => "#{badges.issued_to} didn't accept the badge yet") %>
-      <% end %>
+      <a style="width: 150px;" target="_blank" href="./badges/<%= badges.id %>">
+        <%= render "badge_icon", width: 230, height: 230, level: badges.training_session.training.training_level, name_en: badges.training_session.training.name, name_fr: badges.training_session.training.name_fr %>
+      </a>
     </div>
 
   <% end %>
 </div>
 <br>
 <div class="apple_pagination">
-  <%= page_entries_info @badge_data, model: 'badge' %>
+  <%= page_entries_info @badge_data, model: 'badges' %>
   <%= will_paginate @badge_data, container: false %>
 </div>
 

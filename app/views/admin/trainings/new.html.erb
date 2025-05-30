@@ -9,11 +9,6 @@
             <%= f.label 'Name', class: 'form-label' %>
           </div>
 
-          <div class="col-md-12 form-floating my-2">
-            <%= f.text_area :description, placeholder: 'Write an description...', class: 'form-control', required: true %>
-            <%= f.label 'Description', class: 'form-label' %>
-          </div>
-
           <div class="form-check-inline">
           <%= f.collection_check_boxes(:space_ids, @spaces, :id, :name) do |b| %>
             <%= b.label("data-value": b.value, class: 'form-check-label') { b.check_box(class: 'form-check-input', style: 'margin-left:1rem;margin-right:0.5rem;') + b.text } %>
@@ -25,6 +20,25 @@
           <div class="col-md-12 form-group">
             <%= f.label(:skill_id, 'Skill Type', class: 'form-label') %>
             <%= f.select :skill_id, options_for_select(@skills), { include_blank: false }, { class: 'form-control form-select' } %>
+          </div>
+
+          <div class="col-md-12 form-group my-5">
+          <h5>Would you Like to Associate a Badge to This Training?</h5>
+          </div>
+
+          <div class="col-md-12 form-floating my-2">
+            <%= f.text_area :description, placeholder: 'Write an description...', class: 'form-control', required: true %>
+            <%= f.label 'Badge Description', class: 'form-label' %>
+          </div>
+
+          <div class="col-md-12 form-floating my-2">
+            <%= f.label(:training_level, 'Training Level', class: 'form-label') %>
+            <%= f.select :training_level, options_for_select(["I", "II", "III"]), { include_blank: false }, { class: 'form-control form-select' } %>
+          </div>
+
+          <div class="col-md-12 form-floating my-2">
+            <%= f.text_area :list_of_skills, placeholder: 'Write the list of skills which this badge describes...', class: 'form-control', required: true %>
+            <%= f.label 'List of Skills', class: 'form-label' %>
           </div>
 
           <div class="col-md-12 form-group my-5">

@@ -50,6 +50,8 @@ class Admin::TrainingsController < AdminAreaController
       :name,
       :skill_id,
       :description,
+      :training_level,
+      :list_of_skills,
       space_ids: []
     )
   end
