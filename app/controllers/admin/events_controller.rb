@@ -232,11 +232,13 @@ Time.parse(event_params[:utc_start_time]).utc)
 
     event_sources = Event.where(space_id: params[:id])
       .group_by(&:event_type)
-      .map do |event_type, events|
+      .map do |event_type, events|        
       {
         id: event_type,
-        # color: generate_color_from_id(event_type),
         events: events.map do |event|
+          # Skip events that are far in the past
+          next if event.recurrence_rule.empty? && event.end_time < (Time.now.utc - 2.months)
+
           title = if event.title == event.event_type.capitalize && !event.event_assignments.empty?
             "#{event.event_type.capitalize} for #{event.event_assignments.map { |ea| ea.user.name }.join(", ")}"
           else 
@@ -276,17 +278,26 @@ Time.parse(event_params[:utc_start_time]).utc)
     render json: event_sources
   end
 
-  def publish 
-    @event = Event.find(params[:id])
-    if @event.update(draft: false)
-      flash[:notice] = "Event published successfully."
+  def publish
+    if params[:id].blank?
+        start_date = Time.parse(params[:view_start_date]).utc
+        end_date = Time.parse(params[:view_end_date]).utc
+
+        updated_count = Event.where(start_time: start_date..end_date, draft: true).update_all(draft: false)
+
+        return redirect_to admin_calendar_index_path, notice: "#{updated_count} events published."
     else
-      flash[:alert] = "Failed to publish event: #{@event.errors.full_messages.to_sentence}"
+      @event = Event.find(params[:id])
+      if @event.update(draft: false)
+        flash[:notice] = "Event published successfully."
+      else
+        flash[:alert] = "Failed to publish event: #{@event.errors.full_messages.to_sentence}"
+      end
     end
+    
+
     redirect_to admin_calendar_index_path
   end
-
-  private
 
   def parse_rrule_and_dtstart(rule_string)
     lines = rule_string.strip.split("\n")

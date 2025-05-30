@@ -34,7 +34,8 @@ document.addEventListener("turbo:load", async () => {
   let tomSelect;
 
   const fetchedStaffUnavailabilitiesRes = await fetch(
-    "/admin/calendar/json/" + document.getElementById("space_id").value,
+    "/admin/calendar/unavailabilities_json/" +
+      document.getElementById("space_id").value,
   ).catch((error) => console.log(error));
   const fetchedStaffUnavailabilities =
     await fetchedStaffUnavailabilitiesRes.json();

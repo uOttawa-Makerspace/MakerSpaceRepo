@@ -23,6 +23,9 @@ document.addEventListener("turbo:load", async () => {
       right: "timeGridWeek,dayGridMonth",
     },
     scrollTime: "08:00:00",
+    nowIndicator: true,
+    expandRows: true,
+    eventMaxStack: 3,
     selectable: true,
     selectMirror: true,
     selectMinDistance: "30",
@@ -47,6 +50,10 @@ document.addEventListener("turbo:load", async () => {
     },
     eventClick: (info) => eventClick(info.event),
     select: (info) => eventCreate(info),
+    datesSet: (info) => {
+      document.getElementById("view_start_date").value = info.startStr;
+      document.getElementById("view_end_date").value = info.endStr;
+    },
   });
 
   // Init events
@@ -71,7 +78,8 @@ document.addEventListener("turbo:load", async () => {
 
   // Init staff unavailabilities
   const res = await fetch(
-    "/admin/calendar/json/" + document.getElementById("space_id").value,
+    "/admin/calendar/unavailabilities_json/" +
+      document.getElementById("space_id").value,
   ).catch((error) => console.log(error));
   const data = await res.json();
 
@@ -91,36 +99,22 @@ document.addEventListener("turbo:load", async () => {
     );
   });
 
-  // Init other calendars
-  const myCalRes = await fetch(
-    "/admin/calendar/ics_to_json?url=" +
-      encodeURI(
-        "https://outlook.office365.com/owa/calendar/0735be293f0049deb6033980c56fdfc1@uottawa.ca/9e0d5369bcea43c8b2179c4373edc2798901470964911707346/calendar.ics&background_color=SlateBlue&name=Max's+Calendar",
-      ),
+  // Init imported calendars
+  const importedCalendarsRes = await fetch(
+    "/admin/calendar/imported_calendars_json/" +
+      document.getElementById("space_id").value,
   ).catch((error) => console.log(error));
-  const myCalEventSource = await myCalRes.json();
+  const importedCalendars = await importedCalendarsRes.json();
 
-  const gCalRes = await fetch(
-    "/admin/calendar/ics_to_json?url=" +
-      encodeURI(
-        "https://calendar.google.com/calendar/ical/c_g1bk6ctpenjeko2dourrr0h6pc%40group.calendar.google.com/public/basic.ics&background_color=pink&text_color=black&name=Makerspace",
-      ),
-  ).catch((error) => console.log(error));
-  const gCalEventSource = await gCalRes.json();
+  importedCalendars.forEach((eventSource) => {
+    calendar.addEventSource(eventSource);
 
-  calendar.addEventSource(myCalEventSource);
-  calendar.addEventSource(gCalEventSource);
-
-  appendCheckbox(
-    myCalEventSource,
-    document.getElementById("calendars_checkbox_container"),
-    "hidden_calendars",
-  );
-  appendCheckbox(
-    gCalEventSource,
-    document.getElementById("calendars_checkbox_container"),
-    "hidden_calendars",
-  );
+    appendCheckbox(
+      eventSource,
+      document.getElementById("calendars_checkbox_container"),
+      "hidden_calendars",
+    );
+  });
 
   // Render and SHOW IT!!!
   document.getElementById("calendar_container").style.display = "block";

@@ -9,7 +9,7 @@ class Admin::CalendarController < AdminAreaController
     @space_id = @user.space_id || Space.first.id
   end
 
-  def json
+  def unavailabilities_json
     return render json: { error: "Space ID is required" }, status: :bad_request if params[:id].blank?
 
     staff_user_ids = StaffSpace.where(space_id: params[:id]).pluck(:user_id)
@@ -20,6 +20,9 @@ class Admin::CalendarController < AdminAreaController
         name: staff.name,
         color: helpers.generate_color_from_id(staff.id),
         unavailabilities: StaffUnavailability.where(user_id: staff.id).map do |u| 
+          # Skip events that are far in the past
+          next if u.recurrence_rule.empty? && u.end_time < (Time.now.utc - 2.months)
+
           {
             id: u.id,
             title: "#{staff.name} - #{u.title}",
@@ -37,68 +40,74 @@ class Admin::CalendarController < AdminAreaController
     render json: result
   end
 
-  def ics_to_json
-    ics_url = params[:url]
-    name = params[:name].presence || "Unnamed Calendar"
-    background_color = params[:background_color].presence || helpers.generate_color_from_id(ics_url) 
-    text_color = params[:text_color].presence || "#ffffff"
-    group_id = params[:groupId].presence || Digest::MD5.hexdigest(ics_url)
-    
-    return render json: { error: "Missing 'url' parameter" }, status: :bad_request if ics_url.blank?
+  def imported_calendars_json
+    return render json: { error: "Space ID is required" }, status: :bad_request if params[:id].blank?
 
-    begin
-      response = HTTParty.get(ics_url,  timeout: 10 )
-      return render json: { error: "Failed to fetch ICS file" }, status: :bad_gateway unless response.success?
+    calendars = StaffNeededCalendar.where(space_id: params[:id])
+    all_calendars = []
 
-      calendars = ::Icalendar::Calendar.parse(response.body)
-      events = calendars.flat_map do |calendar|
-        calendar.events.map do |event|
-          # Skip events that are fully in the past
-          next if event.rrule.empty? && event.dtend < (Time.now.utc - 1.month)
+    calendars.each do |calendar_record|
+      ics_url = calendar_record.calendar_url
+      name = calendar_record.name.presence || "Unnamed Calendar"
+      background_color = calendar_record.color.presence || helpers.generate_color_from_id(ics_url)
+      group_id = Digest::MD5.hexdigest(ics_url)
 
-          event_hash = {
-                id: event.uid,
-                groupId: group_id,
-                title: event.summary,
-                extendedProps: {
-                  name: name,
-                  description: event.description,
-                },
-                allDay: (true if event.dtstart.to_time == event.dtend.to_time - 1.day)
+      begin
+        response = HTTParty.get(ics_url, timeout: 10)
+        next unless response.success?
 
-              }
+        parsed_cals = ::Icalendar::Calendar.parse(response.body)
+        events = parsed_cals.flat_map do |calendar|
+          calendar.events.map do |event|
+            next if event.rrule.empty? && event.dtend < (Time.now.utc - 2.months)
 
-              # Handle recurring events (seems a tad broken especially with old events and exdate stuff)
-              if event.rrule.any?
-                dtstart = begin
-                  event.dtstart.to_time
-                rescue StandardError
-                  event.dtstart
-                end
+            event_hash = {
+              id: event.uid,
+              groupId: group_id,
+              title: event.summary,
+              extendedProps: {
+                name: name,
+                description: event.description,
+              },
+              allDay: event.dtstart.to_time == event.dtend.to_time - 1.day,
+              start: event.dtstart.to_time.iso8601
+            }
 
-                
-                event_hash[:start] = dtstart.iso8601
-                event_hash[:rrule] = open_struct_to_rrule(event.rrule.first.value, dtstart)
-
-                if event.dtend && event.dtstart
-                  duration_seconds = event.dtend.to_time - event.dtstart.to_time
-                  event_hash[:duration] = ActiveSupport::Duration.build(duration_seconds).iso8601
-                end
-              else
-                # Non-recurring single event
-                event_hash[:start] = event.dtstart.to_time.iso8601
-                event_hash[:end] = event.dtend.to_time.iso8601 if event.dtend
+            if event.rrule.any?
+              dtstart = begin
+                event.dtstart.to_time
+              rescue StandardError
+                event.dtstart
               end
 
-              event_hash
-        end.compact
-      end
+              event_hash[:start] = dtstart.iso8601
+              event_hash[:rrule] = open_struct_to_rrule(event.rrule.first.value, dtstart)
 
-      render json: { events: events, id: group_id, color: background_color, textColor: text_color }
-    rescue StandardError => e
-      render json: { error: "Error parsing ICS: #{e.message}" }, status: :internal_server_error
+              if event.dtend && event.dtstart
+                duration_seconds = event.dtend.to_time - event.dtstart.to_time
+                event_hash[:duration] = ActiveSupport::Duration.build(duration_seconds).iso8601
+              end
+            elsif event.dtend
+              event_hash[:end] = event.dtend.to_time.iso8601
+            end
+
+            event_hash
+          end.compact
+        end
+
+        all_calendars << {
+          id: group_id,
+          color: background_color,
+          events: events
+        }
+      rescue StandardError => e
+        Rails.logger.error("ICS parse error for #{ics_url}: #{e.message}")
+      end
     end
+
+    render json: all_calendars
   end
+
 
   private
 

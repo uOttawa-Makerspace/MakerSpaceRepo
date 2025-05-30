@@ -11,7 +11,7 @@
 
 <section id="calendar_container">
     <div class="row">
-        <div id="checkbox_container" class="col">
+        <div id="checkbox_container" class="col-md-3">
             <button type="button" id="addEventButton" class="btn btn-outline-primary my-2 w-100" data-bs-toggle="modal" data-bs-target="#eventModal">
             + Add Event
             </button>
@@ -22,9 +22,23 @@
             <div id="events_checkbox_container"></div>
             <p class="fw-bold mt-1">Imported Calendars</p>
             <div id="calendars_checkbox_container"></div>
+
+            <div class="my-4">
+                <%= form_with url: "/admin/events/publish", method: :patch, local: false, html: { class: "useTurbo dropdown show" } do %>
+                    <button type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Publish Drafts in Current View
+                    </button>
+
+                    <%= hidden_field_tag :view_start_date, nil, id: "view_start_date" %>
+                    <%= hidden_field_tag :view_end_date, nil, id: "view_end_date" %>
+                    <div class="dropdown-menu">
+                        <%= submit_tag "Confirm Publish", class: "dropdown-item py-2" %>
+                    </div>
+                <% end %>
+            </div>
         </div>
 
-        <div id="calendar" class="col-9"></div>
+        <div id="calendar" class="col-md-9 w-md-100"></div>
     </div>
 </section>
 

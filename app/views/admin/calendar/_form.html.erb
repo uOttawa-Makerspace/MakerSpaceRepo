@@ -1,5 +1,5 @@
 <div class="modal fade" id="eventModal" tabindex="-1" aria-labelledby="eventModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog">
         <div class="modal-content" id="content">
             <div class="modal-header">
                 <h5 class="modal-title" id="eventModalLabel">Add Event</h5>
@@ -12,14 +12,14 @@
                         <label class="form-check-label" for="all_day_checkbox">All Day</label>
                     </div>
 
-                    <div class="row mb-3">
+                    <div class="row">
                         <div class="col">
                         <%= f.label :start_time, "Start Time", class: "form-label", required: "true" %>
-                        <%= f.datetime_local_field :start_time, class: "form-control", id: "start_time_field", required: "true" %>
+                        <%= f.datetime_local_field :start_time, class: "form-control mb-3", id: "start_time_field", required: "true" %>
                         </div>
                         <div class="col">
                         <%= f.label :end_time, "End Time", class: "form-label" %>
-                        <%= f.datetime_local_field :end_time, class: "form-control", id: "end_time_field", disabled: false %>
+                        <%= f.datetime_local_field :end_time, class: "form-control mb-3", id: "end_time_field", disabled: false %>
                         </div>
                     </div>
 
@@ -164,6 +164,20 @@
 </div>
 
 <style>
+    .modal-dialog {
+        margin-left: 0;
+        max-width: 28vw;
+    }
+
+    .modal-content {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+    }
+
+    .modal-backdrop {
+        opacity: 20% !important;
+    }
+
     .modal-footer.second {
         border: 0 !important;
         padding-top: 0 !important;
