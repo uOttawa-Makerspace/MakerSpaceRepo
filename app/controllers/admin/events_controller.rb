@@ -160,7 +160,7 @@ Time.parse(event_params[:utc_start_time]).utc)
         # the dates are already in utc but for consistent formatting with @event, we will do it explicitly
         start_time: Time.parse(event_params[:utc_start_time]).utc,
         end_time: Time.parse(event_params[:utc_end_time]).utc,
-        recurrence_rule: event_params[:recurrence_rule],
+        recurrence_rule: nil,
         created_by_id: current_user.id,
         space_id: event_params[:space_id],
         event_type: event_params[:event_type]
@@ -235,7 +235,7 @@ Time.parse(event_params[:utc_start_time]).utc)
       .map do |event_type, events|
       {
         id: event_type,
-        color: generate_color_from_id(event_type),
+        # color: generate_color_from_id(event_type),
         events: events.map do |event|
           title = if event.title == event.event_type.capitalize && !event.event_assignments.empty?
             "#{event.event_type.capitalize} for #{event.event_assignments.map { |ea| ea.user.name }.join(", ")}"
@@ -246,8 +246,15 @@ Time.parse(event_params[:utc_start_time]).utc)
           # seconds to milliseconds because javascript
           duration = (event.end_time.to_time - event.start_time.to_time) * 1000
 
+          background = "linear-gradient(to right, #{event.event_assignments.map.with_index do |ea, i|
+ c = helpers.generate_color_from_id(ea.user_id)
+ s = (100.0 / event.event_assignments.size) * i
+ e = (100.0 / event.event_assignments.size) * (i + 1)
+ "#{c} #{s}%, #{c} #{e}%" end.join(', ')});#{' opacity: 0.6;' if event.draft}"
+
+
           {
-            id: event.id,
+            id: "event-#{event.id}",
             title: title,
             start: event.start_time.iso8601,
             end: event.end_time.iso8601,
@@ -258,9 +265,9 @@ Time.parse(event_params[:utc_start_time]).utc)
               draft: event.draft,
               description: event.description,
               eventType: event.event_type,
-              assigned_users: event.event_assignments.map { |ea| { id: ea.user.id, name: ea.user.name } },
+              assignedUsers: event.event_assignments.map { |ea| { id: ea.user.id, name: ea.user.name } },
+              background: background
             },
-            color: event.draft ? generate_color_from_id(event.event_type, 0.25) : ""
           }
         end
       }
@@ -311,25 +318,5 @@ Time.parse(event_params[:utc_start_time]).utc)
   def remove_until_from_rrule(rrule_line)
     rrule_line = rrule_line.gsub(/;UNTIL=[^;Z]*Z/, '') if rrule_line.include?('UNTIL=')
     rrule_line
-  end
-
-  def generate_color_from_id(id, opacity = 1.0)
-    hash = if id.to_i.zero?
-      id.to_s.match?(/^\d+$/) ? id.to_i : id.to_s.each_byte.reduce(0) { |sum, b| sum * 31 + b }
-    else
-      id.to_i
-    end
-    
-    h = (hash * 137.5) % 360   
-    s = 80 + (hash % 15)       
-    l = 50 + (hash % 10)       
-    
-    # Convert HSL to RGB (compact version)
-    c = (1 - (2 * l/100.0 - 1).abs) * s/100.0
-    x = c * (1 - ((h/60.0) % 2 - 1).abs)
-    m = l/100.0 - c/2.0
-    r, g, b = [ [c,x,0], [x,c,0], [0,c,x], [0,x,c], [x,0,c], [c,0,x] ][(h/60).to_i % 6]
-    
-    "rgba(#{((r + m) * 255).round}, #{((g + m) * 255).round}, #{((b + m) * 255).round}, #{opacity})"
   end
 end

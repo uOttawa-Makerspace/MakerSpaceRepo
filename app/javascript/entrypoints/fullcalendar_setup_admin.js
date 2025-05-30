@@ -36,6 +36,14 @@ document.addEventListener("turbo:load", async () => {
             : ""),
         html: true,
       });
+
+      if (info.event.extendedProps.background) {
+        info.el.setAttribute(
+          "style",
+          `
+          background: ${info.event.extendedProps.background}`,
+        );
+      }
     },
     eventClick: (info) => eventClick(info.event),
     select: (info) => eventCreate(info),
@@ -69,10 +77,11 @@ document.addEventListener("turbo:load", async () => {
 
   const staffUnavailabilitiesEventSources = generateEventsFromStaffData(data);
 
-  createAllStaffCheckbox();
+  createAllStaffCheckboxes();
 
   staffUnavailabilitiesEventSources.forEach((eventSource) => {
     calendar.addEventSource(eventSource);
+    // Unavails cb
     appendCheckbox(
       eventSource,
       document.getElementById("staff_checkbox_container"),
@@ -125,7 +134,7 @@ document.addEventListener("turbo:load", async () => {
    * @param {Array} hiddenStaff - The array of staff IDs that are hidden from query params. This is used to filter out events for those staff members.
    * @returns {Object} - FullCalendar event source object.
    * @description This function generates events from the staff data returned from the server.
-   * THIS SHOULD PROBABLY BE DONE IN THE CONTROLLER
+   * THIS SHOULD PROBABLY BE DONE IN THE CONTROLLER BUT THE DATA OBJECT IS REALLY NICE TO USE TO TRACK UNAVAILS IN THE MODAL
    */
   function generateEventsFromStaffData(data) {
     try {
@@ -180,14 +189,14 @@ document.addEventListener("turbo:load", async () => {
                 },
               },
             ],
-            id: staff.id.toString(),
+            id: staff.id,
             color: staff.color,
           });
 
         // Unshift to prepend to ensure any staff who haven't set their unavailability yet are at the bottom
         allUnavails.unshift({
           events: unavails,
-          id: staff.id.toString(),
+          id: staff.id,
           color: staff.color,
         });
       });
@@ -202,18 +211,43 @@ document.addEventListener("turbo:load", async () => {
    * @description Creates a checkbox for all staff members to toggle visibility of all staff checkboxes and their events.
    * @returns {void}
    */
-  function createAllStaffCheckbox() {
+  function createAllStaffCheckboxes() {
     const allCheckboxDiv = document.createElement("div");
-    allCheckboxDiv.className = "form-check m-2 d-flex align-items-center gap-2";
+    allCheckboxDiv.className = "m-2 d-flex align-items-center gap-1";
 
+    const { checkbox: allEventsCheckbox, label: allEventsLabel } =
+      createCheckboxElement("all", " / ", "#919191", "all_events_checkbox");
     const { checkbox: allCheckbox, label: allLabel } = createCheckboxElement(
       "all",
       "All Staff",
       "#919191",
-      " all_checkbox",
+      "all_checkbox",
     );
+
     const container = document.getElementById("staff_checkbox_container");
     const urlParams = new URLSearchParams(window.location.search);
+
+    // For staff events
+    const hiddenStaffEvents = urlParams.get("hidden_staff_events") || "";
+    const hiddenStaffEventsArray = hiddenStaffEvents
+      .split(",")
+      .filter((id) => id !== "");
+    allEventsCheckbox.checked = hiddenStaffEventsArray.length === 0;
+    allEventsCheckbox.addEventListener("change", (e) => {
+      toggleAllStaffEventsCheckboxes();
+    });
+    const toggleAllStaffEventsCheckboxes = () => {
+      const checkboxes = container.querySelectorAll(
+        "input[type='checkbox'].staff_events",
+      );
+      checkboxes.forEach((checkbox) => {
+        checkbox.checked = allEventsCheckbox.checked;
+        const event = new Event("change");
+        checkbox.dispatchEvent(event);
+      });
+    };
+
+    // For staff unavails
     const hiddenStaff = urlParams.get("hidden_staff") || "";
     const hiddenStaffArray = hiddenStaff.split(",").filter((id) => id !== "");
     allCheckbox.checked = hiddenStaffArray.length === 0;
@@ -225,11 +259,12 @@ document.addEventListener("turbo:load", async () => {
         "input[type='checkbox'].staff",
       );
       checkboxes.forEach((checkbox) => {
+        // Unforch we can't just dispatch the change event here since we aren't toggling the display property, we're adding and remove event sources... so we just need to check if the event source is already shown or hidden and go from there
         checkbox.checked = allCheckbox.checked;
         updateHiddenParam(checkbox.value, "hidden_staff", !allCheckbox.checked);
 
         const eventSource = staffUnavailabilitiesEventSources.find(
-          (source) => source.id === checkbox.value,
+          (source) => source.id.toString() === checkbox.value,
         );
         const eventSourceFromCalendar = calendar.getEventSourceById(
           checkbox.value,
@@ -243,6 +278,8 @@ document.addEventListener("turbo:load", async () => {
       });
     };
 
+    allCheckboxDiv.appendChild(allEventsCheckbox);
+    allCheckboxDiv.appendChild(allEventsLabel);
     allCheckboxDiv.appendChild(allCheckbox);
     allCheckboxDiv.appendChild(allLabel);
     container.appendChild(allCheckboxDiv);
@@ -275,7 +312,7 @@ document.addEventListener("turbo:load", async () => {
     const isHidden = hiddenCalendarsArray.includes(eventSource.id.toString());
 
     const checkboxDiv = document.createElement("div");
-    checkboxDiv.className = "form-check m-2 d-flex align-items-center gap-2";
+    checkboxDiv.className = "m-2 d-flex align-items-center gap-1";
 
     const { checkbox, label } = createCheckboxElement(
       eventSource.id,
@@ -305,6 +342,53 @@ document.addEventListener("turbo:load", async () => {
     checkboxDiv.appendChild(label);
     container.appendChild(checkboxDiv);
 
+    // Not the best solution, but need a second set of checkboxes for staff specifically
+    if (classes.includes("staff")) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const hiddenStaffEvents = urlParams.get("hidden_staff_events") || "";
+      const hiddenStaffEventsArray = hiddenStaffEvents
+        .split(",")
+        .filter((id) => id !== "");
+
+      const isStaffEventsHidden = hiddenStaffEventsArray.includes(
+        eventSource.id.toString(),
+      );
+
+      const { checkbox: eventsCheckbox, label: eventsLabel } =
+        createCheckboxElement(
+          `events-${eventSource.id}`,
+          " / ",
+          eventSource.color,
+          "staff_events",
+        );
+      eventsCheckbox.checked = !isStaffEventsHidden;
+
+      eventsCheckbox.addEventListener("change", (e) => {
+        const userIdsOfEventsToHide = updateHiddenParam(
+          eventSource.id,
+          "hidden_staff_events",
+          !e.target.checked,
+        );
+
+        eventsData.forEach((eventSource) => {
+          eventSource.events.forEach((event) => {
+            const assignedUserIds = (
+              event.extendedProps.assignedUsers || []
+            ).map((u) => u.id);
+            const allUsersHidden = assignedUserIds.every((id) =>
+              userIdsOfEventsToHide.includes(id.toString()),
+            );
+            calendar
+              .getEventById(event.id)
+              .setProp("display", allUsersHidden ? "none" : "auto");
+          });
+        });
+      });
+
+      checkboxDiv.insertBefore(eventsLabel, checkboxDiv.firstChild);
+      checkboxDiv.insertBefore(eventsCheckbox, checkboxDiv.firstChild);
+    }
+
     // Also remove the event source if it is hidden
     if (isHidden) {
       calendar.getEventSourceById(eventSource.id).remove();
@@ -316,7 +400,7 @@ document.addEventListener("turbo:load", async () => {
    * @param {String} name - The name of the checkbox (displayed next to the checkbox).
    * @param {String} color - The color of the checkbox (used for styling).
    * @param {String} classes - Additional classes to add to the checkbox.
-   * @returns {Object} - An object containing the checkbox and label elements.
+   * @returns {Object} An object containing the checkbox and label elements.
    * @description Creates a checkbox element with the given parameters.
    */
   function createCheckboxElement(id, name, color, classes = "") {
@@ -342,6 +426,7 @@ document.addEventListener("turbo:load", async () => {
    * @param {string} id - The ID of the checkbox (and, as a result, the staff/event id).
    * @param {string} param - The URL parameter to update.
    * @param {boolean} shouldHide - Whether to hide or show the event.
+   * @returns {Array} - An array of the hidden params
    * @description Updates the URL parameter and refreshes the calendar events.
    */
   function updateHiddenParam(id, param, shouldHide) {
@@ -372,5 +457,7 @@ document.addEventListener("turbo:load", async () => {
     window.history.pushState({}, "", url.toString());
 
     calendar.refetchEvents();
+
+    return hiddenParamArray;
   }
 });

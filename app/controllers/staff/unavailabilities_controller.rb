@@ -98,8 +98,6 @@ Time.parse(staff_params[:utc_start_time]).utc)
       exclusion_start_time = combine_date_and_time(Time.parse(staff_params[:utc_start_time]).utc, 
 @staff_unavailability.start_time.utc)
 
-      Rails.logger.warn("EXDATE: #{Time.parse(staff_params[:utc_start_time]).utc} AND #{@staff_unavailability.start_time.utc} EQUALS $#{exclusion_start_time}")
-
       updated_rule = add_exdate_to_rrule(@staff_unavailability.recurrence_rule, exclusion_start_time)
 
       @staff_unavailability.update(recurrence_rule: updated_rule)

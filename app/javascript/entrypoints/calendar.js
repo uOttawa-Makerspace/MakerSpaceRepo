@@ -31,13 +31,14 @@ export function addEventClick() {
 
 export function eventClick(eventImpl) {
   const event = eventImpl._def;
+  const id = eventImpl.id.replace("event-", "");
 
   // Only edit events (ex. shifts, trainings, meetings, other)
   if (!event.extendedProps.eventType) return;
 
   // Set form action to edit path
   const form = document.querySelector("#eventModal form");
-  form.action = `/admin/events/${eventImpl.id}`;
+  form.action = `/admin/events/${id}`;
   const methodInput = document.createElement("input");
   methodInput.type = "hidden";
   methodInput.name = "_method";
@@ -122,7 +123,7 @@ export function eventClick(eventImpl) {
 
   // Set the staff members
   const staffSelect = document.getElementById("staff_select");
-  const assignedStaff = event.extendedProps.assigned_users || [];
+  const assignedStaff = event.extendedProps.assignedUsers || [];
   // append the current staff members to the select
   assignedStaff.forEach((staff) => {
     const option = document.createElement("option");
@@ -149,7 +150,7 @@ export function eventClick(eventImpl) {
   // Handle publish button
   const publishForm = document.getElementById("publish_form");
   if (event.extendedProps.draft) {
-    publishForm.action = `/admin/events/${eventImpl.id}/publish`;
+    publishForm.action = `/admin/events/${id}/publish`;
     publishForm.style.display = "block";
   } else {
     publishForm.style.display = "none";
@@ -170,10 +171,8 @@ export function eventClick(eventImpl) {
     allForm.style.display = "none";
   }
 
-  const id = eventImpl.id;
-
   document.querySelectorAll(".delete_start_date").forEach((e) => {
-    e.value = parseLocalDatetimeString(event.start).toISOString();
+    e.value = parseLocalDatetimeString(eventImpl.start).toISOString();
   });
 
   singleForm.action = `/admin/events/${id}/delete_with_scope`;

@@ -18,7 +18,7 @@ class Admin::CalendarController < AdminAreaController
       {
         id: staff.id,
         name: staff.name,
-        color: generate_color_from_id(staff.id),
+        color: helpers.generate_color_from_id(staff.id),
         unavailabilities: StaffUnavailability.where(user_id: staff.id).map do |u| 
           {
             id: u.id,
@@ -40,7 +40,7 @@ class Admin::CalendarController < AdminAreaController
   def ics_to_json
     ics_url = params[:url]
     name = params[:name].presence || "Unnamed Calendar"
-    background_color = params[:background_color].presence || generate_color_from_id(ics_url) 
+    background_color = params[:background_color].presence || helpers.generate_color_from_id(ics_url) 
     text_color = params[:text_color].presence || "#ffffff"
     group_id = params[:groupId].presence || Digest::MD5.hexdigest(ics_url)
     
@@ -104,22 +104,6 @@ class Admin::CalendarController < AdminAreaController
 
   def set_default_space
     @space_id = current_user.space_id || Space.first.id
-  end
-
-  def generate_color_from_id(user_id)
-    user_id = user_id.to_i
-
-    h = (user_id * 137.5) % 360   
-    s = 80 + (user_id % 15)       
-    l = 50 + (user_id % 10)       
-    
-    # Convert HSL to RGB (compact version)
-    c = (1 - (2 * l/100.0 - 1).abs) * s/100.0
-    x = c * (1 - ((h/60.0) % 2 - 1).abs)
-    m = l/100.0 - c/2.0
-    r, g, b = [ [c,x,0], [x,c,0], [0,c,x], [0,x,c], [x,0,c], [c,0,x] ][(h/60).to_i % 6]
-    
-    "#%02x%02x%02x" % [(r+m)*255, (g+m)*255, (b+m)*255].map(&:round) # rubocop:disable Style/FormatStringToken,Style/FormatString
   end
 
   def open_struct_to_rrule(recur, dtstart)
