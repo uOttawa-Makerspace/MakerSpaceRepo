@@ -21,7 +21,7 @@ class Admin::CalendarController < AdminAreaController
         color: helpers.generate_color_from_id(staff.id),
         unavailabilities: StaffUnavailability.where(user_id: staff.id).map do |u| 
           # Skip events that are far in the past
-          next if u.recurrence_rule.empty? && u.end_time < (Time.now.utc - 2.months)
+          next if u.recurrence_rule.blank? && u.end_time < (Time.now.utc - 2.months)
 
           {
             id: u.id,
