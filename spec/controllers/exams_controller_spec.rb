@@ -36,16 +36,16 @@ RSpec.describe ExamsController, type: :controller do
           create(:training_session_with_users, training: training)
         user = create(:user, :regular_user)
         training_session.users << user
-        expect {
+        expect do
           @controller.send(
             :create_exam_and_exam_questions,
             user,
             training_session
           )
-        }.to change { Exam.count }.by(1).and change { ExamQuestion.count }.by(
+        end.to change { Exam.count }.by(1).and change { ExamQuestion.count }.by(
                 $n_exams_question
               )
-        expect(Exam.last.category).to eq(training_session.training.name)
+        expect(Exam.last.category).to eq(training_session.training.name_en)
         expect(flash[:notice]).to eq(
           "You've successfully sent exams to all users in this training."
         )
@@ -124,12 +124,12 @@ RSpec.describe ExamsController, type: :controller do
         training_session =
           create(:training_session_with_users, training: training)
         n_users = training_session.users.count
-        expect {
+        expect do
           get :create_from_training,
               params: {
                 training_session_id: training_session.id
               }
-        }.to change(Exam, :count).by(n_users).and change(
+        end.to change(Exam, :count).by(n_users).and change(
                 ExamQuestion,
                 :count
               ).by(n_users * $n_exams_question)
@@ -151,13 +151,13 @@ RSpec.describe ExamsController, type: :controller do
         training_session =
           create(:training_session_with_users, training: training)
         user = create(:user, :regular_user)
-        expect {
+        expect do
           get :create_for_single_user,
               params: {
                 user_id: user.id,
                 training_session_id: training_session.id
               }
-        }.to change(Exam, :count).by(1).and change(ExamQuestion, :count).by(
+        end.to change(Exam, :count).by(1).and change(ExamQuestion, :count).by(
                 $n_exams_question
               )
         expect(flash[:notice]).to eq(

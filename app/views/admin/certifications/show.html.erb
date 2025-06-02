@@ -4,7 +4,7 @@
             <p>image goes here</p>
         </div>
         <div class="col-8 py-3 px-my-5">
-            <h1><%= @certification.training_session.training.name %></h1>
+            <h1><%= @certification.training_session.training.localized_name %></h1>
             <h4 class="my-3 fw-bold">Badge Owner: <%= @earner.name %></h4>
             <h5 class="my-3">Issued by CGEC/CEED - uOttawa on <%= @certification.created_at.to_date.to_fs :long_ordinal %></h5>
             <p><%= @certification.training_session.training.description %></p>

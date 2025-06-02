@@ -289,7 +289,7 @@ class Admin::ReportGeneratorController < AdminAreaController
       end
 
       # get cert training topic (?)
-      training_name = cert.training.name
+      training_name = cert.training.name_en
       if !@training_count.has_key?(training_name)
         @training_count[training_name] = 1
       else
@@ -341,7 +341,7 @@ class Admin::ReportGeneratorController < AdminAreaController
         @space_count["unknown"] += 1
       end
 
-      training_name = training_session.training.name
+      training_name = training_session.training.name_en
       if !@trainings_count.has_key?(training_name)
         @trainings_count[training_name] = 1
         @attendance_count[training_name] = training_session.users.count

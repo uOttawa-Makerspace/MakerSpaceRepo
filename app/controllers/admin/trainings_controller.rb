@@ -5,7 +5,7 @@ class Admin::TrainingsController < AdminAreaController
   before_action :set_skills, only: %i[new edit]
 
   def index
-    @trainings = Training.all.order(:name)
+    @trainings = Training.all.order(:name_en)
   end
 
   def new
@@ -47,7 +47,8 @@ class Admin::TrainingsController < AdminAreaController
 
   def training_params
     params.require(:training).permit(
-      :name,
+      :name_en,
+      :name_fr,
       :skill_id,
       :description,
       :training_level,

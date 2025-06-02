@@ -117,7 +117,7 @@
                     <br>
                     <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello <%= @user.name %>,</p>
                     <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-                      You are receiving this email because you were in the <b><%= @training_session.training.name %> at uOttawa.</b> </br>
+                      You are receiving this email because you were in the <b><%= @training_session.training.localized_name %> at uOttawa.</b> </br>
                       Sign in to your account: <a href="http://makerepo.com/login" target="_blank"> Log In </a> <br />
                       and check all the exams available <%= link_to 'Exams', exams_url %>. <br />
                       You have 3 days to complete the exam. <br />

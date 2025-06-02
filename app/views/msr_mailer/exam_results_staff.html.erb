@@ -118,7 +118,7 @@
                     <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello <%= @user.name %>,</p>
                     <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
                       You are receiving this email because you were the responsible staff for the
-                      <b><%= @training_session.training.name %> at uOttawa (<%= @training_session.created_at.strftime('%b %e %Y') %>)</b> </br>
+                      <b><%= @training_session.training.localized_name %> at uOttawa (<%= @training_session.created_at.strftime('%b %e %Y') %>)</b> </br>
                       <%= @user.name.titleize %> finished the exam and his/her score was <%= @exam.score %>. Hence, He/she <%= @exam.status %> the exam. <br />
                       <% unless @exam.status == "passed" %>
                         If this is his/her first try, he/she will be able to try one more time. <br />

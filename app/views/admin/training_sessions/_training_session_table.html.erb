@@ -86,7 +86,7 @@
         <td>
           <%= sesh.created_at.to_formatted_s :long %>
         </td>
-        <td><%= sesh.training.name %></td>
+        <td><%= sesh.training.localized_name %></td>
         <td>
           <%= link_to sesh.user.name, user_url(sesh.user.username), class: 'text-blue-500 hover:underline' %>
         </td>

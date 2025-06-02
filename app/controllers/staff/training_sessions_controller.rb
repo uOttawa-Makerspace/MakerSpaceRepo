@@ -65,12 +65,10 @@ class Staff::TrainingSessionsController < StaffDashboardController
   end
 
   def update
-    if changed_params["user_id"].present?
-      unless @user.admin?
+    if changed_params["user_id"].present? && !@user.admin?
         flash[:alert] = "You're not an admin."
         redirect_back(fallback_location: root_path) and return
       end
-    end
 
     @current_training_session.update(changed_params)
 
@@ -86,11 +84,10 @@ class Staff::TrainingSessionsController < StaffDashboardController
             )
           next if cert.blank?
 
-          unless cert.destroy
-            flash[
-              :alert
-            ] = "Error deleting #{user.username}'s #{@current_training_session.training.name} certification."
-          end
+          next if cert.destroy
+          flash[
+            :alert
+          ] = "Error deleting #{user.username}'s #{@current_training_session.training.name_en} certification."
         end
     end
 
@@ -166,12 +163,11 @@ class Staff::TrainingSessionsController < StaffDashboardController
           ] != "true"
         end
       end
-      unless certification.save
-        error = true
-        flash[
-          :alert
-        ] = "#{graduate.username}'s certification has not saved properly!"
-      end
+      next if certification.save
+      error = true
+      flash[
+        :alert
+      ] = "#{graduate.username}'s certification has not saved properly!"
     end
     respond_to do |format|
       format.html do
@@ -270,10 +266,10 @@ class Staff::TrainingSessionsController < StaffDashboardController
   end
 
   def verify_ownership
-    unless @user.admin? || @current_training_session.user == @user
+    return if @user.admin? || @current_training_session.user == @user
       flash[:alert] = "Can't access training session"
       redirect_to new_staff_training_session_path
-    end
+    
   end
 
   def set_courses_and_levels

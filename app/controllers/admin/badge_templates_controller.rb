@@ -5,7 +5,7 @@ class Admin::BadgeTemplatesController < AdminAreaController
 
   def index
     @badge_template =
-      BadgeTemplate.all.order(updated_at: :desc, badge_name: :asc)
+      BadgeTemplate.all.order(updated_at: :desc, name_en: :asc)
     @template_usage = Badge.group(:badge_template_id).count
     @templates_at_service =
       BadgeTemplate.acclaim_api_get_all_badge_templates["data"].map do |x|

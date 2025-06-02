@@ -19,7 +19,7 @@
                           <div class="accordion-button collapsed px-5" type="button" data-bs-toggle="collapse" data-bs-target="#training-<%= training.id %>" aria-expanded="false" aria-controls="training-<%= training.id %>">
                             <div class="col-4 float-end"></div>
                             <div class="col-4 text-center">
-                              <button class="btn btn-link" type="button"><%= training.name %></button>
+                              <button class="btn btn-link" type="button"><%= training.localized_name %></button>
                             </div>
                             <div class="col-4 pe-3">
                               <%= training_status(training.id, current_user.id).html_safe %>
@@ -63,7 +63,7 @@
       <div class="mt-3 row row-cols-5">
         <% @certifications.each do |cert| %>
           <div class="col">
-            <b><%= cert.training.name %> </b> <br/>
+            <b><%= cert.training.localized_name %> </b> <br/>
             <%= image_tag(cert.get_badge_path, class: 'skills-badges', alt: 'Medal image') %>
             <br/>
             <%= cert.training_session.level %>
@@ -72,7 +72,7 @@
 
         <% @remaining_trainings.each do |training| %>
           <div class="col">
-            <b><%= training.name %> </b> <br/>
+            <b><%= training.localized_name %> </b> <br/>
             <%= image_tag('badges/none.png', class: 'skills-badges', alt: 'No medal picture') %>
             <br/>
             None

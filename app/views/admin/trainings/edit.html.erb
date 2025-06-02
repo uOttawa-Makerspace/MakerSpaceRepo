@@ -1,12 +1,18 @@
 <section>
-  <h2 class="text-center fw-bold py-3">Edting <b><%= @training.name.capitalize %></b> Training</h2>
+  <h2 class="text-center fw-bold py-3">Edting <b><%= @training.localized_name.capitalize %></b> Training</h2>
   <%= form_for @training, url: { controller: 'admin/trainings', action: 'update' } do |f| %>
     <div class="container">
       <div class="row">
         <div class="col-md-12 form-floating">
-          <%= f.text_field :name, placeholder: 'Write an unique name...', class: 'form-control', required: true %>
-          <%= f.label :name, 'Name:', class: 'form-label' %>
+          <%= f.text_field :name_en, placeholder: 'Write an unique name...', class: 'form-control', required: true %>
+          <%= f.label :name_en, 'Name:', class: 'form-label' %>
         </div>
+
+        <div class="col-md-12 form-floating">
+            <%= f.text_field :name_fr, placeholder: 'Ecrir un nom...', class: 'form-control', required: true %>
+            <%= f.label 'Nom (Français)', class: 'form-label' %>
+          </div>
+          
         <br />
         <div class="col-md-12 form-floating">
             <%= f.text_area :description, placeholder: 'Write an description...', class: 'form-control my-2', required: true %>
