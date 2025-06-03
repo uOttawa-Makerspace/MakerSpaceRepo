@@ -154,29 +154,28 @@ Time.parse(event_params[:utc_start_time]).utc)
 
       @event.update(recurrence_rule: updated_rule)
 
-      Event.create!(
+      @new_event = Event.create!(
         title: title,
         description: event_params[:description],
         # the dates are already in utc but for consistent formatting with @event, we will do it explicitly
         start_time: Time.parse(event_params[:utc_start_time]).utc,
         end_time: Time.parse(event_params[:utc_end_time]).utc,
-        recurrence_rule: nil,
+        recurrence_rule: '',
         created_by_id: current_user.id,
         space_id: event_params[:space_id],
         event_type: event_params[:event_type]
       )
 
       # Update event assignments
-      @event.event_assignments.destroy_all
       unless participants.empty?
         @event_assignments = participants.map do |staff_id|
           EventAssignment.new(
-            event: @event,
+            event: @new_event,
             user_id: staff_id
           )
         end
-        @event.event_assignments << @event_assignments
-      end
+        @new_event.event_assignments << @event_assignments
+      end 
 
       flash[:notice] = "This event occurrence updated successfully."
     end
@@ -283,7 +282,11 @@ Time.parse(event_params[:utc_start_time]).utc)
       start_date = Time.parse(params[:view_start_date]).utc
       end_date = Time.parse(params[:view_end_date]).utc
 
-      updated_count = Event.where(start_time: start_date..end_date, draft: true).update_all(draft: false)
+      updated_count = 0
+
+      Event.where(start_time: start_date..end_date, draft: true).find_each do |event|
+        updated_count += 1 if event.update(draft: false)
+      end
 
       return redirect_to admin_calendar_index_path, notice: "#{updated_count} events published."
     else
