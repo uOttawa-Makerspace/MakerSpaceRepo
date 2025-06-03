@@ -30,6 +30,9 @@
           <div class="col-md-12 form-group my-5">
           <h5>Would you Like to Associate a Badge to This Training?</h5>
           </div>
+          <div class="form-check-inline">
+          <%= f.check_box :has_badge %>
+          </div>
 
           <div class="col-md-12 form-floating my-2">
             <%= f.text_area :description, placeholder: 'Write an description...', class: 'form-control', required: true %>

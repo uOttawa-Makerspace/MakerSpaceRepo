@@ -53,6 +53,7 @@ class Admin::TrainingsController < AdminAreaController
       :description,
       :training_level,
       :list_of_skills,
+      :has_badge,
       space_ids: []
     )
   end

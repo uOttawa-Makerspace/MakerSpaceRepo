@@ -10,7 +10,6 @@ class User < ApplicationRecord
   has_and_belongs_to_many :repositories, dependent: :destroy
   has_many :certifications,
            class_name: "Certification",
-           foreign_key: "user_id",
            dependent: :destroy
   has_many :demotion_staff,
            class_name: "Certification",
@@ -52,11 +51,10 @@ class User < ApplicationRecord
   has_many :coupon_codes, dependent: :destroy # GoDaddy temp replacement for discount codes
   has_one :key_request,
           class_name: "KeyRequest",
-          foreign_key: "user_id",
           dependent: :destroy
   has_many :key_transactions, dependent: :destroy
   has_one :key_certification, dependent: :destroy
-  has_many :keys, class_name: "Key", foreign_key: "user_id"
+  has_many :keys, class_name: "Key"
   has_many :team_memberships, dependent: :destroy
   has_many :teams, through: :team_memberships
   has_many :space_manager_joins, dependent: :destroy
@@ -266,11 +264,11 @@ class User < ApplicationRecord
     user.update(auth_attempts: user.auth_attempts + 1)
     if user.auth_attempts >= MAX_AUTH_ATTEMPTS
       user.update(locked: true)
-      user.update(locked_until: 5.minute.from_now)
+      user.update(locked_until: 5.minutes.from_now)
       user_hash = Rails.application.message_verifier("unlock").generate(user.id)
       MsrMailer.unlock_account(user, user_hash).deliver_now
     end
-    return nil
+    nil
   end
 
   def self.username_or_email(username_email)
@@ -295,8 +293,7 @@ class User < ApplicationRecord
   end
 
   def student?
-    identity == "grad" || identity == "undergrad" ||
-      identity == "international_grad" || identity == "international_undergrad"
+    ["grad", "undergrad", "international_grad", "international_undergrad"].include?(identity)
   end
 
   def admin?
@@ -328,9 +325,7 @@ class User < ApplicationRecord
   end
 
   def internal?
-    identity == "faculty_member" || identity == "grad" ||
-      identity == "undergrad" || identity == "international_grad" ||
-      identity == "international_undergrad"
+    ["faculty_member", "grad", "undergrad", "international_grad", "international_undergrad"].include?(identity)
   end
 
   def self.to_csv(attributes)
@@ -345,7 +340,7 @@ class User < ApplicationRecord
 
   def get_certifications_names
     cert = []
-    certifications.each { |c| cert << c.training.name }
+    certifications.each { |c| cert << c.training.name_en }
     cert
   end
 
@@ -369,13 +364,12 @@ class User < ApplicationRecord
     certifications.each do |cert|
       training_ids << cert.training_session.training.id
     end
-    path =
-      if training_ids.include?(training_id)
+    if training_ids.include?(training_id)
         "badges/bronze.png"
       else
         "badges/none.png"
       end
-    path
+    
   end
 
   def remaining_trainings
@@ -415,7 +409,7 @@ class User < ApplicationRecord
   end
 
   def department
-    # HACK some programs include words like 'in' that aren't
+    # HACK: some programs include words like 'in' that aren't
     # in the program list. try to clean up before processing
     # So this might return nil or 'Non-Engineering' too
     program_alt = program.gsub(" in", "")
@@ -434,12 +428,12 @@ class User < ApplicationRecord
     if student?
       year = year_of_study.to_s
       if I18n.locale == :fr
-        case year.last
+        year += case year.last
         when "1"
-          year += "ère"
+          "ère"
         else
-          year += "ème"
-        end
+          "ème"
+                end
       elsif I18n.locale == :en
         year = year.to_i.ordinalize
       end

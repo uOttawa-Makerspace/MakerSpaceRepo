@@ -4,12 +4,12 @@
     </style>
 
     <g
-        <% if level == "I" %>
+        <% if skill == 1 %>
             fill="#488b2c"
-        <% elsif level == "II" %>
+        <% elsif skill == 2 %>
             fill="#dc4720"
         <% else %>
-            fill="#488b2c"
+            fill="#3f7ed1"
         <% end %>
     >
         <circle cx="50%" cy="50%" r="50%" />
@@ -37,7 +37,13 @@
         <% else %>
             <tspan x="50%" dy="1.1em" font-size="0.6rem"><%= name_en %></tspan>
         <% end %>
-        <tspan x="50%" dy="1.1em" font-size="0.6rem">I</tspan>
+        <% if level == "I" %>
+            <tspan x="50%" dy="1.1em" font-size="0.6rem">I</tspan>
+        <% elsif level == "II" %>
+            <tspan x="50%" dy="1.1em" font-size="0.6rem">II</tspan>
+        <% else %>
+            <tspan x="50%" dy="1.1em" font-size="0.6rem">III</tspan>
+        <% end %>
     </text>
 
     <path d="m 6 50

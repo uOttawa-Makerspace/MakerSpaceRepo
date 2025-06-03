@@ -29,7 +29,7 @@
     <!-- Training Dropdown -->
     <div class="col-md-2">
       <%= label_tag :training, 'Training:', class: 'form-label' %>
-      <%= select_tag :training, options_from_collection_for_select(Training.order(:name), :id, :name, params[:training]), include_blank: 'All', class: 'form-select' %>
+      <%= select_tag :training, options_from_collection_for_select(Training.order(:name_en), :id, :name_en, params[:training]), include_blank: 'All', class: 'form-select' %>
     </div>
     <!-- Trainer Search -->
     <div class="col-md-2">

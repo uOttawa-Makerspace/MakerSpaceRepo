@@ -4,12 +4,12 @@
     </style>
 
     <g
-        <% if level == :one %>
+        <% if skill == 1 %>
             fill="#488b2c"
-        <% elsif level == :two %>
+        <% elsif skill == 2 %>
             fill="#dc4720"
         <% else %>
-            fill="#488b2c"
+            fill="#3f7ed1"
         <% end %>
     >
         <circle cx="50%" cy="50%" r="50%" />
@@ -19,13 +19,31 @@
     <line x1="6%" y1="50%" x2="94" y2="50%" stroke="black"/>
 
     <text x="50%" y="65%" fill="white" text-anchor="middle" >
-        <% 
-        size = "0.6rem"
-        size = "0.4rem" if name_fr.chars.count > 18
-        %>
-        <tspan x="50%" font-size="<%= size %>" id="name_fr"><%= name_fr %></tspan>
-        <tspan x="50%" dy="1.1em" font-size="0.6rem" id="name_en"><%= name_en %></tspan>
-        <tspan x="50%" dy="1.1em" font-size="0.6rem">I</tspan>
+        <% if name_fr.nil? %>
+            <tspan x="50%" font-size="0.6rem">nil</tspan>
+        <% elsif name_fr.chars.count > 20 %>
+            <tspan x="50%" font-size="0.4rem"><%= name_fr %></tspan>
+        <% elsif name_fr.chars.count > 18 %>
+            <tspan x="50%" font-size="0.5rem"><%= name_fr %></tspan>
+        <% else %>
+            <tspan x="50%" font-size="0.6rem"><%= name_fr %></tspan>
+        <% end %>
+        <% if name_en.nil? %>
+            <tspan x="50%" dy="1.1em" font-size="0.6rem">nil</tspan>
+        <% elsif name_en.chars.count > 18 %>
+            <tspan x="50%" dy="1.1em" font-size="0.5rem"><%= name_en %></tspan>
+        <% elsif name_en.chars.count > 20 %>
+            <tspan x="50%" dy="1.1em" font-size="0.4rem"><%= name_en %></tspan>
+        <% else %>
+            <tspan x="50%" dy="1.1em" font-size="0.6rem"><%= name_en %></tspan>
+        <% end %>
+        <% if level == "I" %>
+            <tspan x="50%" dy="1.1em" font-size="0.6rem">I</tspan>
+        <% elsif level == "II" %>
+            <tspan x="50%" dy="1.1em" font-size="0.6rem">II</tspan>
+        <% else %>
+            <tspan x="50%" dy="1.1em" font-size="0.6rem">III</tspan>
+        <% end %>
     </text>
 
     <path d="m 6 50

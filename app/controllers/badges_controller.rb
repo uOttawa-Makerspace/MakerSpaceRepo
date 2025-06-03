@@ -25,14 +25,16 @@ class BadgesController < DevelopmentProgramsController
       )
     @badge_data = if @user.admin? || @user.staff?
       Certification
-          .joins(:training)
+          .includes(:training)
+          .where(training: { has_badge: true})
           .order(user_id: :asc)
           .paginate(page: params[:page], per_page: 20)
           .all
           
     else
       Certification
-          .joins(:training)
+          .includes(:training)
+          .where(training: { has_badge: true})
           .where(user: @user)
           .paginate(page: params[:page], per_page: 20)
           .all
@@ -41,7 +43,6 @@ class BadgesController < DevelopmentProgramsController
       format.js
       format.html
     end
-    Rails.logger.warn("HI WORLD#{@badge_data.inspect}")
   end
 
   def show

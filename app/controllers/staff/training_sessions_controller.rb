@@ -24,7 +24,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
       format.html { @new_training_session = TrainingSession.new }
       format.json do
         render json: {
-                 trainings: @space.trainings.pluck(:id, :name).as_json,
+                 trainings: @space.trainings.pluck(:id, :name_en).as_json,
                  level: @levels.as_json,
                  course_names: @course_names.as_json,
                  admins:

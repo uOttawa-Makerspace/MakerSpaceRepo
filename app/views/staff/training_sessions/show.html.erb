@@ -36,7 +36,7 @@
           Training Type: <%= @current_training_session.training.localized_name %>
           <br />
           <% label_tag 'changed_params[training_id]', class: 'form-label' %>
-          <%= select_tag 'changed_params[training_id]', options_from_collection_for_select(@current_training_session.space.trainings.order('name ASC'), 'id', 'name'), prompt: 'Change training', class: 'form-control' %>
+          <%= select_tag 'changed_params[training_id]', options_from_collection_for_select(@current_training_session.space.trainings.order('name_en ASC'), 'id', 'name_en'), prompt: 'Change training', class: 'form-control' %>
           <br />
           Level: <%= @current_training_session.level %>
           <br />
