@@ -24,15 +24,39 @@
             <div id="calendars_checkbox_container"></div>
 
             <div class="my-4">
-                <%= form_with url: "/admin/events/publish", method: :patch, local: false, html: { class: "useTurbo dropdown show" } do %>
+                <%= form_with url: "/admin/events/publish", method: :patch, local: false, html: { class: "useTurbo dropdown show mb-2" } do %>
                     <button type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         Publish Drafts in Current View
                     </button>
 
-                    <%= hidden_field_tag :view_start_date, nil, id: "view_start_date" %>
-                    <%= hidden_field_tag :view_end_date, nil, id: "view_end_date" %>
+                    <%= hidden_field_tag :view_start_date, nil, class: "view_start_date" %>
+                    <%= hidden_field_tag :view_end_date, nil, class: "view_end_date" %>
                     <div class="dropdown-menu">
                         <%= submit_tag "Confirm Publish", class: "dropdown-item py-2" %>
+                    </div>
+                <% end %>
+
+                <%= form_with url: "/admin/events/delete_drafts", method: :delete, local: false, html: { class: "useTurbo dropdown show mb-2" } do %>
+                    <button type="button" class="btn btn-danger dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Delete Drafts in Current View
+                    </button>
+
+                    <%= hidden_field_tag :view_start_date, nil, class: "view_start_date" %>
+                    <%= hidden_field_tag :view_end_date, nil, class: "view_end_date" %>
+                    <div class="dropdown-menu">
+                        <%= submit_tag "Confirm Delete", class: "dropdown-item py-2" %>
+                    </div>
+                <% end %>
+                
+                <%= form_with url: "/admin/events/copy", method: :post, local: false, html: { class: "useTurbo dropdown show" } do %>
+                    <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Copy Events
+                    </button>
+
+                    <%= hidden_field_tag :view_start_date, nil, class: "view_start_date" %>
+                    <%= hidden_field_tag :view_end_date, nil, class: "view_end_date" %>
+                    <div class="dropdown-menu">
+                        <%= submit_tag "Confirm Copy", class: "dropdown-item py-2" %>
                     </div>
                 <% end %>
             </div>

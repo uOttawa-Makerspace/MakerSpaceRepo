@@ -5,6 +5,10 @@ Rails.application.routes.draw do
   resources :discount_codes, only: %i[new index create]
   resources :coupon_codes, only: %i[index new create destroy edit update]
 
+  namespace :api do
+    post "sync_to_google_calendar", to: "calendar#sync_to_google"
+  end
+
   resources :custom_webhooks do
     collection do
       post :orders_paid
@@ -447,6 +451,8 @@ Rails.application.routes.draw do
       collection do
         get 'json/:id', to: 'events#json', as: :json
         patch :publish
+        delete :delete_drafts
+        post :copy
       end
       member do
         patch :publish

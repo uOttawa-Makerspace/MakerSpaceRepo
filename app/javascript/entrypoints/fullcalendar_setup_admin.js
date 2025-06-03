@@ -31,6 +31,7 @@ document.addEventListener("turbo:load", async () => {
     selectMinDistance: "30",
     height: "75vh",
     eventDidMount: (info) => {
+      // create event tooltip
       new Tooltip(info.el, {
         title:
           info.event.title +
@@ -40,6 +41,7 @@ document.addEventListener("turbo:load", async () => {
         html: true,
       });
 
+      // add user color bg gradient
       if (info.event.extendedProps.background) {
         info.el.setAttribute(
           "style",
@@ -51,8 +53,14 @@ document.addEventListener("turbo:load", async () => {
     eventClick: (info) => eventClick(info.event),
     select: (info) => eventCreate(info),
     datesSet: (info) => {
-      document.getElementById("view_start_date").value = info.startStr;
-      document.getElementById("view_end_date").value = info.endStr;
+      document
+        .querySelectorAll(".view_start_date")
+        .forEach((elem) => (elem.value = info.startStr));
+      document
+        .querySelectorAll(".view_end_date")
+        .forEach((elem) => (elem.value = info.endStr));
+
+      updateUserHourBadges();
     },
   });
 
@@ -453,5 +461,48 @@ document.addEventListener("turbo:load", async () => {
     calendar.refetchEvents();
 
     return hiddenParamArray;
+  }
+
+  // Handle staff hours worked badges
+  function updateUserHourBadges() {
+    const eventsInView = calendar
+      ?.getEvents()
+      .filter(
+        (eventImpl) =>
+          eventImpl.start >= calendar.view.activeStart &&
+          eventImpl.end <= calendar.view.activeEnd &&
+          eventImpl._def.extendedProps?.assignedUsers?.length >= 1,
+      );
+
+    document.querySelectorAll(".staff[id^='checkbox-']").forEach((checkbox) => {
+      const userId = checkbox.id.replace("checkbox-", "");
+      const parent = checkbox.parentNode;
+      let span = parent.querySelector(".user-hours");
+
+      let userHours = 0;
+      eventsInView.forEach((eventImpl) => {
+        if (
+          !eventImpl._def.extendedProps.assignedUsers.some(
+            (user) => user.id == userId,
+          )
+        )
+          return;
+
+        userHours +=
+          (eventImpl.end.getTime() - eventImpl.start.getTime()) /
+          1000 /
+          60 /
+          60;
+      });
+
+      if (!span) {
+        span = document.createElement("span");
+        span.className = "user-hours px-2 py-1 bg-secondary-subtle rounded";
+        span.style.minWidth = "max-content";
+        parent.appendChild(span);
+      }
+
+      span.textContent = `${userHours} hrs`;
+    });
   }
 });

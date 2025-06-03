@@ -237,7 +237,7 @@ Time.parse(event_params[:utc_start_time]).utc)
         id: event_type,
         events: events.map do |event|
           # Skip events that are far in the past
-          next if event.recurrence_rule.empty? && event.end_time < (Time.now.utc - 2.months)
+          next if event.recurrence_rule.blank? && event.end_time < (Time.now.utc - 2.months)
 
           title = if event.title == event.event_type.capitalize && !event.event_assignments.empty?
             "#{event.event_type.capitalize} for #{event.event_assignments.map { |ea| ea.user.name }.join(", ")}"
@@ -280,12 +280,12 @@ Time.parse(event_params[:utc_start_time]).utc)
 
   def publish
     if params[:id].blank?
-        start_date = Time.parse(params[:view_start_date]).utc
-        end_date = Time.parse(params[:view_end_date]).utc
+      start_date = Time.parse(params[:view_start_date]).utc
+      end_date = Time.parse(params[:view_end_date]).utc
 
-        updated_count = Event.where(start_time: start_date..end_date, draft: true).update_all(draft: false)
+      updated_count = Event.where(start_time: start_date..end_date, draft: true).update_all(draft: false)
 
-        return redirect_to admin_calendar_index_path, notice: "#{updated_count} events published."
+      return redirect_to admin_calendar_index_path, notice: "#{updated_count} events published."
     else
       @event = Event.find(params[:id])
       if @event.update(draft: false)
@@ -298,6 +298,58 @@ Time.parse(event_params[:utc_start_time]).utc)
 
     redirect_to admin_calendar_index_path
   end
+
+  def delete_drafts
+    if params[:id].blank?
+      start_date = Time.parse(params[:view_start_date]).utc
+      end_date = Time.parse(params[:view_end_date]).utc
+
+      draft_events = Event.where(start_time: start_date..end_date, draft: true, recurrence_rule: nil || "")
+      deleted_count = draft_events.destroy_all.size
+        
+      return redirect_to admin_calendar_index_path, 
+notice: "#{deleted_count} draft events deleted. Any recurring events were untouched and must be deleted separately."
+    end
+    
+    redirect_to admin_calendar_index_path
+  end
+
+  def copy
+    start_date = Time.parse(params[:view_start_date]).utc
+    end_date = Time.parse(params[:view_end_date]).utc
+
+    duration = end_date - start_date
+    time_offset =
+      if duration == 7.days
+        1.week
+      else
+        return redirect_to admin_calendar_index_path, 
+alert: "Invalid date range. Copying events is only supported in week view."
+      end
+
+    events_to_copy = Event.where(start_time: start_date..end_date, draft: false, recurrence_rule: nil || "")
+
+    copied_count = 0
+
+    events_to_copy.find_each do |event|
+      new_event = event.dup
+      new_event.start_time += time_offset
+      new_event.end_time += time_offset if event.end_time.present?
+      new_event.draft = true
+      new_event.save!
+      copied_count += 1
+
+      event.event_assignments.each do |assignment|
+        new_event.event_assignments.create!(assignment.attributes.except("id", "event_id", "created_at", "updated_at"))
+      end
+    end
+
+    redirect_to admin_calendar_index_path, notice: "#{copied_count} published events copied forward."
+  rescue StandardError => e
+    redirect_to admin_calendar_index_path, alert: "Error copying events: #{e.message}"
+  end
+
+  private
 
   def parse_rrule_and_dtstart(rule_string)
     lines = rule_string.strip.split("\n")
