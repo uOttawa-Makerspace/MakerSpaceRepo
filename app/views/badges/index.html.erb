@@ -14,15 +14,3 @@
 <div class="badge_list">
   <%= render 'badges/badge_list' %>
 </div>
-
-<% if @order_items.present? %>
-  <h2 style="text-align: center">My Pending Badges</h2>
-  <p class="text-center">Before receiving these badges, you need to complete the project related to the badge and show it to Development Program Admin. For any questions, please contact your Proficient Project Administrator.</p>
-  <div class="row">
-    <% @order_items.each do |order_item| %>
-      <div class="col-md-4" style="opacity: 0.3;">
-        <%= image_tag(order_item.proficient_project.badge_template.image_url, style: 'width: inherit', alt: "Logo for #{order_item.proficient_project.badge_template.localized_name}") %>
-      </div>
-    <% end %>
-  </div>
-<% end %>

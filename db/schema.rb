@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_06_02_183401) do
+ActiveRecord::Schema[7.2].define(version: 2025_06_04_160431) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -83,43 +83,6 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_02_183401) do
     t.string "name"
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
-  end
-
-  create_table "badge_requirements", id: :serial, force: :cascade do |t|
-    t.datetime "created_at", precision: nil, null: false
-    t.datetime "updated_at", precision: nil, null: false
-    t.integer "badge_template_id"
-    t.integer "proficient_project_id"
-    t.index ["badge_template_id"], name: "index_badge_requirements_on_badge_template_id"
-    t.index ["proficient_project_id"], name: "index_badge_requirements_on_proficient_project_id"
-  end
-
-  create_table "badge_templates", id: :serial, force: :cascade do |t|
-    t.text "acclaim_template_id"
-    t.text "badge_description"
-    t.text "name_en"
-    t.datetime "created_at", precision: nil, null: false
-    t.datetime "updated_at", precision: nil, null: false
-    t.string "image_url"
-    t.string "list_of_skills"
-    t.bigint "training_id"
-    t.string "training_level"
-    t.string "badge_url"
-    t.string "name_fr"
-    t.index ["training_id"], name: "index_badge_templates_on_training_id"
-  end
-
-  create_table "badges", id: :serial, force: :cascade do |t|
-    t.string "issued_to"
-    t.datetime "created_at", precision: nil, null: false
-    t.datetime "updated_at", precision: nil, null: false
-    t.string "acclaim_badge_id"
-    t.integer "user_id"
-    t.string "badge_url"
-    t.integer "badge_template_id"
-    t.bigint "certification_id"
-    t.index ["badge_template_id"], name: "index_badges_on_badge_template_id"
-    t.index ["certification_id"], name: "index_badges_on_certification_id"
   end
 
   create_table "booking_statuses", force: :cascade do |t|
@@ -815,11 +778,9 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_02_183401) do
     t.datetime "updated_at", precision: nil, null: false
     t.string "level", default: "Beginner"
     t.integer "cc", default: 0
-    t.integer "badge_template_id"
     t.boolean "has_project_kit"
     t.bigint "drop_off_location_id"
     t.boolean "is_virtual", default: false
-    t.index ["badge_template_id"], name: "index_proficient_projects_on_badge_template_id"
     t.index ["drop_off_location_id"], name: "index_proficient_projects_on_drop_off_location_id"
   end
 
@@ -1340,11 +1301,6 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_02_183401) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "announcement_dismisses", "announcements"
   add_foreign_key "announcement_dismisses", "users"
-  add_foreign_key "badge_requirements", "badge_templates"
-  add_foreign_key "badge_requirements", "proficient_projects"
-  add_foreign_key "badge_templates", "trainings"
-  add_foreign_key "badges", "badge_templates"
-  add_foreign_key "badges", "certifications"
   add_foreign_key "categories", "category_options"
   add_foreign_key "categories", "repositories"
   add_foreign_key "cc_moneys", "discount_codes"
@@ -1389,7 +1345,6 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_02_183401) do
   add_foreign_key "printer_issues", "printers"
   add_foreign_key "printer_issues", "users", column: "reporter_id"
   add_foreign_key "printers", "printer_types"
-  add_foreign_key "proficient_projects", "badge_templates"
   add_foreign_key "proficient_projects", "drop_off_locations"
   add_foreign_key "project_kits", "learning_modules"
   add_foreign_key "project_kits", "proficient_projects"

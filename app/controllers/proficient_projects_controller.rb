@@ -15,7 +15,6 @@ class ProficientProjectsController < DevelopmentProgramsController
                 only: %i[show destroy edit update complete_project]
   before_action :grant_access_to_project, only: [:show]
   before_action :set_training_categories,
-                :set_badge_templates,
                 :set_drop_off_location,
                 only: %i[new edit]
   before_action :set_files_photos_videos, only: %i[show edit]
@@ -80,23 +79,8 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def create
-    badge_template_id =
-      BadgeTemplate.where(
-        training_id: params[:proficient_project][:training_id],
-        training_level: params[:proficient_project][:level]
-      ).first
-    if badge_template_id.present?
-      (params[:proficient_project][:badge_template_id] = badge_template_id.id)
-    else
-      (params[:proficient_project][:badge_template_id] = nil)
-    end
     @proficient_project = ProficientProject.new(proficient_project_params)
     if @proficient_project.save
-      if params[:badge_requirements_id].present?
-        @proficient_project.create_badge_requirements(
-          params[:badge_requirements_id]
-        )
-      end
       begin
         create_photos
       rescue FastImage::ImageFetchFailure,
@@ -115,7 +99,6 @@ class ProficientProjectsController < DevelopmentProgramsController
       @training_levels ||= TrainingSession.return_levels
       @training_categories = Training.all.order(:name).pluck(:name, :id)
       @drop_off_location = DropOffLocation.all.order(name: :asc)
-      @badge_templates = BadgeTemplate.all.order(name: :asc)
       flash[:alert] = "Something went wrong"
       render "new", status: :unprocessable_entity
     end
@@ -137,24 +120,6 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def update
-    @proficient_project.delete_all_badge_requirements
-    if params[:badge_requirements_id].present?
-      @proficient_project.create_badge_requirements(
-        params[:badge_requirements_id]
-      )
-    end
-
-    badge_template_id =
-      BadgeTemplate.where(
-        training_id: params[:proficient_project][:training_id],
-        training_level: params[:proficient_project][:level]
-      ).first
-    if badge_template_id.present?
-      (params[:proficient_project][:badge_template_id] = badge_template_id.id)
-    else
-      (params[:proficient_project][:badge_template_id] = nil)
-    end
-
     if @proficient_project.update(proficient_project_params)
       update_files
       update_videos
@@ -240,19 +205,6 @@ class ProficientProjectsController < DevelopmentProgramsController
             training_session_id: training_session.id,
             user_id: order_item.order.user_id
           )
-        # Look for a badge template to award
-        # NOTE This will fail in development mode
-        # unless you award a badge that exists in sandbox mode
-        badge_template = order_item.proficient_project.badge_template
-        if badge_template.present?
-          user = order_item.order.user
-            Badge.create(
-              user_id: user.id,
-              issued_to: user.name,
-              acclaim_badge_id: nil,
-              badge_template_id: badge_template.id,
-              certification: cert)
-        end
         # Award project, even if badge fails.
         # You can manually grant badge later
         order_item.update(order_item_params.merge({ status: "Awarded" }))
@@ -288,18 +240,6 @@ class ProficientProjectsController < DevelopmentProgramsController
     redirect_to requests_proficient_projects_path
   end
 
-  def generate_acquired_badge
-    badge =
-      BadgeTemplate.where(
-        training_id: params[:training_id],
-        training_level: params[:level]
-      ).first
-    if badge.present?
-      render plain: "#{badge.name}"
-    else
-      render plain: "No badges will be acquired"
-    end
-  end
 
   private
 
@@ -332,7 +272,6 @@ class ProficientProjectsController < DevelopmentProgramsController
       :level,
       :proficient,
       :cc,
-      :badge_template_id,
       :has_project_kit,
       :drop_off_location_id,
       :is_virtual
@@ -447,10 +386,6 @@ class ProficientProjectsController < DevelopmentProgramsController
 
   def get_filter_params
     params.permit(:search, :level, :category, :my_projects, :price)
-  end
-
-  def set_badge_templates
-    @badge_templates = BadgeTemplate.all.order(name: :asc)
   end
 
   def set_drop_off_location

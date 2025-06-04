@@ -394,9 +394,9 @@ class User < ApplicationRecord
 
   def highest_badge(training)
     badges =
-      self
-        .badges
-        .joins(certification: :training_session)
+      
+        certifications
+        .joins(:training_session)
         .where(training_sessions: { training_id: training.id })
     if badges.where(training_sessions: { level: "Advanced" }).present?
       badge = badges.where(training_sessions: { level: "Advanced" }).last

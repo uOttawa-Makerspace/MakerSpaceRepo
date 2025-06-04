@@ -243,8 +243,6 @@ Rails.application.routes.draw do
 
     resources :announcements
 
-    resources :badge_templates, only: %i[index edit update destroy]
-
     resources :job_service_groups,
               only: %i[index new create edit update destroy]
     resources :job_services, only: %i[index new create edit update destroy]
@@ -513,20 +511,7 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :badges, only: [:index,:show,:destroy] do
-    collection do
-      get :admin
-      get :new_badge
-      get :populate_badge_list
-      get :certify
-      get "grant", as: "grant_badge", action: "grant_badge"
-      get :reinstate
-      get :update_badge_data
-      get :update_badge_templates
-      get :populate_grant_users
-      get :populate_revoke_users
-    end
-  end
+  resources :badges, only: [:index,:show] 
 
   resources :proficient_projects do
     get :proficient_project_modal
@@ -536,7 +521,6 @@ Rails.application.routes.draw do
       put :complete_project
       get :approve_project
       get :revoke_project
-      get :generate_acquired_badge
     end
   end
 
