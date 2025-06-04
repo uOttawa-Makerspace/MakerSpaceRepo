@@ -1,5 +1,5 @@
 import { Collapse } from "bootstrap";
-import { RRule } from "rrule";
+import { RRule, rrulestr } from "rrule";
 import TomSelect from "tom-select";
 
 import {
@@ -76,6 +76,7 @@ document.addEventListener("turbo:load", async () => {
     });
 
     ruleField.value = rule.toString();
+    refreshTomSelect();
   }
 
   function handleDateIfAllDay() {
@@ -100,28 +101,59 @@ document.addEventListener("turbo:load", async () => {
   }
 
   function isUnavailableDuring(unavailabilities) {
-    return unavailabilities.some((unavail) => {
+    const eventStart = parseLocalDatetimeString(startTimeField.value);
+    const eventEnd = parseLocalDatetimeString(endTimeField.value);
+    const eventRule = ruleField.value ? rrulestr(ruleField.value) : null;
+
+    return unavailabilities.flatMap((unavail) => {
       const start = new Date(unavail.start_date);
       const end = new Date(unavail.end_date);
 
-      const eventStart = parseLocalDatetimeString(startTimeField.value);
-      const eventEnd = parseLocalDatetimeString(endTimeField.value);
-
-      // Recurring rule check
+      // Recurring unavailability vs recurring event
       if (unavail.recurrence_rule) {
         try {
-          const rule = RRule.fromString(unavail.recurrence_rule);
-          const occurrences = rule.between(eventStart, eventEnd, false);
+          const unavailRule = rrulestr(unavail.recurrence_rule);
 
-          return occurrences.length > 0;
+          if (eventRule) {
+            const eventDuration = eventEnd - eventStart;
+            const windowStart = new Date(Math.min(start, eventStart));
+            const windowEnd = new Date(Math.max(end, eventEnd));
+
+            const eventOccurrences = eventRule
+              .between(windowStart, windowEnd)
+              .map((occStart) => ({
+                start: occStart,
+                end: new Date(occStart.getTime() + eventDuration),
+              }));
+
+            const unavailOccurrences = unavailRule
+              .between(windowStart, windowEnd)
+              .map((occStart) => ({
+                start: occStart,
+                end: new Date(occStart.getTime() + (end - start)),
+              }));
+
+            return eventOccurrences
+              .filter((ev) =>
+                unavailOccurrences.some(
+                  (ua) => ev.start < ua.end && ev.end > ua.start,
+                ),
+              )
+              .map((ev) => ev.start);
+          } else {
+            // One-off event vs recurring unavailability
+            return unavailRule.between(eventStart, eventEnd);
+          }
         } catch (e) {
           console.warn("Invalid RRULE:", e);
-          return false;
+          return [];
         }
       }
 
-      // One-time event overlap check
-      return start < eventEnd && end > eventStart;
+      // One-time unavailability vs recurring or one-time event
+      if (eventRule) return eventRule.between(start, end);
+
+      return start < eventEnd && end > eventStart ? [eventStart] : [];
     });
   }
 
@@ -136,7 +168,7 @@ document.addEventListener("turbo:load", async () => {
           value: option.value,
           text: option.textContent,
           color: option.dataset.color,
-          unavailable: option.dataset.unavailable,
+          unavailableDates: option.dataset.unavailableDates,
         })),
       );
     } else {
@@ -156,27 +188,35 @@ document.addEventListener("turbo:load", async () => {
       !fetchedStaffUnavailabilities ||
       fetchedStaffUnavailabilities.length === 0
     ) {
-      staffSelect.innerHTML = '<option value="">No staff available</option>';
+      staffSelect.innerHTML = '<option value="">No staff yet</option>';
       return;
     }
 
-    const sortedStaff = fetchedStaffUnavailabilities.sort((a, b) => {
-      const aUnavailable = isUnavailableDuring(a.unavailabilities);
-      const bUnavailable = isUnavailableDuring(b.unavailabilities);
+    const staffWithAvailability = fetchedStaffUnavailabilities.map((staff) => {
+      const unavailableDates = isUnavailableDuring(staff.unavailabilities);
+      return { ...staff, unavailableDates };
+    });
 
-      if (aUnavailable !== bUnavailable) {
-        return aUnavailable - bUnavailable;
-      }
-      return a.name.localeCompare(b.name);
+    const sortedStaff = staffWithAvailability.sort((a, b) => {
+      const aUnavailable = a.unavailableDates.length > 0;
+      const bUnavailable = b.unavailableDates.length > 0;
+
+      if (aUnavailable !== bUnavailable) return aUnavailable - bUnavailable; // available first
+
+      return a.name.localeCompare(b.name); // then sort by name
     });
 
     sortedStaff.forEach((staff) => {
-      const unavailable = isUnavailableDuring(staff.unavailabilities);
+      const unavailableDates =
+        staff.unavailableDates.length > 0
+          ? staff.unavailableDates[0].toLocaleDateString()
+          : "";
+
       const option = document.createElement("option");
       option.value = staff.id;
       option.textContent = staff.name;
       option.dataset.color = staff.color;
-      option.dataset.unavailable = unavailable ? "true" : "false";
+      option.dataset.unavailableDates = unavailableDates;
       option.selected = previouslySelected.includes(staff.id.toString());
       staffSelect.add(option);
     });
@@ -187,17 +227,14 @@ document.addEventListener("turbo:load", async () => {
       tomSelect.destroy();
     }
 
-    // console.log("Initializing TomSelect with staff select:", staffSelect);
-
     tomSelect = new TomSelect(staffSelect, {
       plugins: ["remove_button", "restore_on_backspace"],
       render: {
         option: (data, escape) => {
           const color = escape(data.color || "#000");
-          const unavailable = data.unavailable === "true";
           return `<div style="color: ${color}">
                         ${escape(data.text)} 
-                        ${unavailable ? "<span style='color:red;'> (Unavailable)</span>" : ""}
+                        ${data.unavailableDates ? `<span style='color:red;'> (Unavailable ${data.unavailableDates})</span>` : ""}
                     </div>`;
         },
       },
@@ -224,6 +261,10 @@ document.addEventListener("turbo:load", async () => {
           title.value = "";
         }
       }
+    });
+
+    tomSelect.on("focus", () => {
+      buildRule();
     });
   }
 

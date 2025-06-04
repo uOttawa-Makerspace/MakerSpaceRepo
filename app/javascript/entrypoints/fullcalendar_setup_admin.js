@@ -31,6 +31,11 @@ document.addEventListener("turbo:load", async () => {
     selectMinDistance: "30",
     height: "75vh",
     eventDidMount: (info) => {
+      // fade in event
+      requestAnimationFrame(() => {
+        info.el.classList.add("fade-in");
+      });
+
       // create event tooltip
       new Tooltip(info.el, {
         title:
@@ -107,6 +112,13 @@ document.addEventListener("turbo:load", async () => {
     );
   });
 
+  // Render and SHOW IT!!!
+  document.getElementById("calendar_container").style.display = "block";
+  document.getElementById("spinner_container").style.display = "none";
+
+  calendar.render();
+  document.querySelector(".fc-timegrid-slots tbody tr").style.height = "120px";
+
   // Init imported calendars
   const importedCalendarsRes = await fetch(
     "/admin/calendar/imported_calendars_json/" +
@@ -123,13 +135,6 @@ document.addEventListener("turbo:load", async () => {
       "hidden_calendars",
     );
   });
-
-  // Render and SHOW IT!!!
-  document.getElementById("calendar_container").style.display = "block";
-  document.getElementById("spinner_container").style.display = "none";
-
-  calendar.render();
-  document.querySelector(".fc-timegrid-slots tbody tr").style.height = "120px";
 
   /**
    * @param {Array} data - The array of staff members returned from the server. NOT AN EVENT LIST! Since we want the individual staff details (name, color, etc.) to be displayed in the checkboxes which will be used to filter the events.
@@ -366,6 +371,9 @@ document.addEventListener("turbo:load", async () => {
       eventsCheckbox.checked = !isStaffEventsHidden;
 
       eventsCheckbox.addEventListener("change", (e) => {
+        if (!eventsCheckbox.checked)
+          document.querySelector(".all_events_checkbox").checked = false;
+
         const userIdsOfEventsToHide = updateHiddenParam(
           eventSource.id,
           "hidden_staff_events",
