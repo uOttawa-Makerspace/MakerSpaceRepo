@@ -5,13 +5,13 @@
       <div class="container">
         <div class="row text-center">
           <div class="col-md-12 form-floating">
-            <%= f.text_field :name, placeholder: 'Write an unique name...', class: 'form-control', required: true %>
-            <%= f.label 'Name', class: 'form-label' %>
+            <%= f.text_field :name_en, placeholder: 'Write an unique name...', class: 'form-control', required: true %>
+            <%= f.label 'Name (English)', class: 'form-label' %>
           </div>
 
-          <div class="col-md-12 form-floating my-2">
-            <%= f.text_area :description, placeholder: 'Write an description...', class: 'form-control', required: true %>
-            <%= f.label 'Description', class: 'form-label' %>
+          <div class="col-md-12 form-floating">
+            <%= f.text_field :name_fr, placeholder: 'Ecrir un nom...', class: 'form-control', required: true %>
+            <%= f.label 'Nom (Français)', class: 'form-label' %>
           </div>
 
           <div class="form-check-inline">
@@ -20,12 +20,40 @@
           <% end %>
           </div>
 
-          <br><br>
+          <br><br>  
 
           <div class="col-md-12 form-group">
             <%= f.label(:skill_id, 'Skill Type', class: 'form-label') %>
             <%= f.select :skill_id, options_for_select(@skills), { include_blank: false }, { class: 'form-control form-select' } %>
           </div>
+
+          <div class="col-md-12 form-group my-5">
+          <h5>Would you Like to Associate a Badge to This Training?</h5>
+          </div>
+          <div class="form-check-inline">
+          <%= f.check_box :has_badge %>
+          </div>
+
+          <div class="col-md-12 form-floating my-2">
+            <%= f.text_area :description_en, placeholder: 'Write an description...', class: 'form-control', required: true %>
+            <%= f.label 'Badge Description (English)', class: 'form-label' %>
+          </div>
+
+          <div class="col-md-12 form-floating my-2">
+            <%= f.text_area :description_fr, placeholder: 'Write an description...', class: 'form-control', required: true %>
+            <%= f.label 'Badge Description (French)', class: 'form-label' %>
+          </div>
+
+          <div class="col-md-12 form-floating my-2">
+            <%= f.text_area :list_of_skills_en, placeholder: 'Write the list of skills which this badge describes...', class: 'form-control', required: true %>
+            <%= f.label 'List of Skills (English)', class: 'form-label' %>
+          </div>
+
+          <div class="col-md-12 form-floating my-2">
+            <%= f.text_area :list_of_skills_fr, placeholder: 'Write the list of skills which this badge describes...', class: 'form-control', required: true %>
+            <%= f.label 'List of Skills (French)', class: 'form-label' %>
+          </div>
+        
 
           <div class="col-md-12 form-group my-5">
             <%= f.submit 'Create Training', class: 'btn btn-secondary btn-xl text-uppercase' %>

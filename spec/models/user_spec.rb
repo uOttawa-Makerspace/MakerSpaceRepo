@@ -433,7 +433,7 @@ RSpec.describe User, type: :model do
         user = create(:user, :admin)
         certification = create(:certification, user_id: user.id)
         training = certification.training
-        expect(user.get_certifications_names).to eq([training.name])
+        expect(user.get_certifications_names).to eq([training.name_en])
       end
     end
 

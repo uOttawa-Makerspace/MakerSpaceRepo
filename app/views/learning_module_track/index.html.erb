@@ -20,7 +20,7 @@
                   <p style="float: right"><%= get_lower_level_lm(training.id).html_safe %></p>
                   <h2 class="mb-0">
                     <button class="accordion-button btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#training-<%= training.id %>">
-                      <%= training.name %>
+                      <%= training.localized_name %>
                     </button>
                   </h2>
                 </div>
@@ -49,7 +49,7 @@
 
       <% @certifications.each do |cert| %>
         <div class="col-md-3 text-center my-3">
-          <b><%= cert.training.name %> </b> <br/>
+          <b><%= cert.training.localized_name %> </b> <br/>
           <%= image_tag(cert.get_badge_path, class: 'skills-badges', alt: 'Medal image') %>
           <br/>
           <%= cert.training_session.level %>
@@ -61,7 +61,7 @@
 
       <% @remaining_trainings.each do |training| %>
         <div class="col-md-3 text-center my-3">
-          <b><%= training.name %> </b> <br/>
+          <b><%= training.localized_name %> </b> <br/>
           <%= image_tag('badges/none.png', class: 'skills-badges', alt: 'No medal picture') %>
           <br/>
           None

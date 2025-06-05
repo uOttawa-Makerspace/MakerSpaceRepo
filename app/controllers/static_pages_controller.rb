@@ -38,18 +38,18 @@ class StaticPagesController < SessionsController
 
     @user_skills =
       current_user.certifications.map do |cert|
-        [cert.training_session.training.name, cert.training_session.level]
+        [cert.training_session.training.name_en, cert.training_session.level]
       end.sample 5
 
     # Get total tracks in all learning modules
     total_tracks =
-      LearningModule.all.includes(:training).map { |x| x.training.name }.tally
+      LearningModule.all.includes(:training).map { |x| x.training.name_en }.tally
     # get the total number of tracks completed
     # and in progress under the user's name
     @user_tracks =
       current_user
         .learning_module_tracks
-        .group_by { |x| x.learning_module.training.name }
+        .group_by { |x| x.learning_module.training.name_en }
         .transform_values { |x| x.map(&:status).tally }
         .map do |key, value|
           [key, "#{value["Completed"]}/#{total_tracks[key]}"]
@@ -215,7 +215,7 @@ QUERY
       else
         []
       end
-  rescue
+  rescue StandardError
     @makerstore_links = []
   end
 end

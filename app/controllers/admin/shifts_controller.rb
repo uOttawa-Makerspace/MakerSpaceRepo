@@ -23,12 +23,10 @@ class Admin::ShiftsController < AdminAreaController
       .where(space_id: @space_id)
       .merge(
         User.staff
-      ) # NOTE why isn't this the default scope? Ask Alex *again* sometime later lol
+      ) # NOTE: why isn't this the default scope? Ask Alex *again* sometime later lol
       .order("users.name")
       .each do |staff|
-        if !staff.nil? && !staff.user.nil?
-          @colors << { user: staff.user, color: staff.color }
-        end
+        @colors << { user: staff.user, color: staff.color } if !staff.nil? && !staff.user.nil?
       end
   end
 
@@ -48,13 +46,12 @@ class Admin::ShiftsController < AdminAreaController
       .merge(User.staff)
       .order("users.name")
       .each do |staff|
-        if !staff.nil? && !staff.user.nil? && !staff.user_id.nil?
-          @colors << {
-            id: staff.user.id,
-            name: staff.user.name,
-            color: staff.color
-          }
-        end
+        next unless !staff.nil? && !staff.user.nil? && !staff.user_id.nil?
+        @colors << {
+          id: staff.user.id,
+          name: staff.user.name,
+          color: staff.color
+        }
       end
 
     @pending_shifts = Shift.where(space_id: @user.space_id, pending: true)
@@ -134,7 +131,7 @@ class Admin::ShiftsController < AdminAreaController
                    extendedProps: {
                      reason: @shift.reason,
                      training:
-                       @shift.training.present? ? @shift.training.name : "",
+                       @shift.training.present? ? @shift.training.name_en : "",
                      course: @shift.course,
                      language: @shift.language
                    },
@@ -337,7 +334,7 @@ class Admin::ShiftsController < AdminAreaController
         event["title"] = shift.return_event_title
         event["extendedProps"] = {
           reason: shift.reason,
-          training: shift.training.present? ? shift.training.name : "",
+          training: shift.training.present? ? shift.training.name_en : "",
           course: shift.course,
           language: shift.language,
           color: shift.color(@space_id, (shift.pending? ? 0.7 : 1))
@@ -359,7 +356,7 @@ class Admin::ShiftsController < AdminAreaController
              **shift.as_json,
              extendedProps: {
                reason: shift.reason,
-               training: shift.training.present? ? shift.training.name : "",
+               training: shift.training.present? ? shift.training.name_en : "",
                course: shift.course,
                language: shift.language
              },
@@ -374,14 +371,13 @@ class Admin::ShiftsController < AdminAreaController
       .where(space_id: @space_id)
       .each do |shift|
         title = ""
-        shift.training_level_id == nil ?
-          title = "Staff Needed" :
-          title =
-            "Staff Needed - #{TrainingLevel.find(shift.training_level_id).name}"
-        shift.course_name_id == nil ?
-          title = "Staff Needed" :
-          title +=
+        title = shift.training_level_id.nil? ? "Staff Needed" : "Staff Needed - #{TrainingLevel.find(shift.training_level_id).name}"
+        if shift.course_name_id.nil?
+  title = "Staff Needed"
+else
+  title +=
             " - #{CourseName.find(shift.course_name_id).name} - #{shift.language}"
+end
         event = {}
         event["title"] = title
         event["daysOfWeek"] = [shift.day]
@@ -402,7 +398,7 @@ class Admin::ShiftsController < AdminAreaController
 
   def get_users_hours_between_dates
     unless params[:start_date].present? && params[:end_date].present?
-      render json: { error: "Missing start_date or end_date" }, status: 422 and
+      render json: { error: "Missing start_date or end_date" }, status: :unprocessable_entity and
         return
     end
 
@@ -516,9 +512,7 @@ class Admin::ShiftsController < AdminAreaController
           end
         end
 
-        if recurring_query.empty? && one_time_query.empty?
-          @suggestions << staff.user
-        end
+        @suggestions << staff.user if recurring_query.empty? && one_time_query.empty?
       end
     render json:
              @suggestions

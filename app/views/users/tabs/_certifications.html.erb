@@ -19,9 +19,9 @@
     <tr>
       <td>
         <% if @user.admin? %>
-          <%= link_to certification.training.name, staff_training_session_path(certification.training_session) %>
+          <%= link_to certification.training.localized_name, staff_training_session_path(certification.training_session) %>
         <% else %>
-          <%= certification.training.name %>
+          <%= certification.training.localized_name %>
         <% end %>
         <br />
         <%= certification_status(certification.training_session.level).html_safe %>
