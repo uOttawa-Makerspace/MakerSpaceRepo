@@ -48,10 +48,10 @@
             <%= f.label :drop_off_location_id, 'Drop-Off Location', class: 'form-label' %>
             <%= f.select(:drop_off_location_id, options_for_select(@drop_off_location.pluck(:name, :id)), { include_blank: 'No Location' }, { class: 'form-control form-select mb-5' }) %>
 
-            <%= label :badge_requirements_id, 'Prerequisite Badge (Choose as many badges as you want)', class: 'form-label' %>
+            <%= label :badge_requirements_id, 'Prerequisite Training (Choose as many trainings as you want)', class: 'form-label' %>
             <%= select_tag :badge_requirements_id, options_from_collection_for_select(@badge_templates, 'id', 'name'), { multiple: true, id: 'badge_requirements', class: 'form-control mb-5' } %>
 
-            <%= f.label :badge_template_id, 'Badge that will be acquired', class: 'form-label' %>
+            <%= f.label :training_id, 'Badge that will be acquired', class: 'form-label' %>
             <p class="alert alert-secondary mb-5" id="badge-acquired-text">No badge will be acquired</p>
 
             <%= label_tag :file, 'Project files', class: 'form-label' %>

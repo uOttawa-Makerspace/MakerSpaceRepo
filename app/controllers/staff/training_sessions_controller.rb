@@ -131,38 +131,6 @@ class Staff::TrainingSessionsController < StaffDashboardController
           user_id: graduate.id,
           training_session_id: @current_training_session.id
         )
-
-      if BadgeTemplate.where(
-           training_id: @current_training_session.training_id
-         ).present? && @current_training_session.level == "Beginner" &&
-           params[:skip_badge] != "true"
-        badge_template =
-          BadgeTemplate.find_by(
-            training_id: @current_training_session.training_id
-          )
-        response =
-          Badge.acclaim_api_create_badge(
-            graduate,
-            badge_template.acclaim_template_id
-          )
-        if response.status == 201
-          badge_data = JSON.parse(response.body)["data"]
-          Badge.create(
-            user_id: graduate.id,
-            issued_to: graduate.name,
-            acclaim_badge_id: badge_data["id"],
-            badge_template_id: badge_template.id,
-            certification: certification
-          )
-        else
-          error = true
-          flash[
-            :alert
-          ] = "#{graduate.username}'s badge has not saved properly!" if params[
-            :skip_badge
-          ] != "true"
-        end
-      end
       next if certification.save
       error = true
       flash[

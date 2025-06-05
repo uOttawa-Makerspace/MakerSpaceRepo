@@ -50,9 +50,11 @@ class Admin::TrainingsController < AdminAreaController
       :name_en,
       :name_fr,
       :skill_id,
-      :description,
+      :description_en,
+      :description_fr,
       :training_level,
-      :list_of_skills,
+      :list_of_skills_en,
+      :list_of_skills_fr,
       :has_badge,
       space_ids: []
     )

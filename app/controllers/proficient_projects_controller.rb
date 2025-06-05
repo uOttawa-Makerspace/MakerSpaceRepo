@@ -97,7 +97,7 @@ class ProficientProjectsController < DevelopmentProgramsController
       end
     else
       @training_levels ||= TrainingSession.return_levels
-      @training_categories = Training.all.order(:name).pluck(:name, :id)
+      @training_categories = Training.all.order(:name_en).pluck(:name_en, :id)
       @drop_off_location = DropOffLocation.all.order(name: :asc)
       flash[:alert] = "Something went wrong"
       render "new", status: :unprocessable_entity
@@ -315,7 +315,7 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def set_training_categories
-    @training_categories = Training.all.order(:name).pluck(:name, :id)
+    @training_categories = Training.all.order(:name_en).pluck(:name_en, :id)
   end
 
   def set_files_photos_videos

@@ -14,10 +14,6 @@
           </div>
 
         <br />
-        <div class="col-md-12 form-floating">
-            <%= f.text_area :description, placeholder: 'Write an description...', class: 'form-control my-2', required: true %>
-            <%= f.label :description, 'Description:', class: 'form-label' %>
-        </div>
 
         <div class="form-check-inline">
           <%= f.label :space, 'Spaces:', class: 'form-label' %> <br />
@@ -38,14 +34,24 @@
           <%= f.check_box :has_badge %>
           </div>
 
-        <div class="col-md-12 form-floating my-2">
-            <%= f.label(:training_level, 'Training Level', class: 'form-label') %>
-            <%= f.select :training_level, options_for_select(["I", "II", "III"]), { include_blank: false }, { class: 'form-control form-select' } %>
+          <div class="col-md-12 form-floating my-2">
+            <%= f.text_area :description_en, placeholder: 'Write an description...', class: 'form-control', required: true %>
+            <%= f.label 'Badge Description (English)', class: 'form-label' %>
           </div>
 
           <div class="col-md-12 form-floating my-2">
-            <%= f.text_area :list_of_skills, placeholder: 'Write the list of skills which this badge describes...', class: 'form-control', required: true %>
-            <%= f.label 'List of Skills', class: 'form-label' %>
+            <%= f.text_area :description_fr, placeholder: 'Write an description...', class: 'form-control', required: true %>
+            <%= f.label 'Badge Description (French)', class: 'form-label' %>
+          </div>
+
+          <div class="col-md-12 form-floating my-2">
+            <%= f.text_area :list_of_skills_en, placeholder: 'Write the list of skills which this badge describes...', class: 'form-control', required: true %>
+            <%= f.label 'List of Skills (English)', class: 'form-label' %>
+          </div>
+
+          <div class="col-md-12 form-floating my-2">
+            <%= f.text_area :list_of_skills_fr, placeholder: 'Write the list of skills which this badge describes...', class: 'form-control', required: true %>
+            <%= f.label 'List of Skills (French)', class: 'form-label' %>
           </div>
 
         <div class="col-md-12 form-group my-3 text-center">

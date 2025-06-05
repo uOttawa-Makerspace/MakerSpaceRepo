@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_06_04_160431) do
+ActiveRecord::Schema[7.2].define(version: 2025_06_05_185522) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -1164,11 +1164,13 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_04_160431) do
     t.datetime "updated_at", precision: nil, null: false
     t.integer "space_id"
     t.bigint "skill_id"
-    t.string "description"
-    t.string "list_of_skills"
+    t.string "description_en"
+    t.string "list_of_skills_en"
     t.string "training_level"
     t.string "name_fr"
     t.boolean "has_badge", default: true
+    t.string "description_fr"
+    t.string "list_of_skills_fr"
     t.index ["skill_id"], name: "index_trainings_on_skill_id"
     t.index ["space_id"], name: "index_trainings_on_space_id"
   end
