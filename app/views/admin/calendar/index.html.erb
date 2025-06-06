@@ -51,18 +51,9 @@
                     </div>
                 <% end %>
                 
-                <%= form_with url: "/admin/events/copy", method: :post, local: false, html: { class: "useTurbo dropdown show" } do %>
-                    <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        Copy Events
-                    </button>
-
-                    <%= hidden_field_tag :space_id, @space_id %>
-                    <%= hidden_field_tag :view_start_date, nil, class: "view_start_date" %>
-                    <%= hidden_field_tag :view_end_date, nil, class: "view_end_date" %>
-                    <div class="dropdown-menu">
-                        <%= submit_tag "Confirm Copy", class: "dropdown-item py-2" %>
-                    </div>
-                <% end %>
+                <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#copyEventsModal">
+                    Copy Events
+                </button>
             </div>
         </div>
 
@@ -75,6 +66,7 @@
 </div>
 
 <%= render 'form' %>
+<%= render 'copy' %>
 
 <style>
     #calendar_container {

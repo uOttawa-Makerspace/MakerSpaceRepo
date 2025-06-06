@@ -312,7 +312,7 @@ Time.parse(event_params[:utc_start_time]).utc)
     return if space_id.empty?
 
     draft_events = Event.where(space_id: space_id, start_time: start_date..end_date, draft: true, 
-recurrence_rule: nil || "")
+recurrence_rule: [nil, ""])
     deleted_count = draft_events.destroy_all.size
         
     redirect_to admin_calendar_index_path, 
@@ -320,44 +320,58 @@ notice: "#{deleted_count} draft event(s) deleted. Any recurring events were unto
   end
 
   def copy
-    start_date = Time.parse(params[:view_start_date]).utc
-    end_date = Time.parse(params[:view_end_date]).utc
+    source_range = params[:source_range]&.split(" to ")
+    target_date = params[:target_date]
     space_id = params[:space_id]
-    return if space_id.empty?
 
-    duration = end_date - start_date
-    time_offset =
-      if duration == 7.days
-        1.week
-      else
-        return redirect_to admin_calendar_index_path, 
-alert: "Invalid date range. Copying events is only supported in week view."
-      end
-
-    events_to_copy = Event.where(space_id: space_id, start_time: start_date..end_date, draft: false, 
-recurrence_rule: nil || "")
-
-    copied_count = 0
-
-    events_to_copy.find_each do |event|
-      new_event = event.dup
-      new_event.start_time += time_offset
-      new_event.end_time += time_offset if event.end_time.present?
-      new_event.draft = true
-      new_event.google_event_id = ""
-      new_event.save!
-      copied_count += 1
-
-      event.event_assignments.each do |assignment|
-        new_event.event_assignments.create!(assignment.attributes.except("id", "event_id", "created_at", "updated_at"))
-      end
+    if source_range.blank? || target_date.blank? || space_id.blank?
+      return redirect_to admin_calendar_index_path, alert: "Please fill out all fields before copying."
     end
 
-    redirect_to admin_calendar_index_path, 
-notice: "#{copied_count} published event(s) copied forward. Any recurring events were skipped during copying to avoid duplicates."
-  rescue StandardError => e
-    redirect_to admin_calendar_index_path, alert: "Error copying events: #{e.message}"
+    begin
+      start_date = Time.zone.parse(source_range[0]).beginning_of_day
+      end_date = Time.zone.parse(source_range[1]).end_of_day
+      new_start_date = Time.zone.parse(target_date).beginning_of_day
+
+      # Find events in range
+      events_to_copy = Event.where(
+        space_id: space_id,
+        start_time: start_date..end_date,
+        draft: false,
+        recurrence_rule: [nil, ""]
+      )
+
+      copied_count = 0
+
+      events_to_copy.find_each do |event|
+        days_offset = (event.start_time.to_date - start_date.to_date).to_i
+        event_offset = event.start_time - event.start_time.beginning_of_day
+        new_start = new_start_date + days_offset.days + event_offset
+        new_end = event.end_time.present? ? (new_start + (event.end_time - event.start_time)) : nil
+
+        new_event = event.dup
+        new_event.start_time = new_start
+        new_event.end_time = new_end
+        new_event.draft = true
+        new_event.google_event_id = ""
+        new_event.save!
+
+        copied_count += 1
+
+        event.event_assignments.each do |assignment|
+          new_event.event_assignments.create!(
+            assignment.attributes.except("id", "event_id", "created_at", "updated_at")
+          )
+        end
+      end
+
+      redirect_to admin_calendar_index_path,
+        notice: "#{copied_count} published event(s) copied to #{new_start_date.to_date}. Recurring events were skipped."
+    rescue StandardError => e
+      redirect_to admin_calendar_index_path, alert: "Error copying events: #{e.message}"
+    end
   end
+
 
   private
 
