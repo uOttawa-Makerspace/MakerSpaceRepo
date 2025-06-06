@@ -162,14 +162,17 @@ Time.parse(staff_params[:utc_start_time]).utc)
 
   def json
     @unavailabilities = StaffUnavailability.where(user_id: current_user.id)
-  
+
+    
     render json: @unavailabilities.map { |u| 
+    duration = (u.end_time.to_time - u.start_time.to_time) * 1000
       {
         id: u.id,
         title: u.title || "Unavailable",
-        start_date: u.start_time,
-        end_date: u.end_time,
-        recurrence_rule: u.recurrence_rule,
+        start: u.start_time.iso8601,
+        end: u.end_time.iso8601,
+        **(u.recurrence_rule.present? ? { rrule: u.recurrence_rule, duration: duration } : {}),
+        allDay: u.start_time.to_time == u.end_time.to_time - 1.day,
         extendedProps: {
           description: u.description
         }

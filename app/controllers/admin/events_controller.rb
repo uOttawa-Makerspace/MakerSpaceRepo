@@ -239,9 +239,10 @@ Time.parse(event_params[:utc_start_time]).utc)
           next if event.recurrence_rule.blank? && event.end_time < (Time.now.utc - 2.months)
 
           title = if event.title == event.event_type.capitalize && !event.event_assignments.empty?
-            "#{event.event_type.capitalize} for #{event.event_assignments.map { |ea| ea.user.name }.join(", ")}"
+            "#{'✎ ' if event.draft}#{event.event_type.capitalize} for #{event.event_assignments.map do |ea|
+ ea.user.name end.join(", ")}"
           else 
-            event.title
+            "#{'✎ ' if event.draft}#{event.title}"
           end
 
           # seconds to milliseconds because javascript
@@ -251,7 +252,7 @@ Time.parse(event_params[:utc_start_time]).utc)
  c = helpers.generate_color_from_id(ea.user_id)
  s = (100.0 / event.event_assignments.size) * i
  e = (100.0 / event.event_assignments.size) * (i + 1)
- "#{c} #{s}%, #{c} #{e}%" end.join(', ')});#{' opacity: 0.6;' if event.draft}"
+ "#{c} #{s}%, #{c} #{e}%" end.join(', ')});#{' opacity: 0.8;' if event.draft}"
 
 
           {
@@ -281,14 +282,16 @@ Time.parse(event_params[:utc_start_time]).utc)
     if params[:id].blank?
       start_date = Time.parse(params[:view_start_date]).utc
       end_date = Time.parse(params[:view_end_date]).utc
+      space_id = params[:space_id]
+      return if space_id.empty?
 
       updated_count = 0
 
-      Event.where(start_time: start_date..end_date, draft: true).find_each do |event|
+      Event.where(space_id: space_id, start_time: start_date..end_date, draft: true).find_each do |event|
         updated_count += 1 if event.update(draft: false)
       end
 
-      return redirect_to admin_calendar_index_path, notice: "#{updated_count} events published."
+      return redirect_to admin_calendar_index_path, notice: "#{updated_count} event(s) published."
     else
       @event = Event.find(params[:id])
       if @event.update(draft: false)
@@ -303,23 +306,24 @@ Time.parse(event_params[:utc_start_time]).utc)
   end
 
   def delete_drafts
-    if params[:id].blank?
-      start_date = Time.parse(params[:view_start_date]).utc
-      end_date = Time.parse(params[:view_end_date]).utc
+    start_date = Time.parse(params[:view_start_date]).utc
+    end_date = Time.parse(params[:view_end_date]).utc
+    space_id = params[:space_id]
+    return if space_id.empty?
 
-      draft_events = Event.where(start_time: start_date..end_date, draft: true, recurrence_rule: nil || "")
-      deleted_count = draft_events.destroy_all.size
+    draft_events = Event.where(space_id: space_id, start_time: start_date..end_date, draft: true, 
+recurrence_rule: nil || "")
+    deleted_count = draft_events.destroy_all.size
         
-      return redirect_to admin_calendar_index_path, 
-notice: "#{deleted_count} draft events deleted. Any recurring events were untouched and must be deleted separately."
-    end
-    
-    redirect_to admin_calendar_index_path
+    redirect_to admin_calendar_index_path, 
+notice: "#{deleted_count} draft event(s) deleted. Any recurring events were untouched and must be deleted separately."
   end
 
   def copy
     start_date = Time.parse(params[:view_start_date]).utc
     end_date = Time.parse(params[:view_end_date]).utc
+    space_id = params[:space_id]
+    return if space_id.empty?
 
     duration = end_date - start_date
     time_offset =
@@ -330,7 +334,8 @@ notice: "#{deleted_count} draft events deleted. Any recurring events were untouc
 alert: "Invalid date range. Copying events is only supported in week view."
       end
 
-    events_to_copy = Event.where(start_time: start_date..end_date, draft: false, recurrence_rule: nil || "")
+    events_to_copy = Event.where(space_id: space_id, start_time: start_date..end_date, draft: false, 
+recurrence_rule: nil || "")
 
     copied_count = 0
 
@@ -339,6 +344,7 @@ alert: "Invalid date range. Copying events is only supported in week view."
       new_event.start_time += time_offset
       new_event.end_time += time_offset if event.end_time.present?
       new_event.draft = true
+      new_event.google_event_id = ""
       new_event.save!
       copied_count += 1
 
@@ -347,7 +353,8 @@ alert: "Invalid date range. Copying events is only supported in week view."
       end
     end
 
-    redirect_to admin_calendar_index_path, notice: "#{copied_count} published events copied forward."
+    redirect_to admin_calendar_index_path, 
+notice: "#{copied_count} published event(s) copied forward. Any recurring events were skipped during copying to avoid duplicates."
   rescue StandardError => e
     redirect_to admin_calendar_index_path, alert: "Error copying events: #{e.message}"
   end

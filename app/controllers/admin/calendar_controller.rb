@@ -25,13 +25,13 @@ class Admin::CalendarController < AdminAreaController
 
           {
             id: u.id,
-            title: "#{staff.name} - #{u.title}",
+            title: "🚫 #{staff.name} - #{u.title}",
             start_date: u.start_time,
             end_date: u.end_time,
             recurrence_rule: u.recurrence_rule,
             extendedProps: {
               description: u.description
-            }
+            },
           }
         end
       }

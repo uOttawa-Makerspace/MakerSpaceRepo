@@ -18,18 +18,34 @@ document.addEventListener("turbo:load", async () => {
     plugins: [timeGridPlugin, dayGridPlugin, rrulePlugin, interactionPlugin],
     initialView: "timeGridWeek",
     headerToolbar: {
-      left: "prev,next,today",
+      left: "prev,next,today toggleEventOverlap",
       center: "title",
-      right: "timeGridWeek,dayGridMonth",
+      right: "toggleWeekends timeGridWeek,dayGridMonth",
     },
     scrollTime: "08:00:00",
     nowIndicator: true,
-    expandRows: true,
-    eventMaxStack: 3,
+    slotEventOverlap: true,
     selectable: true,
     selectMirror: true,
     selectMinDistance: "30",
-    height: "75vh",
+    height: "80vh",
+    customButtons: {
+      toggleWeekends: {
+        text: "Toggle Weekends",
+        click: () => {
+          calendar.setOption("weekends", !calendar.getOption("weekends"));
+        },
+      },
+      toggleEventOverlap: {
+        text: "Toggle Overlap",
+        click: () => {
+          calendar.setOption(
+            "slotEventOverlap",
+            !calendar.getOption("slotEventOverlap"),
+          );
+        },
+      },
+    },
     eventDidMount: (info) => {
       // fade in event
       requestAnimationFrame(() => {
@@ -57,13 +73,29 @@ document.addEventListener("turbo:load", async () => {
     },
     eventClick: (info) => eventClick(info.event),
     select: (info) => eventCreate(info),
+    initialDate: localStorage.fullCalendarDefaultDateAdmin,
     datesSet: (info) => {
+      // recall dates on refresh
+      const date = new Date(info.view.currentStart);
+      localStorage.fullCalendarDefaultDateAdmin = date.toISOString();
+
       document
         .querySelectorAll(".view_start_date")
         .forEach((elem) => (elem.value = info.startStr));
       document
         .querySelectorAll(".view_end_date")
         .forEach((elem) => (elem.value = info.endStr));
+
+      // update publish/delete button names
+      const pubDraftButt = document.getElementById("publish_drafts_button");
+      const delDraftButt = document.getElementById("delete_drafts_button");
+      if (info.view.type === "timeGridWeek") {
+        pubDraftButt.innerText = "Publish This Week's Drafts";
+        delDraftButt.innerText = "Delete This Week's Drafts";
+      } else {
+        pubDraftButt.innerText = "Publish This Month's Drafts";
+        delDraftButt.innerText = "Delete This Month's Drafts";
+      }
 
       updateUserHourBadges();
     },
@@ -115,9 +147,7 @@ document.addEventListener("turbo:load", async () => {
   // Render and SHOW IT!!!
   document.getElementById("calendar_container").style.display = "block";
   document.getElementById("spinner_container").style.display = "none";
-
   calendar.render();
-  document.querySelector(".fc-timegrid-slots tbody tr").style.height = "120px";
 
   // Init imported calendars
   const importedCalendarsRes = await fetch(
@@ -135,6 +165,14 @@ document.addEventListener("turbo:load", async () => {
       "hidden_calendars",
     );
   });
+  const importedCalStatusSpan = document.getElementById(
+    "imported_calendars_status",
+  );
+  if (importedCalendars.length) {
+    importedCalStatusSpan.style.display = "none";
+  } else {
+    importedCalStatusSpan.innerText = "No calendars found";
+  }
 
   /**
    * @param {Array} data - The array of staff members returned from the server. NOT AN EVENT LIST! Since we want the individual staff details (name, color, etc.) to be displayed in the checkboxes which will be used to filter the events.
@@ -309,6 +347,7 @@ document.addEventListener("turbo:load", async () => {
     classes = "",
   ) {
     const container = containerElem;
+    container.previousElementSibling.style.display = "block";
 
     const urlParams = new URLSearchParams(window.location.search);
     const hiddenCalendars = urlParams.get(urlParam) || "";
@@ -507,6 +546,7 @@ document.addEventListener("turbo:load", async () => {
         span = document.createElement("span");
         span.className = "user-hours px-2 py-1 bg-secondary-subtle rounded";
         span.style.minWidth = "max-content";
+        parent.lastElementChild.style.flex = 1;
         parent.appendChild(span);
       }
 

@@ -3,7 +3,6 @@
         <div class="input-group mb-3">
             <%= label_tag :space_id, 'Space', class: 'input-group-text' %>
             <%= select_tag :space_id, options_for_select(@spaces.pluck(:name, :id), selected: @space_id), class: 'form-select', id: "space_id" %>
-            <%= hidden_field_tag :shifts, true %>
             <button class="btn btn-outline-secondary" type="submit">Go</button>
         </div>
     <% end %>
@@ -18,17 +17,20 @@
 
             <p class="fw-bold mt-1">Events / Unavailabilities</p>
             <div id="staff_checkbox_container"></div>
-            <p class="fw-bold">Events</p>
+            <p class="fw-bold" style="display: none;">Events</p>
             <div id="events_checkbox_container"></div>
             <p class="fw-bold mt-1">Imported Calendars</p>
-            <div id="calendars_checkbox_container"></div>
+            <div id="calendars_checkbox_container">
+                <span id="imported_calendars_status">Loading...</span>
+            </div>
 
             <div class="my-4">
                 <%= form_with url: "/admin/events/publish", method: :patch, local: false, html: { class: "useTurbo dropdown show mb-2" } do %>
-                    <button type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        Publish Drafts in Current View
+                    <button id="publish_drafts_button" type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Publish This Week's Drafts
                     </button>
 
+                    <%= hidden_field_tag :space_id, @space_id %>
                     <%= hidden_field_tag :view_start_date, nil, class: "view_start_date" %>
                     <%= hidden_field_tag :view_end_date, nil, class: "view_end_date" %>
                     <div class="dropdown-menu">
@@ -37,10 +39,11 @@
                 <% end %>
 
                 <%= form_with url: "/admin/events/delete_drafts", method: :delete, local: false, html: { class: "useTurbo dropdown show mb-2" } do %>
-                    <button type="button" class="btn btn-danger dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        Delete Drafts in Current View
+                    <button id="delete_drafts_button" type="button" class="btn btn-danger dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Delete This Week's Drafts
                     </button>
 
+                    <%= hidden_field_tag :space_id, @space_id %>
                     <%= hidden_field_tag :view_start_date, nil, class: "view_start_date" %>
                     <%= hidden_field_tag :view_end_date, nil, class: "view_end_date" %>
                     <div class="dropdown-menu">
@@ -53,6 +56,7 @@
                         Copy Events
                     </button>
 
+                    <%= hidden_field_tag :space_id, @space_id %>
                     <%= hidden_field_tag :view_start_date, nil, class: "view_start_date" %>
                     <%= hidden_field_tag :view_end_date, nil, class: "view_end_date" %>
                     <div class="dropdown-menu">
@@ -62,7 +66,7 @@
             </div>
         </div>
 
-        <div id="calendar" class="col-md-9 w-md-100"></div>
+        <div id="calendar" class="col-md-9 w-md-100" style="zoom: 1;"></div>
     </div>
 </section>
 
@@ -73,10 +77,6 @@
 <%= render 'form' %>
 
 <style>
-    .fc-timegrid-slots tbody tr {
-        height: 25px !important;
-    }
-
     #calendar_container {
         display: none;
     }
