@@ -55,6 +55,7 @@ class ProficientProjectsController < DevelopmentProgramsController
   def new
     @proficient_project = ProficientProject.new
     @training_levels ||= TrainingSession.return_levels
+    @trainings = Training.all
   end
 
   def show
@@ -240,6 +241,17 @@ class ProficientProjectsController < DevelopmentProgramsController
     redirect_to requests_proficient_projects_path
   end
 
+  def generate_acquired_badge
+    badge =
+      Training.where(
+        id: params[:training_id],
+      ).first
+    if badge.present?
+      render plain: "#{badge.name_en} - #{params[:level]}"
+    else
+      render plain: "No badges will be acquired"
+    end
+  end
 
   private
 
