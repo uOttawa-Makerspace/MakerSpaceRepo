@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_06_05_185522) do
+ActiveRecord::Schema[7.2].define(version: 2025_06_06_175655) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -132,6 +132,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_05_185522) do
     t.boolean "active", default: true
     t.string "demotion_reason"
     t.bigint "demotion_staff_id"
+    t.string "level"
     t.index ["demotion_staff_id"], name: "index_certifications_on_demotion_staff_id"
     t.index ["user_id"], name: "index_certifications_on_user_id"
   end
@@ -1138,6 +1139,15 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_05_185522) do
     t.index ["space_id"], name: "index_training_levels_on_space_id"
   end
 
+  create_table "training_requirements", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "training_id"
+    t.bigint "proficient_project_id"
+    t.index ["proficient_project_id"], name: "index_training_requirements_on_proficient_project_id"
+    t.index ["training_id"], name: "index_training_requirements_on_training_id"
+  end
+
   create_table "training_sessions", id: :serial, force: :cascade do |t|
     t.integer "training_id"
     t.integer "user_id"
@@ -1376,6 +1386,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_05_185522) do
   add_foreign_key "sub_space_bookings", "users", column: "approved_by_id"
   add_foreign_key "sub_spaces", "spaces"
   add_foreign_key "training_levels", "spaces"
+  add_foreign_key "training_requirements", "proficient_projects"
+  add_foreign_key "training_requirements", "trainings"
   add_foreign_key "training_sessions", "trainings"
   add_foreign_key "training_sessions", "users"
   add_foreign_key "trainings", "skills"

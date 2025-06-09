@@ -17,6 +17,7 @@ class ProficientProject < ApplicationRecord
            source: :proficient_project
   has_many :cc_moneys, dependent: :destroy
   has_many :order_items, dependent: :destroy
+  has_many :training_requirements, dependent: :destroy
   has_many :project_kits, dependent: :destroy
   belongs_to :drop_off_location, optional: true
 
@@ -55,6 +56,13 @@ class ProficientProject < ApplicationRecord
       where(proficient: bool)
     else
       self
+    end
+  end
+
+  def create_training_requirements(training_requirements_id)
+    training_requirements_id.each do |training_id|
+      training = Training.find_by(id: training_id)
+      training_requirements.create(training: training) if training
     end
   end
 

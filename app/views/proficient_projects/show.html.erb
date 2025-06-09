@@ -11,11 +11,11 @@
     </div>
   <% end %>
   <div class="text-center">
-    Badge that will be Awarded:
+    Training that will be Awarded:
     <br/>
-    <% badge_template = @proficient_project.badge_template %>
-    <% if badge_template.present? %>
-      <%= image_tag(badge_template.image_url, style: 'width: 100px;', alt: 'Proficient Project Image') %>
+    <% training = @proficient_project.training %>
+    <% if training.present? %>
+      <%= render "badges/badge_icon", width: 230, height: 230, level: @proficient_project.level, name_en: training.name_en, name_fr: training.name_fr, skill: training.skill_id %>
     <% else %>
       None
     <% end %>

@@ -386,10 +386,10 @@ class User < ApplicationRecord
     update(wallet: get_total_cc)
   end
 
-  def has_required_badges?(badge_requirements)
-    user_badges_set = badges.pluck(:badge_template_id).to_set
-    badge_requirements_set = badge_requirements.pluck(:badge_template_id).to_set
-    badge_requirements_set.subset?(user_badges_set)
+  def has_required_trainings?(training_requirements)
+    user_trainings_set = training_sessions.pluck(:training_id).to_set
+    training_requirements_set = training_requirements.pluck(:training_id).to_set
+    training_requirements_set.subset?(user_trainings_set)
   end
 
   def highest_badge(training)

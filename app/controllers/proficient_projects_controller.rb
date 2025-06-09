@@ -82,6 +82,11 @@ class ProficientProjectsController < DevelopmentProgramsController
   def create
     @proficient_project = ProficientProject.new(proficient_project_params)
     if @proficient_project.save
+      if params[:training_requirements_id].present?
+        @proficient_project.create_training_requirements(
+          params[:training_requirements_id]
+        )
+      end
       begin
         create_photos
       rescue FastImage::ImageFetchFailure,
@@ -118,6 +123,7 @@ class ProficientProjectsController < DevelopmentProgramsController
 
   def edit
     @training_levels = TrainingSession.return_levels
+    @trainings = Training.all
   end
 
   def update
