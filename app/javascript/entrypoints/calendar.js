@@ -1,4 +1,4 @@
-import { RRule, rrulestr } from "rrule";
+import { RRule } from "rrule";
 import { Modal } from "bootstrap";
 
 import {

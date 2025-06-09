@@ -31,18 +31,26 @@ document.addEventListener("turbo:load", async () => {
     height: "80vh",
     customButtons: {
       toggleWeekends: {
-        text: "Toggle Weekends",
+        text: "",
         click: () => {
           calendar.setOption("weekends", !calendar.getOption("weekends"));
+
+          document.querySelector(".fc-toggleWeekends-button").innerHTML =
+            calendar.getOption("weekends") ? "Hide Weekends" : "Show Weekends";
         },
       },
       toggleEventOverlap: {
-        text: "Toggle Overlap",
+        text: "",
         click: () => {
           calendar.setOption(
             "slotEventOverlap",
             !calendar.getOption("slotEventOverlap"),
           );
+
+          document.querySelector(".fc-toggleEventOverlap-button").innerHTML =
+            calendar.getOption("slotEventOverlap")
+              ? "Disable Event Overlap"
+              : "Enable Event Overlap";
         },
       },
     },
@@ -149,6 +157,15 @@ document.addEventListener("turbo:load", async () => {
   document.getElementById("spinner_container").style.display = "none";
   calendar.render();
 
+  // Set custom button text
+  document.querySelector(".fc-toggleWeekends-button").innerHTML =
+    calendar.getOption("weekends") ? "Hide Weekends" : "Show Weekends";
+
+  document.querySelector(".fc-toggleEventOverlap-button").innerHTML =
+    calendar.getOption("slotEventOverlap")
+      ? "Disable Event Overlap"
+      : "Enable Event Overlap";
+
   // Init imported calendars
   const importedCalendarsRes = await fetch(
     "/admin/calendar/imported_calendars_json/" +
@@ -179,7 +196,6 @@ document.addEventListener("turbo:load", async () => {
    * @param {Array} hiddenStaff - The array of staff IDs that are hidden from query params. This is used to filter out events for those staff members.
    * @returns {Object} - FullCalendar event source object.
    * @description This function generates events from the staff data returned from the server.
-   * THIS SHOULD PROBABLY BE DONE IN THE CONTROLLER BUT THE DATA OBJECT IS REALLY NICE TO USE TO TRACK UNAVAILS IN THE MODAL
    */
   function generateEventsFromStaffData(data) {
     try {
@@ -230,7 +246,7 @@ document.addEventListener("turbo:load", async () => {
                 title: "No Unavailabilities for this user",
                 allDay: true,
                 extendedProps: {
-                  name: staff.name + " (No unavailabilities yet)",
+                  name: staff.name + " (0 unavailabilities)",
                 },
               },
             ],

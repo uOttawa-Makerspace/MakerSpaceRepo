@@ -1,5 +1,5 @@
 import { Modal } from "bootstrap";
-import { RRule, rrulestr } from "rrule";
+import { RRule } from "rrule";
 
 import {
   parseLocalDatetimeString,
@@ -13,9 +13,10 @@ document.addEventListener("turbo:load", () => {
     .addEventListener("click", addUnavailabilityClick);
 });
 
-export function eventClick(info, events) {
-  const event = info.event;
-  const eventFromEvents = events.find((e) => e.id == event.id);
+// Closely matches ./calendar.js eventClick functionality
+export function eventClick(eventImpl) {
+  const event = eventImpl._def;
+  const id = eventImpl.id;
 
   // Show modal
   const modal = new Modal(document.getElementById("unavailabilityModal"));
@@ -23,7 +24,7 @@ export function eventClick(info, events) {
 
   // Set form action to edit path
   const form = document.querySelector("#unavailabilityModal form");
-  form.action = `/staff/unavailabilities/${event.id}`;
+  form.action = `/staff/unavailabilities/${id}`;
   const methodInput = document.createElement("input");
   methodInput.type = "hidden";
   methodInput.name = "_method";
@@ -33,10 +34,10 @@ export function eventClick(info, events) {
   const startTimeField = document.getElementById("start_time_field");
   const endTimeField = document.getElementById("end_time_field");
 
-  if (event.allDay) {
+  if (eventImpl.allDay) {
     document.getElementById("all_day_checkbox").checked = true;
 
-    const startDate = new Date(event.start);
+    const startDate = new Date(eventImpl.start);
     startDate.setHours(0, 0, 0, 0);
 
     const endDate = new Date(startDate);
@@ -46,13 +47,10 @@ export function eventClick(info, events) {
     endTimeField.value = toLocalDatetimeString(endDate);
     endTimeField.disabled = true;
   } else {
-    const start = new Date(event.start);
+    const start = new Date(eventImpl.start);
     startTimeField.value = toLocalDatetimeString(start);
-    const duration =
-      new Date(eventFromEvents.end) - new Date(eventFromEvents.start);
-    endTimeField.value = toLocalDatetimeString(
-      new Date(start.getTime() + duration),
-    );
+    const end = new Date(eventImpl.end);
+    endTimeField.value = toLocalDatetimeString(end);
   }
 
   document.getElementById("title").value = event.title || "";
@@ -60,8 +58,14 @@ export function eventClick(info, events) {
     event.extendedProps.description || "";
 
   // unbuild the rrule
-  if (eventFromEvents.rrule) {
-    const rule = rrulestr(eventFromEvents.rrule);
+  if (
+    event.recurringDef &&
+    event.recurringDef.typeData &&
+    event.recurringDef.typeData.rruleSet
+  ) {
+    const rule = new RRule(
+      event.recurringDef.typeData.rruleSet._rrule[0].origOptions,
+    );
 
     const frequency = document.querySelector("#recurrence_frequency");
     const options = document.querySelector("#recurrence_options");
@@ -96,7 +100,7 @@ export function eventClick(info, events) {
     }
 
     untilInput.value = toLocalDateString(rule.options.until);
-    ruleField.value = eventFromEvents.rrule;
+    ruleField.value = rule.toString();
   }
 
   document.getElementById("unavailabilityModalLabel").textContent =
@@ -105,7 +109,7 @@ export function eventClick(info, events) {
   saveButton.value = "Update";
 
   // Show update type dropdown if recurrency present
-  if (eventFromEvents.rrule) {
+  if (event.recurringDef) {
     document.getElementById("update_dropdown_items").appendChild(saveButton);
     document.getElementById("update_dropdown").style.display = "block";
   } else {
@@ -120,7 +124,7 @@ export function eventClick(info, events) {
   const followingForm = document.getElementById("delete_following_form");
   const allForm = document.getElementById("delete_all_form");
 
-  if (eventFromEvents.rrule) {
+  if (event.recurringDef) {
     followingForm.style.display = "block";
     allForm.style.display = "block";
   } else {
@@ -128,10 +132,8 @@ export function eventClick(info, events) {
     allForm.style.display = "none";
   }
 
-  const id = event.id;
-
   document.querySelectorAll(".delete_start_date").forEach((e) => {
-    e.value = parseLocalDatetimeString(event.start).toISOString();
+    e.value = parseLocalDatetimeString(eventImpl.start).toISOString();
   });
 
   singleForm.action = `/staff/unavailabilities/${id}/delete_with_scope`;

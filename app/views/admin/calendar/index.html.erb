@@ -1,3 +1,8 @@
+<div class="my-4">
+  <h1>Admin Calendar</h1>
+  <p>View unavailabilities and imported calendars, add and manage events (shifts, trainings, meetings, etc.), then publish for staff to see on <%= link_to "their work calendar", "/staff/my_calendar", data: { turbo: true } %> and the synced Google Calendar.</p>
+</div>
+
 <div class="mt-4">
     <%= form_tag staff_dashboard_change_space_path, method: :put do %>
         <div class="input-group mb-3">
@@ -84,10 +89,10 @@
     }
 
     .fc-event {
-    opacity: 0;
-    transition: opacity 0.1s ease-in;
+        opacity: 0;
+        transition: opacity 0.1s ease-in;
     }
     .fc-event.fade-in {
-    opacity: 1;
+        opacity: 1;
     }
 </style>

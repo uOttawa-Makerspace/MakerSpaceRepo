@@ -23,8 +23,14 @@ document.addEventListener("turbo:load", async () => {
     selectMinDistance: "30",
     height: "80vh",
     events: "/staff/unavailabilities/json",
-    eventClick: (info) => eventClick(info, events),
+    eventClick: (info) => eventClick(info.event),
     select: (info) => eventCreate(info),
+    eventDidMount: (info) => {
+      // fade in event
+      requestAnimationFrame(() => {
+        info.el.classList.add("fade-in");
+      });
+    },
     initialDate: localStorage.fullCalendarDefaultDateStaffUnavailabilities,
     datesSet: (info) => {
       // recall dates on refresh
@@ -34,5 +40,8 @@ document.addEventListener("turbo:load", async () => {
     },
   });
 
+  // Render and SHOW IT!!!
+  document.getElementById("calendar_container").style.display = "block";
+  document.getElementById("spinner_container").style.display = "none";
   calendar.render();
 });

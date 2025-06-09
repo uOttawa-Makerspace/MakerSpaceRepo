@@ -1,9 +1,40 @@
-<button type="button" id="addUnavailabilityButton" class="btn btn-outline-primary my-4" data-bs-toggle="modal" data-bs-target="#unavailabilityModal">
-  + Add Unavailability
-</button>
+<div class="my-4">
+  <h1>My Unavailabilities</h1>
+  <p>Add your schedule unavailabilities (classes, appointments, etc.) by clicking the button below or dragging on the calendar. Click on an event to delete or edit it. <%= link_to "View your work schedule here", "/staff/my_calendar", data: { turbo: true } %>.</p>
+</div>
 
-<div id="calendar"></div>
+<div id="calendar_container">
+  <button type="button" id="addUnavailabilityButton" class="btn btn-outline-primary my-4" data-bs-toggle="modal" data-bs-target="#unavailabilityModal">
+    + Add Unavailability
+  </button>
+
+  <div id="calendar"></div>
+</div>
+
+<div id="spinner_container">
+    <div id='spinner' class="spinner-border" role="status"></div>
+</div>
 
 <%= vite_javascript_tag 'fullcalendar_setup_staff_unavailabilities' %>
 
 <%= render 'form' %>
+
+<style>
+    #calendar_container {
+        display: none;
+    }
+
+    #spinner_container {
+        height: 50vh;
+        display: grid;
+        place-items: center;
+    }
+
+    .fc-event {
+        opacity: 0;
+        transition: opacity 0.1s ease-in;
+    }
+    .fc-event.fade-in {
+        opacity: 1;
+    }
+</style>
