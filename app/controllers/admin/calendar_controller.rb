@@ -32,6 +32,7 @@ class Admin::CalendarController < AdminAreaController
             extendedProps: {
               description: u.description
             },
+            className: "unavailability"
           }
         end
       }

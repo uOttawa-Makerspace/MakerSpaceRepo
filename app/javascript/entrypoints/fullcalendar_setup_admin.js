@@ -212,6 +212,7 @@ document.addEventListener("turbo:load", async () => {
               unavailability.start_date,
               unavailability.end_date,
             ),
+            className: "unavailability",
             extendedProps: {
               name: staff.name,
               description: unavailability.extendedProps.description,
