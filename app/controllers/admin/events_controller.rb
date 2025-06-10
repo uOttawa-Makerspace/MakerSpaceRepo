@@ -96,14 +96,14 @@ class Admin::EventsController < AdminAreaController
         flash[:alert] = "Failed to update event: #{@event.errors.full_messages.to_sentence}"
       end
     when "all"
-      old_date_new_time_start = combine_date_and_time(@event.start_time.utc, 
+      old_date_new_time_start = helpers.combine_date_and_time(@event.start_time.utc, 
 Time.parse(event_params[:utc_start_time]).utc)
       duration = (Time.parse(event_params[:utc_end_time]).utc - Time.parse(event_params[:utc_start_time]).utc).to_i
       old_date_new_time_end = old_date_new_time_start + duration
 
 
-      old_rrule, old_dtstart, old_extra_lines  = parse_rrule_and_dtstart(@event.recurrence_rule)
-      new_rrule, new_dtstart, _new_extra_lines  = parse_rrule_and_dtstart(event_params[:recurrence_rule])
+      old_rrule, old_dtstart, old_extra_lines = helpers.parse_rrule_and_dtstart(@event.recurrence_rule)
+      new_rrule, new_dtstart, _new_extra_lines = helpers.parse_rrule_and_dtstart(event_params[:recurrence_rule])
 
       rule_to_use = if old_rrule == new_rrule
         # the freq is the same, so we just need to make the dtstart time correct
@@ -148,9 +148,10 @@ Time.parse(event_params[:utc_start_time]).utc)
         flash[:alert] = "Failed to update unavailability: #{@event.errors.full_messages.to_sentence}"
       end
     when "this"
-      exclusion_start_time = combine_date_and_time(Time.parse(event_params[:utc_start_time]).utc, @event.start_time.utc)
+      exclusion_start_time = helpers.combine_date_and_time(Time.parse(event_params[:utc_start_time]).utc, 
+@event.start_time.utc)
 
-      updated_rule = add_exdate_to_rrule(@event.recurrence_rule, exclusion_start_time)
+      updated_rule = helpers.add_exdate_to_rrule(@event.recurrence_rule, exclusion_start_time)
 
       @event.update(recurrence_rule: updated_rule)
 
@@ -194,7 +195,7 @@ Time.parse(event_params[:utc_start_time]).utc)
       return
     end
 
-    rrule_line, dtstart, rest_of_lines = parse_rrule_and_dtstart(@event.recurrence_rule)
+    rrule_line, dtstart, rest_of_lines = helpers.parse_rrule_and_dtstart(@event.recurrence_rule)
     exdates = []
 
     case scope
@@ -202,7 +203,7 @@ Time.parse(event_params[:utc_start_time]).utc)
       exdates << Time.parse(params[:start_date]).utc.strftime("%Y%m%dT%H%M%SZ")
     when "following"
       previous_day = Time.parse(params[:start_date]).utc - 24 * 60 * 60
-      rrule_line = "#{remove_until_from_rrule(rrule_line)};UNTIL=#{previous_day.strftime("%Y%m%dT%H%M%SZ")}"
+      rrule_line = "#{helpers.remove_until_from_rrule(rrule_line)};UNTIL=#{previous_day.strftime("%Y%m%dT%H%M%SZ")}"
     when "all"
       @event.destroy
       redirect_to admin_calendar_index_path, notice: "Event series deleted."
@@ -370,40 +371,5 @@ notice: "#{deleted_count} draft event(s) deleted. Any recurring events were unto
     rescue StandardError => e
       redirect_to admin_calendar_index_path, alert: "Error copying events: #{e.message}"
     end
-  end
-
-
-  private
-
-  def parse_rrule_and_dtstart(rule_string)
-    lines = rule_string.strip.split("\n")
-    rrule_line = lines.find { |l| l.start_with?("RRULE:") }&.sub("RRULE:", "")
-    dtstart_line = lines.find { |l| l.start_with?("DTSTART:") }&.sub("DTSTART:", "")
-
-    rest_of_lines = lines.reject { |l| l.start_with?("RRULE:", "DTSTART:") }
-
-    dtstart = dtstart_line.present? ? Time.parse(dtstart_line) : nil
-    
-    [rrule_line, dtstart, rest_of_lines]
-  end
-
-  def add_exdate_to_rrule(rrule_str, date_to_exclude)
-    return rrule_str if rrule_str.blank? || date_to_exclude.blank?
-
-    exdate = date_to_exclude.strftime('%Y%m%dT%H%M%SZ')
-    "#{rrule_str}\nEXDATE:#{exdate}"
-  end
-
-  def combine_date_and_time(keep_date, keep_time)
-    keep_date.change(
-      hour: keep_time.hour,
-      min: keep_time.min,
-      sec: keep_time.sec
-    )
-  end
-
-  def remove_until_from_rrule(rrule_line)
-    rrule_line = rrule_line.gsub(/;UNTIL=[^;Z]*Z/, '') if rrule_line.include?('UNTIL=')
-    rrule_line
   end
 end

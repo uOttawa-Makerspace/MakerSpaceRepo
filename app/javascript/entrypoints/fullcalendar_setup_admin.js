@@ -8,7 +8,6 @@ import { rrulestr } from "rrule";
 
 import { Tooltip } from "bootstrap";
 
-import { isAllDay } from "./calendar_helper.js";
 import { eventClick, eventCreate } from "./calendar.js";
 
 document.addEventListener("turbo:load", async () => {
@@ -27,7 +26,7 @@ document.addEventListener("turbo:load", async () => {
     slotEventOverlap: true,
     selectable: true,
     selectMirror: true,
-    selectMinDistance: "30",
+    selectMinDistance: "15",
     height: "80vh",
     customButtons: {
       toggleWeekends: {
@@ -201,42 +200,8 @@ document.addEventListener("turbo:load", async () => {
     try {
       const allUnavails = [];
       data.map((staff) => {
-        const unavails = staff.unavailabilities.map((unavailability) => {
-          const event = {
-            id: unavailability.id,
-            groupId: staff.id,
-            start: unavailability.start_date,
-            end: unavailability.end_date,
-            title: unavailability.title,
-            allDay: isAllDay(
-              unavailability.start_date,
-              unavailability.end_date,
-            ),
-            className: "unavailability",
-            extendedProps: {
-              name: staff.name,
-              description: unavailability.extendedProps.description,
-            },
-          };
-
-          if (unavailability.recurrence_rule) {
-            try {
-              const rule = rrulestr(unavailability.recurrence_rule);
-              event.rrule = rule.toString();
-            } catch (e) {
-              console.warn(
-                "Invalid recurrence rule:",
-                unavailability.recurrence_rule,
-                e,
-              );
-            }
-          }
-
-          return event;
-        });
-
         // If there are no unavailabilities for this staff member, we add a placeholder event
-        if (unavails.length === 0)
+        if (staff.unavailabilities.length === 0)
           return allUnavails.push({
             events: [
               {
@@ -257,9 +222,9 @@ document.addEventListener("turbo:load", async () => {
 
         // Unshift to prepend to ensure any staff who haven't set their unavailability yet are at the bottom
         allUnavails.unshift({
-          events: unavails,
           id: staff.id,
           color: staff.color,
+          events: staff.unavailabilities,
         });
       });
 
@@ -379,11 +344,11 @@ document.addEventListener("turbo:load", async () => {
 
     const { checkbox, label } = createCheckboxElement(
       eventSource.id,
-      eventSource.events[0].extendedProps.name,
+      eventSource.events?.[0]?.extendedProps?.name || "Unnamed Calendar",
       eventSource.color,
       classes,
     );
-    checkbox.style.accentColor = eventSource.events[0].textColor;
+    checkbox.style.accentColor = eventSource.events?.[0]?.textColor;
     checkbox.checked = !isHidden;
 
     checkbox.addEventListener("change", (e) => {

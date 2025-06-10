@@ -1,5 +1,5 @@
 import { Collapse } from "bootstrap";
-import { RRule, rrulestr } from "rrule";
+import { datetime, RRule, rrulestr } from "rrule";
 import TomSelect from "tom-select";
 
 import {
@@ -64,7 +64,11 @@ document.addEventListener("turbo:load", async () => {
     const startDate = parseLocalDatetimeString(startTimeField.value);
     const untilDate = new Date(untilInput.value + "T23:59:59");
 
-    if (frequency.value === "") return (ruleField.value = "");
+    if (frequency.value === "") {
+      ruleField.value = "";
+      refreshTomSelect();
+      return;
+    }
 
     const rule = new RRule({
       freq: RRule[frequency.value] || RRule.DAILY,
@@ -105,19 +109,28 @@ document.addEventListener("turbo:load", async () => {
     const eventEnd = parseLocalDatetimeString(endTimeField.value);
     const eventRule = ruleField.value ? rrulestr(ruleField.value) : null;
 
-    return unavailabilities.flatMap((unavail) => {
-      const start = new Date(unavail.start_date);
-      const end = new Date(unavail.end_date);
+    const conflicts = [];
 
-      // Recurring unavailability vs recurring event
-      if (unavail.recurrence_rule) {
+    for (const unavail of unavailabilities) {
+      const start = new Date(unavail.start);
+      // if duration present, use it (rrule present), else calculate it
+      const duration =
+        typeof unavail.duration === "number"
+          ? unavail.duration
+          : new Date(unavail.end) - start;
+      const end = new Date(start.getTime() + duration);
+
+      // Recurring event vs recurring unavailability
+      if (unavail.rrule) {
         try {
-          const unavailRule = rrulestr(unavail.recurrence_rule);
-
+          const unavailRule = rrulestr(unavail.rrule);
           if (eventRule) {
             const eventDuration = eventEnd - eventStart;
             const windowStart = new Date(Math.min(start, eventStart));
-            const windowEnd = new Date(Math.max(end, eventEnd));
+            // check for 4 weeks
+            const windowEnd = new Date(
+              Date.now() + 4 * 7 * 24 * 60 * 60 * 1000,
+            );
 
             const eventOccurrences = eventRule
               .between(windowStart, windowEnd)
@@ -130,31 +143,48 @@ document.addEventListener("turbo:load", async () => {
               .between(windowStart, windowEnd)
               .map((occStart) => ({
                 start: occStart,
-                end: new Date(occStart.getTime() + (end - start)),
+                end: new Date(occStart.getTime() + duration),
               }));
 
-            return eventOccurrences
-              .filter((ev) =>
-                unavailOccurrences.some(
-                  (ua) => ev.start < ua.end && ev.end > ua.start,
-                ),
-              )
-              .map((ev) => ev.start);
+            // for each occurrence of the event, check each unavailability occurence
+            for (const ev of eventOccurrences) {
+              for (const ua of unavailOccurrences) {
+                if (ev.start < ua.end && ev.end > ua.start) {
+                  conflicts.push(ev.start);
+                }
+              }
+            }
           } else {
-            // One-off event vs recurring unavailability
-            return unavailRule.between(eventStart, eventEnd);
+            // One-time event vs recurring unavailability
+            const unavailOccurrences = unavailRule.between(
+              new Date(eventStart.getTime() - duration),
+              new Date(eventEnd.getTime() + duration),
+              true,
+            );
+
+            for (const uaStart of unavailOccurrences) {
+              const uaEnd = new Date(uaStart.getTime() + duration);
+              if (eventStart < uaEnd && eventEnd > uaStart) {
+                conflicts.push(eventStart);
+              }
+            }
           }
         } catch (e) {
           console.warn("Invalid RRULE:", e);
-          return [];
+        }
+      } else {
+        // Recurring event vs one-time unavailability
+        if (eventRule) {
+          const overlapping = eventRule.between(start, end);
+          conflicts.push(...overlapping);
+          // One-time event vs one-time unavailability
+        } else if (start < eventEnd && end > eventStart) {
+          conflicts.push(eventStart);
         }
       }
+    }
 
-      // One-time unavailability vs recurring or one-time event
-      if (eventRule) return eventRule.between(start, end);
-
-      return start < eventEnd && end > eventStart ? [eventStart] : [];
-    });
+    return conflicts.sort((a, b) => a - b);
   }
 
   function refreshTomSelect() {
@@ -207,16 +237,11 @@ document.addEventListener("turbo:load", async () => {
     });
 
     sortedStaff.forEach((staff) => {
-      const unavailableDates =
-        staff.unavailableDates.length > 0
-          ? staff.unavailableDates[0].toLocaleDateString()
-          : "";
-
       const option = document.createElement("option");
       option.value = staff.id;
       option.textContent = staff.name;
       option.dataset.color = staff.color;
-      option.dataset.unavailableDates = unavailableDates;
+      option.dataset.unavailableDates = staff.unavailableDates.toString();
       option.selected = previouslySelected.includes(staff.id.toString());
       staffSelect.add(option);
     });
@@ -232,10 +257,21 @@ document.addEventListener("turbo:load", async () => {
       render: {
         option: (data, escape) => {
           const color = escape(data.color || "#000");
+          const unavailableDates = data.unavailableDates
+            .split(",")
+            .filter(Boolean);
+          const firstDate = unavailableDates[0]
+            ? new Date(unavailableDates[0]).toLocaleDateString()
+            : null;
+          const moreDates =
+            unavailableDates.length > 1
+              ? `+${unavailableDates.length - 1}`
+              : "";
+
           return `<div style="color: ${color}">
-                        ${escape(data.text)} 
-                        ${data.unavailableDates ? `<span style='color:red;'> (Unavailable ${data.unavailableDates})</span>` : ""}
-                    </div>`;
+                    ${escape(data.text)} 
+                    ${firstDate ? `<span style='color:red;'> (Unavailable ${firstDate}${moreDates})</span>` : ""}
+                  </div>`;
         },
       },
       onItemAdd: function () {

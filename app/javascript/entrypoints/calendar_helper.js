@@ -29,12 +29,3 @@ export function parseLocalDatetimeString(value) {
   if (!value) return new Date();
   return new Date(value);
 }
-
-export function isAllDay(start, end) {
-  const startDate = new Date(start);
-  const endDate = new Date(end);
-  const diff = endDate - startDate;
-  const diffInHours = diff / (1000 * 60 * 60);
-
-  return diffInHours === 24;
-}

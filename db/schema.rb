@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_06_02_200238) do
+ActiveRecord::Schema[7.2].define(version: 2025_06_09_150913) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -1112,6 +1112,14 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_02_200238) do
     t.index ["staff_availability_id"], name: "index_staff_availability_exceptions_on_staff_availability_id"
   end
 
+  create_table "staff_external_unavailabilities", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "ics_url"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_staff_external_unavailabilities_on_user_id"
+  end
+
   create_table "staff_needed_calendars", force: :cascade do |t|
     t.string "calendar_url", null: false
     t.string "color"
@@ -1446,6 +1454,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_02_200238) do
   add_foreign_key "space_staff_hours", "training_levels"
   add_foreign_key "staff_availabilities", "time_periods"
   add_foreign_key "staff_availabilities", "users"
+  add_foreign_key "staff_external_unavailabilities", "users"
   add_foreign_key "staff_needed_calendars", "spaces"
   add_foreign_key "staff_spaces", "spaces"
   add_foreign_key "staff_spaces", "users"

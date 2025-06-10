@@ -1,6 +1,6 @@
 <div class="my-4">
   <h1>Admin Calendar</h1>
-  <p>View unavailabilities and imported calendars, add and manage events (shifts, trainings, meetings, etc.), then publish for staff to see on <%= link_to "their work calendar", "/staff/my_calendar", data: { turbo: true } %> and the synced Google Calendar.</p>
+  <p>View unavailabilities and imported calendars, add and manage events (shifts, trainings, meetings, etc.), then publish for staff to see on <%= link_to "their work calendar", "/staff/my_calendar", data: { turbo: true } %> and the synced Google Calendar. Assigned staff availability is based solely on staff set unavailabilities, not admin set events.</p>
 </div>
 
 <div class="mt-4">
@@ -88,7 +88,7 @@
         max-width: none !important;
     }
 
-    .fc-event {
+    .fc-event:not(.fc-event-mirror) {
         opacity: 0;
         transition: opacity 0.1s ease-in;
     }
