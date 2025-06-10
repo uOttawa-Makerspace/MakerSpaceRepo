@@ -1,5 +1,5 @@
 import { Collapse } from "bootstrap";
-import { datetime, RRule, rrulestr } from "rrule";
+import { RRule, rrulestr } from "rrule";
 import TomSelect from "tom-select";
 
 import {

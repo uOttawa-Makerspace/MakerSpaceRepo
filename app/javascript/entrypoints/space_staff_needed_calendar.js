@@ -12,5 +12,9 @@ document.addEventListener("DOMContentLoaded", () => {
     clone.querySelectorAll("input").forEach((input) => {
       input.value = "";
     });
+    clone.querySelector("button").addEventListener("click", (el) => {
+      el.target.closest("button").parentNode.remove();
+    });
+    clone.style.visibility = "visible";
   });
 });

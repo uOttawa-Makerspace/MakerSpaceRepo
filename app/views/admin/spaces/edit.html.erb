@@ -162,10 +162,10 @@
     <%= form_for update_staff_needed_calendars_admin_spaces_path, url: { controller: 'admin/spaces', action: 'update_staff_needed_calendars', space_id: @space.id }, method: :put do |f| %>
       <div id="link-container">
         <% @staff_needed_calendars.each_with_index do |snc, i| %>
-          <div class="d-flex upload-file-input mb-2 gap-1" <%= 'id=new-link-input' if i == 0 %>>
+          <div class="d-flex upload-file-input mb-2 gap-1">
             <input type="color" id="colorpicker" name="staff_needed_calendar_color[]" class="form-control form-control-color" style="aspect-ratio: 1;" value="<%= snc.color %>" title="Choose your color">
-            <%= text_field_tag 'staff_needed_calendar_name[]', snc.name, { class: 'form-control w-25', placeholder: 'Enter name...', required: true } %>
-            <%= text_field_tag 'staff_needed_calendar[]', snc.calendar_url, { class: 'form-control', placeholder: 'Enter ICS URL...', required: true } %>
+            <%= text_field_tag 'staff_needed_calendar_name[]', snc.name, { class: 'form-control w-25', placeholder: 'Enter name...' } %>
+            <%= text_field_tag 'staff_needed_calendar[]', snc.calendar_url, { class: 'form-control', placeholder: 'Enter ICS URL...' } %>
             <button class="btn btn-danger snc-delete-button ms-2" type="button">
               <i class="fa fa-trash"></i>
             </button>
@@ -176,6 +176,15 @@
       <%= f.submit 'Save Calendars', class: 'btn btn-primary' %>
     <% end %>
 
+    <%# template %>
+    <div class="d-flex upload-file-input mb-2 gap-1" id="new-link-input" style="visibility: hidden;">
+      <input type="color" id="colorpicker" name="staff_needed_calendar_color[]" class="form-control form-control-color" style="aspect-ratio: 1;" value="navyblue" title="Choose your color">
+      <%= text_field_tag 'staff_needed_calendar_name[]', nil, { class: 'form-control w-25', placeholder: 'Enter name...' } %>
+      <%= text_field_tag 'staff_needed_calendar[]', nil, { class: 'form-control', placeholder: 'Enter ICS URL...' } %>
+      <button class="btn btn-danger snc-delete-button ms-2" type="button">
+        <i class="fa fa-trash"></i>
+      </button>
+    </div>
   </div>
 
   <br><br>

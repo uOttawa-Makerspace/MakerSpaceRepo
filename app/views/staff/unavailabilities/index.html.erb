@@ -15,7 +15,33 @@
     <div id='spinner' class="spinner-border" role="status"></div>
 </div>
 
-<%= vite_javascript_tag 'fullcalendar_setup_staff_unavailabilities' %>
+<br>
+
+<div class="my-3">
+  <h4>Imported Unavailability Calendars</h4>
+  <p>Paste in any ICS link (from Google Calendar, Outlook, Apple Calendar, etc.) to be used as your unavailabilities.</p>
+  <%= form_with url: update_external_unavailabilities_staff_unavailabilities_path, method: :patch, local: false, html: { class: "useTurbo" } do |f| %>
+    <div id="link-container">
+      <% @external_unavailabilities.each_with_index do |calendar, i| %>
+        <div class="d-flex mb-2 gap-1">
+          <%= text_field_tag 'external_calendar[]', calendar.ics_url, { class: 'form-control', placeholder: 'Enter ICS URL...' } %>
+          <button class="btn btn-danger calendar-delete-button ms-2" type="button">
+            <i class="fa fa-trash"></i>
+          </button>
+        </div>
+      <% end %>
+    </div>
+    <button type="button" class="btn btn-outline-primary" id="new-calendar">New Calendar</button>
+    <%= f.submit 'Save Calendars', class: 'btn btn-primary' %>
+  <% end %>
+  <%# template %>
+  <div class="d-flex mb-2 gap-1" style="visibility: hidden;" id="new-link-input">
+    <%= text_field_tag 'external_calendar[]', nil, { class: 'form-control', placeholder: 'Enter ICS URL...' } %>
+    <button class="btn btn-danger calendar-delete-button ms-2" type="button">
+      <i class="fa fa-trash"></i>
+    </button>
+  </div>
+</div>
 
 <%= render 'form' %>
 

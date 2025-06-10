@@ -4,7 +4,7 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 
-import { eventClick, eventCreate } from "./unavailabilities.js";
+import { eventClick, eventCreate } from "./unavailabilities_helpers.js";
 
 document.addEventListener("turbo:load", async () => {
   const calendarEl = document.getElementById("calendar");

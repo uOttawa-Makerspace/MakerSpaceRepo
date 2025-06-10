@@ -316,6 +316,9 @@ class Admin::SpacesController < AdminAreaController
       ] = "An error occurred while trying to add/remove the calendar URLs, please try again later."
     end
     StaffNeededCalendar.where(space_id: params[:space_id]).destroy_all
+
+    return if params[:staff_needed_calendar].blank?
+
     (
       if (params[:staff_needed_calendar].is_a? Array)
         params[:staff_needed_calendar]

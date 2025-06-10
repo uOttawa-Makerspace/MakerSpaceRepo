@@ -1,6 +1,10 @@
 class Staff::UnavailabilitiesController < StaffAreaController
   layout "staff_area"
 
+  def index
+    @external_unavailabilities = StaffExternalUnavailability.where(user_id: current_user.id)
+  end
+
   def create
     staff_params = params.require(:staff_unavailability).permit(
       :title, :description, :utc_start_time, :utc_end_time, :recurrence_rule
@@ -159,13 +163,11 @@ Time.parse(staff_params[:utc_start_time]).utc)
 
     redirect_to staff_unavailabilities_path, notice: "Unavailability deleted (#{scope})."
   end
-
   def json
     @unavailabilities = StaffUnavailability.where(user_id: current_user.id)
-
     
-    render json: @unavailabilities.map { |u| 
-    duration = (u.end_time.to_time - u.start_time.to_time) * 1000
+    local_unavails = @unavailabilities.map do |u| 
+      duration = (u.end_time.to_time - u.start_time.to_time) * 1000
       {
         id: u.id,
         title: u.title || "Unavailable",
@@ -175,8 +177,53 @@ Time.parse(staff_params[:utc_start_time]).utc)
         allDay: u.start_time.to_time == u.end_time.to_time - 1.day,
         extendedProps: {
           description: u.description
-        }
+        },
+        color: helpers.generate_color_from_id(current_user.id),
       }
-    }
+    end.compact
+    
+    ics_unavails = current_user.staff_external_unavailabilities.flat_map do |external|
+      parsed = helpers.parse_ics_calendar(
+        external.ics_url,
+        name: "#{current_user.name} External Unavailability",
+      )
+      
+      parsed.flat_map do |calendar|
+        calendar[:events].map do |event|
+          event.merge(
+            title: "External - #{event[:title]}", 
+          )
+        end
+      end
+    end
+
+    # Combine both types of unavailabilities
+    combined_unavailabilities = local_unavails + ics_unavails
+    
+    render json: combined_unavailabilities
+  end
+
+  def update_external_unavailabilities
+    StaffExternalUnavailability.where(user_id: current_user.id).destroy_all
+
+    if params[:external_calendar].blank?
+      return redirect_to staff_unavailabilities_path, notice: "External calendar links updated."
+    end
+
+    (
+      if params[:external_calendar].is_a? Array
+        params[:external_calendar].compact
+      else
+        [params[:external_calendar]].compact
+      end
+    ).each do |calendar|
+      next if calendar.blank?
+      StaffExternalUnavailability.create(
+        ics_url: calendar,
+        user_id: current_user.id
+      )
+    end
+
+    redirect_to staff_unavailabilities_path, notice: "External calendar links updated."
   end
 end

@@ -493,7 +493,8 @@ Rails.application.routes.draw do
     end
     resources :unavailabilities do
       collection do
-        get :json  
+        get :json
+        patch :update_external_unavailabilities
       end
       member do
         delete :delete_with_scope
