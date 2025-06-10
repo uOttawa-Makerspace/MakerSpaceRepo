@@ -16,6 +16,7 @@
   </thead>
   <tbody>
   <% @repo_user.certifications.highest_certifications(@repo_user.id).each do |certification| %>
+  <% unless certification.nil? %>
     <tr>
       <td>
         <% if @user.admin? %>
@@ -44,6 +45,7 @@
         </td>
       <% end %>
     </tr>
+  <% end %>  
   <% end %>
   </tbody>
 </table>

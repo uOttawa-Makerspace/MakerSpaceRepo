@@ -29,6 +29,7 @@ class ProficientProject < ApplicationRecord
               message: "Title already exists"
             }
   before_save :capitalize_title
+  
 
   scope :filter_by_level, ->(level) { where(level: level) }
 
