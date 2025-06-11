@@ -73,8 +73,7 @@ document.addEventListener("turbo:load", async () => {
       if (info.event.extendedProps.background) {
         info.el.setAttribute(
           "style",
-          `
-          background: ${info.event.extendedProps.background}`,
+          `background: ${info.event.extendedProps.background}`,
         );
       }
     },
