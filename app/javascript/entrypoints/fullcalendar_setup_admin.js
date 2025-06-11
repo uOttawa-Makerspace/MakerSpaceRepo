@@ -8,7 +8,7 @@ import { rrulestr } from "rrule";
 
 import { Tooltip } from "bootstrap";
 
-import { eventClick, eventCreate } from "./calendar.js";
+import { eventClick, eventCreate } from "./calendar_helper.js";
 
 document.addEventListener("turbo:load", async () => {
   const calendarEl = document.getElementById("calendar");

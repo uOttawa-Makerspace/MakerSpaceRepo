@@ -2,11 +2,23 @@ class Admin::CalendarController < AdminAreaController
   layout "admin_area"
 
   def index
-     @spaces =
+    @spaces =
       Space.all.where(
         id: StaffSpace.where(user_id: current_user.id).pluck(:space_id)
       )
     @space_id = @user.space_id || Space.first.id
+
+    @colors = StaffSpace
+      .includes(:user)
+      .where(space_id: @space_id)
+      .map do |staff_space|
+        {
+          id: staff_space.user.id,
+          name: staff_space.user.name,
+          color: staff_space.color
+        }
+    end
+    .sort_by { |user| user[:name].downcase }
   end
 
   def unavailabilities_json
@@ -29,6 +41,7 @@ class Admin::CalendarController < AdminAreaController
           **(u.recurrence_rule.present? ? { rrule: u.recurrence_rule, duration: duration } : {}),
           allDay: u.start_time.to_time == u.end_time.to_time - 1.day,
           extendedProps: {
+            name: staff.name,
             description: u.description
           },
           className: "unavailability"
@@ -50,10 +63,11 @@ class Admin::CalendarController < AdminAreaController
 
       {
         id: staff.id,
+        # for users with no unavails, we pull the name from here
         name: staff.name,
-        color: helpers.generate_color_from_id(staff.id),
+        color: StaffSpace.find_by(user_id: staff.id, space_id: params[:id])&.color,
         unavailabilities: local_unavails + ics_unavails
-      }
+    }
     end
 
     render json: result
@@ -72,6 +86,23 @@ class Admin::CalendarController < AdminAreaController
     end
 
     render json: all_calendars
+  end
+
+  def update_color
+    if params[:user_id].present? &&
+         StaffSpace.where(
+           user_id: params[:user_id],
+           space_id: @user.space_id
+         ).present? && params[:color].present?
+      staff_space =
+        StaffSpace.where(
+          user_id: params[:user_id],
+          space_id: @user.space_id
+        ).first
+      return flash[:notice] = "Color updated successfully" if staff_space.update(color: params[:color])
+    end
+
+    flash[:alert] = "An error occurred, try again later."
   end
 
 

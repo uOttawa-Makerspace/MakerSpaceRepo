@@ -5,10 +5,6 @@ Rails.application.routes.draw do
   resources :discount_codes, only: %i[new index create]
   resources :coupon_codes, only: %i[index new create destroy edit update]
 
-  namespace :api do
-    post "sync_to_google_calendar", to: "calendar#sync_to_google"
-  end
-
   resources :custom_webhooks do
     collection do
       post :orders_paid
@@ -444,6 +440,7 @@ Rails.application.routes.draw do
         get 'unavailabilities_json/:id', to: 'calendar#unavailabilities_json', as: :unavailabilities_json
         get 'imported_calendars_json/:id', to: 'calendar#imported_calendars_json', as: :imported_calendars_json
         get 'ics_to_json', to: 'calendar#ics_to_json', as: :ics_to_json 
+        post :update_color
       end
     end
 

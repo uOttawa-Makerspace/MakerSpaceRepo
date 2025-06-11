@@ -178,7 +178,7 @@ Time.parse(staff_params[:utc_start_time]).utc)
         extendedProps: {
           description: u.description
         },
-        color: helpers.generate_color_from_id(current_user.id),
+        color: StaffSpace.find_by(user_id: u.id, space_id: params[:id])&.color,
       }
     end.compact
     
