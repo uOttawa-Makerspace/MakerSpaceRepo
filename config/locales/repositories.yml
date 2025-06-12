@@ -74,7 +74,7 @@ fr:
     reason: "Êtes-vous en train de créer un projet lié a une proposition de projet ? Veuillez choisir la proposition ci-dessous."
     new_owner: "Ajouter un autre proprietaire"
     proj_is: "Votre projet est..."
-    pub_msg: "Tout le monde peut voir ce référentiel numérique"
+    pub_msg: "Tout le monde peut voir ce dépôt"
     private: "Privé"
     priv_msg: "Seules les personnes disposant de l'URL et du mot de passe peuvent consulter ce dépôt"
     create: "Créer ton Projet"
