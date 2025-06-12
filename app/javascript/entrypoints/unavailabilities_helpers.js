@@ -112,7 +112,7 @@ export function eventClick(eventImpl) {
   }
 
   // Handle delete buttons
-  document.getElementById("delete_forms").style.display = "block";
+  document.getElementById("delete_forms").style.display = "flex";
 
   const singleForm = document.getElementById("delete_single_form");
   const followingForm = document.getElementById("delete_following_form");

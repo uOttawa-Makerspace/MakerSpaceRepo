@@ -201,7 +201,7 @@ document.addEventListener("turbo:load", () => {
   });
 
   // Before form submission, convert to UTC
-  document.querySelector("form").addEventListener("submit", (e) => {
+  document.getElementById("unavailForm").addEventListener("submit", (e) => {
     buildRule();
 
     const startLocal = parseLocalDatetimeString(startTimeField.value);

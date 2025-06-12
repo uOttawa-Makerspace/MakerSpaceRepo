@@ -15,6 +15,7 @@ class Admin::CalendarController < AdminAreaController
         {
           id: staff_space.user.id,
           name: staff_space.user.name,
+          username: staff_space.user.username,
           color: staff_space.color
         }
     end

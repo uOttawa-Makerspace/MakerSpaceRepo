@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe Admin::ShiftsController, type: :controller do
+RSpec.describe Admin::EventsController, type: :controller do
   before(:all) { @admin = create(:user, :admin) }
 
   before(:each) do
@@ -8,9 +8,27 @@ RSpec.describe Admin::ShiftsController, type: :controller do
     session[:user_id] = @admin.id
   end
 
+  # Add this factory definition if you don't have it in your factories file
+  FactoryBot.define do
+    factory :event do
+      title { "Test Event" }
+      description { "Test Description" }
+      start_time { 1.day.from_now }
+      end_time { 1.day.from_now + 2.hours }
+      event_type { "meeting" }
+      space
+      created_by { @admin }
+      draft { false }
+
+      trait :recurring do
+        recurrence_rule { "RRULE:FREQ=WEEKLY;COUNT=5" }
+      end
+    end
+  end
+
   describe "GET /index" do
     context "logged as regular user" do
-      it "should return 200" do
+      it "should redirect to root" do
         user = create(:user, :regular_user)
         session[:user_id] = user.id
         get :index
@@ -19,7 +37,7 @@ RSpec.describe Admin::ShiftsController, type: :controller do
     end
 
     context "logged as admin" do
-      it "should return 200" do
+      it "should return success" do
         Space.find_or_create_by(name: "Makerspace")
         get :index
         expect(response).to have_http_status(:success)
@@ -27,191 +45,250 @@ RSpec.describe Admin::ShiftsController, type: :controller do
     end
   end
 
-  describe "GET /shifts" do
-    context "logged as regular user" do
-      it "should return 200" do
-        user = create(:user, :regular_user)
-        session[:user_id] = user.id
-        get :shifts
-        expect(response).to redirect_to root_path
+  describe "POST /create" do
+    let(:space) { create(:space) }
+    let(:staff_members) { create_list(:user, 2, :staff) }
+    let(:valid_params) do
+      {
+        event: {
+          title: "Team Meeting",
+          description: "Weekly sync",
+          utc_start_time: 1.day.from_now.iso8601,
+          utc_end_time: (1.day.from_now + 2.hours).iso8601,
+          event_type: "meeting",
+          space_id: space.id
+        },
+        staff_select: staff_members.map(&:id)
+      }
+    end
+
+    context "with valid parameters" do
+      it "creates a new event" do
+        expect do
+          post :create, params: valid_params
+        end.to change(Event, :count).by(1)
+      end
+
+      it "creates event assignments" do
+        post :create, params: valid_params
+        event = Event.last
+        expect(event.event_assignments.count).to eq(2)
+      end
+
+      it "sets default title when blank" do
+        post :create, params: valid_params.deep_merge(event: { title: "" })
+        expect(Event.last.title).to eq("Meeting")
+      end
+
+      it "redirects with success notice" do
+        post :create, params: valid_params
+        expect(response).to redirect_to(admin_calendar_index_path)
+        expect(flash[:notice]).to eq("Event created successfully.")
       end
     end
 
-    context "logged as admin" do
-      it "should return 200" do
-        Space.find_or_create_by(name: "Makerspace")
-        get :shifts
-        expect(response).to have_http_status(:success)
+    context "with invalid parameters" do
+      it "does not create event" do
+        expect do
+          post :create, params: valid_params.deep_merge(event: { space_id: nil })
+        end.not_to change(Event, :count)
       end
-    end
-  end
 
-  describe "GET /get_availabilities" do
-    context "get availabilities" do
-      it "should get all the availabilities from the staffs" do
-        time_period = create(:time_period)
-        sa1 = create(:staff_availability, time_period: time_period)
-        sa2 = create(:staff_availability, time_period: time_period)
-        sa3 = create(:staff_availability, time_period: time_period)
-        space1 = create(:space)
-        space2 = create(:space)
-
-        User.find(@admin.id).update(space_id: space1.id)
-
-        ss1 = StaffSpace.create(space_id: space1.id, user_id: sa1.user_id)
-        ss2 = StaffSpace.create(space_id: space1.id, user_id: sa2.user_id)
-        StaffSpace.create(space_id: space2.id, user_id: sa2.user_id)
-        StaffSpace.create(space_id: space2.id, user_id: sa3.user_id)
-
-        get :get_availabilities,
-            params: {
-              space_id: space1.id,
-              time_period_id: time_period.id
-            }
-        expect(response).to have_http_status(:success)
-        expect(response.body).to eq(
-          [
-            {
-              title:
-                "#{sa1.user.name} is unavailable (#{sa1.recurring? ? "Recurring" : "One-Time"})",
-              id: sa1.id,
-              daysOfWeek: [sa1.day],
-              startTime: sa1.start_time.strftime("%H:%M"),
-              endTime: sa1.end_time.strftime("%H:%M"),
-              startRecur: time_period.start_date.beginning_of_day,
-              endRecur: time_period.end_date.end_of_day,
-              color:
-                "rgba(#{ss1.color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)",
-              recurring: sa1.recurring?,
-              userId: sa1.user.id,
-              className: sa1.user.name.strip.downcase.gsub(" ", "-"),
-              exceptions: []
-            },
-            {
-              title:
-                "#{sa2.user.name} is unavailable (#{sa2.recurring? ? "Recurring" : "One-Time"})",
-              id: sa2.id,
-              daysOfWeek: [sa2.day],
-              startTime: sa2.start_time.strftime("%H:%M"),
-              endTime: sa2.end_time.strftime("%H:%M"),
-              startRecur: time_period.start_date.beginning_of_day,
-              endRecur: time_period.end_date.end_of_day,
-              color:
-                "rgba(#{ss2.color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 1)",
-              recurring: sa2.recurring?,
-              userId: sa2.user.id,
-              className: sa2.user.name.strip.downcase.gsub(" ", "-"),
-              exceptions: []
-            }
-          ].to_json
-        )
-
-        get :get_availabilities,
-            params: {
-              space_id: space1.id,
-              transparent: true,
-              time_period_id: time_period.id
-            }
-        expect(response).to have_http_status(:success)
-        expect(response.body).to eq(
-          [
-            {
-              title:
-                "#{sa1.user.name} is unavailable (#{sa1.recurring? ? "Recurring" : "One-Time"})",
-              id: sa1.id,
-              daysOfWeek: [sa1.day],
-              startTime: sa1.start_time.strftime("%H:%M"),
-              endTime: sa1.end_time.strftime("%H:%M"),
-              startRecur: time_period.start_date.beginning_of_day,
-              endRecur: time_period.end_date.end_of_day,
-              color:
-                "rgba(#{ss1.color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 0.25)",
-              recurring: sa1.recurring?,
-              userId: sa1.user.id,
-              className: sa1.user.name.strip.downcase.gsub(" ", "-"),
-              exceptions: []
-            },
-            {
-              title:
-                "#{sa2.user.name} is unavailable (#{sa2.recurring? ? "Recurring" : "One-Time"})",
-              id: sa2.id,
-              daysOfWeek: [sa2.day],
-              startTime: sa2.start_time.strftime("%H:%M"),
-              endTime: sa2.end_time.strftime("%H:%M"),
-              startRecur: time_period.start_date.beginning_of_day,
-              endRecur: time_period.end_date.end_of_day,
-              color:
-                "rgba(#{ss2.color.match(/^#(..)(..)(..)$/).captures.map(&:hex).join(", ")}, 0.25)",
-              recurring: sa2.recurring?,
-              userId: sa2.user.id,
-              className: sa2.user.name.strip.downcase.gsub(" ", "-"),
-              exceptions: []
-            }
-          ].to_json
-        )
+      it "redirects with error message" do
+        post :create, params: valid_params.deep_merge(event: { space_id: nil })
+        expect(response).to redirect_to(admin_calendar_index_path)
+        expect(flash[:alert]).to include("Failed to create event")
       end
     end
   end
 
-  describe "GET /get_shifts" do
-    context "get shifts" do
-      it "should get all the shifts from the staffs" do
-        space = create(:space)
-        s1 = create(:shift, space_id: space.id, pending: false)
-        s2 = create(:shift)
-        s3 = create(:shift, space_id: space.id)
+  describe "PATCH /update" do
+    let(:space) { create(:space) }
+    let(:event) { create(:event, space: space, created_by: @admin) }
+    let(:staff_members) { create_list(:user, 2, :staff) }
+    let(:update_params) do
+      {
+        id: event.id,
+        event: {
+          title: "Updated Title",
+          description: "Updated description",
+          utc_start_time: 2.days.from_now.iso8601,
+          utc_end_time: (2.days.from_now + 2.hours).iso8601,
+          event_type: "training",
+          space_id: space.id
+        },
+        staff_select: staff_members.map(&:id)
+      }
+    end
 
-        User.find(@admin.id).update(space_id: space.id)
+    context "for non-recurring event" do
+      it "updates the event" do
+        patch :update, params: update_params
+        event.reload
+        expect(event.title).to eq("Updated Title")
+      end
 
-        s1.users << create(:user, :staff)
+      it "updates event assignments" do
+        patch :update, params: update_params
+        expect(event.reload.event_assignments.count).to eq(2)
+      end
 
-        StaffSpace.create(user_id: s1.users.first.id, space_id: s1.space_id)
-        StaffSpace.create(user_id: s1.users.second.id, space_id: s1.space_id)
-        StaffSpace.create(user_id: s2.users.first.id, space_id: s2.space_id)
-        StaffSpace.create(user_id: s3.users.first.id, space_id: s3.space_id)
+      it "redirects with success notice" do
+        patch :update, params: update_params
+        expect(response).to redirect_to(admin_calendar_index_path)
+        expect(flash[:notice]).to eq("Event updated successfully.")
+      end
+    end
 
-        get :get_shifts
-        expect(response).to have_http_status(:success)
-        expect(response.body).to include_json(
-          [
-            {
-              title:
-                /(#{s1.reason} for (#{s1.users.first.name}|#{s1.users.second.name}), (#{s1.users.first.name}|#{s1.users.second.name})|#{s3.reason} for #{s3.users.first.name})/,
-              id: /(#{s1.id}|#{s3.id})/,
-              start:
-                /(#{s1.start_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z")}|#{s3.start_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z")})/,
-              end:
-                /(#{s1.end_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z")}|#{s3.end_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z")})/,
-              color: s1.color(space.id, 1),
-              className:
-                /((user-#{s1.users.first.id}|user-#{s1.users.second.id}|user-#{s3.users.first.id}))/
-            },
-            {
-              title:
-                /(#{s1.reason} for (#{s1.users.first.name}|#{s1.users.second.name}), (#{s1.users.first.name}|#{s1.users.second.name})|#{s3.reason} for #{s3.users.first.name})/,
-              id: /(#{s1.id}|#{s3.id})/,
-              start:
-                /(#{s1.start_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z")}|#{s3.start_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z")})/,
-              end:
-                /(#{s1.end_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z")}|#{s3.end_datetime.strftime("%Y-%m-%dT%H:%M:%S.%3N%:z")})/,
-              color: s3.color(space.id, 0.7),
-              className:
-                /((user-#{s1.users.first.id}|user-#{s1.users.second.id}|user-#{s3.users.first.id}))/
-            }
-          ]
-        )
+    context "for recurring event" do
+      let(:event) { create(:event, :recurring, space: space, created_by: @admin) }
+
+      it "handles 'all' scope update" do
+        patch :update, params: update_params.merge(update_scope: "all")
+        expect(response).to redirect_to(admin_calendar_index_path)
+        expect(flash[:notice]).to eq("Unavailability updated successfully.")
+      end
+
+      it "handles 'this' scope update" do
+        expect do
+          patch :update, params: update_params.merge(update_scope: "this")
+        end.to change(Event, :count).by(1)
       end
     end
   end
-  describe "GET /get_shift" do
-    context "get shift" do
-      it "should get the specific shift" do
-        space = create(:space)
-        s1 = create(:shift, space_id: space.id, pending: false)
-        s2 = create(:shift)
-        get :get_shift, params: { id: s1.id }
-        expect(response).to have_http_status(:success)
+
+  describe "DELETE /delete_with_scope" do
+    let(:space) { create(:space) }
+    let(:event) { create(:event, space: space, created_by: @admin) }
+
+    context "for non-recurring event" do
+      it "deletes the event" do
+        delete :delete_with_scope, params: { id: event.id }
+        expect(Event.exists?(event.id)).to be_falsey
       end
+    end
+
+    context "for recurring event" do
+      let(:event) { create(:event, :recurring, space: space, created_by: @admin) }
+
+      it "handles 'single' scope" do
+        delete :delete_with_scope, params: { 
+          id: event.id, 
+          scope: "single", 
+          start_date: event.start_time.iso8601 
+        }
+        expect(event.reload.recurrence_rule).to include("EXDATE")
+      end
+
+      it "handles 'all' scope" do
+        delete :delete_with_scope, params: { id: event.id, scope: "all" }
+        expect(Event.exists?(event.id)).to be_falsey
+      end
+    end
+  end
+
+  describe "GET /json" do
+    let(:space) { create(:space) }
+
+    before do
+      # Add route if not already defined in config/routes.rb
+      # get 'admin/events/json', to: 'admin/events#json'
+    end
+
+    it "returns events for space" do
+      create(:event, space: space)
+      get :json, params: { id: space.id }
+      expect(response).to have_http_status(:success)
+      json_response = JSON.parse(response.body)
+      expect(json_response).not_to be_empty
+    end
+
+    it "returns error without space id" do
+      get :json, params: { id: nil }
+      expect(response).to have_http_status(:bad_request)
+    end
+
+    it "filters out old non-recurring events" do
+      old_event = create(:event, space: space, start_time: 3.months.ago, end_time: 3.months.ago)
+      get :json, params: { id: space.id }
+      json_response = JSON.parse(response.body)
+      event_ids = json_response.flat_map { |source| source["events"] }.compact.map { |e| e["id"] }
+      expect(event_ids).not_to include("event-#{old_event.id}")
+    end
+  end
+
+  describe "POST /publish" do
+    let(:space) { create(:space) }
+    let(:draft_event) { create(:event, space: space, draft: true) }
+
+    it "publishes single event" do
+      post :publish, params: { id: draft_event.id }
+      expect(draft_event.reload.draft).to be_falsey
+    end
+
+    it "publishes multiple events in range" do
+      create_list(:event, 2, space: space, draft: true, 
+                 start_time: 1.day.from_now, end_time: 2.days.from_now)
+      expect do
+        post :publish, params: { 
+          view_start_date: Time.current.iso8601,
+          view_end_date: 3.days.from_now.iso8601,
+          space_id: space.id
+        }
+      end.to change { Event.where(draft: false).count }.by(2)
+    end
+  end
+
+  describe "DELETE /delete_drafts" do
+    let(:space) { create(:space) }
+
+    it "deletes draft events in range" do
+      create_list(:event, 2, space: space, draft: true, 
+                 start_time: 1.day.from_now, end_time: 2.days.from_now)
+      expect do
+        delete :delete_drafts, params: { 
+          view_start_date: Time.current.iso8601,
+          view_end_date: 3.days.from_now.iso8601,
+          space_id: space.id
+        }
+      end.to change(Event, :count).by(-2)
+    end
+
+    it "does not delete recurring events" do
+      create(:event, :recurring, space: space, draft: true)
+      expect do
+        delete :delete_drafts, params: { 
+          view_start_date: Time.current.iso8601,
+          view_end_date: 3.days.from_now.iso8601,
+          space_id: space.id
+        }
+      end.not_to change(Event, :count)
+    end
+  end
+
+  describe "POST /copy" do
+    let(:space) { create(:space) }
+
+    it "copies events to new date" do
+      create(:event, space: space, draft: false)
+      post :copy, params: { 
+        source_range: "#{1.day.from_now.to_date} to #{2.days.from_now.to_date}",
+        target_date: 1.week.from_now.to_date,
+        space_id: space.id
+      }
+      expect(response).to redirect_to(admin_calendar_index_path)
+      expect(flash[:notice]).to include("copied to")
+    end
+
+    it "does not copy recurring events" do
+      create(:event, :recurring, space: space)
+      expect do
+        post :copy, params: { 
+          source_range: "#{1.day.from_now.to_date} to #{2.days.from_now.to_date}",
+          target_date: 1.week.from_now.to_date,
+          space_id: space.id
+        }
+      end.not_to change(Event, :count)
     end
   end
 end

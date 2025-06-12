@@ -6,7 +6,7 @@
         <div class="d-flex gap-2 align-items-center mb-2">
             <input type="color" name="color" id="color-<%= user[:id] %>" data-user="<%= user[:id] %>" class="form-control form-control-color w-auto staff_color_select" style="aspect-ratio: 1;" value="<%= user[:color] %>" title="Choose your color">
             <label for="color-<%= user[:id] %>">
-                <%= user[:name] %>
+                <a href="/<%= user[:username] %>" rel="noreferrer" target="_blank"><%= user[:name] %></a>
             </label>
         </div>
     <% end %>
