@@ -131,7 +131,7 @@ class Admin::ShiftsController < AdminAreaController
                    extendedProps: {
                      reason: @shift.reason,
                      training:
-                       @shift.training.present? ? @shift.training.name_en : "",
+                       @shift.training.present? ? @shift.training.name : "",
                      course: @shift.course,
                      language: @shift.language
                    },
@@ -334,7 +334,7 @@ class Admin::ShiftsController < AdminAreaController
         event["title"] = shift.return_event_title
         event["extendedProps"] = {
           reason: shift.reason,
-          training: shift.training.present? ? shift.training.name_en : "",
+          training: shift.training.present? ? shift.training.name : "",
           course: shift.course,
           language: shift.language,
           color: shift.color(@space_id, (shift.pending? ? 0.7 : 1))
@@ -356,7 +356,7 @@ class Admin::ShiftsController < AdminAreaController
              **shift.as_json,
              extendedProps: {
                reason: shift.reason,
-               training: shift.training.present? ? shift.training.name_en : "",
+               training: shift.training.present? ? shift.training.name : "",
                course: shift.course,
                language: shift.language
              },

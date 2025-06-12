@@ -138,4 +138,8 @@ class Certification < ApplicationRecord
       end
     high_certs
   end
+
+  def name
+    I18n.locale == :fr ? name_fr : name_en
+  end
 end

@@ -22,6 +22,11 @@ class Training < ApplicationRecord
   def localized_name
     I18n.locale == :fr ? name_fr : name_en
   end
+
+  def name
+    I18n.locale == :fr ? name_fr : name_en
+  end
+
   def description
     I18n.locale == :fr ? description_fr : description_en
   end
