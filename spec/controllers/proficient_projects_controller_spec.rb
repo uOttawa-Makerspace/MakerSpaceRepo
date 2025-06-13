@@ -78,25 +78,25 @@ RSpec.describe ProficientProjectsController, type: :controller do
 
       it "should create the proficient project" do
         pp_params = FactoryBot.attributes_for(:proficient_project)
-        expect {
+        expect do
           post :create, params: { proficient_project: pp_params }
-        }.to change(ProficientProject, :count).by(1)
+        end.to change(ProficientProject, :count).by(1)
         expect(flash[:notice]).to eq("Proficient Project successfully created.")
       end
 
       it "should create the proficient project with badge requirements" do
         pp_params = FactoryBot.attributes_for(:proficient_project)
-        create(:badge_template, :"3d_printing")
-        create(:badge_template, :laser_cutting)
-        expect {
+        create(:training, :"3d_printing")
+        create(:training, :laser_cutting)
+        expect do
           post :create,
                params: {
                  proficient_project: pp_params,
-                 badge_requirements_id: [1, 2]
+                 training_requirements_id: [1, 2]
                }
-        }.to change(ProficientProject, :count).by(1)
+        end.to change(ProficientProject, :count).by(1)
         expect(
-          BadgeRequirement.where(
+          TrainingRequirement.where(
             proficient_project_id: ProficientProject.last.id
           ).count
         ).to eq(2)
@@ -105,24 +105,24 @@ RSpec.describe ProficientProjectsController, type: :controller do
 
       it "should create the proficient project with images and files" do
         pp_params = FactoryBot.attributes_for(:proficient_project)
-        expect {
+        expect do
           post :create,
                params: {
                  proficient_project: pp_params,
                  files: [
                    fixture_file_upload(
-                     Rails.root.join("spec/support/assets", "RepoFile1.pdf"),
+                     Rails.root.join("spec/support/assets/RepoFile1.pdf"),
                      "application/pdf"
                    )
                  ],
                  images: [
                    fixture_file_upload(
-                     Rails.root.join("spec/support/assets", "avatar.png"),
+                     Rails.root.join("spec/support/assets/avatar.png"),
                      "image/png"
                    )
                  ]
                }
-        }.to change(ProficientProject, :count).by(1)
+        end.to change(ProficientProject, :count).by(1)
         expect(RepoFile.count).to eq(1)
         expect(Photo.count).to eq(1)
         expect(response.body).to redirect_to(
@@ -132,9 +132,9 @@ RSpec.describe ProficientProjectsController, type: :controller do
 
       it "should fail to create the proficient project" do
         pp_params = FactoryBot.attributes_for(:proficient_project, :broken)
-        expect {
+        expect do
           post :create, params: { proficient_project: pp_params }
-        }.to change(ProficientProject, :count).by(0)
+        end.to change(ProficientProject, :count).by(0)
         expect(response).to have_http_status(:unprocessable_entity)
         expect(flash[:alert]).to eq("Something went wrong")
       end
@@ -148,9 +148,9 @@ RSpec.describe ProficientProjectsController, type: :controller do
         session[:user_id] = admin.id
         session[:expires_at] = Time.zone.now + 10_000
         create(:proficient_project)
-        expect {
+        expect do
           delete :destroy, params: { id: ProficientProject.last.id }
-        }.to change(ProficientProject, :count).by(-1)
+        end.to change(ProficientProject, :count).by(-1)
         expect(response).to redirect_to proficient_projects_path
         expect(flash[:notice]).to eq(
           "Proficient Project has been successfully deleted."
@@ -196,8 +196,8 @@ RSpec.describe ProficientProjectsController, type: :controller do
       end
 
       it "should update the proficient project with badge requirements" do
-        create(:badge_template, :"3d_printing")
-        create(:badge_template, :laser_cutting)
+        create(:training, :"3d_printing")
+        create(:training, :laser_cutting)
         create(:proficient_project)
         patch :update,
               params: {
@@ -205,13 +205,13 @@ RSpec.describe ProficientProjectsController, type: :controller do
                 proficient_project: {
                   title: "abc"
                 },
-                badge_requirements_id: [1, 2]
+                training_requirements_id: [1, 2]
               }
         expect(response.body).to redirect_to(
           proficient_project_path(ProficientProject.last.id)
         )
         expect(
-          BadgeRequirement.where(
+          TrainingRequirement.where(
             proficient_project_id: ProficientProject.last.id
           ).count
         ).to eq(2)
@@ -228,13 +228,13 @@ RSpec.describe ProficientProjectsController, type: :controller do
                 },
                 files: [
                   fixture_file_upload(
-                    Rails.root.join("spec/support/assets", "RepoFile1.pdf"),
+                    Rails.root.join("spec/support/assets/RepoFile1.pdf"),
                     "application/pdf"
                   )
                 ],
                 images: [
                   fixture_file_upload(
-                    Rails.root.join("spec/support/assets", "avatar.png"),
+                    Rails.root.join("spec/support/assets/avatar.png"),
                     "image/png"
                   )
                 ],
@@ -288,7 +288,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
         session[:expires_at] = Time.zone.now + 10_000
         create(:order, :with_item, user_id: user.id)
         proficient_project = ProficientProject.last
-        proficient_project.update(badge_template_id: "")
+        proficient_project.update(training_id: "")
         put :complete_project,
             format: "js",
             params: {
@@ -319,7 +319,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
         create(:order, :with_item, user_id: @user.id)
         create(:user, email: "avend029@uottawa.ca")
         @proficient_project = ProficientProject.last
-        @proficient_project.update(badge_template_id: "")
+        @proficient_project.update(training_id: "")
         put :complete_project,
             format: "js",
             params: {
@@ -367,7 +367,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
         session[:expires_at] = Time.zone.now + 10_000
         create(:order, :with_item, user_id: @user.id)
         @proficient_project = ProficientProject.last
-        @proficient_project.update(badge_template_id: "")
+        @proficient_project.update(training_id: "")
         put :complete_project,
             format: "js",
             params: {

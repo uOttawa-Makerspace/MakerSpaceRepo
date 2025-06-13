@@ -140,7 +140,7 @@ class ReportGenerator
               toggle_grey = !toggle_grey
             end
 
-          # FIXME test if sorting by users.faculty gives different count than
+          # FIXME: test if sorting by users.faculty gives different count than
           # users.program.include? engineering. Community users might affect this
           # so also filter by identity == undergrad or grad
 
@@ -184,7 +184,7 @@ class ReportGenerator
         table_header(sheet, ["program", "Distinct Users", "", "Total Visits"])
         all_visits
           .group_by do |x|
-            if (x.program != nil and !x.program&.empty?)
+            if !x.program.nil? and !x.program&.empty?
               x.program.strip.gsub(/^\W+/, "")
             else
               "None"
@@ -347,7 +347,7 @@ class ReportGenerator
           # Plus the total header
           (courses.count + 1).times do |n|
             n = n * 2 + 1
-            # NOTE Merging non-existent cells is bad.
+            # NOTE: Merging non-existent cells is bad.
             # https://github.com/randym/axlsx/issues/189
             sheet.merge_cells sheet.rows.last.cells[(n..n + 1)]
           end
@@ -688,7 +688,7 @@ class ReportGenerator
             sheet.add_row [
                             certification.user.name,
                             certification.user.email,
-                            certification.training_session.training.name,
+                            certification.training_session.training.name_en,
                             certification.training_session.created_at.strftime(
                               "%Y-%m-%d %H:%M"
                             ),
@@ -887,7 +887,7 @@ class ReportGenerator
       .add_worksheet(name: "Report") do |sheet|
         title(sheet, "Training Session")
 
-        sheet.add_row ["Training Type", session.training.name]
+        sheet.add_row ["Training Type", session.training.name_en]
         sheet.add_row ["Location", session.space.name]
         sheet.add_row ["Date", session.created_at.strftime("%Y-%m-%d %H:%M")]
         sheet.add_row ["Instructor", session.user.name]
@@ -1094,7 +1094,7 @@ class ReportGenerator
     )
   end
 
-  def self.get_visitors(start_date, end_date) # NOTE This duplicates counts
+  def self.get_visitors(start_date, end_date) # NOTE: This duplicates counts
     g = Arel::Table.new("g")
     ls = LabSession.arel_table
     u = User.arel_table
@@ -1460,7 +1460,7 @@ class ReportGenerator
 
   # Returns which engineering department a program belongs to
   def self.get_program_department(program)
-    # HACK Department list, this is hardcoded because we have no
+    # HACK: Department list, this is hardcoded because we have no
     # structured way to describe them
     # Chemical/Bio, Civil, Mech, Elec, Innovation?
     case program

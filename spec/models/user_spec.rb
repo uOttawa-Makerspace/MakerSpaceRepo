@@ -44,7 +44,6 @@ RSpec.describe User, type: :model do
       it { should have_many(:print_orders) }
       it { should have_many(:volunteer_task_requests) }
       it { should have_many(:cc_moneys) }
-      it { should have_many(:badges) }
       it { should have_many(:programs) }
       it { should have_many(:orders) }
       it { should have_many(:order_items) }
@@ -433,7 +432,7 @@ RSpec.describe User, type: :model do
         user = create(:user, :admin)
         certification = create(:certification, user_id: user.id)
         training = certification.training
-        expect(user.get_certifications_names).to eq([training.name])
+        expect(user.get_certifications_names).to eq([training.name_en])
       end
     end
 
@@ -528,24 +527,24 @@ RSpec.describe User, type: :model do
       end
     end
 
-    context "#has_required_badges?" do
+    context "#has_required_trainings?" do
       before :each do
-        create(:badge_template, :"3d_printing")
-        create(:badge_template, :laser_cutting)
-        create(:badge_template, :arduino)
+        create(:training, :"3d_printing")
+        create(:training, :laser_cutting)
+        create(:training, :arduino)
       end
 
       it "should be false" do
         user = create(:user, :regular_user)
-        create(:badge_requirement, :"3d_printing")
-        expect(user.has_required_badges?(BadgeRequirement.all)).to be_falsey
+        create(:training_requirement, :"3d_printing")
+        expect(user.has_required_trainings?(TrainingRequirement.all)).to be_falsey
       end
 
       it "should be true" do
         user = create(:user, :regular_user)
-        create(:badge, :"3d_printing", user_id: user.id)
-        create(:badge_requirement, :"3d_printing")
-        expect(user.has_required_badges?(BadgeRequirement.all)).to be_truthy
+        create(:certification, :"3d_printing", user_id: user.id)
+        create(:training_requirement, :"3d_printing")
+        expect(user.has_required_trainings?(BadgeRequirement.all)).to be_truthy
       end
 
       it "should be true" do

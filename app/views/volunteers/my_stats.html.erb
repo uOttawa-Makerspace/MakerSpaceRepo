@@ -91,12 +91,12 @@
                 </div>
                 <div id="trainings-<%= skill.id %>" class="accordion-collapse collapse" aria-labelledby="header-<%= skill.name %>" data-bs-parent="#accordion-<%= skill.name %>">
                   <% skill.trainings.each do |training| %>
-                    <div class="accordion" id="accordion-<%= training.name %>">
+                    <div class="accordion" id="accordion-<%= training.localized_name %>">
                       <div class="accordion-item">
                         <div class="accordion-header accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#training-<%= training.id %>" aria-expanded="false" aria-controls="training-<%= training.id %>">
                             <div class="col-4"></div>
                             <div class="col-4 text-center">
-                              <button class="btn btn-link" type="button"><%= training.name %></button>
+                              <button class="btn btn-link" type="button"><%= training.localized_name %></button>
                             </div>
                             <div class="col-4">
                               <%= training_status(training.id, @user.id).html_safe %>

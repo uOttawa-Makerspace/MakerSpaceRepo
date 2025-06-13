@@ -14,7 +14,9 @@ generate_badge_acquired();
 
 function generate_badge_acquired() {
   let training_id = document.getElementById("training_id_field").value;
+  console.log(training_id);
   let level = document.getElementById("training_level_field").value;
+  console.log(level);
   Rails.ajax({
     type: "GET",
     url: "/proficient_projects/generate_acquired_badge",

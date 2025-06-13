@@ -22,9 +22,9 @@
                     <% proc.call(user, @space.id).each do |certification| %>
                         <div class="cert-name" style="display:inline">
                             <div class="cert-holder" style="display:inline">
-                                <%= certification.training.name %>
+                                <%= certification.training.localized_name %>
                                     <div id="cert-details" style="display:inline">
-                                        <%= certification.training.name %> <br>
+                                        <%= certification.training.localized_name %> <br>
                                         <%= certification.trainer %> <br>
                                         <%= certification.updated_at.strftime('%B %d, %Y') %>
                                     </div>
@@ -36,7 +36,7 @@
             </td>
             <% if @space.makerspace? %>
               <td class="printers-cell">
-                <% @printers_in_use.where(user_id: user.id).each do |printer_session| %>
+                <% @printers_in_use.where(user_id: user.id).find_each do |printer_session| %>
                   <p class="m-0"><%= printer_session.printer.name %></p>
                 <% end %>
               </td>

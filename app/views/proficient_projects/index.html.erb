@@ -12,7 +12,7 @@
                   <div class="accordion-button card-header" id="header-<%= training.id %>" type="button" data-bs-toggle="collapse" data-bs-target="#training-<%= training.id %>" aria-expanded="true" aria-controls="training-<%= training.id %>">
                     <div class="col-4 float-end"></div>
                     <div class="col-4 text-center">
-                      <button class="btn btn-link"><%= training.name %></button>
+                      <button class="btn btn-link"><%= training.localized_name %></button>
                     </div>
                     <div class="col-4">
                       <%= training_status(training.id, current_user.id).html_safe %>
@@ -38,7 +38,7 @@
                                   <%= link_to 'Edit', edit_proficient_project_path(pp.id), class: 'btn btn-primary', style: 'opacity: 0.5' if current_user.admin? %>
                                 </div>
                                 <div class="col-6">
-                                  <p><h6 class="text-center my-auto"><strong><%= pp.training.name %></strong></h6></p>
+                                  <p><h6 class="text-center my-auto"><strong><%= pp.training.localized_name %></strong></h6></p>
                                 </div>
                                 <div class="col-3 float-end">
                                   <%= button_to 'Delete', proficient_project_path(pp.id), method: :delete, class: 'btn btn-danger float-end', style: 'opacity: 0.5', data: { confirm: 'Are you sure? This will delete the Learning Module.' } if current_user.admin? %>

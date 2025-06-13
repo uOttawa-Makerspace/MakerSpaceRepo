@@ -221,7 +221,7 @@
         <th>Associate with <%= @space.name %></th>
       </tr>
       </thead>
-      <% PiReader.where(space_id: nil).each do |raspi| %>
+      <% PiReader.where(space_id: nil).find_each do |raspi| %>
         <tr>
           <td><%= raspi.pi_mac_address %></td>
           <td>unknown</td>
@@ -256,7 +256,7 @@
       </thead>
       <% @space.trainings.each do |training| %>
         <tr>
-          <td><%= training.name %></td>
+          <td><%= training.localized_name %></td>
           <td><%= training.training_sessions.length %></td>
           <td><%= training.certifications.length %></td>
           <td><%= button_to fa_icon('times'), admin_training_url(id: training.id), method: :delete, action: :destroy, class: 'btn btn-default',

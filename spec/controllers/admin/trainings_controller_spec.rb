@@ -58,19 +58,19 @@ RSpec.describe Admin::TrainingsController, type: :controller do
     context "logged as admin" do
       it "should create a training and redirect" do
         training_params = FactoryBot.attributes_for(:training)
-        expect {
+        expect do
           post :create, params: { training: training_params }
-        }.to change(Training, :count).by(1)
+        end.to change(Training, :count).by(1)
         expect(flash[:notice]).to eq("Training added successfully!")
         expect(response).to redirect_to admin_trainings_path
       end
 
       it "should not create a invalid training" do
         training_params =
-          FactoryBot.attributes_for(:training, name: @training.name)
-        expect {
+          FactoryBot.attributes_for(:training, name: @training.name_en)
+        expect do
           post :create, params: { training: training_params }
-        }.to change(Training, :count).by(0)
+        end.to change(Training, :count).by(0)
         expect(flash[:alert]).to eq("Input is invalid")
         expect(response).to redirect_to admin_trainings_path
       end
@@ -85,11 +85,11 @@ RSpec.describe Admin::TrainingsController, type: :controller do
               params: {
                 id: @training.id,
                 training: {
-                  name: first_training.name
+                  name: first_training.name_en
                 }
               }
         expect(response).to redirect_to admin_trainings_path
-        expect(Training.find(@training.id).name).to eq(@training.name)
+        expect(Training.find(@training.id).name).to eq(@training.name_en)
         expect(flash[:alert]).to eq("Input is invalid")
       end
 

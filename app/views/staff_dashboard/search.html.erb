@@ -89,9 +89,9 @@
                 <% user.certifications.each do |certification| %>
                   <div class="cert-name" style="display:inline" >
                     <div class="cert-holder" style="display:inline">
-                      <%= certification.training.name %>
+                      <%= certification.training.name_en %>
                       <div id="cert-details" style="display:inline">
-                        <%= certification.training.name %> <br />
+                        <%= certification.training.name_en %> <br />
                         <%= certification.trainer %> <br />
                         <%= certification.updated_at.strftime('%B %d, %Y') %>
                       </div>

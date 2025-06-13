@@ -117,7 +117,7 @@
                     <br>
                     <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello <%= @user.name %>,</p>
                     <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-                      You are receiving this email because you were in the <b><%= @training_session.training.name %> at uOttawa.</b> </br>
+                      You are receiving this email because you were in the <b><%= @training_session.training.localized_name %> at uOttawa.</b> </br>
                       You finished your exam. Your score was <%= @exam.score %>. You <%= @exam.status %> the exam. <br />
                       <% if @exam.status == "passed" %>
                         Congratulations. Your certification is already available in your profile.
