@@ -1,3 +1,5 @@
+<% provide(:title, 'Calendar') %>
+
 <div class="my-4">
     <h1>Admin Calendar</h1>
     <p>View unavailabilities and imported calendars, add and manage events (shifts, trainings, meetings, etc.), then publish for staff to see on <%= link_to "their work calendar", "/staff/my_calendar", data: { turbo: true } %> and the synced Google Calendar. Assigned staff availability is based solely on staff set unavailabilities, not admin set events.</p>
