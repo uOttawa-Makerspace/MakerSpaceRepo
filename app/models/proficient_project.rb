@@ -19,6 +19,7 @@ class ProficientProject < ApplicationRecord
   has_many :order_items, dependent: :destroy
   has_many :training_requirements, dependent: :destroy
   has_many :project_kits, dependent: :destroy
+  has_one :proficient_project_session, dependent: :destroy
   belongs_to :drop_off_location, optional: true
 
   validates :title,

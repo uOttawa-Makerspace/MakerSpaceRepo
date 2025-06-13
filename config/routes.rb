@@ -364,6 +364,8 @@ Rails.application.routes.draw do
       member { patch "update" }
     end
 
+    resources :proficient_project_sessions, only: [:show]
+
     resources :settings, only: [:index] do
       collection do
         post "add_category"

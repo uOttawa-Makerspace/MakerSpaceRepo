@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_06_06_175655) do
+ActiveRecord::Schema[7.2].define(version: 2025_06_13_150014) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -771,6 +771,16 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_06_175655) do
     t.index ["printer_type_id"], name: "index_printers_on_printer_type_id"
   end
 
+  create_table "proficient_project_sessions", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "certification_id"
+    t.bigint "proficient_project_id"
+    t.string "level"
+    t.index ["certification_id"], name: "index_proficient_project_sessions_on_certification_id"
+    t.index ["proficient_project_id"], name: "index_proficient_project_sessions_on_proficient_project_id"
+  end
+
   create_table "proficient_projects", id: :serial, force: :cascade do |t|
     t.integer "training_id"
     t.string "title"
@@ -1176,7 +1186,6 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_06_175655) do
     t.bigint "skill_id"
     t.string "description_en"
     t.string "list_of_skills_en"
-    t.string "training_level"
     t.string "name_fr"
     t.boolean "has_badge", default: true
     t.string "description_fr"
@@ -1357,6 +1366,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_06_175655) do
   add_foreign_key "printer_issues", "printers"
   add_foreign_key "printer_issues", "users", column: "reporter_id"
   add_foreign_key "printers", "printer_types"
+  add_foreign_key "proficient_project_sessions", "certifications"
+  add_foreign_key "proficient_project_sessions", "proficient_projects"
   add_foreign_key "proficient_projects", "drop_off_locations"
   add_foreign_key "project_kits", "learning_modules"
   add_foreign_key "project_kits", "proficient_projects"

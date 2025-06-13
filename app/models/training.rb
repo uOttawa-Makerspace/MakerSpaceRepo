@@ -12,18 +12,12 @@ class Training < ApplicationRecord
   belongs_to :skill, optional: true
   has_many :badge_templates
 
-  validates :name_en, presence: true, uniqueness: true
-  validates :name_fr, presence: true, uniqueness: true
 
   def self.all_training_names
     order(name: :asc).pluck(:name)
   end
 
   def localized_name
-    I18n.locale == :fr ? name_fr : name_en
-  end
-
-  def name
     I18n.locale == :fr ? name_fr : name_en
   end
 

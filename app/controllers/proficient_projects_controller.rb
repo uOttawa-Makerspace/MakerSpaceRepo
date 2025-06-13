@@ -195,22 +195,19 @@ class ProficientProjectsController < DevelopmentProgramsController
         User.find_by_email("avend029@uottawa.ca") ||
           User.where(role: "admin").last
       course_name = CourseName.find_by_name("no course")
-      training_session =
-        TrainingSession.find_or_create_by(
-          training_id: order_item.proficient_project.training_id,
+      proficient_project_session =
+        ProficientProjectSession.create(
+          proficient_project_id: order_item.proficient_project.id,
           level: order_item.proficient_project.level,
-          user: admin,
-          space: space,
-          course_name: course_name
+
         )
       # Make sure we don't double add the HABTM relation
       # In case badge fails somehow, at least we award the skill
-      training_session.users << order_item.order.user unless training_session.users.exists? order_item.order.user.id
-      if training_session.present?
+      if proficient_project_session.present?
         cert =
-          Certification.find_or_create_by(
-            training_session_id: training_session.id,
-            user_id: order_item.order.user_id
+          Certification.create(
+            user_id: order_item.order.user_id,
+            level: proficient_project_session.level
           )
         # Award project, even if badge fails.
         # You can manually grant badge later
