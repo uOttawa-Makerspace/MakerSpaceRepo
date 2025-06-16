@@ -27,7 +27,6 @@ class Admin::EventsController < AdminAreaController
     )
 
     unless participants.empty?
-      Rails.logger.info("Creating event assignments for participants: #{participants.inspect}")
       @event_assignments = participants.map do |staff_id|
         EventAssignment.new(
           event: @event,
