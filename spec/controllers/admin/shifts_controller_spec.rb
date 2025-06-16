@@ -8,24 +8,6 @@ RSpec.describe Admin::EventsController, type: :controller do
     session[:user_id] = @admin.id
   end
 
-  # Add this factory definition if you don't have it in your factories file
-  FactoryBot.define do
-    factory :event do
-      title { "Test Event" }
-      description { "Test Description" }
-      start_time { 1.day.from_now }
-      end_time { 1.day.from_now + 2.hours }
-      event_type { "meeting" }
-      space
-      created_by { @admin }
-      draft { false }
-
-      trait :recurring do
-        recurrence_rule { "RRULE:FREQ=WEEKLY;COUNT=5" }
-      end
-    end
-  end
-
   describe "GET /index" do
     context "logged as regular user" do
       it "should redirect to root" do
