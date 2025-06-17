@@ -3,7 +3,7 @@
         <%= form_with url: search_url, method: 'GET' do |form| %>
             <div class="input-group">
                 <%= form.text_field :q, class: 'form-control' %>
-                <%= form.submit 'Search', name: '', class: 'btn btn-primary' %>
+                <%= form.submit t('explore.search'), name: '', class: 'btn btn-primary' %>
             </div>
         <% end %>
     </div>
