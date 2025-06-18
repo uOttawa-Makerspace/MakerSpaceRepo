@@ -66,6 +66,7 @@ class ReworkDevelopmentProgram < ActiveRecord::Migration[7.2]
       t.timestamps null: false
       t.references :certification, index: true, foreign_key: true
       t.references :proficient_project, index: true, foreign_key: true
+      t.references :user, index: true, foreign_kay: true
       t.string :level
     end
   end

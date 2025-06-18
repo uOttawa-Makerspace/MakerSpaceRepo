@@ -1,0 +1,91 @@
+<section class="page-contents">
+  <% unless @current_proficient_project_session.completed? %>
+    <!-- <script>
+         window.addEventListener('beforeunload', (event) => {
+         event.preventDefault();
+         // Included for legacy support, e.g. Chrome/Edge < 119
+         event.returnValue = true;
+         });
+         </script> -->
+  <% end %>
+  <div class="padding">
+    <div style="font-weight:bold;font-size:1.4em;">Proficient Project Session #<%= @current_proficient_project_session.id %></div>
+
+    <div style="float:right;">Created On: <%= @current_proficient_project_session.created_at.strftime('%D at %l:%M%P') %></div>
+    <br />
+    <div style="float:right;">Updated On: <%= @current_proficient_project_session.updated_at.strftime('%D at %l:%M%P') %></div>
+    <div>
+      Status:
+      <% if @current_proficient_project_session.completed? %>
+      <span style="color:#006633;"> Completed </span>
+      <% else %>
+      <span style="color:#700000;"> Incomplete </span>
+      <% end %>
+    </div>
+    <br />
+
+    <div>Training: <%= @current_proficient_project_session.proficient_project.training.localized_name %></div>
+    <br />
+
+    <br />
+    <table class="training-session-users-table table table-striped">
+        Users in this proficient project session
+        <thead class="table-primary">
+        <tr class="text-center">
+           <th class="action-header">Remove From This Session</th>
+           <th>Name <span onclick="sortTable('training-session-users-table', 1)"><%= fa_icon('arrow-down') %></span></th>
+           <th>Email <span onclick="sortTable('training-session-users-table', 2)"><%= fa_icon('arrow-down') %></span></th>
+           <th>Certifications <span onclick="sortTable('training-session-users-table', 3)"><%= fa_icon('arrow-down') %></span></th>
+           <th>Exam Status <span onclick="sortTable('training-session-users-table', 4)"><%= fa_icon('arrow-down') %></span></th>
+           <th>Training's Cert.<span onclick="sortTable('training-session-users-table', 5)"><%= fa_icon('arrow-down') %></span></th>
+         </tr>
+         </thead>
+
+      <% user = @current_proficient_project_session.user %>
+        <tr id="<%= return_no_waiver_id(user) %>">
+          
+
+          <td class="user-name">
+            <%= link_to(user.name, user_url(user.username)) %>
+          </td>
+
+          <td class="email-cell" style="horizontal-alginment:center;">
+            <%= user.email %>
+          </td>
+
+          <td class="certifications-cell">
+            <% if user.certifications.first.present? %>
+              <% user.certifications.each do |certification| %>
+                <div class="cert-name" style="display:inline" >
+                  <div class="cert-holder" style="display:inline">
+                    <%= certification.training.localized_name %>
+                    <div id="cert-details" style="display:inline">
+                      <%= certification.training.localized_name %> <br>
+                      <%= certification.trainer %> <br>
+                      <%= certification.updated_at.strftime('%B %d, %Y') %>
+                    </div>
+                    <br>
+                  </div>
+                </div>
+              <% end %>
+            <% end %>
+          </td>
+        </tr>
+    </table>
+    <br />
+    <br />
+    <br />
+    <br />
+    <div class="text-center">
+      <% if @current_proficient_project_session.user.present? %>
+          <%= button_to 'Certify', staff_proficient_project_session_certify_participant_path(@current_proficient_project_session), method: 'POST', class: 'mb-5 certify-button display-6', form_class: 'mt-3', data: { confirm: 'Are you sure? This will grant the user bypassing the exams.' } %>
+      <% end %>
+    </div>
+    <br />
+    <br />
+
+
+
+  <br>
+</section>
+<br />

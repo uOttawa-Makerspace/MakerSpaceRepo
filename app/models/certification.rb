@@ -6,8 +6,7 @@ class Certification < ApplicationRecord
   belongs_to :training_session, optional: true
   belongs_to :proficient_project_session, optional: true
   has_one :space, through: :training_session
-  has_one :training, through: :training_session, optional: true
-  has_one :proficient_project, through: :proficient_project_session
+  has_one :training, through: :training_session
   has_many :badges
   has_many :badge_templates, through: :training
 
@@ -20,7 +19,7 @@ class Certification < ApplicationRecord
 
   default_scope -> { where(active: true) }
   scope :between_dates_picked,
-        ->(start_date, end_date) {
+        ->(start_date, end_date) {un
           where("created_at BETWEEN ? AND ? ", start_date, end_date)
         }
   scope :inactive, -> { unscoped.where(active: false) }
@@ -34,10 +33,10 @@ class Certification < ApplicationRecord
   end
 
   def unique_cert
-    @user_certs = user.certifications if user
+    @user_certs = user.certifications.includes(:proficient_project_session) if user
     return false unless @user_certs
       @user_certs.each do |cert|
-        next unless (cert.training.id == training.id) &&
+        next unless (cert.training.id == cert.proficient_project_session.proficient_project.training.id) &&
              (cert.training_session.level == training_session.level)
         errors.add(:string, "Certification already exists.")
         return false

@@ -385,10 +385,28 @@ class User < ApplicationRecord
     update(wallet: get_total_cc)
   end
 
-  def has_required_trainings?(training_requirements)
+  def has_required_trainings?(training_requirements, proficient_project)
     user_trainings_set = training_sessions.pluck(:training_id).to_set
     training_requirements_set = training_requirements.pluck(:training_id).to_set
-    training_requirements_set.subset?(user_trainings_set)
+    training_requirements_set.subset?(user_trainings_set) && has_prev_training?(proficient_project)
+  end
+
+  def has_prev_training?(proficient_project)
+    level = proficient_project.level
+    highest_badge = highest_badge(Training.find(proficient_project.training_id))
+    return true if highest_badge.nil?
+      
+    
+      user_level = highest_badge.level
+      case level
+      when "Intermediate"
+          user_level == "Beginner"
+      when "Advanced"
+        user_level == "Intermediate"
+      when "Beginner"
+        true
+      end
+    
   end
 
   def highest_badge(training)

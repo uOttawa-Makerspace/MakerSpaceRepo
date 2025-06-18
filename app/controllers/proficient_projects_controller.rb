@@ -199,6 +199,7 @@ class ProficientProjectsController < DevelopmentProgramsController
         ProficientProjectSession.create(
           proficient_project_id: order_item.proficient_project.id,
           level: order_item.proficient_project.level,
+          user_id: order_item.order.user_id
 
         )
       # Make sure we don't double add the HABTM relation
