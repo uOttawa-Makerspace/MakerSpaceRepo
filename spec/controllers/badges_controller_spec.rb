@@ -44,7 +44,7 @@ RSpec.describe BadgesController, type: :controller do
     context "show" do
       it "should allow non-authenticated" do
         session[:user_id] = nil
-        badge = create(:badge)
+        badge = create(:certification)
         expect(get(:show, params: {id: badge.id})).to have_http_status(:success)
       end
 
@@ -52,7 +52,7 @@ RSpec.describe BadgesController, type: :controller do
         user = create(:user)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
-        badge = create(:badge)
+        badge = create(:certification)
         expect(get(:show, params: {id: badge.id})).to have_http_status(:success)
       end
     end
