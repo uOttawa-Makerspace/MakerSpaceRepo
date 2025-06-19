@@ -68,7 +68,7 @@ Rails.application.routes.draw do
       patch :update_submission
     end
   end
-
+    
   resources :job_orders, only: %i[index create update new destroy] do
     get :steps
     get :quote_modal
@@ -91,6 +91,7 @@ Rails.application.routes.draw do
       get :pay
       get :stripe_success
       get :stripe_cancelled
+      get :landing
       patch :user_magic_approval_confirmation
       post "/new" => "job_orders#new"
       patch "/new" => "job_orders#new"

@@ -48,7 +48,7 @@ en:
       exams: "Exams"
       help: "Help"
       sign_out: "Sign Out"
-      joborder: "Job Order Request"
+      joborder: "Job Orders"
       joborder_admin: "Job Order Admin"
   home:
     welcome_html: "Welcome to Maker<strong>Repo</strong>!"
