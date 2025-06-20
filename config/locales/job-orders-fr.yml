@@ -1,0 +1,37 @@
+fr:
+  job_orders:
+    title: "Commandes CGEC"
+    header: "Du concept à la création"
+    subtext: "Découvrez comment le CGEC transforme vos idées en réalité grâce à ses services de fabrication, de conception et de prototypage."
+    request_button: "Lancer une commande"
+    view_orders_button: "Voir mes commandes"
+    intro:
+      title: "Votre centre d'ingénierie tout-en-un"
+      text: "Le CGEC offre une expertise technique et un accès à de l’équipement pour soutenir la conception, le prototypage et la fabrication à petite échelle pour les étudiants, les chercheurs et les clients externes."
+    sections:
+      services: "Services d’ingénierie"
+      services_text: "Soutien professionnel incluant l’usinage, la soudure et la conception."
+      services_list:
+        - "Usinage manuel"
+        - "CNC et soudure"
+        - "Numérisation 3D et conception"
+      makerspace: "Fabrication créative"
+      makerspace_text: "Outils numériques pour le prototypage rapide et les projets artistiques."
+      makerspace_list:
+        - "Impression 3D et découpe laser"
+        - "Broderie CNC et gravure de circuits"
+        - "Vêtements personnalisés et trophées"
+      design_consultation:
+        title: "Consultations en conception"
+        subtitle: "Besoin d'aide avec votre projet?"
+        description: "Nos experts peuvent vous aider avec la conception, le prototypage et l'usinage de projets de toute taille pour répondre à vos besoins."
+        services:
+          - "Développement de concepts et assistance à la conception"
+          - "Modélisation 3D et support CAO"
+          - "Conseils pour la sélection des matériaux"
+          - "Stratégies de prototypage"
+          - "Planification de production"
+        call_to_action: "Planifiez une consultation dès aujourd'hui!"
+    pricing:
+      title: "Tarifs"
+      text: "Les tarifs internes et externes varient selon le service. Les matériaux sont vendus séparément. Une consultation d’une heure est offerte gratuitement."

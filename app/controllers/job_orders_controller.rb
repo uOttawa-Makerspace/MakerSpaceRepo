@@ -7,6 +7,7 @@ class JobOrdersController < ApplicationController
                   pay
                   stripe_success
                   stripe_cancelled
+                  landing
                 ]
   before_action :grant_access,
                 only: %w[
@@ -504,6 +505,9 @@ class JobOrdersController < ApplicationController
   end
 
   def stripe_cancelled
+  end
+
+  def landing
   end
 
   private
