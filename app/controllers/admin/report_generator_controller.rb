@@ -234,8 +234,6 @@ class Admin::ReportGeneratorController < AdminAreaController
           Certification.all
         end
       )
-        .includes(:badges)
-        .includes(badges: :badge_template)
         .includes(:space)
         .includes(training_session: %i[course_name training])
         .includes(training: [:skill])
@@ -246,8 +244,6 @@ class Admin::ReportGeneratorController < AdminAreaController
     @course_count["unknown"] = 0
 
     @skill_count = {}
-
-    @badge_count = {}
 
     @training_count = {}
 
@@ -296,15 +292,6 @@ class Admin::ReportGeneratorController < AdminAreaController
         @training_count[training_name] += 1
       end
 
-      # number of badges handed out
-      cert.badges.each do |badge|
-        badge_name = badge.badge_template.localized_name
-        if !@badge_count.has_key?(badge_name)
-          @badge_count[badge_name] = 1
-        else
-          @badge_count[badge_name] += 1
-        end
-      end
     end
   end
 
