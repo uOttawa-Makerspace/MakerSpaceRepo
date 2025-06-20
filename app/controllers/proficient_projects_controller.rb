@@ -190,28 +190,23 @@ class ProficientProjectsController < DevelopmentProgramsController
   def approve_project
     order_item = OrderItem.find_by(id: params[:oi_id])
     if order_item
-      space = Space.find_by_name("Makerepo")
-      admin =
-        User.find_by_email("avend029@uottawa.ca") ||
-          User.where(role: "admin").last
-      course_name = CourseName.find_by_name("no course")
+      admin = @user
+      cert =
+          Certification.create(
+            user_id: order_item.order.user_id,
+            level: order_item.proficient_project.level
+          )
       proficient_project_session =
         ProficientProjectSession.create(
           proficient_project_id: order_item.proficient_project.id,
           level: order_item.proficient_project.level,
-          user_id: order_item.order.user_id
+          user_id: admin.id,
+          certification_id: cert.id
 
         )
       # Make sure we don't double add the HABTM relation
       # In case badge fails somehow, at least we award the skill
       if proficient_project_session.present?
-        cert =
-          Certification.create(
-            user_id: order_item.order.user_id,
-            level: proficient_project_session.level
-          )
-        # Award project, even if badge fails.
-        # You can manually grant badge later
         order_item.update(order_item_params.merge({ status: "Awarded" }))
         MsrMailer.send_results_pp(
           order_item,

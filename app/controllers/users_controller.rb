@@ -375,7 +375,6 @@ class UsersController < SessionsController
       @joined_projects = @repo_user.project_joins
       @photos = photo_hash
       @certifications = @repo_user.certifications.highest_level
-      @remaining_trainings = @repo_user.remaining_trainings
       @skills = Skill.all
       @proficient_projects_awarded =
         proc do |training|
@@ -421,8 +420,7 @@ class UsersController < SessionsController
                      user: @repo_user.as_json(include: :rfid),
                      programs: @programs.as_json,
                      certifications:
-                       @certifications.as_json(include: :training),
-                     remaining_trainings: @remaining_trainings.as_json
+                       @certifications.as_json(include: :training)
                    }
           else
             render json:

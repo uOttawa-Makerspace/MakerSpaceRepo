@@ -11,11 +11,6 @@ class Certification < ApplicationRecord
   has_many :badge_templates, through: :training
 
   validates :user, presence: { message: "A user is required." }
-  validates :training_session,
-            presence: {
-              message: "A training session is required."
-            }
-  validate :unique_cert, on: :create
 
   default_scope -> { where(active: true) }
   scope :between_dates_picked,
@@ -30,21 +25,6 @@ class Certification < ApplicationRecord
 
   def self.to_csv(attributes)
     CSV.generate { |csv| attributes.each { |row| csv << row } }
-  end
-
-  def unique_cert
-    @user_certs = user.certifications.includes(:proficient_project_session) if user
-    return false unless @user_certs
-      @user_certs.each do |cert|
-        next unless (cert.training.id == cert.proficient_project_session.proficient_project.training.id) &&
-             (cert.training_session.level == training_session.level)
-        errors.add(:string, "Certification already exists.")
-        return false
-      end
-    
-      
-    
-    true
   end
 
   def self.certify_user(training_session_id, user_id)
@@ -142,5 +122,35 @@ class Certification < ApplicationRecord
 
   def name
     I18n.locale == :fr ? name_fr : name_en
+  end
+
+  def get_name_en(certification)
+    if training.nil?
+      prof_proj_sess = ProficientProjectSession.includes(:certifications, :proficient_projects, 
+:trainings).where(id: id)
+      cert = Certification.joins(proficient_project_session).find(certification.id)
+      proficient_project_session.proficient_project.training.name_en
+    else
+      training_session.training.name_en
+    end
+  end
+
+  def get_name_fr(certification)
+    if training.nil?
+      prof_poj_sess = ProficientProjectSession.includes(:certifications, :proficient_projects, :trainings).where(id: id)
+      cert = Certification.includes(proficient_project_session).find(certification.id)
+      prof_proj_sess.proficient_project.training.name_fr
+    else
+      training_session.training.name_fr
+    end
+  end
+
+  def get_skill_id(certification)
+    if training.nil?
+      cert = Certification.includes(proficient_project_session).find(certification.id)
+      cert.proficient_project.training.skill_id
+    else
+      training_session.training.skill_id
+    end
   end
 end

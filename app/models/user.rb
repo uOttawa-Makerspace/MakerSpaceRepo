@@ -388,6 +388,7 @@ class User < ApplicationRecord
   def has_required_trainings?(training_requirements, proficient_project)
     user_trainings_set = training_sessions.pluck(:training_id).to_set
     training_requirements_set = training_requirements.pluck(:training_id).to_set
+    puts has_prev_training?(proficient_project)
     training_requirements_set.subset?(user_trainings_set) && has_prev_training?(proficient_project)
   end
 
