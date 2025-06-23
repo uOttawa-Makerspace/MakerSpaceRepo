@@ -6,7 +6,7 @@
           <div class="col-md-3 border-bottom text-nowrap overflow-auto d-flex gap-1 flex-wrap">
             <% puts badges.proficient_project_session.nil? %>
               <a target="_blank" href="/badges/<%= badges.id %>">
-                <%= render "badges/badge_icon", width: 125, height: 125, level: badges.level, name_en: badges.get_name_en(badges), name_fr: badges.get_name_fr(badges), skill: badges.get_skill_id(badges) %>
+                <%= render "badges/badge_icon", width: 125, height: 125, level: badges.level, name_en: badges.get_name_en, name_fr: badges.get_name_fr, skill: badges.get_skill_id %>
               </a>
           </div>
         <% end %>

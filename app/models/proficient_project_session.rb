@@ -1,7 +1,7 @@
 class ProficientProjectSession < ApplicationRecord
   belongs_to :proficient_project
   belongs_to :user
-  has_one :certification, dependent: :destroy
+  belongs_to :certification, dependent: :destroy
 
   validates :level, presence: { message: "A level is required"}
 

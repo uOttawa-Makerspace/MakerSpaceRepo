@@ -4,7 +4,7 @@ class Certification < ApplicationRecord
   belongs_to :user, class_name: "User", optional: true
   belongs_to :demotion_staff, class_name: "User", optional: true
   belongs_to :training_session, optional: true
-  belongs_to :proficient_project_session, optional: true
+  has_one :proficient_project_session
   has_one :space, through: :training_session
   has_one :training, through: :training_session
   has_many :badges
@@ -20,7 +20,11 @@ class Certification < ApplicationRecord
   scope :inactive, -> { unscoped.where(active: false) }
 
   def trainer
-    training_session.user.name
+    if training_session.nil?
+      proficient_project_session.user.name
+    else
+      training_session.user.name
+    end
   end
 
   def self.to_csv(attributes)
@@ -120,35 +124,37 @@ class Certification < ApplicationRecord
     high_certs
   end
 
+  def training
+    if training_session.nil?
+      proficient_project_session.proficient_project.training
+    else
+      training_session.training
+    end
+  end
+
   def name
     I18n.locale == :fr ? name_fr : name_en
   end
 
-  def get_name_en(certification)
-    if training.nil?
-      prof_proj_sess = ProficientProjectSession.includes(:certifications, :proficient_projects, 
-:trainings).where(id: id)
-      cert = Certification.joins(proficient_project_session).find(certification.id)
+  def get_name_en
+    if training_session.nil?
       proficient_project_session.proficient_project.training.name_en
     else
       training_session.training.name_en
     end
   end
 
-  def get_name_fr(certification)
-    if training.nil?
-      prof_poj_sess = ProficientProjectSession.includes(:certifications, :proficient_projects, :trainings).where(id: id)
-      cert = Certification.includes(proficient_project_session).find(certification.id)
-      prof_proj_sess.proficient_project.training.name_fr
+  def get_name_fr
+    if training_session.nil?
+      proficient_project_session.proficient_project.training.name_fr
     else
       training_session.training.name_fr
     end
   end
 
-  def get_skill_id(certification)
-    if training.nil?
-      cert = Certification.includes(proficient_project_session).find(certification.id)
-      cert.proficient_project.training.skill_id
+  def get_skill_id
+    if training_session.nil?
+      proficient_project_session.proficient_project.training.skill_id
     else
       training_session.training.skill_id
     end
