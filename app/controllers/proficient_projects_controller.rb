@@ -191,19 +191,40 @@ class ProficientProjectsController < DevelopmentProgramsController
     order_item = OrderItem.find_by(id: params[:oi_id])
     if order_item
       admin = @user
-      cert =
-          Certification.create(
-            user_id: order_item.order.user_id,
-            level: order_item.proficient_project.level
-          )
-      proficient_project_session =
-        ProficientProjectSession.create(
-          proficient_project_id: order_item.proficient_project.id,
-          level: order_item.proficient_project.level,
-          user_id: admin.id,
-          certification_id: cert.id
+      duplicates = 0
+      user = order_item.order.user
+      dup_cert = nil
+      user.certifications.each do |cert|
+        Rails.logger.debug "#{cert.training.id} == #{order_item.proficient_project.training.id}"
+        Rails.logger.debug "#{order_item.proficient_project.level} == #{cert.level}"
+        next unless cert.training.id == order_item.proficient_project.training.id &&
+          order_item.proficient_project.level == cert.level
+        dup_cert = cert
+        duplicates += 1
+      end
 
-        )
+      if duplicates.zero?
+        cert =
+            Certification.create(
+              user_id: order_item.order.user_id,
+              level: order_item.proficient_project.level
+            )
+        proficient_project_session =
+          ProficientProjectSession.create(
+            proficient_project_id: order_item.proficient_project.id,
+            level: order_item.proficient_project.level,
+            user_id: admin.id,
+            certification_id: cert.id
+          )
+      else
+        proficient_project_session =
+          ProficientProjectSession.create(
+            proficient_project_id: order_item.proficient_project.id,
+            level: order_item.proficient_project.level,
+            user_id: admin.id,
+            certification_id: dup_cert.id
+          )
+      end
       # Make sure we don't double add the HABTM relation
       # In case badge fails somehow, at least we award the skill
       if proficient_project_session.present?
@@ -213,7 +234,7 @@ class ProficientProjectsController < DevelopmentProgramsController
           order_item.order.user,
           "Passed"
         ).deliver_now
-        flash[:notice] = "The project has been approved!"
+        flash[:notice] = "The project has been approved!  (#{duplicates} duplicates skipped)"
       else
         flash[:error] = "An error has occurred, please try again later."
       end

@@ -138,7 +138,8 @@ class Staff::TrainingSessionsController < StaffDashboardController
       certification =
         Certification.new(
           user_id: graduate.id,
-          training_session_id: @current_training_session.id
+          training_session_id: @current_training_session.id,
+          level: @current_training_session.level
         )
       next if certification.save
       error = true
