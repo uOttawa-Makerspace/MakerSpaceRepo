@@ -1,8 +1,8 @@
 <div id="decline-modal-rendered">
   <%= form_for @job_order, url: job_order_quote_path(@job_order), method: :patch do |f| %>
     <%= hidden_field_tag :approved, false %>
-    <%= f.label :user_comments, 'Comments (Why is it not approved ?)' %>
+    <%= f.label :user_comments, 'Comments (Why is it not approved?)' %>
     <%= f.text_field :user_comments, placeholder: "The size won't fit", class: 'form-control mb-2' %>
     <%= f.submit 'Decline', class: 'btn btn-danger' %>
-<% end %>
+  <% end %>
 </div>

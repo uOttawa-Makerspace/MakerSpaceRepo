@@ -138,11 +138,6 @@
                         <br>
                       <% end %>
 
-                      <% @job_order.job_order_quote.job_order_quote_type_extras.each do |e| %>
-                        <%= e.job_type_extra.name %> : CAD <%= number_to_currency(e.price) %>
-                        <br>
-                      <% end %>
-
                       <% @job_order.job_order_quote.job_order_quote_options.each do |o| %>
                         <%= o.job_option.name %> (Option) : CAD <%= number_to_currency(o.amount) %>
                         <br>

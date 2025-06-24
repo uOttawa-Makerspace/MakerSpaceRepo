@@ -1,4 +1,24 @@
 fr:
+  time:
+    formats:
+      long: "%d %B %Y à %H:%M"
+  date:
+    month_names:
+      [
+        ~,
+        "janvier",
+        "février",
+        "mars",
+        "avril",
+        "mai",
+        "juin",
+        "juillet",
+        "août",
+        "septembre",
+        "octobre",
+        "novembre",
+        "décembre",
+      ]
   year: "année"
   name: "Français"
   faq:
@@ -283,6 +303,7 @@ fr:
       no_permission: "Vous n'avez pas la permission de voir cette commande."
       cannot_edit: "Vous ne pouvez pas modifier cette commande. Veuillez contacter makerspace@uottawa.ca pour obtenir de l'aide."
       cannot_access_area: "Vous ne pouvez pas accéder à cette zone."
+      updated_successfully: "Mis à jour avec succès !"
     public_page:
       my_job_orders: "Mes commandes"
       create_a_new_job_order: "Créer une nouvelle commande"
@@ -332,6 +353,24 @@ fr:
         no_options: "Il n'y a pas d'options disponibles pour vous. Veuillez continuer vers la prochaine étape."
       step_4:
         additional_comments: "Commentaires supplémentaires"
+    order:
+      job_order: "Commande"
+      client_information: "Informations du client"
+      name: "Nom"
+      email: "Courriel"
+      created: "Créé"
+      job_type: "Type de commande"
+      service: "Service"
+      options: "Options"
+      download_links: "Liens de téléchargement"
+      download: "Télécharger"
+      timeline: "Chronologie"
+      back: "Retour"
+      comments: "Commentaires"
+      staff_information: "Informations du personnel"
+      comments_from_staff: "Commentaires du personnel"
+      files_from_staff: "Fichiers du personnel"
+      none_yet: "Aucun pour l'instant"
   volunteer_program:
     welcome:
       header: "Programme de bénévolat"

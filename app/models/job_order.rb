@@ -192,9 +192,6 @@ class JobOrder < ApplicationRecord
     job_order_quote.job_order_quote_options.each do |o|
       price_data << self.generate_line_item(o.job_option.name, o.amount)
     end
-    job_order_quote.job_order_quote_type_extras.each do |e|
-      price_data << self.generate_line_item(e.job_type_extra.name, e.price)
-    end
 
     price_data
   end

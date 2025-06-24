@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_04_20_193534) do
+ActiveRecord::Schema[7.2].define(version: 2025_06_09_150913) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -262,6 +262,28 @@ ActiveRecord::Schema[7.2].define(version: 2025_04_20_193534) do
     t.datetime "updated_at", precision: nil, null: false
   end
 
+  create_table "event_assignments", force: :cascade do |t|
+    t.bigint "event_id"
+    t.bigint "user_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "events", force: :cascade do |t|
+    t.bigint "created_by_id"
+    t.bigint "space_id"
+    t.string "title"
+    t.text "description"
+    t.datetime "start_time"
+    t.datetime "end_time"
+    t.string "recurrence_rule"
+    t.boolean "draft", default: true
+    t.string "event_type"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "google_event_id"
+  end
+
   create_table "exam_questions", id: :serial, force: :cascade do |t|
     t.integer "exam_id"
     t.integer "question_id"
@@ -364,8 +386,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_04_20_193534) do
   end
 
   create_table "job_order_quote_type_extras", force: :cascade do |t|
-    t.bigint "job_type_extra_id"
-    t.bigint "job_order_quote_id"
+    t.bigint "job_type_extra_id", null: false
+    t.bigint "job_order_quote_id", null: false
     t.decimal "price", precision: 10, scale: 2
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -454,11 +476,11 @@ ActiveRecord::Schema[7.2].define(version: 2025_04_20_193534) do
 
   create_table "job_type_extras", force: :cascade do |t|
     t.bigint "job_type_id"
-    t.string "name"
+    t.string "name", null: false
     t.decimal "price", precision: 10, scale: 2
+    t.text "description"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.string "description"
     t.index ["job_type_id"], name: "index_job_type_extras_on_job_type_id"
   end
 
@@ -594,12 +616,9 @@ ActiveRecord::Schema[7.2].define(version: 2025_04_20_193534) do
     t.datetime "owned_until"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.bigint "repository_id"
-    t.string "requested_as"
     t.string "shopify_draft_order_id"
     t.index ["locker_type_id"], name: "index_locker_rentals_on_locker_type_id"
     t.index ["rented_by_id"], name: "index_locker_rentals_on_rented_by_id"
-    t.index ["repository_id"], name: "index_locker_rentals_on_repository_id"
   end
 
   create_table "locker_types", force: :cascade do |t|
@@ -995,6 +1014,15 @@ ActiveRecord::Schema[7.2].define(version: 2025_04_20_193534) do
     t.index ["user_id"], name: "index_shadowing_hours_on_user_id"
   end
 
+  create_table "shared_calendars", force: :cascade do |t|
+    t.string "name"
+    t.string "url"
+    t.bigint "space_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["space_id"], name: "index_shared_calendars_on_space_id"
+  end
+
   create_table "shifts", force: :cascade do |t|
     t.text "reason"
     t.bigint "space_id"
@@ -1084,12 +1112,21 @@ ActiveRecord::Schema[7.2].define(version: 2025_04_20_193534) do
     t.index ["staff_availability_id"], name: "index_staff_availability_exceptions_on_staff_availability_id"
   end
 
+  create_table "staff_external_unavailabilities", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "ics_url"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_staff_external_unavailabilities_on_user_id"
+  end
+
   create_table "staff_needed_calendars", force: :cascade do |t|
     t.string "calendar_url", null: false
     t.string "color"
     t.bigint "space_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "name"
     t.index ["space_id"], name: "index_staff_needed_calendars_on_space_id"
   end
 
@@ -1101,6 +1138,17 @@ ActiveRecord::Schema[7.2].define(version: 2025_04_20_193534) do
     t.string "color"
     t.index ["space_id"], name: "index_staff_spaces_on_space_id"
     t.index ["user_id"], name: "index_staff_spaces_on_user_id"
+  end
+
+  create_table "staff_unavailabilities", force: :cascade do |t|
+    t.bigint "user_id"
+    t.string "title"
+    t.text "description"
+    t.datetime "start_time"
+    t.datetime "end_time"
+    t.string "recurrence_rule"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "sub_space_booking_statuses", force: :cascade do |t|
@@ -1398,6 +1446,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_04_20_193534) do
   add_foreign_key "rfids", "users"
   add_foreign_key "shadowing_hours", "spaces"
   add_foreign_key "shadowing_hours", "users"
+  add_foreign_key "shared_calendars", "spaces"
   add_foreign_key "shifts", "spaces"
   add_foreign_key "shifts", "trainings"
   add_foreign_key "space_staff_hours", "course_names"
@@ -1405,6 +1454,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_04_20_193534) do
   add_foreign_key "space_staff_hours", "training_levels"
   add_foreign_key "staff_availabilities", "time_periods"
   add_foreign_key "staff_availabilities", "users"
+  add_foreign_key "staff_external_unavailabilities", "users"
   add_foreign_key "staff_needed_calendars", "spaces"
   add_foreign_key "staff_spaces", "spaces"
   add_foreign_key "staff_spaces", "users"

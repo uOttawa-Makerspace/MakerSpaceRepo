@@ -1,0 +1,96 @@
+<div class="container mt-4">
+  <% back_path = current_user.admin? ? admin_job_orders_path : job_orders_path %>
+
+  <div class="mb-3">
+    <%= link_to back_path, class: "text-secondary", style: "opacity: 70%" do %>
+      <i class="fa fa-arrow-left me-1"></i> <%= t("job_orders.order.back") %>
+    <% end %>
+  </div>
+
+  <div class="row">
+    <div class="col-12 mb-3 d-flex justify-content-between align-items-center">
+      <h2 class="fw-bold"><%= t("job_orders.order.job_order") %> #<%= @job_order.id %></h2>
+
+      <% if @job_order.allow_edit? && current_user.id == @job_order.user_id %>
+        <%= link_to t('job_orders.public_page.edit'), job_order_steps_path(job_order_id: @job_order.id), class: 'btn btn-secondary mb-1' %>
+      <% end %>
+      <%= link_to "<i class='fa fa-download'></i> #{t('job_orders.public_page.invoice')}".html_safe, job_order_invoice_path(job_order_id: @job_order.id), target: '_blank', class: 'btn btn-secondary', rel: 'noopener' if @job_order.job_order_quote.present? %>
+    </div>
+
+    <!-- User & Job Info -->
+    <div class="col-md-6 mb-4">
+      <!-- Client Information -->
+      <div class="card mb-3">
+        <div class="card-header">
+          <strong><%= t("job_orders.order.client_information") %></strong>
+        </div>
+        <div class="card-body">
+          <% if @job_order.user.present? %>
+            <p><strong><%= t("job_orders.order.name") %>:</strong> <%= link_to @job_order.user.name, user_path(@job_order.user.username) %></p>
+            <p><strong><%= t("job_orders.order.email") %>:</strong> <%= @job_order.user.email %></p>
+          <% else %>
+            <p class="text-danger">[DELETED USER]</p>
+          <% end %>
+
+          <p><strong><%= t("job_orders.order.created") %>:</strong> <%= l(@job_order.created_at, format: :long) %></p>
+          <p><strong><%= t("job_orders.order.job_type") %>:</strong> <%= @job_order.job_type.name %></p>
+          <% if @job_order.job_service_group.present? %>
+            <p><strong><%= t("job_orders.order.service") %>:</strong> <%= @job_order.job_service_group.name %></p>
+          <% end %>
+          <% if @job_order.job_services.any? %>
+            <ul class="mb-0">
+              <% @job_order.job_services.each do |service| %>
+                <li><%= service.name %></li>
+              <% end %>
+            </ul>
+          <% end %>
+          <% if @job_order.job_order_options.any? %>
+            <p><strong><%= t("job_orders.order.options") %>:</strong></p>
+            <ul class="mb-0">
+              <% @job_order.job_order_options.each do |order_option| %>
+                <% if order_option.job_option.id == 1 %>
+                  <li class="text-success"><i class="fa fa-exclamation-circle"></i> Expedited</li>
+                <% else %>
+                  <li><%= order_option.job_option.name %></li>
+                <% end %>
+              <% end %>
+            </ul>
+          <% end %>
+          <% if @job_order.comments.present? %>
+            <p><strong><%= t("job_orders.order.comments") %>:</strong></p>
+            <%= simple_format(@job_order.comments) %>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Admin stuff -->
+      <%= render 'admin_details', jo: @job_order %>
+
+      <!-- Download Links -->
+      <div class="card">
+        <div class="card-header">
+          <strong><%= t("job_orders.order.download_links") %></strong>
+        </div>
+        <div class="card-body py-0">
+          <% if @job_order.user_files.any? %>
+            <ul class="list-group list-group-flush text-break">
+              <% @job_order.user_files.each do |file| %>
+                <li class="list-group-item d-flex justify-content-between align-items-center p-0 py-2">
+                  <%= file.filename %>
+                  <%= link_to t("job_orders.order.download"), rails_blob_path(file, disposition: "attachment"), class: "btn btn-outline-primary btn-sm ms-1", style: "min-width: fit-content", target: "_blank", rel: "noopener" %>
+                </li>
+              <% end %>
+            </ul>
+          <% else %>
+            <p class="text-muted">No files uploaded for this order.</p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+      <!-- Job Order Card -->
+      <%= render 'order_card', jo: @job_order %>
+    </div>
+  </div>
+</div>

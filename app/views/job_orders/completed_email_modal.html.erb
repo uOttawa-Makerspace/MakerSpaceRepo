@@ -11,19 +11,17 @@
               <input id="job-order-message" value="<%= @message %>" type="hidden" name="message">
               <trix-editor input="job-order-message"></trix-editor>
             </div>
-            <p>Send email to user</p>
             <%= hidden_field_tag :completed, true %>
             <%= hidden_field_tag :send_email, true %>
-            <%= f.submit 'Job Completed', class: 'btn btn-primary' %>
+            <%= f.submit 'Send email and mark completed', class: 'btn btn-primary my-2' %>
           </div>
         <% end %>
       </div>
       <div class="col-md-12 text-center">
-        <p>Do not send email to user</p>
         <%= form_for @job_order, url: job_order_processed_path(@job_order) do |f| %>
           <%= hidden_field_tag :completed, true %>
           <%= hidden_field_tag :send_email, false %>
-          <%= f.submit 'Job Completed', class: 'btn btn-danger' %>
+          <%= f.submit 'Do not send email and mark completed', class: 'btn btn-danger' %>
         <% end %>
       </div>
     </div>

@@ -54,6 +54,13 @@ export default class extends Controller {
   }
 
   close() {
+    if (!this.name) {
+      this.name = this.element.id.replace("-modal", "");
+    }
+    if (!this.modal) {
+      this.modal = this.element;
+    }
+
     document.body.classList.remove("modal-open");
     this.modal.removeAttribute("style");
     this.modal.classList.remove("show");

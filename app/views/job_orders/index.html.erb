@@ -1,5 +1,11 @@
+<div class="text-center mb-2">
+  <h2><%= t('job_orders.public_page.my_job_orders') %></h2>
+  <%= link_to t('job_orders.public_page.create_a_new_job_order'), new_job_orders_path, class: 'btn btn-primary mb-1' %>
+  <%= link_to t('job_orders.public_page.admin_page'), admin_job_orders_path, class: 'btn btn-primary mb-1' if @user.staff? %>
+</div>
+
 <% if @drafts.count > 0 %>
-  <div class="alert alert-warning alert-dismissible fade show col-md-12 text-center">
+  <div class="container alert alert-warning alert-dismissible fade show col-md-12 text-center">
     <i class="fa fa-warning"></i>
     <p class="font-weight-bold"><%= t('job_orders.public_page.job_orders_partly_created') %></p>
     <% @drafts.each do |draft| %>
@@ -9,46 +15,33 @@
   </div>
 <% end %>
 
-<div class="text-center">
-  <h2><%= t('job_orders.public_page.my_job_orders') %></h2>
-  <%= link_to t('job_orders.public_page.create_a_new_job_order'), new_job_orders_path, class: 'btn btn-primary mb-1' %>
-  <%= link_to t('job_orders.public_page.admin_page'), admin_job_orders_path, class: 'btn btn-primary mb-1' if @user.staff? %>
-  <br><br>
-</div>
 <% if @job_orders.count > 0 %>
-  <div class="row col-lg-10 mx-auto">
-    <% @job_orders.each do |jo| %>
-      <%= render 'order_card', jo: jo %>
-    <% end %>
+  <div class="container table-responsive">
+    <table class="table table-striped job-order-table">
+      <thead class="table-primary">
+        <tr class="text-center">
+          <th></th>
+          <th>User</th>
+          <th>ID</th>
+          <th>Submitted</th>
+          <th>Type</th>
+          <th>Status</th>
+          <th>View</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @job_orders.each do |jo| %>
+          <tr id="job-order-row-<%= jo.id %>">
+            <%= render 'client_row', jo: jo %>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
   </div>
 <% else %>
   <div class="text-center">
     <div class="alert alert-info col-lg-6 mx-auto" role="alert">
       <%= t('job_orders.public_page.no_job_orders') %> <%= link_to t('job_orders.public_page.here'), new_job_orders_path, class: 'alert-link' %>.
-    </div>
-  </div>
-<% end %>
-
-<% if @archived_job_orders.count > 0 %>
-  <div class="accordion" id="accordionExample">
-    <div class="card">
-      <div class="card-header" id="headingOne">
-        <h2 class="mb-0">
-          <button class="btn btn-link btn-block text-center" type="button" data-toggle="collapse" data-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-            <%= t('job_orders.public_page.archived_orders') %>
-          </button>
-        </h2>
-      </div>
-
-      <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#accordionExample">
-        <div class="card-body">
-          <div class="row col-lg-10 mx-auto">
-            <% @archived_job_orders.each do |jo| %>
-              <%= render 'order_card', jo: jo %>
-            <% end %>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 <% end %>

@@ -196,17 +196,6 @@
       </tr>
     <% end %>
 
-    <% @job_order.job_order_quote.job_order_quote_type_extras.each do |e| %>
-      <tr class="item last">
-        <td>
-          <%= e.job_type_extra.name %>
-        </td>
-        <td>
-          CAD <%= number_to_currency(e.price) %>
-        </td>
-      </tr>
-    <% end %>
-
     <% @job_order.job_order_quote.job_order_quote_options.each do |o| %>
       <tr class="item last">
         <td>

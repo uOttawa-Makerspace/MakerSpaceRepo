@@ -148,31 +148,5 @@
         <% end %>
       </table>
     </div>
-
-    <h3>Job Type Extras</h3>
-
-    <p class="text-center"><%= link_to 'New Job Type Extra', new_admin_job_type_extra_path, class: 'btn btn-secondary' %></p>
-    <div class="table-responsive">
-      <table class="table table-striped">
-        <tr class="text-center">
-          <th>Name</th>
-          <th>Price</th>
-          <th>Job Type</th>
-          <th>Edit</th>
-          <th>Delete</th>
-        </tr>
-
-        <% @job_type_extras.each do |t| %>
-          <tr>
-            <td><%= t.name %></td>
-            <td><%= number_to_currency(t.price) %></td>
-            <td><%= t.job_type.name %></td>
-            <td><%= link_to 'Edit', edit_admin_job_type_extra_path(t.id), class: 'btn btn-primary' %></td>
-            <td><%= button_to 'Delete', admin_job_type_extra_path(t.id), method: :delete, class: 'btn btn-danger' %></td>
-          </tr>
-        <% end %>
-      </table>
-    </div>
-
   </div>
 </section>

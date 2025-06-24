@@ -47,7 +47,7 @@
         <% end %>
       </div>
 
-      <% if @job_type.service_fee.present? || @job_type_extras.present? %>
+      <% if @job_type.service_fee.present? %>
         <h4>Fees</h4>
         <div class="col-lg-6 mx-auto">
           <div class="table-responsive">
@@ -61,16 +61,6 @@
                 <tr>
                   <td><%= t('job_orders.wizard.step_2.service_fee') %></td>
                   <td><%= number_to_currency(@job_type.service_fee) %></td>
-                </tr>
-              <% end %>
-              <% @job_type_extras.each do |extra| %>
-                <tr>
-                  <td><%= extra.name %></td>
-                  <td><%= if extra.price.present?
-                            number_to_currency(extra.price)
-                          else
-                            extra.description.presence || t('job_orders.wizard.step_2.to_be_determined')
-                          end %></td>
                 </tr>
               <% end %>
               </tbody>

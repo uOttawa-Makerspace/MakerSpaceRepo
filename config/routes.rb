@@ -69,12 +69,13 @@ Rails.application.routes.draw do
     end
   end
     
-  resources :job_orders, only: %i[index create update new destroy] do
+  resources :job_orders, only: %i[index show create update new destroy] do
     get :steps
     get :quote_modal
     get :timeline_modal
     get :completed_email_modal
     get :decline_modal
+    get :comments_modal
     get :invoice
     patch :quote
     patch :steps
@@ -84,6 +85,7 @@ Rails.application.routes.draw do
     patch :paid
     patch :picked_up
     patch :resend_quote_email
+    patch :comments
     collection do
       get :admin
       get :settings
@@ -250,7 +252,6 @@ Rails.application.routes.draw do
               only: %i[index new create edit update destroy]
     resources :job_services, only: %i[index new create edit update destroy]
     resources :job_options, only: %i[index new create edit update destroy]
-    resources :job_type_extras, only: %i[index new create edit update destroy]
     resources :job_types, only: %i[index new create edit update]
 
     get "manage_badges"

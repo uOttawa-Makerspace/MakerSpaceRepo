@@ -1,0 +1,178 @@
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <strong><%= t("job_orders.order.staff_information") %></strong>
+  </div>
+  <div class="card-body">
+    <%# CLIENT STUFF FROM STAFF %>
+    <p><strong><%= t("job_orders.order.comments_from_staff") %>:</strong></p>
+    <% if jo.user_comments.present? %>
+      <p><%= simple_format(jo.user_comments) %></p>
+    <% else %>
+      <p class="text-muted"><%= t("job_orders.order.none_yet") %></p>
+    <% end %>
+
+    <% if jo.staff_files.any? %>
+      <p><strong><%= t("job_orders.order.files_from_staff") %>:</strong></p>
+
+      <ul class="list-group list-group-flush text-break">
+        <% jo.staff_files.each do |file| %>
+          <li class="list-group-item d-flex justify-content-between align-items-center p-0">
+            <%= file.filename %>
+            <%= link_to t("job_orders.order.download"), rails_blob_path(file, disposition: "attachment"), class: "btn btn-outline-primary btn-sm ms-1", style: "min-width: fit-content", target: "_blank", rel: "noopener" %>
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
+
+    <%# STAFF ONLY STUFF %>
+    <hr>
+    <% if current_user.admin? %>
+      <div class="d-grid gap-2">
+        <div>
+          <p><strong>Comments for Staff:</strong></p>
+          <% if jo.staff_comments.present? %>
+            <p><%= simple_format(jo.staff_comments) %></p>
+          <% else %>
+            <p class="text-muted">None yet.</p>
+          <% end %>
+        </div>
+        <% if jo.job_order_statuses.last.job_status == JobStatus::STAFF_APPROVAL %>
+          <button 
+            class="btn btn-primary"         
+            data-controller="launch-modal"
+            data-action="click->launch-modal#openModal" 
+            data-id="<%= jo.id %>"
+            data-name="quote"
+            data-url="/job_orders/<%= jo.id %>/quote_modal">Approve
+          </button>
+          <button 
+            class="btn btn-danger"         
+            data-controller="launch-modal"
+            data-action="click->launch-modal#openModal" 
+            data-id="<%= jo.id %>"
+            data-name="decline"
+            data-url="/job_orders/<%= jo.id %>/decline_modal">Deny
+          </button>
+        <% elsif [JobStatus::USER_APPROVAL, JobStatus::SENT_REMINDER].include?(jo.job_order_statuses.last.job_status) %>
+          <div class="d-flex flex-row gap-2 justify-content-center">
+            <%= button_to 'Approve', job_order_user_approval_path(jo, approved: true), method: :patch, remote: true, format: :js, class: 'btn btn-primary', data: { confirm: 'Are you sure you want to approve the Job Order on behalf of the user?' } %>
+            <%= button_to 'Reject', job_order_user_approval_path(jo, approved: false), method: :patch, remote: true, format: :js, class: 'btn btn-danger', data: { confirm: 'Are you sure you want to decline the Job Order on behalf of the user?' } %>
+            <%= button_to 'Reminder', job_order_resend_quote_email_path(jo), method: :patch, remote: true, format: :js, class: 'btn btn-info', data: { confirm: 'Are you sure you want to resend a quote reminder email?' } %>
+          </div>
+        <% elsif jo.job_order_statuses.last.job_status == JobStatus::WAITING_PROCESSED %>
+          <%= button_to 'Start Processing', job_order_start_processing_path(jo, start_processing: true), method: :patch, remote: true, format: :js, class: 'btn btn-primary my-2', data: { confirm: 'Are you sure you want to start the processing off the part?' } %>
+        <% elsif jo.job_order_statuses.last.job_status == JobStatus::BEING_PROCESSED %>
+          <button 
+            class="btn btn-primary" 
+            data-controller="launch-modal"
+            data-action="click->launch-modal#openModal" 
+            data-id="<%= jo.id %>"
+            data-name="completed-email"
+            data-url="/job_orders/<%= jo.id %>/completed_email_modal">Completed</button>
+        <% elsif jo.job_order_statuses.last.job_status == JobStatus::COMPLETED %>
+          <div class="d-flex justify-content-between align-items-center">
+            <span><strong>Price: </strong><%= number_to_currency(jo.job_order_quote.total_price) %></span>
+            <%= button_to 'Mark as Paid', job_order_paid_path(jo, paid: true), method: :patch, remote: true, format: :js, class: 'btn btn-primary my-2', data: { confirm: 'Are you sure you want to mark the job order as paid?' } %>
+          </div>
+        <% elsif jo.job_order_statuses.last.job_status == JobStatus::PAID %>
+          <%= button_to 'Mark as Picked Up', job_order_picked_up_path(jo, picked_up: true), method: :patch, remote: true, format: :js, class: 'btn btn-primary my-2', data: { confirm: 'Are you sure you want to mark the job order as picked up?' } %>
+        <% end %>
+
+        <button 
+        class="btn btn-secondary" 
+        data-controller="launch-modal"
+        data-action="click->launch-modal#openModal"
+          data-id="<%= jo.id %>"
+          data-name="quote"
+          data-url="/job_orders/<%= jo.id %>/quote_modal">Manage Quote</button>
+
+        <button 
+            class="btn btn-outline-secondary"         
+            data-controller="launch-modal"
+            data-action="click->launch-modal#openModal" 
+          data-id="<%= jo.id %>"
+          data-name="comments"
+          data-url="/job_orders/<%= jo.id %>/comments_modal">Edit User or Staff Comments
+        </button>
+
+        <%= button_to 'Delete', job_order_path(jo), method: :delete, remote: true, format: :js, class: 'btn btn-outline-danger w-100', data: { confirm: 'Are you sure you want to delete the job order?' } %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- Staff Comments Modal -->
+<div class="modal" tabindex="-1" data-controller="launch-modal" data-controller="launch-modal_controller" id="comments-modal">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Edit Comments</h5>
+        <button type="button" class="btn-close" data-action="click->launch-modal#close" aria-label="Close">
+        </button>
+      </div>
+      <div class="modal-body" id="comments-body">
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-action="click->launch-modal#close">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Decline Modal -->
+<div class="modal" tabindex="-1" data-controller="launch-modal" data-controller="launch-modal_controller" id="decline-modal">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Decline Job</h5>
+        <button type="button" class="btn-close" data-action="click->launch-modal#close" aria-label="Close">
+        </button>
+      </div>
+      <div class="modal-body" id="decline-body">
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-action="click->launch-modal#close">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quote Modal -->
+<div class="modal" tabindex="-1" data-controller="launch-modal" id="quote-modal">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Quote</h5>
+        <button type="button" class="btn-close" data-action="click->launch-modal#close" aria-label="Close">
+        </button>
+      </div>
+      <div class="modal-body" id="quote-body">
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-action="click->launch-modal#close">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Email Modal -->
+<div class="modal" tabindex="-1" data-controller="launch-modal" id="completed-email-modal">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Order Processed Email</h5>
+        <button type="button" class="btn-close" data-action="click->launch-modal#close" aria-label="Close">
+        </button>
+      </div>
+      <div class="modal-body" id="completed-email-body">
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-action="click->launch-modal#close">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
