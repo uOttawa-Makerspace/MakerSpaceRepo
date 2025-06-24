@@ -34,8 +34,18 @@ class ReworkDevelopmentProgram < ActiveRecord::Migration[7.2]
     create_table :proficient_project_sessions do |t|
       t.references :certification, index: true, foreign_key: true
       t.references :proficient_project, index: true, foreign_key: true
+      t.references :user, index: true, foreign_key: true
       t.string :level
       t.timestamps
+    end
+
+    BadgeTemplate.all.find_each do |t|
+      next if t.training_id.nil?
+      Training.find_by(id: t.training_id).update(
+        name_fr: t.name_fr,
+        description_en: t.badge_description,
+        list_of_skills_en: t.list_of_skills
+      )
     end
 
     drop_table :badges
@@ -43,7 +53,9 @@ class ReworkDevelopmentProgram < ActiveRecord::Migration[7.2]
     drop_table :badge_templates
 
     Certification.all.find_each do |c|
-      unless c.training_session.level.nil?
+      if c.training_session.level.nil?
+        c.update(level: "Beginner")
+      else
         c.update(level: c.training_session.level)
       end
     end
@@ -54,15 +66,6 @@ class ReworkDevelopmentProgram < ActiveRecord::Migration[7.2]
         description_fr: t.description_en.split("||").last
       )
       t.update(name_fr: t.name_fr.split("-").last) unless t.name_fr.nil?
-    end
-
-    BadgeTemplate.all.find_each do |t|
-      next if t.training_id.nil?
-      Training.find_by(id: t.training_id).update(
-        name_fr: t.name_fr,
-        description: t.badge_description,
-        list_of_skills: t.list_of_skills
-      )
     end
   end
 end

@@ -772,13 +772,15 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_13_150014) do
   end
 
   create_table "proficient_project_sessions", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
     t.bigint "certification_id"
     t.bigint "proficient_project_id"
+    t.bigint "user_id"
     t.string "level"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["certification_id"], name: "index_proficient_project_sessions_on_certification_id"
     t.index ["proficient_project_id"], name: "index_proficient_project_sessions_on_proficient_project_id"
+    t.index ["user_id"], name: "index_proficient_project_sessions_on_user_id"
   end
 
   create_table "proficient_projects", id: :serial, force: :cascade do |t|
@@ -1150,10 +1152,10 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_13_150014) do
   end
 
   create_table "training_requirements", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
     t.bigint "training_id"
     t.bigint "proficient_project_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["proficient_project_id"], name: "index_training_requirements_on_proficient_project_id"
     t.index ["training_id"], name: "index_training_requirements_on_training_id"
   end
@@ -1368,6 +1370,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_13_150014) do
   add_foreign_key "printers", "printer_types"
   add_foreign_key "proficient_project_sessions", "certifications"
   add_foreign_key "proficient_project_sessions", "proficient_projects"
+  add_foreign_key "proficient_project_sessions", "users"
   add_foreign_key "proficient_projects", "drop_off_locations"
   add_foreign_key "project_kits", "learning_modules"
   add_foreign_key "project_kits", "proficient_projects"
