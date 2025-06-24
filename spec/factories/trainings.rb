@@ -1,6 +1,7 @@
 FactoryBot.define do
   factory :training do
-    name { Faker::Name.unique.name }
+    name_en { Faker::Name.unique.name }
+    name_fr { Faker::Name.unique.name }
     description { Faker::Lorem.paragraph }
     association :skill
 
