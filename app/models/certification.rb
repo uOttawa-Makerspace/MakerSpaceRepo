@@ -20,6 +20,14 @@ class Certification < ApplicationRecord
         }
   scope :inactive, -> { unscoped.where(active: false) }
 
+  def training
+    if training_session.nil?
+      proficient_project_session.proficient_project.training
+    else
+      training_session.training
+    end
+  end
+
   def trainer
     if training_session.nil?
       proficient_project_session.user.name
@@ -49,8 +57,14 @@ class Certification < ApplicationRecord
   end
 
   def self.highest_certifications(user_id)
-    training_ids = joins(:training).pluck(:training_id)
-    trainings = Training.where(id: training_ids)
+    # training_ids = joins(:training).pluck(:training_id)
+    # trainings = Training.where(id: training_ids)
+    trainings = []
+    user = User.find(user_id)
+    user_certs = user.certifications
+    user_certs.each do |cert|
+      trainings << cert.training unless trainings.include? cert.training
+    end
     certs = []
     trainings.each do |training|
       certs << certification_highest_level(training.id, user_id)
@@ -59,21 +73,18 @@ class Certification < ApplicationRecord
   end
 
   def self.certification_highest_level(training_id, user_id)
-    certifications =
-      joins(:user, :training_session).where(
-        training_sessions: {
-          training_id: training_id
-        },
-        user_id: user_id
-      )
-    level = certifications.pluck(:level)
-    if level.include?("Advanced")
-      certifications.where(training_sessions: { level: "Advanced" }).last
-    elsif level.include?("Intermediate")
-      certifications.where(training_sessions: { level: "Intermediate" }).last
-    elsif level.include?("Beginner")
-      certifications.where(training_sessions: { level: "Beginner" }).last
+    user = User.find(user_id)
+    training_certs = []
+    user.certifications.each do |cert|
+      training_certs << cert if cert.training.id == training_id
     end
+    
+    highest_cert = training_certs.first
+    training_certs.each do |cert|
+      highest_cert = cert if highest_cert.level == "Beginner" && cert.level == "Intermediate"
+      highest_cert = cert if cert.level == "Advanced"
+    end
+    highest_cert
   end
 
   def self.filter_by_attribute(value)
@@ -123,14 +134,6 @@ class Certification < ApplicationRecord
         end
       end
     high_certs
-  end
-
-  def training
-    if training_session.nil?
-      proficient_project_session.proficient_project.training
-    else
-      training_session.training
-    end
   end
 
   def name
