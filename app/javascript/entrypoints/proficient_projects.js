@@ -1,4 +1,6 @@
 import TomSelect from "tom-select";
+import DataTable from "datatables.net-bs5";
+import "datatables.net-bs5/css/dataTables.bootstrap5.min.css";
 document.addEventListener("turbo:load", () => {
   [...document.getElementsByClassName("pp-status-button")].forEach(
     function (element) {
@@ -102,3 +104,5 @@ document.addEventListener("turbo:load", () => {
     });
   }
 });
+
+new DataTable("#prof-proj-requests");
