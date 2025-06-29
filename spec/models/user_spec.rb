@@ -528,12 +528,6 @@ RSpec.describe User, type: :model do
     end
 
     context "#has_required_trainings?" do
-      before :each do
-        create(:training, :"3d_printing")
-        create(:training, :laser_cutting)
-        create(:training, :arduino)
-      end
-
       it "should be false" do
         user = create(:user, :regular_user)
         create(:training_requirement, :"3d_printing")
@@ -542,19 +536,18 @@ RSpec.describe User, type: :model do
 
       it "should be true" do
         user = create(:user, :regular_user)
-        create(:certification, :"3d_printing", user_id: user.id)
-        create(:training_requirement, :"3d_printing")
-        expect(user.has_required_trainings?(BadgeRequirement.all)).to be_truthy
+        cert = create(:certification, :"3d_printing", user_id: user.id)
+        create(:training_requirement, :"3d_printing", training_id: cert.training.id)
+        expect(user.has_required_trainings?(TrainingRequirement.all)).to be_truthy
       end
 
       it "should be true" do
         user = create(:user, :regular_user)
-        create(:badge, :"3d_printing", user_id: user.id)
-        create(:badge_requirement, :"3d_printing")
-        create(:badge, :laser_cutting, user_id: user.id)
-        create(:badge_requirement, :laser_cutting)
-        create(:badge, :arduino, user_id: user.id)
-        expect(user.has_required_badges?(BadgeRequirement.all)).to be_truthy
+        cert = create(:certification, :"3d_printing", user_id: user.id)
+        create(:training_requirement, :"3d_printing", training_id: cert.training.id)
+        cert = create(:certification, :basic_training, user_id: user.id)
+        create(:training_requirement, :basic_training, training_id: cert.training.id)
+        expect(user.has_required_trainings?(TrainingRequirement.all)).to be_truthy
       end
     end
   end
