@@ -1,5 +1,7 @@
 FactoryBot.define do
   factory :training_requirement do
+    association :training
+
     trait :"3d_printing" do
       association :training
     end
