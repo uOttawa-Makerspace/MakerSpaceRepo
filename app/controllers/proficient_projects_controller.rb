@@ -127,6 +127,13 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def update
+    @proficient_project.training_requirements.destroy
+    if params[:training_requirements_id].present?
+      @proficient_project.create_training_requirements(
+        params[:training_requirements_id]
+      )
+    end
+
     if @proficient_project.update(proficient_project_params)
       update_files
       update_videos

@@ -386,7 +386,7 @@ class User < ApplicationRecord
   end
 
   def has_required_trainings?(training_requirements)
-    user_trainings_set = training_sessions.pluck(:training_id).to_set
+    user_trainings_set = certifications.includes(:training_session).pluck(:training_id).to_set
     training_requirements_set = training_requirements.pluck(:training_id).to_set
     training_requirements_set.subset?(user_trainings_set)
   end

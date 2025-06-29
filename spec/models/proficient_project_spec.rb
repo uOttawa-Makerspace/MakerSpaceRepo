@@ -12,7 +12,6 @@ RSpec.describe ProficientProject, type: :model do
       it { should have_many(:inverse_required_projects) }
       it { should have_many(:cc_moneys) }
       it { should have_many(:order_items) }
-      it { should have_many(:badge_requirements) }
       it { should have_many(:project_kits) }
       it "dependent destroy: should destroy project kits if destroyed" do
         proficient_project = create(:proficient_project_with_project_kits)
@@ -24,7 +23,6 @@ RSpec.describe ProficientProject, type: :model do
 
     context "belongs_to" do
       it { should belong_to(:training).without_validating_presence }
-      it { should belong_to(:badge_template).without_validating_presence }
       it { should belong_to(:drop_off_location).without_validating_presence }
     end
 
@@ -106,27 +104,26 @@ RSpec.describe ProficientProject, type: :model do
 
     describe "#delete_all_badge_requirements" do
       it "should delete all badge requirements" do
-        pp = create(:proficient_project, :with_badge_requirements)
+        pp = create(:proficient_project, :with_training_requirements)
         expect(
-          BadgeRequirement.where(proficient_project_id: pp.id).count
+          TrainingRequirement.where(proficient_project_id: pp.id).count
         ).to eq(2)
-        ProficientProject.find(pp.id).delete_all_badge_requirements
+        ProficientProject.find(pp.id).training_requirements.destroy_all
         expect(
-          BadgeRequirement.where(proficient_project_id: pp.id).count
+          TrainingRequirement.where(proficient_project_id: pp.id).count
         ).to eq(0)
       end
     end
 
-    describe "#create_badge_requirements" do
-      it "should create badge requirements" do
+    describe "#create_training_requirements" do
+      it "should create training requirements" do
         pp = create(:proficient_project)
-        create(:badge_template, :laser_cutting)
-        create(:badge_template, :arduino)
-        ProficientProject.find(pp.id).create_badge_requirements(
-          [2, BadgeTemplate.last.id]
+
+        ProficientProject.find(pp.id).create_training_requirements(
+          [create(:training).id, create(:training).id]
         )
         expect(
-          BadgeRequirement.where(proficient_project_id: pp.id).count
+          TrainingRequirement.where(proficient_project_id: pp.id).count
         ).to eq(2)
       end
     end

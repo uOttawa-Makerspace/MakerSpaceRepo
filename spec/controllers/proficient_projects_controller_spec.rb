@@ -86,13 +86,11 @@ RSpec.describe ProficientProjectsController, type: :controller do
 
       it "should create the proficient project with badge requirements" do
         pp_params = FactoryBot.attributes_for(:proficient_project)
-        create(:training, :"3d_printing")
-        create(:training, :laser_cutting)
         expect do
           post :create,
                params: {
                  proficient_project: pp_params,
-                 training_requirements_id: [1, 2]
+                 training_requirements_id: [create(:training).id, create(:training).id]
                }
         end.to change(ProficientProject, :count).by(1)
         expect(
@@ -196,8 +194,6 @@ RSpec.describe ProficientProjectsController, type: :controller do
       end
 
       it "should update the proficient project with badge requirements" do
-        create(:training, :"3d_printing")
-        create(:training, :laser_cutting)
         create(:proficient_project)
         patch :update,
               params: {
@@ -205,7 +201,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
                 proficient_project: {
                   title: "abc"
                 },
-                training_requirements_id: [1, 2]
+                training_requirements_id: [create(:training).id, create(:training).id]
               }
         expect(response.body).to redirect_to(
           proficient_project_path(ProficientProject.last.id)
@@ -288,7 +284,6 @@ RSpec.describe ProficientProjectsController, type: :controller do
         session[:expires_at] = Time.zone.now + 10_000
         create(:order, :with_item, user_id: user.id)
         proficient_project = ProficientProject.last
-        proficient_project.update(training_id: "")
         put :complete_project,
             format: "js",
             params: {
@@ -319,7 +314,6 @@ RSpec.describe ProficientProjectsController, type: :controller do
         create(:order, :with_item, user_id: @user.id)
         create(:user, email: "avend029@uottawa.ca")
         @proficient_project = ProficientProject.last
-        @proficient_project.update(training_id: "")
         put :complete_project,
             format: "js",
             params: {
@@ -367,7 +361,6 @@ RSpec.describe ProficientProjectsController, type: :controller do
         session[:expires_at] = Time.zone.now + 10_000
         create(:order, :with_item, user_id: @user.id)
         @proficient_project = ProficientProject.last
-        @proficient_project.update(training_id: "")
         put :complete_project,
             format: "js",
             params: {
