@@ -97,7 +97,8 @@ class Certification < ApplicationRecord
       inactive.joins(:user, :training).where(
         "LOWER(demotion_reason) like LOWER(:value) OR
                        LOWER(users.name) like LOWER(:value) OR
-                       LOWER(trainings.name) like LOWER(:value)",
+                       LOWER(trainings.name_en) like LOWER(:value) OR
+                       LOWER(trainings.name_fr) like LOWER(:value)",
         { value: "%#{value}%" }
       )
     else

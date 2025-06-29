@@ -22,7 +22,7 @@ FactoryBot.define do
 
     trait :awarded_with_badge do
       status { "Awarded" }
-      association :proficient_project, :with_badge
+      association :proficient_project
     end
   end
 end

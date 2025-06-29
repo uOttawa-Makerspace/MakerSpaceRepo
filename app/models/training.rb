@@ -12,6 +12,12 @@ class Training < ApplicationRecord
   belongs_to :skill, optional: true
   has_many :badge_templates
 
+  # Column was renamed to name_en and it broke a lot
+  alias_attribute :name, :name_en
+  alias_attribute :description, :description_en
+
+  validates :name_en, presence: true, uniqueness: true
+  validates :name_fr, presence: true, uniqueness: true
 
   def self.all_training_names
     order(name: :asc).pluck(:name)
