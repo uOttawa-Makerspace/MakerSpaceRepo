@@ -1,12 +1,12 @@
 <div class="container">
     <div class="row align-items-start">
         <div class="col-4 py-3 px-my-5">
-            <%= render "badge_icon", width: 300, height: 300, level: @certification.training_session.level, name_en: @certification.training_session.training.name_en, name_fr: @certification.training_session.training.name_fr, skill: @certification.training_session.training.skill_id %>
+            <%= render "badge_icon", width: 300, height: 300, level: @certification.training_session.level, name: @certification.training_session.training.localized_name, skill: @certification.training_session.training.skill_id %>
         </div>
         <div class="col-8 py-3 px-my-5">
             <h1><%= @certification.training_session.training.localized_name %></h1>
             <h4 class="my-3 fw-bold">Badge Owner: <%= @earner.name %></h4>
-            <h5 class="my-3">Issued by CGEC/CEED - uOttawa on <%= @certification.created_at.to_date.to_fs :long_ordinal %></h5>
+            <h5 class="my-3">Issued by CGEC/CEED - uOttawa on <%= @certification.created_at.to_date %></h5>
             <p><%= @certification.training_session.training.description %></p>
 
             <a class="my-4 text-decoration-underline" href="https://www.uottawa.ca/faculty-engineering/">Learn more</a>
@@ -15,8 +15,6 @@
                 <h5>Skills</h5>
                 <p><%= @certification.training_session.training.list_of_skills %></p>
             </div>
-        </div> 
-        
-
+        </div>
     </div>
 </div>
