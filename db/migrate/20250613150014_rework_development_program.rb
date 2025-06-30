@@ -40,10 +40,12 @@ class ReworkDevelopmentProgram < ActiveRecord::Migration[7.2]
     end
 
     BadgeTemplate.all.find_each do |t|
-      next if t.training_id.nil?
-      Training.find_by(id: t.training_id).update(
-        name_fr: t.name_fr,
-        description_en: t.badge_description,
+      # transfer over template data to the trainings
+      t.training&.update(
+        name_en: t.name_en.split('||').first.squish,
+        name_fr: t.name_en.split('||').last.squish,
+        description_en: t.badge_description.split('||').first.squish,
+        description_fr: t.badge_description.split('||').last.squish,
         list_of_skills_en: t.list_of_skills
       )
     end
@@ -58,14 +60,6 @@ class ReworkDevelopmentProgram < ActiveRecord::Migration[7.2]
       else
         c.update(level: c.training_session.level)
       end
-    end
-
-    Training.all.find_each do |t|
-      t.update(
-        description_en: t.description_en.split("||").first,
-        description_fr: t.description_en.split("||").last
-      )
-      t.update(name_fr: t.name_fr.split("-").last) unless t.name_fr.nil?
     end
   end
 end
