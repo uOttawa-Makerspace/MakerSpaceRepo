@@ -144,7 +144,7 @@ class Admin::ReportGeneratorController < AdminAreaController
     start_date =
       (
         if params[:start_date].nil?
-          DateTime.new(2015, 0o6, 0o1).beginning_of_day
+          DateTime.new(2015, 06, 01).beginning_of_day
         else
           Date.parse(params[:start_date]).to_datetime
         end
@@ -539,7 +539,7 @@ class Admin::ReportGeneratorController < AdminAreaController
             .count
         end
     else
-      (DateTime.new(2015, 0o6, 0o1).beginning_of_day..DateTime.now)
+      (DateTime.new(2015, 06, 01).beginning_of_day..DateTime.now)
         .select { |date| date.day == 1 }
         .map do |date|
           month_name = date.end_of_month.strftime("%B")
