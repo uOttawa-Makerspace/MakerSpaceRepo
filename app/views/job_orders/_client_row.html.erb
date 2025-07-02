@@ -1,8 +1,12 @@
-<td style="vertical-align: middle" class="px-1">
-  <% if jo.expedited? %>
-    <i class='fa fa-exclamation-circle fa-2x text-success'></i>
-    <%# span so that datatables can sort it! %>
-    <span class="d-none">Expedited</span>
+<td class="px-1">
+  <% if jo.chat_messages.unread(current_user).any? %>
+    <div class="mx-auto position-relative" style="width: min-content;">
+      <i class="fa fa-bell fa-2x text-danger"></i>
+      <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+        <%= jo.chat_messages.unread(current_user).count %>
+        <span class="visually-hidden">unread messages</span>
+      </span>
+    </div>
   <% end %>
 </td>
 <td>

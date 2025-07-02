@@ -100,6 +100,8 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :chat_messages, only: [:index, :create]
+
   resources :project_proposals do
     collection do
       post :create_revision

@@ -1,4 +1,8 @@
 en:
+  time:
+    formats:
+      time_only: "%l:%M %p" # 2:30 PM
+      short: "%b %d, %l:%M %p" # Jun 15, 2:30 PM
   year: "year"
   name: "English"
   faq:
@@ -281,6 +285,7 @@ en:
         services: "Services"
         enter_material_name: "Enter the material name "
         enter_custom_settings: "Enter the custom settings"
+        previous_page_disabled_tooltip: "You cannot go to the previous page because you selected design services."
       step_3:
         by_unchecking: "(By Un-Checking, you will delete this file)"
         no_options: "There are no options available to you right now. Please continue to the next step."
@@ -300,7 +305,20 @@ en:
       timeline: "Timeline"
       back: "Back"
       comments: "Comments"
-      staff_information: "Staff Information"
+      staff_information: "Staff Panel"
       comments_from_staff: "Comments from Staff"
       files_from_staff: "Files from Staff"
       none_yet: "None yet"
+      no_files: "No files uploaded for this order."
+      send: "Send"
+      type: "Type a message..."
+    new:
+      title: "What kind of project are you starting?"
+      ready_to_make:
+        title: "Ready to Make"
+        description: "You already have the design and just need production."
+        button: "Start Production"
+      need_design_help:
+        title: "Need Design Help"
+        description: "You need help creating or finalizing your design before production."
+        button: "Get Design Help"

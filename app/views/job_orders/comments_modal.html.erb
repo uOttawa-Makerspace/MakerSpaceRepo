@@ -1,7 +1,5 @@
 <div id="comments-modal-rendered">
   <%= form_for @job_order, url: job_order_comments_path(@job_order), method: :patch do |f| %>
-    <%= f.label :user_comments, 'Comments for the user' %>
-    <%= f.text_field :user_comments, placeholder: "10 hour print time...", class: 'form-control mb-2' %>
     <%= f.label :staff_comments, 'Comments for the staff' %>
     <%= f.text_field :staff_comments, placeholder: "Low on filament...", class: 'form-control mb-2' %>
     <%= f.submit 'Save', class: 'btn btn-primary' %>

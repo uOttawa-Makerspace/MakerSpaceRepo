@@ -1,26 +1,43 @@
-<section x-data="{job_type_id: <%= @job_order.job_type_id.presence || JobType.first.id %>}">
-  <%= form_for(@job_order, url: { controller: 'job_orders', action: 'create' }) do |f| %>
+<section class="container my-5 text-center">
+  <h1 class="mb-4"><%= t('job_orders.new.title') %></h1>
 
-    <div class="text-center">
+  <div class="row justify-content-center gap-4">
+    <!-- Ready to Make -->
+    <%= form_with url: job_orders_path, method: :post, local: true do |f| %>
+      <%= hidden_field_tag 'job_order[job_type_id]', nil %> <!-- JS sets this -->
+      <%= hidden_field_tag :redirect_step, 1 %>
 
-      <h2><%= t('job_orders.wizard.title', step: 1) %></h2>
-
-      <div class="form-group col-lg-6 mx-auto">
-        <%= f.label :job_type_id, t('job_orders.wizard.step_1.job_type'), { class: 'form-label' } %>
-        <%= f.select :job_type_id, options_from_collection_for_select(JobType.all, :id, :name), {}, { class: 'form-control form-select', 'x-model': 'job_type_id' } %>
+      <div class="card p-4 border-success" style="min-width: 280px;">
+        <h2 class="h4 text-success mb-3"><%= t('job_orders.new.ready_to_make.title') %></h2>
+        <p><%= t('job_orders.new.ready_to_make.description') %></p>
+        <%= button_tag t('job_orders.new.ready_to_make.button'), type: 'submit', class: 'btn btn-success btn-lg mt-3 w-100', onclick: "this.form.querySelector('[name=\'job_order[job_type_id]\']').value = #{JobType.find_by(name: 'Ready to Make')&.id || 1}" %>
       </div>
+    <% end %>
 
-      <% JobType.all.find_each do |jt| %>
-        <template x-if="job_type_id == <%= jt.id %>">
-          <% if jt.description.present? %>
-            <div class="alert alert-secondary my-2 col-lg-6 mx-auto">
-              <%= jt.description %>
-            </div>
-          <% end %>
-        </template>
-      <% end %>
+    <!-- Need Design Help -->
+    <%= form_with url: job_orders_path, method: :post, local: true do |f| %>
+      <%= hidden_field_tag 'job_order[job_type_id]', 3 %>
+      <%= hidden_field_tag :redirect_step, 2 %>
 
-      <%= f.submit t('job_orders.wizard.next_step'), class: 'btn btn-primary' %>
-    </div>
-  <% end %>
+      <div class="card p-4 border-warning" style="min-width: 280px;">
+        <h2 class="h4 text-warning mb-3"><%= t('job_orders.new.need_design_help.title') %></h2>
+        <p><%= t('job_orders.new.need_design_help.description') %></p>
+        <%= button_tag t('job_orders.new.need_design_help.button'), type: 'submit', class: 'btn btn-warning btn-lg mt-3 w-100' %>
+      </div>
+    <% end %>
+  </div>
 </section>
+
+<script>
+  function prepareForm(mode) {
+    const form = document.getElementById('jobOrderForm');
+    const stepField = document.getElementById('redirectStep');
+
+    if (mode === 'design_help') {
+      stepField.value = 2;
+      document.querySelector('[name="job_order[job_type_id]"]').value = 3;
+    } else {
+      stepField.value = 1;
+    }
+  }
+</script>

@@ -56,15 +56,13 @@
               <% end %>
             </ul>
           <% end %>
-          <% if @job_order.comments.present? %>
-            <p><strong><%= t("job_orders.order.comments") %>:</strong></p>
-            <%= simple_format(@job_order.comments) %>
-          <% end %>
         </div>
       </div>
 
       <!-- Admin stuff -->
-      <%= render 'admin_details', jo: @job_order %>
+      <% if current_user.admin? %>
+        <%= render 'admin_details', jo: @job_order %>
+      <% end %>
 
       <!-- Download Links -->
       <div class="card">
@@ -82,13 +80,29 @@
               <% end %>
             </ul>
           <% else %>
-            <p class="text-muted">No files uploaded for this order.</p>
+            <p class="text-muted"><%= t("job_orders.order.no_files") %></p>
+          <% end %>
+
+          <% if @job_order.staff_files.any? %>
+            <p class="bg-light p-2 border rounded"><strong><%= t("job_orders.order.files_from_staff") %>:</strong></p>
+
+            <ul class="list-group list-group-flush text-break">
+              <% @job_order.staff_files.each do |file| %>
+                <li class="list-group-item d-flex justify-content-between align-items-center p-0 py-2">
+                  <%= file.filename %>
+                  <%= link_to t("job_orders.order.download"), rails_blob_path(file, disposition: "attachment"), class: "btn btn-outline-primary btn-sm ms-1", style: "min-width: fit-content", target: "_blank", rel: "noopener" %>
+                </li>
+              <% end %>
+            </ul>
           <% end %>
         </div>
       </div>
     </div>
 
     <div class="col-md-6 mb-4">
+      <!-- Chat Section -->
+      <%= render 'chat_messages/chat', jo: @job_order, chat_messages: @job_order.chat_messages.includes(:sender).order(created_at: :desc) %>
+
       <!-- Job Order Card -->
       <%= render 'order_card', jo: @job_order %>
     </div>

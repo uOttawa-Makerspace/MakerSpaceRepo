@@ -1,0 +1,16 @@
+<div class="mb-1 p-2 rounded d-inline-block <%= chat_message.sender == current_user ? "bg-light" : "bg-body-secondary" %>">
+  <div class="d-flex justify-content-between align-items-center">
+    <span class="fw-bold">
+      <%= chat_message.sender == current_user ? "You" : chat_message.sender.name %>
+      <% if chat_message.sender != current_user && chat_message.sender.staff? %><span class="text-primary fw-normal">(staff)</span><% end %>:
+    </span>
+    <small class="text-muted ms-1"><%= chat_message.timestamp %></small>
+  </div>
+  <div class="message"><%= simple_format(chat_message.message) %></div>
+</div>
+
+<style>
+  .message * {
+    margin: 0;
+  }
+</style>

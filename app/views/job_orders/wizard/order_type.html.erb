@@ -7,13 +7,13 @@
 
       <div class="col-lg-6 mx-auto">
         <%= f.label :job_type_id, t('job_orders.wizard.step_1.job_type') %>
-        <%= f.select :job_type_id, options_from_collection_for_select(JobType.all, :id, :name, @job_order.job_type_id.presence || ''), {}, { class: 'form-control form-select', 'x-model': 'job_type_id' } %>
+        <%= f.select :job_type_id, options_from_collection_for_select(JobType.where.not(name: "Design Services"), :id, :name, @job_order.job_type_id.presence || ''), {}, { class: 'form-control form-select', 'x-model': 'job_type_id' } %>
       </div>
 
-      <% JobType.all.each do |jo| %>
+      <% JobType.all.find_each do |jo| %>
         <template x-if="job_type_id == <%= jo.id %>">
           <div class="alert alert-info my-2 col-lg-6 mx-auto">
-            <%= jo.description %>
+            <%= jo.description || jo.name %>
           </div>
         </template>
       <% end %>

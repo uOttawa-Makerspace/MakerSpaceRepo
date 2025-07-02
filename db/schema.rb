@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_06_09_150913) do
+ActiveRecord::Schema[7.2].define(version: 2025_06_27_145944) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -170,6 +170,17 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_09_150913) do
     t.bigint "demotion_staff_id"
     t.index ["demotion_staff_id"], name: "index_certifications_on_demotion_staff_id"
     t.index ["user_id"], name: "index_certifications_on_user_id"
+  end
+
+  create_table "chat_messages", force: :cascade do |t|
+    t.text "message"
+    t.bigint "job_order_id"
+    t.bigint "sender_id"
+    t.boolean "is_read", default: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["job_order_id"], name: "index_chat_messages_on_job_order_id"
+    t.index ["sender_id"], name: "index_chat_messages_on_sender_id"
   end
 
   create_table "comments", id: :serial, force: :cascade do |t|
@@ -386,8 +397,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_09_150913) do
   end
 
   create_table "job_order_quote_type_extras", force: :cascade do |t|
-    t.bigint "job_type_extra_id", null: false
-    t.bigint "job_order_quote_id", null: false
+    t.bigint "job_type_extra_id"
+    t.bigint "job_order_quote_id"
     t.decimal "price", precision: 10, scale: 2
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -476,11 +487,11 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_09_150913) do
 
   create_table "job_type_extras", force: :cascade do |t|
     t.bigint "job_type_id"
-    t.string "name", null: false
+    t.string "name"
     t.decimal "price", precision: 10, scale: 2
-    t.text "description"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "description"
     t.index ["job_type_id"], name: "index_job_type_extras_on_job_type_id"
   end
 
@@ -1398,6 +1409,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_09_150913) do
   add_foreign_key "cc_moneys", "proficient_projects"
   add_foreign_key "certifications", "users"
   add_foreign_key "certifications", "users", column: "demotion_staff_id"
+  add_foreign_key "chat_messages", "job_orders"
+  add_foreign_key "chat_messages", "users", column: "sender_id"
   add_foreign_key "comments", "repositories"
   add_foreign_key "comments", "users"
   add_foreign_key "contact_infos", "spaces"

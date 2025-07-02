@@ -63,6 +63,12 @@ class JobOrdersController < ApplicationController
 
   def show
     @job_order = JobOrder.find_by(id: params[:id], is_deleted: false)
+
+    if current_user.id == @job_order.user_id
+      @unread_messages = @job_order.chat_messages.unread(current_user)
+      @unread_messages.update_all(is_read: true) # rubocop:disable Rails/SkipsModelValidations
+    end
+
     return unless @job_order.nil?
       flash[:alert] = t("job_orders.alerts.job_order_not_found")
       redirect_to job_orders_path     
@@ -81,7 +87,7 @@ class JobOrdersController < ApplicationController
         (
           @job_order.user_files.pluck(:id) - params[:keep_files].map(&:to_i)
         ).each { |file_id| @job_order.user_files.find(file_id).purge }
-      elsif params[:should_delete_user_files] && !params[:keep_files].present?
+      elsif params[:should_delete_user_files] && params[:keep_files].blank?
         @job_order.user_files.pluck(:id).each do |file_id|
           @job_order.user_files.find(file_id).purge
         end
@@ -100,7 +106,9 @@ class JobOrdersController < ApplicationController
         if params[:job_order][:job_service_ids] == "custom"
           params[:job_order][:job_service_ids] = @job_order.job_services.last.id
         end
-        error << t("job_orders.alerts.please_upload_valid_file_type") unless @job_order.update(job_order_params)
+
+        error << t("job_orders.alerts.please_upload_valid_file_type") unless update_job_order_with_comments(@job_order, 
+job_order_params.to_h)
       end
 
       if params[:change_options].present? && params[:change_options] == "true" && !@job_order.add_options(params)
@@ -110,7 +118,7 @@ class JobOrdersController < ApplicationController
       error << t("job_orders.alerts.job_order_not_found")
     end
 
-    if error.length > 0
+    if error.present?
       redirect_to job_order_steps_path(
                     @job_order,
                     step: (params[:step].to_i - 1)
@@ -151,7 +159,7 @@ class JobOrdersController < ApplicationController
         else
           flash[:notice] = t("job_orders.alerts.job_order_updated")
         end
-        redirect_to job_orders_path
+        redirect_to job_order_path(@job_order.id)
       else
         redirect_to job_orders_path
       end
@@ -161,14 +169,23 @@ class JobOrdersController < ApplicationController
   def create
     @job_order = JobOrder.new(job_order_params)
     @job_order.user = @user
+
+    # Force job_type_id = 3 if it's the "Need Design Help" flow
+    @job_order.job_type_id = if params[:redirect_step].to_i == 2
+      JobType.where(name: "Design Services") .first.id
+    else 
+      JobType.all.first.id
+    end
+
     if @job_order.save
       @job_order.job_order_statuses << JobOrderStatus.create(
         job_order: @job_order,
         job_status: JobStatus::DRAFT,
         user: @user
       )
+
       if @job_order.save
-        redirect_to job_order_steps_path(job_order_id: @job_order.id, step: 2)
+        redirect_to job_order_steps_path(job_order_id: @job_order.id, step: params[:redirect_step] || 1)
       else
         @job_order.update(is_deleted: true)
         redirect_to new_job_orders_path
@@ -272,7 +289,7 @@ class JobOrdersController < ApplicationController
   def quote
     error = false
     if params[:approved].present? && params[:approved] == "true"
-      if @job_order.update(job_order_params)
+      if update_job_order_with_comments(@job_order, job_order_params.to_h)
         quote = JobOrderQuote.create(service_fee: params[:service_fee])
         if @job_order.save
           params.permit!
@@ -328,7 +345,7 @@ class JobOrdersController < ApplicationController
         error = true
       end
     elsif params[:approved].present? && params[:approved] == "false"
-      if @job_order.update(job_order_params)
+      if update_job_order_with_comments(@job_order, job_order_params.to_h)
         @job_order.job_order_statuses << JobOrderStatus.create(
           job_order: @job_order,
           job_status: JobStatus::DECLINED,
@@ -360,6 +377,7 @@ class JobOrdersController < ApplicationController
   end
 
   def comments
+    # only for staff comments so dont need update_job_order_with_comments
     @job_order.update(job_order_params)
     if @job_order.save
       flash[:notice] = t("job_orders.alerts.updated_successfully")
@@ -521,6 +539,29 @@ class JobOrdersController < ApplicationController
   end
 
   private
+
+  def update_job_order_with_comments(job_order, params)
+    comments = params.delete(:comments)
+    comment_from_staff = params.delete(:user_comments)
+
+    success = job_order.update(params)
+
+    if success && comments.present?
+      job_order.chat_messages.create(
+        message: comments,
+        sender: current_user
+      )
+    end
+
+    if success && comment_from_staff.present?
+      job_order.chat_messages.create(
+        message: comment_from_staff,
+        sender: current_user,
+      )
+    end
+
+    success
+  end
 
   def set_job_order
     if JobOrder.where(id: params[:job_order_id], is_deleted: false).present? ||

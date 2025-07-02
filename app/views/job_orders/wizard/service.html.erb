@@ -6,10 +6,9 @@
       <h2><%= t('job_orders.wizard.title', step: 2) %></h2>
 
       <div class="col-lg-6 mx-auto">
-        <p class="mt-0"><%= @job_order.user_files.attached? ? t('job_orders.wizard.step_2.upload_additional_files_here') : t('job_orders.wizard.step_2.upload_files_here') %></p>
         <div class="custom-file">
           <p><%= @job_type.file_description %></p>
-          <%= f.label :user_files, @job_type.file_label, class: '' %>
+          <%= f.label :user_files, @job_order.user_files.attached? ? t('job_orders.wizard.step_2.upload_additional_files_here') : t('job_orders.wizard.step_2.upload_files_here'), class: '' %>
           <div id="file-input-container">
             <div class="d-flex upload-file-input mb-2" id="new-file-input">
               <%= f.file_field :user_files, multiple: @job_type.multiple_files, required: !@job_order.user_files.attached?, name: 'job_order[user_files][]', class: 'form-control' %>
@@ -24,8 +23,7 @@
         </div>
 
         <% if @job_order.user_files.attached? %>
-          <br><br>
-          <h4><%= t('job_orders.wizard.step_2.current_uploaded_files') %></h4>
+          <h4 class="mt-4"><%= t('job_orders.wizard.step_2.current_uploaded_files') %></h4>
           <p class="mt-0"><%= t('job_orders.wizard.step_2.uncheck_to_delete_file') %></p>
           <div class="text-start">
             <ul class="list-group">
@@ -48,21 +46,21 @@
       </div>
 
       <% if @job_type.service_fee.present? %>
-        <h4>Fees</h4>
+        <h4 class="mt-4">Fees</h4>
         <div class="col-lg-6 mx-auto">
           <div class="table-responsive">
-            <table class="table sessions-table job-order-table table-striped">
+            <table class="table notDataTable sessions-table job-order-table table-striped">
               <thead class="table-primary">
                 <th><%= t('job_orders.wizard.step_2.name') %></th>
                 <th><%= t('job_orders.wizard.step_2.fee') %></th>
               </thead>
               <tbody>
-              <% if @job_type.service_fee.present? %>
-                <tr>
-                  <td><%= t('job_orders.wizard.step_2.service_fee') %></td>
-                  <td><%= number_to_currency(@job_type.service_fee) %></td>
-                </tr>
-              <% end %>
+                <% if @job_type.service_fee.present? %>
+                  <tr>
+                    <td><%= t('job_orders.wizard.step_2.service_fee') %></td>
+                    <td><%= number_to_currency(@job_type.service_fee) %></td>
+                  </tr>
+                <% end %>
               </tbody>
             </table>
           </div>
@@ -133,7 +131,13 @@
 
       <%= hidden_field_tag :step, 3 %>
       <div class="text-center">
-        <%= link_to t('job_orders.wizard.previous_step'), job_order_steps_path(step: 1), class: 'btn btn-primary mb-1' %>
+        <% if @job_order.job_type.name == "Design Services" %>
+          <span data-bs-toggle="tooltip" data-bs-title="<%= t('job_orders.wizard.step_2.previous_page_disabled_tooltip') %>">
+            <button class="btn btn-primary mb-1" disabled><%= t('job_orders.wizard.previous_step') %></button>
+          </span>
+        <% else %>
+          <%= link_to t('job_orders.wizard.previous_step'), job_order_steps_path(step: 1), class: 'btn btn-primary mb-1' %>
+        <% end %>
         <%= f.submit t('job_orders.wizard.next_step'), class: 'btn btn-primary mb-1' %>
       </div>
     </div>
@@ -144,11 +148,10 @@
 </section>
 
 <script type="text/javascript" charset="utf-8">
-    // Needs to stay there for AlpineJS
-    const handleCustomQualityChange = () => {
-        const el = document.getElementsByClassName('custom-service-radio')[0];
-        el.checked = !el.checked;
-    }
+  const handleCustomQualityChange = () => {
+      const el = document.getElementsByClassName('custom-service-radio')[0];
+      el.checked = !el.checked;
+  }
 </script>
 
 <%= vite_javascript_tag 'job_orders_wizard' %>

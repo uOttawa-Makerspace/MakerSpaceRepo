@@ -1,7 +1,9 @@
 fr:
   time:
     formats:
-      long: "%d %B %Y à %H:%M"
+      time_only: "%H:%M" # 14:30
+      short: "%-d %b, %H:%M" # 15 juin, 14:30
+      long: "%d %B %Y à %H:%M" # 15 juin 2023 à 14:30
   date:
     month_names:
       [
@@ -18,6 +20,22 @@ fr:
         "octobre",
         "novembre",
         "décembre",
+      ]
+    abbr_month_names:
+      [
+        ~,
+        janv.,
+        févr.,
+        mars,
+        avr.,
+        mai,
+        juin,
+        juil.,
+        août,
+        sept.,
+        oct.,
+        nov.,
+        déc.,
       ]
   year: "année"
   name: "Français"
@@ -347,6 +365,7 @@ fr:
         services: "Services"
         enter_material_name: "Veuillez entrer le nom du materiel "
         enter_custom_settings: "Veuillez entrer les paramètres personnalisés"
+        previous_page_disabled_tooltip: "Vous ne pouvez pas accéder à la page précédente car vous avez sélectionné des services de conception."
       step_3:
         title: "Nouvelle Commande (Étape 3/4)"
         by_unchecking: "(En décochant, vous allez supprimer ce fichier"
@@ -367,10 +386,23 @@ fr:
       timeline: "Chronologie"
       back: "Retour"
       comments: "Commentaires"
-      staff_information: "Informations du personnel"
+      staff_information: "Panneau du personnel"
       comments_from_staff: "Commentaires du personnel"
       files_from_staff: "Fichiers du personnel"
       none_yet: "Aucun pour l'instant"
+      no_files: "Aucun fichier téléversé pour cette commande."
+      send: "Envoyer"
+      type: "Tapez un message..."
+    new:
+      title: "Quel type de projet commencez-vous?"
+      ready_to_make:
+        title: "Prêt à fabriquer"
+        description: "Vous avez déjà le design et vous avez seulement besoin de la production."
+        button: "Commencer la production"
+      need_design_help:
+        title: "Besoin d'aide pour le design"
+        description: "Vous avez besoin d'aide pour créer ou finaliser le design avant la production."
+        button: "Obtenir de l'aide"
   volunteer_program:
     welcome:
       header: "Programme de bénévolat"
