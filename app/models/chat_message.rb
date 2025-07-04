@@ -4,12 +4,20 @@ class ChatMessage < ApplicationRecord
 
   validates :message, presence: true
 
-  after_create :send_notification_email, if: :should_send_email?
+  after_commit :schedule_notification_email, on: :create
 
   scope :unread, ->(current_user) { 
     where.not(sender: current_user)
          .where(is_read: false)
   }
+
+  def self.count_unread_by_admin(job_order)
+    where(job_order: job_order)
+      # .where.not(sender_id: current_user.id)
+      .order(created_at: :desc)
+      .take_while { |msg| msg.sender_id == job_order.user_id }
+      .count
+  end
 
   def timestamp
     if created_at.today?
@@ -21,32 +29,16 @@ class ChatMessage < ApplicationRecord
 
   private
 
-  def should_send_email?
-    # Check if this is the first message for the job order
-    is_first_message = ChatMessage.where(job_order: job_order)
-                                  .where.not(id: id)
-                                  .empty?
-    
-    return false if is_first_message
+  def schedule_notification_email
+    return if recent_message_by_sender?
 
-    # Check if the most recent message from this sender was more than 45 minutes ago
-    last_message = ChatMessage.where(sender: sender, job_order: job_order)
-                              .where.not(id: id)
-                              .order(created_at: :desc)
-                              .first
-                              
-    last_message.nil? || last_message.created_at < 45.minutes.ago
+    ChatNotificationJob.set(wait: 1.hour).perform_later(id)
   end
 
-  def send_notification_email
-    recipients = if job_order.user_id == sender_id
-                  # Alex and Justine
-                  User.where(id: [25, 1607]).to_a
-                  # User.where(id: [13_252]).to_a
-                else
-                  [job_order.user]
-                end
-
-    ChatMessageMailer.new_message(self, recipients).deliver_later if recipients.any?
+  def recent_message_by_sender?
+    ChatMessage.where(job_order_id: job_order_id, sender_id: sender_id)
+              .where('created_at >= ?', 1.hour.ago)
+              .where.not(id: id)
+              .exists?
   end
 end

@@ -6,6 +6,17 @@
   <% end %>
 </td>
 <td>
+  <% if jo.chat_messages.count_unread_by_admin(jo) > 0 %>
+    <div class="mx-auto position-relative" style="width: min-content;">
+      <i class="fa fa-bell text-danger" style="scale: 1.7;"></i>
+      <span class="position-absolute translate-middle badge rounded-pill bg-danger">
+        <%= jo.chat_messages.count_unread_by_admin(jo) %>
+        <span class="visually-hidden">unread messages</span>
+      </span>
+    </div>
+  <% end %>
+</td>
+<td>
   <% if !jo.user.nil? %>
     <%= link_to jo.user.name, user_path(jo.user.username) %>
     <%= jo.user.email %>
@@ -21,6 +32,36 @@
   <%= jo.job_service_group.name if jo.job_service_group.present? %>
 </td>
 <td><%= jo.job_order_statuses.last.job_status.name %></td>
+<td>
+  <% if jo.assigned_staff.present? %>
+    <%= link_to jo.assigned_staff.name, user_path(jo.assigned_staff.username) %>
+  <% else %>
+    <% if current_user.admin? %>
+      <button type="button" class="btn btn-link fw-bold" style="font-size: 0.9rem !important;" data-bs-toggle="modal" data-bs-target="#assignStaffModal">
+        Assign Staff
+      </button>
+
+      <div class="modal fade" id="assignStaffModal" tabindex="-1" aria-labelledby="assignStaffModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="assignStaffModalLabel">Assign Staff</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <%= render "assign_staff", jo: jo, staff: @staff %>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% else %>
+      <%= button_to 'Assign Me', job_order_assign_staff_path(jo.id), method: :patch, class: 'btn btn-link fw-bold', style: "font-size: 0.9rem !important", params: { staff_id: current_user.id } %>
+    <% end %>
+  <% end %>
+</td>
 <td>
   <%= 
     link_to 'View', job_order_path(jo.id), class: 'btn btn-primary btn-sm'

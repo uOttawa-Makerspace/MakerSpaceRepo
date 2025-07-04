@@ -132,6 +132,11 @@
       <%= hidden_field_tag :step, 3 %>
       <div class="text-center">
         <% if @job_order.job_type.name == "Design Services" %>
+          <div class="form-group col-lg-6 mx-auto mb-3">
+            <%= f.label :comments, t('job_orders.wizard.step_2.design_description'), class: "h4" %>
+            <%= f.text_area :comments, class: 'form-control', rows: 4, placeholder: t('job_orders.wizard.step_2.design_description_placeholder') %>
+          </div>
+
           <span data-bs-toggle="tooltip" data-bs-title="<%= t('job_orders.wizard.step_2.previous_page_disabled_tooltip') %>">
             <button class="btn btn-primary mb-1" disabled><%= t('job_orders.wizard.previous_step') %></button>
           </span>

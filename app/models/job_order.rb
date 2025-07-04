@@ -9,6 +9,8 @@ class JobOrder < ApplicationRecord
   has_many :job_order_statuses, dependent: :destroy
   has_and_belongs_to_many :job_services
   has_many :chat_messages, dependent: :destroy
+  belongs_to :assigned_staff, class_name: "User", optional: true
+
 
   after_save :set_filename
 

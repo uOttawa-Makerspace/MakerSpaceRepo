@@ -86,6 +86,7 @@ Rails.application.routes.draw do
     patch :picked_up
     patch :resend_quote_email
     patch :comments
+    patch :assign_staff
     collection do
       get :admin
       get :settings

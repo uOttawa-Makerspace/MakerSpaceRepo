@@ -16,6 +16,13 @@ class CreateChatMessages < ActiveRecord::Migration[7.2]
       add_index :chat_messages, :sender_id
     end
 
+    # Add assigned staff to job_orders table
+    unless column_exists?(:job_orders, :assigned_staff_id)
+      add_column :job_orders, :assigned_staff_id, :bigint
+      add_foreign_key :job_orders, :users, column: :assigned_staff_id
+      add_index :job_orders, :assigned_staff_id
+    end
+
     # Migrate existing comments to chat messages
     reversible do |dir|
       dir.up do

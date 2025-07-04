@@ -366,6 +366,8 @@ fr:
         enter_material_name: "Veuillez entrer le nom du materiel "
         enter_custom_settings: "Veuillez entrer les paramètres personnalisés"
         previous_page_disabled_tooltip: "Vous ne pouvez pas accéder à la page précédente car vous avez sélectionné des services de conception."
+        design_description: "Description du design"
+        design_description_placeholder: "Veuillez décrire votre design et ce dont vous avez besoin d'aide. Cela nous aidera à mieux comprendre vos besoins."
       step_3:
         title: "Nouvelle Commande (Étape 3/4)"
         by_unchecking: "(En décochant, vous allez supprimer ce fichier"

@@ -5,6 +5,16 @@
   <div class="card-body">
     <div class="d-grid gap-2">
       <div>
+        <% if jo.assigned_staff.present? %>
+          <p>This job is assigned to: <strong><%= jo.assigned_staff.name %></strong></p>
+        <% else %>
+          <p>This job is not assigned to any staff member.</p>
+        <% end %>
+
+        <% if current_user.admin? %>
+          <%= render "assign_staff", jo: jo, staff: @staff %>
+        <% end %>
+
         <p><strong>Comments for Staff:</strong></p>
         <% if jo.staff_comments.present? %>
           <p><%= simple_format(jo.staff_comments) %></p>

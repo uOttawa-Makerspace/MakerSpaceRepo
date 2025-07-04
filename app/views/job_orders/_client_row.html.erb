@@ -1,8 +1,8 @@
 <td class="px-1">
   <% if jo.chat_messages.unread(current_user).any? %>
     <div class="mx-auto position-relative" style="width: min-content;">
-      <i class="fa fa-bell fa-2x text-danger"></i>
-      <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+      <i class="fa fa-bell text-danger" style="scale: 1.7;"></i>
+      <span class="position-absolute translate-middle badge rounded-pill bg-danger">
         <%= jo.chat_messages.unread(current_user).count %>
         <span class="visually-hidden">unread messages</span>
       </span>

@@ -63,6 +63,7 @@ class JobOrdersController < ApplicationController
 
   def show
     @job_order = JobOrder.find_by(id: params[:id], is_deleted: false)
+    @staff = User.staff
 
     if current_user.id == @job_order.user_id
       @unread_messages = @job_order.chat_messages.unread(current_user)
@@ -465,32 +466,53 @@ job_order_params.to_h)
     end
   end
 
-  def admin
-    @statuses = [
-      { name: "Waiting for Staff Approval", status: JobStatus::STAFF_APPROVAL },
-      { name: "Waiting for User Approval", status: JobStatus::USER_APPROVAL },
-      { name: "Sent a Quote Reminder", status: JobStatus::SENT_REMINDER },
-      { name: "Waiting to be processed", status: JobStatus::WAITING_PROCESSED },
-      { name: "Currently being processed", status: JobStatus::BEING_PROCESSED },
-      { name: "Waiting for Payment", status: JobStatus::COMPLETED },
-      { name: "Waiting for Pick-Up", status: JobStatus::PAID },
-      { name: "Archived", status: [JobStatus::PICKED_UP, JobStatus::DECLINED] }
-    ]
-
-    session[:query_date] = params[:query_date].to_i if params[:query_date].present?
-
-    if !session[:query_date].present? || session[:query_date] == 0
-      session[:query_date] = 0
-      @job_orders = JobOrder.all.not_deleted.without_drafts.includes(:job_services).order(created_at: :desc)
+  def assign_staff
+    @job_order = JobOrder.find_by(id: params[:job_order_id], is_deleted: false)
+    if @job_order.present? && (@user.admin? || @user.id == params[:staff_id].to_i)
+      @job_order.assigned_staff_id = params[:staff_id]
+      if @job_order.save
+        flash[:notice] = "#{@job_order.assigned_staff&.name || "No staff"} has been assigned to this job order."
+      else
+        flash[:alert] = "#{@job_order.assigned_staff.name} could not be assigned to this job order."
+      end
     else
-      @job_orders =
-        JobOrder
-          .all
-          .not_deleted
-          .without_drafts
-          .where(created_at: session[:query_date].days.ago..)
-          .order_by_expedited
+      flash[:alert] = "#{@job_order.assigned_staff.name} could not be assigned to this job order."
     end
+    redirect_back(fallback_location: job_orders_path)
+  end
+
+  def admin
+    # @statuses = [
+    #   { name: "Waiting for Staff Approval", status: JobStatus::STAFF_APPROVAL },
+    #   { name: "Waiting for User Approval", status: JobStatus::USER_APPROVAL },
+    #   { name: "Sent a Quote Reminder", status: JobStatus::SENT_REMINDER },
+    #   { name: "Waiting to be processed", status: JobStatus::WAITING_PROCESSED },
+    #   { name: "Currently being processed", status: JobStatus::BEING_PROCESSED },
+    #   { name: "Waiting for Payment", status: JobStatus::COMPLETED },
+    #   { name: "Waiting for Pick-Up", status: JobStatus::PAID },
+    #   { name: "Archived", status: [JobStatus::PICKED_UP, JobStatus::DECLINED] }
+    # ]
+
+    @staff = User.staff
+
+    # get all stuff for filtering
+    @statuses = JobStatus.where.not(name: "Draft")
+    @job_types = JobType.all
+
+    # session[:query_date] = params[:query_date].to_i if params[:query_date].present?
+    @job_orders = JobOrder.all.not_deleted.without_drafts.includes(:job_services).order(created_at: :desc)
+
+    # if !session[:query_date].present? || session[:query_date] == 0
+    #   session[:query_date] = 0
+    # else
+    #   @job_orders =
+    #     JobOrder
+    #       .all
+    #       .not_deleted
+    #       .without_drafts
+    #       .where(created_at: session[:query_date].days.ago..)
+    #       .order_by_expedited
+    # end
   end
 
   def settings
