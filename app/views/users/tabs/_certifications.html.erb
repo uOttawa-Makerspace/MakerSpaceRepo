@@ -35,7 +35,7 @@
             <%= certification.trainer %>
           </td>
           <td>
-            <% if @user.admin? || (@user.name == certification.trainer) %>
+            <% if @user.admin? || (@user.name == certification.trainer && @user.role != "regular_user") %>
               <% if certification.training_session.present? %>
                 <%= link_to certification.created_at.strftime('%B %d, %Y'), staff_training_session_path(id: certification.training_session.id), style: 'text-decoration:underline;' %>
               <% else %>
@@ -45,7 +45,7 @@
               <%= certification.created_at.strftime('%B %d, %Y') %>
             <% end %>
           </td>
-          <% if @user.admin? || (@user.name == certification.trainer) %>
+          <% if @user.admin? || (@user.name == certification.trainer && @user.role != "regular_user") %>
             <td class="action-cell">
               <a data-bs-toggle="modal" data-bs-target="#modal-window"
                 href="<%= open_modal_admin_certifications_path(id: certification.id) %>"
