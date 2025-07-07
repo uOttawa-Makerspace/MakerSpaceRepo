@@ -5,7 +5,7 @@ class ChatMessageMailer < ApplicationMailer
     @job_order = chat_message.job_order
     @sender = chat_message.sender
 
-    subject = "Nouveau message // New message"
+    subject = "MakerRepo - Nouveau message // New message"
     
     mail(to: @recipients.map(&:email), subject: subject)
   end

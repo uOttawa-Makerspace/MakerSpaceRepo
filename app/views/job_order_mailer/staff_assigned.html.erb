@@ -3,6 +3,7 @@
     <meta name="viewport" content="width=device-width">
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <style>
+      /* Your existing CSS styles here */
       @media only screen and (max-width: 620px) {
           table[class=body] h1 {
               font-size: 28px !important;
@@ -97,7 +98,7 @@
     </style>
   </head>
   <body class="" style="background-color: #f6f6f6; font-family: sans-serif; -webkit-font-smoothing: antialiased; font-size: 14px; line-height: 1.4; margin: 0; padding: 0; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%;">
-    <span class="preheader" style="color: transparent; display: none; height: 0; max-height: 0; max-width: 0; opacity: 0; overflow: hidden; mso-hide: all; visibility: hidden; width: 0;">MakerRepo - Nouveau message // New message</span>
+    <span class="preheader" style="color: transparent; display: none; height: 0; max-height: 0; max-width: 0; opacity: 0; overflow: hidden; mso-hide: all; visibility: hidden; width: 0;">Makerepo - Staff Assignment Notification</span>
     <table role="presentation" class="body" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; background-color: #f6f6f6; width: 100%;" width="100%" bgcolor="#f6f6f6">
       <tr>
         <td style="font-family: sans-serif; font-size: 14px; vertical-align: top;" valign="top">&nbsp;</td>
@@ -117,13 +118,17 @@
                         <br>
 
                         <!-- French Content -->
-                        <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Bonjour,</p>
+                        <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Bonjour <%= @staff_member.name %>,</p>
                         <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-                          Vous avez reçu un nouveau message concernant votre commande de travail #<%= @job_order.id %> de la part de <%= @sender.name %>.
+                          Vous avez été assigné(e) à la commande de travail #<%= @job_order.id %> par un administrateur.
                         </p>
                         <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-                          Message :<br/>
-                          <span style="font-style: italic"><%= @chat_message.content %></span>
+                          <strong>Détails de la commande :</strong><br>
+                          Fichier : <%= @job_order.user_files.first.filename %><br>
+                          Client : <%= @job_order.user.name %><br>
+                          <% if @job_order.expedited? %>
+                            <span style="color: #e55426ff;">(COMMANDE PRIORITAIRE)</span><br>
+                          <% end %>
                         </p>
 
                         <table role="presentation" class="btn btn-primary" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; box-sizing: border-box; width: 100%;" width="100%">
@@ -146,13 +151,17 @@
                         <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
 
                         <!-- English Content -->
-                        <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello,</p>
+                        <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello <%= @staff_member.name %>,</p>
                         <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-                          You have received a new message regarding your Job Order #<%= @job_order.id %> from <%= @sender.name %>.
+                          You have been assigned to Job Order #<%= @job_order.id %> by an administrator.
                         </p>
                         <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-                          Message :<br/>
-                          <span style="font-style: italic"><%= @chat_message.content %></span>
+                          <strong>Job Order Details:</strong><br>
+                          File: <%= @job_order.user_files.first.filename %><br>
+                          Client: <%= @job_order.user.name %><br>
+                          <% if @job_order.expedited? %>
+                            <span style="color: #e55426ff;">(EXPEDITED ORDER)</span><br>
+                          <% end %>
                         </p>
 
                         <table role="presentation" class="btn btn-primary" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; box-sizing: border-box; width: 100%;" width="100%">
@@ -194,10 +203,10 @@
                   <td class="content-block" style="font-family: sans-serif; vertical-align: top; padding-bottom: 10px; padding-top: 10px; color: #999999; font-size: 12px; text-align: center;" valign="top" align="center">
                     <span class="apple-link" style="color: #999999; font-size: 12px; text-align: center;">CEED, 150 Louis Pasteur, Ottawa ON Canada K1N 6N5</span>
                     <p style="font-family: sans-serif; font-weight: normal; margin: 0; margin-bottom: 15px; color: #999999; font-size: 12px; text-align: center;">
-                      Vous avez reçu ce courriel parce qu'un nouveau message a été posté sur votre commande de travail sur
+                      Vous avez reçu ce courriel parce qu'un administrateur vous a assigné à une commande de travail sur
                       <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a>.
                       <br>
-                      You received this email because a new message was posted on your job order on
+                      You received this email because an administrator assigned you to a job order on
                       <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a>.
                     </p>
                   </td>
