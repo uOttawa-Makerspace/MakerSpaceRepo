@@ -1,0 +1,15 @@
+name-template: "v$RESOLVED_VERSION"
+tag-template: "v$RESOLVED_VERSION"
+
+change-template: |
+  ### $TITLE (#$NUMBER) by @$AUTHOR
+
+  $BODY
+
+template: |
+  ## Release Notes
+
+  $CHANGES
+
+no-changes-template: |
+  No changes in this release.
