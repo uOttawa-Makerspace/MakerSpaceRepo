@@ -59,9 +59,9 @@
         </div>
       </div>
 
-      <!-- Admin stuff -->
-      <% if current_user.admin? %>
-        <%= render 'admin_details', jo: @job_order %>
+      <!-- Staff stuff -->
+      <% if current_user.staff? %>
+        <%= render 'staff_details', jo: @job_order %>
       <% end %>
 
       <!-- Download Links -->

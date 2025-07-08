@@ -148,6 +148,8 @@ class JobOrderMailer < ApplicationMailer
         subject: "You've been assigned to Job Order ##{@job_order.id}"
       )
     end
+
+    logger.warn "YOU'VE GOT MAIL #{@staff_member.inspect}"
   end
 
   # def send_print_reminder(email, id)

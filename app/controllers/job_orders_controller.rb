@@ -474,7 +474,7 @@ job_order_params.to_h)
         flash[:notice] = "#{@job_order.assigned_staff&.name || "No staff"} has been assigned to this job order."
 
         if @job_order.assigned_staff.present? && @user.admin? && @job_order.assigned_staff != @user
-          JobOrderMailer.staff_assigned(@job_order.id, @job_order.assigned_staff.id).deliver_later
+          JobOrderMailer.staff_assigned(@job_order.id, @job_order.assigned_staff.id).deliver_later(queue: :solid_queue)
         end
       else
         flash[:alert] = "#{@job_order.assigned_staff.name} could not be assigned to this job order."

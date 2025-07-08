@@ -37,7 +37,7 @@ document.addEventListener("turbo:load", () => {
   clearFiltersBtn.addEventListener("click", () => {
     const defaultDateRadio = document.getElementById("default_date");
     defaultDateRadio.checked = true;
-    defaultDateRadio.dispatchEvent(new Event("change"));
+    handleDateRangeChange(defaultDateRadio);
 
     jobTypeCheckboxes.forEach((cb) => (cb.checked = false));
     jobStatusCheckboxes.forEach((cb) => (cb.checked = false));
@@ -105,6 +105,7 @@ document.addEventListener("turbo:load", () => {
       filterTags.innerHTML = "";
 
       [labelText, ...types, ...statuses, ...assignedTos].forEach((value) => {
+        if (value == "All time") return;
         if (value == "Assign") value = "Unassigned"; // Special case for "Assign"
 
         const badge = document.createElement("span");
