@@ -1,7 +1,7 @@
 class CreateStaffUnavailabilitiesAndEventsAndEventAssignments < ActiveRecord::Migration[7.2]
   def change
     create_table :staff_unavailabilities do |t|
-      t.bigint :user_id
+      t.references :user, foreign_key: true
       t.string :title
       t.text :description
       t.datetime :start_time
@@ -11,8 +11,8 @@ class CreateStaffUnavailabilitiesAndEventsAndEventAssignments < ActiveRecord::Mi
     end
 
     create_table :events, force: true do |t| 
-      t.bigint :created_by_id
-      t.bigint :space_id
+      t.references :created_by, foreign_key: {to_table: :users} # created_by_id -> users table
+      t.references :space, foreign_key: true
       t.string :title
       t.text :description
       t.datetime :start_time
@@ -24,8 +24,8 @@ class CreateStaffUnavailabilitiesAndEventsAndEventAssignments < ActiveRecord::Mi
     end
 
     create_table :event_assignments do |t|
-      t.bigint :event_id
-      t.bigint :user_id
+      t.references :event, foreign_key: true
+      t.references :user, foreign_key: true
       t.timestamps
     end
   end
