@@ -40,23 +40,6 @@
       <button type="button" class="btn btn-link fw-bold" style="font-size: 0.9rem !important;" data-bs-toggle="modal" data-bs-target="#assignStaffModal">
         Assign Staff
       </button>
-
-      <div class="modal fade" id="assignStaffModal" tabindex="-1" aria-labelledby="assignStaffModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title" id="assignStaffModalLabel">Assign Staff</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-              <%= render "assign_staff", jo: jo, staff: @staff %>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
-          </div>
-        </div>
-      </div>
     <% else %>
       <%= button_to 'Assign Me', job_order_assign_staff_path(jo.id), method: :patch, class: 'btn btn-link fw-bold', style: "font-size: 0.9rem !important", params: { staff_id: current_user.id } %>
     <% end %>
@@ -67,3 +50,20 @@
     link_to 'View', job_order_path(jo.id), class: 'btn btn-primary btn-sm'
   %>
 </td>
+
+<div class="modal fade" id="assignStaffModal" tabindex="-1" aria-labelledby="assignStaffModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="assignStaffModalLabel">Assign Staff</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <%= render "assign_staff", jo: jo, staff: @staff %>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

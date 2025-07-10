@@ -79,7 +79,7 @@ document.addEventListener("turbo:load", () => {
     }); // date range
     dt.column(5).search(typeRegex, true, false); // job_type
     dt.column(6).search(statusRegex, true, false); // job_status
-    dt.column(7).search(assignedToRegex, true, false); // assigned_to
+    dt.column(7).search(assignedToRegex, false, false); // assigned_to
 
     dt.draw();
 
