@@ -7,6 +7,8 @@ document.addEventListener("turbo:load", () => {
     pageLength: 25,
   });
 
+  if (window.location.pathname !== "/job_orders/admin") return; // only filter on admin page
+
   const dateRangeSelect = document.getElementById("date_range");
   const jobTypeCheckboxes = document.querySelectorAll(
     "input[name='job_type_filter[]']",
