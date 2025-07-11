@@ -1,13 +1,7 @@
 class ReworkDevelopmentProgram < ActiveRecord::Migration[7.2]
   def change
-    change_table :badge_templates do |t|
-      # Split name into separate languages
-      t.rename :badge_name, :name_en
-      t.string :name_fr
-    end
 
     change_table :trainings do |t|
-      t.string :list_of_skills
       t.rename :name, :name_en
       t.string :name_fr
       t.boolean :has_badge, default: true
@@ -15,13 +9,14 @@ class ReworkDevelopmentProgram < ActiveRecord::Migration[7.2]
       t.rename :description, :description_en
       t.string :description_fr
 
-      t.rename :list_of_skills, :list_of_skills_en
+      t.string :list_of_skills_en
       t.string :list_of_skills_fr
     end
 
     create_table :training_requirements do |t|
       t.references :training, index: true, foreign_key: true
       t.references :proficient_project, index: true, foreign_key: true
+      t.string :level
       t.timestamps
     end
 
@@ -42,8 +37,8 @@ class ReworkDevelopmentProgram < ActiveRecord::Migration[7.2]
     BadgeTemplate.all.find_each do |t|
       # transfer over template data to the trainings
       t.training&.update(
-        name_en: t.name_en.split('||').first.squish,
-        name_fr: t.name_en.split('||').last.squish,
+        name_en: t.badge_name.split('||').first.squish,
+        name_fr: t.badge_name.split('||').last.squish,
         description_en: t.badge_description.split('||').first.squish,
         description_fr: t.badge_description.split('||').last.squish,
         list_of_skills_en: t.list_of_skills
