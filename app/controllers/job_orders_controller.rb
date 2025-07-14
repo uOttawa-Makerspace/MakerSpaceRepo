@@ -85,12 +85,10 @@ class JobOrdersController < ApplicationController
 
     if @job_order.present? && @job_order.user == @user
       if params[:keep_files].present?
-        (
-          @job_order.user_files.pluck(:id) - params[:keep_files].map(&:to_i)
-        ).each { |file_id| @job_order.user_files.find(file_id).purge }
-      elsif params[:should_delete_user_files] && params[:keep_files].blank?
-        @job_order.user_files.pluck(:id).each do |file_id|
-          @job_order.user_files.find(file_id).purge
+        keep_ids = params[:keep_files].map(&:to_i)
+        @job_order.user_files.each do |file|
+          logger.warn "FILES: #{file.inspect} and #{keep_ids}"
+          file.purge unless keep_ids.include?(file.id.to_s)
         end
       end
 
@@ -545,8 +543,15 @@ job_order_params.to_h)
   def update_job_order_with_comments(job_order, params)
     comments = params.delete(:comments)
     comment_from_staff = params.delete(:user_comments)
+    uploaded_files = params.delete(:user_files)
 
     success = job_order.update(params)
+ 
+    if success && uploaded_files.present?
+      uploaded_files.reject(&:blank?).each do |file|
+        job_order.user_files.attach(file)
+      end
+    end
 
     if success && comments.present?
       job_order.chat_messages.create(

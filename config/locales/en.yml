@@ -273,8 +273,8 @@ en:
       step_2:
         upload_files_here: "Upload your file(s) here"
         upload_additional_files_here: "Upload additional files here"
-        current_uploaded_files: "Current Uploaded Files"
-        uncheck_to_delete_file: "Un-Check to delete the file"
+        current_uploaded_files: "Previously Uploaded Files"
+        uncheck_to_delete_file: "Uncheck to delete the file"
         you_can_upload_x_files: "You can input %{x_files} in this form."
         multiple_files: "multiple files"
         one_file: "one file"

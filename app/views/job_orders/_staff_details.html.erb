@@ -80,7 +80,7 @@
             data-action="click->launch-modal#openModal" 
         data-id="<%= jo.id %>"
         data-name="comments"
-        data-url="/job_orders/<%= jo.id %>/comments_modal">Edit Staff Comments
+        data-url="/job_orders/<%= jo.id %>/comments_modal">Edit Comments for Staff
       </button>
 
       <%= button_to 'Delete Job Order', job_order_path(jo), method: :delete, remote: true, format: :js, class: 'btn btn-outline-danger w-100', data: { confirm: 'Are you sure you want to delete the job order?' } %>
@@ -93,7 +93,7 @@
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Edit Comments</h5>
+        <h5 class="modal-title">Edit Comments for Staff</h5>
         <button type="button" class="btn-close" data-action="click->launch-modal#close" aria-label="Close">
         </button>
       </div>

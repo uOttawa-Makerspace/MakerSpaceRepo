@@ -8,19 +8,43 @@
       <div class="col-lg-6 mx-auto">
         <div class="custom-file">
           <p><%= @job_type.file_description %></p>
-          <%= f.label :user_files, @job_order.user_files.attached? ? t('job_orders.wizard.step_2.upload_additional_files_here') : t('job_orders.wizard.step_2.upload_files_here'), class: '' %>
+
+          <%= f.label :user_files, @job_order.user_files.attached? ? t('job_orders.wizard.step_2.upload_additional_files_here') : t('job_orders.wizard.step_2.upload_files_here') %>
+
           <div id="file-input-container">
-            <div class="d-flex upload-file-input mb-2" id="new-file-input">
-              <%= f.file_field :user_files, multiple: @job_type.multiple_files, required: !@job_order.user_files.attached?, name: 'job_order[user_files][]', class: 'form-control' %>
-              <% if @job_type.multiple_files %>
-                <button class="btn btn-success ms-2" type="button" id="clone-file-input">
-                  <i class="fa fa-plus"></i>
+            <% is_required = !@job_order.user_files.attached? %>
+            <div class="d-flex upload-file-input mb-2 gap-2">
+              <%= f.file_field :user_files, required: is_required, multiple: false, name: 'job_order[user_files][]', class: 'form-control' %>
+              <%# Hide delete button if it's the only required input %>
+              <% unless is_required %>
+                <button class="btn btn-danger delete-file-button" type="button">
+                  <i class="fa fa-trash"></i>
                 </button>
               <% end %>
             </div>
           </div>
-          <p><%= t('job_orders.wizard.step_2.you_can_upload_x_files', x_files: @job_type.multiple_files ? t('job_orders.wizard.step_2.multiple_files') : t('job_orders.wizard.step_2.one_file')) %></p>
+
+          <button type="button" class="btn btn-outline-primary mt-2" id="add-file-button">
+            <i class="fa fa-plus"></i> Add File
+          </button>
+
+          <% if @job_type.multiple_files %>
+            <p><%= t('job_orders.wizard.step_2.you_can_upload_x_files', x_files: t('job_orders.wizard.step_2.multiple_files')) %></p>
+          <% else %>
+            <p><%= t('job_orders.wizard.step_2.you_can_upload_x_files', x_files: t('job_orders.wizard.step_2.one_file')) %></p>
+          <% end %>
         </div>
+
+        <%# Hidden template for new file input rows %>
+        <div class="upload-file-input mb-2 gap-2" id="new-file-input" style="display: none;">
+          <input type="file" name="job_order[user_files][]" class="form-control" />
+          <button class="btn btn-danger delete-file-button" type="button">
+            <i class="fa fa-trash"></i>
+          </button>
+        </div>
+
+
+        <%= vite_javascript_tag 'file_input_form' %>
 
         <% if @job_order.user_files.attached? %>
           <h4 class="mt-4"><%= t('job_orders.wizard.step_2.current_uploaded_files') %></h4>
@@ -39,7 +63,6 @@
                   </div>
                 </li>
               <% end %>
-              <%= hidden_field_tag :should_delete_user_files, true %>
             </ul>
           </div>
         <% end %>
