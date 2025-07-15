@@ -3,7 +3,7 @@ import "datatables.net-bs5/css/dataTables.bootstrap5.min.css";
 
 document.addEventListener("turbo:load", () => {
   const dt = new DataTable(".table:not(.notDataTable)", {
-    order: [[4, "desc"]],
+    order: [[3, "desc"]], // sorts by id on /admin and submitted date on client view
     pageLength: 25,
   });
 

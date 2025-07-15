@@ -286,7 +286,7 @@ en:
         enter_material_name: "Enter the material name "
         enter_custom_settings: "Enter the custom settings"
         previous_page_disabled_tooltip: "You cannot go to the previous page because you selected design services."
-        design_description: "Design Description"
+        design_description: "Describe your project"
         design_description_placeholder: "Please describe your design and what you need help with. This will help us understand your requirements better."
       step_3:
         by_unchecking: "(By Un-Checking, you will delete this file)"

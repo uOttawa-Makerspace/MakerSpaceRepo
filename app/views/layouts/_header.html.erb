@@ -115,6 +115,7 @@
 <%# Set by layouts/volunteer.html.erb, sometimes not even set?%>
 <%= render 'layouts/volunteer_header' if (defined? with_volunteer) && with_volunteer %>
 <%= render 'layouts/development_program_header' if (defined? with_development) && with_development %>
+<%= render 'layouts/job_orders_header' if (defined? with_job_orders) && with_job_orders %>
 <%= render 'layouts/admin_area_header' if (defined? with_admin) && with_admin %>
 <%= render 'layouts/staff_area_header' if (defined? with_staff) && with_staff %>
 <%= render 'layouts/sub_space_header' if @with_sub_space %>

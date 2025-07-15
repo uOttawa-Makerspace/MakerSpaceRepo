@@ -3,19 +3,36 @@
 
     <div class="text-center">
 
-      <h2><%= t('job_orders.wizard.title', step: 2) %></h2>
+      <% if @job_order.job_type.name == "Design Services" %>
+        <h2>Create Job Order</h2>
+        <%= hidden_field_tag :step, 5 %>
+      <% else %>
+        <h2><%= t('job_orders.wizard.title', step: 2) %></h2>
+        <%= hidden_field_tag :step, 3 %>
+      <% end %>
+
+      <% if @job_order.job_type.name == "Design Services" %>
+        <div class="form-group col-lg-6 mx-auto mb-3">
+          <%= f.label :comments, t('job_orders.wizard.step_2.design_description'), class: "h4" %>
+          <%= f.text_area :comments, class: 'form-control', rows: 4, required: true, placeholder: t('job_orders.wizard.step_2.design_description_placeholder') %>
+        </div>
+      <% end %>
 
       <div class="col-lg-6 mx-auto">
         <div class="custom-file">
           <p><%= @job_type.file_description %></p>
 
-          <%= f.label :user_files, @job_order.user_files.attached? ? t('job_orders.wizard.step_2.upload_additional_files_here') : t('job_orders.wizard.step_2.upload_files_here') %>
+          <%= f.label :user_files, @job_order.user_files.attached? ? t('job_orders.wizard.step_2.upload_additional_files_here') : t('job_orders.wizard.step_2.upload_files_here') %>.
+          <% if @job_type.multiple_files %>
+            <i>(<%= t('job_orders.wizard.step_2.you_can_upload_x_files', x_files: t('job_orders.wizard.step_2.multiple_files')) %>)</i>
+          <% else %>
+            <i>(<%= t('job_orders.wizard.step_2.you_can_upload_x_files', x_files: t('job_orders.wizard.step_2.one_file')) %>)</i>
+          <% end %>
 
           <div id="file-input-container">
             <% is_required = !@job_order.user_files.attached? %>
             <div class="d-flex upload-file-input mb-2 gap-2">
               <%= f.file_field :user_files, required: is_required, multiple: false, name: 'job_order[user_files][]', class: 'form-control' %>
-              <%# Hide delete button if it's the only required input %>
               <% unless is_required %>
                 <button class="btn btn-danger delete-file-button" type="button">
                   <i class="fa fa-trash"></i>
@@ -27,22 +44,14 @@
           <button type="button" class="btn btn-outline-primary mt-2" id="add-file-button">
             <i class="fa fa-plus"></i> Add File
           </button>
-
-          <% if @job_type.multiple_files %>
-            <p><%= t('job_orders.wizard.step_2.you_can_upload_x_files', x_files: t('job_orders.wizard.step_2.multiple_files')) %></p>
-          <% else %>
-            <p><%= t('job_orders.wizard.step_2.you_can_upload_x_files', x_files: t('job_orders.wizard.step_2.one_file')) %></p>
-          <% end %>
         </div>
 
-        <%# Hidden template for new file input rows %>
         <div class="upload-file-input mb-2 gap-2" id="new-file-input" style="display: none;">
           <input type="file" name="job_order[user_files][]" class="form-control" />
           <button class="btn btn-danger delete-file-button" type="button">
             <i class="fa fa-trash"></i>
           </button>
         </div>
-
 
         <%= vite_javascript_tag 'file_input_form' %>
 
@@ -57,7 +66,6 @@
                     <%= check_box_tag 'keep_files[]', file.id, true, { multiple: true, class: 'form-check-input' } %>
                     <%= label_tag 'keep_files[]', file.filename, class: '' %>
                   </div>
-
                   <div class="text-end">
                     <%= link_to "<i class='fa fa-download'></i>".html_safe, rails_blob_path(file, disposition: 'attachment') %>
                   </div>
@@ -78,12 +86,10 @@
                 <th><%= t('job_orders.wizard.step_2.fee') %></th>
               </thead>
               <tbody>
-                <% if @job_type.service_fee.present? %>
-                  <tr>
-                    <td><%= t('job_orders.wizard.step_2.service_fee') %></td>
-                    <td><%= number_to_currency(@job_type.service_fee) %></td>
-                  </tr>
-                <% end %>
+                <tr>
+                  <td><%= t('job_orders.wizard.step_2.service_fee') %></td>
+                  <td><%= number_to_currency(@job_type.service_fee) %></td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -96,7 +102,7 @@
           <div class="text-start">
             <% @service_groups.each do |sg| %>
               <div class="form-check">
-                <%= f.radio_button :job_service_group_id, sg.id, class: 'form-check-input', 'x-model': 'service_group_id', required: true, selected: @job_order.job_service_group_id %>
+                <%= f.radio_button :job_service_group_id, sg.id, class: 'form-check-input', 'x-model': 'service_group_id', required: true %>
                 <%= f.label :job_service_group_id, "#{sg.name} #{"(#{sg.description})" if sg.description.present?}", class: 'form-check-label', value: sg.id %>
               </div>
 
@@ -106,7 +112,7 @@
                     <% if sg.text_field_true? %>
                       <div class="form-group">
                         <%= label_tag :job_service_name, t('job_orders.wizard.step_2.enter_material_name') %>
-                        <%= text_field_tag :job_service_name, @job_order.job_services.where(user_created: true).present? ? @job_order.job_services.where(user_created: true).first.name : '', class: 'form-control', required: true %>
+                        <%= text_field_tag :job_service_name, @job_order.job_services.where(user_created: true).first&.name, class: 'form-control', required: true %>
                       </div>
                     <% elsif sg.multiple %>
                       <% sg.job_services.order(created_at: :asc).where(required: true).each do |r| %>
@@ -122,16 +128,16 @@
                     <% else %>
                       <% sg.job_services.where(user_created: false).order(created_at: :asc).each do |s| %>
                         <div class="form-check">
-                          <%= f.radio_button :job_service_ids, s.id, class: 'form-check-input', checked: @job_order.job_services.present? ? @job_order.job_services.pluck(:id).include?(s.id) : false, required: true %>
+                          <%= f.radio_button :job_service_ids, s.id, class: 'form-check-input', checked: @job_order.job_services.pluck(:id).include?(s.id), required: true %>
                           <%= f.label :job_service_ids, (@user.internal? ? s.name_with_internal_price : s.name_with_external_price), class: 'form-check-label', value: s.id %>
                           <%= f.label :job_service_ids, s.description if s.description %>
                         </div>
                       <% end %>
                       <% if sg.text_field_option? %>
                         <div class="form-check">
-                          <%= f.radio_button :job_service_ids, 'custom', class: 'form-check-input custom-service-radio', checked: @job_order.job_services.present? ? @job_order.job_services.pluck(:id).exclude?(sg.job_service_ids) && @job_order.job_services.where(user_created: true).present? : false, required: true %>
+                          <%= f.radio_button :job_service_ids, 'custom', class: 'form-check-input custom-service-radio', checked: @job_order.job_services.where(user_created: true).present?, required: true %>
                           <%= f.label :job_service_ids, t('job_orders.wizard.step_2.enter_custom_settings'), class: 'form-check-label', value: 'custom' %>
-                          <%= text_field_tag :job_service_name, @job_order.job_services.where(user_created: true).present? ? @job_order.job_services.where(user_created: true).first.name : '', class: 'form-control inanimate', id: 'custom-settings-field', '@change': 'handleCustomQualityChange()' %>
+                          <%= text_field_tag :job_service_name, @job_order.job_services.where(user_created: true).first&.name, class: 'form-control inanimate', id: 'custom-settings-field', '@change': 'handleCustomQualityChange()' %>
                         </div>
                       <% end %>
                     <% end %>
@@ -152,21 +158,13 @@
         </div>
       <% end %>
 
-      <%= hidden_field_tag :step, 3 %>
       <div class="text-center">
         <% if @job_order.job_type.name == "Design Services" %>
-          <div class="form-group col-lg-6 mx-auto mb-3">
-            <%= f.label :comments, t('job_orders.wizard.step_2.design_description'), class: "h4" %>
-            <%= f.text_area :comments, class: 'form-control', rows: 4, placeholder: t('job_orders.wizard.step_2.design_description_placeholder') %>
-          </div>
-
-          <span data-bs-toggle="tooltip" data-bs-title="<%= t('job_orders.wizard.step_2.previous_page_disabled_tooltip') %>">
-            <button class="btn btn-primary mb-1" disabled><%= t('job_orders.wizard.previous_step') %></button>
-          </span>
+          <%= f.submit t('static_pages.forgot_password.submit'), class: 'btn btn-primary mb-1' %>
         <% else %>
           <%= link_to t('job_orders.wizard.previous_step'), job_order_steps_path(step: 1), class: 'btn btn-primary mb-1' %>
+          <%= f.submit t('job_orders.wizard.next_step'), class: 'btn btn-primary mb-1' %>
         <% end %>
-        <%= f.submit t('job_orders.wizard.next_step'), class: 'btn btn-primary mb-1' %>
       </div>
     </div>
   <% end %>

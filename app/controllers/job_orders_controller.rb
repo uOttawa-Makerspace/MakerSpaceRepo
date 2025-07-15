@@ -1,4 +1,6 @@
 class JobOrdersController < ApplicationController
+  layout "job_orders"
+
   before_action :current_user
   before_action :signed_in,
                 except: %i[
@@ -536,6 +538,7 @@ job_order_params.to_h)
   end
 
   def landing
+    render layout: "application"
   end
 
   private

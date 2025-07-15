@@ -110,3 +110,5 @@ group :test do
   gem "shoulda-matchers", "~> 4.0"
   gem "rspec-retry"
 end
+
+gem "solid_queue", "~> 1.2"

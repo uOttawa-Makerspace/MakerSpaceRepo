@@ -1,3 +1,5 @@
+<% provide :title, "#{t('job_orders.order.job_order')} ##{@job_order.id}" %>
+
 <div class="container mt-4">
   <% back_path = current_user.admin? ? admin_job_orders_path : job_orders_path %>
 

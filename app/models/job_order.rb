@@ -88,6 +88,9 @@ class JobOrder < ApplicationRecord
                 image/vnd.dxf
                 image/x-dxf
                 model/x.stl-ascii
+                image/png
+                image/jpeg
+                image/webp
               ],
               if: -> { staff_files.attached? }
             }
