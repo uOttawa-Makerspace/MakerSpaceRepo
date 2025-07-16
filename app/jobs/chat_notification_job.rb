@@ -1,5 +1,5 @@
 class ChatNotificationJob < ApplicationJob
-  queue_as :default
+  self.queue_adapter = :solid_queue
 
   def perform(chat_message_id)
     chat = ChatMessage.find_by(id: chat_message_id)

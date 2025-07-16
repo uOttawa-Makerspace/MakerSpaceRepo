@@ -42,18 +42,9 @@
           </div>
 
           <button type="button" class="btn btn-outline-primary mt-2" id="add-file-button">
-            <i class="fa fa-plus"></i> Add File
+            <i class="fa fa-plus"></i> Add Another File
           </button>
         </div>
-
-        <div class="upload-file-input mb-2 gap-2" id="new-file-input" style="display: none;">
-          <input type="file" name="job_order[user_files][]" class="form-control" />
-          <button class="btn btn-danger delete-file-button" type="button">
-            <i class="fa fa-trash"></i>
-          </button>
-        </div>
-
-        <%= vite_javascript_tag 'file_input_form' %>
 
         <% if @job_order.user_files.attached? %>
           <h4 class="mt-4"><%= t('job_orders.wizard.step_2.current_uploaded_files') %></h4>
@@ -179,5 +170,15 @@
       el.checked = !el.checked;
   }
 </script>
+
+<%# template %>
+<div class="upload-file-input mb-2 gap-2" id="new-file-input" style="display: none;">
+  <input type="file" name="job_order[user_files][]" class="form-control" />
+  <button class="btn btn-danger delete-file-button" type="button">
+    <i class="fa fa-trash"></i>
+  </button>
+</div>
+
+<%= vite_javascript_tag 'file_input_form' %>
 
 <%= vite_javascript_tag 'job_orders_wizard' %>

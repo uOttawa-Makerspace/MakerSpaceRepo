@@ -8,6 +8,7 @@
     <%= vite_stylesheet_tag 'application.scss', media: 'all', 'data-turbo-track': 'reload' %>
     <%= csrf_meta_tags %>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="//unpkg.com/alpinejs" defer></script>
   </head>
   <body>
     <%= render 'layouts/header', with_job_orders: true %>
