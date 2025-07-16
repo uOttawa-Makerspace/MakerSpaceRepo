@@ -66,7 +66,7 @@ end %>
           <%# Special UI for certain current statuses - shown inside the li if it's the current one %>
           <% if is_current && [JobStatus::USER_APPROVAL, JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(status) %>
             <div class="alert alert-warning mt-3">
-              <p><b><%= t('job_orders.public_page.action_required_total_quote') %> <%= number_to_currency(jo.total_price) %></b></p>
+              <p><b><%= t('job_orders.public_page.action_required', blank: status == JobStatus::COMPLETED ? t('job_orders.public_page.total_invoice') : t('job_orders.public_page.total_quote')) %> <%= number_to_currency(jo.total_price) %></b></p>
               <% if current_user.id == jo.user_id %>
                 <div class="d-flex justify-content-start flex-wrap">
                   <% if status == JobStatus::COMPLETED %>

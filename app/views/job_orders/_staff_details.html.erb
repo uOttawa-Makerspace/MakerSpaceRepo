@@ -64,7 +64,7 @@
         <%= button_to 'Mark as Picked Up', job_order_picked_up_path(jo, picked_up: true), method: :patch, remote: true, format: :js, class: 'btn btn-primary my-2', data: { confirm: 'Are you sure you want to mark the job order as picked up?' } %>
       <% end %>
 
-      <% if jo.job_order_statuses.last.job_status != JobStatus::DECLINED %>
+      <% if ![JobStatus::DECLINED, JobStatus::PAID, JobStatus::PICKED_UP].include?(jo.job_order_statuses.last.job_status) %>
         <button 
           class="btn btn-secondary" 
           data-controller="launch-modal"

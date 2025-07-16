@@ -244,6 +244,7 @@ en:
       cannot_edit: "You cannot edit this Job Order. Please contact makerspace@uottawa.ca for assistance."
       cannot_access_area: "You cannot access this area."
       updated_successfully: "Updated successfully!"
+      action_required_scroll_to_timeline: "Action Required: Please scroll down to the 'Timeline' section to provide your input. Your response is needed to proceed. Thank you!"
     public_page:
       my_job_orders: "My Job Orders"
       create_a_new_job_order: "Create a new Job Order"
@@ -257,7 +258,9 @@ en:
       archived_orders: "Archived Orders"
       no_job_orders: "You do not have any Job Orders currently. You can can create one"
       here: "here"
-      action_required_total_quote: "Action Required - Total Quote:"
+      action_required: "Action required - %{blank}:"
+      total_quote: "Total quote"
+      total_invoice: "Invoice total"
       pay_online: "Pay by Credit Card"
       pay_in_store: "Pay with cash or FOAP"
       cannot_edit_this_order: "Cannot edit this order"

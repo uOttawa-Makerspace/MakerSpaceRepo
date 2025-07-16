@@ -322,6 +322,7 @@ fr:
       cannot_edit: "Vous ne pouvez pas modifier cette commande. Veuillez contacter makerspace@uottawa.ca pour obtenir de l'aide."
       cannot_access_area: "Vous ne pouvez pas accéder à cette zone."
       updated_successfully: "Mis à jour avec succès !"
+      action_required_scroll_to_timeline: "Action Requise : Veuillez descendre jusqu'à la section « Chronologie » pour fournir votre contribution. Votre réponse est nécessaire pour continuer. Merci !"
     public_page:
       my_job_orders: "Mes commandes"
       create_a_new_job_order: "Créer une nouvelle commande"
@@ -335,7 +336,9 @@ fr:
       archived_orders: "Commandes archivées"
       no_job_orders: "Vous n'avez pas de commande en ce moment. Vous pouvez en créer une ici"
       here: "ici"
-      action_required_total_quote: "Action requise - Devis total :"
+      action_required: "Action requise - %{blank} :"
+      total_quote: "Devis total"
+      total_invoice: "Total de la facture"
       pay_online: "Payer par carte de crédit"
       pay_in_store: "Payer en argent comptant ou FOAP"
       cannot_edit_this_order: "Cette commande ne peut pas être modifiée"

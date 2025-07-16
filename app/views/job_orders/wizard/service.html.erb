@@ -54,8 +54,8 @@
               <% @job_order.user_files.each do |file| %>
                 <li class="list-group-item me-1 d-flex justify-content-between align-items-center">
                   <div class="form-check">
-                    <%= check_box_tag 'keep_files[]', file.id, true, { multiple: true, class: 'form-check-input' } %>
-                    <%= label_tag 'keep_files[]', file.filename, class: '' %>
+                    <%= check_box_tag 'job_order[user_files][]', file.signed_id, true, { multiple: true, class: 'form-check-input' } %>
+                    <%= label_tag 'job_order[user_files][]', file.filename, class: '' %>
                   </div>
                   <div class="text-end">
                     <%= link_to "<i class='fa fa-download'></i>".html_safe, rails_blob_path(file, disposition: 'attachment') %>

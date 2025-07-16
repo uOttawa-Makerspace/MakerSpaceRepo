@@ -72,6 +72,9 @@ class JobOrdersController < ApplicationController
       @unread_messages.update_all(is_read: true) # rubocop:disable Rails/SkipsModelValidations
     end
 
+      flash[:notice] = t("job_orders.alerts.action_required_scroll_to_timeline") if [JobStatus::USER_APPROVAL, 
+JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_statuses.last&.job_status)
+    
     return unless @job_order.nil?
       flash[:alert] = t("job_orders.alerts.job_order_not_found")
       redirect_to job_orders_path     
@@ -86,14 +89,6 @@ class JobOrdersController < ApplicationController
     error = []
 
     if @job_order.present? && @job_order.user == @user
-      if params[:keep_files].present?
-        keep_ids = params[:keep_files].map(&:to_i)
-        @job_order.user_files.each do |file|
-          logger.warn "FILES: #{file.inspect} and #{keep_ids}"
-          file.purge unless keep_ids.include?(file.id.to_s)
-        end
-      end
-
       if params[:job_order].present?
         if params[:job_service_name].present?
           @job_order.job_services << JobService.create!(
@@ -464,6 +459,8 @@ job_order_params.to_h)
     else
       redirect_to job_orders_path
     end
+
+    flash[:notice] = "Job order deleted successfully."
   end
 
   def assign_staff
@@ -546,16 +543,9 @@ job_order_params.to_h)
   def update_job_order_with_comments(job_order, params)
     comments = params.delete(:comments)
     comment_from_staff = params.delete(:user_comments)
-    uploaded_files = params.delete(:user_files)
-
+    
     success = job_order.update(params)
- 
-    if success && uploaded_files.present?
-      uploaded_files.reject(&:blank?).each do |file|
-        job_order.user_files.attach(file)
-      end
-    end
-
+    
     if success && comments.present?
       job_order.chat_messages.create(
         message: comments,

@@ -16,7 +16,9 @@
       <% if @job_order.allow_edit? && current_user.id == @job_order.user_id %>
         <%= link_to t('job_orders.public_page.edit'), job_order_steps_path(job_order_id: @job_order.id), class: 'btn btn-secondary mb-1' %>
       <% end %>
-      <%= link_to "<i class='fa fa-download'></i> #{t('job_orders.public_page.invoice')}".html_safe, job_order_invoice_path(job_order_id: @job_order.id), target: '_blank', class: 'btn btn-secondary', rel: 'noopener' if @job_order.job_order_quote.present? %>
+      <%= link_to "<i class='fa fa-download'></i> #{t('job_orders.public_page.invoice')}".html_safe, job_order_invoice_path(job_order_id: @job_order.id), target: '_blank', class: 'btn btn-secondary', rel: 'noopener' if [JobStatus::COMPLETED,
+      JobStatus::PAID,
+      JobStatus::PICKED_UP].include?(@job_order.job_order_statuses.last&.job_status) %>
     </div>
 
     <!-- User & Job Info -->

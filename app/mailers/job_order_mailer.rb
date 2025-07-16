@@ -1,6 +1,4 @@
 class JobOrderMailer < ApplicationMailer
-  self.queue_adapter = :solid_queue
-
   def send_job_submitted(job_order_id)
     return unless JobOrder.where(id: job_order_id).present?
   @job_order = JobOrder.find(job_order_id)
