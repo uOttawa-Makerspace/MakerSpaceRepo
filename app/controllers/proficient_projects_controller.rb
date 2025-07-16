@@ -82,10 +82,14 @@ class ProficientProjectsController < DevelopmentProgramsController
   def create
     @proficient_project = ProficientProject.new(proficient_project_params)
     if @proficient_project.save
+      Rails.logger.debug "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+      Rails.logger.debug params.inspect
       if params[:training_requirements_id].present?
-        @proficient_project.create_training_requirements(
-          params[:training_requirements_id]
-        )
+        Rails.logger.debug "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+        params[:training_requirements_id].each_with_index do |t, i|
+            @proficient_project.create_training_requirements(t, params[:training_requirements_level][i])
+        end
+        
       end
       begin
         create_photos
@@ -307,6 +311,13 @@ class ProficientProjectsController < DevelopmentProgramsController
       :has_project_kit,
       :drop_off_location_id,
       :is_virtual
+    )
+  end
+
+  def training_requirement_params
+    params.require(:training_requirement).permit(
+      :training_requirements_id,
+      :training_requirements_level
     )
   end
 

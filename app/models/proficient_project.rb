@@ -61,11 +61,8 @@ class ProficientProject < ApplicationRecord
     end
   end
 
-  def create_training_requirements(training_requirements_id)
-    training_requirements_id.each do |training_id|
-      training = Training.find_by(id: training_id)
-      training_requirements.create(training: training) if training
-    end
+  def create_training_requirements(training_requirements_id, training_requirements_level)
+    training_requirements.create(training: Training.find(training_requirements_id), level: training_requirements_level)
   end
 
   def extract_urls
