@@ -12,7 +12,7 @@
       </div>
     <div id="photo-slide">
       <% @photos.each do |p| %>
-        <%= image_tag p.image.variant(:photo_slide), alt: 'Repository Image', data: { width: p.width, height: p.height } %>
+        <%= image_tag p.image.variant(:photo_slide), alt: 'Repository Image', data: { src: url_for(p.image), width: p.width, height: p.height } %>
       <% end %>
     </div>
 
