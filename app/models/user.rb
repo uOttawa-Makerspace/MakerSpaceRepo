@@ -385,57 +385,35 @@ class User < ApplicationRecord
     update(wallet: get_total_cc)
   end
 
-  def has_required_trainings?(training_requirements, proficient_project)
-    user_trainings_set = training_sessions.pluck(:training_id).to_set
-    training_requirements_set = training_requirements.pluck(:training_id).to_set
-    # Rails.logger.debug "________________VALUE: #{has_prev_training?(proficient_project)}"
-    training_requirements_set.subset?(user_trainings_set) && has_prev_training?(proficient_project)
+  def has_requirements?(training_reqs)
+    training_reqs.each do |treq|
+      tid = treq.training_id
+      l = treq.level
+      return false unless has_training?(tid, l)
+    end
   end
 
-  def has_prev_training?(proficient_project)
-    level = proficient_project.level
-    highest_badge = highest_badge(Training.find(proficient_project.training_id))
-
-    if highest_badge.nil?
-      level == "Beginner"
-    else
-      highest_level = highest_badge.level
-      case level
-      when level == "Beginner"
-        true
-      when level == "Intermediate"
-        true
-      when level == "Advanced"
-        ["Intermediate", "Advanced"].include?(highest_level)
-      end
+  def has_training?(tid, l)
+    count = 0
+    certifications.each do |cert|
+      count+=1 if cert.training.id == tid && cert.level == l
     end
-    
+    count > 0
   end
 
   def highest_badge(training)
-    certs = []
-    certifications.each do |cert|
-      certs << cert if cert.training.id == training.id
+    badges =
+        certifications
+        .joins(:training_session)
+        .where(training_sessions: { training_id: training.id })
+    if badges.where(training_sessions: { level: "Advanced" }).present?
+      badge = badges.where(training_sessions: { level: "Advanced" }).last
+    elsif badges.where(training_sessions: { level: "Intermediate" }).present?
+      badge = badges.where(training_sessions: { level: "Intermediate" }).last
+    elsif badges.where(training_sessions: { level: "Beginner" }).present?
+      badge = badges.where(training_sessions: { level: "Beginner" }).last
     end
-    highest_cert = certs.first
-    certs.each do |cert|
-      highest_cert = cert if highest_cert.level == "Beginner" && cert.level == "Intermediate"
-      highest_cert = cert if cert.level == "Advanced"
-    end
-    highest_cert
-    # badges =
-      
-    #     certifications
-    #     .joins(:training_session)
-    #     .where(training_sessions: { training_id: training.id })
-    # if badges.where(training_sessions: { level: "Advanced" }).present?
-    #   badge = badges.where(training_sessions: { level: "Advanced" }).last
-    # elsif badges.where(training_sessions: { level: "Intermediate" }).present?
-    #   badge = badges.where(training_sessions: { level: "Intermediate" }).last
-    # elsif badges.where(training_sessions: { level: "Beginner" }).present?
-    #   badge = badges.where(training_sessions: { level: "Beginner" }).last
-    # end
-    # badge
+    badge
   end
 
   def department

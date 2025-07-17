@@ -82,10 +82,8 @@ class ProficientProjectsController < DevelopmentProgramsController
   def create
     @proficient_project = ProficientProject.new(proficient_project_params)
     if @proficient_project.save
-      Rails.logger.debug "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
       Rails.logger.debug params.inspect
       if params[:training_requirements_id].present?
-        Rails.logger.debug "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
         params[:training_requirements_id].each_with_index do |t, i|
             @proficient_project.create_training_requirements(t, params[:training_requirements_level][i])
         end
