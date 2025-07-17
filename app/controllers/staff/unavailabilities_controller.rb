@@ -6,10 +6,6 @@ class Staff::UnavailabilitiesController < StaffAreaController
   end
 
   def create
-    staff_params = params.require(:staff_unavailability).permit(
-      :title, :description, :utc_start_time, :utc_end_time, :recurrence_rule
-    )
-
     title = if staff_params[:title].blank? || staff_params[:title].strip.empty?
       "Unavailable"
     else 
@@ -36,10 +32,6 @@ class Staff::UnavailabilitiesController < StaffAreaController
 
   def update
     @staff_unavailability = StaffUnavailability.find(params[:id])
-
-    staff_params = params.require(:staff_unavailability).permit(
-      :title, :description, :utc_start_time, :utc_end_time, :recurrence_rule
-    )
 
     update_scope = if @staff_unavailability.recurrence_rule.present?
       params[:update_scope]
@@ -224,5 +216,11 @@ Time.parse(staff_params[:utc_start_time]).utc)
     end
 
     redirect_to staff_unavailabilities_path, notice: "External calendar links updated."
+  end
+
+  def staff_params
+    params.require(:staff_unavailability).permit(
+      :title, :description, :utc_start_time, :utc_end_time, :recurrence_rule
+    )
   end
 end

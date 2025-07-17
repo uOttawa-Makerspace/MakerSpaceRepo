@@ -2,10 +2,6 @@ class Admin::EventsController < AdminAreaController
   layout "admin_area"
 
   def create
-    event_params = params.require(:event).permit(
-      :title, :description, :utc_start_time, :utc_end_time, :recurrence_rule, :event_type, :space_id
-    )
-
     participants = params[:staff_select].presence || []
 
     title = if event_params[:title].blank? || event_params[:title].strip.empty?
@@ -45,10 +41,6 @@ class Admin::EventsController < AdminAreaController
 
   def update
     @event = Event.find(params[:id])
-
-    event_params = params.require(:event).permit(
-      :title, :description, :utc_start_time, :utc_end_time, :recurrence_rule, :event_type, :space_id
-    )
 
     participants = params[:staff_select].presence || []
 
@@ -370,5 +362,13 @@ notice: "#{deleted_count} draft event(s) deleted. Any recurring events were unto
     rescue StandardError => e
       redirect_to admin_calendar_index_path, alert: "Error copying events: #{e.message}"
     end
+  end
+
+  private
+
+  def event_params
+    params.require(:event).permit(
+      :title, :description, :utc_start_time, :utc_end_time, :recurrence_rule, :event_type, :space_id
+    )
   end
 end
