@@ -29,7 +29,7 @@
     <!-- Training Dropdown -->
     <div class="col-md-2">
       <%= label_tag :training, 'Training:', class: 'form-label' %>
-      <%= select_tag :training, options_from_collection_for_select(Training.order(:name), :id, :name, params[:training]), include_blank: 'All', class: 'form-select' %>
+      <%= select_tag :training, options_from_collection_for_select(Training.order(:name_en), :id, :name_en, params[:training]), include_blank: 'All', class: 'form-select' %>
     </div>
     <!-- Trainer Search -->
     <div class="col-md-2">
@@ -86,7 +86,7 @@
         <td>
           <%= sesh.created_at.to_formatted_s :long %>
         </td>
-        <td><%= sesh.training.name %></td>
+        <td><%= sesh.training.localized_name %></td>
         <td>
           <%= link_to sesh.user.name, user_url(sesh.user.username), class: 'text-blue-500 hover:underline' %>
         </td>

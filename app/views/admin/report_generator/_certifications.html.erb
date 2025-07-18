@@ -20,10 +20,6 @@
         <%= render partial: 'line_chart', locals: { data: @certs, model: 'Certifications' } %>
 
         <div class="mb-5">
-            <h4 class="text-center">Certifications by Badges</h4>
-            <%= bar_chart @badge_count, height: "#{@badge_count.length * 40}px" %>
-        </div>
-        <div class="mb-5">
             <h4 class="text-center">Certifications by Trainings</h4>
             <%= bar_chart @training_count, height: "#{@training_count.length * 40}px" %>
         </div>

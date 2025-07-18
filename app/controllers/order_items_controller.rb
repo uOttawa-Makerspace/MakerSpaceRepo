@@ -6,7 +6,7 @@ class OrderItemsController < DevelopmentProgramsController
     @order.user = current_user
     proficient_project =
       ProficientProject.find(params[:order_item][:proficient_project_id])
-    if @order.user.has_required_badges?(proficient_project.badge_requirements)
+    if @order.user.has_required_trainings?(proficient_project.training_requirements)
       begin
         @order_item = @order.order_items.new(order_item_params)
         existing_order =
@@ -41,10 +41,11 @@ class OrderItemsController < DevelopmentProgramsController
 
   def destroy
     @order = current_order
-    @order_item = @order.order_items.find(params[:id])
+    @order_item = @order.order_items.find(params[:order_item_id])
     @order_item.destroy
     @order_items = @order.order_items
     redirect_to carts_path, notice: "Successfully removed item from cart"
+    
   end
 
   def revoke
@@ -66,7 +67,7 @@ class OrderItemsController < DevelopmentProgramsController
         page: params[:page],
         per_page: 20
       )
-    @order_items_done =
+    @order_items_done =Revoked
       order_items
         .where.not(status: "In progress")
         .paginate(page: params[:page], per_page: 20)

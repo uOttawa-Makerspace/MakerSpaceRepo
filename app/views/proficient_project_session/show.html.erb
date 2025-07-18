@@ -1,0 +1,212 @@
+<section class="page-contents">
+  <% unless @current_proficient_project_session.completed? %>
+    <!-- <script>
+         window.addEventListener('beforeunload', (event) => {
+         event.preventDefault();
+         // Included for legacy support, e.g. Chrome/Edge < 119
+         event.returnValue = true;
+         });
+         </script> -->
+  <% end %>
+  <div class="padding">
+    <div style="font-weight:bold;font-size:1.4em;">Proficient Project Session #<%= @current_proficient_project_session.id %></div>
+
+    <div style="float:right;">Created On: <%= @current_proficient_project_session.created_at.strftime('%D at %l:%M%P') %></div>
+    <br />
+    <div style="float:right;">Updated On: <%= @current_proficient_project_session.updated_at.strftime('%D at %l:%M%P') %></div>
+    <div>Space: <span style="font-weight:bold;"> <%= @current_proficient_project_session.space.name %></span></div>
+    <div>
+      Status:
+      <% if @current_proficient_project_session.completed? %>
+      <span style="color:#006633;"> Completed </span>
+      <% else %>
+      <span style="color:#700000;"> Incomplete </span>
+      <% end %>
+    </div>
+    <br />
+    <% unless @current_proficient_project_session.completed? %>
+      <%= form_for staff_proficient_project_session_path(@current_proficient_project_session), method: 'PATCH', action: 'update' do |f| %>
+        <div>Trainer: <%= @staff.name %></div>
+        <% if @user.admin? %>
+          <% label_tag 'changed_params[user_id]', class: 'form-label' %>
+          <%= select_tag 'changed_params[user_id]', options_from_collection_for_select(User.where(role: %w[staff admin]).order('name ASC'), 'id', 'name'), prompt: 'Change trainer', class: 'form-control' %>
+          <br />
+        <% end %>
+        <div>
+          Training Type: <%= @current_proficient_project_session.training.localized_name %>
+          <br />
+          <% label_tag 'changed_params[training_id]', class: 'form-label' %>
+          <%= select_tag 'changed_params[training_id]', options_from_collection_for_select(@current_proficient_project_session.space.trainings.order('name_en ASC'), 'id', 'name_en'), prompt: 'Change training', class: 'form-control' %>
+          <br />
+          Level: <%= @current_proficient_project_session.level %>
+          <br />
+          <% label_tag 'changed_params[level]', class: 'form-label' %>
+          <%= select_tag 'changed_params[level]', options_for_select(@levels), prompt: 'Change level', class: 'form-control' %>
+          <br />
+          <div>
+            Course: <%= @current_proficient_project_session.course %>
+          </div>
+          <% label_tag 'changed_params[course]', class: 'form-label' %>
+          <%= select_tag 'changed_params[course]', options_for_select(@course_names), prompt: 'Change course', class: 'form-control' %>
+          <br />
+        </div>
+        <br />
+        <%= submit_tag 'Update', class: 'btn btn-secondary' %>
+      <% end %>
+    <% else %>
+      <div>Trainer: <%= @staff.name %></div>
+      <div>Training: <%= @current_proficient_project_session.training.localized_name %></div>
+      <div>Course: <%= @current_proficient_project_session.course %></div>
+      <br />
+    <% end %>
+    <br />
+    <table class="training-session-users-table table table-striped">
+        Users in this training session
+        <thead class="table-primary">
+        <tr class="text-center">
+           <th class="action-header">Remove From This Session</th>
+           <th>Name <span onclick="sortTable('training-session-users-table', 1)"><%= fa_icon('arrow-down') %></span></th>
+           <th>Email <span onclick="sortTable('training-session-users-table', 2)"><%= fa_icon('arrow-down') %></span></th>
+           <th>Certifications <span onclick="sortTable('training-session-users-table', 3)"><%= fa_icon('arrow-down') %></span></th>
+           <th>Exam Status <span onclick="sortTable('training-session-users-table', 4)"><%= fa_icon('arrow-down') %></span></th>
+           <th>Training's Cert.<span onclick="sortTable('training-session-users-table', 5)"><%= fa_icon('arrow-down') %></span></th>
+         </tr>
+         </thead>
+
+      <% @current_proficient_project_session.users.each do |user| %>
+        <tr id="<%= return_no_waiver_id(user) %>">
+          <td class="action-cell">
+            <%= link_to(fa_icon('times-circle'), { controller: :proficient_project_sessions, action: :update, id: @current_proficient_project_session.id,
+                                                   dropped_users: [user.username], changed_params: { course: '' } },
+                        method: :patch, class: 'x-button') %>
+          </td>
+
+          <td class="user-name">
+            <%= link_to(user.name, user_url(user.username)) %>
+          </td>
+
+          <td class="email-cell" style="horizontal-alginment:center;">
+            <%= user.email %>
+          </td>
+
+          <td class="certifications-cell">
+            <% if user.certifications.first.present? %>
+              <% user.certifications.each do |certification| %>
+                <div class="cert-name" style="display:inline" >
+                  <div class="cert-holder" style="display:inline">
+                    <%= certification.training.localized_name %>
+                    <div id="cert-details" style="display:inline">
+                      <%= certification.training.localized_name %> <br>
+                      <%= certification.trainer %> <br>
+                      <%= certification.updated_at.strftime('%B %d, %Y') %>
+                    </div>
+                    <br>
+                  </div>
+                </div>
+              <% end %>
+            <% end %>
+          </td>
+          <td>
+            <% exams = @current_proficient_project_session.exams.where(user_id: user.id).order(:created_at) %>
+            <% if !exams.blank? %>
+              <% exams.each_with_index do |exam, i| %>
+                E<%= i + 1 %>:
+                <%= exam.status.capitalize %>
+                <br />
+                <%= if exam.failed? && user.exams.count < 2
+                      link_to 'Resend Exam',
+                              create_for_single_user_exams_path(proficient_project_session_id: @current_proficient_project_session.id, user_id: user.id),
+                              class: 'btn btn-secondary'
+                    end %>
+              <% end %>
+            <% else %>
+              <%= 'NA' %>
+              <br />
+            <% end %>
+          </td>
+          <td><%= @current_proficient_project_session.certifications.where(user_id: user.id).last.try(:training).try(:name) || 'None' %></td>
+        </tr>
+      <% end %>
+    </table>
+    <br />
+    <br />
+    <div class="text-center">
+      <% if @current_proficient_project_session.users.present? %>
+        <% if @current_proficient_project_session.training.questions.where(level: @current_proficient_project_session.level).count >= $n_exams_question && @current_proficient_project_session.created_at > DateTime.new(2019, 8, 9) %>
+          <%= button_to 'Certify', certify_trainees_staff_training_session_path(@current_proficient_project_session, skip_badge: true), method: 'POST', class: 'mb-5 certify-button display-6', form_class: 'mt-3', data: { confirm: 'Are you sure? This will grant the user bypassing the exams.' } %>
+          <%= button_to 'Send Exams', create_from_training_exams_path(training_session_id: @current_proficient_project_session.id), method: 'POST', class: 'd-inline-block certify-button bg-secondary', data: { confirm: 'Are you sure? This send exams to the users.' } if @current_proficient_project_session.exams.blank? %>
+          <%#%= button_to 'Certify & Issue Badges', certify_trainees_staff_training_session_path(@current_proficient_project_session), method: 'POST', class: 'certify-button bg-secondary', data: { confirm: 'Are you sure? This will grant the user bypassing the exams.' } %>
+        <% else %>
+          <%= button_to 'Certify', certify_trainees_staff_training_session_path(@current_proficient_project_session, skip_badge: true), method: 'POST', class: 'certify-button', data: { confirm: 'Are you sure? This will grant the user bypassing the exams.' } %>
+          <%#%= button_to 'Certify & Issue Badges', certify_trainees_staff_training_session_path(@current_proficient_project_session), method: 'POST', class: 'certify-button bg-secondary', data: { confirm: 'Are you sure? This will grant the user bypassing the exams.' } %>
+        <% end %>
+      <% end %>
+    </div>
+    <br />
+    <br />
+    <table class="space-users-table table table-striped">
+        Users inside <%= @current_proficient_project_session.space.name %>
+      <thead class="table-primary">
+        <tr class="text-center">
+           <th class="action-header">Add To This Session</th>
+           <th>Name <span onclick="sortTable('space-users-table', 1)"><%= fa_icon('arrow-down') %></span></th>
+           <th>Email <span onclick="sortTable('space-users-table', 2)"><%= fa_icon('arrow-down') %></span></th>
+           <th>Certifications <span onclick="sortTable('space-users-table', 3)"><%= fa_icon('arrow-down') %></span></th>
+         </tr>
+      </thead>
+      <% @current_proficient_project_session.space.signed_in_users.each do |user| %>
+        <% unless @current_proficient_project_session.users.include? user %>
+          <tr>
+            <td class="action-cell">
+              <%= link_to(fa_icon('check-circle'),
+                          { controller: :training_sessions,
+                            action: :update,
+                            id: @current_proficient_project_session.id,
+                            added_users: [user.username],
+                            changed_params: { course: '' } },
+                          method: :patch, class: 'check-button') %>
+            </td>
+            <td class="user-name">
+              <%= link_to(user.name, user_url(user.username)) %>
+            </td>
+            <td class="email-cell" style="horizontal-alginment:center;">
+              <%= user.email %>
+            </td>
+            <td class="certifications-cell">
+              <% if user.certifications.first.present? %>
+                <% user.certifications.each do |certification| %>
+                    <div class="cert-name" style="display:inline" >
+                      <div class="cert-holder" style="display:inline">
+                        <%= certification.training.localized_name %>
+                        <div id="cert-details" style="display:inline">
+                          <%= certification.training.localized_name %> <br>
+                          <%= certification.trainer %> <br>
+                          <%= certification.updated_at.strftime('%B %d, %Y') %>
+                        </div>
+                        <br />
+                      </div>
+                    </div>
+                <% end %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      <% end %>
+    </table>
+    <br />
+    <br />
+      <% if @user.admin? || @current_proficient_project_session.user == @user %>
+      <div class="text-center">
+    <%= button_to 'Destroy', { action: :destroy },
+                  method: :delete,
+                  data: { confirm: 'Cancelling a training session also deletes all corresponding certifications. OK to confirm.' },
+                  class: 'btn btn-danger',
+                  style: 'color: #fff;' %>
+                </div>
+  <% end %>
+  </div>
+
+
+  <br>
+</section>
+<br />

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_04_20_193534) do
+ActiveRecord::Schema[7.2].define(version: 2025_06_13_150014) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -85,42 +85,6 @@ ActiveRecord::Schema[7.2].define(version: 2025_04_20_193534) do
     t.datetime "updated_at", precision: nil, null: false
   end
 
-  create_table "badge_requirements", id: :serial, force: :cascade do |t|
-    t.datetime "created_at", precision: nil, null: false
-    t.datetime "updated_at", precision: nil, null: false
-    t.integer "badge_template_id"
-    t.integer "proficient_project_id"
-    t.index ["badge_template_id"], name: "index_badge_requirements_on_badge_template_id"
-    t.index ["proficient_project_id"], name: "index_badge_requirements_on_proficient_project_id"
-  end
-
-  create_table "badge_templates", id: :serial, force: :cascade do |t|
-    t.text "acclaim_template_id"
-    t.text "badge_description"
-    t.text "badge_name"
-    t.datetime "created_at", precision: nil, null: false
-    t.datetime "updated_at", precision: nil, null: false
-    t.string "image_url"
-    t.string "list_of_skills"
-    t.bigint "training_id"
-    t.string "training_level"
-    t.string "badge_url"
-    t.index ["training_id"], name: "index_badge_templates_on_training_id"
-  end
-
-  create_table "badges", id: :serial, force: :cascade do |t|
-    t.string "issued_to"
-    t.datetime "created_at", precision: nil, null: false
-    t.datetime "updated_at", precision: nil, null: false
-    t.string "acclaim_badge_id"
-    t.integer "user_id"
-    t.string "badge_url"
-    t.integer "badge_template_id"
-    t.bigint "certification_id"
-    t.index ["badge_template_id"], name: "index_badges_on_badge_template_id"
-    t.index ["certification_id"], name: "index_badges_on_certification_id"
-  end
-
   create_table "booking_statuses", force: :cascade do |t|
     t.string "name", null: false
     t.text "description"
@@ -168,6 +132,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_04_20_193534) do
     t.boolean "active", default: true
     t.string "demotion_reason"
     t.bigint "demotion_staff_id"
+    t.string "level"
     t.index ["demotion_staff_id"], name: "index_certifications_on_demotion_staff_id"
     t.index ["user_id"], name: "index_certifications_on_user_id"
   end
@@ -260,6 +225,28 @@ ActiveRecord::Schema[7.2].define(version: 2025_04_20_193534) do
     t.string "name"
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
+  end
+
+  create_table "event_assignments", force: :cascade do |t|
+    t.bigint "event_id"
+    t.bigint "user_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "events", force: :cascade do |t|
+    t.bigint "created_by_id"
+    t.bigint "space_id"
+    t.string "title"
+    t.text "description"
+    t.datetime "start_time"
+    t.datetime "end_time"
+    t.string "recurrence_rule"
+    t.boolean "draft", default: true
+    t.string "event_type"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "google_event_id"
   end
 
   create_table "exam_questions", id: :serial, force: :cascade do |t|
@@ -594,12 +581,9 @@ ActiveRecord::Schema[7.2].define(version: 2025_04_20_193534) do
     t.datetime "owned_until"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.bigint "repository_id"
-    t.string "requested_as"
     t.string "shopify_draft_order_id"
     t.index ["locker_type_id"], name: "index_locker_rentals_on_locker_type_id"
     t.index ["rented_by_id"], name: "index_locker_rentals_on_rented_by_id"
-    t.index ["repository_id"], name: "index_locker_rentals_on_repository_id"
   end
 
   create_table "locker_types", force: :cascade do |t|
@@ -809,6 +793,18 @@ ActiveRecord::Schema[7.2].define(version: 2025_04_20_193534) do
     t.index ["printer_type_id"], name: "index_printers_on_printer_type_id"
   end
 
+  create_table "proficient_project_sessions", force: :cascade do |t|
+    t.bigint "certification_id"
+    t.bigint "proficient_project_id"
+    t.bigint "user_id"
+    t.string "level"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["certification_id"], name: "index_proficient_project_sessions_on_certification_id"
+    t.index ["proficient_project_id"], name: "index_proficient_project_sessions_on_proficient_project_id"
+    t.index ["user_id"], name: "index_proficient_project_sessions_on_user_id"
+  end
+
   create_table "proficient_projects", id: :serial, force: :cascade do |t|
     t.integer "training_id"
     t.string "title"
@@ -817,11 +813,9 @@ ActiveRecord::Schema[7.2].define(version: 2025_04_20_193534) do
     t.datetime "updated_at", precision: nil, null: false
     t.string "level", default: "Beginner"
     t.integer "cc", default: 0
-    t.integer "badge_template_id"
     t.boolean "has_project_kit"
     t.bigint "drop_off_location_id"
     t.boolean "is_virtual", default: false
-    t.index ["badge_template_id"], name: "index_proficient_projects_on_badge_template_id"
     t.index ["drop_off_location_id"], name: "index_proficient_projects_on_drop_off_location_id"
   end
 
@@ -1084,12 +1078,21 @@ ActiveRecord::Schema[7.2].define(version: 2025_04_20_193534) do
     t.index ["staff_availability_id"], name: "index_staff_availability_exceptions_on_staff_availability_id"
   end
 
+  create_table "staff_external_unavailabilities", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "ics_url"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_staff_external_unavailabilities_on_user_id"
+  end
+
   create_table "staff_needed_calendars", force: :cascade do |t|
     t.string "calendar_url", null: false
     t.string "color"
     t.bigint "space_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "name"
     t.index ["space_id"], name: "index_staff_needed_calendars_on_space_id"
   end
 
@@ -1101,6 +1104,17 @@ ActiveRecord::Schema[7.2].define(version: 2025_04_20_193534) do
     t.string "color"
     t.index ["space_id"], name: "index_staff_spaces_on_space_id"
     t.index ["user_id"], name: "index_staff_spaces_on_user_id"
+  end
+
+  create_table "staff_unavailabilities", force: :cascade do |t|
+    t.bigint "user_id"
+    t.string "title"
+    t.text "description"
+    t.datetime "start_time"
+    t.datetime "end_time"
+    t.string "recurrence_rule"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "sub_space_booking_statuses", force: :cascade do |t|
@@ -1179,6 +1193,15 @@ ActiveRecord::Schema[7.2].define(version: 2025_04_20_193534) do
     t.index ["space_id"], name: "index_training_levels_on_space_id"
   end
 
+  create_table "training_requirements", force: :cascade do |t|
+    t.bigint "training_id"
+    t.bigint "proficient_project_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["proficient_project_id"], name: "index_training_requirements_on_proficient_project_id"
+    t.index ["training_id"], name: "index_training_requirements_on_training_id"
+  end
+
   create_table "training_sessions", id: :serial, force: :cascade do |t|
     t.integer "training_id"
     t.integer "user_id"
@@ -1200,12 +1223,17 @@ ActiveRecord::Schema[7.2].define(version: 2025_04_20_193534) do
   end
 
   create_table "trainings", id: :serial, force: :cascade do |t|
-    t.string "name"
+    t.string "name_en"
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
     t.integer "space_id"
     t.bigint "skill_id"
-    t.string "description"
+    t.string "description_en"
+    t.string "list_of_skills_en"
+    t.string "name_fr"
+    t.boolean "has_badge", default: true
+    t.string "description_fr"
+    t.string "list_of_skills_fr"
     t.index ["skill_id"], name: "index_trainings_on_skill_id"
     t.index ["space_id"], name: "index_trainings_on_space_id"
   end
@@ -1338,11 +1366,6 @@ ActiveRecord::Schema[7.2].define(version: 2025_04_20_193534) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "announcement_dismisses", "announcements"
   add_foreign_key "announcement_dismisses", "users"
-  add_foreign_key "badge_requirements", "badge_templates"
-  add_foreign_key "badge_requirements", "proficient_projects"
-  add_foreign_key "badge_templates", "trainings"
-  add_foreign_key "badges", "badge_templates"
-  add_foreign_key "badges", "certifications"
   add_foreign_key "categories", "category_options"
   add_foreign_key "categories", "repositories"
   add_foreign_key "cc_moneys", "discount_codes"
@@ -1387,7 +1410,9 @@ ActiveRecord::Schema[7.2].define(version: 2025_04_20_193534) do
   add_foreign_key "printer_issues", "printers"
   add_foreign_key "printer_issues", "users", column: "reporter_id"
   add_foreign_key "printers", "printer_types"
-  add_foreign_key "proficient_projects", "badge_templates"
+  add_foreign_key "proficient_project_sessions", "certifications"
+  add_foreign_key "proficient_project_sessions", "proficient_projects"
+  add_foreign_key "proficient_project_sessions", "users"
   add_foreign_key "proficient_projects", "drop_off_locations"
   add_foreign_key "project_kits", "learning_modules"
   add_foreign_key "project_kits", "proficient_projects"
@@ -1405,6 +1430,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_04_20_193534) do
   add_foreign_key "space_staff_hours", "training_levels"
   add_foreign_key "staff_availabilities", "time_periods"
   add_foreign_key "staff_availabilities", "users"
+  add_foreign_key "staff_external_unavailabilities", "users"
   add_foreign_key "staff_needed_calendars", "spaces"
   add_foreign_key "staff_spaces", "spaces"
   add_foreign_key "staff_spaces", "users"
@@ -1417,6 +1443,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_04_20_193534) do
   add_foreign_key "sub_space_bookings", "users", column: "approved_by_id"
   add_foreign_key "sub_spaces", "spaces"
   add_foreign_key "training_levels", "spaces"
+  add_foreign_key "training_requirements", "proficient_projects"
+  add_foreign_key "training_requirements", "trainings"
   add_foreign_key "training_sessions", "trainings"
   add_foreign_key "training_sessions", "users"
   add_foreign_key "trainings", "skills"

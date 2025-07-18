@@ -3,15 +3,10 @@
     <div class="row">
       <% @acclaim_data.each do |badges| %>
         <% begin %>
-          <div class="col-md-3 border-bottom">
-            <% if badges.badge_url.present? %>
-              <a target="_blank" class="w-100" href="<%= @acclaim_badge_url + badges.acclaim_badge_id %>">
-                <%= image_tag(badges.badge_template.image_url, style: 'width: inherit', alt: 'Badge') %>
+          <div class="col-md-3 border-bottom text-nowrap overflow-auto d-flex gap-1 flex-wrap">
+              <a target="_blank" href="/badges/<%= badges.id %>">
+                <%= render "badges/badge_icon", width: 125, height: 125, level: badges.training_session.level, name: badges.training_session.training.localized_name, skill: badges.training_session.training.skill_id %>
               </a>
-            <% else %>
-              <%= image_tag(badges.badge_template.image_url, alt: 'Badge', class: 'w-100', :style => 'width: inherit', 'data-bs-toggle' => 'modal', 'data-bs-target' => '#pending_modal') %>
-            <% end %>
-            <p class="text-center"><%= badges.badge_template.badge_name %></p>
           </div>
         <% end %>
       <% end %>

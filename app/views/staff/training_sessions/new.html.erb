@@ -8,7 +8,7 @@
       <%= f.hidden_field :space_id, value: @space.id %>
       <div class="mb-3">
         <% label_tag 'training_id', class: 'form-label' %>
-        <%= select_tag 'training_id', options_from_collection_for_select(@space.trainings.order('name ASC'), 'id', 'name'), prompt: 'Select training', class: 'form-control form-select', required: true %><br>
+        <%= select_tag 'training_id', options_from_collection_for_select(@space.trainings.order('name_en ASC'), 'id', 'name_en'), prompt: 'Select training', class: 'form-control form-select', required: true %><br>
       </div>
       <div class="mb-3">
         <% label_tag 'level', class: 'form-label' %>
@@ -57,9 +57,9 @@
                 <% user.certifications.each do |certification| %>
                   <div class="cert-name" style="display:inline" >
                     <div class="cert-holder" style="display:inline">
-                      <%= certification.training.name %>
+                      <%= certification.training.name_en %>
                       <div id="cert-details" style="display:inline">
-                        <%= certification.training.name %> <br />
+                        <%= certification.training.name_en %> <br />
                         <%= certification.trainer %> <br />
                         <%= certification.updated_at.strftime('%B %d, %Y') %>
                       </div>

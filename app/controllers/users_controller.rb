@@ -24,13 +24,6 @@ class UsersController < SessionsController
                 ]
 
   def create
-    unless verify_recaptcha
-      @new_user = User.new
-      render :new,
-             alert: "You failed the Captcha",
-             status: :unprocessable_entity
-      return
-    end
     @new_user = User.new(user_params)
     @new_user.pword = params[:user][:password] if @new_user.valid?
 
@@ -185,9 +178,7 @@ class UsersController < SessionsController
     @repo_user = User.find(params[:repo_user_id])
     msg = params[:flag_msg]
     @repo_user.flag_message = @repo_user.flag_message.gsub("; #{msg}", "")
-    @repo_user.flag_message.blank? ?
-      @repo_user.flagged = false :
-      @repo_user.flagged = true
+    @repo_user.flagged = (@repo_user.flag_message.blank? ? false : true)
     @repo_user.save
     redirect_to user_path(@repo_user.username)
   end
@@ -314,26 +305,20 @@ class UsersController < SessionsController
     if user.present? && (@user.staff? || @user.admin?)
       if params[:dev_program].present?
         user.programs.find_or_create_by(program_type: Program::DEV_PROGRAM)
-      else
-        if user.programs.find_by(program_type: Program::DEV_PROGRAM).present?
-          user.programs.find_by(program_type: Program::DEV_PROGRAM).destroy
-        end
+      elsif user.programs.find_by(program_type: Program::DEV_PROGRAM).present?
+        user.programs.find_by(program_type: Program::DEV_PROGRAM).destroy
       end
 
       if params[:volunteer].present?
         user.programs.find_or_create_by(program_type: Program::VOLUNTEER)
-      else
-        if user.programs.find_by(program_type: Program::VOLUNTEER).present?
-          user.programs.find_by(program_type: Program::VOLUNTEER).destroy
-        end
+      elsif user.programs.find_by(program_type: Program::VOLUNTEER).present?
+        user.programs.find_by(program_type: Program::VOLUNTEER).destroy
       end
 
       if params[:teams].present?
         user.programs.find_or_create_by(program_type: Program::TEAMS)
-      else
-        if user.programs.find_by(program_type: Program::TEAMS).present?
-          user.programs.find_by(program_type: Program::TEAMS).destroy
-        end
+      elsif user.programs.find_by(program_type: Program::TEAMS).present?
+        user.programs.find_by(program_type: Program::TEAMS).destroy
       end
       flash[:notice] = "The programs for #{user.name} has been updated!"
       redirect_to user_path(user.username)
@@ -346,16 +331,16 @@ class UsersController < SessionsController
   end
 
   def show
-    if @user.admin? || @user.staff?
-      @repo_user = User.unscoped.find_by username: params[:username]
+    @repo_user = if @user.admin? || @user.staff?
+      User.unscoped.find_by username: params[:username]
     else
-      @repo_user = User.find_by username: params[:username]
-    end
+      User.find_by username: params[:username]
+                 end
 
-    if @repo_user.nil?
-      raise ActiveRecord::RecordNotFound
+    raise ActiveRecord::RecordNotFound if @repo_user.nil?
+      
       #redirect_to root_path, alert: "User not found."
-    else
+    
       @programs = @repo_user.programs.pluck(:program_type)
       begin
         @github_username =
@@ -384,7 +369,7 @@ class UsersController < SessionsController
           "https://www.youracclaim.com/badges/"
         end
 
-      @acclaim_data = @repo_user.badges
+      @acclaim_data = @repo_user.certifications
       @makes =
         @repo_user.repositories.where.not(make_id: nil).page params[:page]
       @joined_projects = @repo_user.project_joins
@@ -393,13 +378,13 @@ class UsersController < SessionsController
       @remaining_trainings = @repo_user.remaining_trainings
       @skills = Skill.all
       @proficient_projects_awarded =
-        Proc.new do |training|
+        proc do |training|
           training.proficient_projects.where(
             id: @repo_user.order_items.awarded.pluck(:proficient_project_id)
           )
         end
       @learning_modules_completed =
-        Proc.new do |training|
+        proc do |training|
           training.learning_modules.where(
             id:
               @repo_user.learning_module_tracks.completed.pluck(
@@ -408,7 +393,7 @@ class UsersController < SessionsController
           )
         end
       @recomended_hours =
-        Proc.new do |training, levels|
+        proc do |training, levels|
           training.learning_modules.where(level: levels).count +
             training.proficient_projects.where(level: levels).count
         end
@@ -445,7 +430,7 @@ class UsersController < SessionsController
           end
         end
       end
-    end
+    
   end
 
   def likes
@@ -460,15 +445,14 @@ class UsersController < SessionsController
             repository_id: repo_ids
           }
         )
-      if !@repositories.empty?
-        @repositories =
-          @repositories.order([sort_arr].to_h).paginate(
+      @repositories = if !@repositories.empty?
+        @repositories.order([sort_arr].to_h).paginate(
             per_page: 12,
             page: params[:page]
           )
       else
-        @repositories = []
-      end
+        []
+                      end
     else
       @repositories =
         Repository

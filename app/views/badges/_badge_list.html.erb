@@ -3,38 +3,36 @@
   <h2 style="text-align: center"><b>Badges</b></h2>
 
   <div class="apple_pagination">
-  <%= page_entries_info @acclaim_data, model: 'badge' %>
-  <%= will_paginate @acclaim_data, container: false %>
+  <%= page_entries_info @badge_data, model: 'badges' %>
+  <%= will_paginate @badge_data, container: false %>
 </div>
 <br>
 <div style="width: 100%;" class="row">
 
-  <% @acclaim_data.each do |badges| %>
+  <% @badge_data.each do |badges| %>
 
     <div class="col-md-3">
       <p style="text-align: center">
-        <% if badges.user_id.present? %>
-          <%= link_to(badges.issued_to, user_path(User.find(badges.user_id).username)) %>
-        <% else %>
-          <%= badges.issued_to %>
-        <% end %>
-      </p>
+        <% if badges.training_session.training.has_badge %>
+          <% if badges.user_id.present? %>
+            <%= link_to(badges.user.name, user_path(User.find(badges.user_id).username)) %>
+          <% else %>
+            <%= badges.user.name %>
+          <% end %>
+          </p>
 
-      <% if badges.badge_url.present? %>
-        <a style="width: 150px;" target="_blank" href="<%= badges.badge_url %>">
-          <%= image_tag(badges.badge_template.image_url, style: 'width: inherit;display:block; margin:0 auto;', alt: "Badge image: #{badges.badge_template.badge_name}") %>
-        </a>
-      <% else %>
-        <%= image_tag(badges.badge_template.image_url, :style => 'width: 150px; display:block; margin:0 auto;', 'data-bs-toggle' => 'tooltip', :title => "#{badges.issued_to} didn't accept the badge yet", :alt => "#{badges.issued_to} didn't accept the badge yet") %>
-      <% end %>
+          <a style="width: 150px;" class="mx-auto w-100!important d-block" target="_blank" href="./badges/<%= badges.id %>">
+            <%= render "badge_icon", width: 150, height: 150, level: badges.training_session.level, name: badges.training_session.training.localized_name, skill: badges.training_session.training.skill_id %>
+          </a>
+        <% end %>
     </div>
 
   <% end %>
 </div>
 <br>
 <div class="apple_pagination">
-  <%= page_entries_info @acclaim_data, model: 'badge' %>
-  <%= will_paginate @acclaim_data, container: false %>
+  <%= page_entries_info @badge_data, model: 'badges' %>
+  <%= will_paginate @badge_data, container: false %>
 </div>
 
 <% rescue %>

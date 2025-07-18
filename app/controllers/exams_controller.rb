@@ -32,9 +32,7 @@ class ExamsController < ApplicationController
   def show
     # TODO: User cannot open new tab when clicking "Finish Exam"
     @exam = Exam.find(params[:id])
-    if @exam.status == Exam::STATUS[:not_started]
-      @exam.update(status: Exam::STATUS[:incomplete])
-    end
+    @exam.update(status: Exam::STATUS[:incomplete]) if @exam.status == Exam::STATUS[:not_started]
     @questions = @exam.questions
   end
 
@@ -75,7 +73,7 @@ class ExamsController < ApplicationController
     new_exam =
       user.exams.new(
         training_session_id: training_session.id,
-        category: training_session.training.name,
+        category: training_session.training.name_en,
         expired_at: DateTime.now + 3.days
       )
     new_exam.save!
@@ -98,10 +96,10 @@ class ExamsController < ApplicationController
   end
 
   def grant_access
-    unless @exam.user.eql?(current_user) || current_user.staff?
+    return if @exam.user.eql?(current_user) || current_user.staff?
       flash[:alert] = "You cannot access this area."
       redirect_to root_path
-    end
+    
   end
 
   def check_exam_status
