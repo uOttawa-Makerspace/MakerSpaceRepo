@@ -47,7 +47,7 @@ Rails.application.routes.draw do
 
   resources :carts, only: [:index]
   resources :order_items, only: %i[create update destroy] do
-    get :revoke, path: "revoke"
+    get :destroy, path: "revoke"
     get :order_item_modal
     get :approve_order_item_modal
     get :revoke_order_item_modal
@@ -243,8 +243,6 @@ Rails.application.routes.draw do
 
     resources :announcements
 
-    resources :badge_templates, only: %i[index edit update destroy]
-
     resources :job_service_groups,
               only: %i[index new create edit update destroy]
     resources :job_services, only: %i[index new create edit update destroy]
@@ -366,6 +364,8 @@ Rails.application.routes.draw do
       member { patch "update" }
     end
 
+    resources :proficient_project_sessions, only: [:show]
+
     resources :settings, only: [:index] do
       collection do
         post "add_category"
@@ -388,7 +388,7 @@ Rails.application.routes.draw do
       end
     end
 
-    resources :certifications, only: %i[update destroy] do
+    resources :certifications, only: %i[show update destroy] do
       collection do
         get :open_modal
         get :demotions
@@ -549,21 +549,7 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :badges, only: [:index] do
-    collection do
-      get :admin
-      get :new_badge
-      get :revoke_badge
-      get :populate_badge_list
-      get :certify
-      get "grant", as: "grant_badge", action: "grant_badge"
-      get :reinstate
-      get :update_badge_data
-      get :update_badge_templates
-      get :populate_grant_users
-      get :populate_revoke_users
-    end
-  end
+  resources :badges, only: [:index,:show] 
 
   resources :proficient_projects do
     get :proficient_project_modal

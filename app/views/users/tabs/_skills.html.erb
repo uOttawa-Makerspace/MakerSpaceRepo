@@ -14,16 +14,16 @@
         <div id="trainings-skill-<%= skill.id %>" class="accordion-collapse collapse">
           <% skill.trainings.each do |training| %>
 
-            <div class="accordion" id="accordion-<% training.name %>">
+            <div class="accordion" id="accordion-<% training.localized_name %>">
               <div class="accordion-item">
-                <div class="accordion-header" id="header-training-<% training.name %>" type="button"
+                <div class="accordion-header" id="header-training-<% training.localized_name %>" type="button"
                      data-bs-toggle="collapse" data-bs-target="#training-<%= training.id %>"
                      aria-expanded="false" aria-controls="training-<%= training.id %>">
                   <div class="row">
                     <div class="col-4"></div>
                     <div class="col-4 text-center">
                       <button class="btn btn-link">
-                        <%= training.name %>
+                        <%= training.localized_name %>
                       </button>
                     </div>
                     <div class="col-4">
@@ -33,8 +33,8 @@
                 </div>
 
                 <div id="training-<%= training.id %>" class="accordion-collapse collapse"
-                     aria-labelledby="header-<% training.name %>"
-                     data-bs-parent="#accordion-<% training.name %>">
+                     aria-labelledby="header-<% training.localized_name %>"
+                     data-bs-parent="#accordion-<% training.localized_name %>">
                   <div class="accordion-body">
                     <% if training.description.present? %>
                       <div class="jumbotron card bg-light text-center text-wrap">
@@ -46,19 +46,20 @@
                       <% badge = @repo_user.highest_badge(training) %>
                       <% unless badge.nil? %>
                         <div class="col-lg-4 text-center">
-                          <%= image_tag(badge.badge_template.image_url, alt: 'Badge',
-                                                                        style: 'width: 150px') %>
+                          <a style="width: 100px;" class="mx-auto w-100!important d-block" target="_blank" href="./badges/<%= badge.id %>">
+                            <%= render "badges/badge_icon", width: 100, height: 100, margin: "auto", display: "block", level: badge.training_session.level, name: badge.training_session.training.localized_name, skill: badge.training_session.training.skill_id %>
+                          </a>
                         </div>
                         <div class="col-lg-8 my-auto">
                           <b>
-                            <%= badge.badge_template.badge_name %>
+                            <%= badge.training_session.training.localized_name %>
                             :
                           </b>
-                          <%= badge.badge_template.badge_description %>
+                          <%= badge.training_session.training.description %>
                         </div>
                         <div class="col-12 pt-2">
                           <p>Skills Acquired: <b>
-                            <%= badge.badge_template.list_of_skills %>
+                            <%= badge.training_session.training.list_of_skills %>
                           </b></p>
                         </div>
                       <% end %>

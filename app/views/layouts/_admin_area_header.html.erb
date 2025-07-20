@@ -21,7 +21,6 @@
         <li class="nav-item"><%= link_to t('navbar.design_day'), admin_design_day_path, class: 'nav-link' %></li>
         <li class="nav-item"><%= link_to t('admin.announcements'), admin_announcements_path, class: 'nav-link' %></li>
         <li class="nav-item"><%= link_to t('admin.reports'), admin_report_generator_index_path, class: 'nav-link' %></li>
-        <li class="nav-item"><%= link_to t('admin.booking_admin'), sub_space_booking_index_path(anchor: 'booking-admin-tab'), class: 'nav-link' %></li>
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#", id="navbarDropdown1" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             <%= t('admin.trainings') %>
@@ -60,15 +59,6 @@
             <%= link_to t('admin.key_transactions'), admin_key_transactions_path, class: 'dropdown-item' %>
           </div>
         </li>
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            <%= t('admin.badges') %>
-          </a>
-          <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
-            <%= link_to t('admin.refresh_badge_data'), admin_manage_badges_path, class: 'dropdown-item' %>
-            <div class="dropdown-divider"></div>
-            <%= link_to t('admin.badge_templates'), admin_badge_templates_path, class: 'dropdown-item' %>
-          </div>
         </li>
       </ul>
     </div>

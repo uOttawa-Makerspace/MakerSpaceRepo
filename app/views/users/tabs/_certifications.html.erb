@@ -16,12 +16,13 @@
   </thead>
   <tbody>
   <% @repo_user.certifications.highest_certifications(@repo_user.id).each do |certification| %>
+  <% unless certification.nil? %>
     <tr>
       <td>
         <% if @user.admin? %>
-          <%= link_to certification.training.name, staff_training_session_path(certification.training_session) %>
+          <%= link_to certification.training.localized_name, staff_training_session_path(certification.training_session) %>
         <% else %>
-          <%= certification.training.name %>
+          <%= certification.training.localized_name %>
         <% end %>
         <br />
         <%= certification_status(certification.training_session.level).html_safe %>
@@ -44,6 +45,7 @@
         </td>
       <% end %>
     </tr>
+  <% end %>  
   <% end %>
   </tbody>
 </table>

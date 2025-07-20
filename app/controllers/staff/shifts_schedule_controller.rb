@@ -64,7 +64,7 @@ class Staff::ShiftsScheduleController < StaffAreaController
       color: user_color,
       extendedProps: {
         reason: shift.reason,
-        training: shift.training.present? ? shift.training.name : "",
+        training: shift.training.present? ? shift.training.name_en : "",
         course: shift.course,
         language: shift.language
       }
@@ -77,7 +77,7 @@ class Staff::ShiftsScheduleController < StaffAreaController
         .where(user_id: user.id, space_id: @space_id)
         .pluck(:color)
         .first
-    color.present? ? color : "#000000"
+    color.presence || "#000000"
   end
 
   def set_time_period

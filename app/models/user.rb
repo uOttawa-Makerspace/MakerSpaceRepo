@@ -32,7 +32,6 @@ class User < ApplicationRecord
   has_many :print_orders
   has_many :volunteer_task_requests
   has_many :cc_moneys, dependent: :destroy
-  has_many :badges, dependent: :destroy
   has_many :programs, dependent: :destroy
   has_and_belongs_to_many :proficient_projects
   # has_and_belongs_to_many :learning_modules
@@ -343,7 +342,7 @@ class User < ApplicationRecord
 
   def get_certifications_names
     cert = []
-    certifications.each { |c| cert << c.training.name }
+    certifications.each { |c| cert << c.training.name_en }
     cert
   end
 
@@ -389,17 +388,17 @@ class User < ApplicationRecord
     update(wallet: get_total_cc)
   end
 
-  def has_required_badges?(badge_requirements)
-    user_badges_set = badges.pluck(:badge_template_id).to_set
-    badge_requirements_set = badge_requirements.pluck(:badge_template_id).to_set
-    badge_requirements_set.subset?(user_badges_set)
+  def has_required_trainings?(training_requirements)
+    user_trainings_set = certifications.includes(:training_session).pluck(:training_id).to_set
+    training_requirements_set = training_requirements.pluck(:training_id).to_set
+    training_requirements_set.subset?(user_trainings_set)
   end
 
   def highest_badge(training)
     badges =
-      self
-        .badges
-        .joins(certification: :training_session)
+      
+        certifications
+        .joins(:training_session)
         .where(training_sessions: { training_id: training.id })
     if badges.where(training_sessions: { level: "Advanced" }).present?
       badge = badges.where(training_sessions: { level: "Advanced" }).last

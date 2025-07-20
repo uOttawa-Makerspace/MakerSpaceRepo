@@ -24,7 +24,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
       format.html { @new_training_session = TrainingSession.new }
       format.json do
         render json: {
-                 trainings: @space.trainings.pluck(:id, :name).as_json,
+                 trainings: @space.trainings.pluck(:id, :name_en).as_json,
                  level: @levels.as_json,
                  course_names: @course_names.as_json,
                  admins:
@@ -65,12 +65,10 @@ class Staff::TrainingSessionsController < StaffDashboardController
   end
 
   def update
-    if changed_params["user_id"].present?
-      unless @user.admin?
+    if changed_params["user_id"].present? && !@user.admin?
         flash[:alert] = "You're not an admin."
         redirect_back(fallback_location: root_path) and return
       end
-    end
 
     @current_training_session.update(changed_params)
 
@@ -86,11 +84,10 @@ class Staff::TrainingSessionsController < StaffDashboardController
             )
           next if cert.blank?
 
-          unless cert.destroy
-            flash[
-              :alert
-            ] = "Error deleting #{user.username}'s #{@current_training_session.training.name} certification."
-          end
+          next if cert.destroy
+          flash[
+            :alert
+          ] = "Error deleting #{user.username}'s #{@current_training_session.training.name_en} certification."
         end
     end
 
@@ -134,44 +131,11 @@ class Staff::TrainingSessionsController < StaffDashboardController
           user_id: graduate.id,
           training_session_id: @current_training_session.id
         )
-
-      if BadgeTemplate.where(
-           training_id: @current_training_session.training_id
-         ).present? && @current_training_session.level == "Beginner" &&
-           params[:skip_badge] != "true"
-        badge_template =
-          BadgeTemplate.find_by(
-            training_id: @current_training_session.training_id
-          )
-        response =
-          Badge.acclaim_api_create_badge(
-            graduate,
-            badge_template.acclaim_template_id
-          )
-        if response.status == 201
-          badge_data = JSON.parse(response.body)["data"]
-          Badge.create(
-            user_id: graduate.id,
-            issued_to: graduate.name,
-            acclaim_badge_id: badge_data["id"],
-            badge_template_id: badge_template.id,
-            certification: certification
-          )
-        else
-          error = true
-          flash[
-            :alert
-          ] = "#{graduate.username}'s badge has not saved properly!" if params[
-            :skip_badge
-          ] != "true"
-        end
-      end
-      unless certification.save
-        error = true
-        flash[
-          :alert
-        ] = "#{graduate.username}'s certification has not saved properly!"
-      end
+      next if certification.save
+      error = true
+      flash[
+        :alert
+      ] = "#{graduate.username}'s certification has not saved properly!"
     end
     respond_to do |format|
       format.html do
@@ -270,10 +234,10 @@ class Staff::TrainingSessionsController < StaffDashboardController
   end
 
   def verify_ownership
-    unless @user.admin? || @current_training_session.user == @user
+    return if @user.admin? || @current_training_session.user == @user
       flash[:alert] = "Can't access training session"
       redirect_to new_staff_training_session_path
-    end
+    
   end
 
   def set_courses_and_levels

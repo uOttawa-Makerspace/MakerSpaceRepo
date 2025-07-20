@@ -50,7 +50,7 @@
               </td>
               <td>
                 <% v.certifications.each do |cert| %>
-                  <b><%= cert.training.name %></b>
+                  <b><%= cert.training.localized_name %></b>
                   (<%= cert.training_session.level %>)
                   <br />
                 <% end %>
@@ -111,7 +111,7 @@
               </td>
               <td>
                 <% v.certifications.each do |cert| %>
-                  <b><%= cert.training.name %></b>
+                  <b><%= cert.training.localized_name %></b>
                   (<%= cert.training_session.level %>)
                   <br />
                 <% end %>

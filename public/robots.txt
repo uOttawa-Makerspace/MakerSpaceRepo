@@ -4,6 +4,14 @@
 User-agent: *
 Disallow: /explore
 
+# Prevent search, nothing shows up here
+User-agent: *
+Disallow: /search
+
+# Prevent assets folder, full of heavy assets
+User-agent: *
+Disallow: /rails/active_storage
+
 User-agent: SemrushBot
 Disallow: /
 

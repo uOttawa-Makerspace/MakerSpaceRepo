@@ -33,17 +33,16 @@ class OrdersController < DevelopmentProgramsController
           user: user,
           cc: cc
         )
-        if order_item.proficient_project.has_project_kit?
-          ProjectKit.create(
-            user_id: @order.user_id,
-            proficient_project_id: order_item.proficient_project_id,
-            delivered: false
-          )
-          MsrMailer.send_kit_email(
-            @order.user,
-            order_item.proficient_project_id
-          ).deliver_now
-        end
+        next unless order_item.proficient_project.has_project_kit?
+        ProjectKit.create(
+          user_id: @order.user_id,
+          proficient_project_id: order_item.proficient_project_id,
+          delivered: false
+        )
+        MsrMailer.send_kit_email(
+          @order.user,
+          order_item.proficient_project_id
+        ).deliver_now
       end
       current_user.update_wallet
       session[:order_id] = nil
@@ -57,16 +56,6 @@ class OrdersController < DevelopmentProgramsController
 
   def destroy
     @order = Order.find(params[:id])
-    user = User.find(@order.user_id)
-    @order
-      .order_items
-      .where(status: "Awarded")
-      .each do |order_item|
-        badge_template = order_item.proficient_project.badge_template
-        badge = Badge.find_by(user: user, badge_template: badge_template)
-        badge.acclaim_api_delete_badge
-        badge.destroy
-      end
     @order.destroy
     flash[
       :notice
@@ -78,16 +67,16 @@ class OrdersController < DevelopmentProgramsController
 
   def check_wallet
     current_user.update_wallet
-    unless current_user.wallet >= current_order.subtotal.to_i
+    return if current_user.wallet >= current_order.subtotal.to_i
       flash[:alert] = "Not enough Cc Points."
       redirect_back(fallback_location: root_path)
-    end
+    
   end
 
   def check_permission
-    unless current_user.admin?
+    return if current_user.admin?
       flash[:alert] = "You can't perform this action"
       redirect_back(fallback_location: root_path)
-    end
+    
   end
 end

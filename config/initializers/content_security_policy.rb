@@ -1,34 +1,31 @@
-# Be sure to restart your server when you modify this file.
+# # Be sure to restart your server when you modify this file.
 
-# Define an application-wide content security policy
-# For further information see the following documentation
-# https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy
+# # Define an application-wide content security policy
+# # For further information see the following documentation
+# # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy
 
 # Rails.application.configure do
 #   config.content_security_policy do |policy|
 #     policy.default_src :self, :https
-#     policy.font_src    :self, :https, :data
+#     policy.font_src    :self, :https, :data, "https://fonts.gstatic.com"
 #     policy.img_src     :self, :https, :data
 #     policy.object_src  :none
 #     policy.script_src  :self, :https
-# Allow @vite/client to hot reload javascript changes in development
-#    policy.script_src *policy.script_src, :unsafe_eval, "http://#{ ViteRuby.config.host_with_port }" if Rails.env.development?
 
-# You may need to enable this in production as well depending on your setup.
-#    policy.script_src *policy.script_src, :blob if Rails.env.test?
+#     policy.script_src :self, :https, "https://www.google.com", "https://www.recaptcha.net", "https://www.gstatic.com", 
+# "https://unpkg.com", "'unsafe-inline'", "'unsafe-eval'", "http://localhost:3036"
+#     policy.frame_src :self, "https://www.youtube.com", "https://www.google.com", "https://www.recaptcha.net", "https://www.calendar.google.com"
 
-#     policy.style_src   :self, :https
-# Allow @vite/client to hot reload style changes in development
-#    policy.style_src *policy.style_src, :unsafe_inline if Rails.env.development?
+#     policy.connect_src :self, :https, "ws://localhost:3036", "http://localhost:3036", "https://www.google.com", "https://www.recaptcha.net"
 
-#     # Specify URI for violation reports
-#     # policy.report_uri "/csp-violation-report-endpoint"
+
+#     policy.style_src :self, :https, "'unsafe-inline'", "https://fonts.googleapis.com"
 #   end
-#
+
 #   # Generate session nonces for permitted importmap and inline scripts
 #   config.content_security_policy_nonce_generator = ->(request) { request.session.id.to_s }
-#   config.content_security_policy_nonce_directives = %w(script-src)
-#
+#   config.content_security_policy_nonce_directives = %w[script-src]
+
 #   # Report CSP violations to a specified URI. See:
 #   # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy-Report-Only
 #   # config.content_security_policy_report_only = true

@@ -50,25 +50,14 @@ RSpec.describe OrderItemsController, type: :controller do
       end
 
       it "should create an order item with badge requirements" do
-        pp = create(:proficient_project, :with_badge_requirements)
-        Badge.create(
-          user_id: User.last.id,
-          badge_template_id:
-            (
-              BadgeTemplate.find_by_badge_name(
-                "Beginner - 3D printing || Débutant - Impression 3D"
-              ).id
-            ),
-          acclaim_badge_id: "abcd"
-        )
-        Badge.create(
-          user_id: User.last.id,
-          badge_template_id:
-            BadgeTemplate.find_by_badge_name(
-              "Beginner Laser cutting || Beginner - Laser cutting"
-            ).id,
-          acclaim_badge_id: "abce"
-        )
+        # Make a proficient project with training requirements
+        pp = create(:proficient_project, :with_training_requirements)
+        # give the user the certifications needed for each requirement
+        pp.training_requirements.each do |training_requirement|
+          training_session = create(:training_session, training_id: training_requirement.training_id)
+          create(:certification, user_id: @volunteer.id, training_session_id: training_session.id)
+        end
+        # Make a request
         expect {
           post :create,
                params: {
@@ -110,22 +99,10 @@ RSpec.describe OrderItemsController, type: :controller do
         create(:order_item)
         session[:order_id] = Order.last.id
         expect {
-          delete :destroy, params: { id: OrderItem.last.id }, format: "js"
+          delete :destroy, params: { order_item_id: OrderItem.last.id }, format: "js"
         }.to change(OrderItem, :count).by(-1)
         expect(flash[:notice]).to eq("Successfully removed item from cart")
         expect(response).to redirect_to carts_path
-      end
-    end
-  end
-
-  describe "GET /revoke" do
-    context "revoke the order item" do
-      it "should revoke the order item" do
-        create(:order_item)
-        session[:order_id] = Order.last.id
-        get :revoke, params: { order_item_id: OrderItem.last.id }
-        expect(flash[:notice]).to eq("The badge has been revoked.")
-        expect(OrderItem.last.status).to eq("Revoked")
       end
     end
   end

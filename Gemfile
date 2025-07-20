@@ -9,11 +9,11 @@ gem "abbrev"
 gem "csv"
 
 gem "airbrake"
-gem "aws-sdk", "~> 3.0.1"
-gem "aws-sdk-s3", require: false
-gem "bcrypt", "~> 3.1.10"
 gem "bootbox-rails", "~>0.4"
 gem "bootsnap", require: false
+gem "aws-sdk", "~> 3.0"
+gem "aws-sdk-s3", require: false
+gem "bcrypt", "~> 3.1"
 gem "caxlsx", "~> 3.3.0"
 gem "chartkick"
 gem "clipboard-rails"
@@ -64,15 +64,13 @@ gem "syntax_tree-haml"
 gem "syntax_tree-rbs"
 gem "thin", "~> 1.8.2"
 gem "toastr-rails"
-gem "trix-rails", "~> 2.4.0", require: "trix"
+gem "trix-rails", "~> 2.4", require: "trix"
 gem "uglifier", ">= 1.3.0"
 gem "unicorn-worker-killer", "~> 0.4.5"
 gem "vite_rails"
 gem "whenever", require: false
-gem "wicked_pdf"
 gem "will_paginate", "~> 3.3.0"
 gem "will_paginate-bootstrap-style"
-gem "wkhtmltopdf-binary"
 gem "youtube_id"
 gem "zip-zip"
 
@@ -80,7 +78,7 @@ gem "zip-zip"
 group :development, :test do
   gem "byebug", platform: :mri
   gem "factory_bot_rails"
-  gem "faker", "~> 3.1.0"
+  gem "faker", "~> 3.1"
   gem "listen", "~> 3.7.1"
   gem "railroady"
   gem "rspec-json_expectations"
