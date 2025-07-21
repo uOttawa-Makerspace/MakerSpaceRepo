@@ -126,12 +126,12 @@ class ProficientProjectsController < DevelopmentProgramsController
   def edit
     @training_levels = TrainingSession.return_levels
     @trainings = Training.all
+    @training_requirements = TrainingRequirement.all.where(proficient_project_id: @proficient_project.id)
   end
 
   def update
-    if @proficient_project.update(proficient_project_params)
-      update_files
-      update_videos
+    @training_requirements = TrainingRequirement.all.where(proficient_project_id: @proficient_project.id)
+    if @proficient_project.update(proficient_project_params) && @training_requirements.update(training_requirement_params)
       begin
         update_photos
       rescue FastImage::ImageFetchFailure,
@@ -313,7 +313,7 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def training_requirement_params
-    params.require(:training_requirement).permit(
+    params.require(:training_requirements).permit(
       :training_requirements_id,
       :training_requirements_level
     )

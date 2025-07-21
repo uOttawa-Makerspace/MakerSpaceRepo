@@ -57,9 +57,11 @@
             <h4>Training Requirements</h4>
               <div id="link-container">
                 <% unless @training_requirements.nil? %>
-                  <% @training_requirements.each_with_index do |tr, i| %>
+                <% Rails.logger.debug "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" %>
+                <% Rails.logger.debug @training_requirements %>
+                  <% @training_requirements.each do |tr| %>
                     <div class="d-flex upload-file-input mb-2 gap-1">
-                      <%= select_tag :training_requirements_id, options_for_select(@trainings.collect{ |t| [t.name_en, t.id] }, selected: tr.id), name: 'training_requirements_id[]' %>
+                      <%= select_tag :training_requirements_id, options_for_select(@trainings.collect{ |t| [t.name_en, t.id] }, selected: tr.training_id), name: 'training_requirements_id[]' %>
                       <%= select_tag :training_requirements_level, options_for_select(@training_levels, selected: tr.level), name: 'training_requirements_level[]' %>
                       <button class="btn btn-danger tr-delete-button ms-2" type="button">
                         <i class="fa fa-trash"></i>
