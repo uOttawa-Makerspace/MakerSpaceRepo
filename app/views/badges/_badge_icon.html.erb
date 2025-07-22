@@ -19,14 +19,23 @@
     <line x1="6%" y1="50%" x2="94" y2="50%" stroke="black"/>
 
     <text x="50%" y="65%" fill="white" text-anchor="middle" >
-        <% if name.nil? %>
+        <% if name_fr.nil? %>
             <tspan x="50%" font-size="0.6rem">nil</tspan>
-        <% elsif name.chars.count > 20 %>
-            <tspan x="50%" font-size="0.4rem"><%= name %></tspan>
-        <% elsif name.chars.count > 18 %>
-            <tspan x="50%" font-size="0.5rem"><%= name %></tspan>
+        <% elsif name_fr.chars.count > 20 %>
+            <tspan x="50%" dy="1.1em" font-size="0.4rem"><%= name_fr %></tspan>
+        <% elsif name_fr.chars.count > 18 %>
+            <tspan x="50%" dy="1.1em" font-size="0.5rem"><%= name_fr %></tspan>
         <% else %>
-            <tspan x="50%" font-size="0.6rem"><%= name %></tspan>
+            <tspan x="50%" dy="1.1em" font-size="0.6rem"><%= name_fr %></tspan>
+        <% end %>
+        <% if name_en.nil? %>
+            <tspan x="50%" dy="1.1em" font-size="0.6rem">nil</tspan>
+        <% elsif name_en.chars.count > 20 %>
+            <tspan x="50%" dy="1.1em" font-size="0.4rem"><%= name_en %></tspan>
+        <% elsif name_en.chars.count > 18 %>
+            <tspan x="50%" dy="1.1em" font-size="0.5rem"><%= name_en %></tspan>
+        <% else %>
+            <tspan x="50%" dy="1.1em" font-size="0.6rem"><%= name_en %></tspan>
         <% end %>
         <% if level == "Beginner" %>
             <tspan x="50%" dy="1.1em" font-size="0.6rem">I</tspan>

@@ -33,7 +33,7 @@ class BadgesController < DevelopmentProgramsController
   end
 
   def show
-    @certification = Certification.includes(:training_session).includes(:training).find(params[:id])
+    @certification = Certification.includes(:training).find(params[:id])
     @earner = User.find(@certification.user_id)
   end
 

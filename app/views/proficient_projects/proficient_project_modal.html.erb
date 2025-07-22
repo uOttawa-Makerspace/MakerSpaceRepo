@@ -23,7 +23,7 @@
         <div class="card-body">
             <% if training_requirements.present? %>
                 <% training_requirements.each do |training_requirement| %>
-                    <%= render "badges/badge_icon", width: 230, height: 230, level: training_requirement.proficient_project.level, name: training_requirement.training.localized_name, skill: training_requirement.training.skill_id %>
+                    <%= render "badges/badge_icon", width: 230, height: 230, level: training_requirement.proficient_project.level, name_en: training_requirement.training.name_en, name_fr: training_requirement.training.name_fr, skill: training_requirement.training.skill_id %>
                 <% end %>
             <% else %>
                 None
@@ -36,7 +36,7 @@
         <div class="card-header bg-primary text-light">Badge Awarded Upon Completion</div>
         <div class="card-body">
             <% if training.present? %>
-                <%= render "badges/badge_icon", width: 230, height: 230, level: @proficient_project.level, name: training.localized_name, skill: training.skill_id %>
+                <%= render "badges/badge_icon", width: 230, height: 230, level: @proficient_project.level, name_en: training.name_en, name_fr: training.name_fr, skill: training.skill_id %>
             <% else %>
                 None
             <% end %>

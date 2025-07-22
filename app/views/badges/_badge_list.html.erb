@@ -22,7 +22,7 @@
           </p>
 
           <a style="width: 150px;" class="mx-auto w-100!important d-block" target="_blank" href="./badges/<%= badges.id %>">
-            <%= render "badge_icon", width: 150, height: 150, level: badges.training_session.level, name: badges.training_session.training.localized_name, skill: badges.training_session.training.skill_id %>
+            <%= render "badge_icon", width: 150, height: 150, level: badges.training_session.level, name_en: badges.get_name_en, name_fr: badges.get_name_fr, skill: badges.training_session.training.skill_id %>
           </a>
         <% end %>
     </div>
