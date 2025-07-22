@@ -28,7 +28,9 @@
         <% else %>
             <tspan x="50%" font-size="0.6rem"><%= name %></tspan>
         <% end %>
-        <% if level == "Beginner" %>
+        <% if level == "none" %>
+            <tspan x="50%" dy="1.1em" font-size="0.6rem">-</tspan>
+        <% elsif level == "Beginner" %>
             <tspan x="50%" dy="1.1em" font-size="0.6rem">I</tspan>
         <% elsif level == "Intermediate" %>
             <tspan x="50%" dy="1.1em" font-size="0.6rem">II</tspan>

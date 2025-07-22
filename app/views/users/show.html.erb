@@ -26,24 +26,6 @@
           <%= fa_icon('link') %>
           <%= link_to @repo_user.url.gsub(%r{\Ahttps?://}, '').to_s, @repo_user.url %> <br />
         <% end %>
-        <p>SKILLS</p>
-        <% @certifications.each do |certification| %>
-          <div class="row">
-            <div class="col-md-6">
-              <% if current_user.staff? %>
-                <%= link_to certification.training.localized_name, staff_training_session_path(certification.training_session) %>
-              <% else %>
-                <%= certification.training.localized_name %>
-              <% end %>
-            </div>
-            <div class="col-md-6">
-              <span style="font-size: 15px;">
-                <%= certification_status(certification.training_session.level).html_safe %>
-              </span>
-              <br />
-            </div>
-          </div>
-        <% end %>
       </div>
     </div>
     <!--      PROFILE HEADER Section-->

@@ -1,0 +1,21 @@
+<section>
+    <div class="mt-3 row row-cols-5">
+        <% @certifications.each do |cert| %>
+          <div class="col">
+            <b><%= cert.training.localized_name %> </b> <br/>
+            <%= render "badges/badge_icon", width: 200, height: 200, level: cert.level, name: cert.training_session.training.localized_name, skill: cert.training_session.training.skill_id %>
+            <br/>
+          </div>
+        <% end %>
+
+        <% @remaining_trainings.each do |training| %>
+        <% if training.has_badge %>
+          <div class="col">
+            <b><%= training.localized_name %> </b> <br/>
+            <%= render "badges/badge_icon", width: 200, height: 200, level: "none", name: training.localized_name, skill: training.skill_id %>
+            <br/>
+          </div>
+        <% end %>
+        <% end %>
+      </div>
+</section>
