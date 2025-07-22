@@ -82,10 +82,12 @@ class ProficientProjectsController < DevelopmentProgramsController
   def create
     @proficient_project = ProficientProject.new(proficient_project_params)
     if @proficient_project.save
+      Rails.logger.debug params.inspect
       if params[:training_requirements_id].present?
-        @proficient_project.create_training_requirements(
-          params[:training_requirements_id]
-        )
+        params[:training_requirements_id].each_with_index do |t, i|
+            @proficient_project.create_training_requirements(t, params[:training_requirements_level][i])
+        end
+        
       end
       begin
         create_photos
@@ -124,19 +126,17 @@ class ProficientProjectsController < DevelopmentProgramsController
   def edit
     @training_levels = TrainingSession.return_levels
     @trainings = Training.all
+    @training_requirements = TrainingRequirement.all.where(proficient_project_id: @proficient_project.id)
   end
 
   def update
     @proficient_project.training_requirements.destroy
     if params[:training_requirements_id].present?
-      @proficient_project.create_training_requirements(
-        params[:training_requirements_id]
-      )
+      params[:training_requirements_id].each_with_index do |t, i|
+            @proficient_project.create_training_requirements(t, params[:training_requirements_level][i])
+        end
     end
-
     if @proficient_project.update(proficient_project_params)
-      update_files
-      update_videos
       begin
         update_photos
       rescue FastImage::ImageFetchFailure,
@@ -197,34 +197,51 @@ class ProficientProjectsController < DevelopmentProgramsController
   def approve_project
     order_item = OrderItem.find_by(id: params[:oi_id])
     if order_item
-      space = Space.find_by_name("Makerepo")
-      admin =
-        User.find_by_email("avend029@uottawa.ca") ||
-          User.where(role: "admin").last
-      course_name = CourseName.find_by_name("no course")
-      proficient_project_session =
-        ProficientProjectSession.create(
-          proficient_project_id: order_item.proficient_project.id,
-          level: order_item.proficient_project.level,
+      admin = @user
+      duplicates = 0
+      user = order_item.order.user
+      dup_cert = nil
+      user.certifications.each do |cert|
+        Rails.logger.debug "#{cert.training.id} == #{order_item.proficient_project.training.id}"
+        Rails.logger.debug "#{order_item.proficient_project.level} == #{cert.level}"
+        next unless cert.training.id == order_item.proficient_project.training.id &&
+          order_item.proficient_project.level == cert.level
+        dup_cert = cert
+        duplicates += 1
+      end
 
-        )
+      if duplicates.zero?
+        cert =
+            Certification.create(
+              user_id: order_item.order.user_id,
+              level: order_item.proficient_project.level
+            )
+        proficient_project_session =
+          ProficientProjectSession.create(
+            proficient_project_id: order_item.proficient_project.id,
+            level: order_item.proficient_project.level,
+            user_id: admin.id,
+            certification_id: cert.id
+          )
+      else
+        proficient_project_session =
+          ProficientProjectSession.create(
+            proficient_project_id: order_item.proficient_project.id,
+            level: order_item.proficient_project.level,
+            user_id: admin.id,
+            certification_id: dup_cert.id
+          )
+      end
       # Make sure we don't double add the HABTM relation
       # In case badge fails somehow, at least we award the skill
       if proficient_project_session.present?
-        cert =
-          Certification.create(
-            user_id: order_item.order.user_id,
-            level: proficient_project_session.level
-          )
-        # Award project, even if badge fails.
-        # You can manually grant badge later
         order_item.update(order_item_params.merge({ status: "Awarded" }))
         MsrMailer.send_results_pp(
           order_item,
           order_item.order.user,
           "Passed"
         ).deliver_now
-        flash[:notice] = "The project has been approved!"
+        flash[:notice] = "The project has been approved!  (#{duplicates} duplicates skipped)"
       else
         flash[:error] = "An error has occurred, please try again later."
       end
@@ -297,6 +314,13 @@ class ProficientProjectsController < DevelopmentProgramsController
       :has_project_kit,
       :drop_off_location_id,
       :is_virtual
+    )
+  end
+
+  def training_requirement_params
+    params.require(:training_requirements).permit(
+      :training_requirements_id,
+      :training_requirements_level
     )
   end
 

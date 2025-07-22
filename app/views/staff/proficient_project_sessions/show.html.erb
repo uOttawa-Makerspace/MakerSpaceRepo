@@ -1,0 +1,74 @@
+<section class="page-contents">
+  <% unless @current_proficient_project_session.completed? %>
+    <!-- <script>
+         window.addEventListener('beforeunload', (event) => {
+         event.preventDefault();
+         // Included for legacy support, e.g. Chrome/Edge < 119
+         event.returnValue = true;
+         });
+         </script> -->
+  <% end %>
+  <div class="padding">
+    <div style="font-weight:bold;font-size:1.4em;">Proficient Project Session #<%= @current_proficient_project_session.id %></div>
+
+    <div style="float:right;">Created On: <%= @current_proficient_project_session.created_at.strftime('%D at %l:%M%P') %></div>
+    <br />
+    <div style="float:right;">Updated On: <%= @current_proficient_project_session.updated_at.strftime('%D at %l:%M%P') %></div>
+    <div>
+      Status:
+      <% if @current_proficient_project_session.completed? %>
+      <span style="color:#006633;"> Completed </span>
+      <% else %>
+      <span style="color:#700000;"> Incomplete </span>
+      <% end %>
+    </div>
+    <br />
+
+
+
+    <br />
+    <table class="training-session-users-table table table-striped">
+        <thead class="table-primary">
+        <tr class="text-center">
+           <th>Earner <span onclick="sortTable('training-session-users-table', 1)"><%= fa_icon('arrow-down') %></span></th>
+           <th>Earner Email <span onclick="sortTable('training-session-users-table', 2)"><%= fa_icon('arrow-down') %></span></th>
+           <th>Admin <span onclick="sortTable('training-session-users-table', 3)"><%= fa_icon('arrow-down') %></span></th>
+           <th>Admin Email<span onclick="sortTable('training-session-users-table', 5)"><%= fa_icon('arrow-down') %></span></th>
+           <th>Badge Awarded<span onclick="sortTable('training-session-users-table', 5)"><%= fa_icon('arrow-down') %></span></th>
+         </tr>
+         </thead>
+
+      <% cert = @current_proficient_project_session.certification
+         user = cert.user 
+         admin = @current_proficient_project_session.user %>
+        <tr id="<%= return_no_waiver_id(user) %>">
+          
+          <td class="user-name">
+            <%= link_to(user.name, user_url(user.username)) %>
+          </td>
+
+          <td class="email-cell" style="horizontal-alginment:center;">
+            <%= user.email %>
+          </td>
+
+          <td class="user-name">
+            <%= link_to(admin.name, user_url(admin.username)) %>
+          </td>
+          <td class="email-cell" style="horizontal-alginment:center;">
+            <%= admin.email %>
+          </td>
+          <td> <%= @current_proficient_project_session.proficient_project.training.localized_name %></td>
+        </tr>
+    </table>
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+
+
+
+  <br>
+</section>
+<br />

@@ -385,15 +385,24 @@ class User < ApplicationRecord
     update(wallet: get_total_cc)
   end
 
-  def has_required_trainings?(training_requirements)
-    user_trainings_set = certifications.includes(:training_session).pluck(:training_id).to_set
-    training_requirements_set = training_requirements.pluck(:training_id).to_set
-    training_requirements_set.subset?(user_trainings_set)
+  def has_requirements?(training_reqs)
+    training_reqs.each do |treq|
+      tid = treq.training_id
+      l = treq.level
+      return false unless has_training?(tid, l)
+    end
+  end
+
+  def has_training?(tid, l)
+    count = 0
+    certifications.each do |cert|
+      count+=1 if cert.training.id == tid && cert.level == l
+    end
+    count > 0
   end
 
   def highest_badge(training)
     badges =
-      
         certifications
         .joins(:training_session)
         .where(training_sessions: { training_id: training.id })

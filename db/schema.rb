@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_06_13_150014) do
+ActiveRecord::Schema[7.2].define(version: 2025_07_14_184940) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -1196,6 +1196,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_13_150014) do
   create_table "training_requirements", force: :cascade do |t|
     t.bigint "training_id"
     t.bigint "proficient_project_id"
+    t.string "level"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["proficient_project_id"], name: "index_training_requirements_on_proficient_project_id"

@@ -4,48 +4,42 @@ class Certification < ApplicationRecord
   belongs_to :user, class_name: "User", optional: true
   belongs_to :demotion_staff, class_name: "User", optional: true
   belongs_to :training_session, optional: true
-  belongs_to :proficient_project_session, optional: true
+  has_one :proficient_project_session
   has_one :space, through: :training_session
   has_one :training, through: :training_session
+  has_one :training, through: :proficient_project_session
   has_one :proficient_project, through: :proficient_project_session
   has_many :badges
   has_many :badge_templates, through: :training
 
   validates :user, presence: { message: "A user is required." }
-  validates :training_session,
-            presence: {
-              message: "A training session is required."
-            }
-  validate :unique_cert, on: :create
+  validates :level, presence: { message: "A level is required."}
 
   default_scope -> { where(active: true) }
   scope :between_dates_picked,
-        ->(start_date, end_date) {
+        ->(start_date, end_date) {un
           where("created_at BETWEEN ? AND ? ", start_date, end_date)
         }
   scope :inactive, -> { unscoped.where(active: false) }
 
+  def training
+    if training_session.nil?
+      proficient_project_session.proficient_project.training
+    else
+      training_session.training
+    end
+  end
+
   def trainer
-    training_session.user.name
+    if training_session.nil?
+      proficient_project_session.user.name
+    else
+      training_session.user.name
+    end
   end
 
   def self.to_csv(attributes)
     CSV.generate { |csv| attributes.each { |row| csv << row } }
-  end
-
-  def unique_cert
-    @user_certs = user.certifications if user
-    return false unless @user_certs
-      @user_certs.each do |cert|
-        next unless (cert.training.id == training.id) &&
-             (cert.training_session.level == training_session.level)
-        errors.add(:string, "Certification already exists.")
-        return false
-      end
-    
-      
-    
-    true
   end
 
   def self.certify_user(training_session_id, user_id)
@@ -65,8 +59,14 @@ class Certification < ApplicationRecord
   end
 
   def self.highest_certifications(user_id)
-    training_ids = joins(:training).pluck(:training_id)
-    trainings = Training.where(id: training_ids)
+    # training_ids = joins(:training).pluck(:training_id)
+    # trainings = Training.where(id: training_ids)
+    trainings = []
+    user = User.find(user_id)
+    user_certs = user.certifications
+    user_certs.each do |cert|
+      trainings << cert.training unless trainings.include? cert.training
+    end
     certs = []
     trainings.each do |training|
       certs << certification_highest_level(training.id, user_id)
@@ -75,21 +75,18 @@ class Certification < ApplicationRecord
   end
 
   def self.certification_highest_level(training_id, user_id)
-    certifications =
-      joins(:user, :training_session).where(
-        training_sessions: {
-          training_id: training_id
-        },
-        user_id: user_id
-      )
-    level = certifications.pluck(:level)
-    if level.include?("Advanced")
-      certifications.where(training_sessions: { level: "Advanced" }).last
-    elsif level.include?("Intermediate")
-      certifications.where(training_sessions: { level: "Intermediate" }).last
-    elsif level.include?("Beginner")
-      certifications.where(training_sessions: { level: "Beginner" }).last
+    user = User.find(user_id)
+    training_certs = []
+    user.certifications.each do |cert|
+      training_certs << cert if cert.training.id == training_id
     end
+    
+    highest_cert = training_certs.first
+    training_certs.each do |cert|
+      highest_cert = cert if highest_cert.level == "Beginner" && cert.level == "Intermediate"
+      highest_cert = cert if cert.level == "Advanced"
+    end
+    highest_cert
   end
 
   def self.filter_by_attribute(value)
@@ -144,5 +141,29 @@ class Certification < ApplicationRecord
 
   def name
     I18n.locale == :fr ? name_fr : name_en
+  end
+
+  def get_name_en
+    if training_session.nil?
+      proficient_project_session.proficient_project.training.name_en
+    else
+      training_session.training.name_en
+    end
+  end
+
+  def get_name_fr
+    if training_session.nil?
+      proficient_project_session.proficient_project.training.name_fr
+    else
+      training_session.training.name_fr
+    end
+  end
+
+  def get_skill_id
+    if training_session.nil?
+      proficient_project_session.proficient_project.training.skill_id
+    else
+      training_session.training.skill_id
+    end
   end
 end
