@@ -15,7 +15,7 @@
     <br/>
     <% training = @proficient_project.training %>
     <% if training.present? %>
-      <%= render "badges/badge_icon", width: 230, height: 230, level: @proficient_project.level, name_en: training.name_en, name_fr: training.name_fr, skill: training.skill_id %>
+      <%= render "badges/badge_icon", width: 230, height: 230, level: @proficient_project.level, name: training.localized_name, skill: training.skill_id %>
     <% else %>
       None
     <% end %>

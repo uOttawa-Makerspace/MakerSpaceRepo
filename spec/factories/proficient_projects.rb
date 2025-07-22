@@ -44,6 +44,13 @@ FactoryBot.define do
       level { "Advanced" }
     end
 
+    trait :with_training_requirements do
+      after :create do |pp|
+        create_list(:training_requirement, 2, proficient_project: pp)
+        pp.reload
+      end
+    end
+
     factory :proficient_project_with_project_kits do
       transient { project_kit_count { 3 } }
       after(:create) do |proficient_project, evaluator|

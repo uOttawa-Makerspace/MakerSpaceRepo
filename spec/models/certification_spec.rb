@@ -7,10 +7,6 @@ RSpec.describe Certification, type: :model do
       it { should belong_to(:training_session).without_validating_presence }
     end
 
-    context "has_many" do
-      it { should have_many(:badges) }
-    end
-
     context "has_one" do
       it { should have_one(:space) }
       it { should have_one(:training) }

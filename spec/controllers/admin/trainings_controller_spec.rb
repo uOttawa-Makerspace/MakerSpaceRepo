@@ -67,7 +67,7 @@ RSpec.describe Admin::TrainingsController, type: :controller do
 
       it "should not create a invalid training" do
         training_params =
-          FactoryBot.attributes_for(:training, name: @training.name_en)
+          FactoryBot.attributes_for(:training, name_en: @training.name_en)
         expect do
           post :create, params: { training: training_params }
         end.to change(Training, :count).by(0)
@@ -85,7 +85,7 @@ RSpec.describe Admin::TrainingsController, type: :controller do
               params: {
                 id: @training.id,
                 training: {
-                  name: first_training.name_en
+                  name_en: first_training.name_en
                 }
               }
         expect(response).to redirect_to admin_trainings_path
@@ -98,7 +98,7 @@ RSpec.describe Admin::TrainingsController, type: :controller do
               params: {
                 id: @training.id,
                 training: {
-                  name: "New Random Name"
+                  name_en: "New Random Name"
                 }
               }
         expect(response).to redirect_to admin_trainings_path

@@ -8,6 +8,7 @@ class Certification < ApplicationRecord
   has_one :space, through: :training_session
   has_one :training, through: :training_session
   has_one :training, through: :proficient_project_session
+  has_one :proficient_project, through: :proficient_project_session
   has_many :badges
   has_many :badge_templates, through: :training
 
@@ -93,7 +94,8 @@ class Certification < ApplicationRecord
       inactive.joins(:user, :training).where(
         "LOWER(demotion_reason) like LOWER(:value) OR
                        LOWER(users.name) like LOWER(:value) OR
-                       LOWER(trainings.name) like LOWER(:value)",
+                       LOWER(trainings.name_en) like LOWER(:value) OR
+                       LOWER(trainings.name_fr) like LOWER(:value)",
         { value: "%#{value}%" }
       )
     else
