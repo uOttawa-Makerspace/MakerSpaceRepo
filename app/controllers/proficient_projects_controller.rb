@@ -130,8 +130,13 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def update
-    @training_requirements = TrainingRequirement.all.where(proficient_project_id: @proficient_project.id)
-    if @proficient_project.update(proficient_project_params) && @training_requirements.update(training_requirement_params)
+    @proficient_project.training_requirements.destroy
+    if params[:training_requirements_id].present?
+      params[:training_requirements_id].each_with_index do |t, i|
+            @proficient_project.create_training_requirements(t, params[:training_requirements_level][i])
+        end
+    end
+    if @proficient_project.update(proficient_project_params)
       begin
         update_photos
       rescue FastImage::ImageFetchFailure,
