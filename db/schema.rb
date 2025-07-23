@@ -232,6 +232,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_13_150014) do
     t.bigint "user_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["event_id"], name: "index_event_assignments_on_event_id"
+    t.index ["user_id"], name: "index_event_assignments_on_user_id"
   end
 
   create_table "events", force: :cascade do |t|
@@ -247,6 +249,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_13_150014) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "google_event_id"
+    t.index ["created_by_id"], name: "index_events_on_created_by_id"
+    t.index ["space_id"], name: "index_events_on_space_id"
   end
 
   create_table "exam_questions", id: :serial, force: :cascade do |t|
@@ -1115,6 +1119,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_13_150014) do
     t.string "recurrence_rule"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_staff_unavailabilities_on_user_id"
   end
 
   create_table "sub_space_booking_statuses", force: :cascade do |t|
@@ -1196,6 +1201,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_13_150014) do
   create_table "training_requirements", force: :cascade do |t|
     t.bigint "training_id"
     t.bigint "proficient_project_id"
+    t.string "level"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["proficient_project_id"], name: "index_training_requirements_on_proficient_project_id"
@@ -1229,10 +1235,10 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_13_150014) do
     t.integer "space_id"
     t.bigint "skill_id"
     t.string "description_en"
-    t.string "list_of_skills_en"
     t.string "name_fr"
     t.boolean "has_badge", default: true
     t.string "description_fr"
+    t.string "list_of_skills_en"
     t.string "list_of_skills_fr"
     t.index ["skill_id"], name: "index_trainings_on_skill_id"
     t.index ["space_id"], name: "index_trainings_on_space_id"
@@ -1380,6 +1386,10 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_13_150014) do
   add_foreign_key "discount_codes", "price_rules"
   add_foreign_key "discount_codes", "users"
   add_foreign_key "equipment", "repositories"
+  add_foreign_key "event_assignments", "events"
+  add_foreign_key "event_assignments", "users"
+  add_foreign_key "events", "spaces"
+  add_foreign_key "events", "users", column: "created_by_id"
   add_foreign_key "job_order_options", "job_options"
   add_foreign_key "job_order_options", "job_orders"
   add_foreign_key "job_order_quote_options", "job_options"
@@ -1434,6 +1444,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_13_150014) do
   add_foreign_key "staff_needed_calendars", "spaces"
   add_foreign_key "staff_spaces", "spaces"
   add_foreign_key "staff_spaces", "users"
+  add_foreign_key "staff_unavailabilities", "users"
   add_foreign_key "sub_space_booking_statuses", "booking_statuses"
   add_foreign_key "sub_space_booking_statuses", "sub_space_bookings", on_delete: :cascade
   add_foreign_key "sub_space_bookings", "recurring_bookings"

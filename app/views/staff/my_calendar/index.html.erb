@@ -1,0 +1,44 @@
+<% provide(:title, 'My Work Calendar') %>
+
+<div class="my-4">
+    <h1>My Work Schedule</h1>
+    <p>Your assigned shifts, trainings, meetings, etc. are shown below. <%= link_to "View and manage your unavailabilities here", "/staff/unavailabilities", data: { turbo: true } %>.</p>
+</div>
+
+<div class="mt-4">
+    <%= form_tag staff_dashboard_change_space_path, method: :put do %>
+        <div class="input-group mb-3">
+            <%= label_tag :space_id, 'Space', class: 'input-group-text' %>
+            <%= select_tag :space_id, options_for_select(@spaces.pluck(:name, :id), selected: @space_id), class: 'form-select', id: "space_id" %>
+            <button class="btn btn-outline-secondary" type="submit">Go</button>
+        </div>
+    <% end %>
+</div>
+
+<div id="calendar_container">
+    <div id="calendar"></div>
+</div>
+
+<div id="spinner_container">
+    <div id='spinner' class="spinner-border" role="status"></div>
+</div>
+
+<style>
+    #calendar_container {
+        display: none;
+    }
+
+    #spinner_container {
+        height: 50vh;
+        display: grid;
+        place-items: center;
+    }
+
+    .fc-event {
+        opacity: 0;
+        transition: opacity 0.1s ease-in;
+    }
+    .fc-event.fade-in {
+        opacity: 1;
+    }
+</style>

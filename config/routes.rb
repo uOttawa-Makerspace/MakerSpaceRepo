@@ -434,6 +434,28 @@ Rails.application.routes.draw do
           format: :csv
       post "import_programs"
     end
+
+    resources :calendar do
+      collection do
+        get 'unavailabilities_json/:id', to: 'calendar#unavailabilities_json', as: :unavailabilities_json
+        get 'imported_calendars_json/:id', to: 'calendar#imported_calendars_json', as: :imported_calendars_json
+        get 'ics_to_json', to: 'calendar#ics_to_json', as: :ics_to_json 
+        post :update_color
+      end
+    end
+
+    resources :events, only: [:create, :update] do
+      collection do
+        get 'json/:id', to: 'events#json', as: :json
+        patch :publish
+        delete :delete_drafts
+        post :copy
+      end
+      member do
+        patch :publish
+        delete :delete_with_scope
+      end
+    end
   end
   # For singular routes
   resolve('DesignDay') {[:admin, :design_day]}
@@ -460,6 +482,20 @@ Rails.application.routes.draw do
     end
     resources :shifts_schedule, except: %i[new show destroy] do
       collection { get :get_shifts }
+    end
+    resources :my_calendar do
+      collection do
+        get 'json/:id', to: 'my_calendar#json', as: :json
+      end
+    end
+    resources :unavailabilities do
+      collection do
+        get :json
+        patch :update_external_unavailabilities
+      end
+      member do
+        delete :delete_with_scope
+      end
     end
 
     resources :makerstore_links, only: %i[index edit update create new] do
