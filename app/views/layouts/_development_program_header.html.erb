@@ -36,15 +36,23 @@
           <%= link_to 'Proficient Projects', proficient_projects_path, class: 'nav-link' %>
         </li>
       <% end %>
-      <li class="nav-item dropdown">
+      
+        <% if current_user.role == "regular_user" %>
+          <li class="nav-item">
+            <%= link_to t('devprog.nav.badges_view'), badge_templates_development_programs_path, class: 'nav-link' %>
+          </li>
+        <% else %>
+        <li class="nav-item dropdown">
         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-          Skills/Badge
+          Badge
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
-          <%= link_to 'Skills', skills_development_programs_path, class: 'dropdown-item' %>
+          <%= link_to t('devprog.nav.badges_view'), badge_templates_development_programs_path, class: 'dropdown-item' %>
             <div class="dropdown-divider"></div>
-          <%= link_to 'Badges', badges_path, class: 'dropdown-item' %>
+          <%= link_to t('devprog.nav.badges_search'), badges_path, class: 'dropdown-item' %>
         </div>
+        <% end %>
+        
       </li>
       <li class="nav-item">
         <%= link_to 'Orders', orders_path, class: 'nav-link' %>

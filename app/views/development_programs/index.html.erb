@@ -40,10 +40,12 @@
             </div>
             <div class="col-lg-4">
                 <div class="linkBox">
-                    <h2><%= t('devprog.nav.skills_badges') %></h2>
+                    <h2><%= t('devprog.nav.badges') %></h2>
                     <p><%= t('devprog.block1.skills_badges') %></p>
-                    <%= link_to "Badge Templates", badge_templates_development_programs_path %>
-                    <%= link_to t('devprog.nav.badges'), badges_path %>
+                    <%= link_to t('devprog.nav.badges_view'), badge_templates_development_programs_path %>
+                    <% if current_user.role != "regular_user" %>
+                        <%= link_to t('devprog.nav.badges_search'), badges_path %>
+                    <% end %>
                 </div>
             </div>
         </div>

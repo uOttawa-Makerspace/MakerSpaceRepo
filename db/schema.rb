@@ -227,28 +227,6 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_13_150014) do
     t.datetime "updated_at", precision: nil, null: false
   end
 
-  create_table "event_assignments", force: :cascade do |t|
-    t.bigint "event_id"
-    t.bigint "user_id"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-  end
-
-  create_table "events", force: :cascade do |t|
-    t.bigint "created_by_id"
-    t.bigint "space_id"
-    t.string "title"
-    t.text "description"
-    t.datetime "start_time"
-    t.datetime "end_time"
-    t.string "recurrence_rule"
-    t.boolean "draft", default: true
-    t.string "event_type"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.string "google_event_id"
-  end
-
   create_table "exam_questions", id: :serial, force: :cascade do |t|
     t.integer "exam_id"
     t.integer "question_id"
@@ -1078,21 +1056,12 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_13_150014) do
     t.index ["staff_availability_id"], name: "index_staff_availability_exceptions_on_staff_availability_id"
   end
 
-  create_table "staff_external_unavailabilities", force: :cascade do |t|
-    t.bigint "user_id", null: false
-    t.string "ics_url"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["user_id"], name: "index_staff_external_unavailabilities_on_user_id"
-  end
-
   create_table "staff_needed_calendars", force: :cascade do |t|
     t.string "calendar_url", null: false
     t.string "color"
     t.bigint "space_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.string "name"
     t.index ["space_id"], name: "index_staff_needed_calendars_on_space_id"
   end
 
@@ -1104,17 +1073,6 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_13_150014) do
     t.string "color"
     t.index ["space_id"], name: "index_staff_spaces_on_space_id"
     t.index ["user_id"], name: "index_staff_spaces_on_user_id"
-  end
-
-  create_table "staff_unavailabilities", force: :cascade do |t|
-    t.bigint "user_id"
-    t.string "title"
-    t.text "description"
-    t.datetime "start_time"
-    t.datetime "end_time"
-    t.string "recurrence_rule"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
   end
 
   create_table "sub_space_booking_statuses", force: :cascade do |t|
@@ -1196,6 +1154,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_13_150014) do
   create_table "training_requirements", force: :cascade do |t|
     t.bigint "training_id"
     t.bigint "proficient_project_id"
+    t.string "level"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["proficient_project_id"], name: "index_training_requirements_on_proficient_project_id"
@@ -1229,10 +1188,10 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_13_150014) do
     t.integer "space_id"
     t.bigint "skill_id"
     t.string "description_en"
-    t.string "list_of_skills_en"
     t.string "name_fr"
     t.boolean "has_badge", default: true
     t.string "description_fr"
+    t.string "list_of_skills_en"
     t.string "list_of_skills_fr"
     t.index ["skill_id"], name: "index_trainings_on_skill_id"
     t.index ["space_id"], name: "index_trainings_on_space_id"
@@ -1430,7 +1389,6 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_13_150014) do
   add_foreign_key "space_staff_hours", "training_levels"
   add_foreign_key "staff_availabilities", "time_periods"
   add_foreign_key "staff_availabilities", "users"
-  add_foreign_key "staff_external_unavailabilities", "users"
   add_foreign_key "staff_needed_calendars", "spaces"
   add_foreign_key "staff_spaces", "spaces"
   add_foreign_key "staff_spaces", "users"

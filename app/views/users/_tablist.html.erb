@@ -5,12 +5,17 @@
 <% if !@repo_user.deleted? %>
   <li class="nav-item">
     <a class="nav-link" id="skills-tab" data-bs-toggle="tab" href="#profile-skills" role="tab"
-      aria-controls="profile" aria-selected="false">Skills</a>
+      aria-controls="profile" aria-selected="false">Skills Roadmap</a>
   </li>
   <li class="nav-item">
     <a class="nav-link" id="badges-tab" data-bs-toggle="tab" href="#badges-manager" role="tab"
       aria-controls="profile" aria-selected="false">Badges</a>
   </li>
+  <li class="nav-item">
+          <a class="nav-link" id="certifications-tab" data-bs-toggle="tab"
+            href="#certifications-manager" role="tab" aria-controls="profile"
+            aria-selected="false">Certifications</a>
+        </li>
   <li class="nav-item">
     <a href="#programs-manager" class="nav-link" id="programs-tab" data-bs-toggle="tab" role="tab"
       aria-controls="profile" aria-selected="false">Programs</a>
@@ -30,11 +35,7 @@
           <% end %>
         </li>
 
-        <li class="nav-item">
-          <a class="dropdown-item" id="certifications-tab" data-bs-toggle="tab"
-            href="#certifications-manager" role="tab" aria-controls="profile"
-            aria-selected="false">Certifications</a>
-        </li>
+        
         <li class="nav-item">
           <a class="dropdown-item" id="keys-tab" data-bs-toggle="tab" href="#keys-manager" role="tab" aria-controls="profile" aria-selected="false">
             Staff Keys
