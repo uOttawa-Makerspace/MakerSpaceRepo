@@ -38,7 +38,7 @@
                             <% unless badge.nil? %>
                               <div class="col-md-3">
                                 <a style="width: 100px;" class="mx-auto w-100!important d-block" target="_blank" href="./badges/<%= badge.id %>">
-                                  <%= render "badge_icon", width: 100, height: 100, margin: "auto", display: "block", level: badge.training_session.training.training_level, name_en: badge.get_name_en, name_fr: badge.get_name_fr skill: badge.training_session.training.skill_id %>
+                                  <%= render "badge_icon", width: 100, height: 100, margin: "auto", display: "block", level: badge.training_session.training.training_level, name: badge.training.localized_name, skill: badge.training_session.training.skill_id %>
                                 </a>
                               </div>
                               <div class="col-md-9 my-auto">

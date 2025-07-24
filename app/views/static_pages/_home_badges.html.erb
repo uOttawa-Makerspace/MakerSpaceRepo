@@ -8,7 +8,7 @@
             <% else %>
             <% @user.certifications.each do |badge| %>
                 <a target="_blank" href="./badges/<%= badge.id %>">
-                    <%= render "badges/badge_icon", width: 75, height: 75, margin: "auto", display: "block", level: badge.level, name_en: badge.get_name_en, name_fr: badge.get_name_fr, skill: badge.get_skill_id %>
+                    <%= render "badges/badge_icon", width: 75, height: 75, margin: "auto", display: "block", level: badge.level, name: badge.training.localized_name, skill: badge.get_skill_id %>
                 </a>
             <% end end %>
         </div>

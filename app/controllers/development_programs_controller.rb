@@ -19,7 +19,33 @@ class DevelopmentProgramsController < ApplicationController
 
   def badge_templates
     @certifications = current_user.certifications
+    @digital_certs = []
+    @manu_certs = []
+    @prof_certs = []
+    @certifications.each do |cert|
+      if cert.training.skill_id == 1
+        @digital_certs << cert
+      elsif cert.training.skill_id == 2
+        @manu_certs << cert
+      else
+        @prof_certs << cert
+      end
+      
+    end
     @remaining_trainings = current_user.remaining_trainings
+    @digital_trainings = []
+    @manu_trainings = []
+    @prof_trainings = []
+    @remaining_trainings.each do |training|
+      if training.skill_id == 1
+        @digital_trainings << training
+      elsif training.skill_id == 2
+        @manu_trainings << training
+      else
+        @prof_trainings << training
+      end
+      
+    end
   end
 
   def skills

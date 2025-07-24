@@ -29,7 +29,9 @@
               <%= certification.training.localized_name %>
             <% end %>
             <br />
-            <%= certification_status(certification.level).html_safe %>
+            <a target="_blank" href="/badges/<%= certification.id %>">
+              <%= render "badges/badge_icon", width: 200, height: 200, level: certification.level, name: certification.training.localized_name, skill: certification.training.skill_id %>
+            </a>
           </td>
           <td>
             <%= certification.trainer %>

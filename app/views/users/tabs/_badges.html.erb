@@ -6,7 +6,7 @@
         <% if badges.training.has_badge %>
           <div>
               <a target="_blank" href="/badges/<%= badges.id %>">
-                <%= render "badges/badge_icon", width: 200, height: 200, level: badges.training_session.level, name: badges.training_session.training.localized_name, skill: badges.training_session.training.skill_id %>
+                <%= render "badges/badge_icon", width: 200, height: 200, level: badges.level, name: badges.training.localized_name, skill: badges.training.skill_id %>
               </a>
           </div>
         <% end %>

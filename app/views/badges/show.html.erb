@@ -1,7 +1,7 @@
 <div class="container">
     <div class="row align-items-start">
         <div class="col-4 py-3 px-my-5">
-            <%= render "badge_icon", width: "", height: "", level: @certification.level, name_en: @certification.get_name_en, name_fr: @certification.get_name_fr, skill: @certification.get_skill_id %>
+            <%= render "badge_icon", width: "", height: "", level: @certification.level, name: @certification.training.localized_name, skill: @certification.get_skill_id %>
         </div>
         <div class="col-8 py-3 px-my-5">
             <h1><%= @certification.training.localized_name %></h1>
@@ -9,8 +9,12 @@
             <h5 class="my-3">Issued by CGEC/CEED - uOttawa on <%= @certification.created_at.to_date.to_fs :long_ordinal %></h5>
             <p><%= @certification.training.description %></p>
 
-            <a class="my-4 text-decoration-underline" href="https://www.uottawa.ca/faculty-engineering/">Learn more</a>
-
+            <a class="my-4 text-decoration-underline" href="https://www.uottawa.ca/faculty-engineering/">Learn more</a> <br>
+            <% if current_user.id == @earner.id %>
+                <a class="my-4 text-decoration-underline" href="https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME&name=Test%20Certificate&organizationId=1337&issueYear=2018&
+                issueMonth=2&expirationYear=2020&expirationMonth=5&certUrl=https%3A%2F%2Fdocs.microsoft.com
+                %2Fen-us%2Flearn%2Fcertifications%2Fd365-functional-consultant-sales&certId=1234">Add to Linkedin</a>
+            <% end %>
             <div class="my-5">
                 <h5>Skills</h5>
                 <p><%= @certification.training.list_of_skills %></p>
