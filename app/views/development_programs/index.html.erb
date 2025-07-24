@@ -30,13 +30,37 @@
           <%= link_to t('devprog.nav.new_module'), new_learning_area_path %>
           <%= link_to t('devprog.nav.all_modules'), learning_area_index_path %>
         </div>
-      </div>
-      <div class="col-lg-4">
-        <div class="linkBox">
-          <h2><%= t('devprog.nav.proficient_projects') %></h2>
-          <p><%= t('devprog.block1.proficient_projects') %></p>
-          <%= link_to t('devprog.nav.requests'), requests_proficient_projects_path %>
-          <%= link_to t('devprog.nav.new_project'), new_proficient_project_path %>
+        <!-- This block has awful layout, hope it works on safari :^) -->
+        <div class="row g-3 my-5">
+            <div class="col-lg-4">
+                <div class="linkBox d-flex flex-column">
+                    <h2><%= t('devprog.nav.learning_area') %></h2>
+                    <p class="flex-grow-1"><%= t('devprog.block1.learning_area') %></p>
+                    <!-- Use the navbar localizations, I think this is just the navbar in block form -->
+                    <%= link_to t('devprog.nav.new_module'), new_learning_area_path %>
+                    <%= link_to t('devprog.nav.all_modules'), learning_area_index_path %>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="linkBox d-flex flex-column">
+                    <h2><%= t('devprog.nav.proficient_projects') %></h2>
+                    <p class="flex-grow-1"><%= t('devprog.block1.proficient_projects') %></p>
+                    <%= link_to t('devprog.nav.requests'), requests_proficient_projects_path %>
+                    <%= link_to t('devprog.nav.new_project'), new_proficient_project_path %>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="linkBox d-flex flex-column">
+                    <h2><%= t('devprog.nav.badges') %></h2>
+                    <p class="flex-grow-1"><%= t('devprog.block1.skills_badges') %></p>
+                    <div class="align-bottom">
+                    <%= link_to t('devprog.nav.badges_view'), badge_templates_development_programs_path %>
+                    <% if current_user.role != "regular_user" %>
+                        <%= link_to t('devprog.nav.badges_search'), badges_path %>
+                    <% end %>
+                    </div>
+                </div>
+            </div>
         </div>
       </div>
       <div class="col-lg-4">
