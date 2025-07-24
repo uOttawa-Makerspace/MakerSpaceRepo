@@ -126,10 +126,20 @@ class Staff::TrainingSessionsController < StaffDashboardController
         duplicates += 1
         next
       end
+      cert_duplicates = 0
+      graduate.certifications.each do |cert|
+        if cert.proficient_project_session.present? && cert.proficient_project_session.proficient_project.training_id == @current_training_session.training_id && 
+          cert.level == @current_training_session.level
+          cert_duplicates += 1
+        end
+      end
+      duplicates += cert_duplicates
+      next unless cert_duplicates.zero?
       certification =
         Certification.new(
           user_id: graduate.id,
-          training_session_id: @current_training_session.id
+          training_session_id: @current_training_session.id,
+          level: @current_training_session.level
         )
       next if certification.save
       error = true

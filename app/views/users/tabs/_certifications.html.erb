@@ -15,38 +15,46 @@
   </tr>
   </thead>
   <tbody>
-  <% @repo_user.certifications.highest_certifications(@repo_user.id).each do |certification| %>
-  <% unless certification.nil? %>
-    <tr>
-      <td>
-        <% if @user.admin? %>
-          <%= link_to certification.training.localized_name, staff_training_session_path(certification.training_session) %>
-        <% else %>
-          <%= certification.training.localized_name %>
-        <% end %>
-        <br />
-        <%= certification_status(certification.training_session.level).html_safe %>
-      </td>
-      <td>
-        <%= certification.trainer %>
-      </td>
-      <td>
-        <% if @user.admin? || (@user.name == certification.trainer) %>
-          <%= link_to certification.created_at.strftime('%B %d, %Y'), staff_training_session_path(id: certification.training_session.id), style: 'text-decoration:underline;' %>
-        <% else %>
-          <%= certification.created_at.strftime('%B %d, %Y') %>
-        <% end %>
-      </td>
-      <% if @user.admin? || (@user == certification.training_session.user) %>
-        <td class="action-cell">
-          <a data-bs-toggle="modal" data-bs-target="#modal-window"
-             href="<%= open_modal_admin_certifications_path(id: certification.id) %>"
-             class="btn btn-danger d-block w-100 btn-sm demote-button">Demote</a>
-        </td>
-      <% end %>
-    </tr>
-  <% end %>  
-  <% end %>
+    <% @repo_user.certifications.highest_certifications(@repo_user.id).each do |certification| %>
+      <% unless certification.nil? %>
+        <tr>
+          <td>
+            <% if @user.admin? %>
+              <% if certification.training_session.present? %>
+                <%= link_to certification.training.localized_name, staff_training_session_path(certification.training_session) %>
+              <% else %>
+                <%= link_to certification.training.localized_name, staff_proficient_project_session_path(id: certification.proficient_project_session.id), style: 'text-decoration:underline;' %>
+              <% end %>
+            <% else %>
+              <%= certification.training.localized_name %>
+            <% end %>
+            <br />
+            <%= certification_status(certification.level).html_safe %>
+          </td>
+          <td>
+            <%= certification.trainer %>
+          </td>
+          <td>
+            <% if @user.admin? || (@user.name == certification.trainer && @user.role != "regular_user") %>
+              <% if certification.training_session.present? %>
+                <%= link_to certification.created_at.strftime('%B %d, %Y'), staff_training_session_path(id: certification.training_session.id), style: 'text-decoration:underline;' %>
+              <% else %>
+                <%= link_to certification.created_at.strftime('%B %d, %Y'), staff_proficient_project_session_path(id: certification.proficient_project_session.id), style: 'text-decoration:underline;' %>
+              <% end %>
+            <% else %>
+              <%= certification.created_at.strftime('%B %d, %Y') %>
+            <% end %>
+          </td>
+          <% if @user.admin? || (@user.name == certification.trainer && @user.role != "regular_user") %>
+            <td class="action-cell">
+              <a data-bs-toggle="modal" data-bs-target="#modal-window"
+                href="<%= open_modal_admin_certifications_path(id: certification.id) %>"
+                class="btn btn-danger d-block w-100 btn-sm demote-button">Demote</a>
+            </td>
+          <% end %>
+        </tr>
+      <% end %>  
+    <% end %>
   </tbody>
 </table>
 

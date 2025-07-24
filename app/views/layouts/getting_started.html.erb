@@ -3,14 +3,13 @@
 <head>
   <title>Getting Started | MakerRepo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <%= favicon_link_tag 'C_square.png' %>
-    <%= stylesheet_link_tag 'vendor', media: 'all', debug: false %>
-    <%= javascript_include_tag 'vendor', debug: false %>
-    <%= vite_javascript_tag 'application', 'data-turbo-track': 'reload' %>
-    <%= stylesheet_link_tag 'application', media: 'all', 'data-turbo-track': 'reload' %>
-    <%= vite_stylesheet_tag 'application.scss', media: 'all', 'data-turbo-track': 'reload' %>
+  <%= favicon_link_tag 'C_square.png' %>
+  <%= stylesheet_link_tag 'vendor', media: 'all', debug: false %>
+  <%= javascript_include_tag 'vendor', debug: false %>
+  <%= vite_javascript_tag 'application', 'data-turbo-track': 'reload' %>
+  <%= stylesheet_link_tag 'application', media: 'all', 'data-turbo-track': 'reload' %>
+  <%= vite_stylesheet_tag 'application.scss', media: 'all', 'data-turbo-track': 'reload' %>
   <%= csrf_meta_tags %>
-  <link href='http://fonts.googleapis.com/css?family=Roboto:700,300,400' rel='stylesheet' type='text/css'>
 </head>
 <body>
   <%= render 'layouts/header' %>

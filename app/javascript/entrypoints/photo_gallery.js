@@ -16,7 +16,8 @@ document.addEventListener("turbo:load", function () {
   // Grab data from each image
   lightbox.addFilter("itemData", (itemData, index) => {
     return {
-      src: itemData.element.src,
+      // Sometimes src is a compressed thumbnail
+      src: itemData.element.dataset.src || itemData.element.src,
       width: itemData.element.dataset.width,
       height: itemData.element.dataset.height,
     };

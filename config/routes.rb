@@ -364,8 +364,6 @@ Rails.application.routes.draw do
       member { patch "update" }
     end
 
-    resources :proficient_project_sessions, only: [:show]
-
     resources :settings, only: [:index] do
       collection do
         post "add_category"
@@ -458,6 +456,10 @@ Rails.application.routes.draw do
         get "training_report"
       end
     end
+    resources :proficient_project_sessions, only: [:show] do
+      post "certify_participant"
+    end
+
     resources :shifts_schedule, except: %i[new show destroy] do
       collection { get :get_shifts }
     end

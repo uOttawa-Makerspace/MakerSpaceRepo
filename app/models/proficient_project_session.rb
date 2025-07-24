@@ -1,6 +1,7 @@
 class ProficientProjectSession < ApplicationRecord
-  belongs_to :proficient_project, optional: true
-  has_one :certifications, dependent: :destroy
+  belongs_to :proficient_project
+  belongs_to :user
+  belongs_to :certification, dependent: :destroy
 
   validates :level, presence: { message: "A level is required"}
 
@@ -15,7 +16,7 @@ class ProficientProjectSession < ApplicationRecord
 
         }
 
-  scope :filter_by_date_range,
+  scope :filter_by_date_range,-> { un }
         ->(range) {
           case range
           when "30_days"
@@ -43,6 +44,10 @@ class ProficientProjectSession < ApplicationRecord
 
   def levels
     %w[Beginner Intermediate Advanced]
+  end
+
+  def completed?
+    !certification_id.nil?
   end
 
   def self.return_levels
