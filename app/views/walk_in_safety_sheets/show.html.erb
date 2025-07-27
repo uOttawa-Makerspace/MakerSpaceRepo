@@ -1,0 +1,6 @@
+<%= provide(:title, t('informed_consent')) %>
+<div class="container">
+    <%= form_with model: @walk_in_safety_sheet do |f| %>
+        <%= render partial: 'text', locals: {f: f} %>
+    <% end %>
+</div>

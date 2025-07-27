@@ -652,10 +652,15 @@ Rails.application.routes.draw do
     collection { post :bulk_add_users }
   end
 
+  resource :walk_in_safety_sheet
+
   # namespace :help do
   #   get 'main', path: '/'
   # end
   # get 'repositories', to: 'repositories#index'
+
+  # NOTE: Routes are executed in order, any root route below this line is now a
+  # request to a user page
 
   # USER RESOURCES
   resources :users, path: "/", param: :username, except: %i[edit destroy] do
