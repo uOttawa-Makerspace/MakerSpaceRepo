@@ -47,3 +47,11 @@ fr:
     more:
       header: "Voulez-vous savoir en plus?"
       text: "Pour toute questions, envoyez-nous à <a href='mailto:volunteer@makerepo.com'>volunteer@makerepo.com</a>"
+    view_badges:
+      title_1: "Badges acquis"
+      title_2: "Badges restants"
+      digital: "TECHNOLOGIES NUMÉRIQUES"
+      manu: "TECHNOLOGIES DE FABRICATION"
+      prof: "DÉVELOPPEMENT PROFESSIONNEL"
+      none_yet: "Aucun badge acquis"
+      all_acq: "Tous les badges de cette catégorie ont été acquis"

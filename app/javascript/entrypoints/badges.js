@@ -98,7 +98,7 @@ if (document.getElementById("revoke_user_select")) {
 }
 
 var download = document.querySelector("#add-to-linkedin");
-download.addEventListener("click", downloadSVGAsPNG, false);
+download.addEventListener("click", downloadSVGAsText, false);
 
 function downloadSVGAsText() {
   const svg = document.querySelector("svg");

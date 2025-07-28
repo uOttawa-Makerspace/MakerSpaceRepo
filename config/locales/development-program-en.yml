@@ -49,3 +49,11 @@ en:
     more:
       header: "Do you want to know more?"
       text: "For any questions, email us at: <a href='mailto:volunteer@makerepo.com'>volunteer@makerepo.com</a>"
+    view_badges:
+      title_1: "Acquired Badges"
+      title_2: "Remaining Badges"
+      digital: "DIGITAL TECHNOLOGIES"
+      manu: "MANUFACTURING TECHNOLOGIES"
+      prof: "PROFESSIONAL DEVELOPMENT"
+      none_yet: "No badges acquired yet"
+      all_acq: "All badges from this category have been acquired"

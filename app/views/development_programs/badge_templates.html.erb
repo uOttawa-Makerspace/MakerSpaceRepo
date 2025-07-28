@@ -1,10 +1,10 @@
 <section>
   <br>
-  <h1 class="display-1 text-center fw-bold"> Acquired Badges </h1>
-  <h4 class="text-uppercase mt-5 fw-bold"> DIGITAL TECHNOLOGIES </h2>
+  <h1 class="display-1 text-center fw-bold"> <%= t('devprog.view_badges.title_1') %> </h1>
+  <h4 class="text-uppercase mt-5 fw-bold"> <%= t('devprog.view_badges.digital') %> </h2>
       <br>
     <% if @digital_certs.empty? %>
-        <h5 class="text-muted">No badges acquired yet</h5>
+        <h5 class="text-muted"><%= t('devprog.view_badges.none_yet') %></h5>
     <% end %>
     <div class="d-flex gap-4 flex-wrap">
         <% @digital_certs.each do |cert| %>
@@ -15,10 +15,10 @@
         <% end %>
     </div>
     <br>
-    <h4 class="text-uppercase mt-5 fw-bold"> MANUFACTURING TECHNOLOGIES </h2>
+    <h4 class="text-uppercase mt-5 fw-bold"> <%= t('devprog.view_badges.manu') %> </h2>
         <br>
     <% if @manu_certs.empty? %>
-        <h5 class="text-muted">No badges acquired yet</h5>
+        <h5 class="text-muted"><%= t('devprog.view_badges.none_yet') %></h5>
     <% end %>
     <div class="d-flex gap-4 flex-wrap">
         <% @manu_certs.each do |cert| %>
@@ -29,10 +29,10 @@
         <% end %>
     </div>
     <br>
-    <h4 class="text-uppercase mt-5 fw-bold"> PROFESSIONAL DEVELOPMENT </h2>
+    <h4 class="text-uppercase mt-5 fw-bold"> <%= t('devprog.view_badges.prof') %> </h2>
         <br>
     <% if @prof_certs.empty? %>
-        <h5 class="text-muted">No badges acquired yet</h5>
+        <h5 class="text-muted"><%= t('devprog.view_badges.none_yet') %></h5>
     <% end %>
     <div class="d-flex gap-4 flex-wrap">
         <% @prof_certs.each do |cert| %>
@@ -44,12 +44,12 @@
     </div>
     <br>
     <br>
-    <h1 class="display-1 text-center fw-bold"> Remaining Badges </h1>
+    <h1 class="display-1 text-center fw-bold"> <%= t('devprog.view_badges.title_2') %> </h1>
 
-    <h4 class="text-uppercase mt-5 fw-bold"> DIGITAL TECHNOLOGIES </h2>
+    <h4 class="text-uppercase mt-5 fw-bold"> <%= t('devprog.view_badges.digital') %> </h2>
       <br>
     <% if @digital_trainings.empty? %>
-        <h5 class="text-muted">All badges acquired</h5>
+        <h5 class="text-muted"><%= t('devprog.view_badges.all_aqc') %></h5>
     <% end %>
     <div class="d-flex gap-4 flex-wrap">
         <% @digital_trainings.each do |cert| %>
@@ -59,10 +59,10 @@
         <% end %>
     </div>
     <br>
-    <h4 class="text-uppercase mt-5 fw-bold"> MANUFACTURING TECHNOLOGIES </h2>
+    <h4 class="text-uppercase mt-5 fw-bold"> <%= t('devprog.view_badges.manu') %> </h2>
         <br>
     <% if @manu_trainings.empty? %>
-        <h5 class="text-muted">All badges acquired</h5>
+        <h5 class="text-muted"><%= t('devprog.view_badges.all_aqc') %></h5>
     <% end %>
     <div class="d-flex gap-4 flex-wrap">
         <% @manu_trainings.each do |cert| %>
@@ -72,10 +72,10 @@
         <% end %>
     </div>
     <br>
-    <h4 class="text-uppercase mt-5 fw-bold"> PROFESSIONAL DEVELOPMENT </h2>
+    <h4 class="text-uppercase mt-5 fw-bold"> <%= t('devprog.view_badges.prof') %> </h2>
         <br>
     <% if @prof_trainings.empty? %>
-        <h5 class="text-muted">All badges acquired</h5>
+        <h5 class="text-muted"><%= t('devprog.view_badges.all_aqc') %></h5>
     <% end %>
     <div class="d-flex gap-4 flex-wrap">
         <% @prof_trainings.each do |cert| %>
