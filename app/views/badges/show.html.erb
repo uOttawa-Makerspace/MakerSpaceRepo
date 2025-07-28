@@ -10,15 +10,17 @@
             <p><%= @certification.training.description %></p>
 
             <a class="my-4 text-decoration-underline" href="https://www.uottawa.ca/faculty-engineering/">Learn more</a> <br>
-            <% if current_user.id == @earner.id %>
-                <a class="my-4 text-decoration-underline" href="https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME&name=Test%20Certificate&organizationId=1337&issueYear=2018&
-                issueMonth=2&expirationYear=2020&expirationMonth=5&certUrl=https%3A%2F%2Fdocs.microsoft.com
-                %2Fen-us%2Flearn%2Fcertifications%2Fd365-functional-consultant-sales&certId=1234">Add to Linkedin</a>
-            <% end %>
+            
             <div class="my-5">
                 <h5>Skills</h5>
                 <p><%= @certification.training.list_of_skills %></p>
             </div>
+            <% if current_user.id == @earner.id %>
+                <a id="linkedin" class="btn btn-primary" href="https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME&name=<%= @certification.get_name_en %>&organizationId=38127375&issueYear=<%= @certification.created_at.year %>&issueMonth=<%= @certification.created_at.month %>&expirationYear=<%= @certification.created_at.year + 10 %>&expirationMonth=5&certUrl=https://makerepo.com/badges/<%= @certification.id %>/&certId=<%= @certification.id %>">Add to Linkedin
+                </a>
+                
+                <button id="add-to-linkedin" class="btn btn-primary">Download .svg</button>
+            <% end %>
         </div>
     </div>
 </div>

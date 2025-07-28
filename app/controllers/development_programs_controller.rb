@@ -24,9 +24,9 @@ class DevelopmentProgramsController < ApplicationController
     @prof_certs = []
     @certifications.each do |cert|
       if cert.training.skill_id == 1
-        @digital_certs << cert
-      elsif cert.training.skill_id == 2
         @manu_certs << cert
+      elsif cert.training.skill_id == 2
+        @digital_certs << cert
       else
         @prof_certs << cert
       end
@@ -38,9 +38,9 @@ class DevelopmentProgramsController < ApplicationController
     @prof_trainings = []
     @remaining_trainings.each do |training|
       if training.skill_id == 1
-        @digital_trainings << training
-      elsif training.skill_id == 2
         @manu_trainings << training
+      elsif training.skill_id == 2
+        @digital_trainings << training
       else
         @prof_trainings << training
       end

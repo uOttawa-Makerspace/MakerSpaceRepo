@@ -3,31 +3,43 @@
   <h1 class="display-1 text-center fw-bold"> Acquired Badges </h1>
   <h4 class="text-uppercase mt-5 fw-bold"> DIGITAL TECHNOLOGIES </h2>
       <br>
+    <% if @digital_certs.empty? %>
+        <h5 class="text-muted">No badges acquired yet</h5>
+    <% end %>
     <div class="d-flex gap-4 flex-wrap">
         <% @digital_certs.each do |cert| %>
-
+        <a target="_blank" href="/badges/<%= cert.id %>">
             <%= render "badges/badge_icon", width: 200, height: 200, level: cert.level, name: cert.training.localized_name, skill: cert.training.skill_id %>
             <br/>
+        </a>
         <% end %>
     </div>
     <br>
     <h4 class="text-uppercase mt-5 fw-bold"> MANUFACTURING TECHNOLOGIES </h2>
         <br>
+    <% if @manu_certs.empty? %>
+        <h5 class="text-muted">No badges acquired yet</h5>
+    <% end %>
     <div class="d-flex gap-4 flex-wrap">
         <% @manu_certs.each do |cert| %>
-
+        <a target="_blank" href="/badges/<%= cert.id %>">
             <%= render "badges/badge_icon", width: 200, height: 200, level: cert.level, name: cert.training.localized_name, skill: cert.training.skill_id %>
             <br/>
+        </a>
         <% end %>
     </div>
     <br>
     <h4 class="text-uppercase mt-5 fw-bold"> PROFESSIONAL DEVELOPMENT </h2>
         <br>
+    <% if @prof_certs.empty? %>
+        <h5 class="text-muted">No badges acquired yet</h5>
+    <% end %>
     <div class="d-flex gap-4 flex-wrap">
         <% @prof_certs.each do |cert| %>
-
+        <a target="_blank" href="/badges/<%= cert.id %>">
             <%= render "badges/badge_icon", width: 200, height: 200, level: cert.level, name: cert.training.localized_name, skill: cert.training.skill_id %>
             <br/>
+        </a>
         <% end %>
     </div>
     <br>
@@ -36,6 +48,9 @@
 
     <h4 class="text-uppercase mt-5 fw-bold"> DIGITAL TECHNOLOGIES </h2>
       <br>
+    <% if @digital_trainings.empty? %>
+        <h5 class="text-muted">All badges acquired</h5>
+    <% end %>
     <div class="d-flex gap-4 flex-wrap">
         <% @digital_trainings.each do |cert| %>
 
@@ -46,6 +61,9 @@
     <br>
     <h4 class="text-uppercase mt-5 fw-bold"> MANUFACTURING TECHNOLOGIES </h2>
         <br>
+    <% if @manu_trainings.empty? %>
+        <h5 class="text-muted">All badges acquired</h5>
+    <% end %>
     <div class="d-flex gap-4 flex-wrap">
         <% @manu_trainings.each do |cert| %>
 
@@ -56,6 +74,9 @@
     <br>
     <h4 class="text-uppercase mt-5 fw-bold"> PROFESSIONAL DEVELOPMENT </h2>
         <br>
+    <% if @prof_trainings.empty? %>
+        <h5 class="text-muted">All badges acquired</h5>
+    <% end %>
     <div class="d-flex gap-4 flex-wrap">
         <% @prof_trainings.each do |cert| %>
 
