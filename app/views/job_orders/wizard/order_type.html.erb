@@ -1,30 +1,54 @@
-<section x-data="{job_type_id: <%= @job_order.job_type_id.presence || JobType.first.id %>}">
-  <%= form_for(@job_order, url: { controller: 'job_orders', action: 'steps' }) do |f| %>
-
+<section class="container">
+  <%= form_for([@job_order, @job_task], url: job_order_job_task_path(@job_order, @job_task, step: 1)) do |f| %>
     <div class="text-center">
-
       <h2><%= t('job_orders.wizard.title', step: 1) %></h2>
 
       <div class="col-lg-6 mx-auto">
         <%= f.label :job_type_id, t('job_orders.wizard.step_1.job_type') %>
-        <%= f.select :job_type_id, options_from_collection_for_select(JobType.where.not(name: "Design Services"), :id, :name, @job_order.job_type_id.presence || ''), {}, { class: 'form-control form-select', 'x-model': 'job_type_id' } %>
+        <%= f.select :job_type_id, 
+                    options_from_collection_for_select(JobType.where.not(name: "Design Services"), :id, :name, @job_task.job_type_id.presence || ''),
+                    {},
+                    { class: 'form-control form-select', id: 'job_type_select' } %>
       </div>
 
       <% JobType.all.find_each do |jo| %>
-        <template x-if="job_type_id == <%= jo.id %>">
-          <div class="alert alert-info my-2 col-lg-6 mx-auto">
-            <%= jo.description || jo.name %>
-          </div>
-        </template>
+        <div class="job-type-description alert alert-info my-2 col-lg-6 mx-auto" 
+             id="job_type_<%= jo.id %>_description" 
+             style="display: <%= @job_task.job_type_id == jo.id ? 'block' : 'none' %>">
+          <%= jo.description || jo.name %>
+        </div>
       <% end %>
 
-      <%= hidden_field_tag :step, 2 %>
       <div class="text-center">
         <%= f.submit t('job_orders.wizard.next_step'), class: 'btn btn-primary mb-1' %>
       </div>
     </div>
   <% end %>
-  <div class="text-center mt-2">
-    <%= button_to(t('job_orders.wizard.delete_current_order'), job_order_path(@job_order), method: :delete, data: { confirm: t('job_orders.are_you_sure_you_want_to_delete') }, class: 'btn btn-danger mb-1') %>
-  </div>
 </section>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const jobTypeSelect = document.getElementById('job_type_select');
+    
+    if (jobTypeSelect) {
+      updateJobTypeDescription(jobTypeSelect.value);
+      
+      jobTypeSelect.addEventListener('change', function() {
+        updateJobTypeDescription(this.value);
+      });
+    }
+    
+    function updateJobTypeDescription(selectedId) {
+      // Hide all descriptions
+      document.querySelectorAll('.job-type-description').forEach(el => {
+        el.style.display = 'none';
+      });
+      
+      // Show the selected one
+      const selectedDescription = document.getElementById(`job_type_${selectedId}_description`);
+      if (selectedDescription) {
+        selectedDescription.style.display = 'block';
+      }
+    }
+  });
+</script>

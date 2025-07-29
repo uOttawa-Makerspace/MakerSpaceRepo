@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_06_29_145944) do
+ActiveRecord::Schema[7.2].define(version: 2025_07_21_135743) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -451,6 +451,15 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_29_145944) do
     t.index ["job_service_id"], name: "index_job_orders_services_on_job_service_id"
   end
 
+  create_table "job_quote_line_items", force: :cascade do |t|
+    t.bigint "job_order_id", null: false
+    t.string "description", null: false
+    t.decimal "price", precision: 10, scale: 2
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["job_order_id"], name: "index_job_quote_line_items_on_job_order_id"
+  end
+
   create_table "job_service_groups", force: :cascade do |t|
     t.string "name", null: false
     t.text "description"
@@ -485,6 +494,56 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_29_145944) do
     t.datetime "updated_at", null: false
     t.string "name_fr"
     t.string "description_fr"
+  end
+
+  create_table "job_task_options", force: :cascade do |t|
+    t.bigint "job_task_id", null: false
+    t.bigint "job_option_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["job_option_id"], name: "index_job_task_options_on_job_option_id"
+    t.index ["job_task_id"], name: "index_job_task_options_on_job_task_id"
+  end
+
+  create_table "job_task_quote_options", force: :cascade do |t|
+    t.bigint "job_task_quote_id", null: false
+    t.bigint "job_option_id", null: false
+    t.decimal "price", precision: 10, scale: 2
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["job_option_id"], name: "index_job_task_quote_options_on_job_option_id"
+    t.index ["job_task_quote_id"], name: "index_job_task_quote_options_on_job_task_quote_id"
+  end
+
+  create_table "job_task_quote_services", force: :cascade do |t|
+    t.bigint "job_task_quote_id", null: false
+    t.bigint "job_service_id", null: false
+    t.decimal "quantity", precision: 10, default: "1"
+    t.decimal "price", precision: 10, scale: 2
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["job_service_id"], name: "index_job_task_quote_services_on_job_service_id"
+    t.index ["job_task_quote_id"], name: "index_job_task_quote_services_on_job_task_quote_id"
+  end
+
+  create_table "job_task_quotes", force: :cascade do |t|
+    t.bigint "job_task_id", null: false
+    t.decimal "price", precision: 10, scale: 2
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["job_task_id"], name: "index_job_task_quotes_on_job_task_id"
+  end
+
+  create_table "job_tasks", force: :cascade do |t|
+    t.bigint "job_order_id", null: false
+    t.bigint "job_type_id"
+    t.bigint "job_service_id"
+    t.string "title", default: ""
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["job_order_id"], name: "index_job_tasks_on_job_order_id"
+    t.index ["job_service_id"], name: "index_job_tasks_on_job_service_id"
+    t.index ["job_type_id"], name: "index_job_tasks_on_job_type_id"
   end
 
   create_table "job_type_extras", force: :cascade do |t|
@@ -1433,9 +1492,20 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_29_145944) do
   add_foreign_key "job_order_statuses", "users"
   add_foreign_key "job_orders", "job_service_groups"
   add_foreign_key "job_orders", "users", column: "assigned_staff_id"
+  add_foreign_key "job_quote_line_items", "job_orders"
   add_foreign_key "job_service_groups", "job_types"
   add_foreign_key "job_services", "job_orders"
   add_foreign_key "job_services", "job_service_groups"
+  add_foreign_key "job_task_options", "job_options"
+  add_foreign_key "job_task_options", "job_tasks"
+  add_foreign_key "job_task_quote_options", "job_options"
+  add_foreign_key "job_task_quote_options", "job_task_quotes"
+  add_foreign_key "job_task_quote_services", "job_services"
+  add_foreign_key "job_task_quote_services", "job_task_quotes"
+  add_foreign_key "job_task_quotes", "job_tasks"
+  add_foreign_key "job_tasks", "job_orders"
+  add_foreign_key "job_tasks", "job_services"
+  add_foreign_key "job_tasks", "job_types"
   add_foreign_key "job_type_extras", "job_types"
   add_foreign_key "lab_sessions", "spaces"
   add_foreign_key "learning_module_tracks", "learning_modules"

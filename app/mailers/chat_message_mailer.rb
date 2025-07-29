@@ -7,6 +7,6 @@ class ChatMessageMailer < ApplicationMailer
 
     subject = "MakerRepo - Nouveau message // New message"
     
-    mail(to: @recipients.map(&:email), subject: subject)
+    mail(to: @recipients.map(&:email), subject: subject, respond_to: @sender.email)
   end
 end

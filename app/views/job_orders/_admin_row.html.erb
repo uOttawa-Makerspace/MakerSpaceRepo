@@ -28,8 +28,10 @@
 <td data-sort="<%= jo.created_at %>"><%= l(jo.created_at, format: :long) %></td>
 </td>
 <td>
-  <%= jo.job_type.name %>
-  <%= jo.job_service_group.name if jo.job_service_group.present? %>
+  <% jo.job_tasks.each_with_index do |task, i| %>
+    <%= "," if i != 0 %>
+    <%= task.job_type&.name || "Unselected" %>
+  <% end %>
 </td>
 <td><%= jo.job_order_statuses.last.job_status.name %></td>
 <td>

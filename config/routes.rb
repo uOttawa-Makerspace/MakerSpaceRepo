@@ -101,6 +101,9 @@ Rails.application.routes.draw do
       post "/new" => "job_orders#new"
       patch "/new" => "job_orders#new"
     end
+    resources :job_tasks, path: "task", only: [:create, :destroy, :edit, :update] do
+      post :update, on: :member
+    end
   end
 
   resources :chat_messages, only: [:index, :create]

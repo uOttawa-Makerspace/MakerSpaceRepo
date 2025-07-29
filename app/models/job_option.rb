@@ -5,5 +5,8 @@ class JobOption < ApplicationRecord
   validates :name, presence: true, uniqueness: true
   validates :fee, presence: true
 
+  has_many :job_task_options
+  has_many :job_tasks, through: :job_task_options
+
   has_many_attached :files
 end

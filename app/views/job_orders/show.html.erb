@@ -13,12 +13,19 @@
     <div class="col-12 mb-3 d-flex justify-content-between align-items-center">
       <h2 class="fw-bold"><%= t("job_orders.order.job_order") %> #<%= @job_order.id %></h2>
 
-      <% if @job_order.allow_edit? && current_user.id == @job_order.user_id %>
-        <%= link_to t('job_orders.public_page.edit'), job_order_steps_path(job_order_id: @job_order.id), class: 'btn btn-secondary mb-1' %>
-      <% end %>
-      <%= link_to "<i class='fa fa-download'></i> #{t('job_orders.public_page.invoice')}".html_safe, job_order_invoice_path(job_order_id: @job_order.id), target: '_blank', class: 'btn btn-secondary', rel: 'noopener' if [JobStatus::COMPLETED,
-      JobStatus::PAID,
-      JobStatus::PICKED_UP].include?(@job_order.job_order_statuses.last&.job_status) %>
+      <div class="d-flex gap-1">
+        <%= link_to "<i class='fa fa-download'></i> #{t('job_orders.public_page.invoice')}".html_safe, job_order_invoice_path(job_order_id: @job_order.id), target: '_blank', class: 'btn btn-secondary', rel: 'noopener' if [JobStatus::COMPLETED,
+        JobStatus::PAID,
+        JobStatus::PICKED_UP].include?(@job_order.job_order_statuses.last&.job_status) %>
+        
+        <% if @job_order.job_order_statuses.last&.job_status == JobStatus::DRAFT && !@tasks_missing_information.any? %>
+          <%= button_to 'Submit for Approval', job_order_job_task_path(@job_order, @job_order.job_tasks.first, step: 4), method: :post, format: :js, class: 'btn btn-outline-primary', data: { confirm: 'Are you sure you want to submit this job order for staff approval?' } %>
+        <% end %>
+
+        <% if @job_order.allow_edit? || current_user.admin? %>
+          <%= button_to t('job_orders.order.delete', default: "Delete"), job_order_path(@job_order), method: :delete, format: :js, class: 'btn btn-danger', data: { confirm: 'Are you sure you want to delete this job order?' } %>
+        <% end %>
+      </div>
     </div>
 
     <!-- User & Job Info -->
@@ -37,70 +44,151 @@
           <% end %>
 
           <p><strong><%= t("job_orders.order.created") %>:</strong> <%= l(@job_order.created_at, format: :long) %></p>
-          <p><strong><%= t("job_orders.order.job_type") %>:</strong> <%= @job_order.job_type.name %></p>
-          <% if @job_order.job_service_group.present? %>
-            <p><strong><%= t("job_orders.order.service") %>:</strong> <%= @job_order.job_service_group.name %></p>
-          <% end %>
-          <% if @job_order.job_services.any? %>
-            <ul class="mb-0">
-              <% @job_order.job_services.each do |service| %>
-                <li><%= service.name %></li>
-              <% end %>
-            </ul>
-          <% end %>
-          <% if @job_order.job_order_options.any? %>
-            <p><strong><%= t("job_orders.order.options") %>:</strong></p>
-            <ul class="mb-0">
-              <% @job_order.job_order_options.each do |order_option| %>
-                <% if order_option.job_option.id == 1 %>
-                  <li class="text-success"><i class="fa fa-exclamation-circle"></i> Expedited</li>
-                <% else %>
-                  <li><%= order_option.job_option.name %></li>
-                <% end %>
-              <% end %>
-            </ul>
-          <% end %>
         </div>
       </div>
+
+      <!-- Job Tasks -->      
+      <% if @job_order.job_tasks.any? %>
+        <div class="card mb-4">
+          <div class="card-header bg-light">
+            <strong><%= t("job_orders.order.tasks", default: "Tasks") %></strong>
+          </div>
+          <div class="card-body">
+            <% @job_order.job_tasks.each_with_index do |task, index| %>
+              <div class="task-card mb-2 p-3 border rounded">
+                <div class="d-flex justify-content-between">
+                  <h6 class="d-flex align-items-center">
+                    <span class="badge bg-primary me-2"><%= index + 1 %></span>
+                    <%= task.title.presence || t("job_orders.order.unnamed_task", default: "Unnamed Task") %>
+                  </h6>
+
+                  <% if (@job_order.allow_edit? && current_user.id == @job_order.user_id) || current_user.admin? %>
+                    <div class="d-flex gap-1 flex-row align-items-center">
+                      <%= link_to t('job_orders.public_page.edit'), edit_job_order_job_task_path(@job_order, task, step: 1), class: 'btn btn-secondary py-0 px-2' %>
+                      <% if @job_order.job_tasks.count > 1 %>
+                        <%= button_to "Delete", job_order_job_task_path(@job_order, task), method: :delete, data: { confirm: "Are you sure you want to delete this task?" }, class: "btn btn-outline-danger py-0 px-2" %>
+                      <% end %>
+                    </div>
+                  <% end %>
+                </div>
+
+                <% if task.job_type.present? %>
+                  <div class="ms-4 mt-2">
+                    <div class="d-flex align-items-center mb-1">
+                      <i class="fa fa-cog me-2 text-muted"></i>
+                      <span class="fw-medium"><%= task.job_type.name %></span>
+                      <% if task.job_service.present? %>
+                        <span class="text-muted mx-2">-</span>
+                        <span><%= task.job_service.name %> (<%= task.job_service.job_service_group.name %>)</span>
+                      <% end %>
+                    </div>
+
+                    <% if task.job_options.any? %>
+                      <div class="d-flex align-items-start flex-wrap">
+                        <span class="fw-medium me-1"><%= t("job_orders.order.options", default: "Options") %>:</span>
+                        <% task.job_options.each_with_index do |option, opt_index| %>
+                          <span class="badge bg-secondary me-1 mb-1"><%= option.name %></span>
+                        <% end %>
+                      </div>
+                    <% end %>
+                  </div>
+                <% end %>
+
+                <div class="accordion mt-3" id="taskAccordion<%= index %>">
+                  <!-- User Files Accordion Item -->
+                  <div class="accordion-item border-0">
+                    <h2 class="accordion-header" id="userFilesHeading<%= index %>">
+                      <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" 
+                              data-bs-target="#userFilesCollapse<%= index %>" aria-expanded="false" 
+                              aria-controls="userFilesCollapse<%= index %>">
+                        <i class="fa fa-cloud-arrow-down me-2"></i>
+                        <%= t("job_orders.order.files_from_client", default: "Client Files") %>
+                        <span class="badge bg-primary rounded-pill ms-2"><%= task.user_files.size + task.job_task_options.map(&:option_file).select(&:attached?).size %></span>
+                      </button>
+                    </h2>
+                    <div id="userFilesCollapse<%= index %>" class="accordion-collapse collapse" 
+                        aria-labelledby="userFilesHeading<%= index %>">
+                      <div class="accordion-body p-0">
+                        <% if task.user_files.any? || task.job_task_options.joins(:option_file_attachment).any? %>
+                          <% all_user_files = task.user_files + task.job_task_options.map(&:option_file).select(&:attached?) %>
+                          <div class="list-group list-group-flush">
+                            <% all_user_files.each do |file| %>
+                              <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center flex-grow-1 overflow-hidden">
+                                  <i class="fa fa-file me-2 flex-shrink-0"></i>
+                                  <span class="text-truncate d-block overflow-hidden"><%= file.filename %></span>
+                                </div>
+                                <%= link_to rails_blob_path(file, disposition: "attachment"), 
+                                            class: "btn btn-sm btn-outline-primary flex-shrink-0 ms-2", 
+                                            target: "_blank", 
+                                            rel: "noopener",
+                                            title: "Download" do %>
+                                  <i class="fa fa-download"></i>
+                                <% end %>
+                              </div>
+                            <% end %>
+                          </div>
+                        <% else %>
+                          <div class="text-muted p-3">
+                            <i class="fa fa-info-circle me-1"></i>
+                            <%= t("job_orders.order.no_files") %>
+                          </div>
+                        <% end %>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Staff Files Accordion Item -->
+                  <% if task.staff_files.any? %>
+                    <div class="accordion-item border-0">
+                      <h2 class="accordion-header" id="staffFilesHeading<%= index %>">
+                        <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" 
+                                data-bs-target="#staffFilesCollapse<%= index %>" aria-expanded="false" 
+                                aria-controls="staffFilesCollapse<%= index %>">
+                          <i class="fa fa-cloud-arrow-up me-2"></i>
+                          <%= t("job_orders.order.files_from_staff") %>
+                          <span class="badge bg-success rounded-pill ms-2"><%= task.staff_files.size %></span>
+                        </button>
+                      </h2>
+                      <div id="staffFilesCollapse<%= index %>" class="accordion-collapse collapse" 
+                          aria-labelledby="staffFilesHeading<%= index %>">
+                        <div class="accordion-body p-0">
+                          <div class="list-group list-group-flush">
+                            <% task.staff_files.each do |file| %>
+                              <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center flex-grow-1 overflow-hidden">
+                                  <i class="fa fa-file me-2 flex-shrink-0"></i>
+                                  <span class="text-truncate d-block overflow-hidden"><%= file.filename %></span>
+                                </div>
+                                <%= link_to rails_blob_path(file, disposition: "attachment"), 
+                                            class: "btn btn-sm btn-outline-success flex-shrink-0 ms-2", 
+                                            target: "_blank", 
+                                            rel: "noopener",
+                                            title: "Download" do %>
+                                  <i class="fa fa-download"></i>
+                                <% end %>
+                              </div>
+                            <% end %>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+
+            <% if @job_order.allow_edit? || current_user.admin? %>
+              <%= button_to t('job_orders.order.add_another_task', default: "Add Another Task"), job_order_job_tasks_path(@job_order), method: :post, class: "btn btn-outline-primary" %>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
 
       <!-- Staff stuff -->
       <% if current_user.staff? %>
         <%= render 'staff_details', jo: @job_order %>
       <% end %>
-
-      <!-- Download Links -->
-      <div class="card">
-        <div class="card-header">
-          <strong><%= t("job_orders.order.download_links") %></strong>
-        </div>
-        <div class="card-body py-0">
-          <% if @job_order.user_files.any? %>
-            <ul class="list-group list-group-flush text-break">
-              <% @job_order.user_files.each do |file| %>
-                <li class="list-group-item d-flex justify-content-between align-items-center p-0 py-2">
-                  <%= file.filename %>
-                  <%= link_to t("job_orders.order.download"), rails_blob_path(file, disposition: "attachment"), class: "btn btn-outline-primary btn-sm ms-1", style: "min-width: fit-content", target: "_blank", rel: "noopener" %>
-                </li>
-              <% end %>
-            </ul>
-          <% else %>
-            <p class="text-muted"><%= t("job_orders.order.no_files") %></p>
-          <% end %>
-
-          <% if @job_order.staff_files.any? %>
-            <p class="bg-light p-2 border rounded"><strong><%= t("job_orders.order.files_from_staff") %>:</strong></p>
-
-            <ul class="list-group list-group-flush text-break">
-              <% @job_order.staff_files.each do |file| %>
-                <li class="list-group-item d-flex justify-content-between align-items-center p-0 py-2">
-                  <%= file.filename %>
-                  <%= link_to t("job_orders.order.download"), rails_blob_path(file, disposition: "attachment"), class: "btn btn-outline-primary btn-sm ms-1", style: "min-width: fit-content", target: "_blank", rel: "noopener" %>
-                </li>
-              <% end %>
-            </ul>
-          <% end %>
-        </div>
-      </div>
     </div>
 
     <div class="col-md-6 mb-4">

@@ -11,7 +11,9 @@
     <i class="fa fa-warning"></i>
     <p class="font-weight-bold"><%= t('job_orders.public_page.job_orders_partly_created') %></p>
     <% @drafts.each do |draft| %>
-      <p><%= link_to "#{t('job_orders.public_page.order')} ##{draft.id}", job_order_steps_path(job_order_id: draft.id, step: 1) %></p>
+      <% if draft.job_tasks.any? %>
+        <p><%= link_to "#{t('job_orders.public_page.order')} ##{draft.id}", edit_job_order_job_task_path(draft.id, draft.job_tasks.first, step: 1) %></p>
+      <% end %>
     <% end %>
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
   </div>

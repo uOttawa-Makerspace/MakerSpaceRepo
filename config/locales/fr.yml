@@ -393,11 +393,16 @@ fr:
       comments: "Commentaires"
       staff_information: "Panneau du personnel"
       comments_from_staff: "Commentaires du personnel"
+      files_from_client: "Fichiers du client"
       files_from_staff: "Fichiers du personnel"
       none_yet: "Aucun pour l'instant"
       no_files: "Aucun fichier téléversé pour cette commande."
       send: "Envoyer"
       type: "Tapez un message..."
+      tasks: "Tâches"
+      add_another_task: "Ajouter une Autre Tâche"
+      save_draft: "Enregistrer le Brouillon"
+      delete: "Supprimer"
     new:
       title: "Quel type de projet commencez-vous?"
       ready_to_make:
