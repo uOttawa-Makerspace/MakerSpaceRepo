@@ -12,6 +12,8 @@ fr:
       badges: "Badges"
       badge_requests: "Demandes de badges"
       grant_revoke_badge: "Accorder/Revoker des badges"
+      badges_view: "Tous les badges"
+      all_projects: "Tous les projets"
     title: "Programme de développement"
     header: "Obtenir des badges officiellement accrédités avec <span class='text-primary'>CGEC</span>"
     subtext: "Bienvenue à la Programme de Développement"

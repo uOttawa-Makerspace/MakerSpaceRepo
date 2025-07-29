@@ -26,7 +26,9 @@
                     <h2><%= t('devprog.nav.learning_area') %></h2>
                     <p class="flex-grow-1"><%= t('devprog.block1.learning_area') %></p>
                     <!-- Use the navbar localizations, I think this is just the navbar in block form -->
-                    <%= link_to t('devprog.nav.new_module'), new_learning_area_path %>
+                    <% if current_user.role != "regular_user" %>
+                        <%= link_to t('devprog.nav.new_module'), new_learning_area_path %>
+                    <% end %>
                     <%= link_to t('devprog.nav.all_modules'), learning_area_index_path %>
                 </div>
             </div>
@@ -34,8 +36,11 @@
                 <div class="linkBox d-flex flex-column">
                     <h2><%= t('devprog.nav.proficient_projects') %></h2>
                     <p class="flex-grow-1"><%= t('devprog.block1.proficient_projects') %></p>
-                    <%= link_to t('devprog.nav.requests'), requests_proficient_projects_path %>
-                    <%= link_to t('devprog.nav.new_project'), new_proficient_project_path %>
+                    <% if current_user.role != "regular_user" %>
+                        <%= link_to t('devprog.nav.requests'), requests_proficient_projects_path %>
+                        <%= link_to t('devprog.nav.new_project'), new_proficient_project_path %>
+                    <% end %>
+                    <%= link_to t('devprog.nav.all_projects'), requests_proficient_projects_path %>
                 </div>
             </div>
             <div class="col-lg-4">
