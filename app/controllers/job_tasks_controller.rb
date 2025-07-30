@@ -31,7 +31,7 @@ class JobTasksController < ApplicationController
 
     if @job_task.job_type&.name == "Design Services"
       @job_type = JobType.find(@job_task.job_type_id)
-      @service_groups = JobServiceGroup.where(job_type: @job_type).order(:id)
+      @service_groups = JobServiceGroup.not_deleted.where(job_type: @job_type).order(:id)
       return render "job_orders/wizard/service"
     end
 
@@ -40,7 +40,7 @@ class JobTasksController < ApplicationController
       render "job_orders/wizard/order_type"
     when 2
       @job_type = JobType.find(@job_task.job_type_id)
-      @service_groups = JobServiceGroup.where(job_type: @job_type).order(:id)
+      @service_groups = JobServiceGroup.not_deleted.where(job_type: @job_type).order(:id)
       render "job_orders/wizard/service"
     when 3
       @options = JobOption

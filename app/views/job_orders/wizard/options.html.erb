@@ -5,21 +5,38 @@
 
       <div class="form-group col-lg-6 mx-auto">
         <% @options.each do |o| %>
+          <% is_job_wide = o.is_job_wide %>
+          <% option_used_in_other_task = is_job_wide && @job_order.job_tasks.where.not(id: @job_task.id).joins(:job_options).where(job_options: { id: o.id }).exists? %>
+          
           <div class="my-3 card p-2">
             <div class="form-check-inline">
               <% if o.description.present? %>
                 <p><%= o.description.html_safe %></p>
               <% end %>
+              
+              <% if is_job_wide %>
+                <span class="badge bg-info ms-2"><%= t('job_orders.wizard.step_3.job_wide_option') %></span>
+              <% end %>
+              
               <%= check_box_tag "job_task[job_task_options_attributes][][job_option_id]", 
                   o.id, 
                   @job_task.job_options.include?(o),
                   id: "job_task_option_#{o.id}",
                   class: 'form-check-input option-checkbox',
-                  data: { 'file-required': o.need_files, 'option-id': o.id } %>
+                  data: { 'file-required': o.need_files, 'option-id': o.id },
+                  disabled: option_used_in_other_task %>
               <%= label_tag "job_task_option_#{o.id}", "#{o.name} (#{number_to_currency(o.fee)})", class: 'form-check-label' %>
             </div>
 
-            <% if o.need_files %>
+            <% if option_used_in_other_task %>
+              <div class="alert alert-warning mt-2 mb-0">
+                <%= t('job_orders.wizard.step_3.option_already_selected') %>
+                <%= link_to t('job_orders.wizard.step_3.remove_from_other_task'), 
+                    edit_job_order_job_task_path(@job_order, @job_order.job_tasks.joins(:job_options).where(job_options: { id: o.id }).where.not(id: @job_task.id).first, step: 3) %>
+              </div>
+            <% end %>
+
+            <% if o.need_files && !option_used_in_other_task %>
               <div class="custom-file mt-2">
                 <%= file_field_tag "job_task[job_task_options_attributes][][option_file]", 
                     class: 'form-control option-file mt-2', 
@@ -34,7 +51,6 @@
                     <ul class="list-group">
                       <li class="list-group-item text-center text-muted">
                         <%= t('job_orders.wizard.step_3.by_unchecking') %>
-                        TODO: fix wording
                       </li>
                       <li class="list-group-item me-1 d-flex justify-content-between align-items-center">
                         <p><%= existing_option.option_file.filename %></p>

@@ -292,8 +292,9 @@ en:
         design_description: "Describe your project"
         design_description_placeholder: "Please describe your design and what you need help with. This will help us understand your requirements better."
       step_3:
-        by_unchecking: "(By unchecking, you will delete this file)"
+        by_unchecking: "Uploading another file will overwrite this one."
         no_options: "There are no options available to you right now. Please continue to the next step."
+        job_wide_option: "Applies to All Tasks"
       step_4:
         additional_comments: "Additional Comments"
     order:

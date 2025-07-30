@@ -122,7 +122,7 @@
                       <%= text_field_tag "job_service_name_#{sg.id}", @job_task.job_service&.user_created? ? @job_task.job_service.name : nil, class: 'form-control mt-2 service-name-field', data: { service_group: sg.id } %>
                     </div>
                   <% else %>
-                    <% sg.job_services.not_user_created.order(created_at: :asc).each do |service| %>
+                    <% sg.job_services.not_user_created.not_deleted.order(created_at: :asc).each do |service| %>
                       <div class="form-check mb-2">
                         <%= f.radio_button :job_service_id, service.id, checked: @job_task.job_service_id == service.id, 
                             class: "form-check-input service-radio", 

@@ -350,6 +350,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_07_21_135743) do
     t.decimal "fee", precision: 10, scale: 2, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "is_deleted", default: false, null: false
+    t.boolean "is_job_wide", default: false, null: false
   end
 
   create_table "job_options_types", id: false, force: :cascade do |t|
@@ -468,6 +470,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_07_21_135743) do
     t.bigint "job_type_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "is_deleted", default: false, null: false
     t.index ["job_type_id"], name: "index_job_service_groups_on_job_type_id"
   end
 
@@ -483,6 +486,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_07_21_135743) do
     t.datetime "updated_at", null: false
     t.bigint "job_order_id"
     t.boolean "user_created", default: false
+    t.boolean "is_deleted", default: false, null: false
     t.index ["job_order_id"], name: "index_job_services_on_job_order_id"
     t.index ["job_service_group_id"], name: "index_job_services_on_job_service_group_id"
   end
@@ -515,20 +519,11 @@ ActiveRecord::Schema[7.2].define(version: 2025_07_21_135743) do
     t.index ["job_task_quote_id"], name: "index_job_task_quote_options_on_job_task_quote_id"
   end
 
-  create_table "job_task_quote_services", force: :cascade do |t|
-    t.bigint "job_task_quote_id", null: false
-    t.bigint "job_service_id", null: false
-    t.decimal "quantity", precision: 10, default: "1"
-    t.decimal "price", precision: 10, scale: 2
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["job_service_id"], name: "index_job_task_quote_services_on_job_service_id"
-    t.index ["job_task_quote_id"], name: "index_job_task_quote_services_on_job_task_quote_id"
-  end
-
   create_table "job_task_quotes", force: :cascade do |t|
     t.bigint "job_task_id", null: false
     t.decimal "price", precision: 10, scale: 2
+    t.decimal "service_quantity", precision: 10, default: "1"
+    t.decimal "service_price", precision: 10, scale: 2
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["job_task_id"], name: "index_job_task_quotes_on_job_task_id"
@@ -566,6 +561,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_07_21_135743) do
     t.decimal "service_fee", precision: 10, scale: 2
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "is_deleted", default: false, null: false
   end
 
   create_table "key_certifications", force: :cascade do |t|
@@ -1500,8 +1496,6 @@ ActiveRecord::Schema[7.2].define(version: 2025_07_21_135743) do
   add_foreign_key "job_task_options", "job_tasks"
   add_foreign_key "job_task_quote_options", "job_options"
   add_foreign_key "job_task_quote_options", "job_task_quotes"
-  add_foreign_key "job_task_quote_services", "job_services"
-  add_foreign_key "job_task_quote_services", "job_task_quotes"
   add_foreign_key "job_task_quotes", "job_tasks"
   add_foreign_key "job_tasks", "job_orders"
   add_foreign_key "job_tasks", "job_services"

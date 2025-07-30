@@ -50,46 +50,41 @@
                       <a href="<%= user_magic_approval_job_orders_url(token: @hash) %>">page de la commande</a> pour approuver ou refuser le devis.
                     </p>
 
-               <p>
-  <strong>Pricing:</strong><br>
-  <% @job_order.job_tasks.each do |task| %>
-    - <%= task.title %>
-    <% if task.job_service.present? %>
-      (<%= task.job_service.name %>
-      <% if task.job_service.job_service_group.present? %>
-        - <%= task.job_service.job_service_group.name %>
-      <% end %>)
-    <% end %>
+                    <p>
+                      <strong>Tarification :</strong><br>
+                      <% @job_order.job_tasks.each do |task| %>
+                        - <%= task.title %>
+                        <% if task.job_service.present? %>
+                          (<%= task.job_service.name %>
+                          <% if task.job_service.job_service_group.present? %>
+                            - <%= task.job_service.job_service_group.name %><% end %>)
+                        <% end %>
 
-    <% qt_service = task.job_task_quote&.job_task_quote_service %>
-    <% if qt_service&.quantity.present? %>
-      (<%= "#{qt_service.quantity} #{task.job_service&.unit.presence || 'unit'}" %>)
-    <% end %>
+                        <% base_fee = task.job_task_quote&.price.to_f %>
+                        <% task_price = task.job_task_quote&.service_price.to_f * (task.job_task_quote&.service_quantity || 0) %>
+                        <% total_task_price = base_fee + task_price %>
 
-    <% base_fee = task.job_service&.base_fee.to_f %>
-    <% task_price = task.job_task_quote&.price.to_f %>
-    <% total_task_price = base_fee + task_price %>
+                        :     
+                        <% if total_task_price > 0 %>
+                          CAD <%= number_to_currency(total_task_price) %>
+                          <small>(frais de base de <%= number_to_currency(base_fee) %> plus
+                            <% if task.job_task_quote&.service_quantity.present? %>
+                              <%= "#{task.job_task_quote.service_quantity} #{task.job_service&.unit.presence || 'unité'}" %>
+                              ×
+                              <%= number_to_currency(task.job_task_quote.service_price) %><% end %>)</small>
+                        <% else %>
+                          Tarification en attente
+                        <% end %>
+                        <br>
 
-    : 
-    <% if total_task_price > 0 %>
-      CAD <%= number_to_currency(total_task_price) %>
-      <% if base_fee > 0 %>
-        <small>(includes base fee: <%= number_to_currency(base_fee) %>)</small>
-      <% end %>
-    <% else %>
-      Pending pricing
-    <% end %>
-    <br>
-
-    <% task.job_task_options.each do |opt| %>
-      &nbsp;&nbsp;• <%= opt.job_option.name %>
-      : CAD <%= number_to_currency(task.job_task_quote&.job_task_quote_options&.find_by(job_option_id: opt.job_option.id)&.price || 0) %>
-      <br>
-    <% end %>
-  <% end %>
-  <strong>Grand Total:</strong> CAD <%= number_to_currency(@job_order.total_price) %>
-</p>
-
+                        <% task.job_task_options.each do |opt| %>
+                          &nbsp;&nbsp;• <%= opt.job_option.name %>
+                          : CAD <%= number_to_currency(task.job_task_quote&.job_task_quote_options&.find_by(job_option_id: opt.job_option.id)&.price || 0) %>
+                          <br>
+                        <% end %>
+                      <% end %>
+                      <strong>Total général :</strong> CAD <%= number_to_currency(@job_order.total_price) %>
+                    </p>
 
                     <!-- ENGLISH SECTION -->
                     <hr style="margin: 25px 0;">
@@ -111,18 +106,21 @@
                         <% if task.job_service.present? %>
                           (<%= task.job_service.name %>
                           <% if task.job_service.job_service_group.present? %>
-                            - <%= task.job_service.job_service_group.name %>
-                          <% end %>)
+                            - <%= task.job_service.job_service_group.name %><% end %>)
                         <% end %>
 
-                        <% qt_service = task.job_task_quote&.job_task_quote_service %>
-                        <% if qt_service&.quantity.present? %>
-                          (<%= "#{qt_service.quantity} #{task.job_service&.unit.presence || 'unit'}" %>)
-                        <% end %>
+                        <% base_fee = task.job_task_quote&.price.to_f %>
+                        <% task_price = task.job_task_quote&.service_price.to_f * (task.job_task_quote&.service_quantity || 0) %>
+                        <% total_task_price = base_fee + task_price %>
 
-                        : 
-                        <% if task.job_task_quote&.price.present? %>
-                          CAD <%= number_to_currency(task.job_task_quote.price) %>
+                        :     
+                        <% if total_task_price > 0 %>
+                          CAD <%= number_to_currency(total_task_price) %>
+                          <small>(base fee of <%= number_to_currency(base_fee) %> plus
+                            <% if task.job_task_quote&.service_quantity.present? %>
+                              <%= "#{task.job_task_quote.service_quantity} #{task.job_service&.unit.presence || 'unit'}" %>
+                              ×
+                              <%= number_to_currency(task.job_task_quote.service_price) %><% end %>)</small>
                         <% else %>
                           Pending pricing
                         <% end %>

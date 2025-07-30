@@ -54,7 +54,7 @@
             <strong><%= t("job_orders.order.tasks", default: "Tasks") %></strong>
           </div>
           <div class="card-body">
-            <% @job_order.job_tasks.each_with_index do |task, index| %>
+            <% @job_order.job_tasks.order(created_at: :asc).each_with_index do |task, index| %>
               <div class="task-card mb-2 p-3 border rounded">
                 <div class="d-flex justify-content-between">
                   <h6 class="d-flex align-items-center">
@@ -87,7 +87,7 @@
                       <div class="d-flex align-items-start flex-wrap">
                         <span class="fw-medium me-1"><%= t("job_orders.order.options", default: "Options") %>:</span>
                         <% task.job_options.each_with_index do |option, opt_index| %>
-                          <span class="badge bg-secondary me-1 mb-1"><%= option.name %></span>
+                          <span class="badge <%= option.is_job_wide ? "bg-info" : "bg-secondary" %> me-1 mb-1"><%= option.name %></span>
                         <% end %>
                       </div>
                     <% end %>

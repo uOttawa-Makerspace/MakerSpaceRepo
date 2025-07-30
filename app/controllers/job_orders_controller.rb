@@ -220,19 +220,16 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
           price_key = "job_task_quote_price_#{task.id}"
           job_task_quote = task.job_task_quote || task.build_job_task_quote
           job_task_quote.price = params[price_key].presence || 0.0
-          job_task_quote.save!
-
+          
           # Service
           if task.job_service.present?
             qty_key   = "task_#{task.id}_service_qty"
             svc_price_key = "task_#{task.id}_service_price"
-
-            qt_service = job_task_quote.job_task_quote_service || job_task_quote.job_task_quote_service.build(job_service: task.job_service)
-
-            qt_service.quantity = params[qty_key].presence || 0.0
-            qt_service.price = params[svc_price_key].presence || 0.0
-            qt_service.save!
+            
+            job_task_quote.service_quantity = params[qty_key].presence || 0.0
+            job_task_quote.service_price = params[svc_price_key].presence || 0.0
           end
+          job_task_quote.save!
 
           # Options
           task.job_task_options.each do |option|
@@ -427,9 +424,9 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
   end
 
   def settings
-    @service_groups = JobServiceGroup.all.order(:job_type_id)
-    @services = JobService.all.not_user_created.order(:job_service_group_id)
-    @options = JobOption.all
+    @service_groups = JobServiceGroup.not_deleted.order(:job_type_id)
+    @services = JobService.not_deleted.not_user_created.order(:job_service_group_id)
+    @options = JobOption.not_deleted
     @job_types = JobType.all
   end
 

@@ -1,4 +1,6 @@
 class JobOption < ApplicationRecord
+  include SoftDelete
+
   has_and_belongs_to_many :job_types
   has_many :job_order_options
   has_many :job_order_quote_options

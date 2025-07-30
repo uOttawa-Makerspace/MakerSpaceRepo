@@ -195,10 +195,10 @@ class JobOrder < ApplicationRecord
   end
 
   def expedited?
-    job_order_options
-      .joins(:job_option)
-      .where(job_option: { name: "Expedited" })
-      .present?
+    job_tasks
+      .joins(job_task_options: :job_option)
+      .where("job_options.name LIKE ?", "%Expedited%")
+      .exists?
   end
 
   private

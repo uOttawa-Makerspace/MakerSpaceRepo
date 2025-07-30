@@ -17,6 +17,8 @@ class SupportMultipleTasksPerJobOrder < ActiveRecord::Migration[7.2]
     create_table :job_task_quotes do |t|
       t.references :job_task, null: false, foreign_key: true
       t.decimal :price, precision: 10, scale: 2
+      t.decimal :service_quantity, precision: 10, default: 1
+      t.decimal :service_price, precision: 10, scale: 2
       t.timestamps
     end
 
@@ -27,20 +29,18 @@ class SupportMultipleTasksPerJobOrder < ActiveRecord::Migration[7.2]
       t.timestamps
     end
 
-    create_table :job_task_quote_services do |t|
-      t.references :job_task_quote, null: false, foreign_key: true
-      t.references :job_service, null: false, foreign_key: true
-      t.decimal :quantity, precision: 10, default: 1
-      t.decimal :price, precision: 10, scale: 2
-      t.timestamps
-    end
-
     create_table :job_quote_line_items do |t|
       t.references :job_order, null: false, foreign_key: true
       t.string :description, null: false
       t.decimal :price, precision: 10, scale: 2
       t.timestamps
     end
+
+    add_column :job_types, :is_deleted, :boolean, default: false, null: false
+    add_column :job_service_groups, :is_deleted, :boolean, default: false, null: false
+    add_column :job_services, :is_deleted, :boolean, default: false, null: false
+    add_column :job_options, :is_deleted, :boolean, default: false, null: false
+    add_column :job_options, :is_job_wide, :boolean, default: false, null: false
 
     reversible do |dir|
       dir.up do
@@ -71,9 +71,23 @@ class SupportMultipleTasksPerJobOrder < ActiveRecord::Migration[7.2]
 
             # Create a quote scaffold for the task if old quote exists
             if order.job_order_quote
+              # Find the primary service price and quantity
+              service_price = 0
+              service_quantity = 1
+              
+              if order.job_order_quote.respond_to?(:job_order_quote_services)
+                primary_service = order.job_order_quote.job_order_quote_services.first
+                if primary_service
+                  service_price = primary_service.per_unit
+                  service_quantity = primary_service.quantity
+                end
+              end
+
               task_quote = JobTaskQuote.create!(
                 job_task_id: task.id,
-                price: order.job_order_quote.service_fee || 0
+                price: order.job_order_quote.service_fee || 0,
+                service_price: service_price,
+                service_quantity: service_quantity
               )
 
               # Migrate quote options
@@ -83,18 +97,6 @@ class SupportMultipleTasksPerJobOrder < ActiveRecord::Migration[7.2]
                     job_task_quote_id: task_quote.id,
                     job_option_id: opt.job_option_id,
                     price: opt.amount
-                  )
-                end
-              end
-
-              # Migrate quote services
-              if order.job_order_quote.respond_to?(:job_order_quote_services)
-                order.job_order_quote.job_order_quote_services.each do |svc|
-                  JobTaskQuoteService.create!(
-                    job_task_quote_id: task_quote.id,
-                    job_service_id: svc.job_service_id,
-                    quantity: svc.quantity,
-                    price: svc.per_unit
                   )
                 end
               end

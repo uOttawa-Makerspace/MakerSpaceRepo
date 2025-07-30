@@ -373,8 +373,9 @@ fr:
         design_description_placeholder: "Veuillez décrire votre design et ce dont vous avez besoin d'aide. Cela nous aidera à mieux comprendre vos besoins."
       step_3:
         title: "Nouvelle Commande (Étape 3/4)"
-        by_unchecking: "(En décochant, vous allez supprimer ce fichier"
+        by_unchecking: "Le téléchargement d’un autre fichier écrasera celui-ci."
         no_options: "Il n'y a pas d'options disponibles pour vous. Veuillez continuer vers la prochaine étape."
+        job_wide_option: "S'applique à toutes les tâches"
       step_4:
         additional_comments: "Commentaires supplémentaires"
     order:
