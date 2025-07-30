@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_06_13_150014) do
+ActiveRecord::Schema[7.2].define(version: 2025_07_27_155137) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -1366,6 +1366,25 @@ ActiveRecord::Schema[7.2].define(version: 2025_06_13_150014) do
     t.string "category", default: "Other"
     t.integer "cc", default: 0
     t.decimal "hours", precision: 5, scale: 2, default: "0.0"
+  end
+
+  create_table "walk_in_safety_sheets", force: :cascade do |t|
+    t.bigint "user_id"
+    t.string "participant_signature"
+    t.string "participant_print_name"
+    t.string "participant_telephone_at_home"
+    t.string "guardian_name"
+    t.string "guardian_signature"
+    t.string "minor_participant_name"
+    t.string "guardian_telephone_at_home"
+    t.string "guardian_telephone_at_work"
+    t.string "emergency_contact_name"
+    t.string "emergency_contact_telephone"
+    t.string "supervisor_name"
+    t.string "supervisor_telephone"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_walk_in_safety_sheets_on_user_id"
   end
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"

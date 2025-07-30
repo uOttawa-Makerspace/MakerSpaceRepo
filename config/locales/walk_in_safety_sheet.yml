@@ -1,0 +1,62 @@
+en:
+  walk_in_safety_sheet:
+    title: Informed Consent
+    header: Informed Consent
+    subtitle: Access to the Brunsfield Centre Machine Shops at the Centre for Entrepreneurship and Engineering Design (CEED), Faculty of Engineering, University of Ottawa
+
+    adult_contact:
+      title: Persons over 18 years of age
+      subtext_html: |
+        <strong>I ACCEPT AND FULLY ASSUME</strong> all such health and safety risks, dangers and hazards which may be associated with my participation.
+        <br />
+        Upon the University’s request, <strong>I AGREE</strong> to leave the Activity should I fail to follow the University’s instructions or directions or if there is any health and safety infraction.
+      participant_student_number: Student number of participant
+      participant_signature: Signature of Participant
+      print_name_of_participant: Print name of Participant
+      participant_telephone_at_home: Telephone at home/cellular phone
+
+    minor_contact:
+      title: Children under 18 years of age
+      subtext_html: |
+        <strong>I CONSENT</strong> to the Participant’s presence at the University of Ottawa and <strong>I ACCEPT AND FULLY ASSUME</strong> all such health and safety risks, dangers and hazards which may be associated with his or her participation.
+        <br />
+        Upon the University’s request, <strong>I AGREE</strong> to pick up the Participant should he or she fail to follow the University’s instructions or directions or if there is any health and safety infraction. I the undersigned declare that I am the parent or legal guardian Participant about the guidelines of this program and the of the Participant identified below. I agree to inform the University of Ottawa requirements.
+      guardian_name: Print name of Parent/Legal Guardian (Children under 18 years of age)
+      guardian_signature: Signature of Parent/Legal Guardian (Children under 18 years of age)
+      minor_participant_name: Print name of Participant
+      guardian_telephone_at_home: Telephone at home/cellular phone
+      guardian_telephone_at_work: Telephone number at work
+
+    emergency_contact:
+
+fr:
+  walk_in_safety_sheet:
+    title: Consentement Éclairé
+    subtitle: Accès aux ateliers d'usinage du Centre Brunsfield au Centre en génie entrepreneurial de la conception (CGEC), Faculté de génie de l'Université d'Ottawa
+
+    adult_contact:
+      title: Personnes de plus de 18 ans
+      subtext_html: |
+        <strong>J’ACCEPTE ET J’ASSUME PLEINEMENT</strong> tous les risques et
+        dangers pour la santé et la sécurité qui peuvent être associés à
+        ma participation.
+        <br />
+        Si l’Université le demande, <strong>J’ACCEPTE</strong> de quitter l’Activité si je néglige de respecter ses directives ou si je commets une infraction en matière de santé et de sécurité.
+
+      participant_student_number: Numéro d’étudiant du Participant
+      participant_signature: Signature du Participant
+      print_name_of_participant: Nom du Participant en lettres moulées
+      participant_telephone_at_home: Téléphone à domicile ou cellulaire
+
+    minor_contact:
+      title: Personnes de moins de 18 ans
+      subtext_html: |
+        <strong>JE CONSENS</strong> à la présence du Participant à l’Université d’Ottawa et <strong>J’ACCEPTE ET J’ASSUME PLEINEMENT</strong> tous les risques et les dangers pour la santé et la sécurité qui peuvent être associés à sa participation
+        <br />
+        <strong>J’ACCEPTE</strong>, à la demande de l’Université, de venir chercher le Participant s’il néglige de respecter les directives de l’Université ou s’il commet une infraction en matière de santé et de sécurité. Je, soussigné(e), déclare que je suis le parent ou le tuteur légal du Participant nommé plus bas. J’accepte de l’informer des directives du programme et des exigences de l’Université.
+
+      guardian_name: Nom du parent ou du tuteur légal en lettres moulées (personnes de moins de 18 ans)
+      guardian_signature: Signature du parent ou du tuteur légal (personnes de moins de 18 ans)
+      minor_participant_name: Nom du Participant en lettres moulées
+      guardian_telephone_at_home: Téléphone au travail
+      guardian_telephone_at_work: Téléphone à domicile ou cellulaire

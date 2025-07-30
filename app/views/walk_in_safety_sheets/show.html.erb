@@ -1,6 +1,105 @@
-<%= provide(:title, t('informed_consent')) %>
+<%= provide(:title, t('walk_in_safety_sheet.title')) %>
 <div class="container">
-    <%= form_with model: @walk_in_safety_sheet do |f| %>
+    <%= form_with model: @walk_in_safety_sheet, disabled: @walk_in_safety_sheet.persisted? do |f| %>
         <%= render partial: 'text', locals: {f: f} %>
+
+        <hr />
+
+        <div class="row">
+            <div class="col-lg-6 mb-3 d-flex flex-column justify-content-between">
+                <div class="mb-5">
+                    <p class="text-center"><strong><%= t 'walk_in_safety_sheet.adult_contact.title' %></strong></p>
+                    <p><%= t 'walk_in_safety_sheet.adult_contact.subtext_html' %></p>
+                </div>
+
+                <fieldset>
+                    <div class="mb-3">
+                        <%# User profile would include this student number %>
+                        <%= f.label :participant_student_number, t('walk_in_safety_sheet.adult_contact.participant_student_number'), class: 'form-label' %>
+                        <%# Student ID isn't modifiable from this page %>
+                        <%= f.text_field :participant_student_number, value: current_user.student_id, class: 'form-control', disabled: true %>
+                        <div class="form-text">To modify your student number, go to <%= link_to "your profile", user_path(current_user.username) %></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <%= f.label :participant_signature, t('walk_in_safety_sheet.adult_contact.participant_signature'), class: 'form-label' %>
+                        <%= f.text_field :participant_signature, class: 'form-control' %>
+                    </div>
+
+                    <div class="mb-3">
+                        <%= f.label :participant_print_name, t('walk_in_safety_sheet.adult_contact.print_name_of_participant') , class: 'form-label' %>
+                        <%= f.text_field :participant_print_name, class: 'form-control' %>
+                    </div>
+
+                    <div class="mb-3">
+                        <%= f.label :participant_telephone_at_home, t('walk_in_safety_sheet.adult_contact.participant_telephone_at_home'), class: 'form-label' %>
+                        <%= f.telephone_field :participant_telephone_at_home, class: 'form-control' %>
+                    </div>
+                </fieldset>
+            </div>
+
+            <div class="col-lg-6 mb-3 d-flex flex-column justify-content-between">
+                <div class="mb-5">
+                    <p class="text-center"><strong><%= t('walk_in_safety_sheet.minor_contact.title') %></strong></p>
+                    <p><%= t('walk_in_safety_sheet.minor_contact.subtext_html') %></p>
+                </div>
+
+                <fieldset>
+                    <%# These aren't being set as required, up to supervisor to enforce %>
+                    <%# Model would validate complete pairs however %>
+                    <div class="mb-3">
+                        <%= f.label :guardian_name, t('walk_in_safety_sheet.minor_contact.guardian_name'), class: 'form-label' %>
+                        <%= f.text_field :guardian_name, class: 'form-control' %>
+                    </div>
+
+                    <div class="mb-3">
+                        <%= f.label :guardian_signature, t('walk_in_safety_sheet.minor_contact.guardian_signature'), class: 'form-label' %>
+                        <%= f.text_field :guardian_signature, class: 'form-control' %>
+                    </div>
+
+                    <div class="mb-3">
+                        <%= f.label :minor_participant_name, t('walk_in_safety_sheet.minor_contact.minor_participant_name'), class: 'form-label' %>
+                        <%= f.text_field :minor_participant_name, class: 'form-control' %>
+                    </div>
+
+                    <div class="mb-3">
+                        <%= f.label :guardian_telephone_at_home, t('walk_in_safety_sheet.minor_contact.guardian_telephone_at_home'), class: 'form-label' %>
+                        <%= f.telephone_field :guardian_telephone_at_home, class: 'form-control' %>
+                    </div>
+
+                    <div class="mb-3">
+                        <%= f.label :guardian_telephone_at_work, t('walk_in_safety_sheet.minor_contact.guardian_telephone_at_work'), class: 'form-label' %>
+                        <%= f.telephone_field :guardian_telephone_at_work, class: 'form-control' %>
+                    </div>
+                </fieldset>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <p><strong>Important For All Participants</strong></p>
+            <div class="row row-cols-lg-2">
+                <div>
+                    <%= f.label :emergency_contact_name, "Name of other emergency contact", class: 'form-label' %>
+                    <%= f.text_field :emergency_contact_name, class: 'form-control' %>
+                </div>
+                <div>
+                    <%= f.label :emergency_contact_telephone, "Emergency contact telephone", class: 'form-label' %>
+                    <%= f.telephone_field :emergency_contact_telephone, class: 'form-control' %>
+                </div>
+                <div>
+                    <%= f.label :supervisor_name, "Name of University Employee Supervising Participant", class: 'form-label' %>
+                    <%= f.text_field :supervisor_name, class: 'form-control' %>
+                </div>
+                <div>
+                    <%= f.label :supervisor_telephone, "Supervisor telephone", class: 'form-label' %>
+                    <%= f.telephone_field :supervisor_telephone, class: 'form-control' %>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="d-flex">
+            <%= f.submit f.object.persisted? ? "Update contact details" : "Sign sheet", class: 'btn btn-primary mx-auto' %>
+        </div>
     <% end %>
 </div>

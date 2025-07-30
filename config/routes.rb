@@ -653,6 +653,7 @@ Rails.application.routes.draw do
   end
 
   resource :walk_in_safety_sheet
+  resolve("WalkInSafetySheet") {[:walk_in_safety_sheet]}
 
   # namespace :help do
   #   get 'main', path: '/'
