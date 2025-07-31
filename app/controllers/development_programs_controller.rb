@@ -99,7 +99,7 @@ class DevelopmentProgramsController < ApplicationController
     unless current_user.dev_program? || current_user.admin? ||
              current_user.staff?
       redirect_to root_path
-      flash[:alert] = "You cannot access this area."
+      flash[:alert] = "You must be a part of the Development Program to access this area."
     end
   end
 end

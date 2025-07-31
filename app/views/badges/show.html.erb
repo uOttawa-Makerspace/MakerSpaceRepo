@@ -16,7 +16,7 @@
                 <p><%= @certification.training.list_of_skills %></p>
             </div>
             <% if current_user.id == @earner.id %>
-                <a id="linkedin" class="btn btn-primary" href="https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME&name=<%= @certification.get_name_en %>&organizationId=38127375&issueYear=<%= @certification.created_at.year %>&issueMonth=<%= @certification.created_at.month %>&expirationYear=<%= @certification.created_at.year + 10 %>&expirationMonth=5&certUrl=https://makerepo.com/badges/<%= @certification.id %>/&certId=<%= @certification.id %>">Add to Linkedin
+                <a id="linkedin" class="btn btn-primary" href="https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME&name=<%= @certification.get_name_fr %> // <%= @certification.get_name_en %>&organizationId=38127375&issueYear=<%= @certification.created_at.year %>&issueMonth=<%= @certification.created_at.month %>&expirationYear=<%= @certification.created_at.year + 10 %>&expirationMonth=5&certUrl=https://makerepo.com/badges/<%= @certification.id %>/&certId=<%= @certification.id %>">Add to Linkedin
                 </a>
                 
                 <button id="add-to-linkedin" class="btn btn-primary">Download .png</button>

@@ -57,3 +57,10 @@ fr:
       prof: "DÉVELOPPEMENT PROFESSIONNEL"
       none_yet: "Aucun badge acquis"
       all_acq: "Tous les badges de cette catégorie ont été acquis"
+    proficient_project:
+      block: "Vous n'avez pas les entraînement requises"
+      add: "Ajouter au panier"
+      added: "Ajouté au panier"
+      award: "Récompensé"
+      show: "Afficher le projet"
+      progress: "En cours"

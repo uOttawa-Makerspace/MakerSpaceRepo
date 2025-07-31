@@ -536,18 +536,32 @@ RSpec.describe User, type: :model do
 
       it "should be true" do
         user = create(:user, :regular_user)
-        cert = create(:certification, :"3d_printing", user_id: user.id)
-        create(:training_requirement, :"3d_printing", training_id: cert.training.id)
+        cert = create(:certification, :"3d_printing", user_id: user.id, level: "Beginner")
+        create(:training_requirement, :"3d_printing", training_id: cert.training.id, level: "Beginner")
         expect(user.has_requirements?(TrainingRequirement.all)).to be_truthy
       end
 
       it "should be true" do
         user = create(:user, :regular_user)
-        cert = create(:certification, :"3d_printing", user_id: user.id)
-        create(:training_requirement, :"3d_printing", training_id: cert.training.id)
-        cert = create(:certification, :basic_training, user_id: user.id)
-        create(:training_requirement, :basic_training, training_id: cert.training.id)
+        cert = create(:certification, :"3d_printing", user_id: user.id, level: "Intermediate")
+        create(:training_requirement, :"3d_printing", training_id: cert.training.id, level: "Intermediate")
+        cert = create(:certification, :basic_training, user_id: user.id, level: "Advanced")
+        create(:training_requirement, :basic_training, training_id: cert.training.id, level: "Advanced")
         expect(user.has_requirements?(TrainingRequirement.all)).to be_truthy
+      end
+
+      it "should be false" do
+        user = create(:user, :regular_user)
+        cert = create(:certification, :"3d_printing", user_id: user.id, level: "Beginner")
+        create(:training_requirement, :"3d_printing", training_id: cert.training.id, level: "Intermediate")
+        expect(user.has_requirements?(TrainingRequirement.all)).to be_falsey
+      end
+
+      it "should be false" do
+        user = create(:user, :regular_user)
+        cert = create(:certification, :basic_training, user_id: user.id, level: "Beginner")
+        create(:training_requirement, :"3d_printing", level: "Beginner")
+        expect(user.has_requirements?(TrainingRequirement.all)).to be_falsey
       end
     end
   end

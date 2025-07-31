@@ -84,13 +84,14 @@ RSpec.describe ProficientProjectsController, type: :controller do
         expect(flash[:notice]).to eq("Proficient Project successfully created.")
       end
 
-      it "should create the proficient project with badge requirements" do
+      it "should create the proficient project with training requirements" do
         pp_params = FactoryBot.attributes_for(:proficient_project)
         expect do
           post :create,
                params: {
                  proficient_project: pp_params,
-                 training_requirements_id: [create(:training).id, create(:training).id]
+                 training_requirements_id: [create(training_id: :training.id, level: "Beginner"), 
+create(training_id: training.id, level: "Intermediate")]
                }
         end.to change(ProficientProject, :count).by(1)
         expect(

@@ -7,18 +7,18 @@
     <% end %>
     <br />
     <% if order_items.where(status: ["In progress", "Awarded", "Waiting for approval"]).present? %>
-      <a href="<%= proficient_project_path(proficient_project.id) %>"><button type="button" class="btn btn-success mb-2 ">Show Project</button></a>
+      <a href="<%= proficient_project_path(proficient_project.id) %>"><button type="button" class="btn btn-success mb-2 "><%= t('devprog.proficient_project.show') %></button></a>
     <% elsif current_user.order_items.where(proficient_project: proficient_project, status: "In progress").present? %>
-      <button type="button" class="btn btn-success disabled mb-2 ">Added to cart</button>
+      <button type="button" class="btn btn-success disabled mb-2 "><%= t('devprog.proficient_project.added') %></button>
       <% elsif !current_user.has_requirements?(training_requirements) %>
-      <button type="button" class="btn btn-danger disabled mb-2 ">You don't have the required trainings</button>
+      <button type="button" class="btn btn-danger disabled mb-2 "><%= t('devprog.proficient_project.block') %></button>
       <% else %>
       <%= form_for order_item, remote: true do |f| %>
         <div class="input-group">
           <%= f.hidden_field :quantity, value: 1 %>
           <div class="input-group-btn mx-auto mb-2">
             <%= f.hidden_field :proficient_project_id, value: proficient_project.id %>
-            <%= f.submit 'Add to Cart', class: 'btn btn-secondary ', id: 'cart-button' %>
+            <%= f.submit t('devprog.proficient_project.add') , class: 'btn btn-secondary ', id: 'cart-button' %>
           </div>
         </div>
       <% end %>

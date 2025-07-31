@@ -58,3 +58,10 @@ en:
       prof: "PROFESSIONAL DEVELOPMENT"
       none_yet: "No badges acquired yet"
       all_acq: "All badges from this category have been acquired"
+    proficient_project:
+      block: "You don't have the required trainings"
+      add: "Add to Cart"
+      added: "Added to Cart"
+      award: "Awarded"
+      show: "Show Project"
+      progress: "In Progress"
