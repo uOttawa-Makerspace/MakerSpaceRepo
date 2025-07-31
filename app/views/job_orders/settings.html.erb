@@ -7,7 +7,7 @@
     <b>Job Types</b> define the main service categories (like 3D printing or laser cutting). 
     Each type contains <b>Service Groups</b> that specify materials (like PLA or resin), 
     and each group offers individual <b>Services</b> with quality/color options and pricing. 
-    <b>Job Options</b> are add-ons that can apply to multiple job types (like expedited service).
+    <b>Job Options</b> are add-ons that can apply to multiple job types (like expedited service). <b>Input Required, Optional Input, No Input</b> specify whether an "Other" option with a textbox is present for the user (as in, the user must enter text, the user can enter text, or there is no input box).
   </p>
 
   <div class="my-3 text-center">
@@ -50,9 +50,6 @@ end %>" title="Text Input Required">
 else
 (service_group.text_field_true? ? 'Input Required' : 'Optional Input')
 end %>
-                      </span>
-                      <span class="badge bg-<%= service_group.multiple ? 'primary' : 'secondary' %>" title="Multiple Selection">
-                        <%= service_group.multiple ? 'Multiple Allowed' : 'Single Only' %>
                       </span>
                     </div>
                   </div>
@@ -153,6 +150,7 @@ end %>
               <th class="align-middle">Applicable Job Types</th>
               <th class="align-middle text-end">Fee</th>
               <th class="align-middle text-center">Files Required</th>
+              <th class="align-middle text-center">Applies to All Tasks</th>
               <th class="align-middle text-center">Actions</th>
             </tr>
           </thead>
@@ -184,6 +182,11 @@ end %>
                 <td class="align-middle text-center">
                   <span class="badge bg-<%= option.need_files ? 'danger' : 'success' %> bg-opacity-10 text-<%= option.need_files ? 'danger' : 'success' %>">
                     <%= option.need_files ? 'Yes' : 'No' %>
+                  </span>
+                </td>
+                <td class="align-middle text-center">
+                  <span class="badge bg-<%= option.is_job_wide ? 'danger' : 'success' %> bg-opacity-10 text-<%= option.is_job_wide ? 'danger' : 'success' %>">
+                    <%= option.is_job_wide ? 'Yes' : 'No' %>
                   </span>
                 </td>
                 <td class="align-middle text-center">

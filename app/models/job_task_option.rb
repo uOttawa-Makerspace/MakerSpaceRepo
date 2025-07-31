@@ -1,13 +1,11 @@
-class JobService < ApplicationRecord
-  include SoftDelete
+class JobTaskOption < ApplicationRecord
+  belongs_to :job_task
+  belongs_to :job_option
 
-  belongs_to :job_service_group, optional: true
-  has_and_belongs_to_many :job_orders
+  after_save :set_filename
 
-  validates :name, presence: true
-
-  has_many_attached :files
-  validates :files,
+  has_one_attached :option_file
+  validates :option_file,
             file_content_type: {
               allow: %w[
                 application/pdf
@@ -23,17 +21,19 @@ class JobService < ApplicationRecord
                 image/vnd.dxf
                 image/x-dxf
                 model/x.stl-ascii
+                image/png
+                image/jpeg
+                image/webp
               ],
-              if: -> { files.attached? }
+              if: -> { option_file.attached? }
             }
 
-  scope :not_user_created, -> { where(user_created: false) }
+  private
 
-  def name_with_internal_price
-    "#{name} ($#{internal_price}/#{unit})"
-  end
-
-  def name_with_external_price
-    "#{name} ($#{external_price}/#{unit})"
+  def set_filename
+    return unless option_file.attached?
+      return if option_file.filename.to_s.start_with?("JMTS")
+        option_file.blob.update(filename: "JMTS_#{option_file.filename}")
+      
   end
 end

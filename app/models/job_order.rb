@@ -11,6 +11,8 @@ class JobOrder < ApplicationRecord
   has_many :chat_messages, dependent: :destroy
   belongs_to :assigned_staff, class_name: "User", optional: true
 
+  has_many :job_tasks, dependent: :destroy
+  has_many :job_quote_line_items, dependent: :destroy
 
   after_save :set_filename
 
@@ -22,16 +24,6 @@ class JobOrder < ApplicationRecord
             )
             .where.not(job_order_statuses: { job_status: JobStatus::DRAFT })
             .group("job_orders.id")
-        }
-
-  scope :last_status,
-        ->(status) {
-          joins(:job_order_statuses)
-            .where(
-              "job_order_statuses.created_at = (SELECT MAX(job_order_statuses.created_at) FROM job_order_statuses WHERE job_order_statuses.job_order_id = job_orders.id)"
-            )
-            .where(job_order_statuses: { job_status: status })
-            .uniq
         }
 
   scope :order_by_expedited,
@@ -179,7 +171,21 @@ class JobOrder < ApplicationRecord
     shopify_draft_order['invoiceUrl']
   end
 
-  delegate :total_price, to: :job_order_quote
+  def total_price
+    total = 0
+    job_tasks.each do |task|
+      next unless task.job_task_quote.present?
+      total += task.job_task_quote.price + (task.job_task_quote.service_price * task.job_task_quote.service_quantity)
+      next unless task.job_task_quote.job_task_quote_options.any?
+      task.job_task_quote.job_task_quote_options.each do |opt|
+        total += opt.price
+      end
+    end
+
+    total += job_quote_line_items.sum(:price)
+
+    total
+  end
 
   def shopify_draft_order_line_items
     price_data = [
@@ -200,10 +206,10 @@ class JobOrder < ApplicationRecord
   end
 
   def expedited?
-    job_order_options
-      .joins(:job_option)
-      .where(job_option: { name: "Expedited" })
-      .present?
+    job_tasks
+      .joins(job_task_options: :job_option)
+      .where("job_options.name LIKE ?", "%Expedited%")
+      .exists?
   end
 
   private

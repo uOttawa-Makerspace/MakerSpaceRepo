@@ -124,7 +124,6 @@
                         </p>
                         <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
                           <strong>Détails de la commande :</strong><br>
-                          Fichier : <%= @job_order.user_files.first.filename %><br>
                           Client : <%= @job_order.user.name %><br>
                           <% if @job_order.expedited? %>
                             <span style="color: #e55426ff;">(COMMANDE PRIORITAIRE)</span><br>
@@ -157,7 +156,6 @@
                         </p>
                         <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
                           <strong>Job Order Details:</strong><br>
-                          File: <%= @job_order.user_files.first.filename %><br>
                           Client: <%= @job_order.user.name %><br>
                           <% if @job_order.expedited? %>
                             <span style="color: #e55426ff;">(EXPEDITED ORDER)</span><br>

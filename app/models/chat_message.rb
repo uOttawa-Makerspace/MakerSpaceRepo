@@ -30,7 +30,7 @@ class ChatMessage < ApplicationRecord
   private
 
   def schedule_notification_email
-    return if recent_message_by_sender?
+    return if recent_message_by_sender? || job_order.job_order_statuses.last&.job_status != JobStatus::DRAFT
 
     ChatNotificationJob.set(wait: 1.hour).perform_later(id)
   end

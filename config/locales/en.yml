@@ -265,7 +265,7 @@ en:
       pay_in_store: "Pay with cash or FOAP"
       cannot_edit_this_order: "Cannot edit this order"
     wizard:
-      title: "New Job Order (Step %{step}/4)"
+      title: "New Job Task (Step %{step}/4)"
       deprecated_message: "The old Print order system is now deprecated. You can now use this new Job Order System."
       access_old_ones: "You will still be able to access old Print Orders, but you will not be able to create new ones. To see old ones, please click"
       delete_current_order: "Delete Current Order"
@@ -292,8 +292,9 @@ en:
         design_description: "Describe your project"
         design_description_placeholder: "Please describe your design and what you need help with. This will help us understand your requirements better."
       step_3:
-        by_unchecking: "(By Un-Checking, you will delete this file)"
+        by_unchecking: "Uploading another file will overwrite this one."
         no_options: "There are no options available to you right now. Please continue to the next step."
+        job_wide_option: "Applies to All Tasks"
       step_4:
         additional_comments: "Additional Comments"
     order:
