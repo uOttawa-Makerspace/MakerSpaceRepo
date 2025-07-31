@@ -19,7 +19,10 @@ class Admin::EventsController < AdminAreaController
       recurrence_rule: event_params[:recurrence_rule],
       created_by_id: current_user.id,
       space_id: event_params[:space_id],
-      event_type: event_params[:event_type]
+      event_type: event_params[:event_type],
+      training_id: event_params[:training_id],
+      language: event_params[:language],
+      course: event_params[:course]
     )
 
     unless participants.empty?
@@ -259,6 +262,9 @@ Time.parse(event_params[:utc_start_time]).utc)
               draft: event.draft,
               description: event.description,
               eventType: event.event_type,
+              trainingId: event.training_id,
+              language: event.language,
+              course: event.course,
               assignedUsers: event.event_assignments.map { |ea| { id: ea.user.id, name: ea.user.name } },
               background: background
             },
@@ -368,7 +374,7 @@ notice: "#{deleted_count} draft event(s) deleted. Any recurring events were unto
 
   def event_params
     params.require(:event).permit(
-      :title, :description, :utc_start_time, :utc_end_time, :recurrence_rule, :event_type, :space_id
+      :title, :description, :utc_start_time, :utc_end_time, :recurrence_rule, :event_type, :space_id, :training_id, :language, :course
     )
   end
 end

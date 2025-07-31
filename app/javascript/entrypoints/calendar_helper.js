@@ -142,6 +142,22 @@ export function eventClick(eventImpl) {
   const eventTypeSelect = document.getElementById("event_type_select");
   eventTypeSelect.value = event.extendedProps.eventType || "other";
 
+  // Show options if event is a training
+  const trainingFields = document.getElementById("training-fields");
+  if (eventTypeSelect.value === "training") {
+    trainingFields.style.display = "";
+
+    // Populate training options
+    document.getElementById("training_select").value =
+      event.extendedProps.trainingId || null;
+    document.getElementById("language_select").value =
+      event.extendedProps.language || null;
+    document.getElementById("course_select").value =
+      event.extendedProps.course || null;
+  } else {
+    trainingFields.style.display = "none";
+  }
+
   // Set the staff members
   const staffSelect = document.getElementById("staff_select");
   const assignedStaff = event.extendedProps.assignedUsers || [];

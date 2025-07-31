@@ -392,6 +392,14 @@ document.addEventListener("turbo:load", async () => {
     });
   });
 
+  // Handle training options
+  const eventTypeSelect = document.getElementById("event_type_select");
+  const trainingFields = document.getElementById("training-fields");
+  eventTypeSelect.addEventListener("change", () => {
+    trainingFields.style.display =
+      eventTypeSelect.value === "training" ? "" : "none";
+  });
+
   // Confirm before modal exit
   const modal = document.getElementById("eventModal");
   modal.addEventListener("hide.bs.modal", (e) => {

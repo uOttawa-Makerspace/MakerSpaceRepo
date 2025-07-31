@@ -9,6 +9,7 @@ class Training < ApplicationRecord
   has_many :proficient_projects, dependent: :destroy
   has_many :learning_modules, dependent: :destroy
   has_many :shifts, dependent: :nullify
+  has_many :events, dependent: :nullify
   belongs_to :skill, optional: true
   has_many :badge_templates
 
