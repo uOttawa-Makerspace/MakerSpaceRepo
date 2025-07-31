@@ -176,61 +176,6 @@
   <% end %>
 </section>
 
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  const accordionButtons = document.querySelectorAll('.accordion-button');
-  const radioButtons = document.querySelectorAll('.service-radio');
-  
-  radioButtons.forEach(radio => {
-    radio.addEventListener('change', () => {
-      const serviceGroup = radio.dataset.serviceGroup;
-      
-      // Highlight the selected accordion header
-      accordionButtons.forEach(btn => {
-        btn.classList.remove('text-primary', 'fw-bold');
-        const desc = btn.querySelector('p');
-        if (desc) desc.classList.remove('text-primary');
-        if (desc) desc.classList.add('text-muted');
-      });
-      
-      const selectedHeader = document.querySelector(`.accordion-button[data-service-group="${serviceGroup}"]`);
-      if (selectedHeader) {
-        selectedHeader.classList.add('text-primary', 'fw-bold');
-        const desc = selectedHeader.querySelector('p');
-        if (desc) {
-          desc.classList.add('text-primary');
-          desc.classList.remove('text-muted');
-        }
-      }
-
-      // Clear inputs when custom is selected
-      if (radio.value === 'custom') {
-        document.querySelectorAll('.service-name-field').forEach(field => {
-          if (field.dataset.serviceGroupId !== serviceGroup) {
-            field.value = '';
-          }
-        });
-      }
-    });
-  });
-  
-  // Init selected state
-  const initiallySelectedRadio = document.querySelector('.service-radio:checked');
-  if (initiallySelectedRadio) {
-    const serviceGroup = initiallySelectedRadio.dataset.serviceGroup;
-    const selectedHeader = document.querySelector(`.accordion-button[data-service-group="${serviceGroup}"]`);
-    if (selectedHeader) {
-      selectedHeader.classList.add('text-primary', 'fw-bold');
-      const desc = selectedHeader.querySelector('p');
-      if (desc) {
-        desc.classList.add('text-primary');
-        desc.classList.remove('text-muted');
-      }
-    }
-  }
-});
-</script>
-
 <%# template %>
 <div class="upload-file-input mb-2 gap-2" id="new-file-input" style="display: none;">
   <input type="file" name="job_task[user_files][]" class="form-control" />
@@ -239,5 +184,4 @@ document.addEventListener('DOMContentLoaded', () => {
   </button>
 </div>
 
-<%= vite_javascript_tag 'file_input_form' %>
 <%= vite_javascript_tag 'job_orders_wizard' %>

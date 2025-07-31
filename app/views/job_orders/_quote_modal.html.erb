@@ -90,6 +90,43 @@
         </div>
       <% end %>
 
+      <!-- Line Items -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="m-0">Additional Line Items</h5>
+        </div>
+        <div class="card-body">
+          <div id="line-items-container">
+            <% @job_order.job_quote_line_items.each_with_index do |item, i| %>
+              <div class="d-flex mb-2 gap-1 line-item">
+                <%= text_field_tag "job_quote_line_items[#{i}][description]", item.description, class: "form-control w-50", placeholder: "Description" %>
+                <div class="input-group w-25">
+                  <span class="input-group-text">$</span>
+                  <%= number_field_tag "job_quote_line_items[#{i}][price]", item.price, step: "0.01", class: "form-control money-input line-item-price", placeholder: "0.00" %>
+                </div>
+                <button class="btn btn-danger line-item-delete ms-2" type="button">
+                  <i class="fa fa-trash"></i>
+                </button>
+              </div>
+            <% end %>
+          </div>
+
+          <button type="button" class="btn btn-outline-primary" id="new-line-item">New Line Item</button>
+
+        <!-- template -->
+          <div class="mb-2 gap-1 line-item" id="new-line-item-template" style="display: none;">
+            <%= text_field_tag "job_quote_line_items[__INDEX__][description]", nil, class: "form-control w-50", placeholder: "Description" %>
+            <div class="input-group w-25">
+              <span class="input-group-text">$</span>
+              <%= number_field_tag "job_quote_line_items[__INDEX__][price]", nil, step: "0.01", class: "form-control money-input line-item-price", placeholder: "0.00" %>
+            </div>
+            <button class="btn btn-danger line-item-delete ms-2" type="button">
+              <i class="fa fa-trash"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- User Comments -->
       <div class="form-group mb-3">
         <%= f.label :user_comments, 'Comments for the user (will send as a chat)' %>
@@ -111,38 +148,3 @@
   <% end %>
 </div>
 
-<script>
-  function parseVal(el) {
-    const val = parseFloat(el.value);
-    return isNaN(val) ? 0.0 : val;
-  }
-
-  function calculateTotal() {
-    let total = 0.0;
-
-    document.querySelectorAll(".card").forEach(card => {
-      let baseFee = parseVal(card.querySelector(".base-fee") || { value: 0 });
-      let qty = parseVal(card.querySelector(".service-qty") || { value: 0 });
-      let pricePer = parseVal(card.querySelector(".service-price") || { value: 0 });
-
-      let serviceTotal = qty * pricePer;
-      total += baseFee + serviceTotal;
-
-      card.querySelectorAll(".option-price").forEach(opt => {
-        total += parseVal(opt);
-      });
-    });
-
-    document.getElementById("quote-total-value").textContent = total.toFixed(2);
-  }
-
-  document.querySelectorAll(".money-input, .service-qty").forEach((el) => {
-    el.addEventListener("input", calculateTotal);
-    el.addEventListener("blur", () => {
-      if (el.value !== "") el.value = parseVal(el).toFixed(2);
-      calculateTotal();
-    });
-  });
-
-  document.addEventListener("DOMContentLoaded", setTimeout(calculateTotal, 10)); // Without timeout, total stays at 0 until input for some reason
-</script>

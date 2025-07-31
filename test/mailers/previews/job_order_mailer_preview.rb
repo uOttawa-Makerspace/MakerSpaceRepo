@@ -6,7 +6,7 @@ class JobOrderMailerPreview < ActionMailer::Preview
 
   def send_job_quote
     job_order = JobOrder.last || create_job_order_with_statuses
-    JobOrderMailer.send_job_quote(job_order.id)
+    JobOrderMailer.send_job_quote(JobOrder.find(454).id)
   end
 
   def send_job_quote_reminder

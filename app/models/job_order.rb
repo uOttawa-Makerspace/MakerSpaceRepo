@@ -172,8 +172,19 @@ class JobOrder < ApplicationRecord
   end
 
   def total_price
-    job_tasks.includes(:job_task_quote).sum do |job_task|
- job_task.job_task_quote&.total_task_price.to_f end + job_quote_line_items.sum(:price)
+    total = 0
+    job_tasks.each do |task|
+      next unless task.job_task_quote.present?
+      total += task.job_task_quote.price + (task.job_task_quote.service_price * task.job_task_quote.service_quantity)
+      next unless task.job_task_quote.job_task_quote_options.any?
+      task.job_task_quote.job_task_quote_options.each do |opt|
+        total += opt.price
+      end
+    end
+
+    total += job_quote_line_items.sum(:price)
+
+    total
   end
 
   def shopify_draft_order_line_items

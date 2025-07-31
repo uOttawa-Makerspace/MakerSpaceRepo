@@ -248,6 +248,23 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
           end
         end
 
+        # line items
+        if params[:job_quote_line_items].present?
+          @job_order.job_quote_line_items.destroy_all
+
+          params[:job_quote_line_items].each_value do |item_params|
+            desc = item_params[:description].to_s.strip
+            price = item_params[:price].to_s.strip
+
+            next if desc.blank? && price.blank?
+
+            @job_order.job_quote_line_items.create!(
+              description: desc,
+              price: price.presence || 0.0
+            )
+          end
+        end
+
         if params[:user_comments].present?
           @job_order.chat_messages.create(
             message: params[:comments],

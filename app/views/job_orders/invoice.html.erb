@@ -216,6 +216,19 @@
       <% end %>
     <% end %>
 
+    <% if @job_order.job_quote_line_items.any? %>
+      <% @job_order.job_quote_line_items.each do |item| %>
+        <tr class="item">
+          <td>
+            <%= item.description.presence || "Line Item" %>
+          </td>
+          <td>
+            CAD <%= number_to_currency(item.price) %>
+          </td>
+        </tr>
+      <% end %>
+    <% end %>
+
     <tr class="total">
       <td></td>
       <td>

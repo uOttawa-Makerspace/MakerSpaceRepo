@@ -51,7 +51,7 @@
                     </p>
 
                     <p>
-                      <strong>Tarification :</strong><br>
+                      <strong>Prix :</strong><br>
                       <% @job_order.job_tasks.each do |task| %>
                         - <%= task.title %>
                         <% if task.job_service.present? %>
@@ -73,7 +73,7 @@
                               ×
                               <%= number_to_currency(task.job_task_quote.service_price) %><% end %>)</small>
                         <% else %>
-                          Tarification en attente
+                          Prix en attente
                         <% end %>
                         <br>
 
@@ -83,6 +83,15 @@
                           <br>
                         <% end %>
                       <% end %>
+
+                      <% if @job_order.job_quote_line_items.any? %>
+                        <strong>Articles détaillés :</strong><br>
+                        <% @job_order.job_quote_line_items.each do |item| %>
+                          - <%= item.description %>: CAD <%= number_to_currency(item.price) %>
+                          <br>
+                        <% end %>
+                      <% end %>
+
                       <strong>Total général :</strong> CAD <%= number_to_currency(@job_order.total_price) %>
                     </p>
 
@@ -132,6 +141,15 @@
                           <br>
                         <% end %>
                       <% end %>
+
+                      <% if @job_order.job_quote_line_items.any? %>
+                        <strong>Line items:</strong><br>
+                        <% @job_order.job_quote_line_items.each do |item| %>
+                          - <%= item.description %>: CAD <%= number_to_currency(item.price) %>
+                          <br>
+                        <% end %>
+                      <% end %>
+
                       <strong>Grand Total:</strong> CAD <%= number_to_currency(@job_order.total_price) %>
                     </p>
 

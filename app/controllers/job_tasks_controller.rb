@@ -44,8 +44,10 @@ class JobTasksController < ApplicationController
       render "job_orders/wizard/service"
     when 3
       @options = JobOption
-                  .joins(:job_types)
-                  .where(job_types: { id: @job_task.job_type_id })
+        .joins(:job_types)
+        .where(job_types: { id: @job_task.job_type_id })
+        .where("job_options.is_deleted = FALSE OR job_options.id IN (?)", 
+              @job_task.job_task_options.pluck(:job_option_id))
       render "job_orders/wizard/options"
     when 4
       render "job_orders/wizard/submission"
@@ -108,9 +110,14 @@ class JobTasksController < ApplicationController
     end
 
     # Remove options that weren't submitted (if on that step of form)
-    @job_task.job_task_options
-            .where.not(job_option_id: submitted_options.keys)
-            .destroy_all if params[:step].to_i == 3
+    if params[:step].to_i == 3
+      @job_task.job_task_options.where.not(job_option_id: submitted_options.keys).destroy_all
+
+      # Also remove quoted options if the option is deselected
+      if @job_task.job_task_quote
+        @job_task.job_task_quote.job_task_quote_options.where.not(job_option_id: submitted_options.keys).destroy_all
+      end
+    end
 
     # Handle rest
     if job_task_params.present? && !@job_task.update(job_task_params.except(:job_task_options_attributes))
