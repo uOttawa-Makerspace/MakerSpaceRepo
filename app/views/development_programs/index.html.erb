@@ -26,7 +26,7 @@
                     <h2><%= t('devprog.nav.learning_area') %></h2>
                     <p class="flex-grow-1"><%= t('devprog.block1.learning_area') %></p>
                     <!-- Use the navbar localizations, I think this is just the navbar in block form -->
-                    <% if current_user.role != "regular_user" %>
+                    <% if current_user.role == "admin" %>
                         <%= link_to t('devprog.nav.new_module'), new_learning_area_path %>
                     <% end %>
                     <%= link_to t('devprog.nav.all_modules'), learning_area_index_path %>
@@ -36,7 +36,7 @@
                 <div class="linkBox d-flex flex-column">
                     <h2><%= t('devprog.nav.proficient_projects') %></h2>
                     <p class="flex-grow-1"><%= t('devprog.block1.proficient_projects') %></p>
-                    <% if current_user.role != "regular_user" %>
+                    <% if current_user.role == "admin" %>
                         <%= link_to t('devprog.nav.requests'), requests_proficient_projects_path %>
                         <%= link_to t('devprog.nav.new_project'), new_proficient_project_path %>
                     <% end %>
@@ -48,8 +48,8 @@
                     <h2><%= t('devprog.nav.badges') %></h2>
                     <p class="flex-grow-1"><%= t('devprog.block1.skills_badges') %></p>
                     <div class="align-bottom">
-                    <%= link_to t('devprog.nav.badges_view'), badge_templates_development_programs_path %>
-                    <% if current_user.role != "regular_user" %>
+                    <%= link_to t('devprog.nav.badges_view'), all_badges_development_programs_path %>
+                    <% if current_user.role == "admin" %>
                         <%= link_to t('devprog.nav.badges_search'), badges_path %>
                     <% end %>
                     </div>

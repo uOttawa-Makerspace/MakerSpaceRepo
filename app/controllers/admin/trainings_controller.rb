@@ -10,10 +10,14 @@ class Admin::TrainingsController < AdminAreaController
 
   def new
     @new_training = Training.new
+    @skills_en
+    @skills_fr
   end
 
   def edit
     @training = Training.find(params[:id])
+    @skills_en = @training.tokenize_info_en unless @training.list_of_skills_en.nil?
+    @skills_fr = @training.tokenize_info_fr unless @training.list_of_skills_fr.nil?
   end
 
   def create
@@ -27,10 +31,32 @@ class Admin::TrainingsController < AdminAreaController
   end
 
   def update
-    @changed_training.update(training_params)
+    if params[:skills_en].present?
+      arr_en = []
+      arr_fr = []
+      params[:skills_en].each_with_index do |sk, i|
+        arr_en << sk
+        arr_fr << params[:skills_fr][i]
+      end
+    end
+    @changed_training.update(
+      name_en: params[:name_en],
+      name_fr: params[:name_fr],
+      skill_id: params[:skill_id],
+      description_en: params[:description_en],
+      description_fr: params[:description_fr],
+      list_of_skills_en: " ",
+      list_of_skills_fr: " ",
+      has_badge: params[:has_badge],
+      space_ids: params[:space_ids]
+      )
+    Rails.logger.debug "__________________________________________________________________________________________________________"
+    Rails.logger.debug params.inspect
     if @changed_training.save
       flash[:notice] = "Training renamed successfully"
     else
+      Rails.logger.debug "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]"
+      @changed_training.errors.full_messages
       flash[:alert] = "Input is invalid"
     end
     redirect_to admin_trainings_path
@@ -53,7 +79,6 @@ class Admin::TrainingsController < AdminAreaController
       :description_en,
       :description_fr,
       :training_level,
-      :list_of_skills_en,
       :list_of_skills_fr,
       :has_badge,
       space_ids: []

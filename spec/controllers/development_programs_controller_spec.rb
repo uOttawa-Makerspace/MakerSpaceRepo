@@ -44,19 +44,19 @@ RSpec.describe DevelopmentProgramsController, type: :controller do
     end
   end
 
-  describe "GET /badge_templates" do
+  describe "GET /all_badges" do
     context "allows only users in the dev program" do
       it "should return 200 response" do
         user = create(:user, :volunteer_with_dev_program)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
         #binding.pry
-        expect(get(:badge_templates)).to have_http_status(:success)
+        expect(get(:all_badges)).to have_http_status(:success)
       end
 
       it "should return 300-399 response" do
         session[:user_id] = nil
-        expect(get(:badge_templates)).to have_http_status(:redirect)
+        expect(get(:all_badges)).to have_http_status(:redirect)
       end
     end
   end

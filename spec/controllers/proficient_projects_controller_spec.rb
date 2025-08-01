@@ -202,7 +202,8 @@ create(training_id: training.id, level: "Intermediate")]
                 proficient_project: {
                   title: "abc"
                 },
-                training_requirements_id: [create(:training).id, create(:training).id]
+                training_requirements_id: [create(:training).id, create(:training).id],
+                training_requirements_level: ["Beginner", "Intermediate"]
               }
         expect(response.body).to redirect_to(
           proficient_project_path(ProficientProject.last.id)

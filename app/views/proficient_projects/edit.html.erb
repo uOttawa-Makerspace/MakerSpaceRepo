@@ -57,8 +57,6 @@
             <h4>Training Requirements</h4>
               <div id="link-container">
                 <% unless @training_requirements.nil? %>
-                <% Rails.logger.debug "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" %>
-                <% Rails.logger.debug @training_requirements %>
                   <% @training_requirements.each do |tr| %>
                     <div class="d-flex upload-file-input mb-2 gap-1">
                       <%= select_tag :training_requirements_id, options_for_select(@trainings.collect{ |t| [t.name_en, t.id] }, selected: tr.training_id), name: 'training_requirements_id[]' %>

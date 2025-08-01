@@ -17,7 +17,7 @@ class DevelopmentProgramsController < ApplicationController
     render layout: "application"
   end
 
-  def badge_templates
+  def all_badges
     @certifications = current_user.certifications
     @digital_certs = []
     @manu_certs = []

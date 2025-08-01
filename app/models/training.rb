@@ -34,4 +34,31 @@ class Training < ApplicationRecord
   def list_of_skills
     I18n.locale == :fr ? list_of_skills_fr : list_of_skills_en
   end
+
+  def tokenize_info_en
+    arr = list_of_skills_en.split(',')
+    arr.collect(&:strip)
+    arr
+  end
+
+  def tokenize_info_fr
+    arr = list_of_skills_fr.split(',')
+    arr.collect(&:strip)
+    arr
+  end
+
+  def create_list_of_skills(list_en, list_fr)
+    Rails.logger.debug "###########################################################################################"
+    Rails.logger.debug list_en
+    arr_en = []
+    list_en.each do |i|
+      arr_en << i
+    end
+    arr_fr = []
+    list_fr.each do |i|
+      arr_fr << i
+    end
+    self.list_of_skills_en = arr_en.join(', ')
+    self.list_of_skills_fr = arr_fr.join(', ')
+  end
 end
