@@ -47,18 +47,8 @@ class Training < ApplicationRecord
     arr
   end
 
-  def create_list_of_skills(list_en, list_fr)
-    Rails.logger.debug "###########################################################################################"
-    Rails.logger.debug list_en
-    arr_en = []
-    list_en.each do |i|
-      arr_en << i
-    end
-    arr_fr = []
-    list_fr.each do |i|
-      arr_fr << i
-    end
-    self.list_of_skills_en = arr_en.join(', ')
-    self.list_of_skills_fr = arr_fr.join(', ')
+  def create_list_of_skills(los_en, los_fr)
+    self.list_of_skills_en = los_en
+    self.list_of_skills_fr = los_fr
   end
 end

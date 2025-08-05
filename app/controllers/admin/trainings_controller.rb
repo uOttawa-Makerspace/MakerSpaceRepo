@@ -1,6 +1,5 @@
 class Admin::TrainingsController < AdminAreaController
   layout "admin_area"
-  before_action :changed_training, only: %i[update destroy]
   before_action :set_spaces, only: %i[new edit]
   before_action :set_skills, only: %i[new edit]
 
@@ -18,10 +17,14 @@ class Admin::TrainingsController < AdminAreaController
     @training = Training.find(params[:id])
     @skills_en = @training.tokenize_info_en unless @training.list_of_skills_en.nil?
     @skills_fr = @training.tokenize_info_fr unless @training.list_of_skills_fr.nil?
+    Rails.logger.debug "11111111111111111111111111111111111111111111111111111111111"
+    Rails.logger.debug @skills_en
   end
 
   def create
+    serialize_skills
     @new_training = Training.new(training_params)
+    @new_training.create_list_of_skills(params[:list_of_skills_en], params[:list_of_skills_fr])
     if @new_training.save
       flash[:notice] = "Training added successfully!"
     else
@@ -31,38 +34,28 @@ class Admin::TrainingsController < AdminAreaController
   end
 
   def update
-    if params[:skills_en].present?
-      arr_en = []
-      arr_fr = []
-      params[:skills_en].each_with_index do |sk, i|
-        arr_en << sk
-        arr_fr << params[:skills_fr][i]
-      end
-    end
-    @changed_training.update(
-      name_en: params[:name_en],
-      name_fr: params[:name_fr],
-      skill_id: params[:skill_id],
-      description_en: params[:description_en],
-      description_fr: params[:description_fr],
-      list_of_skills_en: " ",
-      list_of_skills_fr: " ",
-      has_badge: params[:has_badge],
-      space_ids: params[:space_ids]
-      )
+    @changed_training = Training.find(params[:id])
+    serialize_skills
+    @changed_training.create_list_of_skills(params[:list_of_skills_en], params[:list_of_skills_fr])
     Rails.logger.debug "__________________________________________________________________________________________________________"
     Rails.logger.debug params.inspect
+    Rails.logger.debug params['list_of_skills_en[]']
+    Rails.logger.debug params[:list_of_skills_en]
+    @changed_training.update(training_params)
     if @changed_training.save
-      flash[:notice] = "Training renamed successfully"
+      flash[:notice] = "Training updated successfully"
+      redirect_to admin_trainings_path
     else
-      Rails.logger.debug "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]"
-      @changed_training.errors.full_messages
-      flash[:alert] = "Input is invalid"
+      Rails.logger.debug "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]"
+      
+      flash[:alert] = @changed_training.errors.full_messages
+      redirect_to edit_admin_training_path
     end
-    redirect_to admin_trainings_path
+    
   end
 
   def destroy
+    @changed_training = Training.find(params["id"])
     flash[
       :notice
     ] = "Training removed successfully" if @changed_training.destroy
@@ -79,14 +72,16 @@ class Admin::TrainingsController < AdminAreaController
       :description_en,
       :description_fr,
       :training_level,
+      :list_of_skills_en,
       :list_of_skills_fr,
       :has_badge,
       space_ids: []
     )
   end
 
-  def changed_training
-    @changed_training = Training.find(params["id"])
+  def serialize_skills
+    params[:list_of_skills_en] = params[:list_of_skills_en].join(', ')
+    params[:list_of_skills_fr] = params[:list_of_skills_fr].join(', ')
   end
 
   def set_spaces
