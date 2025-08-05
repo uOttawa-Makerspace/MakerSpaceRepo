@@ -3,6 +3,8 @@
 require "date"
 
 class Staff::ShiftsScheduleController < StaffAreaController
+  include ShiftsDeprecationWarning
+
   layout "staff_area"
 
   before_action :set_default_space
