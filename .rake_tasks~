@@ -60,10 +60,12 @@ diagram:models:complete_with_engines
 diagram:setup:create_new_doc_folder_if_needed
 emails:send_survey_ceed
 exams:check_expired_exams
+importmap:install
 increment_year:fix
 increment_year:fix_this_year
 increment_year:increment_one_year
 log:clear
+mission_control:jobs:authentication:configure
 move_volunteer_to_volunteer_program:move
 popular_hours:calculate_popular_hours
 print_order_notifications:two_weeks_reminder
@@ -74,9 +76,13 @@ project_proposals:translate_client_type
 project_proposals:translate_level_of_interest
 questions:update_attachment
 reports:send_cdel_report_to_sharepoint
+solid_queue:install
+solid_queue:start
 spec
 spec:config
 spec:controllers
+spec:jobs
+spec:mailers
 spec:models
 spec:requests
 stats
@@ -92,6 +98,10 @@ time:zones[country_or_offset]
 tmp:clear
 tmp:create
 training_sessions:populate_course_name_id
+turbo:install
+turbo:install:bun
+turbo:install:importmap
+turbo:install:node
 update_mailer:send_email
 update_profile:send_emails[removed_emails]
 update_wiki_users:run
