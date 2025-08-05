@@ -88,7 +88,7 @@ export function eventClick(eventImpl) {
     endTimeField.value = toLocalDatetimeString(end);
   }
 
-  document.getElementById("title").value = event.title || "";
+  document.getElementById("title").value = event.title.replace(/✎/g, "") || "";
   document.getElementById("description").value =
     event.extendedProps.description || "";
 
@@ -228,6 +228,8 @@ export function eventCreate(info) {
   document.getElementById("end_time_field").value = toLocalDatetimeString(
     info.end,
   );
+
+  document.getElementById("training-fields").style.display = "none";
 
   // This must be called after the start and end times are set, since marking staff as unavailable (on modal show) relies on these values.
   document.getElementById("addEventButton").click();
