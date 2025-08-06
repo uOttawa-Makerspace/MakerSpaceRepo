@@ -29,7 +29,7 @@ module SoftDelete
       dup_record.save! # create new one
 
       # copy services if sg
-      if is_a?(JobServiceGroup)
+      if is_a?(JobServiceGroup) && services.any?
         services.each do |service|
           new_service = service.dup
           new_service.service_group_id = dup_record.id
