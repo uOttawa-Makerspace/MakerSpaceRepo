@@ -5,10 +5,18 @@
 
         <hr />
 
-        <div class="row">
-            <div class="col-lg-6 mb-3 d-flex flex-column justify-content-between">
+        <div class="text-center">
+            <div class="btn-group">
+                <%= f.radio_button :is_minor, false, checked: true, class: 'btn-check', data: {show: '#adult-contact', hide: '#minor-contact'} %>
+                <%= f.label :is_minor_false, "I am an adult", class: 'btn btn-outline-primary' %>
+                <%= f.radio_button :is_minor, true, checked: false, class: 'btn-check', data: {show: '#minor-contact', hide: '#adult-contact'} %>
+                <%= f.label :is_minor_true, "I am a minor", class: 'btn btn-outline-primary' %>
+            </div>
+        </div>
+        <div>
+            <div id="adult-contact">
                 <div class="mb-5">
-                    <p class="text-center"><strong><%= t 'walk_in_safety_sheet.adult_contact.title' %></strong></p>
+                    <p class="text-center fs-3"><strong><%= t 'walk_in_safety_sheet.adult_contact.title' %></strong></p>
                     <p><%= t 'walk_in_safety_sheet.adult_contact.subtext_html' %></p>
                 </div>
 
@@ -24,11 +32,7 @@
                     <div class="mb-3">
                         <%= f.label :participant_signature, t('walk_in_safety_sheet.adult_contact.participant_signature'), class: 'form-label' %>
                         <%= f.text_field :participant_signature, class: 'form-control' %>
-                    </div>
-
-                    <div class="mb-3">
-                        <%= f.label :participant_print_name, t('walk_in_safety_sheet.adult_contact.print_name_of_participant') , class: 'form-label' %>
-                        <%= f.text_field :participant_print_name, class: 'form-control' %>
+                        <div class="form-text">By entering your name, you agree to the terms above</div>
                     </div>
 
                     <div class="mb-3">
@@ -38,20 +42,14 @@
                 </fieldset>
             </div>
 
-            <div class="col-lg-6 mb-3 d-flex flex-column justify-content-between">
+            <div id="minor-contact">
                 <div class="mb-5">
-                    <p class="text-center"><strong><%= t('walk_in_safety_sheet.minor_contact.title') %></strong></p>
+                    <p class="text-center fs-3"><strong><%= t('walk_in_safety_sheet.minor_contact.title') %></strong></p>
                     <p><%= t('walk_in_safety_sheet.minor_contact.subtext_html') %></p>
                 </div>
 
                 <fieldset>
                     <%# These aren't being set as required, up to supervisor to enforce %>
-                    <%# Model would validate complete pairs however %>
-                    <div class="mb-3">
-                        <%= f.label :guardian_name, t('walk_in_safety_sheet.minor_contact.guardian_name'), class: 'form-label' %>
-                        <%= f.text_field :guardian_name, class: 'form-control' %>
-                    </div>
-
                     <div class="mb-3">
                         <%= f.label :guardian_signature, t('walk_in_safety_sheet.minor_contact.guardian_signature'), class: 'form-label' %>
                         <%= f.text_field :guardian_signature, class: 'form-control' %>
@@ -78,25 +76,24 @@
         <div class="mb-3">
             <p><strong>Important For All Participants</strong></p>
             <div class="row row-cols-lg-2">
-                <div>
+                <div class="mb-3">
                     <%= f.label :emergency_contact_name, "Name of other emergency contact", class: 'form-label' %>
                     <%= f.text_field :emergency_contact_name, class: 'form-control' %>
                 </div>
-                <div>
+                <div class="mb-3">
                     <%= f.label :emergency_contact_telephone, "Emergency contact telephone", class: 'form-label' %>
                     <%= f.telephone_field :emergency_contact_telephone, class: 'form-control' %>
                 </div>
-                <div>
+                <div class="mb-3">
                     <%= f.label :supervisor_name, "Name of University Employee Supervising Participant", class: 'form-label' %>
                     <%= f.text_field :supervisor_name, class: 'form-control' %>
                 </div>
-                <div>
+                <div class="mb-3">
                     <%= f.label :supervisor_telephone, "Supervisor telephone", class: 'form-label' %>
                     <%= f.telephone_field :supervisor_telephone, class: 'form-control' %>
                 </div>
             </div>
         </div>
-
 
         <div class="d-flex">
             <%= f.submit f.object.persisted? ? "Update contact details" : "Sign sheet", class: 'btn btn-primary mx-auto' %>

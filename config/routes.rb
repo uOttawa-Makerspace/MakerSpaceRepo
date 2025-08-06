@@ -652,8 +652,8 @@ Rails.application.routes.draw do
     collection { post :bulk_add_users }
   end
 
-  resource :walk_in_safety_sheet
-  resolve("WalkInSafetySheet") {[:walk_in_safety_sheet]}
+  resources :walk_in_safety_sheets, only: [:index, :show, :create, :update]
+  #resolve("WalkInSafetySheet") {[:walk_in_safety_sheet]}
 
   # namespace :help do
   #   get 'main', path: '/'

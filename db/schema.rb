@@ -1370,20 +1370,19 @@ ActiveRecord::Schema[7.2].define(version: 2025_07_27_155137) do
 
   create_table "walk_in_safety_sheets", force: :cascade do |t|
     t.bigint "user_id"
+    t.bigint "space_id"
+    t.boolean "is_minor"
     t.string "participant_signature"
-    t.string "participant_print_name"
     t.string "participant_telephone_at_home"
-    t.string "guardian_name"
     t.string "guardian_signature"
     t.string "minor_participant_name"
     t.string "guardian_telephone_at_home"
     t.string "guardian_telephone_at_work"
     t.string "emergency_contact_name"
     t.string "emergency_contact_telephone"
-    t.string "supervisor_name"
-    t.string "supervisor_telephone"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["space_id"], name: "index_walk_in_safety_sheets_on_space_id"
     t.index ["user_id"], name: "index_walk_in_safety_sheets_on_user_id"
   end
 

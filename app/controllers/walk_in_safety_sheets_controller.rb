@@ -4,8 +4,14 @@ class WalkInSafetySheetsController < SessionsController
   # how many checkboxes should be sent
   NUMBER_OF_AGREEMENTS = 6
 
+  # show a list of spaces to sign for
+  def index
+    @spaces = Space.where.associated(:space_managers)
+  end
+
   def show
-    @walk_in_safety_sheet = WalkInSafetySheet.find_or_initialize_by(user: current_user)
+    @space = Space.find(params[:id]) # Space to sign entry for
+    @walk_in_safety_sheet = WalkInSafetySheet.find_or_initialize_by(user: current_user, space: @space)
   end
 
   # User pressed 'sign sheet'
@@ -37,17 +43,14 @@ class WalkInSafetySheetsController < SessionsController
 
   def walk_in_safety_sheet_params
     params.require(:walk_in_safety_sheet).permit(
-      :supervisor_name,
-      :supervisor_telephone,
+      :is_minor,
 
-      #adult_contact: [
       #:participant_student_number,
       :participant_signature,
-      :participant_print_name,
+      #:participant_print_name,
       :participant_telephone_at_home,
 
-      #minor_contact: [
-      :guardian_name,
+      #:guardian_name,
       :guardian_signature,
       :minor_participant_name,
       :guardian_telephone_at_home,
@@ -56,6 +59,10 @@ class WalkInSafetySheetsController < SessionsController
       # emergency_contact
       :emergency_contact_name,
       :emergency_contact_telephone,
+
+      # we already have this
+      #:supervisor_name,
+      #:supervisor_telephone,
     )
   end
 end
