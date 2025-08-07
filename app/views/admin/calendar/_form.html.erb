@@ -70,6 +70,38 @@
                             required: true %>
                     </div>
 
+                    <div id="training-fields">
+                        <div class="mb-3">
+                            <label class="form-label">Training</label>
+                            <%= f.collection_select :training_id,
+                                Training.joins(:spaces_trainings)
+                                        .where(spaces_trainings: { space_id: @space_id })
+                                        .select(:id, :name_en),
+                                :id, :name_en,
+                                {include_blank: 'Select a training'},
+                                id: 'training_select',
+                                class: 'form-select' %>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Language</label>
+                            <%= f.select :language,
+                                options_for_select([['English', 'en'], ['French', 'fr']]),
+                                {include_blank: 'Select language'},
+                                id: 'language_select',
+                                class: 'form-select' %>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Course</label>
+                            <%= f.select :course_name,
+                                options_for_select(CourseName.all.map {|c| [c.name, c.id]}),
+                                {include_blank: 'Select course'},
+                                id: 'course_select',
+                                class: 'form-select' %>
+                        </div>
+                    </div>
+
                     <div id="staff_select_container">
                         <label class="form-label">Assigned Staff</label>
                         <select name="staff_select[]" id="staff_select" class="form-select" multiple="true"></select>
