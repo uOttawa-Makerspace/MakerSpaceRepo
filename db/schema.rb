@@ -260,7 +260,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_07_31_163455) do
     t.string "google_event_id"
     t.bigint "training_id"
     t.string "language"
-    t.string "course"
+    t.bigint "course_name_id"
+    t.index ["course_name_id"], name: "index_events_on_course_name_id"
     t.index ["training_id"], name: "index_events_on_training_id"
   end
 
@@ -1464,6 +1465,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_07_31_163455) do
   add_foreign_key "discount_codes", "price_rules"
   add_foreign_key "discount_codes", "users"
   add_foreign_key "equipment", "repositories"
+  add_foreign_key "events", "course_names", on_delete: :nullify
   add_foreign_key "events", "trainings", on_delete: :nullify
   add_foreign_key "job_order_options", "job_options"
   add_foreign_key "job_order_options", "job_orders"

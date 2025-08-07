@@ -154,7 +154,7 @@ export function eventClick(eventImpl) {
     document.getElementById("language_select").value =
       event.extendedProps.language || null;
     document.getElementById("course_select").value =
-      event.extendedProps.course || null;
+      event.extendedProps.course_name.id || null;
   } else {
     trainingFields.style.display = "none";
   }

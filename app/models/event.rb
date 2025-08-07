@@ -5,6 +5,7 @@ class Event < ApplicationRecord
   has_many :users, through: :event_assignments, source: :user
 
   belongs_to :training, optional: true
+  belongs_to :course_name, optional: true
 
   validates :start_time, :end_time, :created_by_id, :space_id, :event_type, presence: true
 
@@ -94,7 +95,7 @@ class Event < ApplicationRecord
       training_details = [
         "Training: #{event.training.name_en}",
         "Language: #{language}",
-        "Course: #{event.course}" # Assuming there's a course association
+        "Course: #{event&.course_name&.name}" # Assuming there's a course association
       ].join("\n")
 
       description = [description, training_details].reject(&:blank?).join("\n\n")
