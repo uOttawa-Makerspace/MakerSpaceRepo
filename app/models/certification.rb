@@ -21,6 +21,9 @@ class Certification < ApplicationRecord
         }
   scope :inactive, -> { unscoped.where(active: false) }
 
+  ##
+  # manually finds the training associated with this certification. If you know an easier way of doing this using active
+  # record associations, please fix this.
   def training
     if training_session.nil?
       proficient_project_session.proficient_project.training
@@ -29,6 +32,9 @@ class Certification < ApplicationRecord
     end
   end
 
+  ##
+  # manually finds the trainer associated with this certification. If you know an easier way of doing this using active
+  # record associations, please fix this.
   def trainer
     if training_session.nil?
       proficient_project_session.user.name

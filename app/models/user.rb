@@ -385,6 +385,9 @@ class User < ApplicationRecord
     update(wallet: get_total_cc)
   end
 
+  ##
+  # returns true if the user has a certification from each training associated to the training requirements
+  # training_reqs stores n training requirements, each associated with a training and a proficient project
   def has_requirements?(training_reqs)
     training_reqs.each do |treq|
       tid = treq.training_id
@@ -393,6 +396,9 @@ class User < ApplicationRecord
     end
   end
 
+  ##
+  # Given a training and a level, finds out if the user possesses a certification of that exact training and level.
+  # returns true if they posess the certification.
   def has_training?(tid, l)
     count = 0
     certifications.each do |cert|
@@ -401,6 +407,8 @@ class User < ApplicationRecord
     count > 0
   end
 
+  ##
+  # returns the certification of highest level owned by this user, given any training. Outdated
   def highest_badge(training)
     badges =
         certifications

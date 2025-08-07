@@ -35,6 +35,8 @@ class Training < ApplicationRecord
     I18n.locale == :fr ? list_of_skills_fr : list_of_skills_en
   end
 
+  ##
+  # Convertes column list_of_skills_en into an array of strings
   def tokenize_info_en
     if list_of_skills_en.nil?
       arr = []
@@ -44,7 +46,8 @@ class Training < ApplicationRecord
       arr
     end
   end
-
+  ##
+  # Converts column list_of_skills_fr into an array of strings
   def tokenize_info_fr
     if list_of_skills_fr.nil?
       arr = []
@@ -55,11 +58,17 @@ class Training < ApplicationRecord
     end
   end
 
+  ##
+  # Assigns the new lists of skills.
+  # los_en: string format of english skills
+  # los_fr: string format of french skills
   def create_list_of_skills(los_en, los_fr)
     self.list_of_skills_en = los_en
     self.list_of_skills_fr = los_fr
   end
 
+  ##
+  # returns and array containing every skill ever listed
   def all_skills
     arr = []
   
