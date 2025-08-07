@@ -17,8 +17,7 @@ class Admin::TrainingsController < AdminAreaController
     @training = Training.find(params[:id])
     @skills_en = @training.tokenize_info_en unless @training.list_of_skills_en.nil?
     @skills_fr = @training.tokenize_info_fr unless @training.list_of_skills_fr.nil?
-    Rails.logger.debug "11111111111111111111111111111111111111111111111111111111111"
-    Rails.logger.debug @skills_en
+    @options = @training.filter_by_attributes(params[:search])
   end
 
   def create
@@ -37,17 +36,11 @@ class Admin::TrainingsController < AdminAreaController
     @changed_training = Training.find(params[:id])
     serialize_skills
     @changed_training.create_list_of_skills(params[:list_of_skills_en], params[:list_of_skills_fr])
-    Rails.logger.debug "__________________________________________________________________________________________________________"
-    Rails.logger.debug params.inspect
-    Rails.logger.debug params['list_of_skills_en[]']
-    Rails.logger.debug params[:list_of_skills_en]
     @changed_training.update(training_params)
     if @changed_training.save
       flash[:notice] = "Training updated successfully"
       redirect_to admin_trainings_path
-    else
-      Rails.logger.debug "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]"
-      
+    else      
       flash[:alert] = @changed_training.errors.full_messages
       redirect_to edit_admin_training_path
     end
@@ -80,8 +73,16 @@ class Admin::TrainingsController < AdminAreaController
   end
 
   def serialize_skills
-    params[:list_of_skills_en] = params[:list_of_skills_en].join(', ')
-    params[:list_of_skills_fr] = params[:list_of_skills_fr].join(', ')
+    params[:list_of_skills_en] = if params[:list_of_skills_en].nil?
+      " "
+    else
+      params[:list_of_skills_en].join(', ')
+                                 end
+    params[:list_of_skills_fr] = if params[:list_of_skills_fr].nil?
+      " "
+    else
+      params[:list_of_skills_fr].join(', ')
+                                 end
   end
 
   def set_spaces

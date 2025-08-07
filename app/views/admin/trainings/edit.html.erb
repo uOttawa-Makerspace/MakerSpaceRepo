@@ -44,7 +44,7 @@
                 <% unless @skills_en.nil? %>
                   <% @skills_en.each_with_index do |sk, i| %>
                     <div class="d-flex upload-file-input mb-2 gap-1">
-                      <%= text_field_tag 'list_of_skills_en[]', sk, { class: 'form-control w-25', placeholder: 'Enter name (en)...' } %>
+                      <%= text_field_tag 'list_of_skills_en[]', sk, { id: "search_bar", class: 'form-control', placeholder: 'Enter name (en)...' } %>
                       <% unless @skills_fr.nil? %>
                         <%= text_field_tag 'list_of_skills_fr[]', @skills_fr[i], { class: 'form-control', placeholder: 'Enter name (fr)...' } %>
                       <% end %>
@@ -59,6 +59,8 @@
 
             
           </div>
+
+
         <div class="col-md-12 form-group my-3 text-center">
           <%= f.submit t('admin.training.update'), class: 'btn btn-secondary btn-xl' %>
         </div>
@@ -72,7 +74,7 @@
   </div>
 
   <div class="d-flex upload-file-input mb-2 gap-1" id="new-link-input" style="visibility: hidden;">
-      <%= text_field_tag 'list_of_skills_en[]', nil, { class: 'form-control w-25', placeholder: 'Enter name (en)...' } %>
+      <%= text_field_tag 'list_of_skills_en[]', nil, { id: "skills-input", class: 'form-control', placeholder: 'Enter name (en)...' } %>
       <%= text_field_tag 'list_of_skills_fr[]', nil, { class: 'form-control', placeholder: 'Enter name (fr)...' } %>
       <button class="btn btn-danger sk-delete-button ms-2" type="button">
         <i class="fa fa-trash"></i>

@@ -21,18 +21,47 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+if (document.getElementById("search_bar")) {
+  document
+    .getElementById("search_bar")
+    .addEventListener("keyup", function (event) {
+      event.preventDefault();
+      let query = document.getElementById("search_bar").value;
+      if (query == "") {
+        query = ".";
+      }
+      if (query.length > 2 || query == ".") {
+        let url =
+          "/admin/trainings/" +
+          window.location.search("id") +
+          "/edit?search=" +
+          query;
+        fetch(url, {
+          method: "GET",
+          headers: {
+            Accept: "*/*",
+          },
+        })
+          .then((response) => response.text())
+          .then((data) => {
+            document.getElementsByClassName("skills_list")[0].innerHTML = data;
+          });
+      }
+    });
+}
+
 // Pass single element
 const element = document.getElementById("#skills-input");
 const choices = new Choices(element, {
   choices: [
     {
-      value: "Option 1",
+      value: "A 1",
       label: "Option 1",
       selected: true,
       disabled: false,
     },
     {
-      value: "Option 2",
+      value: "A 2",
       label: "Option 2",
       selected: false,
       disabled: true,
@@ -45,13 +74,13 @@ const choices = new Choices(element, {
       label: "Group 1",
       choices: [
         {
-          value: "Option 3",
+          value: "A 3",
           label: "Option 4",
           selected: true,
           disabled: false,
         },
         {
-          value: "Option 2",
+          value: "B 2",
           label: "Option 2",
           selected: false,
           disabled: true,
@@ -63,4 +92,5 @@ const choices = new Choices(element, {
       ],
     },
   ],
+  searchChoices: true,
 });

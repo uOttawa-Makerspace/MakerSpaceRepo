@@ -35,6 +35,16 @@ class BadgesController < DevelopmentProgramsController
   def show
     @certification = Certification.includes(:training).find(params[:id])
     @earner = User.find(@certification.user_id)
+    @los_en = @certification.training.tokenize_info_en
+    @los_fr = @certification.training.tokenize_info_fr
+    @skill_colour = 
+      if @certification.training.skill_id == 1
+        "#488b2c"
+      elsif @certification.training.skill_id == 2
+        "#dc4720"
+      else
+        "#3f7ed1"
+      end
   end
 
   def only_admin_access

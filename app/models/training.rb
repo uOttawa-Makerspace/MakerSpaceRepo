@@ -36,19 +36,58 @@ class Training < ApplicationRecord
   end
 
   def tokenize_info_en
-    arr = list_of_skills_en.split(',')
-    arr.collect(&:strip)
-    arr
+    if list_of_skills_en.nil?
+      arr = []
+    else
+      arr = list_of_skills_en.split(',')
+      arr.collect(&:strip)
+      arr
+    end
   end
 
   def tokenize_info_fr
-    arr = list_of_skills_fr.split(',')
-    arr.collect(&:strip)
-    arr
+    if list_of_skills_fr.nil?
+      arr = []
+    else
+      arr = list_of_skills_fr.split(',')
+      arr.collect(&:strip)
+      arr
+    end
   end
 
   def create_list_of_skills(los_en, los_fr)
     self.list_of_skills_en = los_en
     self.list_of_skills_fr = los_fr
+  end
+
+  def all_skills
+    arr = []
+  
+    Training.all.each do |t|
+      next if t.list_of_skills_en.nil?
+      t.tokenize_info_en.each do |sk|
+          arr << sk
+      end
+    end
+    arr
+  end
+
+  def filter_by_attributes(value)
+    if value
+      if value == "search="
+        all_skills
+      else
+        value = value.split("=").last.gsub("+", " ")
+        where(
+          tokenize_info_en.each do |sk|
+          "LOWER(#{sk}) like LOWER(?)"
+          "%#{value}%"
+          end 
+        )
+      end
+      
+    else
+      all_skills
+    end
   end
 end
