@@ -88,7 +88,8 @@ export function eventClick(eventImpl) {
     endTimeField.value = toLocalDatetimeString(end);
   }
 
-  document.getElementById("title").value = event.title.replace(/✎/g, "") || "";
+  document.getElementById("title").value =
+    event.title.replace(/✎/g, "").trim() || "";
   document.getElementById("description").value =
     event.extendedProps.description || "";
 

@@ -95,7 +95,7 @@
                         <div class="mb-3">
                             <label class="form-label">Course</label>
                             <%= f.select :course,
-                                options_for_select(['GNG2101', 'GNG2501', 'GNG1103', 'GNG1503', 'CVG2141', 'CVG2541', 'MCG4143', 'Other']),
+                                options_for_select(CourseName.all.map {|c| [c.name]}),
                                 {include_blank: 'Select course'},
                                 id: 'course_select',
                                 class: 'form-select' %>

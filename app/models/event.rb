@@ -84,7 +84,7 @@ class Event < ApplicationRecord
     end
 
     description = event.description.to_s
-    if event.training_id.present?
+    if event.event_type == 'training' && event.training_id.present?
       language = case event.language
                 when 'en' then 'English'
                 when 'fr' then 'French'
