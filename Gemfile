@@ -65,7 +65,7 @@ gem "syntax_tree-rbs"
 gem "thin", "~> 1.8.2"
 gem "toastr-rails"
 gem "trix-rails", "~> 2.4", require: "trix"
-gem "uglifier", ">= 1.3.0"
+gem 'uglifier', '~> 2.7'
 gem "unicorn-worker-killer", "~> 0.4.5"
 gem "vite_rails"
 gem "whenever", require: false
