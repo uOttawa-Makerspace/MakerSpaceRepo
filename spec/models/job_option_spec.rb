@@ -3,8 +3,8 @@ require "rails_helper"
 RSpec.describe JobOption, type: :model do
   describe "Association" do
     context "has_many" do
-      it { should have_many(:job_order_options) }
-      it { should have_many(:job_order_quote_options) }
+      it { should have_many(:job_task_options) }
+      it { should have_many(:job_tasks) }
     end
 
     context "has_and_belongs_to_many" do

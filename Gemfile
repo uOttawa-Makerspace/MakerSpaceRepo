@@ -73,7 +73,7 @@ gem "will_paginate", "~> 3.3.0"
 gem "will_paginate-bootstrap-style"
 gem "youtube_id"
 gem "zip-zip"
-
+gem "mission_control-jobs"
 
 group :development, :test do
   gem "byebug", platform: :mri
@@ -114,3 +114,5 @@ group :test do
   gem "selenium-webdriver", "~> 3.142.7"
   gem "shoulda-matchers", "~> 4.0"
 end
+
+gem "solid_queue", "~> 1.2"

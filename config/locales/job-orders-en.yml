@@ -1,0 +1,37 @@
+en:
+  job_orders:
+    title: "CEED Job Orders"
+    header: "From Concept to Creation"
+    subtext: "Discover how CEED transforms your ideas into reality through fabrication, design, and prototyping services."
+    request_button: "Start a Job Order"
+    view_orders_button: "View My Orders"
+    intro:
+      title: "Your One-Stop Engineering Hub"
+      text: "CEED offers technical expertise and equipment to support design, prototyping, and small-scale manufacturing projects for students, researchers, and external clients."
+    sections:
+      services: "Engineering Services"
+      services_text: "Professional support including machining, welding, and design."
+      services_list:
+        - "Manual Machining"
+        - "CNC & Welding"
+        - "3D Scanning & Design"
+      makerspace: "Creative Fabrication"
+      makerspace_text: "Digital tools for rapid prototyping and artistic projects."
+      makerspace_list:
+        - "3D Printing & Laser Cutting"
+        - "Embroidery & PCB Milling"
+        - "Custom Apparel & Awards"
+      design_consultation:
+        title: "Design Consultations"
+        subtitle: "Need help with your project?"
+        description: "Our experts can assist you with designing, prototyping, and machining any size project to suit your needs."
+        services:
+          - "Concept development and design assistance"
+          - "3D modeling and CAD support"
+          - "Material selection guidance"
+          - "Prototyping strategies"
+          - "Production planning"
+        call_to_action: "Schedule a consultation today!"
+    pricing:
+      title: "Rates & Fees"
+      text: "Internal and external rates vary by service. Materials sold separately. One-hour consultations are free."

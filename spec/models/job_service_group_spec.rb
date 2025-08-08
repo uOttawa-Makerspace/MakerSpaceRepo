@@ -7,7 +7,6 @@ RSpec.describe JobServiceGroup, type: :model do
     end
 
     context "has_many" do
-      it { should have_many(:job_order) }
       it { should have_many(:job_services) }
     end
   end
