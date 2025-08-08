@@ -6,9 +6,13 @@ import {
   setCookieWithExp,
   translate,
   toggleLocale,
+  removeURLParameter,
 } from "./tour_utilities.js";
 
 console.log(getCookie("tour_started"));
+
+var btn = document.querySelector("#rm-tour");
+btn.addEventListener("click", () => setURL(window.location.href, "tour"));
 
 // Keeps track of the current step the tour is on incase a user switches the language mid-tour
 let curStep = 0;
@@ -93,7 +97,7 @@ const driverObj = driver({
       popover: {
         title: "Space Hours",
         description:
-          "Here on the home page, you can access plenty of essential information, such as when our spaces are open. . .",
+          "Here on the home page, you can access plenty of essential information, such as when our spaces are open",
         onPrevClick: () => {
           curStep--;
           driverObj.movePrevious();
@@ -111,7 +115,7 @@ const driverObj = driver({
       popover: {
         title: "Explore Projects",
         description:
-          "What projects students have been working on recently. . .",
+          "And what projects students have been working on recently.",
         onPrevClick: () => {
           curStep--;
           driverObj.movePrevious();
