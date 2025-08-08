@@ -62,10 +62,10 @@ gem "stripe_event", "~> 2.3", ">= 2.3.1"
 gem "syntax_tree", "~> 3.3.0"
 gem "syntax_tree-haml"
 gem "syntax_tree-rbs"
+gem 'terser', '~> 1.2'
 gem "thin", "~> 1.8.2"
 gem "toastr-rails"
 gem "trix-rails", "~> 2.4", require: "trix"
-gem 'uglifier', '~> 2.7'
 gem "unicorn-worker-killer", "~> 0.4.5"
 gem "vite_rails"
 gem "whenever", require: false

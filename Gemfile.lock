@@ -2282,6 +2282,8 @@ GEM
       syntax_tree (>= 2.0.1)
     systemu (2.6.5)
     temple (0.10.3)
+    terser (1.2.6)
+      execjs (>= 0.3.0, < 3)
     thin (1.8.2)
       daemons (~> 1.0, >= 1.0.9)
       eventmachine (~> 1.0, >= 1.0.4)
@@ -2300,9 +2302,6 @@ GEM
     tzinfo (2.0.6)
       concurrent-ruby (~> 1.0)
     uber (0.1.0)
-    uglifier (2.7.2)
-      execjs (>= 0.3.0)
-      json (>= 1.8.0)
     unicode-display_width (3.1.4)
       unicode-emoji (~> 4.0, >= 4.0.4)
     unicode-emoji (4.0.4)
@@ -2438,10 +2437,10 @@ DEPENDENCIES
   syntax_tree (~> 3.3.0)
   syntax_tree-haml
   syntax_tree-rbs
+  terser (~> 1.2)
   thin (~> 1.8.2)
   toastr-rails
   trix-rails (~> 2.4)
-  uglifier (~> 2.7)
   unicorn-worker-killer (~> 0.4.5)
   vite_rails
   web-console
