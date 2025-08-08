@@ -1,0 +1,74 @@
+<div class="container mt-5">
+  <h1 class="mb-4"><%= t('memberships.index.title') %></h1>
+  
+  <% if @active_memberships.any? %>
+    <div class="alert alert-success">
+      <h4><%= t('memberships.index.active.heading') %></h4>
+      <% @active_memberships.each_with_index do |membership, i| %>
+        <% if i != 0 %><hr /><% end %>
+        <p>
+          <strong><%= t('memberships.index.active.type') %></strong> <%= membership.membership_type.humanize %><br>
+          <strong><%= t('memberships.index.active.expires') %></strong> <%= membership.end_date.to_formatted_s(:long) %>
+        </p>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="alert alert-warning">
+      <%= t('memberships.index.no_active') %>
+    </div>
+  <% end %>
+  
+  <div class="row mt-5">
+    <div class="col-lg-8">
+      <h2 class="mb-3"><%= t('memberships.index.purchase.heading') %></h2>
+      <div class="row">
+        <% Membership::MEMBERSHIP_TYPES.each do |type, duration| %>
+          <div class="col-md-4 mb-4">
+            <div class="card h-100">
+              <div class="card-body d-flex flex-column">
+                <h5 class="card-title"><%= type.humanize %></h5>
+                <p class="h4 mt-auto">$<%= Membership.new(membership_type: type).price %></p>
+                <%= form_with model: @membership, url: membership_index_path, method: :post, local: true do |f| %>
+                  <%= f.hidden_field :membership_type, value: type %>
+                  <%= f.submit t('memberships.index.purchase.button'), class: 'btn btn-primary w-100' %>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+    
+    <div class="col-lg-4">
+      <% if @memberships.any? %>
+        <h2 class="mb-3"><%= t('memberships.index.history.heading') %></h2>
+        <div class="table-responsive">
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th><%= t('memberships.index.history.type') %></th>
+                <th><%= t('memberships.index.history.purchase_date') %></th>
+                <th><%= t('memberships.index.history.status') %></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @memberships.each do |membership| %>
+                <tr>
+                  <td><%= membership.membership_type.humanize %></td>
+                  <td><%= membership.created_at.to_formatted_s(:short) %></td>
+                  <td>
+                    <% if membership.active? %>
+                      <span class="badge bg-success"><%= t('memberships.index.history.active') %></span>
+                    <% else %>
+                      <span class="badge bg-secondary"><%= t('memberships.index.history.expired') %></span>
+                    <% end %>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

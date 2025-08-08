@@ -520,3 +520,22 @@ fr:
       paragraph_1: "Voulez-vous en savoir plus ? Envoyez-nous un courriel et nous serons ravi de répondre à vos questions."
       contact_1: "Mohamed Elsageyer <br>Responsable D'équipe <br> melsa036@uottawa.ca"
       contact_2: "Stephanie Chiarotto <br>Coordonnatrice des bénévoles <br> volunteer@makerrepo.com"
+  memberships:
+    index:
+      title: "Vos Adhésions"
+      active:
+        heading: "Adhésion(s) Active(s)"
+        type: "Type :"
+        expires: "Expire le :"
+      no_active: "Vous n'avez pas d'adhésion active. Achetez-en une ci-dessous pour commencer."
+      purchase:
+        heading: "Acheter une Nouvelle Adhésion"
+        button: "Acheter"
+      history:
+        heading: "Historique des Adhésions"
+        type: "Type"
+        purchase_date: "Date d'achat"
+        status: "Statut"
+        active: "Active"
+        expired: "Expirée"
+        cancelled: "Annulé"

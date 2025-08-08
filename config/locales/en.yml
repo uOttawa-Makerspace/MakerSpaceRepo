@@ -285,3 +285,22 @@ en:
         no_options: "There are no options available to you right now. Please continue to the next step."
       step_4:
         additional_comments: "Additional Comments"
+  memberships:
+    index:
+      title: "Your Memberships"
+      active:
+        heading: "Active Membership(s)"
+        type: "Type:"
+        expires: "Expires:"
+      no_active: "You don't have an active membership. Purchase one below to get started."
+      purchase:
+        heading: "Purchase New Membership"
+        button: "Purchase"
+      history:
+        heading: "Membership History"
+        type: "Type"
+        purchase_date: "Purchase Date"
+        status: "Status"
+        active: "Active"
+        expired: "Expired"
+        cancelled: "Cancelled"

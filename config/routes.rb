@@ -145,6 +145,8 @@ Rails.application.routes.draw do
     post :sign_email
   end
 
+  resources :membership, only: [:index, :create], controller: 'membership'
+
   root "static_pages#home"
 
   # STATIC PAGES
