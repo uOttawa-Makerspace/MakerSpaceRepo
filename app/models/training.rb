@@ -9,11 +9,30 @@ class Training < ApplicationRecord
   has_many :proficient_projects, dependent: :destroy
   has_many :learning_modules, dependent: :destroy
   has_many :shifts, dependent: :nullify
+  has_many :events, dependent: :nullify
   belongs_to :skill, optional: true
+  has_many :badge_templates
 
-  validates :name, presence: true, uniqueness: true
+  # Column was renamed to name_en and it broke a lot
+  alias_attribute :name, :name_en
+  alias_attribute :description, :description_en
+
+  validates :name_en, presence: true, uniqueness: true
+  validates :name_fr, presence: true, uniqueness: true
 
   def self.all_training_names
     order(name: :asc).pluck(:name)
+  end
+
+  def localized_name
+    I18n.locale == :fr ? name_fr : name_en
+  end
+
+  def description
+    I18n.locale == :fr ? description_fr : description_en
+  end
+
+  def list_of_skills
+    I18n.locale == :fr ? list_of_skills_fr : list_of_skills_en
   end
 end

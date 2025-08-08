@@ -33,10 +33,10 @@
           <br />
         <% end %>
         <div>
-          Training Type: <%= @current_training_session.training.name %>
+          Training Type: <%= @current_training_session.training.localized_name %>
           <br />
           <% label_tag 'changed_params[training_id]', class: 'form-label' %>
-          <%= select_tag 'changed_params[training_id]', options_from_collection_for_select(@current_training_session.space.trainings.order('name ASC'), 'id', 'name'), prompt: 'Change training', class: 'form-control' %>
+          <%= select_tag 'changed_params[training_id]', options_from_collection_for_select(@current_training_session.space.trainings.order('name_en ASC'), 'id', 'name_en'), prompt: 'Change training', class: 'form-control' %>
           <br />
           Level: <%= @current_training_session.level %>
           <br />
@@ -55,7 +55,7 @@
       <% end %>
     <% else %>
       <div>Trainer: <%= @staff.name %></div>
-      <div>Training: <%= @current_training_session.training.name %></div>
+      <div>Training: <%= @current_training_session.training.localized_name %></div>
       <div>Course: <%= @current_training_session.course %></div>
       <br />
     <% end %>
@@ -94,9 +94,9 @@
               <% user.certifications.each do |certification| %>
                 <div class="cert-name" style="display:inline" >
                   <div class="cert-holder" style="display:inline">
-                    <%= certification.training.name %>
+                    <%= certification.training.localized_name %>
                     <div id="cert-details" style="display:inline">
-                      <%= certification.training.name %> <br>
+                      <%= certification.training.localized_name %> <br>
                       <%= certification.trainer %> <br>
                       <%= certification.updated_at.strftime('%B %d, %Y') %>
                     </div>
@@ -177,9 +177,9 @@
                 <% user.certifications.each do |certification| %>
                     <div class="cert-name" style="display:inline" >
                       <div class="cert-holder" style="display:inline">
-                        <%= certification.training.name %>
+                        <%= certification.training.localized_name %>
                         <div id="cert-details" style="display:inline">
-                          <%= certification.training.name %> <br>
+                          <%= certification.training.localized_name %> <br>
                           <%= certification.trainer %> <br>
                           <%= certification.updated_at.strftime('%B %d, %Y') %>
                         </div>

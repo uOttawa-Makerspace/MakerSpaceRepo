@@ -1,3 +1,6 @@
+# Because the model was renamed, keep this just for the migration
+class JobOrderOption < ApplicationRecord; end
+
 class SupportMultipleTasksPerJobOrder < ActiveRecord::Migration[7.2]
   def change
     create_table :job_tasks do |t|

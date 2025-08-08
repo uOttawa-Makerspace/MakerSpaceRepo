@@ -17,17 +17,13 @@
         </div>
     </div>
 
-    <% badge_requirements = @proficient_project.badge_requirements %>
+    <% training_requirements = @proficient_project.training_requirements %>
     <div class="card">
         <div class="card-header bg-primary text-light">Badge Requirements</div>
         <div class="card-body">
-            <% if badge_requirements.present? %>
-                <% badge_requirements.each do |badge_requirement| %>
-                    <% if badge_requirement.badge_template.badge_url != nil %>
-                        <%= link_to image_tag(badge_requirement.badge_template.image_url, style: 'width: 80px;', alt: 'Badge image', class: 'd-block'), badge_requirement.badge_template.badge_url, target: '_blank', class: 'd-inline-block', rel: 'noopener' %>
-                    <% else %>
-                        <%= image_tag(badge_requirement.badge_template.image_url, style: 'width: 80px; cursor: not-allowed;', alt: 'Badge Image') %>
-                    <% end %>
+            <% if training_requirements.present? %>
+                <% training_requirements.each do |training_requirement| %>
+                    <%= render "badges/badge_icon", width: 230, height: 230, level: training_requirement.proficient_project.level, name: training_requirement.training.localized_name, skill: training_requirement.training.skill_id %>
                 <% end %>
             <% else %>
                 None
@@ -35,17 +31,12 @@
         </div>
     </div>
 
-    <% badge_template = @proficient_project.badge_template %>
+    <% training = @proficient_project.training %>
     <div class="card">
         <div class="card-header bg-primary text-light">Badge Awarded Upon Completion</div>
         <div class="card-body">
-            <% if badge_template.present? %>
-                <%= badge_template.badge_name %>
-                <% if badge_template.badge_url != nil %>
-                    <%= link_to image_tag(badge_template.image_url, style: 'width: 80px;', alt: 'Badge image', class: 'd-block'), badge_template.badge_url, target: '_blank', class: 'd-block', rel: 'noopener' %>
-                <% else %>
-                    <%= image_tag(badge_template.image_url, style: 'width: 80px; cursor: not-allowed;', alt: 'Badge image', class: 'd-block') %>
-                <% end %>
+            <% if training.present? %>
+                <%= render "badges/badge_icon", width: 230, height: 230, level: @proficient_project.level, name: training.localized_name, skill: training.skill_id %>
             <% else %>
                 None
             <% end %>

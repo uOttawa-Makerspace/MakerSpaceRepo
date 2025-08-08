@@ -52,25 +52,13 @@
             <%= link_to t('admin.roles'), manage_roles_admin_users_path, class: 'dropdown-item' %>
             <%= link_to t('admin.add_new_staff'), admin_add_new_staff_index_path, class: 'dropdown-item' %>
             <div class="dropdown-divider"></div>
-            <%= link_to t('admin.unavailabilities'), admin_shifts_path, class: 'dropdown-item' %>
-            <%= link_to t('admin.shifts'), shifts_admin_shifts_path, class: 'dropdown-item' %>
-            <div class="dropdown-divider"></div>
-            <%= link_to t('admin.time_periods'), admin_time_periods_path, class: 'dropdown-item' %>
+            <%= link_to t('admin.calendar'), admin_calendar_index_path, class: 'dropdown-item' %>
             <div class="dropdown-divider"></div>
             <%= link_to t('admin.keys'), admin_keys_path, class: 'dropdown-item' %>
             <%= link_to t('admin.key_requests'), requests_admin_keys_path, class: 'dropdown-item' %>
             <%= link_to t('admin.key_transactions'), admin_key_transactions_path, class: 'dropdown-item' %>
           </div>
         </li>
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            <%= t('admin.badges') %>
-          </a>
-          <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
-            <%= link_to t('admin.refresh_badge_data'), admin_manage_badges_path, class: 'dropdown-item' %>
-            <div class="dropdown-divider"></div>
-            <%= link_to t('admin.badge_templates'), admin_badge_templates_path, class: 'dropdown-item' %>
-          </div>
         </li>
       </ul>
     </div>

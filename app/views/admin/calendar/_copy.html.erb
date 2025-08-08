@@ -1,0 +1,50 @@
+<!-- Bootstrap Modal for Copying Events -->
+<div class="modal fade" id="copyEventsModal" tabindex="-1" aria-labelledby="copyEventsModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <%= form_with url: "/admin/events/copy", method: :post, local: false, html: { class: "useTurbo" } do |f| %>
+        <div class="modal-header">
+          <h5 class="modal-title" id="copyEventsModalLabel">Copy Published Events</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="mb-3">
+            <%= f.label :source_range, "Copy From" %>
+            <%= f.text_field :source_range, class: "form-control", id: "source_range", placeholder: "YYYY-MM-DD to YYYY-MM-DD", autocomplete: "off" %>
+          </div>
+
+          <div class="mb-3">
+            <%= f.label :target_date, "Copy Onto" %>
+            <%= f.text_field :target_date, class: "form-control", id: "target_date", placeholder: "YYYY-MM-DD", autocomplete: "off" %>
+          </div>
+        </div>
+
+        <%= f.hidden_field :space_id, value: @space_id %>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <%= f.submit "Copy Events", class: "btn btn-info" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("turbo:load", () => {
+    const fp1 = flatpickr("#source_range", {
+      mode: "range",
+      dateFormat: "Y-m-d"
+    });
+
+    const fp2 = flatpickr("#target_date", {
+      dateFormat: "Y-m-d"
+    });
+
+    document.getElementById("copyEventsModal").addEventListener("hide.bs.modal", (e) => {
+        fp1.flatpickr().destroy();
+        fp2.flatpickr().destroy();
+    });
+  });
+</script>
