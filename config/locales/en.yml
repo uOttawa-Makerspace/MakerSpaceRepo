@@ -294,10 +294,11 @@ en:
         expires: "Expires:"
       no_active: "You don't have an active membership. Purchase one below to get started."
       purchase:
-        heading: "Purchase New Membership"
+        heading: "Purchase or Renew"
         button: "Purchase"
+        cutoff_tooltip: "You cannot extend your membership beyond the allowed limit."
       history:
-        heading: "Membership History"
+        heading: "History"
         type: "Type"
         purchase_date: "Purchase Date"
         status: "Status"

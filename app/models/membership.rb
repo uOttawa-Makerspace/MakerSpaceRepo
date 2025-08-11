@@ -12,9 +12,11 @@ class Membership < ApplicationRecord
   }, _default: 'pending'
 
   MEMBERSHIP_TYPES = {
-    '1_day' => { duration: 1.day, price: 10.00, title: '1 Day Membership' },
-    '1_month' => { duration: 1.month, price: 30.00, title: '1 Month Membership' },
-    '1_semester' => { duration: 4.months, price: 100.00, title: '1 Semester Membership' }
+    '1_day' => { duration: 1.day, price: 0.00, title: '1 Day Membership', title_fr: 'Adhésion 1 jour' },
+    '1_month' => { duration: 1.month, price: 30.00, title: '1 Month Membership', title_fr: 'Adhésion 1 mois' },
+    '1_semester' => { duration: 4.months, price: 100.00, title: '1 Semester Membership', 
+title_fr: 'Adhésion 1 semestre' },
+    'custom' => { duration: 1.hour, price: 0, title: 'Custom Membership', title_fr: 'Adhésion Personnalisée' }
   }.freeze
   
   validates :membership_type, inclusion: { in: MEMBERSHIP_TYPES.keys }
@@ -36,8 +38,6 @@ class Membership < ApplicationRecord
       originalUnitPrice: price.to_s,
       quantity: 1,
       title: membership_title,
-      requiresShipping: false,
-      taxable: false
     }]
   end
 
@@ -50,7 +50,7 @@ class Membership < ApplicationRecord
   end
 
   def membership_title
-    MEMBERSHIP_TYPES[membership_type][:title]
+    I18n.locale == :en ? MEMBERSHIP_TYPES[membership_type][:title] : MEMBERSHIP_TYPES[membership_type][:title_fr]
   end
 
   def duration
@@ -69,7 +69,7 @@ class Membership < ApplicationRecord
   private
 
   def set_dates
-    self.start_date = Time.current
-    self.end_date = Membership.calculate_end_date(user) + duration
+    self.start_date ||= Membership.calculate_end_date(user)
+    self.end_date ||= Membership.calculate_end_date(user) + duration
   end
 end

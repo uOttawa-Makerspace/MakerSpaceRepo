@@ -529,10 +529,11 @@ fr:
         expires: "Expire le :"
       no_active: "Vous n'avez pas d'adhésion active. Achetez-en une ci-dessous pour commencer."
       purchase:
-        heading: "Acheter une Nouvelle Adhésion"
+        heading: "Acheter ou Renouveler"
         button: "Acheter"
+        cutoff_tooltip: "Vous ne pouvez pas prolonger votre adhésion au-delà de la limite autorisée."
       history:
-        heading: "Historique des Adhésions"
+        heading: "Précédentes"
         type: "Type"
         purchase_date: "Date d'achat"
         status: "Statut"

@@ -1,0 +1,60 @@
+<div class="tab-pane fade" id="admin-membership" role="tabpanel" aria-labelledby="admin-membership-tab">
+  <div class="row">
+    <%= form_tag admin_create_membership_membership_index_path, method: :post, class: 'row' do %>
+      <%= hidden_field_tag :user_id, @repo_user.id %>
+
+      <div class="col-md-4">
+        <label for="extend_days" class="form-label">Add Membership</label>
+        <%= number_field_tag :extend_days, nil, min: 1, class: 'form-control', id: 'extend_days', required: true, placeholder: 'Enter number of days' %>
+      </div>
+
+      <div class="col-md-2 d-flex align-items-end">
+        <%= submit_tag 'Add Custom Membership', class: 'btn btn-primary' %>
+      </div>
+    <% end %>
+  </div>
+
+  <% memberships = @repo_user.memberships.order(created_at: :desc) %>
+ 
+  <% if memberships.any? %>
+    <div class="row mt-4">
+      <div class="col-12">
+        <h4>History</h4>
+        <div class="table-responsive">
+          <table class="table table-striped table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                  <th scope="col" class="w-50 text-start"><%= t('memberships.index.history.type') %></th>
+                  <th scope="col" class="w-25 text-start"><%= t('memberships.index.history.purchase_date') %></th>
+                  <th scope="col" class="w-25 text-start"><%= t('memberships.index.history.status') %></th>
+                </tr>
+            </thead>
+            <tbody>
+              <% memberships.each do |membership| %>
+                <tr>
+                    <td class="text-start">
+                    <%= membership.membership_title.gsub(/\b(Membership|Adhésion)\b/i, '').strip %>
+                    </td>
+                    <td class="text-start">
+                    <%= membership.created_at.to_formatted_s(:short) %>
+                    </td>
+                    <td class="text-start">
+                    <% if membership.active? %>
+                        <span class="badge bg-success"><%= t('memberships.index.history.active') %></span>
+                    <% else %>
+                        <span class="badge bg-secondary"><%= t('memberships.index.history.expired') %></span>
+                    <% end %>
+                    </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  <% else %>
+    <div class="alert alert-warning mt-4" role="alert">
+        <%= t('memberships.index.no_history') %>
+    </div>
+  <% end %>
+</div>

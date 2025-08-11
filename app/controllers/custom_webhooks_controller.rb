@@ -66,8 +66,24 @@ class CustomWebhooksController < ApplicationController
     user = User.find_by(email: order_hook["customer"]["email"])
     return unless user
 
+    # find membership in db
+    membership_id_metafield = order_hook['metafields']&.find do |m|
+      m['namespace'] == 'makerepo' && m['key'] == 'membership_db_reference'
+    end
+
+    membership_id_metafield ||=
+      draft_order_metafields(order_hook["admin_graphql_api_id"])&.find do |field|
+        field["key"] == "membership_db_reference"
+      end
+
+    if membership_id_metafield
+      membership = Membership.find_by(id: membership_id_metafield["value"], user: user)
+      membership&.update(status: :paid)
+      return
+    end
+
+    # fallback if not found
     order_hook["line_items"].each do |item|
-      # match by membership title
       membership_type_key = Membership::MEMBERSHIP_TYPES.keys.find do |type|
         item["title"].to_s.strip.casecmp(Membership::MEMBERSHIP_TYPES[type][:title].strip).zero?
       end
