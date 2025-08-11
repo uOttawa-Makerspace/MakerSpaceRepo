@@ -339,7 +339,8 @@ class User < ApplicationRecord
 
   def get_certifications_names
     cert = []
-    certifications.each { |c| cert << c.training.name_en }
+    certifications.each { |c| cert << c.get_name_en }
+    Rails.logger.debug cert
     cert
   end
 
@@ -358,18 +359,6 @@ class User < ApplicationRecord
     volunteer_hours.approved.sum(:total_time)
   end
 
-  def get_badges(training_id)
-    training_ids = []
-    certifications.each do |cert|
-      training_ids << cert.training_session.training.id
-    end
-    if training_ids.include?(training_id)
-        "badges/bronze.png"
-      else
-        "badges/none.png"
-      end
-    
-  end
 
   def remaining_trainings
     trainings = []
