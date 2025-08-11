@@ -13,7 +13,7 @@
                 <div class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#training-training-<%= training.id %>">
                   <div class="col-4">
                     <button class="btn btn-link float-start">
-                      <%= training.name %>
+                      <%= training.localized_name %>
                     </button>
                   </div>
                   <div class="col-4 text-center">
@@ -69,7 +69,7 @@
                                     </div>
                                     <div class="col-4">
                                       <p><h6 class="text-center my-auto">
-                                      <strong><%= learning_module.training.name %></strong></h6></p>
+                                      <strong><%= learning_module.training.localized_name %></strong></h6></p>
                                     </div>
                                     <div class="col-4 float-end">
                                     <%= button_to 'Delete', learning_area_path(learning_module.id), method: :delete, class: 'btn btn-danger', style: 'opacity: 0.5', data: { confirm: 'Are you sure? This will delete the Learning Module.' } if current_user.admin? %>

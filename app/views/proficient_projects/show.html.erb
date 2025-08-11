@@ -13,9 +13,9 @@
   <div class="text-center">
     Badge that will be Awarded:
     <br/>
-    <% badge_template = @proficient_project.badge_template %>
-    <% if badge_template.present? %>
-      <%= image_tag(badge_template.image_url, style: 'width: 100px;', alt: 'Proficient Project Image') %>
+    <% training = @proficient_project.training %>
+    <% if training.present? %>
+      <%= render "badges/badge_icon", width: 230, height: 230, level: @proficient_project.level, name: training.localized_name, skill: training.skill_id %>
     <% else %>
       None
     <% end %>
@@ -36,7 +36,7 @@
     <% end %>
     <div class="container my-4">
       <div class="text-center">
-        <%= @proficient_project.training.name %>
+        <%= @proficient_project.training.localized_name %>
         -
         <%= @proficient_project.level %>
       </div>
@@ -137,7 +137,7 @@
             <%= link_to 'Edit', edit_proficient_project_path(project_required.id), class: 'btn btn-primary', style: 'opacity: 0.5' if current_user.admin? %>
           </div>
           <div class="mb-3 mx-auto">
-            <p><h6 class="text-center py-3"><strong><%= project_required.training.name %></strong></h6></p>
+            <p><h6 class="text-center py-3"><strong><%= project_required.training.localized_name %></strong></h6></p>
           </div>
           <div class="mb-3">
             <%= button_to 'Unfollow', project_requirement, method: :delete, class: 'btn btn-danger', style: 'opacity: 0.5', data: { confirm: 'Are you sure? This will delete the Project Requirement, but not the Project itself.' } if current_user.admin? %>
@@ -165,7 +165,7 @@
       <div class="col-md-4 mb-5 mt-3 card <%= return_hover_and_text_colors(inverse_required_project.level) %>" style="border-width:2px !important;">
         <form class="w-auto d-inline-block">
           <div class="mb-3 mx-auto">
-            <p><h6 class="text-center py-3"><strong><%= inverse_required_project.training.name %></strong></h6></p>
+            <p><h6 class="text-center py-3"><strong><%= inverse_required_project.training.localized_name %></strong></h6></p>
           </div>
         </form>
         <a href="<%= proficient_project_path(inverse_required_project.id) %>">

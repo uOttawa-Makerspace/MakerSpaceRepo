@@ -1,0 +1,96 @@
+<% provide(:title, 'Calendar') %>
+
+<div class="my-4">
+    <h1>Admin Calendar</h1>
+    <p>View unavailabilities and imported calendars, add and manage events (shifts, trainings, meetings, etc.), then publish for staff to see on <%= link_to "their work calendar", "/staff/my_calendar", data: { turbo: true } %> and the synced Google Calendar. Assigned staff availability is based solely on staff set unavailabilities, not admin set events.</p>
+</div>
+<div class="mt-4">
+    <%= form_tag staff_dashboard_change_space_path, method: :put do %>
+        <div class="input-group mb-3">
+            <%= label_tag :space_id, 'Space', class: 'input-group-text' %>
+            <%= select_tag :space_id, options_for_select(@spaces.pluck(:name, :id), selected: @space_id), class: 'form-select', id: "space_id" %>
+            <button class="btn btn-outline-secondary" type="submit">Go</button>
+        </div>
+    <% end %>
+</div>
+<section id="calendar_container">
+    <div class="row">
+        <div id="checkbox_container" class="col-md-3">
+            <button type="button" id="addEventButton" class="btn btn-outline-primary my-2 w-100" data-bs-toggle="modal" data-bs-target="#eventModal">
+                + Add Event
+            </button>
+            <p class="fw-bold mt-1">Events / Unavailabilities</p>
+            <div id="staff_checkbox_container"></div>
+            <p class="fw-bold" style="display: none;">Events</p>
+            <div id="events_checkbox_container"></div>
+            <p class="fw-bold mt-1">Imported Calendars</p>
+            <div id="calendars_checkbox_container">
+                <span id="imported_calendars_status">Loading...</span>
+            </div>
+            <div class="my-4">
+                <%= form_with url: "/admin/events/publish", method: :patch, local: false, html: { class: "useTurbo dropdown show mb-2" } do %>
+                    <button id="publish_drafts_button" type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Publish This Week's Drafts
+                    </button>
+                    <%= hidden_field_tag :space_id, @space_id %>
+                    <%= hidden_field_tag :view_start_date, nil, class: "view_start_date" %>
+                    <%= hidden_field_tag :view_end_date, nil, class: "view_end_date" %>
+                    <div class="dropdown-menu">
+                        <%= submit_tag "Confirm Publish", class: "dropdown-item py-2" %>
+                    </div>
+                <% end %>
+                <%= form_with url: "/admin/events/delete_drafts", method: :delete, local: false, html: { class: "useTurbo dropdown show mb-2" } do %>
+                    <button id="delete_drafts_button" type="button" class="btn btn-danger dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Delete This Week's Drafts
+                    </button>
+                    <%= hidden_field_tag :space_id, @space_id %>
+                    <%= hidden_field_tag :view_start_date, nil, class: "view_start_date" %>
+                    <%= hidden_field_tag :view_end_date, nil, class: "view_end_date" %>
+                    <div class="dropdown-menu">
+                        <%= submit_tag "Confirm Delete", class: "dropdown-item py-2" %>
+                    </div>
+                <% end %>
+                <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#copyEventsModal">
+                    Copy Events
+                </button>
+            </div>
+        </div>
+        <div id="calendar" class="col-md-9 w-md-100" style="zoom: 1;"></div>
+    </div>
+</section>
+<div id="spinner_container">
+    <div id='spinner' class="spinner-border" role="status"></div>
+</div>
+
+<%= render 'colors' %>
+
+<%= render 'form' %>
+<%= render 'copy' %>
+
+<style>
+    #calendar_container {
+        display: none;
+    }
+
+    #spinner_container {
+        height: 50vh;
+        display: grid;
+        place-items: center;
+    }
+
+    .container {
+        max-width: none !important;
+    }
+
+    .fc-event:not(.fc-event-mirror) {
+        opacity: 0;
+        transition: opacity 0.1s ease-in;
+    }
+    .fc-event.fade-in {
+        opacity: 1;
+    }
+
+    .unavailability {
+        outline: 2px solid red;
+    }
+</style>

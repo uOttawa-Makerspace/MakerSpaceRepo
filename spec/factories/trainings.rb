@@ -1,7 +1,9 @@
 FactoryBot.define do
   factory :training do
-    name { Faker::Name.unique.name }
-    description { Faker::Lorem.paragraph }
+    name_en { Faker::Name.unique.name }
+    name_fr { Faker::Name.unique.name }
+    description_en { Faker::Lorem.paragraph }
+    description_fr { Faker::Lorem.paragraph }
     association :skill
 
     trait :"3d_printing" do

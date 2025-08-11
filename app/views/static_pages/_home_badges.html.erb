@@ -1,13 +1,15 @@
 <div class="card home-card hide-on-mobile">
     <div class="card-body">
         <h2 class="d-inline me-2"><%= t('home.badges.header') %></h2><%= link_to t('home.show_all'), "#{user_path(@user.username)}#badges-manager" %>
-        <div class="text-nowrap overflow-auto">
-            <% if @user.badges.empty? %>
+        <div class="text-nowrap overflow-auto d-flex gap-1 flex-wrap">
+            <% if @user.certifications.empty? %>
                 <p><%= t('home.badges.no_badges') %></p>
                 <p><%= link_to t('home.badges.no_badges_anchor'), development_programs_path %></p>
             <% else %>
-            <% @user.badges.each do |badge| %>
-                <%= image_tag badge.badge_template.image_url, style: 'width: 25%;' %>
+            <% @user.certifications.each do |badge| %>
+                <a target="_blank" href="./badges/<%= badge.id %>">
+                    <%= render "badges/badge_icon", width: 75, height: 75, margin: "auto", display: "block", level: badge.training_session.level, name: badge.training_session.training.localized_name, skill: badge.training_session.training.skill_id %>
+                </a>
             <% end end %>
         </div>
     </div>

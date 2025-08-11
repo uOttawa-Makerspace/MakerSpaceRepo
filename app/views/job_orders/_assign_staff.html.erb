@@ -1,0 +1,8 @@
+<%= form_with url: job_order_assign_staff_path(jo.id), method: :patch, class: "d-inline useTurbo" do |f| %>
+  <%= f.select :staff_id, 
+    options_from_collection_for_select(staff, :id, :name, jo.assigned_staff_id),
+    { include_blank: jo.assigned_staff_id ? false : "Select staff..." }, 
+    { id: "jo-staff-select" } %>
+  <%= f.submit "Assign", class: "btn btn-primary mt-1 w-100" %>
+<% end %>
+<%= vite_javascript_tag 'assign_staff_to_job' %>

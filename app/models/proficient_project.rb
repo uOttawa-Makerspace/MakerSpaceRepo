@@ -4,7 +4,6 @@ class ProficientProject < ApplicationRecord
   include Filterable
   has_and_belongs_to_many :users
   belongs_to :training, optional: true
-  belongs_to :badge_template, optional: true
   has_many :photos, dependent: :destroy
   has_many :repo_files, dependent: :destroy
   has_many :videos, dependent: :destroy
@@ -18,8 +17,9 @@ class ProficientProject < ApplicationRecord
            source: :proficient_project
   has_many :cc_moneys, dependent: :destroy
   has_many :order_items, dependent: :destroy
-  has_many :badge_requirements, dependent: :destroy
+  has_many :training_requirements, dependent: :destroy
   has_many :project_kits, dependent: :destroy
+  has_one :proficient_project_session, dependent: :destroy
   belongs_to :drop_off_location, optional: true
 
   validates :title,
@@ -30,6 +30,7 @@ class ProficientProject < ApplicationRecord
               message: "Title already exists"
             }
   before_save :capitalize_title
+  
 
   scope :filter_by_level, ->(level) { where(level: level) }
 
@@ -60,25 +61,19 @@ class ProficientProject < ApplicationRecord
     end
   end
 
-  def delete_all_badge_requirements
-    badge_requirements.destroy_all
-  end
-
-  def create_badge_requirements(badge_requirements_id)
-    badge_requirements_id.each do |requirement_id|
-      badge_template = BadgeTemplate.find_by(id: requirement_id)
-      if badge_template
-        badge_requirements.create(badge_template: badge_template)
-      end
+  def create_training_requirements(training_requirements_id)
+    training_requirements_id.each do |training_id|
+      training = Training.find_by(id: training_id)
+      training_requirements.create(training: training) if training
     end
   end
 
   def extract_urls
-    URI.extract(self.description)
+    URI.extract(description)
   end
 
   def extract_valid_urls
-    self.extract_urls.uniq.select { |url| url.include?("wiki.makerepo.com") }
+    extract_urls.uniq.select { |url| url.include?("wiki.makerepo.com") }
   end
 
   def self.training_status(training_id, user_id)
@@ -88,14 +83,13 @@ class ProficientProject < ApplicationRecord
         .joins(:user, :training_session)
         .where(training_sessions: { training_id: training_id }, user: user)
         .pluck(:level)
-    result =
-      if level.include?("Advanced")
+    if level.include?("Advanced")
         "Advanced"
       elsif level.include?("Intermediate")
         "Intermediate"
       else
         "Beginner"
       end
-    result
+    
   end
 end

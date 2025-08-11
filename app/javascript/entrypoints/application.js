@@ -153,7 +153,7 @@ document.addEventListener("turbo:load", () => {
   });
 });
 document.addEventListener("turbo:load", () => {
-  document.querySelectorAll("form").forEach(function (el) {
+  document.querySelectorAll("form:not(.useTurbo)").forEach(function (el) {
     el.dataset.turbo = false;
   });
   document.querySelectorAll("a").forEach(function (el) {

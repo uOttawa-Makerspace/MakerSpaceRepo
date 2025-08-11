@@ -54,6 +54,14 @@ html {
   overflow: auto;
 }
 
+@font-face {
+  font-family: "Roboto";
+  font-style: normal;
+  font-weight: normal;
+  font-display: block;
+  src: font-url("Roboto-VariableFont_wdth,wght.ttf");
+}
+
 body {
   min-height: 100%;
   margin: 0;

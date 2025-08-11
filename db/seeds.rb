@@ -77,13 +77,13 @@ soft_trainings = [
   "Shadowing"
 ]
 Training.all.each do |training|
-  training.description = training.name
-  skill_type = Proc.new { |skill_name| Skill.find_by(name: skill_name) }
-  if machine_trainings.include?(training.name)
+  training.description = training.name_en
+  skill_type = proc { |skill_name| Skill.find_by(name: skill_name) }
+  if machine_trainings.include?(training.name_en)
     training.skill = skill_type.call("Machine Shop")
-  elsif technical_trainings.include?(training.name)
+  elsif technical_trainings.include?(training.name_en)
     training.skill = skill_type.call("Technical")
-  elsif soft_trainings.include?(training.name)
+  elsif soft_trainings.include?(training.name_en)
     training.skill = skill_type.call("Soft")
   end
   training.save
