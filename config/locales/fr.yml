@@ -536,6 +536,7 @@ fr:
         heading: "Précédentes"
         type: "Type"
         purchase_date: "Date d'achat"
+        expiry_date: "Échéance"
         status: "Statut"
         active: "Active"
         expired: "Expirée"

@@ -301,6 +301,7 @@ en:
         heading: "History"
         type: "Type"
         purchase_date: "Purchase Date"
+        expiry_date: "Expiry Date"
         status: "Status"
         active: "Active"
         expired: "Expired"
