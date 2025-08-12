@@ -203,10 +203,10 @@
 
           </div>
 
-          <% if session[:user_id].nil? %>
+          <% if current_user.id.nil? %>
             <%= recaptcha_tags %>
           <% end %>
-          
+
           <div class="text-center mt-5">
             <%= f.submit t('project_proposal.new.create_proposal'), class: 'btn btn-primary', id: 'waiting-save-button', data: { disable_with: false } %>
           </div>

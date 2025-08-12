@@ -143,7 +143,7 @@ class ProjectProposalsController < ApplicationController
     @project_proposal.user_id = @user.try(:id)
 
     respond_to do |format|
-      if (verify_recaptcha(model: @project_proposal) || !session[:user_id].nil?) && @project_proposal.save
+      if (verify_recaptcha(model: @project_proposal) || !current_user.id.nil?) && @project_proposal.save
         begin
           create_photos
         rescue FastImage::ImageFetchFailure,
