@@ -19,7 +19,22 @@ document.addEventListener("turbo:load", () => {
   });
 });
 
-new TomSelect("#select-state", {
+var form = document.getElementById("sign_in_skill_fastsearch");
+form.onsubmit = function () {
+  document.getElementById("sign_in_skill_fastsearch_skillname").value = [
+    document.getElementById("skill_dashboard_select").value,
+  ];
+  form.submit();
+};
+
+var form2 = document.getElementById("search_skill_fastsearch");
+form2.onsubmit = function () {
+  document.getElementById("search_skill_fastsearch_skillname").value =
+    document.getElementById("skill_dashboard_select").value;
+  form2.submit();
+};
+
+new TomSelect("#skill_dashboard_select", {
   valueField: "label",
   labelField: "label",
   searchField: ["label", "type"],

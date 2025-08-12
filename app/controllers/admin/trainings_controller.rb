@@ -20,6 +20,52 @@ class Admin::TrainingsController < AdminAreaController
     @options = @training.filter_by_attributes(params[:search])
   end
 
+  def skill_search
+    respond_to do |format|
+      if params[:query].blank? and params[:list_of_skills_en].blank?
+        format.html do
+          redirect_to admin_trainings_path, alert: "No search parameters."
+        end
+        format.json { render json: { error: "no params" } }
+      elsif params[:list_of_skills_en].present?
+        @skills = @training.all_skills
+      else
+        @query = params[:query]
+        @skills = @training.filter_by_attributes(@query)
+      end
+      format.html
+      format.json { render json: @skills.as_json }
+    end
+  end
+
+  def add_skills
+    alert = []
+    if params[:list_of_skills_en].present?
+      @options = @training.all_skills
+      @options.each do |opt|
+        alert << opt
+      end
+    end
+    respond_to do |format|
+      format.html do
+        flash[:alert] = "Error signing #{alert.join(", ")} in" if alert.length >
+          0
+        redirect_to admin_trainings_path
+      end
+      format.js
+      format.json { render json: { status: "ok" } }
+    end
+  end
+
+  def skill
+    if params[:query].present?
+      redirect_to edit_admin_training_path
+    else
+      flash[:alert] = "A valid user must be selected"
+      redirect_to admin_trainings_path
+    end
+  end
+
   def create
     serialize_skills
     @new_training = Training.new(training_params)

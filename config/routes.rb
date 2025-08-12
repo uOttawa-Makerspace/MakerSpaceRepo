@@ -348,7 +348,13 @@ Rails.application.routes.draw do
 
     resources :pi_readers, only: [:update]
 
-    resources :trainings
+    resources :trainings do
+      collection do
+        get "skill_search"
+        get "add_skill"
+        get "skills"
+      end
+    end
 
     resources :skills
 
