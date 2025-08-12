@@ -143,7 +143,7 @@ class ProjectProposalsController < ApplicationController
     @project_proposal.user_id = @user.try(:id)
 
     respond_to do |format|
-      if verify_recaptcha(model: @project_proposal) && @project_proposal.save
+      if (verify_recaptcha(model: @project_proposal) || !session[:user_id].nil?) && @project_proposal.save
         begin
           create_photos
         rescue FastImage::ImageFetchFailure,
@@ -376,7 +376,7 @@ class ProjectProposalsController < ApplicationController
   private
 
   def create_photos
-    if params[:images].present?
+    return unless params[:images].present?
       params[:images]
         .first(5)
         .each do |img|
@@ -388,29 +388,28 @@ class ProjectProposalsController < ApplicationController
             height: dimension.last
           )
         end
-    end
+    
   end
 
   def create_files
-    if params[:files].present?
+    return unless params[:files].present?
       params[:files].each do |f|
         RepoFile.create(file: f, project_proposal_id: @project_proposal.id)
       end
-    end
+    
   end
 
   def update_photos
     if params[:deleteimages].present?
       @project_proposal.photos.each do |img|
-        if params[:deleteimages].include?(img.image.filename.to_s)
-          # checks if the file should be deleted
-          img.image.purge
-          img.destroy
-        end
+        next unless params[:deleteimages].include?(img.image.filename.to_s)
+        # checks if the file should be deleted
+        img.image.purge
+        img.destroy
       end
     end
 
-    if params["images"].present?
+    return unless params["images"].present?
       params["images"].each do |img|
         dimension = FastImage.size(img.tempfile, raise_on_failure: true)
         Photo.create(
@@ -420,33 +419,32 @@ class ProjectProposalsController < ApplicationController
           height: dimension.last
         )
       end
-    end
+    
   end
 
   def update_files
     if params["deletefiles"].present?
       @project_proposal.repo_files.each do |f|
-        if params["deletefiles"].include?(f.file.id.to_s)
-          # checks if the file should be deleted
-          f.file.purge
-          f.destroy
-        end
+        next unless params["deletefiles"].include?(f.file.id.to_s)
+        # checks if the file should be deleted
+        f.file.purge
+        f.destroy
       end
     end
 
-    if params["files"].present?
+    return unless params["files"].present?
       params["files"].each do |f|
         RepoFile.create(file: f, project_proposal_id: @project_proposal.id)
       end
-    end
+    
   end
 
   # Use callbacks to share common setup or constraints between actions.
   def set_project_proposal
     @project_proposal = ProjectProposal.find(params[:id])
-    unless @project_proposal
+    return if @project_proposal
       redirect_to root_path, alert: "Project proposal not found"
-    end
+    
   end
 
   # Never trust parameters from the scary internet, only allow the white list through.
@@ -477,13 +475,13 @@ class ProjectProposalsController < ApplicationController
   end
 
   def create_categories
-    if params[:project_proposal]["categories"].present?
+    return unless params[:project_proposal]["categories"].present?
       params[:project_proposal]["categories"]
         .first(5)
         .each do |c|
           Category.create(name: c, project_proposal_id: @project_proposal.id)
         end
-    end
+    
   end
 
   def project_join_params
