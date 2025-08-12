@@ -2,7 +2,8 @@ class WalkInSafetySheet < ApplicationRecord
   belongs_to :user
   belongs_to :space
 
-  validates :is_minor, presence: true
+  # This is how you validate a boolean
+  validates :is_minor, inclusion: [true, false]
 
   # Adult info
   validates :participant_signature, presence: true, unless: :is_minor?
