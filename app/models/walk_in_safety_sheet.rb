@@ -1,4 +1,8 @@
 class WalkInSafetySheet < ApplicationRecord
+
+  # how many checkboxes should be sent
+  NUMBER_OF_AGREEMENTS = 6
+
   belongs_to :user
   belongs_to :space
 
