@@ -6,6 +6,9 @@ class WalkInSafetySheet < ApplicationRecord
   belongs_to :user
   belongs_to :space
 
+  # Only one sheet per space for each user
+  validates :space, uniqueness: { scope: :user }
+
   # This is how you validate a boolean
   validates :is_minor, inclusion: [true, false]
 
