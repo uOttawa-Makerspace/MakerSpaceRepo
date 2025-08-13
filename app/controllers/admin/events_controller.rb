@@ -19,7 +19,10 @@ class Admin::EventsController < AdminAreaController
       recurrence_rule: event_params[:recurrence_rule],
       created_by_id: current_user.id,
       space_id: event_params[:space_id],
-      event_type: event_params[:event_type]
+      event_type: event_params[:event_type],
+      training_id: event_params[:training_id],
+      language: event_params[:language],
+      course_name_id: event_params[:course_name]
     )
 
     unless participants.empty?
@@ -67,7 +70,10 @@ class Admin::EventsController < AdminAreaController
         recurrence_rule: event_params[:recurrence_rule],
         created_by_id: current_user.id,
         space_id: event_params[:space_id],
-        event_type: event_params[:event_type]
+        event_type: event_params[:event_type],
+        training_id: event_params[:training_id],
+        language: event_params[:language],
+        course_name_id: event_params[:course_name]
         )
 
         # Update event assignments
@@ -116,11 +122,14 @@ Time.parse(event_params[:utc_start_time]).utc)
       if @event.update(
           title: title,
           description: event_params[:description],
-          event_type: event_params[:event_type],
           start_time: old_date_new_time_start,
           end_time: old_date_new_time_end,
-          recurrence_rule: rule_to_use
-        )
+          recurrence_rule: rule_to_use,
+          event_type: event_params[:event_type],
+          training_id: event_params[:training_id],
+          language: event_params[:language],
+          course_name_id: event_params[:course_name]
+          )
 
         # Update event assignments
         @event.event_assignments.destroy_all
@@ -155,8 +164,11 @@ Time.parse(event_params[:utc_start_time]).utc)
         recurrence_rule: '',
         created_by_id: current_user.id,
         space_id: event_params[:space_id],
-        event_type: event_params[:event_type]
-      )
+        event_type: event_params[:event_type],
+        training_id: event_params[:training_id],
+        language: event_params[:language],
+        course_name_id: event_params[:course_name]
+        )
 
       # Update event assignments
       unless participants.empty?
@@ -259,6 +271,9 @@ Time.parse(event_params[:utc_start_time]).utc)
               draft: event.draft,
               description: event.description,
               eventType: event.event_type,
+              trainingId: event.training_id,
+              language: event.language,
+              course_name: event.course_name, # not just the id... pass the object
               assignedUsers: event.event_assignments.map { |ea| { id: ea.user.id, name: ea.user.name } },
               background: background
             },
@@ -368,7 +383,7 @@ notice: "#{deleted_count} draft event(s) deleted. Any recurring events were unto
 
   def event_params
     params.require(:event).permit(
-      :title, :description, :utc_start_time, :utc_end_time, :recurrence_rule, :event_type, :space_id
+      :title, :description, :utc_start_time, :utc_end_time, :recurrence_rule, :event_type, :space_id, :training_id, :language, :course_name
     )
   end
 end

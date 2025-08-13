@@ -12,7 +12,7 @@ fr:
     staff_resources:
       header: Ressources des employés
       staff_area: Zone des employés
-      shifts: Heures
+      shifts: Mon horaire de travail
       job_order_admin: Administrateur de commande
       admin_area: Zone des administrateurs
     general_resources:

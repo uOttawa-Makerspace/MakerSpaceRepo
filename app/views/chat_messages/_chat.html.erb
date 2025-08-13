@@ -1,0 +1,61 @@
+<div class="card mb-3" id="chat-box" data-job-order-id="<%= jo.id %>">
+  <div class="card-header fw-bold">
+    Chat
+  </div>
+
+  <div class="card-body d-flex flex-column-reverse" style="max-height: 300px; overflow-y: auto;" id="chat-messages">
+    <% if chat_messages.any? %>
+      <%= render partial: 'chat_messages/message', collection: chat_messages, as: :chat_message %>
+    <% else %>
+      <p class="text-muted"><%= t("job_orders.order.none_yet") %></p>
+    <% end %>
+  </div>
+
+  <div class="card-footer">
+    <%= form_with url: chat_messages_path, method: :post, remote: true, scope: :chat_message, html: { class: 'useTurbo', id: "new-message-form" } do |f| %>
+      <%= f.hidden_field :job_order_id, value: jo.id %>
+      <div class="input-group">
+        <%= f.text_field :message, class: "form-control", placeholder: t("job_orders.order.type") %>
+        <button id="send" class="btn btn-primary" type="submit"><%= t("job_orders.order.send") %></button>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<script>
+  function loadMessages() {
+    const chatBox = document.getElementById('chat-box');
+    if (!chatBox) return;
+
+    const jobOrderId = chatBox.dataset.jobOrderId;
+    fetch(`/chat_messages?job_order_id=${jobOrderId}`, { headers: { Accept: "text/javascript" } })
+      .then(response => response.text())
+      .then(html => {
+        const container = document.getElementById('chat-messages');
+        const shouldScroll = container.scrollTop + container.clientHeight === container.scrollHeight;
+
+        if (html && html.trim() !== "") {
+          container.innerHTML = html;
+        }
+
+        if (shouldScroll) {
+          container.scrollTop = container.scrollHeight;
+        }
+      });
+  }
+
+  // Reload messages every minute
+  setInterval(loadMessages, 60000);
+
+  document.getElementById("new-message-form").addEventListener("turbo:submit-start", (e) => {
+    document.getElementById("send").disabled = true;
+  });
+
+  document.getElementById("new-message-form").addEventListener("turbo:submit-end", (e) => {
+    document.getElementById("send").disabled = false;
+
+    const form = document.getElementById('new-message-form');
+    if (form) form.reset();
+    loadMessages();
+  });
+</script>

@@ -1,6 +1,19 @@
 <td style="vertical-align: middle" class="px-1">
   <% if jo.expedited? %>
-    <i class='fa fa-exclamation-circle fa-2x text-danger'></i>
+    <i class='fa fa-exclamation-circle fa-2x text-success'></i>
+    <%# span so that datatables can sort it! %>
+    <span class="d-none">Expedited</span>
+  <% end %>
+</td>
+<td>
+  <% if jo.chat_messages.count_unread_by_admin(jo) > 0 %>
+    <div class="mx-auto position-relative" style="width: min-content;">
+      <i class="fa fa-bell text-danger" style="scale: 1.7;"></i>
+      <span class="position-absolute translate-middle badge rounded-pill bg-danger">
+        <%= jo.chat_messages.count_unread_by_admin(jo) %>
+        <span class="visually-hidden">unread messages</span>
+      </span>
+    </div>
   <% end %>
 </td>
 <td>
@@ -11,126 +24,48 @@
     [DELETED USER]
   <% end %>
 </td>
-<td><%= unless jo.user.nil?
-          jo.user.internal? ? 'Internal' : 'External'
-        end %></td>
 <td><%= jo.id %></td>
-<td data-sort="<%= jo.created_at %>"><%= jo.created_at.to_formatted_s(:long_ordinal) %></td></td>
-<td>
-  <%= jo.job_type.name %>
-  <%= jo.job_service_group.name if jo.job_service_group.present? %>
-  <% jo.job_services.each do |service| %>
-    <li><%= service.name %></li>
-  <% end %>
+<td data-sort="<%= jo.created_at %>"><%= l(jo.created_at, format: :long) %></td>
 </td>
 <td>
-  <% jo.job_order_options.each do |option| %>
-    <li><%= option.job_option.name %></li>
-    <% if option.option_file.attached? %>
-      <%= link_to 'Download', rails_blob_path(option.option_file, disposition: 'attachment'), class: 'btn btn-primary btn-sm' %>
-      <br>
-      <span style="word-break: break-all;"><%= option.option_file.filename %></span>
-    <% end %>
-  <% end %>
-</td>
-<td>
-  <% if jo.comments.present? %>
-    <a class="link-primary" data-action="click->launch-custom-modal#launchJobOrderCommentsModal" data-id="<%= jo.id %>" data-comments="<%= simple_format(jo.comments) %>"><%= simple_format(jo.comments.truncate(40)) %></a>
-  <% end %>
-</td>
-<td>
-  <% if !jo.user.nil? && jo.user_files.attached? %>
-    <% jo.user_files.each do |file| %>
-      <%= link_to 'Download', rails_blob_path(file, disposition: 'attachment'), class: 'btn btn-primary btn-sm' %>
-      <br>
-      <span style="word-break: break-all;"><%= file.filename %></span>
-    <% end %>
-  <% else %>
-    Not Available
-  <% end %>
-</td>
-<td>
-  <% if jo.staff_files.attached? %>
-    <% jo.staff_files.each do |file| %>
-      <%= link_to 'Download', rails_blob_path(file, disposition: 'attachment'), class: 'btn btn-primary btn-sm' %>
-      <br>
-      <span style="word-break: break-all;"><%= file.filename %></span>
-    <% end %>
-  <% else %>
-    Not Available
+  <% jo.job_tasks.each_with_index do |task, i| %>
+    <%= "," if i != 0 %>
+    <%= task.job_type&.name || "Unselected" %>
   <% end %>
 </td>
 <td><%= jo.job_order_statuses.last.job_status.name %></td>
 <td>
-  <button 
-    class="btn btn-secondary btn-sm" 
-    data-action="click->launch-modal#openModal" 
-    data-id="<%= jo.id %>"
-    data-name="timeline"
-    data-url="/job_orders/<%= jo.id %>/timeline_modal">Timeline
-  </button>
-  <% if jo.staff_comments %>
-    <a class="btn btn-primary btn-sm mt-1" data-action="click->launch-custom-modal#launchJobOrderCommentsModal" data-id="<%= jo.id %>" data-comments="<%= jo.staff_comments %>">Staff Msg</a>
-  <% end %>
-</td>
-<td data-sort="<%= jo&.job_order_quote&.total_price %>">
-  <% if jo.job_order_statuses.last.job_status == JobStatus::STAFF_APPROVAL %>
-    <button 
-      class="btn btn-primary btn-sm btn-block" 
-      data-action="click->launch-modal#openModal" 
-      data-id="<%= jo.id %>"
-      data-name="quote"
-      data-url="/job_orders/<%= jo.id %>/quote_modal">Approve
-    </button>
-    <button 
-      class="btn btn-danger btn-sm btn-block" 
-      data-action="click->launch-modal#openModal" 
-      data-id="<%= jo.id %>"
-      data-name="decline"
-      data-url="/job_orders/<%= jo.id %>/decline_modal">Deny
-    </button>
-  <% elsif [JobStatus::USER_APPROVAL, JobStatus::SENT_REMINDER].include?(jo.job_order_statuses.last.job_status) %>
-    <%= button_to 'Approve', job_order_user_approval_path(jo, approved: true), method: :patch, remote: true, format: :js, class: 'btn btn-primary btn-sm btn-block my-2', data: { confirm: 'Are you sure you want to approve the Job Order on behalf of the user?' } %>
-    <%= button_to 'Reject', job_order_user_approval_path(jo, approved: false), method: :patch, remote: true, format: :js, class: 'btn btn-danger btn-sm btn-block', data: { confirm: 'Are you sure you want to decline the Job Order on behalf of the user?' } %>
-    <%= button_to 'Reminder', job_order_resend_quote_email_path(jo), method: :patch, remote: true, format: :js, class: 'btn btn-info btn-sm btn-block my-2', data: { confirm: 'Are you sure you want to resend a quote reminder email?' } %>
-  <% elsif jo.job_order_statuses.last.job_status == JobStatus::WAITING_PROCESSED %>
-    <%= button_to 'Start Processing', job_order_start_processing_path(jo, start_processing: true), method: :patch, remote: true, format: :js, class: 'btn btn-primary btn-sm btn-block my-2', data: { confirm: 'Are you sure you want to start the processing off the part?' } %>
-  <% elsif jo.job_order_statuses.last.job_status == JobStatus::BEING_PROCESSED %>
-    <button 
-      class="btn btn-primary btn-sm btn-block" 
-      data-action="click->launch-modal#openModal" 
-      data-id="<%= jo.id %>"
-      data-name="completed-email"
-      data-url="/job_orders/<%= jo.id %>/completed_email_modal">Completed</button>
-  <% elsif jo.job_order_statuses.last.job_status == JobStatus::COMPLETED %>
-    Price : <%= number_to_currency(jo.job_order_quote.total_price) %>
-    <%= button_to 'Paid?', job_order_paid_path(jo, paid: true), method: :patch, remote: true, format: :js, class: 'btn btn-primary btn-sm btn-block my-2', data: { confirm: 'Are you sure you want set the Job Order as paid?' } %>
-  <% elsif jo.job_order_statuses.last.job_status == JobStatus::PAID %>
-    <%= button_to 'Picked-Up?', job_order_picked_up_path(jo, picked_up: true), method: :patch, remote: true, format: :js, class: 'btn btn-primary btn-sm btn-block my-2', data: { confirm: 'Are you sure you want set the Job Order as Picked-Up?' } %>
+  <% if jo.assigned_staff.present? %>
+    <%= link_to jo.assigned_staff.name, user_path(jo.assigned_staff.username) %>
   <% else %>
-    Not action available
+    <% if current_user.admin? %>
+      <button type="button" class="btn btn-link fw-bold" style="font-size: 0.9rem !important;" data-bs-toggle="modal" data-bs-target="#assignStaffModal">
+        Assign Staff
+      </button>
+    <% else %>
+      <%= button_to 'Assign Me', job_order_assign_staff_path(jo.id), method: :patch, class: 'btn btn-link fw-bold', style: "font-size: 0.9rem !important", params: { staff_id: current_user.id } %>
+    <% end %>
   <% end %>
 </td>
 <td>
-  <button 
-    class="btn btn-secondary btn-sm" 
-    data-action="click->launch-modal#openModal" 
-    data-id="<%= jo.id %>"
-    data-name="quote"
-    data-url="/job_orders/<%= jo.id %>/quote_modal">Quote
-  </button>
+  <%= 
+    link_to 'View', job_order_path(jo.id), class: 'btn btn-primary btn-sm'
+  %>
 </td>
-<td>
-  <% if jo.job_order_quote.present? %>
-    <%= button_to "<i class='fa fa-download'></i> Invoice".html_safe, job_order_invoice_path(job_order_id: jo.id), method: :get, form: { target: '_blank' }, class: 'btn btn-secondary btn-sm' %>
-  <% else %>
-    Not Available
-  <% end %>
-</td>
-<td>
-  <% if @user.admin? %>
-    <%= button_to('Delete', job_order_path(id: jo.id), method: :delete, data: { confirm: 'Are you sure you want to delete the Job Order?' }, class: 'btn btn-danger btn-sm') %>
-  <% else %>
-    Can not delete
-  <% end %>
-</td>
+
+<div class="modal fade" id="assignStaffModal" tabindex="-1" aria-labelledby="assignStaffModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="assignStaffModalLabel">Assign Staff</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <%= render "assign_staff", jo: jo, staff: @staff %>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

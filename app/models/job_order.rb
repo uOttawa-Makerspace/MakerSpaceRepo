@@ -8,6 +8,11 @@ class JobOrder < ApplicationRecord
   has_many :job_order_options, dependent: :destroy
   has_many :job_order_statuses, dependent: :destroy
   has_and_belongs_to_many :job_services
+  has_many :chat_messages, dependent: :destroy
+  belongs_to :assigned_staff, class_name: "User", optional: true
+
+  has_many :job_tasks, dependent: :destroy
+  has_many :job_quote_line_items, dependent: :destroy
 
   after_save :set_filename
 
@@ -19,16 +24,6 @@ class JobOrder < ApplicationRecord
             )
             .where.not(job_order_statuses: { job_status: JobStatus::DRAFT })
             .group("job_orders.id")
-        }
-
-  scope :last_status,
-        ->(status) {
-          joins(:job_order_statuses)
-            .where(
-              "job_order_statuses.created_at = (SELECT MAX(job_order_statuses.created_at) FROM job_order_statuses WHERE job_order_statuses.job_order_id = job_orders.id)"
-            )
-            .where(job_order_statuses: { job_status: status })
-            .uniq
         }
 
   scope :order_by_expedited,
@@ -61,6 +56,9 @@ class JobOrder < ApplicationRecord
                 image/vnd.dxf
                 image/x-dxf
                 model/x.stl-ascii
+                image/png
+                image/jpeg
+                image/webp
               ],
               if: -> { user_files.attached? }
             }
@@ -82,6 +80,9 @@ class JobOrder < ApplicationRecord
                 image/vnd.dxf
                 image/x-dxf
                 model/x.stl-ascii
+                image/png
+                image/jpeg
+                image/webp
               ],
               if: -> { staff_files.attached? }
             }
@@ -95,18 +96,17 @@ class JobOrder < ApplicationRecord
       end
     end
 
-    if staff_files.attached?
+    return unless staff_files.attached?
       staff_files.each do |staff_files|
         unless staff_files.filename.to_s.start_with?(id.to_s)
           staff_files.blob.update(filename: "#{id}_#{staff_files.filename}")
         end
       end
-    end
+    
   end
 
   def allow_edit?
-    job_order_statuses.last.job_status == JobStatus::DRAFT ||
-      job_order_statuses.last.job_status == JobStatus::STAFF_APPROVAL
+    [JobStatus::DRAFT, JobStatus::STAFF_APPROVAL].include?(job_order_statuses.last.job_status)
   end
 
   def add_options(params)
@@ -117,27 +117,24 @@ class JobOrder < ApplicationRecord
     ids = []
 
     params.to_h.each do |key, value|
-      if key.include?("options_id_")
-        ids << value
-        if job_order_options.where(job_option_id: value).present?
-          if JobOption.find(value).need_files?
-            unless params["options_keep_file_" + value].present?
-              job_order_options
-                .where(job_option_id: value)
-                .first
-                .option_file
-                .purge
-            end
+      next unless key.include?("options_id_")
+      ids << value
+      if job_order_options.where(job_option_id: value).present?
+        if JobOption.find(value).need_files? && !params["options_keep_file_" + value].present?
+            job_order_options
+              .where(job_option_id: value)
+              .first
+              .option_file
+              .purge
           end
-        else
-          option = JobOrderOption.create(job_order_id: id, job_option_id: value)
-          if params["options_file_" + value].present?
-            option.option_file.attach(params["options_file_" + value])
-            success = true unless save
-          end
-          job_order_options << option
+      else
+        option = JobOrderOption.create(job_order_id: id, job_option_id: value)
+        if params["options_file_" + value].present?
+          option.option_file.attach(params["options_file_" + value])
           success = true unless save
         end
+        job_order_options << option
+        success = true unless save
       end
     end
     job_order_options.where.not(job_option_id: ids).destroy_all
@@ -175,35 +172,44 @@ class JobOrder < ApplicationRecord
   end
 
   def total_price
-    job_order_quote.total_price
+    total = 0
+    job_tasks.each do |task|
+      next unless task.job_task_quote.present?
+      total += task.job_task_quote.price + (task.job_task_quote.service_price * task.job_task_quote.service_quantity)
+      next unless task.job_task_quote.job_task_quote_options.any?
+      task.job_task_quote.job_task_quote_options.each do |opt|
+        total += opt.price
+      end
+    end
+
+    total += job_quote_line_items.sum(:price)
+
+    total
   end
 
   def shopify_draft_order_line_items
     price_data = [
-      self.generate_line_item("Service Fees", job_order_quote.service_fee)
+      generate_line_item("Service Fees", job_order_quote.service_fee)
     ]
 
     job_order_quote.job_order_quote_services.each do |s|
-      price_data << self.generate_line_item(
-        "#{s.job_service.job_service_group.name} - #{s.job_service.name} (#{s.quantity} #{s.job_service.unit.present? ? s.job_service.unit : "unit"})",
+      price_data << generate_line_item(
+        "#{s.job_service.job_service_group.name} - #{s.job_service.name} (#{s.quantity} #{s.job_service.unit.presence || "unit"})",
         s.cost
       )
     end
     job_order_quote.job_order_quote_options.each do |o|
-      price_data << self.generate_line_item(o.job_option.name, o.amount)
-    end
-    job_order_quote.job_order_quote_type_extras.each do |e|
-      price_data << self.generate_line_item(e.job_type_extra.name, e.price)
+      price_data << generate_line_item(o.job_option.name, o.amount)
     end
 
     price_data
   end
 
   def expedited?
-    job_order_options
-      .joins(:job_option)
-      .where(job_option: { name: "Expedited" })
-      .present?
+    job_tasks
+      .joins(job_task_options: :job_option)
+      .where("job_options.name LIKE ?", "%Expedited%")
+      .exists?
   end
 
   private

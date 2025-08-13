@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_07_27_155137) do
+ActiveRecord::Schema[7.2].define(version: 2025_07_31_163455) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -137,6 +137,17 @@ ActiveRecord::Schema[7.2].define(version: 2025_07_27_155137) do
     t.index ["user_id"], name: "index_certifications_on_user_id"
   end
 
+  create_table "chat_messages", force: :cascade do |t|
+    t.text "message"
+    t.bigint "job_order_id"
+    t.bigint "sender_id"
+    t.boolean "is_read", default: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["job_order_id"], name: "index_chat_messages_on_job_order_id"
+    t.index ["sender_id"], name: "index_chat_messages_on_sender_id"
+  end
+
   create_table "comments", id: :serial, force: :cascade do |t|
     t.integer "user_id"
     t.integer "repository_id"
@@ -249,8 +260,13 @@ ActiveRecord::Schema[7.2].define(version: 2025_07_27_155137) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "google_event_id"
+    t.bigint "training_id"
+    t.string "language"
+    t.bigint "course_name_id"
+    t.index ["course_name_id"], name: "index_events_on_course_name_id"
     t.index ["created_by_id"], name: "index_events_on_created_by_id"
     t.index ["space_id"], name: "index_events_on_space_id"
+    t.index ["training_id"], name: "index_events_on_training_id"
   end
 
   create_table "exam_questions", id: :serial, force: :cascade do |t|
@@ -308,6 +324,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_07_27_155137) do
     t.decimal "fee", precision: 10, scale: 2, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "is_deleted", default: false, null: false
+    t.boolean "is_job_wide", default: false, null: false
   end
 
   create_table "job_options_types", id: false, force: :cascade do |t|
@@ -394,6 +412,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_07_27_155137) do
     t.text "user_comments"
     t.boolean "is_deleted", default: false
     t.string "shopify_draft_order_id"
+    t.bigint "assigned_staff_id"
+    t.index ["assigned_staff_id"], name: "index_job_orders_on_assigned_staff_id"
     t.index ["job_order_quote_id"], name: "index_job_orders_on_job_order_quote_id"
     t.index ["job_service_group_id"], name: "index_job_orders_on_job_service_group_id"
     t.index ["job_type_id"], name: "index_job_orders_on_job_type_id"
@@ -407,6 +427,15 @@ ActiveRecord::Schema[7.2].define(version: 2025_07_27_155137) do
     t.index ["job_service_id"], name: "index_job_orders_services_on_job_service_id"
   end
 
+  create_table "job_quote_line_items", force: :cascade do |t|
+    t.bigint "job_order_id", null: false
+    t.string "description", null: false
+    t.decimal "price", precision: 10, scale: 2
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["job_order_id"], name: "index_job_quote_line_items_on_job_order_id"
+  end
+
   create_table "job_service_groups", force: :cascade do |t|
     t.string "name", null: false
     t.text "description"
@@ -415,6 +444,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_07_27_155137) do
     t.bigint "job_type_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "is_deleted", default: false, null: false
     t.index ["job_type_id"], name: "index_job_service_groups_on_job_type_id"
   end
 
@@ -430,6 +460,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_07_27_155137) do
     t.datetime "updated_at", null: false
     t.bigint "job_order_id"
     t.boolean "user_created", default: false
+    t.boolean "is_deleted", default: false, null: false
     t.index ["job_order_id"], name: "index_job_services_on_job_order_id"
     t.index ["job_service_group_id"], name: "index_job_services_on_job_service_group_id"
   end
@@ -441,6 +472,47 @@ ActiveRecord::Schema[7.2].define(version: 2025_07_27_155137) do
     t.datetime "updated_at", null: false
     t.string "name_fr"
     t.string "description_fr"
+  end
+
+  create_table "job_task_options", force: :cascade do |t|
+    t.bigint "job_task_id", null: false
+    t.bigint "job_option_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["job_option_id"], name: "index_job_task_options_on_job_option_id"
+    t.index ["job_task_id"], name: "index_job_task_options_on_job_task_id"
+  end
+
+  create_table "job_task_quote_options", force: :cascade do |t|
+    t.bigint "job_task_quote_id", null: false
+    t.bigint "job_option_id", null: false
+    t.decimal "price", precision: 10, scale: 2
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["job_option_id"], name: "index_job_task_quote_options_on_job_option_id"
+    t.index ["job_task_quote_id"], name: "index_job_task_quote_options_on_job_task_quote_id"
+  end
+
+  create_table "job_task_quotes", force: :cascade do |t|
+    t.bigint "job_task_id", null: false
+    t.decimal "price", precision: 10, scale: 2
+    t.decimal "service_quantity", precision: 10, default: "1"
+    t.decimal "service_price", precision: 10, scale: 2
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["job_task_id"], name: "index_job_task_quotes_on_job_task_id"
+  end
+
+  create_table "job_tasks", force: :cascade do |t|
+    t.bigint "job_order_id", null: false
+    t.bigint "job_type_id"
+    t.bigint "job_service_id"
+    t.string "title", default: ""
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["job_order_id"], name: "index_job_tasks_on_job_order_id"
+    t.index ["job_service_id"], name: "index_job_tasks_on_job_service_id"
+    t.index ["job_type_id"], name: "index_job_tasks_on_job_type_id"
   end
 
   create_table "job_type_extras", force: :cascade do |t|
@@ -463,6 +535,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_07_27_155137) do
     t.decimal "service_fee", precision: 10, scale: 2
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "is_deleted", default: false, null: false
   end
 
   create_table "key_certifications", force: :cascade do |t|
@@ -1383,6 +1456,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_07_27_155137) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["space_id"], name: "index_walk_in_safety_sheets_on_space_id"
+    t.index ["user_id", "space_id"], name: "index_walk_in_safety_sheets_on_user_id_and_space_id", unique: true
     t.index ["user_id"], name: "index_walk_in_safety_sheets_on_user_id"
   end
 
@@ -1397,6 +1471,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_07_27_155137) do
   add_foreign_key "cc_moneys", "proficient_projects"
   add_foreign_key "certifications", "users"
   add_foreign_key "certifications", "users", column: "demotion_staff_id"
+  add_foreign_key "chat_messages", "job_orders"
+  add_foreign_key "chat_messages", "users", column: "sender_id"
   add_foreign_key "comments", "repositories"
   add_foreign_key "comments", "users"
   add_foreign_key "contact_infos", "spaces"
@@ -1406,7 +1482,9 @@ ActiveRecord::Schema[7.2].define(version: 2025_07_27_155137) do
   add_foreign_key "equipment", "repositories"
   add_foreign_key "event_assignments", "events"
   add_foreign_key "event_assignments", "users"
+  add_foreign_key "events", "course_names", on_delete: :nullify
   add_foreign_key "events", "spaces"
+  add_foreign_key "events", "trainings", on_delete: :nullify
   add_foreign_key "events", "users", column: "created_by_id"
   add_foreign_key "job_order_options", "job_options"
   add_foreign_key "job_order_options", "job_orders"
@@ -1420,9 +1498,19 @@ ActiveRecord::Schema[7.2].define(version: 2025_07_27_155137) do
   add_foreign_key "job_order_statuses", "job_statuses"
   add_foreign_key "job_order_statuses", "users"
   add_foreign_key "job_orders", "job_service_groups"
+  add_foreign_key "job_orders", "users", column: "assigned_staff_id"
+  add_foreign_key "job_quote_line_items", "job_orders"
   add_foreign_key "job_service_groups", "job_types"
   add_foreign_key "job_services", "job_orders"
   add_foreign_key "job_services", "job_service_groups"
+  add_foreign_key "job_task_options", "job_options"
+  add_foreign_key "job_task_options", "job_tasks"
+  add_foreign_key "job_task_quote_options", "job_options"
+  add_foreign_key "job_task_quote_options", "job_task_quotes"
+  add_foreign_key "job_task_quotes", "job_tasks"
+  add_foreign_key "job_tasks", "job_orders"
+  add_foreign_key "job_tasks", "job_services"
+  add_foreign_key "job_tasks", "job_types"
   add_foreign_key "job_type_extras", "job_types"
   add_foreign_key "lab_sessions", "spaces"
   add_foreign_key "learning_module_tracks", "learning_modules"

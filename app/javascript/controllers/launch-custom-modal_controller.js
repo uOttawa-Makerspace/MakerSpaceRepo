@@ -7,10 +7,10 @@ export default class extends Controller {
     let jobOrderCommentsModalController =
       this.application.getControllerForElementAndIdentifier(
         this.jobOrderCommentsModalTarget,
-        "job-order-comments-modal"
+        "job-order-comments-modal",
       );
     jobOrderCommentsModalController.setCoHostContent(
-      event.currentTarget.dataset
+      event.currentTarget.dataset,
     );
     jobOrderCommentsModalController.open();
   }

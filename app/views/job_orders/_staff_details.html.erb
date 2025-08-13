@@ -1,0 +1,169 @@
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <strong><%= t("job_orders.order.staff_information") %></strong>
+  </div>
+  <div class="card-body">
+    <div class="d-grid gap-2">
+      <div>
+        <% if jo.assigned_staff.present? %>
+          <p>This job is assigned to: <strong><%= jo.assigned_staff.name %></strong></p>
+        <% else %>
+          <p>This job is not assigned to any staff member.</p>
+        <% end %>
+
+        <% if current_user.admin? %>
+          <%= render "assign_staff", jo: jo, staff: @staff %>
+        <% end %>
+
+        <p><strong>Comments for Staff:</strong></p>
+        <% if jo.staff_comments.present? %>
+          <p><%= simple_format(jo.staff_comments) %></p>
+        <% else %>
+          <p class="text-muted">None yet.</p>
+        <% end %>
+      </div>
+      <% if jo.job_order_statuses.last.job_status == JobStatus::STAFF_APPROVAL %>
+        <button 
+          class="btn btn-primary"         
+          data-bs-toggle="modal" 
+          data-bs-target="#quote-modal"
+          >Approve
+        </button>
+        <button 
+          class="btn btn-danger"         
+          data-bs-toggle="modal" 
+          data-bs-target="#decline-modal"
+          >Deny
+        </button>
+      <% elsif [JobStatus::USER_APPROVAL, JobStatus::SENT_REMINDER].include?(jo.job_order_statuses.last.job_status) %>
+        <div class="d-flex flex-row gap-2 justify-content-center">
+          <%= button_to 'Approve', job_order_user_approval_path(jo, approved: true), method: :patch, remote: true, format: :js, class: 'btn btn-primary', data: { confirm: 'Are you sure you want to approve the Job Order on behalf of the user?' } %>
+          <%= button_to 'Reject', job_order_user_approval_path(jo, approved: false), method: :patch, remote: true, format: :js, class: 'btn btn-danger', data: { confirm: 'Are you sure you want to decline the Job Order on behalf of the user?' } %>
+          <%= button_to 'Reminder', job_order_resend_quote_email_path(jo), method: :patch, remote: true, format: :js, class: 'btn btn-info', data: { confirm: 'Are you sure you want to resend a quote reminder email?' } %>
+        </div>
+      <% elsif jo.job_order_statuses.last.job_status == JobStatus::WAITING_PROCESSED %>
+        <%= button_to 'Start Processing', job_order_start_processing_path(jo, start_processing: true), method: :patch, remote: true, format: :js, class: 'btn btn-primary my-2', data: { confirm: 'Are you sure you want to start the processing off the part?' } %>
+      <% elsif jo.job_order_statuses.last.job_status == JobStatus::BEING_PROCESSED %>
+        <button 
+            class="btn btn-primary" 
+            data-bs-toggle="modal" 
+            data-bs-target="#completed-email-modal"
+        >Completed</button>
+      <% elsif jo.job_order_statuses.last.job_status == JobStatus::COMPLETED %>
+        <div class="d-flex justify-content-between align-items-center">
+          <span><strong>Price: </strong><%= number_to_currency(jo.total_price) %></span>
+          <%= button_to 'Mark as Paid', job_order_paid_path(jo, paid: true), method: :patch, remote: true, format: :js, class: 'btn btn-primary my-2', data: { confirm: 'Are you sure you want to mark the job order as paid?' } %>
+        </div>
+      <% elsif jo.job_order_statuses.last.job_status == JobStatus::PAID %>
+        <%= button_to 'Mark as Picked Up', job_order_picked_up_path(jo, picked_up: true), method: :patch, remote: true, format: :js, class: 'btn btn-primary my-2', data: { confirm: 'Are you sure you want to mark the job order as picked up?' } %>
+      <% end %>
+
+      <% if ![JobStatus::DECLINED, JobStatus::PAID, JobStatus::PICKED_UP].include?(jo.job_order_statuses.last.job_status) %>
+        <button 
+          class="btn btn-secondary" 
+          data-bs-toggle="modal" 
+          data-bs-target="#quote-modal"
+          >Manage Quote</button>
+      <% end %>
+
+      <button 
+            class="btn btn-outline-secondary"         
+            data-bs-toggle="modal" 
+            data-bs-target="#comments-modal"
+            >Edit Comments for Staff
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Staff Comments Modal -->
+<div class="modal fade" id="comments-modal" tabindex="-1" aria-labelledby="commentsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="commentsModalLabel">Edit Comments for Staff</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        <%= form_for @job_order, url: job_order_comments_path(@job_order), method: :patch do |f| %>
+          <%= f.label :staff_comments, 'Comments for the staff' %>
+          <%= f.text_field :staff_comments, placeholder: "Low on filament...", class: 'form-control mb-2' %>
+          <%= f.submit 'Save', class: 'btn btn-primary' %>
+        <% end %>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Decline Modal -->
+<div class="modal fade" id="decline-modal" tabindex="-1" aria-labelledby="declineModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="declineModalLabel">Decline Job</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        <%= form_for @job_order, url: job_order_quote_path(@job_order), method: :patch do |f| %>
+          <%= hidden_field_tag :approved, false %>
+          <%= f.label :user_comments, 'Comments (Why is it not approved?)' %>
+          <%= text_field_tag :user_comments, nil, placeholder: "The size won't fit", class: 'form-control mb-2' %>
+          <%= f.submit 'Decline', class: 'btn btn-danger' %>
+        <% end %>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Quote Modal -->
+<div class="modal fade" id="quote-modal" tabindex="-1" aria-labelledby="quoteModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="quoteModalLabel">Quote</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        <%= render "quote_modal" %>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Email Modal -->
+<div class="modal fade" id="completed-email-modal" tabindex="-1" aria-labelledby="completedEmailModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="completedEmailModalLabel">Order Processed Email</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        <%= render "completed_email_modal" %>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%= vite_javascript_tag 'quote_modal' %>

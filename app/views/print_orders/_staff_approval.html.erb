@@ -101,7 +101,7 @@
           </div>
 
           <div class="mb-3">
-            <%= f.label :staff_comments, 'Comments for the user', class: 'form-label' %>
+            <%= f.label :staff_comments, 'Comments for the user (will send as a chat)', class: 'form-label' %>
             <%= f.text_field :staff_comments, placeholder: 'I will need to add supports', class: 'form-control' %>
           </div>
           <div class="mb-3">
@@ -110,7 +110,8 @@
           </div>
         </div>
         <button class="btn btn-primary" onClick="checkFile(this.form)" type="button">Approve</button>
-        <br><br>
+        <br>
+        <br>
       <% end %>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -118,7 +119,8 @@
     </div>
   </div>
 </div>
-<br><br>
+<br>
+<br>
 
 <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#decline_<%= prints.id %>">
   Decline
@@ -129,22 +131,23 @@
       <div class="modal-header">
         <h5 class="modal-title" id="exampleModalLabel">Quote</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </button>
-      </div>
-      <%= form_for prints, url: print_order_path(prints), html: { id: "approve-#{prints.id}" } do |f| %>
-        <div class="modal-body">
-          <%= f.hidden_field :approved, value: false %>
-          <%= f.label :staff_comments, 'Comments (Why is it not approved ?)', class: 'form-label' %>
-          <div class="mb-3">
-            <%= f.text_field :staff_comments, placeholder: "The size won't fit", class: 'form-control' %>
-          </div>
+      </button>
+    </div>
+    <%= form_for prints, url: print_order_path(prints), html: { id: "approve-#{prints.id}" } do |f| %>
+      <div class="modal-body">
+        <%= f.hidden_field :approved, value: false %>
+        <%= f.label :staff_comments, 'Comments (Why is it not approved ?)', class: 'form-label' %>
+        <div class="mb-3">
+          <%= f.text_field :staff_comments, placeholder: "The size won't fit", class: 'form-control' %>
         </div>
-        <button class="btn btn-danger" type="submit">Decline</button>
-        <br><br>
-      <% end %>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
       </div>
+      <button class="btn btn-danger" type="submit">Decline</button>
+      <br>
+      <br>
+    <% end %>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
     </div>
   </div>
+</div>
 </div>

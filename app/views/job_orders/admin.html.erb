@@ -1,165 +1,118 @@
+<% provide :title, "Staff Job Orders" %>
+
 <div class="px-2" data-controller="launch-modal launch-custom-modal">
-  <h1 class="text-center">List of Job Orders</h1>
+  <h1 class="text-center fw-bold my-1">All Job Orders</h1>
   <div class="text-center">
-    <%= link_to 'New Job Order', new_job_orders_path, { class: 'btn btn-primary mb-1' } %>
-    <%= link_to 'Client Page', job_orders_path, { class: 'btn btn-primary mb-1' } %>
-    <%= link_to 'Settings Page', settings_job_orders_path, { class: 'btn btn-primary mb-1' } %>
-    <%= link_to 'Old Admin Page', print_orders_path, { class: 'btn btn-primary mb-1' } %>
+    <%= link_to 'Client View', job_orders_path, { class: 'btn btn-primary mb-1' } %>
+    <%= link_to 'Settings', settings_job_orders_path, { class: 'btn btn-outline-primary mb-1' } %>
   </div>
 
-  <div class="py-1">
-    <%= form_with(url: admin_job_orders_path, method: 'get', class: 'form-inline') do %>
-      <label class="my-1 mr-1" for="start_date">Filter by date</label>
-      <%= select_tag(:query_date, options_for_select([['All', 0], ['1 Month', 30], ['3 Months', 90], ['6 Months', 180], ['12 Months', 365]], selected: session[:query_date]), { class: 'form-select mr-1' }) %>
-      <%= submit_tag('Search', class: 'btn btn-primary mt-1 mt-md-0') %>
-    <% end %>
+  <div class="container px-4">
+    <!-- Filter Button -->
+    <button class="btn btn-outline-secondary" type="button" data-bs-toggle="offcanvas" data-bs-target="#filterPanel" aria-controls="filterPanel">
+      Filter Jobs
+    </button>
+    <!-- Filter Summary -->
+    <div id="active-filters" class="mt-2 d-none">
+      <span class="fw-bold me-2">Active Filters:</span>
+      <span id="filter-tags" class="me-3"></span>
+      <br>
+      <button id="clear-filters" class="btn btn-sm btn-outline-danger mt-1">Clear All Filters</button>
+    </div>
   </div>
 
-  <div class="accordion">
-    <% @statuses.each_with_index do |status, i| %>
-      <% if @job_orders.last_status(status[:status]).present? %>
-        <div class="card">
-          <div class="card-header" data-bs-toggle="collapse" data-bs-target="#accordion-job-order-<%= i %>" aria-expanded="true">
-            <h2 class="mb-0 text-center">
-              <button class="btn btn-link" type="button">
-                <%= status[:name] %>
-              </button>
-            </h2>
+  <div class="container table-responsive">
+    <table class="table table-striped job-order-table">
+      <thead class="table-primary">
+        <tr class="text-center">
+          <th style="width: min-content;"></th>
+          <th style="width: min-content;"></th>
+          <th>User</th>
+          <th>ID</th>
+          <th>Submitted</th>
+          <th>Type</th>
+          <th>Status</th>
+          <th>Staff</th>
+          <th>View</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @job_orders.each do |jo| %>
+          <tr id="job-order-row-<%= jo.id %>">
+            <%= render 'admin_row', jo: %>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Offcanvas Sidebar -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="filterPanel" aria-labelledby="filterPanelLabel">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title" id="filterPanelLabel">Filters</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+  </div>
+  <div class="offcanvas-body">
+    <form>
+      <div class="mb-4">
+        <strong>Date Range</strong>
+        <fieldset id="date_range" class="form-check">
+          <label>
+            <input type="radio" name="date_range" value="all" class="form-check-input" id="default_date" checked>
+            All time
+          </label><br>
+          <label>
+            <input type="radio" name="date_range" value="7" class="form-check-input">
+            Past 7 days
+          </label><br>
+          <label>
+            <input type="radio" name="date_range" value="30" class="form-check-input">
+            Past 30 days
+          </label><br>
+          <label>
+            <input type="radio" name="date_range" value="semester" class="form-check-input">
+            Semester to date
+          </label><br>
+          <label>
+            <input type="radio" name="date_range" value="365" class="form-check-input">
+            Past 1 year
+          </label>
+        </fieldset>
+        <input type="hidden" id="computed_days" name="computed_days" value="1000000" />
+      </div>
+
+      <div class="mb-4">
+        <strong>Job Types</strong>
+        <% @job_types.each do |type| %>
+          <div class="form-check">
+            <%= check_box_tag "job_type_filter[]", type.name, false, class: "form-check-input", id: "job_type_#{type.id}" %>
+            <%= label_tag "job_type_#{type.id}", type.name, class: "form-check-label" %>
           </div>
-          <div id="accordion-job-order-<%= i %>" class="collapse" aria-labelledby="#job-order-<%= i %>">
-            <div class="table-responsive">
-              <table class="table table-striped job-order-table-<%= i %>">
-                <thead class="table-primary">
-                  <tr class="text-center">
-                    <th></th>
-                    <th>User <span onclick="sortTable('job-order-table-<%= i %>', 1)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Identity <span onclick="sortTable('job-order-table-<%= i %>', 2)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>ID <span onclick="sortTable('job-order-table-<%= i %>', 3)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Submitted on <span onclick="sortTable('job-order-table-<%= i %>', 4, true)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Type <span onclick="sortTable('job-order-table-<%= i %>', 5)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Options <span onclick="sortTable('job-order-table-<%= i %>', 6)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Comments <span onclick="sortTable('job-order-table-<%= i %>', 7)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>User's Files</th>
-                    <th>Staff Files</th>
-                    <th>Current Status <span onclick="sortTable('job-order-table-<%= i %>', 10)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Extra Info</th>
-                    <th>Action</th>
-                    <th>Quote</th>
-                    <th>Invoice</th>
-                    <th>Delete</th>
-                  </tr>
-                </thead>
-                <tbody>
-                <% @job_orders.last_status(status[:status]).each do |jo| %>
-                  <tr id="job-order-row-<%= jo.id %>">
-                    <%= render 'admin_row', jo: %>
-                  </tr>
-                <% end %>
-                </tbody>
-              </table>
-            </div>
+        <% end %>
+      </div>
+
+      <div class="mb-4">
+        <strong>Job Statuses</strong>
+        <% @statuses.each do |status| %>
+          <div class="form-check">
+            <%= check_box_tag "job_status_filter[]", status.name, false, class: "form-check-input", id: "job_status_#{status.id}" %>
+            <%= label_tag "job_status_#{status.id}", status.name, class: "form-check-label" %>
           </div>
-        </div>
-      <% end %>
-    <% end %>
-  </div>
+        <% end %>
+      </div>
 
-  <!-- Comments Modal -->
-  <div class="modal" tabindex="-1" data-controller="job-order-comments-modal" data-launch-custom-modal-target="jobOrderCommentsModal">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Comments for Job Order #<span data-job-order-comments-modal-target="id"></span></h5>
-          <button type="button" class="btn-close" data-action="click->job-order-comments-modal#close" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-          </button>
+      <div class="mb-4">
+        <strong>Assigned To</strong>
+        <div class="form-check">
+          <%= check_box_tag "assigned_to_filter[]", "Assign", false, class: "form-check-input", id: "assigned_to_unassigned" %>
+          <%= label_tag "assigned_to_unassigned", "Unassigned", class: "form-check-label" %>
         </div>
-        <div class="modal-body">
-          <p><span data-job-order-comments-modal-target="comments"></span></p>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-action="click->job-order-comments-modal#close">Close</button>
+        <div class="form-check">
+          <%= check_box_tag "assigned_to_filter[]", current_user.name, false, class: "form-check-input", id: "assigned_to_#{current_user.id}" %>
+          <%= label_tag "assigned_to_#{current_user.id}", "Me", class: "form-check-label" %>
         </div>
       </div>
-    </div>
-  </div>
-
-  <!-- Decline Modal -->
-  <div class="modal" tabindex="-1" data-controller="launch-modal_controller" id="decline-modal">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Decline Comments for #<span data-launch-modal-target="id"></span></h5>
-          <button type="button" class="btn-close" data-action="click->launch-modal#close" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-        <div class="modal-body" id="decline-body">
-
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-action="click->launch-modal#close">Close</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Quote Modal -->
-  <div class="modal" tabindex="-1" data-controller="launch-modal_controller" id="quote-modal">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Quote for Job Order #<span data-launch-modal-target="id"></span></h5>
-          <button type="button" class="btn-close" data-action="click->launch-modal#close" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-        <div class="modal-body" id="quote-body">
-
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-action="click->launch-modal#close">Close</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Timeline Modal -->
-  <div class="modal" tabindex="-1" data-controller="launch-modal_controller" id="timeline-modal">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Status Timeline for Job Order #<span data-launch-modal-target="id"></span></h5>
-          <button type="button" class="btn-close" data-action="click->launch-modal#close" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-        <div class="modal-body" id="timeline-body">
-
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-action="click->launch-modal#close">Close</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal" tabindex="-1" data-controller="launch-modal_controller" id="completed-email-modal">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Processed Email for Job Order #<span data-launch-modal-target="id"></span></h5>
-          <button type="button" class="btn-close" data-action="click->launch-modal#close" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-        <div class="modal-body" id="completed-email-body">
-
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-action="click->launch-modal#close">Close</button>
-        </div>
-      </div>
-    </div>
+    </form>
   </div>
 </div>

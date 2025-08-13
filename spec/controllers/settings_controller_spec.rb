@@ -13,7 +13,7 @@ RSpec.describe SettingsController, type: :controller do
       it "should redirect to root" do
         session[:user_id] = ""
         get :profile
-        expect(response).to redirect_to login_path
+        expect(response).to redirect_to login_path(back_to: request.path)
       end
     end
 

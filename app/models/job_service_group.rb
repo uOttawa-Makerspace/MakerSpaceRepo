@@ -1,4 +1,6 @@
 class JobServiceGroup < ApplicationRecord
+  include SoftDelete
+
   belongs_to :job_type, optional: true
   has_many :job_order
   has_many :job_services

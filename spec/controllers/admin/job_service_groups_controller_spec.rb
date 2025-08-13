@@ -23,9 +23,9 @@ RSpec.describe Admin::JobServiceGroupsController, type: :controller do
           FactoryBot.attributes_for(:job_service_group).merge(
             job_type_id: create(:job_type).id
           )
-        expect {
+        expect do
           post :create, params: { job_service_group: params }
-        }.to change(JobServiceGroup, :count).by(1)
+        end.to change(JobServiceGroup, :count).by(1)
         expect(response).to redirect_to settings_job_orders_path
       end
     end
@@ -42,27 +42,26 @@ RSpec.describe Admin::JobServiceGroupsController, type: :controller do
 
   describe "PATCH /update" do
     context "logged as admin" do
-      it "should update the job service group" do
-        patch :update,
-              params: {
-                id: @job_service_group.id,
-                job_service_group: {
-                  name: "abc123"
-                }
-              }
-        expect(response).to redirect_to settings_job_orders_path
-        expect(JobServiceGroup.find(@job_service_group.id).name).to eq("abc123")
-      end
-    end
-  end
+      it "soft updates the job service group by duplicating it with new attributes" do
+        original_id = @job_service_group.id
 
-  describe "DELETE /destroy" do
-    context "logged as admin" do
-      it "should destroy the job service group" do
-        expect {
-          delete :destroy, params: { id: @job_service_group.id }
-        }.to change(JobServiceGroup, :count).by(-1)
-        expect(response).to redirect_to settings_job_orders_path
+        expect do
+          patch :update,
+                params: {
+                  id: original_id,
+                  job_service_group: {
+                    name: "abc123"
+                  }
+                }
+        end.to change(JobServiceGroup, :count).by(1)
+
+        expect(response).to redirect_to(settings_job_orders_path)
+
+        expect(JobServiceGroup.find(original_id).is_deleted).to be true
+
+        new_record = JobServiceGroup.order(:created_at).last
+        expect(new_record.name).to eq("abc123")
+        expect(new_record.is_deleted).to be false
       end
     end
   end

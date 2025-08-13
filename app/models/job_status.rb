@@ -8,8 +8,8 @@ class JobStatus < ApplicationRecord
   SENT_REMINDER = JobStatus.find_by(name: "Sent a Quote Reminder")
   WAITING_PROCESSED = JobStatus.find_by(name: "Waiting to be Processed")
   BEING_PROCESSED = JobStatus.find_by(name: "Currently being Processed")
-  COMPLETED = JobStatus.find_by(name: "Completed")
-  PAID = JobStatus.find_by(name: "Paid")
+  COMPLETED = JobStatus.find_by(name: "Completed (Waiting for Payment)")
+  PAID = JobStatus.find_by(name: "Paid (Waiting for Pick-Up)")
   PICKED_UP = JobStatus.find_by(name: "Picked-Up")
   DECLINED = JobStatus.find_by(name: "Declined")
 

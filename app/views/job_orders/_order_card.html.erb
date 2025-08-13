@@ -1,55 +1,91 @@
-<div class="col-md-6 my-3">
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title m-0 d-flex justify-content-md-between flex-md-row flex-column">
-        <div>
-          <h5><%= t('job_orders.public_page.order') %> #<%= jo.id %> - <%= jo.job_order_statuses.last.job_status.t_name %></h5>
-          <p class="mb-0"><%= jo.user_files.map(&:filename).join(', ') %></p>
-        </div>
-        <div class="pt-2 pt-md-0">
-          <% if jo.allow_edit? %>
-            <%= link_to t('job_orders.public_page.edit'), job_order_steps_path(job_order_id: jo.id), class: 'btn btn-secondary mb-1' %>
-          <% else %>
-            <span class="d-inline-block mb-1" tabindex="0" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="bottom" data-bs-content="<%= t('job_orders.public_page.cannot_edit_this_order') %>">
-              <button class="btn btn-primary" style="pointer-events: none;" type="button" disabled><%= t('job_orders.public_page.edit') %></button>
-            </span>
-          <% end %>
-          <%= button_to "<i class='fa fa-download'></i> Invoice".html_safe, job_order_invoice_path(job_order_id: jo.id), method: :get, target: '_blank', class: 'btn btn-secondary' if jo.job_order_quote.present? %>
-        </div>
-      </div>
-    </div>
-    <div class="card-body">
-      <ul class="timeline">
-        <% jo.job_order_statuses.order(created_at: :desc).each do |jos| %>
-          <li>
-            <div class="d-flex justify-content-between">
-              <p><%= jos.job_status.t_name %></p>
-              <p class="float-right"><%= jos.created_at.strftime('%b %e %Y at %H:%M') %></p>
+<div class="card mb-3">
+  <div class="d-flex justify-content-between align-items-center card-header">
+    <strong><%= t("job_orders.order.timeline") %></strong>
+  </div>
+  <div class="card-body">
+    <% completed_status_ids = jo.job_order_statuses.map(&:job_status_id) %>
+    <% status_by_id = jo.job_order_statuses.index_by(&:job_status_id) %>
+    <% current_status = jo.job_order_statuses.last&.job_status %>
+    <% current_status_id = current_status&.id %>
+
+    <% all_statuses = [
+      JobStatus::DRAFT,
+      JobStatus::STAFF_APPROVAL,
+      JobStatus::USER_APPROVAL,
+      JobStatus::SENT_REMINDER,
+      JobStatus::WAITING_PROCESSED,
+      JobStatus::BEING_PROCESSED,
+      JobStatus::COMPLETED,
+      JobStatus::PAID,
+      JobStatus::PICKED_UP,
+      JobStatus::DECLINED
+    ].compact.reverse %>
+
+    <% filtered_statuses = all_statuses.reject do |status|
+      [JobStatus::DECLINED, JobStatus::SENT_REMINDER].include?(status) && !completed_status_ids.include?(status.id)
+    end %>
+
+    <% current_index = filtered_statuses.find_index(current_status) %>
+
+    <ul class="list-group list-group-flush">
+      <% filtered_statuses.each_with_index do |status, index| %>
+        <% jos = status_by_id[status.id] %>
+        <% is_completed = completed_status_ids.include?(status.id) && index > current_index %>
+        <% is_current = status == current_status %>
+        <% is_future = index < current_index && !is_current %>
+        <% is_cancelled = current_status == JobStatus::DECLINED && index < current_index %>
+
+        <li class="list-group-item <%= 'bg-light border-primary' if is_current %>" style="<%= is_completed || is_future ? 'opacity: 0.5;' : '' %>">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="d-flex align-items-center">
+              <% if is_completed %>
+                <%= fa_icon :check, class: 'me-2 text-success' %>
+              <% elsif is_current %>
+                <%= fa_icon :dot_circle, class: 'me-2 text-primary' %>
+              <% else %>
+                <%= fa_icon :circle, class: 'me-2 text-muted' %>
+              <% end %>
+
+              <div>
+                <% name_class = if is_current
+'fw-bold text-primary'
+else
+is_cancelled ? 'text-decoration-line-through text-muted' : ''
+end %>
+                <strong class="<%= name_class %>"><%= status.t_name %></strong>
+                <p class="mb-0 small <%= is_cancelled ? 'text-decoration-line-through text-muted' : '' %>">
+                  <%= status.t_description %>
+                </p>
+              </div>
             </div>
-            <p><%= jos.job_status.t_description %></p>
-            <% if jo.job_order_statuses.last == jos %>
-              <% if [JobStatus::USER_APPROVAL, JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(jos.job_status) %>
-                <div class="alert alert-warning">
-                  <p><b><%= t('job_orders.public_page.action_required_total_quote') %> <%= number_to_currency(jo.total_price) %></b></p>
-                  <div class="d-flex justify-content-between">
-                    <% if jos.job_status === JobStatus::COMPLETED %>
-                      <%= link_to t('job_orders.public_page.pay_online'), pay_job_orders_path(token: Rails.application.message_verifier(:job_order_id).generate(jo.id)), class: 'btn btn-primary' %>
-                      <a href="https://en.wiki.makerepo.com/wiki/How_to_pay_for_an_Order" class="btn btn-primary"><%= t('job_orders.public_page.pay_in_store') %></a>
-                    <% else %>
-                      <%= form_tag job_order_user_approval_path(job_order_id: jo.id, approved: true), method: :patch do %>
-                        <%= submit_tag t('job_orders.public_page.approve'), class: 'btn btn-primary' %>
-                      <% end %>
-                      <%= form_tag job_order_user_approval_path(job_order_id: jo.id, approved: false), method: :patch do %>
-                        <%= submit_tag t('job_orders.public_page.deny'), class: 'btn btn-danger' %>
-                      <% end %>
+            <% if jos %>
+              <small class="text-muted"><%= l(jos.created_at, format: :long) %></small>
+            <% end %>
+          </div>
+
+          <%# Special UI for certain current statuses - shown inside the li if it's the current one %>
+          <% if is_current && [JobStatus::USER_APPROVAL, JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(status) %>
+            <div class="alert alert-warning mt-3">
+              <p><b><%= t('job_orders.public_page.action_required', blank: status == JobStatus::COMPLETED ? t('job_orders.public_page.total_invoice') : t('job_orders.public_page.total_quote')) %> <%= number_to_currency(jo.total_price) %></b></p>
+              <% if current_user.id == jo.user_id %>
+                <div class="d-flex justify-content-start flex-wrap">
+                  <% if status == JobStatus::COMPLETED %>
+                    <%= link_to t('job_orders.public_page.pay_online'), pay_job_orders_path(token: Rails.application.message_verifier(:job_order_id).generate(jo.id)), class: 'btn btn-primary me-2 mb-2' %>
+                    <a href="https://en.wiki.makerepo.com/wiki/How_to_pay_for_an_Order" class="btn btn-primary mb-2"><%= t('job_orders.public_page.pay_in_store') %></a>
+                  <% else %>
+                    <%= form_tag job_order_user_approval_path(job_order_id: jo.id, approved: true), method: :patch, class: 'me-2 mb-2' do %>
+                      <%= submit_tag t('job_orders.public_page.approve'), class: 'btn btn-primary' %>
+                    <% end %>
+                    <%= form_tag job_order_user_approval_path(job_order_id: jo.id, approved: false), method: :patch, class: 'mb-2' do %>
+                      <%= submit_tag t('job_orders.public_page.deny'), class: 'btn btn-danger' %>
+                    <% end %>
                   <% end %>
-                  </div>
                 </div>
               <% end %>
-            <% end %>
-          </li>
-        <% end %>
-      </ul>
-    </div>
+            </div>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
   </div>
 </div>

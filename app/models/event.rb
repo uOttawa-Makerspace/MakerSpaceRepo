@@ -4,6 +4,9 @@ class Event < ApplicationRecord
   has_many :event_assignments, dependent: :destroy
   has_many :users, through: :event_assignments, source: :user
 
+  belongs_to :training, optional: true
+  belongs_to :course_name, optional: true
+
   validates :start_time, :end_time, :created_by_id, :space_id, :event_type, presence: true
 
   validate :start_time_must_be_before_end_time
@@ -81,10 +84,27 @@ class Event < ApplicationRecord
       event.title
     end
 
+    description = event.description.to_s
+    if event.event_type == 'training' && event.training_id.present?
+      language = case event.language
+                when 'en' then 'English'
+                when 'fr' then 'French'
+                else event.language.to_s
+                end
+      
+      training_details = [
+        "Training: #{event.training.name_en}",
+        "Language: #{language}",
+        "Course: #{event&.course_name&.name}" # Assuming there's a course association
+      ].join("\n")
+
+      description = [description, training_details].reject(&:blank?).join("\n\n")
+    end
+
     gcal_event =
       Google::Apis::CalendarV3::Event.new(
         summary: title,
-        description: event.description,
+        description: description,
         start:
           Google::Apis::CalendarV3::EventDateTime.new(
             date_time: event.start_time.iso8601,

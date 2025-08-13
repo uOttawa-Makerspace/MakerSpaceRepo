@@ -88,7 +88,8 @@ export function eventClick(eventImpl) {
     endTimeField.value = toLocalDatetimeString(end);
   }
 
-  document.getElementById("title").value = event.title || "";
+  document.getElementById("title").value =
+    event.title.replace(/✎/g, "").trim() || "";
   document.getElementById("description").value =
     event.extendedProps.description || "";
 
@@ -141,6 +142,22 @@ export function eventClick(eventImpl) {
   // Set the event type
   const eventTypeSelect = document.getElementById("event_type_select");
   eventTypeSelect.value = event.extendedProps.eventType || "other";
+
+  // Show options if event is a training
+  const trainingFields = document.getElementById("training-fields");
+  if (eventTypeSelect.value === "training") {
+    trainingFields.style.display = "";
+
+    // Populate training options
+    document.getElementById("training_select").value =
+      event.extendedProps.trainingId || null;
+    document.getElementById("language_select").value =
+      event.extendedProps.language || null;
+    document.getElementById("course_select").value =
+      event.extendedProps.course_name.id || null;
+  } else {
+    trainingFields.style.display = "none";
+  }
 
   // Set the staff members
   const staffSelect = document.getElementById("staff_select");
@@ -212,6 +229,8 @@ export function eventCreate(info) {
   document.getElementById("end_time_field").value = toLocalDatetimeString(
     info.end,
   );
+
+  document.getElementById("training-fields").style.display = "none";
 
   // This must be called after the start and end times are set, since marking staff as unavailable (on modal show) relies on these values.
   document.getElementById("addEventButton").click();

@@ -1,8 +1,7 @@
 FactoryBot.define do
   factory :job_order do
     association :user, :regular_user
-    comments { Faker::Lorem.paragraph }
-    user_comments { Faker::Lorem.paragraph }
+    staff_comments { Faker::Lorem.paragraph }
 
     trait :with_user_files do
       user_files { [FilesTestHelper.stl] }

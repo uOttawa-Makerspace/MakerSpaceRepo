@@ -1,0 +1,33 @@
+<nav class="navbar navbar-expand-xl navbar-light navbar-staff">
+  <div class="container-fluid">
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarJobOrders" aria-controls="navbarJobOrders" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarJobOrders">
+      <ul class="navbar-nav mx-auto">
+        <li class="nav-item">
+          <%= link_to "#{t('navbar.user.joborder', default: 'Job Orders')} #{t('navbar.home', default: 'Home')}", landing_job_orders_path, class: 'nav-link' %>
+        </li>
+        <li class="nav-item">
+          <%= link_to t('job_orders.public_page.my_job_orders', default: 'My Job Orders'), job_orders_path, class: 'nav-link' %>
+        </li>
+        <li class="nav-item">
+          <%= link_to t('job_orders.public_page.create_a_new_job_order', default: 'Create a new Job Order'), new_job_order_path, class: 'nav-link' %>
+        </li>
+
+        <% if current_user.staff? || current_user.admin? %>
+          <li class="nav-item">
+            <%= link_to 'All Job Orders (Staff Only)', admin_job_orders_path, class: 'nav-link' %>
+          </li>
+        <% end %>
+
+        <% if current_user.admin? %>
+          <li class="nav-item">
+            <%= link_to 'Settings (Admin Only)', settings_job_orders_path, class: 'nav-link' %>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+  </div>
+</nav>

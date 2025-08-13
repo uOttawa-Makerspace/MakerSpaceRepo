@@ -2,7 +2,7 @@
     <% if signed_in? %>
     <div class="row">
         <div class="col gy-3 text-center">
-            <%= image_tag @user.display_avatar, alt: 'Avatar' %>
+            <%= image_tag @user.display_avatar, alt: 'Avatar', loading: 'lazy' %>
             <%# why the '@', this isn't twitter%>
             <p class="subtext">@<%= @user.username %></p>
             <%= link_to t('home.userinfo.edit_profile'), settings_profile_path, class: 'btn btn-primary w-100' %>
