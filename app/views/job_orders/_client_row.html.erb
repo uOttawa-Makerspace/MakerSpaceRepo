@@ -1,0 +1,34 @@
+<td class="px-1">
+  <% if jo.chat_messages.unread(current_user).any? %>
+    <div class="mx-auto position-relative" style="width: min-content;">
+      <i class="fa fa-bell text-danger" style="scale: 1.7;"></i>
+      <span class="position-absolute translate-middle badge rounded-pill bg-danger">
+        <%= jo.chat_messages.unread(current_user).count %>
+        <span class="visually-hidden">unread messages</span>
+      </span>
+    </div>
+  <% end %>
+</td>
+<td>
+  <% if !jo.user.nil? %>
+    <%= link_to jo.user.name, user_path(jo.user.username) %>
+    <%= jo.user.email %>
+  <% else %>
+    [DELETED USER]
+  <% end %>
+</td>
+<td><%= jo.id %></td>
+<td data-sort="<%= jo.created_at %>"><%= l(jo.created_at, format: :long) %></td>
+</td>
+<td>
+  <% jo.job_tasks.each_with_index do |task, i| %>
+    <%= " ," if i != 0 %>
+    <%= task.job_type&.name || "Unselected" %>
+  <% end %>
+</td>
+<td><%= jo.job_order_statuses.last.job_status.name %></td>
+<td>
+  <%= 
+    link_to 'View', job_order_path(jo.id), class: 'btn btn-primary btn-sm'
+  %>
+</td>

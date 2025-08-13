@@ -169,66 +169,73 @@
       <td>
         Item
       </td>
-
       <td>
         Price
       </td>
     </tr>
 
-    <tr class="item last">
-      <td>
-        Service charges
-      </td>
+    <% @job_order.job_tasks.each do |task| %>
+      <!-- Task Base Fee -->
+      <% if task.job_task_quote&.price.to_f > 0 %>
+        <tr class="item">
+          <td>
+            <%= task.title %> - Base Fee
+          </td>
+          <td>
+            CAD <%= number_to_currency(task.job_task_quote.price) %>
+          </td>
+        </tr>
+      <% end %>
 
-      <td>
-        CAD <%= number_to_currency(@job_order.job_order_quote.service_fee) %>
-      </td>
-    </tr>
+      <!-- Task Service -->
+      <% if task.job_service && task.job_task_quote&.service_price.to_f > 0 %>
+        <tr class="item">
+          <td>
+            <%= task.title %> - <%= task.job_service.name %>
+            <% if task.job_service.job_service_group %>
+              (<%= task.job_service.job_service_group.name %>)
+            <% end %>
+            - <%= "#{task.job_task_quote.service_quantity} #{task.job_service.unit.presence || 'unit'}" %>
+          </td>
+          <td>
+            CAD <%= number_to_currency(task.job_task_quote.service_price * task.job_task_quote.service_quantity) %>
+          </td>
+        </tr>
+      <% end %>
 
-    <% @job_order.job_order_quote.job_order_quote_services.each do |s| %>
-      <tr class="item last">
-        <td>
-          <%= s.job_service.job_service_group.name %> - <%= s.job_service.name %> (<%= "#{s.quantity} #{s.job_service.unit.presence || 'unit'}" %>)
-        </td>
-        <td>
-          CAD <%= number_to_currency(s.cost) %>
-        </td>
-      </tr>
+      <!-- Task Options -->
+      <% task.job_task_quote&.job_task_quote_options&.each do |option| %>
+        <tr class="item">
+          <td>
+            <%= task.title %> - <%= option.job_option.name %> (Option)
+          </td>
+          <td>
+            CAD <%= number_to_currency(option.price) %>
+          </td>
+        </tr>
+      <% end %>
     <% end %>
 
-    <% @job_order.job_order_quote.job_order_quote_type_extras.each do |e| %>
-      <tr class="item last">
-        <td>
-          <%= e.job_type_extra.name %>
-        </td>
-        <td>
-          CAD <%= number_to_currency(e.price) %>
-        </td>
-      </tr>
-    <% end %>
-
-    <% @job_order.job_order_quote.job_order_quote_options.each do |o| %>
-      <tr class="item last">
-        <td>
-          <%= o.job_option.name %> (Option)
-        </td>
-        <td>
-          CAD <%= number_to_currency(o.amount) %>
-        </td>
-      </tr>
+    <% if @job_order.job_quote_line_items.any? %>
+      <% @job_order.job_quote_line_items.each do |item| %>
+        <tr class="item">
+          <td>
+            <%= item.description.presence || "Line Item" %>
+          </td>
+          <td>
+            CAD <%= number_to_currency(item.price) %>
+          </td>
+        </tr>
+      <% end %>
     <% end %>
 
     <tr class="total">
       <td></td>
-
       <td>
         Total: CAD <%= number_to_currency(@job_order.total_price) %>
       </td>
     </tr>
   </table>
-  <% if @job_order.user_comments.present? %>
-    <p>Comments to the user : <%= @job_order.user_comments %></p>
-  <% end %>
   <button class="print-button" onclick="window.print()">Print this page</button>
 </div>
 </body>

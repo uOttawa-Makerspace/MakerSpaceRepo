@@ -62,10 +62,10 @@ gem "stripe_event", "~> 2.3", ">= 2.3.1"
 gem "syntax_tree", "~> 3.3.0"
 gem "syntax_tree-haml"
 gem "syntax_tree-rbs"
+gem 'terser', '~> 1.2'
 gem "thin", "~> 1.8.2"
 gem "toastr-rails"
 gem "trix-rails", "~> 2.4", require: "trix"
-gem "uglifier", ">= 1.3.0"
 gem "unicorn-worker-killer", "~> 0.4.5"
 gem "vite_rails"
 gem "whenever", require: false
@@ -73,7 +73,7 @@ gem "will_paginate", "~> 3.3.0"
 gem "will_paginate-bootstrap-style"
 gem "youtube_id"
 gem "zip-zip"
-
+gem "mission_control-jobs"
 
 group :development, :test do
   gem "byebug", platform: :mri
@@ -100,6 +100,11 @@ group :development do
   gem "rubocop-rails"
   gem "web-console"
 
+  gem 'ruby-lsp-rails', require: false
+  gem "ruby-lsp-rspec", require: false
+  gem 'ruby-lsp-rubyfmt', require: false
+
+
   # ssh deploymentque
   gem "bcrypt_pbkdf", "~> 1.0"
   gem "ed25519", "~> 1.2"
@@ -114,3 +119,5 @@ group :test do
   gem "selenium-webdriver", "~> 3.142.7"
   gem "shoulda-matchers", "~> 4.0"
 end
+
+gem "solid_queue", "~> 1.2"

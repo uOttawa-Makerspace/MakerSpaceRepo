@@ -26,7 +26,7 @@ Rails.application.configure do
   # Apache or NGINX already handles this.
   config.public_file_server.enabled = ENV["RAILS_SERVE_STATIC_FILES"].present?
 
-  config.assets.js_compressor = Uglifier.new(harmony: true)
+  config.assets.js_compressor = :terser
 
   # Compress CSS using a preprocessor.
   # config.assets.css_compressor = :sass
@@ -65,7 +65,8 @@ Rails.application.configure do
   # config.cache_store = :mem_cache_store
 
   # Use a real queuing backend for Active Job (and separate queues per environment).
-  # config.active_job.queue_adapter     = :resque
+  # config.active_job.queue_adapter = :solid_queue
+  # config.solid_queue.connects_to = { database: { writing: :queue } }
   # config.active_job.queue_name_prefix = "maker_space_repo_production"
 
   config.action_mailer.perform_caching = false

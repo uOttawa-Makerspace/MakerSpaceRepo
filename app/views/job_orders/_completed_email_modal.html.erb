@@ -1,0 +1,29 @@
+<div id="completed-email-modal-rendered">
+  <div class="modal-body">
+    <div class="row">
+      <div class="text-center w-100">
+        <p class="text-center ml-3 mr-3">Until you click one of the buttons, the Job Order will appear as <b>NOT Printed</b></p>
+      </div>
+      <div class="col-md-12">
+        <%= form_for @job_order, url: job_order_processed_path(@job_order) do |f| %>
+          <div class="pr-5 pl-5 text-center">
+            <div class="text-start">
+              <input id="job-order-message" value="<%= @message %>" type="hidden" name="message">
+              <trix-editor input="job-order-message"></trix-editor>
+            </div>
+            <%= hidden_field_tag :completed, true %>
+            <%= hidden_field_tag :send_email, true %>
+            <%= f.submit 'Send email and mark completed', class: 'btn btn-primary my-2' %>
+          </div>
+        <% end %>
+      </div>
+      <div class="col-md-12 text-center">
+        <%= form_for @job_order, url: job_order_processed_path(@job_order) do |f| %>
+          <%= hidden_field_tag :completed, true %>
+          <%= hidden_field_tag :send_email, false %>
+          <%= f.submit 'Do not send email and mark completed', class: 'btn btn-danger' %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

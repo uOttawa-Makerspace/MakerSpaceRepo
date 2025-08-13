@@ -101,7 +101,7 @@
           </div>
         <% end %>
         <div class="mb-3">
-          <%= f.label :staff_comments, 'Comments for the user', class: 'form-label' %>
+          <%= f.label :staff_comments, 'Comments for the user (will send as a chat)', class: 'form-label' %>
           <%= f.text_field :staff_comments, placeholder: 'I will need to add supports', class: 'form-control' %>
         </div>
         <div class="mb-3">
@@ -122,20 +122,20 @@
           <%= f.submit 'Edit Request', class: 'btn btn-primary', data: { confirm: 'Are you sure you want to submit the updated quoted? This will send an updated quote email to the client.' } %>
         </div>
       <% end %>
-      </div>
-</div>
+    </div>
+  </div>
 </div>
 
 
 <script type="text/javascript" charset="utf-8">
-    function refresh_fileList(list_item) {
-        let remove_files = document.getElementById('remove_files');
-        let file = list_item.getAttribute('data-file');
-        if (remove_files.value === "") {
-            remove_files.value += file;
-        } else if (remove_files.value.includes(file) == false) {
-            remove_files.value += "," + file;
-        }
-        document.getElementById(file).hidden = true;
-    }
+  function refresh_fileList(list_item) {
+      let remove_files = document.getElementById('remove_files');
+      let file = list_item.getAttribute('data-file');
+      if (remove_files.value === "") {
+          remove_files.value += file;
+      } else if (remove_files.value.includes(file) == false) {
+          remove_files.value += "," + file;
+      }
+      document.getElementById(file).hidden = true;
+  }
 </script>

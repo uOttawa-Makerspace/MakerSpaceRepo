@@ -5,6 +5,11 @@ class CreateWalkInSafetySheets < ActiveRecord::Migration[7.2]
       t.references :user
       # What space was this signed for?
       t.references :space
+      # Add an index to ensure uniqueness. This table will fill up quickly
+      # This creates an index for both, but only the combination is unique
+      # Index order matters, we scope by user then search by space
+      t.index [:user_id, :space_id], unique: true
+      #t.index :user_id
 
       t.boolean :is_minor
 
