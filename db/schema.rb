@@ -1441,6 +1441,25 @@ ActiveRecord::Schema[7.2].define(version: 2025_07_31_163455) do
     t.decimal "hours", precision: 5, scale: 2, default: "0.0"
   end
 
+  create_table "walk_in_safety_sheets", force: :cascade do |t|
+    t.bigint "user_id"
+    t.bigint "space_id"
+    t.boolean "is_minor"
+    t.string "participant_signature"
+    t.string "participant_telephone_at_home"
+    t.string "guardian_signature"
+    t.string "minor_participant_name"
+    t.string "guardian_telephone_at_home"
+    t.string "guardian_telephone_at_work"
+    t.string "emergency_contact_name"
+    t.string "emergency_contact_telephone"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["space_id"], name: "index_walk_in_safety_sheets_on_space_id"
+    t.index ["user_id", "space_id"], name: "index_walk_in_safety_sheets_on_user_id_and_space_id", unique: true
+    t.index ["user_id"], name: "index_walk_in_safety_sheets_on_user_id"
+  end
+
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "announcement_dismisses", "announcements"
