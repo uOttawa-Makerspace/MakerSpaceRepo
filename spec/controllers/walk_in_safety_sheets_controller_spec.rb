@@ -114,4 +114,12 @@ RSpec.describe WalkInSafetySheetsController do
       expect(current_user.walk_in_safety_sheets.count).to eq 2
     end
   end
+
+  describe "storing supervisor information" do
+    it "should get the current supervisors for a space" do
+      # This needs a space_manager factory now
+      # or a way to create a space then insert space managers
+      expect(true).to be false
+    end
+  end
 end
