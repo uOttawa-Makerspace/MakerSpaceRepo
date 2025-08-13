@@ -1,3 +1,6 @@
+import "tom-select";
+import TomSelect from "tom-select";
+
 document.addEventListener("turbo:load", () => {
   [...document.getElementsByClassName("sk-delete-button")].forEach((btn) =>
     btn.addEventListener("click", (el) => {
@@ -19,60 +22,21 @@ document.addEventListener("turbo:load", () => {
   });
 });
 
-var form = document.getElementById("sign_in_skill_fastsearch");
-form.onsubmit = function () {
-  document.getElementById("sign_in_skill_fastsearch_skillname").value = [
-    document.getElementById("skill_dashboard_select").value,
-  ];
-  form.submit();
-};
-
-var form2 = document.getElementById("search_skill_fastsearch");
-form2.onsubmit = function () {
-  document.getElementById("search_skill_fastsearch_skillname").value =
-    document.getElementById("skill_dashboard_select").value;
-  form2.submit();
-};
-
-new TomSelect("#skill_dashboard_select", {
-  valueField: "label",
-  labelField: "label",
-  searchField: ["label", "type"],
-  // fetch remote data
-  load: function (query, callback) {
-    var self = this;
-    if (self.loading > 1) {
-      callback();
-      return;
-    }
-
-    var url = "https://whatcms.org/API/List";
-    fetch(url)
-      .then((response) => response.json())
-      .then((json) => {
-        callback(json.result.list);
-        self.settings.load = null;
-      })
-      .catch(() => {
-        callback();
-      });
-  },
-  // custom rendering function for options
-  render: {
-    option: function (item, escape) {
-      return `<div class="py-2 d-flex">
-							<div class="mb-1">
-								<span class="h5">
-									${escape(item.label)}
-								</span>
-							</div>
-					 		<div class="ms-auto">${escape(item.type.join(", "))}</div>
-						</div>`;
-    },
-  },
+document.addEventListener("turbo:load", () => {
+  new TomSelect("#select-skills", {
+    sortField: "text",
+  });
 });
 
-if (document.getElementById("search_bar")) {
+const test = document.querySelector("#skill_select");
+test.addEventListener("click", () => {
+  console.log("Selected");
+  new TomSelect("#skill_select", {
+    sortField: "text",
+  });
+});
+
+if (document.getElementById("#search_bar")) {
   document
     .getElementById("search_bar")
     .addEventListener("keyup", function (event) {

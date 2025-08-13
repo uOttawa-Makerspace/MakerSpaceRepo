@@ -38,6 +38,14 @@
           <%= f.label :description_fr, t('admin.training.desc_fr'), class: 'form-label' %>
         </div>
 
+        <select id="select-skills" multiple placeholder="Select skills...">
+          <option value="">Select skills...</option>
+          <optgroup label="Skills">
+            <% @all_options.each do |opt| %>
+              <option value="<%= opt %>"><%= opt %></option>
+            <% end %>
+          </optgroup>
+        </select>
 
         <div class="mb-3">
             <h4>List of Skills</h4>
@@ -46,20 +54,17 @@
                   <% @skills_en.each_with_index do |sk, i| %>
                     <div class="d-flex upload-file-input mb-2 gap-1">
                       <div class="col-md-9 p-1">
-                        <%= form_tag skill_search_admin_trainings_path, method: :get, action: :skills_search do %>
                           <div class="mb-3 mb-0">
-                            <%= select_tag('list_of_skills_en[]', sk, prompt: 'Choose skill...', class: 'form-control form-select', id: 'skill_dashboard_select') %>
-                            <%= text_field_tag(:query, sk, prompt: 'Choose skill...', class: 'form-control form-select', id: 'skill_dashboard_select') %>
+                            <select id="skill_select" multiple placeholder="Choose skill...">
+                              <optgroup label="Skills">
+                                <% @all_options.each do |opt| %>
+                                <option value="<%= opt %>"><%= opt %></option>
+                                <% end %>
+                              </optgroup>
+                            </select>
                           </div>
-                        <% end %>
                       </div>
 
-                      <%= form_tag skill_search_admin_trainings_path, method: :get, action: :skills_search do %>
-                        <div class="input-group mb-3">
-                          <%= text_field_tag(:query, '', placeholder: 'Name, email, username', class: 'form-control', 'aria-describedby': 'button-addon2', style: 'font-size: inherit;') %>
-                          <button class="btn btn-primary" type="submit" id="button-addon2">Search</button>
-                        </div>
-                      <% end %>
 
                       <button class="btn btn-danger sk-delete-button ms-2" type="button">
                         <i class="fa fa-trash"></i>
@@ -90,13 +95,15 @@
     
 
     <div class="col-md-9 p-1">
-    <%= form_tag skill_search_admin_trainings_path, method: :get, action: :skills_search do %>
       <div class="mb-3 mb-0">
-        <%= select_tag('list_of_skills_en[]', '', prompt: 'Choose skill...', class: 'form-control form-select', id: 'skill_dashboard_select') %>
-        <%= text_field_tag(:query, nil, prompt: 'Choose skill...', class: 'form-control form-select', id: 'skill_dashboard_select') %>
-
+        <select id="skill_select" multiple placeholder="Choose skill...">
+                              <optgroup label="Skills">
+                                <% @all_options.each do |opt| %>
+                                  <option value="<%= opt %>"><%= opt %></option>
+                                <% end %>
+                              </optgroup>
+                            </select>
       </div>
-    <% end %>
   </div>
 
       <button class="btn btn-danger sk-delete-button ms-2" type="button">
@@ -104,19 +111,3 @@
       </button>
     </div>
 </section>
-
-<script type="text/javascript" charset="utf-8">
-
-    window.searchForm = function () {
-        let form = document.getElementById('search_skill_fastsearch');
-        if (form.elements['list_of_skills_en[]'].value == "" || form.elements['list_of_skills_en[]'].value == null || form.elements['list_of_skills_en'].value == undefined) {
-            var query = document.createElement("input");
-            query.type = "hidden";
-            query.value = currentQuery;
-            query.name = "query";
-            form.appendChild(query);
-        }
-        form.submit();
-    }
-</script>
-<%= vite_javascript_tag 'staff_dashboard_search', 'data-turbo-track': 'reload' %>

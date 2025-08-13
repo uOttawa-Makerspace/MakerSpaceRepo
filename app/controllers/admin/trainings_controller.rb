@@ -17,10 +17,12 @@ class Admin::TrainingsController < AdminAreaController
     @training = Training.find(params[:id])
     @skills_en = @training.tokenize_info_en unless @training.list_of_skills_en.nil?
     @skills_fr = @training.tokenize_info_fr unless @training.list_of_skills_fr.nil?
+    @all_options = @training.all_skills
     @options = @training.filter_by_attributes(params[:search])
   end
 
   def skill_search
+    @training = Training.find(params[:id])
     respond_to do |format|
       if params[:query].blank? and params[:list_of_skills_en].blank?
         format.html do
@@ -32,6 +34,8 @@ class Admin::TrainingsController < AdminAreaController
       else
         @query = params[:query]
         @skills = @training.filter_by_attributes(@query)
+        Rails.logger.debug "------------------------------------------------"
+        Rails.logger.debug @skills
       end
       format.html
       format.json { render json: @skills.as_json }
