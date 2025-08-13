@@ -40,4 +40,28 @@ document.addEventListener("turbo:load", function () {
 
     optionElement.dispatchEvent(new Event("change"));
   });
+
+  document
+    .querySelectorAll("[data-disable-on-select]")
+    .forEach((optionElement) => {
+      optionElement.addEventListener("change", function () {
+        document
+          .querySelectorAll(optionElement.dataset.disableOnSelect)
+          .forEach((target) => {
+            target.disabled = optionElement.checked;
+          });
+      });
+    });
+
+  document
+    .querySelectorAll("[data-enable-on-select]")
+    .forEach((optionElement) => {
+      optionElement.addEventListener("change", function () {
+        document
+          .querySelectorAll(optionElement.dataset.enableOnSelect)
+          .forEach((target) => {
+            target.disabled = !optionElement.checked;
+          });
+      });
+    });
 });

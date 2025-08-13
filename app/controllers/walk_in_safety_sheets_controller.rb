@@ -4,6 +4,7 @@ class WalkInSafetySheetsController < SessionsController
   # show a list of spaces to sign for
   def index
     @spaces = Space.where.associated(:space_managers)
+    @signed_spaces = current_user.walk_in_safety_sheets.pluck(:space_id)
   end
 
   def show
@@ -14,6 +15,12 @@ class WalkInSafetySheetsController < SessionsController
 
   # User pressed 'sign sheet'
   def create
+    # then store contact details. Existence of record means all fields were accepted
+    @walk_in_safety_sheet =
+      WalkInSafetySheet.new(
+        walk_in_safety_sheet_params.merge(user: current_user)
+      )
+
     # verify all checkboxes are checked
     unless params[:agreement] ==
              WalkInSafetySheetsController.complete_agreements
@@ -22,12 +29,6 @@ class WalkInSafetySheetsController < SessionsController
              notice: "Please agree to all terms before signing"
       return
     end
-
-    # then store contact details. Existence of record means all fields were accepted
-    @walk_in_safety_sheet =
-      WalkInSafetySheet.new(
-        walk_in_safety_sheet_params.merge(user: current_user)
-      )
 
     if @walk_in_safety_sheet.save
       render :show
@@ -38,10 +39,14 @@ class WalkInSafetySheetsController < SessionsController
 
   def update
     # user pressed 'update contacts'
-    @walk_in_safety_sheet = current_user.walk_in_safety_sheet
-    return unless @walk_in_safety_sheet.update(walk_in_safety_sheet_params)
-    redirect_to action: :show
-    render :show, status: :unprocessable_entity
+    # Only get user's sheets
+    @walk_in_safety_sheet = current_user.walk_in_safety_sheets.find(params[:id])
+    if  @walk_in_safety_sheet.update(walk_in_safety_sheet_params)
+      # The actual path is weird, we give the space ID instead
+      redirect_to walk_in_safety_sheet_path(@walk_in_safety_sheet.space_id)
+    else
+      render :show, status: :unprocessable_entity
+    end
   end
 
   def self.complete_agreements
