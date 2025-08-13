@@ -8,7 +8,7 @@ RSpec.describe WalkInSafetySheetsController do
   it "should ask for login" do
     session[:user_id] = nil
     get :index
-    expect(response).to redirect_to login_url
+    expect(response.redirect_url).to match(login_url)
   end
 
   describe "Signing the sheet" do
