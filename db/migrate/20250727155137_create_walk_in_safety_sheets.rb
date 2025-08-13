@@ -30,8 +30,8 @@ class CreateWalkInSafetySheets < ActiveRecord::Migration[7.2]
       t.string :emergency_contact_name
       t.string :emergency_contact_telephone
 
-      # t.string :supervisor_name
-      # t.string :supervisor_telephone
+      t.string :supervisor_names
+      t.string :supervisor_contacts
 
       t.timestamps
     end

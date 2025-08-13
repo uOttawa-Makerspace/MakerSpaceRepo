@@ -3,10 +3,11 @@ class WalkInSafetySheetsController < SessionsController
 
   # show a list of spaces to sign for
   def index
-    @spaces = Space.where.associated(:space_managers)
+    @spaces = Space.all
     @signed_spaces = current_user.walk_in_safety_sheets.pluck(:space_id)
   end
 
+  # This also doubles as :new because this used to be a singular route...
   def show
     @space = Space.find(params[:id]) # Space to sign entry for
     @walk_in_safety_sheet =
@@ -15,7 +16,6 @@ class WalkInSafetySheetsController < SessionsController
 
   # User pressed 'sign sheet'
   def create
-    # then store contact details. Existence of record means all fields were accepted
     @walk_in_safety_sheet =
       WalkInSafetySheet.new(
         walk_in_safety_sheet_params.merge(user: current_user)
@@ -37,11 +37,11 @@ class WalkInSafetySheetsController < SessionsController
     end
   end
 
+  # Update contacts
   def update
-    # user pressed 'update contacts'
     # Only get user's sheets
     @walk_in_safety_sheet = current_user.walk_in_safety_sheets.find(params[:id])
-    if  @walk_in_safety_sheet.update(walk_in_safety_sheet_params)
+    if @walk_in_safety_sheet.update(walk_in_safety_sheet_params)
       # The actual path is weird, we give the space ID instead
       redirect_to walk_in_safety_sheet_path(@walk_in_safety_sheet.space_id)
     else

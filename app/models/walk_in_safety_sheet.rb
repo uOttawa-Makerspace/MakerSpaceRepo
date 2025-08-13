@@ -1,7 +1,14 @@
 class WalkInSafetySheet < ApplicationRecord
-
   # how many checkboxes should be sent
   NUMBER_OF_AGREEMENTS = 6
+
+  # Set supervisor information on initialization to simplify controller and view
+  after_initialize :set_supervisor_information
+  # Reset supervisor info, before commiting to database for first time
+  before_create :set_supervisor_information
+  # Prevent accidental modification after persistence
+  attr_readonly :supervisor_names
+  attr_readonly :supervisor_contacts
 
   belongs_to :user
   belongs_to :space
@@ -25,4 +32,24 @@ class WalkInSafetySheet < ApplicationRecord
   # Emergency contact
   validates :emergency_contact_name, presence: true
   validates :emergency_contact_telephone, presence: true
+
+  # Space supervisors. This is stored as a comma-separated string in DB
+  # Because supervisors might change over time.
+
+  # convenience function to choose between supervisor on file or the current
+  # space supervisor. Returns [['name', 'phone'], ['name', 'phone']]
+  def supervisor_information
+    names = supervisor_names.split(",")
+    contacts = supervisor_contacts.split(",")
+    names.zip contacts
+  end
+
+  private
+
+  def set_supervisor_information
+    return if persisted? # only new records
+    infos = space.space_managers.pluck(:name, :email)
+    self.supervisor_names ||= infos.map(&:first).join(",")
+    self.supervisor_contacts ||= infos.map(&:last).join(",")
+  end
 end

@@ -1,13 +1,18 @@
 <%= provide(:title, t('walk_in_safety_sheet.title')) %>
 <h1 class="text-center"><%= t('walk_in_safety_sheet.title') %></h1>
 <p class="fs-3 text-center">
-    Select a space to sign the sheet for
-</p>
+    Select a space to sign the sheet for <br />
+    Sad attempt at simulating manila folders :(</p>
 <div class="container">
     <ul class="list-group">
         <% @spaces.each do |space| %>
-            <%= link_to space.name, walk_in_safety_sheet_path(space.id),
-                        class: "list-group-item list-group-item-action" %>
+            <%= link_to walk_in_safety_sheet_path(space.id),
+                        class: "list-group-item list-group-item-action" do %>
+                <% if @signed_spaces.include? space.id %>
+                    <i class="fa fa-check text-success"></i>
+                <% end %>
+                <%= space.name %>
+            <% end %>
         <% end %>
     </ul>
 </div>

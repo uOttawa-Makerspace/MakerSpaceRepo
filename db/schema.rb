@@ -1453,6 +1453,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_07_31_163455) do
     t.string "guardian_telephone_at_work"
     t.string "emergency_contact_name"
     t.string "emergency_contact_telephone"
+    t.string "supervisor_names"
+    t.string "supervisor_contacts"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["space_id"], name: "index_walk_in_safety_sheets_on_space_id"

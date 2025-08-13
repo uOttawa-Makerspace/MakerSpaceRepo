@@ -93,14 +93,17 @@
                     <%= f.label :emergency_contact_telephone, "Emergency contact telephone", class: 'form-label' %>
                     <%= f.telephone_field :emergency_contact_telephone, class: 'form-control', required: true %>
                 </div>
-                <div class="mb-3">
-                    <%= f.label :supervisor_name, "Name of University Employee Supervising Participant", class: 'form-label' %>
-                    <%= f.text_field :supervisor_name, class: 'form-control' %>
-                </div>
-                <div class="mb-3">
-                    <%= f.label :supervisor_telephone, "Supervisor telephone", class: 'form-label' %>
-                    <%= f.telephone_field :supervisor_telephone, class: 'form-control' %>
-                </div>
+
+                <% @walk_in_safety_sheet.supervisor_information.each do |supervisor| %>
+                    <div class="mb-3">
+                        <%= f.label :supervisor_name, "Name of University Employee Supervising Participant", class: 'form-label' %>
+                        <%= f.text_field :supervisor_name, value: supervisor[0], class: 'form-control', disabled: true %>
+                    </div>
+                    <div class="mb-3">
+                        <%= f.label :supervisor_email, "Supervisor contact", class: 'form-label' %>
+                        <%= f.telephone_field :supervisor_email, value: supervisor[1], class: 'form-control', disabled: true %>
+                    </div>
+                <% end %>
             </div>
         </div>
 

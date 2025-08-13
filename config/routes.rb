@@ -662,8 +662,8 @@ Rails.application.routes.draw do
     collection { post :bulk_add_users }
   end
 
+  # :show and :update would take a space ID and use the logged in session user ID
   resources :walk_in_safety_sheets, only: [:index, :show, :create, :update]
-  #resolve("WalkInSafetySheet") {[:walk_in_safety_sheet]}
 
   # namespace :help do
   #   get 'main', path: '/'
