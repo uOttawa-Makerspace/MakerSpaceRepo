@@ -77,6 +77,6 @@ export function removeURLParameter(url, parameter) {
   return url;
 }
 
-function setURL(url, param) {
+export function setURL(url, param) {
   window.location.href = removeURLParameter(url, param);
 }

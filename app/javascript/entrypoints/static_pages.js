@@ -11,9 +11,6 @@ import {
 
 console.log(getCookie("tour_started"));
 
-var btn = document.querySelector("#rm-tour");
-btn.addEventListener("click", () => setURL(window.location.href, "tour"));
-
 // Keeps track of the current step the tour is on incase a user switches the language mid-tour
 let curStep = 0;
 
@@ -207,7 +204,7 @@ const btnTour = document.querySelector("#tour");
 btnTour.addEventListener("click", () => {
   //driverObj.drive();
   const urlParams = new URLSearchParams(window.location.search);
-
+  console.log("hi");
   urlParams.set("tour", "0");
 
   window.location.search = urlParams;
