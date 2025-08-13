@@ -79,7 +79,7 @@ class RepositoriesController < SessionsController
     FileUtils.mkdir_p(directory) unless File.directory?(directory)
     File.delete(file_location) if File.file?(file_location)
 
-    Zip::ZipFile.open(file_location, Zip::File::CREATE) do |zip|
+    Zip::File.open(file_location, create: true) do |zip|
       @files.each do |file|
         downloaded_file_path = "#{Rails.root}/public/tmp/#{file.file.filename}"
         if file.file.attached? &&
