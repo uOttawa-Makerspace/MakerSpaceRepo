@@ -12,7 +12,7 @@ class Certification < ApplicationRecord
   has_many :badge_templates, through: :training
 
   validates :user, presence: { message: "A user is required." }
-  validates :level, presence: { message: "A level is required."}
+  validates :level, inclusion: { in: %w[Beginner Intermediate Advanced], message: "A level is required."}
 
   default_scope -> { where(active: true) }
   scope :between_dates_picked,

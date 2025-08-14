@@ -424,7 +424,6 @@ RSpec.describe User, type: :model do
         create(:cc_money, :hundred, user_id: user.id)
         user.update_wallet
         expect(user.wallet).to eq(100)
-        binding.pry
       end
     end
 
@@ -459,8 +458,7 @@ RSpec.describe User, type: :model do
         user = create(:user, :admin)
         training = create(:training)
         create(:certification, user_id: user.id)
-        expect(user.remaining_trainings[0].id).to eq([training.id])
-        binding.pry
+        expect(user.remaining_trainings[0].id).to eq(training.id)
       end
     end
 
@@ -478,7 +476,6 @@ RSpec.describe User, type: :model do
         expect(user.return_program_status).to eq(
           { volunteer: false, dev: false, teams: false }
         )
-        binding.pry
       end
 
       it "should return true for volunteer only" do
@@ -487,7 +484,6 @@ RSpec.describe User, type: :model do
         expect(user.return_program_status).to eq(
           { volunteer: true, dev: false, teams: false }
         )
-        binding.pry
       end
 
       it "should return true for volunteer only" do
@@ -497,6 +493,7 @@ RSpec.describe User, type: :model do
         expect(volunteer.return_program_status).to eq(
           { volunteer: true, dev: false, teams: false }
         )
+        
       end
 
       it "should return true for development program only" do
@@ -511,7 +508,7 @@ RSpec.describe User, type: :model do
         user = create(:user, :regular_user_with_certifications)
         Program.create(user_id: user.id, program_type: Program::VOLUNTEER)
         Program.create(user_id: user.id, program_type: Program::DEV_PROGRAM)
-        binding.pry
+       
         expect(user.return_program_status).to eq(
           { volunteer: true, dev: true, teams: false }
         )

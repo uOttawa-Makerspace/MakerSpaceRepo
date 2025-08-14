@@ -61,6 +61,7 @@ class ProficientProject < ApplicationRecord
     end
   end
 
+  # link a training to a project
   def create_training_requirements(training_requirements_id, training_requirements_level)
     training_requirements.create(training: Training.find(training_requirements_id), level: training_requirements_level)
   end
