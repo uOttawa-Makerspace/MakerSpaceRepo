@@ -1,98 +1,46 @@
 class Admin::TrainingsController < AdminAreaController
   layout "admin_area"
-  before_action :set_spaces, only: %i[new edit]
-  before_action :set_skills, only: %i[new edit]
+  before_action :set_spaces, only: %i[new edit update create]
+  before_action :set_skills, only: %i[new edit update create]
 
   def index
     @trainings = Training.all.order(:name_en)
   end
 
   def new
-    @new_training = Training.new
-    @skills_en
-    @skills_fr
+    @training = Training.new
+    @skills_en = @training.list_of_skills_en&.split(',')
+    @skills_fr = @training.list_of_skills_fr&.split(',')
   end
 
   def edit
     @training = Training.find(params[:id])
-    @skills_en = @training.tokenize_info_en unless @training.list_of_skills_en.nil?
-    @skills_fr = @training.tokenize_info_fr unless @training.list_of_skills_fr.nil?
-    @all_options = @training.all_skills
-    @options = @training.filter_by_attributes(params[:search])
-  end
-
-  def skill_search
-    @training = Training.find(params[:id])
-    respond_to do |format|
-      if params[:query].blank? and params[:list_of_skills_en].blank?
-        format.html do
-          redirect_to admin_trainings_path, alert: "No search parameters."
-        end
-        format.json { render json: { error: "no params" } }
-      elsif params[:list_of_skills_en].present?
-        @skills = @training.all_skills
-      else
-        @query = params[:query]
-        @skills = @training.filter_by_attributes(@query)
-        Rails.logger.debug "------------------------------------------------"
-        Rails.logger.debug @skills
-      end
-      format.html
-      format.json { render json: @skills.as_json }
-    end
-  end
-
-  def add_skills
-    alert = []
-    if params[:list_of_skills_en].present?
-      @options = @training.all_skills
-      @options.each do |opt|
-        alert << opt
-      end
-    end
-    respond_to do |format|
-      format.html do
-        flash[:alert] = "Error signing #{alert.join(", ")} in" if alert.length >
-          0
-        redirect_to admin_trainings_path
-      end
-      format.js
-      format.json { render json: { status: "ok" } }
-    end
-  end
-
-  def skill
-    if params[:query].present?
-      redirect_to edit_admin_training_path
-    else
-      flash[:alert] = "A valid user must be selected"
-      redirect_to admin_trainings_path
-    end
+    @skills_en = @training.list_of_skills_en&.split(',')
+    @skills_fr = @training.list_of_skills_fr&.split(',')
   end
 
   def create
     serialize_skills
-    @new_training = Training.new(training_params)
-    @new_training.create_list_of_skills(params[:list_of_skills_en], params[:list_of_skills_fr])
-    if @new_training.save
+    @training = Training.new(training_params)
+    if @training.save
       flash[:notice] = "Training added successfully!"
+      redirect_to admin_trainings_path
     else
       flash[:alert] = "Input is invalid"
+      render :new, status: :unprocessable_entity
     end
-    redirect_to admin_trainings_path
   end
 
   def update
     @changed_training = Training.find(params[:id])
     serialize_skills
-    @changed_training.create_list_of_skills(params[:list_of_skills_en], params[:list_of_skills_fr])
-    @changed_training.update(training_params)
-    if @changed_training.save
+    # @changed_training.create_list_of_skills(params[:list_of_skills_en], params[:list_of_skills_fr])
+    if @changed_training.update(training_params)
       flash[:notice] = "Training updated successfully"
       redirect_to admin_trainings_path
     else      
       flash[:alert] = @changed_training.errors.full_messages
-      redirect_to edit_admin_training_path
+      render :edit, status: :unprocessable_entity
     end
     
   end
@@ -123,16 +71,9 @@ class Admin::TrainingsController < AdminAreaController
   end
 
   def serialize_skills
-    params[:list_of_skills_en] = if params[:list_of_skills_en].nil?
-      " "
-    else
-      params[:list_of_skills_en].join(', ')
-                                 end
-    params[:list_of_skills_fr] = if params[:list_of_skills_fr].nil?
-      " "
-    else
-      params[:list_of_skills_fr].join(', ')
-                                 end
+    params[:training][:list_of_skills_en] = params[:training][:list_of_skills_en]&.join(',')
+                                 
+    params[:training][:list_of_skills_fr] = params[:training][:list_of_skills_fr]&.join(', ')
   end
 
   def set_spaces

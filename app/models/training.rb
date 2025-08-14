@@ -59,44 +59,13 @@ class Training < ApplicationRecord
   end
 
   ##
-  # Assigns the new lists of skills.
-  # los_en: string format of english skills
-  # los_fr: string format of french skills
-  def create_list_of_skills(los_en, los_fr)
-    self.list_of_skills_en = los_en
-    self.list_of_skills_fr = los_fr
-  end
-
-  ##
   # returns and array containing every skill ever listed
-  def all_skills
-    arr = []
-  
-    Training.all.each do |t|
-      next if t.list_of_skills_en.nil?
-      t.tokenize_info_en.each do |sk|
-          arr << sk
-      end
-    end
-    arr
+  def self.all_skills_en
+    Training.all.pluck(:list_of_skills_en).flat_map { |l| l&.split(',')}.uniq
   end
 
-  def filter_by_attributes(value)
-    if value
-      if value == "search="
-        all_skills
-      else
-        value = value.split("=").last.gsub("+", " ")
-        where(
-          tokenize_info_en.each do |sk|
-          "LOWER(#{sk}) like LOWER(?)"
-          "%#{value}%"
-          end 
-        )
-      end
-      
-    else
-      all_skills
-    end
+  def self.all_skills_fr
+    Training.all.pluck(:list_of_skills_fr).flat_map { |l| l&.split(',')}.uniq
   end
+
 end
