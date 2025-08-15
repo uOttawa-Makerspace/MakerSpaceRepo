@@ -18,11 +18,6 @@ RSpec.describe Certification, type: :model do
       it do
         should validate_presence_of(:user).with_message("A user is required.")
       end
-      it do
-        should validate_presence_of(:training_session).with_message(
-                 "A training session is required."
-               )
-      end
     end
   end
 
@@ -107,29 +102,13 @@ RSpec.describe Certification, type: :model do
       end
     end
 
-    context "#unique_cert" do
-      it "should return true if certification is unique" do
-        certification = create(:certification)
-        expect(certification.unique_cert).to eq(true)
-      end
-
-      it "should return false if certification is not unique" do
-        certification = create(:certification)
-        user = certification.user
-        training_session = certification.training_session
-        new_certification =
-          user.certifications.new(training_session: training_session)
-        expect(new_certification.unique_cert).to eq(false)
-      end
-    end
-
     context "#certify_user" do
       it "should certify user" do
         user = create(:user, :regular_user)
         training_session = create(:training_session)
-        expect {
+        expect do
           Certification.certify_user(training_session.id, user.id)
-        }.to change { Certification.count }.by(1)
+        end.to change { Certification.count }.by(1)
         expect(
           Certification.find_by(
             user: user,

@@ -32,14 +32,13 @@ class Admin::TrainingsController < AdminAreaController
   end
 
   def update
-    @changed_training = Training.find(params[:id])
+    @training = Training.find(params[:id])
     serialize_skills
-    # @changed_training.create_list_of_skills(params[:list_of_skills_en], params[:list_of_skills_fr])
-    if @changed_training.update(training_params)
+    if @training.update(training_params)
       flash[:notice] = "Training updated successfully"
       redirect_to admin_trainings_path
     else      
-      flash[:alert] = @changed_training.errors.full_messages
+      flash[:alert] = "Input is invalid"
       render :edit, status: :unprocessable_entity
     end
     

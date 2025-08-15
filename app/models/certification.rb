@@ -16,7 +16,7 @@ class Certification < ApplicationRecord
 
   default_scope -> { where(active: true) }
   scope :between_dates_picked,
-        ->(start_date, end_date) {un
+        ->(start_date, end_date) {unscoped.
           where("created_at BETWEEN ? AND ? ", start_date, end_date)
         }
   scope :inactive, -> { unscoped.where(active: false) }

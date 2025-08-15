@@ -27,7 +27,7 @@ RSpec.describe CartsController, type: :controller do
         session[:user_id] = user.id
         get :index
         expect(response).to redirect_to root_path
-        expect(flash[:alert]).to eq("You cannot access this area.")
+        expect(flash[:alert]).to eq("You must be a part of the Development Program to access this area.")
       end
     end
   end

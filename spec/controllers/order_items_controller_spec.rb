@@ -14,11 +14,11 @@ RSpec.describe OrderItemsController, type: :controller do
 
   describe "POST /create" do
     context "logged as regular user" do
-      it "should create an order item" do
+      it "should not let regular user to create order item" do
         user = create(:user, :regular_user)
         session[:user_id] = user.id
         pp = create(:proficient_project)
-        expect {
+        expect do
           post :create,
                params: {
                  order_item: {
@@ -26,16 +26,16 @@ RSpec.describe OrderItemsController, type: :controller do
                    quantity: 1
                  }
                }
-        }.to change(OrderItem, :count).by(0)
+        end.to change(OrderItem, :count).by(0)
         expect(response).to redirect_to root_path
-        expect(flash[:alert]).to eq("You cannot access this area.")
+        expect(flash[:alert]).to eq("You must be a part of the Development Program to access this area.")
       end
     end
 
     context "logged as volunteer user" do
       it "should create an order item" do
         pp = create(:proficient_project)
-        expect {
+        expect do
           post :create,
                params: {
                  order_item: {
@@ -44,12 +44,12 @@ RSpec.describe OrderItemsController, type: :controller do
                  },
                  format: "js"
                }
-        }.to change(OrderItem, :count).by(1)
+        end.to change(OrderItem, :count).by(1)
         expect(response).to redirect_to carts_path
         expect(session[:order_id]).to eq(Order.last.id)
       end
 
-      it "should create an order item with badge requirements" do
+      it "should create an order item with training requirements" do
         # Make a proficient project with training requirements
         pp = create(:proficient_project, :with_training_requirements)
         # give the user the certifications needed for each requirement
@@ -58,7 +58,7 @@ RSpec.describe OrderItemsController, type: :controller do
           create(:certification, user_id: @volunteer.id, training_session_id: training_session.id)
         end
         # Make a request
-        expect {
+        expect do
           post :create,
                params: {
                  order_item: {
@@ -67,7 +67,7 @@ RSpec.describe OrderItemsController, type: :controller do
                  },
                  format: "js"
                }
-        }.to change(OrderItem, :count).by(1)
+        end.to change(OrderItem, :count).by(1)
         expect(response).to redirect_to carts_path
         expect(session[:order_id]).to eq(Order.last.id)
       end
@@ -98,9 +98,9 @@ RSpec.describe OrderItemsController, type: :controller do
       it "should delete the order item" do
         create(:order_item)
         session[:order_id] = Order.last.id
-        expect {
+        expect do
           delete :destroy, params: { order_item_id: OrderItem.last.id }, format: "js"
-        }.to change(OrderItem, :count).by(-1)
+        end.to change(OrderItem, :count).by(-1)
         expect(flash[:notice]).to eq("Successfully removed item from cart")
         expect(response).to redirect_to carts_path
       end
