@@ -17,13 +17,12 @@ gem "bcrypt", "~> 3.1"
 gem "caxlsx", "~> 3.3.0"
 gem "chartkick"
 gem "clipboard-rails"
-gem "coffee-rails", "5.0.0"
 gem "concurrent-ruby", "~> 1.1", ">= 1.1.6"
 gem "excon"
 gem "faraday", "~> 0.17.0"
 gem "fastimage", "~> 1.7.0"
 gem "file_validators"
-gem "font-awesome-rails", "~> 4.7.0.8"
+gem "font-awesome-rails", "~> 4.7.0.9"
 gem "google-api-client", "~> 0.53.0", require: ["google/apis/calendar_v3"]
 gem "googleauth", "~> 0.15.0"
 gem "graphlient"
@@ -38,9 +37,8 @@ gem "nobspw_rails7"
 gem "octokit", "~> 4.21.0"
 gem "pg", "~> 1.5"
 gem "prettier_print"
-gem "progress_bar", "~> 1.0.3"
-gem "pry", "~> 0.15.0"
-gem "pry-rails", "~> 0.3.11", group: :development
+gem "pry", "~> 0.15"
+gem "pry-rails", "~> 0.3", group: :development
 gem "psych", "~> 4.0"
 gem "quick_random_records", "~> 0.3.2"
 gem "rack-cors"
@@ -66,13 +64,11 @@ gem 'terser', '~> 1.2'
 gem "thin", "~> 1.8.2"
 gem "toastr-rails"
 gem "trix-rails", "~> 2.4", require: "trix"
-gem "unicorn-worker-killer", "~> 0.4.5"
 gem "vite_rails"
 gem "whenever", require: false
 gem "will_paginate", "~> 3.3.0"
 gem "will_paginate-bootstrap-style"
 gem "youtube_id"
-gem "zip-zip"
 gem "mission_control-jobs"
 
 group :development, :test do
@@ -99,6 +95,7 @@ group :development do
   gem "letter_opener" # Open emails in development
   gem "rubocop-rails"
   gem "web-console"
+  gem "ruby-prof" # profiling
 
   # ssh deploymentque
   gem "bcrypt_pbkdf", "~> 1.0"
