@@ -9,7 +9,7 @@
                     class: class_names('nav-link': true, active: selected.eql?(:new_rental)),
                     aria: {current: ('page' if selected.eql?(:new_rental))} %>
     </li>
-    <% if current_user.admin? %>
+    <% if current_user.staff? %>
         <li class="nav-item">
             <%= link_to 'Admin Panel', admin_locker_rentals_path,
                         class: class_names('nav-link': true, active: selected.eql?(:admin_rental)),

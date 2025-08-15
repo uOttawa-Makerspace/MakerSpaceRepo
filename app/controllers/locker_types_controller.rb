@@ -1,4 +1,4 @@
-class LockerTypesController < AdminAreaController
+class LockerTypesController < StaffAreaController
   def index
     @locker_types = LockerType.all
     # For the locker type form

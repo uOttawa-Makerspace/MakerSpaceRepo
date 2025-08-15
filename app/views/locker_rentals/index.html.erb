@@ -1,11 +1,11 @@
 <% provide :title, t('lockers.all_locker_rentals') %>
 
-<div class="mt-3">
-<%= render 'locker_rentals/nav_tabs', selected: :my_rentals %>
+<div class="my-3">
+    <%= render 'locker_rentals/nav_tabs', selected: :my_rentals %>
 </div>
 <h1 class="text-center"><%= t('lockers.all_locker_rentals') %></h1>
 <div class="container">
     <%= render partial: 'rental_data_table',
                locals: { locker_rentals: @own_locker_rentals.order(:state),
-                         header_title: t('lockers.your_locker_requests'), hide_actions: true } %>
+                   header_title: t('lockers.your_locker_requests'), hide_actions: true } %>
 </div>

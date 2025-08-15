@@ -1,9 +1,8 @@
-class LockersController < AdminAreaController
-  before_action :current_user
+class LockersController < StaffAreaController
   before_action :signed_in
 
   before_action do
-    unless current_user.admin?
+    unless current_user.staff?
       flash[:alert] = "You cannot access this area"
       redirect_back(fallback_location: root_path)
     end

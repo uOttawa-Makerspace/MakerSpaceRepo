@@ -1,4 +1,4 @@
-class LockerRentalsController < ApplicationController
+class LockerRentalsController < SessionsController
   before_action :current_user
   before_action :signed_in, except: %i[stripe_success stripe_cancelled]
   # Also sets @locker_rental
@@ -58,18 +58,18 @@ class LockerRentalsController < ApplicationController
     @locker_rental = LockerRental.new(locker_rental_params)
     # if not admin member or has debug value set
     # then force to wait for admin approval
-    if !current_user.admin? || params.dig(:locker_rental, :ask)
+    if !current_user.staff? || params.dig(:locker_rental, :ask)
       @locker_rental.state = :reviewing
       # If not admin, only create request for self
       @locker_rental.rented_by = current_user
-    elsif current_user.admin? && locker_rental_params[:state] == "active"
+    elsif current_user.staff? && locker_rental_params[:state] == "active"
       # if acting as admin
       # save down later
       @locker_rental.auto_assign
     end
 
     # validate locker type if not administration
-    unless current_user.admin?
+    unless current_user.staff?
       # not an admin, asking for an unavailable locker
       unless @locker_rental.locker_type.available
         new_instance_attributes
@@ -94,9 +94,10 @@ class LockerRentalsController < ApplicationController
 
   def update
     @locker_rental = LockerRental.find(params[:id])
+
     # NOTE move this line to model maybe?
     # if changing state to 'active'
-    if current_user.admin? && locker_rental_params[:state] == "active"
+    if current_user.staff? && locker_rental_params[:state] == "active"
       # default to end of semester
       @locker_rental.owned_until ||= end_of_this_semester
       # Get first available locker specifier if not set
@@ -106,7 +107,7 @@ class LockerRentalsController < ApplicationController
 
     # Only admins can cancel active rentals
     # If current user is attempting to change state
-    if !current_user.admin? && locker_rental_params[:state].present?
+    if !current_user.staff? && locker_rental_params[:state].present?
       # prevent if not cancelling a non-active rental
       unless locker_rental_params[:state] == "cancelled" &&
                @locker_rental.under_review?
@@ -143,8 +144,8 @@ class LockerRentalsController < ApplicationController
       # Allow if getting own locker rental
       return if @locker_rental.rented_by == current_user
     end
-    # Always allow admin
-    return if current_user.admin?
+    # Always allow staff
+    return if current_user.staff?
 
     # Else redirect to only page with no auth (new page takes no ID)
     redirect_to :new_locker_rental
@@ -192,7 +193,7 @@ class LockerRentalsController < ApplicationController
   end
 
   def locker_rental_params
-    if current_user.admin? && !params.dig(:locker_rental, :ask)
+    if current_user.staff? && !params.dig(:locker_rental, :ask)
       admin_locker_rental_params
     else
       # people pick where they want a locker
