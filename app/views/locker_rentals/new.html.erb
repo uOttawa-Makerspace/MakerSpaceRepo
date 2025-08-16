@@ -1,15 +1,11 @@
 <% provide :title, 'Request a locker' %>
-<% if current_user.admin? %>
-    <details open>
-        <summary class="text-center fs-underline text-primary">Seen by administration only</summary>
-        <h1 class="text-center my-3">Assign locker to user</h1>
-        <%= render partial: 'assign_locker_form' %>
-        <hr />
-    </details>
-<% end %>
+
+<div class="mt-3">
+    <%= render 'locker_rentals/nav_tabs', selected: :new_rental %>
+</div>
 
 <div class="border container">
-    <h1 class="text-center mt-3">New Locker Request</h1>
+    <h1 class="text-center pt-3">New Locker Request</h1>
     <hr class="w-50 mx-auto" />
     <p>Here you can submit a request for a locker. Once sent, you'll be notified once your request is approved and payment is received.
         You may cancel your request before it is paid, however once paid the locker rental fee is non-refundable.</p>
@@ -30,7 +26,7 @@
     <% if @pending_locker_request&.reviewing? %>
         <hr />
         <p>You have a pending request for a locker at <%= @pending_locker_request.locker_type.short_form %>, submitted on <%= @pending_locker_request.created_at.to_date %>.
-        You will receive a response shortly from administration.</p>
+            You will receive a response shortly from administration.</p>
     <% elsif @pending_locker_request&.await_payment? %>
         <hr />
         <p>Your request has been accepted, and now is pending payment to be finalized. <%= link_to 'Click here to view your request and to proceed to checkout', @pending_locker_request, class: '' %></p>
@@ -38,10 +34,18 @@
         <%= form_with model: @locker_rental do |f| %>
             <div class="row row-cols-auto align-items-center">
                 <%= f.label :locker_type_id, 'Request locker for', class: 'd-inline' %>
-                <%= f.select :locker_type_id, options_for_select(@available_locker_types.pluck(:short_form, :id)), {}, { class: 'form-select w-auto' } %>
-                <%= f.label :as_a, 'as a', class: 'd-inline' %>
-                <%= f.select :as_a, options_for_select(@available_fors), {}, { class: 'form-select w-auto' } %>
+                <%= f.select :locker_type_id, options_for_select(@available_locker_types),
+                 {prompt: "Select a locker"}, { class: 'form-select w-auto' } %>
+                <%= f.label :requested_as, 'as a', class: 'd-inline' %>
+                <%= f.select :requested_as, options_for_select(@available_fors), {}, { class: 'form-select w-auto', required: true } %>
             </div>
+            <fieldset id="repo-select" hidden disabled>
+                <p class="mb-3">If applying as a GNG student, please provide a link to your repository page here to help speed up your application</p>
+                <%= f.select :repository_id, options_for_select(@user_repositories),
+                 {prompt: @user_repositories.empty? ? 'No repositories are linked to your account' : 'Select a repository'},
+                 {class: 'form-select mb-3', disabled: @user_repositories.empty?} %>
+            </fieldset>
+            <% %>
             <%= f.label :notes, 'Notes with request:' %>
             <%= f.text_area :notes, class: 'form-control' %>
             <!-- This hidden field is for testing/debug purposes only, we're still checking credentials you skiddie -->
