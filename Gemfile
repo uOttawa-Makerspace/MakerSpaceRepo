@@ -61,7 +61,7 @@ gem "syntax_tree", "~> 3.3.0"
 gem "syntax_tree-haml"
 gem "syntax_tree-rbs"
 gem 'terser', '~> 1.2'
-gem "thin", "~> 1.8.2"
+gem "thin", "~> 2.0"
 gem "toastr-rails"
 gem "trix-rails", "~> 2.4", require: "trix"
 gem "vite_rails"
