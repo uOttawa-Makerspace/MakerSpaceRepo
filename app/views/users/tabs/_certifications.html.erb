@@ -25,7 +25,7 @@
             </a>
           </td>
           <td class="align-middle">
-            <%= certification.name %>
+            <%= certification.trainer.name %>
           </td>
           <td class="align-middle">
             <% if @user.admin? || (@user.name == certification.trainer.name && @user.role != "regular_user") %>
