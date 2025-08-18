@@ -37,9 +37,9 @@ class Certification < ApplicationRecord
   # record associations, please fix this.
   def trainer
     if training_session.nil?
-      proficient_project_session.user.name
+      proficient_project_session.user
     else
-      training_session.user.name
+      training_session.user
     end
   end
 

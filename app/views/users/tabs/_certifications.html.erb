@@ -25,10 +25,10 @@
             </a>
           </td>
           <td class="align-middle">
-            <%= certification.trainer %>
+            <%= certification.name %>
           </td>
           <td class="align-middle">
-            <% if @user.admin? || (@user.name == certification.trainer && @user.role != "regular_user") %>
+            <% if @user.admin? || (@user.name == certification.trainer.name && @user.role != "regular_user") %>
               <% if certification.training_session.present? %>
                 <%= link_to certification.created_at.strftime('%B %d, %Y'), staff_training_session_path(id: certification.training_session.id), style: 'text-decoration:underline;' %>
               <% else %>
@@ -38,7 +38,7 @@
               <%= certification.created_at.strftime('%B %d, %Y') %>
             <% end %>
           </td>
-          <% if @user.admin? || (@user.name == certification.trainer && @user.role != "regular_user") %>
+          <% if @user.admin? || (@user.name == certification.trainer.name && @user.role != "regular_user") %>
             <td class="action-cell align-middle">
               <a data-bs-toggle="modal" data-bs-target="#modal-window"
                 href="<%= open_modal_admin_certifications_path(id: certification.id) %>"
