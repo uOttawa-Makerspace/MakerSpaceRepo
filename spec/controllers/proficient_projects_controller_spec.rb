@@ -329,6 +329,25 @@ RSpec.describe ProficientProjectsController, type: :controller do
             }
       end
 
+      it "should allow a staff member to approve the project" do
+        staff = create(:user, :staff)
+        session[:staff_id] = staff.id
+        session[:expires_at] = Time.zone.now + 10_000
+        get :approve_project,
+            params: {
+              oi_id: OrderItem.last.id,
+              order_item: {
+                admin_comments: ""
+              }
+            }
+        expect(response).to redirect_to requests_proficient_projects_path
+        expect(OrderItem.last.status).to eq("Awarded")
+        expect(ActionMailer::Base.deliveries.count).to eq(3)
+        # Unreliable test - Mailing orders aren't consistent
+        #expect(ActionMailer::Base.deliveries.second.to.last).to eq(staff.email)
+        expect(flash[:notice]).not_to be_nil
+      end
+
       it "should set the oi as Awarded" do
         get :approve_project,
             params: {
@@ -352,7 +371,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
         get :approve_project, format: "js"
         expect(response).to redirect_to development_programs_path
         expect(OrderItem.last.status).to eq("Waiting for approval")
-        expect(flash[:alert]).to eq("Only admin members can access this area.")
+        expect(flash[:alert]).to eq("Only staff members can access this area.")
       end
     end
   end

@@ -8,9 +8,12 @@ class ProficientProjectsController < DevelopmentProgramsController
                   edit
                   update
                   destroy
+                ]
+  before_action :only_staff_access,
+                only: %i[
                   requests
                   approve_project
-                ]
+  ]
   before_action :set_proficient_project,
                 only: %i[show destroy edit update complete_project]
   before_action :grant_access_to_project, only: [:show]
@@ -300,6 +303,12 @@ class ProficientProjectsController < DevelopmentProgramsController
       redirect_to development_programs_path
       flash[:alert] = "Only admin members can access this area."
     
+  end
+
+  def only_staff_access
+    return if current_user.staff?
+      redirect_to development_programs_path
+      flash[:alert] = "Only staff members can access this area."
   end
 
   def proficient_project_params

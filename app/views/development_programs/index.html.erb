@@ -36,8 +36,10 @@
                 <div class="linkBox d-flex flex-column">
                     <h2><%= t('devprog.nav.proficient_projects') %></h2>
                     <p class="flex-grow-1"><%= t('devprog.block1.proficient_projects') %></p>
-                    <% if current_user.role == "admin" %>
+                    <% if current_user.role == "staff" || current_user.role == "admin" %>
                         <%= link_to t('devprog.nav.requests'), requests_proficient_projects_path %>
+                    <% end %>
+                    <% if current_user.role == "admin" %>
                         <%= link_to t('devprog.nav.new_project'), new_proficient_project_path %>
                     <% end %>
                     <%= link_to t('devprog.nav.all_projects'), requests_proficient_projects_path %>

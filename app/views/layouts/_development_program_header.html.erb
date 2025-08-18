@@ -28,12 +28,26 @@
             <%= link_to 'All Proficient Projects', proficient_projects_path, class: 'dropdown-item' %>
           </div>
         </li>
+      <% elsif current_user.staff? %>
+        <li class="nav-item">
+          <%= link_to 'Learning', learning_area_index_path, class: 'nav-link' %>
+        </li>
+         <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Proficient Projects
+          </a>
+          <div class="dropdown-menu" aria-labelledby="navbarDropdo wn2">
+            <%= link_to 'Requests', requests_proficient_projects_path, class: 'dropdown-item' %>
+            <div class="dropdown-divider"></div>
+            <%= link_to 'All Proficient Projects', proficient_projects_path, class: 'dropdown-item' %>
+          </div>
+        </li>
       <% else %>
         <li class="nav-item">
           <%= link_to 'Learning', learning_area_index_path, class: 'nav-link' %>
         </li>
-        <li class="nav-item">
-          <%= link_to 'Proficient Projects', proficient_projects_path, class: 'nav-link' %>
+         <li class="nav-item">
+            <%= link_to 'Proficient Projects', proficient_projects_path, class: 'nav-link' %>
         </li>
       <% end %>
       
