@@ -98,7 +98,7 @@ RSpec.describe Certification, type: :model do
         certification = create(:certification)
         training_session = certification.training_session
         user = training_session.user
-        expect(certification.trainer).to eq(User.find(user.id).name)
+        expect(certification.trainer.name).to eq(User.find(user.id).name)
       end
     end
 

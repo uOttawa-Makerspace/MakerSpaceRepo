@@ -50,7 +50,6 @@ RSpec.describe DevelopmentProgramsController, type: :controller do
         user = create(:user, :volunteer_with_dev_program)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
-        #binding.pry
         expect(get(:all_badges)).to have_http_status(:success)
       end
 

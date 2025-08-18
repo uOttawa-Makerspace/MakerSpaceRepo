@@ -1,5 +1,5 @@
 class LearningAreaController < DevelopmentProgramsController
-  before_action :admin_access, only: %i[new create edit update destroy]
+  before_action :only_admin_access, only: %i[new create edit update destroy]
   before_action :set_learning_module, only: %i[show destroy edit update]
   before_action :set_training_categories, only: %i[new edit]
   before_action :set_training_levels, only: %i[new edit]
@@ -129,6 +129,13 @@ class LearningAreaController < DevelopmentProgramsController
 
   private
 
+  def only_admin_access
+    return if current_user.admin?
+      redirect_to development_programs_path,
+                  alert: "Only admin members can access this area."
+    
+  end
+  
   def learning_modules_params
     params.require(:learning_module).permit(
       :title,
