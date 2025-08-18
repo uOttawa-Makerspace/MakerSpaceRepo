@@ -54,8 +54,10 @@ RSpec.describe OrderItemsController, type: :controller do
         pp = create(:proficient_project, :with_training_requirements)
         # give the user the certifications needed for each requirement
         pp.training_requirements.each do |training_requirement|
-          training_session = create(:training_session, training_id: training_requirement.training_id)
-          create(:certification, user_id: @volunteer.id, training_session_id: training_session.id)
+          training_session = create(:training_session, training_id: training_requirement.training_id, 
+level: training_requirement.level)
+          create(:certification, user_id: @volunteer.id, training_session_id: training_session.id, 
+level: training_session.level)
         end
         # Make a request
         expect do
@@ -64,8 +66,7 @@ RSpec.describe OrderItemsController, type: :controller do
                  order_item: {
                    proficient_project_id: pp.id,
                    quantity: 1
-                 },
-                 format: "js"
+                 }
                }
         end.to change(OrderItem, :count).by(1)
         expect(response).to redirect_to carts_path

@@ -1,5 +1,5 @@
 class LearningAreaController < DevelopmentProgramsController
-  before_action :only_admin_access, only: %i[new create edit update destroy]
+  before_action :admin_access, only: %i[new create edit update destroy]
   before_action :set_learning_module, only: %i[show destroy edit update]
   before_action :set_training_categories, only: %i[new edit]
   before_action :set_training_levels, only: %i[new edit]
@@ -8,13 +8,13 @@ class LearningAreaController < DevelopmentProgramsController
   def index
     @skills = Skill.all
     @learning_module_track =
-      Proc.new do |learning_module|
+      proc do |learning_module|
         learning_module.learning_module_tracks.where(user: current_user)
       end
     @all_learning_modules =
-      Proc.new { |training| training.learning_modules.order(:order) }
+      proc { |training| training.learning_modules.order(:order) }
     @learning_modules_completed =
-      Proc.new do |training, level|
+      proc do |training, level|
         training
           .learning_modules
           .joins(:learning_module_tracks)
@@ -27,7 +27,7 @@ class LearningAreaController < DevelopmentProgramsController
           .where(learning_modules: { level: level })
       end
     @total_learning_modules_per_level =
-      Proc.new do |training, level|
+      proc do |training, level|
         training.learning_modules.where(level: level)
       end
   end
@@ -63,7 +63,7 @@ class LearningAreaController < DevelopmentProgramsController
       flash[:alert] = "Something went wrong"
       @training_levels ||= TrainingSession.return_levels
       @training_categories = Training.all.order(:name).pluck(:name, :id)
-      render "new", status: 422
+      render "new", status: :unprocessable_entity
     end
   end
 
@@ -101,7 +101,7 @@ class LearningAreaController < DevelopmentProgramsController
       flash[:alert] = "Unable to apply the changes."
       @training_categories = Training.all.order(:name).pluck(:name, :id)
       @training_levels ||= TrainingSession.return_levels
-      render "edit", status: 422
+      render "edit", status: :unprocessable_entity
     end
   end
 
@@ -129,13 +129,6 @@ class LearningAreaController < DevelopmentProgramsController
 
   private
 
-  def only_admin_access
-    unless current_user.admin?
-      redirect_to development_programs_path,
-                  alert: "Only admin members can access this area."
-    end
-  end
-
   def learning_modules_params
     params.require(:learning_module).permit(
       :title,
@@ -148,7 +141,7 @@ class LearningAreaController < DevelopmentProgramsController
   end
 
   def create_photos
-    if params["images"].present?
+    return unless params["images"].present?
       params["images"].each do |img|
         dimension = FastImage.size(img.tempfile, raise_on_failure: true)
         Photo.create(
@@ -158,18 +151,16 @@ class LearningAreaController < DevelopmentProgramsController
           height: dimension.last
         )
       end
-    end
+    
   end
 
   def create_files
-    if params["files"].present?
+    return unless params["files"].present?
       params["files"].each do |f|
         @repo = RepoFile.new(file: f, learning_module_id: @learning_module.id)
-        unless @repo.save
-          flash[:alert] = "Make sure you only upload PDFs for the project files"
-        end
+        flash[:alert] = "Make sure you only upload PDFs for the project files" unless @repo.save
       end
-    end
+    
   end
 
   def set_learning_module
@@ -193,15 +184,14 @@ class LearningAreaController < DevelopmentProgramsController
   def update_photos
     if params["deleteimages"].present?
       @learning_module.photos.each do |img|
-        if params["deleteimages"].include?(img.image.filename.to_s)
-          # checks if the file should be deleted
-          img.image.purge
-          img.destroy
-        end
+        next unless params["deleteimages"].include?(img.image.filename.to_s)
+        # checks if the file should be deleted
+        img.image.purge
+        img.destroy
       end
     end
 
-    if params["images"].present?
+    return unless params["images"].present?
       params["images"].each do |img|
         dimension = FastImage.size(img.tempfile, raise_on_failure: true)
         Photo.create(
@@ -211,46 +201,43 @@ class LearningAreaController < DevelopmentProgramsController
           height: dimension.last
         )
       end
-    end
+    
   end
 
   def update_files
     if params["deletefiles"].present?
       @learning_module.repo_files.each do |f|
-        if params["deletefiles"].include?(f.file.filename.to_s)
-          # checks if the file should be deleted
-          f.file.purge
-          f.destroy
-        end
+        next unless params["deletefiles"].include?(f.file.filename.to_s)
+        # checks if the file should be deleted
+        f.file.purge
+        f.destroy
       end
     end
 
-    if params["files"].present?
+    return unless params["files"].present?
       params["files"].each do |f|
         repo = RepoFile.new(file: f, learning_module_id: @learning_module.id)
-        unless repo.save
-          flash[
-            :alert
-          ] = "Make sure you only upload PDFs for the project files, the PDFs were uploaded"
-        end
+        next if repo.save
+        flash[
+          :alert
+        ] = "Make sure you only upload PDFs for the project files, the PDFs were uploaded"
       end
-    end
+    
   end
 
   def update_videos
     videos_id = params["deletevideos"]
-    if videos_id.present?
+    return unless videos_id.present?
       videos_id = videos_id.split(",").uniq.map { |id| id.to_i }
       @learning_module.videos.each do |f|
-        if (f.video.pluck(:id) & videos_id).any?
-          videos_id.each do |video_id|
-            video = f.video.find(video_id)
-            video.purge
-          end
-          f.destroy unless f.video.attached?
+        next unless (f.video.pluck(:id) & videos_id).any?
+        videos_id.each do |video_id|
+          video = f.video.find(video_id)
+          video.purge
         end
+        f.destroy unless f.video.attached?
       end
-    end
+    
   end
 
   def get_filter_params

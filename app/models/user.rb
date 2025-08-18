@@ -388,10 +388,10 @@ class User < ApplicationRecord
   ##
   # Given a training and a level, finds out if the user possesses a certification of that exact training and level.
   # returns true if they posess the certification.
-  def has_training?(tid, l)
+  def has_training?(tid, level)
     count = 0
     certifications.each do |cert|
-      count+=1 if cert.training.id == tid && cert.level == l
+      count+=1 if cert.training.id == tid && cert.level == level
     end
     count > 0
   end

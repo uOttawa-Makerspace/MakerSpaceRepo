@@ -136,7 +136,8 @@ RSpec.describe Staff::TrainingSessionsController, type: :controller do
           expect(
             Certification.find_or_create_by(
               user_id: user.id,
-              training_session_id: training_session.id
+              training_session_id: training_session.id,
+              level: training_session.level
             ).present?
           ).to eq(true)
         end

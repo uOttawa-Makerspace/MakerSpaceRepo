@@ -3,25 +3,28 @@ FactoryBot.define do
     association :training
     association :proficient_project
 
-    # FIXME: The traits don't really do anything anymore
     trait :"3d_printing" do
       association :training
       association :proficient_project
+      level {"Beginner"}
     end
 
     trait :basic_training do
       association :training
       association :proficient_project
+      level {"Beginner"}
     end
 
     trait :laser_cutting do
       association :training
       association :proficient_project
+      level {"Intermediate"}
     end
 
     trait :arduino do
       association :training
       association :proficient_project
+      level {"Advanced"}
     end
   end
 end

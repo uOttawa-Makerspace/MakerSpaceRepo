@@ -105,14 +105,15 @@ RSpec.describe Certification, type: :model do
     context "#certify_user" do
       it "should certify user" do
         user = create(:user, :regular_user)
-        training_session = create(:training_session)
+        training_session = create(:training_session, level: "Beginner")
         expect do
-          Certification.certify_user(training_session.id, user.id)
+          Certification.certify_user(training_session.id, user.id, training_session.level)
         end.to change { Certification.count }.by(1)
         expect(
           Certification.find_by(
             user: user,
-            training_session: training_session
+            training_session: training_session,
+            level: training_session.level
           ).present?
         ).to eq(true)
       end

@@ -46,7 +46,8 @@ FactoryBot.define do
 
     trait :with_training_requirements do
       after :create do |pp|
-        create_list(:training_requirement, 2, proficient_project: pp)
+        create(:training_requirement , :"3d_printing")
+        create(:training_requirement , :arduino)
         pp.reload
       end
     end

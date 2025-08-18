@@ -47,8 +47,8 @@ class Certification < ApplicationRecord
     CSV.generate { |csv| attributes.each { |row| csv << row } }
   end
 
-  def self.certify_user(training_session_id, user_id)
-    create(user_id: user_id, training_session_id: training_session_id)
+  def self.certify_user(training_session_id, user_id, level)
+    create(user_id:, training_session_id:, level:)
   end
 
   def get_badge_path
