@@ -3,7 +3,7 @@ class ProficientProjectSession < ApplicationRecord
   belongs_to :user
   belongs_to :certification, dependent: :destroy
 
-  validates :level, presence: { message: "A level is required"}
+  validates :level, inclusion: { in: %w[Beginner Intermediate Advanced], message: "A level is required"}
 
   scope :between_dates_picked,
         ->(start_date, end_date) {
