@@ -25,6 +25,8 @@ class RfidController < SessionsController
   end
 
   def card_number
+    Rails.logger.debug "_______________________________________________________"
+    Rails.logger.debug "RFID DETECTED"
     if params[:space_id].present? && Space.find(params[:space_id]).present?
       space_id = params[:space_id]
     else
@@ -82,13 +84,13 @@ class RfidController < SessionsController
   def update_kiosk(space_id)
     @space = Space.find(space_id)
     @certifications_on_space =
-      Proc.new do |user, space_id|
+      proc do |user, space_id|
         user
           .certifications
           .joins(:training, training: :spaces)
           .where(trainings: { spaces: { id: space_id } })
       end
-    @all_user_certs = Proc.new { |user| user.certifications }
+    @all_user_certs = proc { |user| user.certifications }
   end
   def check_session(rfid, space_id)
     active_sessions =
@@ -124,9 +126,9 @@ class RfidController < SessionsController
   private
 
   def grant_access
-    unless current_user.staff? || current_user.admin?
+    return if current_user.staff? || current_user.admin?
       flash[:alert] = "You cannot access this area."
       redirect_to root_path
-    end
+    
   end
 end
