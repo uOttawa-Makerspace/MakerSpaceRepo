@@ -40,7 +40,8 @@ const driverObj = driver({
       element: "#profile-icon",
       popover: {
         title: "Tour End",
-        description: "That's all for this brief tour. Enjoy!",
+        description:
+          "Click here to explore your profile page. That's all for this brief tour. Enjoy!",
         onNextClick: () => {
           driverObj.moveNext();
           setURL(window.location.href, "tour");

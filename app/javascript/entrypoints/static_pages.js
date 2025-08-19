@@ -21,8 +21,7 @@ const translations = {
     "start-desc":
       "Veuillez sélectionner la langue de votre choix en utilisant le bouton le plus à droite. // Please select your language of choice using the rightmost button.",
     "step1-title": "Home Page",
-    "step1-desc":
-      "Welcome to MakerRepo. Please enjoy this tour of the website's basic functionalities.",
+    "step1-desc": "Welcome to MakerRepo. <Explain purpose of makerepo.com>.",
   },
 
   fr: {
@@ -30,7 +29,7 @@ const translations = {
     "start-desc":
       "Veuillez sélectionner la langue de votre choix en utilisant le bouton le plus à droite. // Please select your language of choice using the rightmost button.",
     "step1-title": "Home Page (French)",
-    "step1-desc": "Bienvenue a MakerRepo. . .",
+    "step1-desc": "Bienvenue a MakerRepo. <Explain purpose of makerepo.com>.",
   },
 };
 
