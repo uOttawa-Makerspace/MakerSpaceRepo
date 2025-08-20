@@ -62,6 +62,9 @@ class User < ApplicationRecord
   has_many :spaces, through: :staff_spaces
   has_many :printer_issues # Don't delete issues when a user is deleted
   has_many :locker_rentals, foreign_key: "rented_by"
+  has_many :staff_unavailabilities
+  has_many :staff_external_unavailabilities, dependent: :destroy
+
 
   MAX_AUTH_ATTEMPTS = 5
 

@@ -1,4 +1,6 @@
 class StaffAvailabilitiesController < ApplicationController
+  include ShiftsDeprecationWarning
+
   before_action :check_admin_or_staff_in_space
   before_action :set_staff_availabilities, only: %i[edit update destroy]
   before_action :set_selected_user
@@ -63,22 +65,10 @@ class StaffAvailabilitiesController < ApplicationController
     if params[:staff_availability][:time_period_id].present? ||
          @time_period.present?
       time_period_id =
-        (
-          if params[:staff_availability][:time_period_id].present?
-            params[:staff_availability][:time_period_id]
-          else
-            @time_period.id
-          end
-        )
+        params[:staff_availability][:time_period_id].presence || @time_period.id
     elsif params[:time_period_id].present? || @time_period.present?
       time_period_id =
-        (
-          if params[:time_period_id].present?
-            params[:time_period_id]
-          else
-            @time_period.id
-          end
-        )
+        params[:time_period_id].presence || @time_period.id
     end
 
     # From staff availability form
@@ -216,9 +206,8 @@ class StaffAvailabilitiesController < ApplicationController
       params_end_date = Date.parse(params[:end_date])
 
       respond_to do |format|
-        if params.has_key?(:recurring)
-          updated =
-            @staff_availability.update(
+        updated = if params.has_key?(:recurring)
+          @staff_availability.update(
               staff_availability_params.except(
                 :start_date,
                 :end_date,
@@ -226,8 +215,7 @@ class StaffAvailabilitiesController < ApplicationController
               ).merge(start_datetime: nil, end_datetime: nil, recurring: true)
             )
         else
-          updated =
-            @staff_availability.update(
+          @staff_availability.update(
               staff_availability_params.except(
                 :start_date,
                 :end_date,
@@ -248,7 +236,7 @@ class StaffAvailabilitiesController < ApplicationController
                 recurring: false
               )
             )
-        end
+                  end
 
         if updated
           format.html do
@@ -335,12 +323,12 @@ class StaffAvailabilitiesController < ApplicationController
   private
 
   def check_admin_or_staff_in_space
-    unless @user && (@user.admin? || @user.staff_in_space?)
+    return if @user && (@user.admin? || @user.staff_in_space?)
       redirect_to root_path
       flash[
         :alert
       ] = "You cannot access this area. If you think you should be able, try asking your manager if you were added in one of the spaces."
-    end
+    
   end
 
   def set_staff_availabilities
@@ -362,16 +350,16 @@ class StaffAvailabilitiesController < ApplicationController
   end
 
   def set_selected_user
-    if @user.admin?
+    @selected_user = if @user.admin?
       if params[:staff_id].present? && params[:staff_id] != "null" &&
            User.find(params[:staff_id]).present?
-        @selected_user = User.find(params[:staff_id])
+        User.find(params[:staff_id])
       else
-        @selected_user = @user
-      end
+        @user
+                       end
     else
-      @selected_user = @user
-    end
+      @user
+                     end
   end
 
   def set_time_period
@@ -379,12 +367,10 @@ class StaffAvailabilitiesController < ApplicationController
     if params[:time_period_id] &&
          TimePeriod.find(params[:time_period_id]).present?
       @time_period = TimePeriod.find(params[:time_period_id])
-    else
-      if TimePeriod.current.present?
-        @time_period = TimePeriod.current
+    elsif TimePeriod.current.present?
+      @time_period = TimePeriod.current
       else
         @missing_time_period = true
-      end
     end
   end
 

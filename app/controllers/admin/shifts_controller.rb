@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Admin::ShiftsController < AdminAreaController
+  include ShiftsDeprecationWarning
+
   layout "admin_area"
 
   before_action :set_default_space

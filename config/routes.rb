@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 Rails.application.routes.draw do
+  mount MissionControl::Jobs::Engine, at: "/solid_queue"
+
   resources :price_rules, only: %i[index new create destroy edit update]
   resources :discount_codes, only: %i[new index create]
   resources :coupon_codes, only: %i[index new create destroy edit update]
@@ -68,13 +70,14 @@ Rails.application.routes.draw do
       patch :update_submission
     end
   end
-
-  resources :job_orders, only: %i[index create update new destroy] do
+    
+  resources :job_orders, only: %i[index show create update new destroy] do
     get :steps
     get :quote_modal
     get :timeline_modal
     get :completed_email_modal
     get :decline_modal
+    get :comments_modal
     get :invoice
     patch :quote
     patch :steps
@@ -84,6 +87,8 @@ Rails.application.routes.draw do
     patch :paid
     patch :picked_up
     patch :resend_quote_email
+    patch :comments
+    patch :assign_staff
     collection do
       get :admin
       get :settings
@@ -91,11 +96,17 @@ Rails.application.routes.draw do
       get :pay
       get :stripe_success
       get :stripe_cancelled
+      get :landing
       patch :user_magic_approval_confirmation
       post "/new" => "job_orders#new"
       patch "/new" => "job_orders#new"
     end
+    resources :job_tasks, path: "task", only: [:create, :destroy, :edit, :update] do
+      post :update, on: :member
+    end
   end
+
+  resources :chat_messages, only: [:index, :create]
 
   resources :project_proposals do
     collection do
@@ -247,7 +258,6 @@ Rails.application.routes.draw do
               only: %i[index new create edit update destroy]
     resources :job_services, only: %i[index new create edit update destroy]
     resources :job_options, only: %i[index new create edit update destroy]
-    resources :job_type_extras, only: %i[index new create edit update destroy]
     resources :job_types, only: %i[index new create edit update]
 
     get "manage_badges"
@@ -438,6 +448,28 @@ Rails.application.routes.draw do
           format: :csv
       post "import_programs"
     end
+
+    resources :calendar do
+      collection do
+        get 'unavailabilities_json/:id', to: 'calendar#unavailabilities_json', as: :unavailabilities_json
+        get 'imported_calendars_json/:id', to: 'calendar#imported_calendars_json', as: :imported_calendars_json
+        get 'ics_to_json', to: 'calendar#ics_to_json', as: :ics_to_json 
+        post :update_color
+      end
+    end
+
+    resources :events, only: [:create, :update] do
+      collection do
+        get 'json/:id', to: 'events#json', as: :json
+        patch :publish
+        delete :delete_drafts
+        post :copy
+      end
+      member do
+        patch :publish
+        delete :delete_with_scope
+      end
+    end
   end
   # For singular routes
   resolve('DesignDay') {[:admin, :design_day]}
@@ -468,6 +500,20 @@ Rails.application.routes.draw do
 
     resources :shifts_schedule, except: %i[new show destroy] do
       collection { get :get_shifts }
+    end
+    resources :my_calendar do
+      collection do
+        get 'json/:id', to: 'my_calendar#json', as: :json
+      end
+    end
+    resources :unavailabilities do
+      collection do
+        get :json
+        patch :update_external_unavailabilities
+      end
+      member do
+        delete :delete_with_scope
+      end
     end
 
     resources :makerstore_links, only: %i[index edit update create new] do

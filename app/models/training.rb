@@ -9,6 +9,7 @@ class Training < ApplicationRecord
   has_many :proficient_projects, dependent: :destroy
   has_many :learning_modules, dependent: :destroy
   has_many :shifts, dependent: :nullify
+  has_many :events, dependent: :nullify
   belongs_to :skill, optional: true
   has_many :badge_templates
 
@@ -24,15 +25,28 @@ class Training < ApplicationRecord
   end
 
   def localized_name
-    I18n.locale == :fr ? name_fr : name_en
+    # Pick one, show other if unavailable
+    if I18n.locale == :fr
+      name_fr || name_en
+    else
+      name_en || name_fr
+    end
   end
 
   def description
-    I18n.locale == :fr ? description_fr : description_en
+    if I18n.locale == :fr
+      description_fr || description_en
+    else
+      description_en || description_fr
+    end
   end
 
   def list_of_skills
-    I18n.locale == :fr ? list_of_skills_fr : list_of_skills_en
+    if I18n.locale == :fr
+      list_of_skills_fr || list_of_skills_en
+    else
+      list_of_skills_en || list_of_skills_fr
+    end
   end
 
   ##

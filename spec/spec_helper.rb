@@ -15,6 +15,7 @@
 # See http://rubydoc.info/gems/rspec-core/RSpec/Core/Configuration
 #
 require "rspec/retry"
+require "ruby-prof" if ENV['PROFILING']
 
 RSpec.configure do |config|
   # rspec-expectations config goes here. You can use an alternate
@@ -51,6 +52,38 @@ RSpec.configure do |config|
   config.default_retry_count = 3
   config.verbose_retry = true
   config.display_try_failure_messages = true
+
+  # Profiling the test suite. Note this makes tests much slower
+  # The attempt here is to profile only the actual test code and not rspec
+  # This makes a report for each spec context/file as an html graph
+  # Output might be very large
+  if ENV['PROFILING']
+    profiler = RubyProf::Profile.new
+    Dir.mkdir('tmp/profiling/') unless File.exist?('tmp/profiling/')
+    config.before :context do
+      profiler.start
+      profiler.pause
+    end
+    config.before :example do
+      profiler.resume
+    end
+    config.after :example do
+      profiler.pause
+    end
+    config.after :context do
+      File.open("tmp/profiling/#{self.class.metadata[:description]}_profile.html", 'w') do |file|
+        result = profiler.stop
+        printer = RubyProf::GraphHtmlPrinter.new(result)
+        printer.print(file, min_percent: 0.1)
+      end
+    end
+
+    config.after :suite do
+      puts ""
+      puts "Profiling output sent to tmp/profiling/"
+    end
+  end
+
   # The settings below are suggested to provide a good initial experience
   # with RSpec, but feel free to customize to your heart's content.
 =begin

@@ -47,6 +47,7 @@ class Admin::JobOptionsController < AdminAreaController
       :description,
       :need_files,
       :fee,
+      :is_job_wide,
       job_type_ids: []
     )
   end
