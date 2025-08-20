@@ -17,9 +17,10 @@
     </g>
 
     <line x1="6%" y1="50%" x2="94" y2="50%" stroke="black"/>
-    <text x="50%" y="51%" fill="white" text-anchor="middle" >
+    <text x="50%" y="55%" fill="white" text-anchor="middle">
         <% word_wrap_badge_name(name || "").each_with_index do |line, i| %>
             <tspan x="50%" dy="1em"><%= line %></tspan>
+        <% end %>
         <% if level == "none" %>
             <tspan x="50%" dy="1.1em" font-size="0.6rem">-</tspan>
         <% elsif level == "Beginner" %>
@@ -30,7 +31,6 @@
             <tspan x="50%" dy="1.1em" font-size="0.6rem">III</tspan>
         <% end %>
     </text>
-
     <path d="m 6 50
              A 1 1 0 0 1 94 50" fill="black" />
 
