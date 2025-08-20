@@ -1,5 +1,6 @@
 import DataTable from "datatables.net-bs5";
 import "datatables.net-bs5/css/dataTables.bootstrap5.min.css";
+import toastr from "toastr/toastr";
 
 var form = document.getElementById("sign_in_user_fastsearch");
 form.onsubmit = function () {
@@ -34,6 +35,27 @@ function refreshCapacity() {
           data;
     });
 }
+
+var displayedBefore = undefined;
+function notifyNewUserLogin(users) {
+  console.log("1");
+  if (displayedBefore == undefined) {
+    console.log("2");
+    // first load, do not spam
+    displayedBefore = new Array(users);
+    // early out
+    return;
+  }
+  // next load
+  var displayNow = new Array(users);
+  // get difference of displayed before and incoming
+  displayNow.forEach((e) => {
+    if (!displayedBefore.includes(e)) {
+      toastr.success(e[2], "New User Sign-In");
+    }
+  });
+}
+
 function refreshTables() {
   let token = Array.from(
     document.querySelectorAll(`[data-user-id]`),
@@ -52,9 +74,15 @@ function refreshTables() {
           document.getElementById("table-js-signed-in").innerHTML =
             data.signed_in;
         }
+        notifyNewUserLogin(data.users);
+        // data.users.forEach(element => {
+        //   toastr.success(element[2], 'New User Sign-In')
+        // });
       }
     });
 }
+
 setInterval(refreshCapacity, 60000);
 refreshCapacity();
-setInterval(refreshTables, 15000);
+setInterval(refreshTables, 5000);
+refreshTables();
