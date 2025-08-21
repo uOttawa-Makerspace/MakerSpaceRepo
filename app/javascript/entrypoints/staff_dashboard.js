@@ -1,6 +1,30 @@
 import DataTable from "datatables.net-bs5";
 import "datatables.net-bs5/css/dataTables.bootstrap5.min.css";
 import toastr from "toastr/toastr";
+import bootstrap from "bootstrap";
+
+toastr.options = {
+  closeButton: true,
+  debug: false,
+  newestOnTop: false,
+  progressBar: true,
+  positionClass: "toast-bottom-full-width",
+  preventDuplicates: false,
+  showDuration: "300",
+  hideDuration: "1000",
+  onclick: function () {
+    const myModal = new bootstrap.Modal(
+      document.getElementById("signin-modal"),
+    );
+    myModal.show();
+  },
+  timeOut: "5000",
+  extendedTimeOut: "1000",
+  showEasing: "swing",
+  hideEasing: "linear",
+  showMethod: "fadeIn",
+  hideMethod: "fadeOut",
+};
 
 document.addEventListener("turbo:load", function () {
   var form = document.getElementById("sign_in_user_fastsearch");
