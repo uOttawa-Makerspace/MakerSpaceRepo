@@ -1,7 +1,9 @@
 import DataTable from "datatables.net-bs5";
 import "datatables.net-bs5/css/dataTables.bootstrap5.min.css";
 import toastr from "toastr/toastr";
-import bootstrap from "bootstrap";
+
+// Import all of Bootstrap’s JS
+import * as bootstrap from "bootstrap";
 
 toastr.options = {
   closeButton: true,
@@ -12,18 +14,13 @@ toastr.options = {
   preventDuplicates: false,
   showDuration: "300",
   hideDuration: "1000",
-  onclick: function () {
-    const myModal = new bootstrap.Modal(
-      document.getElementById("signin-modal"),
-    );
-    myModal.show();
-  },
   timeOut: "5000",
   extendedTimeOut: "1000",
   showEasing: "swing",
   hideEasing: "linear",
   showMethod: "fadeIn",
   hideMethod: "fadeOut",
+  escapeHTML: true,
 };
 
 document.addEventListener("turbo:load", function () {
@@ -68,13 +65,24 @@ document.addEventListener("turbo:load", function () {
       displayNow = users;
     } else {
       users.forEach((e) => {
-        if (!displayBefore.includes(e)) {
-          displayNow.push(e);
+        if (!displayBefore.includes(e[0])) {
+          displayNow.push(e[0]);
         }
       });
     }
     displayNow.forEach((e) => {
-      toastr.success(e, "New User Signin");
+      toastr.success(e[0], "New User Signin", {
+        onclick: function () {
+          const myModal = new bootstrap.Modal(
+            document.getElementById("signinModal"),
+            {
+              keyboard: true,
+            },
+          );
+          myModal.show();
+          document.getElementById("signinModalHeader").innerText = e[0];
+        },
+      });
     });
     displayBefore = displayNow;
   }
