@@ -1,13 +1,15 @@
 <% begin %>
   <% if @acclaim_data.present? %>
-    <div class="row">
+    <div class="d-flex gap-4 flex-wrap">
       <% @acclaim_data.each do |badges| %>
         <% begin %>
-          <div class="col-md-3 border-bottom text-nowrap overflow-auto d-flex gap-1 flex-wrap">
+        <% if badges.training.has_badge %>
+          <div>
               <a target="_blank" href="/badges/<%= badges.id %>">
-                <%= render "badges/badge_icon", width: 125, height: 125, level: badges.training_session.level, name: badges.training_session.training.localized_name, skill: badges.training_session.training.skill_id %>
+                <%= render "badges/badge_icon", width: 200, height: 200, level: badges.level, name: badges.training.localized_name, skill: badges.training.skill_id %>
               </a>
           </div>
+        <% end %>
         <% end %>
       <% end %>
     </div>

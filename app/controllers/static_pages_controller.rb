@@ -38,7 +38,7 @@ class StaticPagesController < SessionsController
 
     @user_skills =
       current_user.certifications.map do |cert|
-        [cert.training_session.training.name_en, cert.training_session.level]
+        [cert.get_name_en, cert.level]
       end.sample 5
 
     # Get total tracks in all learning modules

@@ -8,9 +8,12 @@ class ProficientProjectsController < DevelopmentProgramsController
                   edit
                   update
                   destroy
+                ]
+  before_action :only_staff_access,
+                only: %i[
                   requests
                   approve_project
-                ]
+  ]
   before_action :set_proficient_project,
                 only: %i[show destroy edit update complete_project]
   before_action :grant_access_to_project, only: [:show]
@@ -83,9 +86,10 @@ class ProficientProjectsController < DevelopmentProgramsController
     @proficient_project = ProficientProject.new(proficient_project_params)
     if @proficient_project.save
       if params[:training_requirements_id].present?
-        @proficient_project.create_training_requirements(
-          params[:training_requirements_id]
-        )
+        params[:training_requirements_id].each_with_index do |t, i|
+            @proficient_project.create_training_requirements(t, params[:training_requirements_level][i])
+        end
+        
       end
       begin
         create_photos
@@ -124,19 +128,17 @@ class ProficientProjectsController < DevelopmentProgramsController
   def edit
     @training_levels = TrainingSession.return_levels
     @trainings = Training.all
+    @training_requirements = TrainingRequirement.all.where(proficient_project_id: @proficient_project.id)
   end
 
   def update
     @proficient_project.training_requirements.destroy
     if params[:training_requirements_id].present?
-      @proficient_project.create_training_requirements(
-        params[:training_requirements_id]
-      )
+      params[:training_requirements_id].each_with_index do |t, i|
+            @proficient_project.create_training_requirements(t, params[:training_requirements_level][i])
+        end
     end
-
     if @proficient_project.update(proficient_project_params)
-      update_files
-      update_videos
       begin
         update_photos
       rescue FastImage::ImageFetchFailure,
@@ -197,34 +199,51 @@ class ProficientProjectsController < DevelopmentProgramsController
   def approve_project
     order_item = OrderItem.find_by(id: params[:oi_id])
     if order_item
-      space = Space.find_by_name("Makerepo")
-      admin =
-        User.find_by_email("avend029@uottawa.ca") ||
-          User.where(role: "admin").last
-      course_name = CourseName.find_by_name("no course")
-      proficient_project_session =
-        ProficientProjectSession.create(
-          proficient_project_id: order_item.proficient_project.id,
-          level: order_item.proficient_project.level,
+      admin = @user
+      duplicates = 0
+      user = order_item.order.user
+      dup_cert = nil
+      ## Check for an already existing certification
+      user.certifications.each do |cert|
+        next unless cert.training.id == order_item.proficient_project.training.id &&
+          order_item.proficient_project.level == cert.level
+        dup_cert = cert
+        duplicates += 1
+      end
 
-        )
-      # Make sure we don't double add the HABTM relation
-      # In case badge fails somehow, at least we award the skill
-      if proficient_project_session.present?
+      # If there wasn't a duplicate, create a new cert and link the p_p_s to it
+      if duplicates.zero?
         cert =
-          Certification.create(
-            user_id: order_item.order.user_id,
-            level: proficient_project_session.level
+            Certification.create(
+              user_id: order_item.order.user_id,
+              level: order_item.proficient_project.level
+            )
+        proficient_project_session =
+          ProficientProjectSession.create(
+            proficient_project_id: order_item.proficient_project.id,
+            level: order_item.proficient_project.level,
+            user_id: admin.id,
+            certification_id: cert.id
           )
-        # Award project, even if badge fails.
-        # You can manually grant badge later
+      # If a cert already exists, we just add that cert's id to the proficient project session
+      else
+        proficient_project_session =
+          ProficientProjectSession.create(
+            proficient_project_id: order_item.proficient_project.id,
+            level: order_item.proficient_project.level,
+            user_id: admin.id,
+            certification_id: dup_cert.id
+          )
+      end
+      # Award the cert
+      if proficient_project_session.present?
         order_item.update(order_item_params.merge({ status: "Awarded" }))
         MsrMailer.send_results_pp(
           order_item,
           order_item.order.user,
           "Passed"
         ).deliver_now
-        flash[:notice] = "The project has been approved!"
+        flash[:notice] = "The project has been approved!  (#{duplicates} duplicates skipped)"
       else
         flash[:error] = "An error has occurred, please try again later."
       end
@@ -286,6 +305,12 @@ class ProficientProjectsController < DevelopmentProgramsController
     
   end
 
+  def only_staff_access
+    return if current_user.staff?
+      redirect_to development_programs_path
+      flash[:alert] = "Only staff members can access this area."
+  end
+
   def proficient_project_params
     params.require(:proficient_project).permit(
       :title,
@@ -297,6 +322,13 @@ class ProficientProjectsController < DevelopmentProgramsController
       :has_project_kit,
       :drop_off_location_id,
       :is_virtual
+    )
+  end
+
+  def training_requirement_params
+    params.require(:training_requirements).permit(
+      :training_requirements_id,
+      :training_requirements_level
     )
   end
 
