@@ -127,16 +127,6 @@ class SessionsController < ApplicationController
     #@user = User.new
   end
 
-  def signed_in
-    return if signed_in?
-
-    respond_to do |format|
-      format.html { redirect_to login_path }
-      format.js { render js: "window.location.href = '#{login_path}'" }
-      format.json { render json: "redirect" }
-    end
-  end
-
   def logout
     sign_out
     @user = User.new

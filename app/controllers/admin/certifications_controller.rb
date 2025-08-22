@@ -1,6 +1,11 @@
 class Admin::CertificationsController < AdminAreaController
   before_action :set_certification, only: %i[update destroy]
 
+  def show
+    @certification = Certification.includes(:training_session).includes(:training).find(params[:id])
+    @earner = User.find(@certification.user_id)
+  end
+
   def update
     past_demotion_reason = @cert.demotion_reason
     if @cert.update(certification_params)
@@ -8,7 +13,7 @@ class Admin::CertificationsController < AdminAreaController
       if @cert.active
         user.flag_message =
           user.flag_message.gsub(
-            "; This user was demoted in '#{@cert.training.name}' because '#{past_demotion_reason}'",
+            "; This user was demoted in '#{@cert.training.name_en}' because '#{past_demotion_reason}'",
             ""
           )
         user.flagged = false if user.flag_message.blank?
@@ -16,10 +21,10 @@ class Admin::CertificationsController < AdminAreaController
         @cert.update(demotion_staff: @user)
         if user.flag_message.blank?
           user.flag_message =
-            "; This user was demoted in '#{@cert.training.name}' because '#{@cert.demotion_reason}'"
+            "; This user was demoted in '#{@cert.training.localized_name}' because '#{@cert.demotion_reason}'"
         else
           user.flag_message +=
-            "; This user was demoted in '#{@cert.training.name}' because '#{@cert.demotion_reason}'"
+            "; This user was demoted in '#{@cert.training.localized_name}' because '#{@cert.demotion_reason}'"
         end
         user.flagged = true
       end
@@ -28,10 +33,7 @@ class Admin::CertificationsController < AdminAreaController
     else
       flash[:alert] = "Something went wrong. Try again later."
     end
-    @cert.active ?
-      redirection = demotions_admin_certifications_path :
-      redirection = user_path(@cert.user.username)
-    redirect_to redirection
+    redirect_to @cert.active ? demotions_admin_certifications_path : user_path(@cert.user.username)
   end
 
   def destroy

@@ -9,7 +9,15 @@
         <li class="nav-item"><%= link_to 'Kiosk', staff_dashboard_index_path, class: 'nav-link' %></li>
         <li class="nav-item"><%= link_to 'New Training Session', new_staff_training_session_path, class: 'nav-link' %></li>
         <li class="nav-item"><%= link_to 'My Training Sessions', staff_training_sessions_path, class: 'nav-link' %></li>
-        <li class="nav-item"><%= link_to 'Shifts', staff_shifts_schedule_index_path, class: 'nav-link' %></li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Work Calendar
+          </a>
+          <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+            <%= link_to "My Unavailabilities", staff_unavailabilities_path, class: 'dropdown-item' %>
+            <%= link_to "My Work Schedule", staff_my_calendar_index_path, class: 'dropdown-item' %>
+          </div>
+        </li>
         <li class="nav-item"><%= link_to 'Sign in kiosk', kiosk_index_path, class: 'nav-link' %></li>
         <li class="nav-item"><%= link_to 'Makerstore links', staff_makerstore_links_path, class: 'nav-link' %></li>
       </ul>

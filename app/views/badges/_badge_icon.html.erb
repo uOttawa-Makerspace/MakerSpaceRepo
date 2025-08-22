@@ -1,0 +1,38 @@
+<svg width="<%= width %>" height="<%= height %>" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <style>
+     text { font: bold 0.5rem sans-serif; };
+    </style>
+
+    <g
+        <% if skill == 1 %>
+            fill="#488b2c"
+        <% elsif skill == 2 %>
+            fill="#dc4720"
+        <% else %>
+            fill="#3f7ed1"
+        <% end %>
+    >
+        <circle cx="50%" cy="50%" r="50%" />
+        <circle cx="50%" cy="50%" r="45%" stroke="white" stroke-width="2" />
+    </g>
+
+    <line x1="6%" y1="50%" x2="94" y2="50%" stroke="black"/>
+
+    <text x="50%" y="51%" fill="white" text-anchor="middle" >
+        <% word_wrap_badge_name(name || "").each_with_index do |line, i| %>
+            <tspan x="50%" dy="1em"><%= line %></tspan>
+        <% end %>
+        <% if level == "Beginner" %>
+            <tspan x="50%" dy="1.1em" font-size="0.6rem">I</tspan>
+        <% elsif level == "Intermediate" %>
+            <tspan x="50%" dy="1.1em" font-size="0.6rem">II</tspan>
+        <% else %>
+            <tspan x="50%" dy="1.1em" font-size="0.6rem">III</tspan>
+        <% end %>
+    </text>
+
+    <path d="m 6 50
+             A 1 1 0 0 1 94 50" fill="black" />
+    <image x="32.5%" y="25%" width="35%" height="25%" href="<%= image_url 'logo/CEED_WHITE.svg' %>"/>
+    <image x="32.5%" y="10%" width="35%" height="25%" href="<%= image_url 'logo/CGEC_WHITE.svg' %>"/>
+</svg>

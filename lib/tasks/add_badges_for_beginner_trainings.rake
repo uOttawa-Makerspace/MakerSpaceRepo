@@ -41,40 +41,28 @@ namespace :add_badges_to_beginner_trainings do
             failed_certifications << "#{c.user.name} - #{badge_template.badge_name}"
           end
         else
-          no_template_certifications << "#{c.user.name} - #{c.training.name}"
+          no_template_certifications << "#{c.user.name} - #{c.training.name_en}"
         end
       end
 
     puts("\e[32mThese Certifications have been assigned to a Badge\e[0m")
     puts(
       (
-        if updated_certifications.present?
-          updated_certifications
-        else
-          "No successfully Added Badges"
-        end
+        updated_certifications.presence || "No successfully Added Badges"
       )
     )
 
     puts("\e[33mThese Certifications don't have a related Badge Template\e[0m")
     puts(
       (
-        if no_template_certifications.present?
-          no_template_certifications
-        else
-          "No Certifications without related Badge Templates"
-        end
+        no_template_certifications.presence || "No Certifications without related Badge Templates"
       )
     )
 
     puts("\e[31mThese Certifications have NOT been assigned to a Badge\e[0m")
     puts(
       (
-        if failed_certifications.present?
-          failed_certifications
-        else
-          "No Failed Badges"
-        end
+        failed_certifications.presence || "No Failed Badges"
       )
     )
   end

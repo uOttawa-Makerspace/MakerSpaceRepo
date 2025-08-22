@@ -1,0 +1,31 @@
+<div id="hr"></div>
+
+<h3 class="colors">Staff Colors</h3>
+<section class="row row-cols-1 row-cols-md-2 colors">
+    <% @colors.each do |user| %>
+        <div class="d-flex gap-2 align-items-center mb-2">
+            <input type="color" name="color" id="color-<%= user[:id] %>" data-user="<%= user[:id] %>" class="form-control form-control-color w-auto staff_color_select" style="aspect-ratio: 1;" value="<%= user[:color] %>" title="Choose your color">
+            <label for="color-<%= user[:id] %>">
+                <a href="/<%= user[:username] %>" rel="noreferrer" target="_blank"><%= user[:name] %></a>
+            </label>
+        </div>
+    <% end %>
+</section>
+
+<div class="colors">
+    <button id="refresh_calendar" class="btn btn-outline-secondary">
+        Refresh Calendar
+    </button>
+</div>
+
+<style>
+    .colors {
+        max-width: 50%;
+        margin: 2rem auto !important;
+    }
+
+    #hr {
+        border-top: 1px solid #e8e8e8;
+        margin: 4rem 1rem;
+    }
+</style>

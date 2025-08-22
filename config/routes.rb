@@ -49,7 +49,7 @@ Rails.application.routes.draw do
 
   resources :carts, only: [:index]
   resources :order_items, only: %i[create update destroy] do
-    get :revoke, path: "revoke"
+    get :destroy, path: "revoke"
     get :order_item_modal
     get :approve_order_item_modal
     get :revoke_order_item_modal
@@ -254,8 +254,6 @@ Rails.application.routes.draw do
 
     resources :announcements
 
-    resources :badge_templates, only: %i[index edit update destroy]
-
     resources :job_service_groups,
               only: %i[index new create edit update destroy]
     resources :job_services, only: %i[index new create edit update destroy]
@@ -376,6 +374,8 @@ Rails.application.routes.draw do
       member { patch "update" }
     end
 
+    resources :proficient_project_sessions, only: [:show]
+
     resources :settings, only: [:index] do
       collection do
         post "add_category"
@@ -398,7 +398,7 @@ Rails.application.routes.draw do
       end
     end
 
-    resources :certifications, only: %i[update destroy] do
+    resources :certifications, only: %i[show update destroy] do
       collection do
         get :open_modal
         get :demotions
@@ -444,6 +444,28 @@ Rails.application.routes.draw do
           format: :csv
       post "import_programs"
     end
+
+    resources :calendar do
+      collection do
+        get 'unavailabilities_json/:id', to: 'calendar#unavailabilities_json', as: :unavailabilities_json
+        get 'imported_calendars_json/:id', to: 'calendar#imported_calendars_json', as: :imported_calendars_json
+        get 'ics_to_json', to: 'calendar#ics_to_json', as: :ics_to_json 
+        post :update_color
+      end
+    end
+
+    resources :events, only: [:create, :update] do
+      collection do
+        get 'json/:id', to: 'events#json', as: :json
+        patch :publish
+        delete :delete_drafts
+        post :copy
+      end
+      member do
+        patch :publish
+        delete :delete_with_scope
+      end
+    end
   end
   # For singular routes
   resolve('DesignDay') {[:admin, :design_day]}
@@ -470,6 +492,20 @@ Rails.application.routes.draw do
     end
     resources :shifts_schedule, except: %i[new show destroy] do
       collection { get :get_shifts }
+    end
+    resources :my_calendar do
+      collection do
+        get 'json/:id', to: 'my_calendar#json', as: :json
+      end
+    end
+    resources :unavailabilities do
+      collection do
+        get :json
+        patch :update_external_unavailabilities
+      end
+      member do
+        delete :delete_with_scope
+      end
     end
 
     resources :makerstore_links, only: %i[index edit update create new] do
@@ -523,21 +559,7 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :badges, only: [:index] do
-    collection do
-      get :admin
-      get :new_badge
-      get :revoke_badge
-      get :populate_badge_list
-      get :certify
-      get "grant", as: "grant_badge", action: "grant_badge"
-      get :reinstate
-      get :update_badge_data
-      get :update_badge_templates
-      get :populate_grant_users
-      get :populate_revoke_users
-    end
-  end
+  resources :badges, only: [:index,:show] 
 
   resources :proficient_projects do
     get :proficient_project_modal

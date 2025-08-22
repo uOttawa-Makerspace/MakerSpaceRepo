@@ -21,7 +21,7 @@ namespace :exams do
             new_exam =
               user.exams.new(
                 training_session_id: training_session.id,
-                category: training_session.training.name,
+                category: training_session.training.name_en,
                 expired_at: DateTime.now + 3.days
               )
             new_exam.save!

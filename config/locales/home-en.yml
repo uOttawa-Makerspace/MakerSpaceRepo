@@ -12,7 +12,7 @@ en:
     staff_resources:
       header: "Staff Resources"
       staff_area: "Staff Area"
-      shifts: "Shifts"
+      shifts: "My Work Schedule"
       job_order_admin: "Job Order Admin"
       admin_area: "Admin Area"
     general_resources:

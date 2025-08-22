@@ -1,18 +1,14 @@
-# frozen_string_literal: true
-
 module BadgesHelper
-  def update_badge_data_helper
-    load_rakes
-    Rake::Task["badges:get_data"].invoke
-    Rake::Task["badges:get_data"].reenable
-    Rake::Task["badges:get_and_update_badge_templates"].reenable
-    flash[:notice] = "Badges Update is now complete!"
-  end
-
-  def update_badge_templates_helper
-    load_rakes
-    Rake::Task["badges:get_and_update_badge_templates"].invoke
-    Rake::Task["badges:get_and_update_badge_templates"].reenable
-    flash[:notice] = "Badge Templates Update is now complete!"
+  def word_wrap_badge_name(name, max_line_length = 20)
+    words = name.split(' ')
+    words.drop(1).reduce([words.first]) do |lines, word|
+      # plus space
+      if lines.last.length + word.length + 1 <= max_line_length
+        lines[-1] = lines.last + ' ' + word
+      else
+        lines.append(word)
+      end
+      lines
+    end
   end
 end
