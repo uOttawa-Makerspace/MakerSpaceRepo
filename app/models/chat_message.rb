@@ -33,7 +33,7 @@ class ChatMessage < ApplicationRecord
     return if recent_message_by_sender? || job_order.job_order_statuses.last&.job_status != JobStatus::DRAFT
 
     recipients = self.job_order.chat_messages
-                  .where.not(sender_id: chat.sender_id)
+                  .where.not(sender_id: self.sender_id)
                   .select(:sender_id)
                   .distinct
                   .map(&:sender)
