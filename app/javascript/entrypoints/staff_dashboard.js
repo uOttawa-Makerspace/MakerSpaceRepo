@@ -79,8 +79,10 @@ document.addEventListener("turbo:load", function () {
               keyboard: true,
             },
           );
+          console.log(e[2]);
           myModal.show();
           document.getElementById("signinModalHeader").innerText = e[0];
+          document.getElementById("signinEmail").innerText = e[2];
         },
       });
     });
@@ -106,6 +108,8 @@ document.addEventListener("turbo:load", function () {
               data.signed_in;
           }
           notifyNewUserLogin(data.users);
+        } else {
+          console.error(data.error);
         }
       });
   }
