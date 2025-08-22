@@ -64,6 +64,7 @@ class User < ApplicationRecord
   has_many :locker_rentals, foreign_key: "rented_by"
   has_many :staff_unavailabilities
   has_many :staff_external_unavailabilities, dependent: :destroy
+  has_many :memberships, dependent: :destroy
 
 
   MAX_AUTH_ATTEMPTS = 5
@@ -449,5 +450,13 @@ class User < ApplicationRecord
     else
       identity.titleize
     end
+  end
+
+  def active_membership
+    memberships.where('end_date > ?', Time.current).order(end_date: :desc).first
+  end
+
+  def has_active_membership?
+    active_membership.present?
   end
 end
