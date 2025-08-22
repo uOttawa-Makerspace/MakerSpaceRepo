@@ -681,6 +681,18 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_15_171922) do
     t.boolean "shown", default: true
   end
 
+  create_table "memberships", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "membership_type"
+    t.datetime "start_date"
+    t.datetime "end_date"
+    t.string "shopify_draft_order_id"
+    t.string "status", default: "paid"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_memberships_on_user_id"
+  end
+
   create_table "opening_hours", force: :cascade do |t|
     t.bigint "contact_info_id"
     t.datetime "created_at", null: false
@@ -1155,12 +1167,21 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_15_171922) do
     t.index ["staff_availability_id"], name: "index_staff_availability_exceptions_on_staff_availability_id"
   end
 
+  create_table "staff_external_unavailabilities", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "ics_url"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_staff_external_unavailabilities_on_user_id"
+  end
+
   create_table "staff_needed_calendars", force: :cascade do |t|
     t.string "calendar_url", null: false
     t.string "color"
     t.bigint "space_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "name"
     t.index ["space_id"], name: "index_staff_needed_calendars_on_space_id"
   end
 
@@ -1489,6 +1510,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_15_171922) do
   add_foreign_key "learning_module_tracks", "users"
   add_foreign_key "likes", "repositories"
   add_foreign_key "likes", "users"
+  add_foreign_key "memberships", "users"
   add_foreign_key "order_items", "orders"
   add_foreign_key "order_items", "proficient_projects"
   add_foreign_key "orders", "order_statuses"
@@ -1518,6 +1540,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_15_171922) do
   add_foreign_key "space_staff_hours", "training_levels"
   add_foreign_key "staff_availabilities", "time_periods"
   add_foreign_key "staff_availabilities", "users"
+  add_foreign_key "staff_external_unavailabilities", "users"
   add_foreign_key "staff_needed_calendars", "spaces"
   add_foreign_key "staff_spaces", "spaces"
   add_foreign_key "staff_spaces", "users"
