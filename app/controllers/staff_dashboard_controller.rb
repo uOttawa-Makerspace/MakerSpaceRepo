@@ -47,7 +47,9 @@ class StaffDashboardController < StaffAreaController
       end
     @all_user_certs = proc { |user| user.certifications }
     render json: {
-             users: @space.signed_in_users.pluck(:name, :id, :email),
+            users: @space.signed_in_users.pluck(:name, :email),
+            certifications: Certification.where(user_id: [13_250, 13_251, 13_252, 13_253]).group_by(&:user_id),
+
              signed_out:
                render_to_string(
                  partial: "staff_dashboard/signed_out_table",

@@ -1,8 +1,6 @@
 import DataTable from "datatables.net-bs5";
 import "datatables.net-bs5/css/dataTables.bootstrap5.min.css";
 import toastr from "toastr/toastr";
-
-// Import all of Bootstrap’s JS
 import * as bootstrap from "bootstrap";
 
 toastr.options = {
@@ -59,7 +57,7 @@ document.addEventListener("turbo:load", function () {
   }
 
   var displayBefore = undefined;
-  function notifyNewUserLogin(users) {
+  function notifyNewUserLogin(users, certifications) {
     var displayNow = [];
     if (displayBefore == undefined) {
       displayNow = users;
@@ -70,22 +68,24 @@ document.addEventListener("turbo:load", function () {
         }
       });
     }
-    displayNow.forEach((e) => {
-      toastr.success(e[0], "New User Signin", {
-        onclick: function () {
-          const myModal = new bootstrap.Modal(
-            document.getElementById("signinModal"),
-            {
-              keyboard: true,
-            },
-          );
-          console.log(e[2]);
-          myModal.show();
-          document.getElementById("signinModalHeader").innerText = e[0];
-          document.getElementById("signinEmail").innerText = e[2];
-        },
-      });
-    });
+    var e = displayNow[0];
+    // Show Modal
+    const myModal = new bootstrap.Modal(
+      document.getElementById("signinModal"),
+      {
+        keyboard: true,
+      },
+    );
+    myModal.show();
+    // Setting Modal Text
+    document.getElementById("signinModalHeader").innerText = e[0];
+    document.getElementById("signinEmail").innerText = e[1];
+    if (e[2] == null) {
+      document.getElementById("signinMembership").innerText = "No Membership";
+    } else {
+      document.getElementById("signinMembership").innerText = "Has Membership";
+    }
+    console.log(certifications[0]);
     displayBefore = displayNow;
   }
 
@@ -107,7 +107,7 @@ document.addEventListener("turbo:load", function () {
             document.getElementById("table-js-signed-in").innerHTML =
               data.signed_in;
           }
-          notifyNewUserLogin(data.users);
+          notifyNewUserLogin(data.users, data.certifications);
         } else {
           console.error(data.error);
         }
