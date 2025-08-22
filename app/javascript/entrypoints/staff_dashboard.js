@@ -21,6 +21,10 @@ toastr.options = {
   escapeHTML: true,
 };
 
+const myModal = new bootstrap.Modal(document.getElementById("signinModal"), {
+  keyboard: true,
+});
+
 document.addEventListener("turbo:load", function () {
   var form = document.getElementById("sign_in_user_fastsearch");
   form.onsubmit = function () {
@@ -69,13 +73,7 @@ document.addEventListener("turbo:load", function () {
       });
     }
     var e = displayNow[0];
-    // Show Modal
-    const myModal = new bootstrap.Modal(
-      document.getElementById("signinModal"),
-      {
-        keyboard: true,
-      },
-    );
+    // Refresh Modal
     myModal.show();
     // Setting Modal Text
     document.getElementById("signinModalHeader").innerText = e[0];
@@ -85,7 +83,13 @@ document.addEventListener("turbo:load", function () {
     } else {
       document.getElementById("signinMembership").innerText = "Has Membership";
     }
-    console.log(certifications[0]);
+    var certificationTrainings = certifications[0][1];
+    var trainingString = "";
+    certificationTrainings.forEach((e) => {
+      trainingString = trainingString + "  |  " + e.name_en;
+    });
+    document.getElementById("signinCertifications").innerHTML =
+      '<p id="signinCertification">' + trainingString + "</p>";
     displayBefore = displayNow;
   }
 
