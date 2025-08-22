@@ -32,7 +32,7 @@ class ChatMessage < ApplicationRecord
   def schedule_notification_email
     return if recent_message_by_sender? || job_order.job_order_statuses.last&.job_status != JobStatus::DRAFT
 
-    recipients = chat_message.job_order.chat_messages
+    recipients = self.job_order.chat_messages
                   .where.not(sender_id: chat.sender_id)
                   .select(:sender_id)
                   .distinct
@@ -40,9 +40,9 @@ class ChatMessage < ApplicationRecord
                   .uniq
 
     additional_recipients = User.where(id: [25, 1607])
-    all_recipients = (recipients + additional_recipients).uniq - [chat_message.sender]
+    all_recipients = (recipients + additional_recipients).uniq - [self.sender]
 
-    ChatMessageMailer.new_message(chat_message, all_recipients).deliver_later if all_recipients.any?
+    ChatMessageMailer.new_message(self, all_recipients).deliver_later if all_recipients.any?
     # ChatNotificationJob.set(wait: 1.hour).perform_later(id)
   end
 
