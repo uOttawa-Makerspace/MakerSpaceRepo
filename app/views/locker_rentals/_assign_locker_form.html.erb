@@ -1,15 +1,10 @@
 <%= form_with model: @locker_rental, class: 'container' do |f| %>
     <div class="row row-cols-md-2">
-        <%= f.label :locker_type_id, class: 'form-label' %>
+        <%= f.label :locker_selected, "Select a locker" %>
         <div>
-            <%= f.select :locker_type_id, options_for_select(LockerType.available.select(:short_form, :id).distinct.pluck(:short_form, :id)), {}, { class: 'form-select' } %>
-        </div>
-    </div>
-    <div class="row row-cols-md-2">
-        <%= f.label :locker_specifier, 'Locker number' %>
-        <div>
-            <% locker_specifier_options = LockerType.all.map { |type| [type.short_form, type.get_available_lockers] } %>
-            <%= f.select :locker_specifier, grouped_options_for_select(locker_specifier_options), {}, { class: 'form-select' } %>
+            <%= f.select :locker_selected, grouped_options_for_select(LockerType.all.map { |type|
+                [type.short_form, type.get_available_lockers.map{|number| "#{type.short_form} - #{number}"} ]
+            }), {prompt: 'Select a locker...'}, {class: 'form-select'} %>
         </div>
     </div>
     <div class="row row-cols-md-2">

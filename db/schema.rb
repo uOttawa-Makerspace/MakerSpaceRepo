@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_07_31_163455) do
+ActiveRecord::Schema[7.2].define(version: 2025_08_20_195031) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -650,9 +650,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_07_31_163455) do
   end
 
   create_table "locker_rentals", force: :cascade do |t|
-    t.bigint "locker_type_id"
     t.bigint "rented_by_id"
-    t.string "locker_specifier"
     t.string "state"
     t.string "notes"
     t.datetime "owned_until"
@@ -661,20 +659,21 @@ ActiveRecord::Schema[7.2].define(version: 2025_07_31_163455) do
     t.string "shopify_draft_order_id"
     t.bigint "repository_id"
     t.string "requested_as"
-    t.index ["locker_type_id"], name: "index_locker_rentals_on_locker_type_id"
+    t.date "paid_at"
+    t.bigint "decided_by_id"
+    t.bigint "locker_id"
+    t.index ["decided_by_id"], name: "index_locker_rentals_on_decided_by_id"
+    t.index ["locker_id"], name: "index_locker_rentals_on_locker_id"
     t.index ["rented_by_id"], name: "index_locker_rentals_on_rented_by_id"
     t.index ["repository_id"], name: "index_locker_rentals_on_repository_id"
   end
 
-  create_table "locker_types", force: :cascade do |t|
-    t.string "short_form"
-    t.string "description"
-    t.boolean "available", default: true
-    t.string "available_for"
-    t.integer "quantity", default: 0
-    t.decimal "cost", default: "0.0"
+  create_table "lockers", force: :cascade do |t|
+    t.string "specifier"
+    t.boolean "available"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["specifier"], name: "index_lockers_on_specifier"
   end
 
   create_table "makerstore_links", force: :cascade do |t|
@@ -1501,6 +1500,9 @@ ActiveRecord::Schema[7.2].define(version: 2025_07_31_163455) do
   add_foreign_key "learning_module_tracks", "users"
   add_foreign_key "likes", "repositories"
   add_foreign_key "likes", "users"
+  add_foreign_key "locker_rentals", "lockers"
+  add_foreign_key "locker_rentals", "users", column: "decided_by_id"
+  add_foreign_key "locker_rentals", "users", column: "rented_by_id"
   add_foreign_key "order_items", "orders"
   add_foreign_key "order_items", "proficient_projects"
   add_foreign_key "orders", "order_statuses"

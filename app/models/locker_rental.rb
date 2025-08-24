@@ -1,10 +1,14 @@
 # frozen_string_literal: true
 
+# Describes a locker ownership lifecycle. Goes from under review to active, or
+# under review to payment to active. Can be cancelled by admins at any time. Can
+# be cancelled by users if still under review
 class LockerRental < ApplicationRecord
   include ApplicationHelper
+  # Fetch checkout url via shopify
   include ShopifyConcern
 
-  belongs_to :locker_type
+  belongs_to :locker
   belongs_to :rented_by, class_name: "User"
   # optional because some students don't always have a repository ready beforehand
   belongs_to :repository, optional: true
@@ -26,15 +30,16 @@ class LockerRental < ApplicationRecord
 
   # Shares the enum with the other class,
   # not really work making a whole concern for one enum
-  enum :requested_as, LockerType.available_fors, prefix: true
+  enum :requested_as, { staff: "staff", student: "student", general: "general" }, prefix: true
 
-  # Locker type and state and request_as always present
-  validates :locker_type, :state, :requested_as, presence: true
+  # specifier is a string, call #squish on it
+  normalizes :specifier, with: :squish
+
   # When submitting a request, ensure only one is present
   validate :only_one_request_per_user, on: :create
   def only_one_request_per_user
     # If this request is under review, and another by same user is also under review
-    if under_review? &&
+    if pending? &&
        LockerRental.where(rented_by: rented_by).exists?(
          state: %i[reviewing await_payment]
        )
@@ -42,29 +47,17 @@ class LockerRental < ApplicationRecord
     end
   end
 
-  # Make sure the locker type requested has quantity available on request
-  validate :locker_type_requested_is_available, on: :create
-  def locker_type_requested_is_available
-    return if locker_type&.quantity_available&.positive?
-    errors.add(:locker_type, "No lockers of this type are available for request")
-  end
-
   # If set to active
   with_options if: :active? do |rental|
     # Don't double assign lockers of same locker type if assigned
-    # TODO upgrade Rails and add normalization to trim spaces
-    # or change column type to integer not string
-    validates :locker_specifier,
-              uniqueness: {
-                scope: :locker_type,
-                conditions: -> { assigned }
-              },
+    rental.validates :locker_specifier,
+              uniqueness: { conditions: -> { assigned } },
               allow_nil: true # Skip validation if nil, caught below anyways
     rental.validates :rented_by, :owned_until, :locker_specifier, presence: true
   end
 
   # Scopes to aid sorting rentals
-  scope :under_review, -> { where(state: %i[reviewing await_payment]) }
+  scope :pending, -> { where(state: %i[reviewing await_payment]) }
   scope :assigned, -> { where(state: :active) }
 
   def auto_assign_parameters
@@ -87,12 +80,7 @@ class LockerRental < ApplicationRecord
     )
   end
 
-  def full_locker_name
-    "#{locker_type.short_form}##{locker_specifier}"
-  end
-
-  # FIXME: rename to .pending?
-  def under_review?
+  def pending?
     reviewing? || await_payment?
   end
 
@@ -101,11 +89,11 @@ class LockerRental < ApplicationRecord
     return unless saved_change_to_state?
     case state.to_sym
     when :await_payment
-      LockerMailer.with(locker_rental: self).locker_checkout.deliver_now
+      LockerMailer.with(locker_rental: self).locker_checkout.deliver_later
     when :active
-      LockerMailer.with(locker_rental: self).locker_assigned.deliver_now
+      LockerMailer.with(locker_rental: self).locker_assigned.deliver_later
     when :cancelled
-      LockerMailer.with(locker_rental: self).locker_cancelled.deliver_now
+      LockerMailer.with(locker_rental: self).locker_cancelled.deliver_later
     when :reviewing
       nil # do nothing
     else
@@ -117,17 +105,17 @@ class LockerRental < ApplicationRecord
     return unless saved_change_to_state?
     case state.to_sym
     when :cancelled
-      # When a locker is cancelled, cancel draft order too
+      # When a locker is cancelled, cancel draft_order too
       destroy_shopify_draft_order
     end
   end
 
-  # Fetch checkout link from shopify draft order, if not found create a draft
-  # order. Returns nil if API call fails or checkout is not possible now.
+  # Fetch checkout link from shopify .Returns nil if API call fails or checkout
+  # is not possible now.
   def checkout_link
     return nil unless await_payment?  # checkout only if await payment
 
-    shopify_draft_order['invoiceUrl']
+    shopify_checkout_link
   end
 
   # For the view
@@ -155,17 +143,15 @@ class LockerRental < ApplicationRecord
   end
 
   private
-  # Definitions for the shopify concern:
+  # Definitions for the shopify concern
 
   def shopify_draft_order_line_items
     [
       {
         "quantity": 1,
-        "title": "Locker Rental for one semester / Location de casier pour un trimestre",
-        "originalUnitPriceWithCurrency": {
-          "amount": locker_type.cost,
-          "currencyCode": "CAD",
-        },
+        # FIXME: Locker product ID is hardcoded here
+        # locker product ID 10478024917048
+        "merchandiseId": "gid://shopify/Product/10478024917048",
       }
     ]
   end

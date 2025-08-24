@@ -141,7 +141,7 @@ Rails.application.routes.draw do
     collection { get :history }
   end
 
-  resources :lockers, only: :index do
+  resources :lockers do
     collection do
       get :assign_lockers
     end

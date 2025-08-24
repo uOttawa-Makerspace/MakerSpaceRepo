@@ -21,7 +21,7 @@
             <% if locker_rentals.present? %>
                 <% locker_rentals.each do |rental| %>
                     <tr>
-                        <td class="dt-center" data-sort="<%= rental.locker_specifier %>" data-search="<%= rental.locker_type.short_form %>"><span class="badge fs-6" style="background-color: #<%= rental.locker_type.rgb %>"><%= rental.full_locker_name %></span></td>
+                        <td class="dt-center"> <%= rental.locker %></td>
                         <td><%= link_to rental.rented_by.username, user_path(rental.rented_by) %>
                             <%= tag.span(rental.rented_by.role.humanize, class: 'badge text-bg-primary') if rental.rented_by.staff? %></td>
                         <td data-search="<%= rental.state %>">

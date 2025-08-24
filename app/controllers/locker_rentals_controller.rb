@@ -6,20 +6,10 @@ class LockerRentalsController < SessionsController
                 except: %i[index new create stripe_success stripe_cancelled]
 
   def index
-    # Only admin can see index list
-    #redirect_to :new_locker_rental unless current_user.admin?
-
     @own_locker_rentals = current_user.locker_rentals
   end
 
   def admin
-
-    @locker_types = LockerType.all
-    @current_locker_type = if params[:locker_type]
-                             LockerType.find(params[:locker_type])
-                           else
-                             LockerType.first
-                           end
     @current_rental_state = params[:rental_state] || "reviewing"
 
     @locker_rentals =
@@ -34,18 +24,11 @@ class LockerRentalsController < SessionsController
   end
 
   def show
-    # return unless @locker_rental.await_payment?
+  end
 
-    @stripe_checkout_session = nil
-    # @stripe_checkout_session =
-    #   Stripe::Checkout::Session.create(
-    #     success_url: stripe_success_locker_rentals_url,
-    #     cancel_url: stripe_cancelled_locker_rentals_url,
-    #     mode: "payment",
-    #     line_items: @locker_rental.locker_type.generate_line_items,
-    #     billing_address_collection: "required",
-    #     client_reference_id: "locker-rental-#{@locker_rental.id}"
-    #   )
+  def edit
+    @locker_rental = LockerRental.find(params[:id])
+    new_instance_attributes
   end
 
   def new
@@ -110,7 +93,7 @@ class LockerRentalsController < SessionsController
     if !current_user.staff? && locker_rental_params[:state].present?
       # prevent if not cancelling a non-active rental
       unless locker_rental_params[:state] == "cancelled" &&
-               @locker_rental.under_review?
+               @locker_rental.pending?
         flash[
           :alert
         ] = "Cannot cancel active locker rental, contact administration for cancellation"
@@ -147,16 +130,15 @@ class LockerRentalsController < SessionsController
     # Always allow staff
     return if current_user.staff?
 
-    # Else redirect to only page with no auth (new page takes no ID)
-    redirect_to :new_locker_rental
+    redirect_to :index
   end
 
   # FIXME: these three functions below are too big and complicated
   def new_instance_attributes
-    @available_locker_types = LockerType.available.map do |t|
-      ["#{t.short_form}#{' - none available' if t.quantity_available.zero?}",
-       t.id, {disabled: t.quantity_available.zero?}]
-    end
+    # @available_locker_types = LockerType.available.map do |t|
+    #   ["#{t.short_form}#{' - none available' if t.quantity_available.zero?}",
+    #    t.id, {disabled: t.quantity_available.zero?}]
+    # end
     @user_repositories = current_user.repositories.pluck(:title, :id)
     # FIXME localize this later
     @available_fors = {
@@ -165,7 +147,7 @@ class LockerRentalsController < SessionsController
       general: "community member"
     }.compact.invert
     # Don't allow new request if user already has an active or pending request
-    @pending_locker_request = current_user.locker_rentals.under_review.first
+    @pending_locker_request = current_user.locker_rentals.pending.first
   end
 
   def admin_locker_rental_params

@@ -1,47 +1,70 @@
 <% provide :title, t('lockers.view_locker_request') %>
 <div class="container">
-    <div class="mx-auto col-md-8">
-        <h1 class="text-center"><%= t('lockers.locker_request') %> #<%= @locker_rental.id %> - <%= t("lockers.state.#{@locker_rental.state}") %></h1>
-        <h2 class="fs-4"><%= t('lockers.details') %></h2>
-        <p><%= t('lockers.submitted_on') %> <b><%= @locker_rental.created_at.to_date %></b> <%= t('lockers.for') %> <%= link_to @locker_rental.rented_by.username, @locker_rental.rented_by %> <%= tag.span(@locker_rental.rented_by.role.humanize, class: 'badge text-bg-primary') if @locker_rental.rented_by.staff? %></p>
-        <p><b><%= t('lockers.locker_type') %>:</b> <%= @locker_rental.locker_type.short_form %> - <i><%= @locker_rental.locker_type.description %></i></p>
-        <p><b><%= t('lockers.state.state') %>:</b> <%= @locker_rental.state.humanize %></p>
-        <p><b><%= t('lockers.paid_on') %>:</b></p>
-        <p><b>Requested as:</b> <%= @locker_rental.requested_as %></p>
-        <% if @locker_rental.repository %>
-            <b>Repository linked to this locker rental request:</b>
-            <%= link_to @locker_rental.repository.title, repository_path(@locker_rental.rented_by.username, @locker_rental.repository.id) %>
-        <% else %>
-            No repository linked with this student request
-        <% end if @locker_rental.requested_as_student? %>
+    <h1 class="text-center"><%= t('lockers.locker_request') %> #<%= @locker_rental.id %> - <%= t("lockers.state.#{@locker_rental.state}") %></h1>
+    <h2 class="fs-4"><%= t('lockers.details') %></h2>
+    <p><%= t('lockers.submitted_on') %> <b><%= @locker_rental.created_at.to_date %></b> <%= t('lockers.for') %> <%= link_to @locker_rental.rented_by.username, @locker_rental.rented_by.username %> <%= tag.span(@locker_rental.rented_by.role.humanize, class: 'badge text-bg-primary') if @locker_rental.rented_by.staff? %></p>
+    <p><b><%= t('lockers.locker_type') %>:</b> <%= @locker_rental.locker_type.short_form %> - <i><%= @locker_rental.locker_type.description %></i></p>
+    <p><b><%= t('lockers.state.state') %>:</b> <%= @locker_rental.state.humanize %></p>
+    <p><b><%= t('lockers.paid_on') %>:</b> <%= @locker_rental.paid_at&.to_date&.to_fs(:long) || 'unpaid' %></p>
+    <p><b>Requested as:</b> <%= @locker_rental.requested_as %></p>
+    <% if @locker_rental.repository %>
+        <b>Repository linked to this locker rental request:</b>
+        <%= link_to @locker_rental.repository.title, repository_path(@locker_rental.rented_by.username, @locker_rental.repository.id) %>
+    <% else %>
+        No repository linked with this student request
+    <% end if @locker_rental.requested_as_student? %>
 
-        <% if !current_user.admin? %>
-            <%= form_with model: @locker_rental do |f| %>
-                <%= f.text_area :notes, class: 'form-control w-25' %>
-                <%= f.submit 'Update notes', class: 'btn btn-primary' %>
-            <% end %>
-        <% else %>
-            <div class="card my-3">
-                <div class="card-header bg-primary text-light">
-                    <%= t('lockers.notes') %>
-                </div>
-                <div class="card-body">
-                    <%= @locker_rental.notes %>
-                </div>
+    <% if !current_user.admin? %>
+        <%= form_with model: @locker_rental do |f| %>
+            <%= f.text_area :notes, class: 'form-control w-25' %>
+            <%= f.submit 'Update notes', class: 'btn btn-primary' %>
+        <% end %>
+    <% else %>
+        <div class="card my-3">
+            <div class="card-header bg-primary text-light">
+                <%= t('lockers.notes') %>
+            </div>
+            <div class="card-body">
+                <%= @locker_rental.notes %>
+            </div>
+        </div>
+    <% end %>
+    <% if @locker_rental.pending? %>
+        <% if @locker_rental.reviewing? %>
+            <p>This request has not been approved yet</p>
+        <% elsif @locker_rental.await_payment? %>
+            <p>This request is awaiting payment.
+                <% if @locker_rental.rented_by == current_user %>
+                    <%= link_to('Click here to proceed to checkout', @locker_rental.checkout_link) %>
+                <% end %>
+            </p>
+        <% end %>
+
+        <p>To cancel this request, click on <b>Cancel</b> below.</p>
+    <% end %>
+
+    <div class="mb-3 text-end">
+        <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#lockerApproveModal">
+            Modify locker request before approval
+        </button>
+    </div>
+    <div>
+        <%= form_with model: @locker_rental do |f| %>
+            <div>
+                <% locker_specifier_options = LockerType.all.map do |type|
+                    [type.short_form, type.get_available_lockers.map{ |number| ["#{type.short_form} - #{number}", "#{type.id}-#{number}"] } ]
+                end %>
+                <%= f.select :locker_selected, grouped_options_for_select(locker_specifier_options), {}, { class: 'form-select' } %>
             </div>
         <% end %>
-        <% if @locker_rental.under_review? %>
-            <% if @locker_rental.reviewing? %>
-                <p>This request has not been approved yet</p>
-            <% elsif @locker_rental.await_payment? %>
-                <p>This request is awaiting payment. <%= link_to 'Click here to proceed to checkout',
-                                                                 "https://makerstore.ca/products/ceed-locker-rental-per-trimester" %></p>
-            <% end %>
-            <p>To cancel this request, click on <b>Cancel</b> below.</p>
+        <% if current_user.staff? %>
+            <%= locker_rental_actions(@locker_rental, current_user.staff?) %>
         <% end %>
-        <div>
-            <%= locker_rental_actions(@locker_rental, current_user.admin?) %>
-            <%= link_to 'Back to locker rentals', locker_rentals_path, class: 'btn btn-secondary float-end' %>
-        </div>
+        <%= link_to locker_rentals_path, class: 'btn btn-secondary float-end' do %>
+            <i class="fa fa-arrow-left"></i> Back to locker rentals
+        <% end %>
     </div>
 </div>
+
+<%= render 'approve_modal' %>
+<%= vite_javascript_tag 'locker_rental_form', 'data-turbo-track': 'reload' %>

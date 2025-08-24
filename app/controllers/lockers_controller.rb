@@ -11,12 +11,30 @@ class LockersController < StaffAreaController
   helper_method :rental_state_icon
 
   def index
-    @locker_requests_pending = LockerRental.under_review.take 5
     # For the locker rental form
-    @locker_rental = LockerRental.new
+    @lockers = Locker.all
+  end
+
+  # Make a range of lockers
+  # Maybe later this can be modified to take explicit non-numeric names
+  def create
+    if locker_params[:range_start] >= locker_params[:range_end]
+      flash[:alert] = "Range end must be larger than range start"
+      return
+    end
+
+    @lockers =
+    Locker.create(
+      (locker_params[:range_start].to_i..locker_params[:range_end].to_i)
+                    .map{ |specifier| {specifier:} }
+    )
   end
 
   private
+
+  def locker_params
+    params.permit(:range_start, :range_end)
+  end
 
   def rental_state_icon(state)
     case state
