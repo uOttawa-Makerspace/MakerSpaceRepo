@@ -1,5 +1,9 @@
-class MembershipController < ApplicationController
-  before_action :signed_in  
+class MembershipController < SessionsController
+  before_action :signed_in
+  before_action only: :admin_create_membership do
+    head :unauthorized unless current_user.admin?
+  end
+
   def index
     load_membership_data
     @membership = current_user.memberships.new # for the purchase form
