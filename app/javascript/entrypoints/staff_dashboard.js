@@ -67,13 +67,14 @@ document.addEventListener("turbo:load", function () {
       displayNow = users;
     } else {
       users.forEach((e) => {
-        if (!displayBefore.includes(e[0])) {
-          displayNow.push(e[0]);
+        if (!displayBefore.includes(e)) {
+          displayNow.push(e);
         }
       });
     }
     var e = displayNow[0];
     myModal.show();
+    console.log(e);
 
     // Setting Modal Text
     document.getElementById("signinModalHeader").innerText = e[0];
