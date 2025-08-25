@@ -60,6 +60,10 @@ document.addEventListener("turbo:load", function () {
       });
   }
 
+  function hideModal() {
+    myModal.hide();
+  }
+
   var displayBefore = undefined;
   function notifyNewUserLogin(users, certification, has_membership) {
     var displayNow = [];
@@ -74,6 +78,7 @@ document.addEventListener("turbo:load", function () {
     }
     var e = displayNow[0];
     myModal.show();
+    setTimeout(hideModal, 4000);
     console.log(e);
 
     // Setting Modal Text
