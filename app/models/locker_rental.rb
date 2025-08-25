@@ -8,7 +8,8 @@ class LockerRental < ApplicationRecord
   # Fetch checkout url via shopify
   include ShopifyConcern
 
-  belongs_to :locker
+  # Associated when assigned
+  belongs_to :locker, optional: true
   belongs_to :rented_by, class_name: "User"
   # optional because some students don't always have a repository ready beforehand
   belongs_to :repository, optional: true

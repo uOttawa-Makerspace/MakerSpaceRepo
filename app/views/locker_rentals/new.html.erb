@@ -26,9 +26,6 @@
         <%= form_with model: @locker_rental do |f| %>
             <div class="row row-cols-auto align-items-center">
                 <div>
-                    <%#= f.label :locker_type_id, 'Request locker for', class: 'form-label d-inline' %>
-                    <%#%= f.select :locker_type_id, options_for_select(@available_locker_types),
-                     {prompt: "Select a locker"}, { class: 'form-select w-auto' } %>
                     <%= f.label :requested_as, 'I am a ', class: 'd-inline' %>
                     <%= f.select :requested_as, options_for_select(@available_fors), {}, { class: 'form-select w-auto', required: true } %>
                 </div>

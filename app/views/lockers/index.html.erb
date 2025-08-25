@@ -7,9 +7,8 @@
 
 <div class="text-center">
     <h1>Locker Management</h1>
-
-    <fieldset class="border p-3">
-        <legend class="w-auto float-none">Make new lockers</legend>
+    <details>
+        <summary>Make new lockers</summary>
         <%= form_with controller: :lockers do |f| %>
             <div class="d-md-flex align-items-baseline">
                 <span class="me-3">
@@ -30,7 +29,7 @@
 
             </div>
         <% end %>
-    </fieldset>
+    </details>
 
     <hr />
 
@@ -41,7 +40,7 @@
         <% else %>
             <% @lockers.each do |locker| %>
                 <div class="border d-flex px-3 mb-3">
-                    <p class="mb-3"><%= locker.specifier %></p>
+                    <p class="mb-3 px-3"><%= locker.specifier %></p>
                     <p>
                         <% if locker.locker_rentals.assigned.present? %>
                             <p><%= locker.locker_rentals.assigned.first.rented_by.username %></p>

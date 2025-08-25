@@ -430,6 +430,26 @@ td > .btn:not(:last-of-type) {
   //margin-bottom: 0.5rem;
 }
 
+details {
+  border: 1px solid $secondary;
+  border-radius: 4px;
+  padding: 0.5em 0.5em 0;
+  &[open] {
+    padding: 0.5em;
+  }
+}
+
+summary {
+  font-weight: bold;
+  margin: -0.5em -0.5em 0;
+  padding: 0.5em;
+
+  details[open] & {
+    border-bottom: 1px solid $secondary;
+    margin-bottom: 0.5em;
+  }
+}
+
 .subtitle {
   font:
     400 0.75rem "Roboto",
