@@ -33,13 +33,17 @@ class StaticPagesController < SessionsController
         []
       end
 
-    @recent_projects =
-      Repository.public_repos.order(created_at: :desc).limit(15)
+    @recent_projects = Rails.cache.fetch "StaticPagesRecentRepos", expires: 5.minutes do
+      # This is how you preload active storage attachments, I think
+      Repository.public_repos.order(created_at: :desc)
+        .includes(photos: {image_attachment: [blob: { variant_records: :blob }]}).limit(15)
+    end
 
     @user_skills =
-      current_user.certifications.map do |cert|
-        [cert.training_session.training.name_en, cert.training_session.level]
-      end.sample 5
+    Certification.where(user: current_user)
+      .includes(training_session: :training)
+      .limit(5)
+      .pluck('trainings.name_en', 'training_sessions.level')
 
     # Get total tracks in all learning modules
     total_tracks =
@@ -56,21 +60,22 @@ class StaticPagesController < SessionsController
         end
 
     @contact_info = ContactInfo.where(show_hours: true).order(name: :asc)
-    begin
-      @workshops =
-        Excon.get(
-          "https://simpli.events/api/organizer/44d09ce5-5999-4bd9-82eb-8a9772963223"
-        )
-      @workshops =
-        JSON.parse(@workshops.body)["events"]
-          .select { |x| x["startTime"] >= DateTime.now.to_i * 1000 }
-          .sort { |x| -x["startTime"] }
-          .take(5)
+
+    @workshops = Rails.cache.fetch "SimpliEventsRecentEvents", expires: 5.minutes do
+      workshops = Excon.get(
+        "https://simpli.events/api/organizer/44d09ce5-5999-4bd9-82eb-8a9772963223"
+      )
+      JSON.parse(workshops.body)["events"]
+        .select { |x| x["startTime"] >= DateTime.now.to_i * 1000 }
+        .sort { |x| -x["startTime"] }
+        .take(5)
     rescue StandardError
-      @workshops = [] # eh
+      [] # eh
     end
 
-    home_makerstore_links
+    @makerstore_links = Rails.cache.fetch "ShopifyMakerstoreLinks", expires: 5.minutes do
+      home_makerstore_links
+    end
   end
 
   def about
@@ -199,8 +204,6 @@ query {
 }
 QUERY
     items = client.query(query: query)
-    # TODO: Cache the response here, I do think shopify rate limits
-    @makerstore_links =
       if items.code == 200
         items.body["data"]["collections"]["nodes"].map do |node|
           {
@@ -216,6 +219,6 @@ QUERY
         []
       end
   rescue StandardError
-    @makerstore_links = []
+    []
   end
 end
