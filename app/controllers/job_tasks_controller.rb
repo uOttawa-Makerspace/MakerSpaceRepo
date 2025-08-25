@@ -10,7 +10,7 @@ class JobTasksController < ApplicationController
   end
 
   def create
-    @job_order = current_user.job_orders.find(params[:job_order_id])
+    @job_order = JobOrder.find(params[:job_order_id])
 
     highest_numbered_task = @job_order.job_tasks.maximum("CAST(SUBSTRING(title FROM 'Task ([0-9]+)') AS INTEGER)") || 0
     total_tasks_count = @job_order.job_tasks.count
