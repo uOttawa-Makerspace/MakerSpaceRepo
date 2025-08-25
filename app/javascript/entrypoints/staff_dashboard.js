@@ -61,7 +61,7 @@ document.addEventListener("turbo:load", function () {
   }
 
   var displayBefore = undefined;
-  function notifyNewUserLogin(users, certifications) {
+  function notifyNewUserLogin(users, certification, has_membership) {
     var displayNow = [];
     if (displayBefore == undefined) {
       displayNow = users;
@@ -73,17 +73,19 @@ document.addEventListener("turbo:load", function () {
       });
     }
     var e = displayNow[0];
-    // Refresh Modal
     myModal.show();
+
     // Setting Modal Text
     document.getElementById("signinModalHeader").innerText = e[0];
+    document.getElementById("signinProfileLink").innerHTML =
+      '<a class="drop-username-cell" href="/' + e[2] + '">See Profile</a>';
     document.getElementById("signinEmail").innerText = e[1];
-    if (e[2] == null) {
-      document.getElementById("signinMembership").innerText = "No Membership";
-    } else {
+    if (has_membership) {
       document.getElementById("signinMembership").innerText = "Has Membership";
+    } else {
+      document.getElementById("signinMembership").innerText = "No Membership";
     }
-    var certificationTrainings = certifications[0][1];
+    var certificationTrainings = certification[0][1];
     var trainingString = "";
     certificationTrainings.forEach((e) => {
       trainingString = trainingString + "  |  " + e.name_en;
@@ -111,7 +113,11 @@ document.addEventListener("turbo:load", function () {
             document.getElementById("table-js-signed-in").innerHTML =
               data.signed_in;
           }
-          notifyNewUserLogin(data.users, data.certifications);
+          notifyNewUserLogin(
+            data.users,
+            data.certification,
+            data.has_membership,
+          );
         } else {
           console.error(data.error);
         }
