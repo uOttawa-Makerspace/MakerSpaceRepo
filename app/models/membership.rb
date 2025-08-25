@@ -11,6 +11,7 @@ class Membership < ApplicationRecord
     failed: 'failed'
   }, _default: 'pending'
 
+  # FIXME: These should be rows in a database, not hardcoded
   MEMBERSHIP_TYPES = {
     '1_day' => { duration: 1.day, price: 0.00, title: '1 Day Membership', title_fr: 'Adhésion 1 jour' },
     '1_month' => { duration: 1.month, price: 30.00, title: '1 Month Membership', title_fr: 'Adhésion 1 mois' },
