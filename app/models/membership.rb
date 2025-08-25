@@ -13,7 +13,7 @@ class Membership < ApplicationRecord
 
   # FIXME: These should be rows in a database, not hardcoded
   MEMBERSHIP_TYPES = {
-    '1_day' => { duration: 1.day, price: 0.00, title: '1 Day Membership', title_fr: 'Adhésion 1 jour' },
+    '1_day' => { duration: 1.day, price: (Rails.env.production? ? 5.00 : 0.00), title: '1 Day Membership', title_fr: 'Adhésion 1 jour' },
     '1_month' => { duration: 1.month, price: 30.00, title: '1 Month Membership', title_fr: 'Adhésion 1 mois' },
     '1_semester' => { duration: 4.months, price: 100.00, title: '1 Semester Membership', 
 title_fr: 'Adhésion 1 semestre' },
