@@ -63,9 +63,6 @@ class CustomWebhooksController < ApplicationController
   def process_membership_hook(order_hook)
     return unless order_hook["line_items"].present? && order_hook["customer"].present?
 
-    user = User.find_by(email: order_hook["customer"]["email"])
-    return unless user
-
     # find membership in db
     membership_id_metafield = order_hook['metafields']&.find do |m|
       m['namespace'] == 'makerepo' && m['key'] == 'membership_db_reference'
@@ -77,12 +74,16 @@ class CustomWebhooksController < ApplicationController
       end
 
     if membership_id_metafield
-      membership = Membership.find_by(id: membership_id_metafield["value"], user: user)
+      membership = Membership.find_by(id: membership_id_metafield["value"])
       membership&.update(status: :paid)
       return
     end
 
     # fallback if not found
+    Rails.logger.info "Membership metafield ID not found in DB, fallback to email"
+    user = User.find_by(email: order_hook["customer"]["email"])
+    return unless user
+
     order_hook["line_items"].each do |item|
       membership_type_key = Membership::MEMBERSHIP_TYPES.keys.find do |type|
         item["title"].to_s.strip.casecmp(Membership::MEMBERSHIP_TYPES[type][:title].strip).zero?
