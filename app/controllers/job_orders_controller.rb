@@ -1,4 +1,6 @@
 class JobOrdersController < ApplicationController
+  layout "job_orders"
+
   before_action :current_user
   before_action :signed_in,
                 except: %i[
@@ -7,6 +9,7 @@ class JobOrdersController < ApplicationController
                   pay
                   stripe_success
                   stripe_cancelled
+                  landing
                 ]
   before_action :grant_access,
                 only: %w[
@@ -20,12 +23,13 @@ class JobOrdersController < ApplicationController
                   timeline_modal
                   decline_modal
                   completed_email_modal
+                  comments_modal
                   quote
                   resend_quote_email
+                  comments
                 ]
   before_action :set_job_order,
                 only: %w[
-                  steps
                   destroy
                   user_approval
                   start_processing
@@ -36,12 +40,12 @@ class JobOrdersController < ApplicationController
                   timeline_modal
                   decline_modal
                   completed_email_modal
+                  comments_modal
                   quote
                   invoice
                   resend_quote_email
+                  comments
                 ]
-  before_action :wizard, only: %w[steps]
-  before_action :allow_edit, only: %w[steps]
 
   def index
     @job_orders = []
@@ -50,121 +54,60 @@ class JobOrdersController < ApplicationController
     @user.job_orders.not_deleted.each do |jo|
       if jo.job_order_statuses.last.job_status == JobStatus::DRAFT
         @drafts << jo
-      elsif jo.job_order_statuses.last.job_status == JobStatus::DECLINED ||
-            jo.job_order_statuses.last.job_status == JobStatus::PICKED_UP
-        @archived_job_orders << jo
       else
         @job_orders << jo
       end
     end
   end
 
-  def new
-    @job_order = JobOrder.new
+  def show
+    @job_order = JobOrder.find_by(id: params[:id], is_deleted: false)
+    @staff = User.staff
+
+    if @job_order.nil?
+      flash[:alert] = t("job_orders.alerts.job_order_not_found")
+      return redirect_to job_orders_path     
+    end
+    
+    if current_user.id == @job_order.user_id
+      @unread_messages = @job_order.chat_messages.unread(current_user)
+      @unread_messages.update_all(is_read: true) # rubocop:disable Rails/SkipsModelValidations
+    end
+
+    flash[:notice] = t("job_orders.alerts.action_required_scroll_to_timeline") if [JobStatus::USER_APPROVAL, 
+JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_statuses.last&.job_status) && @job_order.user_id == current_user.id
+
+    @tasks_missing_information = @job_order.job_tasks.select do |task|
+      task.job_type.blank? || (task.job_type.name != "Design Services" && task.job_service.blank?)
+    end
+    return unless @tasks_missing_information.any?
+      flash[:alert] = 
+"The following tasks are missing required information: #{@tasks_missing_information.map(&:title).join(', ')}"
   end
 
-  def steps
-    error = []
-
-    if @job_order.present? && @job_order.user == @user
-      if params[:keep_files].present?
-        (
-          @job_order.user_files.pluck(:id) - params[:keep_files].map(&:to_i)
-        ).each { |file_id| @job_order.user_files.find(file_id).purge }
-      elsif params[:should_delete_user_files] && !params[:keep_files].present?
-        (@job_order.user_files.pluck(:id)).each do |file_id|
-          @job_order.user_files.find(file_id).purge
-        end
-      end
-
-      if params[:job_order].present?
-        if params[:job_service_name].present?
-          @job_order.job_services << JobService.create!(
-            name: params[:job_service_name],
-            job_service_group_id: params[:job_order][:job_service_group_id],
-            user_created: true,
-            job_order_id: @job_order.id
-          )
-        end
-
-        if params[:job_order][:job_service_ids] == "custom"
-          params[:job_order][:job_service_ids] = @job_order.job_services.last.id
-        end
-        unless @job_order.update(job_order_params)
-          error << t("job_orders.alerts.please_upload_valid_file_type")
-        end
-      end
-
-      if params[:change_options].present? && params[:change_options] == "true"
-        unless @job_order.add_options(params)
-          error = t("job_orders.alerts.options_have_not_been_saved")
-        end
-      end
-    else
-      error << t("job_orders.alerts.job_order_not_found")
-    end
-
-    if error.length > 0
-      redirect_to job_order_steps_path(
-                    @job_order,
-                    step: (params[:step].to_i - 1)
-                  )
-      flash[:alert] = t("job_orders.alerts.error_while_saving_step") +
-        error.join(", ")
-    else
-      @step = @job_order.max_step if (@job_order.max_step < @step)
-      case @step
-      when 1
-        render "job_orders/wizard/order_type"
-      when 2
-        @job_type = JobType.find(@job_order.job_type_id)
-        @job_type_extras =
-          JobTypeExtra.where(job_type_id: @job_order.job_type_id)
-        @service_groups =
-          JobServiceGroup.all.where(job_type: @job_order.job_type).order(:id)
-        render "job_orders/wizard/service"
-      when 3
-        @options =
-          JobOption
-            .all
-            .joins(:job_types)
-            .where(job_types: { id: @job_order.job_type_id })
-        render "job_orders/wizard/options"
-      when 4
-        render "job_orders/wizard/submission"
-      when 5
-        if @job_order.job_order_statuses.last.job_status !=
-             JobStatus::STAFF_APPROVAL
-          @job_order.job_order_statuses << JobOrderStatus.create!(
-            job_order: @job_order,
-            job_status: JobStatus::STAFF_APPROVAL,
-            user: @user
-          )
-          JobOrderMailer.send_job_submitted(@job_order.id).deliver_now
-          flash[:notice] = t(
-            "job_orders.alerts.job_order_submitted_for_approval"
-          )
-        else
-          flash[:notice] = t("job_orders.alerts.job_order_updated")
-        end
-        redirect_to job_orders_path
-      else
-        redirect_to job_orders_path
-      end
-    end
+  def new
+    @job_order = JobOrder.new
   end
 
   def create
     @job_order = JobOrder.new(job_order_params)
     @job_order.user = @user
+
     if @job_order.save
       @job_order.job_order_statuses << JobOrderStatus.create(
         job_order: @job_order,
         job_status: JobStatus::DRAFT,
         user: @user
       )
+
       if @job_order.save
-        redirect_to job_order_steps_path(job_order_id: @job_order.id, step: 2)
+        @job_task = @job_order.job_tasks.create!(
+          title: "Task #1",
+          # Force job_type_id = 3 if it's the "Need Design Help" flow
+          job_type: params[:redirect_step].to_i == 2 ? JobType.where(name: "Design Services").first : nil
+        )
+        
+        redirect_to edit_job_order_job_task_path(@job_order, @job_task, step: 1)
       else
         @job_order.update(is_deleted: true)
         redirect_to new_job_orders_path
@@ -206,7 +149,7 @@ class JobOrdersController < ApplicationController
     if verifier.valid_message?(params[:token])
       @job_order =
         JobOrder.where(id: verifier.verify(@token), is_deleted: false).first
-      if update_status(
+      @status = if update_status(
            params[:approved],
            [JobStatus::USER_APPROVAL, JobStatus::SENT_REMINDER],
            JobStatus::WAITING_PROCESSED,
@@ -214,9 +157,9 @@ class JobOrdersController < ApplicationController
            JobStatus::DECLINED,
            nil
          )
-        @status = true
+        true
       else
-        @status = false
+        false
       end
       render "job_orders/magic_approval_confirmation"
     else
@@ -226,8 +169,6 @@ class JobOrdersController < ApplicationController
   end
 
   def user_approval
-    redirect_link =
-      @job_order.user == @user ? job_orders_path : admin_job_orders_path
     if update_status(
          params[:approved],
          [JobStatus::USER_APPROVAL, JobStatus::SENT_REMINDER],
@@ -240,13 +181,12 @@ class JobOrdersController < ApplicationController
     end
 
     respond_to do |format|
-      format.html { redirect_to redirect_link }
+      format.html { redirect_to job_order_path(@job_order.id) }
       format.js { render "admin_row" }
     end
   end
 
   def quote_modal
-    @job_type_extras = JobTypeExtra.where(job_type: @job_order.job_type)
     render layout: false
   end
 
@@ -264,77 +204,103 @@ class JobOrdersController < ApplicationController
     render layout: false
   end
 
+  def comments_modal
+    render layout: false
+  end
+
   def quote
     error = false
+
+    return flash[:alert] = t("job_orders.alerts.error_while_updating") if params[:approved].blank?
+
     if params[:approved].present? && params[:approved] == "true"
-      if @job_order.update(job_order_params)
-        quote = JobOrderQuote.create(service_fee: params[:service_fee])
-        if @job_order.save
-          params.permit!
-          params.to_h.each do |key, value|
-            if key.include?("quote_service_amount_")
-              id = +key.delete_prefix("quote_service_amount_").to_i
-              if params["quote_service_per_unit_#{id}"].present?
-                JobOrderQuoteService.create!(
-                  job_service_id: id,
-                  job_order_quote: quote,
-                  quantity: value,
-                  per_unit: params["quote_service_per_unit_#{id}"]
-                )
-              end
-            end
+      # ACCEPT JOB
+      JobOrder.transaction do
+        @job_order.job_tasks.each do |task|
+          price_key = "job_task_quote_price_#{task.id}"
+          job_task_quote = task.job_task_quote || task.build_job_task_quote
+          job_task_quote.price = params[price_key].presence || 0.0
+          
+          # Service
+          if task.job_service.present?
+            qty_key   = "task_#{task.id}_service_qty"
+            svc_price_key = "task_#{task.id}_service_price"
+            
+            job_task_quote.service_quantity = params[qty_key].presence || 0.0
+            job_task_quote.service_price = params[svc_price_key].presence || 0.0
+          end
+          job_task_quote.save!
 
-            if key.include?("quote_option_amount_")
-              id = +key.delete_prefix("quote_option_amount_").to_i
-              JobOrderQuoteOption.create!(
-                job_option_id: id,
-                job_order_quote: quote,
-                amount: value
-              )
-            end
+          # Options
+          task.job_task_options.each do |option|
+            opt_key = "task_#{task.id}_option_price_#{option.job_option_id}"
+            next if params[opt_key].blank?
 
-            if key.include?("quote_extra_amount_")
-              id = +key.delete_prefix("quote_extra_amount_").to_i
-              JobOrderQuoteTypeExtra.create!(
-                job_type_extra_id: id,
-                job_order_quote: quote,
-                price: value
-              )
-            end
-
-            error = true unless @job_order.update(job_order_quote: quote)
+            qt_option = job_task_quote.job_task_quote_options.find_or_initialize_by(job_option_id: option.job_option_id)
+            qt_option.price = params[opt_key]
+            qt_option.save!
           end
 
-          unless error
-            @job_order.job_order_statuses << JobOrderStatus.create(
-              job_order: @job_order,
-              job_status: JobStatus::USER_APPROVAL,
-              user: @user
+          file_key = "task_#{task.id}_staff_files"
+          next if params[file_key].blank?
+          params[file_key].each do |file|
+            task.staff_files.attach(file)
+          end
+        end
+
+        # line items
+        if params[:job_quote_line_items].present?
+          @job_order.job_quote_line_items.destroy_all
+
+          params[:job_quote_line_items].each_value do |item_params|
+            desc = item_params[:description].to_s.strip
+            price = item_params[:price].to_s.strip
+
+            next if desc.blank? && price.blank?
+
+            @job_order.job_quote_line_items.create!(
+              description: desc,
+              price: price.presence || 0.0
             )
           end
-          if @job_order.save
-            JobOrderMailer.send_job_quote(@job_order.id).deliver_now
-          else
-            error = true
-          end
-        else
-          error = true
         end
-      else
-        error = true
-      end
-    elsif params[:approved].present? && params[:approved] == "false"
-      if @job_order.update(job_order_params)
+
+        if params[:user_comments].present?
+          @job_order.chat_messages.create(
+            message: params[:user_comments],
+            sender: current_user
+          )
+        end
+
         @job_order.job_order_statuses << JobOrderStatus.create(
           job_order: @job_order,
-          job_status: JobStatus::DECLINED,
+          job_status: JobStatus::USER_APPROVAL,
           user: @user
         )
+
         if @job_order.save
-          JobOrderMailer.send_job_declined(@job_order.id).deliver_now
+          JobOrderMailer.send_job_quote(@job_order.id).deliver_now
         else
           error = true
         end
+      end
+    elsif params[:approved] == "false"
+      # DELCINE JOB
+      if params[:user_comments].present?
+        @job_order.chat_messages.create(
+          message: params[:comments],
+          sender: current_user
+        )
+      end
+
+      @job_order.job_order_statuses << JobOrderStatus.create(
+        job_order: @job_order,
+        job_status: JobStatus::DECLINED,
+        user: @user
+      )
+
+      if @job_order.save
+        JobOrderMailer.send_job_declined(@job_order.id).deliver_now
       else
         error = true
       end
@@ -351,8 +317,20 @@ class JobOrdersController < ApplicationController
       flash[:alert] = t("job_orders.alerts.error_while_updating")
     end
     respond_to do |format|
-      format.html { redirect_to admin_job_orders_path }
-      format.js { render "admin_row" }
+      format.html { redirect_to job_order_path(@job_order.id) }
+    end
+  end
+
+  def comments
+    @job_order.update(job_order_params)
+    if @job_order.save
+      flash[:notice] = t("job_orders.alerts.updated_successfully")
+    else
+      flash[:alert] = t("job_orders.alerts.error_while_updating")
+    end
+
+    respond_to do |format|
+      format.html { redirect_to job_order_path(@job_order.id) }
     end
   end
 
@@ -391,7 +369,7 @@ class JobOrdersController < ApplicationController
     end
 
     respond_to do |format|
-      format.html { redirect_to admin_job_orders_path }
+      format.html { redirect_to job_order_path(@job_order.id) }
       format.js { render "admin_row" }
     end
   end
@@ -415,11 +393,9 @@ class JobOrdersController < ApplicationController
       job_status: JobStatus::SENT_REMINDER,
       user: @user
     )
-    if @job_order.save
-      JobOrderMailer.send_job_quote(@job_order.id, true).deliver_now
-    end
+    JobOrderMailer.send_job_quote(@job_order.id, true).deliver_now if @job_order.save
     respond_to do |format|
-      format.html { redirect_to admin_job_orders_path }
+      format.html { redirect_to job_order_path(@job_order.id) }
       format.js { render "admin_row" }
     end
   end
@@ -431,44 +407,44 @@ class JobOrdersController < ApplicationController
     else
       redirect_to job_orders_path
     end
+
+    flash[:notice] = "Job order deleted successfully."
+  end
+
+  def assign_staff
+    @job_order = JobOrder.find_by(id: params[:job_order_id], is_deleted: false)
+    if @job_order.present? && (@user.admin? || @user.id == params[:staff_id].to_i)
+      @job_order.assigned_staff_id = params[:staff_id]
+      if @job_order.save
+        flash[:notice] = "#{@job_order.assigned_staff&.name || "No staff"} has been assigned to this job order."
+
+        if @job_order.assigned_staff.present? && @user.admin? && @job_order.assigned_staff != @user
+          JobOrderMailer.staff_assigned(@job_order.id, @job_order.assigned_staff.id).deliver_later
+        end
+      else
+        flash[:alert] = "#{@job_order.assigned_staff.name} could not be assigned to this job order."
+      end
+    else
+      flash[:alert] = "#{@job_order.assigned_staff.name} could not be assigned to this job order."
+    end
+    redirect_back(fallback_location: job_orders_path)
   end
 
   def admin
-    @statuses = [
-      { name: "Waiting for Staff Approval", status: JobStatus::STAFF_APPROVAL },
-      { name: "Waiting for User Approval", status: JobStatus::USER_APPROVAL },
-      { name: "Sent a Quote Reminder", status: JobStatus::SENT_REMINDER },
-      { name: "Waiting to be processed", status: JobStatus::WAITING_PROCESSED },
-      { name: "Currently being processed", status: JobStatus::BEING_PROCESSED },
-      { name: "Waiting for Payment", status: JobStatus::COMPLETED },
-      { name: "Waiting for Pick-Up", status: JobStatus::PAID },
-      { name: "Archived", status: [JobStatus::PICKED_UP, JobStatus::DECLINED] }
-    ]
+    @staff = User.staff
 
-    if params[:query_date].present?
-      session[:query_date] = params[:query_date].to_i
-    end
+    # get all stuff for filtering
+    @statuses = JobStatus.where.not(name: "Draft")
+    @job_types = JobType.all
 
-    if !session[:query_date].present? || session[:query_date] == 0
-      session[:query_date] = 0
-      @job_orders = JobOrder.all.not_deleted.without_drafts.order_by_expedited
-    else
-      @job_orders =
-        JobOrder
-          .all
-          .not_deleted
-          .without_drafts
-          .where(created_at: session[:query_date].days.ago..)
-          .order_by_expedited
-    end
+    @job_orders = JobOrder.all.not_deleted.without_drafts.includes(:job_services).order(created_at: :desc)
   end
 
   def settings
-    @service_groups = JobServiceGroup.all.order(:job_type_id)
-    @services = JobService.all.not_user_created.order(:job_service_group_id)
-    @options = JobOption.all
+    @service_groups = JobServiceGroup.not_deleted.order(:job_type_id)
+    @services = JobService.not_deleted.not_user_created.order(:job_service_group_id)
+    @options = JobOption.not_deleted
     @job_types = JobType.all
-    @job_type_extras = JobTypeExtra.all
   end
 
   def invoice
@@ -496,7 +472,7 @@ class JobOrdersController < ApplicationController
       render "job_orders/pay"
     else
       flash[:alert] = t("job_orders.alerts.pay_magic_link_expired")
-      redirect_to job_orders_path
+      redirect_to job_order_path(@job_order.id)
     end
   end
 
@@ -504,6 +480,10 @@ class JobOrdersController < ApplicationController
   end
 
   def stripe_cancelled
+  end
+
+  def landing
+    render layout: "application"
   end
 
   private
@@ -514,13 +494,8 @@ class JobOrdersController < ApplicationController
       jo =
         JobOrder.where(
           id:
-            (
-              if params[:job_order_id].present?
-                params[:job_order_id]
-              else
-                params[:id]
-              end
-            ),
+            
+              params[:job_order_id].presence || params[:id],
           is_deleted: false
         ).first
       if @user.admin? | @user.staff? || @user.id == jo.user_id
@@ -532,13 +507,6 @@ class JobOrdersController < ApplicationController
     else
       flash[:alert] = t("job_orders.alerts.no_permission")
       redirect_to new_job_orders_path
-    end
-  end
-
-  def allow_edit
-    unless @job_order.allow_edit? || @user.admin?
-      flash[:alert] = t("job_orders.alerts.cannot_edit")
-      redirect_to job_orders_path
     end
   end
 
@@ -559,14 +527,10 @@ class JobOrdersController < ApplicationController
   end
 
   def grant_access
-    unless current_user.staff? || current_user.admin?
+    return if current_user.staff? || current_user.admin?
       flash[:alert] = t("job_orders.alerts.cannot_access_area")
       redirect_to root_path
-    end
-  end
-
-  def wizard
-    @step = params[:step].present? ? params[:step].to_i : 1
+    
   end
 
   def update_status(
@@ -575,7 +539,7 @@ class JobOrdersController < ApplicationController
     true_status,
     need_false_status,
     false_status = nil,
-    redirect_link = admin_job_orders_path
+    redirect_link = job_order_path(@job_order.id)
   )
     error = false
 
@@ -612,7 +576,7 @@ class JobOrdersController < ApplicationController
       flash[:alert] = t("job_orders.alerts.error_while_updating")
     end
 
-    if redirect_link == nil
+    if redirect_link.nil?
       !error
     else
       respond_to do |format|

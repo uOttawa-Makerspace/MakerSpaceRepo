@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_08_08_163402) do
+ActiveRecord::Schema[7.2].define(version: 2025_08_20_195031) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -243,6 +243,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_08_163402) do
     t.bigint "user_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["event_id"], name: "index_event_assignments_on_event_id"
+    t.index ["user_id"], name: "index_event_assignments_on_user_id"
   end
 
   create_table "events", force: :cascade do |t|
@@ -262,6 +264,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_08_163402) do
     t.string "language"
     t.bigint "course_name_id"
     t.index ["course_name_id"], name: "index_events_on_course_name_id"
+    t.index ["created_by_id"], name: "index_events_on_created_by_id"
+    t.index ["space_id"], name: "index_events_on_space_id"
     t.index ["training_id"], name: "index_events_on_training_id"
   end
 
@@ -646,28 +650,30 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_08_163402) do
   end
 
   create_table "locker_rentals", force: :cascade do |t|
-    t.bigint "locker_type_id"
     t.bigint "rented_by_id"
-    t.string "locker_specifier"
     t.string "state"
     t.string "notes"
     t.datetime "owned_until"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "shopify_draft_order_id"
-    t.index ["locker_type_id"], name: "index_locker_rentals_on_locker_type_id"
+    t.bigint "repository_id"
+    t.string "requested_as"
+    t.date "paid_at"
+    t.bigint "decided_by_id"
+    t.bigint "locker_id"
+    t.index ["decided_by_id"], name: "index_locker_rentals_on_decided_by_id"
+    t.index ["locker_id"], name: "index_locker_rentals_on_locker_id"
     t.index ["rented_by_id"], name: "index_locker_rentals_on_rented_by_id"
+    t.index ["repository_id"], name: "index_locker_rentals_on_repository_id"
   end
 
-  create_table "locker_types", force: :cascade do |t|
-    t.string "short_form"
-    t.string "description"
-    t.boolean "available", default: true
-    t.string "available_for"
-    t.integer "quantity", default: 0
-    t.decimal "cost", default: "0.0"
+  create_table "lockers", force: :cascade do |t|
+    t.string "specifier"
+    t.boolean "available"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["specifier"], name: "index_lockers_on_specifier"
   end
 
   create_table "makerstore_links", force: :cascade do |t|
@@ -1074,15 +1080,6 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_08_163402) do
     t.index ["user_id"], name: "index_shadowing_hours_on_user_id"
   end
 
-  create_table "shared_calendars", force: :cascade do |t|
-    t.string "name"
-    t.string "url"
-    t.bigint "space_id", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["space_id"], name: "index_shared_calendars_on_space_id"
-  end
-
   create_table "shifts", force: :cascade do |t|
     t.text "reason"
     t.bigint "space_id"
@@ -1209,6 +1206,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_08_163402) do
     t.string "recurrence_rule"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_staff_unavailabilities_on_user_id"
   end
 
   create_table "sub_space_booking_statuses", force: :cascade do |t|
@@ -1477,8 +1475,12 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_08_163402) do
   add_foreign_key "discount_codes", "price_rules"
   add_foreign_key "discount_codes", "users"
   add_foreign_key "equipment", "repositories"
+  add_foreign_key "event_assignments", "events"
+  add_foreign_key "event_assignments", "users"
   add_foreign_key "events", "course_names", on_delete: :nullify
+  add_foreign_key "events", "spaces"
   add_foreign_key "events", "trainings", on_delete: :nullify
+  add_foreign_key "events", "users", column: "created_by_id"
   add_foreign_key "job_order_options", "job_options"
   add_foreign_key "job_order_options", "job_orders"
   add_foreign_key "job_order_quote_options", "job_options"
@@ -1510,6 +1512,9 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_08_163402) do
   add_foreign_key "learning_module_tracks", "users"
   add_foreign_key "likes", "repositories"
   add_foreign_key "likes", "users"
+  add_foreign_key "locker_rentals", "lockers"
+  add_foreign_key "locker_rentals", "users", column: "decided_by_id"
+  add_foreign_key "locker_rentals", "users", column: "rented_by_id"
   add_foreign_key "memberships", "users"
   add_foreign_key "order_items", "orders"
   add_foreign_key "order_items", "proficient_projects"
@@ -1533,7 +1538,6 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_08_163402) do
   add_foreign_key "rfids", "users"
   add_foreign_key "shadowing_hours", "spaces"
   add_foreign_key "shadowing_hours", "users"
-  add_foreign_key "shared_calendars", "spaces"
   add_foreign_key "shifts", "spaces"
   add_foreign_key "shifts", "trainings"
   add_foreign_key "space_staff_hours", "course_names"
@@ -1545,6 +1549,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_08_163402) do
   add_foreign_key "staff_needed_calendars", "spaces"
   add_foreign_key "staff_spaces", "spaces"
   add_foreign_key "staff_spaces", "users"
+  add_foreign_key "staff_unavailabilities", "users"
   add_foreign_key "sub_space_booking_statuses", "booking_statuses"
   add_foreign_key "sub_space_booking_statuses", "sub_space_bookings", on_delete: :cascade
   add_foreign_key "sub_space_bookings", "recurring_bookings"

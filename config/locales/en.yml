@@ -1,4 +1,8 @@
 en:
+  time:
+    formats:
+      time_only: "%l:%M %p" # 2:30 PM
+      short: "%b %d, %l:%M %p" # Jun 15, 2:30 PM
   year: "year"
   name: "English"
   faq:
@@ -48,7 +52,7 @@ en:
       exams: "Exams"
       help: "Help"
       sign_out: "Sign Out"
-      joborder: "Job Order Request"
+      joborder: "Job Orders"
       joborder_admin: "Job Order Admin"
   home:
     welcome_html: "Welcome to Maker<strong>Repo</strong>!"
@@ -239,6 +243,8 @@ en:
       no_permission: "You do not have permission to view this job order."
       cannot_edit: "You cannot edit this Job Order. Please contact makerspace@uottawa.ca for assistance."
       cannot_access_area: "You cannot access this area."
+      updated_successfully: "Updated successfully!"
+      action_required_scroll_to_timeline: "Action Required: Please scroll down to the 'Timeline' section to provide your input. Your response is needed to proceed. Thank you!"
     public_page:
       my_job_orders: "My Job Orders"
       create_a_new_job_order: "Create a new Job Order"
@@ -252,12 +258,14 @@ en:
       archived_orders: "Archived Orders"
       no_job_orders: "You do not have any Job Orders currently. You can can create one"
       here: "here"
-      action_required_total_quote: "Action Required - Total Quote:"
+      action_required: "Action required - %{blank}:"
+      total_quote: "Total quote"
+      total_invoice: "Invoice total"
       pay_online: "Pay by Credit Card"
       pay_in_store: "Pay with cash or FOAP"
       cannot_edit_this_order: "Cannot edit this order"
     wizard:
-      title: "New Job Order (Step %{step}/4)"
+      title: "New Job Task (Step %{step}/4)"
       deprecated_message: "The old Print order system is now deprecated. You can now use this new Job Order System."
       access_old_ones: "You will still be able to access old Print Orders, but you will not be able to create new ones. To see old ones, please click"
       delete_current_order: "Delete Current Order"
@@ -268,8 +276,8 @@ en:
       step_2:
         upload_files_here: "Upload your file(s) here"
         upload_additional_files_here: "Upload additional files here"
-        current_uploaded_files: "Current Uploaded Files"
-        uncheck_to_delete_file: "Un-Check to delete the file"
+        current_uploaded_files: "Previously Uploaded Files"
+        uncheck_to_delete_file: "Uncheck to delete the file"
         you_can_upload_x_files: "You can input %{x_files} in this form."
         multiple_files: "multiple files"
         one_file: "one file"
@@ -280,11 +288,46 @@ en:
         services: "Services"
         enter_material_name: "Enter the material name "
         enter_custom_settings: "Enter the custom settings"
+        previous_page_disabled_tooltip: "You cannot go to the previous page because you selected design services."
+        design_description: "Describe your project"
+        design_description_placeholder: "Please describe your design and what you need help with. This will help us understand your requirements better."
       step_3:
-        by_unchecking: "(By Un-Checking, you will delete this file)"
+        by_unchecking: "Uploading another file will overwrite this one."
         no_options: "There are no options available to you right now. Please continue to the next step."
+        job_wide_option: "Applies to All Tasks"
       step_4:
         additional_comments: "Additional Comments"
+    order:
+      job_order: "Job Order"
+      client_information: "Client Information"
+      name: "Name"
+      email: "Email"
+      created: "Created"
+      job_type: "Job Type"
+      service: "Service"
+      options: "Options"
+      download_links: "Download Links"
+      download: "Download"
+      timeline: "Timeline"
+      back: "Back"
+      comments: "Comments"
+      staff_information: "Staff Panel"
+      comments_from_staff: "Comments from Staff"
+      files_from_staff: "Files from Staff"
+      none_yet: "None yet"
+      no_files: "No files uploaded for this order."
+      send: "Send"
+      type: "Type a message..."
+    new:
+      title: "What kind of project are you starting?"
+      ready_to_make:
+        title: "Ready to Make"
+        description: "You already have the design and just need production."
+        button: "Start Production"
+      need_design_help:
+        title: "Need Design Help"
+        description: "You need help creating or finalizing your design before production."
+        button: "Get Design Help"
   memberships:
     index:
       title: "Your Memberships"

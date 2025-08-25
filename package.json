@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "postinstall": "husky install",
+    "postinstall": "husky init",
     "prettier:format": "prettier --write .",
     "prettier:check": "prettier --check ."
   },
@@ -43,7 +43,6 @@
     "moment-timezone": "^0.5.47",
     "node-sass": "^9.0.0",
     "photoswipe": "^5.4.4",
-    "popper.js": "^1.16.1",
     "progress-tracker": "^2.0.6",
     "rails-erb-loader": "^5.5.2",
     "rrule": "^2.8.1",

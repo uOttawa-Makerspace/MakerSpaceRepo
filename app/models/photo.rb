@@ -8,7 +8,7 @@ class Photo < ApplicationRecord
   belongs_to :volunteer_task, optional: true
 
   has_one_attached :image do |attachable|
-    attachable.variant :explore, resize_to_limit: [210, 230]
+    attachable.variant :explore, resize_to_limit: [210*2, 230*2]
     # There's no way to specify height only, so I made the width three times the
     # actual max height of 65
     attachable.variant :photo_slide, resize_to_limit: [65*3, 65]
