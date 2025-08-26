@@ -40,8 +40,9 @@ class LabSession < ApplicationRecord
     )
   end
 
-  def self.sign_out
-    # Apply active scope to make sure we don't touch old sessions
+  # Sign out only active sessions This was called sign_out but it conflicted
+  # with the one in ApplicationHelper
+  def self.sign_out_session
     active.update(sign_out_time: Time.zone.now)
   end
 end

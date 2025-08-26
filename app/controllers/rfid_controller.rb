@@ -92,7 +92,7 @@ class RfidController < SessionsController
     active_sessions = rfid.user.lab_sessions.active
     if active_sessions.present?
       # Sign out of all spaces
-      active_sessions.sign_out
+      active_sessions.sign_out_session
       # If user tapped somewhere other than last active space, make a new
       # session.
       last_active_location = active_sessions.last.space_id
