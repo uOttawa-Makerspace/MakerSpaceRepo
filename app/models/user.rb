@@ -460,7 +460,6 @@ class User < ApplicationRecord
   end
 
   def active_membership?
-    # FIXME: engineering? should instead be a subtype of membership we add.
-    active_membership.present? || engineering?
+    active_membership.present?
   end
 end

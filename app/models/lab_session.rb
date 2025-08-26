@@ -17,6 +17,8 @@ class LabSession < ApplicationRecord
   scope :active_for_user,
         ->(user) { where(user: user, sign_out_time: Time.zone.now..) }
 
+  scope :active, -> { where(sign_out_time: Time.zone.now..) }
+
   def self.to_csv(attributes)
     CSV.generate { |csv| attributes.each { |row| csv << row } }
   end
@@ -25,5 +27,21 @@ class LabSession < ApplicationRecord
     if self.sign_out_time >= Time.zone.now
       self.update(sign_out_time: Time.zone.now)
     end
+  end
+
+  # Create a session for a user in a space.
+  def self.create_session(user:, mac_address:, space_id:)
+    LabSession.create(
+      user: user,
+      sign_in_time: Time.zone.now,
+      sign_out_time: Time.zone.now + 6.hours,
+      mac_address: mac_address,
+      space_id: space_id,
+    )
+  end
+
+  def self.sign_out
+    # Apply active scope to make sure we don't touch old sessions
+    active.update(sign_out_time: Time.zone.now)
   end
 end

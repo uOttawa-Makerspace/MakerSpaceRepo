@@ -52,6 +52,7 @@ class RfidController < SessionsController
 
     if rfid
       if rfid.user_id
+        # User has a card associated with their account
         check_session(rfid, space_id)
       else
         rfid.mac_address = params[:mac_address]
@@ -84,22 +85,16 @@ class RfidController < SessionsController
 
   private
 
-  def update_kiosk(space_id)
-    @space = Space.find(space_id)
-    @certifications_on_space =
-      Proc.new do |user, space_id|
-        user
-          .certifications
-          .joins(:training, training: :spaces)
-          .where(trainings: { spaces: { id: space_id } })
-      end
-    @all_user_certs = Proc.new { |user| user.certifications }
-  end
+  # Check if a user has an active session for the space they tapped in, sign out
+  # of all active sessions and create a new session in space unless user just
+  # signed out of it.
   def check_session(rfid, space_id)
-    active_sessions =
-      rfid.user.lab_sessions.where("sign_out_time > ?", Time.zone.now)
+    active_sessions = rfid.user.lab_sessions.active
     if active_sessions.present?
-      active_sessions.update_all(sign_out_time: Time.zone.now)
+      # Sign out of all spaces
+      active_sessions.sign_out
+      # If user tapped somewhere other than last active space, make a new
+      # session.
       last_active_location = active_sessions.last.space_id
       if last_active_location != space_id
         new_session(rfid, space_id)
@@ -109,25 +104,25 @@ class RfidController < SessionsController
     else
       new_session(rfid, space_id)
     end
-    update_kiosk(space_id)
+
+    # Here we're assuming the user is physically in the space. Query if they are
+    # eligible for a faculty membership
+    if rfid.user.find_or_create_uoeng_membership.present?
+      Rails.logger.info "Created faculty membership for user #{rfid.user.id}"
+    end
   end
 
   def new_session(rfid, new_location)
-    sign_in = Time.zone.now
-    sign_out = sign_in + 6.hours
-    new_session =
-      rfid.user.lab_sessions.new(
-        sign_in_time: sign_in,
-        sign_out_time: sign_out,
-        mac_address: params[:mac_address],
-        space_id: new_location
-      )
-    new_session.save
+    LabSession.create_session(
+      user: rfid.user,
+      mac_address: params[:mac_address],
+      space_id: new_location
+    )
     render json: { success: "RFID sign in" }, status: :ok
   end
 
   def grant_access
-    unless current_user.staff? || current_user.admin?
+    unless current_user.staff?
       flash[:alert] = "You cannot access this area."
       redirect_to root_path
     end
