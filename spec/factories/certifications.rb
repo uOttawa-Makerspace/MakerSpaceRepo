@@ -2,6 +2,7 @@ FactoryBot.define do
   factory :certification do
     association :user, :regular_user
     association :training_session
+    association :training
 
     level { "Beginner" }
 

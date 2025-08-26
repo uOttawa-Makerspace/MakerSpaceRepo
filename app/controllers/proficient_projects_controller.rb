@@ -202,39 +202,19 @@ class ProficientProjectsController < DevelopmentProgramsController
       admin = @user
       duplicates = 0
       user = order_item.order.user
-      dup_cert = nil
-      ## Check for an already existing certification
-      user.certifications.each do |cert|
-        next unless cert.training.id == order_item.proficient_project.training.id &&
-          order_item.proficient_project.level == cert.level
-        dup_cert = cert
-        duplicates += 1
-      end
-
-      # If there wasn't a duplicate, create a new cert and link the p_p_s to it
-      if duplicates.zero?
-        cert =
-            Certification.create(
-              user_id: order_item.order.user_id,
-              level: order_item.proficient_project.level
-            )
-        proficient_project_session =
-          ProficientProjectSession.create(
-            proficient_project_id: order_item.proficient_project.id,
-            level: order_item.proficient_project.level,
-            user_id: admin.id,
-            certification_id: cert.id
-          )
-      # If a cert already exists, we just add that cert's id to the proficient project session
-      else
-        proficient_project_session =
-          ProficientProjectSession.create(
-            proficient_project_id: order_item.proficient_project.id,
-            level: order_item.proficient_project.level,
-            user_id: admin.id,
-            certification_id: dup_cert.id
-          )
-      end
+      training_id = order_item.proficient_project.training_id
+      cert = Certification.joins(:training).where(
+        training: {id: training_id}).find_or_create_by(
+          user_id: order_item.order.user_id,
+          level: order_item.proficient_project.level
+        )
+      proficient_project_session =
+        ProficientProjectSession.create(
+          proficient_project_id: order_item.proficient_project.id,
+          level: order_item.proficient_project.level,
+          user_id: admin.id,
+          certification_id: cert.id
+      )
       # Award the cert
       if proficient_project_session.present?
         order_item.update(order_item_params.merge({ status: "Awarded" }))

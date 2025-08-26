@@ -373,6 +373,32 @@ RSpec.describe ProficientProjectsController, type: :controller do
         expect(OrderItem.last.status).to eq("Waiting for approval")
         expect(flash[:alert]).to eq("Only staff members can access this area.")
       end
+
+      it "should create a new Certification" do
+        expect do
+          get :approve_project,
+            params: {
+              oi_id: OrderItem.last.id,
+              order_item: {
+                admin_comments: ""
+              }
+            }
+        end.to change(Certification, :count).by(1)
+      end
+
+      it "should NOT create a new Certification" do
+        create(:certification, user: OrderItem.last.order.user, training: @proficient_project.training, 
+level: @proficient_project.level)
+        expect do
+          get :approve_project,
+            params: {
+              oi_id: OrderItem.last.id,
+              order_item: {
+                admin_comments: ""
+              }
+            }
+        end.to change(Certification, :count).by(0)
+      end
     end
   end
 
