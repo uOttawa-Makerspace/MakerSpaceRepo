@@ -69,12 +69,11 @@ document.addEventListener("turbo:load", function () {
   }
 
   function hideModal() {
-    if (!modalClicked && activateModal) {
+    if (!modalClicked) {
       myModal.hide();
-      activateModal = false;
     }
   }
-  var activateModal = false;
+
   var displayBefore = undefined;
   function notifyNewUserLogin(users, certification, has_membership) {
     var displayNow = [];
@@ -91,41 +90,46 @@ document.addEventListener("turbo:load", function () {
 
     // Display/Refresh Modal
     const modalElement = document.getElementById("signinModal");
-    activateModal = true;
-    myModal.toggle();
-    modalElement.addEventListener(
-      "hidden.bs.modal",
-      function () {
-        if (activateModal) {
-          console.log("show");
-          myModal.show();
-        }
-      },
-      { once: true },
-    );
+    myModal.show();
     setTimeout(hideModal, 4000);
 
     // Setting Modal Text
+
+    // Name
     document.getElementById("signinModalHeader").innerText = e[0];
+    // Link to Profile
     document.getElementById("signinProfileLink").innerHTML =
       '<a class="drop-username-cell" href="/' + e[2] + '">See Profile</a>';
+    // Email
     document.getElementById("signinEmail").innerText = e[1];
+    // Membership Status
     if (has_membership) {
       document.getElementById("signinMembership").innerText = "Has Membership";
     } else {
       document.getElementById("signinMembership").innerText = "No Membership";
     }
-    var certificationTrainings = certification[0][1];
+
+    // Displaying Certifications
     var trainingString = "";
-    certificationTrainings.forEach((e) => {
-      if (trainingString == "") {
-        trainingString = trainingString + e.name_en;
-      } else {
-        trainingString = trainingString + "  |  " + e.name_en;
-      }
-    });
+    if (certification[0] == null) {
+      trainingString = "No Certifications";
+    } else {
+      var certificationTrainings = certification[0][1];
+      console.log(certification[0][1]);
+
+      certificationTrainings.forEach((e) => {
+        if (trainingString == "") {
+          trainingString = trainingString + e.name_en;
+        } else {
+          trainingString = trainingString + "  |  " + e.name_en;
+        }
+      });
+    }
+
     document.getElementById("signinCertifications").innerHTML =
       '<p id="signinCertification">' + trainingString + "</p>";
+
+    // Updating previous user signin list
     displayBefore = displayNow;
   }
 
