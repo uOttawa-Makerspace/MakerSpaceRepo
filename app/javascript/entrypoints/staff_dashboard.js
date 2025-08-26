@@ -27,10 +27,19 @@ const myModal = new bootstrap.Modal(document.getElementById("signinModal"), {
 
 var modalClicked = false;
 const modal = document.getElementById("signinModal");
+const progressBar = document.getElementById("outer-progress-bar");
+const innerBar = document.getElementById("signin-progress-bar");
 modal.addEventListener("click", function () {
   modalClicked = true;
-  const progressBar = document.getElementById("outer-progress-bar");
   progressBar.classList.add("fading-progress-bar");
+});
+
+modal.addEventListener("hidden.bs.modal", function () {
+  progressBar.classList.remove("fading-progress-bar");
+});
+
+modal.addEventListener("show.bs.modal", function () {
+  innerBar.classList.add("moving-progress-bar");
 });
 
 document.addEventListener("turbo:load", function () {
@@ -90,6 +99,7 @@ document.addEventListener("turbo:load", function () {
 
     // Display/Refresh Modal
     const modalElement = document.getElementById("signinModal");
+    modalClicked = false;
     myModal.show();
     setTimeout(hideModal, 4000);
 
