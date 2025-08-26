@@ -5,6 +5,8 @@ class RfidController < SessionsController
   before_action :signed_in, only: %i[get_unset_rfids]
   before_action :grant_access, only: %i[get_unset_rfids]
 
+  # Shows the list of student cards tapped for staff members to link to newly
+  # signed up users
   def get_unset_rfids
     rfids = []
     mac_addresses =
@@ -18,12 +20,13 @@ class RfidController < SessionsController
         rfids << {
           cardNumber: card.card_number,
           tappedAt:
-            "Tapped at #{PiReader.find_by(pi_mac_address: card.mac_address).space.name} #{time_ago_in_words(card.updated_at) + " ago"}"
+            "Tapped at #{PiReader.find_by(pi_mac_address: card.mac_address).space.name} #{time_ago_in_words(card.updated_at)} ago"
         }
       end
     render json: rfids
   end
 
+  # Notify server of a student card tap
   def card_number
     if params[:space_id].present? && Space.find(params[:space_id]).present?
       space_id = params[:space_id]
@@ -79,6 +82,8 @@ class RfidController < SessionsController
     end
   end
 
+  private
+
   def update_kiosk(space_id)
     @space = Space.find(space_id)
     @certifications_on_space =
@@ -120,8 +125,6 @@ class RfidController < SessionsController
     new_session.save
     render json: { success: "RFID sign in" }, status: :ok
   end
-
-  private
 
   def grant_access
     unless current_user.staff? || current_user.admin?

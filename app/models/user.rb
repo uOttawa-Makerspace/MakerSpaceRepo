@@ -459,7 +459,8 @@ class User < ApplicationRecord
     memberships.where('end_date > ?', Time.current).order(end_date: :desc).first
   end
 
-  def has_active_membership?
-    active_membership.present?
+  def active_membership?
+    # FIXME: engineering? should instead be a subtype of membership we add.
+    active_membership.present? || engineering?
   end
 end
