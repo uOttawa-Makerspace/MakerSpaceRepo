@@ -5,12 +5,12 @@ class Membership < ApplicationRecord
 
   attribute :status, :string, default: 'paid'
 
-  enum status: {
+  enum :status, {
          pending: 'pending',
          paid: 'paid',
          failed: 'failed'
        },
-       _default: 'pending'
+       default: 'pending'
 
   # FIXME: These should be rows in a database, not hardcoded
   # FIXME: These should be in locale files
