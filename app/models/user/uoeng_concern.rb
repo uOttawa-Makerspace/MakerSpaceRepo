@@ -24,7 +24,7 @@ module User::UoengConcern
     def engineering?
       # HACK: Cheat for CI tests
       if Rails.env.test?
-        return if faculty == "Engineering"
+        return faculty == "Engineering"
       end
       # Check if we have valid data. Either query by student ID, or uOttawa
       details = uoeng_details
