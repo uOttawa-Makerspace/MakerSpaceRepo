@@ -27,8 +27,8 @@
         </div>
       <% end %>
       <div class="row">
-        <% Membership::MEMBERSHIP_TYPES.each do |type, duration| %>
-          <% next if type == 'custom' %>
+        <% Membership::MEMBERSHIP_TYPES.each do |type, details| %>
+          <% next if details[:hidden] %>
           <div class="col-md-4 mb-4">
             <div class="card h-100">
               <div class="card-body d-flex flex-column">

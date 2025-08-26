@@ -1,3 +1,4 @@
+# FIXME: This should be plural. why didn't i catch this during review
 class MembershipController < SessionsController
   before_action :signed_in
   before_action only: :admin_create_membership do
