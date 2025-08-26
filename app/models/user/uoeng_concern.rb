@@ -1,6 +1,7 @@
 # Queries uOEng via student ID or student email to figure out if a student is
 # paying CEED fees or not on their tuition. User-specific module
 module User::UoengConcern
+  include ApplicationHelper # end_of_this_semeseter
   extend ActiveSupport::Concern
 
   included do
@@ -11,8 +12,9 @@ module User::UoengConcern
     def find_or_create_uoeng_membership
       return nil unless engineering?
       memberships.active.find_or_create_by(
-        membership_type: 'faculty',
-        status: :paid
+        membership_type: "faculty",
+        status: :paid,
+        end_date: end_of_this_semester
       )
     end
 
@@ -30,8 +32,8 @@ module User::UoengConcern
       # Either a fulltime engineering student, or enrolled in a CEED managed
       # course. Note the array intersection to detect courses
       (
-        details['student_this_semester'] && details['fulltime'] == true &&
-          details['faculty'] == 'GENIE'
+        details["student_this_semester"] && details["fulltime"] == true &&
+          details["faculty"] == "GENIE"
       ) || (details.courses_enrolled & CourseName.pluck(:name)).present?
     rescue StandardError => e
       # For now return false on all errors
@@ -47,7 +49,7 @@ module User::UoengConcern
       url =
         if student_id.present?
           "#{creds[:query_by_id]}#{student_id}"
-        elsif email.ends_with? '@uottawa.ca'
+        elsif email.ends_with? "@uottawa.ca"
           "#{creds[:query_by_email]}#{email}"
         else
           # No valid query params, early out.
