@@ -111,42 +111,35 @@ class Staff::TrainingSessionsController < StaffDashboardController
   def certify_trainees
     error = false
     duplicates = 0
+    # Count users that already have a certification
     @current_training_session.users.each do |graduate|
       # Skip if user already has a certifications that match the training id and training level
       if graduate
            .certifications
+           .joins(:training)
            .where(
-             training_session_id:
-               TrainingSession.where(
-                 training_id: @current_training_session.training_id,
-                 level: @current_training_session.level
-               ).pluck(:id)
-           )
-           .present?
+              training: {id: @current_training_session.training_id},
+              level: @current_training_session.level
+               ).any?
         duplicates += 1
         next
       end
-      cert_duplicates = 0
-      graduate.certifications.each do |cert|
-        if cert.proficient_project_session.present? && cert.proficient_project_session.proficient_project.training_id == @current_training_session.training_id && 
-          cert.level == @current_training_session.level
-          cert_duplicates += 1
-        end
-      end
-      duplicates += cert_duplicates
-      next unless cert_duplicates.zero?
+
+      # Else make a certification
       certification =
         Certification.new(
           user_id: graduate.id,
           training_session_id: @current_training_session.id,
           level: @current_training_session.level
         )
+        
       next if certification.save
       error = true
       flash[
         :alert
       ] = "#{graduate.username}'s certification has not saved properly!"
     end
+
     respond_to do |format|
       format.html do
         redirect_to staff_dashboard_index_path,

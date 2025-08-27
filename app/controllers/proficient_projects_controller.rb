@@ -201,7 +201,6 @@ class ProficientProjectsController < DevelopmentProgramsController
     if order_item
       admin = @user
       duplicates = 0
-      user = order_item.order.user
       training_id = order_item.proficient_project.training_id
       cert = Certification.joins(:training).where(
         training: {id: training_id}).find_or_create_by(
