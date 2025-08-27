@@ -151,8 +151,8 @@ RSpec.describe Certification, type: :model do
         ts2 =
           create(:training_session, training: training, level: "Intermediate")
         ts2.users << user
-        create(:certification, training_session: ts1, user: user)
-        create(:certification, training_session: ts2, user: user)
+        create(:certification, training_session: ts1, user: user, level: ts1.level, training: ts1.training)
+        create(:certification, training_session: ts2, user: user, level: ts2.level, training: ts2.training)
         expect(user.certifications.highest_level.count).to eq(1)
         expect(
           user.certifications.highest_level.last.training_session.level
