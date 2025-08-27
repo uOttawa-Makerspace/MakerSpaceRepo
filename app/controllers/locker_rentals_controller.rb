@@ -78,14 +78,9 @@ class LockerRentalsController < SessionsController
   def update
     @locker_rental = LockerRental.find(params[:id])
 
-    # NOTE move this line to model maybe?
-    # if changing state to 'active'
     if current_user.staff? && locker_rental_params[:state] == "active"
       # default to end of semester
       @locker_rental.owned_until ||= end_of_this_semester
-      # Get first available locker specifier if not set
-      @locker_rental.locker_specifier ||=
-        @locker_rental.locker_type.get_available_lockers.first
     end
 
     # Only admins can cancel active rentals
@@ -112,16 +107,10 @@ class LockerRentalsController < SessionsController
     redirect_back fallback_location: :locker_rentals
   end
 
-  def stripe_success
-  end
-
-  def stripe_cancelled
-  end
-
   private
 
   def check_permission
-    # If user gives a request id
+    # If user accesses a locker rental by ID
     if params[:id].present?
       @locker_rental = LockerRental.find(params[:id])
       # Allow if getting own locker rental
@@ -133,12 +122,7 @@ class LockerRentalsController < SessionsController
     redirect_to :index
   end
 
-  # FIXME: these three functions below are too big and complicated
   def new_instance_attributes
-    # @available_locker_types = LockerType.available.map do |t|
-    #   ["#{t.short_form}#{' - none available' if t.quantity_available.zero?}",
-    #    t.id, {disabled: t.quantity_available.zero?}]
-    # end
     @user_repositories = current_user.repositories.pluck(:title, :id)
     # FIXME localize this later
     @available_fors = {
@@ -150,13 +134,12 @@ class LockerRentalsController < SessionsController
     @pending_locker_request = current_user.locker_rentals.pending.first
   end
 
+  # Admins are allowed to cancel and assign
   def admin_locker_rental_params
     admin_params =
       params.require(:locker_rental).permit(
-        :locker_type_id,
-        # admin can assign and approve requests
+        :locker_id,
         :rented_by_id,
-        :locker_specifier,
         :repository,
         :requested_as,
         :state,
@@ -177,18 +160,10 @@ class LockerRentalsController < SessionsController
   def locker_rental_params
     if current_user.staff? && !params.dig(:locker_rental, :ask)
       admin_locker_rental_params
-    else
-      # people pick where they want a locker
-      permits = [:locker_type_id]
-      unless params[:id]
-        # prevent user from editing rental notes after first submit
-        permits << :notes
-        permits << :requested_as
-        permits << :repository_id
-      end
-      # For user cancellations
-      permits << :state
-      params.require(:locker_rental).permit(*permits)
+    elsif params[:id] # If updating, only allow state cancellations
+      params.require(:locker_rental).permit(:state)
+    else # If new, only allow some details
+      params.require(:locker_rental).permit(:notes, :requested_as, :repository_id)
     end
   end
 end

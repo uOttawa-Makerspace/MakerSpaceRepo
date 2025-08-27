@@ -51,10 +51,10 @@ class LockerRental < ApplicationRecord
   # If set to active
   with_options if: :active? do |rental|
     # Don't double assign lockers of same locker type if assigned
-    rental.validates :locker_specifier,
+    rental.validates :locker,
               uniqueness: { conditions: -> { assigned } },
               allow_nil: true # Skip validation if nil, caught below anyways
-    rental.validates :rented_by, :owned_until, :locker_specifier, presence: true
+    rental.validates :locker, :rented_by, :owned_until, presence: true
   end
 
   # Scopes to aid sorting rentals

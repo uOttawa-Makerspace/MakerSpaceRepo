@@ -21,12 +21,11 @@
             <% if locker_rentals.present? %>
                 <% locker_rentals.each do |rental| %>
                     <tr>
-                        <td class="dt-center"> <%= rental.locker %></td>
+                        <td class="dt-center"> #<%= rental.locker&.specifier %></td>
                         <td><%= link_to rental.rented_by.username, user_path(rental.rented_by) %>
                             <%= tag.span(rental.rented_by.role.humanize, class: 'badge text-bg-primary') if rental.rented_by.staff? %></td>
                         <td data-search="<%= rental.state %>">
                             <%= tag.i class: "fa #{rental.state_icon}" %> <%= t("lockers.state.#{rental.state}") %>
-                            <%= link_to t('lockers.details'), rental, class: 'btn btn-sm btn-primary' %>
                         </td>
                         <td data-order="<%= rental.created_at.to_i %>"><%= rental.created_at.to_formatted_s :long %></td>
                         <td>
@@ -41,9 +40,7 @@
                         </td>
                         <td><%= rental.updated_at&.to_date %></td>
                         <td><%= rental.owned_until&.to_date || 'Unapproved yet' %></td>
-                        <% unless local_assigns[:hide_actions] %>
-                            <td><%= locker_rental_actions(rental) %></td>
-                        <% end %>
+                        <td><%= link_to t('lockers.details'), rental, class: 'btn btn-sm btn-primary' %></td>
                     </tr>
                 <% end %>
             <% end %>

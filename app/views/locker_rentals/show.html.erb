@@ -3,10 +3,9 @@
     <h1 class="text-center"><%= t('lockers.locker_request') %> #<%= @locker_rental.id %> - <%= t("lockers.state.#{@locker_rental.state}") %></h1>
     <h2 class="fs-4"><%= t('lockers.details') %></h2>
     <p><%= t('lockers.submitted_on') %> <b><%= @locker_rental.created_at.to_date %></b> <%= t('lockers.for') %> <%= link_to @locker_rental.rented_by.username, @locker_rental.rented_by.username %> <%= tag.span(@locker_rental.rented_by.role.humanize, class: 'badge text-bg-primary') if @locker_rental.rented_by.staff? %></p>
-    <p><b><%= t('lockers.locker_type') %>:</b> <%= @locker_rental.locker_type.short_form %> - <i><%= @locker_rental.locker_type.description %></i></p>
     <p><b><%= t('lockers.state.state') %>:</b> <%= @locker_rental.state.humanize %></p>
-    <p><b><%= t('lockers.paid_on') %>:</b> <%= @locker_rental.paid_at&.to_date&.to_fs(:long) || 'unpaid' %></p>
-    <p><b>Requested as:</b> <%= @locker_rental.requested_as %></p>
+    <p><b><%= t('lockers.paid_on') %>:</b> <%= @locker_rental.paid_at&.to_date&.to_fs(:long) || 'Unpaid' %></p>
+    <p><b>Requested as:</b> <%= @locker_rental.requested_as.humanize %></p>
     <% if @locker_rental.repository %>
         <b>Repository linked to this locker rental request:</b>
         <%= link_to @locker_rental.repository.title, repository_path(@locker_rental.rented_by.username, @locker_rental.repository.id) %>
@@ -43,27 +42,43 @@
         <p>To cancel this request, click on <b>Cancel</b> below.</p>
     <% end %>
 
-    <div class="mb-3 text-end">
-        <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#lockerApproveModal">
-            Modify locker request before approval
-        </button>
-    </div>
-    <div>
-        <%= form_with model: @locker_rental do |f| %>
-            <div>
-                <% locker_specifier_options = LockerType.all.map do |type|
-                    [type.short_form, type.get_available_lockers.map{ |number| ["#{type.short_form} - #{number}", "#{type.id}-#{number}"] } ]
-                end %>
-                <%= f.select :locker_selected, grouped_options_for_select(locker_specifier_options), {}, { class: 'form-select' } %>
+    <hr />
+    <%= form_with model: @locker_rental do |f| %>
+        <div class="row justify-content-between gy-3">
+            <div class="col-md-auto">
+                <%= link_to current_user.staff? ? admin_locker_rentals_path : locker_rentals_path, class: 'btn btn-secondary' do %>
+                    <i class="fa fa-arrow-left"></i> Back to locker rentals
+                <% end %>
             </div>
-        <% end %>
-        <% if current_user.staff? %>
-            <%= locker_rental_actions(@locker_rental, current_user.staff?) %>
-        <% end %>
-        <%= link_to locker_rentals_path, class: 'btn btn-secondary float-end' do %>
-            <i class="fa fa-arrow-left"></i> Back to locker rentals
-        <% end %>
-    </div>
+
+            <div class="col-md">
+                <% if current_user.staff? && @locker_rental.pending? %>
+                    <%= f.select :locker_id,
+                        options_for_select(Locker.order_by_specifier.available.pluck(:specifier, :id).map{ |specifier, id| ["Locker ##{specifier}", id]}),
+                     {prompt: 'Select a locker...'}, { class: 'form-select'} %>
+                    <div class="input-group">
+                        <span class="input-group-text">Owned until</span>
+                        <%= f.date_field :owned_until, value: end_of_this_semester, class: 'form-control' %>
+                    </div>
+                <% end %>
+            </div>
+
+            <div class="col-md-auto">
+                <% unless @locker_rental.cancelled? %>
+                    <div class="btn-group">
+                        <% if @locker_rental.pending? %>
+                            <%= f.button 'Send to checkout', name: 'locker_rental[state]', value: 'await_payment', class: 'btn btn-success' %>
+                            <%= f.button 'Assign now', name: 'locker_rental[state]', value: 'active', class: 'btn btn-info' %>
+                        <% end %>
+                        <%# Staff can cancel any rental. %>
+                        <% if (current_user.staff? && !@locker_rental.cancelled?) || @locker_rental.pending? %>
+                            <%= f.button 'Cancel rental', name: 'locker_rental[state]', value: 'cancelled', class: 'btn btn-danger' %>
+                        <% end %>
+                    </div>
+                <% end %>
+            </div>
+        </div>
+    <% end %>
 </div>
 
 <%= render 'approve_modal' %>
