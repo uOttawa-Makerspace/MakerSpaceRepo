@@ -5,17 +5,30 @@ module User::UoengConcern
   extend ActiveSupport::Concern
 
   included do
-    # Find or create an active faculty membership.
+    # Verify if user qualifies for a faculty membership.
+    #
     # NOTE: The uOEng call is expensive and we don't want them to think we're
     # batch-calling. Don't call this anywhere popular (such as in views, GET
     # actions, etc.)
-    def find_or_create_uoeng_membership
-      return nil unless engineering?
-      memberships.active.find_or_create_by(
-        membership_type: "faculty",
-        status: :paid,
-        end_date: end_of_this_semester
-      )
+    def validate_uoeng_membership
+      if engineering?
+        # Student is an engineer, make a membership
+        memberships.active.find_or_create_by(
+          membership_type: "faculty",
+          status: :paid,
+          end_date: end_of_this_semester
+        )
+        Rails.logger.info "Created faculty membership for user id #{id}"
+      else
+        # NOT an engineer, revoke any faculty memberships. Students can
+        # drop/change courses mid-semester.
+        memberships
+          .active
+          .where(membership_type: "faculty")
+          .update(status: :revoked)
+        Rails.logger.info "Revoked faculty membership for user id #{id}"
+        return nil
+      end
     end
 
     private
@@ -23,9 +36,7 @@ module User::UoengConcern
     # Is user paying the CEED fee?
     def engineering?
       # HACK: Cheat for CI tests
-      if Rails.env.test?
-        return faculty == "Engineering"
-      end
+      return faculty == "Engineering" if Rails.env.test?
       # Check if we have valid data. Either query by student ID, or uOttawa
       details = uoeng_details
 

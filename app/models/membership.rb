@@ -8,7 +8,8 @@ class Membership < ApplicationRecord
   enum :status, {
          pending: 'pending',
          paid: 'paid',
-         failed: 'failed'
+         failed: 'failed',
+         revoked: 'revoked'
        },
        default: 'pending'
 

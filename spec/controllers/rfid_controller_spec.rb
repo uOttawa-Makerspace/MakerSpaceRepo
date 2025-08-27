@@ -200,6 +200,27 @@ RSpec.describe RfidController, type: :controller do
         post :card_number, params: @rfid_params
         expect(user.reload.active_membership).to be_blank
       end
+
+      it "should revoke membership for students if they're no longer eligible" do
+        @rfid =
+          create(
+            :rfid,
+            mac_address: @pi_reader.pi_mac_address,
+            user: create(:user, :student)
+          )
+        @rfid_params = {
+          rfid: @rfid[:card_number],
+          mac_address: @rfid[:mac_address]
+        }
+        user = @rfid.user
+        post :card_number, params: @rfid_params
+        expect(user.reload.active_membership).to be_present
+        # User dropped a course, changed programs, etc...
+        # Hardcoded because why not...
+        user.update(faculty: 'Social Sciences')
+        post :card_number, params: @rfid_params
+        expect(user.reload.active_membership).to be_blank
+      end
     end
   end
 end

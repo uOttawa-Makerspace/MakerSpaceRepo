@@ -107,9 +107,7 @@ class RfidController < SessionsController
 
     # Here we're assuming the user is physically in the space. Query if they are
     # eligible for a faculty membership
-    if rfid.user.find_or_create_uoeng_membership.present?
-      Rails.logger.info "Created faculty membership for user #{rfid.user.id}"
-    end
+    rfid.user.validate_uoeng_membership
   end
 
   def new_session(rfid, new_location)

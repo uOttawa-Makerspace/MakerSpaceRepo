@@ -456,7 +456,7 @@ class User < ApplicationRecord
   end
 
   def active_membership
-    memberships.where('end_date > ?', Time.current).order(end_date: :desc).first
+    memberships.active.first
   end
 
   def active_membership?
