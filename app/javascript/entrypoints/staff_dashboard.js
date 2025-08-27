@@ -38,10 +38,6 @@ modal.addEventListener("hidden.bs.modal", function () {
   progressBar.classList.remove("fading-progress-bar");
 });
 
-modal.addEventListener("show.bs.modal", function () {
-  innerBar.classList.add("moving-progress-bar");
-});
-
 document.addEventListener("turbo:load", function () {
   var form = document.getElementById("sign_in_user_fastsearch");
   form.onsubmit = function () {
@@ -98,8 +94,8 @@ document.addEventListener("turbo:load", function () {
     var e = displayNow[0];
 
     // Display/Refresh Modal
-    const modalElement = document.getElementById("signinModal");
     modalClicked = false;
+    innerBar.classList.add("moving-progress-bar");
     myModal.show();
     setTimeout(hideModal, 4000);
 
@@ -174,6 +170,6 @@ document.addEventListener("turbo:load", function () {
 
   setInterval(refreshCapacity, 60000);
   refreshCapacity();
-  setInterval(refreshTables, 15000);
+  setInterval(refreshTables, 5000);
   refreshTables();
 });
