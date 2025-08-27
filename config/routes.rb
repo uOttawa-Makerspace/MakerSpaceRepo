@@ -150,8 +150,6 @@ Rails.application.routes.draw do
   resources :locker_rentals do
     #, only: %i[index show new create update destroy]
     collection do
-      get :stripe_success
-      get :stripe_cancelled
       get :admin
     end
   end
