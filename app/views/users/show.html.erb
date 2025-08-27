@@ -67,18 +67,8 @@
             <% if @repo_user.staff? %>
               <p class="text-secondary fw-bold" >Makerepo <%= @repo_user.role.humanize %></p>
             <% end %>
-
-            <% active_membership = @repo_user.memberships.active.order(end_date: :desc).first %>
-            <% if active_membership %>
-              <%= link_to membership_index_path, class: "d-flex align-items-center gap-2 my-3 text-black fw-normal btn btn-light rounded-pill glow", style: "width: fit-content;" do %>
-                <%= fa_icon "check-circle", class: "text-primary fs-5" %>
-                Membership expires <%= l(active_membership.end_date.to_date, format: :long) %>
-              <% end %>
-            <% else %>
-              <%= link_to membership_index_path, class: "d-flex align-items-center gap-2 my-3 text-black fw-normal btn btn-light rounded-pill", style: "width: fit-content;" do %>
-                <%= fa_icon "times-circle", class: "text-muted fs-5" %>
-                No active membership
-              <% end %>
+            <% if @repo_user == current_user || current_user.staff? %>
+              <%= render 'users/membership_tag', user: @repo_user %>
             <% end %>
           </div>
           <div class="col-md-3">
