@@ -1,9 +1,7 @@
 class JobOrderMailer < ApplicationMailer
   def send_job_submitted(job_order_id)
     return unless JobOrder.where(id: job_order_id).present?
-  @job_order = JobOrder.find(job_order_id)
-
-  
+    @job_order = JobOrder.find(job_order_id)
 
     if @job_order.expedited?
       mail(
@@ -25,28 +23,31 @@ class JobOrderMailer < ApplicationMailer
     @job_order = JobOrder.find(job_order_id)
 
     @reminder = reminder
-    @hash = Rails.application.message_verifier(:job_order_id).generate(job_order_id)
+    @hash =
+      Rails.application.message_verifier(:job_order_id).generate(job_order_id)
 
     approved_fr, approved_en =
-      if @job_order.job_order_statuses.where(job_status: JobStatus::USER_APPROVAL).count > 1
-        ["réapprouvée", "re-approved"]
+      if @job_order
+           .job_order_statuses
+           .where(job_status: JobStatus::USER_APPROVAL)
+           .count > 1
+        %w[réapprouvée re-approved]
       else
-        ["approuvée", "approved"]
+        %w[approuvée approved]
       end
 
     mail(
       to: @job_order.user.email,
       reply_to: "makerspace@uottawa.ca",
       bcc: "uottawa.makerepo@gmail.com",
-      subject: "Votre commande ##{@job_order.id} a été #{approved_fr} // Your job order ##{@job_order.id} has been #{approved_en}"
+      subject:
+        "Votre commande ##{@job_order.id} a été #{approved_fr} // Your job order ##{@job_order.id} has been #{approved_en}"
     )
   end
 
   def send_job_declined(job_order_id)
     return unless JobOrder.where(id: job_order_id).present?
-  @job_order = JobOrder.find(job_order_id)
-
-  
+    @job_order = JobOrder.find(job_order_id)
 
     mail(
       to: @job_order.user.email,
@@ -59,9 +60,7 @@ class JobOrderMailer < ApplicationMailer
 
   def send_job_user_approval(job_order_id)
     return unless JobOrder.where(id: job_order_id).present?
-  @job_order = JobOrder.find(job_order_id)
-
-  
+    @job_order = JobOrder.find(job_order_id)
 
     if @job_order.expedited?
       mail(
@@ -80,10 +79,7 @@ class JobOrderMailer < ApplicationMailer
 
   def send_job_completed(job_order_id, message)
     return unless JobOrder.where(id: job_order_id).present?
-  @job_order = JobOrder.find(job_order_id)
-
-  
-
+    @job_order = JobOrder.find(job_order_id)
 
     @message =
       if message.present?
@@ -105,9 +101,7 @@ class JobOrderMailer < ApplicationMailer
 
   def payment_succeeded(job_order_id)
     return unless JobOrder.where(id: job_order_id).present?
-  @job_order = JobOrder.find(job_order_id)
-
-  
+    @job_order = JobOrder.find(job_order_id)
 
     mail(
       to: @job_order.user.email,
@@ -119,9 +113,7 @@ class JobOrderMailer < ApplicationMailer
 
   def payment_failed(job_order_id)
     return unless JobOrder.where(id: job_order_id).present?
-  @job_order = JobOrder.find(job_order_id)
-
-  
+    @job_order = JobOrder.find(job_order_id)
 
     mail(
       to: @job_order.user.email,
@@ -133,14 +125,15 @@ class JobOrderMailer < ApplicationMailer
 
   def staff_assigned(job_order_id, staff_member_id)
     return if JobOrder.where(id: job_order_id).blank?
-      @job_order = JobOrder.find(job_order_id)
-    
+    @job_order = JobOrder.find(job_order_id)
+
     @staff_member = User.find(staff_member_id)
-    
+
     if @job_order.expedited?
       mail(
         to: @staff_member.email,
-        subject: "EXPEDITED: You've been assigned to Job Order ##{@job_order.id}",
+        subject:
+          "EXPEDITED: You've been assigned to Job Order ##{@job_order.id}",
         Importance: "high",
         "X-Priority": "1"
       )
