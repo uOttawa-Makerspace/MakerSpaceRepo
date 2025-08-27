@@ -63,6 +63,8 @@ class JobOrdersController < ApplicationController
   def show
     @job_order = JobOrder.find_by(id: params[:id], is_deleted: false)
     @staff = User.staff
+    @message =
+      JobOrderMessage.find_by(name: "processed").retrieve_message(@job_order.id)
 
     if @job_order.nil?
       flash[:alert] = t("job_orders.alerts.job_order_not_found")
@@ -195,12 +197,6 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
   end
 
   def decline_modal
-    render layout: false
-  end
-
-  def completed_email_modal
-    @message =
-      JobOrderMessage.find_by(name: "processed").retrieve_message(@job_order.id)
     render layout: false
   end
 
