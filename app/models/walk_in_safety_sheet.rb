@@ -48,7 +48,8 @@ class WalkInSafetySheet < ApplicationRecord
 
   def set_supervisor_information
     return if persisted? # only new records
-    infos = space.space_managers.pluck(:name, :email)
+    return unless space # space has to be set
+    infos = space.space_managers&.pluck(:name, :email)
     self.supervisor_names ||= infos.map(&:first).join(",")
     self.supervisor_contacts ||= infos.map(&:last).join(",")
   end
