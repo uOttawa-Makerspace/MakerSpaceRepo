@@ -67,6 +67,9 @@
             <% if @repo_user.staff? %>
               <p class="text-secondary fw-bold" >Makerepo <%= @repo_user.role.humanize %></p>
             <% end %>
+            <% if @repo_user == current_user || current_user.staff? %>
+              <%= render 'users/membership_tag', user: @repo_user %>
+            <% end %>
           </div>
           <div class="col-md-3">
             <!--      EDIT PROFILE Section-->
@@ -170,6 +173,7 @@
                 <div class="nav flex-column nav-underline me-5 text-nowrap" role="tablist" aria-orientation="vertical">
                   <a class="nav-link active" id="admin-roles-pill" data-bs-toggle="pill" href="#admin-roles" role="tab" aria-controls="admin-roles" aria-selected="true">Role manager</a>
                   <a class="nav-link" id="admin-rename-pill" data-bs-toggle="pill" href="#admin-rename" role="tab" aria-controls="admin-rename" aria-selected="false">Rename</a>
+                  <a class="nav-link" id="admin-membership-pill" data-bs-toggle="pill" href="#admin-membership" role="tab" aria-controls="admin-membership" aria-selected="false">Manage membership</a>
                   <% if current_user == @repo_user %>
                     <a class="nav-link" id="admin-quick-access-pill" data-bs-toggle="pill" href="#admin-quick-access" role="tab" aria-controls="admin-quick-access" aria-selected="false">Quick access</a>
                   <% end %>
@@ -180,6 +184,7 @@
                 <div class="tab-content w-100">
                   <%= render partial: 'users/tabs/roles', locals: { user: @user, repo_user: @repo_user } %>
                   <%= render partial: 'users/tabs/rename', locals: { user: @user, repo_user: @repo_user } %>
+                  <%= render partial: 'users/tabs/membership', locals: { user: @user, repo_user: @repo_user } %>
                   <%= render partial: 'users/tabs/quick_access', locals: { user: @user, repo_user: @repo_user } if current_user == @repo_user %>
                   <%= render partial: 'users/tabs/delete' unless @repo_user.deleted? %>
                 </div>

@@ -1,4 +1,4 @@
-<section class="container">
+<section class="container mt-5">
   <%= form_for([@job_order, @job_task], url: job_order_job_task_path(@job_order, @job_task, step: 2)) do |f| %>
     <div class="text-center">
       <% if @job_task.job_type.name == "Design Services" %>
