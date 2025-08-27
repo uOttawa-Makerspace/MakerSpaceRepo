@@ -85,6 +85,8 @@ class RfidController < SessionsController
 
   private
 
+  # FIXME: These should be moved to LabSession model
+
   # Check if a user has an active session for the space they tapped in, sign out
   # of all active sessions and create a new session in space unless user just
   # signed out of it.

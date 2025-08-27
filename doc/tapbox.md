@@ -13,7 +13,8 @@ using the current user's signed-in space instead of taking a space id.
 ## Hardware
 
 The firmware is somewhere on makerepo, and I honestly have no clue how that
-works really. Pray it doesn't break.
+works really. It used to be a Pi, then an arduino, and now it's an ESP32. Pray
+it doesn't break.
 
 ## Server architecture
 
@@ -22,8 +23,8 @@ There's two models to know about. `PiReader` represents a tap box in a space.
 mac adddress of the PI reader.
 
 There's `RfidController` which handles the interface with the student cards. It
-handles creating and assigning an RFID scanner with a space. There's two exposed
-endpoints:
+handles creating and assigning an RFID scanner with a space. There are two
+exposed endpoints:
 
 - `/rfid/get_unset_rfids` shows the most recent five cards that were tapped.
   This list is displayed on the user profile page for staff members to link
@@ -34,4 +35,22 @@ endpoints:
   tapping their card. It takes a `:space_id` parameter or a `:pi_mac_address`
   parameter, and a `:rfid` card serial number parameter.
 
-Past that, there's some private helper functions used to verify
+Past that, there are some private helper functions used to prevent duplicate
+sessions and sign out of old sessions.
+
+Tapping in a space also checks if you're eligible for a membership. See the
+membership documentation for more information on how the membership system
+works.
+
+## Operation
+
+When a RFID card taps on a tapbox, the controller checks to see if the is
+already an RFID record present. If not, it creates a \__temporary rfid_, which is
+an RFID record with a null user reference and a record of which mac address it
+was last seen at. These _temporary rfid_ records are later collected and
+displayed at `/rfid/get_unset_rfids`.
+
+If an RFID record already exists with a linked user, it instead signs the user
+in or out of a space. Users can tap into a space to sign in, and tap out at the
+same space to sign out. They can tap into a different space to sign out of
+previous sessions and create a new session in the new space.
