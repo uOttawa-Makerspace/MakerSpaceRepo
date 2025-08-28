@@ -136,8 +136,7 @@ document.addEventListener("turbo:load", function () {
       document.getElementById("sign-in-student").innerText = "Student";
       document.getElementById("sign-in-student").classList.add("bg-success");
     } else {
-      document.getElementById("sign-in-student").innerText =
-        "Not Community Member";
+      document.getElementById("sign-in-student").innerText = "Not Student";
       document.getElementById("sign-in-student").classList.add("bg-danger");
     }
 
