@@ -46,11 +46,16 @@ class StaffDashboardController < StaffAreaController
           .where(trainings: { spaces: { id: space_id } })
       end
     @all_user_certs = proc { |user| user.certifications }
+    recent_membership = @space.signed_in_users.first.memberships.active.order(end_date: :desc).first
+    recent_expiration_date = ""
+    recent_expiration_date = recent_membership.end_date.to_date unless recent_membership.nil?
     render json: {
             users: @space.signed_in_users.pluck(:name, :email, :username),
             certification: Certification.select('certifications.id, certifications.user_id, trainings.name_en')
             .joins(:training).where(user_id: @space.signed_in_users.pick(:id)).group_by(&:user_id).to_a,
             has_membership: @space.signed_in_users.first.has_active_membership?,
+            expiration_date: recent_expiration_date,
+            is_student: @space.signed_in_users.first.student?,
              signed_out:
                render_to_string(
                  partial: "staff_dashboard/signed_out_table",

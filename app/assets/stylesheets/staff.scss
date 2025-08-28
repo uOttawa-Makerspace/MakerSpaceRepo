@@ -8,6 +8,7 @@
   from {
     width: 0%;
   }
+
   to {
     width: 100%;
   }
@@ -17,6 +18,7 @@
   from {
     opacity: 1;
   }
+
   to {
     opacity: 0;
   }
@@ -26,13 +28,31 @@ div.moving-progress-bar {
   animation-name: signin-progress-bar;
   opacity: 1;
   width: 0%;
-  animation-duration: 4s;
+  animation-duration: 6s;
 }
 
 div.fading-progress-bar {
   animation-name: fade-progress-bar;
   opacity: 0;
   animation-duration: 0.5s;
+}
+
+.badge {
+  font-size: 0.7em;
+  background: #e24829;
+  color: white;
+  width: auto;
+  padding: 4px;
+  height: 18px;
+  text-align: center;
+  line-height: 18px;
+  border-radius: 25%;
+  box-shadow: 0 0 1px #333;
+  margin-top: 7px;
+  margin-right: 5px;
+  float: left;
+  padding: 7px;
+  font-size: 18px;
 }
 
 div#space-top-corner {
@@ -63,6 +83,7 @@ div.setting-top-panel {
 
 div.panel-title:hover {
   padding-left: 5px;
+
   &:hover:not(.vp-button) {
     border-left: 5px solid #5f9ea0;
   }
@@ -84,6 +105,7 @@ div.panel-title:hover {
   margin-right: 5px;
   margin-top: 11px;
   margin-bottom: 5px;
+
   &:hover {
     cursor: pointer;
     background-color: transparentize(#5a42e8, 0.4);
@@ -107,6 +129,7 @@ div.panel-title:hover {
   &:hover:not(.vp-button) {
     background-color: #73b2b4;
   }
+
   &:hover {
     cursor: pointer;
   }

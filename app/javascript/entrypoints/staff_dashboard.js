@@ -80,7 +80,13 @@ document.addEventListener("turbo:load", function () {
   }
 
   var displayBefore = undefined;
-  function notifyNewUserLogin(users, certification, has_membership) {
+  function notifyNewUserLogin(
+    users,
+    certification,
+    has_membership,
+    expiration_date,
+    is_student,
+  ) {
     var displayNow = [];
     if (displayBefore == undefined) {
       displayNow = users;
@@ -97,7 +103,7 @@ document.addEventListener("turbo:load", function () {
     modalClicked = false;
     innerBar.classList.add("moving-progress-bar");
     myModal.show();
-    setTimeout(hideModal, 4000);
+    setTimeout(hideModal, 6000);
 
     // Setting Modal Text
 
@@ -110,30 +116,34 @@ document.addEventListener("turbo:load", function () {
     document.getElementById("signinEmail").innerText = e[1];
     // Membership Status
     if (has_membership) {
-      document.getElementById("signinMembership").innerText = "Has Membership";
+      document.getElementById("signinMembership").classList.add("glow");
+      document.getElementById("signinMembership").innerText =
+        "Expires on " + expiration_date;
     } else {
       document.getElementById("signinMembership").innerText = "No Membership";
     }
-
-    // Displaying Certifications
-    var trainingString = "";
-    if (certification[0] == null) {
-      trainingString = "No Certifications";
+    // Is Community Member
+    if (is_student) {
+      document.getElementById("signinCommunityMember").innerText =
+        "Is a Student";
     } else {
-      var certificationTrainings = certification[0][1];
-      console.log(certification[0][1]);
-
-      certificationTrainings.forEach((e) => {
-        if (trainingString == "") {
-          trainingString = trainingString + e.name_en;
-        } else {
-          trainingString = trainingString + "  |  " + e.name_en;
-        }
-      });
+      document.getElementById("signinCommunityMember").innerText =
+        "Is Not a Student";
     }
 
-    document.getElementById("signinCertifications").innerHTML =
-      '<p id="signinCertification">' + trainingString + "</p>";
+    // Displaying Certifications
+    var certificationTrainings = certification[0][1];
+    var result = "";
+
+    certificationTrainings.forEach((e) => {
+      result += '<span class="badge">' + e.name_en + "</span>";
+    });
+
+    if (result != "") {
+      document.getElementById("signinCertTitle").innerHTML =
+        "<p>Certifications: </p>";
+    }
+    document.getElementById("signinCertifications").innerHTML = result;
 
     // Updating previous user signin list
     displayBefore = displayNow;
@@ -161,6 +171,8 @@ document.addEventListener("turbo:load", function () {
             data.users,
             data.certification,
             data.has_membership,
+            data.expiration_date,
+            data.is_student,
           );
         } else {
           console.error(data.error);
