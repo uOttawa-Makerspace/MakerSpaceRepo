@@ -85,15 +85,16 @@ class CustomWebhooksController < ApplicationController
     return unless user
 
     order_hook["line_items"].each do |item|
-      membership_type_key = Membership::MEMBERSHIP_TYPES.keys.find do |type|
-        item["title"].to_s.strip.casecmp(Membership::MEMBERSHIP_TYPES[type][:title].strip).zero?
-      end
+      title = item["title"].to_s.strip
 
-      next unless membership_type_key
+      membership_tier =
+        MembershipTier.where("LOWER(title_en) = ? OR LOWER(title_fr) = ?", title.downcase, title.downcase).first
+
+      next unless membership_tier
 
       Membership.create!(
         user: user,
-        membership_type: membership_type_key,
+        membership_tier: membership_tier,
         status: :paid
       )
     end

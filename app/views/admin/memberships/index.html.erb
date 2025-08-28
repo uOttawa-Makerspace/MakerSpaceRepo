@@ -1,0 +1,35 @@
+<div class="container mt-5">
+  <h1>Membership Tiers</h1>
+
+  <table class="table table-striped mt-4">
+    <thead>
+      <tr>
+        <th scope="col">ID</th>
+        <th scope="col">Title (EN)</th>
+        <th scope="col">Title (FR)</th>
+        <th scope="col">Internal Price ($)</th>
+        <th scope="col">External Price ($)</th>
+        <th scope="col">Duration (seconds)</th>
+        <th scope="col">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% MembershipTier.order(:id).each do |tier| %>
+        <tr>
+          <%= form_with model: tier, url: admin_membership_path(tier), method: :patch, local: true do |f| %>
+            <% disabled = tier.hidden %>
+            <td><%= tier.id %></td>
+            <td><%= f.text_field :title_en, class: "form-control", disabled: disabled %></td>
+            <td><%= f.text_field :title_fr, class: "form-control", disabled: disabled %></td>
+            <td><%= f.number_field :internal_price, class: "form-control", step: 0.01, disabled: disabled %></td>
+            <td><%= f.number_field :external_price, class: "form-control", step: 0.01, disabled: disabled %></td>
+            <td><%= f.number_field :duration, class: "form-control", step: 3600, disabled: disabled %></td>
+            <td>
+                <%= f.submit "Save", class: "btn btn-primary btn-sm", disabled: disabled %>
+            </td>
+          <% end %>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

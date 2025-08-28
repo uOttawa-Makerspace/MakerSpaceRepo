@@ -11,10 +11,12 @@ module User::UoengConcern
     # batch-calling. Don't call this anywhere popular (such as in views, GET
     # actions, etc.)
     def validate_uoeng_membership
+      faculty_tier = MembershipTier.find_by!(title_en: "Faculty membership")
+
       if engineering?
         # Student is an engineer, make a membership
         memberships.active.find_or_create_by(
-          membership_type: "faculty",
+          membership_tier: faculty_tier,
           status: :paid,
           end_date: end_of_this_semester
         )
@@ -24,7 +26,7 @@ module User::UoengConcern
         # drop/change courses mid-semester.
         memberships
           .active
-          .where(membership_type: "faculty")
+          .where(membership_tier_id: faculty_tier.id)
           .update(status: :revoked)
         Rails.logger.info "Revoked faculty membership for user id #{id}"
         return nil
