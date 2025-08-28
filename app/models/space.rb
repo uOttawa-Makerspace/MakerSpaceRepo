@@ -78,6 +78,11 @@ class Space < ApplicationRecord
     name.eql?("JMTS")
   end
 
+  # FIXME: This should be a checkbox somewhere
+  def needs_walk_in_safety_sheet?
+    name.eql?("Brunsfield Centre") || name.eql?("MTC")
+  end
+
   def assigned_color
     colors = [
       [230, 25, 75], # #e6194b
