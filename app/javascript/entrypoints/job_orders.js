@@ -80,7 +80,12 @@ document.addEventListener("turbo:load", () => {
       return diffDays <= lastXDays;
     }); // date range
     dt.column(5).search(typeRegex, true, false); // job_type
-    dt.column(6).search(statusRegex, true, false); // job_status
+    // no clue why the regex isn't matching the full string... it's working for everything else but here is a hack to make it work for now (and forever)
+    dt.column(6).search(
+      statusRegex.replace(/\(Waiting for Payment\)/g, "").trim(),
+      true,
+      false,
+    ); // job_status
     dt.column(7).search(assignedToRegex, false, false); // assigned_to
 
     dt.draw();
