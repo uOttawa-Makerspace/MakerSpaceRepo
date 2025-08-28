@@ -459,7 +459,7 @@ class User < ApplicationRecord
     memberships.active.first
   end
 
-  def active_membership?
-    active_membership.present?
+  def has_active_membership?
+    active_membership.present? && active_membership.active?
   end
 end
