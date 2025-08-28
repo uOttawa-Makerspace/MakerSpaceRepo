@@ -21,6 +21,12 @@ toastr.options = {
   escapeHTML: true,
 };
 
+// Testing Consent forms before they have been added
+
+function getRandomInt(max) {
+  return Math.floor(Math.random() * max);
+}
+
 const myModal = new bootstrap.Modal(document.getElementById("signinModal"), {
   keyboard: true,
 });
@@ -108,42 +114,54 @@ document.addEventListener("turbo:load", function () {
     // Setting Modal Text
 
     // Name
-    document.getElementById("signinModalHeader").innerText = e[0];
+    document.getElementById("sign-in-username").innerText = e[0];
     // Link to Profile
-    document.getElementById("signinProfileLink").innerHTML =
-      '<a class="drop-username-cell" href="/' + e[2] + '">See Profile</a>';
+    document.getElementById("sign-in-profile-link").innerHTML =
+      '<a class="drop-username-cell fs-5" href="/' + e[2] + '">See Profile</a>';
     // Email
-    document.getElementById("signinEmail").innerText = e[1];
+    document.getElementById("sign-in-email").innerText = e[1];
     // Membership Status
     if (has_membership) {
-      document.getElementById("signinMembership").classList.add("glow");
-      document.getElementById("signinMembership").innerText =
-        "Expires on " + expiration_date;
+      document.getElementById("sign-in-membership").classList.add("glow");
+      document.getElementById("sign-in-membership").classList.add("bg-success");
+      document.getElementById("sign-in-membership").innerText =
+        "Active until " + expiration_date;
     } else {
-      document.getElementById("signinMembership").innerText = "No Membership";
+      document.getElementById("sign-in-membership").innerText =
+        "No Active Membership";
+      document.getElementById("sign-in-membership").classList.add("bg-danger");
     }
     // Is Community Member
     if (is_student) {
-      document.getElementById("signinCommunityMember").innerText =
-        "Is a Student";
+      document.getElementById("sign-in-student").innerText = "Student";
+      document.getElementById("sign-in-student").classList.add("bg-success");
     } else {
-      document.getElementById("signinCommunityMember").innerText =
-        "Is Not a Student";
+      document.getElementById("sign-in-student").innerText =
+        "Not Community Member";
+      document.getElementById("sign-in-student").classList.add("bg-danger");
+    }
+
+    var consent = getRandomInt(2);
+    if (consent == 0) {
+      document.getElementById("sign-in-consent").innerText = "Signed";
+      document.getElementById("sign-in-consent").classList.add("bg-success");
+    } else {
+      document.getElementById("sign-in-consent").innerText = "Unsigned";
+      document.getElementById("sign-in-consent").classList.add("bg-danger");
     }
 
     // Displaying Certifications
     var certificationTrainings = certification[0][1];
-    var result = "";
+    var result = "<h4>";
 
     certificationTrainings.forEach((e) => {
-      result += '<span class="badge">' + e.name_en + "</span>";
+      result +=
+        '<span class="badge text-bg-light text-black-50">' +
+        e.name_en +
+        "</span>  ";
     });
-
-    if (result != "") {
-      document.getElementById("signinCertTitle").innerHTML =
-        "<p>Certifications: </p>";
-    }
-    document.getElementById("signinCertifications").innerHTML = result;
+    result += "</h4>";
+    document.getElementById("sign-in-certifications").innerHTML = result;
 
     // Updating previous user signin list
     displayBefore = displayNow;

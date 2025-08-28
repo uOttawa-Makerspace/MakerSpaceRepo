@@ -37,12 +37,15 @@ div.fading-progress-bar {
   animation-duration: 0.5s;
 }
 
-.badge {
+h1.modal-title {
+  font-size: 20px;
+}
+
+.badge.cert-badge {
   font-size: 0.7em;
   background: #e24829;
   color: white;
   width: auto;
-  padding: 4px;
   height: 18px;
   text-align: center;
   line-height: 18px;
@@ -51,7 +54,7 @@ div.fading-progress-bar {
   margin-top: 7px;
   margin-right: 5px;
   float: left;
-  padding: 7px;
+  padding: 1em;
   font-size: 18px;
 }
 
