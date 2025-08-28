@@ -2,16 +2,27 @@ class WalkInSafetySheetsController < SessionsController
   before_action :signed_in
 
   # show a list of spaces to sign for
+  # NOTE: currently unused because the route is a singular route
   def index
-    @spaces = Space.all
-    @signed_spaces = current_user.walk_in_safety_sheets.pluck(:space_id)
+    @walk_in_safety_sheet =
+      WalkInSafetySheet.find_or_initialize_by(user: current_user)
+    render :show
+    #@spaces = Space.all
+    #@signed_spaces = current_user.walk_in_safety_sheets.pluck(:space_id)
+  end
+
+  def new
+    #@space = Space.find(params[:id]) # Space to sign entry for
+    @walk_in_safety_sheet =
+      WalkInSafetySheet.find_or_initialize_by(user: current_user)
   end
 
   # This also doubles as :new because this used to be a singular route...
   def show
-    @space = Space.find(params[:id]) # Space to sign entry for
+    # FIXME: add spaces later
+    #@space = Space.find(params[:id]) # Space to sign entry for
     @walk_in_safety_sheet =
-      WalkInSafetySheet.find_or_initialize_by(user: current_user, space: @space)
+      WalkInSafetySheet.find_or_initialize_by(user: current_user)
   end
 
   # User pressed 'sign sheet'
@@ -26,7 +37,7 @@ class WalkInSafetySheetsController < SessionsController
              WalkInSafetySheetsController.complete_agreements
       render :show,
              status: :unprocessable_entity,
-             notice: "Please agree to all terms before signing"
+             notice: 'Please agree to all terms before signing'
       return
     end
 
@@ -50,7 +61,7 @@ class WalkInSafetySheetsController < SessionsController
   end
 
   def self.complete_agreements
-    ["1"] * WalkInSafetySheet::NUMBER_OF_AGREEMENTS
+    ['1'] * WalkInSafetySheet::NUMBER_OF_AGREEMENTS
   end
 
   private

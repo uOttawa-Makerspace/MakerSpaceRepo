@@ -11,7 +11,7 @@
         <% end %>
 
         <hr >
-        <%= f.hidden_field :space_id, value: @walk_in_safety_sheet.space_id %>
+        <%#= f.hidden_field :space_id, value: @walk_in_safety_sheet.space_id %>
         <div class="text-center">
             <div class="btn-group">
                 <%= f.radio_button :is_minor, false, checked: true, class: 'btn-check', data: {show: '#adult-contact', hide: '#minor-contact',
@@ -41,7 +41,7 @@
 
                     <div class="mb-3">
                         <%= f.label :participant_signature, t('walk_in_safety_sheet.adult_contact.participant_signature'), class: 'form-label' %>
-                        <%= f.text_field :participant_signature, class: 'form-control', required: true %>
+                        <%= f.text_field :participant_signature, class: 'form-control', required: true, disabled: @walk_in_safety_sheet.persisted? %>
                         <div class="form-text">By entering your name, you agree to the terms above</div>
                     </div>
 

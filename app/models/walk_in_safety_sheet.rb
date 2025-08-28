@@ -39,8 +39,8 @@ class WalkInSafetySheet < ApplicationRecord
   # convenience function to choose between supervisor on file or the current
   # space supervisor. Returns [['name', 'phone'], ['name', 'phone']]
   def supervisor_information
-    names = supervisor_names.split(",")
-    contacts = supervisor_contacts.split(",")
+    names = supervisor_names.split(',')
+    contacts = supervisor_contacts.split(',')
     names.zip contacts
   end
 
@@ -48,9 +48,11 @@ class WalkInSafetySheet < ApplicationRecord
 
   def set_supervisor_information
     return if persisted? # only new records
+    # Hardcode brunsfield
+    self.space ||= Space.find_by(name: "Brunsfield Centre")
     return unless space # space has to be set
-    infos = space.space_managers&.pluck(:name, :email)
-    self.supervisor_names ||= infos.map(&:first).join(",")
-    self.supervisor_contacts ||= infos.map(&:last).join(",")
+    infos = space.space_managers.pluck(:name, :email) # Hardcoded brunsfield centre
+    self.supervisor_names ||= infos.map(&:first).join(',')
+    self.supervisor_contacts ||= infos.map(&:last).join(',')
   end
 end

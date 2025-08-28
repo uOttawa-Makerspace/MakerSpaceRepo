@@ -2,14 +2,19 @@ class CreateWalkInSafetySheets < ActiveRecord::Migration[7.2]
   def change
     create_table :walk_in_safety_sheets do |t|
       # Who signed this, student_number comes from this
-      t.references :user
+      t.references :user, null: false, foreign_key: true
       # What space was this signed for?
       t.references :space
-      # Add an index to ensure uniqueness. This table will fill up quickly
-      # This creates an index for both, but only the combination is unique
-      # Index order matters, we scope by user then search by space
+
+      # Add an index to ensure uniqueness. This table will fill up quickly This
+      # creates an index for both, but only the combination is unique Index
+      # order matters, we scope by user then search by space.
+      #
+      # NOTE: If you're making this for each space, add a compound index to
+      # speed up the uniqueness validation and search. There's going to be a lot
+      # of records in this table.
+
       t.index [:user_id, :space_id], unique: true
-      #t.index :user_id
 
       t.boolean :is_minor
 
