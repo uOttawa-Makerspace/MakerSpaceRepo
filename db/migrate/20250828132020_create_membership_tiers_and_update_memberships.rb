@@ -18,22 +18,15 @@ class CreateMembershipTiersAndUpdateMemberships < ActiveRecord::Migration[7.2]
         tiers = {
           '1_day' => {
             duration: 1.day,
-            internal_price: 2,
-            external_price: 4,
+            internal_price: 5,
+            external_price: 10,
             title_en: '1 Day Membership',
             title_fr: 'Adhésion 1 jour'
-          },
-          '1_month' => {
-            duration: 1.month,
-            internal_price: 6,
-            external_price: 12,
-            title_en: '1 Month Membership',
-            title_fr: 'Adhésion 1 mois'
           },
           '1_semester' => {
             duration: 4.months,
             internal_price: 25,
-            external_price: 50,
+            external_price: 40,
             title_en: '1 Semester Membership',
             title_fr: 'Adhésion 1 semestre'
           },
@@ -76,7 +69,6 @@ class CreateMembershipTiersAndUpdateMemberships < ActiveRecord::Migration[7.2]
 
         execute <<~SQL
           UPDATE memberships SET membership_tier_id = #{tier_ids['1_day']} WHERE membership_type = '1_day';
-          UPDATE memberships SET membership_tier_id = #{tier_ids['1_month']} WHERE membership_type = '1_month';
           UPDATE memberships SET membership_tier_id = #{tier_ids['1_semester']} WHERE membership_type = '1_semester';
           UPDATE memberships SET membership_tier_id = #{tier_ids['custom']} WHERE membership_type = 'custom';
           UPDATE memberships SET membership_tier_id = #{tier_ids['faculty']} WHERE membership_type = 'faculty';
