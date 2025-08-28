@@ -52,6 +52,8 @@ class JobOrdersController < ApplicationController
     @archived_job_orders = []
     @drafts = []
     @user.job_orders.not_deleted.each do |jo|
+      next unless jo.job_order_statuses.last
+
       if jo.job_order_statuses.last.job_status == JobStatus::DRAFT
         @drafts << jo
       else
