@@ -86,21 +86,21 @@
             <p><strong>Important For All Participants</strong></p>
             <div class="row row-cols-lg-2">
                 <div class="mb-3">
-                    <%= f.label :emergency_contact_name, "Name of other emergency contact", class: 'form-label' %>
+                    <%= f.label :emergency_contact_name, t('walk_in_safety_sheet.emergency_contact.name'), class: 'form-label' %>
                     <%= f.text_field :emergency_contact_name, class: 'form-control', required: true %>
                 </div>
                 <div class="mb-3">
-                    <%= f.label :emergency_contact_telephone, "Emergency contact telephone", class: 'form-label' %>
+                    <%= f.label :emergency_contact_telephone, t('walk_in_safety_sheet.emergency_contact.contact'), class: 'form-label' %>
                     <%= f.telephone_field :emergency_contact_telephone, class: 'form-control', required: true %>
                 </div>
 
                 <% @walk_in_safety_sheet.supervisor_information.each do |supervisor| %>
                     <div class="mb-3">
-                        <%= f.label :supervisor_name, "Name of University Employee Supervising Participant", class: 'form-label' %>
+                        <%= f.label :supervisor_name, t('walk_in_safety_sheet.supervisor.name'), class: 'form-label' %>
                         <%= f.text_field :supervisor_name, value: supervisor[0], class: 'form-control', disabled: true %>
                     </div>
                     <div class="mb-3">
-                        <%= f.label :supervisor_email, "Supervisor contact", class: 'form-label' %>
+                        <%= f.label :supervisor_email, t("walk_in_safety_sheet.supervisor.contact"), class: 'form-label' %>
                         <%= f.telephone_field :supervisor_email, value: supervisor[1], class: 'form-control', disabled: true %>
                     </div>
                 <% end %>

@@ -28,6 +28,12 @@ en:
       guardian_telephone_at_work: Telephone number at work
 
     emergency_contact:
+      name: Name of other emergency contact
+      contact: Telephone number
+
+    supervisor:
+      name: Name of University Employee Supervising Participant
+      contact: Contact
 
 fr:
   walk_in_safety_sheet:
@@ -60,3 +66,11 @@ fr:
       minor_participant_name: Nom du Participant en lettres moulées
       guardian_telephone_at_home: Téléphone au travail
       guardian_telephone_at_work: Téléphone à domicile ou cellulaire
+
+    emergency_contact:
+      name: Nom d'une personne à joindre en cas d'urgence
+      contact: Numéro de téléphone
+
+    supervisor:
+      name: Nom du superviseur à l'Université
+      contact: Contact
