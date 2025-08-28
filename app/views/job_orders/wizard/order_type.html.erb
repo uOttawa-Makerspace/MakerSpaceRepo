@@ -1,4 +1,4 @@
-<section class="container">
+<section class="container mt-5">
   <%= form_for([@job_order, @job_task], url: job_order_job_task_path(@job_order, @job_task, step: 1)) do |f| %>
     <div class="text-center">
       <h2><%= t('job_orders.wizard.title', step: 1) %></h2>

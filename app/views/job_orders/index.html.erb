@@ -1,6 +1,6 @@
 <% provide :title, t('job_orders.public_page.my_job_orders') %>
 
-<div class="text-center my-2">
+<div class="text-center mt-5 my-2">
   <h1 class="fw-bold"><%= t('job_orders.public_page.my_job_orders') %></h1>
   <%= link_to t('job_orders.public_page.create_a_new_job_order'), new_job_orders_path, class: 'btn btn-primary mb-1' %>
   <%= link_to t('job_orders.public_page.admin_page'), admin_job_orders_path, class: 'btn btn-outline-primary mb-1' if @user.staff? %>
