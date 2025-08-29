@@ -84,9 +84,8 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
     @tasks_missing_information = @job_order.job_tasks.select do |task|
       task.job_type.blank? || (task.job_type.name != "Design Services" && task.job_service.blank?)
     end
-    return unless @tasks_missing_information.any?
-      flash[:alert] = 
-"The following tasks are missing required information: #{@tasks_missing_information.map(&:title).join(', ')}"
+    flash[:alert] = 
+"#{t('job_orders.alerts.missing_info')} #{@tasks_missing_information.map(&:title).join(', ')}" if @tasks_missing_information.any? 
   end
 
   def new
