@@ -3,6 +3,7 @@ require "rails_helper"
 RSpec.describe RfidController, type: :controller do
   before :all do
     @user = create(:user, :regular_user)
+    create(:membership_tier, title_en: "Faculty membership", title_fr: "Adhésion de la faculté", internal_price: 0, external_price: 0, duration: 4.months.to_i)
   end
 
   before :each do

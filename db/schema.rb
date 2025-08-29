@@ -681,15 +681,27 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_28_202059) do
     t.boolean "shown", default: true
   end
 
+  create_table "membership_tiers", force: :cascade do |t|
+    t.string "title_en", null: false
+    t.string "title_fr", null: false
+    t.integer "duration", null: false
+    t.decimal "internal_price", precision: 8, scale: 2, default: "0.0", null: false
+    t.decimal "external_price", precision: 8, scale: 2, default: "0.0", null: false
+    t.boolean "hidden", default: false, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "memberships", force: :cascade do |t|
     t.bigint "user_id", null: false
-    t.string "membership_type"
     t.datetime "start_date"
     t.datetime "end_date"
     t.string "shopify_draft_order_id"
     t.string "status", default: "paid"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "membership_tier_id"
+    t.index ["membership_tier_id"], name: "index_memberships_on_membership_tier_id"
     t.index ["user_id"], name: "index_memberships_on_user_id"
   end
 
@@ -1453,13 +1465,6 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_28_202059) do
     t.decimal "hours", precision: 5, scale: 2, default: "0.0"
   end
 
-  create_table "walk_in_safety_sheet_supervisors", force: :cascade do |t|
-    t.bigint "space_id", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["space_id"], name: "index_walk_in_safety_sheet_supervisors_on_space_id"
-  end
-
   create_table "walk_in_safety_sheets", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.bigint "space_id"
@@ -1538,6 +1543,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_28_202059) do
   add_foreign_key "learning_module_tracks", "users"
   add_foreign_key "likes", "repositories"
   add_foreign_key "likes", "users"
+  add_foreign_key "memberships", "membership_tiers"
   add_foreign_key "memberships", "users"
   add_foreign_key "order_items", "orders"
   add_foreign_key "order_items", "proficient_projects"
@@ -1595,6 +1601,5 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_28_202059) do
   add_foreign_key "users", "spaces"
   add_foreign_key "videos", "learning_modules"
   add_foreign_key "videos", "proficient_projects"
-  add_foreign_key "walk_in_safety_sheet_supervisors", "spaces"
   add_foreign_key "walk_in_safety_sheets", "users"
 end
