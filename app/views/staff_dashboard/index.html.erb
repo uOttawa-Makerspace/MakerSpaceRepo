@@ -1,5 +1,5 @@
-<section class="page-contents">
-
+  <section class="page-contents">
+  <%= render "signin_modal", locals: { space: @space, all_user_certs: @all_user_certs, certifications_on_space: @certifications_on_space } %>
   <%= hidden_field_tag 'space_id', @space.id %>
   <div>
 

@@ -28,6 +28,8 @@ class RfidController < SessionsController
 
   # Notify server of a student card tap
   def card_number
+    Rails.logger.debug "_______________________________________________________"
+    Rails.logger.debug "RFID DETECTED"
     if params[:space_id].present? && Space.find(params[:space_id]).present?
       space_id = params[:space_id]
     else
@@ -83,6 +85,18 @@ class RfidController < SessionsController
     end
   end
 
+  def update_kiosk(space_id)
+    @space = Space.find(space_id)
+    @certifications_on_space =
+      proc do |user, space_id|
+        user
+          .certifications
+          .joins(:training, training: :spaces)
+          .where(trainings: { spaces: { id: space_id } })
+      end
+    @all_user_certs = proc { |user| user.certifications }
+  end
+  
   private
 
   # FIXME: These should be moved to LabSession model
@@ -122,9 +136,9 @@ class RfidController < SessionsController
   end
 
   def grant_access
-    unless current_user.staff?
+    return if current_user.staff?
       flash[:alert] = "You cannot access this area."
       redirect_to root_path
-    end
+    
   end
 end

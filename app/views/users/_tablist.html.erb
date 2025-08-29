@@ -15,6 +15,12 @@
     <a href="#programs-manager" class="nav-link" id="programs-tab" data-bs-toggle="tab" role="tab"
       aria-controls="profile" aria-selected="false">Programs</a>
   </li>
+  <% if @repo_user == current_user %>
+    <li class="nav-item">
+      <a href="#profile-safety-sheets" class="nav-link" id="safety-sheets-tab" data-bs-toggle="tab" role="tab"
+         aria-selected="false">Consent form</a>
+    </li>
+  <% end %>
 
   <!--- Staff Tabs -->
   <% if @user.staff? %>
