@@ -42,7 +42,7 @@ class WalkInSafetySheetsController < SessionsController
     end
 
     if @walk_in_safety_sheet.save
-      render :show
+      render :show, status: :created # HTTP 201 reloads page
     else
       render :show, status: :unprocessable_entity
     end
