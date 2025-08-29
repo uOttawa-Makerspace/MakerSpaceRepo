@@ -108,13 +108,6 @@ document.addEventListener("turbo:load", function () {
     // Display/Refresh Modal
     modalClicked = false;
     innerBar.classList.add("moving-progress-bar");
-    console.log(
-      users,
-      certification,
-      has_membership,
-      expiration_date,
-      is_student,
-    );
     myModal.show();
     setTimeout(hideModal, 6000);
 
@@ -148,14 +141,11 @@ document.addEventListener("turbo:load", function () {
 
     var consent = getRandomInt(2);
     if (consent == 0) {
-      document.getElementById("sign-in-consent").innerText = "Signed";
-      document.getElementById("sign-in-consent").classList.remove("bg-danger");
-
-      document.getElementById("sign-in-consent").classList.add("bg-success");
+      document.getElementById("unsigned-consent-form").style.display = "none";
+      document.getElementById("signed-consent-form").style.display = "block";
     } else {
-      document.getElementById("sign-in-consent").innerText = "Unsigned";
-      document.getElementById("sign-in-consent").classList.remove("bg-success");
-      document.getElementById("sign-in-consent").classList.add("bg-danger");
+      document.getElementById("signed-consent-form").style.display = "none";
+      document.getElementById("unsigned-consent-form").style.display = "block";
     }
 
     // Displaying Certifications
@@ -203,8 +193,6 @@ document.addEventListener("turbo:load", function () {
             data.expiration_date,
             data.is_student,
           );
-        } else {
-          console.log(data.error);
         }
       });
   }

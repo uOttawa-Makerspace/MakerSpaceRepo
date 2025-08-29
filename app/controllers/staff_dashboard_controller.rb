@@ -36,9 +36,7 @@ class StaffDashboardController < StaffAreaController
   end
 
   def refresh_tables
-    if params[:token] == @space.signed_in_users.pluck(:id).join("")
-      return render json: { error: "No changes at #{@space.name}" }
-    end
+    return render json: { error: "No changes" } if params[:token] == @space.signed_in_users.pluck(:id).join("")
     @users = User.order(id: :desc).limit(10)
     @certifications_on_space =
       proc do |user, space_id|
