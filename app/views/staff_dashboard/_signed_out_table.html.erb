@@ -2,19 +2,19 @@
 <tbody id="table-js-signed-out">
     <% @space.recently_signed_out_users.each do |user| %>
         <tr class="add-rows" id="<%= return_no_waiver_id(user) %>">
-            <td class="add-username-cell">
+            <td class="add-username-cell align-middle">
                 <% if @all_sign_out_memberships&.include?(user.id) %>
-                    <%= fa_icon "check-circle", class: "text-primary fs-5" %>
+                    <%= fa_icon "check-circle", class: "text-primary fs-3 align-middle" %>
                 <% end %>
-                <%= link_to(tag.add_username(user.name), user_url(user.username)) %>
+                <%= link_to(tag.add_username(user.name), user_url(user.username), class: "align-middle") %>
             </td>
-            <td class="email-cell">
+            <td class="email-cell align-middle">
                 <%= user.email %>
             </td>
-            <td class="sign_out_time-cell" style="horizontal-alginment:center;">
+            <td class="sign_out_time-cell align-middle" style="horizontal-alginment:center;">
                 <%= time_ago_in_words(user.lab_sessions.where(space: @space.id).max_by(&:sign_out_time).sign_out_time) + " ago at #{user.lab_sessions.where(space: @space.id).last.space.name}" if user.lab_sessions.where(space: @space.id).present? %>
             </td>
-            <td class="action-cell">
+            <td class="action-cell align-middle">
                 <%= button_to fa_icon('check'), { controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username] }, method: :put, class: 'btn btn-default check-button', remote: true %>
             </td>
         </tr>
