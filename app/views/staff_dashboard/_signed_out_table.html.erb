@@ -3,6 +3,9 @@
     <% @space.recently_signed_out_users.each do |user| %>
         <tr class="add-rows" id="<%= return_no_waiver_id(user) %>">
             <td class="add-username-cell">
+                <% if @all_sign_out_memberships&.include?(user.id) %>
+                    <%= fa_icon "check-circle", class: "text-primary fs-5" %>
+                <% end %>
                 <%= link_to(tag.add_username(user.name), user_url(user.username)) %>
             </td>
             <td class="email-cell">
