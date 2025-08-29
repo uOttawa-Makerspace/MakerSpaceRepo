@@ -28,6 +28,7 @@ class LockersController < StaffAreaController
       (locker_params[:range_start].to_i..locker_params[:range_end].to_i)
                     .map{ |specifier| {specifier:} }
     )
+    render action: :index, status: :created
   end
 
   private
