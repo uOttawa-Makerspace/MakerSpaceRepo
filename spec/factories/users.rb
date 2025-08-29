@@ -99,6 +99,11 @@ FactoryBot.define do
       student_id { Faker::Number.number(digits: 9) }
     end
 
+    trait :non_engineering do
+      program { "Honours BSocSc Political Science " }
+      faculty { "Social Sciences" }
+    end
+
     trait :with_staff_spaces do
       # https://thoughtbot.github.io/factory_bot/cookbook/has_many-associations.html
       # Make two spaces

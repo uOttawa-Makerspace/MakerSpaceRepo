@@ -3,6 +3,8 @@
 class User < ApplicationRecord
   include BCrypt
   include ActiveModel::Serialization
+  include UoengConcern
+
   belongs_to :space, optional: true
   has_one :rfid, dependent: :destroy
   has_many :upvotes, dependent: :destroy
@@ -64,7 +66,8 @@ class User < ApplicationRecord
   has_many :locker_rentals, foreign_key: "rented_by"
   has_many :staff_unavailabilities
   has_many :staff_external_unavailabilities, dependent: :destroy
-
+  has_many :walk_in_safety_sheets#, dependent: :destroy
+  has_many :memberships, dependent: :destroy
 
   MAX_AUTH_ATTEMPTS = 5
 
@@ -422,9 +425,10 @@ class User < ApplicationRecord
       &.department
   end
 
-  def engineering?
-    student? and department != "Non-Engineering"
-  end
+  # Replaced by Uoeng concern
+  # def engineering?
+  #   student? and department != "Non-Engineering"
+  # end
 
   def identity_readable
     if student?
@@ -440,14 +444,22 @@ class User < ApplicationRecord
         year = year.to_i.ordinalize
       end
 
-      if engineering?
-        # department + ' ' unless department.nil?
-        "#{year} #{I18n.t "year"} #{department&.+ " "}#{identity.titleize}uate"
-      else
+      # if engineering?
+      #   # department + ' ' unless department.nil?
+      #   "#{year} #{I18n.t "year"} #{department&.+ " "}#{identity.titleize}uate"
+      # else
         "#{year} #{I18n.t "year"} #{identity}uate".titleize
-      end
+      #end
     else
       identity.titleize
     end
+  end
+
+  def active_membership
+    memberships.active.first
+  end
+
+  def has_active_membership?
+    active_membership.present? && active_membership.active?
   end
 end

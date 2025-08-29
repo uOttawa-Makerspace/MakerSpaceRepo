@@ -15,6 +15,9 @@
                 <% else %>
                     None
                 <% end %>
+                <% if @space.needs_walk_in_safety_sheet? && !user.walk_in_safety_sheets.any? %>
+                    <p class="text-danger"><%= fa_icon :warning %> Did not sign sheet</p>
+                <% end %>
             </td>
             <td class="certifications-cell">
                 <% proc = @space.ceed? ? @all_user_certs : @certifications_on_space %>

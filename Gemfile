@@ -9,7 +9,6 @@ gem "abbrev"
 gem "csv"
 
 gem "airbrake"
-gem "bootbox-rails", "~>0.4"
 gem "bootsnap", require: false
 gem "aws-sdk", "~> 3.0"
 gem "aws-sdk-s3", require: false
@@ -20,7 +19,7 @@ gem "clipboard-rails"
 gem "concurrent-ruby", "~> 1.1", ">= 1.1.6"
 gem "excon"
 gem "faraday", "~> 0.17.0"
-gem "fastimage", "~> 1.7.0"
+gem 'fastimage', '~> 2.4'
 gem "file_validators"
 gem "font-awesome-rails", "~> 4.7.0.9"
 gem "google-api-client", "~> 0.53.0", require: ["google/apis/calendar_v3"]
@@ -57,11 +56,11 @@ gem "sprockets-rails"
 gem "stimulus-rails"
 gem "stripe"
 gem "stripe_event", "~> 2.3", ">= 2.3.1"
-gem "syntax_tree", "~> 3.3.0"
+gem "syntax_tree"
 gem "syntax_tree-haml"
 gem "syntax_tree-rbs"
 gem 'terser', '~> 1.2'
-gem "thin", "~> 1.8.2"
+gem "thin", "~> 2.0"
 gem "toastr-rails"
 gem "trix-rails", "~> 2.4", require: "trix"
 gem "vite_rails"
@@ -96,6 +95,11 @@ group :development do
   gem "rubocop-rails"
   gem "web-console"
   gem "ruby-prof" # profiling
+
+  gem 'ruby-lsp-rails', require: false
+  gem "ruby-lsp-rspec", require: false
+  gem 'ruby-lsp-rubyfmt', require: false
+
 
   # ssh deploymentque
   gem "bcrypt_pbkdf", "~> 1.0"

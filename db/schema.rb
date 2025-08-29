@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_08_15_171922) do
+ActiveRecord::Schema[7.2].define(version: 2025_08_28_202059) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -243,6 +243,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_15_171922) do
     t.bigint "user_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["event_id"], name: "index_event_assignments_on_event_id"
+    t.index ["user_id"], name: "index_event_assignments_on_user_id"
   end
 
   create_table "events", force: :cascade do |t|
@@ -262,6 +264,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_15_171922) do
     t.string "language"
     t.bigint "course_name_id"
     t.index ["course_name_id"], name: "index_events_on_course_name_id"
+    t.index ["created_by_id"], name: "index_events_on_created_by_id"
+    t.index ["space_id"], name: "index_events_on_space_id"
     t.index ["training_id"], name: "index_events_on_training_id"
   end
 
@@ -1074,15 +1078,6 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_15_171922) do
     t.index ["user_id"], name: "index_shadowing_hours_on_user_id"
   end
 
-  create_table "shared_calendars", force: :cascade do |t|
-    t.string "name"
-    t.string "url"
-    t.bigint "space_id", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["space_id"], name: "index_shared_calendars_on_space_id"
-  end
-
   create_table "shifts", force: :cascade do |t|
     t.text "reason"
     t.bigint "space_id"
@@ -1209,6 +1204,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_15_171922) do
     t.string "recurrence_rule"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_staff_unavailabilities_on_user_id"
   end
 
   create_table "sub_space_booking_statuses", force: :cascade do |t|
@@ -1457,6 +1453,34 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_15_171922) do
     t.decimal "hours", precision: 5, scale: 2, default: "0.0"
   end
 
+  create_table "walk_in_safety_sheet_supervisors", force: :cascade do |t|
+    t.bigint "space_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["space_id"], name: "index_walk_in_safety_sheet_supervisors_on_space_id"
+  end
+
+  create_table "walk_in_safety_sheets", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "space_id"
+    t.boolean "is_minor"
+    t.string "participant_signature"
+    t.string "participant_telephone_at_home"
+    t.string "guardian_signature"
+    t.string "minor_participant_name"
+    t.string "guardian_telephone_at_home"
+    t.string "guardian_telephone_at_work"
+    t.string "emergency_contact_name"
+    t.string "emergency_contact_telephone"
+    t.string "supervisor_names"
+    t.string "supervisor_contacts"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["space_id"], name: "index_walk_in_safety_sheets_on_space_id"
+    t.index ["user_id", "space_id"], name: "index_walk_in_safety_sheets_on_user_id_and_space_id", unique: true
+    t.index ["user_id"], name: "index_walk_in_safety_sheets_on_user_id"
+  end
+
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "announcement_dismisses", "announcements"
@@ -1477,8 +1501,12 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_15_171922) do
   add_foreign_key "discount_codes", "price_rules"
   add_foreign_key "discount_codes", "users"
   add_foreign_key "equipment", "repositories"
+  add_foreign_key "event_assignments", "events"
+  add_foreign_key "event_assignments", "users"
   add_foreign_key "events", "course_names", on_delete: :nullify
+  add_foreign_key "events", "spaces"
   add_foreign_key "events", "trainings", on_delete: :nullify
+  add_foreign_key "events", "users", column: "created_by_id"
   add_foreign_key "job_order_options", "job_options"
   add_foreign_key "job_order_options", "job_orders"
   add_foreign_key "job_order_quote_options", "job_options"
@@ -1533,7 +1561,6 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_15_171922) do
   add_foreign_key "rfids", "users"
   add_foreign_key "shadowing_hours", "spaces"
   add_foreign_key "shadowing_hours", "users"
-  add_foreign_key "shared_calendars", "spaces"
   add_foreign_key "shifts", "spaces"
   add_foreign_key "shifts", "trainings"
   add_foreign_key "space_staff_hours", "course_names"
@@ -1545,6 +1572,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_15_171922) do
   add_foreign_key "staff_needed_calendars", "spaces"
   add_foreign_key "staff_spaces", "spaces"
   add_foreign_key "staff_spaces", "users"
+  add_foreign_key "staff_unavailabilities", "users"
   add_foreign_key "sub_space_booking_statuses", "booking_statuses"
   add_foreign_key "sub_space_booking_statuses", "sub_space_bookings", on_delete: :cascade
   add_foreign_key "sub_space_bookings", "recurring_bookings"
@@ -1567,4 +1595,6 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_15_171922) do
   add_foreign_key "users", "spaces"
   add_foreign_key "videos", "learning_modules"
   add_foreign_key "videos", "proficient_projects"
+  add_foreign_key "walk_in_safety_sheet_supervisors", "spaces"
+  add_foreign_key "walk_in_safety_sheets", "users"
 end

@@ -1,0 +1,17 @@
+<% active_membership = user.memberships.active.order(end_date: :desc).first %>
+<% if active_membership %>
+    <%= link_to membership_index_path, class: "d-flex align-items-center gap-2 my-3 text-black fw-normal btn btn-light rounded-pill glow", style: "width: fit-content;" do %>
+        <% if active_membership.membership_type == 'faculty' %>
+            <%= fa_icon "university", class: "text-primary fs-5" %>
+            Engineering membership!
+        <% else %>
+            <%= fa_icon "check-circle", class: "text-primary fs-5" %>
+            Membership expires <%= l(active_membership.end_date.to_date, format: :long) %>
+        <% end %>
+    <% end %>
+<% else %>
+    <%= link_to membership_index_path, class: "d-flex align-items-center gap-2 my-3 text-black fw-normal btn btn-light rounded-pill", style: "width: fit-content;" do %>
+        <%= fa_icon "times-circle", class: "text-muted fs-5" %>
+        No active membership
+    <% end %>
+<% end %>

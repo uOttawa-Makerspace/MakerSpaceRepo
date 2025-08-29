@@ -40,9 +40,18 @@
               <span style="font-size: 15px;">
                 <%= certification_status(certification.training_session.level).html_safe %>
               </span>
-              <br />
             </div>
           </div>
+        <% end %>
+        <% if current_user.staff? || @repo_user == current_user %>
+          <p><%= t('walk_in_safety_sheet.title') %></p>
+          <%= link_to walk_in_safety_sheets_path do %>
+            <% if @repo_user.walk_in_safety_sheets.any? %>
+              Signed
+            <% else %>
+              Not signed
+            <% end %>
+          <% end %>
         <% end %>
       </div>
     </div>
@@ -52,84 +61,78 @@
       <div class="profile-head">
         <div class="row">
           <div class="col-md-9">
-            <h3>
-              <%= @repo_user.name %>
-            </h3>
-            <h6>
-              <%= @repo_user.username %>
-            </h6>
-            <%= image_tag('cc.png', alt: 'CC', class: 'ccs') %>: <b>
-              <%= @repo_user.get_total_cc %>
-            </b>
-            <p class="proile-rating">REPUTATION : <span>
-              <%= @repo_user.reputation %>
-            </span></p>
+            <p class="fs-3"><%= @repo_user.name %></p>
+            <p class="ms-3 fs-5"><%= @repo_user.username %></p>
+            <%= image_tag('cc.png', alt: 'CC', class: 'ccs') %>: <b><%= @repo_user.get_total_cc %></b>
+            <p class="proile-rating">REPUTATION : <span><%= @repo_user.reputation %></span></p>
             <% if @repo_user.staff? %>
               <p class="text-secondary fw-bold" >Makerepo <%= @repo_user.role.humanize %></p>
+            <% end %>
+            <% if @repo_user == current_user || current_user.staff? %>
+              <div class="d-flex">
+                <%= render 'users/membership_tag', user: @repo_user %>
+              </div>
             <% end %>
           </div>
           <div class="col-md-3">
             <!--      EDIT PROFILE Section-->
-            <div>
-              <div class="d-flex flex-column">
-                <% if current_user.admin? %>
-                  <%= button_to fa_icon(@repo_user.locked? ? 'unlock' : 'lock'), toggle_lock_user_admin_users_path(id: @repo_user), method: :put, class: "btn rounded-pill w-100 mb-2#{@repo_user.locked? ? ' btn-success' : ' btn-danger'}" %>
-                <% end %>
-                <%= link_to fa_icon('cog', text: 'Edit Profile'), settings_profile_path, class: 'btn btn-secondary rounded-pill mb-2' if @repo_user.eql?(@user) %>
-              </div>
+            <div class="btn-group-vertical w-100">
+              <% if current_user.admin? %>
+                <%= button_to fa_icon(@repo_user.locked? ? 'unlock' : 'lock'),
+                              toggle_lock_user_admin_users_path(id: @repo_user),
+                              method: :put, class: 'btn p-0', form_class: "btn #{@repo_user.locked? ? 'btn-success' : 'btn-danger'}" %>
+              <% end %>
+              <%= link_to fa_icon('cog', text: 'Edit Profile'), settings_profile_path, class: 'btn btn-secondary' if @repo_user.eql?(@user) %>
 
               <% if @user.staff? %>
                 <%= render 'users/flag' %>
-                <div class="row mx-auto mb-2">
-                  <% if @repo_user.flagged? %>
-                    <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal"
-                            data-bs-target="#flag_message">
-                      Flagged
+                <% if @repo_user.flagged? %>
+                  <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal"
+                          data-bs-target="#flag_message">
+                    Flagged
+                  </button>
+                <% else %>
+                  <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#flag_message">
+                    Add Flag
+                  </button>
+                <% end %>
+
+                <% if @repo_user.rfid.present? %>
+                  <div class="dropdown">
+                    <button class="btn btn-success dropdown-toggle" type="button"
+                            id="rfidUnregisterMenu" data-bs-toggle="dropdown" aria-haspopup="true"
+                            aria-expanded="false">
+                      <%= fa_icon 'check', text: 'RFID Card Set' %>
                     </button>
-                  <% else %>
-                    <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#flag_message">
-                      Add Flag
+                    <div class="dropdown-menu" aria-labelledby="rfidUnregisterMenu">
+                      <h5 class="dropdown-header">RFID Card Set</h5>
+                      <%= button_to 'Un-Register RFID', staff_dashboard_unlink_rfid_path(card_number: @repo_user.rfid.card_number), action: :link_rfid, method: :put, class: 'dropdown-item dropdown-item-danger' %>
+                    </div>
+                  </div>
+                <% else %>
+                  <div class="dropdown">
+                    <button class="btn btn-outline-danger dropdown-toggle" type="button"
+                            id="rfidUnregisterMenu" data-bs-toggle="dropdown" aria-haspopup="true"
+                            aria-expanded="false">
+                      <%= fa_icon 'ban', text: 'RFID Card Not Set' %>
                     </button>
-                  <% end %>
-                </div>
-                <div class="mb-2">
-                  <% if @repo_user.rfid.present? %>
-                    <div class="dropdown">
-                      <button class="btn btn-success dropdown-toggle" type="button"
-                              id="rfidUnregisterMenu" data-bs-toggle="dropdown" aria-haspopup="true"
-                              aria-expanded="false">
-                        <%= fa_icon 'check', text: 'RFID Card Set' %>
-                      </button>
-                      <div class="dropdown-menu" aria-labelledby="rfidUnregisterMenu">
-                        <h5 class="dropdown-header">RFID Card Set</h5>
-                        <%= button_to 'Un-Register RFID', staff_dashboard_unlink_rfid_path(card_number: @repo_user.rfid.card_number), action: :link_rfid, method: :put, class: 'dropdown-item dropdown-item-danger' %>
-                      </div>
+                    <div class="dropdown-menu" aria-labelledby="rfidUnregisterMenu">
+                      <h5 class="dropdown-header text-center">Un-Registered Cards</h5>
+                      <% Rfid.recent_unset.first(5).each do |rfid| %>
+                        <% space = begin
+                        PiReader.find_by(pi_mac_address: rfid.mac_address).space.name
+                        rescue StandardError
+                        'unknown'
+                        end %>
+                        <%= button_to "Tapped at #{space} #{time_ago_in_words(rfid.updated_at)} ago",
+                                      staff_dashboard_link_rfid_path(user_id: @repo_user.id, card_number: rfid.card_number),
+                                      action: :link_rfid, method: :put, class: 'dropdown-item' %>
+                      <% end %>
                     </div>
-                  <% else %>
-                    <div class="dropdown">
-                      <button class="btn btn-outline-danger dropdown-toggle" type="button"
-                              id="rfidUnregisterMenu" data-bs-toggle="dropdown" aria-haspopup="true"
-                              aria-expanded="false">
-                        <%= fa_icon 'ban', text: 'RFID Card Not Set' %>
-                      </button>
-                      <div class="dropdown-menu" aria-labelledby="rfidUnregisterMenu">
-                        <h5 class="dropdown-header text-center">Un-Registered Cards</h5>
-                        <% Rfid.recent_unset.first(5).each do |rfid| %>
-                          <% space = begin
-                               PiReader.find_by(pi_mac_address: rfid.mac_address).space.name
-                             rescue StandardError
-                               'unknown'
-                             end %>
-                          <%= button_to "Tapped at #{space} #{time_ago_in_words(rfid.updated_at)} ago",
-                                        staff_dashboard_link_rfid_path(user_id: @repo_user.id, card_number: rfid.card_number),
-                                        action: :link_rfid, method: :put, class: 'dropdown-item' %>
-                        <% end %>
-                      </div>
-                    </div>
-                  <% end %>
-                </div>
-              <% end %>
+                  </div>
+                <% end %>
             </div>
+              <% end %>
           </div>
         </div>
         <ul class="nav nav-tabs" id="myTab" role="tablist">
@@ -151,6 +154,9 @@
           <div class="tab-pane fade" id="profile-skills" role="tabpanel" aria-labelledby="profile-tab">
             <%= render partial: 'users/tabs/skills', locals: { skills: @skills } %>
           </div>
+          <div class="tab-pane fade" id="profile-safety-sheets" role="tabpanel" aria-labelledby="safety-sheets-tab">
+            <%= render partial: 'users/tabs/safety_sheets' %>
+          </div>
           <% if @user.staff? %>
             <div class="tab-pane fade" id="certifications-manager" role="tabpanel" aria-labelledby="profile-tab">
               <%= render partial: 'users/tabs/certifications', locals: { user: @user, repo_user: @repo_user } %>
@@ -170,6 +176,7 @@
                 <div class="nav flex-column nav-underline me-5 text-nowrap" role="tablist" aria-orientation="vertical">
                   <a class="nav-link active" id="admin-roles-pill" data-bs-toggle="pill" href="#admin-roles" role="tab" aria-controls="admin-roles" aria-selected="true">Role manager</a>
                   <a class="nav-link" id="admin-rename-pill" data-bs-toggle="pill" href="#admin-rename" role="tab" aria-controls="admin-rename" aria-selected="false">Rename</a>
+                  <a class="nav-link" id="admin-membership-pill" data-bs-toggle="pill" href="#admin-membership" role="tab" aria-controls="admin-membership" aria-selected="false">Manage membership</a>
                   <% if current_user == @repo_user %>
                     <a class="nav-link" id="admin-quick-access-pill" data-bs-toggle="pill" href="#admin-quick-access" role="tab" aria-controls="admin-quick-access" aria-selected="false">Quick access</a>
                   <% end %>
@@ -180,12 +187,13 @@
                 <div class="tab-content w-100">
                   <%= render partial: 'users/tabs/roles', locals: { user: @user, repo_user: @repo_user } %>
                   <%= render partial: 'users/tabs/rename', locals: { user: @user, repo_user: @repo_user } %>
+                  <%= render partial: 'users/tabs/membership', locals: { user: @user, repo_user: @repo_user } %>
                   <%= render partial: 'users/tabs/quick_access', locals: { user: @user, repo_user: @repo_user } if current_user == @repo_user %>
                   <%= render partial: 'users/tabs/delete' unless @repo_user.deleted? %>
                 </div>
-                </div>
               </div>
             </div>
+      </div>
           <% end %>
         <% else %>
           <div class="tab-pane fade" id="user-restore" role="tabpanel" aria-labelledby="profile-tab">
@@ -196,64 +204,64 @@
             </div>
         <% end %>
           </div>
+    </div>
+    <!-- FOOTER Section-->
+    <section id="user-show-links" class="m-5" style="margin-bottom: 20px!important;">
+      <%= link_to "#{user_path(show: :repositories)}#user-show-links", class: ('tab-active' if !params[:show] || params[:show].eql?('repositories')) do %>
+        <span class="number"><%= @repositories.count %></span> REPOS
+      <% end %>
+      <%= link_to "#{user_path(show: :makes)}#user-show-links", class: ('tab-active' if params[:show].eql? 'makes') do %>
+        <span class="number"><%= @makes.count %></span> MAKES
+      <% end %>
+      <%= link_to "#{user_path(show: :projects_assigned)}#user-show-links", class: ('tab-active' if params[:show].eql? 'projects_assigned') do %>
+        <span class="number"><%= @joined_projects.count %></span> JOINED PROJECTS
+      <% end %>
+    </section>
+    <section id="repositories-container" class="m-5">
+      <%= render partial: 'users/repositories', locals: { repositories: @repositories } %>
+    </section>
+    <div id="modal-window" class="modal hide fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content" id="cert-modal"></div>
       </div>
-      <!-- FOOTER Section-->
-      <section id="user-show-links" class="m-5" style="margin-bottom: 20px!important;">
-        <%= link_to "#{user_path(show: :repositories)}#user-show-links", class: ('tab-active' if !params[:show] || params[:show].eql?('repositories')) do %>
-          <span class="number"><%= @repositories.count %></span> REPOS
-        <% end %>
-        <%= link_to "#{user_path(show: :makes)}#user-show-links", class: ('tab-active' if params[:show].eql? 'makes') do %>
-          <span class="number"><%= @makes.count %></span> MAKES
-        <% end %>
-        <%= link_to "#{user_path(show: :projects_assigned)}#user-show-links", class: ('tab-active' if params[:show].eql? 'projects_assigned') do %>
-          <span class="number"><%= @joined_projects.count %></span> JOINED PROJECTS
-        <% end %>
-      </section>
-      <section id="repositories-container" class="m-5">
-        <%= render partial: 'users/repositories', locals: { repositories: @repositories } %>
-      </section>
-      <div id="modal-window" class="modal hide fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg" role="document">
-          <div class="modal-content" id="cert-modal"></div>
-        </div>
-      </div>
-      <div class="modal fade" id="pending_modal" role="dialog">
-        <div class="modal-dialog modal-md">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h4 class="modal-title">Badge pending</h4>
-            </div>
-            <div class="modal-body">
-              <p>To accept your badge, please look into your emails (it could be in the spam folder), you should have
-                received an email from Acclaim or CEED with a link to accept the badge!</p>
-              <p>Congratulations!</p>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
-            </div>
+    </div>
+    <div class="modal fade" id="pending_modal" role="dialog">
+      <div class="modal-dialog modal-md">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title">Badge pending</h4>
+          </div>
+          <div class="modal-body">
+            <p>To accept your badge, please look into your emails (it could be in the spam folder), you should have
+              received an email from Acclaim or CEED with a link to accept the badge!</p>
+            <p>Congratulations!</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
           </div>
         </div>
       </div>
-      <div class="modal fade" id="delete-modal">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h1 class="text-center">Confirm Identity</h1>
-              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-              <div class="mb-3 attach">
-                <%= form_tag(delete_user_admin_users_path(id: @repo_user.id), method: :delete) do %>
-                  <span> Please re-enter your password to confirm your identity.</span>
-                  <%= hidden_field_tag 'id', @repo_user.id %>
-                  <%= label_tag :delete_user, 'Are you sure you want to delete this user?', class: 'form-label mb-3' %>
-                  <%= password_field_tag :password, nil, placeholder: t('sessions.login.password'), class: 'form-control mb-3' %>
-                  <%= submit_tag 'Delete', class: 'btn btn-danger' %>
-                <% end %>
-              </div>
+    </div>
+    <div class="modal fade" id="delete-modal">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="text-center">Confirm Identity</h1>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3 attach">
+              <%= form_tag(delete_user_admin_users_path(id: @repo_user.id), method: :delete) do %>
+                <span> Please re-enter your password to confirm your identity.</span>
+                <%= hidden_field_tag 'id', @repo_user.id %>
+                <%= label_tag :delete_user, 'Are you sure you want to delete this user?', class: 'form-label mb-3' %>
+                <%= password_field_tag :password, nil, placeholder: t('sessions.login.password'), class: 'form-control mb-3' %>
+                <%= submit_tag 'Delete', class: 'btn btn-danger' %>
+              <% end %>
             </div>
           </div>
         </div>
       </div>
     </div>
   </div>
+</div>
