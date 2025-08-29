@@ -1,6 +1,6 @@
 <div class="tab-pane fade" id="admin-membership" role="tabpanel" aria-labelledby="admin-membership-tab">
   <div class="row">
-    <%= form_tag admin_create_membership_membership_index_path, method: :post, class: 'row' do %>
+    <%= form_tag admin_create_membership_memberships_path, method: :post, class: 'row' do %>
       <%= hidden_field_tag :user_id, @repo_user.id %>
 
       <div class="col-md-4">
@@ -14,7 +14,7 @@
     <% end %>
   </div>
 
-  <% memberships = @repo_user.memberships.order(created_at: :desc) %>
+  <% memberships = @repo_user.memberships.where(status: 'paid').order(created_at: :desc) %>
  
   <% if memberships.any? %>
     <div class="row mt-4">

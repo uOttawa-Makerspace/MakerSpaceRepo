@@ -1,5 +1,4 @@
-# FIXME: This should be plural. why didn't i catch this during review
-class MembershipController < SessionsController
+class MembershipsController < SessionsController
   before_action :signed_in
   before_action only: :admin_create_membership do
     head :unauthorized unless current_user.admin?
@@ -18,12 +17,8 @@ class MembershipController < SessionsController
     @membership = current_user.memberships.new(membership_params)
     
     begin
-      if @membership.save
-        redirect_to @membership.checkout_link, allow_other_host: true
-      else
-        load_membership_data
-        render :index
-      end
+      @membership.save!
+      redirect_to @membership.checkout_link, allow_other_host: true
     rescue StandardError => e
       Rails.logger.error "Membership creation failed: #{e.message}"
       @membership.destroy if @membership.persisted?
@@ -41,7 +36,7 @@ class MembershipController < SessionsController
       start_time = Membership.calculate_end_date(user)
       Membership.create!(
         user: user,
-        membership_type: 'custom',
+        membership_tier: MembershipTier.find_by!(title_en: "Custom Membership"),
         status: 'paid',
         start_date: start_time,
         end_date: start_time + days.days
@@ -51,7 +46,7 @@ class MembershipController < SessionsController
       flash[:alert] = "Please enter a valid number of days."
     end
 
-    redirect_back(fallback_location: membership_index_path)
+    redirect_back(fallback_location: memberships_path)
   end
 
   private
@@ -62,7 +57,7 @@ class MembershipController < SessionsController
   end
   
   def membership_params
-    params.require(:membership).permit(:membership_type)
+    params.require(:membership).permit(:membership_tier_id)
   end
 
   def is_user_cutoff

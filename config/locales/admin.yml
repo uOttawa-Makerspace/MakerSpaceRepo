@@ -27,6 +27,7 @@ en:
     refresh_badge_data: "Refresh Badge   Data"
     badge_templates: "Badge Templates"
     drop_off_locations: "Drop-Off Locations"
+    membership_tiers: "Membership Tiers"
     teams: "Teams"
     uni_programs: "University Programs"
 fr:
@@ -57,5 +58,6 @@ fr:
     refresh_badge_data: "Actualiser les Données des Badges"
     badge_templates: "Modèles de Badges"
     drop_off_locations: "Lieux de Dépôt"
+    membership_tiers: "Niveaux d'adhésion"
     teams: "Équipes"
     uni_programs: "Programmes Universitaires"

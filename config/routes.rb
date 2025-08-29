@@ -156,7 +156,7 @@ Rails.application.routes.draw do
     post :sign_email
   end
 
-  resources :membership, only: [:index, :create] do
+  resources :memberships, only: [:index, :create] do
     collection do
       post :admin_create_membership
     end
@@ -472,6 +472,8 @@ Rails.application.routes.draw do
         delete :delete_with_scope
       end
     end
+
+    resources :memberships, only: [:index, :update]
   end
   # For singular routes
   resolve('DesignDay') {[:admin, :design_day]}

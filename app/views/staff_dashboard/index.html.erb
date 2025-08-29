@@ -31,7 +31,7 @@
     <% end %>
     <br />
     <div class="table-responsive border">
-      <table class="staff-users-table text-center table table-striped" data-datatable data-page-length="50">
+      <table class="staff-users-table table table-striped text-center" data-datatable data-page-length="50">
         <caption id="user-count" class="text-center fs-3" align="top">Users inside <%= @space.name %>:  <%= @space.signed_in_users.count %>
         <div class="container text-center mx-auto">
           <%= link_to 'Sign Out All Users', staff_dashboard_sign_out_all_users_path, class: 'btn btn-secondary mx-auto text-center' %>
