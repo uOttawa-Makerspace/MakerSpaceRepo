@@ -45,6 +45,8 @@ class StaffDashboardController < StaffAreaController
           .joins(:training, training: :spaces)
           .where(trainings: { spaces: { id: space_id } })
       end
+    @printers_in_use =
+      PrinterSession.order(created_at: :desc).where(in_use: true)
     @all_user_certs = proc { |user| user.certifications }
     recent_membership = @space.signed_in_users.first.memberships.active.order(end_date: :desc).first
     recent_expiration_date = ""
