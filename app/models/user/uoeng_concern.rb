@@ -11,7 +11,7 @@ module User::UoengConcern
     # batch-calling. Don't call this anywhere popular (such as in views, GET
     # actions, etc.)
     def validate_uoeng_membership
-      faculty_tier = MembershipTier.find_by!(title_en: "Faculty membership")
+      faculty_tier = MembershipTier.find_by!(title_en: 'Faculty membership')
 
       if engineering?
         # Student is an engineer, make a membership
@@ -38,16 +38,14 @@ module User::UoengConcern
     # Is user paying the CEED fee?
     def engineering?
       # HACK: Cheat for CI tests
-      return faculty == "Engineering" if Rails.env.test?
+      return faculty == 'Engineering' if Rails.env.test?
       # Check if we have valid data. Either query by student ID, or uOttawa
       details = uoeng_details
 
       # Either a fulltime engineering student, or enrolled in a CEED managed
       # course. Note the array intersection to detect courses
-      (
-        details["student_this_semester"] && details["fulltime"] == true &&
-          details["faculty"] == "GENIE"
-      ) || (details.courses_enrolled & CourseName.pluck(:name)).present?
+      (details['student_this_semester'] && details['faculty'] == 'GENIE') ||
+        (details.courses_enrolled.any? { |course| course.include? 'GNG' })
     rescue StandardError => e
       # For now return false on all errors
       Rails.logger.fatal e
@@ -62,7 +60,7 @@ module User::UoengConcern
       url =
         if student_id.present?
           "#{creds[:query_by_id]}#{student_id}"
-        elsif email.ends_with? "@uottawa.ca"
+        elsif email.ends_with? '@uottawa.ca'
           "#{creds[:query_by_email]}#{email}"
         else
           # No valid query params, early out.
