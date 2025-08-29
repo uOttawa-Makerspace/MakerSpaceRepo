@@ -28,7 +28,7 @@ class Admin::MembershipsController < AdminAreaController
       :title_fr,
       :internal_price,
       :external_price,
-      :duration_seconds,
+      :duration,
       :hidden
     )
   end

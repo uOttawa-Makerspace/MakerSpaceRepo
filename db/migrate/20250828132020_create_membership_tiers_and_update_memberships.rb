@@ -31,7 +31,7 @@ class CreateMembershipTiersAndUpdateMemberships < ActiveRecord::Migration[7.2]
             title_fr: 'Adhésion 1 semestre'
           },
           'custom' => {
-            duration: 1.hour,
+            duration: 1.day,
             internal_price: 0,
             external_price: 0,
             title_en: 'Custom Membership',
@@ -55,7 +55,7 @@ class CreateMembershipTiersAndUpdateMemberships < ActiveRecord::Migration[7.2]
             VALUES (
               #{ActiveRecord::Base.connection.quote(attrs[:title_en])},
               #{ActiveRecord::Base.connection.quote(attrs[:title_fr])},
-              #{attrs[:duration].to_i},
+              #{attrs[:duration].to_i / 86_400},
               #{attrs[:internal_price]},
               #{attrs[:external_price]},
               #{attrs[:hidden] ? 'TRUE' : 'FALSE'},

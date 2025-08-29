@@ -9,7 +9,7 @@
         <th scope="col">Title (FR)</th>
         <th scope="col">Internal Price ($)</th>
         <th scope="col">External Price ($)</th>
-        <th scope="col">Duration (seconds)</th>
+        <th scope="col">Duration (days)</th>
         <th scope="col">Actions</th>
       </tr>
     </thead>
@@ -23,7 +23,7 @@
             <td><%= f.text_field :title_fr, class: "form-control", disabled: disabled %></td>
             <td><%= f.number_field :internal_price, class: "form-control", step: 0.01, disabled: disabled %></td>
             <td><%= f.number_field :external_price, class: "form-control", step: 0.01, disabled: disabled %></td>
-            <td><%= f.number_field :duration, class: "form-control", step: 3600, disabled: disabled %></td>
+            <td><%= f.number_field :duration, class: "form-control", step: 1, disabled: disabled %></td>
             <td>
                 <%= f.submit "Save", class: "btn btn-primary btn-sm", disabled: disabled %>
             </td>

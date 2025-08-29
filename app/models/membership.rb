@@ -59,6 +59,6 @@ class Membership < ApplicationRecord
 
   def set_dates
     self.start_date ||= Membership.calculate_end_date(user)
-    self.end_date ||= Membership.calculate_end_date(user) + duration
+    self.end_date ||= Membership.calculate_end_date(user) + duration.days
   end
 end
