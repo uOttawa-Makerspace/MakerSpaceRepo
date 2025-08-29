@@ -129,38 +129,32 @@ document.addEventListener("turbo:load", function () {
     document.getElementById("sign-in-email").innerText = e[1];
     // Membership Status
     if (has_membership) {
-      document.getElementById("sign-in-membership").classList.add("glow");
-      document.getElementById("sign-in-student").classList.remove("bg-danger");
-      document.getElementById("sign-in-membership").classList.add("bg-success");
+      document.getElementById("no-membership").style.display = "none";
+      document.getElementById("has-membership").style.display = "block";
       document.getElementById("sign-in-membership").innerText =
         "Active until " + expiration_date;
     } else {
-      document.getElementById("sign-in-membership").innerText =
-        "No Active Membership";
-      document.getElementById("sign-in-student").classList.remove("bg-success");
-
-      document.getElementById("sign-in-membership").classList.add("bg-danger");
+      document.getElementById("has-membership").style.display = "none";
+      document.getElementById("no-membership").style.display = "block";
     }
     // Is Community Member
     if (is_student) {
-      document.getElementById("sign-in-student").innerText = "Student";
-      document.getElementById("sign-in-student").classList.remove("bg-danger");
-      document.getElementById("sign-in-student").classList.add("bg-success");
+      document.getElementById("not-student").style.display = "none";
+      document.getElementById("is-student").style.display = "block";
     } else {
-      document.getElementById("sign-in-student").innerText = "Not Student";
-      document.getElementById("sign-in-student").classList.remove("bg-success");
-      document.getElementById("sign-in-student").classList.add("bg-danger");
+      document.getElementById("is-student").style.display = "none";
+      document.getElementById("not-student").style.display = "block";
     }
 
     var consent = getRandomInt(2);
     if (consent == 0) {
       document.getElementById("sign-in-consent").innerText = "Signed";
-      document.getElementById("sign-in-student").classList.remove("bg-danger");
+      document.getElementById("sign-in-consent").classList.remove("bg-danger");
 
       document.getElementById("sign-in-consent").classList.add("bg-success");
     } else {
       document.getElementById("sign-in-consent").innerText = "Unsigned";
-      document.getElementById("sign-in-student").classList.remove("bg-success");
+      document.getElementById("sign-in-consent").classList.remove("bg-success");
       document.getElementById("sign-in-consent").classList.add("bg-danger");
     }
 
