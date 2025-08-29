@@ -30,6 +30,9 @@ class CustomWebhooksController < ApplicationController
 
     # handle memberships
     process_membership_hook(order_hook)
+    
+    # handle job orders
+    process_job_orders_hook(order_hook)
 
     discount_code_params = webhook_params.to_h
     if discount_code_params["discount_codes"].present?
@@ -97,6 +100,26 @@ class CustomWebhooksController < ApplicationController
         status: :paid
       )
     end
+  end
+  
+  # job order handler
+  def process_job_orders_hook(order_hook)
+    return unless order_hook["line_items"].present? && order_hook["customer"].present?
+
+    # find jo in db
+    job_order_id_metafield = order_hook['metafields']&.find do |m|
+      m['namespace'] == 'makerepo' && m['key'] == 'job_order_db_reference'
+    end
+
+    job_order_id_metafield ||=
+      draft_order_metafields(order_hook["admin_graphql_api_id"])&.find do |field|
+        field["key"] == "job_order_db_reference"
+      end
+
+    return unless job_order_id_metafield
+      
+    job_order = JobOrder.find_by(id: job_order_id_metafield["value"])
+    job_order.update_status(true, JobStatus::COMPLETED, JobStatus::PAID, false)
   end
 
   def increment_cc_money(product_params, email)
