@@ -96,6 +96,11 @@ group :development do
   gem "web-console"
   gem "ruby-prof" # profiling
 
+  gem 'ruby-lsp-rails', require: false
+  gem "ruby-lsp-rspec", require: false
+  gem 'ruby-lsp-rubyfmt', require: false
+
+
   # ssh deploymentque
   gem "bcrypt_pbkdf", "~> 1.0"
   gem "ed25519", "~> 1.2"

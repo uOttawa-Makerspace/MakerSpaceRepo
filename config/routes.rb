@@ -668,10 +668,16 @@ Rails.application.routes.draw do
     collection { post :bulk_add_users }
   end
 
+  # :show and :update would take a space ID and use the logged in session user ID
+  resources :walk_in_safety_sheets, except: :delete
+
   # namespace :help do
   #   get 'main', path: '/'
   # end
   # get 'repositories', to: 'repositories#index'
+
+  # NOTE: Routes are executed in order, any root route below this line is now a
+  # request to a user page
 
   # USER RESOURCES
   resources :users, path: "/", param: :username, except: %i[edit destroy] do

@@ -66,8 +66,8 @@ class User < ApplicationRecord
   has_many :locker_rentals, foreign_key: "rented_by"
   has_many :staff_unavailabilities
   has_many :staff_external_unavailabilities, dependent: :destroy
+  has_many :walk_in_safety_sheets#, dependent: :destroy
   has_many :memberships, dependent: :destroy
-
 
   MAX_AUTH_ATTEMPTS = 5
 
