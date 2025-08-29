@@ -122,46 +122,48 @@ document.addEventListener("turbo:load", function () {
     document.getElementById("sign-in-email").innerText = e[1];
     // Membership Status
     if (has_membership) {
-      document.getElementById("sign-in-membership").classList.add("glow");
-      document.getElementById("sign-in-membership").classList.add("bg-success");
+      document.getElementById("no-membership").style.display = "none";
+      document.getElementById("has-membership").style.display = "block";
       document.getElementById("sign-in-membership").innerText =
         "Active until " + expiration_date;
     } else {
-      document.getElementById("sign-in-membership").innerText =
-        "No Active Membership";
-      document.getElementById("sign-in-membership").classList.add("bg-danger");
+      document.getElementById("has-membership").style.display = "none";
+      document.getElementById("no-membership").style.display = "block";
     }
     // Is Community Member
     if (is_student) {
-      document.getElementById("sign-in-student").innerText = "Student";
-      document.getElementById("sign-in-student").classList.add("bg-success");
+      document.getElementById("not-student").style.display = "none";
+      document.getElementById("is-student").style.display = "block";
     } else {
-      document.getElementById("sign-in-student").innerText = "Not Student";
-      document.getElementById("sign-in-student").classList.add("bg-danger");
+      document.getElementById("is-student").style.display = "none";
+      document.getElementById("not-student").style.display = "block";
     }
 
     var consent = getRandomInt(2);
     if (consent == 0) {
-      document.getElementById("sign-in-consent").innerText = "Signed";
-      document.getElementById("sign-in-consent").classList.add("bg-success");
+      document.getElementById("unsigned-consent-form").style.display = "none";
+      document.getElementById("signed-consent-form").style.display = "block";
     } else {
-      document.getElementById("sign-in-consent").innerText = "Unsigned";
-      document.getElementById("sign-in-consent").classList.add("bg-danger");
+      document.getElementById("signed-consent-form").style.display = "none";
+      document.getElementById("unsigned-consent-form").style.display = "block";
     }
 
     // Displaying Certifications
-    var certificationTrainings = certification[0][1];
-    var result = "<h4>";
+    if (certification[0] != null) {
+      var certificationTrainings = certification[0][1];
+      var result = "<h4>";
 
-    certificationTrainings.forEach((e) => {
-      result +=
-        '<span class="badge text-bg-light text-black-50">' +
-        e.name_en +
-        "</span>  ";
-    });
-    result += "</h4>";
-    document.getElementById("sign-in-certifications").innerHTML = result;
-
+      certificationTrainings.forEach((e) => {
+        result +=
+          '<span class="badge text-bg-light text-black-50">' +
+          e.name_en +
+          "</span>  ";
+      });
+      result += "</h4>";
+      document.getElementById("sign-in-certifications").innerHTML = result;
+    } else {
+      document.getElementById("sign-in-certifications").innerHTML = "";
+    }
     // Updating previous user signin list
     displayBefore = displayNow;
   }
@@ -191,14 +193,12 @@ document.addEventListener("turbo:load", function () {
             data.expiration_date,
             data.is_student,
           );
-        } else {
-          console.error(data.error);
         }
       });
   }
 
-  setInterval(refreshCapacity, 60000);
   refreshCapacity();
-  setInterval(refreshTables, 5000);
+  setInterval(refreshCapacity, 60000);
   refreshTables();
+  setInterval(refreshTables, 5000);
 });
