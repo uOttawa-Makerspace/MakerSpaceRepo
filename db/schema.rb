@@ -1453,13 +1453,6 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_28_202059) do
     t.decimal "hours", precision: 5, scale: 2, default: "0.0"
   end
 
-  create_table "walk_in_safety_sheet_supervisors", force: :cascade do |t|
-    t.bigint "space_id", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["space_id"], name: "index_walk_in_safety_sheet_supervisors_on_space_id"
-  end
-
   create_table "walk_in_safety_sheets", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.bigint "space_id"
@@ -1595,6 +1588,5 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_28_202059) do
   add_foreign_key "users", "spaces"
   add_foreign_key "videos", "learning_modules"
   add_foreign_key "videos", "proficient_projects"
-  add_foreign_key "walk_in_safety_sheet_supervisors", "spaces"
   add_foreign_key "walk_in_safety_sheets", "users"
 end
