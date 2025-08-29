@@ -46,6 +46,8 @@ class StaffDashboardController < StaffAreaController
           .where(trainings: { spaces: { id: space_id } })
       end
     @all_user_certs = proc { |user| user.certifications }
+    @all_user_memberships = Membership.where(user_id: @space.signed_in_users.pluck(:id)).active.pluck(:user_id)
+    @all_sign_out_memberships = Membership.where(user_id: @space.recently_signed_out_users.pluck(:id)).active.pluck(:user_id)
     recent_membership = @space.signed_in_users.first.memberships.active.order(end_date: :desc).first
     recent_expiration_date = ""
     recent_expiration_date = recent_membership.end_date.to_date unless recent_membership.nil?
@@ -62,7 +64,8 @@ class StaffDashboardController < StaffAreaController
                  locals: {
                    space: @space,
                    all_user_certs: @all_user_certs,
-                   certifications_on_space: @certifications_on_space
+                   certifications_on_space: @certifications_on_space,
+                   all_user_memberships: @all_sign_out_memberships
                  },
                  formats: [:html]
                ),
@@ -72,7 +75,8 @@ class StaffDashboardController < StaffAreaController
                  locals: {
                    space: @space,
                    all_user_certs: @all_user_certs,
-                   certifications_on_space: @certifications_on_space
+                   certifications_on_space: @certifications_on_space,
+                   all_user_memberships: @all_user_memberships
                  },
                  formats: [:html]
                )
