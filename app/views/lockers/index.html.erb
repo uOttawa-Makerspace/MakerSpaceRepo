@@ -38,18 +38,30 @@
         <% if @lockers.blank? %>
             <p>There are no lockers on record.</p>
         <% else %>
-            <% @lockers.each do |locker| %>
-                <div class="border d-flex px-3 mb-3">
-                    <p class="mb-3 px-3"><%= locker.specifier %></p>
-                    <p>
-                        <% if locker.locker_rentals.assigned.present? %>
-                            <p><%= locker.locker_rentals.assigned.first.rented_by.username %></p>
-                        <% else %>
-                            Locker not assigned
-                        <% end %>
-                    </p>
-                </div>
-            <% end %>
+            <table class="table table-striped" data-datatable data-page-length="100">
+                <thead class="table-primary">
+                    <tr>
+                        <th scope="col">Locker specifier</th>
+                        <th scope="col">Owner</th>
+                        <th scope="col">Until</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% @lockers.each do |locker| %>
+                        <tr>
+                            <th scope="row"><%= locker.specifier %></th>
+                            <td>
+                                <% if locker.locker_rentals.assigned.present? %>
+                                    <p><%= locker.locker_rentals.assigned.first.rented_by.username %></p>
+                                <% end %>
+                            </td>
+                            <td>
+                                <%= locker.locker_rentals.assigned.first.owned_until if locker.locker_rentals.assigned.present? %>
+                            </td>
+                        </tr>
+                    <% end %>
+                </tbody>
+            </table>
         <% end %>
     </fieldset>
 
