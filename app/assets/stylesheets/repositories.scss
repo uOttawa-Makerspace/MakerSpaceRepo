@@ -119,23 +119,6 @@ li.ui-menu-item {
   padding-right: 10px;
 }
 
-.select,
-select:not(.form-control) {
-  cursor: pointer;
-  display: inline-block;
-  position: relative;
-  color: #555;
-  width: 100%;
-  max-width: calc(400px + 1rem);
-  height: 2.4rem;
-  font:
-    300 0.9em "Roboto",
-    sans-serif;
-  border: 1px solid #aaa;
-  border-top-left-radius: 3px;
-  border-top-right-radius: 3px;
-}
-
 .select-styled {
   position: absolute;
   top: 0;

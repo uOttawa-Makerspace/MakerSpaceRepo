@@ -1,110 +1,95 @@
-  <section class="page-contents">
-  <%= render "signin_modal", locals: { space: @space, all_user_certs: @all_user_certs, certifications_on_space: @certifications_on_space } %>
-  <%= hidden_field_tag 'space_id', @space.id %>
-  <div>
+<%= render "signin_modal", locals: { space: @space, all_user_certs: @all_user_certs, certifications_on_space: @certifications_on_space } %>
+<%= hidden_field_tag 'space_id', @space.id %>
+<div class="max_capacity_alert">
+  <%= render partial: 'max_capacity_warning', space: @space %>
+</div>
 
-    <br>
+<h2 class="text-center pt-2 mb-5">
+  <span>Welcome to</span>
+  <%= select_tag :space_id, options_from_collection_for_select(Space.order(:name), :id, :name, @space.id),
+                 id: 'set_space_id', class: 'form-select fs-3 w-auto d-inline-block', onchange: 'setSpace()' %>
+</h2>
 
-    <div class="max_capacity_alert">
-      <%= render partial: 'max_capacity_warning', space: @space %>
-    </div>
+<%= render 'search' %>
 
-    <h2 class="text-center pt-2 mb-5">
-      Welcome to <strong><%= select_tag :space_id, options_from_collection_for_select(Space.order(:name), :id, :name, @space.id), id: 'set_space_id', class: 'form-select', onchange: 'setSpace()', style: 'padding: 2px;' %></strong>
-    </h2>
-
-    <div class="btn-group float-end">
-      <%= link_to 'Download Excel Template', asset_path('excel/ImportUsersTemplate.xlsx', skip_pipeline: true), download: 'ImportUsersTemplate.xlsx', class: 'btn btn-secondary' %>
-      <%= link_to 'Download Summary',
-                  staff_dashboard_present_users_report_path(format: 'xlsx'),
-                  action: :training_report,
-                  class: 'btn btn-secondary' %>
-    </div>
-    <br/> <br/>
-    <%= render 'search' %>
-    <br>
-
-    <% if @space.makerspace? %>
-      <div class="container" id="printer-div">
-        <div id="printer-div-2"><%= link_to 'Manage 3D-printers', staff_printers_printers_path, class: 'btn btn-secondary' %></div>
-      </div>
-    <% end %>
-    <br />
-    <div class="table-responsive border">
-      <table class="staff-users-table table table-striped text-center" data-datatable data-page-length="50">
-        <caption id="user-count" class="text-center fs-3" align="top">Users inside <%= @space.name %>:  <%= @space.signed_in_users.count %>
-        <div class="container text-center mx-auto">
-          <%= link_to 'Sign Out All Users', staff_dashboard_sign_out_all_users_path, class: 'btn btn-secondary mx-auto text-center' %>
-          <%= button_to 'Add Signed In Users to Teams Program', staff_dashboard_add_signed_in_users_to_teams_path, method: :patch, class: 'btn btn-primary mx-auto text-center mt-1', data: { confirm: 'Are you sure you want to add all signed in users to the teams program?' } if @space.jmts? %>
-        </div>
-        </caption>
-        <thead class="table-primary">
-          <tr>
-            <th class="name-header">
-              Name
-              <% @table_column_count += 1 %>
-            </th>
-            <th class="email-header">
-              Email
-              <% @table_column_count += 1 %>
-            </th>
-            <th class="name-header">
-              Flagged?
-              <% @table_column_count += 1 %>
-            </th>
-            <th class="certifications-header">
-              Certifications in <%= @space.name %>
-              <% @table_column_count += 1 %>
-            </th>
-            <% if @space.makerspace? %>
-              <th class="printers-header">Assigned Printers</th>
-              <% @table_column_count += 1 %>
-            <% end %>
-            <th class="email-header">
-              # of visits <br> (Past 2 months)
-              <% @table_column_count += 1 %>
-            </th>
-            <th class="last-seen-header">
-              Last Seen
-              <% @table_column_count += 1 %>
-            </th>
-            <th class="action-header disable-sort">Sign Out of <%= @space.name %></th>
-          </tr>
-        </thead>
-
-        <%= render partial: 'signed_in_table', locals: { space: @space, all_user_certs: @all_user_certs, certifications_on_space: @certifications_on_space } %>
-      </table>
-    </div>
-    <br />
-    <div class="table-responsive border">
-      <table class="staff-recent-users-table text-center table table-striped table-sort table-arrows" data-datatable>
-        <caption class="text-center fs-3" align="top">Users recently signed out of <%= @space.name %></caption>
-        <thead class="table-primary">
-          <tr>
-            <th class="name-header">Name</th>
-            <th class="email-header">Email</th>
-            <th class="last-seen-header">Last Seen</th>
-            <th class="action-header disable-sort"><%= fa_icon('check') %>&nbsp; TO SIGN IN <br> <%= fa_icon('times') %>&nbsp; TO SIGN OUT</th>
-          </tr>
-        </thead>
-        <%= render partial: 'signed_out_table', locals: { space: @space, all_user_certs: @all_user_certs, certifications_on_space: @certifications_on_space } %>
-      </table>
-    </div>
-    <br />
-    <div class="table-responsive border">
-      <table class="text-center table table-striped staff-newly-signed-up-users-table table-sort table-arrows" data-datatable>
-        <caption class="text-center fs-3" align="top">Newly signed up users on Maker<strong>Repo</strong></caption>
-        <thead class="table-primary">
-          <tr>
-            <th class="name-header">Name</th>
-            <th class="email-header">Email</th>
-            <th class="action-header disable-sort">Sign In To <%= @space.name %></span></th>
-          </tr>
-        </thead>
-        <%= render partial: 'newly_signed_up', locals: { space: @space, all_user_certs: @all_user_certs, certifications_on_space: @certifications_on_space } %>
-      </table>
-    </div>
-    <br />
+<% if @space.makerspace? %>
+  <div class="container" id="printer-div">
+    <div id="printer-div-2"><%= link_to 'Manage 3D-printers', staff_printers_printers_path, class: 'btn btn-secondary' %></div>
   </div>
-</section>
+<% end %>
+<hr />
+<div class="table-responsive">
+  <table class="table table-striped" data-datatable data-page-length="50" data-responsive="true">
+    <caption id="user-count" class="text-center fs-3" align="top"><%= pluralize @space.signed_in_users.count, 'user' %> inside <%= @space.name %>
+      <div class="d-flex justify-content-around">
+        <%= link_to "#{fa_icon('sign-out')} Sign Out All Users", staff_dashboard_sign_out_all_users_path, class: 'btn btn-danger', data: {confirm: 'Are you sure you want to sign out all users?'} %>
+        <%= button_to "#{fa_icon('group')} Add Signed In Users to Teams Program", staff_dashboard_add_signed_in_users_to_teams_path, method: :patch, form_class: 'btn btn-primary', class: 'btn p-0', data: { confirm: 'Are you sure you want to add all signed in users to the teams program?' } if @space.jmts? %>
+      </div>
+    </caption>
+    <thead class="table-primary">
+      <tr>
+        <th class="name-header">
+          Name
+          <% @table_column_count += 1 %>
+        </th>
+        <th class="email-header">
+          Email
+          <% @table_column_count += 1 %>
+        </th>
+        <th class="name-header">
+          Flagged?
+          <% @table_column_count += 1 %>
+        </th>
+        <th class="certifications-header">
+          Certifications in <%= @space.name %>
+          <% @table_column_count += 1 %>
+        </th>
+        <% if @space.makerspace? %>
+          <th class="printers-header">Assigned Printers</th>
+          <% @table_column_count += 1 %>
+        <% end %>
+        <th class="email-header">
+          # of visits <br> (Past 2 months)
+          <% @table_column_count += 1 %>
+        </th>
+        <th class="last-seen-header">
+          Last Seen
+          <% @table_column_count += 1 %>
+        </th>
+        <th class="action-header disable-sort">Sign Out of <%= @space.name %></th>
+      </tr>
+    </thead>
+
+    <%= render partial: 'signed_in_table', locals: { space: @space, all_user_certs: @all_user_certs, certifications_on_space: @certifications_on_space } %>
+  </table>
+</div>
+<hr />
+<div class="table-responsive">
+  <table class="table table-striped table-sort" data-datatable>
+    <caption class="text-center fs-3" align="top">Users recently signed out of <%= @space.name %></caption>
+    <thead class="table-primary">
+      <tr>
+        <th class="name-header">Name</th>
+        <th class="email-header">Email</th>
+        <th class="last-seen-header">Last Seen</th>
+        <th class="action-header disable-sort"><%= fa_icon('check') %>&nbsp; TO SIGN IN <br> <%= fa_icon('times') %>&nbsp; TO SIGN OUT</th>
+      </tr>
+    </thead>
+    <%= render partial: 'signed_out_table', locals: { space: @space, all_user_certs: @all_user_certs, certifications_on_space: @certifications_on_space } %>
+  </table>
+</div>
+<hr />
+<div class="table-responsive">
+  <table class="table table-striped staff-newly-signed-up-users-table table-sort table-arrows" data-datatable>
+    <caption class="text-center fs-3" align="top">Newly signed up users on Maker<strong>Repo</strong></caption>
+    <thead class="table-primary">
+      <tr>
+        <th class="name-header">Name</th>
+        <th class="email-header">Email</th>
+        <th class="action-header disable-sort">Sign In To <%= @space.name %></span></th>
+      </tr>
+    </thead>
+    <%= render partial: 'newly_signed_up', locals: { space: @space, all_user_certs: @all_user_certs, certifications_on_space: @certifications_on_space } %>
+  </table>
+</div>
 <%= vite_javascript_tag 'staff_dashboard', 'data-turbo-track': 'reload' %>
