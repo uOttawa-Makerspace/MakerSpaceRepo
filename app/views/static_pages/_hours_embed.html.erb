@@ -15,3 +15,20 @@
     <% end %>
     <p><%= opening_hour.notes&.html_safe %></p>
 <% end %>
+
+<% grouped = @weekly_events.group_by { |e| e.dtstart.to_date.wday } %>
+
+<% Date::DAYNAMES.each_with_index do |day, i| %>
+  <div class="formatted-hour-row">
+    <span><%= day %></span>
+    <% if grouped[i] %>
+      <span>
+        <% grouped[i].each do |event| %>
+          <%= event.dtstart.to_time.strftime("%I:%M %p") %> - <%= event.dtend.to_time.strftime("%I:%M %p") %><br>
+        <% end %>
+      </span>
+    <% else %>
+      <span><%= t("hours.tags.closed") %></span>
+    <% end %>
+  </div>
+<% end %>

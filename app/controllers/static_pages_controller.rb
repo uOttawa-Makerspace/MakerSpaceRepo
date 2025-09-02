@@ -91,6 +91,20 @@ class StaticPagesController < SessionsController
   def hours
     @contact_info = ContactInfo.where(show_hours: true).order(name: :asc)
 
+    url = "https://calendar.google.com/calendar/ical/c_ed8123a51d455a358fbb36213a9d3cf37fde88c6e51252d8396faf54a5ae75f4%40group.calendar.google.com/public/basic.ics"
+
+    file = URI.open(url).read
+    calendars = Icalendar::Calendar.parse(file)
+    calendar = calendars.first
+
+    start_of_week = Time.zone.today.beginning_of_week + 2.weeks
+    end_of_week = Time.zone.today.end_of_week + 2.weeks
+
+    @weekly_events = calendar.events.select do |event|
+      event.dtstart.to_time >= start_of_week.beginning_of_day &&
+        event.dtstart.to_time <= end_of_week.end_of_day
+    end
+
     respond_to do |format|
       format.html { render :hours }
       format.json do
