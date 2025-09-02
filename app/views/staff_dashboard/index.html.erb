@@ -4,11 +4,11 @@
   <%= render partial: 'max_capacity_warning', space: @space %>
 </div>
 
-<h2 class="text-center pt-2 mb-5">
+<h1 class="text-center pt-2 mb-3">
   <span>Welcome to</span>
   <%= select_tag :space_id, options_from_collection_for_select(Space.order(:name), :id, :name, @space.id),
-                 id: 'set_space_id', class: 'form-select fs-3 w-auto d-inline-block', onchange: 'setSpace()' %>
-</h2>
+                 id: 'set_space_id', class: 'form-select fs-2 w-auto d-inline-block', onchange: 'setSpace()' %>
+</h1>
 
 <%= render 'search' %>
 
@@ -17,13 +17,20 @@
     <div id="printer-div-2"><%= link_to 'Manage 3D-printers', staff_printers_printers_path, class: 'btn btn-secondary' %></div>
   </div>
 <% end %>
-<hr />
+<!-- <hr /> -->
 <div class="table-responsive">
   <table class="table table-striped" data-datatable data-page-length="50" data-responsive="true">
     <caption id="user-count" class="text-center fs-3" align="top"><%= pluralize @space.signed_in_users.count, 'user' %> inside <%= @space.name %>
       <div class="d-flex justify-content-around">
-        <%= link_to "#{fa_icon('sign-out')} Sign Out All Users", staff_dashboard_sign_out_all_users_path, class: 'btn btn-danger', data: {confirm: 'Are you sure you want to sign out all users?'} %>
-        <%= button_to "#{fa_icon('group')} Add Signed In Users to Teams Program", staff_dashboard_add_signed_in_users_to_teams_path, method: :patch, form_class: 'btn btn-primary', class: 'btn p-0', data: { confirm: 'Are you sure you want to add all signed in users to the teams program?' } if @space.jmts? %>
+        <%= link_to staff_dashboard_sign_out_all_users_path, class: 'btn btn-danger', data: {confirm: 'Are you sure you want to sign out all users?'} do %>
+          <%= fa_icon('sign-out') %> Sign Out All Users
+        <% end %>
+        <% if @space.jmts? %>
+          <%= button_to staff_dashboard_add_signed_in_users_to_teams_path, method: :patch, form_class: 'btn btn-primary', class: 'btn p-0',
+                        data: { confirm: 'Are you sure you want to add all signed in users to the teams program?' } do %>
+            <%= fa_icon('group') %> Add Signed In Users to Teams Program
+          <% end %>
+        <% end %>
       </div>
     </caption>
     <thead class="table-primary">
