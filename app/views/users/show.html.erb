@@ -1,23 +1,17 @@
 <% provide(:title, "#{@repo_user.username}\'s Profile") %>
 
-<div class="emp-profile">
-  <div class="row">
-    <div class="col-md-4">
+<div class="container">
+  <div class="row mb-3 g-3">
+    <div class="col-md-4 border">
       <!--      User's Avatar-->
       <div class="profile-img">
-        <% if @repo_user.eql?(@user) %>
-          <%= link_to settings_profile_path do %>
-            <%= image_tag @repo_user.display_avatar, alt: 'Avatar' %>
-          <% end %>
-        <% else %>
-          <%= image_tag @repo_user.display_avatar, alt: 'Avatar' %>
-        <% end %>
+        <%= image_tag @repo_user.display_avatar, alt: 'Avatar' %>
       </div>
       <!--      MORE INFO Section-->
       <div class="profile-work">
-        <p>MORE INFO</p>
+        <p>More info</p>
         <%= fa_icon 'location-arrow', text: @repo_user.location if @repo_user.location.present? %><br />
-        <%= fa_icon 'clock-o', text: "Joined on #{@repo_user.created_at.strftime('%B %d %Y')}" %><br />
+        <%= fa_icon 'clock-o', text: "Joined on #{@repo_user.created_at.to_date.to_fs :long}" %><br />
         <% if @github_username.present? %>
           <%= fa_icon 'github-alt' %>
           <%= link_to @github_username, "https://github.com/#{@github_username}" %><br />
@@ -26,7 +20,7 @@
           <%= fa_icon('link') %>
           <%= link_to @repo_user.url.gsub(%r{\Ahttps?://}, '').to_s, @repo_user.url %> <br />
         <% end %>
-        <p>SKILLS</p>
+        <p>Skills</p>
         <% @certifications.each do |certification| %>
           <div class="row">
             <div class="col-md-6">
@@ -61,22 +55,22 @@
       <div class="profile-head">
         <div class="row">
           <div class="col-md-9">
-            <p class="fs-3"><%= @repo_user.name %></p>
-            <p class="ms-3 fs-5"><%= @repo_user.username %></p>
-            <%= image_tag('cc.png', alt: 'CC', class: 'ccs') %>: <b><%= @repo_user.get_total_cc %></b>
-            <p class="proile-rating">REPUTATION : <span><%= @repo_user.reputation %></span></p>
-            <% if @repo_user.staff? %>
-              <p class="text-secondary fw-bold" >Makerepo <%= @repo_user.role.humanize %></p>
-            <% end %>
-            <% if @repo_user == current_user || current_user.staff? %>
-              <div class="d-flex">
-                <%= render 'users/membership_tag', user: @repo_user %>
-              </div>
-            <% end %>
+            <h1 class="fs-3"><%= @repo_user.name %></h3>
+              <p class="ms-3 fs-5"><%= @repo_user.username %></p>
+              <%= image_tag('cc.png', alt: 'CC', class: 'ccs') %>: <b><%= @repo_user.get_total_cc %></b>
+              <p class="proile-rating">REPUTATION : <span><%= @repo_user.reputation %></span></p>
+              <% if @repo_user.staff? %>
+                <p class="text-secondary fw-bold" >Makerepo <%= @repo_user.role.humanize %></p>
+              <% end %>
+              <% if @repo_user == current_user || current_user.staff? %>
+                <div class="d-flex">
+                  <%= render 'users/membership_tag', user: @repo_user %>
+                </div>
+              <% end %>
           </div>
           <div class="col-md-3">
             <!--      EDIT PROFILE Section-->
-            <div class="btn-group-vertical w-100">
+            <div class="btn-group-vertical">
               <% if current_user.admin? %>
                 <%= button_to fa_icon(@repo_user.locked? ? 'unlock' : 'lock'),
                               toggle_lock_user_admin_users_path(id: @repo_user),
@@ -98,7 +92,7 @@
                 <% end %>
 
                 <% if @repo_user.rfid.present? %>
-                  <div class="dropdown">
+                  <div class="dropdown btn-group">
                     <button class="btn btn-success dropdown-toggle" type="button"
                             id="rfidUnregisterMenu" data-bs-toggle="dropdown" aria-haspopup="true"
                             aria-expanded="false">
@@ -110,7 +104,7 @@
                     </div>
                   </div>
                 <% else %>
-                  <div class="dropdown">
+                  <div class="dropdown btn-group">
                     <button class="btn btn-outline-danger dropdown-toggle" type="button"
                             id="rfidUnregisterMenu" data-bs-toggle="dropdown" aria-haspopup="true"
                             aria-expanded="false">
@@ -140,7 +134,7 @@
         </ul>
       </div>
       <!--      PROFILE CONTENT Section-->
-      <div class="tab-content profile-tab bg-light border-black" id="myTabContent">
+      <div class="tab-content profile-tab p-3 bg-light rounded-top border" id="myTabContent">
         <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
           <%= render partial: 'users/tabs/home', locals: { user: @user, repo_user: @repo_user } %>
         </div>
@@ -206,7 +200,7 @@
           </div>
     </div>
     <!-- FOOTER Section-->
-    <section id="user-show-links" class="m-5" style="margin-bottom: 20px!important;">
+    <section id="user-show-links" class="text-center mb-3">
       <%= link_to "#{user_path(show: :repositories)}#user-show-links", class: ('tab-active' if !params[:show] || params[:show].eql?('repositories')) do %>
         <span class="number"><%= @repositories.count %></span> REPOS
       <% end %>
@@ -217,7 +211,7 @@
         <span class="number"><%= @joined_projects.count %></span> JOINED PROJECTS
       <% end %>
     </section>
-    <section id="repositories-container" class="m-5">
+    <section id="repositories-container">
       <%= render partial: 'users/repositories', locals: { repositories: @repositories } %>
     </section>
     <div id="modal-window" class="modal hide fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
