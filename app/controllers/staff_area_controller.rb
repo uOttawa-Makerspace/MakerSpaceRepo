@@ -7,6 +7,8 @@ class StaffAreaController < SessionsController
   private
 
   def ensure_staff
+    redirect_to login_path(back_to: request.fullpath) unless signed_in?
+
     @user = current_user
     unless @user.staff? || @user.admin?
       redirect_to root_path
