@@ -7,7 +7,7 @@
 
   <%= form_tag staff_dashboard_user_profile_path, method: :get, id: 'search_user_fastsearch', class: 'btn btn-secondary' do %>
     <%= hidden_field_tag :username, '', { id: 'search_user_fastsearch_username' } %>
-    <%= button_tag 'Search', onclick: 'searchForm()', class: 'btn p-0' %>
+    <%= button_tag 'View', onclick: 'searchForm()', class: 'btn p-0' %>
   <% end %>
 </div>
 
@@ -16,11 +16,15 @@
     Download...
   </button>
   <ul class="dropdown-menu">
-    <li>
-      <%= link_to "#{fa_icon(:download)} Excel Template (xlsx)", asset_path('excel/ImportUsersTemplate.xlsx', skip_pipeline: true), download: 'ImportUsersTemplate.xlsx', class: 'dropdown-item' %>
+      <li>
+          <%= link_to asset_path('excel/ImportUsersTemplate.xlsx', skip_pipeline: true), download: 'ImportUsersTemplate.xlsx', class: 'dropdown-item' do %>
+              <%= fa_icon(:download) %> Excel Template (xlsx)
+          <% end %>
     </li>
     <li>
-      <%= link_to "#{fa_icon(:download)} Summary (xlsx)", staff_dashboard_present_users_report_path(format: 'xlsx'), action: :training_report, class: 'dropdown-item' %>
+        <%= link_to staff_dashboard_present_users_report_path(format: 'xlsx'), action: :training_report, class: 'dropdown-item' do %>
+            <%= fa_icon(:download) %> Summary (xlsx)
+        <% end %>
     </li>
   </ul>
 </div>
