@@ -19,10 +19,10 @@
           <% @space_list.each do |space| %>
             <%= check_box_tag 'space_ids[]', space.id, false, class: 'form-check-input' %>
             <%= label_tag 'space[]', space.name %>
-            <%= hidden_field_tag 'user_ids[]', [] %>
             <br>
           <% end %>
         </div>
+        <%= hidden_field_tag 'user_ids[]', [] %>
       </div>
     </div>
       <button type="submit" class="btn btn-success mt-3 w-25 mx-auto">Confirm Changes</button>
