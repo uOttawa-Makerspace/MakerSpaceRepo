@@ -2,9 +2,6 @@
 
 <%# HACK to get out of the forced admin container div and reclaim some horizontal space %>
 <% content_for :before_container do %>
-    <%= render 'locker_rentals/nav_tabs', selected: :admin_rental %>
-    <%= render 'lockers/admin_nav_tabs', selected: :rentals %>
-
     <div class="mx-md-3 pt-3">
         <h1 class="text-center">Locker Rentals</h1>
         <div class="d-flex">
