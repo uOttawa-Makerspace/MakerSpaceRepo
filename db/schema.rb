@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_08_20_195031) do
+ActiveRecord::Schema[7.2].define(version: 2025_08_28_202059) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -670,7 +670,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_20_195031) do
 
   create_table "lockers", force: :cascade do |t|
     t.string "specifier"
-    t.boolean "available"
+    t.boolean "available", default: true, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["specifier"], name: "index_lockers_on_specifier"
@@ -681,6 +681,18 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_20_195031) do
     t.string "title"
     t.string "url"
     t.boolean "shown", default: true
+  end
+
+  create_table "memberships", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "membership_type"
+    t.datetime "start_date"
+    t.datetime "end_date"
+    t.string "shopify_draft_order_id"
+    t.string "status", default: "paid"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_memberships_on_user_id"
   end
 
   create_table "opening_hours", force: :cascade do |t|
@@ -1443,6 +1455,27 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_20_195031) do
     t.decimal "hours", precision: 5, scale: 2, default: "0.0"
   end
 
+  create_table "walk_in_safety_sheets", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "space_id"
+    t.boolean "is_minor"
+    t.string "participant_signature"
+    t.string "participant_telephone_at_home"
+    t.string "guardian_signature"
+    t.string "minor_participant_name"
+    t.string "guardian_telephone_at_home"
+    t.string "guardian_telephone_at_work"
+    t.string "emergency_contact_name"
+    t.string "emergency_contact_telephone"
+    t.string "supervisor_names"
+    t.string "supervisor_contacts"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["space_id"], name: "index_walk_in_safety_sheets_on_space_id"
+    t.index ["user_id", "space_id"], name: "index_walk_in_safety_sheets_on_user_id_and_space_id", unique: true
+    t.index ["user_id"], name: "index_walk_in_safety_sheets_on_user_id"
+  end
+
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "announcement_dismisses", "announcements"
@@ -1503,6 +1536,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_20_195031) do
   add_foreign_key "locker_rentals", "lockers"
   add_foreign_key "locker_rentals", "users", column: "decided_by_id"
   add_foreign_key "locker_rentals", "users", column: "rented_by_id"
+  add_foreign_key "memberships", "users"
   add_foreign_key "order_items", "orders"
   add_foreign_key "order_items", "proficient_projects"
   add_foreign_key "orders", "order_statuses"
@@ -1559,4 +1593,5 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_20_195031) do
   add_foreign_key "users", "spaces"
   add_foreign_key "videos", "learning_modules"
   add_foreign_key "videos", "proficient_projects"
+  add_foreign_key "walk_in_safety_sheets", "users"
 end

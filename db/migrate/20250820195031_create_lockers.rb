@@ -2,7 +2,7 @@ class CreateLockers < ActiveRecord::Migration[7.2]
   def change
     create_table :lockers do |t|
       t.string :specifier, index: true
-      t.boolean :available
+      t.boolean :available, default: true, null: false
 
       t.timestamps
     end
