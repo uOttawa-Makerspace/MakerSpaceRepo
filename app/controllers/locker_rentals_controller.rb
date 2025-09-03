@@ -1,9 +1,8 @@
 class LockerRentalsController < SessionsController
   before_action :current_user
-  before_action :signed_in, except: %i[stripe_success stripe_cancelled]
+  before_action :signed_in
   # Also sets @locker_rental
-  before_action :check_permission,
-                except: %i[index new create stripe_success stripe_cancelled]
+  before_action :check_permission, except: %i[index new create]
 
   def index
     @own_locker_rentals = current_user.locker_rentals
@@ -19,7 +18,7 @@ class LockerRentalsController < SessionsController
 
     respond_to do |format|
       format.json { render json: @locker_rentals }
-      format.all {render layout: 'admin_area'}
+      format.all { render layout: "staff_area" }
     end
   end
 

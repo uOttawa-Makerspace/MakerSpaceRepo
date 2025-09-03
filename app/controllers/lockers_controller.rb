@@ -1,4 +1,4 @@
-class LockersController < StaffAreaController
+class LockersController < AdminAreaController
   before_action :signed_in
 
   before_action do
