@@ -4,6 +4,8 @@ Stripe.api_key =
 StripeEvent.signing_secret =
   Rails.application.credentials[Rails.env.to_sym][:stripe][:webhook_secret_key]
 
+# NOTE: We don't use stripe anymore and all of the systems here have been
+# overhauled. These callbacks probably do not work anymore.
 StripeEvent.configure do |events|
   events.subscribe "payout.paid" do |event|
     obj =
