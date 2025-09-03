@@ -1,5 +1,4 @@
 #!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
 bundle lock --add-platform aarch64-linux
 npx lint-staged
 printf "Changed Files:"
