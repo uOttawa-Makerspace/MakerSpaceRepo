@@ -1,7 +1,9 @@
 <section class="page-contents">
   <div class="text-center padding">
 
-    <h2 class="pt-2 mb-5">New <strong><%= select_tag :space_id, options_from_collection_for_select(Space.order(:name), :id, :name, @space.id), id: 'set_space_id', class: 'form-select', onchange: 'setSpace()', style: 'width: 50%; padding: 2px;' %></strong>
+    <h2 class="my-3">
+      New
+      <strong><%= select_tag :space_id, options_from_collection_for_select(Space.order(:name), :id, :name, @space.id), id: 'set_space_id', class: 'form-select fs-3 w-auto d-inline-block pe-0', onchange: 'setSpace()' %></strong>
       Training Session</h2>
 
     <%= form_for @new_training_session, url: { action: 'create', controller: 'staff/training_sessions' } do |f| %>
