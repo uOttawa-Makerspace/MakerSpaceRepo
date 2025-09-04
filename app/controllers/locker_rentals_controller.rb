@@ -38,33 +38,9 @@ class LockerRentalsController < SessionsController
 
   def create
     @locker_rental = LockerRental.new(locker_rental_params)
-    # if not admin member or has debug value set
-    # then force to wait for admin approval
-    if !current_user.staff? || params.dig(:locker_rental, :ask)
-      @locker_rental.state = :reviewing
-      # If not admin, only create request for self
-      @locker_rental.rented_by = current_user
-    elsif current_user.staff? && locker_rental_params[:state] == "active"
-      # if acting as admin
-      # save down later
-      @locker_rental.auto_assign
-    end
 
-    # validate locker type if not administration
-    unless current_user.staff?
-      # not an admin, asking for an unavailable locker
-      unless @locker_rental.locker_type.available
-        new_instance_attributes
-        render :new, status: :unprocessable_entity
-        return
-      end
-
-      if @locker_rental.locker_type.get_available_lockers.empty?
-        new_instance_attributes
-        render :new, status: :unprocessable_entity
-        return
-      end
-    end
+    # If locker rental needs a decision
+    @locker_rental.decided_by = current_user unless @locker_rental.reviewing?
 
     if @locker_rental.save
       redirect_back fallback_location: :new_locker_rental
@@ -76,27 +52,28 @@ class LockerRentalsController < SessionsController
 
   def update
     @locker_rental = LockerRental.find(params[:id])
+    # Assign new parameters but don't commit yet
+    @locker_rental.assign_attributes(locker_rental_params)
 
-    if current_user.staff? && locker_rental_params[:state] == "active"
+    if @locker_rental.state_changed?(from: :reviewing)
+      @locker_rental.decided_by = current_user
+    end
+
+    # FIXME: move this to model
+    if @locker_rental.state_changed?(to: :active)
       # default to end of semester
       @locker_rental.owned_until ||= end_of_this_semester
     end
 
-    # Only admins can cancel active rentals
-    # If current user is attempting to change state
-    if !current_user.staff? && locker_rental_params[:state].present?
-      # prevent if not cancelling a non-active rental
-      unless locker_rental_params[:state] == "cancelled" &&
-               @locker_rental.pending?
-        flash[
-          :alert
-        ] = "Cannot cancel active locker rental, contact administration for cancellation"
-        render :show, status: :unprocessable_entity
-        return
-      end
+    # Only staff can cancel a paid locker
+    if @locker_rental.state_changed?(from: :active, to: :cancelled) &&
+         !current_user.staff?
+      flash[:alert] = "Please contact administration for cancelling a locker"
+      render :show, status: :unprocessable_entity
+      return
     end
 
-    if @locker_rental.update(locker_rental_params)
+    if @locker_rental.save
       flash[:notice] = "Locker rental updated"
     else
       flash[:alert] = "Failed to update locker rental" + helpers.tag.br +
@@ -157,12 +134,16 @@ class LockerRentalsController < SessionsController
   end
 
   def locker_rental_params
-    if current_user.staff? && !params.dig(:locker_rental, :ask)
+    if current_user.staff?
       admin_locker_rental_params
-    elsif params[:id] # If updating, only allow state cancellations
+    elsif params[:id] # If updating, only allow cancellations
       params.require(:locker_rental).permit(:state)
     else # If new, only allow some details
-      params.require(:locker_rental).permit(:notes, :requested_as, :repository_id)
-    end
+      params.require(:locker_rental).permit(
+        :notes,
+        :requested_as,
+        :repository_id
+      )
+    end.with_defaults(rented_by_id: current_user.id)
   end
 end
