@@ -3,9 +3,9 @@
         <% if local_assigns[:header_title] %>
             <caption class="text-center fs-3" align="top"><%= header_title %></caption>
         <% end %>
-        <thead class="table-primary text-center">
+        <thead class="table-primary">
             <tr>
-                <th class="w-auto dt-center" data-type="num"><%= t('lockers.locker_id') %></th>
+                <th class="w-auto dt-center" data-type="num"><%= t('lockers.locker_id') %> assigned</th>
                 <th class="w-auto"><%= t('lockers.rented_by') %></th>
                 <th class="w-auto"><%= t('lockers.state.state') %></th>
                 <th class="w-auto">Requested on</th>
@@ -21,7 +21,9 @@
             <% if locker_rentals.present? %>
                 <% locker_rentals.each do |rental| %>
                     <tr>
-                        <td class="dt-center"> #<%= rental.locker&.specifier %></td>
+                        <td class="dt-center">
+                            <%= link_to "##{rental.locker&.specifier}", rental, class: 'link' %>
+                        </td>
                         <td><%= link_to rental.rented_by.username, user_path(rental.rented_by) %>
                             <%= tag.span(rental.rented_by.role.humanize, class: 'badge text-bg-primary') if rental.rented_by.staff? %></td>
                         <td data-search="<%= rental.state %>">
@@ -40,7 +42,6 @@
                         </td>
                         <td><%= rental.updated_at&.to_date %></td>
                         <td><%= rental.owned_until&.to_date || 'Unapproved yet' %></td>
-                        <td><%= link_to t('lockers.details'), rental, class: 'btn btn-sm btn-primary' %></td>
                     </tr>
                 <% end %>
             <% end %>
