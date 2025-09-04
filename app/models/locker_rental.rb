@@ -11,6 +11,7 @@ class LockerRental < ApplicationRecord
   # Associated when assigned
   belongs_to :locker, optional: true
   belongs_to :rented_by, class_name: "User"
+  belongs_to :decided_by, class_name: "User", optional: true
   # optional because some students don't always have a repository ready beforehand
   belongs_to :repository, optional: true
 
@@ -27,11 +28,15 @@ class LockerRental < ApplicationRecord
          active: "active",
          # Cancelled, no longer assigned
          cancelled: "cancelled"
-       }, validate: true
+       },
+       validate: true,
+       default: :reviewing
 
   # Shares the enum with the other class,
   # not really work making a whole concern for one enum
-  enum :requested_as, { staff: "staff", student: "student", general: "general" }, prefix: true
+  enum :requested_as,
+       { staff: "staff", student: "student", general: "general" },
+       prefix: true
 
   # specifier is a string, call #squish on it
   normalizes :specifier, with: :squish
@@ -41,9 +46,9 @@ class LockerRental < ApplicationRecord
   def only_one_request_per_user
     # If this request is under review, and another by same user is also under review
     if pending? &&
-       LockerRental.where(rented_by: rented_by).exists?(
-         state: %i[reviewing await_payment]
-       )
+         LockerRental.where(rented_by: rented_by).exists?(
+           state: %i[reviewing await_payment]
+         )
       errors.add(:rented_by, "already has a request under review")
     end
   end
@@ -52,10 +57,19 @@ class LockerRental < ApplicationRecord
   with_options if: :active? do |rental|
     # Don't double assign lockers of same locker type if assigned
     rental.validates :locker,
-              uniqueness: { conditions: -> { assigned } },
-              allow_nil: true # Skip validation if nil, caught below anyways
-    rental.validates :locker, :rented_by, :owned_until, presence: true
+                     uniqueness: {
+                       conditions: -> { assigned }
+                     },
+                     allow_nil: true # Skip validation if nil, caught below anyways
+    rental.validates :locker, :owned_until, presence: true
   end
+
+  # If state ever changes from request, record who did it
+  # Which staff member approved the request, or if owner cancelled the request
+  validates :decided_by, presence: true, unless: :reviewing?
+
+  # Locker rental always has an owner
+  validates :rented_by, presence: true
 
   # Scopes to aid sorting rentals
   scope :pending, -> { where(state: %i[reviewing await_payment]) }
@@ -65,8 +79,6 @@ class LockerRental < ApplicationRecord
     {
       state: (:active unless active?),
       owned_until: (end_of_this_semester if owned_until.blank?),
-      locker_specifier:
-        (locker_type.get_available_lockers.first if locker_specifier.blank?)
     }.compact
   end
 
@@ -114,9 +126,9 @@ class LockerRental < ApplicationRecord
   # Fetch checkout link from shopify .Returns nil if API call fails or checkout
   # is not possible now.
   def checkout_link
-    return nil unless await_payment?  # checkout only if await payment
+    return nil unless await_payment? # checkout only if await payment
 
-    shopify_checkout_link
+    shopify_draft_order["invoiceUrl"]
   end
 
   # For the view
@@ -144,17 +156,34 @@ class LockerRental < ApplicationRecord
   end
 
   private
+
   # Definitions for the shopify concern
 
   def shopify_draft_order_line_items
-    [
-      {
-        "quantity": 1,
-        # FIXME: Locker product ID is hardcoded here
-        # locker product ID 10478024917048
-        "merchandiseId": "gid://shopify/Product/10478024917048",
-      }
-    ]
+    if Rails.env.production?
+      [
+        {
+          quantity: 1,
+          # FIXME: Locker product ID is hardcoded here
+          # locker product ID 10478024917048
+          # variant ID is 50851781312568
+          variantId: "gid://shopify/ProductVariant/50851781312568"
+        }
+      ]
+    else
+      # Make a free locker, yay
+      [
+        {
+          quantity: 1,
+          title:
+            "TEST locker on #{Rails.env} environment.",
+          originalUnitPriceWithCurrency: {
+            amount: "0",
+            currencyCode: "CAD"
+          }
+        }
+      ]
+    end
   end
 
   # name of the metafield key stored on shopify side
