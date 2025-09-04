@@ -344,10 +344,7 @@ class User < ApplicationRecord
   end
 
   def get_certifications_names
-    cert = []
-    certifications.each { |c| cert << c.get_name_en }
-    Rails.logger.debug cert
-    cert
+    certifications.map { |c| c.get_name_en }
   end
 
   def get_volunteer_tasks_from_volunteer_joins
