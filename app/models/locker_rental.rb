@@ -79,6 +79,7 @@ class LockerRental < ApplicationRecord
     {
       state: (:active unless active?),
       owned_until: (end_of_this_semester if owned_until.blank?),
+      paid_on: Date.current
     }.compact
   end
 
