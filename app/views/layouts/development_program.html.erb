@@ -9,14 +9,13 @@
     <%= csrf_meta_tags %>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<!--    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">-->
   </head>
   <body>
     <%= render 'layouts/header', with_development: true %>
 
     <%= render partial: 'partials/announcements' %>
 
-    <section class="h-100">
+    <section>
       <div class="bg-white">
         <div class="container">
           <%= yield %>

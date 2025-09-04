@@ -76,8 +76,8 @@ fr:
     uni_programs: "Programmes Universitaires"
     training:
       title: "Nouvelle entraînement"
-      name_en: "Nom anglais:"
-      name_fr: "Nom français:"
+      name_en: "Nom en anglais:"
+      name_fr: "Nom en français:"
       skill: "Type de compétence:"
       desc_en: "Description du certificat (anglais)"
       desc_fr: "Description du certificat (français)"
