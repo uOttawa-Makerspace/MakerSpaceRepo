@@ -1,37 +1,32 @@
 <% provide :title, t('lockers.view_locker_request') %>
 <div class="container">
     <h1 class="text-center"><%= t('lockers.locker_request') %> #<%= @locker_rental.id %> - <%= t("lockers.state.#{@locker_rental.state}") %></h1>
-    <h2 class="fs-4"><%= t('lockers.details') %></h2>
-    <p><%= t('lockers.submitted_on') %> <b><%= @locker_rental.created_at.to_date %></b> <%= t('lockers.for') %>
-        <%= link_to @locker_rental.rented_by.username, user_url(@locker_rental.rented_by.username) %>
-        <%= tag.span(@locker_rental.rented_by.role.humanize, class: 'badge text-bg-primary') if @locker_rental.rented_by.staff? %></p>
-    <p><b><%= t('lockers.locker') %>:</b> <%= @locker_rental.locker&.specifier || '-' %></p>
-    <p><b><%= t('lockers.state.state') %>:</b> <%= @locker_rental.state.humanize %></p>
-    <p><b><%= t('lockers.paid_on') %>:</b> <%= @locker_rental.paid_at&.to_date&.to_fs(:long) || '-' %></p>
-    <p><b>Approved by:</b> <%= @locker_rental.decided_by.name %></p>
-    <p><b>Requested as:</b> <%= @locker_rental.requested_as.humanize %></p>
-    <% if @locker_rental.repository %>
-        <b>Repository linked to this locker rental request:</b>
-        <%= link_to @locker_rental.repository.title, repository_path(@locker_rental.rented_by.username, @locker_rental.repository.id) %>
-    <% else %>
-        No repository linked with this student request
-    <% end if @locker_rental.requested_as_student? %>
-
-    <% if !current_user.admin? %>
-        <%= form_with model: @locker_rental do |f| %>
-            <%= f.text_area :notes, class: 'form-control w-25' %>
-            <%= f.submit 'Update notes', class: 'btn btn-primary' %>
-        <% end %>
-    <% else %>
-        <div class="card my-3">
-            <div class="card-header">
-                <%= t('lockers.notes') %>
-            </div>
-            <div class="card-body">
-                <%= @locker_rental.notes %>
-            </div>
+    <hr class="w-50 mx-auto" />
+    <div class="row justify-content-between">
+        <div class="col-md">
+            <h2><%= t('lockers.details') %></h2>
+            <p><%= t('lockers.submitted_on') %> <b><%= @locker_rental.created_at.to_date %></b> <%= t('lockers.for') %>
+                <%= link_to @locker_rental.rented_by.username, user_url(@locker_rental.rented_by.username) %>
+                <%= tag.span(@locker_rental.rented_by.role.humanize, class: 'badge text-bg-primary') if @locker_rental.rented_by.staff? %></p>
+            <p><b><%= t('lockers.locker') %>:</b> <%= @locker_rental.locker&.specifier || '-' %></p>
+            <p><b><%= t('lockers.state.state') %>:</b> <%= @locker_rental.state.humanize %></p>
+            <p><b><%= t('lockers.paid_on') %>:</b> <%= @locker_rental.paid_at&.to_date&.to_fs(:long) || '-' %></p>
+            <p><b>Approved by:</b> <%= @locker_rental.decided_by.name %></p>
+            <p><b>Requested as:</b> <%= @locker_rental.requested_as.humanize %></p>
+            <% if @locker_rental.repository %>
+                <b>Repository linked to this locker rental request:</b>
+                <%= link_to @locker_rental.repository.title, repository_path(@locker_rental.rented_by.username, @locker_rental.repository.id) %>
+            <% else %>
+                No repository linked with this student request
+            <% end if @locker_rental.requested_as_student? %>
         </div>
-    <% end %>
+        <% if @locker_rental.notes.present? %>
+            <div class="col-md">
+                <h2 class="card-title"><%= t('lockers.notes') %></h2>
+                <p><%= @locker_rental.notes %></p>
+            </div>
+        <% end %>
+    </div>
     <% if @locker_rental.pending? %>
         <% if @locker_rental.reviewing? %>
             <p>This request has not been approved yet</p>
@@ -58,7 +53,7 @@
             <div class="col-md">
                 <% if current_user.staff? && !@locker_rental.cancelled? %>
                     <%= f.select :locker_id,
-                      options_for_select(Locker.order_by_specifier.available.pluck(:specifier, :id).map{ |specifier, id| ["Locker ##{specifier}", id]}),
+                        options_for_select(Locker.order_by_specifier.available.pluck(:specifier, :id).map{ |specifier, id| ["Locker ##{specifier}", id]}),
                      {prompt: 'Select a locker...'}, { class: 'form-select'} %>
                     <div class="input-group">
                         <%= f.date_field :owned_until, value: end_of_this_semester, class: 'form-control' %>
