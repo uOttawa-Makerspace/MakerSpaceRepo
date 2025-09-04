@@ -650,30 +650,28 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_28_202059) do
   end
 
   create_table "locker_rentals", force: :cascade do |t|
+    t.bigint "locker_type_id"
     t.bigint "rented_by_id"
+    t.string "locker_specifier"
     t.string "state"
     t.string "notes"
     t.datetime "owned_until"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "shopify_draft_order_id"
-    t.bigint "repository_id"
-    t.string "requested_as"
-    t.date "paid_at"
-    t.bigint "decided_by_id"
-    t.bigint "locker_id"
-    t.index ["decided_by_id"], name: "index_locker_rentals_on_decided_by_id"
-    t.index ["locker_id"], name: "index_locker_rentals_on_locker_id"
+    t.index ["locker_type_id"], name: "index_locker_rentals_on_locker_type_id"
     t.index ["rented_by_id"], name: "index_locker_rentals_on_rented_by_id"
-    t.index ["repository_id"], name: "index_locker_rentals_on_repository_id"
   end
 
-  create_table "lockers", force: :cascade do |t|
-    t.string "specifier"
-    t.boolean "available", default: true, null: false
+  create_table "locker_types", force: :cascade do |t|
+    t.string "short_form"
+    t.string "description"
+    t.boolean "available", default: true
+    t.string "available_for"
+    t.integer "quantity", default: 0
+    t.decimal "cost", default: "0.0"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["specifier"], name: "index_lockers_on_specifier"
   end
 
   create_table "makerstore_links", force: :cascade do |t|
@@ -1545,9 +1543,6 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_28_202059) do
   add_foreign_key "learning_module_tracks", "users"
   add_foreign_key "likes", "repositories"
   add_foreign_key "likes", "users"
-  add_foreign_key "locker_rentals", "lockers"
-  add_foreign_key "locker_rentals", "users", column: "decided_by_id"
-  add_foreign_key "locker_rentals", "users", column: "rented_by_id"
   add_foreign_key "memberships", "membership_tiers"
   add_foreign_key "memberships", "users"
   add_foreign_key "order_items", "orders"
