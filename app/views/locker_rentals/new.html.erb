@@ -33,12 +33,13 @@
                  {prompt: @user_repositories.empty? ? 'No repositories are linked to your account' : 'Select a repository'},
                  {class: 'form-select mb-3', disabled: @user_repositories.empty?, required: true} %>
             </fieldset>
-            <% %>
             <%= f.label :notes, 'Notes with request:' %>
-            <%= f.text_area :notes, class: 'form-control' %>
-            <!-- This hidden field is for testing/debug purposes only, we're still checking credentials you skiddie -->
-            <%= f.hidden_field :ask %>
-            <%= f.submit 'Submit request', class: 'btn btn-primary my-3' %>
+            <%= f.text_area :notes, class: 'form-control mb-3' %>
+            <div class="d-flex justify-content-between mb-3">
+                <%= f.submit 'Submit request', class: 'btn btn-primary' %>
+                <%= link_to "Back", locker_rentals_path, class: 'btn btn-secondary' %>
+            </div>
+
         <% end %>
     <% end %>
 
