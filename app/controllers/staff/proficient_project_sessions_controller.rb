@@ -17,9 +17,4 @@ class Staff::ProficientProjectSessionsController < StaffDashboardController
       :user_id
     )
   end
-
-
-  def current_proficient_project_session
-    @current_proficient_project_session = ProficientProjectSession.find(params[:id])
-  end
 end
