@@ -105,7 +105,7 @@ document.addEventListener("turbo:load", () => {
   }
 });
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("turbo:load", () => {
   [...document.getElementsByClassName("tr-delete-button")].forEach((btn) =>
     btn.addEventListener("click", (el) => {
       el.target.closest("button").parentNode.remove();
