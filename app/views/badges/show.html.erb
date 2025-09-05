@@ -1,20 +1,39 @@
 <div class="container">
     <div class="row align-items-start">
         <div class="col-4 py-3 px-my-5">
-            <%= render "badge_icon", width: 300, height: 300, level: @certification.training_session.level, name: @certification.training_session.training.localized_name, skill: @certification.training_session.training.skill_id %>
+            <%= render "badge_icon", width: "", height: "", level: @certification.level, name: @certification.training.localized_name, skill: @certification.get_skill_id %>
         </div>
         <div class="col-8 py-3 px-my-5">
-            <h1><%= @certification.training_session.training.localized_name %></h1>
+            <h1><%= @certification.training.localized_name %></h1>
             <h4 class="my-3 fw-bold">Badge Owner: <%= @earner.name %></h4>
-            <h5 class="my-3">Issued by CGEC/CEED - uOttawa on <%= @certification.created_at.to_date %></h5>
-            <p><%= @certification.training_session.training.description %></p>
+            <h5 class="my-3">Issued by CGEC/CEED - uOttawa on <%= @certification.created_at.to_date.to_fs :long_ordinal %></h5>
+            <p><%= @certification.training.description %></p>
 
-            <a class="my-4 text-decoration-underline" href="https://www.uottawa.ca/faculty-engineering/">Learn more</a>
-
+            <a class="my-4 text-decoration-underline" href="https://www.uottawa.ca/faculty-engineering/">Learn more</a> <br>
+            
             <div class="my-5">
                 <h5>Skills</h5>
-                <p><%= @certification.training_session.training.list_of_skills %></p>
+                
+                <% if I18n.locale == :en %>
+                    <% @los_en.each do |sk| %>
+                        <span class="badge" style="background: <%= @skill_colour %>; inline"><%= sk %></span>
+                    <% end %>
+                <% elsif I18n.locale == :fr %>
+                    <% @los_fr.each do |sk| %>
+                        <span class="badge" style="background: <%= @skill_colour %>; inline"><%= sk %></span>
+                    <% end %>
+                <% else %>
+                    <% @los_en.each do |sk| %>
+                        <span class="badge" style="background: <%= @skill_colour %>; inline"><%= sk %></span>
+                    <% end %>
+                <% end %>
             </div>
+            <% if current_user.id == @earner.id %>
+                <a id="linkedin" class="btn btn-outline-secondary" href="https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME&name=<%= @certification.get_name_fr %> // <%= @certification.get_name_en %>&organizationId=38127375&issueYear=<%= @certification.created_at.year %>&issueMonth=<%= @certification.created_at.month %>&expirationYear=<%= @certification.created_at.year + 10 %>&expirationMonth=5&certUrl=https://makerepo.com/badges/<%= @certification.id %>/&certId=<%= @certification.id %>">Add to Linkedin
+                </a>
+                
+                <button id="add-to-linkedin" class="btn btn-outline-secondary">Download .png</button>
+            <% end %>
         </div>
     </div>
 </div>

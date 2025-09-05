@@ -139,7 +139,8 @@ RSpec.describe Staff::TrainingSessionsController, type: :controller do
           expect(
             Certification.find_or_create_by(
               user_id: user.id,
-              training_session_id: training_session.id
+              training_session_id: training_session.id,
+              level: training_session.level
             ).present?
           ).to eq(true)
         end
@@ -155,13 +156,13 @@ RSpec.describe Staff::TrainingSessionsController, type: :controller do
     context "logged as admin" do
       it "should delete certification" do
         certification = create(:certification)
-        expect {
+        expect do
           patch :revoke_certification,
                 params: {
                   id: certification.training_session.id,
                   cert_id: certification.id
                 }
-        }.to change(Certification, :count).by(-1)
+        end.to change(Certification, :count).by(-1)
         expect(Certification.find_by(id: certification.id)).to eq(nil)
         expect(response).to redirect_to user_path(certification.user.username)
         expect(flash[:notice]).to eq("Deleted Successfully")
@@ -172,9 +173,9 @@ RSpec.describe Staff::TrainingSessionsController, type: :controller do
   describe "DELETE /destroy" do
     context "logged as admin" do
       it "should destroy the training session" do
-        expect {
+        expect do
           delete :destroy, params: { id: @training_session.id }
-        }.to change(TrainingSession, :count).by(-1)
+        end.to change(TrainingSession, :count).by(-1)
         expect(flash[:notice]).to eq("Deleted Successfully")
         expect(response).to redirect_to staff_dashboard_index_path
       end

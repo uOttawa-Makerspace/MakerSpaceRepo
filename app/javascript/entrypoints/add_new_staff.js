@@ -1,64 +1,45 @@
 import TomSelect from "tom-select";
 
-let staff_select = document.getElementById("new_staff_select");
-if (staff_select) {
-  if (!staff_select.tomselect) {
-    new TomSelect("#new_staff_select", {
-      searchField: ["name"],
-      valueField: "id",
-      labelField: "name",
-      options: [],
-      maxOptions: 5,
-      searchPlaceholder: "Choose User...",
-      searchOnKeyUp: true,
-      load: function (type, callback) {
-        if (type.length < 2) {
-          return;
-        } else {
-          fetch(`/repositories/populate_users?search=${type}`)
-            .then((response) => response.json())
-            .then((data) => {
-              callback(
-                data.users.map((user) => {
-                  return { id: user.username, name: user.name };
-                })
-              );
-            });
-        }
-      },
-      shouldLoad: function (type) {
-        return type.length > 2;
-      },
-      onItemAdd: function (value, item) {
-        let tselect = this;
-        let listItem = document.createElement("span");
-        listItem.setAttribute("data-id", value);
-        listItem.setAttribute("class", "d-block");
+const el = document.getElementById("new_staff_select");
+if (el && !el.tomselect) {
+  const ts = new TomSelect(el, {
+    valueField: "id", // what gets submitted to Rails
+    labelField: "name", // what gets displayed
+    searchField: "name",
+    options: [],
+    maxItems: null, // or a number if you want to limit selections
+    hideSelected: true,
+    plugins: ["remove_button"], // adds the "x" to remove items
+    closeAfterSelect: false,
 
-        let remove = document.createElement("btn");
-        remove.setAttribute("class", "fa fa-times x-button");
-        remove.addEventListener("click", () => {
-          remove.parentElement.remove();
-          document.getElementById("user_ids_").value = Array.from(
-            document.getElementById("new-staff-list").children
-          ).map((child) => child.dataset.id);
-          tselect.addOption(value, false);
-        });
+    load(query, callback) {
+      if (query.length < 2) return callback();
+      fetch(`/repositories/populate_users?search=${encodeURIComponent(query)}`)
+        .then((r) => r.json())
+        .then((data) =>
+          callback(
+            data.users.map((u) => ({
+              id: u.username, // this is what will be submitted
+              name: u.name,
+            })),
+          ),
+        )
+        .catch(() => callback());
+    },
+    shouldLoad: (query) => query.length >= 2,
 
-        listItem.appendChild(remove);
-        let label = document.createElement("a");
-        label.setAttribute("class", "form-check-label ms-2");
-        label.innerHTML = item.innerText;
-        label.setAttribute("href", "/" + value);
-        listItem.appendChild(label);
-
-        document.getElementById("new-staff-list").appendChild(listItem);
-        tselect.removeOption(value);
-        document.getElementById("new_staff_select-ts-control").value = "";
-        document.getElementById("user_ids_").value = Array.from(
-          document.getElementById("new-staff-list").children
-        ).map((child) => child.dataset.id);
+    render: {
+      item: (item, escape) => {
+        return `<div class="ts-item">
+          <a class="ms-1" href="/${escape(item.id)}">${escape(item.name)}</a>
+        </div>`;
       },
-    });
-  }
+      option: (item, escape) => {
+        return `<div class="ts-option">
+          <strong>${escape(item.name)}</strong>
+          <small class="text-muted ms-2">@${escape(item.id)}</small>
+        </div>`;
+      },
+    },
+  });
 }

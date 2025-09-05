@@ -118,9 +118,13 @@ RSpec.describe ProficientProject, type: :model do
     describe "#create_training_requirements" do
       it "should create training requirements" do
         pp = create(:proficient_project)
-
+        training_1 = create(:training)
+        training_2 = create(:training)
         ProficientProject.find(pp.id).create_training_requirements(
-          [create(:training).id, create(:training).id]
+          training_1.id, "Beginner"
+        )
+        ProficientProject.find(pp.id).create_training_requirements(
+          training_2.id, "Beginner"
         )
         expect(
           TrainingRequirement.where(proficient_project_id: pp.id).count
