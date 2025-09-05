@@ -11,7 +11,7 @@
             <p><b><%= t('lockers.locker') %>:</b> <%= @locker_rental.locker&.specifier || '-' %></p>
             <p><b><%= t('lockers.state.state') %>:</b> <%= @locker_rental.state.humanize %></p>
             <p><b><%= t('lockers.paid_on') %>:</b> <%= @locker_rental.paid_at&.to_date&.to_fs(:long) || '-' %></p>
-            <p><b>Approved by:</b> <%= @locker_rental.decided_by.name %></p>
+            <p><b>Approved by:</b> <%= @locker_rental.decided_by&.name %></p>
             <p><b>Requested as:</b> <%= @locker_rental.requested_as.humanize %></p>
             <% if @locker_rental.repository %>
                 <b>Repository linked to this locker rental request:</b>
