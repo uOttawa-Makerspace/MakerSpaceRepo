@@ -1,32 +1,32 @@
-<section>
-    <h2 class="fw-bold py-3 text-center">Add New Staff</h2>
-
-    <div class="row">
+<%= form_tag(bulk_add_users_staff_spaces_path, method: :post) do %>
+  <div class="row">
     <div class="col-6">
-    <h3 class="py-1">Users to be made staff</h3>
-        <div class="mb-3">
+      <h3 class="py-1">Users to be made staff</h3>
+      <div class="mb-3">
         <%= label_tag(:new_staff, 'Add new staff members', class: 'form-label') %>
-        <%= select_tag(:new_staff, '', prompt: 'Choose User...', class: 'new_staff_select form-control w-75', id: 'new_staff_select', multiple: true) %>
+        <%= select_tag 'user_ids[]', '', 
+              include_blank: 'Choose User...',
+              class: 'new_staff_select form-control w-75',
+              id: 'new_staff_select',
+              multiple: true %>
+      </div>
+      <div id="new-staff-list"></div>
     </div>
-    <div id="new-staff-list">
-    </div>
-    </div>
+
     <div class="col-6">
-    <h3 class="py-1">Assigned Spaces</h3>
-    <%= form_tag(bulk_add_users_staff_spaces_path, method: 'post') do %>
+      <h3 class="py-1">Assigned Spaces</h3>
       <div class="field form-group">
         <div class="checkbox-inline">
           <% @space_list.each do |space| %>
-            <%= check_box_tag 'space_ids[]', space.id, false, class: 'form-check-input' %>
-            <%= label_tag 'space[]', space.name %>
-            <%= hidden_field_tag 'user_ids[]', [] %>
-            <br>
+            <% checkbox_id = "space_ids_#{space.id}" %>
+            <%= check_box_tag 'space_ids[]', space.id, false, class: 'form-check-input', id: checkbox_id %>
+            <%= label_tag checkbox_id, space.name %><br>
           <% end %>
         </div>
       </div>
-    </div>
       <button type="submit" class="btn btn-success mt-3 w-25 mx-auto">Confirm Changes</button>
-    <% end %>
     </div>
-</section>
-  <%= vite_javascript_tag 'add_new_staff' %>
+  </div>
+<% end %>
+
+<%= vite_javascript_tag 'add_new_staff' %>
