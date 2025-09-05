@@ -166,26 +166,21 @@ a.edit-user-profile {
   }
 }
 
-ul#myTab {
-  .active {
-    border-color: $primary;
-  }
-}
-
 section#user-show-links {
-  background-color: #eee;
+  border-top: 1px solid var(--bs-border-color);
+  //background-color: #eee;
+  text-align: center;
+  padding-top: 0.5em;
+  display: flex;
+  gap: 40px;
+  justify-content: center;
   a {
     display: inline-block;
     font-size: 1.25rem;
-    height: 4rem;
-    line-height: 4rem;
     color: #555;
     padding: 0;
     text-align: center;
     border-bottom: 5px solid #eee;
-    white-space: nowrap;
-    margin-right: 40px;
-
     span {
       font-size: 2rem;
     }
