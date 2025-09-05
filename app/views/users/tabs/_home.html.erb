@@ -1,72 +1,18 @@
-<div class="row mb-1">
-  <div class="col-md-6">
-    <label>Username</label>
-  </div>
-  <div class="col-md-6">
-    <label class="right-side">
-      <%= @repo_user.username %>
-    </label>
-  </div>
+<div class="fw-bold row">
+  <span span class="col-md-2">Username</span>
+  <span class="text-primary col-md-10"><%= @repo_user.username %></span>
+  <span class="col-md-2">Name</span>
+  <span class="text-primary col-md-10"><%= @repo_user.name %></span>
+  <% if @user.staff? %>
+    <span class="col-md-2">Email</span>
+    <span class="text-primary col-md-10"><%= @repo_user.email %></span>
+    <span class="col-md-2">Faculty</span>
+    <span class="text-primary col-md-10"> <%= @repo_user.faculty.presence || '-' %></span>
+    <span class="col-md-2">Program</span>
+    <span class="text-primary col-md-10"><%= @repo_user.program.presence || '-' %></span>
+    <span class="col-md-2">Year of study</span>
+    <span class="text-primary col-md-10"><%= @repo_user.year_of_study.presence || '-' %></span>
+    <span class="col-md-2">Identity</span>
+    <span class="text-primary col-md-10"><%= @repo_user.identity.present? ? @repo_user.identity.humanize : '-' %></span>
+  <% end %>
 </div>
-<div class="row mb-1">
-  <div class="col-md-6">
-    <label>Name</label>
-  </div>
-  <div class="col-md-6">
-    <label class="right-side">
-      <%= @repo_user.name %>
-    </label>
-  </div>
-</div>
-<% if @user.staff? %>
-    <div class="row mb-1">
-      <div class="col-md-6">
-        <label>Email</label>
-      </div>
-      <div class="col-md-6">
-        <label class="right-side">
-          <%= @repo_user.email %>
-        </label>
-      </div>
-    </div>
-    <div class="row mb-1">
-      <div class="col-md-6">
-        <label>Faculty</label>
-      </div>
-      <div class="col-md-6">
-        <label class="right-side">
-          <%= @repo_user.faculty.presence || '-' %>
-        </label>
-      </div>
-    </div>
-    <div class="row mb-1">
-      <div class="col-md-6">
-        <label>Program</label>
-      </div>
-      <div class="col-md-6">
-        <label class="right-side">
-          <%= @repo_user.program.presence || '-' %>
-        </label>
-      </div>
-    </div>
-    <div class="row mb-1">
-      <div class="col-md-6">
-        <label>Year of study</label>
-      </div>
-      <div class="col-md-6">
-        <label class="right-side">
-          <%= @repo_user.year_of_study.presence || '-' %>
-        </label>
-      </div>
-    </div>
-    <div class="row mb-1">
-      <div class="col-md-6">
-        <label>Identity</label>
-      </div>
-      <div class="col-md-6">
-        <label class="right-side">
-          <%= @repo_user.identity.present? ? @repo_user.identity.capitalize : '-' %>
-        </label>
-      </div>
-    </div>
-<% end %>
