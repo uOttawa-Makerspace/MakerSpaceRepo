@@ -45,6 +45,8 @@ class StaffDashboardController < StaffAreaController
           .joins(:training, training: :spaces)
           .where(trainings: { spaces: { id: space_id } })
       end
+    @printers_in_use =
+      PrinterSession.order(created_at: :desc).where(in_use: true)
     @all_user_certs = proc { |user| user.certifications }
     @all_user_memberships = Membership.where(user_id: @space.signed_in_users.pluck(:id)).active.pluck(:user_id)
     @all_sign_out_memberships = Membership.where(user_id: @space.recently_signed_out_users.pluck(:id)).active.pluck(:user_id)
