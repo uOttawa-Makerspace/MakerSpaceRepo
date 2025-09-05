@@ -7,12 +7,15 @@ class StaffAreaController < SessionsController
   private
 
   def ensure_staff
-    redirect_to login_path(back_to: request.fullpath) unless signed_in?
+    unless signed_in?
+      redirect_to login_path(back_to: request.fullpath)
+      return
+    end
 
     @user = current_user
     unless @user.staff? || @user.admin?
       redirect_to root_path
-      flash[:alert] = "You cannot access this area."
+      flash[:alert] = 'You cannot access this area.'
     end
   end
 
