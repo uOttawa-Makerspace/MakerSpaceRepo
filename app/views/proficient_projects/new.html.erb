@@ -48,8 +48,26 @@
             <%= f.label :drop_off_location_id, 'Drop-Off Location', class: 'form-label' %>
             <%= f.select(:drop_off_location_id, options_for_select(@drop_off_location.pluck(:name, :id)), { include_blank: 'No Location' }, { class: 'form-control form-select mb-5' }) %>
 
-            <%= label :training_requirements_id, 'Prerequisite Training (Choose as many trainings as you want)', class: 'form-label' %>
-            <%= select_tag :training_requirements_id, options_from_collection_for_select(@trainings, 'id', 'localized_name'), { multiple: true, id: 'training_requirements', class: 'form-control mb-5' } %>
+            
+            <div class="mb-3">
+            <h4>Training Requirements</h4>
+              <div id="link-container">
+                <% unless @training_requirements.nil? %>
+                  <% @training_requirements.each_with_index do |tr, i| %>
+                    <div class="d-flex upload-file-input mb-2 gap-1">
+                      <%= select_tag :training_requirements_id, options_for_select(@trainings.collect{ |t| [t.name_en, t.id] }), name: 'training_requirements_id[]' %>
+                      <%= select_tag :training_requirements_level, options_for_select(@training_levels), name: 'training_requirements_level[]' %>
+                      <button class="btn btn-danger tr-delete-button ms-2" type="button">
+                        <i class="fa fa-trash"></i>
+                      </button>
+                    </div>
+                  <% end %>
+                <% end %>
+              </div>
+              <button type="button" class="btn btn-outline-primary" id="new-tr">New Requirement</button>
+
+            
+          </div>
 
             <%= f.label :training_id, 'Badge that will be acquired', class: 'form-label' %>
             <p class="alert alert-secondary mb-5" id="badge-acquired-text">No badge will be acquired</p>
@@ -84,9 +102,20 @@
             </div>
           </div>
         <% end %>
+
+        
       </div>
     </div>
   </div>
+  <%# template %>
+            <div class="d-flex upload-file-input mb-2 gap-1" id="new-link-input" style="visibility: hidden;">
+              <%= select_tag :training_requirements_id, options_for_select(@trainings.collect{ |t| [t.name_en, t.id] }), name: 'training_requirements_id[]' %>
+              <%= select_tag :training_requirements_level, options_for_select(@training_levels), name: 'training_requirements_level[]' %>
+              
+                <button class="btn btn-danger tr-delete-button ms-2" type="button">
+                <i class="fa fa-trash"></i>
+              </button>
+            </div>
 </section>
 
 <%= vite_javascript_tag 'generate_acquired_badge' %>

@@ -77,7 +77,7 @@
         <tr id="<%= return_no_waiver_id(user) %>">
           <td class="action-cell">
             <%= link_to(fa_icon('times-circle'), { controller: :training_sessions, action: :update, id: @current_training_session.id,
-                                                   dropped_users: [user.username], changed_params: { course: '' } },
+                                                   dropped_user: user.username, changed_params: { course: '' } },
                         method: :patch, class: 'x-button') %>
           </td>
 
@@ -97,7 +97,7 @@
                     <%= certification.training.localized_name %>
                     <div id="cert-details" style="display:inline">
                       <%= certification.training.localized_name %> <br>
-                      <%= certification.trainer %> <br>
+                      <%= certification.trainer.name %> <br>
                       <%= certification.updated_at.strftime('%B %d, %Y') %>
                     </div>
                     <br>
@@ -180,7 +180,7 @@
                         <%= certification.training.localized_name %>
                         <div id="cert-details" style="display:inline">
                           <%= certification.training.localized_name %> <br>
-                          <%= certification.trainer %> <br>
+                          <%= certification.trainer.name %> <br>
                           <%= certification.updated_at.strftime('%B %d, %Y') %>
                         </div>
                         <br />

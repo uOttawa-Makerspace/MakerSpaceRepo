@@ -37,7 +37,7 @@ RSpec.describe ProjectKitsController, type: :controller do
         session[:expires_at] = Time.zone.now + 10_000
         get :new
         expect(response).to redirect_to root_path
-        expect(flash[:alert]).to eq("You cannot access this area.")
+        expect(flash[:alert]).to eq("You must be a part of the Development Program to access this area.")
       end
     end
   end
@@ -53,7 +53,7 @@ RSpec.describe ProjectKitsController, type: :controller do
       end
 
       it "should create a kit" do
-        expect {
+        expect do
           post :create,
                params: {
                  project_kit: {
@@ -61,12 +61,12 @@ RSpec.describe ProjectKitsController, type: :controller do
                    proficient_project_id: @pp.id
                  }
                }
-        }.to change(ProjectKit, :count).by(1)
+        end.to change(ProjectKit, :count).by(1)
         expect(response).to redirect_to project_kits_path
       end
 
       it "should fail to create a kit" do
-        expect {
+        expect do
           post :create,
                params: {
                  project_kit: {
@@ -74,7 +74,7 @@ RSpec.describe ProjectKitsController, type: :controller do
                    proficient_project_id: @pp.id
                  }
                }
-        }.to change(ProjectKit, :count).by(0)
+        end.to change(ProjectKit, :count).by(0)
         expect(response).to redirect_to project_kits_path
       end
     end
@@ -147,7 +147,7 @@ RSpec.describe ProjectKitsController, type: :controller do
         session[:expires_at] = Time.zone.now + 10_000
         get :mark_delivered, params: { project_kit_id: "" }
         expect(response).to redirect_to root_path
-        expect(flash[:alert]).to eq("You cannot access this area.")
+        expect(flash[:alert]).to eq("You must be a part of the Development Program to access this area.")
       end
     end
   end
