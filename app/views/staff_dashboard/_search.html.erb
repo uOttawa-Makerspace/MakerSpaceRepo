@@ -1,75 +1,72 @@
-<p>Search for users to sign them in or out of <%= @space.name.capitalize %>:</p>
-<div class="row m-0 mb-2 gx-3 align-items-center input-group">
-  <div class="col-md-9 p-1">
-    <%= form_tag staff_dashboard_search_path, method: :get, action: :search do %>
-      <div class="mb-3 mb-0">
-        <%= select_tag(:username, '', prompt: 'Choose User...', class: 'form-control form-select', id: 'user_dashboard_select') %>
-      </div>
-    <% end %>
-  </div>
-  <div class="col-auto p-1 mb-auto ms-auto">
-         <%= form_tag staff_dashboard_sign_in_users_path, method: :put, action: :sign_in_users, id: 'sign_in_user_fastsearch', remote: true do %>
-           <%= hidden_field_tag :added_users, '', { id: 'sign_in_user_fastsearch_username' } %>
-           <%= submit_tag 'Sign In', class: 'btn btn-primary form-control ' %>
-         <% end %>
-         </div>
-  <div class="col-auto p-1 mb-auto me-auto">
-         <%= form_tag staff_dashboard_user_profile_path, method: :get, id: 'search_user_fastsearch' do %>
-           <%= hidden_field_tag :username, '', { id: 'search_user_fastsearch_username' } %>
-           <%= button_tag 'Search', onclick: 'searchForm()', class: 'btn btn-secondary form-control' %>
-         <% end %>
-         </div>
+<div class="input-group mb-3">
+  <%= select_tag(:username, '', prompt: " Search for users to sign them in or out of #{@space.name.titleize}", class: 'form-select', id: 'user_dashboard_select') %>
+  <%= form_tag staff_dashboard_sign_in_users_path, method: :put, action: :sign_in_users, id: 'sign_in_user_fastsearch', class: 'btn btn-primary' do %>
+    <%= hidden_field_tag :added_users, '', { id: 'sign_in_user_fastsearch_username' } %>
+    <%= button_tag 'Sign In', class: 'btn p-0' %>
+  <% end %>
 
+  <%= form_tag staff_dashboard_user_profile_path, method: :get, id: 'search_user_fastsearch', class: 'btn btn-secondary' do %>
+    <%= hidden_field_tag :username, '', { id: 'search_user_fastsearch_username' } %>
+    <%= button_tag 'View', onclick: 'searchForm()', class: 'btn p-0' %>
+  <% end %>
 </div>
 
-<div class="accordion" id="accordionLogin">
-  <div class="accordion-item">
-    <div class="accordion-header text-center" id="accordionLoginHeader">
-      <h5 class="mb-0">
-        <button class="accordion-button btn btn-link collapsed" data-bs-toggle="collapse" data-bs-target="#advancedLoginCollapse" aria-expanded="false" aria-controls="advancedLoginCollapse">
-          Advanced Search / Sign In
-        </button>
-      </h5>
-    </div>
-    <div class="accordion-collapse collapse" id="advancedLoginCollapse" data-bs-parent="#accordionLogin" aria-labelledby="accordionLoginHeader">
-      <div class="accordion-body">
-        <p>Search for users:</p>
-        <div class="row" style="flex-direction: row; flex-wrap: nowrap">
-          <div style="flex-grow: 1">
-            <%= form_tag staff_dashboard_search_path, method: :get, action: :search do %>
-              <div class="input-group mb-3">
-                <%= text_field_tag(:query, '', placeholder: 'Name, email, username', class: 'form-control', 'aria-describedby': 'button-addon2', style: 'font-size: inherit;') %>
-                <button class="btn btn-primary" type="submit" id="button-addon2">Search</button>
-              </div>
-            <% end %>
-          </div>
-        </div>
-        <div class="row">
-          <%= form_tag staff_dashboard_import_excel_path, method: :post, multipart: true, class: 'w-100' do %>
-            <p>Upload Excel File to log in users (Emails, names and usernames, first column only)</p>
-            <div class="input-group mb-3">
-              <%= file_field_tag :file, style: 'display: inline;', class: 'form-control form-control-input-excel', id: 'excel-input' %>
-              <%= submit_tag 'Import File', class: 'btn btn-primary' %>
-            </div>
+<div class="dropdown text-end mb-3">
+  <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+    Download...
+  </button>
+  <ul class="dropdown-menu">
+      <li>
+          <%= link_to asset_path('excel/ImportUsersTemplate.xlsx', skip_pipeline: true), download: 'ImportUsersTemplate.xlsx', class: 'dropdown-item' do %>
+              <%= fa_icon(:download) %> Excel Template (xlsx)
           <% end %>
-        </div>
+    </li>
+    <li>
+        <%= link_to staff_dashboard_present_users_report_path(format: 'xlsx'), action: :training_report, class: 'dropdown-item' do %>
+            <%= fa_icon(:download) %> Summary (xlsx)
+        <% end %>
+    </li>
+  </ul>
+</div>
+
+<details>
+  <summary>Advanced Search & Sign In</summary>
+  <div>
+    <p>Search for users:</p>
+    <div class="row" style="flex-direction: row; flex-wrap: nowrap">
+      <div style="flex-grow: 1">
+        <%= form_tag staff_dashboard_search_path, method: :get, action: :search do %>
+          <div class="input-group mb-3">
+            <%= text_field_tag(:query, '', placeholder: 'Name, email, username', class: 'form-control', 'aria-describedby': 'button-addon2', style: 'font-size: inherit;') %>
+            <button class="btn btn-primary" type="submit" id="button-addon2">Search</button>
+          </div>
+        <% end %>
       </div>
     </div>
+    <div class="row">
+      <%= form_tag staff_dashboard_import_excel_path, method: :post, multipart: true, class: 'w-100' do %>
+        <p>Upload Excel File to log in users (Emails, names and usernames, first column only)</p>
+        <div class="input-group mb-3">
+          <%= file_field_tag :file, style: 'display: inline;', class: 'form-control form-control-input-excel', id: 'excel-input' %>
+          <%= submit_tag 'Import File', class: 'btn btn-primary' %>
+        </div>
+      <% end %>
+    </div>
   </div>
-</div>
+</details>
 
 <script type="text/javascript" charset="utf-8">
 
-    window.searchForm = function () {
-        let form = document.getElementById('search_user_fastsearch');
-        if (form.elements['username'].value == "" || form.elements['username'].value == null || form.elements['username'].value == undefined) {
-            var query = document.createElement("input");
-            query.type = "hidden";
-            query.value = currentQuery;
-            query.name = "query";
-            form.appendChild(query);
-        }
-        form.submit();
-    }
+ window.searchForm = function () {
+   let form = document.getElementById('search_user_fastsearch');
+   if (form.elements['username'].value == "" || form.elements['username'].value == null || form.elements['username'].value == undefined) {
+     var query = document.createElement("input");
+     query.type = "hidden";
+     query.value = currentQuery;
+     query.name = "query";
+     form.appendChild(query);
+   }
+   form.submit();
+ }
 </script>
 <%= vite_javascript_tag 'staff_dashboard_search', 'data-turbo-track': 'reload' %>

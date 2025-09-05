@@ -6,7 +6,10 @@ RSpec.describe Staff::TrainingSessionsController, type: :controller do
     @training_session = create(:training_session)
   end
 
-  before(:each) { session[:user_id] = @admin.id }
+  before(:each) do
+    session[:user_id] = @admin.id
+    session[:expires_at] = Time.zone.now + 10_000
+  end
 
   describe "GET /index" do
     context "logged as admin" do

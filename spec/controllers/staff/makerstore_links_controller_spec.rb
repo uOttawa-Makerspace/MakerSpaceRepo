@@ -1,7 +1,10 @@
 require "rails_helper"
 
 RSpec.describe Staff::MakerstoreLinksController, type: :controller do
-  before(:each) { session[:user_id] = (create :user, :staff).id }
+  before(:each) do
+    session[:user_id] = (create :user, :staff).id
+    session[:expires_at] = Time.zone.now + 10_000
+  end
 
   describe "GET /index" do
     context "logged in as staff" do

@@ -110,6 +110,26 @@ h1 {
   }
 }
 
+// Stylize the details element as a cleaner accordion. Simpler syntax
+details {
+  @extend .border;
+  @extend .rounded-top;
+  @extend .px-3;
+}
+summary {
+  @extend .p-3;
+  @extend .mx-n3;
+  &:hover,
+  &:focus {
+    @extend .bg-secondary-subtle;
+    transition: background-color 125ms;
+  }
+  details[open] & {
+    @extend .border-bottom;
+    @extend .bg-secondary-subtle;
+  }
+}
+
 // Add the triangle between the menu and the dropdown button
 // uses @extend to inherit from .d-none and .d-xl-block
 // to hide for screens below xl aka when navbar collapses
@@ -171,12 +191,7 @@ h3,
 h4,
 h5,
 h6 {
-  font-weight: 400;
-  color: #000;
-  padding: 0;
-  background: none;
-  text-rendering: optimizeLegibility;
-  margin: 0 0 0.5rem 0;
+  font-weight: 600;
 }
 
 p {
@@ -292,10 +307,6 @@ u {
 a :focus {
   outline-offset: 1px;
 }
-
-//input:focus, textarea:focus, select:focus{
-//  outline: none;
-//}
 
 div.seperator {
   width: 100%;
