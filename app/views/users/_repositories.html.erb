@@ -9,7 +9,6 @@
         <%= page_entries_info @repositories, model: 'Repository' %>
         <%= will_paginate @repositories, container: false %>
     </div>
-    <br>
 <% end %>
 <% if params[:show] == 'makes' %>
     <% repos = @makes %>

@@ -445,20 +445,6 @@ RSpec.describe User, type: :model do
       end
     end
 
-    context "#get_badges" do
-      it "should get badge called none" do
-        user = create(:user, :admin)
-        training = create(:training)
-        expect(user.get_badges(training.id)).to eq("badges/none.png")
-      end
-
-      it "should get badge called bronze" do
-        user = create(:user, :regular_user)
-        create(:certification, user_id: user.id)
-        expect(user.get_badges(Training.last.id)).to eq("badges/bronze.png")
-      end
-    end
-
     context "#remaining_trainings" do
       it "should get the two remaining trainings" do
         user = create(:user, :admin)
@@ -472,7 +458,7 @@ RSpec.describe User, type: :model do
         user = create(:user, :admin)
         training = create(:training)
         create(:certification, user_id: user.id)
-        expect(user.remaining_trainings.ids).to eq([training.id])
+        expect(user.remaining_trainings[0].id).to eq(training.id)
       end
     end
 
@@ -507,6 +493,7 @@ RSpec.describe User, type: :model do
         expect(volunteer.return_program_status).to eq(
           { volunteer: true, dev: false, teams: false }
         )
+        
       end
 
       it "should return true for development program only" do
@@ -521,33 +508,48 @@ RSpec.describe User, type: :model do
         user = create(:user, :regular_user_with_certifications)
         Program.create(user_id: user.id, program_type: Program::VOLUNTEER)
         Program.create(user_id: user.id, program_type: Program::DEV_PROGRAM)
+       
         expect(user.return_program_status).to eq(
           { volunteer: true, dev: true, teams: false }
         )
       end
     end
 
-    context "#has_required_trainings?" do
+    context "#has_requirements?" do
       it "should be false" do
         user = create(:user, :regular_user)
         create(:training_requirement, :"3d_printing")
-        expect(user.has_required_trainings?(TrainingRequirement.all)).to be_falsey
+        expect(user.has_requirements?(TrainingRequirement.all)).to be_falsey
       end
 
       it "should be true" do
         user = create(:user, :regular_user)
-        cert = create(:certification, :"3d_printing", user_id: user.id)
-        create(:training_requirement, :"3d_printing", training_id: cert.training.id)
-        expect(user.has_required_trainings?(TrainingRequirement.all)).to be_truthy
+        cert = create(:certification, :"3d_printing", user_id: user.id, level: "Beginner")
+        create(:training_requirement, :"3d_printing", training_id: cert.training.id, level: "Beginner")
+        expect(user.has_requirements?(TrainingRequirement.all)).to be_truthy
       end
 
       it "should be true" do
         user = create(:user, :regular_user)
-        cert = create(:certification, :"3d_printing", user_id: user.id)
-        create(:training_requirement, :"3d_printing", training_id: cert.training.id)
-        cert = create(:certification, :basic_training, user_id: user.id)
-        create(:training_requirement, :basic_training, training_id: cert.training.id)
-        expect(user.has_required_trainings?(TrainingRequirement.all)).to be_truthy
+        cert = create(:certification, :"3d_printing", user_id: user.id, level: "Intermediate")
+        create(:training_requirement, :"3d_printing", training_id: cert.training.id, level: "Intermediate")
+        cert = create(:certification, :basic_training, user_id: user.id, level: "Advanced")
+        create(:training_requirement, :basic_training, training_id: cert.training.id, level: "Advanced")
+        expect(user.has_requirements?(TrainingRequirement.all)).to be_truthy
+      end
+
+      it "should be false" do
+        user = create(:user, :regular_user)
+        cert = create(:certification, :"3d_printing", user_id: user.id, level: "Beginner")
+        create(:training_requirement, :"3d_printing", training_id: cert.training.id, level: "Intermediate")
+        expect(user.has_requirements?(TrainingRequirement.all)).to be_falsey
+      end
+
+      it "should be false" do
+        user = create(:user, :regular_user)
+        cert = create(:certification, :basic_training, user_id: user.id, level: "Beginner")
+        create(:training_requirement, :"3d_printing", level: "Beginner")
+        expect(user.has_requirements?(TrainingRequirement.all)).to be_falsey
       end
     end
   end

@@ -344,9 +344,7 @@ class User < ApplicationRecord
   end
 
   def get_certifications_names
-    cert = []
-    certifications.each { |c| cert << c.training.name_en }
-    cert
+    certifications.map { |c| c.get_name_en }
   end
 
   def get_volunteer_tasks_from_volunteer_joins
@@ -364,18 +362,6 @@ class User < ApplicationRecord
     volunteer_hours.approved.sum(:total_time)
   end
 
-  def get_badges(training_id)
-    training_ids = []
-    certifications.each do |cert|
-      training_ids << cert.training_session.training.id
-    end
-    if training_ids.include?(training_id)
-        "badges/bronze.png"
-      else
-        "badges/none.png"
-      end
-    
-  end
 
   def remaining_trainings
     trainings = []
@@ -391,15 +377,32 @@ class User < ApplicationRecord
     update(wallet: get_total_cc)
   end
 
-  def has_required_trainings?(training_requirements)
-    user_trainings_set = certifications.includes(:training_session).pluck(:training_id).to_set
-    training_requirements_set = training_requirements.pluck(:training_id).to_set
-    training_requirements_set.subset?(user_trainings_set)
+  ##
+  # returns true if the user has a certification from each training associated to the training requirements
+  # training_reqs stores n training requirements, each associated with a training and a proficient project
+  def has_requirements?(training_reqs)
+    training_reqs.each do |treq|
+      tid = treq.training_id
+      l = treq.level
+      return false unless has_training?(tid, l)
+    end
   end
 
+  ##
+  # Given a training and a level, finds out if the user possesses a certification of that exact training and level.
+  # returns true if they posess the certification.
+  def has_training?(tid, level)
+    count = 0
+    certifications.each do |cert|
+      count+=1 if cert.training.id == tid && cert.level == level
+    end
+    count > 0
+  end
+
+  ##
+  # returns the certification of highest level owned by this user, given any training. Outdated
   def highest_badge(training)
     badges =
-      
         certifications
         .joins(:training_session)
         .where(training_sessions: { training_id: training.id })

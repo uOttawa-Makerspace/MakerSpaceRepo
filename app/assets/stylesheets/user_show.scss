@@ -136,7 +136,9 @@ div#rfid-thing.user-info {
   }
 
   .unregister {
-    font: 300 0.4em "Roboto", sans-serif;
+    font:
+      300 0.4em "Roboto",
+      sans-serif;
     float: bottom;
     padding: 0.5rem 1rem;
     border: none;
@@ -164,31 +166,21 @@ a.edit-user-profile {
   }
 }
 
-ul#myTab {
-  .active {
-    border-color: $primary;
-  }
-}
-
 section#user-show-links {
-  width: 90%;
-  background-color: #eee;
-  float: left;
-  padding: 0 5%;
-  margin-bottom: 3rem;
-
+  border-top: 1px solid var(--bs-border-color);
+  //background-color: #eee;
+  text-align: center;
+  padding-top: 0.5em;
+  display: flex;
+  gap: 40px;
+  justify-content: center;
   a {
     display: inline-block;
     font-size: 1.25rem;
-    height: 4rem;
-    line-height: 4rem;
     color: #555;
     padding: 0;
     text-align: center;
     border-bottom: 5px solid #eee;
-    white-space: nowrap;
-    margin-right: 40px;
-
     span {
       font-size: 2rem;
     }
@@ -205,7 +197,9 @@ div#role-container {
   color: #366;
 
   .update-button {
-    font: 300 0.7em "Roboto", sans-serif;
+    font:
+      300 0.7em "Roboto",
+      sans-serif;
     padding: 0.3rem 0.13em;
     border: none;
     text-transform: uppercase;
@@ -266,7 +260,10 @@ section#repositories-container {
     }
 
     div.repo-info {
-      font: 400 0.7rem "Roboto", helvetica, sans-serif;
+      font:
+        400 0.7rem "Roboto",
+        helvetica,
+        sans-serif;
       padding: 5%;
       @include outer-container(90%);
       background-color: #fff;

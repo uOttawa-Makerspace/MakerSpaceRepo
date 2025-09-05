@@ -10,6 +10,10 @@ RSpec.describe AnnouncementsController, type: :controller do
     @announcement_volunteer = create(:announcement, :volunteer)
   end
 
+  before(:each) do
+    session[:expires_at] = Time.zone.now + 10_000
+  end
+
   describe "GET /index" do
     context "logged as admin" do
       it "should return 200 response" do

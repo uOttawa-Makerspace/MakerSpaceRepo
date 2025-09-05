@@ -4,16 +4,14 @@ class StaffSpacesController < StaffAreaController
       space_list = params[:space_ids]
       user_list = params[:user_ids]
 
-      space_list.each do |space|
-        user_list.each do |user_name|
-          if User.find_by(username: user_name).present?
-            user = User.find_by(username: user_name)
-            if !user.staff? || !user.admin?
-              user.role = "staff"
-              user.save
-            end
-            StaffSpace.find_or_create_by(space_id: space, user_id: user.id)
-          end
+      user_list.each do |user_name|
+        user = User.find_by(username: user_name)
+        next unless user
+        # Make staff if not
+        user.update(role: "staff") unless user.staff?
+        # Add spaces
+        space_list.each do |space|
+          StaffSpace.find_or_create_by(space_id: space, user_id: user.id)
         end
       end
 

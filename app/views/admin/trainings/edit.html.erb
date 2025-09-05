@@ -1,69 +1,8 @@
 <section>
   <h2 class="text-center fw-bold py-3">Editing <b><%= @training.localized_name.capitalize %></b> Training</h2>
-  <%= form_for @training, url: { controller: 'admin/trainings', action: 'update' } do |f| %>
-    <div class="container">
-      <div class="row">
-        <div class="col-md-12 form-floating mb-2">
-          <%= f.text_field :name_en, placeholder: 'Write an unique name...', class: 'form-control', required: true %>
-          <%= f.label :name_en, 'English Name:', class: 'form-label' %>
-        </div>
-
-        <div class="col-md-12 form-floating mb-3">
-          <%= f.text_field :name_fr, placeholder: 'Écrire un nom unique...', class: 'form-control', required: true %>
-          <%= f.label :name_fr, 'French Name:', class: 'form-label' %>
-        </div>
-
-        <p class="fs-3">Spaces</p>
-        <div class="row row-cols-auto mb-3">
-          <%= f.collection_check_boxes(:space_ids, @spaces, :id, :name) do |b| %>
-            <div class="form-check-inline">
-              <%= b.check_box class: 'form-check-input' %>
-              <%= b.label class: 'form-check-label' %>
-            </div>
-          <% end %>
-        </div>
-
-        <div class="col-md-12 form-group">
-          <%= f.label :skill_id, 'Skill Type:', class: 'form-label' %>
-          <%= f.select :skill_id, options_for_select(@skills, selected: f.object.skill_id), { include_blank: false }, { class: 'form-control form-select' } %>
-        </div>
-
-        <div class="col-12">
-          <hr />
-          <div class="form-check">
-            <%= f.label :has_badge, "Would you Like to Associate a Badge to This Training?", class: 'form-check-label' %>
-            <%= f.check_box :has_badge, class: 'form-check-input' %>
-          </div>
-        </div>
-
-        <div class="col-md-12 form-floating my-2">
-          <%= f.text_area :description_en, placeholder: 'Write a description...', class: 'form-control', required: true, style: 'min-height: 6em;' %>
-          <%= f.label :description_en, 'Badge Description (English)', class: 'form-label' %>
-        </div>
-
-        <div class="col-md-12 form-floating my-2">
-          <%= f.text_area :description_fr, placeholder: 'Write an description...', class: 'form-control', required: true, style: 'min-height: 6em;' %>
-          <%= f.label :description_fr, 'Badge Description (French)', class: 'form-label' %>
-        </div>
-
-        <div class="col-md-12 form-floating my-2">
-          <%= f.text_area :list_of_skills_en, placeholder: 'Write the list of skills which this badge describes...', class: 'form-control', required: true %>
-          <%= f.label :list_of_skills_en, 'List of Skills (English)', class: 'form-label' %>
-        </div>
-
-        <div class="col-md-12 form-floating my-2">
-          <%= f.text_area :list_of_skills_fr, placeholder: 'Write the list of skills which this badge describes...', class: 'form-control', required: true %>
-          <%= f.label :list_of_skills_fr, 'List of Skills (French)', class: 'form-label' %>
-        </div>
-
-        <div class="col-md-12 form-group my-3 text-center">
-          <%= f.submit 'Update Training', class: 'btn btn-secondary btn-xl' %>
-        </div>
-      </div>
-    </div>
-  <% end %>
+    <%= render 'form' %>
   <div class="mx-auto">
-    <%= button_to 'Delete', { controller: 'admin/trainings', action: :destroy, id: @training.id }, method: :delete,
+    <%= button_to t('admin.training.delete'), { controller: 'admin/trainings', action: :destroy, id: @training.id }, method: :delete,
                   data: { confirm: 'Are you sure that you want to delete this training. This will delete all the training sessions as well.?' },
                   class: 'btn btn-danger', form_class: 'text-center' %>
   </div>

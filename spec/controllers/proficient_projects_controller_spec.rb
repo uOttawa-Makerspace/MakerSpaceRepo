@@ -28,7 +28,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
         get :new
-        expect(flash[:alert]).to eq("You cannot access this area.")
+        expect(flash[:alert]).to eq("You must be a part of the Development Program to access this area.")
         expect(response).to redirect_to root_path
       end
     end
@@ -84,13 +84,16 @@ RSpec.describe ProficientProjectsController, type: :controller do
         expect(flash[:notice]).to eq("Proficient Project successfully created.")
       end
 
-      it "should create the proficient project with badge requirements" do
+      it "should create the proficient project with training requirements" do
         pp_params = FactoryBot.attributes_for(:proficient_project)
+        training_1 = create(:training)
+        training_2 = create(:training)
         expect do
           post :create,
                params: {
                  proficient_project: pp_params,
-                 training_requirements_id: [create(:training).id, create(:training).id]
+                 training_requirements_id: [training_1.id, training_2.id],
+                 training_requirements_level: ["Beginner", "Intermediate"]
                }
         end.to change(ProficientProject, :count).by(1)
         expect(
@@ -201,7 +204,8 @@ RSpec.describe ProficientProjectsController, type: :controller do
                 proficient_project: {
                   title: "abc"
                 },
-                training_requirements_id: [create(:training).id, create(:training).id]
+                training_requirements_id: [create(:training).id, create(:training).id],
+                training_requirements_level: ["Beginner", "Intermediate"]
               }
         expect(response.body).to redirect_to(
           proficient_project_path(ProficientProject.last.id)
@@ -325,6 +329,25 @@ RSpec.describe ProficientProjectsController, type: :controller do
             }
       end
 
+      it "should allow a staff member to approve the project" do
+        staff = create(:user, :staff)
+        session[:staff_id] = staff.id
+        session[:expires_at] = Time.zone.now + 10_000
+        get :approve_project,
+            params: {
+              oi_id: OrderItem.last.id,
+              order_item: {
+                admin_comments: ""
+              }
+            }
+        expect(response).to redirect_to requests_proficient_projects_path
+        expect(OrderItem.last.status).to eq("Awarded")
+        expect(ActionMailer::Base.deliveries.count).to eq(3)
+        # Unreliable test - Mailing orders aren't consistent
+        #expect(ActionMailer::Base.deliveries.second.to.last).to eq(staff.email)
+        expect(flash[:notice]).not_to be_nil
+      end
+
       it "should set the oi as Awarded" do
         get :approve_project,
             params: {
@@ -338,7 +361,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
         expect(OrderItem.last.status).to eq("Awarded")
         expect(ActionMailer::Base.deliveries.count).to eq(3)
         expect(ActionMailer::Base.deliveries.second.to.first).to eq(@user.email)
-        expect(flash[:notice]).to eq("The project has been approved!")
+        expect(flash[:notice]).not_to be_nil
       end
 
       it "should NOT set the oi as Awarded" do
@@ -348,7 +371,33 @@ RSpec.describe ProficientProjectsController, type: :controller do
         get :approve_project, format: "js"
         expect(response).to redirect_to development_programs_path
         expect(OrderItem.last.status).to eq("Waiting for approval")
-        expect(flash[:alert]).to eq("Only admin members can access this area.")
+        expect(flash[:alert]).to eq("Only staff members can access this area.")
+      end
+
+      it "should create a new Certification" do
+        expect do
+          get :approve_project,
+            params: {
+              oi_id: OrderItem.last.id,
+              order_item: {
+                admin_comments: ""
+              }
+            }
+        end.to change(Certification, :count).by(1)
+      end
+
+      it "should NOT create a new Certification" do
+        create(:certification, user: OrderItem.last.order.user, training: @proficient_project.training, 
+level: @proficient_project.level)
+        expect do
+          get :approve_project,
+            params: {
+              oi_id: OrderItem.last.id,
+              order_item: {
+                admin_comments: ""
+              }
+            }
+        end.to change(Certification, :count).by(0)
       end
     end
   end

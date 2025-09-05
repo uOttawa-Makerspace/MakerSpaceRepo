@@ -18,11 +18,6 @@ RSpec.describe Certification, type: :model do
       it do
         should validate_presence_of(:user).with_message("A user is required.")
       end
-      it do
-        should validate_presence_of(:training_session).with_message(
-                 "A training session is required."
-               )
-      end
     end
   end
 
@@ -103,37 +98,22 @@ RSpec.describe Certification, type: :model do
         certification = create(:certification)
         training_session = certification.training_session
         user = training_session.user
-        expect(certification.trainer).to eq(User.find(user.id).name)
-      end
-    end
-
-    context "#unique_cert" do
-      it "should return true if certification is unique" do
-        certification = create(:certification)
-        expect(certification.unique_cert).to eq(true)
-      end
-
-      it "should return false if certification is not unique" do
-        certification = create(:certification)
-        user = certification.user
-        training_session = certification.training_session
-        new_certification =
-          user.certifications.new(training_session: training_session)
-        expect(new_certification.unique_cert).to eq(false)
+        expect(certification.trainer.name).to eq(User.find(user.id).name)
       end
     end
 
     context "#certify_user" do
       it "should certify user" do
         user = create(:user, :regular_user)
-        training_session = create(:training_session)
-        expect {
-          Certification.certify_user(training_session.id, user.id)
-        }.to change { Certification.count }.by(1)
+        training_session = create(:training_session, level: "Beginner")
+        expect do
+          Certification.certify_user(training_session.id, user.id, training_session.level)
+        end.to change { Certification.count }.by(1)
         expect(
           Certification.find_by(
             user: user,
-            training_session: training_session
+            training_session: training_session,
+            level: training_session.level
           ).present?
         ).to eq(true)
       end
@@ -171,8 +151,8 @@ RSpec.describe Certification, type: :model do
         ts2 =
           create(:training_session, training: training, level: "Intermediate")
         ts2.users << user
-        create(:certification, training_session: ts1, user: user)
-        create(:certification, training_session: ts2, user: user)
+        create(:certification, training_session: ts1, user: user, level: ts1.level, training: ts1.training)
+        create(:certification, training_session: ts2, user: user, level: ts2.level, training: ts2.training)
         expect(user.certifications.highest_level.count).to eq(1)
         expect(
           user.certifications.highest_level.last.training_session.level

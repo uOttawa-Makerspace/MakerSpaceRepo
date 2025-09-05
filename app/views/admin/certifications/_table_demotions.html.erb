@@ -22,7 +22,7 @@
             <%= link_to '', staff_training_session_path(demotion.training_session.id), class: 'mb-2' %>
             <%= certification_status(demotion.training_session.level).html_safe %>
           </td>
-          <td><%= demotion.trainer %></td>
+          <td><%= demotion.trainer.name %></td>
           <td>
               <%= link_to demotion.created_at.strftime('%B %d, %Y'), staff_training_session_path(id: demotion.training_session.id), style: 'text-decoration:underline;' %>
           </td>

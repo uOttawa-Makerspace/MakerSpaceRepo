@@ -1,6 +1,10 @@
 require "rails_helper"
 
 RSpec.describe PrintersController, type: :controller do
+  before(:each) do
+    session[:expires_at] = Time.zone.now + 10_000
+  end
+
   describe "POST /printer" do
     before(:each) do
       @printer = create(:printer, :UM2P_01)

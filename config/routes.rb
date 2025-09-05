@@ -364,7 +364,13 @@ Rails.application.routes.draw do
 
     resources :pi_readers, only: [:update]
 
-    resources :trainings
+    resources :trainings do
+      collection do
+        get "skill_search"
+        get "add_skill"
+        get "skills"
+      end
+    end
 
     resources :skills
 
@@ -379,8 +385,6 @@ Rails.application.routes.draw do
 
       member { patch "update" }
     end
-
-    resources :proficient_project_sessions, only: [:show]
 
     resources :settings, only: [:index] do
       collection do
@@ -498,6 +502,10 @@ Rails.application.routes.draw do
         get "training_report"
       end
     end
+    resources :proficient_project_sessions, only: [:show] do
+      post "certify_participant"
+    end
+
     resources :shifts_schedule, except: %i[new show destroy] do
       collection { get :get_shifts }
     end
@@ -564,6 +572,7 @@ Rails.application.routes.draw do
     collection do
       get :join_development_program
       get :skills
+      get :all_badges
     end
   end
 

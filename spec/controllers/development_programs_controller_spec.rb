@@ -44,18 +44,18 @@ RSpec.describe DevelopmentProgramsController, type: :controller do
     end
   end
 
-  describe "GET /skills" do
-    context "show user skills" do
+  describe "GET /all_badges" do
+    context "allows only users in the dev program" do
       it "should return 200 response" do
-        3.times { create(:certification, user: @user) }
-        get :skills
-        expect(response).to have_http_status(:success)
-        expect(@controller.instance_variable_get(:@certifications).count).to eq(
-          3
-        )
-        expect(
-          @controller.instance_variable_get(:@remaining_trainings).count
-        ).to eq(Training.all.count - @user.certifications.count)
+        user = create(:user, :volunteer_with_dev_program)
+        session[:user_id] = user.id
+        session[:expires_at] = Time.zone.now + 10_000
+        expect(get(:all_badges)).to have_http_status(:success)
+      end
+
+      it "should return 300-399 response" do
+        session[:user_id] = nil
+        expect(get(:all_badges)).to have_http_status(:redirect)
       end
     end
   end

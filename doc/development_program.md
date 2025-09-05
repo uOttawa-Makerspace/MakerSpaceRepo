@@ -1,3 +1,5 @@
+## Please see badges_overhaul for a description of the massive update to the dev program
+
 Development program is buggy as hell
 
 The volunteer program is fine i guess.

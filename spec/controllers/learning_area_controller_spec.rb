@@ -28,7 +28,7 @@ RSpec.describe LearningAreaController, type: :controller do
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
         get :new
-        expect(flash[:alert]).to eq("You cannot access this area.")
+        expect(flash[:alert]).to eq("You must be a part of the Development Program to access this area.")
         expect(response).to redirect_to root_path
       end
     end
@@ -66,9 +66,9 @@ RSpec.describe LearningAreaController, type: :controller do
 
       it "should create the learning module" do
         learning_module_params = FactoryBot.attributes_for(:learning_module)
-        expect {
+        expect do
           post :create, params: { learning_module: learning_module_params }
-        }.to change(LearningModule, :count).by(1)
+        end.to change(LearningModule, :count).by(1)
         expect(flash[:notice]).to eq(
           "Learning Module has been successfully created."
         )
@@ -77,24 +77,24 @@ RSpec.describe LearningAreaController, type: :controller do
 
       it "should create the learning module with images and files" do
         learning_module_params = FactoryBot.attributes_for(:learning_module)
-        expect {
+        expect do
           post :create,
                params: {
                  learning_module: learning_module_params,
                  files: [
                    fixture_file_upload(
-                     Rails.root.join("spec/support/assets", "RepoFile1.pdf"),
+                     Rails.root.join("spec/support/assets/RepoFile1.pdf"),
                      "application/pdf"
                    )
                  ],
                  images: [
                    fixture_file_upload(
-                     Rails.root.join("spec/support/assets", "avatar.png"),
+                     Rails.root.join("spec/support/assets/avatar.png"),
                      "image/png"
                    )
                  ]
                }
-        }.to change(LearningModule, :count).by(1)
+        end.to change(LearningModule, :count).by(1)
         expect(RepoFile.count).to eq(1)
         expect(Photo.count).to eq(1)
         expect(response.body).to redirect_to learning_area_path(
@@ -105,9 +105,9 @@ RSpec.describe LearningAreaController, type: :controller do
       it "should fail to create the learning module" do
         learning_module_params =
           FactoryBot.attributes_for(:learning_module, :broken)
-        expect {
+        expect do
           post :create, params: { learning_module: learning_module_params }
-        }.to change(LearningModule, :count).by(0)
+        end.to change(LearningModule, :count).by(0)
         expect(response).to have_http_status(:unprocessable_entity)
         expect(flash[:alert]).to eq("Something went wrong")
       end
@@ -121,9 +121,9 @@ RSpec.describe LearningAreaController, type: :controller do
         session[:user_id] = admin.id
         session[:expires_at] = Time.zone.now + 10_000
         create(:learning_module)
-        expect {
+        expect do
           delete :destroy, params: { id: LearningModule.last.id }
-        }.to change(LearningModule, :count).by(-1)
+        end.to change(LearningModule, :count).by(-1)
         expect(response).to redirect_to learning_area_index_path
         expect(flash[:notice]).to eq(
           "Learning Module has been successfully deleted."
@@ -178,13 +178,13 @@ RSpec.describe LearningAreaController, type: :controller do
                 },
                 files: [
                   fixture_file_upload(
-                    Rails.root.join("spec/support/assets", "RepoFile1.pdf"),
+                    Rails.root.join("spec/support/assets/RepoFile1.pdf"),
                     "application/pdf"
                   )
                 ],
                 images: [
                   fixture_file_upload(
-                    Rails.root.join("spec/support/assets", "avatar.png"),
+                    Rails.root.join("spec/support/assets/avatar.png"),
                     "image/png"
                   )
                 ],

@@ -6,7 +6,7 @@ class OrderItemsController < DevelopmentProgramsController
     @order.user = current_user
     proficient_project =
       ProficientProject.find(params[:order_item][:proficient_project_id])
-    if @order.user.has_required_trainings?(proficient_project.training_requirements)
+    if @order.user.has_requirements?(proficient_project.training_requirements)
       begin
         @order_item = @order.order_items.new(order_item_params)
         existing_order =

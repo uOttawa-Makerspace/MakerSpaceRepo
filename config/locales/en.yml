@@ -245,6 +245,7 @@ en:
       cannot_access_area: "You cannot access this area."
       updated_successfully: "Updated successfully!"
       action_required_scroll_to_timeline: "Action Required: Please scroll down to the 'Timeline' section to provide your input. Your response is needed to proceed. Thank you!"
+      missing_info: "Your job order is not submitted! The following tasks are missing required information:"
     public_page:
       my_job_orders: "My Job Orders"
       create_a_new_job_order: "Create a new Job Order"
@@ -272,9 +273,9 @@ en:
       next_step: "Next Step"
       previous_step: "Previous Step"
       step_1:
-        job_type: "Job Type"
+        job_type: "Job Type (required)*"
       step_2:
-        upload_files_here: "Upload your file(s) here"
+        upload_files_here: "Upload your file(s) here (required)*"
         upload_additional_files_here: "Upload additional files here"
         current_uploaded_files: "Previously Uploaded Files"
         uncheck_to_delete_file: "Uncheck to delete the file"
@@ -285,7 +286,7 @@ en:
         fee: "Fee"
         service_fee: "Service Fee"
         to_be_determined: "To be determined"
-        services: "Services"
+        services: "Services (required)*"
         enter_material_name: "Enter the material name "
         enter_custom_settings: "Enter the custom settings"
         previous_page_disabled_tooltip: "You cannot go to the previous page because you selected design services."

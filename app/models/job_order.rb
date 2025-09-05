@@ -188,19 +188,22 @@ class JobOrder < ApplicationRecord
   end
 
   def shopify_draft_order_line_items
-    price_data = [
-      generate_line_item("Service Fees", job_order_quote.service_fee)
-    ]
+    price_data = []
 
-    job_order_quote.job_order_quote_services.each do |s|
-      price_data << generate_line_item(
-        "#{s.job_service.job_service_group.name} - #{s.job_service.name} (#{s.quantity} #{s.job_service.unit.presence || "unit"})",
-        s.cost
-      )
+    job_tasks.each do |task|
+      next unless task.job_task_quote.present?
+
+      price_data << generate_line_item("#{task.title} Service Fee", task.job_task_quote.price)
+      price_data << generate_line_item("#{task.title} Parts Fee", 
+task.job_task_quote.service_price * task.job_task_quote.service_quantity)
+      
+      next unless task.job_task_quote.job_task_quote_options.any?
+      task.job_task_quote.job_task_quote_options.each do |opt|
+        price_data << generate_line_item("#{task.title} #{opt.job_option.name}", opt.price)
+      end
     end
-    job_order_quote.job_order_quote_options.each do |o|
-      price_data << generate_line_item(o.job_option.name, o.amount)
-    end
+
+    price_data << generate_line_item("Line Items Total", job_quote_line_items.sum(:price))
 
     price_data
   end

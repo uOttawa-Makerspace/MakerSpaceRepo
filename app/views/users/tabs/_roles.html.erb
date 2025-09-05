@@ -2,7 +2,7 @@
   <div class="row">
     <%= form_tag set_role_admin_users_path, method: :patch, class: 'row' do %>
       <%= hidden_field_tag :'user_ids[]', @repo_user.id %>
-      <div class="col-md-2">
+      <div class="col-md-auto">
           <label>Role</label><br>
           <%= radio_button_tag :role, 'admin', @repo_user.admin?, class: 'form-check-input role-button', id: 'role_admin' %>
           <%= label_tag :role_admin, 'Admin', class: 'form-label' %><br>
@@ -13,7 +13,7 @@
           <br />
           <%= submit_tag 'Update', class: 'btn btn-primary' %>
       </div>
-      <div class="field form-group col-md-8" id="staff-space-changer" style="display: <%= @repo_user.staff? ? 'block' : 'none' %>;">
+      <div class="field form-group col-md" id="staff-space-changer" style="display: <%= @repo_user.staff? ? 'block' : 'none' %>;">
         <label>Manage Spaces</label>
         <div class="checkbox-inline">
           <% @space_list.each do |space| %>

@@ -89,7 +89,7 @@ en:
       add_link: Add a link
       remove_link: Remove last link
 
-      prototype_budget: Prototype Budget
+      prototype_budget: Class prototype Budget
       expected_cost: Expected cost of the project
 
       project_type: Project Type
@@ -194,7 +194,7 @@ fr:
       add_link: Ajouter un lien
       remove_link: Retirer le dernier lien
 
-      prototype_budget: Budget du Prototype
+      prototype_budget: Budget du Prototype de la classe
       expected_cost: Coût Prevu du Projet
 
       project_type: Type de Projet

@@ -10,10 +10,12 @@ FactoryBot.define do
 
     trait :"3d_printing" do
       association :training, :"3d_printing"
+      level {"Beginner"}
     end
 
     trait :basic_training do
       association :training, :basic_training
+      level {"Beginner"}
     end
 
     factory :training_session_with_certifications do

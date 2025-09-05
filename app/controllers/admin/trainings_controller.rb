@@ -1,42 +1,51 @@
 class Admin::TrainingsController < AdminAreaController
   layout "admin_area"
-  before_action :changed_training, only: %i[update destroy]
-  before_action :set_spaces, only: %i[new edit]
-  before_action :set_skills, only: %i[new edit]
+  before_action :set_spaces, only: %i[new edit update create]
+  before_action :set_skills, only: %i[new edit update create]
 
   def index
     @trainings = Training.all.order(:name_en)
   end
 
   def new
-    @new_training = Training.new
+    @training = Training.new
+    @skills_en = @training.list_of_skills_en&.split(',')
+    @skills_fr = @training.list_of_skills_fr&.split(',')
   end
 
   def edit
     @training = Training.find(params[:id])
+    @skills_en = @training.list_of_skills_en&.split(',')
+    @skills_fr = @training.list_of_skills_fr&.split(',')
   end
 
   def create
-    @new_training = Training.new(training_params)
-    if @new_training.save
+    serialize_skills
+    @training = Training.new(training_params)
+    if @training.save
       flash[:notice] = "Training added successfully!"
+      redirect_to admin_trainings_path
     else
       flash[:alert] = "Input is invalid"
+      render :new, status: :unprocessable_entity
     end
-    redirect_to admin_trainings_path
   end
 
   def update
-    @changed_training.update(training_params)
-    if @changed_training.save
-      flash[:notice] = "Training renamed successfully"
-    else
+    @training = Training.find(params[:id])
+    serialize_skills
+    if @training.update(training_params)
+      flash[:notice] = "Training updated successfully"
+      redirect_to admin_trainings_path
+    else      
       flash[:alert] = "Input is invalid"
+      render :edit, status: :unprocessable_entity
     end
-    redirect_to admin_trainings_path
+    
   end
 
   def destroy
+    @changed_training = Training.find(params["id"])
     flash[
       :notice
     ] = "Training removed successfully" if @changed_training.destroy
@@ -60,8 +69,10 @@ class Admin::TrainingsController < AdminAreaController
     )
   end
 
-  def changed_training
-    @changed_training = Training.find(params["id"])
+  def serialize_skills
+    params[:training][:list_of_skills_en] = params[:training][:list_of_skills_en]&.join(',')
+                                 
+    params[:training][:list_of_skills_fr] = params[:training][:list_of_skills_fr]&.join(', ')
   end
 
   def set_spaces
