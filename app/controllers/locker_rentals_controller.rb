@@ -52,6 +52,10 @@ class LockerRentalsController < SessionsController
 
   def update
     @locker_rental = LockerRental.find(params[:id])
+    unless current_user.staff? || current_user == @locker_rental.rented_by
+      redirect_to locker_rentals_path
+    end
+
     # Assign new parameters but don't commit yet
     @locker_rental.assign_attributes(locker_rental_params)
 
@@ -95,7 +99,7 @@ class LockerRentalsController < SessionsController
     # Always allow staff
     return if current_user.staff?
 
-    redirect_to :index
+    redirect_to locker_rentals_path
   end
 
   def new_instance_attributes
@@ -144,6 +148,6 @@ class LockerRentalsController < SessionsController
         :requested_as,
         :repository_id
       )
-    end.with_defaults(rented_by_id: current_user.id)
+    end.with_defaults(rented_by_id: current_user.id, owned_until: end_of_this_semester)
   end
 end

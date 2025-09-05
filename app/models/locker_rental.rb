@@ -103,11 +103,11 @@ class LockerRental < ApplicationRecord
     return unless saved_change_to_state?
     case state.to_sym
     when :await_payment
-      LockerMailer.with(locker_rental: self).locker_checkout.deliver_later
+      LockerMailer.with(locker_rental: self).locker_checkout.deliver_now
     when :active
-      LockerMailer.with(locker_rental: self).locker_assigned.deliver_later
+      LockerMailer.with(locker_rental: self).locker_assigned.deliver_now
     when :cancelled
-      LockerMailer.with(locker_rental: self).locker_cancelled.deliver_later
+      LockerMailer.with(locker_rental: self).locker_cancelled.deliver_now
     when :reviewing
       nil # do nothing
     else
