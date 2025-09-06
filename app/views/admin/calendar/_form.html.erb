@@ -134,33 +134,32 @@
                             </div>
                             </div>
                         </div>
-                    </div>
+                        <div class="modal-footer first" id="modal_buttons">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <%= f.submit "Update", class: "btn btn-success", id: "save_button" %>
 
-                    <div class="modal-footer first" id="modal_buttons">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <%= f.submit "Update", class: "btn btn-success", id: "save_button" %>
-
-                        <div class="dropdown" id="update_dropdown" data-bs-auto-close="outside">
-                            <button class="btn btn-success dropdown-toggle hidden" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Save
-                            </button>
-                            <div class="dropdown-menu p-3" id="update_dropdown_items" style="min-width: 250px;">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="update_scope" id="update_this" value="this" checked>
-                                    <label class="form-check-label" for="update_this">
-                                        Update this event only
-                                    </label>
-                                </div>
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="radio" name="update_scope" id="update_all" value="all">
-                                    <label class="form-check-label" for="update_all">
-                                        Update all events
-                                    </label>
+                            <div class="dropdown" id="update_dropdown" data-bs-auto-close="outside">
+                                <button class="btn btn-success dropdown-toggle hidden" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Save
+                                </button>
+                                <div class="dropdown-menu p-3" id="update_dropdown_items" style="min-width: 250px;">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="update_scope" id="update_this" value="this" checked>
+                                        <label class="form-check-label" for="update_this">
+                                            Update this event only
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="radio" name="update_scope" id="update_all" value="all">
+                                        <label class="form-check-label" for="update_all">
+                                            Update all events
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                <% end %>
+                    <% end %>
+                </div>
 
             <div class="modal-footer second" id="publish_and_delete_forms" style="display: none">
                 <%= form_with ur: "#", method: :patch, local: false, html: { class: "useTurbo", id: "publish_form" } do %>
@@ -196,19 +195,19 @@
 </div>
 
 <style>
-    @media (min-width: 768px) { 
+    /* @media (min-width: 768px) { 
         .modal-dialog {
             margin-left: 0;
             max-width: 28vw;
         }
-    }
+
+        .modal-content {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+        }
+    } */
 
     .modal-backdrop {
         opacity: 20% !important;
-    }
-
-    .modal-footer.second {
-        border: 0 !important;
-        padding-top: 0 !important;
     }
 </style>
