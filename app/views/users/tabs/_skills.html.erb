@@ -1,6 +1,4 @@
 <div class="container">
-  <%= link_to 'View all skills', skills_development_programs_path, class: 'ms-1' %>
-  <hr/>
   <% @skills.each do |skill| %>
     <div class="accordion mb-3" id="accordion-skill-<%= skill.name %>">
       <div class="accordion-item">
@@ -47,19 +45,19 @@
                       <% unless badge.nil? %>
                         <div class="col-lg-4 text-center">
                           <a style="width: 100px;" class="mx-auto w-100!important d-block" target="_blank" href="./badges/<%= badge.id %>">
-                            <%= render "badges/badge_icon", width: 100, height: 100, margin: "auto", display: "block", level: badge.training_session.level, name: badge.training_session.training.localized_name, skill: badge.training_session.training.skill_id %>
+                            <%= render "badges/badge_icon", width: 100, height: 100, margin: "auto", display: "block", level: badge.level, name: badge.training.localized_name, skill: badge.get_skill_id %>
                           </a>
                         </div>
                         <div class="col-lg-8 my-auto">
                           <b>
-                            <%= badge.training_session.training.localized_name %>
+                            <%= badge.training.localized_name %>
                             :
                           </b>
-                          <%= badge.training_session.training.description %>
+                          <%= badge.training.description %>
                         </div>
                         <div class="col-12 pt-2">
                           <p>Skills Acquired: <b>
-                            <%= badge.training_session.training.list_of_skills %>
+                            <%= badge.training.list_of_skills %>
                           </b></p>
                         </div>
                       <% end %>

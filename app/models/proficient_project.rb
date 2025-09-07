@@ -19,7 +19,7 @@ class ProficientProject < ApplicationRecord
   has_many :order_items, dependent: :destroy
   has_many :training_requirements, dependent: :destroy
   has_many :project_kits, dependent: :destroy
-  has_one :proficient_project_session, dependent: :destroy
+  has_many :proficient_project_sessions, dependent: :destroy
   belongs_to :drop_off_location, optional: true
 
   validates :title,
@@ -61,13 +61,18 @@ class ProficientProject < ApplicationRecord
     end
   end
 
-  def create_training_requirements(training_requirements_id)
-    training_requirements_id.each do |training_id|
-      training = Training.find_by(id: training_id)
-      training_requirements.create(training: training) if training
-    end
+  # link a training to a project
+  def create_training_requirements(training_requirements_id, training_requirements_level)
+    training_requirements.create(training: Training.find(training_requirements_id), level: training_requirements_level)
   end
 
+  def update_training_requirements(training_requirements_id, training_requirements_level)
+    treqs = @proficient_project.training_requirements
+    treqs.each_with_index do |treq, i|
+      treq.update(training_id: training_requirements_id[i], level: training_requirements_level[i])
+    end
+  end
+  
   def extract_urls
     URI.extract(description)
   end
