@@ -11,7 +11,7 @@ class CreateLockers < ActiveRecord::Migration[7.2]
       # Simplify lockers, they're all the same type now
       t.remove_references :locker_type
       t.references :locker, index: true, null: true, foreign_key: true
-      t.remove :locker_specifier, type: :string
+      t.rename :locker_specifier, :preferred_locker
     end
 
     drop_table :locker_types do |t|
