@@ -11,11 +11,11 @@ RSpec.describe LockersController, type: :controller do
       end
     end
     context "as staff" do
-      it "should allow access" do
+      it "should prevent access" do
         session[:user_id] = create(:user, :staff).id
         session[:expires_at] = DateTime.tomorrow.end_of_day
         get :index
-        expect(response).to have_http_status :success
+        expect(response).to_not have_http_status :success
       end
     end
 
