@@ -3,15 +3,16 @@ class LockerRentalsController < SessionsController
   before_action :signed_in
   # Also sets @locker_rental
   before_action :check_permission, except: %i[index new create]
-  layout 'staff_area', only: [:admin] # as in admin tools but staff can access it
-  layout 'admin_area', only: [:assign_locker]
+  layout "staff_area", only: [:admin] # as in admin tools but staff can access it
+  layout "admin_area", only: [:assign_locker]
 
   def index
     @own_locker_rentals = current_user.locker_rentals
   end
 
   def expired
-    @expired_locker_rentals = LockerRental.active.where(owned_until: ..DateTime.current)
+    @expired_locker_rentals =
+      LockerRental.active.where(owned_until: ..DateTime.current)
   end
 
   def admin
@@ -47,10 +48,16 @@ class LockerRentalsController < SessionsController
   end
 
   def create
-    @locker_rental = LockerRental.new(locker_rental_params.with_defaults(rented_by_id: current_user.id))
+    @locker_rental =
+      LockerRental.new(
+        locker_rental_params.with_defaults(rented_by_id: current_user.id)
+      )
 
     # If locker rental needs a decision
-    @locker_rental.decided_by = current_user unless @locker_rental.reviewing?
+    unless @locker_rental.reviewing?
+      @locker_rental.decided_by = current_user
+      @locker_rental.owned_until ||= end_of_this_semester
+    end
 
     if @locker_rental.save
       redirect_back fallback_location: :new_locker_rental
@@ -148,7 +155,8 @@ class LockerRentalsController < SessionsController
   def locker_rental_params
     if current_user.staff?
       admin_locker_rental_params
-    elsif params[:id] # If updating, only allow cancellations
+    elsif params[:id]
+      # If updating, only allow cancellations
       params.require(:locker_rental).permit(:state)
     else # If new, only allow some details
       params.require(:locker_rental).permit(
