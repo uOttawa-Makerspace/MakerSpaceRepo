@@ -33,25 +33,40 @@
         <% if @lockers.blank? %>
             <p>There are no lockers on record.</p>
         <% else %>
-            <table class="table table-striped" data-datatable data-page-length="100">
+            <table class="table table-striped" data-datatable data-page-length="25">
                 <thead class="table-primary">
                     <tr>
-                        <th scope="col">Locker specifier</th>
-                        <th scope="col">Owner</th>
-                        <th scope="col">Until</th>
+                        <th scope="col">Locker name</th>
+                        <th scope="col">Owned by</th>
+                        <th scope="col">Locker expires on</th>
+                        <th scope="col">Approved on</th>
+                        <th scope="col">Last actioned by</th>
+                        <th scope="col">Expired?</th>
                     </tr>
                 </thead>
                 <tbody>
                     <% @lockers.each do |locker| %>
+                        <% current_rental = locker.locker_rentals.assigned.first %>
                         <tr>
-                            <th scope="row"><%= locker.specifier %></th>
-                            <td>
-                                <% if locker.locker_rentals.assigned.present? %>
-                                    <p><%= locker.locker_rentals.assigned.first.rented_by.username %></p>
+                            <th scope="row">
+                                <% if current_rental %>
+                                    <%= link_to locker.specifier, locker_rental_path(current_rental), class: 'stretched-link' %>
+                                <% else %>
+                                    <%= locker.specifier %>
                                 <% end %>
-                            </td>
+                            </th>
+                            <td><%= current_rental&.rented_by&.username %></td>
+                            <td><%= current_rental&.owned_until&.to_date&.to_fs :long %></td>
+                            <td><%= current_rental&.updated_at %></td>
+                            <td><%= current_rental&.decided_by&.username %></td>
                             <td>
-                                <%= locker.locker_rentals.assigned.first.owned_until if locker.locker_rentals.assigned.present? %>
+                                <% if current_rental.present? %>
+                                    <% if current_rental.expired? %>
+                                        <p class="text-danger"><%= fa_icon :times %> Expired</p>
+                                    <% else %>
+                                        <p class="text-success"><%= fa_icon :check %> Valid</p>
+                                    <% end %>
+                                <% end %>
                             </td>
                         </tr>
                     <% end %>

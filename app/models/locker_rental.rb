@@ -94,6 +94,10 @@ class LockerRental < ApplicationRecord
     )
   end
 
+  def expired?
+    active? && owned_until && owned_until >= DateTime.current
+  end
+
   def pending?
     reviewing? || await_payment?
   end

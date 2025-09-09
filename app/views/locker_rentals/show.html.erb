@@ -9,10 +9,14 @@
                 <%= link_to @locker_rental.rented_by.username, user_url(@locker_rental.rented_by.username) %>
                 <%= tag.span(@locker_rental.rented_by.role.humanize, class: 'badge text-bg-primary') if @locker_rental.rented_by.staff? %></p>
             <p><b><%= t('lockers.locker') %>:</b> <%= @locker_rental.locker&.specifier || '-' %></p>
-            <p><b><%= t('lockers.state.state') %>:</b> <%= @locker_rental.state.humanize %></p>
+            <p><b><%= t('lockers.state.state') %>:</b> <%= @locker_rental.state.humanize %>
+                <% if @locker_rental.expired? %>
+                    | <span class="text-danger"><%= fa_icon :times %> Expired</span>
+                <% end %>
+            </p>
             <p><b><%= t('lockers.paid_on') %>:</b> <%= @locker_rental.paid_at&.to_date&.to_fs(:long) || '-' %></p>
             <p><b>Approved by:</b> <%= @locker_rental.decided_by&.name %></p>
-            <p><b>Requested as:</b> <%= @locker_rental.requested_as.humanize %></p>
+            <p><b>Requested as:</b> <%= @locker_rental.requested_as&.humanize %></p>
             <% if @locker_rental.repository %>
                 <b>Repository linked to this locker rental request:</b>
                 <%= link_to @locker_rental.repository.title, repository_path(@locker_rental.rented_by.username, @locker_rental.repository.id) %>

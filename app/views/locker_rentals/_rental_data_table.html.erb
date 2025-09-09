@@ -25,6 +25,9 @@
                             <%= tag.span(rental.rented_by.role.humanize, class: 'badge text-bg-primary') if rental.rented_by.staff? %></td>
                         <td data-search="<%= rental.state %>">
                             <%= tag.i class: "fa #{rental.state_icon}" %> <%= t("lockers.state.#{rental.state}") %>
+                            <% if rental.expired? %>
+                                | <span class="text-danger"><%= fa_icon :times %> Expired</span>
+                            <% end %>
                         </td>
                         <td data-order="<%= rental.created_at.to_i %>"><%= rental.created_at.to_formatted_s :long %></td>
                         <td>
