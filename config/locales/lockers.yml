@@ -15,6 +15,8 @@ en:
     your_locker_requests: Your locker requests
     assigned_lockers: Assigned lockers
 
+    assign_a_locker: Assign a locker
+
     locker_id: Locker ID
     rented_by: Rented by
     details: Details
@@ -52,6 +54,7 @@ fr:
     all_locker_rentals: Toutes les locations de casier
     your_locker_requests: Votre demandes de casiers
     assigned_lockers: Casiers assignés
+    assign_a_locker: Assigner un casier
 
     locker_id: ID de casier
     rented_by: Loué par

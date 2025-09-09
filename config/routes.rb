@@ -141,16 +141,12 @@ Rails.application.routes.draw do
     collection { get :history }
   end
 
-  resources :lockers do
-    collection do
-      get :assign_lockers
-    end
-  end
-  resources :locker_types
+  resources :lockers
   resources :locker_rentals do
-    #, only: %i[index show new create update destroy]
     collection do
       get :admin
+      get :assign_locker
+      get :expired
     end
   end
 
