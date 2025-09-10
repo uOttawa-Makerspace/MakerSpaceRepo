@@ -9,9 +9,10 @@ class KeyCertification < ApplicationRecord
   has_one_attached :pdf_file_7, dependent: :destroy
   has_one_attached :pdf_file_8, dependent: :destroy
   has_one_attached :pdf_file_9, dependent: :destroy
+  has_one_attached :pdf_file_10, dependent: :destroy
 
-  TOTAL_NUMBER_OF_FILES = 9
-  NUMBER_OF_STAFF_FILES = 8
+  TOTAL_NUMBER_OF_FILES = 10
+  NUMBER_OF_STAFF_FILES = 9
   NUMBER_OF_SUPERVISOR_FILES = TOTAL_NUMBER_OF_FILES - NUMBER_OF_STAFF_FILES
 
   FILE_NAMES = %w[
@@ -23,6 +24,7 @@ class KeyCertification < ApplicationRecord
     the-code-and-the-AODA
     dry-lab-risk-management
     health-and-safety-roles-and-responsibilities
+    bilingualism
     supervisor-health-and-safety-awareness
   ]
 
@@ -35,6 +37,7 @@ class KeyCertification < ApplicationRecord
     https://web47.uottawa.ca/en/lrs/node/2398
     https://web47.uottawa.ca/en/lrs/node/38516
     https://web47.uottawa.ca/en/lrs/node/38274
+    https://web47.uottawa.ca/en/lrs/node/37715
     https://web47.uottawa.ca/en/lrs/node/2082
   ]
 
