@@ -81,7 +81,7 @@ RSpec.describe LockerRentalsController, type: :controller do
     context "assigning to users" do
       it "should allow manual assignment" do
         target_user = create :user
-        expect {
+        expect do
           post :create,
                params: {
                  locker_rental:
@@ -94,7 +94,7 @@ RSpec.describe LockerRentalsController, type: :controller do
                      owned_until: end_of_this_semester
                    )
                }
-        }.to change(LockerRental, :count).by(1).and change {
+        end.to change(LockerRental, :count).by(1).and change {
                 ActionMailer::Base.deliveries.count
               }.by(1)
         expect(response).to redirect_to :new_locker_rental
@@ -139,16 +139,16 @@ RSpec.describe LockerRentalsController, type: :controller do
         # make a request in DB
         active_request = create :locker_rental, :active
         # Test model in controller tests, because this whole test suite is a parody
-        expect {
+        expect do
           create(
             :locker_rental,
             :active,
             locker: active_request.locker,
           )
-        }.to raise_error(ActiveRecord::RecordInvalid)
+        end.to raise_error(ActiveRecord::RecordInvalid)
 
         # Assign a reserved specifier
-        expect {
+        expect do
           post :create,
                params: {
                  locker_params: {
@@ -157,10 +157,10 @@ RSpec.describe LockerRentalsController, type: :controller do
                    state: :active
                  }
                }
-        }.to change { LockerRental.count }.by(0)
+        end.to change { LockerRental.count }.by(0)
 
         # Cancel active rental
-        expect {
+        expect do
           patch :update,
                 params: {
                   id: active_request.id,
@@ -169,7 +169,7 @@ RSpec.describe LockerRentalsController, type: :controller do
                   }
                 },
                 as: :json
-        }.to change { active_request.reload.state }.from("active").to(
+        end.to change { active_request.reload.state }.from("active").to(
           "cancelled"
         )
 
@@ -194,7 +194,7 @@ RSpec.describe LockerRentalsController, type: :controller do
 
       it "should send emails when assigned" do
         locker_rental = create :locker_rental, :reviewing
-        expect {
+        expect do
           patch :update,
                 params: {
                   id: locker_rental.id,
@@ -203,7 +203,7 @@ RSpec.describe LockerRentalsController, type: :controller do
                     locker_id: @locker.id
                   }
                 }
-        }.to change { locker_rental.reload.state }.from("reviewing").to(
+        end.to change { locker_rental.reload.state }.from("reviewing").to(
           "active"
         ).and change { ActionMailer::Base.deliveries.count }.by(1)
         last_email = ActionMailer::Base.deliveries.last
@@ -212,7 +212,7 @@ RSpec.describe LockerRentalsController, type: :controller do
 
       it "should reject assignments with missing info" do
         target_user = create :user
-        expect {
+        expect do
           patch :create,
                 params: {
                   locker_rental: {
@@ -223,7 +223,7 @@ RSpec.describe LockerRentalsController, type: :controller do
                     # no owned_until
                   }
                 }
-        }.to change(LockerRental, :count).by(0)
+        end.to change(LockerRental, :count).by(0)
         expect(response).to have_http_status :unprocessable_entity
       end
     end
@@ -251,7 +251,7 @@ RSpec.describe LockerRentalsController, type: :controller do
 
       it "should send users to checkout" do
         rental = create :locker_rental
-        expect {
+        expect do
           patch :update,
                 params: {
                   id: rental.id,
@@ -260,7 +260,7 @@ RSpec.describe LockerRentalsController, type: :controller do
                     locker_id: @locker.id
                   }
                 }
-        }.to change { rental.reload.state }.from("reviewing").to(
+        end.to change { rental.reload.state }.from("reviewing").to(
           "await_payment"
         ).and change { ActionMailer::Base.deliveries.count }.by(1)
         last_mail = ActionMailer::Base.deliveries.last
@@ -270,7 +270,7 @@ RSpec.describe LockerRentalsController, type: :controller do
 
       it "should cancel rentals" do
         rental = create :locker_rental, :active
-        expect {
+        expect do
           patch :update,
                 params: {
                   id: rental.id,
@@ -278,7 +278,7 @@ RSpec.describe LockerRentalsController, type: :controller do
                     state: :cancelled
                   }
                 }
-        }.to change { LockerRental.count }.by(0).and change {
+        end.to change { LockerRental.count }.by(0).and change {
                 rental.reload.state
               }.from("active").to("cancelled").and change {
                       ActionMailer::Base.deliveries.count
@@ -301,7 +301,7 @@ RSpec.describe LockerRentalsController, type: :controller do
 
       it "should create a request" do
         request_note = "Testing request notes"
-        expect {
+        expect do
           post :create,
                params: {
                  locker_rental:
@@ -310,7 +310,7 @@ RSpec.describe LockerRentalsController, type: :controller do
                      notes: request_note
                    )
                }
-        }.to change { LockerRental.count }.by(1)
+        end.to change { LockerRental.count }.by(1)
         #.and change {ActionMailer::Base.deliveries.count}.by(1)
         last_rental = LockerRental.last
         expect(last_rental.rented_by_id).to eq @current_user.id
@@ -319,7 +319,7 @@ RSpec.describe LockerRentalsController, type: :controller do
       end
 
       it "should force only requests" do
-        expect {
+        expect do
           post :create,
                params: {
                  locker_rental:
@@ -329,14 +329,14 @@ RSpec.describe LockerRentalsController, type: :controller do
                      locker_id: @locker.id
                    )
                }
-        }.to change { LockerRental.count }.by(1)
+        end.to change { LockerRental.count }.by(1)
         expect(LockerRental.last.state).to eq "reviewing"
         expect(LockerRental.last.locker_id).to be_nil
       end
 
       it "should only allow requests for self" do
         other_user = create :user, :admin
-        expect {
+        expect do
           post :create,
                params: {
                  locker_rental:
@@ -346,7 +346,7 @@ RSpec.describe LockerRentalsController, type: :controller do
                      rented_by_id: other_user.id
                    )
                }
-        }.to change { LockerRental.count }.by(1)
+        end.to change { LockerRental.count }.by(1)
         expect(LockerRental.last.rented_by_id).to eq @current_user.id
       end
 

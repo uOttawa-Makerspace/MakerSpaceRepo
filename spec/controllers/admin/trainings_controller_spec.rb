@@ -72,7 +72,7 @@ RSpec.describe Admin::TrainingsController, type: :controller do
           post :create, params: { training: training_params }
         end.to change(Training, :count).by(0)
         expect(flash[:alert]).to eq("Input is invalid")
-        expect(response).to redirect_to admin_trainings_path
+        expect(response).to have_http_status(422)
       end
     end
   end
@@ -88,8 +88,8 @@ RSpec.describe Admin::TrainingsController, type: :controller do
                   name_en: first_training.name_en
                 }
               }
-        expect(response).to redirect_to admin_trainings_path
-        expect(Training.find(@training.id).name).to eq(@training.name_en)
+        expect(response).to have_http_status(422)
+        expect(Training.find(@training.id).name_en).to eq(@training.name_en)
         expect(flash[:alert]).to eq("Input is invalid")
       end
 
@@ -103,7 +103,7 @@ RSpec.describe Admin::TrainingsController, type: :controller do
               }
         expect(response).to redirect_to admin_trainings_path
         expect(Training.find(@training.id).name).to eq("New Random Name")
-        expect(flash[:notice]).to eq("Training renamed successfully")
+        expect(flash[:notice]).to eq("Training updated successfully")
       end
     end
   end

@@ -17,18 +17,49 @@ class DevelopmentProgramsController < ApplicationController
     render layout: "application"
   end
 
+  def all_badges
+    @certifications = current_user.certifications
+    @digital_certs = []
+    @manu_certs = []
+    @prof_certs = []
+    @certifications.each do |cert|
+      if cert.training.skill_id == 1
+        @manu_certs << cert
+      elsif cert.training.skill_id == 2
+        @digital_certs << cert
+      else
+        @prof_certs << cert
+      end
+      
+    end
+    @remaining_trainings = current_user.remaining_trainings
+    @digital_trainings = []
+    @manu_trainings = []
+    @prof_trainings = []
+    @remaining_trainings.each do |training|
+      if training.skill_id == 1
+        @manu_trainings << training
+      elsif training.skill_id == 2
+        @digital_trainings << training
+      else
+        @prof_trainings << training
+      end
+      
+    end
+  end
+
   def skills
     @skills = Skill.all
     @certifications = current_user.certifications
     @remaining_trainings = current_user.remaining_trainings
     @proficient_projects_awarded =
-      Proc.new do |training|
+      proc do |training|
         training.proficient_projects.where(
           id: current_user.order_items.awarded.pluck(:proficient_project_id)
         )
       end
     @learning_modules_completed =
-      Proc.new do |training|
+      proc do |training|
         training.learning_modules.where(
           id:
             current_user.learning_module_tracks.completed.pluck(
@@ -37,7 +68,7 @@ class DevelopmentProgramsController < ApplicationController
         )
       end
     @recomended_hours =
-      Proc.new do |training, levels|
+      proc do |training, levels|
         training.learning_modules.where(level: levels).count +
           training.proficient_projects.where(level: levels).count
       end
@@ -68,7 +99,7 @@ class DevelopmentProgramsController < ApplicationController
     unless current_user.dev_program? || current_user.admin? ||
              current_user.staff?
       redirect_to root_path
-      flash[:alert] = "You cannot access this area."
+      flash[:alert] = "You must be a part of the Development Program to access this area."
     end
   end
 end

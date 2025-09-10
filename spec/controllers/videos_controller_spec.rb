@@ -47,7 +47,7 @@ RSpec.describe VideosController, type: :controller do
         session[:user_id] = user.id
         get :index
         expect(response).to redirect_to root_path
-        expect(flash[:alert]).to eq("You cannot access this area.")
+        expect(flash[:alert]).to eq("You must be a part of the Development Program to access this area.")
       end
     end
   end
@@ -86,13 +86,13 @@ RSpec.describe VideosController, type: :controller do
     context "logged as admin" do
       it "should destroy the video" do
         video = create(:video, :with_video)
-        expect {
+        expect do
           delete :destroy,
                  params: {
                    id: video.id,
                    video_id: video.video.last.id
                  }
-        }.to change(Video, :count).by(-1)
+        end.to change(Video, :count).by(-1)
         expect(response).to redirect_to videos_path
         expect(flash[:notice]).to eq("Video Deleted.")
       end

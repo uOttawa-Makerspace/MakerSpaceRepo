@@ -1,0 +1,40 @@
+<div class="container">
+    <% safety_sheet = @repo_user.walk_in_safety_sheets.first %>
+    <% if safety_sheet.present? %>
+        <p>
+            Consent form signed on <%= safety_sheet.created_at.to_date.to_fs :long %>.
+            <%= link_to "Click here to review or update contact details", walk_in_safety_sheets_path %>
+        </p>
+        <div class="row">
+            <div class="col-md">
+                <p><b><%= t('walk_in_safety_sheet.adult_contact.participant_signature') %>:</b> <%= safety_sheet.participant_signature %></p>
+                <p><b><%= t('walk_in_safety_sheet.adult_contact.participant_telephone_at_home') %>:</b> <%= number_to_phone safety_sheet.participant_telephone_at_home&.delete(' ') %></p>
+            </div>
+            <div class="col-md">
+                <p><b><%= t('walk_in_safety_sheet.minor_contact.guardian_signature') %>:</b> <%= safety_sheet.guardian_signature %></p>
+                <p><b><%= t('walk_in_safety_sheet.minor_contact.guardian_telephone_at_home') %>:</b> <%= number_to_phone safety_sheet.guardian_telephone_at_home&.delete(' ') %></p>
+                <p><b><%= t('walk_in_safety_sheet.minor_contact.guardian_telephone_at_work') %>:</b> <%= number_to_phone safety_sheet.guardian_telephone_at_work&.delete(' ') %></p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md">
+                <p><b><%= t('walk_in_safety_sheet.emergency_contact.name') %></b>: <%= safety_sheet.emergency_contact_name %></p>
+            </div>
+            <div class="col-md">
+                <p><b><%= t('walk_in_safety_sheet.emergency_contact.contact') %>:</b> <%= number_to_phone safety_sheet.emergency_contact_telephone&.delete(' ') %></p>
+            </div>
+        </div>
+        <% safety_sheet.supervisor_information.each do |name, contact| %>
+            <div class="row">
+                <div class="col">
+                    <p><b><%= t('walk_in_safety_sheet.supervisor.name') %></b>: <%= name %></p>
+                </div>
+                <div class="col">
+                    <p><b><%= t('walk_in_safety_sheet.supervisor.contact') %></b>: <%= contact %></p>
+                </div>
+            </div>
+        <% end %>
+    <% else %>
+        <%= link_to "Consent form not signed. Click here to sign it", walk_in_safety_sheets_path %>
+    <% end %>
+</div>

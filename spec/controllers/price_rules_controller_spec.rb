@@ -20,7 +20,7 @@ RSpec.describe PriceRulesController, type: :controller do
         session[:user_id] = @user.id
         get :index
         expect(response).to redirect_to root_path
-        expect(flash[:alert]).to eq("You cannot access this area.")
+        expect(flash[:alert]).to eq("You must be a part of the Development Program to access this area.")
       end
 
       it "should leave the admin to the price rule path" do
@@ -56,9 +56,9 @@ RSpec.describe PriceRulesController, type: :controller do
         post :create, params: { price_rule: price_rule_params }
         expect(response).to redirect_to price_rules_path
         expect(flash[:notice]).to eq("Price rule was successfully created.")
-        expect {
+        expect do
           post :create, params: { price_rule: price_rule_params }
-        }.to change(PriceRule, :count).by(1)
+        end.to change(PriceRule, :count).by(1)
       end
 
       it "should redirect to new path" do

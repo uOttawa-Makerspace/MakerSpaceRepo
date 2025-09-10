@@ -1,4 +1,3 @@
-#!/usr/bin/env sh
 bundle lock --add-platform aarch64-linux
 npx lint-staged
 printf "Changed Files:"

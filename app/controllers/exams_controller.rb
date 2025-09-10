@@ -58,7 +58,7 @@ class ExamsController < ApplicationController
       end
     else
       status = Exam::STATUS[:passed]
-      Certification.certify_user(training_session.id, user.id)
+      Certification.certify_user(training_session.id, user.id, training_session.level)
     end
     exam.update(status: status, score: score)
     MsrMailer.finishing_exam(user, exam).deliver_now

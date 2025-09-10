@@ -5,238 +5,118 @@ A website where makers can publish projects. An initiative by the University of 
 
 [![Actions Status](https://github.com/uOttawa-Makerspace/MakerSpaceRepo/workflows/CI/badge.svg)](https://github.com/uOttawa-Makerspace/MakerSpaceRepo/actions)
 
-[![Build Status](https://travis-ci.com/uOttawa-Makerspace/MakerSpaceRepo.svg?branch=master)](https://travis-ci.com/uOttawa-Makerspace/MakerSpaceRepo)
+## New developer setup
 
-## New Developer Setup
+You'll need Ruby via rbenv, PostgreSQL, and NodeJS via NVM to run the website locally.
+Then you'll need the master encryption key `config/master.key` and a database backup (referred to as `msr-backup.bak` here) to have a proper local installation.
 
 ### Windows
 
-1. Open Powershell & Install WSL for Ubuntu
+Windows developers need to [install WSL](https://learn.microsoft.com/en-us/windows/wsl/install) then follow the Linux-specific instructions below inside the WSL environment.
 
-   ```bash
-   wsl --install -d Ubuntu
-   ```
+```powershell
+wsl --install -d Ubuntu # Or any distro
+```
 
-2. Follow the [Debian-based Linux Distributions](#Debian-based-Linux-distributions) setup instructions using WSL.
-
-- **Note**: When cloning the repository in step 6, make sure to not clone it within the `/mnt` directory as this directory is shared with windows and may cause performance issues.
+**Note**: When cloning the repository make sure to not clone it within the `/mnt` directory, as this directory is shared with windows and may cause performance issues.
 
 ### macOS
 
-1. Install Homebrew if not already installed
+macOS developers need to install [Homebrew if not already installed](https://brew.sh/). Homebrew is a macOS package manager, similar to `apt` or `pacman`. It also manages services, used to start PostgreSQL. To start the database after installation, run `brew services start postgresql`
+
+### General instructions
+
+1. Install external dependencies and libraries.
+   For macOS:
 
    ```bash
-   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+   brew install postgresql@17 libpq imagemagick
+   brew services start postgresql
    ```
 
-2. Install PostgreSQL and libpq-dev with homebrew:
+   For Linux:
 
    ```bash
-   brew install postgresql@14 libpq
+   sudo apt-get install postgresql libpq-dev imagemagick
+   sudo systemctl enable postgresql --now
    ```
 
-3. Start PostgreSQL & Access a PostgreSQL Shell
+2. Clone and install required ruby version
+
+   **IMPORTANT:** [Make sure that you have all ruby-build requirements present](https://github.com/rbenv/ruby-build/wiki#suggested-build-environment), before starting Ruby compilation, or else you'll get an error after a long wait. Note that the requirements are different for each system.
 
    ```bash
-   brew services start postgresql@14
-   psql -U postgres
-   ```
-
-4. Run the following commands in a PostgreSQL shell to allow MakerRepo to connect:
-
-   ```SQL
-   ALTER USER "postgres" WITH PASSWORD 'postgres';
-   CREATE DATABASE makerspacerepo;
-   exit
-   ```
-
-5. Install rbenv and Ruby 3.1.2
-   ```bash
-   brew install rbenv
-   rbenv install 3.1.2
-   ```
-6. Install NVM and Node 18 LTS
-
-   ```bash
-   # Check to see if '.zshrc' is present in home directory
-   cd ~
-   ls -a
-
-   # If '.zshrc' is not present, create .zshrc profile in home directory
-   touch .zshrc
-
-   # Install NVM
-   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
-   source .zshrc
-
-   # Install Node 18 LTS
-   nvm install 18 --lts
-   ```
-
-7. Clone this repository and go into it:
-
-   ```bash
-   git clone https://github.com/uOttawa-Makerspace/MakerSpaceRepo.git
-   cd MakerSpaceRepo
-   ```
-
-8. Install gems:
-
-   ```bash
-   bundle install
-   ```
-
-9. Create X.509 certificates for SAML:
-
-   ```bash
-   mkdir certs
-   openssl req -x509 -newkey rsa:4096 -keyout certs/saml.key -out certs/saml.crt -days 365 -nodes
-   ```
-
-10. Move the master credentials key into config (Ask for master.key file)
-
-```bash
-mv ~/Downloads/master.key config/master.key
-```
-
-11. Configure Postgres for port 5433, ctrl+w to search for port, replace 5432 with 5433.
-
-```bash
-# Locate configuration file
-psql -U postgres -c 'SHOW config_file'
-
-# edit configuration file and change port variable
-nano <your configuration file location>
-```
-
-12. Set up the database:
-
-```bash
-rake db:setup
-rake db:setup RAILS_ENV=test
-```
-
-13. Run all tests to load clean fixtures into the database (You will fail one test because you do not have wkhtmltopdf, you may optionally install it if it is compatible with your distro.):
-
-```bash
-bundle exec rake
-```
-
-14. Install yarn and yarn packages
-
-```bash
-npm install -g yarn
-yarn install
-```
-
-15. Start the Rails server:
-
-```bash
-foreman start -f Procfile.dev
-```
-
-### Debian-based Linux distributions
-
-1. Install PostgreSQL and libpq-dev if they are not already installed:
-
-   ```bash
-   sudo apt-get install postgresql libpq-dev git curl
-   ```
-
-2. Access a PostgreSQL Shell:
-
-   ```bash
-   sudo -i -u postgres psql
-   ```
-
-3. Run the following commands in a PostgreSQL shell to allow MakerRepo to connect:
-
-   ```SQL
-   ALTER USER "postgres" WITH PASSWORD 'postgres';
-   CREATE DATABASE makerspacerepo;
-   exit
-   ```
-
-4. Install rbenv and Ruby 3.1.2:
-
-   ```bash
+   # Install rbenv
    curl -fsSL https://github.com/rbenv/rbenv-installer/raw/HEAD/bin/rbenv-installer | bash
-   echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bashrc
-   echo 'eval "$(rbenv init -)"' >> ~/.bashrc
-   source ~/.bashrc
-   rbenv install 3.1.2
+   # Clone repository using SSH if you're planning to make commits
+   git clone ssh://git@github.com:uOttawa-Makerspace/MakerSpaceRepo.git
+   cd ./Install
+   # MakerSpaceRepo version in .ruby-version
+   rbenv install
+   # Install ruby dependencies
+   bundler install
+   # Install foreman
+   gem install foreman
    ```
 
-5. Install NVM and Node 18 LTS:
-
+3. [Install NVM](https://github.com/nvm-sh/nvm), Node, then Yarn.
    ```bash
-   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
-   export NVM_DIR="$HOME/.nvm"
-   [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-   [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
    nvm install 18 --lts
+   nvm use 18
+   npm install -g yarn
+   yarn install
    ```
-
-6. Clone this repository and go into it:
-
-- **Note**: For WSL users, make sure the repository isn't cloned within the `/mnt`directory
-  ```bash
-  git clone https://github.com/uOttawa-Makerspace/MakerSpaceRepo.git
-  cd MakerSpaceRepo
-  ```
-
-7. Install gems:
-
-   ```bash
-   bundle install
-   ```
-
-8. Create X.509 certificates for SAML:
-
+4. Make SAML certificates
    ```bash
    mkdir certs
    openssl req -x509 -newkey rsa:4096 -keyout certs/saml.key -out certs/saml.crt -days 365 -nodes
    ```
-
-9. Move the master credentials key into config (Ask for master.key file)
+5. Move the master credentials key into config
 
    ```bash
    mv ~/Downloads/master.key config/master.key
    ```
 
-10. Configure Postgres for port 5433, ctrl+w to search for port, replace 5432 with 5433.
+6. Change the default PostgreSQL port from 5432 to 5433. Start PostgreSQL and access a PostgreSQL shell. When inside nano, press `Ctrl-W` to start search.
 
-```bash
-sudo nano $(sudo -u postgres psql -c 'SHOW config_file' | sed -n '3p')
-sudo systemctl restart postgresql
-```
+   ```bash
+   # Find the postgres config file and open in nano
+   sudo nano $(sudo -u postgres -i psql -c 'SHOW config_file' | sed -n '3p')
+   sudo systemctl restart postgresql
+   psql -U postgres
+   # or
+   sudo -u postgres -i psql
+   ```
 
-11. Set up the database:
+   Set the password for the `postgres` user to `postgres`. Then load a staging database backup
 
-```bash
-rake db:setup
-rake db:setup RAILS_ENV=test
-```
+   ```SQL
+   ALTER USER "postgres" WITH PASSWORD 'postgres';
+   CREATE DATABASE makerspacerepo;
+   \c makerspacerepo
+   \i ./path/to/msr-backup.bak
+   exit
+   ```
 
-12. Run all tests to load clean fixtures into the database (You will fail one test because you do not have wkhtmltopdf, you may optionally install it if it is compatible with your distro.):
+7. Setup development and test databases
+   ```bash
+   rake db:setup
+   RAILS_ENV=test rake db:setup
+   ```
+8. Run tests from the project root. If this doesn't immediately fail, you should have a functioning backend
+   ```bash
+   rake
+   ```
+9. Start the server
+   ```bash
+   foreman start -f Procfile.dev
+   ```
 
-```bash
-bundle exec rake
-```
+Then visit http://localhost:3000 to view the home page locally.
 
-13. Install yarn and yarn packages
+**NOTE:** You'll receive a lot of AWS errors because you're accessing production images using development credentials.
 
-```bash
-npm install -g yarn
-yarn install
-```
+## Deployment
 
-14. Start the Rails server:
-
-```bash
-foreman start -f Procfile.dev
-```
-
-Note: You will want to change the remote origin from https to an ssh source, git@github.com:uOttawa-Makerspace/MakerSpaceRepo.git, in order to push.
-
-Happy coding!
+Deployment is handled by Capistrano on Github Actions. Pushing to the staging branch deploys to staging server after tests pass. Pushing to the master branch deploys to the production server after tests pass.

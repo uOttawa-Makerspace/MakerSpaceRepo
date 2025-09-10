@@ -52,6 +52,8 @@ class JobOrdersController < ApplicationController
     @archived_job_orders = []
     @drafts = []
     @user.job_orders.not_deleted.each do |jo|
+      next unless jo.job_order_statuses.last
+
       if jo.job_order_statuses.last.job_status == JobStatus::DRAFT
         @drafts << jo
       else
@@ -63,6 +65,8 @@ class JobOrdersController < ApplicationController
   def show
     @job_order = JobOrder.find_by(id: params[:id], is_deleted: false)
     @staff = User.staff
+    @message =
+      JobOrderMessage.find_by(name: "processed").retrieve_message(@job_order.id)
 
     if @job_order.nil?
       flash[:alert] = t("job_orders.alerts.job_order_not_found")
@@ -80,9 +84,8 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
     @tasks_missing_information = @job_order.job_tasks.select do |task|
       task.job_type.blank? || (task.job_type.name != "Design Services" && task.job_service.blank?)
     end
-    return unless @tasks_missing_information.any?
-      flash[:alert] = 
-"The following tasks are missing required information: #{@tasks_missing_information.map(&:title).join(', ')}"
+    flash[:alert] = 
+"#{t('job_orders.alerts.missing_info')} #{@tasks_missing_information.map(&:title).join(', ')}" if @tasks_missing_information.any? 
   end
 
   def new
@@ -198,12 +201,6 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
     render layout: false
   end
 
-  def completed_email_modal
-    @message =
-      JobOrderMessage.find_by(name: "processed").retrieve_message(@job_order.id)
-    render layout: false
-  end
-
   def comments_modal
     render layout: false
   end
@@ -267,7 +264,7 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
 
         if params[:user_comments].present?
           @job_order.chat_messages.create(
-            message: params[:comments],
+            message: params[:user_comments],
             sender: current_user
           )
         end

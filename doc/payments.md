@@ -24,6 +24,8 @@ we need to do anyways for accounting reasons (in case of bugs, proof of payment,
 etc...)
 .
 
+## How to make a payment with a model
+
 For interacting with Shopify use the `ShopifyConcern` concern. Right now it is
 geared towards imitating Stripe behaviour and transparently generate a checkout
 URL. Please keep all Shopify API calls to that one file, as the API changes
@@ -43,6 +45,28 @@ When a checkout url for a record is requested, the following steps happen:
 We do not check if the draft order is 'paid', users would be shown status after
 following the invoice url. After using the url, wait until an `orders/paid`
 webhook is sent.
+
+## Receiving the webhook
+
+We have an `orders/paid` webhook pointed at production and staging. Any order
+paid will trigger and notify the two servers. The `CustomWebhooks` controller
+looks for metafields to determine which model handles the notification.
+
+**IMPORTANT:** You need some setup on admin UI side to make sure the metafields
+get copied over from draft orders to the paid orders:
+
+1. Login to the makerstore admin panel
+2. Go to Settings > Metafields and metaobjects
+3. Create a structured metafield definition on draft orders with the correct
+   name (for example, `locker_db_reference` or `membership_db_reference`).
+4. At the bottom, click on the link to create an identical metafield on all
+   orders
+
+To debug the webhooks locally, you'll have to run a reverse proxy and add your
+ip address or domain name to the webhook receiver list. I'd recommend tailscale
+funnel. In your `Procfile.dev` make sure to tell rails to listen to loopback:
+`bin/rails s -p 3000 -b 0.0.0.0`. Then you could see the webhook payload in the
+rails console.
 
 Once receiving the `orders/paid` webhook, webhook handler performs:
 

@@ -6,13 +6,13 @@ class StaffDashboardController < StaffAreaController
       format.html do
         @users = User.order(id: :desc).limit(10)
         @certifications_on_space =
-          Proc.new do |user, space_id|
+          proc do |user, space_id|
             user
               .certifications
               .joins(:training, training: :spaces)
               .where(trainings: { spaces: { id: space_id } })
           end
-        @all_user_certs = Proc.new { |user| user.certifications }
+        @all_user_certs = proc { |user| user.certifications }
         @printers_in_use =
           PrinterSession.order(created_at: :desc).where(in_use: true)
         @table_column_count = 0
@@ -36,26 +36,38 @@ class StaffDashboardController < StaffAreaController
   end
 
   def refresh_tables
-    if params[:token] == @space.signed_in_users.pluck(:id).join("")
-      return render json: { error: "No changes" }
-    end
+    return render json: { error: "No changes" } if params[:token] == @space.signed_in_users.pluck(:id).join("")
     @users = User.order(id: :desc).limit(10)
     @certifications_on_space =
-      Proc.new do |user, space_id|
+      proc do |user, space_id|
         user
           .certifications
           .joins(:training, training: :spaces)
           .where(trainings: { spaces: { id: space_id } })
       end
-    @all_user_certs = Proc.new { |user| user.certifications }
+    @printers_in_use =
+      PrinterSession.order(created_at: :desc).where(in_use: true)
+    @all_user_certs = proc { |user| user.certifications }
+    @all_user_memberships = Membership.where(user_id: @space.signed_in_users.pluck(:id)).active.pluck(:user_id)
+    @all_sign_out_memberships = Membership.where(user_id: @space.recently_signed_out_users.pluck(:id)).active.pluck(:user_id)
+    recent_membership = @space.signed_in_users.first.memberships.active.order(end_date: :desc).first
+    recent_expiration_date = ""
+    recent_expiration_date = recent_membership.end_date.to_date unless recent_membership.nil?
     render json: {
+            users: @space.signed_in_users.pluck(:name, :email, :username),
+            certification: Certification.select('certifications.id, certifications.user_id, trainings.name_en')
+            .joins(:training).where(user_id: @space.signed_in_users.pick(:id)).group_by(&:user_id).to_a,
+            has_membership: @space.signed_in_users.first.has_active_membership?,
+            expiration_date: recent_expiration_date,
+            is_student: @space.signed_in_users.first.student?,
              signed_out:
                render_to_string(
                  partial: "staff_dashboard/signed_out_table",
                  locals: {
                    space: @space,
                    all_user_certs: @all_user_certs,
-                   certifications_on_space: @certifications_on_space
+                   certifications_on_space: @certifications_on_space,
+                   all_user_memberships: @all_sign_out_memberships
                  },
                  formats: [:html]
                ),
@@ -65,7 +77,8 @@ class StaffDashboardController < StaffAreaController
                  locals: {
                    space: @space,
                    all_user_certs: @all_user_certs,
-                   certifications_on_space: @certifications_on_space
+                   certifications_on_space: @certifications_on_space,
+                   all_user_memberships: @all_user_memberships
                  },
                  formats: [:html]
                )
@@ -78,12 +91,10 @@ class StaffDashboardController < StaffAreaController
       file_ext = File.extname(file.original_filename)
       faulty_users = 0
       faulty_user_data = []
-      unless %w[.xls .xlsx].include?(file_ext)
-        raise "Unknown file type: #{file.original_filename}"
-      end
+      raise "Unknown file type: #{file.original_filename}" unless %w[.xls .xlsx].include?(file_ext)
       spreadsheet =
         (
-          if (file_ext == ".xls")
+          if file_ext == ".xls"
             Roo::Excel.new(file.path)
           else
             Roo::Excelx.new(file.path)
@@ -129,13 +140,13 @@ class StaffDashboardController < StaffAreaController
     if params[:dropped_users].present?
       @users = User.order(id: :desc).limit(10)
       @certifications_on_space =
-        Proc.new do |user, space_id|
+        proc do |user, space_id|
           user
             .certifications
             .joins(:training, training: :spaces)
             .where(trainings: { spaces: { id: space_id } })
         end
-      @all_user_certs = Proc.new { |user| user.certifications }
+      @all_user_certs = proc { |user| user.certifications }
       # Search user by username
       User
         .where(username: params[:dropped_users])
@@ -168,13 +179,13 @@ class StaffDashboardController < StaffAreaController
   def sign_out_all_users
     space = @space
     @certifications_on_space =
-      Proc.new do |user, space_id|
+      proc do |user, space_id|
         user
           .certifications
           .joins(:training, training: :spaces)
           .where(trainings: { spaces: { id: space_id } })
       end
-    @all_user_certs = Proc.new { |user| user.certifications }
+    @all_user_certs = proc { |user| user.certifications }
     @users = User.order(id: :desc).limit(10)
 
     space.signed_in_users.each do |user|
@@ -193,13 +204,13 @@ class StaffDashboardController < StaffAreaController
     alert = []
     if params[:added_users].present?
       @certifications_on_space =
-        Proc.new do |user, space_id|
+        proc do |user, space_id|
           user
             .certifications
             .joins(:training, training: :spaces)
             .where(trainings: { spaces: { id: space_id } })
         end
-      @all_user_certs = Proc.new { |user| user.certifications }
+      @all_user_certs = proc { |user| user.certifications }
       @users = User.order(id: :desc).limit(10)
 
       users = User.where(username: params[:added_users])
@@ -234,9 +245,11 @@ class StaffDashboardController < StaffAreaController
     else
       status = false
     end
-    status ?
-      flash[:notice] = "Space changed successfully" :
-      flash[:alert] = "Something went wrong"
+    if status
+  flash[:notice] = "Space changed successfully"
+else
+  flash[:alert] = "Something went wrong"
+end
     respond_to do |format|
       format.html do
         redirect_back(fallback_location: staff_dashboard_index_path)
@@ -256,11 +269,13 @@ class StaffDashboardController < StaffAreaController
 
     respond_to do |format|
       format.html do
-        status ?
-          flash[:notice] = "RFID linked successfully" :
-          flash[
+        if status
+  flash[:notice] = "RFID linked successfully"
+else
+  flash[
             :alert
           ] = "Something went wrong while linking the RFID, please try again later."
+end
         redirect_back(fallback_location: root_path)
       end
       format.json { render json: { status: status ? "ok" : "error" } }
@@ -274,7 +289,7 @@ class StaffDashboardController < StaffAreaController
       rfid = Rfid.find_by(card_number: params[:card_number])
       rfid.user_id = nil
       if @user.location != "no sign in yet" &&
-           pi = Space.find_by(name: @user.location)&.pi_readers.first
+           pi = Space.find_by(name: @user.location)&.pi_readers&.first
         new_mac = pi.pi_mac_address
         rfid.mac_address = new_mac
       end
@@ -283,11 +298,13 @@ class StaffDashboardController < StaffAreaController
 
     respond_to do |format|
       format.html do
-        status ?
-          flash[:notice] = "RFID unlinked successfully" :
-          flash[
+        if status
+  flash[:notice] = "RFID unlinked successfully"
+else
+  flash[
             :alert
           ] = "Something went wrong while unlinking the RFID, please try again later."
+end
         redirect_back(fallback_location: root_path)
       end
       format.json { render json: { status: status ? "ok" : "error" } }
@@ -335,6 +352,11 @@ class StaffDashboardController < StaffAreaController
     end
   end
 
+  def open_modal
+    @sign_in_modal = User.find(params[:id])
+    respond_to { |format| format.js }
+  end
+
   def present_users_report
     respond_to do |format|
       format.html
@@ -364,9 +386,9 @@ class StaffDashboardController < StaffAreaController
   def update_lab_session
     current_sesh =
       current_user.lab_sessions.where("sign_out_time > ?", Time.zone.now).last
-    if current_sesh.present?
+    return unless current_sesh.present?
       current_sesh.sign_out_time = Time.zone.now
       current_sesh.save
-    end
+    
   end
 end

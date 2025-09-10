@@ -154,6 +154,12 @@ Rails.application.routes.draw do
     post :sign_email
   end
 
+  resources :memberships, only: [:index, :create] do
+    collection do
+      post :admin_create_membership
+    end
+  end
+
   root "static_pages#home"
 
   # STATIC PAGES
@@ -356,7 +362,13 @@ Rails.application.routes.draw do
 
     resources :pi_readers, only: [:update]
 
-    resources :trainings
+    resources :trainings do
+      collection do
+        get "skill_search"
+        get "add_skill"
+        get "skills"
+      end
+    end
 
     resources :skills
 
@@ -371,8 +383,6 @@ Rails.application.routes.draw do
 
       member { patch "update" }
     end
-
-    resources :proficient_project_sessions, only: [:show]
 
     resources :settings, only: [:index] do
       collection do
@@ -464,6 +474,8 @@ Rails.application.routes.draw do
         delete :delete_with_scope
       end
     end
+
+    resources :memberships, only: [:index, :update]
   end
   # For singular routes
   resolve('DesignDay') {[:admin, :design_day]}
@@ -488,6 +500,10 @@ Rails.application.routes.draw do
         get "training_report"
       end
     end
+    resources :proficient_project_sessions, only: [:show] do
+      post "certify_participant"
+    end
+
     resources :shifts_schedule, except: %i[new show destroy] do
       collection { get :get_shifts }
     end
@@ -554,6 +570,7 @@ Rails.application.routes.draw do
     collection do
       get :join_development_program
       get :skills
+      get :all_badges
     end
   end
 
@@ -660,10 +677,16 @@ Rails.application.routes.draw do
     collection { post :bulk_add_users }
   end
 
+  # :show and :update would take a space ID and use the logged in session user ID
+  resources :walk_in_safety_sheets, except: :delete
+
   # namespace :help do
   #   get 'main', path: '/'
   # end
   # get 'repositories', to: 'repositories#index'
+
+  # NOTE: Routes are executed in order, any root route below this line is now a
+  # request to a user page
 
   # USER RESOURCES
   resources :users, path: "/", param: :username, except: %i[edit destroy] do

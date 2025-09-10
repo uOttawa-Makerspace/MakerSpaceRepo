@@ -3,6 +3,7 @@ require "rails_helper"
 RSpec.describe RfidController, type: :controller do
   before :all do
     @user = create(:user, :regular_user)
+    create(:membership_tier, title_en: "Faculty membership", title_fr: "Adhésion de la faculté", internal_price: 0, external_price: 0, duration: 4.months.to_i)
   end
 
   before :each do
@@ -160,6 +161,66 @@ RSpec.describe RfidController, type: :controller do
         actual = JSON.parse(response.body, symbolize_names: true)
         expected = { error: "Temporary RFID already exists" }
         expect(actual).to eq(expected)
+      end
+    end
+
+    context "creates memberships" do
+      before :all do
+        @pi_reader = create(:pi_reader)
+      end
+
+      it "should create a faculty membership for an engineering student" do
+        @rfid =
+          create(
+            :rfid,
+            mac_address: @pi_reader.pi_mac_address,
+            user: create(:user, :student)
+          )
+        @rfid_params = {
+          rfid: @rfid[:card_number],
+          mac_address: @rfid[:mac_address]
+        }
+        user = @rfid.user
+        expect { post :card_number, params: @rfid_params }.to change {
+          user.reload.active_membership
+        }.to be_present
+      end
+
+      it "should not create a membership for non-engineering students" do
+        @rfid =
+          create(
+            :rfid,
+            mac_address: @pi_reader.pi_mac_address,
+            user: create(:user, :student, :non_engineering)
+          )
+        @rfid_params = {
+          rfid: @rfid[:card_number],
+          mac_address: @rfid[:mac_address]
+        }
+        user = @rfid.user
+        post :card_number, params: @rfid_params
+        expect(user.reload.active_membership).to be_blank
+      end
+
+      it "should revoke membership for students if they're no longer eligible" do
+        @rfid =
+          create(
+            :rfid,
+            mac_address: @pi_reader.pi_mac_address,
+            user: create(:user, :student)
+          )
+        @rfid_params = {
+          rfid: @rfid[:card_number],
+          mac_address: @rfid[:mac_address]
+        }
+        user = @rfid.user
+        post :card_number, params: @rfid_params
+        expect(user.reload.active_membership).to be_present
+        # User dropped a course, changed programs, etc...
+        # Hardcoded because why not...
+        user.update(faculty: 'Social Sciences')
+        post :card_number, params: @rfid_params
+        expect(user.reload.active_membership).to be_blank
       end
     end
   end

@@ -10,7 +10,7 @@ class JobTasksController < ApplicationController
   end
 
   def create
-    @job_order = current_user.job_orders.find(params[:job_order_id])
+    @job_order = JobOrder.find(params[:job_order_id])
 
     highest_numbered_task = @job_order.job_tasks.maximum("CAST(SUBSTRING(title FROM 'Task ([0-9]+)') AS INTEGER)") || 0
     total_tasks_count = @job_order.job_tasks.count
@@ -170,6 +170,10 @@ step: params[:step]))
 
   def submit_for_approval
     return if @job_order.job_order_statuses.last&.job_status != JobStatus::DRAFT
+    @tasks_missing_information = @job_order.job_tasks.select do |task|
+      task.job_type.blank? || (task.job_type.name != "Design Services" && task.job_service.blank?)
+    end
+    return if @tasks_missing_information.any?
 
     @job_order.job_order_statuses.create!(
       job_status: JobStatus::STAFF_APPROVAL,
