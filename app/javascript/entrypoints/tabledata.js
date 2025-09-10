@@ -6,6 +6,8 @@ DataTable.ext.errMode = "throw";
 
 document.addEventListener("turbo:load", function () {
   document.body.querySelectorAll("[data-datatable]").forEach(function (el) {
-    new DataTable(el);
+    new DataTable(el, {
+      order: [], // this makes it so Last Seen is in descending order.
+    });
   });
 });
