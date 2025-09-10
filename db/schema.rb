@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_08_28_202059) do
+ActiveRecord::Schema[7.2].define(version: 2025_09_08_141531) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -1199,7 +1199,9 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_28_202059) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "name"
+    t.string "role"
     t.index ["space_id"], name: "index_staff_needed_calendars_on_space_id"
+    t.index ["space_id"], name: "index_unique_open_hours_per_space", unique: true, where: "((role)::text = 'open_hours'::text)"
   end
 
   create_table "staff_spaces", force: :cascade do |t|
