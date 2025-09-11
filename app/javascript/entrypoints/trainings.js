@@ -1,4 +1,5 @@
 import TomSelect from "tom-select";
+import DataTable from "datatables.net-bs5";
 
 document.addEventListener("turbo:load", () => {
   if (document.querySelector("#training_list_of_skills_en")) {
@@ -28,4 +29,8 @@ document.addEventListener("turbo:load", () => {
       persist: false,
     });
   }
+});
+
+document.addEventListener("turbo:load", () => {
+  new DataTable("#trainings-table");
 });
