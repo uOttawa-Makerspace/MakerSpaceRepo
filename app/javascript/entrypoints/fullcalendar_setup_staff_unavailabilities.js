@@ -17,7 +17,7 @@ document.addEventListener("turbo:load", async () => {
       center: "title",
       right: "timeGridWeek,dayGridMonth",
     },
-    scrollTime: "08:00:00",
+    scrollTime: "07:00:00",
     selectable: true,
     selectMirror: true,
     selectMinDistance: "30",
