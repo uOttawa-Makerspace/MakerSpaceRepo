@@ -250,7 +250,6 @@ document.addEventListener("turbo:load", function () {
     selectMirror: true,
     editable: true,
     slotEventOverlap: false,
-    scrollTime: "07:00:00",
     slotMinTime: "07:00:00",
     slotMaxTime: "22:00:00",
     eventTimeFormat: {
