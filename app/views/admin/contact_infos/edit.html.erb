@@ -38,11 +38,15 @@
               </div>
 
               <div class="mb-3">
-                <%= f.label :show_hours, 'Show Hours', class: 'form-check-label' %>
+                <%= f.label :show_hours, 'Show Hours Show Open Hours (pulled from imported calendars)', class: 'form-check-label' %>
                 <%= f.check_box(:show_hours, class: 'form-check-input') %>
               </div>
 
               <div class="mb-3" id="openingHours">
+                <div class="alert alert-warning my-3">
+                  Hours are now pulled from an imported calendar with the role "Open hours". This feature is deprecated with the exception of footer notes that can still be used to display community hours, for example, until overhauled completely.
+                </div>
+
                 <%= render partial: 'opening_hour_form', locals: { f: } %>
                 <%# Should not be submit if title is kept blank, used as a template for new hours%>
                 <div id="newOpeningHourSubForm" hidden>

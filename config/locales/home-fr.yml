@@ -81,3 +81,6 @@ fr:
       hour_header: "Heures d'ouverture des espaces de la semaine"
     socials:
       subtext: "Restez informé grâce a nos réseaux sociaux"
+    hours:
+      closed: "Fermé"
+      no_hours: "Aucune heure d'ouverture disponible cette semaine."
