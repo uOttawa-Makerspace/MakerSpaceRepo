@@ -12,7 +12,10 @@ class LockersController < AdminAreaController
 
   def index
     # For the locker rental form
-    @lockers = Locker.all
+    # This works on the basis that there's only one active locker rental
+    @lockers = Locker.includes(locker_rentals: [:rented_by, :decided_by])
+    @locker_product_link = LockerOption.locker_product_link
+    @locker_product_info = LockerOption.locker_product_info
   end
 
   # Make a range of lockers
@@ -29,6 +32,12 @@ class LockersController < AdminAreaController
                     .map{ |specifier| {specifier:} }
     )
     render action: :index, status: :created
+  end
+
+  def price
+    # Updates db value
+    LockerOption.locker_product_link = params.require(:value)
+    redirect_to lockers_path
   end
 
   private

@@ -169,10 +169,8 @@ class LockerRental < ApplicationRecord
       [
         {
           quantity: 1,
-          # FIXME: Locker product ID is hardcoded here
-          # locker product ID 10478024917048
-          # variant ID is 50851781312568
-          variantId: "gid://shopify/ProductVariant/50851781312568"
+          variantId:
+            "gid://shopify/ProductVariant/#{LockerOption.locker_product_variant_id}"
         }
       ]
     else

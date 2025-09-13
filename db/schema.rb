@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_08_28_202059) do
+ActiveRecord::Schema[7.2].define(version: 2025_09_09_112337) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -647,6 +647,13 @@ ActiveRecord::Schema[7.2].define(version: 2025_08_28_202059) do
     t.datetime "updated_at", precision: nil, null: false
     t.index ["repository_id"], name: "index_likes_on_repository_id"
     t.index ["user_id"], name: "index_likes_on_user_id"
+  end
+
+  create_table "locker_options", force: :cascade do |t|
+    t.string "name"
+    t.string "value"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "locker_rentals", force: :cascade do |t|

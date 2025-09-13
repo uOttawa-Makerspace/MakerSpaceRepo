@@ -1,8 +1,8 @@
 <% provide :title, 'Locker dashboard' %>
 
-<div class="text-center">
-    <h1>Locker Management</h1>
-    <details>
+<div>
+    <h1 class="text-center">Locker Management</h1>
+    <details class="mb-3">
         <summary>Make new lockers</summary>
         <%= form_with controller: :lockers do |f| %>
             <div class="d-md-flex align-items-baseline">
@@ -18,11 +18,53 @@
                 <div class="me-3">
                     <%= f.number_field :range_end, class: 'form-control', required: true %>
                 </div>
-                <div class="ms-auto">
-                    <%= f.submit class: 'btn btn-primary' %>
-                </div>
-
+                <%= f.submit class: 'btn btn-primary' %>
             </div>
+        <% end %>
+    </details>
+
+    <details open>
+        <summary>Configure locker options</summary>
+        <%= form_with controller: :lockers, url: {action: :price}, method: :put, class: 'mb-3' do |f| %>
+            <%= f.label :value, 'Link to shopify product URL', class: 'form-label' %>
+            <div class="input-group">
+                <%= f.text_field :value, id: 'shopifyProductLink', class: 'form-control' %>
+                <%= f.button name: :name, value: :shopify_product_link, class: 'btn btn-primary' %>
+            </div>
+            <div class="form-text">
+                <span>Currently linked with </span> <%= @locker_product_link ? link_to(@locker_product_link, @locker_product_link) : 'nothing' %>
+            </div>
+        <% end %>
+
+        <% if @locker_product_info %>
+            <div class="card">
+                <div class="row">
+                    <div class="col-md-3" style="max-height: 15em">
+                        <%= image_tag @locker_product_info[:image_url], class: 'rounded-start object-fit-cover w-100 h-100' %>
+                    </div>
+                    <div class="col-md-9">
+                        <div class="card-body">
+                            <p class="card-title fs-3 fw-bold"><%= @locker_product_info[:title] %></p>
+                            <p class="card-text">
+                                <b>SKU</b> <code><%= @locker_product_info[:sku] %></code> <br />
+                                <b>Product ID</b> <code><%= @locker_product_info[:product_id] %></code> <br />
+                                <b>Variant ID</b> <code><%= @locker_product_info[:variant_id] %></code> <br />
+                                <b>Received pricing</b> <code><%= @locker_product_info[:price] %> CAD</code>
+                            </p>
+                            <p class="card-text">
+                                Last updated on <%= @locker_product_info[:updated_at].to_datetime.to_fs :long %>.
+                                <%= link_to 'View product', @locker_product_link %>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        <% elsif @locker_product_link %>
+            <p class="text-center text-danger fw-bold">
+                Failed to load product information.
+            </p>
+        <% else %>
+            <p class="text-center">No valid link assigned...</p>
         <% end %>
     </details>
 
@@ -46,11 +88,11 @@
                 </thead>
                 <tbody>
                     <% @lockers.each do |locker| %>
-                        <% current_rental = locker.locker_rentals.assigned.first %>
+                        <% current_rental = locker.locker_rentals.find(&:active?) %>
                         <tr>
                             <th scope="row">
                                 <% if current_rental %>
-                                    <%= link_to locker.specifier, locker_rental_path(current_rental), class: 'stretched-link' %>
+                                    <%= link_to locker.specifier, locker_rental_path(current_rental) %>
                                 <% else %>
                                     <%= locker.specifier %>
                                 <% end %>
@@ -62,9 +104,9 @@
                             <td>
                                 <% if current_rental.present? %>
                                     <% if current_rental.expired? %>
-                                        <p class="text-danger"><%= fa_icon :times %> Expired</p>
+                                        <span class="text-danger"><%= fa_icon :times %> Expired</span>
                                     <% else %>
-                                        <p class="text-success"><%= fa_icon :check %> Valid</p>
+                                        <span class="text-success"><%= fa_icon :check %> Valid</span>
                                     <% end %>
                                 <% end %>
                             </td>

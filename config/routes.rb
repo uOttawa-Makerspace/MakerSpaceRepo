@@ -141,7 +141,12 @@ Rails.application.routes.draw do
     collection { get :history }
   end
 
-  resources :lockers
+  resources :lockers do
+    collection do
+      # Update only
+      put :price
+    end
+  end
   resources :locker_rentals do
     collection do
       get :admin
