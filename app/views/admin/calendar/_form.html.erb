@@ -166,8 +166,8 @@
                     <%= submit_tag "Publish", class: "btn btn-info" %>
                 <% end %>
 
-                <div class="dropdown show">
-                    <button type="button" class="btn btn-primary dropdown-toggle" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <div class="btn-group dropup position-relative">
+                    <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                         Delete
                     </button>
                     <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
@@ -201,13 +201,14 @@
             max-width: 28vw;
         }
     }
-
-    .modal-footer.second {
-        border: 0 !important;
-        padding-top: 0 !important;
-    }
     
     .modal-backdrop {
         opacity: 20% !important;
+    }
+
+    /* This removes the arrow from the dropup menu */
+    .modal-footer .dropdown-menu::before,
+    .modal-footer .dropdown-menu::after {
+        display: none !important;
     }
 </style>
