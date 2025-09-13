@@ -1,5 +1,13 @@
 # frozen_string_literal: true
 
+# Concern to allow creating an invoice with arbitrary line items and costs.
+# Attempts to simulate what we lost with Stripe.
+#
+# Associates a record with a draft order. Ensures the proper columns
+# are present to track state, then provides helper methods to create or find a
+# draft order's invoice url and paid status.
+#
+# NOTE: This probably should've been named 'ShopifyDraftOrderConcern'
 module ShopifyConcern
   extend ActiveSupport::Concern
 

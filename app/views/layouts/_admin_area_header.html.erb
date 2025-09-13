@@ -19,7 +19,15 @@
             <%= link_to t('admin.membership_tiers'), admin_memberships_path, class: 'dropdown-item' %>
           </div>
         </li>
-        <li class="nav-item"><%= link_to t('admin.lockers'), lockers_path, class: 'nav-link' %></li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" id="navbarDropdownLockers" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
+            <%= t('admin.lockers') %>
+          </a>
+          <div class="dropdown-menu" aria-labelledby="navbarDropdownLockers">
+            <%= link_to t('lockers.assigned_lockers'), lockers_path, class: 'dropdown-item' %>
+            <%= link_to t('lockers.assign_a_locker'), assign_locker_locker_rentals_path, class: 'dropdown-item' %>
+          </div>
+        </li>
         <li class="nav-item"><%= link_to t('navbar.design_day'), admin_design_day_path, class: 'nav-link' %></li>
         <li class="nav-item"><%= link_to t('admin.announcements'), admin_announcements_path, class: 'nav-link' %></li>
         <li class="nav-item"><%= link_to t('admin.reports'), admin_report_generator_index_path, class: 'nav-link' %></li>

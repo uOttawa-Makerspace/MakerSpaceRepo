@@ -88,3 +88,14 @@ interested in the order beyond being marked as 'PAID'
 Only orders 60 days old are accessible. Make sure you don't keep them for as
 long. Unless we're a private app?
 https://shopify.dev/docs/api/admin-graphql/latest/queries/order
+
+# Getting product variant IDs using the public API
+
+https://help.shopify.com/en/manual/products/variants/find-variant-id
+
+All products have a variant ID, and that variant ID can be tacked onto a draft
+order to give admins a way to set prices. You can't pass product IDs to draft
+orders.
+
+In short: https://makerstore.ca/products/ceed-locker-rental-per-trimester.json
+is the link to the product on makerstore, plus a '.json' at the end.
