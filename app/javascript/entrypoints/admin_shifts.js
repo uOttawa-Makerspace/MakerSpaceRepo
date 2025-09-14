@@ -11,6 +11,7 @@ import TomSelect from "tom-select";
 
 // Time slot constants
 const SLOT_MIN_TIME = new Date(new Date().setHours(7, 0, 0, 0));
+const SCROLL_TO_TIME = new Date(new Date().setHours(7, 0, 0, 0));
 const SLOT_MAX_TIME = new Date(new Date().setHours(23, 0, 0, 0));
 const monthsToInt = {
   Jan: 1,
@@ -39,7 +40,7 @@ const dayToInt = {
 // Modal
 const shiftModal = new Modal(document.getElementById("shiftModal"));
 const pendingShiftsModal = new Modal(
-  document.getElementById("pendingShiftsModal")
+  document.getElementById("pendingShiftsModal"),
 );
 
 function makeModalDraggable(shiftModal) {
@@ -140,11 +141,11 @@ const startPicker = startDateTimeInput.flatpickr({
     populateUsers({
       start: new Date(
         Date.parse(selectedDates[0]) -
-          new Date().getTimezoneOffset() * 60 * 1000
+          new Date().getTimezoneOffset() * 60 * 1000,
       ),
       end: new Date(
         Date.parse(endPicker.selectedDates[0]) -
-          new Date().getTimezoneOffset() * 60 * 1000
+          new Date().getTimezoneOffset() * 60 * 1000,
       ),
     }).then(() => {
       for (let id of selectedItems) {
@@ -164,11 +165,11 @@ const endPicker = endDateTimeInput.flatpickr({
     populateUsers({
       end: new Date(
         Date.parse(selectedDates[0]) -
-          new Date().getTimezoneOffset() * 60 * 1000
+          new Date().getTimezoneOffset() * 60 * 1000,
       ),
       start: new Date(
         Date.parse(startPicker.selectedDates[0]) -
-          new Date().getTimezoneOffset() * 60 * 1000
+          new Date().getTimezoneOffset() * 60 * 1000,
       ),
     }).then(() => {
       for (let id of selectedItems) {
@@ -257,6 +258,7 @@ document.addEventListener("turbo:load", () => {
         selectable: true,
         eventStartEditable: false,
         selectMirror: true,
+        scrollTime: SCROLL_TO_TIME.toTimeString().split(" ")[0],
         slotMinTime: SLOT_MIN_TIME.toTimeString().split(" ")[0],
         slotMaxTime: SLOT_MAX_TIME.toTimeString().split(" ")[0],
         eventTimeFormat: {
@@ -337,7 +339,7 @@ document.addEventListener("turbo:load", () => {
           if (isSelectingShifts) {
             // Find the target shift in the selected list
             const shiftIndex = selectedShifts.findIndex(
-              (shift) => shift.id === arg.event.id
+              (shift) => shift.id === arg.event.id,
             );
 
             // If found, remove from list
@@ -350,7 +352,7 @@ document.addEventListener("turbo:load", () => {
               arg.el.classList.add("selected-shift");
             }
             document.querySelector(
-              ".fc-deleteMultipleShifts-button"
+              ".fc-deleteMultipleShifts-button",
             ).textContent =
               selectedShifts.length > 0
                 ? "Delete selected Shifts"
@@ -365,11 +367,11 @@ document.addEventListener("turbo:load", () => {
         eventDrop: (arg) => {
           let shiftStartHour = new Date(
             Date.parse(arg.event.start.toString()) +
-              new Date().getTimezoneOffset() * 60 * 1000
+              new Date().getTimezoneOffset() * 60 * 1000,
           ).getHours();
           let shiftEndHour = new Date(
             Date.parse(arg.event.end.toString()) +
-              new Date().getTimezoneOffset() * 60 * 1000
+              new Date().getTimezoneOffset() * 60 * 1000,
           ).getHours();
           if (
             shiftStartHour < SLOT_MIN_TIME.getHours() ||
@@ -533,7 +535,7 @@ const createCalendarEvent = () => {
     .then((data) => {
       if (data.error) {
         const toast = new Toast(
-          document.getElementById("toast-color-shift-failed")
+          document.getElementById("toast-color-shift-failed"),
         );
         toast.show();
       } else {
@@ -548,7 +550,7 @@ const createCalendarEvent = () => {
             className: data.className,
             extendedProps: data.extendedProps,
           },
-          "shifts"
+          "shifts",
         );
         shiftModal.hide();
         calendar.unselect();
@@ -568,7 +570,7 @@ const createCalendarEvent = () => {
 
 const copyToNextWeek = () => {
   var isConfirmed = window.confirm(
-    "Are you sure you want to copy this week's shifts to the next week's?"
+    "Are you sure you want to copy this week's shifts to the next week's?",
   );
 
   if (isConfirmed) {
@@ -587,8 +589,8 @@ const copyToNextWeek = () => {
         calendar.gotoDate(
           new Date(
             calendar.currentData.dateProfile.currentRange.end.getTime() +
-              1000 * 60 * 60 * 24
-          )
+              1000 * 60 * 60 * 24,
+          ),
         );
       }
     });
@@ -597,7 +599,7 @@ const copyToNextWeek = () => {
 
 const confirmCurrentWeekShifts = () => {
   var isConfirmed = window.confirm(
-    "Are you sure you want to confirm this week's shifts?"
+    "Are you sure you want to confirm this week's shifts?",
   );
 
   if (isConfirmed) {
@@ -617,8 +619,8 @@ const confirmCurrentWeekShifts = () => {
         calendar.refetchEvents();
         calendar.gotoDate(
           new Date(
-            calendar.currentData.dateProfile.currentRange.start.getTime()
-          )
+            calendar.currentData.dateProfile.currentRange.start.getTime(),
+          ),
         );
       }
     });
@@ -632,7 +634,7 @@ const selectDeleteMultipleShifts = () => {
   isSelectingShifts = !isSelectingShifts;
 
   const deleteButton = document.querySelector(
-    ".fc-deleteMultipleShifts-button"
+    ".fc-deleteMultipleShifts-button",
   );
 
   if (isSelectingShifts) {
@@ -692,7 +694,7 @@ const openModal = (arg) => {
 // The 'Select All' modal checkbox when confirming shifts
 const selectAllCheckbox = document.getElementById("selectAllShifts");
 const shiftCheckboxes = document.querySelectorAll(
-  'input[type="checkbox"][id^="shift_"]'
+  'input[type="checkbox"][id^="shift_"]',
 );
 selectAllCheckbox.addEventListener("change", function () {
   shiftCheckboxes.forEach((checkbox) => {
@@ -786,11 +788,11 @@ const editShift = (arg) => {
       populateUsers({
         start: new Date(
           Date.parse(data.start_datetime) +
-            new Date().getTimezoneOffset() * 60 * 1000
+            new Date().getTimezoneOffset() * 60 * 1000,
         ),
         end: new Date(
           Date.parse(data.end_datetime) +
-            new Date().getTimezoneOffset() * 60 * 1000
+            new Date().getTimezoneOffset() * 60 * 1000,
         ),
       }).then(() => {
         data.users.forEach((user) => {
@@ -814,7 +816,7 @@ const updateHours = () => {
         Accept: "application/json",
         "Content-Type": "application/json",
       },
-    }
+    },
   )
     .then((res) => res.json())
     .then((data) => {
@@ -835,10 +837,10 @@ const updateHours = () => {
 const staffNeededEvent = (arg) => {
   openModal(arg);
   startPicker.setDate(
-    Date.parse(arg.event.start) + new Date().getTimezoneOffset() * 60 * 1000
+    Date.parse(arg.event.start) + new Date().getTimezoneOffset() * 60 * 1000,
   );
   endPicker.setDate(
-    Date.parse(arg.event.end) + new Date().getTimezoneOffset() * 60 * 1000
+    Date.parse(arg.event.end) + new Date().getTimezoneOffset() * 60 * 1000,
   );
 };
 
@@ -858,7 +860,7 @@ const hideShowEvents = (eventName) => {
   let eventsToProcess = [];
   if (eventName === "check") {
     eventsToProcess = allEvents.filter((ev) =>
-      sourceShow.hasOwnProperty(ev.source.id)
+      sourceShow.hasOwnProperty(ev.source.id),
     );
   } else {
     eventsToProcess = allEvents.filter((ev) => ev.source.id === eventName);
@@ -869,7 +871,7 @@ const hideShowEvents = (eventName) => {
       let display = sourceShow[ev.source.id] || "block";
       ev.setProp(
         "display",
-        hiddenIds[ev.extendedProps.userId] === "none" ? "none" : display
+        hiddenIds[ev.extendedProps.userId] === "none" ? "none" : display,
       );
     }
   });
@@ -922,7 +924,7 @@ window.toggleVisibility = (id) => {
     if (ev.extendedProps.userId === id) {
       ev.setProp(
         "display",
-        document.getElementById(`user-${id}`).checked ? "block" : "none"
+        document.getElementById(`user-${id}`).checked ? "block" : "none",
       );
       hiddenIds[id] = document.getElementById(`user-${id}`).checked
         ? "block"
@@ -950,14 +952,14 @@ window.updateColor = (userId, color) => {
         Turbo.visit(window.location, { action: "replace" });
       } else {
         const toast = new Toast(
-          document.getElementById("toast-color-update-failed")
+          document.getElementById("toast-color-update-failed"),
         );
         toast.show();
       }
     })
     .catch((error) => {
       const toast = new Toast(
-        document.getElementById("toast-color-update-failed")
+        document.getElementById("toast-color-update-failed"),
       );
       toast.show();
       console.log("An error occurred: " + error.message);
