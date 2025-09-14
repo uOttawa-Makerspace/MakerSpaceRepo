@@ -1,7 +1,11 @@
 <% provide :why_received, 'You have received this email because you have a locker assigned to you' %>
 Hello <%= @user.name %>,
 <br />
-Your locker rental has been cancelled.
+<% if @locker_rental.locker %>
+    Your locker rental for locker <%= @locker_rental.locker.specifier %> has been cancelled.
+<% else %>
+    Your locker rental has been cancelled.
+<% end %>
 <% if @locker_rental.owned_until %>
-Please ensure it is empty before <b><%= @locker_rental.owned_until.to_date %></b>.
+    Please ensure it is empty before <b><%= @locker_rental.owned_until.to_date %></b>.
 <% end %>

@@ -19,6 +19,13 @@
           </div>
         </li>
         <li class="nav-item"><%= link_to 'Sign in kiosk', kiosk_index_path, class: 'nav-link' %></li>
+        <li class="nav-item dropdown">
+          <span class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Locker management</span>
+          <div class="dropdown-menu">
+            <%= link_to 'Locker rentals', admin_locker_rentals_path, class: 'dropdown-item' %>
+            <%= link_to 'Expired rentals', expired_locker_rentals_path, class: 'dropdown-item' %>
+          </div>
+        </li>
         <li class="nav-item"><%= link_to 'Makerstore links', staff_makerstore_links_path, class: 'nav-link' %></li>
       </ul>
     </div>

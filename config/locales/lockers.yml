@@ -1,5 +1,6 @@
 en:
   lockers:
+    locker: Locker
     locker_type: Locker type
     locker_number: Locker number
     locker_rentals: Locker rentals
@@ -7,11 +8,14 @@ en:
 
     new_locker_request: New locker request
     view_locker_request: Locker request details
+    edit_locker_request: Editing locker request
 
     locker_dashboard: Locker dashboard
     all_locker_rentals: All locker rentals
     your_locker_requests: Your locker requests
     assigned_lockers: Assigned lockers
+
+    assign_a_locker: Assign a locker
 
     locker_id: Locker ID
     rented_by: Rented by
@@ -36,6 +40,7 @@ en:
       cancel_request: Cancel request
 fr:
   lockers:
+    locker: Casier
     locker_type: Type de casier
     locker_number: Numéro de casier
     locker_rentals: Locations de casiers
@@ -43,11 +48,13 @@ fr:
 
     new_locker_request: Nouvelle demande de casier
     view_locker_request: Détails de la demande de casier
+    edit_locker_request: Modification de la demande de casier
 
     locker_dashboard: Gestion des casiers
     all_locker_rentals: Toutes les locations de casier
     your_locker_requests: Votre demandes de casiers
     assigned_lockers: Casiers assignés
+    assign_a_locker: Assigner un casier
 
     locker_id: ID de casier
     rented_by: Loué par
