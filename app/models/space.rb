@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Space < ApplicationRecord
+  include CalendarHelper
+
   has_many :pi_readers
   has_many :lab_sessions, dependent: :destroy
   has_many :users, through: :lab_sessions
@@ -49,13 +51,12 @@ class Space < ApplicationRecord
         .map(&:user)
         .uniq
 
-    users =
-      users
+    users
         .sort_by do |user|
           user.lab_sessions.where(space: self).last.sign_out_time
         end
         .reverse
-    users
+    
   end
 
   def create_popular_hours
@@ -97,5 +98,33 @@ class Space < ApplicationRecord
       [0, 128, 128] # #008080
     ]
     colors[id % colors.size]
+  end
+
+  def weekly_open_hours
+    calendar = staff_needed_calendars.find_by(role: "open_hours")
+    return [] if calendar.blank?
+
+    parsed = parse_ics_calendar(calendar.calendar_url, name: "Open Hours")
+    return [] if parsed.blank?
+
+    events = parsed.first[:events]
+
+    start_of_week = Time.zone.today.beginning_of_week
+    end_of_week   = Time.zone.today.end_of_week
+
+    weekly_events = events.map do |ev|
+      dtstart = Time.zone.parse(ev[:start])
+      dtend   = ev[:end] ? Time.zone.parse(ev[:end]) : (dtstart + (ev[:duration].to_i / 1000))
+
+      OpenStruct.new(
+        dtstart: dtstart,
+        dtend:   dtend,
+        title:   ev[:title]
+      )
+    end.select do |e|
+      e.dtstart >= start_of_week.beginning_of_day && e.dtstart <= end_of_week.end_of_day
+    end
+
+    weekly_events.sort_by!(&:dtstart)
   end
 end

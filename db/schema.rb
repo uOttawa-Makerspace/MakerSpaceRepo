@@ -1204,7 +1204,9 @@ ActiveRecord::Schema[7.2].define(version: 2025_09_09_112337) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "name"
+    t.string "role"
     t.index ["space_id"], name: "index_staff_needed_calendars_on_space_id"
+    t.index ["space_id"], name: "index_unique_open_hours_per_space", unique: true, where: "((role)::text = 'open_hours'::text)"
   end
 
   create_table "staff_spaces", force: :cascade do |t|

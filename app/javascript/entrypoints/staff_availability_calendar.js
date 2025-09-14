@@ -9,17 +9,17 @@ import { Modal } from "bootstrap";
 
 // Modal
 const unavailabilityModal = new Modal(
-  document.getElementById("unavailabilityModal")
+  document.getElementById("unavailabilityModal"),
 );
 
 const modalTitle = document.getElementById("modal-title");
 const modalDelete = document.getElementById("modal-delete");
 const modalDeleteRecurring = document.getElementById("modal-delete-recurring");
 const modalDeleteRecThis = document.getElementById(
-  "modal-delete-recurring-this-only"
+  "modal-delete-recurring-this-only",
 );
 const modalDeleteRecRest = document.getElementById(
-  "modal-delete-recurring-this-and-rest"
+  "modal-delete-recurring-this-and-rest",
 );
 const modalDeleteRecAll = document.getElementById("modal-delete-recurring-all");
 const unavailabilityId = document.getElementById("unavailability-id");
@@ -130,6 +130,7 @@ let calendar = new Calendar(calendarEl, {
   navLinks: true,
   selectable: true,
   selectMirror: true,
+  scrollTime: "07:00:00",
   slotMinTime: "07:00:00",
   slotMaxTime: "22:00:00",
   eventTimeFormat: {
@@ -238,7 +239,7 @@ let createEvent = (exceptionType) => {
           startRecur: data.timePeriodStart,
           endRecur: data.timePeriodEnd,
         },
-        "unavailabilities"
+        "unavailabilities",
       );
 
       calendar.unselect();
@@ -365,7 +366,7 @@ document
 modalDeleteRecThis.addEventListener("click", () => createEvent("one_time"));
 modalDeleteRecRest.addEventListener("click", () => createEvent("all_after"));
 modalDeleteRecAll.addEventListener("click", () =>
-  removeEvent(parseInt(unavailabilityId.value), false)
+  removeEvent(parseInt(unavailabilityId.value), false),
 );
 
 modalDelete.addEventListener("click", () => {
