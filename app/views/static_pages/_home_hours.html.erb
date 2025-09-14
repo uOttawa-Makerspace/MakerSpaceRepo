@@ -1,27 +1,30 @@
 <div class="card home-card" id="home-hours">
-    <div class="card-body">
-        <h2 class="mb-3"> <%= t('home.welcome.welcome_to') %>
+    <div class="card-body px-0">
+        <%= image_tag('redesign/site.jpg',
+            alt: 'People watching a project demonstration in SITE',
+            loading: 'lazy',
+            class: 'w-100 rounded-top') %>
+
+        <h2 class="my-3">
+            <%= t('home.welcome.welcome_to') %>
             <% if signed_in? %>
-                <span class="text-secondary"><%= @user.name %></span>
+                <span class="fw-semibold"><%= @user.name %></span>
             <% end %>
         </h2>
+
         <div class="row g-3">
-            <div class="col-lg-4 overflow-clip hide-on-mobile">
-                <%= image_tag('redesign/site.jpg', alt: 'People watching a project demonstration in SITE', loading: 'lazy') %>
-            </div>
-            <div class="col-lg-8 text-start align-self-start">
-                    <h3 class="fw-bold"><%= link_to t('home.welcome.hour_header'), hours_url %></h3>
-                <div class="row g-2">
-                    <% @contact_info.each do |space| %>
-                        <div class="col-lg">
-                            <div class="border rounded p-3">
-                            <h4><%= space.name %></h4>
-                            <%= render partial: 'hours_embed', locals: { space: } %>
-                            </div>
-                        </div>
-                    <% end %>
+            <% @contact_info.each do |space| %>
+                <div class="col-lg-6">
+                    <div class="border rounded p-3 h-100">
+                        <h4 class="fw-semibold"><%= space.name %></h4>
+                        <%= render partial: 'hours_embed', locals: { space: } %>
+                    </div>
                 </div>
-            </div>
+            <% end %>
         </div>
+
+        <h3 class="fw-bold mt-3">
+            <%= link_to t('home.welcome.hour_header'), hours_url %>
+        </h3>
     </div>
 </div>
