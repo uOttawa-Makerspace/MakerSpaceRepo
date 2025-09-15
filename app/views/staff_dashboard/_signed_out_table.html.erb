@@ -3,10 +3,20 @@
     <% @space.recently_signed_out_users.each do |user| %>
         <tr class="add-rows" id="<%= return_no_waiver_id(user) %>">
             <td class="add-username-cell align-middle">
-                <% if @all_sign_out_memberships&.include?(user.id) %>
-                    <%= fa_icon "check-circle", class: "text-primary fs-3 align-middle" %>
-                <% end %>
                 <%= link_to(tag.add_username(user.name), user_url(user.username), class: "align-middle") %>
+                <% if user.has_active_membership? %>
+                    <% if user.active_membership.membership_tier.title_en.downcase.include?('faculty') %>
+                        <p class="text-success"> <%= fa_icon "cogs" %>
+                        Has an Engineering Membership</p>
+                    <% elsif user.student? %>
+                    <p class="text-success">
+                        <%= fa_icon "university" %>
+                        Has a Community Membership</p>
+                    <% else %>
+                        <%= fa_icon "check-circle" %>
+                        Has an External Membership</p>
+                    <% end %>
+                <% end %>
             </td>
             <td class="email-cell align-middle">
                 <%= user.email %>
