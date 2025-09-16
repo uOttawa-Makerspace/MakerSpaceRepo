@@ -1,7 +1,7 @@
 <div class="sticky-md-top" id="sticky-header">
 <nav class="navbar navbar-expand-xl navbar-light <%= controller_name %> <%= action_name %> bg-primary shadow-lg" id="header-navbar">
   <div class="container-fluid">
-    <a class="navbar-brand ms-5" href="/"><strong>Maker</strong>Repo</a>
+    <a class="navbar-brand ms-2 ms-md-5 fs-4 fs-sm-3 fs-md-2" href="/"><strong>Maker</strong>Repo</a>
     <% unless signed_in? %>
       <%# This is to show the register button outside the menu on mobile %>
       <a class="nav-link d-xl-none order-xl-3 ms-auto me-3" data-bs-toggle="modal" data-bs-target="#loginModal" href=""><%= t('navbar.sign_in') %></a>
