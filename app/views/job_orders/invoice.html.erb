@@ -195,10 +195,10 @@
             <% if task.job_service.job_service_group %>
               (<%= task.job_service.job_service_group.name %>)
             <% end %>
-            - <%= "#{task.job_task_quote.service_quantity} #{task.job_service.unit.presence || 'unit'}" %>
+            - <%= "#{task.job_task_quote.service_quantity || 0} #{task.job_service.unit.presence || 'unit'}" %>
           </td>
           <td>
-            CAD <%= number_to_currency(task.job_task_quote.service_price * task.job_task_quote.service_quantity) %>
+            CAD <%= number_to_currency((task.job_task_quote.service_price || 0) * (task.job_task_quote.service_quantity || 0)) %>
           </td>
         </tr>
       <% end %>
