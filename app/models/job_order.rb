@@ -178,7 +178,7 @@ class JobOrder < ApplicationRecord
       total += task.job_task_quote.price + (task.job_task_quote.service_price * task.job_task_quote.service_quantity)
       next unless task.job_task_quote.job_task_quote_options.any?
       task.job_task_quote.job_task_quote_options.each do |opt|
-        total += opt.price
+        total += opt.price || 0
       end
     end
 
