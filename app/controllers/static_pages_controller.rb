@@ -61,7 +61,7 @@ class StaticPagesController < SessionsController
 
     @contact_info = ContactInfo.where(show_hours: true).order(name: :asc)
 
-    @workshops = Rails.cache.fetch "SimpliEventsRecentEvents", expires: 5.minutes do
+    @workshops = Rails.cache.fetch "SimpliEventsRecentEvents", expires_in: 5.minutes do
       workshops = Excon.get(
         "https://simpli.events/api/organizer/44d09ce5-5999-4bd9-82eb-8a9772963223"
       )
