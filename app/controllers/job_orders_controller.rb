@@ -220,6 +220,7 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
           
           # Service
           if task.job_service.present?
+            logger.warn "HAS SERVICE"
             qty_key   = "task_#{task.id}_service_qty"
             svc_price_key = "task_#{task.id}_service_price"
             
