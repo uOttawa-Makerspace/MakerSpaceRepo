@@ -109,22 +109,49 @@ class Space < ApplicationRecord
 
     events = parsed.first[:events]
 
-    start_of_week = Time.zone.today.beginning_of_week
-    end_of_week   = Time.zone.today.end_of_week
+    start_of_week = Time.zone.today.beginning_of_week.beginning_of_day
+    end_of_week   = Time.zone.today.end_of_week.end_of_day
 
-    weekly_events = events.map do |ev|
+    weekly_events = []
+
+    events.each do |ev|
+      next unless ev[:start].present?
+
       dtstart = Time.zone.parse(ev[:start])
-      dtend   = ev[:end] ? Time.zone.parse(ev[:end]) : (dtstart + (ev[:duration].to_i / 1000))
+      dtend   = if ev[:end].present?
+                  Time.zone.parse(ev[:end])
+                elsif ev[:duration].present?
+                  dtstart + (ev[:duration].to_i / 1000)
+                else
+                  dtstart + 1.hour
+                end
 
-      OpenStruct.new(
-        dtstart: dtstart,
-        dtend:   dtend,
-        title:   ev[:title]
-      )
-    end.select do |e|
-      e.dtstart >= start_of_week.beginning_of_day && e.dtstart <= end_of_week.end_of_day
+      if ev[:rrule].present?
+        ical_rrule = ev[:rrule].lines.find { |l| l.start_with?("RRULE:") }&.sub("RRULE:", "")
+        if ical_rrule.present?
+          rule = IceCube::Rule.from_ical(ical_rrule)
+          schedule = IceCube::Schedule.new(dtstart, end_time: dtend)
+          schedule.add_recurrence_rule(rule)
+
+          occurrences = schedule.occurrences_between(start_of_week, end_of_week)
+          occurrences.each do |occ|
+            weekly_events << OpenStruct.new(
+              dtstart: occ.start_time.in_time_zone,
+              dtend:   occ.end_time.in_time_zone,
+              title:   ev[:title]
+            )
+          end
+        end
+      elsif dtstart >= start_of_week && dtstart <= end_of_week
+        weekly_events << OpenStruct.new(
+            dtstart: dtstart,
+            dtend:   dtend,
+            title:   ev[:title]
+          )
+      end
     end
 
-    weekly_events.sort_by!(&:dtstart)
+    weekly_events.sort_by(&:dtstart)
   end
+
 end
