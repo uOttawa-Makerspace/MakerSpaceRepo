@@ -39,7 +39,7 @@ document.addEventListener("turbo:load", async () => {
         },
       },
     },
-    scrollTime: "08:00:00",
+    scrollTime: "07:00:00",
     height: "80vh",
     eventSources:
       "/staff/my_calendar/json/" + document.getElementById("space_id").value,

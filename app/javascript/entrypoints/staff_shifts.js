@@ -6,6 +6,7 @@ import listPlugin from "@fullcalendar/list";
 
 // Time slot constants
 const SLOT_MIN_TIME = new Date(new Date().setHours(7, 0, 0, 0));
+const SCROLL_TO_TIME = new Date(new Date().setHours(7, 0, 0, 0));
 const SLOT_MAX_TIME = new Date(new Date().setHours(23, 0, 0, 0));
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -22,6 +23,7 @@ document.addEventListener("DOMContentLoaded", function () {
     allDaySlot: false,
     timeZone: "America/New_York",
     initialView: "timeGridWeek",
+    scrollTime: SCROLL_TO_TIME.toTimeString().split(" ")[0],
     slotMinTime: SLOT_MIN_TIME.toTimeString().split(" ")[0],
     slotMaxTime: SLOT_MAX_TIME.toTimeString().split(" ")[0],
     eventTimeFormat: {

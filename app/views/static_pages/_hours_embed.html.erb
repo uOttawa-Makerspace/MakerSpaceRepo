@@ -1,17 +1,31 @@
-<% space.opening_hours.each do |opening_hour| %>
-    <p><b><%= opening_hour.target %></b></p>
-    <%# Skip this week if hidden %>
-    <% unless opening_hour.hidden_closed_all_week? %>
-        <% %i[monday tuesday wednesday thursday friday saturday sunday].each do |day| %>
-            <%# Skip this row if hidden %>
-            <% next if opening_hour["#{day}_closed_all_day"] == 'hidden' %>
-            <% opening = opening_hour["#{day}_opening"] %>
-            <% closing = opening_hour["#{day}_closing"] %>
-            <% closed_all_day = opening_hour["#{day}_closed_all_day"] == 'closed' || opening_hour.closed_closed_all_week? %>
-            <div class="formatted-hour-row">
-                <span><%= t('hours.tags')[day] %></span><span><%= opening && closing && !closed_all_day ? "#{opening.strftime('%I:%M %p')} - #{closing.strftime('%I:%M %p')}" : t('hours.tags.closed') %></span>
-            </div>
+<% grouped = Space.find(space.space_id).weekly_open_hours.group_by { |e| e.dtstart.to_date.wday } %>
+
+<% if grouped.blank? %>
+  <div class="alert alert-warning my-3">
+    <%= t("home.hours.no_hours", default: "No open hours available this week.") %>
+  </div>
+<% else %>
+  <% Date::DAYNAMES.each_with_index do |day, i| %>
+    <div class="row py-2 <%= 'bg-light' if i.even? %>">
+      <div class="col-5 col-md-4">
+        <%= day %>
+      </div>
+      <div class="col-7 col-md-8 text-nowrap">
+        <% if grouped[i] %>
+          <% grouped[i].each do |event| %>
+            <%= event.dtstart.to_time.strftime("%I:%M %p") %> - <%= event.dtend.to_time.strftime("%I:%M %p") %><br>
+          <% end %>
+        <% else %>
+          <%= t("home.hours.closed") %>
         <% end %>
-    <% end %>
-    <p><%= opening_hour.notes&.html_safe %></p>
+      </div>
+    </div>
+  <% end %>
 <% end %>
+
+<% space.opening_hours.each do |opening_hour| %>
+  <div class="border-start border-3 ps-3 fst-italic text-muted mt-4">
+    <%= opening_hour.notes&.html_safe %>
+  </div>
+<% end %>
+

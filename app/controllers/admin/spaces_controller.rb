@@ -29,7 +29,7 @@ class Admin::SpacesController < AdminAreaController
           space: Space.find(params[:space_id])
         )
       sub_space.approval_required =
-        params[:approval_required] == "1" ? true : false
+        params[:approval_required] == "1"
       sub_space.save
       flash[:notice] = "Sub Space created!"
     else
@@ -65,7 +65,7 @@ class Admin::SpacesController < AdminAreaController
   end
 
   def change_sub_space_approval
-    if params[:id].present?
+    return unless params[:id].present?
       subspace = SubSpace.find(params[:id])
       if ContactInfo.where(space_id: subspace.space.id).blank?
         flash[
@@ -82,11 +82,11 @@ class Admin::SpacesController < AdminAreaController
         fallback_location:
           edit_admin_space_path(id: params[:space_id], anchor: "sub_space_area")
       )
-    end
+    
   end
 
   def change_sub_space_default_public
-    if params[:id].present?
+    return unless params[:id].present?
       subspace = SubSpace.find(params[:id])
       subspace.update(default_public: !subspace.default_public)
       flash[
@@ -96,7 +96,7 @@ class Admin::SpacesController < AdminAreaController
         fallback_location:
           edit_admin_space_path(id: params[:space_id], anchor: "sub_space_area")
       )
-    end
+    
   end
 
   def edit
@@ -108,18 +108,18 @@ class Admin::SpacesController < AdminAreaController
     @admin_options = admins.map { |admin| [admin.name, admin.id] }
     @admin_options.unshift(["Select an Admin", -1])
 
-    unless @space = Space.find(params[:id])
+    return if @space = Space.find(params[:id])
       flash[:alert] = "Not Found"
       redirect_back(fallback_location: root_path)
-    end
+    
   end
 
   def update_name
     @space = Space.find(params[:space_id])
-    if @space.update(name: params[:name])
+    return unless @space.update(name: params[:name])
       flash[:notice] = "Space Name updated !"
       redirect_back(fallback_location: root_path)
-    end
+    
   end
 
   def update_max_capacity
@@ -136,10 +136,10 @@ class Admin::SpacesController < AdminAreaController
 
   def update_keycode
     @space = Space.find(params[:space_id])
-    if @space.update(keycode: params[:keycode])
+    return unless @space.update(keycode: params[:keycode])
       flash[:notice] = "Space keycode updated!"
       redirect_back(fallback_location: root_path)
-    end
+    
   end
 
   def add_space_manager
@@ -278,11 +278,11 @@ class Admin::SpacesController < AdminAreaController
         space: Space.find(params[:space_id]),
         name: params[:name]
       )
-    if training_level.save
-      flash[:notice] = "Training Level added !"
+    flash[:notice] = if training_level.save
+      "Training Level added !"
     else
-      flash[:notice] = "An issue occurred while adding the training level."
-    end
+      "An issue occurred while adding the training level."
+                     end
     redirect_to edit_admin_space_path(
                   params[:space_id],
                   fallback_location: root_path
@@ -296,12 +296,12 @@ class Admin::SpacesController < AdminAreaController
         raspis = PiReader.where(space_id: space.id)
         raspis.update_all(space_id: nil)
         flash[:notice] = "Space deleted!" if space.destroy
-      else
-        flash[
-          :notice
-        ] = "The destroy request has been submitted, a second admin will need to approve it for the space to be destroyed." if space.update(
+      elsif space.update(
           destroy_admin_id: @user.id
         )
+        flash[
+          :notice
+        ] = "The destroy request has been submitted, a second admin will need to approve it for the space to be destroyed."
       end
     else
       flash[:alert] = "Invalid Input"
@@ -311,41 +311,36 @@ class Admin::SpacesController < AdminAreaController
 
   def update_staff_needed_calendars
     unless params[:space_id].present?
-      flash[
-        :alert
-      ] = "An error occurred while trying to add/remove the calendar URLs, please try again later."
+      flash[:alert] = "An error occurred while trying to add/remove the calendar URLs, please try again later."
+      return redirect_back(fallback_location: root_path)
     end
+
+    calendar_urls = Array(params[:staff_needed_calendar])
+    calendar_names = Array(params[:staff_needed_calendar_name])
+    calendar_colors = Array(params[:staff_needed_calendar_color])
+    calendar_roles = Array(params[:staff_needed_calendar_role])
+
+    open_hours_count = calendar_roles.count { |r| r == "open_hours" }
+    if open_hours_count > 1
+      flash[:alert] = "Only one calendar can be assigned the 'open_hours' role."
+      return redirect_back(fallback_location: root_path)
+    end
+
     StaffNeededCalendar.where(space_id: params[:space_id]).destroy_all
 
-    return if params[:staff_needed_calendar].blank?
+    calendar_urls.each_with_index do |url, i|
+      next if url.blank?
 
-    (
-      if (params[:staff_needed_calendar].is_a? Array)
-        params[:staff_needed_calendar]
-      else
-        [params[:staff_needed_calendar]]
-      end
-    ).each_with_index do |snc, i|
-      unless snc.blank?
-        StaffNeededCalendar.create(
-          name: if params[:staff_needed_calendar_name].is_a? Array
-                params[:staff_needed_calendar_name][i]
-              else
-                params[:staff_needed_calendar_name]
-              end,
-          color:
-            (
-              if (params[:staff_needed_calendar_color].is_a? Array)
-                params[:staff_needed_calendar_color][i]
-              else
-                params[:staff_needed_calendar_color]
-              end
-            ),
-          space_id: params[:space_id],
-          calendar_url: snc
-        )
-      end
+      StaffNeededCalendar.create(
+        name: calendar_names[i],
+        color: calendar_colors[i],
+        role: calendar_roles[i].presence,
+        space_id: params[:space_id],
+        calendar_url: url
+      )
     end
+
+    flash[:notice] = "Calendars updated successfully."
     redirect_back(fallback_location: root_path)
   end
 

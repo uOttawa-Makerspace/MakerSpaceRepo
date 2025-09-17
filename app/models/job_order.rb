@@ -175,10 +175,10 @@ class JobOrder < ApplicationRecord
     total = 0
     job_tasks.each do |task|
       next unless task.job_task_quote.present?
-      total += task.job_task_quote.price + (task.job_task_quote.service_price * task.job_task_quote.service_quantity)
+      total += task.job_task_quote.price + ((task.job_task_quote.service_price || 0) * (task.job_task_quote.service_quantity || 0))
       next unless task.job_task_quote.job_task_quote_options.any?
       task.job_task_quote.job_task_quote_options.each do |opt|
-        total += opt.price
+        total += opt.price || 0
       end
     end
 
@@ -195,7 +195,7 @@ class JobOrder < ApplicationRecord
 
       price_data << generate_line_item("#{task.title} Service Fee", task.job_task_quote.price)
       price_data << generate_line_item("#{task.title} Parts Fee", 
-task.job_task_quote.service_price * task.job_task_quote.service_quantity)
+task.job_task_quote.service_price * task.job_task_quote.service_quantity) if task.job_task_quote.service_price.positive? && task.job_task_quote.service_quantity.positive?
       
       next unless task.job_task_quote.job_task_quote_options.any?
       task.job_task_quote.job_task_quote_options.each do |opt|

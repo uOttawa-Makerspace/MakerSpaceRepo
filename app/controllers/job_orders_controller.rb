@@ -219,13 +219,12 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
           job_task_quote.price = params[price_key].presence || 0.0
           
           # Service
-          if task.job_service.present?
-            qty_key   = "task_#{task.id}_service_qty"
-            svc_price_key = "task_#{task.id}_service_price"
-            
-            job_task_quote.service_quantity = params[qty_key].presence || 0.0
-            job_task_quote.service_price = params[svc_price_key].presence || 0.0
-          end
+          qty_key   = "task_#{task.id}_service_qty"
+          svc_price_key = "task_#{task.id}_service_price"
+          
+          job_task_quote.service_quantity = params[qty_key].presence || 0.0
+          job_task_quote.service_price = params[svc_price_key].presence || 0.0
+
           job_task_quote.save!
 
           # Options
@@ -268,6 +267,8 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
             sender: current_user
           )
         end
+
+        @job_order.staff_comments = params[:job_order][:staff_comments] if params[:job_order][:staff_comments].present?
 
         @job_order.job_order_statuses << JobOrderStatus.create(
           job_order: @job_order,
