@@ -92,6 +92,7 @@ document.addEventListener("turbo:load", function () {
     has_membership,
     expiration_date,
     is_student,
+    signed_sheet,
   ) {
     var displayNow = [];
     if (displayBefore == undefined) {
@@ -139,8 +140,7 @@ document.addEventListener("turbo:load", function () {
       document.getElementById("not-student").style.display = "block";
     }
 
-    var consent = getRandomInt(2);
-    if (consent == 0) {
+    if (signed_sheet) {
       document.getElementById("unsigned-consent-form").style.display = "none";
       document.getElementById("signed-consent-form").style.display = "block";
     } else {
@@ -192,6 +192,7 @@ document.addEventListener("turbo:load", function () {
             data.has_membership,
             data.expiration_date,
             data.is_student,
+            data.signed_sheet,
           );
         }
       });

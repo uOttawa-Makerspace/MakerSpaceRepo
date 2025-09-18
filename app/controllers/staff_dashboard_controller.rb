@@ -60,6 +60,7 @@ class StaffDashboardController < StaffAreaController
             has_membership: @space.signed_in_users.first.has_active_membership?,
             expiration_date: recent_expiration_date,
             is_student: @space.signed_in_users.first.student?,
+            signed_sheet: @space.signed_in_users.first.walk_in_safety_sheets.any?,
              signed_out:
                render_to_string(
                  partial: "staff_dashboard/signed_out_table",
