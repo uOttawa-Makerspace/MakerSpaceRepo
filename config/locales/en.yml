@@ -349,4 +349,5 @@ en:
         status: "Status"
         active: "Active"
         expired: "Expired"
+        revoked: "Revoked"
         cancelled: "Cancelled"

@@ -160,6 +160,9 @@ Rails.application.routes.draw do
     collection do
       post :admin_create_membership
     end
+    member do
+      patch :revoke
+    end
   end
 
   root "static_pages#home"
