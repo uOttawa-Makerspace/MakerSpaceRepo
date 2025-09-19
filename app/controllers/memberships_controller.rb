@@ -49,6 +49,13 @@ class MembershipsController < SessionsController
     redirect_back(fallback_location: memberships_path)
   end
 
+  def revoke
+    membership = Membership.find(params[:id])
+    membership.update!(status: 'revoked')
+    flash[:notice] = "Membership revoked successfully."
+    redirect_back(fallback_location: memberships_path)
+  end
+
   private
 
   def load_membership_data

@@ -623,4 +623,5 @@ fr:
         status: "Statut"
         active: "Active"
         expired: "Expirée"
+        revoked: "Révoqué"
         cancelled: "Annulé"
