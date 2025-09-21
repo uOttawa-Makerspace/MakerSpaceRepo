@@ -49,8 +49,7 @@ class Membership < ApplicationRecord
     last_active =
       user
         .memberships
-        .where('end_date > ?', Time.current)
-        .order(end_date: :desc)
+        .active
         .first
     last_active ? last_active.end_date : Time.current
   end
