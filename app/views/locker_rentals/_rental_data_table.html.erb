@@ -3,33 +3,44 @@
         <% if local_assigns[:header_title] %>
             <caption class="text-center fs-3" align="top"><%= header_title %></caption>
         <% end %>
-        <thead class="table-primary text-center">
+        <thead class="table-primary">
             <tr>
-                <th class="w-auto dt-center" data-type="num"><%= t('lockers.locker_id') %></th>
-                <th class="w-auto"><%= t('lockers.rented_by') %></th>
-                <th class="w-auto"><%= t('lockers.state.state') %></th>
-                <th class="w-auto"><%= t('lockers.assigned_on') %></th>
-                <th class="w-auto"><%= t('lockers.owned_until') %></th>
-                <% unless local_assigns[:hide_actions] %>
-                    <th class="w-auto">Actions</th>
-                <% end %>
+                <th class="w-auto dt-center" data-type="num"><%= t('lockers.locker_id') %> assigned</th>
+                <th><%= t('lockers.rented_by') %></th>
+                <th><%= t('lockers.state.state') %></th>
+                <th>Requested on</th>
+                <th>Requested as</th>
+                <th><%= t('lockers.assigned_on') %></th>
+                <th><%= t('lockers.owned_until') %></th>
             </tr>
         </thead>
         <tbody>
             <% if locker_rentals.present? %>
                 <% locker_rentals.each do |rental| %>
                     <tr>
-                        <td class="dt-center" data-sort="<%= rental.locker_specifier %>" data-search="<%= rental.locker_type.short_form %>"><span class="badge fs-6" style="background-color: #<%= rental.locker_type.rgb %>"><%= rental.full_locker_name %></span></td>
+                        <td class="dt-center">
+                            <%= link_to "##{rental.locker&.specifier}", rental, class: 'link' %>
+                        </td>
                         <td><%= link_to rental.rented_by.username, user_path(rental.rented_by) %>
                             <%= tag.span(rental.rented_by.role.humanize, class: 'badge text-bg-primary') if rental.rented_by.staff? %></td>
-                        <td data-search="<%= rental.state %>"><%= tag.i class: "fa #{rental.state_icon}" %> <%= t("lockers.state.#{rental.state}") %>
-                            <%= link_to "(#{t('lockers.details')})", rental %>
+                        <td data-search="<%= rental.state %>">
+                            <%= tag.i class: "fa #{rental.state_icon}" %> <%= t("lockers.state.#{rental.state}") %>
+                            <% if rental.expired? %>
+                                | <span class="text-danger"><%= fa_icon :times %> Expired</span>
+                            <% end %>
+                        </td>
+                        <td><%= rental.created_at.to_date.to_formatted_s :long %></td>
+                        <td>
+                            <%= rental.requested_as.to_s.humanize %>
+                            <% if rental.repository %>
+                                -
+                                <%= link_to "Linked repository", repository_path(rental.rented_by.username, rental.repository.id), title: rental.repository.title %>
+                            <% else %>
+                                - No repository
+                            <% end if rental.requested_as_student? %>
                         </td>
                         <td><%= rental.updated_at&.to_date %></td>
                         <td><%= rental.owned_until&.to_date || 'Unapproved yet' %></td>
-                        <% unless local_assigns[:hide_actions] %>
-                            <td><%= locker_rental_actions(rental) %></td>
-                        <% end %>
                     </tr>
                 <% end %>
             <% end %>
