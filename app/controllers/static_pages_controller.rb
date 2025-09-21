@@ -33,7 +33,7 @@ class StaticPagesController < SessionsController
         []
       end
 
-    @recent_projects = Rails.cache.fetch "StaticPagesRecentRepos", expires: 5.minutes do
+    @recent_projects = Rails.cache.fetch "StaticPagesRecentRepos", expires_in: 5.minutes do
       # This is how you preload active storage attachments, I think
       Repository.public_repos.order(created_at: :desc)
         .includes(photos: {image_attachment: [blob: { variant_records: :blob }]}).limit(15)
@@ -61,19 +61,23 @@ class StaticPagesController < SessionsController
 
     @contact_info = ContactInfo.where(show_hours: true).order(name: :asc)
 
-    @workshops = Rails.cache.fetch "SimpliEventsRecentEvents", expires_in: 5.minutes do
-      workshops = Excon.get(
-        "https://simpli.events/api/organizer/44d09ce5-5999-4bd9-82eb-8a9772963223"
-      )
-      JSON.parse(workshops.body)["events"]
-        .select { |x| x["startTime"] >= DateTime.now.to_i * 1000 }
-        .sort { |x| -x["startTime"] }
+    @workshops = Rails.cache.fetch 'SimpliEventsRecentEvents', expires_in: 5.minutes do
+      workshops =
+        Net::HTTP.get_response(
+          URI(
+            'https://simpli.events/api/organizer/44d09ce5-5999-4bd9-82eb-8a9772963223'
+          )
+        )
+      JSON.parse(workshops.body)['events']
+        .select { |x| x['startTime'] >= DateTime.now.to_i * 1000 }
+        .sort { |x| -x['startTime'] }
         .take(5)
-    rescue StandardError
+    rescue StandardError => e
+      Rails.logger.error e
       [] # eh
     end
 
-    @makerstore_links = Rails.cache.fetch "ShopifyMakerstoreLinks", expires: 5.minutes do
+    @makerstore_links = Rails.cache.fetch "ShopifyMakerstoreLinks", expires_in: 5.minutes do
       home_makerstore_links
     end
   end
