@@ -1,21 +1,20 @@
 <% provide :title, "Locker Admin" %>
 
 <%# HACK to get out of the forced admin container div and reclaim some horizontal space %>
-<% content_for :before_container do %>
-    <div class="mx-md-3 pt-3">
-        <h1 class="text-center">Locker Rentals</h1>
-        <div class="d-flex">
-            <div class="p-3 filter-rental-state" id="filter-locker-states">
-                <span class="fw-bold me-3">Rental states</span>
-                <% LockerRental.states.keys.each do |state| %>
-                    <div class="form-check form-check-inline">
-                        <%= check_box_tag :rental_state, state, {}, { id: "rental_state_#{state}", class: 'form-check-input', data: { type: state } } %>
-                        <%= label :rental_state, state, state.humanize, class: 'form-check-label' %>
-                    </div>
-                <% end %>
-            </div>
+
+<div class="mx-md-3 pt-3">
+    <h1 class="text-center">Locker Rentals</h1>
+    <div class="d-flex">
+        <div class="p-3 filter-rental-state" id="filter-locker-states">
+            <span class="fw-bold me-3">Rental states</span>
+            <% LockerRental.states.keys.each do |state| %>
+                <div class="form-check form-check-inline">
+                    <%= check_box_tag :rental_state, state, {}, { id: "rental_state_#{state}", class: 'form-check-input', data: { type: state } } %>
+                    <%= label :rental_state, state, state.humanize, class: 'form-check-label' %>
+                </div>
+            <% end %>
         </div>
-        <%= render partial: 'rental_data_table',
-                   locals: { locker_rentals: LockerRental.all } %>
     </div>
-<% end %>
+    <%= render partial: 'rental_data_table',
+               locals: { locker_rentals: LockerRental.all } %>
+</div>

@@ -6,12 +6,12 @@
         <thead class="table-primary">
             <tr>
                 <th class="w-auto dt-center" data-type="num"><%= t('lockers.locker_id') %> assigned</th>
-                <th class="w-auto"><%= t('lockers.rented_by') %></th>
-                <th class="w-auto"><%= t('lockers.state.state') %></th>
-                <th class="w-auto">Requested on</th>
-                <th style="w-auto">Requested as</th>
-                <th class="w-auto"><%= t('lockers.assigned_on') %></th>
-                <th class="w-auto"><%= t('lockers.owned_until') %></th>
+                <th><%= t('lockers.rented_by') %></th>
+                <th><%= t('lockers.state.state') %></th>
+                <th>Requested on</th>
+                <th>Requested as</th>
+                <th><%= t('lockers.assigned_on') %></th>
+                <th><%= t('lockers.owned_until') %></th>
             </tr>
         </thead>
         <tbody>
@@ -29,15 +29,14 @@
                                 | <span class="text-danger"><%= fa_icon :times %> Expired</span>
                             <% end %>
                         </td>
-                        <td data-order="<%= rental.created_at.to_i %>"><%= rental.created_at.to_formatted_s :long %></td>
+                        <td><%= rental.created_at.to_date.to_formatted_s :long %></td>
                         <td>
                             <%= rental.requested_as.to_s.humanize %>
                             <% if rental.repository %>
-                                <br />
-                                <%= link_to "Has linked repository", repository_path(rental.rented_by.username, rental.repository.id), title: rental.repository.title %>
+                                -
+                                <%= link_to "Linked repository", repository_path(rental.rented_by.username, rental.repository.id), title: rental.repository.title %>
                             <% else %>
-                                <br />
-                                No repository provided
+                                - No repository
                             <% end if rental.requested_as_student? %>
                         </td>
                         <td><%= rental.updated_at&.to_date %></td>
