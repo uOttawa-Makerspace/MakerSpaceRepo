@@ -57,4 +57,11 @@ class LockerOption < ApplicationRecord
     Rails.logger.fatal e
     nil
   end
+
+  def self.locker_rental_price
+    locker_product_info[:price]
+  rescue StandardError => e
+    Rails.logger.warn e
+    0
+  end
 end

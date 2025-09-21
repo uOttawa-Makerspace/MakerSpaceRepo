@@ -8,7 +8,7 @@ class LockerRentalsController < SessionsController
 
   def index
     @own_locker_rentals = current_user.locker_rentals
-    @locker_rental_price = LockerOption.locker_product_info[:price]
+    @locker_rental_price = LockerOption.locker_rental_price
   end
 
   def expired
