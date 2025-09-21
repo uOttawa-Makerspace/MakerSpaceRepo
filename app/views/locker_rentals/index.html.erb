@@ -3,51 +3,40 @@
 <h1 class="text-center"><%= t('lockers.all_locker_rentals') %></h1>
 <p class="text-center">Here you can see your locker rental history</p>
 <div class="container">
-    <% @own_locker_rentals.active.each do |rental| %>
-        <div class="card">
-            <div class="row g-0">
-                <div class="col-md-2">
-                    <%= image_tag "locker/STEM_lockers.jpg", class: "img-fluid rounded-start" %>
-                </div>
-                <div class="col-md-10">
-                    <div class="card-body">
-                        <p class="fs-5"><%= "#{t('lockers.locker')} ##{rental.locker.specifier}" %></p>
-                        <p><span class="badge text-bg-success">Active</span> Until <%= rental.owned_until.to_date.to_fs :long %></p>
-                        <%= link_to "View details", locker_rental_path(rental), class: 'btn btn-secondary' %>
-                    </div>
-                </div>
-            </div>
-        </div>
-    <% end %>
-
-    <hr />
-
-    <div class="card mb-3">
-        <div class="row g-0">
-            <div class="col-md-4">
-                <%= image_tag "locker/STEM_lockers.jpg", class: "img-fluid rounded-start bg-secondary" %>
-            </div>
-            <div class="col-md-8">
+    <div class="row row-cols-md-4 gx-0">
+        <% @own_locker_rentals.active.each do |rental| %>
+            <div class="card">
+                <%= image_tag "locker/STEM_lockers.jpg", class: "card-img-top" %>
                 <div class="card-body">
-                    <p class="fs-3 card-title">CEED Lockers</p>
-                    <% if @own_locker_rentals.pending.any? %>
-                        <span class="badge text-bg-secondary">Under review</span>
-                    <% elsif @own_locker_rentals.active.any? %>
-                        <span class="badge text-bg-success">Active</span>
-                    <% end %>
-                    <p class="card-text">Brunsfield lockers located at STM124 or somewhere</p>
-                    <%= link_to new_locker_rental_path, class: 'btn btn-primary stretched-link' do %>
-                        <% if @own_locker_rentals.pending.any? %>
-                            Review request
-                        <% else %>
-                            Request locker
-                        <% end %>
-                    <% end %>
-                    <p class="card-text"><small class="text-body-secondary">$20 per semester</small></p>
+                    <p class="fs-5"><span class="badge text-bg-success">Active</span> <%= "#{t('lockers.locker')} ##{rental.locker.specifier}" %> </p>
+                    <p>Until <%= rental.owned_until.to_date.to_fs :long %></p>
+                    <%= link_to "View details", locker_rental_path(rental), class: 'btn btn-secondary' %>
                 </div>
+            </div>
+        <% end %>
+
+        <div class="card">
+            <%= image_tag "locker/STEM_lockers.jpg", class: "card-img-top" %>
+            <div class="card-body">
+                <p class="fs-3 card-title">CEED Lockers</p>
+                <% if @own_locker_rentals.pending.any? %>
+                    <span class="badge text-bg-secondary">Under review</span>
+                <% end %>
+                <p class="card-text">Various lockers located around the STEM building</p>
+                <p class="card-text"><small class="text-body-secondary">$<%= @locker_rental_price %> per semester</small></p>
+                <% if @own_locker_rentals.pending.any? %>
+                    <%= link_to 'Review request', new_locker_rental_path, class: 'btn btn-primary stretched-link' %>
+                <% else %>
+                    <%= link_to new_locker_rental_path, class: 'btn btn-success stretched-link' do %>
+                        <%= fa_icon :plus %> Request a locker
+                    <% end %>
+                <% end %>
             </div>
         </div>
     </div>
+
+    <hr />
+
     <details>
         <summary>Locker history</summary>
         <%= render partial: 'rental_data_table',
