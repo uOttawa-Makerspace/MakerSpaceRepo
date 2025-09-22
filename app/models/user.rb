@@ -247,6 +247,37 @@ class User < ApplicationRecord
           joins(:programs).where(programs: { program_type: Program::VOLUNTEER })
         }
 
+  # Search uses a direct LIKE substring match
+  scope :search,
+        ->(query) {
+          User.where(
+            'LOWER(UNACCENT(name)) LIKE LOWER(UNACCENT(:query)) OR LOWER(UNACCENT(username)) LIKE LOWER(UNACCENT(:query))',
+            query: "%#{query}%"
+          ).limit(30)
+        } # sanity limit
+
+  # Fuzzy search uses postgres trigram. This comes from:
+  # https://pganalyze.com/blog/similarity-in-postgres-and-ruby-on-rails-using-trigrams
+  # Two notes here:
+  # 1) The % operator triggers the trigram module search. Refer:
+  # https://www.postgresql.org/docs/current/pgtrgm.html#PGTRGM-OP-TABLE
+  # 2) The order query looks weird because it does not accept parameters like
+  # #where, so we sanitize and parameterize manually.
+  scope :fuzzy_search,
+        ->(query) {
+          User
+            .where(
+              'LOWER(UNACCENT(name)) % LOWER(UNACCENT(:query)) OR LOWER(UNACCENT(username)) % LOWER(UNACCENT(:query))',
+              query:
+            )
+            .order(
+              sanitize_sql_for_order(
+                [Arel.sql('similarity(name, ?) DESC'), [query]]
+              )
+            )
+            .limit(30)
+        }
+
   def token(exp = 14.days.from_now.to_i)
     JWT.encode(
       { user_id: id, exp: exp },

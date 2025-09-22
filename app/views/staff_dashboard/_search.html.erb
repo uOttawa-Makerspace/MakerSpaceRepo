@@ -1,15 +1,16 @@
-<div class="input-group mb-3">
-  <%= select_tag(:username, '', prompt: " Search for users to sign them in or out of #{@space.name.titleize}", class: 'form-select', id: 'user_dashboard_select') %>
-  <%= form_tag staff_dashboard_sign_in_users_path, method: :put, action: :sign_in_users, id: 'sign_in_user_fastsearch', class: 'btn btn-primary' do %>
-    <%= hidden_field_tag :added_users, '', { id: 'sign_in_user_fastsearch_username' } %>
-    <%= button_tag 'Sign In', class: 'btn p-0' %>
+<form class="input-group mb-3">
+  <%= select_tag(:username, '', prompt: " Search for users to sign them in or out of #{@space.name.titleize}",
+                 class: 'form-select',
+                 id: 'user_dashboard_select',
+                 data: {user_search_bar: ''}) %>
+  <%= button_tag class: 'btn btn-primary', formaction: staff_dashboard_sign_in_users_path, formmethod: 'post', name: '_method', value: 'put' do %>
+    Sign In
   <% end %>
 
-  <%= form_tag staff_dashboard_user_profile_path, method: :get, id: 'search_user_fastsearch', class: 'btn btn-secondary' do %>
-    <%= hidden_field_tag :username, '', { id: 'search_user_fastsearch_username' } %>
-    <%= button_tag 'View', onclick: 'searchForm()', class: 'btn p-0' %>
+  <%= button_tag class: 'btn btn-secondary', formaction: staff_dashboard_user_profile_path, formmethod: 'get' do %>
+    View
   <% end %>
-</div>
+</form>
 
 <div class="dropdown text-end mb-3">
   <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
