@@ -331,14 +331,23 @@ class Admin::SpacesController < AdminAreaController
     calendar_urls.each_with_index do |url, i|
       next if url.blank?
 
-      StaffNeededCalendar.create(
+      snc = StaffNeededCalendar.create(
         name: calendar_names[i],
         color: calendar_colors[i],
         role: calendar_roles[i].presence,
         space_id: params[:space_id],
         calendar_url: url
       )
-    end
+      Rails.logger.debug "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      Rails.logger.debug calendar_roles[i]
+      Rails.logger.debug params[:space_id]
+      # Copy over to MakerRoom
+      space = Space.find(params[:space_id])
+      if space.id == 24 && calendar_roles[i] == "makeroom"
+        helpers.create_makeroom_bookings_from_ics(snc)
+        Rails.logger.debug "_________________________________________________________"
+      end
+    end    
 
     flash[:notice] = "Calendars updated successfully."
     redirect_back(fallback_location: root_path)

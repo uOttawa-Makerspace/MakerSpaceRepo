@@ -24,6 +24,7 @@ module CalendarHelper
             extendedProps: {
               name: name,
               description: event.description,
+              location: event.location,
             },
             allDay: event.dtstart.to_time == event.dtend.to_time - 1.day,
             start: event.dtstart.to_time.iso8601
@@ -176,5 +177,51 @@ module CalendarHelper
   def remove_until_from_rrule(rrule_line)
     rrule_line = rrule_line.gsub(/;UNTIL=[^;Z]*Z/, '') if rrule_line.include?('UNTIL=')
     rrule_line
+  end
+
+  def create_makeroom_bookings_from_ics(snc)
+    # Filter all CEED Space events into the ones for STEM124 and the ones for STEM126
+
+    @events = parse_ics_calendar(
+        snc.calendar_url,
+        name: snc.name.presence || "Unnamed Calendar",
+        color: snc.color
+      )
+    # Arrays for each rooms' events
+    @events_124 = []
+    @events_126 = []
+    @events.each do |event|
+      Rails.logger.debug event
+      Rails.logger.debug "_________________________________________________"
+      if event.extendedProps.location == "STEM124"
+        @events_124 << event
+      elsif event.extendedProps.location == "STEM126"
+        @events_126 << event
+      end
+    end
+    
+    # Creating the bookings
+    @events_124.each do |event|
+      create SubSpaceBooking(
+        start_time: event.start,
+        end_time: event.end,
+        name: event.name,
+        description: event.description,
+        sub_space_id: 10,
+        blocking: true
+      )
+    end
+
+    # Creating the bookings
+    @events_126.each do |event|
+      create SubSpaceBooking(
+        start_time: event.start,
+        end_time: event.end,
+        name: event.name,
+        description: event.description,
+        sub_space_id: 11,
+        blocking: true
+      )
+    end
   end
 end

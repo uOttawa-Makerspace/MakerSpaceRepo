@@ -24,12 +24,12 @@ document.addEventListener("turbo:load", function () {
       modalBody.replaceChildren(...newOptions);
     });
   }
-
+  // SET UP POPUP MODAL ON CALENDAR
   let bookedCalendarEl = document.getElementById("booked-calendar");
   if (bookedCalendarEl) {
     function createEvent(arg) {
       let modal = document.getElementById("bookModal");
-
+      // Show the create event buttons if new event is being created (and hide edit buttons)
       document.getElementById("bookSave").style.display = "block";
       document.getElementById("bookUpdate").style.display = "none";
       document.getElementById("bookDelete").style.display = "none";
@@ -51,7 +51,7 @@ document.addEventListener("turbo:load", function () {
     }
     function editEvent(arg) {
       let modal = document.getElementById("bookModal");
-
+      // Show the edit event buttons in an event is being edited (and hide create buttons)
       document.getElementById("bookSave").style.display = "none";
       document.getElementById("bookUpdate").style.display = "block";
       document.getElementById("bookingModalLabel").innerText = "Update Booking";
