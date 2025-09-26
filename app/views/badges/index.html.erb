@@ -7,10 +7,62 @@
 <div class="by-5 row row-cols-lg-auto g-3 align-items-center">
     <div class="input-group">
       <%= fa_icon 'search', class: 'fa-2x pe-2 form-group-text' %>
-      <%= text_field_tag(:search, '', placeholder: 'Search by Badge Name, User, Description ...', class: 'form-control', id: 'search_bar') %>
+      <%= text_field_tag(:search, params[:search], placeholder: 'Search by Badge Name, User, Description ...', class: 'form-control', id: 'search_bar') %>
     </div>
 </div>
 
 <div class="badge_list">
   <%= render 'badges/badge_list' %>
 </div>
+
+<script type="text/javascript" charset="utf-8">
+    let search_bar = document.getElementById("search_bar");
+    let searchTimeout;
+    let currentSearch = search_bar.value;
+    
+    // Function to perform search
+    function performSearch(page = 1) {
+      const searchValue = search_bar.value;
+      let url = '/badges/search?search=' + encodeURIComponent(searchValue);
+      if (page > 1) {
+        url += '&page=' + page;
+      }
+      
+      fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': '*/*'
+        }
+      }).then(response => response.text()).then(data => {
+        document.querySelector('.badge_list').innerHTML = data;
+        // Reinitialize tooltips after content update
+        $('[data-bs-toggle="tooltip"]').tooltip();
+        // Re-attach pagination click handlers
+        attachPaginationHandlers();
+      });
+    }
+    
+    // Handle search input
+    search_bar.addEventListener("keyup", () => {
+      clearTimeout(searchTimeout);
+      
+      searchTimeout = setTimeout(() => {
+        performSearch(1); // Reset to page 1 on new search
+      }, 500);
+    });
+    
+    // Handle pagination clicks
+    function attachPaginationHandlers() {
+      document.querySelectorAll('.apple_pagination a').forEach(link => {
+        link.addEventListener('click', function(e) {
+          e.preventDefault();
+          const url = new URL(this.href);
+          const page = url.searchParams.get('page') || 1;
+          performSearch(page);
+        });
+      });
+    }
+    
+    // Initial attachment of pagination handlers
+    attachPaginationHandlers();
+</script>
