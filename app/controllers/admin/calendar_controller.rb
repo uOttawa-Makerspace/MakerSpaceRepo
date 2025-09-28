@@ -20,6 +20,7 @@ class Admin::CalendarController < AdminAreaController
         }
     end
     .sort_by { |user| user[:name].downcase }
+    flash[:alert] = "You are not assigned to any spaces." if @spaces.empty?
   end
 
   def unavailabilities_json
