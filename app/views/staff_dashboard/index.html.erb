@@ -19,7 +19,7 @@
 <% end %>
 <!-- <hr /> -->
 <div class="table-responsive">
-  <table class="table table-striped" data-datatable data-page-length="50" data-responsive="true">
+  <table class="table table-striped" data-datatable data-page-length="50" data-responsive="true" data-order="[]">
     <caption id="user-count" class="text-center fs-3" align="top"><%= pluralize @space.signed_in_users.count, 'user' %> inside <%= @space.name %>
       <div class="d-flex justify-content-around">
         <%= link_to staff_dashboard_sign_out_all_users_path, class: 'btn btn-danger', data: {confirm: 'Are you sure you want to sign out all users?'} do %>
@@ -72,7 +72,7 @@
 </div>
 <hr />
 <div class="table-responsive">
-  <table class="table table-striped table-sort" data-datatable>
+  <table class="table table-striped table-sort" data-datatable data-order="[]">
     <caption class="text-center fs-3" align="top">Users recently signed out of <%= @space.name %></caption>
     <thead class="table-primary">
       <tr>
@@ -87,7 +87,7 @@
 </div>
 <hr />
 <div class="table-responsive">
-  <table class="table table-striped staff-newly-signed-up-users-table table-sort table-arrows" data-datatable>
+  <table class="table table-striped staff-newly-signed-up-users-table table-sort table-arrows" data-datatable data-order="[]">
     <caption class="text-center fs-3" align="top">Newly signed up users on Maker<strong>Repo</strong></caption>
     <thead class="table-primary">
       <tr>
