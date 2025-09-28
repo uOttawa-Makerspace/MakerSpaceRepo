@@ -21,7 +21,7 @@ document.addEventListener("turbo:load", function () {
           return callback();
         }
 
-        let url = "/staff_dashboard/populate_users?search=" + type;
+        let url = "/users/search?search=" + type;
         fetch(url)
           .then((response) => response.json())
           .then((data) => {
@@ -44,7 +44,7 @@ document.addEventListener("turbo:load", function () {
         item: (item, escape) => {
           const link = document.createElement("a");
           link.className = "ts-item";
-          link.innerText = escape(item.name);
+          link.innerText = item.name ? escape(item.name) : escape(item.id);
           link.href = `/${escape(item.id)}`;
           link.setAttribute("target", "_blank");
           link.addEventListener("click", function (evt) {
@@ -56,7 +56,7 @@ document.addEventListener("turbo:load", function () {
           const div = document.createElement("div");
           div.className = "ts-option";
           const strong = document.createElement("strong");
-          strong.innerText = escape(item.name);
+          strong.innerText = item.name ? escape(item.name) : escape(item.id);
 
           const username = document.createElement("a");
           username.className = "ms-2";

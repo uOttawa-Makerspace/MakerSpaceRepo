@@ -140,6 +140,15 @@ class UsersController < SessionsController
     redirect_to root_path
   end
 
+  def search
+    search_results = if current_user.staff?
+                       User.fuzzy_search(params[:search]).as_json(only: %i[name username])
+                     else
+                       User.reduced_fuzzy_search(params[:search]).as_json(only: :username)
+                     end
+    render json: { users: search_results }
+  end
+
   def new
     redirect_to root_path if signed_in?
     @new_user = User.new

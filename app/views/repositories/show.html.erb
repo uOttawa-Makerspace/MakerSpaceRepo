@@ -150,44 +150,39 @@
                 </div>
         </div>
 
+        <hr />
+
         <div class="repo-info-item">
             <%= form_for :repo_owner, url: { controller: 'repositories', action: 'add_member' }, method: :patch do |f| %>
-                <%= f.label t('repository.add_member'), class: 'form-label title' %>
+                <%= f.label t('repository.add_member'), class: 'form-label' %>
                 <div class="mb-3 input-group">
                     <%= f.hidden_field :repository_id, value: @repository.id %>
-                    <%= f.select(:owner_id, '', { prompt: t('repository.add_member') }, { class: 'search_users_add form-control', id: 'search_users_add' }) %>
-                    <br> </br>
+                    <%= f.select(:owner_username, '', { prompt: t('repository.search_user') }, { class: 'form-control', data: {user_search_bar: ''} }) %>
                     <%= f.submit t('repository.add'), class: 'btn btn-success' %>
                 </div>
             <% end %>
-        </div>
-        </div>
 
-        <div class="repo-info-item">
-            <div class="title"><%= t('repository.rem_mem') %></div>
             <%= form_for :repo_owner, url: { controller: 'repositories', action: 'remove_member' }, method: :patch do |f| %>
+                <%= f.label t('repository.rem_mem'), class: 'form-label' %>
                 <div class="mb-3 input-group">
                     <%= f.hidden_field :repository_id, value: @repository.id %>
-                    <%= f.select(:owner_id, @members.pluck(:username, :id), { prompt: t('repository.rem_mem') }, { class: 'search_users_remove form-control', id: 'search_users_remove' }) %>
-                    <br> </br>
+                    <%= f.select(:owner_id, @members.pluck(:username, :id), { prompt: t('repository.search_user') }, { class: 'search_users_remove form-control', id: 'search_users_remove' }) %>
                     <%= f.submit t('repository.remove'), class: 'btn btn-danger' %>
                 </div>
             <% end %>
-        </div>
 
-        <% if @user.id == @repository.user_id || @user.admin? %>
-            <div class="repo-info-item">
-                <div class="title"><%= t('repository.trans_own') %></div>
+            <% if @user.id == @repository.user_id || @user.admin? %>
                 <%= form_for :repo_owner, url: { controller: 'repositories', action: 'transfer_owner' }, method: :patch do |f| %>
+                    <%= f.label t('repository.trans_own'), class: 'form-label' %>
                     <div class="mb-3 input-group required">
                         <%= f.hidden_field :repository_id, value: @repository.id %>
-                        <%= f.select(:owner_id, @members.pluck(:username, :id), { prompt: t('repository.choose') }, { class: 'form-control', id: 'search_users_transfer' }) %>
+                        <%= f.select(:owner_id, @members.pluck(:username, :id), { prompt: t('repository.search_user') }, { class: 'form-control', id: 'search_users_transfer' }) %>
                         <br> </br>
                         <%= f.submit t('repository.transfer'), class: 'btn btn-warning' %>
                     </div>
                 <% end %>
-            </div>
-        <% end %>
+        </div>
+            <% end %>
 
         </div>
             <% end %>
@@ -245,5 +240,5 @@
     </section>
 </section>
 
-
+<%= vite_javascript_tag 'staff_dashboard_search', 'data-turbo-track': 'reload' %>
 <%#%= render 'layouts/photoswipe' %>

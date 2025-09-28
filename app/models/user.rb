@@ -278,6 +278,22 @@ class User < ApplicationRecord
             .limit(30)
         }
 
+  # Fuzzy search but available to non-staff members. Allows username search only
+  scope :reduced_fuzzy_search,
+        ->(query) {
+          User
+            .where(
+              'LOWER(UNACCENT(username)) % LOWER(UNACCENT(:query))',
+              query:
+            )
+            .order(
+              sanitize_sql_for_order(
+                [Arel.sql('similarity(name, ?) DESC'), [query]]
+              )
+            )
+            .limit(10)
+        }
+
   def token(exp = 14.days.from_now.to_i)
     JWT.encode(
       { user_id: id, exp: exp },
