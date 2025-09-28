@@ -42,20 +42,40 @@ document.addEventListener("turbo:load", function () {
       },
       render: {
         item: (item, escape) => {
-          return `<div class="ts-item">
-          <span>${escape(item.name)}</span>
-        </div>`;
+          const link = document.createElement("a");
+          link.className = "ts-item";
+          link.innerText = escape(item.name);
+          link.href = `/${escape(item.id)}`;
+          link.setAttribute("target", "_blank");
+          link.addEventListener("click", function (evt) {
+            evt.stopPropagation();
+          });
+          return link;
         },
         option: (item, escape) => {
-          return `<div class="ts-option">
-          <strong>${escape(item.name)}</strong>
-          <small class="text-muted ms-2">@${escape(item.id)}</small>
-        </div>`;
+          const div = document.createElement("div");
+          div.className = "ts-option";
+          const strong = document.createElement("strong");
+          strong.innerText = escape(item.name);
+
+          const username = document.createElement("a");
+          username.className = "ms-2";
+          username.innerText = `@${escape(item.id)}`;
+          username.href = `/${escape(item.id)}`;
+          username.setAttribute("target", "_blank");
+
+          username.addEventListener("click", function (evt) {
+            evt.stopPropagation();
+          });
+
+          div.append(strong);
+          div.append(username);
+          return div;
         },
       },
     });
   });
-
+  // FIXME: remove this from here
   let form = document.getElementById("sign_in_user_fastsearch");
   if (form) {
     form.onsubmit = function () {
