@@ -46,19 +46,23 @@ modal.addEventListener("hidden.bs.modal", function () {
 
 document.addEventListener("turbo:load", function () {
   var form = document.getElementById("sign_in_user_fastsearch");
-  form.onsubmit = function () {
-    document.getElementById("sign_in_user_fastsearch_username").value = [
-      document.getElementById("user_dashboard_select").value,
-    ];
-    form.submit();
-  };
+  if (form) {
+    form.onsubmit = function () {
+      document.getElementById("sign_in_user_fastsearch_username").value = [
+        document.getElementById("user_dashboard_select").value,
+      ];
+      form.submit();
+    };
+  }
 
   var form2 = document.getElementById("search_user_fastsearch");
-  form2.onsubmit = function () {
-    document.getElementById("search_user_fastsearch_username").value =
-      document.getElementById("user_dashboard_select").value;
-    form2.submit();
-  };
+  if (form2) {
+    form2.onsubmit = function () {
+      document.getElementById("search_user_fastsearch_username").value =
+        document.getElementById("user_dashboard_select").value;
+      form2.submit();
+    };
+  }
 
   document
     .querySelector(".form-control-input-excel")
@@ -175,9 +179,9 @@ document.addEventListener("turbo:load", function () {
     ).join("");
     let url = "/staff_dashboard/refresh_tables?token=" + token;
     fetch(url)
-      .then((response) => response.json())
+      .then((response) => (response.status == 200 ? response.json() : {}))
       .then((data) => {
-        if (!data.error) {
+        if (data.users) {
           if (document.getElementById("table-js-signed-out")) {
             document.getElementById("table-js-signed-out").innerHTML =
               data.signed_out;
