@@ -34,15 +34,15 @@ class UsersController < SessionsController
         format.html do
           redirect_to root_path,
                       notice:
-                        "Account has been created, please look in your emails to confirm your email address."
+                        'Account has been created, please look in your emails to confirm your email address.'
         end
         format.json do
           render json:
-                   "Account has been created, please look in your emails to confirm your email address.",
+                   'Account has been created, please look in your emails to confirm your email address.',
                  status: :unprocessable_entity
         end
       else
-        format.html { render "new", status: :unprocessable_entity }
+        format.html { render 'new', status: :unprocessable_entity }
         format.json do
           render json: @new_user.errors, status: :unprocessable_entity
         end
@@ -56,11 +56,11 @@ class UsersController < SessionsController
     if user.present?
       hash = Rails.application.message_verifier(:user).generate(user.id)
       MsrMailer.confirmation_email(user, hash).deliver_now
-      flash[:notice] = "A new confirmation email has been sent"
+      flash[:notice] = 'A new confirmation email has been sent'
     else
       flash[
         :alert
-      ] = "No users with that email were found. Please select a valid email."
+      ] = 'No users with that email were found. Please select a valid email.'
     end
     redirect_back(fallback_location: root_path)
   end
@@ -76,16 +76,16 @@ class UsersController < SessionsController
         MsrMailer.welcome_email(user).deliver_now
         flash[
           :notice
-        ] = "The email has been confirmed, you can now fully use your Makerepo Account !"
+        ] = 'The email has been confirmed, you can now fully use your Makerepo Account !'
       else
         flash[
           :alert
-        ] = "Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com"
+        ] = 'Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com'
       end
     else
       flash[
         :alert
-      ] = "Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com"
+      ] = 'Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com'
     end
     redirect_to root_path
   end
@@ -108,19 +108,19 @@ class UsersController < SessionsController
       else
         flash[
           :alert
-        ] = "Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com"
+        ] = 'Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com'
       end
     else
       flash[
         :alert
-      ] = "Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com"
+      ] = 'Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com'
     end
     redirect_to root_path
   end
 
   def unlock_account
     @user_token = params[:token]
-    @user_verifier = Rails.application.message_verifier("unlock")
+    @user_verifier = Rails.application.message_verifier('unlock')
     if @user_verifier.valid_message?(@user_token)
       user_id = @user_verifier.verify(@user_token)
       if User.find(user_id).present?
@@ -129,13 +129,13 @@ class UsersController < SessionsController
           user.update(locked: false)
           user.update(auth_attempts: 0)
           user.update(locked_until: nil)
-          flash[:notice] = "The account has been unlocked!"
+          flash[:notice] = 'The account has been unlocked!'
         end
       else
-        flash[:alert] = "We can not find that user. Please try again.."
+        flash[:alert] = 'We can not find that user. Please try again..'
       end
     else
-      flash[:alert] = "Invalid Token"
+      flash[:alert] = 'Invalid Token'
     end
     redirect_to root_path
   end
@@ -186,7 +186,7 @@ class UsersController < SessionsController
   def remove_flag
     @repo_user = User.find(params[:repo_user_id])
     msg = params[:flag_msg]
-    @repo_user.flag_message = @repo_user.flag_message.gsub("; #{msg}", "")
+    @repo_user.flag_message = @repo_user.flag_message.gsub("; #{msg}", '')
     @repo_user.flagged = (@repo_user.flag_message.blank? ? false : true)
     @repo_user.save
     redirect_to user_path(@repo_user.username)
@@ -199,11 +199,11 @@ class UsersController < SessionsController
 
   def update
     if @user.update(user_params)
-      flash[:notice] = "Profile updated successfully."
+      flash[:notice] = 'Profile updated successfully.'
       redirect_to settings_profile_path
     else
-      flash[:alert] = "Could not save changes." +
-        @user.errors.full_messages.join("; ")
+      flash[:alert] = 'Could not save changes.' +
+        @user.errors.full_messages.join('; ')
       redirect_to settings_profile_path
     end
   end
@@ -215,8 +215,8 @@ class UsersController < SessionsController
     end
 
     if @user.pword != params[:user][:old_password]
-      flash.now[:alert] = "Incorrect old password."
-      render "settings/admin", layout: "setting" and return
+      flash.now[:alert] = 'Incorrect old password.'
+      render 'settings/admin', layout: 'setting' and return
     end
 
     if @user.update(user_params)
@@ -225,9 +225,9 @@ class UsersController < SessionsController
       MsrMailer.confirm_password_change(@user).deliver_now
       redirect_to settings_admin_path,
                   notice:
-                    "Password changed successfully, an email will be sent to confirm."
+                    'Password changed successfully, an email will be sent to confirm.'
     else
-      render "settings/admin", layout: "setting"
+      render 'settings/admin', layout: 'setting'
     end
   end
 
@@ -248,9 +248,9 @@ class UsersController < SessionsController
             user_hash,
             email_hash
           ).deliver_now
-          flash[:notice] = "A confirmation email has been sent to the new email"
+          flash[:notice] = 'A confirmation email has been sent to the new email'
         else
-          flash[:alert] = "This email is already used by a MakerRepo Account."
+          flash[:alert] = 'This email is already used by a MakerRepo Account.'
         end
       else
         flash[:alert] = "This confirmation email isn't matching the new email"
@@ -258,7 +258,7 @@ class UsersController < SessionsController
     else
       flash[
         :alert
-      ] = "There was a problem with the email, please try sending the email again."
+      ] = 'There was a problem with the email, please try sending the email again.'
     end
     redirect_to settings_admin_path
   end
@@ -287,24 +287,24 @@ class UsersController < SessionsController
             MsrMailer.confirm_password_change(@user).deliver_now
             flash[
               :notice
-            ] = "Your password has been updated, an email will be sent to confirm!"
+            ] = 'Your password has been updated, an email will be sent to confirm!'
           else
             flash[
               :alert
-            ] = "An error occured while trying to change your password. Please try again later or send us an email at uottawa.makerepo@gmail.com"
+            ] = 'An error occured while trying to change your password. Please try again later or send us an email at uottawa.makerepo@gmail.com'
           end
         else
           flash[
             :alert
-          ] = "Something went wrong. You might have tried to change your password more than 24h after the email was sent. Try to access the page again or send us an email at uottawa.makerepo@gmail.com."
+          ] = 'Something went wrong. You might have tried to change your password more than 24h after the email was sent. Try to access the page again or send us an email at uottawa.makerepo@gmail.com.'
         end
       else
-        flash[:alert] = "Your password and password confirmation do not match."
+        flash[:alert] = 'Your password and password confirmation do not match.'
       end
     else
       flash[
         :alert
-      ] = "Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com"
+      ] = 'Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com'
     end
     redirect_to root_path
   end
@@ -334,110 +334,108 @@ class UsersController < SessionsController
     else
       flash[
         :alert
-      ] = "An error occurred: A user must me selected; You need to be staff/admin to change the programs."
+      ] = 'An error occurred: A user must me selected; You need to be staff/admin to change the programs.'
       redirect_to root_path
     end
   end
 
   def show
-    @repo_user = if @user.admin? || @user.staff?
-      User.unscoped.find_by username: params[:username]
-    else
-      User.find_by username: params[:username]
-                 end
+    @repo_user =
+      if @user.admin? || @user.staff?
+        User.unscoped.find_by username: params[:username]
+      else
+        User.find_by username: params[:username]
+      end
 
     raise ActiveRecord::RecordNotFound if @repo_user.nil?
-      
-      #redirect_to root_path, alert: "User not found."
-    
-      @programs = @repo_user.programs.pluck(:program_type)
-      begin
-        @github_username =
-          Octokit::Client.new(access_token: @repo_user.access_token).login
-      rescue Octokit::Unauthorized
-        @github_username = nil
+
+    #redirect_to root_path, alert: "User not found."
+
+    @programs = @repo_user.programs.pluck(:program_type)
+    begin
+      @github_username =
+        Octokit::Client.new(access_token: @repo_user.access_token).login
+    rescue Octokit::Unauthorized
+      @github_username = nil
+    end
+    @repositories =
+      if params[:username] == @user.username || @user.admin? || @user.staff?
+        @repo_user
+          .repositories
+          .where(make_id: nil)
+          .paginate(page: params[:page], per_page: 18)
+      else
+        @repo_user
+          .repositories
+          .public_repos
+          .where(make_id: nil)
+          .paginate(page: params[:page], per_page: 18)
       end
-      @repositories =
-        if params[:username] == @user.username || @user.admin? || @user.staff?
-          @repo_user
-            .repositories
-            .where(make_id: nil)
-            .paginate(page: params[:page], per_page: 18)
+
+    @acclaim_badge_url =
+      if params[:username] == @user.username
+        'https://www.youracclaim.com/earner/earned/share/'
+      else
+        'https://www.youracclaim.com/badges/'
+      end
+
+    @acclaim_data = @repo_user.certifications
+    @makes = @repo_user.repositories.where.not(make_id: nil).page params[:page]
+    @joined_projects = @repo_user.project_joins
+    @photos = photo_hash
+    @certifications = @repo_user.certifications.highest_level
+    @skills = Skill.all
+    @proficient_projects_awarded =
+      proc do |training|
+        training.proficient_projects.where(
+          id: @repo_user.order_items.awarded.pluck(:proficient_project_id)
+        )
+      end
+    @learning_modules_completed =
+      proc do |training|
+        training.learning_modules.where(
+          id:
+            @repo_user.learning_module_tracks.completed.pluck(
+              :learning_module_id
+            )
+        )
+      end
+    @recomended_hours =
+      proc do |training, levels|
+        training.learning_modules.where(level: levels).count +
+          training.proficient_projects.where(level: levels).count
+      end
+    @space_list = Space.all
+    @staff_spaces = @repo_user.staff_spaces.pluck(:space_id)
+
+    if @user.key_certification.nil? && @user.eql?(@repo_user) &&
+         (
+           @user.staff? ||
+             @user.programs.pluck(:program_type).include?(Program::TEAMS)
+         )
+      key_cert = @user.build_key_certification
+      key_cert.save
+    end
+
+    @keys_owned = @repo_user.keys
+    @keys_supervising = Key.where(supervisor_id: @repo_user.id)
+    @key_cert = @repo_user.key_certification
+
+    respond_to do |format|
+      format.html
+      format.json do
+        if @user.staff? || @user.admin? || @repo_user == @user
+          render json: {
+                   user: @repo_user.as_json(include: :rfid),
+                   programs: @programs.as_json,
+                   certifications: @certifications.as_json(include: :training)
+                 }
         else
-          @repo_user
-            .repositories
-            .public_repos
-            .where(make_id: nil)
-            .paginate(page: params[:page], per_page: 18)
-        end
-
-      @acclaim_badge_url =
-        if params[:username] == @user.username
-          "https://www.youracclaim.com/earner/earned/share/"
-        else
-          "https://www.youracclaim.com/badges/"
-        end
-
-      @acclaim_data = @repo_user.certifications
-      @makes =
-        @repo_user.repositories.where.not(make_id: nil).page params[:page]
-      @joined_projects = @repo_user.project_joins
-      @photos = photo_hash
-      @certifications = @repo_user.certifications.highest_level
-      @skills = Skill.all
-      @proficient_projects_awarded =
-        proc do |training|
-          training.proficient_projects.where(
-            id: @repo_user.order_items.awarded.pluck(:proficient_project_id)
-          )
-        end
-      @learning_modules_completed =
-        proc do |training|
-          training.learning_modules.where(
-            id:
-              @repo_user.learning_module_tracks.completed.pluck(
-                :learning_module_id
-              )
-          )
-        end
-      @recomended_hours =
-        proc do |training, levels|
-          training.learning_modules.where(level: levels).count +
-            training.proficient_projects.where(level: levels).count
-        end
-      @space_list = Space.all
-      @staff_spaces = @repo_user.staff_spaces.pluck(:space_id)
-
-      if @user.key_certification.nil? && @user.eql?(@repo_user) &&
-           (
-             @user.staff? ||
-               @user.programs.pluck(:program_type).include?(Program::TEAMS)
-           )
-        key_cert = @user.build_key_certification
-        key_cert.save
-      end
-
-      @keys_owned = @repo_user.keys
-      @keys_supervising = Key.where(supervisor_id: @repo_user.id)
-      @key_cert = @repo_user.key_certification
-
-      respond_to do |format|
-        format.html
-        format.json do
-          if @user.staff? || @user.admin? || @repo_user == @user
-            render json: {
-                     user: @repo_user.as_json(include: :rfid),
-                     programs: @programs.as_json,
-                     certifications:
-                       @certifications.as_json(include: :training)
-                   }
-          else
-            render json:
-                     "This page has restricted access. If you think you need this access, please contact uottawa.makerepo@gmail.com"
-          end
+          render json:
+                   'This page has restricted access. If you think you need this access, please contact uottawa.makerepo@gmail.com'
         end
       end
-    
+    end
   end
 
   def likes
@@ -452,14 +450,15 @@ class UsersController < SessionsController
             repository_id: repo_ids
           }
         )
-      @repositories = if !@repositories.empty?
-        @repositories.order([sort_arr].to_h).paginate(
+      @repositories =
+        if !@repositories.empty?
+          @repositories.order([sort_arr].to_h).paginate(
             per_page: 12,
             page: params[:page]
           )
-      else
-        []
-                      end
+        else
+          []
+        end
     else
       @repositories =
         Repository
@@ -506,33 +505,33 @@ class UsersController < SessionsController
 
   def sort_order
     case params[:sort]
-    when "newest"
+    when 'newest'
       %i[created_at desc]
-    when "most_likes"
+    when 'most_likes'
       %i[like desc]
-    when "most_makes"
+    when 'most_makes'
       %i[make desc]
-    when "recently_updated"
+    when 'recently_updated'
       %i[updated_at desc]
     else
       %i[created_at desc]
     end
   end
   SLUG_TO_CATEGORY_MODEL = {
-    "internet-of-things" => "Internet of Things",
-    "course-related-projects" => "Course-related Projects",
-    "gng2101/gng2501" => "GNG2101/GNG2501",
-    "gng1103/gng1503" => "GNG1103/GNG1503",
-    "health-sciences" => "Health Sciences",
-    "wearable" => "Wearable",
-    "mobile-development" => "Mobile Development",
-    "virtual-reality" => "Virtual Reality",
-    "other-projects" => "Other Projects",
-    "uottawa-team-projects" => "uOttawa Team Projects"
+    'internet-of-things' => 'Internet of Things',
+    'course-related-projects' => 'Course-related Projects',
+    'gng2101/gng2501' => 'GNG2101/GNG2501',
+    'gng1103/gng1503' => 'GNG1103/GNG1503',
+    'health-sciences' => 'Health Sciences',
+    'wearable' => 'Wearable',
+    'mobile-development' => 'Mobile Development',
+    'virtual-reality' => 'Virtual Reality',
+    'other-projects' => 'Other Projects',
+    'uottawa-team-projects' => 'uOttawa Team Projects'
   }
 
   def photo_hash
-    repo = params[:show].eql?("makes") ? @makes : @repositories
+    repo = params[:show].eql?('makes') ? @makes : @repositories
     repository_ids = repo.map(&:id)
     photo_ids =
       Photo
