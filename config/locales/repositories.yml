@@ -38,7 +38,7 @@ en:
     license_proj: "License"
     link_to_prop: "Linked to Project Proposal:"
     add_member: "Add a member"
-    rem_member: "Remove a member"
+    rem_mem: "Remove a member"
     trans_own: "Transfer Ownership"
     comments: "Comments"
     post_com: "Post a Comment"
