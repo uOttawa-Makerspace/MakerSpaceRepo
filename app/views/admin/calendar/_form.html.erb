@@ -7,6 +7,11 @@
             </div>
                 <div class="modal-body">
                     <%= form_with url: admin_events_path, scope: :event, local: false, html: { id: "eventForm", class: "useTurbo" }  do |f| %>
+                        <div id="staff_select_container" class="mb-3">
+                            <label class="form-label">Assigned Staff</label>
+                            <select name="staff_select[]" id="staff_select" class="form-select" multiple="true"></select>
+                        </div>
+
                         <div class="form-check mb-3">
                             <input class="form-check-input" type="checkbox" id="all_day_checkbox">
                             <label class="form-check-label" for="all_day_checkbox">All Day</label>
@@ -100,11 +105,6 @@
                                     id: 'course_select',
                                     class: 'form-select' %>
                             </div>
-                        </div>
-
-                        <div id="staff_select_container">
-                            <label class="form-label">Assigned Staff</label>
-                            <select name="staff_select[]" id="staff_select" class="form-select" multiple="true"></select>
                         </div>
 
                         <%= f.hidden_field :utc_start_time, id: "utc_start_time" %>

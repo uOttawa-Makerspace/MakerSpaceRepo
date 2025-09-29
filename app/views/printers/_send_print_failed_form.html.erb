@@ -4,7 +4,7 @@
             <%= fields.hidden_field :sent_from, value: sent_from %>
         <% end %>
         <%= fields.label :username, 'Print Owner name', class: 'form-label' %>
-        <%= fields.select :username, '', {}, { id: 'user_dashboard_select', class: 'form-label form-select', required: true } %>
+        <%= fields.select :username, '', {}, { data: {user_search_bar: ''}, class: 'form-label form-select', required: true } %>
         <%= fields.label :printer_number, 'Printer Number', class: 'form-label' %>
         <%= fields.select :printer_number, options_for_select(Printer.all.map { |p| [p.name, p.id] }), { selected: '' }, { id: 'printerNumberSelect', class: 'form-control form-select', required: true } %>
         <%= fields.label :staff_notes, 'Staff notes (optional):', class: 'form-label' %>

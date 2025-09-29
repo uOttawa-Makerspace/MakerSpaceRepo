@@ -6,9 +6,9 @@ class StaticPagesController < SessionsController
   def home
     @volunteer_program_shadowing_scheduled =
       current_user.shadowing_hours.map do |hours|
-        end_time = hours.end_time.strftime "%H:%M"
+        end_time = hours.end_time.strftime '%H:%M'
         formatted_time =
-          "#{I18n.l hours.start_time, format: "%A %H:%M"} - #{end_time}"
+          "#{I18n.l hours.start_time, format: '%A %H:%M'} - #{end_time}"
         [hours.space.name, formatted_time]
       end
 
@@ -22,32 +22,45 @@ class StaticPagesController < SessionsController
           .order(updated_at: :desc)
           .joins(:volunteer_task)
           .includes(volunteer_task: :space)
-          .where(volunteer_task: { status: "open" })
+          .where(volunteer_task: { status: 'open' })
           .map do |task|
             task_name = task.volunteer_task.title
             space_name = task.volunteer_task.space.name
-            formatted_time = task.created_at.strftime "%H:%M"
+            formatted_time = task.created_at.strftime '%H:%M'
             [task_name, space_name, formatted_time, task.volunteer_task_id]
           end.take 5 # five most recent
       rescue StandardError
         []
       end
 
-    @recent_projects = Rails.cache.fetch "StaticPagesRecentRepos", expires: 5.minutes do
-      # This is how you preload active storage attachments, I think
-      Repository.public_repos.order(created_at: :desc)
-        .includes(photos: {image_attachment: [blob: { variant_records: :blob }]}).limit(15)
-    end
+    @recent_projects =
+      Rails.cache.fetch 'StaticPagesRecentRepos', expires_in: 5.minutes do
+        # This is how you preload active storage attachments, I think
+        Repository
+          .public_repos
+          .order(created_at: :desc)
+          .includes(
+            photos: {
+              image_attachment: [blob: { variant_records: :blob }]
+            }
+          )
+          .limit(15)
+      end
 
     @user_skills =
-    Certification.where(user: current_user)
-      .includes(training_session: :training)
-      .limit(5)
-      .pluck('trainings.name_en', 'training_sessions.level')
+      Certification
+        .where(user: current_user)
+        .includes(training_session: :training)
+        .limit(5)
+        .pluck('trainings.name_en', 'training_sessions.level')
 
     # Get total tracks in all learning modules
     total_tracks =
-      LearningModule.all.includes(:training).map { |x| x.training.name_en }.tally
+      LearningModule
+        .all
+        .includes(:training)
+        .map { |x| x.training.name_en }
+        .tally
     # get the total number of tracks completed
     # and in progress under the user's name
     @user_tracks =
@@ -56,26 +69,32 @@ class StaticPagesController < SessionsController
         .group_by { |x| x.learning_module.training.name_en }
         .transform_values { |x| x.map(&:status).tally }
         .map do |key, value|
-          [key, "#{value["Completed"]}/#{total_tracks[key]}"]
+          [key, "#{value['Completed']}/#{total_tracks[key]}"]
         end
 
     @contact_info = ContactInfo.where(show_hours: true).order(name: :asc)
 
-    @workshops = Rails.cache.fetch "SimpliEventsRecentEvents", expires_in: 5.minutes do
-      workshops = Excon.get(
-        "https://simpli.events/api/organizer/44d09ce5-5999-4bd9-82eb-8a9772963223"
-      )
-      JSON.parse(workshops.body)["events"]
-        .select { |x| x["startTime"] >= DateTime.now.to_i * 1000 }
-        .sort { |x| -x["startTime"] }
-        .take(5)
-    rescue StandardError
-      [] # eh
-    end
+    @workshops =
+      Rails.cache.fetch 'SimpliEventsRecentEvents', expires_in: 5.minutes do
+        workshops =
+          Net::HTTP.get_response(
+            URI(
+              'https://simpli.events/api/organizer/44d09ce5-5999-4bd9-82eb-8a9772963223'
+            )
+          )
+        JSON.parse(workshops.body)['events']
+          .select { |x| x['startTime'] >= DateTime.now.to_i * 1000 }
+          .sort { |x| -x['startTime'] }
+          .take(5)
+      rescue StandardError => e
+        Rails.logger.error e
+        [] # eh
+      end
 
-    @makerstore_links = Rails.cache.fetch "ShopifyMakerstoreLinks", expires: 5.minutes do
-      home_makerstore_links
-    end
+    @makerstore_links =
+      Rails.cache.fetch 'ShopifyMakerstoreLinks', expires_in: 5.minutes do
+        home_makerstore_links
+      end
   end
 
   def about
@@ -125,22 +144,22 @@ class StaticPagesController < SessionsController
   def join_team_program
     if signed_in?
       if current_user.programs.exists?(program_type: Program::TEAMS)
-        flash[:alert] = "You are already part of the Teams Program."
+        flash[:alert] = 'You are already part of the Teams Program.'
       else
         current_user.programs.create(program_type: Program::TEAMS)
         flash[
           :notice
-        ] = "You have successfully joined the Teams Program! See below for more information."
+        ] = 'You have successfully joined the Teams Program! See below for more information.'
       end
     else
-      flash[:alert] = "You need to sign in to join the Teams Program."
+      flash[:alert] = 'You need to sign in to join the Teams Program.'
     end
     redirect_to root_path
   end
 
   def reset_password
     unless verify_recaptcha
-      flash[:alert] = "There was a problem with the captcha, please try again."
+      flash[:alert] = 'There was a problem with the captcha, please try again.'
       redirect_to root_path
       return
     end
@@ -158,9 +177,9 @@ class StaticPagesController < SessionsController
       end
       flash[
         :notice
-      ] = "A reset link email has been sent to the email if the account exists."
+      ] = 'A reset link email has been sent to the email if the account exists.'
     else
-      flash[:alert] = "There was a problem with, please try again."
+      flash[:alert] = 'There was a problem with, please try again.'
     end
     redirect_to root_path
   end
@@ -170,9 +189,9 @@ class StaticPagesController < SessionsController
       repository = Repository.find params[:repository_id]
       user = current_user
       MsrMailer.repo_report(repository, user).deliver_now
-      flash[:alert] = "Repository has been reported"
+      flash[:alert] = 'Repository has been reported'
     else
-      flash[:alert] = "Please login if you wish to report this repository"
+      flash[:alert] = 'Please login if you wish to report this repository'
     end
     redirect_back(fallback_location: root_path)
   end
@@ -182,7 +201,7 @@ class StaticPagesController < SessionsController
   def home_makerstore_links
     access_token =
       Rails.application.credentials[Rails.env.to_sym][:shopify][:password]
-    shop_url = "uottawa-makerspace.myshopify.com"
+    shop_url = 'uottawa-makerspace.myshopify.com'
     sess =
       ShopifyAPI::Auth::Session.new(shop: shop_url, access_token: access_token)
     client = ShopifyAPI::Clients::Graphql::Admin.new(session: sess)
@@ -204,20 +223,20 @@ query {
 }
 QUERY
     items = client.query(query: query)
-      if items.code == 200
-        items.body["data"]["collections"]["nodes"].map do |node|
-          {
-            "title" => node["title"],
-            # HACK: Asking for the onlineStoreUrl errors out,
-            # so try and make it yourself from the handle
-            #"url" => node['onlineStoreUrl'],
-            "url" => "https://makerstore.ca/collections/#{node["handle"]}",
-            "image" => node["image"]["url"]
-          }
-        end
-      else
-        []
+    if items.code == 200
+      items.body['data']['collections']['nodes'].map do |node|
+        {
+          'title' => node['title'],
+          # HACK: Asking for the onlineStoreUrl errors out,
+          # so try and make it yourself from the handle
+          #"url" => node['onlineStoreUrl'],
+          'url' => "https://makerstore.ca/collections/#{node['handle']}",
+          'image' => node['image']['url']
+        }
       end
+    else
+      []
+    end
   rescue StandardError
     []
   end

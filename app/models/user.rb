@@ -10,12 +10,10 @@ class User < ApplicationRecord
   has_many :upvotes, dependent: :destroy
   has_many :comments, dependent: :destroy
   has_and_belongs_to_many :repositories, dependent: :destroy
-  has_many :certifications,
-           class_name: "Certification",
-           dependent: :destroy
+  has_many :certifications, class_name: 'Certification', dependent: :destroy
   has_many :demotion_staff,
-           class_name: "Certification",
-           foreign_key: "demotion_staff_id",
+           class_name: 'Certification',
+           foreign_key: 'demotion_staff_id',
            dependent: :destroy
   has_many :lab_sessions, dependent: :destroy
   has_and_belongs_to_many :training_sessions
@@ -50,12 +48,10 @@ class User < ApplicationRecord
   has_many :job_orders, dependent: :destroy
   has_many :job_order_statuses
   has_many :coupon_codes, dependent: :destroy # GoDaddy temp replacement for discount codes
-  has_one :key_request,
-          class_name: "KeyRequest",
-          dependent: :destroy
+  has_one :key_request, class_name: 'KeyRequest', dependent: :destroy
   has_many :key_transactions, dependent: :destroy
   has_one :key_certification, dependent: :destroy
-  has_many :keys, class_name: "Key"
+  has_many :keys, class_name: 'Key'
   has_many :team_memberships, dependent: :destroy
   has_many :teams, through: :team_memberships
   has_many :space_manager_joins, dependent: :destroy
@@ -63,10 +59,10 @@ class User < ApplicationRecord
   has_many :staff_spaces, dependent: :destroy
   has_many :spaces, through: :staff_spaces
   has_many :printer_issues # Don't delete issues when a user is deleted
-  has_many :locker_rentals, foreign_key: "rented_by"
+  has_many :locker_rentals, foreign_key: 'rented_by'
   has_many :staff_unavailabilities
   has_many :staff_external_unavailabilities, dependent: :destroy
-  has_many :walk_in_safety_sheets#, dependent: :destroy
+  has_many :walk_in_safety_sheets #, dependent: :destroy
   has_many :memberships, dependent: :destroy
 
   MAX_AUTH_ATTEMPTS = 5
@@ -111,11 +107,11 @@ class User < ApplicationRecord
             presence: true,
             inclusion: {
               in: [
-                "Male",
-                "Female",
-                "Other",
-                "Prefer not to specify",
-                "unknown"
+                'Male',
+                'Female',
+                'Other',
+                'Prefer not to specify',
+                'unknown'
               ]
             }
 
@@ -124,42 +120,42 @@ class User < ApplicationRecord
             if: :student?,
             inclusion: {
               in: [
-                "Engineering",
-                "Social Sciences",
-                "Education",
-                "Arts",
-                "Medicine",
-                "Law",
-                "Health Sciences",
-                "Science",
-                "Telfer School of Management"
+                'Engineering',
+                'Social Sciences',
+                'Education',
+                'Arts',
+                'Medicine',
+                'Law',
+                'Health Sciences',
+                'Science',
+                'Telfer School of Management'
               ]
             }
 
   before_validation do |user|
     case user.faculty # Translate faculty
-    when "Arts"
-      user.faculty = "Arts"
-    when "Éducation"
-      user.faculty = "Education"
-    when "Génie"
-      user.faculty = "Engineering"
-    when "Sciences de la santé"
-      user.faculty = "Health Sciences"
-    when "Droit civil"
-      user.faculty = "Civil Law"
-    when "Droit commun"
-      user.faculty = "Common Law"
-    when "Droit"
-      user.faculty = "Law"
-    when "Médecine"
-      user.faculty = "Medicine"
-    when "Sciences"
-      user.faculty = "Science"
-    when "Sciences sociales"
-      user.faculty = "Social Sciences"
-    when "École de gestion Telfer"
-      user.faculty = "Telfer School of Management"
+    when 'Arts'
+      user.faculty = 'Arts'
+    when 'Éducation'
+      user.faculty = 'Education'
+    when 'Génie'
+      user.faculty = 'Engineering'
+    when 'Sciences de la santé'
+      user.faculty = 'Health Sciences'
+    when 'Droit civil'
+      user.faculty = 'Civil Law'
+    when 'Droit commun'
+      user.faculty = 'Common Law'
+    when 'Droit'
+      user.faculty = 'Law'
+    when 'Médecine'
+      user.faculty = 'Medicine'
+    when 'Sciences'
+      user.faculty = 'Science'
+    when 'Sciences sociales'
+      user.faculty = 'Social Sciences'
+    when 'École de gestion Telfer'
+      user.faculty = 'Telfer School of Management'
     end
   end
 
@@ -190,7 +186,7 @@ class User < ApplicationRecord
   validates :student_id,
             format: {
               with: /[0-9]/,
-              message: "Student id must be numeric and 9 digits"
+              message: 'Student id must be numeric and 9 digits'
             },
             length: {
               is: 9
@@ -200,22 +196,22 @@ class User < ApplicationRecord
             if: :student?
 
   default_scope { where(deleted: false) }
-  scope :no_waiver_users, -> { where("read_and_accepted_waiver_form = false") }
+  scope :no_waiver_users, -> { where('read_and_accepted_waiver_form = false') }
   scope :between_dates_picked,
         ->(start_date, end_date) {
-          where("created_at BETWEEN ? AND ? ", start_date, end_date)
+          where('created_at BETWEEN ? AND ? ', start_date, end_date)
         }
   scope :frequency_between_dates,
         ->(start_date, end_date) {
           joins(lab_sessions: :space).where(
-            "lab_sessions.sign_in_time BETWEEN ? AND ? AND spaces.name = ?",
+            'lab_sessions.sign_in_time BETWEEN ? AND ? AND spaces.name = ?',
             start_date,
             end_date,
-            "Makerspace"
+            'Makerspace'
           )
         }
   scope :active, -> { where(active: true) }
-  scope :unknown_identity, -> { where(identity: "unknown") }
+  scope :unknown_identity, -> { where(identity: 'unknown') }
   scope :created_at_month,
         ->(month) { where("DATE_PART('month', created_at) = ?", month) }
   scope :not_created_this_year,
@@ -247,16 +243,63 @@ class User < ApplicationRecord
           joins(:programs).where(programs: { program_type: Program::VOLUNTEER })
         }
 
+  # Search uses a direct LIKE substring match
+  scope :search,
+        ->(query) {
+          User.where(
+            'LOWER(UNACCENT(name)) LIKE LOWER(UNACCENT(:query)) OR LOWER(UNACCENT(username)) LIKE LOWER(UNACCENT(:query))',
+            query: "%#{query}%"
+          ).limit(30)
+        } # sanity limit
+
+  # Fuzzy search uses postgres trigram. This comes from:
+  # https://pganalyze.com/blog/similarity-in-postgres-and-ruby-on-rails-using-trigrams
+  # Two notes here:
+  # 1) The % operator triggers the trigram module search. Refer:
+  # https://www.postgresql.org/docs/current/pgtrgm.html#PGTRGM-OP-TABLE
+  # 2) The order query looks weird because it does not accept parameters like
+  # #where, so we sanitize and parameterize manually.
+  scope :fuzzy_search,
+        ->(query) {
+          User
+            .where(
+              'LOWER(UNACCENT(name)) % LOWER(UNACCENT(:query)) OR LOWER(UNACCENT(username)) % LOWER(UNACCENT(:query))',
+              query:
+            )
+            .order(
+              sanitize_sql_for_order(
+                [Arel.sql('similarity(name, ?) DESC'), [query]]
+              )
+            )
+            .limit(30)
+        }
+
+  # Fuzzy search but available to non-staff members. Allows username search only
+  scope :reduced_fuzzy_search,
+        ->(query) {
+          User
+            .where(
+              'LOWER(UNACCENT(username)) % LOWER(UNACCENT(:query))',
+              query:
+            )
+            .order(
+              sanitize_sql_for_order(
+                [Arel.sql('similarity(name, ?) DESC'), [query]]
+              )
+            )
+            .limit(10)
+        }
+
   def token(exp = 14.days.from_now.to_i)
     JWT.encode(
       { user_id: id, exp: exp },
       Rails.application.credentials.secret_key_base,
-      "HS256"
+      'HS256'
     )
   end
 
   def display_avatar
-    avatar.attached? ? avatar : "default-avatar.png"
+    avatar.attached? ? avatar : 'default-avatar.png'
   end
 
   def self.authenticate(username_email, password)
@@ -270,7 +313,7 @@ class User < ApplicationRecord
     if user.auth_attempts >= MAX_AUTH_ATTEMPTS
       user.update(locked: true)
       user.update(locked_until: 5.minutes.from_now)
-      user_hash = Rails.application.message_verifier("unlock").generate(user.id)
+      user_hash = Rails.application.message_verifier('unlock').generate(user.id)
       MsrMailer.unlock_account(user, user_hash).deliver_now
     end
     nil
@@ -279,7 +322,7 @@ class User < ApplicationRecord
   def self.username_or_email(username_email)
     User
       .where(username: username_email)
-      .or(User.where("lower(email) = ?", username_email.downcase))
+      .or(User.where('lower(email) = ?', username_email.downcase))
       .first
   end
 
@@ -298,15 +341,17 @@ class User < ApplicationRecord
   end
 
   def student?
-    ["grad", "undergrad", "international_grad", "international_undergrad"].include?(identity)
+    %w[grad undergrad international_grad international_undergrad].include?(
+      identity
+    )
   end
 
   def admin?
-    role.eql?("admin")
+    role.eql?('admin')
   end
 
   def staff?
-    role.eql?("staff") || role.eql?("admin")
+    role.eql?('staff') || role.eql?('admin')
   end
 
   def volunteer?
@@ -330,7 +375,13 @@ class User < ApplicationRecord
   end
 
   def internal?
-    ["faculty_member", "grad", "undergrad", "international_grad", "international_undergrad"].include?(identity)
+    %w[
+      faculty_member
+      grad
+      undergrad
+      international_grad
+      international_undergrad
+    ].include?(identity)
   end
 
   def self.to_csv(attributes)
@@ -338,7 +389,7 @@ class User < ApplicationRecord
   end
 
   def location
-    return "no sign in yet" if lab_sessions.last.equal? nil
+    return 'no sign in yet' if lab_sessions.last.equal? nil
 
     lab_sessions.last.space.name
   end
@@ -361,7 +412,6 @@ class User < ApplicationRecord
   def get_total_hours
     volunteer_hours.approved.sum(:total_time)
   end
-
 
   def remaining_trainings
     trainings = []
@@ -394,7 +444,7 @@ class User < ApplicationRecord
   def has_training?(tid, level)
     count = 0
     certifications.each do |cert|
-      count+=1 if cert.training.id == tid && cert.level == level
+      count += 1 if cert.training.id == tid && cert.level == level
     end
     count > 0
   end
@@ -403,15 +453,17 @@ class User < ApplicationRecord
   # returns the certification of highest level owned by this user, given any training. Outdated
   def highest_badge(training)
     badges =
-        certifications
-        .joins(:training_session)
-        .where(training_sessions: { training_id: training.id })
-    if badges.where(training_sessions: { level: "Advanced" }).present?
-      badge = badges.where(training_sessions: { level: "Advanced" }).last
-    elsif badges.where(training_sessions: { level: "Intermediate" }).present?
-      badge = badges.where(training_sessions: { level: "Intermediate" }).last
-    elsif badges.where(training_sessions: { level: "Beginner" }).present?
-      badge = badges.where(training_sessions: { level: "Beginner" }).last
+      certifications.joins(:training_session).where(
+        training_sessions: {
+          training_id: training.id
+        }
+      )
+    if badges.where(training_sessions: { level: 'Advanced' }).present?
+      badge = badges.where(training_sessions: { level: 'Advanced' }).last
+    elsif badges.where(training_sessions: { level: 'Intermediate' }).present?
+      badge = badges.where(training_sessions: { level: 'Intermediate' }).last
+    elsif badges.where(training_sessions: { level: 'Beginner' }).present?
+      badge = badges.where(training_sessions: { level: 'Beginner' }).last
     end
     badge
   end
@@ -420,7 +472,7 @@ class User < ApplicationRecord
     # HACK: some programs include words like 'in' that aren't
     # in the program list. try to clean up before processing
     # So this might return nil or 'Non-Engineering' too
-    program_alt = program.gsub(" in", "")
+    program_alt = program.gsub(' in', '')
     UniProgram
       .where(program: program)
       .or(UniProgram.where(program: program_alt))
@@ -437,12 +489,13 @@ class User < ApplicationRecord
     if student?
       year = year_of_study.to_s
       if I18n.locale == :fr
-        year += case year.last
-        when "1"
-          "ère"
-        else
-          "ème"
-                end
+        year +=
+          case year.last
+          when '1'
+            'ère'
+          else
+            'ème'
+          end
       elsif I18n.locale == :en
         year = year.to_i.ordinalize
       end
@@ -451,7 +504,7 @@ class User < ApplicationRecord
       #   # department + ' ' unless department.nil?
       #   "#{year} #{I18n.t "year"} #{department&.+ " "}#{identity.titleize}uate"
       # else
-        "#{year} #{I18n.t "year"} #{identity}uate".titleize
+      "#{year} #{I18n.t 'year'} #{identity}uate".titleize
       #end
     else
       identity.titleize

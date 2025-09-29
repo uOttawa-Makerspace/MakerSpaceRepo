@@ -481,7 +481,7 @@ RSpec.describe RepositoriesController, type: :controller do
                user_username: @owner.username,
                repo_owner: {
                  repository_id: @repo.id,
-                 owner_id: @member.id
+                 owner_username: @member.username
                }
              }
         post :add_member,
@@ -489,7 +489,7 @@ RSpec.describe RepositoriesController, type: :controller do
                user_username: @owner.username,
                repo_owner: {
                  repository_id: @repo.id,
-                 owner_id: @member.id
+                 owner_username: @member.username
                }
              }
         expect(flash[:alert]).to eq(
@@ -538,7 +538,7 @@ RSpec.describe RepositoriesController, type: :controller do
                user_username: @owner.username,
                repo_owner: {
                  repository_id: @repo.id,
-                 owner_id: @member.id
+                 owner_username: @member.username
                }
              }
         expect(@repo.users.last.id).to eq(@member.id)
@@ -562,7 +562,7 @@ RSpec.describe RepositoriesController, type: :controller do
                user_username: @owner.username,
                repo_owner: {
                  repository_id: @repo.id,
-                 owner_id: @member.id
+                 owner_username: @member.username
                }
              }
         post :remove_member,

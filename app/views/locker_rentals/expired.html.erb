@@ -1,0 +1,29 @@
+<h1 class="text-center">Expired locker rentals</h1>
+<% unless @expired_locker_rentals %>
+    <p class="text-center">There are no expired lockers. yay!</p>
+<% end %>
+<div class="container">
+    <table data-datatable class="table table-striped">
+        <thead class="table-primary">
+            <tr>
+                <th>Locker ID</th>
+                <th>Rented by</th>
+                <th>Expired on</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% @expired_locker_rentals.each do |expired| %>
+                <tr>
+                    <td><%= expired.locker&.specifier %></td>
+                    <td><%= expired.rented_by.username %></td>
+                    <td>
+                        Expired on <%= expired.owned_until.to_date.to_fs :long %>,
+                        <%= time_ago_in_words expired.owned_until %> ago
+                    </td>
+                    <td><%= link_to 'View rental', locker_rental_path(expired), class: 'btn btn-primary' %></td>
+                </tr>
+            <% end %>
+        </tbody>
+    </table>
+</div>

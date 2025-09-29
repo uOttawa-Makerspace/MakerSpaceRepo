@@ -32,8 +32,11 @@
           <div class="card-body">
             <h2><%= t('home.general_resources.header') %></h2>
             <ul class="list-unstyled">
-              <li><%= link_to t('home.general_resources.makeroom'), sub_space_booking_index_url %></li>
+              <li><%= link_to t('home.general_resources.makeroom'), sub_space_booking_index_path %></li>
               <li><%= link_to t('home.general_resources.job_orders'), job_orders_path %></li>
+              <% if LockerOption.lockers_enabled %>
+                  <li><%= link_to t('home.general_resources.locker_rentals'), locker_rentals_path %></li>
+              <% end %>
             </ul>
           </div>
         </div>
@@ -90,7 +93,6 @@
           <div class="card-body">
             <h2><%= t('home.workshops.header') %></h2>
             <a href="https://simpli.events/u/uottawaceed"><%= t('home.workshops.link') %></a>
-            <% begin %>
             <% @workshops.each do |w| %>
               <% start = Time.zone.at(w['startTime'].to_i / 1000) %>
               <a class="d-flex workshop-card" href="<%= w['link'] %>">
@@ -103,8 +105,6 @@
                   <!-- <p class="workshop-cost">Free</p> -->
                 </div>
               </a>
-            <% end %>
-            <% rescue %>
             <% end %>
           </div>
         </div>
