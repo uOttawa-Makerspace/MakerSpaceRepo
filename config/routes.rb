@@ -145,6 +145,7 @@ Rails.application.routes.draw do
     collection do
       # Update only
       put :price
+      put :enabled
     end
   end
   resources :locker_rentals do

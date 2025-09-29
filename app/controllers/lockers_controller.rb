@@ -40,6 +40,11 @@ class LockersController < AdminAreaController
     redirect_to lockers_path
   end
 
+  def enabled
+    LockerOption.lockers_enabled = (params.require(:value) == 't')
+    redirect_to lockers_path
+  end
+
   private
 
   def locker_params

@@ -6,6 +6,7 @@ class LockerOption < ApplicationRecord
   normalizes :name, with: ->(name) { name.strip.downcase }
 
   LOCKER_PRODUCT_LINK = 'locker_product_link'.freeze
+  LOCKERS_ENABLED = 'lockers_enabled'.freeze
 
   # Store the product link for a shopify product. Note this is the public URL,
   # we then use the public json response to fetch the variant ID. Refer to
@@ -63,5 +64,19 @@ class LockerOption < ApplicationRecord
   rescue StandardError => e
     Rails.logger.warn e
     0
+  end
+
+  # Sitewide locker disable switch
+  def self.lockers_enabled=(enabled)
+    # HACK: force bool
+    if enabled
+      find_or_create_by(name: LOCKERS_ENABLED).update(value: 't')
+    else
+      find_or_create_by(name: LOCKERS_ENABLED).update(value: 'f')
+    end
+  end
+
+  def self.lockers_enabled
+    find_or_create_by(name: LOCKERS_ENABLED).value == 't'
   end
 end

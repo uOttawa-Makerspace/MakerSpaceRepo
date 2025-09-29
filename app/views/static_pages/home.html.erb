@@ -34,7 +34,9 @@
             <ul class="list-unstyled">
               <li><%= link_to t('home.general_resources.makeroom'), sub_space_booking_index_path %></li>
               <li><%= link_to t('home.general_resources.job_orders'), job_orders_path %></li>
-              <li><%= link_to t('home.general_resources.locker_rentals'), locker_rentals_path %></li>
+              <% if LockerOption.lockers_enabled %>
+                  <li><%= link_to t('home.general_resources.locker_rentals'), locker_rentals_path %></li>
+              <% end %>
             </ul>
           </div>
         </div>
