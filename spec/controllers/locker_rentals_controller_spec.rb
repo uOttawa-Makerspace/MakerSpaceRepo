@@ -322,6 +322,30 @@ RSpec.describe LockerRentalsController, type: :controller do
         expect(last_rental.state).to eq "reviewing"
       end
 
+      it "should prevent requests when rentals are disabled" do
+        LockerOption.lockers_enabled = false
+        expect do
+          post :create,
+               params: {
+                 locker_rental:
+                   attributes_for(
+                     :locker_rental
+                   )
+               }
+        end.to change { LockerRental.count }.by(0)
+        expect(flash[:alert]).not_to be_nil
+        LockerOption.lockers_enabled = true
+        expect do
+          post :create,
+               params: {
+                 locker_rental:
+                   attributes_for(
+                     :locker_rental
+                   )
+               }
+        end.to change { LockerRental.count }.by(1)
+      end
+
       it "should force only requests" do
         expect do
           post :create,
