@@ -1,33 +1,40 @@
 <form class="input-group mb-3">
-  <%= select_tag(:username, '', prompt: " Search for users to sign them in or out of #{@space.name.titleize}",
-                 class: 'form-select',
-                 id: 'user_dashboard_select',
-                 data: {user_search_bar: ''}) %>
-  <%= button_tag class: 'btn btn-primary', formaction: staff_dashboard_sign_in_users_path, formmethod: 'post', name: '_method', value: 'put' do %>
-    Sign In
-  <% end %>
+    <%= select_tag(:username, '', prompt: " Search for users to sign them in or out of #{@space.name.titleize}",
+                   class: 'form-select',
+                   id: 'user_dashboard_select',
+                   data: {user_search_bar: ''}) %>
+    <%= button_tag class: 'btn btn-primary', formaction: staff_dashboard_sign_in_users_path, formmethod: 'post', name: '_method', value: 'put' do %>
+        Sign In
+    <% end %>
 
-  <%= button_tag class: 'btn btn-secondary', formaction: staff_dashboard_user_profile_path, formmethod: 'get' do %>
-    View
-  <% end %>
+    <%= button_tag class: 'btn btn-secondary', formaction: staff_dashboard_user_profile_path, formmethod: 'get' do %>
+        View
+    <% end %>
 </form>
 
-<div class="dropdown text-end mb-3">
-  <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Download...
-  </button>
-  <ul class="dropdown-menu">
-      <li>
-          <%= link_to asset_path('excel/ImportUsersTemplate.xlsx', skip_pipeline: true), download: 'ImportUsersTemplate.xlsx', class: 'dropdown-item' do %>
-              <%= fa_icon(:download) %> Excel Template (xlsx)
-          <% end %>
-    </li>
-    <li>
-        <%= link_to staff_dashboard_present_users_report_path(format: 'xlsx'), action: :training_report, class: 'dropdown-item' do %>
-            <%= fa_icon(:download) %> Summary (xlsx)
-        <% end %>
-    </li>
-  </ul>
+<div class="mb-4 align-items-baseline">
+    <div class="form-check form-switch form-check-inline">
+        <%= check_box_tag :popup_enabled, checked: true, class: 'form-check-input', type: 'checkbox', role: 'switch' %>
+        <%= label_tag :popup_enabled, 'Show popup on user tap?', class: 'form-check-label' %>
+    </div>
+
+    <div class="dropdown float-end">
+        <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            Download...
+        </button>
+        <ul class="dropdown-menu">
+            <li>
+                <%= link_to asset_path('excel/ImportUsersTemplate.xlsx', skip_pipeline: true), download: 'ImportUsersTemplate.xlsx', class: 'dropdown-item' do %>
+                    <%= fa_icon(:download) %> Excel Template (xlsx)
+                <% end %>
+            </li>
+            <li>
+                <%= link_to staff_dashboard_present_users_report_path(format: 'xlsx'), action: :training_report, class: 'dropdown-item' do %>
+                    <%= fa_icon(:download) %> Summary (xlsx)
+                <% end %>
+            </li>
+        </ul>
+    </div>
 </div>
 
 <details>

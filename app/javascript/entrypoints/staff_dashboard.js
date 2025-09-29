@@ -89,6 +89,27 @@ document.addEventListener("turbo:load", function () {
     }
   }
 
+  function disableNotificationModal() {
+    // Is the switch disabled
+    let popupEnabledCheck = document.querySelector("input#popup_enabled");
+    if (popupEnabledCheck && !popupEnabledCheck.checked) {
+      return true;
+    }
+
+    // Is user currently searching something
+    let userSearchBar = document.querySelector("#user_dashboard_select");
+    if (
+      userSearchBar &&
+      userSearchBar.tomselect &&
+      userSearchBar.tomselect.isOpen &&
+      userSearchBar.tomselect.inputValue() != ""
+    ) {
+      return true;
+    }
+
+    return false;
+  }
+
   var displayBefore = undefined;
   function notifyNewUserLogin(
     users,
@@ -98,6 +119,10 @@ document.addEventListener("turbo:load", function () {
     is_student,
     signed_sheet,
   ) {
+    if (disableNotificationModal()) {
+      return;
+    }
+
     var displayNow = [];
     if (displayBefore == undefined) {
       displayNow = users;

@@ -5,9 +5,9 @@
 </div>
 
 <h1 class="text-center pt-2 mb-3">
-  <span>Welcome to</span>
-  <%= select_tag :space_id, options_from_collection_for_select(Space.order(:name), :id, :name, @space.id),
-                 id: 'set_space_id', class: 'form-select fs-2 w-auto d-inline-block', onchange: 'setSpace()' %>
+    <span>Welcome to</span>
+    <%= select_tag :space_id, options_from_collection_for_select(Space.order(:name), :id, :name, @space.id),
+                   id: 'set_space_id', class: 'form-select fs-2 w-auto d-inline-block', onchange: 'setSpace()' %>
 </h1>
 
 <%= render 'search' %>
