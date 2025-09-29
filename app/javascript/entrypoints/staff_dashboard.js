@@ -46,19 +46,23 @@ modal.addEventListener("hidden.bs.modal", function () {
 
 document.addEventListener("turbo:load", function () {
   var form = document.getElementById("sign_in_user_fastsearch");
-  form.onsubmit = function () {
-    document.getElementById("sign_in_user_fastsearch_username").value = [
-      document.getElementById("user_dashboard_select").value,
-    ];
-    form.submit();
-  };
+  if (form) {
+    form.onsubmit = function () {
+      document.getElementById("sign_in_user_fastsearch_username").value = [
+        document.getElementById("user_dashboard_select").value,
+      ];
+      form.submit();
+    };
+  }
 
   var form2 = document.getElementById("search_user_fastsearch");
-  form2.onsubmit = function () {
-    document.getElementById("search_user_fastsearch_username").value =
-      document.getElementById("user_dashboard_select").value;
-    form2.submit();
-  };
+  if (form2) {
+    form2.onsubmit = function () {
+      document.getElementById("search_user_fastsearch_username").value =
+        document.getElementById("user_dashboard_select").value;
+      form2.submit();
+    };
+  }
 
   document
     .querySelector(".form-control-input-excel")
@@ -85,6 +89,27 @@ document.addEventListener("turbo:load", function () {
     }
   }
 
+  function disableNotificationModal() {
+    // Is the switch disabled
+    let popupEnabledCheck = document.querySelector("input#popup_enabled");
+    if (popupEnabledCheck && !popupEnabledCheck.checked) {
+      return true;
+    }
+
+    // Is user currently searching something
+    let userSearchBar = document.querySelector("#user_dashboard_select");
+    if (
+      userSearchBar &&
+      userSearchBar.tomselect &&
+      userSearchBar.tomselect.isOpen &&
+      userSearchBar.tomselect.inputValue() != ""
+    ) {
+      return true;
+    }
+
+    return false;
+  }
+
   var displayBefore = undefined;
   function notifyNewUserLogin(
     users,
@@ -92,7 +117,12 @@ document.addEventListener("turbo:load", function () {
     has_membership,
     expiration_date,
     is_student,
+    signed_sheet,
   ) {
+    if (disableNotificationModal()) {
+      return;
+    }
+
     var displayNow = [];
     if (displayBefore == undefined) {
       displayNow = users;
@@ -139,8 +169,7 @@ document.addEventListener("turbo:load", function () {
       document.getElementById("not-student").style.display = "block";
     }
 
-    var consent = getRandomInt(2);
-    if (consent == 0) {
+    if (signed_sheet) {
       document.getElementById("unsigned-consent-form").style.display = "none";
       document.getElementById("signed-consent-form").style.display = "block";
     } else {
@@ -175,9 +204,9 @@ document.addEventListener("turbo:load", function () {
     ).join("");
     let url = "/staff_dashboard/refresh_tables?token=" + token;
     fetch(url)
-      .then((response) => response.json())
+      .then((response) => (response.status == 200 ? response.json() : {}))
       .then((data) => {
-        if (!data.error) {
+        if (data.users) {
           if (document.getElementById("table-js-signed-out")) {
             document.getElementById("table-js-signed-out").innerHTML =
               data.signed_out;
@@ -192,6 +221,7 @@ document.addEventListener("turbo:load", function () {
             data.has_membership,
             data.expiration_date,
             data.is_student,
+            data.signed_sheet,
           );
         }
       });

@@ -1,0 +1,11 @@
+<ul class="nav nav-tabs nav-fill mb-3">
+    <li class="nav-item">
+        <%= link_to 'Lockers', lockers_path, class: class_names('nav-link': true, active: selected.eql?(:types)) %>
+    </li>
+    <li class="nav-item">
+        <%= link_to 'Locker Rentals', admin_locker_rentals_path, class: class_names('nav-link': true, active: selected.eql?(:rentals)) %>
+    </li>
+    <li class="nav-item">
+        <%= link_to 'Assign a locker', lockers_path, class: class_names('nav-link': true, active: selected.eql?(:assign)) %>
+    </li>
+</ul>

@@ -11,7 +11,8 @@ class LockerMailer < ApplicationMailer
   def locker_assigned
     mail(
       to: @user.email,
-      subject: "Locker #{@locker_rental.full_locker_name} assigned"
+      subject:
+        "Locker #{@locker_rental.locker.specifier} has been assigned for you"
     )
   end
 
@@ -19,15 +20,22 @@ class LockerMailer < ApplicationMailer
     mail(
       to: @user.email,
       subject:
-        "Your locker rental for #{@locker_rental.locker_type.short_form} is ready for checkout"
+        "Your locker rental for locker #{@locker_rental.locker.specifier} is ready for checkout"
     )
   end
 
   def locker_cancelled
+    # Sometimes requests are cancelled before they're assigned
     mail(
       to: @user.email,
       subject:
-        "Your locker rental for #{@locker_rental.locker_type.short_form} has been cancelled"
+        (
+          if @locker_rental.locker
+            "Your locker rental for locker #{@locker_rental.locker.specifier} has been cancelled"
+          else
+            "Your locker rental request has been cancelled"
+          end
+        )
     )
   end
 end

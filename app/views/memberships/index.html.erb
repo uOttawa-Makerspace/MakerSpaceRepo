@@ -66,6 +66,8 @@
                   <td class="col-1 text-start">
                     <% if membership.active? %>
                       <span class="badge bg-success"><%= t('memberships.index.history.active') %></span>
+                    <% elsif membership.status == 'revoked' %>
+                      <span class="badge bg-secondary"><%= t('memberships.index.history.revoked') %></span>
                     <% else %>
                       <span class="badge bg-secondary"><%= t('memberships.index.history.expired') %></span>
                     <% end %>

@@ -130,6 +130,11 @@ summary {
   }
 }
 
+// Alternate coloring for tomselect dropdowns
+.ts-wrapper .option:nth-child(even) {
+  background-color: $tertiary;
+}
+
 // Add the triangle between the menu and the dropdown button
 // uses @extend to inherit from .d-none and .d-xl-block
 // to hide for screens below xl aka when navbar collapses
@@ -225,13 +230,6 @@ a {
     @include transition(100ms);
     color: #000;
   }
-  //&:visited {
-  //  color: #789;
-  //}
-  //
-  //&:focus{
-  //  outline-style: none;
-  //}
 }
 .tags > a {
   color: #fff !important;
@@ -440,6 +438,26 @@ textarea:not(.form-control) {
 
 td > .btn:not(:last-of-type) {
   //margin-bottom: 0.5rem;
+}
+
+details {
+  border: 1px solid $secondary;
+  border-radius: 4px;
+  padding: 0.5em 0.5em 0;
+  &[open] {
+    padding: 0.5em;
+  }
+}
+
+summary {
+  font-weight: bold;
+  margin: -0.5em -0.5em 0;
+  padding: 0.5em;
+
+  details[open] & {
+    border-bottom: 1px solid $secondary;
+    margin-bottom: 0.5em;
+  }
 }
 
 .subtitle {

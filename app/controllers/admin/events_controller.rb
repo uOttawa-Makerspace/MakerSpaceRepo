@@ -39,7 +39,7 @@ class Admin::EventsController < AdminAreaController
     else
       flash[:alert] = "Failed to create event: #{@event.errors.full_messages.to_sentence}"
     end
-    redirect_to admin_calendar_index_path
+    redirect_back(fallback_location: admin_calendar_index_path)
   end
 
   def update
@@ -184,7 +184,7 @@ Time.parse(event_params[:utc_start_time]).utc)
       flash[:notice] = "This event occurrence updated successfully."
     end
 
-    redirect_to admin_calendar_index_path
+    redirect_back(fallback_location: admin_calendar_index_path)
   end
 
   def delete_with_scope
@@ -194,7 +194,7 @@ Time.parse(event_params[:utc_start_time]).utc)
     if @event.recurrence_rule.blank?
       # No recurrence: just delete it normally
       @event.destroy
-      redirect_to admin_calendar_index_path, notice: "Event deleted."
+      redirect_back(fallback_location: admin_calendar_index_path, notice: "Event deleted.")
       return
     end
 
@@ -209,7 +209,7 @@ Time.parse(event_params[:utc_start_time]).utc)
       rrule_line = "#{helpers.remove_until_from_rrule(rrule_line)};UNTIL=#{previous_day.strftime("%Y%m%dT%H%M%SZ")}"
     when "all"
       @event.destroy
-      redirect_to admin_calendar_index_path, notice: "Event series deleted."
+      redirect_back(fallback_location: admin_calendar_index_path, notice: "Event series deleted.")
       return
 
     else
@@ -227,7 +227,7 @@ Time.parse(event_params[:utc_start_time]).utc)
 
     @event.update!(recurrence_rule: (recurrence_lines + rest_of_lines).join("\n"))
 
-    redirect_to admin_calendar_index_path, notice: "Event deleted (#{scope})."
+    redirect_back(fallback_location: admin_calendar_index_path, notice: "Event deleted (#{scope}).")
   end
 
   def json
@@ -243,7 +243,7 @@ Time.parse(event_params[:utc_start_time]).utc)
           next if event.recurrence_rule.blank? && event.end_time < (Time.now.utc - 2.months)
 
           title = if event.title == event.event_type.capitalize && !event.event_assignments.empty?
-            "#{'✎ ' if event.draft}#{event.event_type.capitalize} for #{event.event_assignments.map do |ea|
+            "#{'✎ ' if event.draft}#{event.event_type == 'training' ? event.training.name : event.event_type.capitalize} for #{event.event_assignments.map do |ea|
  ea.user.name end.join(", ")}"
           else 
             "#{'✎ ' if event.draft}#{event.title}"
@@ -298,7 +298,7 @@ Time.parse(event_params[:utc_start_time]).utc)
         updated_count += 1 if event.update(draft: false)
       end
 
-      return redirect_to admin_calendar_index_path, notice: "#{updated_count} event(s) published."
+      return redirect_back(fallback_location: admin_calendar_index_path, notice: "#{updated_count} event(s) published.")
     else
       @event = Event.find(params[:id])
       if @event.update(draft: false)
@@ -309,7 +309,7 @@ Time.parse(event_params[:utc_start_time]).utc)
     end
     
 
-    redirect_to admin_calendar_index_path
+    redirect_back(fallback_location: admin_calendar_index_path)
   end
 
   def delete_drafts
@@ -322,8 +322,8 @@ Time.parse(event_params[:utc_start_time]).utc)
 recurrence_rule: [nil, ""])
     deleted_count = draft_events.destroy_all.size
         
-    redirect_to admin_calendar_index_path, 
-notice: "#{deleted_count} draft event(s) deleted. Any recurring events were untouched and must be deleted separately."
+    redirect_back(fallback_location: admin_calendar_index_path, 
+notice: "#{deleted_count} draft event(s) deleted. Any recurring events were untouched and must be deleted separately.")
   end
 
   def copy
@@ -332,7 +332,8 @@ notice: "#{deleted_count} draft event(s) deleted. Any recurring events were unto
     space_id = params[:space_id]
 
     if source_range.blank? || target_date.blank? || space_id.blank?
-      return redirect_to admin_calendar_index_path, alert: "Please fill out all fields before copying."
+      return redirect_back(fallback_location: admin_calendar_index_path, 
+alert: "Please fill out all fields before copying.")
     end
 
     begin
@@ -372,10 +373,10 @@ notice: "#{deleted_count} draft event(s) deleted. Any recurring events were unto
         end
       end
 
-      redirect_to admin_calendar_index_path,
-        notice: "#{copied_count} published event(s) copied to #{new_start_date.to_date}. Recurring events were skipped."
+      redirect_back(fallback_location: admin_calendar_index_path,
+        notice: "#{copied_count} published event(s) copied to #{new_start_date.to_date}. Recurring events were skipped.")
     rescue StandardError => e
-      redirect_to admin_calendar_index_path, alert: "Error copying events: #{e.message}"
+      redirect_back(fallback_location: admin_calendar_index_path, alert: "Error copying events: #{e.message}")
     end
   end
 

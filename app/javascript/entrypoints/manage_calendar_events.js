@@ -299,8 +299,7 @@ document.addEventListener("turbo:load", async () => {
     const namesPattern = `(?:${escapedNames.join("|")})`;
     const nameGroupPattern = `${namesPattern}(?:, ${namesPattern})*`;
 
-    const eventTypePattern = "(Shift|Meeting|Training|Other)";
-    const fullPattern = `^${eventTypePattern}(?: for ${nameGroupPattern})?$`;
+    const fullPattern = `\\sfor\\s${nameGroupPattern}$`;
 
     const regex = new RegExp(fullPattern);
     return regex.test(title);

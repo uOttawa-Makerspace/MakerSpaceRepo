@@ -109,64 +109,49 @@ class Space < ApplicationRecord
 
     events = parsed.first[:events]
 
-    start_of_week = Time.zone.today.beginning_of_week
-    end_of_week   = Time.zone.today.end_of_week
+    start_of_week = Time.zone.today.beginning_of_week.beginning_of_day
+    end_of_week   = Time.zone.today.end_of_week.end_of_day
 
-    weekly_events = events.map do |ev|
+    weekly_events = []
+
+    events.each do |ev|
+      next unless ev[:start].present?
+
       dtstart = Time.zone.parse(ev[:start])
-      dtend   = ev[:end] ? Time.zone.parse(ev[:end]) : (dtstart + (ev[:duration].to_i / 1000))
+      dtend   = if ev[:end].present?
+                  Time.zone.parse(ev[:end])
+                elsif ev[:duration].present?
+                  dtstart + (ev[:duration].to_i / 1000)
+                else
+                  dtstart + 1.hour
+                end
 
-      OpenStruct.new(
-        dtstart: dtstart,
-        dtend:   dtend,
-        title:   ev[:title]
-      )
-    end.select do |e|
-      e.dtstart >= start_of_week.beginning_of_day && e.dtstart <= end_of_week.end_of_day
-    end
+      if ev[:rrule].present?
+        ical_rrule = ev[:rrule].lines.find { |l| l.start_with?("RRULE:") }&.sub("RRULE:", "")
+        if ical_rrule.present?
+          rule = IceCube::Rule.from_ical(ical_rrule)
+          schedule = IceCube::Schedule.new(dtstart, end_time: dtend)
+          schedule.add_recurrence_rule(rule)
 
-    weekly_events.sort_by!(&:dtstart)
-  end
-
-  def create_makeroom_bookings_from_ics
-    # Filter all CEED Space events into the ones for STEM124 and the ones for STEM126
-    @staff_needed_calendars = StaffNeededCalendar.all.find_by(space_id: 24)
-    @staff_needed_calendars.each do |snc|
-      @events = parse_ics_calendar(snc.calendar_url, "Imported ICS Calendar")
-      # Arrays for each rooms' events
-      @events_124 = []
-      @events_126 = []
-      @events.each do |event|
-        if event.location == "STEM124"
-          @events_124 << event
-        elsif event.location == "STEM126"
-          @events_126 << event
+          occurrences = schedule.occurrences_between(start_of_week, end_of_week)
+          occurrences.each do |occ|
+            weekly_events << OpenStruct.new(
+              dtstart: occ.start_time.in_time_zone,
+              dtend:   occ.end_time.in_time_zone,
+              title:   ev[:title]
+            )
+          end
         end
+      elsif dtstart >= start_of_week && dtstart <= end_of_week
+        weekly_events << OpenStruct.new(
+            dtstart: dtstart,
+            dtend:   dtend,
+            title:   ev[:title]
+          )
       end
     end
-    
-    # Creating the bookings
-    @events_124.each do |event|
-      create SubSpaceBooking(
-        start_time: event.start,
-        end_time: event.end,
-        name: event.name,
-        description: event.description,
-        sub_space_id: 10,
-        blocking: true
-      )
-    end
 
-    # Creating the bookings
-    @events_126.each do |event|
-      create SubSpaceBooking(
-        start_time: event.start,
-        end_time: event.end,
-        name: event.name,
-        description: event.description,
-        sub_space_id: 11,
-        blocking: true
-      )
-    end
+    weekly_events.sort_by(&:dtstart)
   end
+
 end

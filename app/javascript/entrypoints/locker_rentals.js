@@ -2,18 +2,44 @@ import DataTable from "datatables.net-bs5";
 import "datatables.net-bs5/css/dataTables.bootstrap5.min.css";
 
 document.addEventListener("turbo:load", () => {
+  setupRentalTable();
+
+  // For user facing locker request form
+  let requestedAsSelect = document.getElementById("locker_rental_requested_as");
+  let repoSelect = document.getElementById("repo-select");
+  if (requestedAsSelect && repoSelect) {
+    requestedAsSelect.addEventListener("change", function (evt) {
+      if (evt.target.value === "student") {
+        repoSelect.hidden = false;
+        repoSelect.removeAttribute("disabled");
+      } else {
+        repoSelect.hidden = true;
+        repoSelect.setAttribute("disabled", "");
+      }
+    });
+    requestedAsSelect.dispatchEvent(new Event("change"));
+  }
+});
+
+// Setup admin table filtering
+function setupRentalTable() {
+  if (!document.getElementById("rental-data-table")) {
+    return;
+  }
+
   // Pass a specific element ID, else the fixed search breaks
-  window.table = new DataTable("#rental-data-table", {
+  let table = new DataTable("#rental-data-table", {
     language: {
       emptyTable: "Nothing.",
     },
-    search: {
-      fixed: {
-        rentals: (a, b, c) => {
-          return false;
-        },
-      },
-    },
+    // FIXME what is this even doing here
+    // search: {
+    //   fixed: {
+    //     rentals: (a, b, c) => {
+    //       return false;
+    //     },
+    //   },
+    // },
   });
 
   table
@@ -63,4 +89,4 @@ document.addEventListener("turbo:load", () => {
         table.draw();
       });
     });
-});
+}

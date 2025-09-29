@@ -1,38 +1,37 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <title><%= page_title(yield(:title), base_title: 'Admin Area | MakerRepo') %></title>
-  <%= favicon_link_tag 'C_square.png' %>
-  <%= vite_javascript_tag 'application', 'data-turbo-track': 'reload' %>
-  <%= stylesheet_link_tag 'application', media: 'all', 'data-turbo-track': 'reload' %>
-  <%= vite_stylesheet_tag 'application.scss', media: 'all', 'data-turbo-track': 'reload' %>
-  <%= csrf_meta_tags %>
-  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <meta name="description" content="MakerRepo is the uOttawa Makerspace's platform. Share and download projects for 3D printers, CNCs, Arduino and much more!" />
-  <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
+  <head>
+    <title><%= page_title(yield(:title), base_title: 'Admin Area | MakerRepo') %></title>
+    <%= favicon_link_tag 'C_square.png' %>
+    <%= vite_javascript_tag 'application', 'data-turbo-track': 'reload' %>
+    <%= stylesheet_link_tag 'application', media: 'all', 'data-turbo-track': 'reload' %>
+    <%= vite_stylesheet_tag 'application.scss', media: 'all', 'data-turbo-track': 'reload' %>
+    <%= csrf_meta_tags %>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="MakerRepo is the uOttawa Makerspace's platform. Share and download projects for 3D printers, CNCs, Arduino and much more!" />
+    <script>
+     window.dataLayer = window.dataLayer || [];
+     function gtag(){dataLayer.push(arguments);}
+     gtag('js', new Date());
 
-      gtag('config', 'UA-176144772-1');
-  </script>
-  <script>(function(d){var s = d.createElement("script");s.setAttribute("data-account", "va12Fyrpbl");s.setAttribute("src", "https://cdn.userway.org/widget.js");(d.body || d.head).appendChild(s);})(document)</script>
-  <noscript><div id="noscript-warning">Please ensure Javascript is enabled for purposes of <a href="https://userway.org">website accessibility</a></div></noscript>
-</head>
-<body>
-  <%= render 'layouts/header', with_admin: true %>
+     gtag('config', 'UA-176144772-1');
+    </script>
+    <script>(function(d){var s = d.createElement("script");s.setAttribute("data-account", "va12Fyrpbl");s.setAttribute("src", "https://cdn.userway.org/widget.js");(d.body || d.head).appendChild(s);})(document)</script>
+    <noscript><div id="noscript-warning">Please ensure Javascript is enabled for purposes of <a href="https://userway.org">website accessibility</a></div></noscript>
+  </head>
+  <body>
+    <%= render 'layouts/header', with_admin: true %>
 
-  <%= render partial: 'partials/announcements' %>
+    <%= render partial: 'partials/announcements' %>
 
-  <section>
-    <div class="bg-white">
-      <div class="container">
+    <main class="main">
+      <%= yield(:before_container) %>
+      <div class="container mt-3">
         <%= yield %>
       </div>
-    </div>
-  </section>
+    </main>
 
-  <%= render 'layouts/footer' %>
-  <%= vite_javascript_tag controller_name if File.exist?("#{Rails.root}/app/javascript/entrypoints/#{controller_name}.js") %>
-</body>
+    <%= render 'layouts/footer' %>
+    <%= vite_javascript_tag controller_name if File.exist?("#{Rails.root}/app/javascript/entrypoints/#{controller_name}.js") %>
+  </body>
 </html>
