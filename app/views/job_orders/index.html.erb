@@ -20,28 +20,30 @@
 <% end %>
 
 <% if @job_orders.count > 0 %>
-  <div class="container table-responsive">
-    <table class="table table-striped job-order-table">
-      <thead class="table-primary">
-        <tr class="text-center">
-          <th>Chats</th>
-          <th>User</th>
-          <th>ID</th>
-          <th>Submitted</th>
-          <th>Type</th>
-          <th>Status</th>
-          <th>View</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% @job_orders.each do |jo| %>
-          <tr id="job-order-row-<%= jo.id %>">
-            <%= render 'client_row', jo: jo %>
-          </tr>
-        <% end %>
-      </tbody>
-    </table>
-  </div>
+    <div class="container">
+        <div class="table-responsive">
+            <table class="table table-striped job-order-table">
+                <thead class="table-primary">
+                    <tr class="text-center">
+                        <th>Chats</th>
+                        <th>User</th>
+                        <th>ID</th>
+                        <th>Submitted</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>View</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% @job_orders.each do |jo| %>
+                        <tr id="job-order-row-<%= jo.id %>">
+                            <%= render 'client_row', jo: jo %>
+                        </tr>
+                    <% end %>
+                </tbody>
+            </table>
+        </div>
+    </div>
 <% else %>
   <div class="text-center">
     <div class="alert alert-info col-lg-6 mx-auto" role="alert">
