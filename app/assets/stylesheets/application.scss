@@ -130,6 +130,11 @@ summary {
   }
 }
 
+// Alternate coloring for tomselect dropdowns
+.ts-wrapper .option:nth-child(even) {
+  background-color: $tertiary;
+}
+
 // Add the triangle between the menu and the dropdown button
 // uses @extend to inherit from .d-none and .d-xl-block
 // to hide for screens below xl aka when navbar collapses
@@ -225,13 +230,6 @@ a {
     @include transition(100ms);
     color: #000;
   }
-  //&:visited {
-  //  color: #789;
-  //}
-  //
-  //&:focus{
-  //  outline-style: none;
-  //}
 }
 .tags > a {
   color: #fff !important;

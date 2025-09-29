@@ -36,7 +36,7 @@ class StaffDashboardController < StaffAreaController
   end
 
   def refresh_tables
-    return render json: { error: "No changes" } if params[:token] == @space.signed_in_users.pluck(:id).join("")
+    return head :not_modified if params[:token] == @space.signed_in_users.pluck(:id).join("")
     @users = User.order(id: :desc).limit(10)
     @certifications_on_space =
       proc do |user, space_id|
@@ -202,40 +202,31 @@ class StaffDashboardController < StaffAreaController
   end
 
   def sign_in_users
-    alert = []
-    if params[:added_users].present?
-      @certifications_on_space =
-        proc do |user, space_id|
-          user
-            .certifications
-            .joins(:training, training: :spaces)
-            .where(trainings: { spaces: { id: space_id } })
-        end
-      @all_user_certs = proc { |user| user.certifications }
-      @users = User.order(id: :desc).limit(10)
+  alert = []
 
-      users = User.where(username: params[:added_users])
-      users.each do |user|
-        lab_session =
-          LabSession.new(
-            user_id: user.id,
-            space_id: @space.id,
-            sign_in_time: Time.zone.now,
-            sign_out_time: Time.zone.now + 6.hours
-          )
-        alert << user.name unless lab_session.save
-      end
-    end
-    respond_to do |format|
-      format.html do
-        flash[:alert] = "Error signing #{alert.join(", ")} in" if alert.length >
-          0
-        redirect_to staff_dashboard_index_path(space_id: @space.id)
-      end
-      format.js
-      format.json { render json: { status: "ok" } }
-    end
+  # Staff dashboard changed, but we keep compat with app.
+  user_query = params[:added_users] || params[:username]
+
+  users = User.where(username: user_query).find_each do |user|
+    lab_session =
+      LabSession.new(
+        user_id: user.id,
+        space_id: @space.id,
+        sign_in_time: Time.zone.now,
+        sign_out_time: Time.zone.now + 6.hours
+      )
+    alert << user.name unless lab_session.save
   end
+
+  respond_to do |format|
+    format.html do
+      flash[:alert] = "Error signing #{alert.join(', ')} in" if alert.length > 0
+      redirect_to staff_dashboard_index_path(space_id: @space.id)
+    end
+    format.js
+    format.json { render json: { status: 'ok' } }
+  end
+end
 
   def change_space
     new_space = Space.find_by(id: params[:space_id])
@@ -373,12 +364,7 @@ end
   end
 
   def populate_users
-    json_data =
-      User.where(
-        "LOWER(UNACCENT(name)) like LOWER(UNACCENT(?)) OR LOWER(UNACCENT(username)) like LOWER(UNACCENT(?))",
-        "%#{params[:search]}%",
-        "%#{params[:search]}%"
-      ).as_json(only: %i[name username])
+    json_data = User.fuzzy_search(params[:search]).as_json(only: %i[name username])
     render json: { users: json_data }
   end
 

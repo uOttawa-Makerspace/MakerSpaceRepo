@@ -712,6 +712,7 @@ Rails.application.routes.draw do
       get :change_email
       put :remove_flag
       get :unlock_account
+      get :search, path: "/users/search"
     end
 
     get "likes", on: :member

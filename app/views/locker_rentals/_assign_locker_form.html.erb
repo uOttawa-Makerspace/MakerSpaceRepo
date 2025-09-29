@@ -14,7 +14,7 @@
             <%= f.label :rented_by_username, class: 'form-label' %>
         </div>
         <div class="col-md">
-            <%= f.select :rented_by_username, options_for_select([]), { prompt: 'Select user...' }, { class: 'form-select', id: 'user_dashboard_select' } %>
+            <%= f.select :rented_by_username, options_for_select([]), { prompt: 'Select user...' }, { class: 'form-select', data: {user_search_bar: ''} } %>
         </div>
     </div>
     <div class="row mb-3">
