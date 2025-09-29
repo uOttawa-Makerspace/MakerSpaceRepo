@@ -3,41 +3,52 @@
   <h2 style="text-align: center"><b>Badges</b></h2>
 
   <div class="apple_pagination">
-  <%= page_entries_info @badge_data, model: 'badges' %>
-  <%= will_paginate @badge_data, container: false %>
-</div>
-<br>
-<div style="width: 100%;" class="row">
+    <%= page_entries_info @badge_data, model: 'badges' %>
+    <% if @search_term.present? %>
+      <%= will_paginate @badge_data, container: false, params: { search: @search_term } %>
+    <% else %>
+      <%= will_paginate @badge_data, container: false %>
+    <% end %>
+  </div>
+  <br>
+  <div style="width: 100%;" class="row">
 
-  <% @badge_data.each do |badges| %>
+    <% @badge_data.each do |badges| %>
 
-    <div class="col-md-3">
-      <p style="text-align: center">
-        <% if badges.training_session.training.has_badge %>
-          <% if badges.user_id.present? %>
-            <%= link_to(badges.user.name, user_path(User.find(badges.user_id).username)) %>
-          <% else %>
-            <%= badges.user.name %>
+      <div class="col-md-3">
+        <p style="text-align: center">
+          <% if badges.training_session.training.has_badge %>
+            <% if badges.user_id.present? %>
+              <%= link_to(badges.user.name, user_path(User.find(badges.user_id).username)) %>
+            <% else %>
+              <%= badges.user.name %>
+            <% end %>
+            </p>
+
+            <a style="width: 150px;" class="mx-auto w-100!important d-block" target="_blank" href="./badges/<%= badges.id %>">
+              <%= render "badge_icon", width: 150, height: 150, level: badges.level, name: badges.training.localized_name, skill: badges.training.skill_id %>
+            </a>
           <% end %>
-          </p>
+      </div>
 
-          <a style="width: 150px;" class="mx-auto w-100!important d-block" target="_blank" href="./badges/<%= badges.id %>">
-            <%= render "badge_icon", width: 150, height: 150, level: badges.level, name: badges.training.localized_name, skill: badges.training.skill_id %>
-          </a>
-        <% end %>
-    </div>
+    <% end %>
+  </div>
+  <br>
+  <div class="apple_pagination">
+    <%= page_entries_info @badge_data, model: 'badges' %>
+    <% if @search_term.present? %>
+      <%= will_paginate @badge_data, container: false, params: { search: @search_term } %>
+    <% else %>
+      <%= will_paginate @badge_data, container: false %>
+    <% end %>
+  </div>
 
-  <% end %>
-</div>
-<br>
-<div class="apple_pagination">
-  <%= page_entries_info @badge_data, model: 'badges' %>
-  <%= will_paginate @badge_data, container: false %>
-</div>
-
-<% rescue %>
-<div class="alert alert-danger" style="width: 100%; text-align: center">
-  An error has occurred while getting the badges, try again later or contact technical support. Sorry for the
-  inconvenience.
-</div>
+<% rescue => e %>
+  <div class="alert alert-danger" style="width: 100%; text-align: center">
+    An error has occurred while getting the badges, try again later or contact technical support. Sorry for the
+    inconvenience.
+    <% if Rails.env.development? %>
+      <br><small><%= e.message %></small>
+    <% end %>
+  </div>
 <% end %>

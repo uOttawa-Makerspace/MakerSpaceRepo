@@ -583,7 +583,11 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :badges, only: [:index,:show] 
+  resources :badges, only: [:index, :show] do
+    collection do
+      get 'search'
+    end
+  end
 
   resources :proficient_projects do
     get :proficient_project_modal
