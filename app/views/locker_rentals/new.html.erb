@@ -13,7 +13,9 @@
     <p>For any questions, contact us at <a href="mailto:ceed@uottawa.ca">ceed@uottawa.ca</a></p>
     <p>You may have only one pending request at a time.</p>
     <hr />
-    <% if @pending_locker_request&.reviewing? %>
+    <% if !LockerOption.lockers_enabled %>
+        Locker requests are not currently accepted.
+    <% elsif @pending_locker_request&.reviewing? %>
         <p>You have a pending request for a locker submitted on <b><%= @pending_locker_request.created_at.to_date %></b>.
             You will receive a response shortly.</p>
     <% elsif @pending_locker_request&.await_payment? %>

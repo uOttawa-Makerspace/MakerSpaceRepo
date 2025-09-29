@@ -49,6 +49,12 @@ class LockerRentalsController < SessionsController
   end
 
   def create
+    unless LockerOption.lockers_enabled
+      flash[:alert] = "New locker rentals are not currently accepted."
+      redirect_to locker_rentals_path
+      return
+    end
+    
     @locker_rental =
       LockerRental.new(
         locker_rental_params.with_defaults(rented_by_id: current_user.id)

@@ -3,6 +3,10 @@ require "rails_helper"
 include ApplicationHelper
 
 RSpec.describe LockerRentalsController, type: :controller do
+  before(:all) do
+    LockerOption.lockers_enabled = true
+  end
+  
   before(:each) do
     @current_user = create(:user, :admin)
     session[:user_id] = @current_user.id

@@ -23,7 +23,7 @@
         <% end %>
     </details>
 
-    <details open>
+    <details open class="mb-3">
         <summary>Configure locker options</summary>
         <%= form_with controller: :lockers, url: {action: :price}, method: :put, class: 'mb-3' do |f| %>
             <%= f.label :value, 'Link to shopify product URL', class: 'form-label' %>
@@ -67,6 +67,20 @@
             <p class="text-center">No valid link assigned...</p>
         <% end %>
     </details>
+
+    <hr />
+
+    <div class="text-center">
+        <% if LockerOption.lockers_enabled %>
+            <span class="fs-2"><%= fa_icon :check, class: 'text-success' %> New locker rentals are enabled.</span>
+            <%= button_to 'Click here to disable locker rentals', enabled_lockers_path,
+                                               method: :put, params: {value: 'f'}, class: 'btn btn-danger' %>
+        <% else %>
+            <span class="fs-2"><%= fa_icon :times, class: 'text-danger' %> New locker rentals are disabled.</span>
+            <%= button_to 'Click here to enable locker rentals', enabled_lockers_path,
+                                                method: :put, params: {value: 't'}, class: 'btn btn-success' %>
+        <% end %>
+    </div>
 
     <hr />
 
