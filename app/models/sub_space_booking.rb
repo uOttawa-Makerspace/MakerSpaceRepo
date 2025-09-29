@@ -64,46 +64,4 @@ class SubSpaceBooking < ApplicationRecord
       end
     COLOR_LEGEND.find { |c| c[:id] == status }[:color]
   end
-
-  def create_bookings_from_ics
-    # Filter all CEED Space events into the ones for STEM124 and the ones for STEM126
-    @staff_needed_calendars = StaffNeededCalendar.all.find_by(space_id: 24)
-    @staff_needed_calendars.each do |snc|
-      @events = parse_ics_calendar(snc.calendar_url, "Imported ICS Calendar")
-      # Arrays for each rooms' events
-      @events_124 = []
-      @events_126 = []
-      @events.each do |event|
-        if event.location == "STEM124"
-          @events_124 << event
-        elsif event.location == "STEM126"
-          @events_126 << event
-        end
-      end
-    end
-    
-    # Creating the bookings
-    @events_124.each do |event|
-      create SubSpaceBooking(
-        start_time: event.start,
-        end_time: event.end,
-        name: event.name,
-        description: event.description,
-        sub_space_id: 10,
-        blocking: true
-      )
-    end
-
-    # Creating the bookings
-    @events_126.each do |event|
-      create SubSpaceBooking(
-        start_time: event.start,
-        end_time: event.end,
-        name: event.name,
-        description: event.description,
-        sub_space_id: 11,
-        blocking: true
-      )
-    end
-  end
 end

@@ -190,23 +190,23 @@ module CalendarHelper
     # Arrays for each rooms' events
     @events_124 = []
     @events_126 = []
-    @events.each do |event|
-      Rails.logger.debug event
-      Rails.logger.debug "_________________________________________________"
-      if event.extendedProps.location == "STEM124"
+    @events[0][:events].each do |event|
+      if event[:extendedProps][:location] == "STEM124"
+        Rails.logger.debug event
+        Rails.logger.debug "_________________________________________________"
         @events_124 << event
-      elsif event.extendedProps.location == "STEM126"
+      elsif event[:extendedProps][:location] == "STEM126"
         @events_126 << event
       end
     end
     
     # Creating the bookings
     @events_124.each do |event|
-      create SubSpaceBooking(
-        start_time: event.start,
-        end_time: event.end,
-        name: event.name,
-        description: event.description,
+      SubSpaceBooking.create!(
+        start_time: event[:start],
+        end_time: event[:end],
+        name: event[:name] || "Username",
+        description: event[:description] || "No Description",
         sub_space_id: 10,
         blocking: true
       )
@@ -214,11 +214,11 @@ module CalendarHelper
 
     # Creating the bookings
     @events_126.each do |event|
-      create SubSpaceBooking(
-        start_time: event.start,
-        end_time: event.end,
-        name: event.name,
-        description: event.description,
+      SubSpaceBooking.create!(
+        start_time: event[:start],
+        end_time: event[:end],
+        name: event[:name] || "Username",
+        description: event[:description] || "No Description",
         sub_space_id: 11,
         blocking: true
       )
