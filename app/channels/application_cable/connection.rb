@@ -8,10 +8,10 @@ module ApplicationCable
 
     private
       def find_verified_user
-        Rails.logger.info cookies.encrypted["_session"]["user_id"]
         if verified_user = User.find_by(id: cookies.encrypted["_session"]["user_id"])
           verified_user
         else
+          reject_unauthorized_connection
         end
       end
   end
