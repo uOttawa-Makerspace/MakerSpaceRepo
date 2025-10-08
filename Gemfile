@@ -60,7 +60,6 @@ gem "syntax_tree"
 gem "syntax_tree-haml"
 gem "syntax_tree-rbs"
 gem 'terser', '~> 1.2'
-gem "thin", "~> 2.0"
 gem "toastr-rails"
 gem "trix-rails", "~> 2.4", require: "trix"
 gem "vite_rails"
@@ -71,6 +70,7 @@ gem "youtube_id"
 gem "mission_control-jobs"
 
 group :development, :test do
+  gem "puma"
   gem "byebug", platform: :mri
   gem "factory_bot_rails"
   gem "faker", "~> 3.1"
