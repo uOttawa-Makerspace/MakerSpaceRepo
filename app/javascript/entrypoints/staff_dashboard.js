@@ -2,6 +2,7 @@ import DataTable from "datatables.net-bs5";
 import "datatables.net-bs5/css/dataTables.bootstrap5.min.css";
 import toastr from "toastr/toastr";
 import * as bootstrap from "bootstrap";
+import { staffDashboardChannelConnection } from "../channels/staff_dashboard_channel";
 
 toastr.options = {
   closeButton: true,
@@ -21,12 +22,6 @@ toastr.options = {
   escapeHTML: true,
 };
 
-// Testing Consent forms before they have been added
-
-function getRandomInt(max) {
-  return Math.floor(Math.random() * max);
-}
-
 const myModal = new bootstrap.Modal(document.getElementById("signinModal"), {
   keyboard: true,
 });
@@ -45,6 +40,8 @@ modal.addEventListener("hidden.bs.modal", function () {
 });
 
 document.addEventListener("turbo:load", function () {
+  staffDashboardChannelConnection();
+
   var form = document.getElementById("sign_in_user_fastsearch");
   if (form) {
     form.onsubmit = function () {
