@@ -123,7 +123,7 @@ class RfidController < SessionsController
 
     # Here we're assuming the user is physically in the space. Query if they are
     # eligible for a faculty membership
-    rfid.user.validate_uoeng_membership
+    CardTapJob.perform_later(rfid)
   end
 
   def new_session(rfid, new_location)
