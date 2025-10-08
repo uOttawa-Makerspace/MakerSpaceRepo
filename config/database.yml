@@ -6,17 +6,37 @@ default: &default
   password: <%= Rails.application.credentials[Rails.env.to_sym][:database][:password] || postgres %>
 
 development:
-  <<: *default
-  database: <%= Rails.application.credentials[Rails.env.to_sym][:database][:name] || makerspacerepo %>
+  primary:
+    <<: *default
+    database: <%= Rails.application.credentials[Rails.env.to_sym][:database][:name] || makerspacerepo %>
+  queue:
+    <<: *default
+    database: makerspacerepo_queue
+    migrations_paths: db/queue_migrate
 
 test:
-  <<: *default
-  database: <%= Rails.application.credentials[Rails.env.to_sym][:database][:name] || makerspacerepo_test %>
+  primary:
+    <<: *default
+    database: <%= Rails.application.credentials[Rails.env.to_sym][:database][:name] || makerspacerepo_test %>
+  queue:
+    <<: *default
+    database: makerspacerepo_queue_test
+    migrations_paths: db/queue_migrate
 
 production:
-  <<: *default
-  database: <%= Rails.application.credentials[Rails.env.to_sym][:database][:name] %>
+  primary:
+    <<: *default
+    database: <%= Rails.application.credentials[Rails.env.to_sym][:database][:name] %>
+  queue:
+    <<: *default
+    database: makerspacerepo_queue
+    migrations_paths: db/queue_migrate
 
 staging:
-  <<: *default
-  database: <%= Rails.application.credentials[Rails.env.to_sym][:database][:name] %>
+  primary:
+    <<: *default
+    database: <%= Rails.application.credentials[Rails.env.to_sym][:database][:name] %>
+  queue:
+    <<: *default
+    database: makerspacerepo_queue_staging
+    migrations_paths: db/queue_migrate

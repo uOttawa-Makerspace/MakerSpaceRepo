@@ -40,6 +40,10 @@ module MakerSpaceRepo
     # Proxy active storage downloads through the server (and so through the CDN)
     config.active_storage.resolve_model_to_route = :rails_storage_proxy
 
+    # Use a real queuing backend for Active Job (and separate queues per environment).
+    config.active_job.queue_adapter = :solid_queue
+    config.solid_queue.connects_to = { database: { writing: :queue } }
+
     # The default locale is :en and all translations from config/locales/*.rb,yml are auto loaded.
     # config.i18n.load_path += Dir[Rails.root.join('my', 'locales', '*.{rb,yml}').to_s]
     # config.i18n.default_locale = :de
