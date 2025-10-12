@@ -12,4 +12,4 @@ Two ways to create a stream:
 1. `stream_from key_name` and then `ActionCable.server.broadcast key_name, data`
 2. `stream_for key_name` and then `ConcreteChannel.broadcast_to key_name, data`
 
-Not sure of difference
+`stream_for` tries to emulate `form_for` with it's model-reading capability.

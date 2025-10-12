@@ -13,6 +13,10 @@ development:
     <<: *default
     database: makerspacerepo_queue
     migrations_paths: db/queue_migrate
+  cable:
+    <<: *default
+    database: makerspacerepo_cable
+    migrations_paths: db/cable_migrate
 
 test:
   primary:
@@ -31,6 +35,10 @@ production:
     <<: *default
     database: makerspacerepo_queue
     migrations_paths: db/queue_migrate
+  cable:
+    <<: *default
+    database: makerspacerepo_cable
+    migrations_paths: db/cable_migrate
 
 staging:
   primary:

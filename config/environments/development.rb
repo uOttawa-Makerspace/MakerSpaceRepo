@@ -76,6 +76,9 @@ Rails.application.configure do
   config.action_mailer.perform_deliveries = true
   config.action_mailer.perform_caching = false
 
+  # No HTTP basic auth on development.
+  config.mission_control.jobs.http_basic_auth_enabled = false
+
   # Raises error for missing translations.
   #config.i18n.raise_on_missing_translations = true
 

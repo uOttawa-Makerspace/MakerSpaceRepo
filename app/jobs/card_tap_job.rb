@@ -8,5 +8,6 @@ class CardTapJob < ApplicationJob
     rfid.user.validate_uoeng_membership
 
     # Push notification to staff dashboard
+    StaffDashboardChannel.send_tap(rfid.user)
   end
 end
