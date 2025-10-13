@@ -67,7 +67,12 @@
       </tr>
     </thead>
 
-    <%= render partial: 'signed_in_table', locals: { space: @space, all_user_certs: @all_user_certs, certifications_on_space: @certifications_on_space } %>
+    <%= render partial: 'signed_in_table', locals: {
+        space: @space,
+        all_user_certs: @all_user_certs,
+        certifications_on_space: @certifications_on_space,
+        printers_in_use: @printers_in_use
+    } %>
   </table>
 </div>
 <hr />

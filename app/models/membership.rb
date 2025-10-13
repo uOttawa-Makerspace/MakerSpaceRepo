@@ -45,6 +45,10 @@ class Membership < ApplicationRecord
     end_date > Time.current && status == 'paid'
   end
 
+  def faculty?
+    membership_tier.title_en.downcase.include?('faculty')
+  end
+
   def self.calculate_end_date(user)
     last_active =
       user

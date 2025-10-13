@@ -1,3 +1,5 @@
+# Communicates with the staff dashboard via a websocket connection. Used to
+# update the tables with any user activity
 class StaffDashboardChannel < ApplicationCable::Channel
   def subscribed
     stream_from 'space_event'

@@ -1,21 +1,21 @@
 <tbody id="table-js-signed-in">
-    <% @space.signed_in_users.each do |user| %>
+    <% space.signed_in_users.each do |user| %>
         <tr id="<%= return_no_waiver_id(user) %>" data-user-id=<%= user.id %>>
             <td>
                 <%= link_to(tag.drop_username(user.name), user_url(user.username), class: "align-middle") %>
                 <% if user.has_active_membership? %>
-                    <% if user.active_membership.membership_tier.title_en.downcase.include?('faculty') %>
-                        <p class="text-success"> <%= fa_icon "cogs" %>
-                            Has an Engineering Membership</p>
-                    <% elsif user.student? %>
-                        <p class="text-success">
+                    <p class="text-success">
+                        <% if user.active_membership.membership_tier.title_en.downcase.include?('faculty') %>
+                            <%= fa_icon "cogs" %>
+                            Has an Engineering Membership
+                        <% elsif user.student? %>
                             <%= fa_icon "university" %>
-                            Has a Community Membership</p>
-                    <% else %>
-                        <p class="text-success">
+                            Has a Community Membership
+                        <% else %>
                             <%= fa_icon "check-circle" %>
-                            Has an External Membership</p>
-                    <% end %>
+                            Has an External Membership
+                        <% end %>
+                    </p>
                 <% end %>
             </td>
             <td class="email-cell align-middle">
@@ -28,14 +28,14 @@
                 <% else %>
                     None
                 <% end %>
-                <% if @space.needs_walk_in_safety_sheet? && !user.walk_in_safety_sheets.any? %>
+                <% if space.needs_walk_in_safety_sheet? && !user.walk_in_safety_sheets.any? %>
                     <p class="text-danger"><%= fa_icon :warning %> Did not sign sheet</p>
                 <% end %>
             </td>
             <td class="certifications-cell align-middle">
-                <% proc = @space.ceed? ? @all_user_certs : @certifications_on_space %>
-                <% if proc.call(user, @space.id).present? %>
-                    <% proc.call(user, @space.id).each do |certification| %>
+                <% proc = space.ceed? ? all_user_certs : certifications_on_space %>
+                <% if proc.call(user, space.id).present? %>
+                    <% proc.call(user, space.id).each do |certification| %>
                         <div class="cert-name" style="display:inline">
                             <div class="cert-holder" style="display:inline">
                                 <%= certification.training.localized_name %>
@@ -50,9 +50,9 @@
                     <% end %>
                 <% end %>
             </td>
-            <% if @space.makerspace? %>
+            <% if space.makerspace? %>
                 <td class="printers-cell align-middle">
-                    <% @printers_in_use.where(user_id: user.id).find_each do |printer_session| %>
+                    <% printers_in_use.where(user_id: user.id).find_each do |printer_session| %>
                         <p class="m-0"><%= printer_session.printer.name %></p>
                     <% end %>
                 </td>
@@ -69,4 +69,3 @@
         </tr>
     <% end %>
 </tbody>
-<br />

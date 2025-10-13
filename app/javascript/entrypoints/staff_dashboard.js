@@ -205,16 +205,29 @@ document.addEventListener("turbo:load", function () {
     document.getElementById("signed-consent-form").style.display =
       !data.signed_sheet ? "none" : "block";
 
-    notifyModal.show();
-    setTimeout(hideModal, 6000);
+    const dt = new DataTable(document.querySelector("#signed-in-table"));
+    dt.row
+      .add([
+        data.name,
+        data.email,
+        "Flags unimplemented",
+        "certs unimplemented",
+        "printers lol",
+        "number of visits lol",
+        "last seen lol",
+        "hard code sign out button",
+      ])
+      .draw();
+    console.log(dt);
 
-    // TODO: Insert row into table
+    // notifyModal.show();
+    // setTimeout(hideModal, 6000);
   }
 
   function userTapOut(userId) {
     // TODO: Find row by user ID and remove
     const dt = new DataTable(document.querySelector("#signed-in-table"));
-    dt.row('[data-user-id="8393"]').remove().draw();
+    dt.row(`[data-user-id='${userId}']`).remove().draw();
   }
 
   // Start web socket connection
