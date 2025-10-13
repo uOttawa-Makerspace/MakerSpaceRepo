@@ -2,7 +2,7 @@
 
 <% if grouped.blank? %>
   <div class="alert alert-warning my-3">
-    <%= t("home.hours.no_hours", default: "No open hours available this week.") %>
+    <%= t("home.hours.no_hours", default: "No open hours this week.") %>
   </div>
 <% else %>
   <% Date::DAYNAMES.each_with_index do |day, i| %>

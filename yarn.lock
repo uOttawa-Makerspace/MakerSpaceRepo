@@ -293,11 +293,6 @@
     "@fullcalendar/common" "~5.9.0"
     tslib "^2.1.0"
 
-"@fullcalendar/icalendar@6.1.17":
-  version "6.1.17"
-  resolved "https://registry.npmjs.org/@fullcalendar/icalendar/-/icalendar-6.1.17.tgz"
-  integrity sha512-Gv47quN1/les/i5Gjdqo2q1arbTQjFFsK6UUBX/LLLoYiduzfX9eaX/RUpFF51BCl0EF1+eDXH7Figc1FSWpSA==
-
 "@fullcalendar/interaction@6.1.17":
   version "6.1.17"
   resolved "https://registry.npmjs.org/@fullcalendar/interaction/-/interaction-6.1.17.tgz"
@@ -1129,7 +1124,7 @@ bonjour-service@^1.2.1:
     fast-deep-equal "^3.1.3"
     multicast-dns "^7.2.5"
 
-bootstrap@^5.3:
+bootstrap@^5.3.8:
   version "5.3.8"
   resolved "https://registry.yarnpkg.com/bootstrap/-/bootstrap-5.3.8.tgz#6401a10057a22752d21f4e19055508980656aeed"
   integrity sha512-HP1SZDqaLDPwsNiqRqi5NcP0SSXciX2s9E+RyqJIIqGo+vJeN5AJVM98CXmW/Wux0nQ5L7jeWUdplCEf0Ee+tg==
