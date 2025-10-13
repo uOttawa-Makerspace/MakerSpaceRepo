@@ -13,6 +13,7 @@ class StaffDashboardChannel < ApplicationCable::Channel
                                    add_user: {
                                      username: user.username,
                                      name: user.name,
+                                     id: user.id,
                                      email: user.email,
                                      #certification: user.certifications.pluck(:name_en),
                                      membership: user.has_active_membership?,

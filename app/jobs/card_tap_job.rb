@@ -3,7 +3,7 @@
 class CardTapJob < ApplicationJob
   queue_as :default
 
-  def perform(rfid, tap_in)
+  def perform(rfid)
     # Update faculty membership
     rfid.user.validate_uoeng_membership
 

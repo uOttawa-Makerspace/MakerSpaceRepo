@@ -17,62 +17,44 @@
     <div id="printer-div-2"><%= link_to 'Manage 3D-printers', staff_printers_printers_path, class: 'btn btn-secondary' %></div>
   </div>
 <% end %>
-<!-- <hr /> -->
+
 <div class="table-responsive">
   <table class="table table-striped" data-datatable data-page-length="50" data-responsive="true" data-order="[]" id="signed-in-table">
-    <caption id="user-count" class="text-center fs-3" align="top"><%= pluralize @space.signed_in_users.count, 'user' %> inside <%= @space.name %>
-      <div class="d-flex justify-content-around">
-        <%= link_to staff_dashboard_sign_out_all_users_path, class: 'btn btn-danger', data: {confirm: 'Are you sure you want to sign out all users?'} do %>
-          <%= fa_icon('sign-out') %> Sign Out All Users
-        <% end %>
-        <% if @space.jmts? %>
-          <%= button_to staff_dashboard_add_signed_in_users_to_teams_path, method: :patch, form_class: 'btn btn-primary', class: 'btn p-0',
-                        data: { confirm: 'Are you sure you want to add all signed in users to the teams program?' } do %>
-            <%= fa_icon('group') %> Add Signed In Users to Teams Program
-          <% end %>
-        <% end %>
-      </div>
+    <caption id="user-count" class="text-center fs-3" align="top">
+        <%= pluralize @space.signed_in_users.count, 'user' %> inside <%= @space.name %>
+        <div class="d-flex justify-content-around">
+            <%= link_to staff_dashboard_sign_out_all_users_path, class: 'btn btn-danger', data: {confirm: 'Are you sure you want to sign out all users?'} do %>
+                <%= fa_icon('sign-out') %> Sign Out All Users
+            <% end %>
+            <% if @space.jmts? %>
+                <%= button_to staff_dashboard_add_signed_in_users_to_teams_path, method: :patch, form_class: 'btn btn-primary', class: 'btn p-0',
+                              data: { confirm: 'Are you sure you want to add all signed in users to the teams program?' } do %>
+                    <%= fa_icon('group') %> Add Signed In Users to Teams Program
+                <% end %>
+            <% end %>
+        </div>
     </caption>
     <thead class="table-primary">
       <tr>
-        <th class="name-header">
-          Name
-          <% @table_column_count += 1 %>
-        </th>
-        <th class="email-header">
-          Email
-          <% @table_column_count += 1 %>
-        </th>
-        <th class="name-header">
-          Flagged?
-          <% @table_column_count += 1 %>
-        </th>
-        <th class="certifications-header">
-          Certifications in <%= @space.name %>
-          <% @table_column_count += 1 %>
-        </th>
+        <th class="name-header">Name</th>
+        <th class="email-header">Email</th>
+        <th class="name-header">Flagged?</th>
+        <th class="certifications-header">Certifications in <%= @space.name %></th>
         <% if @space.makerspace? %>
           <th class="printers-header">Assigned Printers</th>
-          <% @table_column_count += 1 %>
         <% end %>
-        <th class="email-header">
-          # of visits <br> (Past 2 months)
-          <% @table_column_count += 1 %>
-        </th>
-        <th class="last-seen-header">
-          Last Seen
-          <% @table_column_count += 1 %>
-        </th>
+        <th class="email-header"># of visits <br> (Past 2 months)</th>
+        <th class="last-seen-header">Last Seen</th>
         <th class="action-header disable-sort">Sign Out of <%= @space.name %></th>
       </tr>
     </thead>
 
-    <%= render partial: 'signed_in_table', locals: {
-        space: @space,
-        all_user_certs: @all_user_certs,
-        certifications_on_space: @certifications_on_space,
-        printers_in_use: @printers_in_use
-    } %>
+    <tbody id="table-js-signed-in">
+        <%= render partial: 'space_activity_row', collection: @signed_in_users, locals: {space: @space} %>
+    </tbody>
+    <template id="signedInRow">
+        
+    </template>
   </table>
 </div>
 <hr />
@@ -87,7 +69,7 @@
         <th class="action-header disable-sort"><%= fa_icon('check') %>&nbsp; TO SIGN IN <br> <%= fa_icon('times') %>&nbsp; TO SIGN OUT</th>
       </tr>
     </thead>
-    <%= render partial: 'signed_out_table', locals: { space: @space, all_user_certs: @all_user_certs, certifications_on_space: @certifications_on_space } %>
+    <%= render partial: 'space_activity_row', collection: @signed_out_users, locals: {space: @space, signed_out: true} %>
   </table>
 </div>
 <hr />
@@ -101,7 +83,7 @@
         <th class="action-header disable-sort">Sign In To <%= @space.name %></span></th>
       </tr>
     </thead>
-    <%= render partial: 'newly_signed_up', locals: { space: @space, all_user_certs: @all_user_certs, certifications_on_space: @certifications_on_space } %>
+    <%= render partial: 'newly_signed_up', locals: { space: @space } %>
   </table>
 </div>
 <%= vite_javascript_tag 'staff_dashboard', 'data-turbo-track': 'reload' %>

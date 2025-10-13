@@ -1,7 +1,18 @@
 # frozen_string_literal: true
 
 class StaffDashboardController < StaffAreaController
+  # NOTE: @space is set by StaffAreaController
+  
   def index
+    # Strict loading because this is used in table views
+    @signed_in_users = User
+                         .strict_loading
+                         .includes(certifications: {training_session: [:training, :user]})
+                         .includes(:lab_sessions)
+                         .where(lab_sessions: {sign_out_time: Time.zone.now.., space: @space })
+
+    @signed_out_users = @space.recently_signed_out_users
+    
     respond_to do |format|
       format.html do
         @users = User.order(id: :desc).limit(10)

@@ -173,52 +173,53 @@ document.addEventListener("turbo:load", function () {
 
   refreshCapacity();
 
-  function userTapIn(data) {
+  function userTapIn(user) {
     if (disableNotificationModal()) {
       return;
     }
 
     innerBar.classList.add("moving-progress-bar");
 
-    document.getElementById("sign-in-username").innerText = data.username;
+    document.getElementById("sign-in-username").innerText = user.username;
 
-    document.getElementById("sign-in-profile-link").href = data.username;
+    document.getElementById("sign-in-profile-link").href = user.username;
     // '<a class="drop-username-cell fs-5" href="/' + e[2] + '">See Profile</a>';
-    document.getElementById("sign-in-email").innerText = data.email;
-    document.getElementById("no-membership").style.display = data.membership
+    document.getElementById("sign-in-email").innerText = user.email;
+    document.getElementById("no-membership").style.display = user.membership
       ? "none"
       : "block";
-    document.getElementById("has-membership").style.display = data.membership
+    document.getElementById("has-membership").style.display = user.membership
       ? "block"
       : "none";
     document.getElementById("sign-in-membership").innerText =
-      "Active until " + data.expiration_date;
+      "Active until " + user.expiration_date;
 
-    document.getElementById("not-student").style.display = !data.is_student
+    document.getElementById("not-student").style.display = !user.is_student
       ? "block"
       : "none";
-    document.getElementById("is-student").style.display = data.is_student
+    document.getElementById("is-student").style.display = user.is_student
       ? "block"
       : "none";
     document.getElementById("unsigned-consent-form").style.display =
-      data.signed_sheet ? "none" : "block";
+      user.signed_sheet ? "none" : "block";
     document.getElementById("signed-consent-form").style.display =
-      !data.signed_sheet ? "none" : "block";
+      !user.signed_sheet ? "none" : "block";
 
     const dt = new DataTable(document.querySelector("#signed-in-table"));
-    dt.row
-      .add([
-        data.name,
-        data.email,
-        "Flags unimplemented",
-        "certs unimplemented",
-        "printers lol",
-        "number of visits lol",
-        "last seen lol",
-        "hard code sign out button",
-      ])
-      .draw();
-    console.log(dt);
+    let node = dt.row.add([
+      user.name,
+      user.email,
+      "Flags unimplemented",
+      "certs unimplemented",
+      "printers lol",
+      "number of visits lol",
+      "last seen lol",
+      "hard code sign out button",
+    ]);
+    dt.draw();
+    // Draw table before node becomes available
+    node.node().dataset.userId = user.id;
+    console.log(`Added username ${user.name}`);
 
     // notifyModal.show();
     // setTimeout(hideModal, 6000);
@@ -227,6 +228,7 @@ document.addEventListener("turbo:load", function () {
   function userTapOut(userId) {
     // TODO: Find row by user ID and remove
     const dt = new DataTable(document.querySelector("#signed-in-table"));
+    console.log(`Removing user ${userId}`);
     dt.row(`[data-user-id='${userId}']`).remove().draw();
   }
 

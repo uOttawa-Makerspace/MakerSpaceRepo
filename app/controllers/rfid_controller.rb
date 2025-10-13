@@ -114,7 +114,7 @@ class RfidController < SessionsController
         new_session(rfid, space_id)
       else
         # Notify staff dashboard of user sign out
-        StaffDashboardChannel.send_tap_out
+        StaffDashboardChannel.send_tap_out rfid.user
         render json: { success: "RFID sign out" }, status: :ok
       end
     else
