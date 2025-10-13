@@ -1,11 +1,11 @@
 import consumer from "./consumer";
 
-export function staffDashboardChannelConnection() {
+export function staffDashboardChannelConnection(modalCallback) {
   consumer.subscriptions.create(
     { channel: "StaffDashboardChannel" },
     {
       received(data) {
-        console.log(data);
+        modalCallback(data);
       },
     },
   );

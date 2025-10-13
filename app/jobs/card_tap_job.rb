@@ -3,11 +3,11 @@
 class CardTapJob < ApplicationJob
   queue_as :default
 
-  def perform(rfid)
+  def perform(rfid, tap_in)
     # Update faculty membership
     rfid.user.validate_uoeng_membership
 
     # Push notification to staff dashboard
-    StaffDashboardChannel.send_tap(rfid.user)
+    StaffDashboardChannel.send_tap_in(rfid.user)
   end
 end

@@ -113,6 +113,7 @@ class RfidController < SessionsController
       if last_active_location != space_id
         new_session(rfid, space_id)
       else
+        StaffDashboardChannel.send_tap_out
         render json: { success: "RFID sign out" }, status: :ok
       end
     else
