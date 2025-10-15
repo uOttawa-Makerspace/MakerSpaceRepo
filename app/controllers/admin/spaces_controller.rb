@@ -338,9 +338,6 @@ class Admin::SpacesController < AdminAreaController
         space_id: params[:space_id],
         calendar_url: url
       )
-      Rails.logger.debug "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-      Rails.logger.debug calendar_roles[i]
-      Rails.logger.debug params[:space_id]
       # Copy over to MakerRoom
       space = Space.find(params[:space_id])
       if space.id == 24 && calendar_roles[i] == "makeroom"
