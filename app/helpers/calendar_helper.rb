@@ -179,69 +179,40 @@ module CalendarHelper
     rrule_line
   end
 
-  def create_makeroom_bookings_from_ics(snc, user_id)
-    # Filter all CEED Space events into the ones for STEM124 and the ones for STEM126
-
+  def create_makeroom_bookings_from_ics(snc, user_id, space)
+    # Parse ics events
     @events = parse_ics_calendar(
         snc.calendar_url,
         name: snc.name.presence || "Unnamed Calendar",
         color: snc.color
       )
-    # Arrays for each rooms' events
-    @events_124 = []
-    @events_126 = []
-    @events[0][:events].each do |event|
-      if event[:extendedProps][:location] == "STEM124"
-        @events_124 << event
-      elsif event[:extendedProps][:location] == "STEM126"
-        @events_126 << event
+    # Iteratee through every sub space of the given param space
+    space.sub_spaces.each do |sub_space|
+      # Iterate through all events, checking if one resides in a sub space
+      @events[0][:events].each do |event|
+        next unless event[:extendedProps][:location] == sub_space.name
+        # If match is found, create a MakerRoom booking
+        booking = SubSpaceBooking.new(
+          start_time: event[:start],
+          end_time: event[:end],
+          name: event[:name] || "Title",
+          description: event[:description] || "No Description",
+          sub_space_id: sub_space.id,
+          blocking: true,
+          user_id: user_id
+        )
+
+        booking.save
+        # Assign a pending status to the booking
+        status = SubSpaceBookingStatus.new(
+          sub_space_booking_id: booking.id,
+          booking_status_id: BookingStatus::PENDING.id
+        )
+      
+        status.save
+        # Once status is created, link its id in the booking instance
+        booking.update(sub_space_booking_status_id: status.id)
       end
     end
-    
-    # Creating the bookings
-    @events_124.each do |event|
-      booking = SubSpaceBooking.new(
-        start_time: event[:start],
-        end_time: event[:end],
-        name: event[:name] || "Title",
-        description: event[:description] || "No Description",
-        sub_space_id: 10,
-        blocking: true,
-        user_id: user_id
-      )
-
-      booking.save
-      status = SubSpaceBookingStatus.new(
-        sub_space_booking_id: booking.id,
-        booking_status_id: BookingStatus::PENDING.id
-      )
-      
-      status.save
-      booking.update(sub_space_booking_status_id: status.id)
-      
-    end
-
-    # Creating the bookings
-    @events_126.each do |event|
-      booking = SubSpaceBooking.create!(
-        start_time: event[:start],
-        end_time: event[:end],
-        name: event[:name] || "Title",
-        description: event[:description] || "No Description",
-        sub_space_id: 11,
-        blocking: true,
-        user_id: user_id
-      )
-      booking.save
-      status = SubSpaceBookingStatus.new(
-        sub_space_booking_id: booking.id,
-        booking_status_id: BookingStatus::PENDING.id
-      )
-      
-      status.save
-      booking.update(sub_space_booking_status_id: status.id)
-      
-    end
-
   end
 end

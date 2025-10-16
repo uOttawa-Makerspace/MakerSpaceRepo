@@ -340,10 +340,7 @@ class Admin::SpacesController < AdminAreaController
       )
       # Copy over to MakerRoom
       space = Space.find(params[:space_id])
-      if space.id == 24 && calendar_roles[i] == "makeroom"
-        helpers.create_makeroom_bookings_from_ics(snc, current_user.id)
-        Rails.logger.debug "_________________________________________________________"
-      end
+      helpers.create_makeroom_bookings_from_ics(snc, current_user.id, space) if calendar_roles[i] == "makeroom"
     end    
 
     flash[:notice] = "Calendars updated successfully."
