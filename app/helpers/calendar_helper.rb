@@ -179,7 +179,7 @@ module CalendarHelper
     rrule_line
   end
 
-  def create_makeroom_bookings_from_ics(snc)
+  def create_makeroom_bookings_from_ics(snc, user_id)
     # Filter all CEED Space events into the ones for STEM124 and the ones for STEM126
 
     @events = parse_ics_calendar(
@@ -192,8 +192,6 @@ module CalendarHelper
     @events_126 = []
     @events[0][:events].each do |event|
       if event[:extendedProps][:location] == "STEM124"
-        Rails.logger.debug event
-        Rails.logger.debug "_________________________________________________"
         @events_124 << event
       elsif event[:extendedProps][:location] == "STEM126"
         @events_126 << event
@@ -202,26 +200,48 @@ module CalendarHelper
     
     # Creating the bookings
     @events_124.each do |event|
-      SubSpaceBooking.create!(
+      booking = SubSpaceBooking.new(
         start_time: event[:start],
         end_time: event[:end],
-        name: event[:name] || "Username",
+        name: event[:name] || "Title",
         description: event[:description] || "No Description",
         sub_space_id: 10,
-        blocking: true
+        blocking: true,
+        user_id: user_id
       )
+
+      booking.save
+      status = SubSpaceBookingStatus.new(
+        sub_space_booking_id: booking.id,
+        booking_status_id: BookingStatus::PENDING.id
+      )
+      
+      status.save
+      booking.update(sub_space_booking_status_id: status.id)
+      
     end
 
     # Creating the bookings
     @events_126.each do |event|
-      SubSpaceBooking.create!(
+      booking = SubSpaceBooking.create!(
         start_time: event[:start],
         end_time: event[:end],
-        name: event[:name] || "Username",
+        name: event[:name] || "Title",
         description: event[:description] || "No Description",
         sub_space_id: 11,
-        blocking: true
+        blocking: true,
+        user_id: user_id
       )
+      booking.save
+      status = SubSpaceBookingStatus.new(
+        sub_space_booking_id: booking.id,
+        booking_status_id: BookingStatus::PENDING.id
+      )
+      
+      status.save
+      booking.update(sub_space_booking_status_id: status.id)
+      
     end
+
   end
 end
