@@ -43,9 +43,7 @@ $utilities: (
 
 html {
   font-size: 90%;
-  height: 100%;
   min-height: 100%;
-  overflow: auto;
 }
 
 @font-face {
@@ -57,9 +55,7 @@ html {
 }
 
 body {
-  height: 100%;
-  margin: 0;
-  background-color: rgba(238, 238, 238, 0.5);
+  min-height: 100%;
   font-family: "Roboto", helvetica, sans-serif;
 }
 
@@ -77,12 +73,12 @@ h1 {
 
 .dropdown-item {
   &:active {
-    color: #000; // !important;
-    background-color: $primary; // !important;
+    color: #000;
+    background-color: $primary;
   }
   &:hover {
-    color: #fff; // !important;
-    background-color: $secondary; // !important;
+    color: #fff;
+    background-color: $secondary;
     &.dropdown-item-danger {
       color: #fff;
       background-color: var(--bs-danger);
@@ -142,7 +138,8 @@ $dropdown-connection-size: 12px;
   display: block;
   border-left: $dropdown-connection-size solid transparent;
   border-right: $dropdown-connection-size solid transparent;
-  border-bottom: $dropdown-connection-size solid #fff; /* change color here, modified for a black arrow */
+  border-bottom: $dropdown-connection-size solid;
+  border-bottom-color: var(--bs-dropdown-bg);
   position: absolute;
   top: -$dropdown-connection-size;
   left: 10%;
@@ -161,11 +158,6 @@ $dropdown-connection-size: 12px;
   border-radius: 4px;
   box-shadow: 4px blur;
   padding-bottom: 0;
-}
-
-.custom-hover:hover {
-  background-color: rgba(0, 0, 0, 0.3);
-  color: #ffffff;
 }
 
 .nav-item.dropdown .dropdown-toggle-split {
@@ -194,33 +186,44 @@ p {
   margin: 0.5rem 0; // !important;
 }
 
-// a {
-//   text-decoration: none;
-//   font-weight: 550; // To make it stand out from the white background
-//   &:not(
-//       .btn,
-//       .nav-item,
-//       .nav-link,
-//       .dropdown-item,
-//       .navbar-brand,
-//       .overlay,
-//       .username,
-//       .user_name,
-//       .edit-repo-link,
-//       .certify-button,
-//       .like,
-//       .make
-//     ) {
-//     color: $primary; // !important;
-//   }
-//   &::visited {
-//     color: #789;
-//   }
-//   &:hover {
-//     @include transition(100ms);
-//     color: #000;
-//   }
-// }
+a {
+  text-decoration: none;
+  font-weight: 550; // To make it stand out from the white background
+  transition: color 100ms;
+  //   &:not(
+  //       .btn,
+  //       .nav-item,
+  //       .nav-link,
+  //       .dropdown-item,
+  //       .navbar-brand,
+  //       .overlay,
+  //       .username,
+  //       .user_name,
+  //       .edit-repo-link,
+  //       .certify-button,
+  //       .like,
+  //       .make
+  //     ) {
+  //     color: $primary; // !important;
+  //   }
+  //   &::visited {
+  //     color: #789;
+  //   }
+  //   &:hover {
+  //     @include transition(100ms);
+  //     color: #000;
+  //   }
+}
+
+.btn-primary,
+.btn-success,
+.btn-danger {
+  --bs-btn-color: white;
+}
+
+.btn-link {
+  text-decoration: none;
+}
 
 .tags > a {
   color: #fff !important;

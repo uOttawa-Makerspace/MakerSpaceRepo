@@ -6,7 +6,7 @@
   </div>
 <% else %>
   <% Date::DAYNAMES.each_with_index do |day, i| %>
-    <div class="row py-2 <%= 'bg-light' if i.even? %>">
+    <div class="row py-2 <%= 'bg-body-secondary' if i.even? %>">
       <div class="col-5 col-md-4">
         <%= day %>
       </div>

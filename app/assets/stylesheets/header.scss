@@ -1,26 +1,21 @@
 @import "shared/variables";
 
-$ceed-maroon: #8f001a;
-html[data-bs-theme="dark"] {
-  #quick-access-bar {
-    --bs-body-bg: $light;
-    //background-color: $light;
-    background-color: black;
-  }
-
-  .nav-link {
+.nav-link {
+  // This is how you nest dark mode selector
+  [data-bs-theme="dark"] & {
+    --bs-nav-link-hover-color: #{$primary};
     --bs-nav-link-color: white;
   }
+  --bs-nav-link-hover-color: black;
+  --bs-nav-link-color: white;
 }
 
 .navbar {
-  // background-color doesnt have variables
+  // background-color doesnt seem to be controlled by a variable
   [data-bs-theme="dark"] & {
     background-color: black;
   }
   background-color: $primary;
-
-  // padding: 0.5rem;
 
   &.navbar-staff {
     background: black;
@@ -65,6 +60,8 @@ html[data-bs-theme="dark"] {
     color: white;
   }
 
+  // FIXME: This is hard to make sense in dark mode. CC money icon turns black
+  // on hover, and it's a PNG so recolors are hard.
   .ccLink {
     #myCcWhite {
       display: none;

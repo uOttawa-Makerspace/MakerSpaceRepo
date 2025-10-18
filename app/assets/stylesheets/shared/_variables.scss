@@ -1,8 +1,7 @@
 $primary: #e24829;
 $secondary: #868686;
 $tertiary: #f7f7f7;
-$light: #e24829;
-$dark: #8f001a;
+$ceed-maroon: #8f001a;
 
 $theme-colors: (
   //"primary": rgb(95, 158, 160) // "MakerRepo Green"
@@ -13,8 +12,29 @@ $theme-colors: (
   "tertiary": $tertiary
 );
 
+// Sass variables are compiled away. They are imperative, meaning the value is
+// copied and constant when used on a rule. Sass variables start with '$'
+//
+// CSS variables are not compiled away and are declarative, meaning when a
+// variable is assigned all rules beneath the assignment receive the updated
+// value. Another way to put it is, when a CSS variable changes the rulesets are
+// recomputed and repainted. CSS variables start with '--'.
+//
+// Because CSS variables can hold strings, use #{} to evaluate sass variables.
+// Look at the header.scss file for a simple demonstration.
+//
+// Additionally, bootstrap 5.3 doesn't seem to have a way to change theme
+// colors, so you'd have to manually set primary and secondary RGB colors
+// yourself. https://github.com/twbs/bootstrap/issues/37976
+
 $body-top-padding: 4rem; // equivalent to navbar height
 $input-border-radius: 0.25rem !default;
 
-$nav-link-color: white;
-$nav-link-hover-color: black;
+$link-color-dark: $primary;
+$link-hover-color-dark: white;
+$link-hover-color: black;
+
+[data-bs-theme="dark"] .card {
+  --bs-card-title-color: white;
+  --bs-card-color: white;
+}
