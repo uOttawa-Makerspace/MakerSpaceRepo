@@ -13,6 +13,7 @@
     "@fullcalendar/core": "6.1.17",
     "@fullcalendar/daygrid": "6.1.17",
     "@fullcalendar/google-calendar": "5.9.0",
+    "@fullcalendar/icalendar": "^6.1.19",
     "@fullcalendar/interaction": "6.1.17",
     "@fullcalendar/list": "6.1.17",
     "@fullcalendar/rrule": "6.1.17",

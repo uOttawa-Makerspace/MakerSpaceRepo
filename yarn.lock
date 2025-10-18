@@ -303,6 +303,11 @@
     "@fullcalendar/common" "~5.9.0"
     tslib "^2.1.0"
 
+"@fullcalendar/icalendar@^6.1.19":
+  version "6.1.19"
+  resolved "https://registry.yarnpkg.com/@fullcalendar/icalendar/-/icalendar-6.1.19.tgz#592222d49f19aa5162558a8634d2e66e9e56facf"
+  integrity sha512-uaJnTP99cM2ZiFmYaSLfayX9TmF0DklIf2SpgwMDCMEqtNYm+TbCotDUrfMDWVFYPr4uCHk0TjlM5mS3U3wB9g==
+
 "@fullcalendar/interaction@6.1.17":
   version "6.1.17"
   resolved "https://registry.npmjs.org/@fullcalendar/interaction/-/interaction-6.1.17.tgz"
