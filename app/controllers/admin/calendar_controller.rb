@@ -28,7 +28,9 @@ class Admin::CalendarController < AdminAreaController
 
     staff_user_ids = StaffSpace.where(space_id: params[:id]).pluck(:user_id)
     
-    result = User.where(id: staff_user_ids, role: ['admin', 'staff']).map do |staff|
+    result = User
+               .where(id: staff_user_ids, role: ['admin', 'staff'])
+               .order(name: :desc).map do |staff|
       local_unavails = StaffUnavailability.where(user_id: staff.id).map do |u| 
         # Skip events that are far in the past
         next if u.recurrence_rule.blank? && u.end_time < (Time.now.utc - 2.months)
