@@ -1,11 +1,26 @@
-@import "lib";
-@import "./shared/variables";
+@import "shared/variables";
 
 $ceed-maroon: #8f001a;
+html[data-bs-theme="dark"] {
+  #quick-access-bar {
+    --bs-body-bg: $light;
+    //background-color: $light;
+    background-color: black;
+  }
+
+  .nav-link {
+    --bs-nav-link-color: white;
+  }
+}
 
 .navbar {
+  // background-color doesnt have variables
+  [data-bs-theme="dark"] & {
+    background-color: black;
+  }
   background-color: $primary;
-  padding: 0.5rem;
+
+  // padding: 0.5rem;
 
   &.navbar-staff {
     background: black;
@@ -16,11 +31,10 @@ $ceed-maroon: #8f001a;
 
   .nav-link {
     font-weight: 700;
-    //font-size: 15px;
     text-transform: uppercase;
 
     &:hover {
-      color: #fff;
+      //color: #fff;
     }
   }
 
@@ -71,6 +85,7 @@ $ceed-maroon: #8f001a;
     }
   }
 
+  // Animate header shrinking when class is added
   transition: margin 150ms;
   transition: padding 150ms;
   &.header-small {

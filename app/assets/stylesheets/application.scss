@@ -14,25 +14,17 @@
 *= require_self
 
  */
-$color-marker-complete: #00a407 !default;
-$color-marker-active: #ff9900 !default;
-$color-marker: #aaa !default;
-$marker-size: 32px !default;
-$color-marker-hover: #6e6e6e;
-// $table-accent-bg: #d6ebeb;
+
+/* Define bootstrap overrides before including library.
+ * See https://getbootstrap.com/docs/5.3/customize/sass/
+ * This is how to configure Bootstrap 5.3. v6 probably will use sass modules instead
+ * and this will break
+*/
+
 $pagination-border-radius: 0;
-$primary: #e24829;
-$primary-light: rgba(59, 147, 147, 0.5);
-$navbar-light-color: rgba(0, 0, 0, 0.7);
-$navbar-light-hover-color: rgba(0, 0, 0, 1);
-$navbar-dark-color: rgba(255, 255, 255, 0.7);
-$navbar-dark-hover-color: rgba(255, 255, 255, 1);
 $body-top-padding: 4rem; // equivalent to navbar height
 $input-border-radius: 0.25rem !default;
 $enable-negative-margins: true;
-
-// I wish but not everything uses rem
-//$font-size-base: 0.95rem;
 
 // Just to add overflow-clip, used in the home page hours column
 $utilities: (
@@ -42,12 +34,13 @@ $utilities: (
   ),
 );
 
+@import "./shared/variables";
 @import "bootstrap/scss/bootstrap";
 @import "toastr";
-@import "./shared/variables";
 @import "trix";
 @import "lib";
 @import "font-awesome";
+
 html {
   font-size: 90%;
   height: 100%;
@@ -67,9 +60,7 @@ body {
   height: 100%;
   margin: 0;
   background-color: rgba(238, 238, 238, 0.5);
-  font-family: "Roboto", helvetica, sans-serif !important;
-  display: flex;
-  flex-direction: column;
+  font-family: "Roboto", helvetica, sans-serif;
 }
 
 // Don't cover element with header when auto scrolling
@@ -203,65 +194,41 @@ p {
   margin: 0.5rem 0; // !important;
 }
 
-a {
-  text-decoration: none;
-  color: inherit;
-  font-weight: 550; // To make it stand out from the white background
-  &:not(
-      .btn,
-      .nav-item,
-      .nav-link,
-      .dropdown-item,
-      .navbar-brand,
-      .overlay,
-      .username,
-      .user_name,
-      .edit-repo-link,
-      .certify-button,
-      .like,
-      .make
-    ) {
-    color: $primary; // !important;
-  }
-  &::visited {
-    color: #789;
-  }
-  &:hover {
-    @include transition(100ms);
-    color: #000;
-  }
-}
+// a {
+//   text-decoration: none;
+//   font-weight: 550; // To make it stand out from the white background
+//   &:not(
+//       .btn,
+//       .nav-item,
+//       .nav-link,
+//       .dropdown-item,
+//       .navbar-brand,
+//       .overlay,
+//       .username,
+//       .user_name,
+//       .edit-repo-link,
+//       .certify-button,
+//       .like,
+//       .make
+//     ) {
+//     color: $primary; // !important;
+//   }
+//   &::visited {
+//     color: #789;
+//   }
+//   &:hover {
+//     @include transition(100ms);
+//     color: #000;
+//   }
+// }
+
 .tags > a {
   color: #fff !important;
-}
-body {
-  background-color: #fff;
 }
 
 u {
   display: inline-block;
   text-decoration: none;
-}
-
-.btn {
-  // Exclude outline btns
-  // FIXME this is getting too large
-  &:not(
-      .btn-outline-primary,
-      .btn-outline-secondary,
-      .btn-outline-danger,
-      .btn-outline-success,
-      .btn-outline-warning,
-      .btn-link,
-      .btn-default
-    ) {
-    color: #fff;
-  }
-  font-weight: 700;
-}
-
-.btn-link {
-  color: $primary;
 }
 
 // Buttons created with button_to are actually a form tag with a single button inside

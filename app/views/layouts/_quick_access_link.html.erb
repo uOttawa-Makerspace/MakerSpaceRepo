@@ -1,7 +1,7 @@
-<div class="navbar navbar-expand-sm navbar-light bg-light" id="quick-access-bar">
-    <div class="container-fluid flex-row align-self-end text-white" id="quick-access-container">
+<div class="navbar navbar-expand-sm" id="quick-access-bar">
+    <div class="container-fluid flex-row align-self-end" id="quick-access-container">
         <ul class="navbar-nav mr-auto d-flex flex-row">
-            <% QuickAccessLink.where(user: current_user).each do |link| %>
+            <% QuickAccessLink.where(user: current_user).find_each do |link| %>
                 <li class="nav-item mx-2">
                     <a class="nav-link d-inline" href="<%= link.path %>"><%= link.name %></a>
                 </li>
@@ -15,7 +15,7 @@
               <% end %>
             </li>
           <% else %>
-            <li class="text-primary nav-item mx-auto" id="add-new-quick-access">
+            <li class="nav-item mx-auto" id="add-new-quick-access">
               <a class="btn btn-link p-0"><%= fa_icon('thumb-tack') %> Pin Page</a>
             </li>
           <% end %>

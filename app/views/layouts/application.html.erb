@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="<%= I18n.locale %>">
+<html lang="<%= I18n.locale %>" data-bs-theme="dark">
     <head>
         <title><%= page_title(yield(:title)) %></title>
         <%= favicon_link_tag 'C_square.png' %>
@@ -33,7 +33,7 @@
     </head>
     <body>
         <%= render 'layouts/header' %>
-        <main class="mt-3">
+        <main>
             <%= yield %>
         </main>
         <%= render 'layouts/footer' %>
