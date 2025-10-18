@@ -233,14 +233,14 @@ document.addEventListener("turbo:load", function () {
   }
 
   // Start web socket connection
-  staffDashboardChannelConnection((data) => {
-    //console.log(data);
-    if (data.add_user) {
-      userTapIn(data.add_user);
-    }
+  // staffDashboardChannelConnection((data) => {
+  //   //console.log(data);
+  //   if (data.add_user) {
+  //     userTapIn(data.add_user);
+  //   }
 
-    if (data.remove_user) {
-      userTapOut(data.remove_user);
-    }
-  });
+  //   if (data.remove_user) {
+  //     userTapOut(data.remove_user);
+  //   }
+  // });
 });

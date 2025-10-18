@@ -114,7 +114,7 @@ class RfidController < SessionsController
         new_session(rfid, space_id)
       else
         # Notify staff dashboard of user sign out
-        StaffDashboardChannel.send_tap_out rfid.user
+        StaffDashboardChannel.send_tap_out rfid.user, space_id
         render json: { success: "RFID sign out" }, status: :ok
       end
     else
@@ -123,7 +123,7 @@ class RfidController < SessionsController
       # Here we're assuming the user is physically in the space. Query if they
       # are eligible for a faculty membership and later send a notification to
       # the staff dashboard
-      CardTapJob.perform_later(rfid)
+      CardTapJob.perform_later(rfid, space_id)
     end
   end
 

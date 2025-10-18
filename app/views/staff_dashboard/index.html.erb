@@ -49,12 +49,11 @@
       </tr>
     </thead>
 
+    <%# Setup websocket connection, listen to broadcasts under signed_in_table %>
+    <%= turbo_stream_from 'signed_in_table' %>
     <tbody id="table-js-signed-in">
         <%= render partial: 'space_activity_row', collection: @signed_in_users, locals: {space: @space} %>
     </tbody>
-    <template id="signedInRow">
-        
-    </template>
   </table>
 </div>
 <hr />

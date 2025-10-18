@@ -36,7 +36,7 @@
 
         <td class="align-middle">
             <% user.certifications.each do |certification| %>
-                <% next unless @space.ceed? || certification.training.spaces.include?( @space) %>
+                <% next unless space.ceed? || certification.training.spaces.include?(space) %>
                 <div class="cert-name" style="display:inline">
                     <div class="cert-holder" style="display:inline">
                         <%= certification.training.localized_name %>
@@ -57,7 +57,7 @@
                 <% end %>
             </td>
         <% end %>
-        <td><%= user.lab_sessions.where(space: @space, created_at: 2.months.ago..DateTime.now).count %></td>
+        <td><%= user.lab_sessions.where(space: space, created_at: 2.months.ago..DateTime.now).count %></td>
     <% end %>
     <td class="align-middle">
         <% if user.lab_sessions.second_to_last.present? %>
