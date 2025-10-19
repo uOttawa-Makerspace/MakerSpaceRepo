@@ -12,12 +12,13 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:16
+        image: postgres:17
         env:
           POSTGRES_DB: makerspacerepo_test
           POSTGRES_PASSWORD: postgres
           POSTGRES_USER: postgres
         ports:
+          # map localhost:5433 to postgres:5433
           - 5433:5432
         options: >-
           --health-cmd pg_isready
@@ -72,7 +73,6 @@ jobs:
           bundle exec rails db:migrate
       - name: Run tests
         env:
-          DATABASE_URL: postgres://postgres:@localhost:5433
           REDIS_URL: redis://localhost:6379/0
           RAILS_ENV: test
         run: |
