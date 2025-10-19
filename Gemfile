@@ -34,7 +34,7 @@ gem "mocha"
 gem "net-ssh"
 gem "nobspw_rails7"
 gem "octokit", "~> 4.21.0"
-gem "pg", "~> 1.5"
+gem "pg", "~> 1.6"
 gem "prettier_print"
 gem "pry", "~> 0.15"
 gem "pry-rails", "~> 0.3", group: :development

@@ -19,13 +19,8 @@ development:
     migrations_paths: db/cable_migrate
 
 test:
-  primary:
-    <<: *default
-    database: <%= Rails.application.credentials[Rails.env.to_sym][:database][:name] || makerspacerepo_test %>
-  queue:
-    <<: *default
-    database: makerspacerepo_queue_test
-    migrations_paths: db/queue_migrate
+  <<: *default
+  database: <%= Rails.application.credentials[Rails.env.to_sym][:database][:name] || makerspacerepo_test %>
 
 production:
   primary:
