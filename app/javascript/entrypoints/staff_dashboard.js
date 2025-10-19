@@ -181,7 +181,6 @@ document.addEventListener("turbo:load", function () {
     innerBar.classList.add("moving-progress-bar");
 
     document.getElementById("sign-in-username").innerText = user.username;
-
     document.getElementById("sign-in-profile-link").href = user.username;
     // '<a class="drop-username-cell fs-5" href="/' + e[2] + '">See Profile</a>';
     document.getElementById("sign-in-email").innerText = user.email;
@@ -205,23 +204,18 @@ document.addEventListener("turbo:load", function () {
     document.getElementById("signed-consent-form").style.display =
       !user.signed_sheet ? "none" : "block";
 
-    const dt = new DataTable(document.querySelector("#signed-in-table"));
-    // let node = dt.row.add([
-    //   user.name,
-    //   user.email,
-    //   "Flags unimplemented",
-    //   "certs unimplemented",
-    //   "printers lol",
-    //   "number of visits lol",
-    //   "last seen lol",
-    //   "hard code sign out button",
-    // ]);
+    console.log(user.certification);
+    let certificationsList = user.certification.map(
+      (name_en) =>
+        `<span class="badge text-bg-light text-black-50">${name_en}</span>`,
+    );
+    console.log(certificationsList);
+    document.getElementById("sign-in-certifications").innerHTML =
+      `<span class='.fs-4'>${certificationsList.join("")}</span>`;
 
+    const dt = new DataTable(document.querySelector("#signed-in-table"));
     // Reflow table after table gets updated
     dt.draw();
-    // Draw table before node becomes available
-    // node.node().dataset.userId = user.id;
-    // console.log(`Added username ${user.name}`);
 
     notifyModal.show();
     setTimeout(hideModal, 6000);

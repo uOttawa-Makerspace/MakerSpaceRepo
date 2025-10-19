@@ -20,7 +20,11 @@ class StaffDashboardChannel < ApplicationCable::Channel
           name: user.name,
           id: user.id,
           email: user.email,
-          #certification: user.certifications.pluck(:name_en),
+          certification:
+            Certification
+              .joins(:training)
+              .where(user_id: user.id)
+              .pluck('trainings.name_en'),
           membership: user.has_active_membership?,
           expiration_date: user.active_membership&.end_date&.to_date,
           is_student: user.student?,
