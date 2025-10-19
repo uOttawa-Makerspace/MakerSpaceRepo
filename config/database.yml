@@ -15,6 +15,7 @@ development:
     migrations_paths: db/queue_migrate
 
 test:
+  <<: *default
   primary:
     <<: *default
     database: <%= Rails.application.credentials[Rails.env.to_sym][:database][:name] || makerspacerepo_test %>
