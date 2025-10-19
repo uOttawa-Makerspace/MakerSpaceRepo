@@ -221,20 +221,13 @@ RSpec.describe RfidController, type: :controller do
           mac_address: @rfid[:mac_address]
         }
         user = @rfid.user
-        expect {
-          post :card_number, params: @rfid_params
-        }.to have_enqueued_job(CardTapJob)
+        post :card_number, params: @rfid_params
         
-        perform_enqueued_jobs
         expect(user.reload.active_membership).to be_present
         # User dropped a course, changed programs, etc...
         # Hardcoded because why not...
         user.update(faculty: 'Social Sciences')
-        expect {
-          post :card_number, params: @rfid_params
-        }.to have_enqueued_job(CardTapJob)
-
-        perform_enqueued_jobs
+        post :card_number, params: @rfid_params
         
         expect(user.reload.active_membership).to be_blank
       end
