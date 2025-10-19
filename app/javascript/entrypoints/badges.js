@@ -47,7 +47,17 @@ if (document.getElementById("search_bar")) {
       event.preventDefault();
       let query = document.getElementById("search_bar").value;
       if (query == "") {
-        query = ".";
+        let url = "/badges";
+        fetch(url, {
+          method: "GET",
+          headers: {
+            Accept: "*/*",
+          },
+        })
+          .then((response) => response.text())
+          .then((data) => {
+            document.getElementsByClassName("badge_list")[0].innerHTML = data;
+          });
       }
       if (query.length > 2 || query == ".") {
         let url = "/badges?search=" + query;

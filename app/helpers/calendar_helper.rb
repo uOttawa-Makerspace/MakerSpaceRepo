@@ -15,7 +15,10 @@ module CalendarHelper
 
       events = parsed_cals.flat_map do |calendar|
         calendar.events.map do |event|
-          next if event.rrule.empty? && event.dtend < (Time.now.utc - 2.months)
+          start_time = safe_to_time(event.dtstart)
+          end_time = safe_to_time(event.dtend)
+
+          next if event.rrule.empty? && end_time < (Time.now.utc - 2.months)
 
           event_hash = {
             id: event.uid,
@@ -25,33 +28,29 @@ module CalendarHelper
               name: name,
               description: event.description,
             },
-            allDay: event.dtstart.to_time == event.dtend.to_time - 1.day,
-            start: event.dtstart.to_time.iso8601
+            allDay: event.dtstart.is_a?(Icalendar::Values::Date),
+            start: start_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S"),
+            end: end_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S")
           }
 
-          if event.rrule.any?
-            dtstart = begin
-              event.dtstart.to_time
-            rescue StandardError
-              event.dtstart
-            end
+          rrule_obj = event.rrule&.first
 
-            event_hash[:start] = dtstart.iso8601
-            event_hash[:rrule] = open_struct_to_rrule(event.rrule.first.value, dtstart)
-
-            if event.dtend && event.dtstart
-              duration_seconds = event.dtend.to_time - event.dtstart.to_time
-              event_hash[:duration] = duration_seconds * 1000
-            end
-          elsif event.dtend
-            event_hash[:end] = event.dtend.to_time.iso8601
+          if rrule_obj.present?
+            event_hash[:rrule] = convert_to_js_rrule(rrule_obj)
+            event_hash[:rrule][:dtstart] = start_time.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S")
+          
+            duration_seconds = end_time.to_time - start_time.to_time
+            event_hash[:duration] = duration_seconds * 1000
+          
+            exs = event.exdate.map(&:value).flatten.map { |d| safe_to_time(d).in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S") rescue nil }.compact
+            event_hash[:exdate] = exs if exs.any?
           end
-
+          
           event_hash
         end.compact
       end
     rescue StandardError => e
-      Rails.logger.error("ICS parse error for #{ics_url}: #{e.message}")
+      Rails.logger.error("ICS parse error for #{ics_url}: #{e.inspect}")
     end
 
     [{ id: group_id, color: background_color, events: events }]
@@ -108,44 +107,7 @@ module CalendarHelper
     (l1 + 0.05) / (l2 + 0.05)
   end
 
-  # RRULE HELPERS
-  def open_struct_to_rrule(recur, dtstart)
-    rule = case recur.frequency&.downcase
-      when "daily" then IceCube::Rule.daily
-      when "weekly" then IceCube::Rule.weekly
-      when "monthly" then IceCube::Rule.monthly
-      when "yearly" then IceCube::Rule.yearly
-      else
-        raise ArgumentError, "Unsupported frequency: #{recur.frequency}"
-      end
-
-    rule.interval(recur.interval) if recur.interval
-    rule.count(recur.count) if recur.count
-    rule.until(Time.parse(recur.until).utc) if recur.until
-
-    if recur.by_day
-      days = recur.by_day.map do |day|
-        {
-          "SU" => :sunday,
-          "MO" => :monday,
-          "TU" => :tuesday,
-          "WE" => :wednesday,
-          "TH" => :thursday,
-          "FR" => :friday,
-          "SA" => :saturday
-        }[day]
-      end.compact
-      rule.day(*days)
-    end
-
-    # Create a temporary schedule just to extract the RRULE string
-    schedule = IceCube::Schedule.new(dtstart)
-    schedule.add_recurrence_rule(rule)
-
-    
-    "DTSTART:#{schedule.start_time.utc.strftime('%Y%m%dT%H%M%SZ')}\n" + "RRULE:#{schedule.rrules.first.to_ical}"
-  end 
-  
+  # RRULE HELPERS  
   def parse_rrule_and_dtstart(rule_string)
     lines = rule_string.strip.split("\n")
     rrule_line = lines.find { |l| l.start_with?("RRULE:") }&.sub("RRULE:", "")
@@ -176,5 +138,47 @@ module CalendarHelper
   def remove_until_from_rrule(rrule_line)
     rrule_line = rrule_line.gsub(/;UNTIL=[^;Z]*Z/, '') if rrule_line.include?('UNTIL=')
     rrule_line
+  end
+
+  def safe_to_time(value)
+    return nil if value.nil?
+    if value.respond_to?(:to_time)
+      t = value.to_time
+      t = t.utc unless t.utc?
+      return t
+    end
+    Time.parse(value.to_s).utc # fallback
+  rescue StandardError
+    nil
+  end
+
+  def convert_to_js_rrule(openstruct_obj)
+    js_rrule = {}
+    
+    if openstruct_obj.frequency
+      js_rrule[:freq] = openstruct_obj.frequency.downcase
+    end
+    
+    js_rrule[:interval] = openstruct_obj.interval if openstruct_obj.interval
+    
+    if openstruct_obj.by_day
+      js_rrule[:byweekday] = openstruct_obj.by_day.map do |day|
+        day.downcase[0..1] # maybe not needed but who knows anymore
+      end
+    end
+    
+    js_rrule[:until] = openstruct_obj.until if openstruct_obj.until
+    
+    js_rrule[:count] = openstruct_obj.count if openstruct_obj.count
+    
+    %w[by_second by_minute by_hour by_month_day by_year_day 
+      by_week_number by_month by_set_position].each do |field|
+      value = openstruct_obj.send(field)
+      js_rrule[field.to_sym] = value if value
+    end
+    
+    js_rrule[:wkst] = openstruct_obj.week_start if openstruct_obj.week_start
+    
+    js_rrule
   end
 end
