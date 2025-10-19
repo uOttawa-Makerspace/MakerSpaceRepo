@@ -123,8 +123,9 @@ class RfidController < SessionsController
       # Here we're assuming the user is physically in the space. Query if they
       # are eligible for a faculty membership and later send a notification to
       # the staff dashboard
-      CardTapJob.perform_later(rfid, space_id)
     end
+    
+    CardTapJob.perform_later(rfid, space_id)
   end
 
   def new_session(rfid, new_location)

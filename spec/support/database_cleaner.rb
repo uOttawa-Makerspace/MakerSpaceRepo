@@ -7,5 +7,9 @@ RSpec.configure do |config|
 
   config.before(:each) { DatabaseCleaner.start }
 
-  config.after(:each) { DatabaseCleaner.clean }
+  config.after(:each) {
+    # Clear job queue before database is restored
+    perform_enqueued_jobs 
+    DatabaseCleaner.clean
+  }
 end
