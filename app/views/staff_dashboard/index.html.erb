@@ -68,7 +68,9 @@
         <th class="action-header disable-sort"><%= fa_icon('check') %>&nbsp; TO SIGN IN <br> <%= fa_icon('times') %>&nbsp; TO SIGN OUT</th>
       </tr>
     </thead>
-    <%= render partial: 'space_activity_row', collection: @signed_out_users, locals: {space: @space, signed_out: true} %>
+    <tbody id="staffDashboardSignedOutTable">
+        <%= render partial: 'space_activity_row', collection: @signed_out_users, locals: {space: @space, signed_out: true} %>
+    </tbody>
   </table>
 </div>
 <hr />

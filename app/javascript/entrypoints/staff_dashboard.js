@@ -206,41 +206,32 @@ document.addEventListener("turbo:load", function () {
       !user.signed_sheet ? "none" : "block";
 
     const dt = new DataTable(document.querySelector("#signed-in-table"));
-    let node = dt.row.add([
-      user.name,
-      user.email,
-      "Flags unimplemented",
-      "certs unimplemented",
-      "printers lol",
-      "number of visits lol",
-      "last seen lol",
-      "hard code sign out button",
-    ]);
+    // let node = dt.row.add([
+    //   user.name,
+    //   user.email,
+    //   "Flags unimplemented",
+    //   "certs unimplemented",
+    //   "printers lol",
+    //   "number of visits lol",
+    //   "last seen lol",
+    //   "hard code sign out button",
+    // ]);
+
+    // Reflow table after table gets updated
     dt.draw();
     // Draw table before node becomes available
-    node.node().dataset.userId = user.id;
-    console.log(`Added username ${user.name}`);
+    // node.node().dataset.userId = user.id;
+    // console.log(`Added username ${user.name}`);
 
-    // notifyModal.show();
-    // setTimeout(hideModal, 6000);
-  }
-
-  function userTapOut(userId) {
-    // TODO: Find row by user ID and remove
-    const dt = new DataTable(document.querySelector("#signed-in-table"));
-    console.log(`Removing user ${userId}`);
-    dt.row(`[data-user-id='${userId}']`).remove().draw();
+    notifyModal.show();
+    setTimeout(hideModal, 6000);
   }
 
   // Start web socket connection
-  // staffDashboardChannelConnection((data) => {
-  //   //console.log(data);
-  //   if (data.add_user) {
-  //     userTapIn(data.add_user);
-  //   }
-
-  //   if (data.remove_user) {
-  //     userTapOut(data.remove_user);
-  //   }
-  // });
+  staffDashboardChannelConnection((data) => {
+    //console.log(data);
+    if (data.add_user) {
+      userTapIn(data.add_user);
+    }
+  });
 });
