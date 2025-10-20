@@ -14,25 +14,17 @@
 *= require_self
 
  */
-$color-marker-complete: #00a407 !default;
-$color-marker-active: #ff9900 !default;
-$color-marker: #aaa !default;
-$marker-size: 32px !default;
-$color-marker-hover: #6e6e6e;
-// $table-accent-bg: #d6ebeb;
+
+/* Define bootstrap overrides before including library.
+ * See https://getbootstrap.com/docs/5.3/customize/sass/
+ * This is how to configure Bootstrap 5.3. v6 probably will use sass modules instead
+ * and this will break
+*/
+
 $pagination-border-radius: 0;
-$primary: #e24829;
-$primary-light: rgba(59, 147, 147, 0.5);
-$navbar-light-color: rgba(0, 0, 0, 0.7);
-$navbar-light-hover-color: rgba(0, 0, 0, 1);
-$navbar-dark-color: rgba(255, 255, 255, 0.7);
-$navbar-dark-hover-color: rgba(255, 255, 255, 1);
 $body-top-padding: 4rem; // equivalent to navbar height
 $input-border-radius: 0.25rem !default;
 $enable-negative-margins: true;
-
-// I wish but not everything uses rem
-//$font-size-base: 0.95rem;
 
 // Just to add overflow-clip, used in the home page hours column
 $utilities: (
@@ -42,17 +34,34 @@ $utilities: (
   ),
 );
 
-@import "bootstrap/scss/bootstrap";
-@import "toastr";
 @import "./shared/variables";
+@import "bootstrap/scss/bootstrap";
+
+// Set variables after bootstrap
+
+[data-bs-theme="dark"] {
+  .card {
+    --bs-card-title-color: white;
+    --bs-card-color: white;
+  }
+  // .btn.btn-primary {
+  //    @include button-variant($ceed-maroon, $ceed-maroon);
+  // }
+
+  // --bs-link-color: #{$ceed-maroon};
+  // --bs-link-color-rgb: #{$ceed-maroon-rgb};
+  // --bs-primary-rgb: #{$ceed-maroon-rgb};
+  // --bs-primary: #{$ceed-maroon};
+}
+
+@import "toastr";
 @import "trix";
 @import "lib";
 @import "font-awesome";
+
 html {
   font-size: 90%;
-  height: 100%;
   min-height: 100%;
-  overflow: auto;
 }
 
 @font-face {
@@ -64,12 +73,8 @@ html {
 }
 
 body {
-  height: 100%;
-  margin: 0;
-  background-color: rgba(238, 238, 238, 0.5);
-  font-family: "Roboto", helvetica, sans-serif !important;
-  display: flex;
-  flex-direction: column;
+  min-height: 100%;
+  font-family: "Roboto", helvetica, sans-serif;
 }
 
 // Don't cover element with header when auto scrolling
@@ -86,12 +91,12 @@ h1 {
 
 .dropdown-item {
   &:active {
-    color: #000; // !important;
-    background-color: $primary; // !important;
+    color: #000;
+    background-color: $primary;
   }
   &:hover {
-    color: #fff; // !important;
-    background-color: $secondary; // !important;
+    color: #fff;
+    background-color: $secondary;
     &.dropdown-item-danger {
       color: #fff;
       background-color: var(--bs-danger);
@@ -151,7 +156,8 @@ $dropdown-connection-size: 12px;
   display: block;
   border-left: $dropdown-connection-size solid transparent;
   border-right: $dropdown-connection-size solid transparent;
-  border-bottom: $dropdown-connection-size solid #fff; /* change color here, modified for a black arrow */
+  border-bottom: $dropdown-connection-size solid;
+  border-bottom-color: var(--bs-dropdown-bg);
   position: absolute;
   top: -$dropdown-connection-size;
   left: 10%;
@@ -170,11 +176,6 @@ $dropdown-connection-size: 12px;
   border-radius: 4px;
   box-shadow: 4px blur;
   padding-bottom: 0;
-}
-
-.custom-hover:hover {
-  background-color: rgba(0, 0, 0, 0.3);
-  color: #ffffff;
 }
 
 .nav-item.dropdown .dropdown-toggle-split {
@@ -205,63 +206,50 @@ p {
 
 a {
   text-decoration: none;
-  color: inherit;
   font-weight: 550; // To make it stand out from the white background
-  &:not(
-      .btn,
-      .nav-item,
-      .nav-link,
-      .dropdown-item,
-      .navbar-brand,
-      .overlay,
-      .username,
-      .user_name,
-      .edit-repo-link,
-      .certify-button,
-      .like,
-      .make
-    ) {
-    color: $primary; // !important;
-  }
-  &::visited {
-    color: #789;
-  }
-  &:hover {
-    @include transition(100ms);
-    color: #000;
-  }
+  transition: color 100ms;
+  //   &:not(
+  //       .btn,
+  //       .nav-item,
+  //       .nav-link,
+  //       .dropdown-item,
+  //       .navbar-brand,
+  //       .overlay,
+  //       .username,
+  //       .user_name,
+  //       .edit-repo-link,
+  //       .certify-button,
+  //       .like,
+  //       .make
+  //     ) {
+  //     color: $primary; // !important;
+  //   }
+  //   &::visited {
+  //     color: #789;
+  //   }
+  //   &:hover {
+  //     @include transition(100ms);
+  //     color: #000;
+  //   }
 }
+
+.btn-primary,
+.btn-success,
+.btn-danger {
+  --bs-btn-color: white;
+}
+
+.btn-link {
+  text-decoration: none;
+}
+
 .tags > a {
   color: #fff !important;
-}
-body {
-  background-color: #fff;
 }
 
 u {
   display: inline-block;
   text-decoration: none;
-}
-
-.btn {
-  // Exclude outline btns
-  // FIXME this is getting too large
-  &:not(
-      .btn-outline-primary,
-      .btn-outline-secondary,
-      .btn-outline-danger,
-      .btn-outline-success,
-      .btn-outline-warning,
-      .btn-link,
-      .btn-default
-    ) {
-    color: #fff;
-  }
-  font-weight: 700;
-}
-
-.btn-link {
-  color: $primary;
 }
 
 // Buttons created with button_to are actually a form tag with a single button inside

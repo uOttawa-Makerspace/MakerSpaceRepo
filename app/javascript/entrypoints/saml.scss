@@ -1,100 +1,100 @@
-$pagination-border-radius: 0;
-$primary: #497979;
-$primary-light: rgba(59, 147, 147, 0.5);
-$navbar-light-color: rgba(0, 0, 0, 0.7);
-$navbar-light-hover-color: rgba(0, 0, 0, 1);
-$navbar-dark-color: rgba(255, 255, 255, 0.7);
-$navbar-dark-hover-color: rgba(255, 255, 255, 1);
-$body-top-padding: 4rem; // equivalent to navbar height
-$input-border-radius: 0.25rem !default;
-$enable-negative-margins: true;
+// $pagination-border-radius: 0;
+// $primary: #497979;
+// $primary-light: rgba(59, 147, 147, 0.5);
+// $navbar-light-color: rgba(0, 0, 0, 0.7);
+// $navbar-light-hover-color: rgba(0, 0, 0, 1);
+// $navbar-dark-color: rgba(255, 255, 255, 0.7);
+// $navbar-dark-hover-color: rgba(255, 255, 255, 1);
+// $body-top-padding: 4rem; // equivalent to navbar height
+// $input-border-radius: 0.25rem !default;
+// $enable-negative-margins: true;
 
-@import "bootstrap/scss/bootstrap";
-@import "shared/variables";
+// @import "bootstrap/scss/bootstrap";
+// @import "shared/variables";
 
-html.saml-login {
-  height: 100%;
+// html.saml-login {
+//   height: 100%;
 
-  body {
-    height: 100%;
-    background-color: #fff;
-  }
+//   body {
+//     height: 100%;
+//     background-color: #fff;
+//   }
 
-  .btn {
-    width: auto;
-    height: auto;
-    float: none;
+//   .btn {
+//     width: auto;
+//     height: auto;
+//     float: none;
 
-    &:hover {
-      cursor: pointer;
-      opacity: 1;
-    }
+//     &:hover {
+//       cursor: pointer;
+//       opacity: 1;
+//     }
 
-    @media (max-width: 575.98px) {
-      height: auto;
-    }
+//     @media (max-width: 575.98px) {
+//       height: auto;
+//     }
 
-    @include media-breakpoint-down(sm) {
-      height: auto;
-    }
+//     @include media-breakpoint-down(sm) {
+//       height: auto;
+//     }
 
-    .break {
-      &::before {
-        content: " – ";
-      }
+//     .break {
+//       &::before {
+//         content: " – ";
+//       }
 
-      @media (max-width: 575.98px) {
-        display: block;
+//       @media (max-width: 575.98px) {
+//         display: block;
 
-        &::before {
-          content: "";
-        }
-      }
+//         &::before {
+//           content: "";
+//         }
+//       }
 
-      @include media-breakpoint-down(sm) {
-        display: block;
+//       @include media-breakpoint-down(sm) {
+//         display: block;
 
-        &::before {
-          content: "";
-        }
-      }
-    }
-  }
+//         &::before {
+//           content: "";
+//         }
+//       }
+//     }
+//   }
 
-  .main-content {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-  }
+//   .main-content {
+//     height: 100%;
+//     display: flex;
+//     flex-direction: column;
+//     align-items: center;
+//     justify-content: center;
+//   }
 
-  input,
-  textarea,
-  .btn {
-    box-shadow: none;
-  }
+//   input,
+//   textarea,
+//   .btn {
+//     box-shadow: none;
+//   }
 
-  .brand {
-    text-align: center;
-    font-size: 4rem;
-    margin: 0;
+//   .brand {
+//     text-align: center;
+//     font-size: 4rem;
+//     margin: 0;
 
-    @media (max-width: 575.98px) {
-      font-size: 3rem;
-    }
+//     @media (max-width: 575.98px) {
+//       font-size: 3rem;
+//     }
 
-    @include media-breakpoint-down(sm) {
-      font-size: 3rem;
-    }
-  }
+//     @include media-breakpoint-down(sm) {
+//       font-size: 3rem;
+//     }
+//   }
 
-  .middle-content {
-    max-width: 100%;
+//   .middle-content {
+//     max-width: 100%;
 
-    .help {
-      text-align: center;
-      margin: 1rem 0;
-    }
-  }
-}
+//     .help {
+//       text-align: center;
+//       margin: 1rem 0;
+//     }
+//   }
+// }

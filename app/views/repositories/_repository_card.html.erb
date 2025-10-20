@@ -1,0 +1,22 @@
+<div class="card">
+    <%= link_to repository_path(repository.user_username, repository.slug), class: 'card-img-top bg-dark', style: 'height: 16rem' do %>
+        <%= image_tag url_for(repository.photos.first.image.variant(:repo_display_wrapper)) if repository.photos.first.present? %>
+    <% end %>
+    <div class="card-body d-flex flex-nowrap">
+        <div class="flex-fill">
+            <%= link_to repository.title, repository_path(user_username: repository.user_username, id: repository.slug) %>
+            <br />
+            <span>by <%= link_to repository.user_username, user_path(repository.user_username) %></span>
+            <br />
+            <span><%= time_ago_in_words(repository.created_at) %> <%= t('datetime.distance_in_words.ago') %></span>
+        </div>
+        <div class="text-center text-primary">
+            <div>
+                <%= fa_icon 'heart' %>
+            </div>
+            <div>
+                <%= repository.like %>
+            </div>
+        </div>
+    </div>
+</div>
