@@ -163,12 +163,8 @@ section#faq {
       padding: 0.8rem;
       border-radius: 0.5rem;
       font-size: 700;
-      background-color: white;
+      background-color: var(--bs-body-bg);
       box-shadow: 0px 4px 14px 0px #00000040;
-      color: black;
-      &:hover {
-        color: var(--bs-primary);
-      }
     }
   }
 }
