@@ -14,6 +14,10 @@
   .btn.btn-link {
     --bs-btn-color: white;
     --bs-btn-hover-color: black;
+
+    [data-bs-theme="dark"] & {
+      --bs-btn-hover-color: #{$primary};
+    }
   }
 
   // background-color doesnt seem to be controlled by a variable
