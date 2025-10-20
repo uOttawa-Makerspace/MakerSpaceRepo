@@ -6,10 +6,12 @@
       <%# This is to show the register button outside the menu on mobile %>
       <a class="nav-link d-xl-none order-xl-3" data-bs-toggle="modal" data-bs-target="#loginModal" href=""><%= t('navbar.sign_in') %></a>
     <% end %>
-    <button onclick="document.querySelector('html').dataset.bsTheme = (document.querySelector('html').dataset.bsTheme == 'dark' ? 'light' : 'dark')">
-        <%= fa_icon 'sun-o' %>
-        Toggle dark mode
-    </button>
+    <% unless Rails.env.production? %>
+        <button onclick="document.querySelector('html').dataset.bsTheme = (document.querySelector('html').dataset.bsTheme == 'dark' ? 'light' : 'dark')">
+            <%= fa_icon 'sun-o' %>
+            Toggle dark mode
+        </button>
+    <% end %>
     <button class="navbar-toggler" id="navbar-toggle-button" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
