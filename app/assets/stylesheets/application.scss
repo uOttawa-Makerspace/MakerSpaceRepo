@@ -36,6 +36,24 @@ $utilities: (
 
 @import "./shared/variables";
 @import "bootstrap/scss/bootstrap";
+
+// Set variables after bootstrap
+
+[data-bs-theme="dark"] {
+  .card {
+    --bs-card-title-color: white;
+    --bs-card-color: white;
+  }
+  // .btn.btn-primary {
+  //    @include button-variant($ceed-maroon, $ceed-maroon);
+  // }
+
+  // --bs-link-color: #{$ceed-maroon};
+  // --bs-link-color-rgb: #{$ceed-maroon-rgb};
+  // --bs-primary-rgb: #{$ceed-maroon-rgb};
+  // --bs-primary: #{$ceed-maroon};
+}
+
 @import "toastr";
 @import "trix";
 @import "lib";

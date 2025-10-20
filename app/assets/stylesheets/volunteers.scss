@@ -45,9 +45,9 @@ section#faq {
 
     // Big "join now" button
     .btn-primary {
-      color: white;
-      background-color: $primary;
-      border-color: $primary;
+      // color: white;
+      // background-color: $primary;
+      // border-color: $primary;
       font-size: 1.4rem;
       padding: 2%;
     }
@@ -63,11 +63,11 @@ section#faq {
 
   i.fa {
     font-size: 4rem;
-    color: $primary;
+    color: var(--bs-primary);
   }
 
   .subtext-primary {
-    color: $primary;
+    color: var(--bs-primary);
     font-weight: 700;
   }
 
@@ -75,7 +75,7 @@ section#faq {
   .numberedCard {
     // The big number
     & > p {
-      background-color: $primary;
+      background-color: var(--bs-primary);
       width: 5rem;
       height: 5rem;
       line-height: 5rem;
@@ -91,7 +91,7 @@ section#faq {
     // Padding and background card
     border: 2px solid $secondary;
     border-radius: 25px;
-    background-color: white;
+    background-color: var(--bs-body-bg);
     margin-bottom: 1rem;
     padding: 1% 5%;
 
@@ -107,7 +107,7 @@ section#faq {
       // fa-ul is broken, im doing it myself
       .fa {
         font-size: 3rem;
-        color: $primary;
+        color: var(--bs-primary);
         vertical-align: middle;
         padding-right: 1rem;
       }
@@ -115,7 +115,7 @@ section#faq {
   }
 
   .box-subtext {
-    background-color: white;
+    background-color: var(--bs-body-bg);
     @include media-breakpoint-up(lg) {
       padding: 3%;
       border-radius: 16px;
@@ -144,7 +144,7 @@ section#faq {
       margin: 0.3rem;
     }
     h2 {
-      color: $primary;
+      color: var(--bs-primary);
     }
 
     ul {
@@ -167,7 +167,7 @@ section#faq {
       box-shadow: 0px 4px 14px 0px #00000040;
       color: black;
       &:hover {
-        color: $primary;
+        color: var(--bs-primary);
       }
     }
   }

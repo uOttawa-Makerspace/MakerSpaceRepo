@@ -2,6 +2,9 @@ $primary: #e24829;
 $secondary: #868686;
 $tertiary: #f7f7f7;
 $ceed-maroon: #8f001a;
+$ceed-maroon-rgb: 143, 0, 26;
+
+// Set these before bootstrap is imported
 
 $theme-colors: (
   //"primary": rgb(95, 158, 160) // "MakerRepo Green"
@@ -33,8 +36,3 @@ $input-border-radius: 0.25rem !default;
 $link-color-dark: $primary;
 $link-hover-color-dark: white;
 $link-hover-color: black;
-
-[data-bs-theme="dark"] .card {
-  --bs-card-title-color: white;
-  --bs-card-color: white;
-}
