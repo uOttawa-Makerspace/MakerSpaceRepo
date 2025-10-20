@@ -6,14 +6,16 @@ $ceed-maroon-rgb: 143, 0, 26;
 
 // Set these before bootstrap is imported
 
-$theme-colors: (
-  //"primary": rgb(95, 158, 160) // "MakerRepo Green"
-  //"primary": #497979 // New "MakerRepo Green"
-  "primary": $primary,
-  // "CEEDRepo Orange"
-  "secondary": $secondary,
-  "tertiary": $tertiary
-);
+// This isn't getting map-merged so it stays commented out
+// also i like the names of the old colors
+// $theme-colors: (
+//   //"primary": rgb(95, 158, 160) // "MakerRepo Green"
+//   //"primary": #497979 // New "MakerRepo Green"
+//   "primary": $primary,
+//   // "CEEDRepo Orange"
+//   "secondary": $secondary,
+//   "tertiary": $tertiary
+// );
 
 // Sass variables are compiled away. They are imperative, meaning the value is
 // copied and constant when used on a rule. Sass variables start with '$'
