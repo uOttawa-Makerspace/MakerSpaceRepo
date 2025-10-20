@@ -1,16 +1,21 @@
 @import "shared/variables";
 
-.nav-link {
-  // This is how you nest dark mode selector
-  [data-bs-theme="dark"] & {
-    --bs-nav-link-hover-color: #{$primary};
+.navbar {
+  .nav-link {
+    // This is how you nest dark mode selector
+    [data-bs-theme="dark"] & {
+      --bs-nav-link-hover-color: #{$primary};
+      --bs-nav-link-color: white;
+    }
+    --bs-nav-link-hover-color: black;
     --bs-nav-link-color: white;
   }
-  --bs-nav-link-hover-color: black;
-  --bs-nav-link-color: white;
-}
 
-.navbar {
+  .btn.btn-link {
+    --bs-btn-color: white;
+    --bs-btn-hover-color: #{$primary};
+  }
+
   // background-color doesnt seem to be controlled by a variable
   [data-bs-theme="dark"] & {
     background-color: black;

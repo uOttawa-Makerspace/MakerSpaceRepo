@@ -7,9 +7,11 @@
       <a class="nav-link d-xl-none order-xl-3" data-bs-toggle="modal" data-bs-target="#loginModal" href=""><%= t('navbar.sign_in') %></a>
     <% end %>
     <% unless Rails.env.production? %>
-        <button onclick="document.querySelector('html').dataset.bsTheme = (document.querySelector('html').dataset.bsTheme == 'dark' ? 'light' : 'dark')">
+        <button onclick="document.querySelector('html').dataset.bsTheme = (document.querySelector('html').dataset.bsTheme == 'dark' ? 'light' : 'dark')"
+                class="btn btn-link ms-auto">
             <%= fa_icon 'sun-o' %>
             Toggle dark mode
+            <%= fa_icon 'moon-o' %>
         </button>
     <% end %>
     <button class="navbar-toggler" id="navbar-toggle-button" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
