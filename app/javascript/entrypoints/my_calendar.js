@@ -11,6 +11,7 @@ document.addEventListener("turbo:load", async () => {
 
   const calendar = new Calendar(calendarEl, {
     plugins: [timeGridPlugin, dayGridPlugin, rrulePlugin],
+    timeZone: "America/Toronto",
     initialView: "timeGridWeek",
     headerToolbar: {
       left: "prev,next,today toggleOthersShifts",
