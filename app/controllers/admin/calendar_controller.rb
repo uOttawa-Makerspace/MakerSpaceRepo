@@ -35,12 +35,19 @@ class Admin::CalendarController < AdminAreaController
 
         duration = (u.end_time.to_time - u.start_time.to_time) * 1000
 
+        rrule_data = if u.recurrence_rule.present?
+          rrule = u.recurrence_rule          
+          rrule_without_dtstart = rrule.gsub(/DTSTART[^;]*;/, '').gsub(/;DTSTART[^;]*/, '')          
+          dtstart_toronto = u.start_time.in_time_zone("America/Toronto")&.strftime("%Y%m%dT%H%M%S")          
+          "DTSTART:#{dtstart_toronto}\nRRULE:#{rrule_without_dtstart}"
+        end
+
         {
           id: u.id,
           title: "🚫 #{staff.name} - #{u.title}",
           start: u.start_time,
           end: u.end_time,
-          **(u.recurrence_rule.present? ? { rrule: u.recurrence_rule, duration: duration } : {}),
+          **(u.recurrence_rule.present? ? { rrule: rrule_data, duration: duration } : {}),
           allDay: u.start_time.to_time == u.end_time.to_time - 1.day,
           extendedProps: {
             name: staff.name,
