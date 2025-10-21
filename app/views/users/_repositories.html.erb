@@ -16,11 +16,13 @@
     <% repos = (params[:show] == 'projects_assigned' ? @joined_projects : @repositories) %>
 <% end %>
 <% if repos !=@joined_projects %>
-    <% repos.each do |repository| %>
-        <div class="col-md-4 col-lg-4">
-            <%= render 'repositories/repository_card', repository: %>
-        </div>
-    <% end %>
+    <div class="row">
+        <% repos.each do |repository| %>
+            <div class="col-md-4 col-lg-4">
+                <%= render 'repositories/repository_card', repository: %>
+            </div>
+        <% end %>
+    </div>
 <% else %>
     <% repos.each do |joined_project| %>
         <% project_proposal = joined_project.project_proposal %>
