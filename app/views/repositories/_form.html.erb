@@ -1,4 +1,5 @@
-<%= form_with model: @repository, multipart: true do |f| %>
+<%# NOTE: The route for this isn't a proper nested route so this hack is necessary%>    
+<%= form_with model: @repository, url: {controller: 'repositories', action: @repository.persisted? ? :update : :create}, multipart: true do |f| %>
     <%= text_field_tag :username_dont_autofill, {}, { hidden: true } %>
     <div class="mb-3 required">
         <%= f.label :title, t('repository.title'), class: 'form-label' %>
@@ -22,7 +23,18 @@
         </div>
     </div>
 
-    <div id="file-container"></div>
+    <div id="file-container">
+        <% @files&.each do |f| %>
+            <table>
+                <tr class="file-item">
+                    <td><%= fa_icon 'file-text-o' %> <%= f.file.filename %></td>
+                    <td><span><%= f.file.byte_size / 1000 %> KB</span></td>
+                    <td><span id="<%= f.file.id %>" class="file-remove">remove</span></td>
+                </tr>
+            </table>
+        <% end %>
+        <%= hidden_field_tag 'deletefiles' %>
+    </div>
     <div class="mb-3 required">
         <%= label_tag :photo, t('repository.gallery') , class: 'form-label' %>
         <div class="input-group mb-3">
@@ -84,29 +96,29 @@
     <div class="mb-3">
         <p><%= t('repository.proj_is') %></p>
         <div class="form-check">
-            <%= f.radio_button(:share_type, 'public', class: 'form-check-input', onclick: 'hidePass();') %>
+            <%= f.radio_button(:share_type, 'public', class: 'form-check-input', onclick: 'hidePass();', required: true) %>
             <%= f.label('share_type_public', class: 'form-check-label') do %>
                 <%= fa_icon('globe') %> Public <br /> <%= t('repository.pub_msg') %>
+        </div>
             <% end %>
-        </div>
-        <div class="form-check">
-            <%= f.radio_button(:share_type, 'private' , class: 'form-check-input', onclick: 'showPass();') %>
-            <%= f.label('share_type_private', class: 'form-check-label') do %>
-                <%= fa_icon('lock') %> <%= t('repository.private') %> <br /> <%= t('repository.priv_msg') %>
-            <% end %>
-        </div>
-        
-        <div id="pass" class="mb-3" style="display: none;">
-            <%= f.label :password, 'Set repository password', class: 'form-label' %>
-            <%= password_field :password, nil, placeholder: 'Password', id: 'password_repo_field', 'aria-label': 'Password / Mot de Passe', class: 'form-control' %>
-        </div>
-        <div class="invalid-feedback">
-            Please Select a Share TypeCréer ton Projet
-        </div>
+            <div class="form-check">
+                <%= f.radio_button(:share_type, 'private' , class: 'form-check-input', onclick: 'showPass();', required: true) %>
+                <%= f.label('share_type_private', class: 'form-check-label') do %>
+                    <%= fa_icon('lock') %> <%= t('repository.private') %> <br /> <%= t('repository.priv_msg') %>
+                <% end %>
+            </div>
+            
+            <div id="pass" class="mb-3" style="display: none;">
+                <%= f.label :password, 'Set repository password', class: 'form-label' %>
+                <%= password_field :password, nil, placeholder: 'Password', id: 'password_repo_field', 'aria-label': 'Password / Mot de Passe', class: 'form-control', required: true %>
+            </div>
+            <div class="invalid-feedback">
+                Please Select a Share Type
+            </div>
     </div>
 
     <div class="text-center">
-        <%= f.submit t('repository.create') , class: 'btn btn-primary', id: 'waiting-save-button' %>
+        <%= f.submit class: 'btn btn-primary' %>
     </div>
     <span id="status-save"></span>
     <div id="form-error-span"></div>
