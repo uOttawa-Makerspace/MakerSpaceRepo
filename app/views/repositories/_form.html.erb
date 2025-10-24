@@ -1,17 +1,113 @@
-<%= form_for(@respository) do |f| %>
-  <% if @respository.errors.any? %>
-    <div id="error_explanation">
-      <h2><%= pluralize(@respository.errors.count, 'error') %> prohibited this respository from being saved:</h2>
-
-      <ul>
-      <% @respository.errors.full_messages.each do |message| %>
-        <li><%= message %></li>
-      <% end %>
-      </ul>
+<%= form_with model: @repository, multipart: true do |f| %>
+    <%= text_field_tag :username_dont_autofill, {}, { hidden: true } %>
+    <div class="mb-3 required">
+        <%= f.label :title, t('repository.title'), class: 'form-label' %>
+        <%= f.text_field :title, class: 'form-control', required: true %>
+        <div class="form-text"><%= t('repository.title_msg') %></div>
     </div>
-  <% end %>
+    <div class="mb-3">
+        <%= f.label :description, class: 'form-label' %>
+        <div>
+            <%= f.trix_editor :description, class: 'form-control', style: 'height: auto!important;', required: true %>
+        </div>
+    </div>
 
-  <div class="actions">
-    <%= f.submit %>
-  </div>
+    <%= label_tag :file, t('repository.proj_files') .html_safe, class: 'form-label mb-2' %>
+    <div class="mb-3">
+        <div class="input-group mb-3">
+            <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'form-control', aria_label: 'Project Files / Fichiers du projet' %>
+            <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="new-file-input">
+                <i class="fa fa-plus"></i>
+            </button>
+        </div>
+    </div>
+
+    <div id="file-container"></div>
+    <div class="mb-3 required">
+        <%= label_tag :photo, t('repository.gallery') , class: 'form-label' %>
+        <div class="input-group mb-3">
+            <%= file_field_tag 'images[]', type: :files, multiple: true, class: 'form-control image-upload', aria_label: 'Select Pictures / Selectionner des images' %>
+            <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="new-photo-input">
+                <i class="fa fa-plus"></i>
+            </button>
+        </div>
+        <div class="form-text"><%= t('repository.gal_msg') %></div>
+        <div class="repo-image mx-auto">
+            <div id="dragndrop" ondrop="dragndrop(event);" ondragover="dragover(event);">
+                <%= fa_icon 'cloud-upload' %>
+                <p><%= t('repository.drag_drop') %></p>
+            </div>
+        </div>
+    </div>
+
+    <div id="image-container"></div>
+    <div class="mb-3">
+        <%= f.label :youtube_link, t('repository.youtube') , class: 'form-label' %>
+        <%= f.text_field :youtube_link, class: 'form-control' %>
+        <div class="form-text"><%= t('repository.youtube_msg') =%></div>
+    </div>
+    <div class="mb-3 required">
+        <%= f.label :categories, t('repository.cat') , class: 'form-label' %>
+        <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :name, :name), { include_blank: t('repository.sel_cat'), include_hidden: false }, { class: 'profile-text form-control form-select', multiple: true } %>
+        <div class="form-text"><%= t('repository.cat_msg') %></div>
+    </div>
+
+    <div class="mb-3">
+        <%= f.label :equipment, t('repository.equip') , class: 'form-label' %>
+        <%= f.select :equipments, options_from_collection_for_select(EquipmentOption.show_options, :name, :name), { include_blank: t('repository.sel_cat'), include_hidden: false }, { class: 'profile-text form-control form-select', multiple: true } %>
+        <div class="form-text"><%= t('repository.equip_msg') %></div>
+    </div>
+
+
+    <div class="mb-3">
+        <%= f.label :license, t('repository.license') , class: 'form-label' %>
+        <%= f.select :license, @repository.class.license_options, {}, { class: 'form-control form-select' } %>
+        <div class="form-text"><%= t('repository.lic_msg') %></div>
+    </div>
+
+    <div class="mb-3">
+        <% if params[:project_proposal_id].present? %>
+            <%= f.hidden_field :project_proposal_id, value: params[:project_proposal_id] %>
+        <% else %>
+            <%= f.label :license, t('repository.reason') , class: 'form-label' %>
+            <%= f.select(:project_proposal_id, options_for_select(@project_proposals), { include_blank: true }, { class: 'form-control form-select' }) %>
+        <% end %>
+    </div>
+
+    <div class="mb-3">
+        <%# Controller looks for a freeform owner param %>
+        <%= label_tag(:owner, t('repository.new_owner') , class: 'form-label') %>
+        <%= select_tag(:owner, '', prompt: t('repository.search_user'), class: 'owner_select form-control', id: 'owner_select', multiple: true) %>
+    </div>
+
+
+    <div class="mb-3">
+        <p><%= t('repository.proj_is') %></p>
+        <div class="form-check">
+            <%= f.radio_button(:share_type, 'public', class: 'form-check-input', onclick: 'hidePass();') %>
+            <%= f.label('share_type_public', class: 'form-check-label') do %>
+                <%= fa_icon('globe') %> Public <br /> <%= t('repository.pub_msg') %>
+            <% end %>
+        </div>
+        <div class="form-check">
+            <%= f.radio_button(:share_type, 'private' , class: 'form-check-input', onclick: 'showPass();') %>
+            <%= f.label('share_type_private', class: 'form-check-label') do %>
+                <%= fa_icon('lock') %> <%= t('repository.private') %> <br /> <%= t('repository.priv_msg') %>
+            <% end %>
+        </div>
+        
+        <div id="pass" class="mb-3" style="display: none;">
+            <%= f.label :password, 'Set repository password', class: 'form-label' %>
+            <%= password_field :password, nil, placeholder: 'Password', id: 'password_repo_field', 'aria-label': 'Password / Mot de Passe', class: 'form-control' %>
+        </div>
+        <div class="invalid-feedback">
+            Please Select a Share TypeCréer ton Projet
+        </div>
+    </div>
+
+    <div class="text-center">
+        <%= f.submit t('repository.create') , class: 'btn btn-primary', id: 'waiting-save-button' %>
+    </div>
+    <span id="status-save"></span>
+    <div id="form-error-span"></div>
 <% end %>
