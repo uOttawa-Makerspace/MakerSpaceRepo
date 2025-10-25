@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 class DevelopmentProgramsController < SessionsController
-  before_action :no_container, only: :index
-  
   before_action :current_user
   # HACK: hardcode exception for this controller's index page only
   before_action :grant_access,
@@ -15,6 +13,9 @@ class DevelopmentProgramsController < SessionsController
                   }
 
   def index
+    # HACK: before_action: :no_container means this gets inherited
+    no_container
+    
     render layout: "application"
   end
 
