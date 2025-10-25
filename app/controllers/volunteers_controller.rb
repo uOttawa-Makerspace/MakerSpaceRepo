@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-require "googleauth"
-require "google/apis/calendar_v3"
+require 'googleauth'
+require 'google/apis/calendar_v3'
 
-class VolunteersController < ApplicationController
-  layout "volunteer"
+class VolunteersController < SessionsController
+  before_action -> { @with_volunteer_header = true }
   before_action :current_user
   before_action :signed_in, only: :join_volunteer_program
   before_action :grant_access,
@@ -12,7 +12,7 @@ class VolunteersController < ApplicationController
                 unless:
                   lambda {
                     controller_name == VolunteersController.controller_name &&
-                      "index" == action_name
+                      'index' == action_name
                   }
 
   before_action :grant_access_list,
@@ -21,7 +21,7 @@ class VolunteersController < ApplicationController
   def index
     @user = current_user
     # A little bit special with headers and all
-    render layout: "application"
+    render layout: 'application'
   end
 
   def emails
@@ -39,7 +39,7 @@ class VolunteersController < ApplicationController
 
   def join_volunteer_program
     if current_user.staff?
-      flash[:notice] = "You already have access to the Volunteer Program."
+      flash[:notice] = 'You already have access to the Volunteer Program.'
     else
       Program.create(
         user_id: current_user.id,
@@ -92,7 +92,7 @@ class VolunteersController < ApplicationController
       User
         .all
         .volunteers
-        .where("LOWER(name) like LOWER(?)", "%#{params[:search]}%")
+        .where('LOWER(name) like LOWER(?)', "%#{params[:search]}%")
         .map(&:as_json)
     render json: { users: json_data }
   end
@@ -101,8 +101,8 @@ class VolunteersController < ApplicationController
   end
 
   def shadowing_shifts
-    @shifts = current_user.shadowing_hours.where("end_time > ?", DateTime.now)
-    @all_shifts = ShadowingHour.where("end_time > ?", DateTime.now).all
+    @shifts = current_user.shadowing_hours.where('end_time > ?', DateTime.now)
+    @all_shifts = ShadowingHour.where('end_time > ?', DateTime.now).all
   end
 
   def delete_event
@@ -111,52 +111,52 @@ class VolunteersController < ApplicationController
       space = ShadowingHour.find_by(event_id: params[:event_id]).space.name
       event = ShadowingHour.delete_event(params[:event_id], space)
 
-      if event != "error"
+      if event != 'error'
         ShadowingHour.find_by(event_id: params[:event_id]).destroy!
-        flash[:notice] = "This shift has been cancelled."
+        flash[:notice] = 'This shift has been cancelled.'
       else
-        flash[:alert] = "An error occured while deleting the shift."
+        flash[:alert] = 'An error occured while deleting the shift.'
       end
     else
-      flash[:alert] = "This shift has not been found."
+      flash[:alert] = 'This shift has not been found.'
     end
     redirect_to calendar_volunteers_path
   end
 
   def create_event
     if (
-         params[:space] == "makerspace" || params[:space] == "brunsfield centre"
+         params[:space] == 'makerspace' || params[:space] == 'brunsfield centre'
        ) && params[:datepicker_start].present? &&
          params[:datepicker_end].present? && params[:user_id] &&
          User.find(params[:user_id]).present?
       start_time =
         DateTime.parse(params[:datepicker_start].to_s).strftime(
-          "%Y-%m-%dT%k:%M:00"
+          '%Y-%m-%dT%k:%M:00'
         )
       end_time =
         DateTime.parse(params[:datepicker_end].to_s).strftime(
-          "%Y-%m-%dT%k:%M:00"
+          '%Y-%m-%dT%k:%M:00'
         )
       user = User.find(params[:user_id])
 
       event =
         ShadowingHour.create_event(start_time, end_time, user, params[:space])
 
-      if event.status != "cancelled"
+      if event.status != 'cancelled'
         ShadowingHour.create!(
           user_id: user.id,
           start_time: start_time,
           end_time: end_time,
           event_id: event.id,
           space_id:
-            Space.where("LOWER(name) = ?", params[:space].downcase).first.id
+            Space.where('LOWER(name) = ?', params[:space].downcase).first.id
         )
-        flash[:notice] = "The shadowing shift has been added"
+        flash[:notice] = 'The shadowing shift has been added'
       else
-        flash[:alert] = "An Error occurred"
+        flash[:alert] = 'An Error occurred'
       end
     else
-      flash[:alert] = "An error occurred, please make sure you choose a space."
+      flash[:alert] = 'An error occurred, please make sure you choose a space.'
     end
     redirect_to calendar_volunteers_path
   end
@@ -166,14 +166,14 @@ class VolunteersController < ApplicationController
   def grant_access
     unless current_user.volunteer? || current_user.admin? || current_user.staff?
       redirect_to root_path
-      flash[:alert] = "You cannot access this area."
+      flash[:alert] = 'You cannot access this area.'
     end
   end
 
   def grant_access_list
     unless current_user.admin? || current_user.staff?
       redirect_to root_path
-      flash[:alert] = "You cannot access this area."
+      flash[:alert] = 'You cannot access this area.'
     end
   end
 end

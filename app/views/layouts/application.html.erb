@@ -32,7 +32,7 @@
 
     </head>
     <body>
-        <%= render 'layouts/header' %>
+        <%= render 'layouts/header', with_volunteer: @with_volunteer_header %>
         <main class="pt-3">
             <%= yield %>
         </main>
