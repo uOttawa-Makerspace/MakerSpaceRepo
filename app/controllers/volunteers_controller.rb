@@ -4,7 +4,8 @@ require 'googleauth'
 require 'google/apis/calendar_v3'
 
 class VolunteersController < SessionsController
-  before_action -> { @with_volunteer_header = true }
+  before_action :no_container, only: :index
+  before_action :with_volunteer_header, except: :index
   before_action :current_user
   before_action :signed_in, only: :join_volunteer_program
   before_action :grant_access,

@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 class DevelopmentProgramsController < SessionsController
-  before_action -> { @with_development_header = true }
+  before_action :no_container, only: :index
+  
   before_action :current_user
   # HACK: hardcode exception for this controller's index page only
   before_action :grant_access,
