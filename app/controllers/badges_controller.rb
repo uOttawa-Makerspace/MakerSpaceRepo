@@ -4,7 +4,6 @@ class BadgesController < DevelopmentProgramsController
   before_action :set_orders, only: [:admin]
   skip_before_action :grant_access, only: [:show]
 
-
   def index
     @order_items =
       @user.order_items.completed_order.in_progress.joins(

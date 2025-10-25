@@ -10,30 +10,13 @@
         <%= csrf_meta_tags %>
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
         <meta name="description" content="MakerRepo is the uOttawa Makerspace's platform. Share and download projects for 3D printers, CNCs, Arduino and much more!" />
-        <script>
-         window.dataLayer = window.dataLayer || [];
-         function gtag(){dataLayer.push(arguments);}
-         gtag('js', new Date());
-
-         gtag('config', 'UA-176144772-1');
-        </script>
         <script>(function(d){var s = d.createElement("script");s.setAttribute("data-account", "va12Fyrpbl");s.setAttribute("src", "https://cdn.userway.org/widget.js");(d.body || d.head).appendChild(s);})(document)</script>
         <noscript><div id="noscript-warning">Please ensure Javascript is enabled for purposes of <a href="https://userway.org">website accessibility</a></div></noscript>
         <%= vite_client_tag %>
-        <!--
-             If using a TypeScript entrypoint file:
-             vite_typescript_tag 'application'
-
-             If using a .jsx or .tsx entrypoint, add the extension:
-             vite_javascript_tag 'application.jsx'
-
-             Visit the guide for more information: https://vite-ruby.netlify.app/guide/rails
-        -->
-
     </head>
     <body>
-        <%= render 'layouts/header', with_volunteer: @with_volunteer_header %>
-        <main class="pt-3">
+        <%= render 'layouts/header', with_volunteer: @with_volunteer_header, with_development: @with_development_header %>
+        <main>
             <%= yield %>
         </main>
         <%= render 'layouts/footer' %>
