@@ -114,15 +114,15 @@
                             <div class="row">
                               <% badge = @user.highest_badge(training) %>
                               <% unless badge.nil? %>
-                                <div class="col-lg-4 text-center">
-                                  <%= image_tag(badge.badge_template.image_url, alt: 'Badge', style: 'width: 150px') %>
-                                </div>
+                                  <div class="col-lg-4 text-center">
+                                      <%= render "badges/badge_icon", width: 140, height: 140, margin: "auto", display: "block", level: badge.level, name: badge.training.localized_name, skill: badge.get_skill_id %>
+                                  </div>
                                 <div class="col-lg-8 my-auto">
-                                  <b><%= badge.badge_template.badge_name %>
-                                    :</b> <%= badge.badge_template.badge_description %>
+                                  <b><%= badge.training.localized_name %>
+                                    :</b> <%= badge.training.description %>
                                 </div>
                                 <div class="col-12 pt-2">
-                                  <p>Skills Acquired: <b><%= badge.badge_template.list_of_skills %></b></p>
+                                  <p>Skills Acquired: <b><%= badge.training.list_of_skills %></b></p>
                                 </div>
                               <% end %>
                             </div>
