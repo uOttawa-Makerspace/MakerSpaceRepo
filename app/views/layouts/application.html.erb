@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="<%= I18n.locale %>" data-bs-theme="<%= cookies[:theme] %>">
+<html lang="<%= I18n.locale %>" data-bs-theme="<%= cookies[:theme] || ('dark' if Date.current >= Date.new(2025, 10, 31)) %>">
     <head>
         <title><%= page_title(yield(:title)) %></title>
         <%= favicon_link_tag 'C_square.png' %>
