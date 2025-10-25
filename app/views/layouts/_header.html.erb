@@ -1,24 +1,16 @@
 <div class="sticky-md-top mb-3" id="sticky-header">
     <nav class="navbar navbar-expand-xl <%= controller_name %> <%= action_name %> shadow-lg">
         <div class="container-fluid">
-            <a class="ms-md-5 navbar-brand" href="/"><strong>Maker</strong>Repo</a>
+            <a class="ms-md-5 me-xl-5 navbar-brand" href="/"><strong>Maker</strong>Repo</a>
             <% unless signed_in? %>
                 <%# This is to show the register button outside the menu on mobile %>
                 <a class="nav-link d-xl-none order-xl-3" data-bs-toggle="modal" data-bs-target="#loginModal" href=""><%= t('navbar.sign_in') %></a>
-            <% end %>
-            <% unless Rails.env.production? %>
-                <button onclick="document.querySelector('html').dataset.bsTheme = (document.querySelector('html').dataset.bsTheme == 'dark' ? 'light' : 'dark')"
-                        class="btn btn-link ms-auto">
-                    <%= fa_icon 'sun-o' %>
-                    Toggle dark mode
-                    <%= fa_icon 'moon-o' %>
-                </button>
             <% end %>
             <button class="navbar-toggler" id="navbar-toggle-button" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                <ul class="navbar-nav ms-5 me-auto align-items-xl-baseline">
+                <ul class="navbar-nav me-auto align-items-xl-baseline">
                     <li class="nav-item">
                         <a class="nav-link" href="/"><%= t('navbar.home') %></a>
                     </li>
@@ -85,10 +77,18 @@
                 </ul>
 
                 <ul class="navbar-nav ms-auto align-items-xl-baseline">
-
                     <% unless signed_in? %>
                         <li class="nav-item d-none d-xl-block"><a class="nav-link" data-bs-toggle="modal" data-bs-target="#loginModal" href=""><%= t('navbar.sign_in') %></a></li>
                     <% else %>
+                        <% unless Rails.env.production? %>
+                            <li class="nav-item">
+                                <button class="nav-link ms-auto d-inline" id="themeToggler">
+                                    <%= fa_icon 'sun-o', id: 'lightModeIcon' %>
+                                    <%= fa_icon 'moon-o', id: 'darkModeIcon' %>
+                                    <%= t('navbar.theme') %>
+                                </button>
+                            </li>
+                        <% end %>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href=" <%= user_path(@user.username) %>" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="text-transform: none;">
                                 <%= image_tag @user.display_avatar, class: 'avatar', alt: 'Avatar' %>

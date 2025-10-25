@@ -82,6 +82,21 @@ body {
   }
 }
 
+// Default/light mode display
+#lightModeIcon {
+  display: none;
+}
+
+// Dark mode display
+[data-bs-theme="dark"] {
+  #darkModeIcon {
+    display: none;
+  }
+  #lightModeIcon {
+    display: unset;
+  }
+}
+
 // Don't cover element with header when auto scrolling
 // https://css-tricks.com/hash-tag-links-padding/
 // Select all elements with an id
