@@ -1,0 +1,15 @@
+<section>
+    <h1 class="text-center">Frequent visitors</h1>
+    <p class="text-center">From <%= params[:start_date].to_date %> to <%= params[:end_date].to_date %></p>
+    <%# each_with_index breaks the destructuring %>
+    <% index = 1 %>
+    <ol class="list-group list-group-numbered">
+        <% @lab_sessions.each do |user, count| %>
+            <li class="list-group-item">
+                <%= user.name %> (<%= link_to user.username, "https://makerepo.com/#{user.username}" %>): <%= count %> visits.
+                Signed up on <%= user.created_at.to_date %>
+            </li>
+            <% index += 1 %>
+        <% end %>
+    </ol>
+</section>
