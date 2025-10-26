@@ -86,8 +86,26 @@
         <h2 class="text-uppercase mt-5"><%= t('devprog.digital_badges.title') %></h2>
         <p class="fs-3 fw-bold text-primary"><%= t('devprog.digital_badges.subtitle') %></p>
         <div class="row mb-5">
-            <div class="col-lg-6">
-                <%= image_tag 'development_program/1.png', class: 'w-100' %>
+            <div class="col-lg-6 d-flex flex-column justify-content-between">
+                <div class="d-flex justify-content-around">
+                    <div class="arrow-box">Learn it</div>
+                    <div class="arrow-box">Earn it</div>
+                    <div class="arrow-box">Share it</div>
+                </div>
+                <div class="fs-3 fw-bold">Display your new achievements through our digital badges</div>
+                <div class="d-flex justify-content-center">
+                    <%# Hardcode these three badges %>
+                    <div class="mx-1">
+                    <%= render 'badges/badge_icon', width: 150, height: 150, name: "Digital Tech", skill: 2, level: "none" %>
+                    </div>
+                    <div class="mx-1">
+                    <%= render 'badges/badge_icon', width: 150, height: 150, name: "Professional Development", skill: 3, level: "none" %>
+                    </div>
+                    <div class="mx-1">
+                    <%= render 'badges/badge_icon', width: 150, height: 150, name: "Manufacturing Tech", skill: 1, level: "none" %>
+                    </div>
+                </div>
+                <%#%= image_tag 'development_program/1.png', class: 'w-100' %>
             </div>
             <div class="col-lg-6">
                 <div class="row row-cols-lg-3 g-3">
