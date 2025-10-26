@@ -34,7 +34,7 @@ import "./clipboard";
 import "../controllers";
 import "./theme";
 
-import "bootstrap";
+import { Tooltip } from "bootstrap";
 import "toastr/toastr";
 
 import "@hotwired/turbo-rails";

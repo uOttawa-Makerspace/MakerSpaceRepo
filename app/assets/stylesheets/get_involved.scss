@@ -6,6 +6,7 @@ section#resources {
   #jumbotron {
     text-align: center;
     width: 100%;
+    background-position: center;
     &.jumbotron-get-involved {
       background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
         url("get_involved/jumbotron.png");
