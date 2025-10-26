@@ -102,6 +102,18 @@ module ApplicationHelper
       DateTime.new(DateTime.now.year, 8).end_of_month
     end
   end
+
+  def no_container
+    @no_container = true
+  end
+
+  def with_development_header
+    @with_development_header = true
+  end
+
+  def with_volunteer_header
+    @with_volunteer_header = true
+  end
 end
 
 def rgba(color, opacity)

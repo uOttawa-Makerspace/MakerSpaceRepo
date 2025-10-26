@@ -73,8 +73,28 @@ html {
 }
 
 body {
-  min-height: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   font-family: "Roboto", helvetica, sans-serif;
+  main {
+    flex: 1;
+  }
+}
+
+// Default/light mode display
+#lightModeIcon {
+  display: none;
+}
+
+// Dark mode display
+[data-bs-theme="dark"] {
+  #darkModeIcon {
+    display: none;
+  }
+  #lightModeIcon {
+    display: unset;
+  }
 }
 
 // Don't cover element with header when auto scrolling
@@ -137,7 +157,14 @@ summary {
 
 // Alternate coloring for tomselect dropdowns
 .ts-wrapper .option:nth-child(even) {
-  background-color: $tertiary;
+  background-color: var(--bs-secondary-bg);
+}
+
+// Have to be more specific than tomselect CSS to override it
+div.ts-dropdown,
+div.ts-control,
+div.ts-control input {
+  color: unset;
 }
 
 // Add the triangle between the menu and the dropdown button
@@ -234,6 +261,7 @@ a {
 }
 
 .btn-primary,
+.btn-secondary,
 .btn-success,
 .btn-danger {
   --bs-btn-color: white;
@@ -348,6 +376,13 @@ div.form-error {
 // Hiding File button for Trix editor
 trix-toolbar .trix-button-group--file-tools {
   display: none;
+}
+
+// Can't easily change toolbar icons, so change background color instead
+[data-bs-theme="dark"] {
+  trix-toolbar button.trix-button {
+    background-color: var(--bs-secondary);
+  }
 }
 
 //Fixing Div bug for Trix editor

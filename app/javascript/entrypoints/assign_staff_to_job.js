@@ -11,7 +11,7 @@ document.addEventListener("turbo:load", () => {
     create: false,
     render: {
       item: function (data, escape) {
-        return `<div class="bg-light rounded-2 p-1">${escape(data.name)}</div>`;
+        return `<div class="bg-body-secondary rounded-2 p-1">${escape(data.name)}</div>`;
       },
       option: function (data, escape) {
         return `<div>${escape(data.name)}</div>`;

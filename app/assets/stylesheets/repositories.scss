@@ -1,140 +1,8 @@
-@import "lib";
-
-section#new-repo {
-  @include outer-container(60rem);
-  padding: 2rem 5rem;
-  min-height: calc(100vh - 65px);
-
-  div.title {
-    color: #000;
-    font-size: 2rem;
-    padding-bottom: 0.5rem;
-    text-align: center;
-    max-width: 80%;
-    margin: 0 auto;
-    margin-bottom: 1rem;
-  }
-
-  form {
-    width: 100%;
-    margin: 0 auto;
-  }
-
-  label {
-    display: block;
-    font:
-      400 1em "Roboto",
-      sans-serif;
-    margin: 10px 0 5px;
-  }
-
-  label + div {
-    font:
-      400 0.85rem "Roboto",
-      helvetica,
-      sans-serif;
-    margin-bottom: 0.5rem;
-  }
-
-  input.repo,
-  textarea,
-  input#tag {
-    font:
-      300 0.9em "Roboto",
-      sans-serif;
-    color: #555;
-    width: 100%;
-    padding: 0.5rem;
-    position: relative;
-    margin-bottom: 15px;
-    border-radius: 3px;
-    display: block;
-  }
-  input.repo:not(.is-invalid),
-  textarea:not(.is-invalid),
-  input#tag:not(.is-invalid) {
-    border: 1px solid #aaa;
-  }
-
-  input.repo {
-    border-radius: initial;
-    border-top-left-radius: 3px;
-    border-top-right-radius: 3px;
-  }
-}
-
-.ui-state-focus:not(.ui-selectmenu-button) {
-  background-color: #075f5f;
-  color: #fff;
-}
+//@import "lib";
 
 // [aria-hidden="true"] {
 //   display: none;
 //}
-
-ul.ui-menu {
-  width: 400px;
-  border: 1px solid #aaa;
-  background-color: #fff;
-  position: absolute !important;
-  @include prefixer(box-shadow, 0 1px 2px rgba(0, 0, 0, 0.2));
-}
-
-li.ui-menu-item {
-  padding: 0.5rem;
-  font:
-    300 0.9em "Roboto",
-    sans-serif;
-  cursor: pointer;
-
-  &:hover {
-    background-color: #075f5f;
-    color: #fff;
-  }
-}
-
-.ui-autocomplete-input {
-  font:
-    300 0.9em "Roboto",
-    sans-serif;
-  background-color: #fff;
-  width: calc(400px + 1rem);
-  @include prefixer(box-shadow, 0 1px 2px rgba(0, 0, 0, 0.2));
-  border: 1px solid #aaa;
-
-  & li {
-    padding: 0.5rem;
-
-    &:hover {
-      background-color: #075f5f;
-      color: #fff;
-    }
-  }
-}
-
-.select-hidden {
-  display: none;
-  visibility: hidden;
-  padding-right: 10px;
-}
-
-.select-styled {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  padding: 10px;
-  @include transition(0.2s);
-  &:after {
-    content: "";
-    border: 5px solid transparent;
-    border-color: #555 transparent transparent transparent;
-    position: absolute;
-    top: 15px;
-    right: 20px;
-  }
-}
 
 div#dragndrop {
   position: relative;
@@ -165,26 +33,8 @@ div.repo-file {
   background-size: cover;
 }
 
-label.custom-image-upload {
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  border-top: 1px solid #bbb;
-  padding: 10px 0;
-  text-align: center;
-  background-color: #eee;
-  font:
-    300 0.8em "Roboto",
-    sans-serif !important;
-  color: #4682b4 !important;
-  margin: 0 !important;
-  &:hover {
-    cursor: pointer;
-  }
-}
-
 div#image-container {
-  @include outer-container(calc(420px + 1rem));
+  //@include outer-container(calc(420px + 1rem));
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -242,126 +92,10 @@ div#equipment-container {
     cursor: not-allowed;
   }
 }
-div#share_option {
-  span {
-    display: inline-block;
-    padding: 0.25rem 0.7rem;
-    background-color: #4682b4;
-    color: #555;
-    font:
-      300 0.8em "Roboto",
-      sans-serif !important;
-    margin-top: 0.2rem;
-    margin-right: 0.2rem;
-    cursor: default;
-  }
-
-  label#type {
-    color: #555;
-    font:
-      300 0.9em "Roboto",
-      sans-serif;
-  }
-  div#description {
-    text-indent: 5mm;
-  }
-
-  div#pass {
-    padding-left: 10px;
-  }
-  div#change_pass {
-    padding-left: 10px;
-  }
-  span:hover {
-    background-color: darkred;
-    cursor: not-allowed;
-  }
-
-  input {
-    color: #666;
-    padding: 2px;
-    padding-left: 5px;
-  }
-}
-
-label.custom-instructable-upload {
-  @include transition(100);
-  font-size: 10px;
-  display: inline-block !important;
-  background-color: rgba(238, 238, 238, 0.3);
-  font:
-    300 0.8em "Roboto",
-    sans-serif !important;
-  color: #4682b4 !important;
-  padding: 5px 10px;
-  border-radius: 3px;
-  cursor: pointer;
-  border: 1px solid #aaa;
-
-  &:hover {
-    background-color: rgba(119, 136, 153, 0.2);
-  }
-}
-
-span.ui-helper-hidden-accessible div {
-  display: none;
-}
 
 .repo-form {
   display: block;
   padding-bottom: 0.5rem;
-}
-
-ul.redactor-toolbar {
-  position: static;
-  border-top-left-radius: 3px;
-  border-top-right-radius: 3px;
-  border: 1px solid #aaa;
-  border-bottom: none;
-  @include prefixer(box-shadow, 0 1px 2px rgba(0, 0, 0, 0.2));
-}
-
-div.redactor-editor {
-  @include prefixer(box-shadow, 0 1px 2px rgba(0, 0, 0, 0.2));
-  padding: 10px;
-  border: 1px solid #aaa;
-  border-top: 1px solid #eee;
-  font:
-    300 0.9em "Roboto",
-    sans-serif;
-  color: #555;
-
-  & h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    font-weight: 400;
-  }
-
-  & ul {
-    list-style-type: circle;
-  }
-
-  & li {
-    display: list-item;
-  }
-}
-
-.pin-button {
-  font:
-    300 1em "Roboto",
-    sans-serif;
-  padding: 0.5rem 1rem;
-  border: none;
-  text-transform: uppercase;
-  color: #777;
-  letter-spacing: 0.15em;
-  border-radius: 2px;
-  background-color: #075f5f;
-  color: #fff;
-  margin-bottom: 20px;
 }
 
 .delete-button {
@@ -382,9 +116,4 @@ div.redactor-editor {
     cursor: pointer;
     color: aquamarine;
   }
-}
-
-#status-save {
-  padding-left: 10px;
-  color: dimgray;
 }

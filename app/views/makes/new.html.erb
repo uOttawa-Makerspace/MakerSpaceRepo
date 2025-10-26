@@ -1,69 +1,70 @@
-<section id="new-repo">
+<section class="container border">
+    <div class="col-lg-7 mx-auto mt-3">
+        <h1 class="text-center">New Make</h1>
+        <%= form_for @repo, url: { controller: 'makes', action: 'create' }, multipart: true do |f| %>
+            <%= f.label :title, 'Name', class: 'form-label' %>
+            <%= f.text_field :title, class: 'form-control', required: true %>
+            <div class="form-text mb-3">Great repository names are short and memorable.</div>
 
-  <%= form_for @repo, url: { controller: 'makes', action: 'create' }, html: { multipart: true, class: 'makes_new', id: 'makes_new' } do |f| %>
-    <%= f.label :title, 'Name', class: 'form-label' %>
-    <div>Great repository names are short and memorable.</div>
-    <span class="autocomplete-wrapper">
-      <%= f.text_field :title, class: 'repo repo-autocomplete', id: 'repository_title' %>
-      <span class="loader"></span> 
-    </span>
-    
-    <%= f.label :description, class: 'form-label' %>
-    <%= f.text_area :description, class: 'repo' %>
+            <%= f.label :description, class: 'form-label' %>
+            <%= f.trix_editor :description, class: 'form-control mb-3', style: 'height: auto!important;', required: true %>
 
-    <div class="mb-3 required">
-      <%= label_tag :photo, 'Gallery', class: 'form-label' %>
-      <div>A maximum of five photos can be uploaded per repository.</div>
-      <div class="input-group mb-3">
-        <%= file_field_tag 'images[]', type: :files, multiple: true, class: 'form-control image-upload', aria_label: 'Select Pictures / Selectionner des images' %>
-        <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="new-photo-input">
-          <i class="fa fa-plus"></i>
-        </button>
-      </div>
+            <div class="mb-3">
+                <%= label_tag :photo, 'Gallery', class: 'form-label' %>
+                <div class="input-group mb-3">
+                    <%= file_field_tag 'images[]', type: :files, multiple: true, class: 'form-control image-upload', aria_label: 'Select Pictures / Selectionner des images' %>
+                    <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="new-photo-input">
+                        <i class="fa fa-plus"></i>
+                    </button>
+                </div>
+                <div classs="form-text">A maximum of five photos can be uploaded per repository.</div>
+            </div>
+            <div class="repo-image mx-auto mb-3">
+                <div id="dragndrop" ondrop="dragndrop(event);" ondragover="dragover(event);">
+                    <%= fa_icon 'cloud-upload' %>
+                    <p>Drag &amp; Drop</p>
+                </div>
+            </div>
+
+            <div id="image-container"></div>
+
+            <div class="text-center mb-3">
+                <%= f.submit 'Create Repository', class: 'btn btn-primary' %>
+            </div>
+            <span id="status-save"></span>
+
+        <% end %>
     </div>
-    <div class="repo-image">
-        <div id="dragndrop" ondrop="dragndrop(event);" ondragover="dragover(event);">
-          <%= fa_icon 'cloud-upload' %>
-          <p>Drag &amp; Drop</p>
-        </div>
-    </div>
-
-    <div id="image-container"></div>
-
-  <%= f.submit 'Create Repository', class: 'save-button' %>
-    <span id="status-save"></span>
-
-  <% end %>
 </section>
 <script>
-if (document.getElementById("new-file-input")) {
-  let cloneButton = document.getElementById("new-file-input");
-  cloneButton.addEventListener("click", () => {
-    let parent = cloneButton.parentElement;
-    let clone = parent.cloneNode(true);
-    clone.removeAttribute("id");
-    clone.children[0].value = null;
-    clone.children[1].className = "btn btn-danger";
-    clone.children[1].children[0].className = "fa fa-trash";
-    clone.children[1].addEventListener("click", (el) => {
-      el.target.closest(".input-group").remove();
-    });
-    parent.parentElement.appendChild(clone);
-  });
-}
-if (document.getElementById("new-photo-input")) {
-  let cloneButton = document.getElementById("new-photo-input");
-  cloneButton.addEventListener("click", () => {
-    let parent = cloneButton.parentElement;
-    let clone = parent.cloneNode(true);
-    clone.removeAttribute("id");
-    clone.children[0].value = null;
-    clone.children[1].className = "btn btn-danger";
-    clone.children[1].children[0].className = "fa fa-trash";
-    clone.children[1].addEventListener("click", (el) => {
-      el.target.closest(".input-group").remove();
-    });
-    parent.parentElement.appendChild(clone);
-  });
-}
+ if (document.getElementById("new-file-input")) {
+     let cloneButton = document.getElementById("new-file-input");
+     cloneButton.addEventListener("click", () => {
+         let parent = cloneButton.parentElement;
+         let clone = parent.cloneNode(true);
+         clone.removeAttribute("id");
+         clone.children[0].value = null;
+         clone.children[1].className = "btn btn-danger";
+         clone.children[1].children[0].className = "fa fa-trash";
+         clone.children[1].addEventListener("click", (el) => {
+             el.target.closest(".input-group").remove();
+         });
+         parent.parentElement.appendChild(clone);
+     });
+ }
+ if (document.getElementById("new-photo-input")) {
+     let cloneButton = document.getElementById("new-photo-input");
+     cloneButton.addEventListener("click", () => {
+         let parent = cloneButton.parentElement;
+         let clone = parent.cloneNode(true);
+         clone.removeAttribute("id");
+         clone.children[0].value = null;
+         clone.children[1].className = "btn btn-danger";
+         clone.children[1].children[0].className = "fa fa-trash";
+         clone.children[1].addEventListener("click", (el) => {
+             el.target.closest(".input-group").remove();
+         });
+         parent.parentElement.appendChild(clone);
+     });
+ }
 </script>

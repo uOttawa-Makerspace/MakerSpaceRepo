@@ -1,5 +1,5 @@
 <%= provide :title, t('resources.header') %>
-<section id="resources">
+<section id="resources" class="mt-n3">
   <!-- Header Section -->
   <div id="jumbotron" class="jumbotron-resources">
     <h1 class="display-1"><%= t('resources.header') %></h1>
@@ -8,7 +8,7 @@
   <div class="container-fluid">
     <div class="row g-3 align-items-center mt-5">
       <div class="offset-lg-1 col-lg-4">
-        <a href="https://wiki.makerepo.com" class="d-block shadow rounded p-5 text-center">
+        <a href="https://wiki.makerepo.com" class="d-block shadow rounded p-5 text-center bg-body-secondary">
           <div class="separator">
             <%= image_tag 'resources/wiki.png', class: 'img-fluid', alt: 'CEED/CGEC Logo' %>
             <p class="fs-3 mt-3 fw-bold text-center"><%= t('resources.wiki.caption') %></p>
@@ -62,7 +62,7 @@
     <% end %>
     <div class="row g-3 mt-5 align-items-center">
       <div class="offset-lg-1 col-lg-4">
-        <%= image_tag 'resources/wood.png', class: 'shadow rounded p-5 text-center img-fluid', alt: 'Wood panels' %>
+        <%= image_tag 'resources/wood.png', class: 'shadow rounded px-lg-5 text-center img-fluid bg-body-secondary', alt: 'Wood panels' %>
       </div>
       <div class="offset-lg-1 col-lg-3">
         <h3 class="fw-bold mb-2"><%= t('resources.makerstore.title') %></h3>

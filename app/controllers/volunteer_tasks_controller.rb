@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-class VolunteerTasksController < ApplicationController
-  layout "volunteer"
+class VolunteerTasksController < SessionsController
   include VolunteerTasksHelper
+  before_action -> { @with_volunteer_header = true }
   before_action :grant_access, except: %i[show index my_tasks complete_task]
   before_action :volunteer_access, only: %i[show index]
 
