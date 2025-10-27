@@ -24,7 +24,7 @@ document.addEventListener("turbo:load", async () => {
     },
     scrollTime: "07:00:00",
     nowIndicator: true,
-    slotEventOverlap: true,
+    slotEventOverlap: localStorage.fullCalendarEventOverlap === "true",
     selectable: true,
     selectMirror: true,
     selectMinDistance: "15",
@@ -42,6 +42,9 @@ document.addEventListener("turbo:load", async () => {
       toggleEventOverlap: {
         text: "",
         click: () => {
+          localStorage.fullCalendarEventOverlap =
+            !calendar.getOption("slotEventOverlap");
+
           calendar.setOption(
             "slotEventOverlap",
             !calendar.getOption("slotEventOverlap"),
