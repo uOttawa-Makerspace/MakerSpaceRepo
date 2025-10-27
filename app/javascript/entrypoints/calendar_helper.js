@@ -224,10 +224,10 @@ export function eventClick(eventImpl) {
 
 export function eventCreate(info) {
   document.getElementById("start_time_field").value = toLocalDatetimeString(
-    info.start,
+    new Date(info.startStr),
   );
   document.getElementById("end_time_field").value = toLocalDatetimeString(
-    info.end,
+    new Date(info.endStr),
   );
 
   document.getElementById("training-fields").style.display = "none";
