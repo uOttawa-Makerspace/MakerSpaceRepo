@@ -22,6 +22,8 @@ document.addEventListener("turbo:load", async () => {
       center: "title",
       right: "toggleWeekends timeGridWeek,dayGridMonth",
     },
+    slotMinTime: "07:00:00",
+    slotMaxTime: "22:00:00",
     scrollTime: "07:00:00",
     nowIndicator: true,
     slotEventOverlap: localStorage.fullCalendarEventOverlap === "true",
