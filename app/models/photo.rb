@@ -29,4 +29,24 @@ class Photo < ApplicationRecord
               allow: [ALLOWED_CONTENT_TYPES],
               if: -> { image.attached? }
             }
+  
+  # Compress image after creation
+  after_commit :compress_later, on: :create
+
+  private
+
+  def compress_later
+    return unless image.attached?
+    
+    compressible = CompressImageJob::COMPRESSIBLE_FORMATS + 
+                  CompressImageJob::CONVERTIBLE_FORMATS
+    
+    if compressible.include?(image.blob.content_type)
+      CompressImageJob.perform_later(id)
+    else
+      Rails.logger.info "Photo ##{id} (#{image.blob.content_type}) - skipping compression"
+    end
+  end
+
+
 end
