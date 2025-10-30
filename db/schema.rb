@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_09_22_001208) do
+ActiveRecord::Schema[7.2].define(version: 2025_10_30_154155) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_trgm"
   enable_extension "plpgsql"
@@ -1256,6 +1256,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_09_22_001208) do
     t.bigint "approved_by_id"
     t.datetime "approved_at"
     t.bigint "recurring_booking_id"
+    t.string "google_booking_id"
     t.index ["approved_by_id"], name: "index_sub_space_bookings_on_approved_by_id"
     t.index ["recurring_booking_id"], name: "index_sub_space_bookings_on_recurring_booking_id"
     t.index ["sub_space_booking_status_id"], name: "index_sub_space_bookings_on_sub_space_booking_status_id"
