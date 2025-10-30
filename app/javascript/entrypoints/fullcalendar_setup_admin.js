@@ -13,6 +13,8 @@ import { eventClick, eventCreate } from "./calendar_helper.js";
 document.addEventListener("turbo:load", async () => {
   const calendarEl = document.getElementById("calendar");
 
+  let hiddenUserIds = new Set();
+
   const calendar = new Calendar(calendarEl, {
     plugins: [timeGridPlugin, dayGridPlugin, rrulePlugin, interactionPlugin],
     timeZone: "America/Toronto",
@@ -120,17 +122,32 @@ document.addEventListener("turbo:load", async () => {
   const eventsData = await eventsRes.json();
 
   eventsData.forEach((eventSource) => {
-    // If the rrule of any event source is present, remove \r
     eventSource.events.forEach((event) => {
       if (event.rrule) event.rrule = rrulestr(event.rrule).toString();
     });
 
-    calendar.addEventSource(eventSource);
     appendCheckbox(
       eventSource,
       document.getElementById("events_checkbox_container"),
       "hidden_events",
     );
+  });
+
+  calendar.addEventSource({
+    id: "staffEvents",
+    events: (info, successCallback) => {
+      const filtered = [];
+      for (const src of eventsData) {
+        for (const ev of src.events) {
+          const assigned = (ev.extendedProps.assignedUsers || []).map((u) =>
+            u.id.toString(),
+          );
+          const visible = !assigned.every((id) => hiddenUserIds.has(id));
+          if (visible) filtered.push(ev);
+        }
+      }
+      successCallback(filtered);
+    },
   });
 
   // Init staff unavailabilities
@@ -264,6 +281,7 @@ document.addEventListener("turbo:load", async () => {
     const hiddenStaffEventsArray = hiddenStaffEvents
       .split(",")
       .filter((id) => id !== "");
+    hiddenUserIds = new Set(hiddenStaffEventsArray);
     allEventsCheckbox.checked = hiddenStaffEventsArray.length === 0;
     allEventsCheckbox.addEventListener("change", (e) => {
       toggleAllStaffEventsCheckboxes();
@@ -358,16 +376,11 @@ document.addEventListener("turbo:load", async () => {
 
     checkbox.addEventListener("change", (e) => {
       updateHiddenParam(checkbox.value, urlParam, !e.target.checked);
-      calendar.getEventSourceById(eventSource.id);
-
       if (e.target.checked) {
         calendar.addEventSource(eventSource);
-      }
-      if (!e.target.checked) {
-        if (groupCheckboxElem) {
-          groupCheckboxElem.checked = false;
-        }
-        calendar.getEventSourceById(eventSource.id).remove();
+      } else {
+        if (groupCheckboxElem) groupCheckboxElem.checked = false;
+        calendar.getEventSourceById(eventSource.id)?.remove();
       }
     });
 
@@ -375,18 +388,7 @@ document.addEventListener("turbo:load", async () => {
     checkboxDiv.appendChild(label);
     container.appendChild(checkboxDiv);
 
-    // Not the best solution, but need a second set of checkboxes for staff specifically
     if (classes.includes("staff")) {
-      const urlParams = new URLSearchParams(window.location.search);
-      const hiddenStaffEvents = urlParams.get("hidden_staff_events") || "";
-      const hiddenStaffEventsArray = hiddenStaffEvents
-        .split(",")
-        .filter((id) => id !== "");
-
-      const isStaffEventsHidden = hiddenStaffEventsArray.includes(
-        eventSource.id.toString(),
-      );
-
       const { checkbox: eventsCheckbox, label: eventsLabel } =
         createCheckboxElement(
           `events-${eventSource.id}`,
@@ -394,40 +396,28 @@ document.addEventListener("turbo:load", async () => {
           eventSource.color,
           "staff_events",
         );
+
+      const isStaffEventsHidden = hiddenUserIds.has(eventSource.id.toString());
       eventsCheckbox.checked = !isStaffEventsHidden;
 
       eventsCheckbox.addEventListener("change", (e) => {
-        if (!eventsCheckbox.checked)
+        const userId = eventSource.id.toString();
+        if (e.target.checked) {
+          hiddenUserIds.delete(userId);
+        } else {
+          hiddenUserIds.add(userId);
           document.querySelector(".all_events_checkbox").checked = false;
-
-        const userIdsOfEventsToHide = updateHiddenParam(
-          eventSource.id,
-          "hidden_staff_events",
-          !e.target.checked,
-        );
-
-        eventsData.forEach((eventSource) => {
-          eventSource.events.forEach((event) => {
-            const assignedUserIds = (
-              event.extendedProps.assignedUsers || []
-            ).map((u) => u.id);
-            const allUsersHidden = assignedUserIds.every((id) =>
-              userIdsOfEventsToHide.includes(id.toString()),
-            );
-            calendar
-              .getEventById(event.id)
-              .setProp("display", allUsersHidden ? "none" : "auto");
-          });
-        });
+        }
+        updateHiddenParam(userId, "hidden_staff_events", !e.target.checked);
+        calendar.refetchEvents();
       });
 
       checkboxDiv.insertBefore(eventsLabel, checkboxDiv.firstChild);
       checkboxDiv.insertBefore(eventsCheckbox, checkboxDiv.firstChild);
     }
 
-    // Also remove the event source if it is hidden
     if (isHidden) {
-      calendar.getEventSourceById(eventSource.id).remove();
+      calendar.getEventSourceById(eventSource.id)?.remove();
     }
   }
 
@@ -491,8 +481,6 @@ document.addEventListener("turbo:load", async () => {
 
     url.search = params.toString();
     window.history.pushState({}, "", url.toString());
-
-    calendar.refetchEvents();
 
     return hiddenParamArray;
   }
