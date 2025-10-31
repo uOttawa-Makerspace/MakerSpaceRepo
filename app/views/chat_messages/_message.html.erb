@@ -1,4 +1,4 @@
-<div class="mb-1 p-2 rounded d-inline-block <%= chat_message.sender == current_user ? "bg-light" : "bg-body-secondary" %>">
+<div class="mb-1 p-2 rounded d-inline-block <%= chat_message.sender == current_user ? "border" : "bg-body-secondary" %>">
   <div class="d-flex justify-content-between align-items-center">
     <span class="fw-bold">
       <%= chat_message.sender == current_user ? "You" : chat_message.sender.name %>

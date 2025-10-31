@@ -58,4 +58,39 @@ section#developmentIndex {
       font-size: 0.5rem;
     }
   }
+
+  .arrow-box {
+    background-color: var(--bs-primary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    font-size: 2rem;
+    font-weight: bold;
+
+    // https://jsfiddle.net/04gna6o5/2/
+    &::before {
+      content: "";
+      width: 0;
+      height: 0;
+
+      border-top: 3rem solid transparent;
+      border-bottom: 3rem solid transparent;
+      border-left: 3rem solid var(--bs-tertiary-bg);
+
+      padding-left: 2rem;
+    }
+
+    &::after {
+      content: "";
+      width: 0;
+      height: 0;
+
+      border-top: 3rem solid var(--bs-tertiary-bg);
+      border-bottom: 3rem solid var(--bs-tertiary-bg);
+      border-left: 3rem solid transparent;
+
+      margin-left: 2rem;
+    }
+  }
 }

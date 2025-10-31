@@ -10,6 +10,7 @@ en:
     subtext: "Here's what you need to know about CEED"
   navbar:
     home: "Home"
+    theme: "Theme"
     # explore section
     explore: "Explore"
     projects: "Projects"

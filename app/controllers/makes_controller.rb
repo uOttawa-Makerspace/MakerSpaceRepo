@@ -46,7 +46,7 @@ class MakesController < SessionsController
   end
 
   def new
-    @repo = @repository.title
+    @repo = @repository
   end
 
   private

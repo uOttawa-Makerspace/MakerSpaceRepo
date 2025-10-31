@@ -2,6 +2,7 @@
 
 class StaticPagesController < SessionsController
   before_action :current_user, except: [:reset_password]
+  before_action :no_container
 
   def home
     @volunteer_program_shadowing_scheduled =
