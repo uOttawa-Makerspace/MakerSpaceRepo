@@ -160,12 +160,21 @@ Time.parse(staff_params[:utc_start_time]).utc)
     
     local_unavails = @unavailabilities.map do |u| 
       duration = (u.end_time.to_time - u.start_time.to_time) * 1000
+
+      rrule_data = if u.recurrence_rule.present?
+        rrule = u.recurrence_rule          
+        rrule_parts = rrule.split(/[;\n]/).reject { |part| part.strip.start_with?('DTSTART') }
+        rrule_without_dtstart = rrule_parts.join(';').gsub(/;EXDATE/, "\nEXDATE")
+        dtstart_toronto = u.start_time.in_time_zone("America/Toronto")&.strftime("%Y%m%dT%H%M%S")          
+        "DTSTART:#{dtstart_toronto}\n#{rrule_without_dtstart}"
+      end
+
       {
         id: u.id,
         title: u.title || "Unavailable",
         start: u.start_time.iso8601,
         end: u.end_time.iso8601,
-        **(u.recurrence_rule.present? ? { rrule: u.recurrence_rule, duration: duration } : {}),
+        **(u.recurrence_rule.present? ? { rrule: rrule_data, duration: duration } : {}),
         allDay: u.start_time.to_time == u.end_time.to_time - 1.day,
         extendedProps: {
           description: u.description
