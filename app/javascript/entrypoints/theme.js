@@ -1,9 +1,9 @@
 import Cookies from "js-cookie";
-import { Tooltip } from "bootstrap";
+// import { Tooltip } from "bootstrap";
 
 document.addEventListener("turbo:load", () => {
   let themeToggler = document.querySelector("#themeToggler");
-  let themeTooltip = new Tooltip(themeToggler);
+  // let themeTooltip = new Tooltip(themeToggler);
 
   function isTodayHalloween() {
     let d = new Date();
@@ -18,10 +18,10 @@ document.addEventListener("turbo:load", () => {
     document.documentElement.dataset.bsTheme = "dark";
     // Check visibility, tooltip shows at top corner on mobile
     // Show tooltip
-    themeTooltip.show();
-    setTimeout(() => {
-      themeTooltip.hide();
-    }, 4000);
+    // themeTooltip.show();
+    // setTimeout(() => {
+    //   themeTooltip.hide();
+    // }, 4000);
   }
 
   themeToggler.addEventListener("click", () => {

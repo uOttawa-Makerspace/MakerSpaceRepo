@@ -77,7 +77,7 @@
                 </ul>
 
                 <ul class="navbar-nav ms-auto align-items-xl-baseline">
-                    <% unless Rails.env.production? || Date.current >= Date.new(2025, 10, 31) %>
+                    <%# unless Rails.env.production? || Date.current >= Date.new(2025, 10, 31) %>
                         <li class="nav-item">
                             <button class="nav-link ms-auto d-inline" id="themeToggler"
                                     data-bs-toggle="tooltip" data-bs-title="Checkout dark mode!" data-bs-placement="bottom" data-bs-trigger="manual">
@@ -86,7 +86,7 @@
                                 <%= t('navbar.theme') %>
                             </button>
                         </li>
-                    <% end %>
+                    <%# end %>
                     <% unless signed_in? %>
                         <li class="nav-item d-none d-xl-block"><a class="nav-link" data-bs-toggle="modal" data-bs-target="#loginModal" href=""><%= t('navbar.sign_in') %></a></li>
                     <% else %>

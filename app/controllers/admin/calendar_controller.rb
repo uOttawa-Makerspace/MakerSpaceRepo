@@ -39,10 +39,9 @@ class Admin::CalendarController < AdminAreaController
 
         rrule_data = if u.recurrence_rule.present?
           rrule = u.recurrence_rule          
-          rrule_parts = rrule.split(/[;\n]/).reject { |part| part.strip.start_with?('DTSTART') }
-          rrule_without_dtstart = rrule_parts.join(';').gsub(/;EXDATE/, "\nEXDATE")
+          rrule_without_dtstart = rrule.gsub(/DTSTART[^;]*;/, '').gsub(/;DTSTART[^;]*/, '')          
           dtstart_toronto = u.start_time.in_time_zone("America/Toronto")&.strftime("%Y%m%dT%H%M%S")          
-          "DTSTART:#{dtstart_toronto}\n#{rrule_without_dtstart}"
+          "DTSTART:#{dtstart_toronto}\nRRULE:#{rrule_without_dtstart}"
         end
 
         {
