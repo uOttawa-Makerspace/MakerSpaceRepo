@@ -1,4 +1,5 @@
 class SubSpaceBookingController < ApplicationController
+  before_action :no_container
   before_action :user_account
   before_action :user_signed_in, only: %i[index request_access bookings]
   before_action :user_approved, only: [:create]
