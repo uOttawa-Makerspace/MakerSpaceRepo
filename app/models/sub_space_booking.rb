@@ -11,6 +11,47 @@ class SubSpaceBooking < ApplicationRecord
   validates :end_time, presence: true
   validate :end_time_after_start_time
 
+  before_save :upsert_google_booking,
+    if: ->(sub_space_booking) {sub_space_booking.sub_space_id == 10 || 11}
+  
+  before_destroy :delete_google_event
+
+  def upsert_google_booking
+    SubSpaceBooking.upsert_booking(self)
+  end
+
+  def delete_google_event
+    SubSpaceBooking.delete_event(self) if google_event_id.present?
+  end
+
+  def self.authorizer # rubocop:disable Metrics/AbcSize
+    scope = "https://www.googleapis.com/auth/calendar"
+
+    @config = {
+      private_key:
+        Rails.application.credentials[Rails.env.to_sym][:google][:private_key],
+      client_email:
+        Rails.application.credentials[Rails.env.to_sym][:google][:client_email],
+      project_id:
+        Rails.application.credentials[Rails.env.to_sym][:google][:project_id],
+      private_key_id:
+        Rails.application.credentials[Rails.env.to_sym][:google][
+          :private_key_id
+        ],
+      type: Rails.application.credentials[Rails.env.to_sym][:google][:type]
+    }
+
+    authorizer =
+      Google::Auth::ServiceAccountCredentials.make_creds(
+        json_key_io: StringIO.new(@config.to_json, "r"),
+        scope: scope
+      )
+
+    authorizer.sub = "volunteer@makerepo.com"
+    authorizer.fetch_access_token!
+    authorizer
+  end
+
   COLOR_LEGEND = [
     {
       id: "your_pending_bookings",
@@ -63,5 +104,74 @@ class SubSpaceBooking < ApplicationRecord
           "other_pending_bookings"
       end
     COLOR_LEGEND.find { |c| c[:id] == status }[:color]
+  end
+
+  def self.upsert_booking(sub_space_booking)
+    service = Google::Apis::CalendarV3::CalendarService.new
+    service.authorization = authorizer
+    attendees = []
+    attendees << Google::Apis::CalendarV3::EventAttendee.new(
+          email: sub_space_booking.user.email)
+
+    title = sub_space_booking.name
+
+    description = sub_space_booking.description.to_s
+
+    gcal_event = 
+      Google::Apis::CalendarV3::Event.new(
+        summary: title,
+        description: description,
+        start:
+          Google::Apis::CalendarV3::EventDateTime.new(
+            date_time: sub_space_booking.start_time.iso8601,
+            time_zone: "America/Toronto"
+          ),
+        end:
+          Google::Apis::CalendarV3::EventDateTime.new(
+            date_time: sub_space_booking.end_time.iso8601,
+            time_zone: "America/Toronto"
+          ),
+          attendees: attendees
+      )
+
+    calendar_id = return_sub_space_calendar(sub_space_booking.sub_space)
+
+    if sub_space_booking.google_event_id.present?
+      begin # Update an existing booking
+        service.update_event(calendar_id, sub_space_booking.google_event_id, gcal_event)
+      rescue Google::Apis::ClientError => e
+        Rails.logger.error "Failed to update Google sub space booking #{sub_space_booking.id}: #{e.message}"
+      end
+    else
+      begin #Create a new booking
+        response = service.insert_event(calendar_id, gcal_event)
+        sub_space_booking.update(google_event_id: response.id)
+      rescue StandardError => e
+        Rails.logger.error "Failed to create booking #{sub_space_booking.id}: #{e.message}"
+      end
+    end
+  end
+
+  def self.delete_booking(sub_space_booking)
+    service = Google::Apis::CalendarV3::CalendarService.new
+    service.authorization = authorizer
+    
+    calendar_id = return_sub_space_calendar(sub_space_booking.sub_space)
+
+    begin
+      response = service.delete_event(calendar_id, sub_space_booking.google_event_id)
+    rescue Google::Apis::ClientError => e
+      Rails.logger.error "Failed to delete Google event #{sub_space_booking.id}: #{e.message}"
+    end
+  end
+
+  def return_sub_space_calendar(sub_space)
+    if sub_space.name == "STM 124"
+      "valentinovinod@gmail.com"
+    elsif sub_space.name == "STM 126"
+      "valentinovinod@gmail.com"
+    else
+      "valentinovinod@gmail.com" # my personal test calendar
+    end
   end
 end
