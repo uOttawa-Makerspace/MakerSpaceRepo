@@ -195,7 +195,7 @@ module CalendarHelper
         booking = SubSpaceBooking.new(
           start_time: event[:start],
           end_time: event[:end],
-          name: event[:name] || "Title",
+          name: event[:title] || "Title",
           description: event[:description] || "No Description",
           sub_space_id: sub_space.id,
           blocking: true,
