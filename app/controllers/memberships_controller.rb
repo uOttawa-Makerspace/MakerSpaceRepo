@@ -10,6 +10,13 @@ class MembershipsController < SessionsController
 
     @is_user_cutoff = is_user_cutoff
   end
+
+  def your_memberships
+    load_membership_data
+    @membership = current_user.memberships.new # for the purchase form
+
+    @is_user_cutoff = is_user_cutoff
+  end
   
   def create
     return flash.now[:alert] = t('memberships.index.purchase.cutoff_tooltip') if is_user_cutoff

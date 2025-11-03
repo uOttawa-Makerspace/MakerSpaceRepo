@@ -330,25 +330,3 @@ en:
         title: "Need Design Help"
         description: "You need help creating or finalizing your design before production."
         button: "Get Design Help"
-  memberships:
-    index:
-      title: "Your Memberships"
-      active:
-        heading: "Active Membership(s)"
-        type: "Type:"
-        expires: "Expires:"
-      no_active: "You don't have an active membership. Purchase one below to get started."
-      purchase:
-        heading: "Purchase or Renew"
-        button: "Purchase"
-        cutoff_tooltip: "You cannot extend your membership beyond the allowed limit."
-      history:
-        heading: "History"
-        type: "Type"
-        purchase_date: "Purchase Date"
-        expiry_date: "Expiry Date"
-        status: "Status"
-        active: "Active"
-        expired: "Expired"
-        revoked: "Revoked"
-        cancelled: "Cancelled"
