@@ -1,29 +1,29 @@
 <div class="container mt-5">
-  <h1 class="mb-4"><%= t('memberships.index.title') %></h1>
+  <h1 class="mb-4"><%= t('memberships.purchase.title') %></h1>
   
   <% if @active_memberships.any? %>
     <div class="alert alert-success">
-      <h4><%= t('memberships.index.active.heading') %></h4>
+      <h4><%= t('memberships.purchase.active.heading') %></h4>
       <% @active_memberships.each_with_index do |membership, i| %>
         <% if i != 0 %><hr /><% end %>
         <p>
-          <strong><%= t('memberships.index.active.type') %></strong> <%= membership.membership_title.gsub(/\b(Membership|Adhésion)\b/i, '').strip %><br>
-          <strong><%= t('memberships.index.active.expires') %></strong> <%= l(membership.end_date, format: :long).to_date %>
+          <strong><%= t('memberships.purchase.active.type') %></strong> <%= membership.membership_title.gsub(/\b(Membership|Adhésion)\b/i, '').strip %><br>
+          <strong><%= t('memberships.purchase.active.expires') %></strong> <%= l(membership.end_date, format: :long).to_date %>
         </p>
       <% end %>
     </div>
   <% else %>
     <div class="alert alert-warning">
-      <%= t('memberships.index.no_active') %>
+      <%= t('memberships.purchase.no_active') %>
     </div>
   <% end %>
   
   <div class="row mt-5">
     <div class="col-lg-8">
-      <h2 class="mb-3"><%= t('memberships.index.purchase.heading') %></h2>
+      <h2 class="mb-3"><%= t('memberships.purchase.purchase.heading') %></h2>
       <% if @is_user_cutoff %>
         <div class="alert alert-warning">
-          <%= t('memberships.index.purchase.cutoff_tooltip') %>
+          <%= t('memberships.purchase.purchase.cutoff_tooltip') %>
         </div>
       <% end %>
       <div class="row">
@@ -35,7 +35,7 @@
                 <p class="h4 mt-auto"><%= number_to_currency(tier.price(current_user)) %></p>
                 <%= form_with model: @membership, url: memberships_path, method: :post, local: true do |f| %>
                   <%= f.hidden_field :membership_tier_id, value: tier.id %>
-                  <%= f.submit t('memberships.index.purchase.button'),
+                  <%= f.submit t('memberships.purchase.purchase.button'),
                         class: 'btn btn-primary w-100',
                         disabled: @is_user_cutoff %>
                 <% end %>
@@ -48,14 +48,14 @@
     
     <div class="col-lg-4">
       <% if @memberships.any? %>
-        <h2 class="mb-3"><%= t('memberships.index.history.heading') %></h2>
+        <h2 class="mb-3"><%= t('memberships.purchase.history.heading') %></h2>
         <div class="table-responsive overflow-y-scroll" style="max-height: 250px;">
           <table class="table table-striped">
             <thead>
               <tr>
-                <th><%= t('memberships.index.history.type') %></th>
-                <th><%= t('memberships.index.history.purchase_date') %></th>
-                <th><%= t('memberships.index.history.status') %></th>
+                <th><%= t('memberships.purchase.history.type') %></th>
+                <th><%= t('memberships.purchase.history.purchase_date') %></th>
+                <th><%= t('memberships.purchase.history.status') %></th>
               </tr>
             </thead>
             <tbody>
@@ -65,11 +65,11 @@
                   <td class="col-3 text-start"><%= membership.created_at.to_formatted_s(:short) %></td>
                   <td class="col-1 text-start">
                     <% if membership.active? %>
-                      <span class="badge bg-success"><%= t('memberships.index.history.active') %></span>
+                      <span class="badge bg-success"><%= t('memberships.purchase.history.active') %></span>
                     <% elsif membership.status == 'revoked' %>
-                      <span class="badge bg-secondary"><%= t('memberships.index.history.revoked') %></span>
+                      <span class="badge bg-secondary"><%= t('memberships.purchase.history.revoked') %></span>
                     <% else %>
-                      <span class="badge bg-secondary"><%= t('memberships.index.history.expired') %></span>
+                      <span class="badge bg-secondary"><%= t('memberships.purchase.history.expired') %></span>
                     <% end %>
                   </td>
                 </tr>
