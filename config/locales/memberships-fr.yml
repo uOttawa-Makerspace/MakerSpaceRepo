@@ -1,5 +1,6 @@
 fr:
   memberships:
+    navbar: "Adhésion"
     index:
       title: "Adhésion CEED"
       sub_header: "Donnez vie à vos idées avec"

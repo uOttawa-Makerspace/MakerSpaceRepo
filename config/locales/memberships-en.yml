@@ -1,5 +1,6 @@
 en:
   memberships:
+    navbar: "Memberships"
     index:
       title: "CEED Memberships"
       sub_header: "Bring your ideas to life with"
