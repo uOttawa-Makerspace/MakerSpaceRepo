@@ -62,4 +62,8 @@ Rails.application.configure do
 
   # Inline adapter executes job immediately
   config.active_job.queue_adapter = :inline
+  
+  # No database connection in test environment.
+  #Environment attempts to connect to a database and fails otherwise
+  config.solid_queue.connects_to = nil
 end
