@@ -5,8 +5,8 @@
     <div style="background: url(<%= asset_path('memberships/jumbotron.jpg') %>) center center / cover no-repeat; filter: brightness(40%); position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;"></div>
 
     <div class="container position-relative z-1">
-      <p class="lead text-white"><%= t('memberships.index.sub_header') %></p>
-      <h1 class="display-1 text-white"><%= t('memberships.index.title') %></h1>
+      <p class="lead text-white fs-2"><%= t('memberships.index.sub_header') %></p>
+      <h1 class="display-1 text-white fw-bold"><%= t('memberships.index.title') %></h1>
       
       <div class="mt-4 pb-5 d-flex justify-content-center flex-wrap gap-3">
         <%= link_to t('memberships.index.purchase_btn'), your_memberships_memberships_path, class: 'btn btn-primary btn-lg px-5 py-3' %>
@@ -70,7 +70,7 @@
       <br>
       <a href="https://www.uottawa.ca/faculty-engineering/centre-entrepreneurship-engineering-design/facilities/brunsfield-centre"><%= t('memberships.index.brunsfield') %></a>
       <br>
-      <a href="https://teams.microsoft.com/l/message/19:2bc5a081-83fe-48b0-ae6b-67b2c184f915_b75d0e76-29a0-43f2-9ed6-37d56517ba22@unq.gbl.spaces/1761928254930?context=%7B%22contextType%22%3A%22chat%22%7D"><%= t('memberships.index.ancillary') %></a>
+      <a href="https://www.uottawa.ca/study/fees-financial-support/university-fees/ancillary-fees"><%= t('memberships.index.ancillary') %></a>
       <br>
       <p><%= t('memberships.index.ancillary_text') %></p>
     </div>

@@ -3,6 +3,7 @@ class MembershipsController < SessionsController
   before_action only: :admin_create_membership do
     head :unauthorized unless current_user.admin?
   end
+  before_action :no_container, only: :index
 
   def index
     load_membership_data
