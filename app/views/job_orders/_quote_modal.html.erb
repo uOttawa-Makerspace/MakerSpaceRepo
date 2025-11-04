@@ -28,8 +28,8 @@
                   <span class="input-group-text">$</span>
                 </div>
                 <%= number_field_tag "job_task_quote_price_#{task.id}",
-                      job_task_quote.price,
-                      placeholder: number_with_precision(task.job_type.service_fee, precision: 2),
+                      (job_task_quote.price.presence || number_with_precision(task.job_type.service_fee, precision: 2)),
+                      placeholder: 'value',
                       step: '0.01', class: 'form-control money-input base-fee' %>
               </div>
             </div>
@@ -42,8 +42,8 @@
                   <div class="form-group">
                     <%= label_tag "task_#{task.id}_service_qty", "Number of #{task.job_service.unit || 'unit'}" %>
                     <%= number_field_tag "task_#{task.id}_service_qty",
-                          task.job_task_quote.service_quantity,
-                          placeholder: '0', 
+                          (task.job_task_quote.service_quantity.presence || 0),
+                          placeholder: 'value', 
                           step: '0.01', class: 'form-control service-qty' %>
                   </div>
                 </div>
@@ -55,8 +55,8 @@
                         <span class="input-group-text">$</span>
                       </div>
                       <%= number_field_tag "task_#{task.id}_service_price",
-                            task.job_task_quote.service_price,
-                            placeholder: number_with_precision(default_service_price, precision: 2),
+                            (task.job_task_quote.service_price.presence || number_with_precision(default_service_price, precision: 2)),
+                            placeholder: "value",
                             step: '0.01', class: 'form-control money-input service-price' %>
                     </div>
                   </div>
@@ -74,8 +74,8 @@
                     <span class="input-group-text">$</span>
                   </div>
                   <%= number_field_tag "task_#{task.id}_option_price_#{option.job_option_id}",
-                        qt_option.price,
-                        placeholder: number_with_precision(option.job_option.fee, precision: 2),
+                        (qt_option.price.presence || number_with_precision(option.job_option.fee, precision: 2)),
+                        placeholder: 'value',
                         step: '0.01', class: 'form-control money-input option-price' %>
                 </div>
               </div>
@@ -102,7 +102,11 @@
                 <%= text_field_tag "job_quote_line_items[#{i}][description]", item.description, class: "form-control w-50", placeholder: "Description" %>
                 <div class="input-group w-25">
                   <span class="input-group-text">$</span>
-                  <%= number_field_tag "job_quote_line_items[#{i}][price]", item.price, step: "0.01", class: "form-control money-input line-item-price", placeholder: "0.00" %>
+                  <%= number_field_tag "job_quote_line_items[#{i}][price]", 
+                      (item.price.presence || "0.00"),
+                      step: "0.01", 
+                      class: "form-control money-input line-item-price", 
+                      placeholder: "value" %>
                 </div>
                 <button class="btn btn-danger line-item-delete ms-2" type="button">
                   <i class="fa fa-trash"></i>
