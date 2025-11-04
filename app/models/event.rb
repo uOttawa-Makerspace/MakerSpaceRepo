@@ -67,6 +67,7 @@ class Event < ApplicationRecord
   end
 
   def self.upsert_event(event) # rubocop:disable Lint/IneffectiveAccessModifier,Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
+    Rails.logger.debug "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
     service = Google::Apis::CalendarV3::CalendarService.new
     service.authorization = authorizer
     attendees = []
@@ -129,14 +130,16 @@ class Event < ApplicationRecord
     end
 
     calendar_id = return_space_calendar(event.space)
-
+    Rails.logger.debug "_______________________________________________________________________"
     if event.google_event_id.present?
+      Rails.logger.debug "UPDATING EVENT"
       begin
         service.update_event(calendar_id, event.google_event_id, gcal_event)
       rescue Google::Apis::ClientError => e
         Rails.logger.error "Failed to update Google event #{event.id}: #{e.message}"
       end
     else
+      Rails.logger.debug "CREATING NEW EVENT"
       begin
         response = service.insert_event(calendar_id, gcal_event)
         event.update(google_event_id: response.id)
