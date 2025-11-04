@@ -32,7 +32,7 @@
             <div class="card h-100">
               <div class="card-body d-flex flex-column">
                 <h5 class="card-title"><%= tier.title(I18n.locale) %></h5>
-                <p class="h4 mt-auto">$<%= tier.price(current_user) %></p>
+                <p class="h4 mt-auto"><%= number_to_currency(tier.price(current_user)) %></p>
                 <%= form_with model: @membership, url: memberships_path, method: :post, local: true do |f| %>
                   <%= f.hidden_field :membership_tier_id, value: tier.id %>
                   <%= f.submit t('memberships.index.purchase.button'),

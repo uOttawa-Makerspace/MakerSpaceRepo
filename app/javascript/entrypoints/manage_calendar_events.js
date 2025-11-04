@@ -62,6 +62,11 @@ document.addEventListener("turbo:load", async () => {
 
   function buildRule() {
     const startDate = parseLocalDatetimeString(startTimeField.value);
+    console.log(
+      "Building rule with start date:",
+      startDate,
+      startDate.toISOString(),
+    );
     const untilDate = new Date(untilInput.value + "T23:59:59");
 
     if (frequency.value === "") {
