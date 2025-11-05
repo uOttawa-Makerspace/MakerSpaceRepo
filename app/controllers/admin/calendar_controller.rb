@@ -32,8 +32,6 @@ class Admin::CalendarController < AdminAreaController
                .where(id: staff_user_ids, role: ['admin', 'staff'])
                .order(name: :desc).map do |staff|
       local_unavails = StaffUnavailability.where(user_id: staff.id).map do |u| 
-        # Skip events that are far in the past
-        next if u.recurrence_rule.blank? && u.end_time < (Time.now.utc - 2.months)
 
         duration = (u.end_time.to_time - u.start_time.to_time) * 1000
 
