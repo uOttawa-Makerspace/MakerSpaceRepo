@@ -14,7 +14,9 @@ class Staff::MyCalendarController < StaffAreaController
 
     events = Event.where(space_id: params[:id], draft: false).map do |event|        
         title = if event.title == event.event_type.capitalize && !event.event_assignments.empty?
-          "#{'✎ ' if event.draft}#{event.event_type.capitalize} for #{event.event_assignments.map do |ea|
+          "#{if event.draft
+                '✎ '
+              end}#{event.event_type == 'training' ? "#{event.training.name} (#{event.course_name.name || ''} - #{event.language || ''})" : event.event_type.capitalize} for #{event.event_assignments.map do |ea|
 ea.user.name end.join(", ")}"
         else 
           "#{'✎ ' if event.draft}#{event.title}"
