@@ -7,16 +7,17 @@ RSpec.describe MembershipsController, type: :controller do
     session[:user_id] = @regular_user.id
     session[:expires_at] = Time.zone.now + 10_000
 
-    @tier = create(:membership_tier, title_en: "1 Month Membership", duration: 1.month.to_i, internal_price: 30, external_price: 30)
+    @tier = create(:membership_tier, title_en: "1 Month Membership", duration: 1.month.to_i, internal_price: 30, 
+external_price: 30)
   end
 
-  describe "GET #index" do
+  describe "GET #your_memberships" do
     it "assigns memberships and a new membership" do
       membership = create(:membership, user: @regular_user, membership_tier: @tier, status: 'paid')
-      get :index
+      get :your_memberships
       expect(assigns(:memberships)).to include(membership)
       expect(assigns(:membership)).to be_a_new(Membership)
-      expect(response).to render_template(:index)
+      expect(response).to render_template(:your_memberships)
     end
   end
 
@@ -53,9 +54,9 @@ RSpec.describe MembershipsController, type: :controller do
     context "when user is admin" do
       it "creates a custom membership" do
         create(:membership_tier, title_en: "Custom Membership", duration: 1.hour.to_i)
-        expect {
+        expect do
           post :admin_create_membership, params: { user_id: @regular_user.id, extend_days: 5 }
-        }.to change { @regular_user.memberships.count }.by(1)
+        end.to change { @regular_user.memberships.count }.by(1)
         expect(flash[:notice]).to include("Custom membership added")
       end
     end
