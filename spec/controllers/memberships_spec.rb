@@ -11,6 +11,16 @@ RSpec.describe MembershipsController, type: :controller do
 external_price: 30)
   end
 
+  describe "GET #index" do
+    it "allows regular members to view index" do
+      user = create(:user, :regular_user)
+      session[:user_id] = user.id
+      session[:expires_at] = Time.zone.now + 10_000
+      get :index
+      expect(response).to have_http_status :success
+    end
+  end
+
   describe "GET #your_memberships" do
     it "assigns memberships and a new membership" do
       membership = create(:membership, user: @regular_user, membership_tier: @tier, status: 'paid')
