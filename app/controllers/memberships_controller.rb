@@ -1,15 +1,11 @@
 class MembershipsController < SessionsController
-  before_action :signed_in
+  before_action :signed_in, except: [:index]
   before_action only: :admin_create_membership do
     head :unauthorized unless current_user.admin?
   end
   before_action :no_container, only: :index
 
   def index
-    load_membership_data
-    @membership = current_user.memberships.new # for the purchase form
-
-    @is_user_cutoff = is_user_cutoff
   end
 
   def your_memberships
