@@ -32,17 +32,14 @@ class Admin::CalendarController < AdminAreaController
                .where(id: staff_user_ids, role: ['admin', 'staff'])
                .order(name: :desc).map do |staff|
       local_unavails = StaffUnavailability.where(user_id: staff.id).map do |u| 
-        # Skip events that are far in the past
-        next if u.recurrence_rule.blank? && u.end_time < (Time.now.utc - 2.months)
 
         duration = (u.end_time.to_time - u.start_time.to_time) * 1000
 
         rrule_data = if u.recurrence_rule.present?
           rrule = u.recurrence_rule          
-          rrule_parts = rrule.split(/[;\n]/).reject { |part| part.strip.start_with?('DTSTART') }
-          rrule_without_dtstart = rrule_parts.join(';').gsub(/;EXDATE/, "\nEXDATE")
+          rrule_without_dtstart = rrule.gsub(/DTSTART[^;]*;/, '').gsub(/;DTSTART[^;]*/, '')          
           dtstart_toronto = u.start_time.in_time_zone("America/Toronto")&.strftime("%Y%m%dT%H%M%S")          
-          "DTSTART:#{dtstart_toronto}\n#{rrule_without_dtstart}"
+          "DTSTART:#{dtstart_toronto}\nRRULE:#{rrule_without_dtstart}"
         end
 
         {

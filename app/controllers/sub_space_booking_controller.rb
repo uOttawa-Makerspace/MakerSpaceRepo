@@ -1,4 +1,5 @@
 class SubSpaceBookingController < ApplicationController
+  before_action :no_container
   before_action :user_account
   before_action :user_signed_in, only: %i[index request_access bookings]
   before_action :user_approved, only: [:create]
@@ -28,9 +29,7 @@ class SubSpaceBookingController < ApplicationController
       if @subspace.maximum_booking_hours_per_week.present?
         @rules << "has a maximum booking hours per person per week of #{@subspace.maximum_booking_hours_per_week} hours"
       end
-      if @subspace.default_public
-        @rules << "bookings (Name and Description of event) are public by default"
-      end
+      @rules << "bookings (Name and Description of event) are public by default" if @subspace.default_public
       if @subspace.max_automatic_approval_hour.present? &&
            @subspace.approval_required
         @rules << "Bookings require manual approval, bookings of #{@subspace.max_automatic_approval_hour} hours or less will be automatically approved"
@@ -56,14 +55,18 @@ class SubSpaceBookingController < ApplicationController
 
     @supervisors = []
     SpaceManagerJoin.all.each do |smj|
-      unless @supervisors.include?([smj.user.name, smj.user.id])
-        @supervisors << [smj.user.name, smj.user.id]
-      end
+      @supervisors << [smj.user.name, smj.user.id] unless @supervisors.include?([smj.user.name, smj.user.id])
     end
     @supervisors = @supervisors.sort_by { |elem| elem[0].downcase }
   end
 
   def request_access
+    if params[:comments].blank?
+      flash[:alert] = "Please provide a reason for booking access."
+      redirect_to root_path
+      return
+    end
+
     if UserBookingApproval.where(user: current_user).first.nil?
       booking_approval =
         UserBookingApproval.new(
@@ -80,7 +83,6 @@ class SubSpaceBookingController < ApplicationController
         case params[:identity]
         when "JMTS"
           jmts = Space.find_by(name: "JMTS")
-
           jmts.space_managers.each { |sm| emails << sm.email }
         when "Staff"
           emails << User.find(params[:supervisor]).email
@@ -97,9 +99,7 @@ class SubSpaceBookingController < ApplicationController
 
         flash[:notice] = "Access request submitted successfully."
       else
-        flash[
-          :alert
-        ] = "Something went wrong when trying to request MakeRoom access. Please try again later."
+        flash[:alert] = booking_approval.errors.full_messages.join(", ")
       end
     else
       flash[:alert] = "You have already requested access."
@@ -215,11 +215,7 @@ class SubSpaceBookingController < ApplicationController
             end
           title += " - #{booking.user.name}" if @user.admin? &&
             booking.user != @user
-          if booking.blocking
-            title = "Space Blocked" if (
-              !booking.public && ((!@user.admin?) || booking.user != @user)
-            )
-          end
+          title = "Space Blocked" if booking.blocking && !booking.public && (!@user.admin? || booking.user != @user)
           event = {
             id: "booking_" + booking.id.to_s + "_" + booking.sub_space_id.to_s,
             title: title,
@@ -346,7 +342,7 @@ class SubSpaceBookingController < ApplicationController
       return
     end
 
-    # NOTE postgres stores these without a timezone
+    # NOTE: postgres stores these without a timezone
     # So we receive time with no timezone, replace the time offset with the default one
     # Then convert to utc when doing comparaisons
     # This may explode once daylight savings are over...
@@ -394,8 +390,7 @@ class SubSpaceBookingController < ApplicationController
     if !SubSpace
          .find(params[:sub_space_booking][:sub_space_id])
          .maximum_booking_duration
-         .nil? && !current_user.admin?
-      if duration > booking.sub_space.maximum_booking_duration
+         .nil? && !current_user.admin? && (duration > booking.sub_space.maximum_booking_duration)
         render json: {
                  errors: [
                    "DurationHour You cannot book #{booking.sub_space.name} for more than #{booking.sub_space.maximum_booking_duration} hours."
@@ -405,7 +400,6 @@ class SubSpaceBookingController < ApplicationController
         booking.destroy
         return
       end
-    end
 
     if !SubSpace
          .find(params[:sub_space_booking][:sub_space_id])
@@ -421,7 +415,7 @@ class SubSpaceBookingController < ApplicationController
       user_bookings.each do |booking|
         total_duration += booking.end_time - booking.start_time
       end
-      total_duration = total_duration / 1.hour
+      total_duration /= 1.hour
       if total_duration > booking.sub_space.maximum_booking_hours_per_week
         render json: {
                  errors: [
@@ -472,7 +466,7 @@ class SubSpaceBookingController < ApplicationController
     flash[
       :notice
     ] = "Booking for #{booking.sub_space.name} created successfully."
-    if send_email
+    return unless send_email
       if booking.sub_space.approval_required &&
            booking.sub_space_booking_status.booking_status_id ==
              BookingStatus::PENDING.id
@@ -485,7 +479,7 @@ class SubSpaceBookingController < ApplicationController
         ).deliver_now
         BookingMailer.send_booking_approved(booking.id).deliver_now
       end
-    end
+    
   end
 
   def edit
@@ -692,7 +686,7 @@ class SubSpaceBookingController < ApplicationController
   private
 
   def destroy_booking(booking)
-    # FIXME This is a one to one relation, so we have to unset
+    # FIXME: This is a one to one relation, so we have to unset
     # the relation before deleting to avoid foreign key issues.
     # Status should be a column in SubSpaceBooking, not in a separate table
     status = booking.sub_space_booking_status
@@ -706,7 +700,7 @@ class SubSpaceBookingController < ApplicationController
 
   def current_bookings(booking_status_id)
     SubSpaceBookingStatus
-      .includes(sub_space_booking: [:approved_by, :user, sub_space: :space])
+      .includes(sub_space_booking: [:approved_by, :user, {sub_space: :space}])
       .where(booking_status_id: booking_status_id)
       .order("sub_space_bookings.start_time": :asc)
       .map { |booking_status| booking_status.sub_space_booking }
@@ -717,7 +711,7 @@ class SubSpaceBookingController < ApplicationController
 
   def old_bookings(booking_status_id)
     SubSpaceBookingStatus
-      .includes(sub_space_booking: [:approved_by, :user, sub_space: :space])
+      .includes(sub_space_booking: [:approved_by, :user, {sub_space: :space}])
       .where(booking_status_id: booking_status_id)
       .order("sub_space_bookings.start_time": :asc)
       .map { |booking_status| booking_status.sub_space_booking }
@@ -728,32 +722,32 @@ class SubSpaceBookingController < ApplicationController
   end
 
   def user_account
-    unless !current_user.nil?
+    return unless current_user.nil?
       redirect_to login_path, alert: "You must be logged in to view this page."
-    end
+    
   end
   def user_signed_in
-    unless signed_in?
+    return if signed_in?
       redirect_to login_path, alert: "You must be logged in to view this page."
-      return
-    end
+      nil
+    
   end
   def user_approved
-    unless current_user.booking_approval || current_user.admin?
+    return if current_user.booking_approval || current_user.admin?
       redirect_to root_path,
                   alert: "You must be approved to book to view this page."
-    end
+    
   end
   def user_admin_or_staff
-    unless current_user.admin? || current_user.staff?
+    return if current_user.admin? || current_user.staff?
       redirect_to root_path,
                   alert: "You must be an admin or staff to view this page."
-    end
+    
   end
   def user_admin
-    unless current_user.admin?
+    return if current_user.admin?
       redirect_to root_path, alert: "You must be an admin to view this page."
-    end
+    
   end
   def user_booking_belongs
     unless SubSpaceBooking.find(params[:sub_space_booking_id]).user_id ==

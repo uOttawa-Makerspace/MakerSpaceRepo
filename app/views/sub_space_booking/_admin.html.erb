@@ -222,7 +222,7 @@
                     </th>
                     <th>Name <span onclick="sortTable('table-sub-space-booking-pending-approved', 1)"><%= fa_icon('arrow-down') %></span></th>
                     <th>Email <span onclick="sortTable('table-sub-space-booking-pending-approved', 2)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Comments <span onclick="sortTable('table-sub-space-booking-pending-approved', 3)"><%= fa_icon('arrow-down') %></span></th>
+                    <th>Reason <span onclick="sortTable('table-sub-space-booking-pending-approved', 3)"><%= fa_icon('arrow-down') %></span></th>
                     <th>Date of Request <span onclick="sortTable('table-sub-space-booking-pending-approved', 4, true)"><%= fa_icon('arrow-down') %></span></th>
                     <th>Actions</th>
                   </tr>
@@ -266,14 +266,14 @@
                 <tr>
                   <th>Name <span onclick="sortTable('table-sub-space-booking-users-approved', 0)"><%= fa_icon('arrow-down') %></span></th>
                   <th>Email <span onclick="sortTable('table-sub-space-booking-users-approved', 1)"><%= fa_icon('arrow-down') %></span></th>
-                  <th>Comments <span onclick="sortTable('table-sub-space-booking-users-approved', 2)"><%= fa_icon('arrow-down') %></span></th>
+                  <th>Reason <span onclick="sortTable('table-sub-space-booking-users-approved', 2)"><%= fa_icon('arrow-down') %></span></th>
                   <th>Date of Request <span onclick="sortTable('table-sub-space-booking-users-approved', 3)"><%= fa_icon('arrow-down') %></span></th>
                   <th>Approved by <span onclick="sortTable('table-sub-space-booking-users-approved', 4, true)"><%= fa_icon('arrow-down') %></span></th>
                   <th>Actions</th>
                 </tr>
                 </thead>
                 <tbody>
-                <% UserBookingApproval.includes(:user).where(approved: true) do |user_booking_approval| %>
+                <% UserBookingApproval.includes(:user, :staff).where(approved: true).find_each do |user_booking_approval| %>
                   <tr>
                     <td><%= user_booking_approval.user.name %></td>
                     <td><%= user_booking_approval.user.email %></td>

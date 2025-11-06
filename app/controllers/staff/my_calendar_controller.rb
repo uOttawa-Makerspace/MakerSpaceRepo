@@ -13,11 +13,10 @@ class Staff::MyCalendarController < StaffAreaController
     return render json: { error: "Space ID is required" }, status: :bad_request if params[:id].blank?
 
     events = Event.where(space_id: params[:id], draft: false).map do |event|        
-      next if event.recurrence_rule.blank? && event.end_time < (Time.now.utc - 2.months)
-      # Skip events that are far in the past
-
         title = if event.title == event.event_type.capitalize && !event.event_assignments.empty?
-          "#{'✎ ' if event.draft}#{event.event_type.capitalize} for #{event.event_assignments.map do |ea|
+          "#{if event.draft
+                '✎ '
+              end}#{event.event_type == 'training' ? "#{event.training.name} (#{event.course_name.name || ''} - #{event.language || ''})" : event.event_type.capitalize} for #{event.event_assignments.map do |ea|
 ea.user.name end.join(", ")}"
         else 
           "#{'✎ ' if event.draft}#{event.title}"

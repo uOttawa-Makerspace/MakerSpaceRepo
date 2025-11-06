@@ -239,9 +239,6 @@ Time.parse(event_params[:utc_start_time]).utc)
       {
         id: event_type,
         events: events.map do |event|
-          # Skip events that are far in the past
-          next if event.recurrence_rule.blank? && event.end_time < (Time.now.utc - 2.months)
-
           title = if event.title == event.event_type.capitalize && !event.event_assignments.empty?
             "#{if event.draft
                  '✎ '
