@@ -2,11 +2,11 @@
 
 <% if grouped.blank? %>
   <div class="alert alert-warning my-3">
-    <%= t("home.hours.no_hours", default: "No open hours available this week.") %>
+    <%= t("home.hours.no_hours", default: "No open hours this week.") %>
   </div>
 <% else %>
   <% Date::DAYNAMES.each_with_index do |day, i| %>
-    <div class="row py-2 <%= 'bg-light' if i.even? %>">
+    <div class="row py-2 <%= 'bg-body-secondary' if i.even? %>">
       <div class="col-5 col-md-4">
         <%= day %>
       </div>

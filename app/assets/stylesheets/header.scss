@@ -1,11 +1,30 @@
-@import "lib";
-@import "./shared/variables";
-
-$ceed-maroon: #8f001a;
+@import "shared/variables";
 
 .navbar {
+  .nav-link {
+    // This is how you nest dark mode selector
+    [data-bs-theme="dark"] & {
+      --bs-nav-link-hover-color: #{$primary};
+      --bs-nav-link-color: white;
+    }
+    --bs-nav-link-hover-color: black;
+    --bs-nav-link-color: white;
+  }
+
+  .btn.btn-link {
+    --bs-btn-color: white;
+    --bs-btn-hover-color: black;
+
+    [data-bs-theme="dark"] & {
+      --bs-btn-hover-color: #{$primary};
+    }
+  }
+
+  // background-color doesnt seem to be controlled by a variable
+  [data-bs-theme="dark"] & {
+    background-color: black;
+  }
   background-color: $primary;
-  padding: 0.5rem;
 
   &.navbar-staff {
     background: black;
@@ -16,11 +35,10 @@ $ceed-maroon: #8f001a;
 
   .nav-link {
     font-weight: 700;
-    //font-size: 15px;
     text-transform: uppercase;
 
     &:hover {
-      color: #fff;
+      //color: #fff;
     }
   }
 
@@ -51,6 +69,8 @@ $ceed-maroon: #8f001a;
     color: white;
   }
 
+  // FIXME: This is hard to make sense in dark mode. CC money icon turns black
+  // on hover, and it's a PNG so recolors are hard.
   .ccLink {
     #myCcWhite {
       display: none;
@@ -71,6 +91,7 @@ $ceed-maroon: #8f001a;
     }
   }
 
+  // Animate header shrinking when class is added
   transition: margin 150ms;
   transition: padding 150ms;
   &.header-small {

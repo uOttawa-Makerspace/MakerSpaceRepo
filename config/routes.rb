@@ -163,6 +163,7 @@ Rails.application.routes.draw do
   resources :memberships, only: [:index, :create] do
     collection do
       post :admin_create_membership
+      get :your_memberships
     end
     member do
       patch :revoke
@@ -583,7 +584,11 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :badges, only: [:index,:show] 
+  resources :badges, only: [:index, :show] do
+    collection do
+      get 'search'
+    end
+  end
 
   resources :proficient_projects do
     get :proficient_project_modal

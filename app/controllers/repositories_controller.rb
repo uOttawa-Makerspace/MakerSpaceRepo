@@ -132,6 +132,10 @@ class RepositoriesController < SessionsController
       @files = @repository.repo_files.joins(:file_attachment)
       @categories = @repository.categories
       @equipments = @repository.equipments
+      @project_proposals =
+      ProjectProposal.approved.order(title: :asc).pluck(:title, :id) if params[
+      :project_proposal_id
+    ].blank?
     else
       flash[:alert] = "You are not allowed to perform this action!"
       redirect_to repository_path(@repository.user_username, @repository.slug)

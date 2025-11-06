@@ -109,45 +109,88 @@ class Space < ApplicationRecord
 
     events = parsed.first[:events]
 
-    start_of_week = Time.zone.today.beginning_of_week.beginning_of_day
-    end_of_week   = Time.zone.today.end_of_week.end_of_day
+    start_of_week = Time.zone.today.beginning_of_week(start_day = :saturday).beginning_of_day
+    end_of_week   = Time.zone.today.end_of_week(start_day = :saturday).end_of_day
 
     weekly_events = []
 
     events.each do |ev|
-      next unless ev[:start].present?
+      next if ev[:start].blank?
 
       dtstart = Time.zone.parse(ev[:start])
-      dtend   = if ev[:end].present?
-                  Time.zone.parse(ev[:end])
-                elsif ev[:duration].present?
-                  dtstart + (ev[:duration].to_i / 1000)
-                else
-                  dtstart + 1.hour
-                end
-
+      dtend =
+        if ev[:end].present?
+          Time.zone.parse(ev[:end])
+        elsif ev[:duration].present?
+          dtstart + (ev[:duration].to_f / 1000.0)
+        else
+          dtstart + 1.hour
+        end
+      
       if ev[:rrule].present?
-        ical_rrule = ev[:rrule].lines.find { |l| l.start_with?("RRULE:") }&.sub("RRULE:", "")
-        if ical_rrule.present?
-          rule = IceCube::Rule.from_ical(ical_rrule)
-          schedule = IceCube::Schedule.new(dtstart, end_time: dtend)
-          schedule.add_recurrence_rule(rule)
+        rule_obj = ev[:rrule]
+        
+        rule = case rule_obj[:freq]&.upcase
+              when "DAILY"   then IceCube::Rule.daily
+              when "WEEKLY"  then IceCube::Rule.weekly
+              when "MONTHLY" then IceCube::Rule.monthly
+              when "YEARLY"  then IceCube::Rule.yearly
+              end
 
-          occurrences = schedule.occurrences_between(start_of_week, end_of_week)
-          occurrences.each do |occ|
-            weekly_events << OpenStruct.new(
-              dtstart: occ.start_time.in_time_zone,
-              dtend:   occ.end_time.in_time_zone,
-              title:   ev[:title]
-            )
+              next if rule.nil?
+              
+        if rule_obj[:byweekday].present?
+          weekday_map = {
+            "su" => 0,
+            "mo" => 1,
+            "tu" => 2,
+            "we" => 3,
+            "th" => 4,
+            "fr" => 5,
+            "sa" => 6
+          }
+
+          mapped_days = rule_obj[:byweekday].map { |d| weekday_map[d] }.compact
+
+          rule.day(*mapped_days) if mapped_days.any?
+        end
+        
+        rule.until(Time.zone.parse(rule_obj[:until])) if rule_obj[:until].present?
+        rule.count(rule_obj[:count]) if rule_obj[:count].present?
+
+        schedule = IceCube::Schedule.new(dtstart, end_time: dtend)
+        schedule.add_recurrence_rule(rule)
+
+        if ev[:exdate].present?
+          ev[:exdate].each do |ex|
+              schedule.add_exception_time(Time.zone.parse(ex))
+            rescue StandardError
+              next
           end
         end
+
+        occurrences = schedule.occurrences_between(start_of_week, end_of_week)
+        occurrences.each do |occ|
+          occ_start = occ.start_time.in_time_zone
+          occ_end   = begin
+                        occ.end_time.in_time_zone
+                      rescue StandardError
+                        (occ_start + (dtend - dtstart))
+                      end
+
+          weekly_events << OpenStruct.new(
+            dtstart: occ_start,
+            dtend: occ_end,
+            title: ev[:title]
+          )
+        end
+
       elsif dtstart >= start_of_week && dtstart <= end_of_week
         weekly_events << OpenStruct.new(
-            dtstart: dtstart,
-            dtend:   dtend,
-            title:   ev[:title]
-          )
+          dtstart: dtstart,
+          dtend: dtend,
+          title: ev[:title]
+        )
       end
     end
 

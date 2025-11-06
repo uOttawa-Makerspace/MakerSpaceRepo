@@ -16,36 +16,13 @@
     <% repos = (params[:show] == 'projects_assigned' ? @joined_projects : @repositories) %>
 <% end %>
 <% if repos !=@joined_projects %>
-    <% repos.each do |repository| %>
-        <div class="repository-container">
-            <div class="repo-display-wrapper" <%= "style=background-image:url('#{url_for(repository.photos.first.image) if repository.photos.present? && repository.photos.first.present? && repository.photos.first.image.attached?}')" %> >
-                <% if repository.user_username.eql?(@user.username) %>
-                    <%= button_to 'Delete', repository_path(repository.user_username, repository.id), method:
-                        :delete, data: { confirm: 'Are you sure? Once you delete the repository there is no coming back!' }, class: 'btn btn-danger btn-sm float-end m-1' %>
-                    <%= link_to 'Edit', edit_repository_path(repository.user_username, repository.id),
-                                class: 'btn btn-secondary btn-sm float-end m-1' %>
-                <% end %>
-                <%= link_to '', repository_path(repository.user_username, repository.slug),
-                            class: 'link' %>
+    <div class="row">
+        <% repos.each do |repository| %>
+            <div class="col-md-4 col-lg-4">
+                <%= render 'repositories/repository_card', repository: %>
             </div>
-            <div class="repo-info">
-                <div class="start">
-                    <div class="likes">
-                        <%= fa_icon 'heart' %><br>
-                        <%= repository.like %>
-                    </div>
-                    <div class="title">
-                        <%= link_to repository.title, repository_path(repository.user_username, repository.slug) %>
-                    </div>
-                    <div>by <%= link_to repository.user_username, user_path(repository.user_username) %>
-                    </div>
-                    <div>
-                        <%= time_ago_in_words(repository.created_at) %> ago
-                    </div>
-                </div>
-            </div>
-        </div>
-    <% end %>
+        <% end %>
+    </div>
 <% else %>
     <% repos.each do |joined_project| %>
         <% project_proposal = joined_project.project_proposal %>

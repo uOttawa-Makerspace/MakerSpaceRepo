@@ -1,4 +1,5 @@
 class SubSpaceBookingController < ApplicationController
+  before_action :no_container
   before_action :user_account
   before_action :user_signed_in, only: %i[index request_access bookings]
   before_action :user_approved, only: [:create]
@@ -60,6 +61,12 @@ class SubSpaceBookingController < ApplicationController
   end
 
   def request_access
+    if params[:comments].blank?
+      flash[:alert] = "Please provide a reason for booking access."
+      redirect_to root_path
+      return
+    end
+
     if UserBookingApproval.where(user: current_user).first.nil?
       booking_approval =
         UserBookingApproval.new(
@@ -76,7 +83,6 @@ class SubSpaceBookingController < ApplicationController
         case params[:identity]
         when "JMTS"
           jmts = Space.find_by(name: "JMTS")
-
           jmts.space_managers.each { |sm| emails << sm.email }
         when "Staff"
           emails << User.find(params[:supervisor]).email
@@ -93,9 +99,7 @@ class SubSpaceBookingController < ApplicationController
 
         flash[:notice] = "Access request submitted successfully."
       else
-        flash[
-          :alert
-        ] = "Something went wrong when trying to request MakeRoom access. Please try again later."
+        flash[:alert] = booking_approval.errors.full_messages.join(", ")
       end
     else
       flash[:alert] = "You have already requested access."

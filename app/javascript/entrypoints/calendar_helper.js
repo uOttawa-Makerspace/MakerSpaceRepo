@@ -72,7 +72,7 @@ export function eventClick(eventImpl) {
   if (eventImpl.allDay) {
     document.getElementById("all_day_checkbox").checked = true;
 
-    const startDate = new Date(eventImpl.start);
+    const startDate = new Date(eventImpl.startStr);
     startDate.setHours(0, 0, 0, 0);
 
     const endDate = new Date(startDate);
@@ -82,9 +82,9 @@ export function eventClick(eventImpl) {
     endTimeField.value = toLocalDatetimeString(endDate);
     endTimeField.disabled = true;
   } else {
-    const start = new Date(eventImpl.start);
+    const start = new Date(eventImpl.startStr);
     startTimeField.value = toLocalDatetimeString(start);
-    const end = new Date(eventImpl.end);
+    const end = new Date(eventImpl.endStr);
     endTimeField.value = toLocalDatetimeString(end);
   }
 
@@ -210,7 +210,7 @@ export function eventClick(eventImpl) {
   }
 
   document.querySelectorAll(".delete_start_date").forEach((e) => {
-    e.value = parseLocalDatetimeString(eventImpl.start).toISOString();
+    e.value = parseLocalDatetimeString(eventImpl.startStr).toISOString();
   });
 
   singleForm.action = `/admin/events/${id}/delete_with_scope`;
@@ -224,10 +224,10 @@ export function eventClick(eventImpl) {
 
 export function eventCreate(info) {
   document.getElementById("start_time_field").value = toLocalDatetimeString(
-    info.start,
+    new Date(info.startStr),
   );
   document.getElementById("end_time_field").value = toLocalDatetimeString(
-    info.end,
+    new Date(info.endStr),
   );
 
   document.getElementById("training-fields").style.display = "none";

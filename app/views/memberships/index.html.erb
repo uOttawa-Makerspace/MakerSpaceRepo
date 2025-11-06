@@ -1,83 +1,78 @@
-<div class="container mt-5">
-  <h1 class="mb-4"><%= t('memberships.index.title') %></h1>
-  
-  <% if @active_memberships.any? %>
-    <div class="alert alert-success">
-      <h4><%= t('memberships.index.active.heading') %></h4>
-      <% @active_memberships.each_with_index do |membership, i| %>
-        <% if i != 0 %><hr /><% end %>
-        <p>
-          <strong><%= t('memberships.index.active.type') %></strong> <%= membership.membership_title.gsub(/\b(Membership|Adhésion)\b/i, '').strip %><br>
-          <strong><%= t('memberships.index.active.expires') %></strong> <%= l(membership.end_date, format: :long).to_date %>
-        </p>
-      <% end %>
-    </div>
-  <% else %>
-    <div class="alert alert-warning">
-      <%= t('memberships.index.no_active') %>
-    </div>
-  <% end %>
-  
-  <div class="row mt-5">
-    <div class="col-lg-8">
-      <h2 class="mb-3"><%= t('memberships.index.purchase.heading') %></h2>
-      <% if @is_user_cutoff %>
-        <div class="alert alert-warning">
-          <%= t('memberships.index.purchase.cutoff_tooltip') %>
-        </div>
-      <% end %>
-      <div class="row">
-        <% MembershipTier.visible.order(duration: :asc).each do |tier| %>
-          <div class="col-md-4 mb-4">
-            <div class="card h-100">
-              <div class="card-body d-flex flex-column">
-                <h5 class="card-title"><%= tier.title(I18n.locale) %></h5>
-                <p class="h4 mt-auto">$<%= tier.price(current_user) %></p>
-                <%= form_with model: @membership, url: memberships_path, method: :post, local: true do |f| %>
-                  <%= f.hidden_field :membership_tier_id, value: tier.id %>
-                  <%= f.submit t('memberships.index.purchase.button'),
-                        class: 'btn btn-primary w-100',
-                        disabled: @is_user_cutoff %>
-                <% end %>
-              </div>
-            </div>
-          </div>
-        <% end %>
+<% provide :title, t('memberships.index.title') %>
+
+<section class="mt-n3">
+  <div class="position-relative text-white text-center d-flex flex-column justify-content-center" style="min-height: 90vh;">
+    <div style="background: url(<%= asset_path('memberships/jumbotron.jpg') %>) center center / cover no-repeat; filter: brightness(40%); position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;"></div>
+
+    <div class="container position-relative z-1">
+      <p class="lead text-white fs-2"><%= t('memberships.index.sub_header') %></p>
+      <h1 class="display-1 text-white fw-bold"><%= t('memberships.index.title') %></h1>
+      
+      <div class="mt-4 pb-5 d-flex justify-content-center flex-wrap gap-3">
+        <%= link_to t('memberships.index.purchase_btn'), your_memberships_memberships_path, class: 'btn btn-primary btn-lg px-5 py-3' %>
       </div>
     </div>
-    
-    <div class="col-lg-4">
-      <% if @memberships.any? %>
-        <h2 class="mb-3"><%= t('memberships.index.history.heading') %></h2>
-        <div class="table-responsive overflow-y-scroll" style="max-height: 250px;">
-          <table class="table table-striped">
-            <thead>
-              <tr>
-                <th><%= t('memberships.index.history.type') %></th>
-                <th><%= t('memberships.index.history.purchase_date') %></th>
-                <th><%= t('memberships.index.history.status') %></th>
-              </tr>
-            </thead>
-            <tbody>
-              <% @memberships.each do |membership| %>
-                <tr>
-                  <td class="col-3 text-start"><%= membership.membership_title.gsub(/\b(Membership|Adhésion)\b/i, '').strip %></td>
-                  <td class="col-3 text-start"><%= membership.created_at.to_formatted_s(:short) %></td>
-                  <td class="col-1 text-start">
-                    <% if membership.active? %>
-                      <span class="badge bg-success"><%= t('memberships.index.history.active') %></span>
-                    <% elsif membership.status == 'revoked' %>
-                      <span class="badge bg-secondary"><%= t('memberships.index.history.revoked') %></span>
-                    <% else %>
-                      <span class="badge bg-secondary"><%= t('memberships.index.history.expired') %></span>
-                    <% end %>
-                  </td>
-                </tr>
-              <% end %>
-            </tbody>
-          </table>
-        </div>
-      <% end %>
+  </div>
+  
+
+
+  <div class="container-lg my-5">
+    <div class="row align-items-center">
+      <div class="col-lg-7">
+        <p class="fs-4 text-primary fw-bold text-uppercase"><%= t('memberships.index.subtitle_1') %></p>
+        <h2 class="mb-4 display-5"><%= t('memberships.index.text_1') %></h2>
+      </div>
+
+      <div class="col-lg-5 text-center">
+        <%= image_tag 'memberships/text1.jpg', class: 'img-fluid rounded shadow' %>
+      </div>
     </div>
   </div>
-</div>
+
+
+  <div class="container-lg mx-auto row g-4 my-5">
+    <div class="col-lg-6">
+      <div class="border border-2 rounded-3 p-4 h-100">
+        <h2><%= t('memberships.index.subtitle_2') %></h2>
+        <p><%= t('memberships.index.text_2') %></p>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="border border-2 rounded-3 p-4 h-100">
+        <h2><%= t('memberships.index.subtitle_3') %></h2>
+        <p><%= t('memberships.index.text_3') %></p>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <div class="border border-3 border-primary rounded-4 p-4 bg-body shadow-sm h-100">
+        <div class="row align-items-stretch">
+          <div class="col-md-4 mb-4 mb-md-0 d-flex align-items-center">
+            <div class="w-100 h-100 d-flex align-items-center" style="overflow: hidden;">
+              <%= image_tag 'memberships/text3.jpg', class: 'img-fluid w-100 h-100 rounded', style: 'object-fit: cover;' %>
+            </div>
+          </div>
+
+          <div class="col-md-8 d-flex flex-column">
+            <div class="d-flex align-items-center mb-3">
+              <h2 class="mb-0 text-primary"><%= fa_icon "star-half-o" %><%= t('memberships.index.subtitle_4') %></h2>
+            </div>
+
+            <p class="lead"><%= t('memberships.index.text_4') %></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="text-center" style="margin-top: 5rem;">
+      <h3 class="fs-2 text-primary fw-bold text-uppercase"><%= t('memberships.index.more_info') %></h3>
+      <a href="https://www.uottawa.ca/faculty-engineering/centre-entrepreneurship-engineering-design/facilities/richard-labbe-makerspace"><%= t('memberships.index.makerspace') %></a>
+      <br>
+      <a href="https://www.uottawa.ca/faculty-engineering/centre-entrepreneurship-engineering-design/facilities/brunsfield-centre"><%= t('memberships.index.brunsfield') %></a>
+      <br>
+      <a href="https://www.uottawa.ca/study/fees-financial-support/university-fees/ancillary-fees"><%= t('memberships.index.ancillary') %></a>
+      <br>
+      <p><%= t('memberships.index.ancillary_text') %></p>
+    </div>
+  </div>
+</section>

@@ -1,136 +1,144 @@
-<div class="sticky-md-top" id="sticky-header">
-<nav class="navbar navbar-expand-xl navbar-light <%= controller_name %> <%= action_name %> bg-primary shadow-lg" id="header-navbar">
-  <div class="container-fluid">
-    <a class="ms-md-5 navbar-brand" href="/"><strong>Maker</strong>Repo</a>
-    <% unless signed_in? %>
-      <%# This is to show the register button outside the menu on mobile %>
-      <a class="nav-link d-xl-none order-xl-3" data-bs-toggle="modal" data-bs-target="#loginModal" href=""><%= t('navbar.sign_in') %></a>
-    <% end %>
-    <button class="navbar-toggler" id="navbar-toggle-button" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarSupportedContent">
-      <ul class="navbar-nav ms-5 me-auto align-items-xl-baseline">
-      <li class="nav-item">
-        <a class="nav-link" href="/"><%= t('navbar.home') %></a>
-      </li>
+<div class="sticky-md-top mb-3" id="sticky-header">
+    <nav class="navbar navbar-expand-xl <%= controller_name %> <%= action_name %> shadow-lg">
+        <div class="container-fluid">
+            <a class="ms-md-5 me-xl-5 navbar-brand" href="/"><strong>Maker</strong>Repo</a>
+            <% unless signed_in? %>
+                <%# This is to show the register button outside the menu on mobile %>
+                <a class="nav-link d-xl-none order-xl-3" data-bs-toggle="modal" data-bs-target="#loginModal" href=""><%= t('navbar.sign_in') %></a>
+            <% end %>
+            <button class="navbar-toggler" id="navbar-toggle-button" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav me-auto align-items-xl-baseline">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/"><%= t('navbar.home') %></a>
+                    </li>
 
-      <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle" href="/explore" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-          <%= t('navbar.projects') %>
-        </a>
-        <div class="dropdown-menu">
-          <a class="dropdown-item" href="/explore"><%= t('navbar.explore') %></a>
-          <% if signed_in? %>
-          <a class="dropdown-item" href="<%= new_repository_path(@user.username) %>"><%= t('navbar.create_project') %></a>
-          <% end %>
-          <a class="dropdown-item" href="/project_proposals/new"><%= t('navbar.propose_project') %></a>
-          <% if signed_in? and @user.staff? %>
-          <a class="dropdown-item" href="/project_proposals"><%= t('navbar.proposed_projects') %></a>
-          <% end %>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="/explore" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <%= t('navbar.projects') %>
+                        </a>
+                        <div class="dropdown-menu">
+                            <a class="dropdown-item" href="/explore"><%= t('navbar.explore') %></a>
+                            <% if signed_in? %>
+                                <a class="dropdown-item" href="<%= new_repository_path(@user.username) %>"><%= t('navbar.create_project') %></a>
+                            <% end %>
+                            <a class="dropdown-item" href="/project_proposals/new"><%= t('navbar.propose_project') %></a>
+                            <% if signed_in? and @user.staff? %>
+                                <a class="dropdown-item" href="/project_proposals"><%= t('navbar.proposed_projects') %></a>
+                            <% end %>
+                        </div>
+                    </li>
+
+                    <li class="nav-item dropdown d-flex align-items-center">
+                        <%= link_to get_involved_path, class: 'nav-link custom-hover' do %>
+                            <%= t('navbar.get_involved') %>
+                        <% end %>
+                        <a class="nav-link dropdown-toggle dropdown-toggle-split custom-hover" href="#" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="padding-left: 0.75rem; padding-right: 0.75rem;">
+                            <span class="visually-hidden">Toggle Dropdown</span>
+                        </a>
+                        <div class="dropdown-menu">
+                            <%= link_to t('navbar.get_involved'), get_involved_path, class: 'dropdown-item' %>
+                            <a class="dropdown-item" href="https://simpli.events/u/uottawaceed"><%= t('navbar.workshops') %></a>
+                            <%= link_to t('navbar.join_a_team'), t('navbar.join_a_team_url'), class: 'dropdown-item' %>
+                            <%= link_to t('navbar.volunteering'), volunteers_path, class: 'dropdown-item' %>
+                            <%= link_to t('navbar.user.development_program'), development_programs_path, class: 'dropdown-item' %>
+                            <%= link_to t('navbar.design_day'), 'https://designday.makerepo.com/', class: 'dropdown-item' %>
+                            <%= link_to t('navbar.makerlaunch'), t('navbar.makerlaunch_url'), class: 'dropdown-item' %>
+                        </div>
+                    </li>
+
+                    <li class="nav-item dropdown d-flex align-items-center">
+                        <a class="nav-link custom-hover" href="<%= resources_path %>">
+                            <%= t('navbar.resources') %>
+                        </a>
+                        <a class="nav-link dropdown-toggle dropdown-toggle-split custom-hover" href="#" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="padding-left: 0.75rem; padding-right: 0.75rem;">
+                            <span class="visually-hidden">Toggle Dropdown</span>
+                        </a>
+                        <div class="dropdown-menu">
+                            <%= link_to t('navbar.resources'), resources_path, class: 'dropdown-item' %>
+                            <a class="dropdown-item" href="https://wiki.makerepo.com/wiki/Main_Page"><%= t('navbar.ceed_wiki') %></a>
+                            <a class="dropdown-item" href="https://makerstore.ca/"><%= t('navbar.makerstore') %></a>
+                            <%= link_to('MakerRoom', sub_space_booking_index_path, class: 'dropdown-item') %>
+                            <% if LockerOption.lockers_enabled %>
+                                <%= link_to t('lockers.locker_rentals'), locker_rentals_path, class: 'dropdown-item' %>
+                            <% end %>
+                        </div>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="<%= landing_job_orders_path %>"><%= t('navbar.user.joborder') %></a>
+                    </li>
+
+                    <li class="nav-item">
+                        <%= link_to 'FAQ', faqs_path, class: 'nav-link' %>
+                    </li>
+                </ul>
+
+                <ul class="navbar-nav ms-auto align-items-xl-baseline">
+                    <li class="nav-item">
+                        <%= link_to(t('memberships.navbar'), memberships_path, class: "nav-link ms-auto d-inline") %>
+                    </li>
+                    <% unless Rails.env.production? || Date.current >= Date.new(2025, 10, 31) %>
+                        <li class="nav-item">
+                            <button class="nav-link ms-auto d-inline" id="themeToggler"
+                                    data-bs-toggle="tooltip" data-bs-title="Checkout dark mode!" data-bs-placement="bottom" data-bs-trigger="manual">
+                                <%= fa_icon 'sun-o', id: 'lightModeIcon' %>
+                                <%= fa_icon 'moon-o', id: 'darkModeIcon' %>
+                                <%= t('navbar.theme') %>
+                            </button>
+                        </li>
+                    <% end %>
+                    <% unless signed_in? %>
+                        <li class="nav-item d-none d-xl-block"><a class="nav-link" data-bs-toggle="modal" data-bs-target="#loginModal" href=""><%= t('navbar.sign_in') %></a></li>
+                    <% else %>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href=" <%= user_path(@user.username) %>" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="text-transform: none;">
+                                <%= image_tag @user.display_avatar, class: 'avatar', alt: 'Avatar' %>
+                                <%= @user.username %>
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right">
+                                <a class="dropdown-item" href="<%= user_path(@user.username) %>"><%= t('navbar.user.profile') %></a>
+                                <%= link_to(t('navbar.user.admin_area'), admin_settings_path, class: 'dropdown-item') if @user.admin? %>
+                                <%= link_to(t('navbar.user.staff_area'), staff_dashboard_index_path, class: 'dropdown-item') if @user.staff? %>
+                                <a class="dropdown-item" href="<%= logout_path %>"><%= t('navbar.user.sign_out') %></a>
+                            </div>
+
+                            <li class="nav-item">
+                                <a class="ccLink" href="<%= discount_codes_path %>">
+                                    <%= image_tag('cc_white.png', alt: 'CC', class: 'ccs', id: 'myCcWhite') %>
+                                    <%= image_tag('cc.png', alt: 'CC', class: 'ccs hidden', id: 'myCcBlack') %>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="ccLink" href="<%= discount_codes_path %>">
+                                    <b class="nav-link"><%= current_user.get_total_cc %></b>
+                                </a>
+                            </li>
+                        </li>
+                    <% end %>
+
+                    <!-- <li class="navbar-divider mx-5"></li> -->
+
+                    <% locales_change.each do |locale| %>
+                        <li class="nav-item">
+                            <%= link_to t('name', locale:), url_for(request.query_parameters.merge(locale:)), class: 'nav-link' %>
+                        </li>
+                    <% end %>
+                </ul>
+            </div>
         </div>
-      </li>
-
-      <li class="nav-item dropdown d-flex align-items-center">
-        <%= link_to get_involved_path, class: 'nav-link custom-hover' do %>
-          <%= t('navbar.get_involved') %>
-        <% end %>
-        <a class="nav-link dropdown-toggle dropdown-toggle-split custom-hover" href="#" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="padding-left: 0.75rem; padding-right: 0.75rem;">
-          <span class="visually-hidden">Toggle Dropdown</span>
-        </a>
-        <div class="dropdown-menu">
-          <%= link_to t('navbar.get_involved'), get_involved_path, class: 'dropdown-item' %>
-          <a class="dropdown-item" href="https://simpli.events/u/uottawaceed"><%= t('navbar.workshops') %></a>
-          <%= link_to t('navbar.join_a_team'), t('navbar.join_a_team_url'), class: 'dropdown-item' %>
-          <%= link_to t('navbar.volunteering'), volunteers_path, class: 'dropdown-item' %>
-          <%= link_to t('navbar.user.development_program'), development_programs_path, class: 'dropdown-item' %>
-          <%= link_to t('navbar.design_day'), 'https://designday.makerepo.com/', class: 'dropdown-item' %>
-          <%= link_to t('navbar.makerlaunch'), t('navbar.makerlaunch_url'), class: 'dropdown-item' %>
-        </div>
-      </li>
-
-      <li class="nav-item dropdown d-flex align-items-center">
-        <a class="nav-link custom-hover" href="<%= resources_path %>">
-          <%= t('navbar.resources') %>
-        </a>
-        <a class="nav-link dropdown-toggle dropdown-toggle-split custom-hover" href="#" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="padding-left: 0.75rem; padding-right: 0.75rem;">
-          <span class="visually-hidden">Toggle Dropdown</span>
-        </a>
-        <div class="dropdown-menu">
-        <%= link_to t('navbar.resources'), resources_path, class: 'dropdown-item' %>
-          <a class="dropdown-item" href="https://wiki.makerepo.com/wiki/Main_Page"><%= t('navbar.ceed_wiki') %></a>
-          <a class="dropdown-item" href="https://makerstore.ca/"><%= t('navbar.makerstore') %></a>
-          <%= link_to('MakerRoom', sub_space_booking_index_path, class: 'dropdown-item') %>
-          <% if LockerOption.lockers_enabled %>
-              <%= link_to t('lockers.locker_rentals'), locker_rentals_path, class: 'dropdown-item' %>
-          <% end %>
-        </div>
-      </li>
-
-      <li class="nav-item">
-        <a class="nav-link" href="<%= landing_job_orders_path %>"><%= t('navbar.user.joborder') %></a>
-      </li>
-
-      <li class="nav-item">
-        <%= link_to 'FAQ', faqs_path, class: 'nav-link' %>
-      </li>
-    </ul>
-
-    <ul class="navbar-nav ms-auto align-items-xl-baseline">
-
-      <% unless signed_in? %>
-      <li class="nav-item d-none d-xl-block"><a class="nav-link" data-bs-toggle="modal" data-bs-target="#loginModal" href=""><%= t('navbar.sign_in') %></a></li>
-        <% else %>
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href=" <%= user_path(@user.username) %>" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="text-transform: none;">
-            <%= image_tag @user.display_avatar, class: 'avatar', alt: 'Avatar' %>
-            <%= @user.username %>
-          </a>
-          <div class="dropdown-menu dropdown-menu-right">
-            <a class="dropdown-item" href="<%= user_path(@user.username) %>"><%= t('navbar.user.profile') %></a>
-            <%= link_to(t('navbar.user.admin_area'), admin_settings_path, class: 'dropdown-item') if @user.admin? %>
-            <%= link_to(t('navbar.user.staff_area'), staff_dashboard_index_path, class: 'dropdown-item') if @user.staff? %>
-            <a class="dropdown-item" href="<%= logout_path %>"><%= t('navbar.user.sign_out') %></a>
-          </div>
-
-          <li class="nav-item">
-            <a class="ccLink" href="<%= discount_codes_path %>">
-              <%= image_tag('cc_white.png', alt: 'CC', class: 'ccs', id: 'myCcWhite') %>
-              <%= image_tag('cc.png', alt: 'CC', class: 'ccs hidden', id: 'myCcBlack') %>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="ccLink" href="<%= discount_codes_path %>">
-              <b class="nav-link"><%= current_user.get_total_cc %></b>
-            </a>
-          </li>
-      </li>
-        <% end %>
-
-        <!-- <li class="navbar-divider mx-5"></li> -->
-
-        <% locales_change.each do |locale| %>
-          <li class="nav-item">
-            <%= link_to t('name', locale:), url_for(request.query_parameters.merge(locale:)), class: 'nav-link' %>
-          </li>
-        <% end %>
-    </ul>
-    </div>
-  </div>
-</nav>
-<%# Set by layouts/volunteer.html.erb, sometimes not even set?%>
-<%= render 'layouts/volunteer_header' if (defined? with_volunteer) && with_volunteer %>
-<%= render 'layouts/development_program_header' if (defined? with_development) && with_development %>
-<%= render 'layouts/job_orders_header' if (defined? with_job_orders) && with_job_orders %>
-<%= render 'layouts/admin_area_header' if (defined? with_admin) && with_admin %>
-<%= render 'layouts/staff_area_header' if (defined? with_staff) && with_staff %>
-<%= render 'layouts/sub_space_header' if @with_sub_space %>
+    </nav>
+    <%# Set by layouts/volunteer.html.erb, sometimes not even set?%>
+    <%= render 'layouts/volunteer_header' if (defined? with_volunteer) && with_volunteer %>
+    <%= render 'layouts/development_program_header' if (defined? with_development) && with_development %>
+    <%= render 'layouts/job_orders_header' if (defined? with_job_orders) && with_job_orders %>
+    <%= render 'layouts/admin_area_header' if (defined? with_admin) && with_admin %>
+    <%= render 'layouts/staff_area_header' if (defined? with_staff) && with_staff %>
+    <%= render 'layouts/sub_space_header' if @with_sub_space %>
 
 
-<%= render 'layouts/quick_access_link' if current_user.admin? %>
+    <%= render 'layouts/quick_access_link' if current_user.admin? %>
 </div>
 <%= render 'static_pages/login_modal' unless signed_in? %>
-
-<div class="flash" id="flash" style="padding-left: 20px; padding-right: 20px; z-index: 100;">
-  <%= render 'layouts/flash' %>
-</div>

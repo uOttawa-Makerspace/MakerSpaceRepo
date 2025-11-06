@@ -215,7 +215,7 @@
         <span class="number"><%= @joined_projects.count %></span> JOINED PROJECTS
       <% end %>
     </section>
-    <section id="repositories-container">
+    <section class="mb-3">
       <%= render partial: 'users/repositories', locals: { repositories: @repositories } %>
     </section>
     <div id="modal-window" class="modal hide fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">

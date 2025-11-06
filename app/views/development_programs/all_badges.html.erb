@@ -8,7 +8,7 @@
     <div class="d-flex gap-4 flex-wrap">
         <% @digital_certs.each do |cert| %>
         <a target="_blank" href="/badges/<%= cert.id %>">
-            <%= render "badges/badge_icon", width: 200, height: 200, level: cert.level, name: cert.training.localized_name, skill: cert.training.skill_id %>
+            <%= render "badges/badge_icon", width: 150, height: 150, level: cert.level, name: cert.training.localized_name, skill: cert.training.skill_id %>
             <br/>
         </a>
         <% end %>
@@ -22,7 +22,7 @@
     <div class="d-flex gap-4 flex-wrap">
         <% @manu_certs.each do |cert| %>
         <a target="_blank" href="/badges/<%= cert.id %>">
-            <%= render "badges/badge_icon", width: 200, height: 200, level: cert.level, name: cert.training.localized_name, skill: cert.training.skill_id %>
+            <%= render "badges/badge_icon", width: 150, height: 150, level: cert.level, name: cert.training.localized_name, skill: cert.training.skill_id %>
             <br/>
         </a>
         <% end %>
@@ -36,7 +36,7 @@
     <div class="d-flex gap-4 flex-wrap">
         <% @prof_certs.each do |cert| %>
         <a target="_blank" href="/badges/<%= cert.id %>">
-            <%= render "badges/badge_icon", width: 200, height: 200, level: cert.level, name: cert.training.localized_name, skill: cert.training.skill_id %>
+            <%= render "badges/badge_icon", width: 150, height: 150, level: cert.level, name: cert.training.localized_name, skill: cert.training.skill_id %>
             <br/>
         </a>
         <% end %>
@@ -53,7 +53,7 @@
     <div class="d-flex gap-4 flex-wrap">
         <% @digital_trainings.each do |cert| %>
 
-            <%= render "badges/badge_icon", width: 200, height: 200, level: "none", name: cert.localized_name, skill: cert.skill_id %>
+            <%= render "badges/badge_icon", width: 150, height: 150, level: "none", name: cert.localized_name, skill: cert.skill_id %>
             <br/>
         <% end %>
     </div>
@@ -66,7 +66,7 @@
     <div class="d-flex gap-4 flex-wrap">
         <% @manu_trainings.each do |cert| %>
 
-            <%= render "badges/badge_icon", width: 200, height: 200, level: "none", name: cert.localized_name, skill: cert.skill_id %>
+            <%= render "badges/badge_icon", width: 150, height: 150, level: "none", name: cert.localized_name, skill: cert.skill_id %>
             <br/>
         <% end %>
     </div>
@@ -79,7 +79,7 @@
     <div class="d-flex gap-4 flex-wrap">
         <% @prof_trainings.each do |cert| %>
 
-            <%= render "badges/badge_icon", width: 200, height: 200, level: "none", name: cert.localized_name, skill: cert.skill_id %>
+            <%= render "badges/badge_icon", width: 150, height: 150, level: "none", name: cert.localized_name, skill: cert.skill_id %>
             <br/>
         <% end %>
     </div>

@@ -1,16 +1,8 @@
-<script>
- $(document).ready(function () {
-   $('[data-bs-toggle="tooltip"]').tooltip();
- });
-</script>
-<br>
-<div class="by-5 row row-cols-lg-auto g-3 align-items-center">
-    <div class="input-group">
-      <%= fa_icon 'search', class: 'fa-2x pe-2 form-group-text' %>
-      <%= text_field_tag(:search, '', placeholder: 'Search by Badge Name, User, Description ...', class: 'form-control', id: 'search_bar') %>
-    </div>
+<div class="input-group">
+    <%= fa_icon 'search', class: 'fa-2x pe-2 form-group-text' %>
+    <%= text_field_tag(:search, '', placeholder: 'Search by Badge Name, User, Description ...', class: 'form-control', id: 'search_bar') %>
 </div>
 
 <div class="badge_list">
-  <%= render 'badges/badge_list' %>
+    <%= render 'badges/badge_list' %>
 </div>

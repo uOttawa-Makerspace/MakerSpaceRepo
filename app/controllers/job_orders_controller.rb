@@ -1,5 +1,5 @@
-class JobOrdersController < ApplicationController
-  layout "job_orders"
+class JobOrdersController < SessionsController
+  before_action :no_container, only: :landing
 
   before_action :current_user
   before_action :signed_in,
