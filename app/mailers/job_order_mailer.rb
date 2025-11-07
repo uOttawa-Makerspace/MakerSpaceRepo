@@ -49,13 +49,11 @@ class JobOrderMailer < ApplicationMailer
     return unless JobOrder.where(id: job_order_id).present?
     @job_order = JobOrder.find(job_order_id)
 
-    file_info = @job_order.user_files.attached? ? " (#{@job_order.user_files.first.filename})" : ""
-
     mail(
       to: @job_order.user.email,
       reply_to: "makerspace@uottawa.ca",
       bcc: "uottawa.makerepo@gmail.com",
-      subject: "Your job ##{@job_order.id}#{file_info} has been declined"
+      subject: "Your job ##{@job_order.id} has been declined"
     )
   end
 
