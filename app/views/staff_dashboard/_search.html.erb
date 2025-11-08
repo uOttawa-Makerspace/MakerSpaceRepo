@@ -45,7 +45,7 @@
       <div style="flex-grow: 1">
         <%= form_tag staff_dashboard_search_path, method: :get, action: :search do %>
           <div class="input-group mb-3">
-            <%= text_field_tag(:query, '', placeholder: 'Name, email, username', class: 'form-control', 'aria-describedby': 'button-addon2', style: 'font-size: inherit;') %>
+            <%= text_field_tag(:query, '', placeholder: 'Search by name, email, or username', class: 'form-control', 'aria-describedby': 'button-addon2', autocomplete: 'off') %>
             <button class="btn btn-primary" type="submit" id="button-addon2">Search</button>
           </div>
         <% end %>
