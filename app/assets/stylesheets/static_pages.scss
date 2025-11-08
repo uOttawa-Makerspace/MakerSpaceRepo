@@ -1,15 +1,6 @@
 @import "lib";
 @import "./shared/variables";
 
-.home ~ #quick-access-bar {
-  width: 100%;
-  z-index: 50;
-}
-
-#add-new-quick-access {
-  cursor: pointer;
-}
-
 section#home-header {
   overflow: hidden;
   position: relative;

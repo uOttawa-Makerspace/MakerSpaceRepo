@@ -1,4 +1,4 @@
-<div class="navbar navbar-expand-sm" id="quick-access-bar">
+<div class="navbar navbar-expand-sm border-bottom" id="quick-access-bar">
     <div class="container-fluid flex-row align-self-end" id="quick-access-container">
         <ul class="navbar-nav mr-auto d-flex flex-row">
             <% QuickAccessLink.where(user: current_user).find_each do |link| %>

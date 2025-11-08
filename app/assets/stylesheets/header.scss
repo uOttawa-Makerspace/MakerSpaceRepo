@@ -1,5 +1,29 @@
 @import "shared/variables";
 
+#quick-access-bar {
+  [data-bs-theme="dark"] & {
+    background-color: black;
+  }
+  background-color: white;
+
+  .nav-link {
+    // This is how you nest dark mode selector
+    [data-bs-theme="dark"] & {
+      --bs-nav-link-hover-color: black;
+    }
+    --bs-nav-link-color: black;
+    --bs-nav-link-hover-color: var(--bs-primary);
+  }
+
+  .btn.btn-link {
+    [data-bs-theme="dark"] & {
+      --bs-btn-hover-color: #{$primary};
+    }
+    --bs-btn-color: var(--bs-primary);
+    --bs-btn-hover-color: black;
+  }
+}
+
 .navbar {
   .nav-link {
     // This is how you nest dark mode selector
