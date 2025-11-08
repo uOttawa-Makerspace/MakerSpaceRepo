@@ -8,7 +8,6 @@ window.hidePass = function () {
     document.getElementById("change_pass").style.display = "none";
   if (document.getElementById("pass"))
     document.getElementById("pass").style.display = "none";
-  document.getElementById("password_repo_field").value = "";
 };
 window.togglePass = function () {
   // dont think this is used
