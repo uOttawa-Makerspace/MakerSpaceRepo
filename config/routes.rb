@@ -514,9 +514,6 @@ Rails.application.routes.draw do
       post "certify_participant"
     end
 
-    resources :shifts_schedule, except: %i[new show destroy] do
-      collection { get :get_shifts }
-    end
     resources :my_calendar do
       collection do
         get 'json/:id', to: 'my_calendar#json', as: :json
