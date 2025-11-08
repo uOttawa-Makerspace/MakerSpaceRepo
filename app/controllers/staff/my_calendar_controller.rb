@@ -25,6 +25,14 @@ ea.user.name end.join(", ")}"
         # seconds to milliseconds because javascript
         duration = (event.end_time.to_time - event.start_time.to_time) * 1000
 
+        rrule_data = if event.recurrence_rule.present?
+          rrule = event.recurrence_rule          
+          rrule_parts = rrule.split(/[;\n]/).reject { |part| part.strip.start_with?('DTSTART') }
+          rrule_without_dtstart = rrule_parts.join(';').gsub(/;EXDATE/, "\nEXDATE")
+          dtstart_toronto = event.start_time.in_time_zone("America/Toronto")&.strftime("%Y%m%dT%H%M%S")          
+          "DTSTART:#{dtstart_toronto}\n#{rrule_without_dtstart}"
+        end
+
         background = if event.event_assignments.empty?
           "linear-gradient(to right, #bbb 0.0%, #bbb 100.0%);#{' opacity: 0.8;' if event.draft}"
         else
@@ -41,7 +49,7 @@ e = (100.0 / event.event_assignments.size) * (i + 1)
         title: title,
         start: event.start_time.iso8601,
         end: event.end_time.iso8601,
-        **(event.recurrence_rule.present? ? { rrule: event.recurrence_rule, duration: duration } : {}),
+        **(event.recurrence_rule.present? ? { rrule: rrule_data, duration: duration } : {}),
         allDay: event.start_time.to_time == event.end_time.to_time - 1.day,
         extendedProps: {
           name: event.event_type.capitalize,
