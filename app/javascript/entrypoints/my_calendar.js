@@ -11,12 +11,14 @@ document.addEventListener("turbo:load", async () => {
 
   const calendar = new Calendar(calendarEl, {
     plugins: [timeGridPlugin, dayGridPlugin, rrulePlugin],
+    timeZone: "America/Toronto",
     initialView: "timeGridWeek",
     headerToolbar: {
-      left: "prev,next,today toggleOthersShifts",
+      left: "prev,next,today toggleOthersShifts toggleEventOverlap",
       center: "title",
       right: "timeGridWeek,dayGridMonth",
     },
+    slotEventOverlap: localStorage.fullCalendarEventOverlap === "true",
     customButtons: {
       toggleOthersShifts: {
         text: "Show My Shifts Only",
@@ -36,6 +38,23 @@ document.addEventListener("turbo:load", async () => {
 
           document.querySelector(".fc-toggleOthersShifts-button").innerHTML =
             onlyShowMyShifts ? "Show My Shifts Only" : "Show All Shifts";
+        },
+      },
+      toggleEventOverlap: {
+        text: "",
+        click: () => {
+          localStorage.fullCalendarEventOverlap =
+            !calendar.getOption("slotEventOverlap");
+
+          calendar.setOption(
+            "slotEventOverlap",
+            !calendar.getOption("slotEventOverlap"),
+          );
+
+          document.querySelector(".fc-toggleEventOverlap-button").innerHTML =
+            calendar.getOption("slotEventOverlap")
+              ? "Disable Event Overlap"
+              : "Enable Event Overlap";
         },
       },
     },
@@ -80,4 +99,10 @@ document.addEventListener("turbo:load", async () => {
   document.getElementById("calendar_container").style.display = "block";
   document.getElementById("spinner_container").style.display = "none";
   calendar.render();
+
+  // Set button text
+  document.querySelector(".fc-toggleEventOverlap-button").innerHTML =
+    calendar.getOption("slotEventOverlap")
+      ? "Disable Event Overlap"
+      : "Enable Event Overlap";
 });

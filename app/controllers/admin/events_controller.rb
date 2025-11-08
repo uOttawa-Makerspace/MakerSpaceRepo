@@ -239,9 +239,6 @@ Time.parse(event_params[:utc_start_time]).utc)
       {
         id: event_type,
         events: events.map do |event|
-          # Skip events that are far in the past
-          next if event.recurrence_rule.blank? && event.end_time < (Time.now.utc - 2.months)
-
           title = if event.title == event.event_type.capitalize && !event.event_assignments.empty?
             "#{if event.draft
                  '✎ '
@@ -253,6 +250,14 @@ Time.parse(event_params[:utc_start_time]).utc)
 
           # seconds to milliseconds because javascript
           duration = (event.end_time.to_time - event.start_time.to_time) * 1000
+
+          rrule_data = if event.recurrence_rule.present?
+            rrule = event.recurrence_rule          
+            rrule_parts = rrule.split(/[;\n]/).reject { |part| part.strip.start_with?('DTSTART') }
+            rrule_without_dtstart = rrule_parts.join(';').gsub(/;EXDATE/, "\nEXDATE")
+            dtstart_toronto = event.start_time.in_time_zone("America/Toronto")&.strftime("%Y%m%dT%H%M%S")          
+            "DTSTART:#{dtstart_toronto}\n#{rrule_without_dtstart}"
+          end
 
           background = "linear-gradient(to right, #{event.event_assignments.map.with_index do |ea, i|
  c = StaffSpace.find_by(user_id: ea.user_id, space_id: params[:id])&.color
@@ -266,7 +271,7 @@ Time.parse(event_params[:utc_start_time]).utc)
             title: title,
             start: event.start_time.iso8601,
             end: event.end_time.iso8601,
-            **(event.recurrence_rule.present? ? { rrule: event.recurrence_rule, duration: duration } : {}),
+            **(event.recurrence_rule.present? ? { rrule: rrule_data, duration: duration } : {}),
             allDay: event.start_time.to_time == event.end_time.to_time - 1.day,
             extendedProps: {
               name: event.event_type.capitalize,

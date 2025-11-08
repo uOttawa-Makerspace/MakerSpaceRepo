@@ -1,4 +1,4 @@
-import { Calendar, elementClosest } from "@fullcalendar/core";
+import { Calendar } from "@fullcalendar/core";
 import "@fullcalendar/common/main.css";
 import interactionPlugin from "@fullcalendar/interaction";
 import timeGridPlugin from "@fullcalendar/timegrid";

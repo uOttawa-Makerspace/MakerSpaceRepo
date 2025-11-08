@@ -108,9 +108,9 @@
                 <% end %>
             </div>
             
-            <div id="pass" class="mb-3" style="display: none;">
+            <div id="pass" class="mb-3" style="display: <%= @repository.share_type == 'private' ? 'block' : 'none' %>;">
                 <%= f.label :password, 'Set repository password', class: 'form-label' %>
-                <%= password_field :password, nil, placeholder: 'Password', id: 'password_repo_field', 'aria-label': 'Password / Mot de Passe', class: 'form-control', required: true %>
+                <%= password_field :password, nil, placeholder: 'Password', id: 'password_repo_field', 'aria-label': 'Password / Mot de Passe', class: 'form-control' %>
             </div>
             <div class="invalid-feedback">
                 Please Select a Share Type

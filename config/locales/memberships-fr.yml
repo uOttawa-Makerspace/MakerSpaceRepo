@@ -1,0 +1,47 @@
+fr:
+  memberships:
+    navbar: "Adhésion"
+    index:
+      title: "Adhésion CEED"
+      sub_header: "Donnez vie à vos idées avec"
+      purchase_btn: "Achetez maintenant"
+      subtitle_1: "QU'EST-CE QUE C'EST?"
+      text_1:
+        "L’adhésion au CEED vous donne accès aux installations du Centre d’entrepreneuriat et de conception technique, notamment
+        l’espace de création Richard L’Abbé et le Centre Brunsfield. Grâce à votre adhésion, vous
+        pouvez explorer les outils de conception et de fabrication, créer ou poursuivre des projets personnels et donner vie à vos idées."
+      subtitle_2: "AI-JE DÉJÀ UN ADHÉSION?"
+      text_2: "Les étudiants ayant réglé les frais annexes du CEED bénéficient automatiquement de l'adhésion. Il n'y a aucun frais supplémentaire."
+      subtitle_3: "QUELS SONT LES AVANTAGES?"
+      text_3: "Tous les membres bénéficient du même niveau d'accès aux espaces du CEED. Cependant, veuillez noter que l'utilisation des installations est soumise à un système de priorités :les cours, les travaux pratiques et les ateliers programmés sont prioritaires sur l'utilisation générale."
+      subtitle_4: " NOUS VOULONS VOIR VOTRE CRÉATIVITÉ BRILLER"
+      text_4:
+        "Que vous soyez étudiant réalisant un projet de classe, une équipe se préparant à une compétition,
+        ou un innovateur développant un prototype, votre adhésion au CEED est votre porte d’entrée vers l’une des communautés d’ingénierie et d’entrepreneuriat les plus créatives d’Ottawa."
+      more_info: "PLUS D'INFOS"
+      makerspace: "Richard L'Abbe Makerspace"
+      brunsfield: "Brunsfield Centre"
+      ancillary: "Frais accessoires"
+      ancillary_text: "Les frais accessoires s'ajoutent aux frais de scolarité pour calculer les frais universitaires. Ce sont des frais obligatoires qui couvrent des services non liés à votre programme d'études."
+
+    purchase:
+      title: "Vos Adhésions"
+      active:
+        heading: "Adhésion(s) Active(s)"
+        type: "Type :"
+        expires: "Expire le :"
+      no_active: "Vous n'avez pas d'adhésion active. Achetez-en une ci-dessous pour commencer."
+      purchase:
+        heading: "Acheter ou Renouveler"
+        button: "Acheter"
+        cutoff_tooltip: "Vous ne pouvez pas prolonger votre adhésion au-delà de la limite autorisée."
+      history:
+        heading: "Précédentes"
+        type: "Type"
+        purchase_date: "Date d'achat"
+        expiry_date: "Échéance"
+        status: "Statut"
+        active: "Active"
+        expired: "Expirée"
+        revoked: "Révoqué"
+        cancelled: "Annulé"

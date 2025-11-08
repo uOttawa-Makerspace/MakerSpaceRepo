@@ -109,8 +109,8 @@ class Space < ApplicationRecord
 
     events = parsed.first[:events]
 
-    start_of_week = Time.zone.today.beginning_of_week.beginning_of_day
-    end_of_week   = Time.zone.today.end_of_week.end_of_day
+    start_of_week = Time.zone.today.beginning_of_week(start_day = :saturday).beginning_of_day
+    end_of_week   = Time.zone.today.end_of_week(start_day = :saturday).end_of_day
 
     weekly_events = []
 
