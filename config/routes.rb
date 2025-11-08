@@ -349,27 +349,7 @@ Rails.application.routes.draw do
     namespace :add_new_staff do
       get "/", as: "index", action: "index"
     end
-
-    resources :shifts, except: %i[new show] do
-      collection do
-        get :shifts
-        get :get_availabilities
-        get :get_shifts
-        get :get_staff_needed
-        get :get_external_staff_needed
-        get :get_users_hours_between_dates
-        get :get_shift
-        get :pending_shifts
-        get :shift_suggestions
-        get :ics
-        post :update_color
-        post :confirm_shifts
-        post :clear_pending_shifts
-        post :confirm_current_week_shifts
-        post :copy_to_next_week
-      end
-    end
-
+    
     resources :pi_readers, only: [:update]
 
     resources :trainings do
