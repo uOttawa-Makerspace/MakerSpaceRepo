@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 class PrintersController < StaffAreaController
-  layout "staff_area"
-
   before_action :ensure_admin, only: %i[index add_printer remove_printer]
 
   def index

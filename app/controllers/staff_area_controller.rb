@@ -3,6 +3,7 @@
 class StaffAreaController < SessionsController
   before_action :current_user, :default_space, :define_spaces
   before_action :ensure_staff, except: %i[dismiss]
+  before_action :with_staff_header
 
   private
 

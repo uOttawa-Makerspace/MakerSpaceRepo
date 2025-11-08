@@ -118,6 +118,10 @@ module ApplicationHelper
   def with_admin_header
     @with_admin_header = true
   end
+
+  def with_staff_header
+    @with_staff_header = true
+  end
 end
 
 def rgba(color, opacity)

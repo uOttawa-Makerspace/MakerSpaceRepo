@@ -3,7 +3,7 @@ class LockerRentalsController < SessionsController
   before_action :signed_in
   # Also sets @locker_rental
   before_action :check_permission, except: %i[index new create]
-  layout "staff_area", only: [:admin] # as in admin tools but staff can access it
+  before_action :with_staff_header, only: [:admin] # as in admin tools but staff can access it
   before_action :with_admin_header, only: [:assign_locker]
 
   def index
@@ -26,7 +26,7 @@ class LockerRentalsController < SessionsController
 
     respond_to do |format|
       format.json { render json: @locker_rentals }
-      format.all { render layout: "staff_area" }
+      format.all
     end
   end
 

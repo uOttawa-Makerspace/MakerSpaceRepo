@@ -1,6 +1,4 @@
 class Staff::UnavailabilitiesController < StaffAreaController
-  layout "staff_area"
-
   def index
     @external_unavailabilities = StaffExternalUnavailability.where(user_id: current_user.id)
   end

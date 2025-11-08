@@ -1,6 +1,4 @@
 class Staff::MyCalendarController < StaffAreaController
-  layout "staff_area"
-
   def index
      @spaces =
       Space.all.where(

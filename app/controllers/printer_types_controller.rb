@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 class PrinterTypesController < StaffAreaController
-  layout "staff_area"
-
   before_action :get_printer_type, only: %i[edit update destroy]
   before_action :ensure_admin
 

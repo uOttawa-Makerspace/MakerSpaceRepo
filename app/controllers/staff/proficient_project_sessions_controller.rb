@@ -1,6 +1,4 @@
 class Staff::ProficientProjectSessionsController < StaffDashboardController
-  layout "staff_area"
-
   def show
     @current_proficient_project_session = ProficientProjectSession.find(params[:id])
     return if current_user.staff?

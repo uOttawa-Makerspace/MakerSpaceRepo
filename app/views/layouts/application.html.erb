@@ -15,7 +15,11 @@
         <%= vite_client_tag %>
     </head>
     <body>
-        <%= render 'layouts/header', with_volunteer: @with_volunteer_header, with_development: @with_development_header, with_admin: @with_admin_header %>
+        <%= render 'layouts/header',
+                   with_volunteer: @with_volunteer_header,
+                   with_development: @with_development_header,
+                   with_staff: @with_staff_header,
+                   with_admin: @with_admin_header %>
         <main <% unless @no_container %>class="container"<% end %> >
             <div class="flash" id="flash" style="padding-left: 20px; padding-right: 20px; z-index: 100;">
                 <%= render 'layouts/flash' %>

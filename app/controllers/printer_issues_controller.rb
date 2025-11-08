@@ -1,6 +1,4 @@
 class PrinterIssuesController < StaffAreaController
-  layout "staff_area"
-
   def index
     @issues = PrinterIssue.all.order(:printer_id)
     @issues_summary =
