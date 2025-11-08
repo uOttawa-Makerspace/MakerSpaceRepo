@@ -10,6 +10,7 @@ window.hidePass = function () {
     document.getElementById("pass").style.display = "none";
 };
 window.togglePass = function () {
+  // dont think this is used
   var x = document.getElementById("password_repo_field");
   if (x.style.display === "none") {
     x.style.display = "block";
