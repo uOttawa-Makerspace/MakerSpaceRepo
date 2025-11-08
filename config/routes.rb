@@ -163,6 +163,7 @@ Rails.application.routes.draw do
   resources :memberships, only: [:index, :create] do
     collection do
       post :admin_create_membership
+      get :your_memberships
     end
     member do
       patch :revoke
