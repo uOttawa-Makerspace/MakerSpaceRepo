@@ -3,6 +3,7 @@
 class AdminAreaController < SessionsController
   before_action :current_user
   before_action :ensure_admin
+  before_action :with_admin_header
 
   private
 

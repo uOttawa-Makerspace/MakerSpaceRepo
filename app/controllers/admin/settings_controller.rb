@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 class Admin::SettingsController < AdminAreaController
-  layout "admin_area"
-
   def index
     @equip_option = EquipmentOption.new
     @cat_option = CategoryOption.new

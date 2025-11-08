@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 class Admin::TimePeriodsController < AdminAreaController
-  layout "admin_area"
-
   def index
     @time_periods = TimePeriod.all
   end

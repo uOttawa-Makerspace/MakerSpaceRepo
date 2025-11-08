@@ -1,6 +1,4 @@
 class Admin::MembershipsController < AdminAreaController
-  layout "admin_area"
-
   before_action :set_membership_tier, only: [:update]
 
   def index

@@ -1,5 +1,4 @@
 class Admin::TrainingsController < AdminAreaController
-  layout "admin_area"
   before_action :set_spaces, only: %i[new edit update create]
   before_action :set_skills, only: %i[new edit update create]
 

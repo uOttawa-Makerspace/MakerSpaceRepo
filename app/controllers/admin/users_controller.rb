@@ -3,8 +3,6 @@
 class Admin::UsersController < AdminAreaController
   before_action :load_user, only: %i[show edit update]
 
-  layout "admin_area"
-
   def index
     if sort_params
       if params[:p] == "signed_in_users"

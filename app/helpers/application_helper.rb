@@ -114,6 +114,10 @@ module ApplicationHelper
   def with_volunteer_header
     @with_volunteer_header = true
   end
+
+  def with_admin_header
+    @with_admin_header = true
+  end
 end
 
 def rgba(color, opacity)

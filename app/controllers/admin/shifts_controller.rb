@@ -3,8 +3,6 @@
 class Admin::ShiftsController < AdminAreaController
   include ShiftsDeprecationWarning
 
-  layout "admin_area"
-
   before_action :set_default_space
   before_action :set_shifts, only: %i[edit update destroy]
   before_action :set_time_period

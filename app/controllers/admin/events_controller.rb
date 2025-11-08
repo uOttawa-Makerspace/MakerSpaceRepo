@@ -1,6 +1,4 @@
 class Admin::EventsController < AdminAreaController
-  layout "admin_area"
-
   def create
     participants = params[:staff_select].presence || []
 

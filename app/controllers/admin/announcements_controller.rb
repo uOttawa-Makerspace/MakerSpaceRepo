@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 class Admin::AnnouncementsController < AdminAreaController
-  layout "admin_area"
-
   def index
     @announcements = Announcement.all.order(created_at: :asc)
   end

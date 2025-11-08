@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class QuestionsController < AdminAreaController
-  layout "admin_area"
   before_action :set_question,
                 only: %i[show edit update destroy remove_answer add_answer]
   before_action :set_levels,

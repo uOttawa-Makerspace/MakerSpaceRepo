@@ -4,7 +4,7 @@ class LockerRentalsController < SessionsController
   # Also sets @locker_rental
   before_action :check_permission, except: %i[index new create]
   layout "staff_area", only: [:admin] # as in admin tools but staff can access it
-  layout "admin_area", only: [:assign_locker]
+  before_action :with_admin_header, only: [:assign_locker]
 
   def index
     @own_locker_rentals = current_user.locker_rentals

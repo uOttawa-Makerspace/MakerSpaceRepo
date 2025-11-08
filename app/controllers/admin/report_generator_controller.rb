@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class Admin::ReportGeneratorController < AdminAreaController
-  layout "admin_area"
   require "date"
 
   def index

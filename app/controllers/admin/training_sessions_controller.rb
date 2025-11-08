@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class Admin::TrainingSessionsController < AdminAreaController
-  layout "admin_area"
   before_action :training_session_params, only: [:update]
   before_action :training_session, only: %i[update destroy]
 

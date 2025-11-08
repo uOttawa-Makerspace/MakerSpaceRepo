@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 class Admin::SpacesController < AdminAreaController
-  layout "admin_area"
-
   def index
   end
 
