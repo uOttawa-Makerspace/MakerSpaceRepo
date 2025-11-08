@@ -25,11 +25,15 @@ ea.user.name end.join(", ")}"
         # seconds to milliseconds because javascript
         duration = (event.end_time.to_time - event.start_time.to_time) * 1000
 
-        background = "linear-gradient(to right, #{event.event_assignments.map.with_index do |ea, i|
+        background = if event.event_assignments.empty?
+          "linear-gradient(to right, #bbb 0.0%, #bbb 100.0%);#{' opacity: 0.8;' if event.draft}"
+        else
+        "linear-gradient(to right, #{event.event_assignments.map.with_index do |ea, i|
 c = StaffSpace.find_by(user_id: ea.user_id, space_id: params[:id])&.color
 s = (100.0 / event.event_assignments.size) * i
 e = (100.0 / event.event_assignments.size) * (i + 1)
 "#{c} #{s}%, #{c} #{e}%" end.join(', ')});#{' opacity: 0.8;' if event.draft}"
+        end
 
 
       {
