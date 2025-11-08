@@ -61,15 +61,6 @@ Rails.application.routes.draw do
   get "/saml/metadata" => "saml_idp#metadata"
   get "/saml/wiki_metadata" => "saml_idp#wiki_metadata"
   post "/saml/auth" => "saml_idp#auth"
-
-  resources :print_orders,
-            only: %i[index create update new destroy edit show] do
-    get :edit_approval
-    collection do
-      get :index_new
-      patch :update_submission
-    end
-  end
     
   resources :job_orders, only: %i[index show create update new destroy] do
     get :steps
