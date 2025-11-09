@@ -286,7 +286,7 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
       # DELCINE JOB
       if params[:user_comments].present?
         @job_order.chat_messages.create(
-          message: params[:comments],
+          message: params[:user_comments],
           sender: current_user
         )
       end
