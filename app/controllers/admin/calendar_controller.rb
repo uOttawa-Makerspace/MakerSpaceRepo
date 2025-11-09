@@ -147,18 +147,7 @@ class Admin::CalendarController < AdminAreaController
       duration = event.end_time - event.start_time
       
       occurrences.map do |occurrence|
-        {
-          title: event.title.presence || "Shift for #{event.users.map(&:name).join(', ')}",
-          start: occurrence,
-          end: occurrence + duration,
-          color: get_user_color(event.users.first),
-          extendedProps: {
-            reason: event.description,
-            training: event.training&.name_en || "",
-            course: event.course_name&.name || "",
-            language: event.language
-          }
-        }
+        build_event_hash(event, occurrence, occurrence + duration)
       end
     rescue => e
       Rails.logger.error "Failed to expand event #{event.id}: #{e.message}"
@@ -169,10 +158,14 @@ class Admin::CalendarController < AdminAreaController
   def format_event(event, range_start, range_end)
     return [] unless event.start_time.between?(range_start, range_end)
     
-    [{
+    [build_event_hash(event, event.start_time, event.end_time)]
+  end
+
+  def build_event_hash(event, start_time, end_time)
+    {
       title: event.title.presence || "Shift for #{event.users.map(&:name).join(', ')}",
-      start: event.start_time,
-      end: event.end_time,
+      start: start_time,
+      end: end_time,
       color: get_user_color(event.users.first),
       extendedProps: {
         reason: event.description,
@@ -180,7 +173,7 @@ class Admin::CalendarController < AdminAreaController
         course: event.course_name&.name || "",
         language: event.language
       }
-    }]
+    }
   end
 
   def get_user_color(user)
