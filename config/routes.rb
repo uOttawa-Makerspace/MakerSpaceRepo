@@ -61,15 +61,6 @@ Rails.application.routes.draw do
   get "/saml/metadata" => "saml_idp#metadata"
   get "/saml/wiki_metadata" => "saml_idp#wiki_metadata"
   post "/saml/auth" => "saml_idp#auth"
-
-  resources :print_orders,
-            only: %i[index create update new destroy edit show] do
-    get :edit_approval
-    collection do
-      get :index_new
-      patch :update_submission
-    end
-  end
     
   resources :job_orders, only: %i[index show create update new destroy] do
     get :steps
@@ -349,27 +340,7 @@ Rails.application.routes.draw do
     namespace :add_new_staff do
       get "/", as: "index", action: "index"
     end
-
-    resources :shifts, except: %i[new show] do
-      collection do
-        get :shifts
-        get :get_availabilities
-        get :get_shifts
-        get :get_staff_needed
-        get :get_external_staff_needed
-        get :get_users_hours_between_dates
-        get :get_shift
-        get :pending_shifts
-        get :shift_suggestions
-        get :ics
-        post :update_color
-        post :confirm_shifts
-        post :clear_pending_shifts
-        post :confirm_current_week_shifts
-        post :copy_to_next_week
-      end
-    end
-
+    
     resources :pi_readers, only: [:update]
 
     resources :trainings do
@@ -514,9 +485,6 @@ Rails.application.routes.draw do
       post "certify_participant"
     end
 
-    resources :shifts_schedule, except: %i[new show destroy] do
-      collection { get :get_shifts }
-    end
     resources :my_calendar do
       collection do
         get 'json/:id', to: 'my_calendar#json', as: :json
