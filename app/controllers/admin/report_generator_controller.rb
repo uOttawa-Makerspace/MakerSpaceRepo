@@ -1,5 +1,13 @@
 # frozen_string_literal: true
 
+# Some notes for later reports: If filtering for a specific type of day, such as
+# on sundays only or saturdays only, use .select(&:sunday?).map(&:all_day). The
+# column type for created_at includes times all_day converts the result from a
+# single point in time to a range for the where query to properly function.
+#
+# Prefer to enable strict_loading on any query you do here, these reports pull a
+# lot of data and reducing round trips is important.
+
 class Admin::ReportGeneratorController < AdminAreaController
   layout 'admin_area'
   require 'date'
@@ -584,19 +592,38 @@ class Admin::ReportGeneratorController < AdminAreaController
   end
 
   def frequent_visitors
-    sundays =
-      (params[:start_date].to_datetime..params[:end_date].to_datetime).select(
-        &:sunday?
-      ).map(&:all_day)
+    @weekends =
+      (params[:start_date].to_datetime..params[:end_date].to_datetime)
+        .select { |day| day.saturday? || day.sunday? }
+        .map(&:all_day)
+
     @lab_sessions =
-      LabSession
-        .strict_loading
-        .joins(:user)
-        .where(created_at: sundays)
-        .where(space_id: 16)
-        .group(:user)
-        .order('count(user_id) desc')
-        .limit(20)
-        .count
+      Space.all.map do |space|
+        [
+          space.name,
+          # Full weeks
+          LabSession
+            .strict_loading
+            .joins(:user)
+            .where(
+              created_at:
+                params[:start_date].to_datetime..params[:end_date].to_datetime,
+              space: space
+            )
+            .group(:user)
+            .order('count(users.id) desc')
+            .limit(20)
+            .count,
+          # Weekend only
+          LabSession
+            .strict_loading
+            .joins(:user)
+            .where(created_at: @weekends, space: space)
+            .group(:user)
+            .order('count(users.id) desc')
+            .limit(20)
+            .count
+        ]
+      end
   end
 end

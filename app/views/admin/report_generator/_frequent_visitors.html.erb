@@ -1,15 +1,54 @@
 <section>
     <h1 class="text-center">Frequent visitors</h1>
     <p class="text-center">From <%= params[:start_date].to_date %> to <%= params[:end_date].to_date %></p>
-    <%# each_with_index breaks the destructuring %>
-    <% index = 1 %>
-    <ol class="list-group list-group-numbered">
-        <% @lab_sessions.each do |user, count| %>
-            <li class="list-group-item">
-                <%= user.name %> (<%= link_to user.username, "https://makerepo.com/#{user.username}" %>): <%= count %> visits.
-                Signed up on <%= user.created_at.to_date %>
+    <p>
+        Weekends are the following saturdays and sundays:
+        <br />
+        <%= @weekends.map{|w| w.begin.to_date}.join(", ") %>
+        
+    </p>
+    <ul class="nav nav-tabs" id="frequent_visitors_tabs" role="tablist">
+        <% @lab_sessions.each do |space, _| %>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link <%= "active" if space == 'Makerspace' %>" data-bs-toggle="tab" data-bs-target="#<%= field_id(space, :tab) %>">
+                    <%= space %>
+                </button>
             </li>
-            <% index += 1 %>
         <% end %>
-    </ol>
+
+        <div class="tab-content w-100" id="frequent_visitors_tabs">
+            <% @lab_sessions.each do |space, sessions, weekend_sessions| %>
+                <div class="tab-pane <%= "show active" if space == 'Makerspace' %>" id="<%= field_id(space, :tab) %>" role="tabpanel" tabindex="0">
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <h2>Weekly Visitors (including weekends)</h2>
+                            <ol>
+                                <% sessions.each do |user, count| %>
+                                    <li>
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <span class="ms-2 me-auto"><%= link_to user.username, user_path(user.username) %>:</span>
+                                            <span><%= count %> Visits</span>
+                                        </div>
+                                    </li>
+                                <% end %>
+                            </ol>
+                        </div>
+                        <div class="col-lg-6">
+                            <h2>Weekend-only Visitors</h2>
+                            <ol>
+                                <% weekend_sessions.each do |user, count| %>
+                                    <li>
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <span class="ms-2 me-auto"><%= link_to user.username, user_path(user.username) %>:</span>
+                                            <span><%= count %> Visits</span>
+                                        </div>
+                                    </li>
+                                <% end %>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            <% end %>
+        </div>
+    </ul>
 </section>
