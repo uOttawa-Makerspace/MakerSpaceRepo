@@ -2126,6 +2126,8 @@ GEM
     rspec-retry (0.6.2)
       rspec-core (> 3.3)
     rspec-support (3.13.4)
+    rspec_junit_formatter (0.6.0)
+      rspec-core (>= 2, < 4, != 2.12.0)
     rubocop (1.76.0)
       json (~> 2.3)
       language_server-protocol (~> 3.17.0.2)
@@ -2402,6 +2404,7 @@ DEPENDENCIES
   rspec-json_expectations
   rspec-rails (~> 7.1.0)
   rspec-retry
+  rspec_junit_formatter
   rubocop-rails
   ruby-lsp-rails
   ruby-lsp-rspec
