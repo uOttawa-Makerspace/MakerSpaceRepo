@@ -24,6 +24,7 @@ jobs:
       PGHOST: localhost
       PGUSER: postgres
       PGPASSWORD: postgres
+      PGPORT: 5432
       REDIS_URL: redis://localhost:6379/${{ matrix.shard }}
 
     services:
