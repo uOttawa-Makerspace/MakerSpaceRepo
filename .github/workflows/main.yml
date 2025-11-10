@@ -36,10 +36,6 @@ jobs:
           --health-interval 5s
           --health-timeout 3s
           --health-retries 3
-          -c fsync=off
-          -c synchronous_commit=off
-          -c full_page_writes=off
-          -c shared_buffers=256MB
 
       redis:
         image: redis:7-alpine
@@ -49,6 +45,14 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Configure PostgreSQL for speed
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "ALTER SYSTEM SET fsync = off;"
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "ALTER SYSTEM SET synchronous_commit = off;"
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "ALTER SYSTEM SET full_page_writes = off;"
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "ALTER SYSTEM SET shared_buffers = '256MB';"
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "SELECT pg_reload_conf();"
 
       - name: Cache apt packages
         uses: awalsh128/cache-apt-pkgs-action@latest
