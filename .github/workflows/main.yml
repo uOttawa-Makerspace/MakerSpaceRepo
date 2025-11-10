@@ -117,7 +117,6 @@ jobs:
           bundle exec rspec \
             --format progress \
             --force-color \
-            --order random \
             $(find spec -name '*_spec.rb' -type f | sort | awk "NR % 6 == (${{ matrix.shard }} - 1)")
 
   deploy:
