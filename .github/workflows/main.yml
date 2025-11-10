@@ -99,31 +99,25 @@ jobs:
       - name: Create Credentials File
         run: echo '${{ secrets.CREDENTIALS_JSON }}' > config/makerepo-1632742c49cc.json
 
-      - name: Setup Database (Shard ${{ matrix.shard }})
-        env:
-          SHARD: ${{ matrix.shard }}
+      - name: Setup parallel databases (Shard ${{ matrix.shard }})
         run: |
-          # Create 2 databases for parallel execution on this shard
-          for i in 1 2; do
-            DB_NAME="makerspacerepo_test_${SHARD}_${i}"
-            psql -h localhost -U postgres -c "CREATE DATABASE $DB_NAME;"
-            DATABASE_URL=postgres://postgres:postgres@localhost:5432/$DB_NAME bundle exec rails db:schema:load
-          done
+          # Create 2 databases for parallel execution
+          psql -h localhost -U postgres -c "CREATE DATABASE makerspacerepo_test1;"
+          psql -h localhost -U postgres -c "CREATE DATABASE makerspacerepo_test2;"
+
+          # Load schema into both databases
+          TEST_ENV_NUMBER=1 bundle exec rails db:schema:load
+          TEST_ENV_NUMBER=2 bundle exec rails db:schema:load
 
       - name: Run RSpec tests (Shard ${{ matrix.shard }}/4) in parallel
-        env:
-          SHARD: ${{ matrix.shard }}
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/makerspacerepo_test_${{ matrix.shard }}_
         run: |
           # Get test files for this shard
           TEST_FILES=$(find spec -name '*_spec.rb' -type f | sort | awk "NR % 4 == (${{ matrix.shard }} - 1)")
 
-          # Run parallel_rspec with 2 processes
-          # Each process will use TEST_ENV_NUMBER (1 or 2) to determine its database
+          # Run with parallel_rspec
           bundle exec parallel_rspec \
             -n 2 \
             --test-options '--format progress --force-color' \
-            --group-by filesize \
             -- \
             $TEST_FILES
 
