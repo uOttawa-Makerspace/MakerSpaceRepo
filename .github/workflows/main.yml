@@ -5,14 +5,45 @@ on:
     branches: [master, staging, test-ci-*]
   pull_request:
     branches: [master, staging]
-  workflow_dispatch: # Allows manual triggering
+  workflow_dispatch:
 
 env:
   RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
   RAILS_ENV: test
 
 jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      cache-key: ${{ steps.cache-key.outputs.key }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Generate cache key
+        id: cache-key
+        run: echo "key=${{ runner.os }}-deps-${{ hashFiles('.github/workflows/ci.yml') }}" >> $GITHUB_OUTPUT
+
+      - name: Cache system dependencies
+        id: cache-deps
+        uses: actions/cache@v4
+        with:
+          path: /tmp/deps
+          key: ${{ steps.cache-key.outputs.key }}
+
+      - name: Install and cache system dependencies
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -yqq --no-install-recommends libpq-dev imagemagick
+
+          # Create cache marker
+          mkdir -p /tmp/deps
+          echo "installed" > /tmp/deps/marker
+
   test:
+    needs: setup # Wait for setup to complete
     runs-on: ubuntu-latest
 
     strategy:
@@ -48,7 +79,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Setup Ruby with bundler caching
+      # Restore cache (instant if setup job cached it)
+      - name: Restore cached dependencies
+        uses: actions/cache@v4
+        with:
+          path: /tmp/deps
+          key: ${{ needs.setup.outputs.cache-key }}
+
+      # Fast install - packages are in apt cache
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -yqq --no-install-recommends libpq-dev imagemagick
+
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
@@ -95,8 +138,7 @@ jobs:
       # Create unique database for this shard
       - name: Setup Database (Shard ${{ matrix.shard }})
         run: |
-          # Drop and recreate database to ensure clean state
-          PGPASSWORD=postgres dropdb -h localhost -U postgres makerspacerepo_test_${{ matrix.shard }} --if-exists
+          PGPASSWORD=postgres dropdb -h localhost -U postgres makerspacerepo_test_${{ matrix.shard }} --if-exists 2>/dev/null || true
           PGPASSWORD=postgres createdb -h localhost -U postgres makerspacerepo_test_${{ matrix.shard }}
 
           # Load schema (faster than migrations)
@@ -157,7 +199,7 @@ jobs:
           bundle exec cap production deploy
 
       - name: Notify Slack
-        uses: ravsamhq/notify-slack-action@v2
+        uses: ravsamhq/notify-slack@v2
         if: always()
         with:
           status: ${{ job.status }}
