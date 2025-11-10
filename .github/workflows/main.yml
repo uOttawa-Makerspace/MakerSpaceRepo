@@ -54,11 +54,10 @@ jobs:
           PGPASSWORD=postgres psql -h localhost -U postgres -c "ALTER SYSTEM SET shared_buffers = '256MB';"
           PGPASSWORD=postgres psql -h localhost -U postgres -c "SELECT pg_reload_conf();"
 
-      - name: Cache apt packages
-        uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: libpq-dev imagemagick
-          version: 1.0
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -yqq --no-install-recommends libpq-dev imagemagick
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
