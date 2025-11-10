@@ -16,7 +16,7 @@ RSpec.configure do |config|
     DatabaseCleaner.strategy = :transaction
   end
 
-  # Handle system/feature tests if you have them
+  # Handle system/feature tests
   config.before(:each, type: :system) do
     DatabaseCleaner.strategy = :truncation, { except: %w[ar_internal_metadata order_statuses] }
   end
