@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6]
+        shard: [1, 2, 3, 4]
 
     env:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/makerspacerepo_test_${{ matrix.shard }}
@@ -30,6 +30,7 @@ jobs:
         env:
           POSTGRES_PASSWORD: postgres
           POSTGRES_USER: postgres
+          POSTGRES_INITDB_ARGS: "-c fsync=off -c synchronous_commit=off -c full_page_writes=off -c shared_buffers=256MB"
         ports: ["5432:5432"]
         options: >-
           --health-cmd pg_isready
@@ -40,32 +41,17 @@ jobs:
       redis:
         image: redis:7-alpine
         ports: ["6379:6379"]
-        options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
+        options: --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 3s --health-retries 3
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      # Optimize PostgreSQL for CI (makes tests faster)
-      - name: Configure PostgreSQL for speed
-        run: |
-          PGPASSWORD=postgres psql -h localhost -U postgres -c "ALTER SYSTEM SET fsync = off;"
-          PGPASSWORD=postgres psql -h localhost -U postgres -c "ALTER SYSTEM SET synchronous_commit = off;"
-          PGPASSWORD=postgres psql -h localhost -U postgres -c "ALTER SYSTEM SET full_page_writes = off;"
-          PGPASSWORD=postgres psql -h localhost -U postgres -c "ALTER SYSTEM SET shared_buffers = '256MB';"
-          PGPASSWORD=postgres psql -h localhost -U postgres -c "SELECT pg_reload_conf();"
 
       - name: Cache apt packages
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: libpq-dev imagemagick
           version: 1.0
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get install -yqq --no-install-recommends libpq-dev imagemagick
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -94,30 +80,28 @@ jobs:
           path: certs
           key: ssl-certs-v2
 
-      - name: Generate SSL certificates
-        if: steps.cache-certs.outputs.cache-hit != 'true'
+      - name: Setup SSL certificates
         run: |
           mkdir -p certs
-          openssl req -x509 -newkey rsa:2048 -keyout certs/saml.key -out certs/saml.crt -days 365 -nodes -subj "/C=CA/ST=Ontario/L=Ottawa/O=uOttawa/OU=Richard L'Abbé Makerspace/CN=makerepo.com/emailAddress=ci@makerepo.com"
-
-      - name: Ensure certs directory exists
-        run: mkdir -p certs && touch certs/saml.key && touch certs/saml.crt
+          if [ ! -f certs/saml.crt ]; then
+            openssl req -x509 -newkey rsa:2048 -keyout certs/saml.key -out certs/saml.crt -days 365 -nodes -subj "/C=CA/ST=Ontario/L=Ottawa/O=uOttawa/OU=Richard L'Abbé Makerspace/CN=makerepo.com/emailAddress=ci@makerepo.com"
+          fi
+          touch certs/saml.key certs/saml.crt
 
       - name: Create Credentials File
         run: echo '${{ secrets.CREDENTIALS_JSON }}' > config/makerepo-1632742c49cc.json
 
       - name: Setup Database (Shard ${{ matrix.shard }})
         run: |
-          PGPASSWORD=postgres psql -h localhost -U postgres -c "DROP DATABASE IF EXISTS makerspacerepo_test_${{ matrix.shard }};"
           PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE DATABASE makerspacerepo_test_${{ matrix.shard }};"
           bundle exec rails db:schema:load
 
-      - name: Run RSpec tests (Shard ${{ matrix.shard }}/6)
+      - name: Run RSpec tests (Shard ${{ matrix.shard }}/4)
         run: |
           bundle exec rspec \
             --format progress \
             --force-color \
-            $(find spec -name '*_spec.rb' -type f | sort | awk "NR % 6 == (${{ matrix.shard }} - 1)")
+            $(find spec -name '*_spec.rb' -type f | sort | awk "NR % 4 == (${{ matrix.shard }} - 1)")
 
   deploy:
     needs: test
@@ -127,8 +111,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
