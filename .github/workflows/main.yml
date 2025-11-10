@@ -48,12 +48,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Install system dependencies (ImageMagick fix)
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -yqq libpq-dev imagemagick
-
       # Setup Ruby with bundler caching
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -107,12 +101,6 @@ jobs:
 
           # Load schema (faster than migrations)
           bundle exec rails db:schema:load
-
-      # Verify ImageMagick is installed
-      - name: Verify ImageMagick
-        run: |
-          which convert
-          convert --version
 
       # Run tests for this shard
       - name: Run RSpec tests (Shard ${{ matrix.shard }}/4)
