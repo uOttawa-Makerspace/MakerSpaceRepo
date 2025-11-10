@@ -21,7 +21,9 @@ jobs:
         shard: [1, 2, 3, 4]
 
     env:
-      DATABASE_URL: postgres://postgres:postgres@localhost:5432/makerspacerepo_test_${{ matrix.shard }}
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
       REDIS_URL: redis://localhost:6379/${{ matrix.shard }}
 
     services:
@@ -48,11 +50,11 @@ jobs:
 
       - name: Configure PostgreSQL for speed
         run: |
-          PGPASSWORD=postgres psql -h localhost -U postgres -c "ALTER SYSTEM SET fsync = off;"
-          PGPASSWORD=postgres psql -h localhost -U postgres -c "ALTER SYSTEM SET synchronous_commit = off;"
-          PGPASSWORD=postgres psql -h localhost -U postgres -c "ALTER SYSTEM SET full_page_writes = off;"
-          PGPASSWORD=postgres psql -h localhost -U postgres -c "ALTER SYSTEM SET shared_buffers = '256MB';"
-          PGPASSWORD=postgres psql -h localhost -U postgres -c "SELECT pg_reload_conf();"
+          psql -h localhost -U postgres -c "ALTER SYSTEM SET fsync = off;"
+          psql -h localhost -U postgres -c "ALTER SYSTEM SET synchronous_commit = off;"
+          psql -h localhost -U postgres -c "ALTER SYSTEM SET full_page_writes = off;"
+          psql -h localhost -U postgres -c "ALTER SYSTEM SET shared_buffers = '256MB';"
+          psql -h localhost -U postgres -c "SELECT pg_reload_conf();"
 
       - name: Install system dependencies
         run: |
@@ -98,16 +100,32 @@ jobs:
         run: echo '${{ secrets.CREDENTIALS_JSON }}' > config/makerepo-1632742c49cc.json
 
       - name: Setup Database (Shard ${{ matrix.shard }})
+        env:
+          SHARD: ${{ matrix.shard }}
         run: |
-          PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE DATABASE makerspacerepo_test_${{ matrix.shard }};"
-          bundle exec rails db:schema:load
+          # Create 2 databases for parallel execution on this shard
+          for i in 1 2; do
+            DB_NAME="makerspacerepo_test_${SHARD}_${i}"
+            psql -h localhost -U postgres -c "CREATE DATABASE $DB_NAME;"
+            DATABASE_URL=postgres://postgres:postgres@localhost:5432/$DB_NAME bundle exec rails db:schema:load
+          done
 
-      - name: Run RSpec tests (Shard ${{ matrix.shard }}/4)
+      - name: Run RSpec tests (Shard ${{ matrix.shard }}/4) in parallel
+        env:
+          SHARD: ${{ matrix.shard }}
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/makerspacerepo_test_${{ matrix.shard }}_
         run: |
-          bundle exec rspec \
-            --format progress \
-            --force-color \
-            $(find spec -name '*_spec.rb' -type f | sort | awk "NR % 4 == (${{ matrix.shard }} - 1)")
+          # Get test files for this shard
+          TEST_FILES=$(find spec -name '*_spec.rb' -type f | sort | awk "NR % 4 == (${{ matrix.shard }} - 1)")
+
+          # Run parallel_rspec with 2 processes
+          # Each process will use TEST_ENV_NUMBER (1 or 2) to determine its database
+          bundle exec parallel_rspec \
+            -n 2 \
+            --test-options '--format progress --force-color' \
+            --group-by filesize \
+            -- \
+            $TEST_FILES
 
   deploy:
     needs: test

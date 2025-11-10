@@ -108,6 +108,7 @@ group :development do
 end
 
 group :test do
+  gem 'parallel_tests'
   gem "capybara"
   gem "database_cleaner-active_record"
   gem "launchy", "~> 2.2"
