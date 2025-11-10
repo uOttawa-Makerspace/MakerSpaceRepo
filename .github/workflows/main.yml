@@ -1,114 +1,166 @@
 name: CI
-on: [push, pull_request]
+
+on:
+  push:
+    branches: [master, staging, test-ci-*]
+  pull_request:
+    branches: [master, staging]
 
 env:
   RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
-  DB_HOST: localhost
-  DB_USERNAME: postgres
-  DB_PASSWORD: postgres
+  DATABASE_URL: postgres://postgres:postgres@localhost:5432/makerspacerepo_test
+  REDIS_URL: redis://localhost:6379/0
+  RAILS_ENV: test
 
 jobs:
   test:
     runs-on: ubuntu-latest
+
     services:
       postgres:
-        image: postgres:14
+        image: postgres:14-alpine
         env:
           POSTGRES_DB: makerspacerepo_test
           POSTGRES_PASSWORD: postgres
           POSTGRES_USER: postgres
-        ports:
-          - 5432:5432
+        ports: ["5432:5432"]
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+
       redis:
-        image: redis
+        image: redis:7-alpine
         ports: ["6379:6379"]
-        options: --entrypoint redis-server
+        options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Cache system dependencies
+      - name: Cache apt packages
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libpq-dev imagemagick
+          version: 1.0
+
+      # Setup Ruby with gem caching
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: 3.4.1
           bundler-cache: true
-      - uses: actions/setup-node@v3
+
+      # Setup Node with yarn caching
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: "18.20.3"
           cache: "yarn"
-      - uses: actions/setup-python@v4
+
+      - name: Install Node dependencies
+        run: yarn install --frozen-lockfile --prefer-offline
+
+      # Setup Python
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          python-version: 3.11
-      - name: Run Yarn install
-        uses: borales/actions-yarn@v4
+          python-version: "3.11"
+
+      # Cache SSL certificates (they're valid for 365 days)
+      - name: Cache SSL certificates
+        id: cache-certs
+        uses: actions/cache@v4
         with:
-          cmd: install
-      - name: Create Credentials File
-        id: create-json
-        uses: jsdaniell/create-json@1.1.2
-        with:
-          name: "makerepo-1632742c49cc.json"
-          json: ${{ secrets.CREDENTIALS_JSON }}
-          dir: "config/"
-      - name: Prepare Test
-        env:
-          DATABASE_URL: postgres://postgres:@localhost:5432/makerspacerepo_test
-          REDIS_URL: redis://localhost:6379/0
-          RAILS_ENV: test
+          path: certs
+          key: ssl-certs-v1
+
+      - name: Generate SSL certificates
+        if: steps.cache-certs.outputs.cache-hit != 'true'
         run: |
-          sudo apt-get update
-          sudo apt-get -yqq install libpq-dev imagemagick
-          mkdir certs && touch certs/saml.key && touch certs/saml.crt
-          openssl req -x509 -newkey rsa:4096 -keyout certs/saml.key -out certs/saml.crt -days 1 -nodes -subj "/C=CA/ST=Ontario/L=Ottawa/O=uOttawa/OU=Richard L'Abbé Makerspace/CN=makerepo.com/emailAddress=travis-ci@makerepo.com"
-      - name: Migrate DB
-        env:
-          DATABASE_URL: postgres://postgres:@localhost:5432/makerspacerepo_test
-          REDIS_URL: redis://localhost:6379/0
-          RAILS_ENV: test
+          mkdir -p certs
+          openssl req -x509 -newkey rsa:2048 -keyout certs/saml.key -out certs/saml.crt -days 365 -nodes -subj "/C=CA/ST=Ontario/L=Ottawa/O=uOttawa/OU=Richard L'Abbé Makerspace/CN=makerepo.com/emailAddress=ci@makerepo.com"
+
+      - name: Ensure SSL certificates exist
+        if: steps.cache-certs.outputs.cache-hit == 'true'
+        run: |
+          touch certs/saml.key
+          touch certs/saml.crt
+
+      # Create credentials file
+      - name: Create Credentials File
+        run: echo '${{ secrets.CREDENTIALS_JSON }}' > config/makerepo-1632742c49cc.json
+
+      # Setup database (use schema:load instead of migrations for speed)
+      - name: Setup Database
         run: |
           bundle exec rails db:prepare
-          bundle exec rails db:migrate
-      - name: Run tests
-        env:
-          DATABASE_URL: postgres://postgres:@localhost:5432/makerspacerepo_test
-          REDIS_URL: redis://localhost:6379/0
-          RAILS_ENV: test
-        run: |
+          bundle exec rails db:schema:load
 
-          bundle exec rails spec
-      - name: Deploy Staging
+      # Run tests
+      - name: Run RSpec tests
+        run: bundle exec rails spec
+
+      # Notify on test completion
+      - name: Notify Slack
+        uses: ravsamhq/notify-slack-action@v2
+        if: failure()
+        with:
+          status: ${{ job.status }}
+          notify_when: "failure"
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  deploy:
+    needs: test
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/staging')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.4.1
+          bundler-cache: true
+
+      - name: Deploy to Staging
         if: github.ref == 'refs/heads/staging'
         env:
           DEPLOY_ENC_KEY: ${{ secrets.DEPLOY_ENC_KEY }}
         run: |
-          openssl enc -d -aes-256-cbc -md sha512 -salt -in config/deploy_id_ed25519_staging_enc -out config/deploy_id_ed25519_staging -k $DEPLOY_ENC_KEY -a -pbkdf2
-          chmod 600 config/deploy_id_ed25519_staging
+          openssl enc -d -aes-256-cbc -md sha512 -salt -in config/deploy_id_ed25519_staging_enc -out /tmp/deploy_key -k $DEPLOY_ENC_KEY -a -pbkdf2
+          chmod 600 /tmp/deploy_key
           eval "$(ssh-agent -s)"
-          ssh-add config/deploy_id_ed25519_staging
-          gem install capistrano
+          ssh-add /tmp/deploy_key
           bundle exec cap staging deploy
-      - name: Deploy Master
+
+      - name: Deploy to Production
         if: github.ref == 'refs/heads/master'
         env:
           DEPLOY_ENC_KEY: ${{ secrets.DEPLOY_ENC_KEY }}
         run: |
-          openssl enc -d -aes-256-cbc -md sha512 -salt -in config/deploy_id_ed25519_prod_enc -out config/deploy_id_ed25519_prod -k $DEPLOY_ENC_KEY -a -pbkdf2
-          chmod 600 config/deploy_id_ed25519_prod
+          openssl enc -d -aes-256-cbc -md sha512 -salt -in config/deploy_id_ed25519_prod_enc -out /tmp/deploy_key -k $DEPLOY_ENC_KEY -a -pbkdf2
+          chmod 600 /tmp/deploy_key
           eval "$(ssh-agent -s)"
-          ssh-add config/deploy_id_ed25519_prod
-          gem install capistrano
+          ssh-add /tmp/deploy_key
           bundle exec cap production deploy
-      - uses: ravsamhq/notify-slack-action@master
+
+      - name: Notify Slack
+        uses: ravsamhq/notify-slack-action@v2
         if: always()
         with:
           status: ${{ job.status }}
           notify_when: "success,failure,warnings"
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      - uses: toko-bifrost/ms-teams-deploy-card@master
+
+      - name: Notify MS Teams
+        uses: toko-bifrost/ms-teams-deploy-card@master
         if: always()
         with:
           github-token: ${{ github.token }}
