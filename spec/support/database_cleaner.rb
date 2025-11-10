@@ -47,10 +47,6 @@ end
 def load_order_statuses
   OrderStatus.find_or_create_by!(name: "In progress")
   OrderStatus.find_or_create_by!(name: "Completed")
-  
-  # Add any other statuses your app uses
-  # OrderStatus.find_or_create_by!(name: "Cancelled")
-  # OrderStatus.find_or_create_by!(name: "Pending")
 end
 
 # Helper to reset PostgreSQL sequences
