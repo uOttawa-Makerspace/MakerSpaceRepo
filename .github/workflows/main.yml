@@ -124,37 +124,6 @@ jobs:
             --out tmp/rspec-${{ matrix.shard }}.xml \
             $SHARD_FILES
 
-      # Upload test results from this shard
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: rspec-results-${{ matrix.shard }}
-          path: tmp/rspec-*.xml
-          retention-days: 7
-
-  # Aggregate all test results
-  test-results:
-    needs: test
-    runs-on: ubuntu-latest
-    if: always()
-
-    steps:
-      - name: Download all test results
-        uses: actions/download-artifact@v4
-        with:
-          path: test-results
-          pattern: rspec-results-*
-          merge-multiple: true
-
-      - name: Publish combined test results
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        if: always()
-        with:
-          files: test-results/**/*.xml
-          check_name: 🧪 RSpec Test Results (All Shards)
-          comment_mode: off
-
   # Deploy only runs after all test shards pass
   deploy:
     needs: test # Waits for ALL test shards to complete
