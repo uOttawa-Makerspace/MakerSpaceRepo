@@ -63,6 +63,8 @@ RSpec.describe TrainingSession, type: :model do
 
   describe "Methods" do
     before(:each) do
+      TrainingSession.destroy_all
+      
       @training_session =
         create(:training_session, created_at: DateTime.yesterday.end_of_day)
       3.times { create(:training_session, created_at: DateTime.now.end_of_day) }
