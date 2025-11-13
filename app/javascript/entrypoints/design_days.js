@@ -169,3 +169,33 @@ document.addEventListener("turbo:load", function () {
     });
   redoOrdering();
 });
+
+// Floorplan editing tools
+document.addEventListener("turbo:load", function () {
+  const floorplanContainer = document.querySelector(
+    "[data-floorplan-container]",
+  );
+  const floorplanTemplate = document.querySelector("[data-floorplan-template]");
+
+  function floorplanDelete(evt) {
+    evt.preventDefault();
+    evt.target.parentElement.remove();
+  }
+
+  function newFloorplanInput() {
+    const clone = floorplanTemplate.cloneNode(true);
+    clone.addEventListener("click", floorplanDelete);
+    return clone;
+  }
+
+  document.querySelectorAll("[data-floorplan-delete]").forEach((el) => {
+    el.addEventListener("click", floorplanDelete);
+  });
+
+  document.querySelectorAll("[data-floorplan-add]").forEach((el) => {
+    el.addEventListener("click", (evt) => {
+      evt.preventDefault();
+      floorplanContainer.appendChild(newFloorplanInput());
+    });
+  });
+});
