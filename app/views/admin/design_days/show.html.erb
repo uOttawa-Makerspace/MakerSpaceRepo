@@ -39,7 +39,40 @@
                 <button class="btn btn-success float-end" data-template-fields=<%= "#design_day_schedule_template_#{event_for}_field" %> ><%= fa_icon 'plus' %></button>
             </div>
         <% end %>
-        <br />
-        <%= f.submit class: 'btn btn-primary mt-3' %>
+        <div>
+            <div class="d-flex flex-column align-items-center">
+                <h2>Floorplans</h2>
+                <div class="form-check form-switch mb-3 align-self-center">
+                    <%= f.check_box :show_floorplans, class: 'form-check-input' %>
+                    <%= f.label :show_floorplans, class: 'form-check-label' %>
+                </div>
+                <button class="btn btn-success mb-3" data-floorplan-add><%= fa_icon 'plus' %> Add a floorplan</button>
+            </div>
+            
+            <div data-floorplan-container>
+                <div class="input-group mb-3" data-floorplan-template>
+                    <%= f.file_field :floorplans, class: 'form-control', accept: 'image/*', autocomplete: 'off', multiple: true %>
+                    <button type="button" class="btn btn-danger" data-floorplan-delete><%= fa_icon :trash %></button>
+                </div>
+            </div>
+            
+            <div>
+                <h3>Floorplans currently on display</h3>
+                <div class="p-1 border">
+                <% @design_day.floorplans.each do |image| %>
+                    <div class="input-group mb-3">
+                        <%= f.hidden_field :floorplans, multiple: true, value: image.signed_id %>
+                        <%= image_tag image, class: 'img-fluid', style: 'height: 5em' %>
+                        <%= link_to image.filename, image, class: 'input-group-text flex-fill' %>
+                        <%= button_tag fa_icon(:trash), class: 'btn btn-danger', data: {floorplan_delete: ''}, type: 'button' %>
+                    </div>
+                <% end %>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center">
+            <%= f.submit class: 'btn btn-primary mt-3' %>
+        </div>
     <% end %>
 </div>

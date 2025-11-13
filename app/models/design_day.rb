@@ -1,6 +1,10 @@
 class DesignDay < ApplicationRecord
   has_many :design_day_schedules, dependent: :destroy
-  accepts_nested_attributes_for :design_day_schedules, allow_destroy: true, reject_if: :all_blank
+  has_many_attached :floorplans
+  
+  accepts_nested_attributes_for :design_day_schedules,
+                                allow_destroy: true,
+                                reject_if: :all_blank
   validates_associated :design_day_schedules
 
   default_scope { order(day: :desc) }

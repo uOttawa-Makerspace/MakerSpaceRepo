@@ -49,6 +49,8 @@ class Admin::DesignDaysController < AdminAreaController
       :day,
       :is_live,
       :sheet_key,
+      :show_floorplans,
+      floorplans: [],
       design_day_schedules_attributes: %i[
         id
         start
