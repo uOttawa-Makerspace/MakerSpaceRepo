@@ -14,39 +14,85 @@ module CalendarHelper
       parsed_cals = ::Icalendar::Calendar.parse(response.body)
 
       events = parsed_cals.flat_map do |calendar|
-        calendar.events.map do |event|
-          start_time = safe_to_time(event.dtstart)
-          end_time = safe_to_time(event.dtend)
-
-          next if event.rrule.empty? && end_time < (Time.now.utc - 2.months)
-
-          event_hash = {
-            id: event.uid,
-            groupId: group_id,
-            title: event.summary,
-            extendedProps: {
-              name: name,
-              description: event.description,
-            },
-            allDay: event.dtstart.is_a?(Icalendar::Values::Date),
-            start: start_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S"),
-            end: end_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S")
-          }
-
-          rrule_obj = event.rrule&.first
-
-          if rrule_obj.present?
-            event_hash[:rrule] = convert_to_js_rrule(rrule_obj)
-            event_hash[:rrule][:dtstart] = start_time.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S")
+        # Group events by UID to handle recurrence-id
+        events_by_uid = calendar.events.group_by(&:uid)
+        
+        events_by_uid.flat_map do |uid, event_group|
+          main_event = event_group.find { |e| e.recurrence_id.nil? }
+          modified_instances = event_group.select { |e| e.recurrence_id.present? }
           
-            duration_seconds = end_time.to_time - start_time.to_time
-            event_hash[:duration] = duration_seconds * 1000
+          results = []
           
-            exs = event.exdate.map(&:value).flatten.map { |d| safe_to_time(d).in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S") rescue nil }.compact
-            event_hash[:exdate] = exs if exs.any?
+          if main_event
+            start_time = safe_to_time(main_event.dtstart)
+            end_time = safe_to_time(main_event.dtend)
+
+            next if main_event.rrule.empty? && end_time < (Time.now.utc - 2.months)
+
+            event_hash = {
+              id: main_event.uid,
+              groupId: group_id,
+              title: main_event.summary,
+              extendedProps: {
+                name: name,
+                description: main_event.description,
+              },
+              allDay: main_event.dtstart.is_a?(Icalendar::Values::Date),
+              start: start_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S"),
+              end: end_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S")
+            }
+
+            rrule_obj = main_event.rrule&.first
+
+            if rrule_obj.present?
+              event_hash[:rrule] = convert_to_js_rrule(rrule_obj)
+              event_hash[:rrule][:dtstart] = start_time.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S")
+            
+              duration_seconds = end_time.to_i - start_time.to_i
+              event_hash[:duration] = duration_seconds * 1000
+            
+              all_exdates = main_event.exdate.map(&:value).flatten.map { |d| safe_to_time(d) }
+              
+              # Add recurrence-id dates from modified instances to exdates
+              modified_instances.each do |modified|
+                recurrence_time = safe_to_time(modified.recurrence_id)
+                all_exdates << recurrence_time if recurrence_time
+              end
+              
+              exs = all_exdates.map do |d|
+ 
+                                            d.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S")
+                                          rescue StandardError
+                                            nil
+                                           end.compact.uniq
+              event_hash[:exdate] = exs if exs.any?
+            end
+            
+            results << event_hash
           end
           
-          event_hash
+          # Process modified instances as separate events
+          modified_instances.each do |modified|
+            start_time = safe_to_time(modified.dtstart)
+            end_time = safe_to_time(modified.dtend)
+            
+            next if end_time < (Time.now.utc - 2.months)
+            
+            results << {
+              id: "#{modified.uid}_#{safe_to_time(modified.recurrence_id)&.to_i}",
+              groupId: group_id,
+              title: modified.summary,
+              extendedProps: {
+                name: name,
+                description: modified.description,
+              },
+              allDay: modified.dtstart.is_a?(Icalendar::Values::Date),
+              start: start_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S"),
+              end: end_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S")
+            }
+          end
+          
+          results
         end.compact
       end
     rescue StandardError => e
@@ -155,9 +201,7 @@ module CalendarHelper
   def convert_to_js_rrule(openstruct_obj)
     js_rrule = {}
     
-    if openstruct_obj.frequency
-      js_rrule[:freq] = openstruct_obj.frequency.downcase
-    end
+    js_rrule[:freq] = openstruct_obj.frequency.downcase if openstruct_obj.frequency
     
     js_rrule[:interval] = openstruct_obj.interval if openstruct_obj.interval
     
