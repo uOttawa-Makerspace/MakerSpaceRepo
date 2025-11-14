@@ -25,6 +25,7 @@
 }
 
 div.moving-progress-bar {
+  animation-timing-function: linear;
   animation-name: signin-progress-bar;
   opacity: 1;
   width: 0%;

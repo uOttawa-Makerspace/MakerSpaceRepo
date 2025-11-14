@@ -42,6 +42,12 @@ Tapping in a space also checks if you're eligible for a membership. See the
 membership documentation for more information on how the membership system
 works.
 
+To simulate my card tapping in and out of the makerspace:
+
+```
+curl localhost:3000/rfid/card_number --request POST -H "Content-Type: application/json" --data '{"space_id": 16, "rfid": "047AA39A841590"}'
+```
+
 ## Operation
 
 When a RFID card taps on a tapbox, the controller checks to see if the is
