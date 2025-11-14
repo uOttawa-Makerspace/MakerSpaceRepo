@@ -14,9 +14,10 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 8
 
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         shard: [1, 2, 3, 4]
 
@@ -37,11 +38,6 @@ jobs:
           --health-timeout 3s
           --health-retries 3
 
-      # redis:
-      #   image: redis:7-alpine
-      #   ports: ["6379:6379"]
-      #   options: --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 3s --health-retries 3
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -54,10 +50,33 @@ jobs:
           PGPASSWORD=postgres psql -h localhost -U postgres -c "ALTER SYSTEM SET shared_buffers = '256MB';"
           PGPASSWORD=postgres psql -h localhost -U postgres -c "SELECT pg_reload_conf();"
 
+      - name: Cache APT packages
+        uses: actions/cache@v4
+        id: cache-apt
+        with:
+          path: ~/apt-cache
+          key: apt-${{ runner.os }}-libpq-imagemagick-v1
+
       - name: Install system dependencies
+        env:
+          CACHE_HIT: ${{ steps.cache-apt.outputs.cache-hit }}
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -yqq --no-install-recommends libpq-dev imagemagick
+          if [[ "$CACHE_HIT" == 'true' ]]; then
+            echo "Restoring from cache..."
+            sudo cp --verbose --force --recursive ~/apt-cache/* /
+          else
+            echo "Installing fresh packages..."
+            sudo apt-get update -qq
+            sudo apt-get install -yqq --no-install-recommends libpq-dev imagemagick
+            
+            echo "Caching installed files..."
+            mkdir -p ~/apt-cache
+            for pkg in libpq-dev libpq5 imagemagick imagemagick-6-common libmagickcore-6.q16-6 libmagickwand-6.q16-6; do
+              dpkg -L $pkg | while IFS= read -r f; do 
+                if test -f $f; then echo $f; fi; 
+              done | xargs cp --parents --target-directory ~/apt-cache/ 2>/dev/null || true
+            done
+          fi
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -73,11 +92,6 @@ jobs:
 
       - name: Install Node dependencies
         run: yarn install --frozen-lockfile --prefer-offline
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
 
       - name: Cache SSL certificates
         id: cache-certs
