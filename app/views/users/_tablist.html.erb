@@ -31,7 +31,7 @@
       <ul class="dropdown-menu">
         <li class="nav-item">
           <% if current_user.admin? %>
-            <%= link_to 'Staff Unavailabilities', admin_shifts_path, class: 'dropdown-item' %>
+            <%= link_to 'Staff Unavailabilities', staff_availabilities_path, class: 'dropdown-item' %>
           <% else %>
             <%= link_to 'Staff Unavailabilities', staff_availabilities_path, class: 'dropdown-item' %>
           <% end %>
