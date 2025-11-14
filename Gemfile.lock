@@ -2003,6 +2003,8 @@ GEM
     os (1.1.4)
     ostruct (0.6.1)
     parallel (1.27.0)
+    parallel_tests (5.5.0)
+      parallel
     parser (3.3.8.0)
       ast (~> 2.4.1)
       racc
@@ -2387,6 +2389,7 @@ DEPENDENCIES
   net-ssh
   nobspw_rails7
   octokit (~> 4.21.0)
+  parallel_tests
   pg (~> 1.5)
   prettier_print
   pry (~> 0.15)

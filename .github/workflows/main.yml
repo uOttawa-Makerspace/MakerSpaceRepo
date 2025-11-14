@@ -83,6 +83,10 @@ jobs:
         with:
           ruby-version: 3.4.1
           bundler-cache: true
+        env:
+          BUNDLE_WITHOUT: "development"
+          BUNDLE_JOBS: 4
+          BUNDLE_RETRY: 3
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -114,14 +118,14 @@ jobs:
       - name: Setup Database (Shard ${{ matrix.shard }})
         run: |
           PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE DATABASE makerspacerepo_test_${{ matrix.shard }};"
-          bundle exec rails db:schema:load
+          DISABLE_DATABASE_ENVIRONMENT_CHECK=1 bundle exec rails db:schema:load RAILS_ENV=test
 
       - name: Run RSpec tests (Shard ${{ matrix.shard }}/4)
         run: |
-          bundle exec rspec \
-            --format progress \
-            --force-color \
-            $(find spec -name '*_spec.rb' -type f | sort | awk "NR % 4 == (${{ matrix.shard }} - 1)")
+          bundle exec parallel_rspec spec/ \
+            -n 4 \
+            --only-group ${{ matrix.shard }} \
+            --runtime-log .ci/parallel_runtime_rspec.log
 
   deploy:
     needs: test
