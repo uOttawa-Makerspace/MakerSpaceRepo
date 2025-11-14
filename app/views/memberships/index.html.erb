@@ -33,7 +33,7 @@
   <div class="container-lg mx-auto row g-4 my-5">
     <div class="col-lg-6">
       <div class="border border-2 rounded-3 p-4 h-100">
-        <h2><%= t('memberships.index.subtitle_2') %></h2>
+        <a class="h2 text-primary" href="https://www.uottawa.ca/study/fees-financial-support/university-fees/ancillary-fees"><%= t('memberships.index.subtitle_2') %></a>
         <p><%= t('memberships.index.text_2') %></p>
       </div>
     </div>
@@ -63,6 +63,35 @@
         </div>
       </div>
     </div>
+    <div class="text-center" style="margin-top: 5rem;">
+      <h3 class="fs-2 text-primary fw-bold text-uppercase"><%= t('memberships.index.prices') %></h3>
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col"><%= t('memberships.index.row1') %></th>
+          <th scope="col"><%= t('memberships.index.col1') %></th>
+          <th scope="col"><%= t('memberships.index.col2') %></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row"><%= t('memberships.index.row2') %></th>
+          <td>/</td>
+          <td>/</td>
+        </tr>
+        <tr>
+          <th scope="row"><%= t('memberships.index.row4') %></th>
+          <td>/</td>
+          <td>/</td>
+        </tr>
+        <tr>
+          <th scope="row"><%= t('memberships.index.row5') %></th>
+          <td>/</td>
+          <td>/</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
 
     <div class="text-center" style="margin-top: 5rem;">
       <h3 class="fs-2 text-primary fw-bold text-uppercase"><%= t('memberships.index.more_info') %></h3>
@@ -72,7 +101,6 @@
       <br>
       <a href="https://www.uottawa.ca/study/fees-financial-support/university-fees/ancillary-fees"><%= t('memberships.index.ancillary') %></a>
       <br>
-      <p><%= t('memberships.index.ancillary_text') %></p>
     </div>
   </div>
 </section>

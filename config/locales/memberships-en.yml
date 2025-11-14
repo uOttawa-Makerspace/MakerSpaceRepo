@@ -22,6 +22,14 @@ en:
         "Whether you’re a student building a class project, a team preparing for a competition,
         or an innovator developing a prototype, your CEED Membership is your gateway to one of Ottawa’s most
         creative engineering and entrepreneurial communities."
+      prices: "PRICE BREAKDOWN"
+      col1: "Day"
+      col2: "Semester"
+      row1: "Member Type"
+      row2: "Engineering"
+      row3: "Computer Science"
+      row4: "Other Students and Faculty"
+      row5: "External"
       more_info: "MORE INFO"
       makerspace: "Richard L'Abbe Makerspace"
       brunsfield: "Brunsfield Centre"

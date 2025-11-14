@@ -18,6 +18,14 @@ fr:
       text_4:
         "Que vous soyez étudiant réalisant un projet de classe, une équipe se préparant à une compétition,
         ou un innovateur développant un prototype, votre adhésion au CEED est votre porte d’entrée vers l’une des communautés d’ingénierie et d’entrepreneuriat les plus créatives d’Ottawa."
+      prices: "DÉTAIL DES PRIX"
+      col1: "Jour"
+      col2: "Semestre"
+      row1: "Type de membre"
+      row2: "Ingénierie"
+      row3: "Informatique"
+      row4: "Autres étudiants et professeurs"
+      row5: "Externe"
       more_info: "PLUS D'INFOS"
       makerspace: "Richard L'Abbe Makerspace"
       brunsfield: "Brunsfield Centre"
