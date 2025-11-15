@@ -52,21 +52,35 @@ jobs:
 
       - name: Cache APT packages
         uses: actions/cache@v4
+        id: cache-apt
         with:
-          path: /var/cache/apt/archives
-          key: apt-cache-${{ runner.os }}-v1
-          restore-keys: |
-            apt-cache-${{ runner.os }}-
+          path: ~/apt-cache
+          key: apt-cache-${{ runner.os }}-imagemagick-v1
 
       - name: Install dependencies
         run: |
-          # Update only if cache miss (for consistency)
-          if [ ! -f /var/cache/apt/archives/lock ]; then
+          # Install ImageMagick with caching
+          if [ "${{ steps.cache-apt.outputs.cache-hit }}" == "true" ]; then
+            echo "Installing ImageMagick from cache..."
+            sudo dpkg -i ~/apt-cache/*.deb || true
+            sudo apt-get install -f -yqq
+          else
+            echo "Downloading and caching ImageMagick..."
+            mkdir -p ~/apt-cache
+            
+            # Download packages
             sudo apt-get update -qq
+            cd ~/apt-cache
+            apt-get download imagemagick imagemagick-6.q16 \
+              libmagickcore-6.q16-7-extra \
+              $(apt-cache depends --recurse --no-recommends --no-suggests \
+                --no-conflicts --no-breaks --no-replaces --no-enhances \
+                imagemagick | grep "^\w" | sort -u | grep -v imagemagick)
+            
+            # Install
+            sudo dpkg -i *.deb || true
+            sudo apt-get install -f -yqq
           fi
-
-          # Install from cache or download (consistent either way)
-          sudo apt-get install -yqq --no-install-recommends imagemagick
 
           # Verify
           convert --version
