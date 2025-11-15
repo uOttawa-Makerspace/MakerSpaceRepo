@@ -54,10 +54,10 @@ jobs:
           SELECT pg_reload_conf();
           EOF
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -yqq --no-install-recommends imagemagick
+      - name: Setup ImageMagick
+        uses: mfinelli/setup-imagemagick@v7
+        with:
+          cache: true
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
