@@ -114,6 +114,8 @@ class Space < ApplicationRecord
 
     weekly_events = []
 
+    # logger.warn "Events: #{events.inspect}"
+
     events.each do |ev|
       next if ev[:start].blank?
 
@@ -193,6 +195,8 @@ class Space < ApplicationRecord
         )
       end
     end
+
+    # logger.warn "WE: #{weekly_events.inspect}"
 
     weekly_events.sort_by(&:dtstart)
   end

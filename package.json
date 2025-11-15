@@ -37,7 +37,7 @@
     "flatpickr": "^4.6.9",
     "font-awesome": "^4.7.0",
     "husky": "^9.1.7",
-    "ical.js": "2.1.0",
+    "ical.js": "^2.2.1",
     "js-cookie": "^3.0.5",
     "lightgallery": "^2.8.2",
     "moment": "^2.30.1",

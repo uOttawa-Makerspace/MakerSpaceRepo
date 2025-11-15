@@ -48,7 +48,10 @@ section#report {
     background-color: #4bbc9c;
     color: #fff;
     padding: 0.2rem;
-    font: 400 1.2rem "Roboto", helvetica, sans-serif;
+    font:
+      400 1.2rem "Roboto",
+      helvetica,
+      sans-serif;
     display: block;
     margin-left: 10px;
 
@@ -105,5 +108,9 @@ section#report {
   }
   .popular-hour-graph {
     width: 50% !important;
+  }
+
+  footer {
+    display: none;
   }
 }

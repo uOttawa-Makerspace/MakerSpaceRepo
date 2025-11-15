@@ -1,20 +1,29 @@
 # frozen_string_literal: true
 
+# Some notes for later reports: If filtering for a specific type of day, such as
+# on sundays only or saturdays only, use .select(&:sunday?).map(&:all_day). The
+# column type for created_at includes times all_day converts the result from a
+# single point in time to a range for the where query to properly function.
+#
+# Prefer to enable strict_loading on any query you do here, these reports pull a
+# lot of data and reducing round trips is important.
+
 class Admin::ReportGeneratorController < AdminAreaController
-  layout "admin_area"
-  require "date"
+  layout 'admin_area'
+  require 'date'
 
   def index
     @report_types = [
-      ["Certifications", :certifications],
-      ["New Projects", :new_projects],
-      ["New Users", :new_users],
-      ["Trainings", :trainings],
-      ["Training Attendees", :training_attendees],
-      ["Visitors", :visitors],
-      ["Visits by Hour", :visits_by_hour],
-      ["Kit purchased", :kit_purchased],
-      ["Popular Hours", :popular_hours]
+      ['Certifications', :certifications],
+      ['New Projects', :new_projects],
+      ['New Users', :new_users],
+      ['Trainings', :trainings],
+      ['Training Attendees', :training_attendees],
+      ['Visitors', :visitors],
+      ['Visits by Hour', :visits_by_hour],
+      ['Kit purchased', :kit_purchased],
+      ['Popular Hours', :popular_hours],
+      ['Frequent Visitors', :frequent_visitors]
     ]
 
     @report_parameter = %w[
@@ -27,35 +36,37 @@ class Admin::ReportGeneratorController < AdminAreaController
       visits_by_hour
       kit_purchased
       popular_hours
+      frequent_visitors
     ]
 
     return unless params[:report_type].present?
-      set_date_specified
+    set_date_specified
 
-      case params[:report_type]
-      when "visitors"
-        visitors
-      when "trainings"
-        trainings
-      when "certifications"
-        certifications
-      when "new_users"
-        new_users
-      when "training_attendees"
-        training_attendees
-      when "new_projects"
-        new_projects
-      when "visits_by_hour"
-        visits_by_hour
-      when "kit_purchased"
-        kit_purchased
-      when "popular_hours"
-        popular_hours
-      else
-        render plain: "Unknown report type", status: :bad_request
-        nil
-      end
-    
+    case params[:report_type]
+    when 'visitors'
+      visitors
+    when 'trainings'
+      trainings
+    when 'certifications'
+      certifications
+    when 'new_users'
+      new_users
+    when 'training_attendees'
+      training_attendees
+    when 'new_projects'
+      new_projects
+    when 'visits_by_hour'
+      visits_by_hour
+    when 'kit_purchased'
+      kit_purchased
+    when 'popular_hours'
+      popular_hours
+    when 'frequent_visitors'
+      frequent_visitors
+    else
+      render plain: 'Unknown report type', status: :bad_request
+      nil
+    end
   end
 
   # generate report as an html graph
@@ -67,47 +78,47 @@ class Admin::ReportGeneratorController < AdminAreaController
     type = params[:type]
 
     case range_type
-    when "semester"
+    when 'semester'
       unless year && (year.to_i > 0)
-        render plain: "Invalid year", status: :bad_request
+        render plain: 'Invalid year', status: :bad_request
         return
       end
 
       year = year.to_i
 
       case term
-      when "winter"
+      when 'winter'
         start_date = DateTime.new(year, 1, 1).beginning_of_day
         end_date = DateTime.new(year, 4, 30).end_of_day
-      when "summer"
+      when 'summer'
         start_date = DateTime.new(year, 5, 1).beginning_of_day
         end_date = DateTime.new(year, 8, 31).end_of_day
-      when "fall"
+      when 'fall'
         start_date = DateTime.new(year, 9, 1).beginning_of_day
         end_date = DateTime.new(year, 12, 31).end_of_day
       else
-        render plain: "Invalid term", status: :bad_request
+        render plain: 'Invalid term', status: :bad_request
         return
       end
-    when "date_range"
+    when 'date_range'
       begin
         start_date = Date.parse(params[:from_date]).to_datetime.beginning_of_day
       rescue ParseError
-        render plain: "Failed to parse start date"
+        render plain: 'Failed to parse start date'
         return
       end
 
       begin
         end_date = Date.parse(params[:to_date]).to_datetime.end_of_day
       rescue ParseError
-        render plain: "Failed to parse end date"
+        render plain: 'Failed to parse end date'
         return
       end
-    when "all_time"
+    when 'all_time'
       start_date = nil
       end_date = nil
     else
-      render plain: "Invalid range type", status: :bad_request
+      render plain: 'Invalid range type', status: :bad_request
       return
     end
 
@@ -121,8 +132,9 @@ class Admin::ReportGeneratorController < AdminAreaController
              visits_by_hour
              kit_purchased
              popular_hours
+             frequent_visitors
            ].include?(type)
-      render plain: "Unknown report type", status: :bad_request
+      render plain: 'Unknown report type', status: :bad_request
       return
     end
 
@@ -132,12 +144,12 @@ class Admin::ReportGeneratorController < AdminAreaController
                   start_date: start_date,
                   end_date: end_date,
                   report_type: type,
-                  anchor: "report",
+                  anchor: 'report',
                   range_type: range_type, # save selection params
                   term: term, # Semester params
                   year: year
                 ),
-                notice: "Successfully generated #{type.gsub("_", " ")} report"
+                notice: "Successfully generated #{type.gsub('_', ' ')} report"
   end
 
   def generate_spreadsheet
@@ -160,42 +172,42 @@ class Admin::ReportGeneratorController < AdminAreaController
     type = params[:type]
 
     case type
-    when "visitors"
+    when 'visitors'
       spreadsheet =
         ReportGenerator.generate_visitors_report(start_date, end_date)
-    when "trainings"
+    when 'trainings'
       spreadsheet =
         ReportGenerator.generate_trainings_report(start_date, end_date)
-    when "certifications"
+    when 'certifications'
       spreadsheet =
         ReportGenerator.generate_certifications_report(start_date, end_date)
-    when "new_users"
+    when 'new_users'
       spreadsheet =
         ReportGenerator.generate_new_users_report(start_date, end_date)
-    when "training_attendees"
+    when 'training_attendees'
       spreadsheet =
         ReportGenerator.generate_training_attendees_report(start_date, end_date)
-    when "new_projects"
+    when 'new_projects'
       spreadsheet =
         ReportGenerator.generate_new_projects_report(start_date, end_date)
-    when "visits_by_hour"
+    when 'visits_by_hour'
       spreadsheet =
         ReportGenerator.generate_peak_hours_report(start_date, end_date)
-    when "kit_purchased"
+    when 'kit_purchased'
       spreadsheet =
         ReportGenerator.generate_kit_purchased_report(start_date, end_date)
     else
-      render plain: "Unknown report type", status: :bad_request
+      render plain: 'Unknown report type', status: :bad_request
       return
     end
 
-    start_date_str = start_date.strftime("%Y-%m-%d")
-    end_date_str = end_date.strftime("%Y-%m-%d")
+    start_date_str = start_date.strftime('%Y-%m-%d')
+    end_date_str = end_date.strftime('%Y-%m-%d')
 
     send_data spreadsheet.to_stream.read,
-              type: "application/xlsx",
+              type: 'application/xlsx',
               filename:
-                type + "_" + start_date_str + "_" + end_date_str + ".xlsx"
+                type + '_' + start_date_str + '_' + end_date_str + '.xlsx'
   end
 
   private
@@ -238,10 +250,10 @@ class Admin::ReportGeneratorController < AdminAreaController
         .includes(training_session: %i[course_name training])
         .includes(training: [:skill])
     @space_count = {}
-    @space_count["unknown"] = 0
+    @space_count['unknown'] = 0
 
     @course_count = {}
-    @course_count["unknown"] = 0
+    @course_count['unknown'] = 0
 
     @skill_count = {}
 
@@ -258,7 +270,7 @@ class Admin::ReportGeneratorController < AdminAreaController
           @space_count[cert.space.name] += 1
         end
       else
-        @space_count["unknown"] += 1
+        @space_count['unknown'] += 1
       end
 
       # get said cert's training session
@@ -273,7 +285,7 @@ class Admin::ReportGeneratorController < AdminAreaController
         end
       else
         # some don't have courses (open to public)
-        @course_count["unknown"] += 1
+        @course_count['unknown'] += 1
       end
 
       # Count by skill and name
@@ -291,7 +303,6 @@ class Admin::ReportGeneratorController < AdminAreaController
       else
         @training_count[training_name] += 1
       end
-
     end
   end
 
@@ -310,7 +321,7 @@ class Admin::ReportGeneratorController < AdminAreaController
     @training_sessions = @training_sessions.unscope(:order)
 
     @space_count = {}
-    @space_count["unknown"] = 0
+    @space_count['unknown'] = 0
 
     @trainings_count = {}
 
@@ -325,7 +336,7 @@ class Admin::ReportGeneratorController < AdminAreaController
           @space_count[space_name] += 1
         end
       else
-        @space_count["unknown"] += 1
+        @space_count['unknown'] += 1
       end
 
       training_name = training_session.training.name_en
@@ -409,8 +420,8 @@ class Admin::ReportGeneratorController < AdminAreaController
         faculty = lab_session.user.faculty
         identity = lab_session.user.identity
       else
-        faculty = "unknown"
-        identity = "unknown"
+        faculty = 'unknown'
+        identity = 'unknown'
       end
 
       if !@identity_total_count.has_key?(identity)
@@ -463,18 +474,19 @@ class Admin::ReportGeneratorController < AdminAreaController
       )
     @spaces = Space.all.order(name: :asc)
 
-    @lab_hash["all"] = lab_sessions
+    @lab_hash['all'] = lab_sessions
 
     Space.all.each do |space|
-      sessions = if @date_specified
-        space.lab_sessions.where(
+      sessions =
+        if @date_specified
+          space.lab_sessions.where(
             created_at: params[:start_date]..params[:end_date]
           )
-      else
-        space.lab_sessions
-                 end
+        else
+          space.lab_sessions
+        end
 
-      @lab_hash[space.name.gsub(" ", "-")] = sessions
+      @lab_hash[space.name.gsub(' ', '-')] = sessions
     end
   end
 
@@ -527,7 +539,7 @@ class Admin::ReportGeneratorController < AdminAreaController
       (params[:start_date].to_datetime..params[:end_date].to_datetime)
         .select { |date| date.day == 1 }
         .map do |date|
-          month_name = date.end_of_month.strftime("%B")
+          month_name = date.end_of_month.strftime('%B')
           certs =
             Certification.where(
               created_at: date.beginning_of_month..date.end_of_month
@@ -542,7 +554,7 @@ class Admin::ReportGeneratorController < AdminAreaController
       (DateTime.new(2015, 06, 01).beginning_of_day..DateTime.now)
         .select { |date| date.day == 1 }
         .map do |date|
-          month_name = date.end_of_month.strftime("%B")
+          month_name = date.end_of_month.strftime('%B')
           certs =
             Certification.where(
               created_at: date.beginning_of_month..date.end_of_month
@@ -558,8 +570,9 @@ class Admin::ReportGeneratorController < AdminAreaController
     (1..12).each do |m|
       month_name = Date::MONTHNAMES[m]
       if total_certs[month_name] != 0
-        @monthly_average[month_name] = total_certs[month_name].to_f /
-          total_sessions[month_name]
+        @monthly_average[month_name] = (
+          total_certs[month_name].to_f / total_sessions[month_name]
+        )
       end
     end
   end
@@ -570,12 +583,47 @@ class Admin::ReportGeneratorController < AdminAreaController
     @weekdays = Date::DAYNAMES
 
     return unless @date_specified
-      @info =
-        PopularHour.popular_hours_per_period(
-          params[:start_date].to_date,
-          params[:end_date].to_date
-        )
-      params[:report_type] = "popular_hours_per_period"
-    
+    @info =
+      PopularHour.popular_hours_per_period(
+        params[:start_date].to_date,
+        params[:end_date].to_date
+      )
+    params[:report_type] = 'popular_hours_per_period'
+  end
+
+  def frequent_visitors
+    @weekends =
+      (params[:start_date].to_datetime..params[:end_date].to_datetime)
+        .select { |day| day.saturday? || day.sunday? }
+        .map(&:all_day)
+
+    @lab_sessions =
+      Space.all.map do |space|
+        [
+          space.name,
+          # Full weeks
+          LabSession
+            .strict_loading
+            .joins(:user)
+            .where(
+              created_at:
+                params[:start_date].to_datetime..params[:end_date].to_datetime,
+              space: space
+            )
+            .group(:user)
+            .order('count(users.id) desc')
+            .limit(20)
+            .count,
+          # Weekend only
+          LabSession
+            .strict_loading
+            .joins(:user)
+            .where(created_at: @weekends, space: space)
+            .group(:user)
+            .order('count(users.id) desc')
+            .limit(20)
+            .count
+        ]
+      end
   end
 end

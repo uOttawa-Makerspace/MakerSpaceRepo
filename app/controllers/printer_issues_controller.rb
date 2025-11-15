@@ -11,6 +11,26 @@ class PrinterIssuesController < StaffAreaController
             issue.summary.include? s
           end || "Other"
         end
+    
+    # Add JSON response
+    respond_to do |format|
+      format.html # renders the HTML view
+      format.json do
+        render json: {
+          issues: @issues.map do |issue|
+            {
+              id: issue.id,
+              printer_id: issue.printer_id,
+              reporter: issue.reporter&.name,
+              summary: issue.summary,
+              description: issue.description,
+              created_at: issue.created_at,
+              active: issue.active
+            }
+          end
+        }
+      end
+    end
   end
 
   def show

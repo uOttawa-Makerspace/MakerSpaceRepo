@@ -53,8 +53,7 @@ class JobOrderMailer < ApplicationMailer
       to: @job_order.user.email,
       reply_to: "makerspace@uottawa.ca",
       bcc: "uottawa.makerepo@gmail.com",
-      subject:
-        "Your job ##{@job_order.id} (#{@job_order.user_files.first.filename}) has been declined"
+      subject: "Your job ##{@job_order.id} has been declined"
     )
   end
 
