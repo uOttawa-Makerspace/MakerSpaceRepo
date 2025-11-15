@@ -17,7 +17,7 @@ jobs:
     timeout-minutes: 8
 
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         shard: [1, 2, 3, 4, 5, 6]
 
