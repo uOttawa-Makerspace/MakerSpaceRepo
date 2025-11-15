@@ -111,10 +111,10 @@ jobs:
 
       - name: Run RSpec tests (Shard ${{ matrix.shard }}/4)
         run: |
-          bundle exec parallel_rspec spec/ \
-            -n 4 \
-            --only-group ${{ matrix.shard }} \
-            --runtime-log .ci/parallel_runtime_rspec.log
+          bundle exec rspec \
+            --format progress \
+            --force-color \
+            $(find spec -name '*_spec.rb' -type f | sort | awk "NR % 4 == (${{ matrix.shard }} - 1)")
 
   deploy:
     needs: test
