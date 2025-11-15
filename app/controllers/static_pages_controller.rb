@@ -130,6 +130,20 @@ class StaticPagesController < SessionsController
     end
   end
 
+  def open_hours
+    calendars = StaffNeededCalendar.where(role: "open_hours")
+    
+    all_calendars = calendars.flat_map do |calendar_record|
+      helpers.parse_ics_calendar(
+        calendar_record.calendar_url,
+        name: calendar_record.name.presence || calendar_record.space&.name || "Unnamed Calendar",
+        color: calendar_record.color
+      )
+    end
+
+    render json: all_calendars
+  end
+
   def calendar
   end
 
