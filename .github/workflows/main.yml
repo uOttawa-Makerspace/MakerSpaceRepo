@@ -50,11 +50,26 @@ jobs:
           PGPASSWORD=postgres psql -h localhost -U postgres -c "ALTER SYSTEM SET shared_buffers = '256MB';"
           PGPASSWORD=postgres psql -h localhost -U postgres -c "SELECT pg_reload_conf();"
 
-      - name: Install system dependencies
-        uses: awalsh128/cache-apt-pkgs-action@latest
+      - name: Cache APT packages
+        uses: actions/cache@v4
         with:
-          packages: imagemagick
-          version: 1.0
+          path: /var/cache/apt/archives
+          key: apt-cache-${{ runner.os }}-v1
+          restore-keys: |
+            apt-cache-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: |
+          # Update only if cache miss (for consistency)
+          if [ ! -f /var/cache/apt/archives/lock ]; then
+            sudo apt-get update -qq
+          fi
+
+          # Install from cache or download (consistent either way)
+          sudo apt-get install -yqq --no-install-recommends imagemagick
+
+          # Verify
+          convert --version
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
