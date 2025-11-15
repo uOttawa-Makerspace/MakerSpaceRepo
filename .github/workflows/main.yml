@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: [1, 2, 3, 4, 5, 6]
 
     env:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/makerspacerepo_test_${{ matrix.shard }}
@@ -31,12 +31,14 @@ jobs:
         env:
           POSTGRES_PASSWORD: postgres
           POSTGRES_USER: postgres
+          PGDATA: /dev/shm/pgdata
         ports: ["5432:5432"]
         options: >-
           --health-cmd pg_isready
           --health-interval 5s
           --health-timeout 3s
           --health-retries 3
+          --shm-size=512mb
 
     steps:
       - name: Checkout code
@@ -109,12 +111,12 @@ jobs:
           PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE DATABASE makerspacerepo_test_${{ matrix.shard }};"
           bundle exec rails db:schema:load
 
-      - name: Run RSpec tests (Shard ${{ matrix.shard }}/4)
+      - name: Run RSpec tests (Shard ${{ matrix.shard }}/6)
         run: |
           bundle exec rspec \
             --format progress \
             --force-color \
-            $(find spec -name '*_spec.rb' -type f | sort | awk "NR % 4 == (${{ matrix.shard }} - 1)")
+            $(find spec -name '*_spec.rb' -type f | sort | awk "NR % 6 == (${{ matrix.shard }} - 1)")
 
   deploy:
     needs: test
