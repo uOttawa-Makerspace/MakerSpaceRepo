@@ -43,9 +43,20 @@ RSpec.describe Question, type: :model do
   describe "Methods" do
     context "#response_for_exam" do
       it "should return exam_response's exam" do
+        # Clean any existing data
+        Exam.destroy_all
+        Question.destroy_all
+        
+        # Create test data
         3.times { create(:exam_with_exam_questions_and_exam_responses) }
+        
         exam = Exam.first
         question = exam.questions.first
+        
+        # Guard against nil
+        expect(question).not_to be_nil
+        expect(question.exam_questions).not_to be_nil
+        
         exam_response =
           question.exam_questions.find_by(exam: exam).exam_response
         expect(question.response_for_exam(exam)).to eq(exam_response)

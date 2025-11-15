@@ -49,7 +49,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
         user = create(:user, :volunteer_with_dev_program)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
-        OrderStatus.create(name: "Completed", id: 2)
+        OrderStatus.find_or_create_by(name: "Completed")
         create(:order_item, :awarded)
         Order.last.update(user_id: user.id)
         get :show, params: { id: ProficientProject.last.id }

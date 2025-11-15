@@ -71,6 +71,7 @@ gem "youtube_id"
 gem "mission_control-jobs"
 
 group :development, :test do
+  gem 'rspec_junit_formatter'
   gem "byebug", platform: :mri
   gem "factory_bot_rails"
   gem "faker", "~> 3.1"

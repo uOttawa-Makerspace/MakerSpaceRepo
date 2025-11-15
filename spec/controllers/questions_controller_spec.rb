@@ -1,17 +1,20 @@
 require "rails_helper"
 
 RSpec.describe QuestionsController, type: :controller do
-  before(:all) do
-    7.times { create(:question_with_answers) }
-    @admin = create(:user, :admin)
-    @question = Question.last
-  end
+  let(:space) { create(:space) }
+  let(:admin) { create(:user, :admin, space: space) }  # Associate space with admin
+  let(:question) { create(:question_with_answers) }
 
-  before(:each) { session[:user_id] = @admin.id }
+  before(:each) do
+    session[:user_id] = admin.id
+  end
 
   describe "GET /index" do
     context "logged as admin" do
       it "should return 200 response" do
+        space # Ensure space is created
+        7.times { create(:question_with_answers) }
+        
         get :index
         expect(response).to have_http_status(:success)
         expect(@controller.instance_variable_get(:@questions).count).to eq(0)
@@ -21,7 +24,8 @@ RSpec.describe QuestionsController, type: :controller do
 
     context "logged as regular user" do
       it "should redirect user to root" do
-        user = create(:user, :regular_user)
+        space # Ensure space exists
+        user = create(:user, :regular_user, space: space)
         session[:user_id] = user.id
         get :index
         expect(response).to redirect_to root_path
@@ -41,7 +45,7 @@ RSpec.describe QuestionsController, type: :controller do
   describe "GET /show" do
     context "logged as admin" do
       it "should return 200 response" do
-        get :show, params: { id: @question.id }
+        get :show, params: { id: question.id }
         expect(response).to have_http_status(:success)
       end
     end
@@ -50,7 +54,7 @@ RSpec.describe QuestionsController, type: :controller do
   describe "GET /edit" do
     context "logged as admin" do
       it "should return 200 response" do
-        get :edit, params: { id: @question.id }
+        get :edit, params: { id: question.id }
         expect(response).to have_http_status(:success)
       end
     end
@@ -59,21 +63,17 @@ RSpec.describe QuestionsController, type: :controller do
   describe "POST /create" do
     context "logged as admin" do
       it "should create a question with answers and redirect" do
-        answer_params =
-          (0..5).inject([]) do |arr, l|
-            arr << FactoryBot.attributes_for(:answer)
-          end
-        question_params =
-          FactoryBot.attributes_for(
-            :question,
-            answers_attributes: answer_params
-          )
+        answer_params = (0..5).map { FactoryBot.attributes_for(:answer) }
+        question_params = FactoryBot.attributes_for(
+          :question,
+          answers_attributes: answer_params
+        )
+        
         expect {
           post :create, params: { question: question_params }
         }.to change(Question, :count).by(1)
-        expect(flash[:notice]).to eq(
-          "You've successfully created a new question!"
-        )
+        
+        expect(flash[:notice]).to eq("You've successfully created a new question!")
         expect(response).to redirect_to questions_path
       end
     end
@@ -84,13 +84,12 @@ RSpec.describe QuestionsController, type: :controller do
       it "should update the question" do
         patch :update,
               params: {
-                id: @question.id,
-                question: {
-                  description: "updated"
-                }
+                id: question.id,
+                question: { description: "updated" }
               }
+        
         expect(response).to redirect_to questions_path
-        expect(Question.find(@question.id).description).to eq("updated")
+        expect(Question.find(question.id).description).to eq("updated")
         expect(flash[:notice]).to eq("Question updated")
       end
     end
@@ -99,15 +98,15 @@ RSpec.describe QuestionsController, type: :controller do
   describe "DELETE /destroy" do
     context "logged as admin" do
       it "should destroy the question" do
-        expect { delete :destroy, params: { id: @question.id } }.to change(
-          Question,
-          :count
-        ).by(-1)
+        question # Create it first
+        
+        expect { 
+          delete :destroy, params: { id: question.id } 
+        }.to change(Question, :count).by(-1)
+        
         expect(response).to redirect_to questions_path
         expect(flash[:notice]).to eq("Question Deleted")
       end
     end
   end
-
-  after(:all) { Question.destroy_all }
 end
