@@ -169,6 +169,7 @@ Rails.application.routes.draw do
     patch "reset_password"
     get "terms_of_service", as: "tos"
     get "hours"
+    get "open_hours"
     get "about"
     get "contact"
     get "calendar"
