@@ -64,6 +64,8 @@ RSpec.describe Admin::DesignDaysController, type: :controller do
           semester
           year
           design_day_schedules
+          show_floorplans
+          floorplan_urls
         ].each { |k| expect(scheds).to have_key(k) }
 
         scheds[:design_day_schedules].each do |dds|
@@ -74,6 +76,8 @@ RSpec.describe Admin::DesignDaysController, type: :controller do
         %i[start end ordering title_en title_fr event_for].each do |k|
           expect(test_sched).to have_key(k)
         end
+
+        expect(scheds[:floorplan_urls]).not_to be_blank
       end
     end
   end

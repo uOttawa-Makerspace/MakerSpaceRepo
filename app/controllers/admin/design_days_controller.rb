@@ -1,4 +1,8 @@
 class Admin::DesignDaysController < AdminAreaController
+  # https://api.rubyonrails.org/v7.2/classes/ActiveStorage/SetCurrent.html
+  # Sets url options for disk service to generate public urls
+  include ActiveStorage::SetCurrent
+  
   before_action :make_variables, only: %i[show update data]
   skip_before_action :current_user, only: :data
   skip_before_action :ensure_admin, only: :data
