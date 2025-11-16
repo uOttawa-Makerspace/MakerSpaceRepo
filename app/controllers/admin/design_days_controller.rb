@@ -14,7 +14,7 @@ class Admin::DesignDaysController < AdminAreaController
     render json:
              @design_day.as_json(
                include: [:design_day_schedules],
-               methods: %i[semester year image_urls] # call methods on DesignDay
+               methods: %i[semester year floorplan_urls] # call methods on DesignDay
              )
   end
 

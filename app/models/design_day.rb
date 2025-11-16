@@ -31,7 +31,7 @@ class DesignDay < ApplicationRecord
   # day.year
   delegate :year, to: :day
 
-  def image_urls
+  def floorplan_urls
     floorplans.map(&:url) if floorplans.attached?
   end
 end
