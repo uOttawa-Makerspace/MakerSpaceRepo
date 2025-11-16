@@ -13,8 +13,8 @@ class Admin::DesignDaysController < AdminAreaController
     # https://api.rubyonrails.org/classes/ActiveModel/Serializers/JSON.html#method-i-as_json
     render json:
              @design_day.as_json(
-               include: :design_day_schedules,
-               methods: %i[semester year]
+               include: [:design_day_schedules],
+               methods: %i[semester year image_urls] # call methods on DesignDay
              )
   end
 
