@@ -179,12 +179,14 @@ document.addEventListener("turbo:load", function () {
 
   function floorplanDelete(evt) {
     evt.preventDefault();
-    evt.target.parentElement.remove();
+    evt.currentTarget.parentElement.remove();
   }
 
   function newFloorplanInput() {
     const clone = floorplanTemplate.cloneNode(true);
-    clone.addEventListener("click", floorplanDelete);
+    clone
+      .querySelector("[data-floorplan-delete]")
+      .addEventListener("click", floorplanDelete);
     return clone;
   }
 
@@ -192,10 +194,10 @@ document.addEventListener("turbo:load", function () {
     el.addEventListener("click", floorplanDelete);
   });
 
-  document.querySelectorAll("[data-floorplan-add]").forEach((el) => {
-    el.addEventListener("click", (evt) => {
+  document
+    .querySelector("[data-floorplan-add]")
+    .addEventListener("click", (evt) => {
       evt.preventDefault();
       floorplanContainer.appendChild(newFloorplanInput());
     });
-  });
 });

@@ -16,11 +16,13 @@
             </div>
             <%= f.button "Convert URL to ID", class: 'btn btn-outline-success', id: 'verifyDesignDaySheet' %>
         </div>
+
         <div class="form-text ms-3">
             Current sheet url is <a id="sheet_key_preview_url" href="https://docs.google.com/spreadsheets/d/<%= @design_day.sheet_key %>">https://docs.google.com/spreadsheets/d/<%= @design_day.sheet_key %></a>
             <br />
             <span id="sheet_key_may_be_invalid" hidden="true">Current key doesn't seem valid.</span>
         </div>
+        <hr />
 
         <% @design_day_schedules.each do |event_for, schedules| %>
             <h2 class="text-center mt-3"><%= event_for.to_s.humanize %> schedules</h2>
@@ -36,37 +38,47 @@
                     <%= render partial: 'design_day_schedule_form', locals: {fs: fs} %>
                 <% end %>
 
-                <button class="btn btn-success float-end" data-template-fields=<%= "#design_day_schedule_template_#{event_for}_field" %> ><%= fa_icon 'plus' %></button>
+                <div class="d-flex justify-content-end">
+                    <button class="btn btn-success" data-template-fields=<%= "#design_day_schedule_template_#{event_for}_field" %> ><%= fa_icon 'plus' %></button>
+                </div>
             </div>
         <% end %>
         <div>
+            <h2 class="text-center">Floorplans</h2>
             <div class="d-flex flex-column align-items-center">
-                <h2>Floorplans</h2>
                 <div class="form-check form-switch mb-3 align-self-center">
                     <%= f.check_box :show_floorplans, class: 'form-check-input' %>
                     <%= f.label :show_floorplans, class: 'form-check-label' %>
                 </div>
+            </div>
+            <div class="text-center">
                 <button class="btn btn-success mb-3" data-floorplan-add><%= fa_icon 'plus' %> Add a floorplan</button>
             </div>
-            
+
             <div data-floorplan-container>
-                <div class="input-group mb-3" data-floorplan-template>
-                    <%= f.file_field :floorplans, class: 'form-control', accept: 'image/*', autocomplete: 'off', multiple: true %>
-                    <button type="button" class="btn btn-danger" data-floorplan-delete><%= fa_icon :trash %></button>
+                <div hidden disabled>
+                    <div class="input-group mb-3" data-floorplan-template>
+                        <%= f.file_field :floorplans, class: 'form-control', accept: 'image/*', autocomplete: 'off', multiple: true %>
+                        <button type="button" class="btn btn-danger" data-floorplan-delete><%= fa_icon :trash %></button>
+                    </div>
                 </div>
             </div>
-            
+            <hr />
+
             <div>
-                <h3>Floorplans currently on display</h3>
-                <div class="p-1 border">
-                <% @design_day.floorplans.each do |image| %>
-                    <div class="input-group mb-3">
-                        <%= f.hidden_field :floorplans, multiple: true, value: image.signed_id %>
-                        <%= image_tag image, class: 'img-fluid', style: 'height: 5em' %>
-                        <%= link_to image.filename, image, class: 'input-group-text flex-fill' %>
-                        <%= button_tag fa_icon(:trash), class: 'btn btn-danger', data: {floorplan_delete: ''}, type: 'button' %>
-                    </div>
-                <% end %>
+                <h2 class="text-center">Floorplans currently on display</h3>
+                <div>
+                    <% unless @design_day.floorplans.attached? %>
+                        <p class="text-center">No floorplans attached...</p>
+                    <% end %>
+                    <% @design_day.floorplans.each do |image| %>
+                        <div class="input-group mb-3">
+                            <%= f.hidden_field :floorplans, multiple: true, value: image.signed_id %>
+                            <%= image_tag image, class: 'img-fluid', style: 'height: 5em' %>
+                            <%= link_to image.filename, image, class: 'input-group-text flex-fill' %>
+                            <%= button_tag fa_icon(:trash), class: 'btn btn-danger', data: {floorplan_delete: ''}, type: 'button' %>
+                        </div>
+                    <% end %>
                 </div>
             </div>
         </div>
