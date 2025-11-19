@@ -20,7 +20,7 @@
     <div class="row align-items-center">
       <div class="col-lg-7">
         <p class="fs-4 text-primary fw-bold text-uppercase"><%= t('memberships.index.subtitle_1') %></p>
-        <h2 class="mb-4 display-5"><%= t('memberships.index.text_1') %></h2>
+        <h2 class="mb-4 fs-2 display-5"><%= t('memberships.index.text_1') %></h2>
       </div>
 
       <div class="col-lg-5 text-center">
@@ -34,13 +34,13 @@
     <div class="col-lg-6">
       <div class="border border-2 rounded-3 p-4 h-100">
         <a class="h2 text-primary" href="https://www.uottawa.ca/study/fees-financial-support/university-fees/ancillary-fees"><%= t('memberships.index.subtitle_2') %></a>
-        <p><%= t('memberships.index.text_2') %></p>
+        <p class="fs-5"><%= t('memberships.index.text_2') %></p>
       </div>
     </div>
     <div class="col-lg-6">
       <div class="border border-2 rounded-3 p-4 h-100">
         <h2><%= t('memberships.index.subtitle_3') %></h2>
-        <p><%= t('memberships.index.text_3') %></p>
+        <p class="fs-5"><%= t('memberships.index.text_3') %></p>
       </div>
     </div>
 
@@ -58,14 +58,14 @@
               <h2 class="mb-0 text-primary"><%= fa_icon "star-half-o" %><%= t('memberships.index.subtitle_4') %></h2>
             </div>
 
-            <p class="lead"><%= t('memberships.index.text_4') %></p>
+            <p class="lead fs-5"><%= t('memberships.index.text_4') %></p>
           </div>
         </div>
       </div>
     </div>
     <div class="text-center" style="margin-top: 5rem;">
       <h3 class="fs-2 text-primary fw-bold text-uppercase"><%= t('memberships.index.prices') %></h3>
-    <table class="table">
+    <table class="table fs-5" style="margin-top: 2rem;">
       <thead>
         <tr>
           <th scope="col"><%= t('memberships.index.row1') %></th>
@@ -76,24 +76,24 @@
       <tbody>
         <tr>
           <th scope="row"><%= t('memberships.index.row2') %></th>
-          <td>/</td>
-          <td>/</td>
+          <td>$<%= @membership_day.internal_price %>0</td>
+          <td>$<%= @membership_sem.internal_price %>0</td>
         </tr>
         <tr>
           <th scope="row"><%= t('memberships.index.row4') %></th>
-          <td>/</td>
-          <td>/</td>
+          <td>$<%= @membership_day.internal_price %>0</td>
+          <td>$<%= @membership_sem.internal_price %>0</td>
         </tr>
         <tr>
           <th scope="row"><%= t('memberships.index.row5') %></th>
-          <td>/</td>
-          <td>/</td>
+          <td>$<%= @membership_day.external_price %>0</td>
+          <td>$<%= @membership_sem.external_price %>0</td>
         </tr>
       </tbody>
     </table>
     </div>
 
-    <div class="text-center" style="margin-top: 5rem;">
+    <div class="text-center" style="margin-top: 5rem; margin-bottom: 1rem;">
       <h3 class="fs-2 text-primary fw-bold text-uppercase"><%= t('memberships.index.more_info') %></h3>
       <a href="https://www.uottawa.ca/faculty-engineering/centre-entrepreneurship-engineering-design/facilities/richard-labbe-makerspace"><%= t('memberships.index.makerspace') %></a>
       <br>
