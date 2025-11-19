@@ -5,7 +5,7 @@ class Staff::MyCalendarController < StaffAreaController
     @spaces = Space.all.where(
       id: StaffSpace.where(user_id: current_user.id).pluck(:space_id)
     )
-    @space_id = @user.space_id || Space.first.id
+    @space_id = current_user.space_id || @spaces.first.id
   end
 
   def json
