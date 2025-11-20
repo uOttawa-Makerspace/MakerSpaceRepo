@@ -283,4 +283,8 @@ QUERY
   def shopify_draft_order_line_items
       raise "Did not define shopify_draft_order_line_items on model implementing concern"
   end
+
+  def shopify_draft_order_key_name
+    self.class.shopify_draft_order_key_name
+  end
 end
