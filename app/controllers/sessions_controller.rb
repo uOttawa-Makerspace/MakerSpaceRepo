@@ -59,7 +59,7 @@ class SessionsController < ApplicationController
           # else
           #   format.html { redirect_back(fallback_location: root_path) }
           # end
-          format.html { redirect_to params[:back_to] || root_path }
+          format.html { redirect_back(fallback_location: root_path) }
           format.json do
             render json: {
                      user: @user.as_json,
