@@ -24,7 +24,7 @@ class Membership < ApplicationRecord
     'membership'
   end
 
-  def self.shopify_draft_order_line_items
+  def shopify_draft_order_line_items
     [{ originalUnitPrice: membership_tier.price(user).to_s, quantity: 1, title: membership_title }]
   end
 
