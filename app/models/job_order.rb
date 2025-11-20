@@ -228,7 +228,7 @@ task.job_task_quote.service_price * task.job_task_quote.service_quantity) if tas
     }
   end
 
-  def shopify_draft_order_key_name
+  def self.shopify_draft_order_key_name
     'job_order'
   end
 end

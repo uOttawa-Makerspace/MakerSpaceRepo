@@ -20,11 +20,11 @@ class Membership < ApplicationRecord
 
   delegate :duration, to: :membership_tier
 
-  def shopify_draft_order_key_name
+  def self.shopify_draft_order_key_name
     'membership'
   end
 
-  def shopify_draft_order_line_items
+  def self.shopify_draft_order_line_items
     [{ originalUnitPrice: membership_tier.price(user).to_s, quantity: 1, title: membership_title }]
   end
 

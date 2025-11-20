@@ -7,7 +7,7 @@ RSpec.describe CustomWebhooksController, type: :controller do
         locker_rental = create(:locker_rental, :await_payment)
         post :orders_paid,
              params: {
-               tags: [ShopifyConcern.target_tag],
+               tags: [LockerRental.draft_order_operating_tag],
                "metafields": [
                  {
                    "namespace": "makerepo",
