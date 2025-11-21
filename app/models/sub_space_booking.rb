@@ -12,7 +12,7 @@ class SubSpaceBooking < ApplicationRecord
   validate :end_time_after_start_time
 
   before_save :upsert_google_booking,
-    if: ->(sub_space_booking) {sub_space_booking.sub_space_id == 10 || 11}
+    if: ->(sub_space_booking) {[10, 11].include?(sub_space_booking.sub_space_id)}
   
   before_destroy :delete_google_booking
 
@@ -135,19 +135,17 @@ class SubSpaceBooking < ApplicationRecord
       )
 
     calendar_id = return_sub_space_calendar(sub_space_booking.sub_space)
-    Rails.logger.debug "________________________________________________________________________________________"
     if sub_space_booking.google_booking_id.present?
-      Rails.logger.debug "UPDATING EXISTING BOOKING"
       begin # Update an existing booking
-        service.update_event(calendar_id, sub_space_booking.google_event_id, gcal_event)
+        service.update_event(calendar_id, sub_space_booking.google_booking_id, gcal_event)
       rescue Google::Apis::ClientError => e
         Rails.logger.error "Failed to update Google sub space booking #{sub_space_booking.id}: #{e.message}"
       end
     else
-      Rails.logger.debug "CREATING NEW BOOKING"
       begin #Create a new booking
+        Rails.logger.debug "CREATE GOOGLE CAL BOOKING"
         response = service.insert_event(calendar_id, gcal_event)
-        sub_space_booking.update(google_event_id: response.id)
+        sub_space_booking.update(google_booking_id: response.id)
       rescue StandardError => e
         Rails.logger.error "Failed to create booking #{sub_space_booking.id}: #{e.message}"
       end
@@ -161,7 +159,7 @@ class SubSpaceBooking < ApplicationRecord
     calendar_id = return_sub_space_calendar(sub_space_booking.sub_space)
 
     begin
-      response = service.delete_event(calendar_id, sub_space_booking.google_event_id)
+      response = service.delete_event(calendar_id, sub_space_booking.google_booking_id)
     rescue Google::Apis::ClientError => e
       Rails.logger.error "Failed to delete Google event #{sub_space_booking.id}: #{e.message}"
     end
@@ -169,11 +167,11 @@ class SubSpaceBooking < ApplicationRecord
 
   def self.return_sub_space_calendar(sub_space)
     if sub_space.name == "STM 124"
-      "d1ee6078f7d085e62d99150ed598526f1ead2068937d30d9b3a93b48e4b17dc0@group.calendar.google.com"
+      "c_hbktsseobsqd92u5rufsjbcok8@group.calendar.google.com"
     elsif sub_space.name == "STM 126"
-      "d1ee6078f7d085e62d99150ed598526f1ead2068937d30d9b3a93b48e4b17dc0@group.calendar.google.com"
+      "c_hbktsseobsqd92u5rufsjbcok8@group.calendar.google.com"
     else
-      "d1ee6078f7d085e62d99150ed598526f1ead2068937d30d9b3a93b48e4b17dc0@group.calendar.google.com" # my personal test calendar
+      "c_hbktsseobsqd92u5rufsjbcok8@group.calendar.google.com" # my personal test calendar
     end
   end
 end
