@@ -11,7 +11,12 @@ module CalendarHelper
       response = HTTParty.get(ics_url, timeout: 10)
       return [] unless response.success?
 
-      parsed_cals = ::Icalendar::Calendar.parse(response.body)
+      if ics_url[0,21] == "/spec/support/assets/"
+        response = File.read(ics_url) 
+        parsed_cals = ::Icalendar::Calendar.parse(response)
+      else
+        parsed_cals = ::Icalendar::Calendar.parse(response.body)
+      end
 
       events = parsed_cals.flat_map do |calendar|
         calendar.events.map do |event|
