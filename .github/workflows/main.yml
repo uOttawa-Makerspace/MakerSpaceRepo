@@ -14,16 +14,7 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
-
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2, 3, 4, 5, 6]
-
-    env:
-      DATABASE_URL: postgres://postgres:postgres@localhost:5432/makerspacerepo_test_${{ matrix.shard }}
-      REDIS_URL: redis://localhost:6379/${{ matrix.shard }}
+    timeout-minutes: 5
 
     services:
       postgres:
@@ -91,17 +82,13 @@ jobs:
       - name: Create Credentials File
         run: echo '${{ secrets.CREDENTIALS_JSON }}' > config/makerepo-1632742c49cc.json
 
-      - name: Setup Database (Shard ${{ matrix.shard }})
+      - name: Setup Parallel Test Databases
         run: |
-          PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE DATABASE makerspacerepo_test_${{ matrix.shard }};"
-          bundle exec rails db:schema:load
+          bundle exec rake parallel:setup[4]
 
-      - name: Run RSpec tests (Shard ${{ matrix.shard }}/6)
+      - name: Run Parallel RSpec Tests (4 processes)
         run: |
-          bundle exec rspec \
-            --format progress \
-            --force-color \
-            $(find spec -name '*_spec.rb' -type f | sort | awk "NR % 6 == (${{ matrix.shard }} - 1)")
+          bundle exec parallel_rspec spec/ -n 4
 
   deploy:
     needs: test
