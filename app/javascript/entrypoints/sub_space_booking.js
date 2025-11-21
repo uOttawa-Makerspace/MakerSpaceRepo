@@ -232,6 +232,7 @@ document.addEventListener("turbo:load", function () {
           description: document.getElementById("book-description").value,
           start_time: start_picker.input.value,
           end_time: end_picker.input.value,
+          sub_space_id: document.getElementById("subspace").value,
           blocking: document.getElementById("book-blocking")
             ? document.getElementById("book-blocking").checked
             : false,
