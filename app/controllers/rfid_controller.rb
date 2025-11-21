@@ -28,8 +28,6 @@ class RfidController < SessionsController
 
   # Notify server of a student card tap
   def card_number
-    Rails.logger.debug "_______________________________________________________"
-    Rails.logger.debug "RFID DETECTED"
     if params[:space_id].present? && Space.find(params[:space_id]).present?
       space_id = params[:space_id]
     else
