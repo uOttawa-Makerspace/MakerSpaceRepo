@@ -79,6 +79,7 @@ fr:
       welcome_to: "Bienvenue à MakerRepo"
       welcome_subheader: "Voici le site de dépôt du <b>CEED</b>"
       hour_header: "Heures d'ouverture des espaces de la semaine"
+      view_hours: "Voir le calendrier complet"
     socials:
       subtext: "Restez informé grâce a nos réseaux sociaux"
     hours:
