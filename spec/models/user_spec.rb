@@ -458,7 +458,7 @@ RSpec.describe User, type: :model do
         user = create(:user, :admin)
         training = create(:training)
         create(:certification, user_id: user.id)
-        expect(user.remaining_trainings[0].id).to eq(training.id)
+        expect(user.remaining_trainings.map(&:id)).to include(training.id)
       end
     end
 

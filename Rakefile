@@ -14,3 +14,6 @@ end
 Rake::Application.include TempFixForRakeLastComment
 
 Rails.application.load_tasks
+
+# Load parallel_tests tasks
+require 'parallel_tests/tasks'
