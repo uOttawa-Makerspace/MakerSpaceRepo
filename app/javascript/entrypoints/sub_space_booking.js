@@ -94,6 +94,8 @@ document.addEventListener("turbo:load", function () {
             modal.style.display = "block";
             modal.classList.add("show");
 
+            document.getElementById("subspace").value = data.sub_space_id;
+
             toggleRecurring();
           });
       }

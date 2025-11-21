@@ -22,6 +22,13 @@
                     <input id="book-end" autocomplete="false" class="form-control inanimate">
                     <span class="invalid-feedback d-none" id="end-date-validation" >The End Date needs to be greater than the Start Date.</span>
                     <br>
+                    <%= form_with model: @sub_space_booking do |f| %>
+
+                    <div class="mb-3">
+                        <label class="form-label">Subspace</label>
+                        <%= f.select(:sub_space_booking, :sub_space_id, SubSpace.all.collect { |s| [s.name,s.id]}, {include_blank: "None" }) %>
+                    </div>
+
                     <input type="checkbox" id="book-recurring" class="form-check-input">
                     <label for="book-recurring" id="book-recurring-label">Is this a recurring booking?</label>
                     <br>
@@ -53,7 +60,8 @@
                 </div>
                 <button type="button" id="bookCancel" class="btn btn-secondary ms-auto" data-bs-dismiss="modal">Close</button>
                 <button type="button" id="bookSave" class="btn btn-primary">Book</button>
-                <button type="button" id="bookUpdate" class="btn btn-primary">Update</button>
+                <%= f.submit "Update", class: "btn btn-primary", id: "bookUpdate" %>
+                <% end %>
             </div>
         </div>
     </div>
