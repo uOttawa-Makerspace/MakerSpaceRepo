@@ -2,19 +2,18 @@ module CalendarHelper
   def parse_ics_calendar(ics_url, name: "Unnamed Calendar", color: nil)
     return [] if ics_url.blank?
 
-    background_color = color.presence || generate_color_from_id(ics_url)
-    group_id = Digest::MD5.hexdigest(ics_url)
+    background_color = color.presence || generate_color_from_id(ics_url.to_s)
+    group_id = Digest::MD5.hexdigest(ics_url.to_s)
 
     events = []
 
     begin
-      response = HTTParty.get(ics_url, timeout: 10)
-      return [] unless response.success?
-
-      if ics_url[0,21] == "/spec/support/assets/"
+      if ics_url.is_a? Pathname
         response = File.read(ics_url) 
         parsed_cals = ::Icalendar::Calendar.parse(response)
       else
+        response = HTTParty.get(ics_url, timeout: 10)
+      return [] unless response.success?
         parsed_cals = ::Icalendar::Calendar.parse(response.body)
       end
 
@@ -49,7 +48,6 @@ module CalendarHelper
             event_hash[:duration] = duration_seconds * 1000
           
             exs = event.exdate.map(&:value).flatten.map do |d|
- 
                                                                 safe_to_time(d).in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S")
                                                               rescue StandardError
                                                                 nil
