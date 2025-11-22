@@ -40,24 +40,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Configure PostgreSQL for speed
-        run: |
-          PGPASSWORD=postgres psql -h localhost -U postgres <<EOF
-          ALTER SYSTEM SET fsync = off;
-          ALTER SYSTEM SET synchronous_commit = off;
-          ALTER SYSTEM SET full_page_writes = off;
-          ALTER SYSTEM SET shared_buffers = '256MB';
-          SELECT pg_reload_conf();
-          CREATE DATABASE makerspacerepo_test;
-          CREATE DATABASE makerspacerepo_test2;
-          CREATE DATABASE makerspacerepo_test3;
-          CREATE DATABASE makerspacerepo_test4;
-          EOF
-
-      - name: Load Schema to Parallel Databases
-        run: |
-          bundle exec rake parallel:load_schema[4]
-
       - name: Setup ImageMagick
         uses: mfinelli/setup-imagemagick@v7
         with:
@@ -94,6 +76,24 @@ jobs:
 
       - name: Create Credentials File
         run: echo '${{ secrets.CREDENTIALS_JSON }}' > config/makerepo-1632742c49cc.json
+
+      - name: Configure PostgreSQL for speed and create databases
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres <<EOF
+          ALTER SYSTEM SET fsync = off;
+          ALTER SYSTEM SET synchronous_commit = off;
+          ALTER SYSTEM SET full_page_writes = off;
+          ALTER SYSTEM SET shared_buffers = '256MB';
+          SELECT pg_reload_conf();
+          CREATE DATABASE makerspacerepo_test;
+          CREATE DATABASE makerspacerepo_test2;
+          CREATE DATABASE makerspacerepo_test3;
+          CREATE DATABASE makerspacerepo_test4;
+          EOF
+
+      - name: Load Schema to Parallel Databases
+        run: |
+          bundle exec rake parallel:load_schema[4]
 
       - name: Run Parallel RSpec Tests (Shard ${{ matrix.shard }}/2, 4 processes each)
         run: |
