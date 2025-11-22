@@ -1,7 +1,31 @@
-@import "lib";
+div.help-grid {
+  max-width: 70rem;
+  margin-left: auto;
+  margin-right: auto;
+
+  background-color: #fff;
+  padding-bottom: 1rem;
+
+  /* Add Grid for layout */
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 3%;
+
+  div.contact {
+    float: left;
+    padding-top: 2rem;
+    margin-left: 3%;
+    font-size: 0.7rem;
+
+    a {
+      color: #4682b4;
+    }
+  }
+}
 
 section#help {
-  @include span-columns(8, 3);
+  grid-column: span 8;
+
   background-color: #fff;
   /*padding: 2rem 0;*/
   color: #555;
@@ -17,7 +41,10 @@ section#help {
   }
 
   div.sub-title {
-    font: 400 1.5rem "Roboto", helvetica, sans-serif;
+    font:
+      400 1.5rem "Roboto",
+      helvetica,
+      sans-serif;
     color: #366;
     padding: 2rem 0 1rem;
   }
@@ -35,25 +62,9 @@ section#help {
   }
 }
 
-div.help-grid {
-  @include outer-container(70rem);
-  background-color: #fff;
-  padding-bottom: 1rem;
-
-  div.contact {
-    float: left;
-    padding-top: 2rem;
-    margin-left: 3%;
-    font-size: 0.7rem;
-
-    a {
-      color: #4682b4;
-    }
-  }
-}
-
 div.help-side-panel {
-  @include span-columns(3.5, 0);
+  grid-column: span 4; /* 3.5 rounded to 4 */
+
   position: relative;
   padding: 3rem 0;
   color: #333;
@@ -61,14 +72,17 @@ div.help-side-panel {
 
   div.title {
     color: #555;
-    font: 700 1.2rem "Roboto", helvetica, sans-serif;
+    font:
+      700 1.2rem "Roboto",
+      helvetica,
+      sans-serif;
     border-bottom: 1px solid #aaa;
     padding-left: 1rem;
     padding-bottom: 1rem;
     margin-bottom: 1rem;
 
     a {
-      @include transition(200ms);
+      transition: 200ms linear;
 
       &:hover {
         color: #5f9ea0;
@@ -77,8 +91,11 @@ div.help-side-panel {
   }
 
   li {
-    @include transition(200ms);
-    font: 700 0.7rem "Roboto", helvetica, sans-serif;
+    transition: 200ms linear;
+    font:
+      700 0.7rem "Roboto",
+      helvetica,
+      sans-serif;
     padding: 0.5rem 0;
     padding-left: 1rem;
     color: #777;
@@ -102,7 +119,7 @@ div.help-side-panel {
   }
 
   section#help {
-    @include span-columns(12, 3);
+    grid-column: span 12;
     padding: 0;
   }
 }

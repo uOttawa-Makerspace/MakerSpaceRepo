@@ -1,6 +1,7 @@
-@import "lib";
 section#edit-user {
-  @include outer-container(60rem);
+  max-width: 60rem;
+  margin-left: auto;
+  margin-right: auto;
   background-color: #fff;
   padding: 2rem 5rem;
   min-height: calc(100vh - 65px);
@@ -20,12 +21,16 @@ section#edit-user {
     margin: 0 auto;
   }
   label {
-    font: 400 1em "Roboto", sans-serif;
+    font:
+      400 1em "Roboto",
+      sans-serif;
     margin: 10px 0 5px;
     color: #5f9ea0;
   }
   input[type="text"] {
-    font: 300 0.9em "Roboto", sans-serif;
+    font:
+      300 0.9em "Roboto",
+      sans-serif;
     color: #555;
     width: 100%;
     max-width: 400px;
@@ -52,7 +57,9 @@ div#certification-container {
     padding: 0.25rem 0.7rem;
     background-color: #4682b4;
     color: #eee;
-    font: 300 0.8em "Roboto", sans-serif !important;
+    font:
+      300 0.8em "Roboto",
+      sans-serif !important;
     margin-top: 0.2rem;
     margin-right: 0.2rem;
     cursor: not-allowed;
@@ -64,7 +71,10 @@ div#certification-container {
 }
 
 div.user-show-admin {
-  @include span-columns(6, 0);
+  width: 50%;
+  float: left;
+  box-sizing: border-box;
+
   border-left: 260px solid #f0f5f5;
   margin-left: -260px;
   min-height: calc(100vh - 50px);
@@ -74,8 +84,13 @@ section#user-show-admin {
   padding-bottom: 2rem;
   width: 800px;
 
+  /* Add Grid for child elements */
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 5%;
+
   a.edit-user-link {
-    @include transition(100ms);
+    transition: 100ms linear;
     position: relative;
     left: 411px;
     background-color: #789;
@@ -87,8 +102,9 @@ section#user-show-admin {
       color: #789;
     }
   }
+
   div.user-avatar {
-    @include span-columns(2, 5);
+    grid-column: span 2;
     width: 250px;
     min-height: 300px;
     margin-top: 20px;
@@ -116,6 +132,7 @@ section#user-show-admin {
     }
   }
   div#user-info {
+    grid-column: span 10;
     padding: 3rem 0;
     min-height: 325px;
     div.fullname {
@@ -157,9 +174,12 @@ section#user-show-admin {
   }
   hr {
     margin-left: 50px;
+    grid-column: 1 / -1;
   }
+
   div.certifications {
     display: table-row;
+    grid-column: 1 / -1;
     .title {
       font-size: 28px;
       color: #366;
@@ -177,7 +197,9 @@ section#user-show-admin {
       padding: 0.25rem 0.7rem;
       background-color: #4682b4;
       color: #eee;
-      font: 300 0.8em "Roboto", sans-serif !important;
+      font:
+        300 0.8em "Roboto",
+        sans-serif !important;
       margin-top: 0.2rem;
       margin-right: 0.2rem;
       cursor: default;
@@ -185,6 +207,7 @@ section#user-show-admin {
   }
   div.sessions {
     display: table-cell;
+    grid-column: 1 / -1;
     margin-left: 50px;
     padding-top: 40px;
     margin-bottom: 500px;

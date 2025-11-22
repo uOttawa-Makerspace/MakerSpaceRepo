@@ -56,7 +56,6 @@ $utilities: (
 
 @import "toastr";
 @import "trix";
-@import "lib";
 @import "font-awesome";
 
 html {
@@ -255,7 +254,7 @@ a {
   //     color: #789;
   //   }
   //   &:hover {
-  //     @include transition(100ms);
+  //     transition: 100ms linear;
   //     color: #000;
   //   }
 }
@@ -435,7 +434,7 @@ trix-toolbar .trix-button-group--file-tools {
 }
 input:not(.btn .form-control),
 textarea:not(.form-control) {
-  @include prefixer(box-shadow, 0 1px 2px rgba(0, 0, 0, 0.2));
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 .justified-gallery {
   height: 250px;
