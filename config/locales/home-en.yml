@@ -79,5 +79,6 @@ en:
       welcome_to: "Welcome to MakerRepo"
       welcome_subheader: "This is <b>CEED's</b> repository website"
       hour_header: "Space hours this week"
+      view_hours: "View full hours"
     socials:
       subtext: "Stay up to date with our socials"
