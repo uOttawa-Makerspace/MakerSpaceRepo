@@ -123,13 +123,7 @@ class SessionsController < ApplicationController
   end
 
   def login
-    if signed_in?
-      redirect_to root_path
-    else
-      # Store where they are now
-      session[:return_to] ||= request.referer || root_path
-      @user = User.new
-    end
+    redirect_to root_path if signed_in?
   end
 
   def logout
