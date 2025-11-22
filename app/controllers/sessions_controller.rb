@@ -59,7 +59,7 @@ class SessionsController < ApplicationController
           # else
           #   format.html { redirect_back(fallback_location: root_path) }
           # end
-          format.html { redirect_back(fallback_location: root_path) }
+          format.html { redirect_to(params[:back_to] || root_path) }
           format.json do
             render json: {
                      user: @user.as_json,
@@ -123,8 +123,13 @@ class SessionsController < ApplicationController
   end
 
   def login
-    redirect_to root_path if signed_in?
-    #@user = User.new
+    if signed_in?
+      redirect_to root_path
+    else
+      # Store where they are now
+      session[:return_to] ||= request.referer || root_path
+      @user = User.new
+    end
   end
 
   def logout
