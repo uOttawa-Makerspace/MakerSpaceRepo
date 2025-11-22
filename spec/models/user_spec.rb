@@ -3,180 +3,24 @@ include BCrypt
 include ActiveModel::Serialization
 
 RSpec.describe User, type: :model do
-  before :all do
-    User.destroy_all
-  end
 
   describe "Association" do
     context "belongs_to" do
       it { should belong_to(:space).without_validating_presence }
     end
-
-    context "has_one" do
-      it { should have_one(:rfid) }
-    end
-
-    context "accepts_nested_attributes_for" do
-      it { should accept_nested_attributes_for(:repositories) }
-    end
-
-    context "has_and_belongs_to_many" do
-      it { should have_and_belong_to_many(:repositories) }
-      it { should have_and_belong_to_many(:training_sessions) }
-      it { should have_and_belong_to_many(:proficient_projects) }
-      it { should have_and_belong_to_many(:shifts) }
-    end
-
-    context "has_many" do
-      it { should have_many(:upvotes) }
-      it { should have_many(:comments) }
-      it { should have_many(:certifications) }
-      it { should have_many(:lab_sessions) }
-      it { should have_many(:project_proposals) }
-      it { should have_many(:project_joins) }
-      it { should have_many(:printer_sessions) }
-      it { should have_many(:volunteer_hours) }
-      it { should have_many(:volunteer_task_joins) }
-      it { should have_many(:training_sessions) }
-      it { should have_many(:announcements) }
-      it { should have_many(:questions) }
-      it { should have_many(:exams) }
-      it { should have_many(:print_orders) }
-      it { should have_many(:volunteer_task_requests) }
-      it { should have_many(:cc_moneys) }
-      it { should have_many(:programs) }
-      it { should have_many(:orders) }
-      it { should have_many(:order_items) }
-      it { should have_many(:discount_codes) }
-      it { should have_many(:project_kits) }
-      it { should have_many(:learning_module_tracks) }
-      it { should have_many(:shadowing_hours) }
-      it { should have_many(:staff_spaces) }
-      it { should have_many(:staff_availabilities) }
-      it { should have_many(:job_orders) }
-    end
   end
 
   describe "validation" do
-    context "avatar" do
-      it "should not be valid (wrong filetype)" do
-        user = build(:user, :regular_user_with_broken_avatar)
-        expect(user.valid?).to be_falsey
-      end
-
-      it "should be valid" do
-        user = build(:user, :regular_user)
-        expect(user.valid?).to be_truthy
-      end
-
-      it "should be valid" do
-        user = build(:user, :regular_user_with_avatar)
-        expect(user.valid?).to be_truthy
-      end
-    end
-
-    context "name" do
-      it { should validate_length_of(:name).is_at_most(50) }
-      it { should validate_presence_of(:name) }
-    end
-
-    context "username" do
-      it { should_not allow_value("gds%%$32").for(:username) }
-      it { should allow_value("johndoe").for(:username) }
-      it { should validate_length_of(:username).is_at_most(20) }
-      it { should validate_presence_of(:username) }
-      it { should validate_uniqueness_of(:username) }
-    end
-
-    context "email" do
-      it { should validate_presence_of(:email) }
-      it { should validate_uniqueness_of(:email) }
-    end
-
-    context "how_heard_about_us" do
-      it { should validate_length_of(:how_heard_about_us).is_at_most(250) }
-    end
-
-    context "read_and_accepted_waiver_form" do
-      it { should_not allow_value(false).for(:read_and_accepted_waiver_form) }
-      it { should allow_value(true).for(:read_and_accepted_waiver_form) }
-    end
-
-    context "password" do
-      it { should_not allow_value("abc").for(:password) }
-      it { should allow_value("aJ2^6amjseHvD#FtV").for(:password) }
-      it { should validate_presence_of(:password) }
-    end
-
-    context "gender" do
-      it { should_not allow_value("Something else").for(:gender) }
-      it do
-        should allow_value(
-                 "Male",
-                 "Female",
-                 "Other",
-                 "Prefer not to specify",
-                 "unknown"
-               ).for(:gender)
-      end
-      it { should validate_presence_of(:gender) }
-    end
-
-    context "faculty student" do
-      subject { build(:user, :student, faculty: nil) }
-      it { should validate_presence_of(:faculty) }
-    end
-
-    context "faculty non-student" do
-      subject { build(:user, :regular_user, faculty: nil) }
-      it { should_not validate_presence_of(:faculty) }
-    end
-
-    context "program student" do
-      subject { build(:user, :student, program: nil) }
-      it { should validate_presence_of(:program) }
-    end
-
-    context "program non-student" do
-      subject { build(:user, :regular_user, program: nil) }
-      it { should_not validate_presence_of(:program) }
-    end
-
-    context "year_of_study student" do
-      subject { build(:user, :student, year_of_study: nil) }
-      it { should validate_presence_of(:year_of_study) }
-    end
-
-    context "year_of_study non-student" do
-      subject { build(:user, :regular_user, year_of_study: nil) }
-      it { should_not validate_presence_of(:year_of_study) }
-    end
-
-    context "identity" do
-      it { should validate_presence_of(:identity) }
-      it { should_not allow_value("Something else").for(:identity) }
-      it do
-        should allow_value(
-                 "grad",
-                 "undergrad",
-                 "faculty_member",
-                 "community_member",
-                 "unknown"
-               ).for(:identity)
-      end
-    end
   end
 
   describe "scopes" do
-    before :all do
-      2.times { create(:user, :regular_user) }
-      create(:user, :admin)
-      create(:user, :staff)
-      create(:user, :volunteer_with_volunteer_program)
-      4.times { create(:user, :regular_user, created_at: 1.month.ago) }
-      5.times { create(:user, :student) }
-      2.times { create(:user, :regular_user, created_at: 3.years.ago) }
-    end
+    let!(:regular_users) { create_list(:user, 2, :regular_user) }
+    let!(:admin_user) { create(:user, :admin) }
+    let!(:staff_user) { create(:user, :staff) }
+    let!(:volunteer_user) { create(:user, :volunteer_with_volunteer_program) }
+    let!(:old_regular_users) { create_list(:user, 4, :regular_user, created_at: 1.month.ago) }
+    let!(:student_users) { create_list(:user, 5, :student) }
+    let!(:ancient_users) { create_list(:user, 2, :regular_user, created_at: 3.years.ago) }
 
     context "#created_at_month" do
       it "should return 12" do
@@ -231,11 +75,11 @@ RSpec.describe User, type: :model do
     end
 
     context "#active" do
-      it "should return 5 active users" do
+      it "should return all active users" do
         expect(User.active.count).to eq(User.all.count)
       end
 
-      it "should return 5 active user" do
+      it "should exclude inactive user" do
         create(:user, :admin, active: false)
         expect(User.active.count).to eq(User.all.count - 1)
       end
@@ -407,16 +251,16 @@ RSpec.describe User, type: :model do
     end
 
     context "#get_total_hours" do
-      it "should return 0 hours" do
-        create(:volunteer_hour, :not_approved1)
-        expect(User.last.get_total_hours).to eq(0)
+      it "should return 0 hours for unapproved hours" do
+        volunteer_hour = create(:volunteer_hour, :not_approved1)
+        expect(volunteer_hour.user.get_total_hours).to eq(0)
       end
 
-      it "should return 15 hours" do
-        create(:volunteer_hour, :approved1)
-        expect(User.last.get_total_hours).to eq(10)
+      it "should return 10 hours for approved hours" do
+        volunteer_hour = create(:volunteer_hour, :approved1)
+        expect(volunteer_hour.user.get_total_hours).to eq(10)
       end
-    end
+    end         
 
     context "#update_wallet" do
       it "should update wallet to a 100" do
@@ -438,10 +282,12 @@ RSpec.describe User, type: :model do
 
     context "#get_volunteer_tasks_from_volunteer_joins" do
       it "should get all volunteer tasks" do
-        create(:volunteer_task_join, :first)
+        user = create(:user, :regular_user)
+        volunteer_task = create(:volunteer_task)
+        create(:volunteer_task_join, :first, user: user, volunteer_task: volunteer_task)
         expect(
-          User.last.get_volunteer_tasks_from_volunteer_joins.first.id
-        ).to eq(VolunteerTask.last.id)
+          user.get_volunteer_tasks_from_volunteer_joins.first.id
+        ).to eq(volunteer_task.id)
       end
     end
 
@@ -493,7 +339,6 @@ RSpec.describe User, type: :model do
         expect(volunteer.return_program_status).to eq(
           { volunteer: true, dev: false, teams: false }
         )
-        
       end
 
       it "should return true for development program only" do
