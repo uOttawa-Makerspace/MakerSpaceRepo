@@ -81,7 +81,7 @@
           <fieldset id="students-only">
             <div class="mb-3">
               <%= form.label :student_id, t('users.new.form.student_id'), class: 'required' %>
-              <%= form.text_field :student_id, { class: 'form-control', inputmode: 'numeric', autocomplete: 'off', minlength: '9', maxlength: '9', size: '9', pattern: '[0-9]{9}', title: 'Enter your uOttawa student number, a 9 digit number' } %>
+              <%= form.text_field :student_id, { required: true, class: 'form-control', inputmode: 'numeric', autocomplete: 'off', minlength: '9', maxlength: '9', size: '9', pattern: '[0-9]{9}', title: 'Enter your uOttawa student number, a 9 digit number' } %>
             </div>
             <div class="mb-3">
               <%= form.label :faculty, t('users.new.form.faculty'), class: 'required' %>
