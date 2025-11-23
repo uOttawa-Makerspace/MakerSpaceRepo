@@ -1,21 +1,31 @@
 import Cookies from "js-cookie";
 
+// Apply theme BEFORE Turbo renders (prevents flicker during navigation)
+document.addEventListener("turbo:before-render", (event) => {
+  const savedTheme = Cookies.get("theme") || "dark";
+  event.detail.newBody.parentElement.dataset.bsTheme = savedTheme;
+});
+
+// Initialize theme on page load
 document.addEventListener("turbo:load", () => {
-  let themeToggler = document.querySelector("#themeToggler");
+  const themeToggler = document.querySelector("#themeToggler");
 
-  // Test theme, set default to dark for release
-  let prevTheme = Cookies.get("theme");
-  if (!prevTheme) {
-    document.documentElement.dataset.bsTheme = "dark";
-  }
+  // Apply saved theme or default to dark
+  const savedTheme = Cookies.get("theme") || "dark";
+  document.documentElement.dataset.bsTheme = savedTheme;
 
+  // Toggle theme on click
   themeToggler.addEventListener("click", () => {
-    let currentTheme = document.documentElement.dataset.bsTheme || prevTheme;
-    if (currentTheme == "dark") {
-      document.documentElement.dataset.bsTheme = "light";
-    } else {
-      document.documentElement.dataset.bsTheme = "dark";
-    }
-    Cookies.set("theme", document.documentElement.dataset.bsTheme);
+    const currentTheme = document.documentElement.dataset.bsTheme;
+    const newTheme = currentTheme === "dark" ? "light" : "dark";
+
+    document.documentElement.dataset.bsTheme = newTheme;
+    Cookies.set("theme", newTheme, { expires: 365, sameSite: "lax" });
   });
 });
+
+// Apply theme immediately on first page load
+(function () {
+  const savedTheme = Cookies.get("theme") || "dark";
+  document.documentElement.dataset.bsTheme = savedTheme;
+})();
