@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="<%= I18n.locale %>" data-bs-theme="<%= cookies[:theme] %>">
     <head>
+        <%= render 'shared/theme_init' %>
         <title><%= page_title(yield(:title)) %></title>
         <%= favicon_link_tag 'C_square.png' %>
         <%= vite_javascript_tag 'application', media: 'all', 'data-turbo-track': 'reload' %>
