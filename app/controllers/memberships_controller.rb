@@ -6,6 +6,8 @@ class MembershipsController < SessionsController
   before_action :no_container, only: :index
 
   def index
+    @membership_day = MembershipTier.find(1)
+    @membership_sem = MembershipTier.find(2)
   end
 
   def your_memberships
