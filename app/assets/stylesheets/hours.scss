@@ -1,30 +1,45 @@
 @import "./shared/variables";
 
-section#hours-of-operation {
-  h1 {
-    color: $primary;
-    border-bottom: 2px solid $secondary;
-    font-size: 2rem;
-    font-weight: 700;
-    padding: 3rem 0 0.75rem;
-    margin-bottom: 2rem;
-  }
-}
+#hours-of-operation {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
 
-.formatted-hour-row {
-  display: inline-block;
-  width: 100%;
-  &:nth-of-type(even) {
-    background-color: $tertiary;
+  @media (min-width: 768px) {
+    padding: 3rem 2rem;
   }
-  span {
-    display: inline-block;
-    white-space: nowrap;
-    &:first-child {
-      width: 40%;
+
+  h1 {
+    margin-bottom: 2rem;
+    font-size: 2rem;
+
+    @media (min-width: 768px) {
+      margin-bottom: 3rem;
+      font-size: 2.5rem;
     }
-    &:last-child {
-      width: 60%;
+  }
+
+  p {
+    margin: 2rem 0;
+    padding: 1rem;
+    background: $tertiary;
+    border-left: 4px solid $primary;
+    border-radius: 4px;
+    font-size: 0.9rem;
+
+    .fa-asterisk {
+      margin-right: 0.5rem;
+      font-size: 0.75rem;
+      color: $primary;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: rgba($ceed-maroon, 0.2);
+      border-left-color: $ceed-maroon;
+
+      .fa-asterisk {
+        color: $ceed-maroon;
+      }
     }
   }
 }

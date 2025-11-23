@@ -1,13 +1,16 @@
 class DesignDay < ApplicationRecord
   has_many :design_day_schedules, dependent: :destroy
-  accepts_nested_attributes_for :design_day_schedules, allow_destroy: true, reject_if: :all_blank
+  has_many_attached :floorplans
+
+  accepts_nested_attributes_for :design_day_schedules,
+                                allow_destroy: true,
+                                reject_if: :all_blank
   validates_associated :design_day_schedules
 
   default_scope { order(day: :desc) }
 
-
   def self.instance
-    any? ? first : create(day: Time.zone.today, sheet_key: "", is_live: false)
+    any? ? first : create(day: Time.zone.today, sheet_key: '', is_live: false)
   end
 
   def can_be_published?
@@ -27,4 +30,8 @@ class DesignDay < ApplicationRecord
 
   # day.year
   delegate :year, to: :day
+
+  def floorplan_urls
+    floorplans.map(&:url) if floorplans.attached?
+  end
 end
