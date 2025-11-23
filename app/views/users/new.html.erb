@@ -1,6 +1,6 @@
 <% provide(:title, t('users.new.sign_up')) %>
 <section id="signup">
-  <div class="container page">
+  <div class="container">
     <div class="row">
       <div class="col-xl-6 offset-xl-3 col-lg-8 offset-lg-2 col-md-10 offset-md-1 col-12 text-center">
         <h1><%= t('users.new.sign_up') %></h1>
@@ -143,7 +143,7 @@
               <% end %>
             </div>
           </div>
-          <%= recaptcha_tags %>
+          <%= turnstile_tag %>
           <div class="my-3 text-center"><%= form.submit t('users.new.sign_up'), class: 'btn btn-primary btn-lg' %></div>
         </div>
       </div>

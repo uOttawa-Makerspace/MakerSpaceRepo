@@ -2,10 +2,15 @@
 module TurnstileHelper
   TURNSTILE_SITEVERIFY_ENDPOINT =
     'https://challenges.cloudflare.com/turnstile/v0/siteverify'.freeze
-  private_constant :TURNSTILE_SITEVERIFY_ENDPOINT
 
   def creds
     Rails.application.credentials[Rails.env.to_sym][:cloudflare][:turnstile]
+
+    # Client side always pass, server side always fail
+    # {
+    #   site_key: "1x00000000000000000000AA",
+    #   secret_key: "2x0000000000000000000000000000000AA"
+    # }
   end
 
   def turnstile_tag()
