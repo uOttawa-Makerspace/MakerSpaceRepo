@@ -109,9 +109,10 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     eventSources.forEach((source, index) => {
       const sourceId = source.id;
-      const sourceName =
-        source.events?.[0].extendedProps.name || `Space ${index + 1}`;
+      const sourceName = source.events?.[0].extendedProps.name;
       const sourceColor = source.color || source.backgroundColor || "#3788d8";
+
+      if (!sourceId || !sourceName) return;
 
       const checkboxWrapper = document.createElement("div");
       checkboxWrapper.className = "d-flex align-items-center gap-2";

@@ -1,5 +1,5 @@
 module CalendarHelper
-  def parse_ics_calendar(ics_url, name: "Unnamed Calendar", color: nil)
+  def parse_ics_calendar(ics_url, name: "Unnamed Calendar", color: nil, all_day_as_background: false)
     return [] if ics_url.blank?
 
     background_color = color.presence || generate_color_from_id(ics_url)
@@ -26,6 +26,7 @@ module CalendarHelper
           if main_event
             start_time = safe_to_time(main_event.dtstart)
             end_time = safe_to_time(main_event.dtend)
+            all_day = main_event.dtstart.is_a?(Icalendar::Values::Date)
 
             next if main_event.rrule.empty? && end_time < (Time.now.utc - 2.months)
 
@@ -37,7 +38,8 @@ module CalendarHelper
                 name: name,
                 description: main_event.description,
               },
-              allDay: main_event.dtstart.is_a?(Icalendar::Values::Date),
+              allDay: all_day,
+              display: all_day_as_background && all_day ? 'background' : 'auto',
               start: start_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S"),
               end: end_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S")
             }
