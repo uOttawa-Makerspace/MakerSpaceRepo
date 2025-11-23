@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <%= render 'shared/theme_init' %>
     <title><%= page_title(yield(:title), base_title: 'Admin Area | MakerRepo') %></title>
     <%= favicon_link_tag 'C_square.png' %>
     <%= vite_javascript_tag 'application', 'data-turbo-track': 'reload' %>
