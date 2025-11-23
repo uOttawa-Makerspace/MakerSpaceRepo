@@ -19,6 +19,7 @@ module TurnstileHelper
   end
 
   def verify_turnstile
+    return true if Rails.env.test?
     cf_turnstile_response = params['cf-turnstile-response']
     response =
       Excon.post(
