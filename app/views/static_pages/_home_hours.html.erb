@@ -14,7 +14,11 @@
 
         <h3 class="text-center mt-4"><%= t('home.welcome.hour_header') %></h3>
 
-        <div id="calendar"></div>
+        <div id="calendar" class="styled-calendar"></div>
+
+        <div class="styled-calendar mt-3">
+            <%= link_to t('home.welcome.view_hours'), hours_path, class: 'fc-button' %>
+        </div>
     </div>
 </div>
 

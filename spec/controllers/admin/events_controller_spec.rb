@@ -147,7 +147,7 @@ RSpec.describe Admin::EventsController, type: :controller do
       expect(response).to be_successful
       json = JSON.parse(response.body)
       expect(json).to be_an(Array)
-      expect(json.first["events"].first["title"]).to include("Test Event")
+      expect(json.first["events"].first["title"]).to eq(event.title)
     end
 
     # it "returns bad request if id is missing" do
