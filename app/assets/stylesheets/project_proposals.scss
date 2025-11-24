@@ -1,7 +1,6 @@
 // Place all the styles related to the ProjectProposals controller here.
 // They will automatically be included in application.css.
 // You can use Sass (SCSS) here: http://sass-lang.com/
-@import "lib";
 
 // #projectProposals {
 //   details {
@@ -124,7 +123,7 @@ div.declined {
 }
 
 .username {
-  @include transition(100ms);
+  transition: 100ms linear;
   color: #19c1a5 !important;
   font-weight: 500;
 
