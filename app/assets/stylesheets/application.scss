@@ -176,7 +176,7 @@ div.ts-control input {
 // dropdowns sitewide.
 // NOTE: the left: 10% could cause issues if the dropdown button
 // is too small and might have the connection pointing to thin air.
-$dropdown-connection-size: 12px;
+$dropdown-connection-size: 1rem;
 .dropdown-menu:before {
   @extend .d-none;
   @extend .d-xl-block;
@@ -189,6 +189,10 @@ $dropdown-connection-size: 12px;
   position: absolute;
   top: -$dropdown-connection-size;
   left: 10%;
+}
+
+.dropdown-menu {
+  border-top-color: var(--bs-dropdown-bg);
 }
 
 .sort-handle {
