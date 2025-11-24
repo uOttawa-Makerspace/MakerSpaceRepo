@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class UsersController < SessionsController
+  include TurnstileHelper
+  
   skip_before_action :session_expiry, only: [:create]
   before_action :current_user,
                 except: %i[
@@ -27,21 +29,30 @@ class UsersController < SessionsController
     @new_user = User.new(user_params)
     @new_user.pword = params[:user][:password] if @new_user.valid?
 
-    respond_to do |format|
-      if @new_user.save
-        hash = Rails.application.message_verifier(:user).generate(@new_user.id)
-        MsrMailer.confirmation_email(@new_user, hash).deliver_now
+    if !verify_turnstile
+      flash[:alert] = 'Captcha error, try again.'
+      respond_to do |format|
+        format.html { render :new, status: :unprocessable_entity }
+        format.json { render json: {errors: 'captcha failure'}, status: :unprocessable_entity }
+      end 
+    elsif @new_user.save
+      hash = Rails.application.message_verifier(:user).generate(@new_user.id)
+      MsrMailer.confirmation_email(@new_user, hash).deliver_now
+      
+      respond_to do |format| 
         format.html do
           redirect_to root_path,
                       notice:
-                        'Account has been created, please look in your emails to confirm your email address.'
+                      'Account has been created, please look in your emails to confirm your email address.'
         end
         format.json do
           render json:
-                   'Account has been created, please look in your emails to confirm your email address.',
+                 'Account has been created, please look in your emails to confirm your email address.',
                  status: :unprocessable_entity
         end
-      else
+      end
+    else
+      respond_to do |format| 
         format.html { render 'new', status: :unprocessable_entity }
         format.json do
           render json: @new_user.errors, status: :unprocessable_entity

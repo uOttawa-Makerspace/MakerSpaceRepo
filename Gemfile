@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 source "https://rubygems.org"
-ruby "3.4.1"
+ruby "3.4.7"
 gem "rails", "~> 7.2.0"
 
 # no longer standard since 3.4
@@ -41,7 +41,6 @@ gem "pry-rails", "~> 0.3", group: :development
 gem "psych", "~> 4.0"
 gem "quick_random_records", "~> 0.3.2"
 gem "rack-cors"
-gem "recaptcha"
 gem "roo", "~> 2.10.0"
 gem "roo-xls"
 gem 'rrule'

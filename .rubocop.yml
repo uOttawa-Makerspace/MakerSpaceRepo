@@ -2,7 +2,7 @@ plugins: rubocop-rails
 Rails:
   Enabled: true
 AllCops:
-  TargetRubyVersion: 3.4.1
+  TargetRubyVersion: 3.4.7
   TargetRailsVersion: 7.2
 Metrics/BlockLength:
   Enabled: false
