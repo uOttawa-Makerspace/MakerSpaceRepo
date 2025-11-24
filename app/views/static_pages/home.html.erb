@@ -6,10 +6,10 @@
     <%= render 'partials/announcements' %>
     <div class="row g-0">
       <!--Left column -->
-      <div class="col-xl-3  order-xl-0 order-1 offcanvas-lg offcanvas-start" id="offcanvas-shortcuts" aria-labelledby="shortcutsOffcanvasLabel">
+      <div class="col-xl-3 order-xl-0 order-1 offcanvas-xl offcanvas-start" id="offcanvas-shortcuts" aria-labelledby="shortcutsOffcanvasLabel">
         <div class="offcanvas-header pb-0">
           <h2 class="offcanvas-title" id="shortcutsOffcanvasLabel">Shortcuts</h2>
-          <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#offcanvas-shortcuts" aria-label="Close"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
         <!-- Staff Resources -->
         <% if @user.staff? %>
@@ -108,4 +108,7 @@
             <% end %>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
 </section>
