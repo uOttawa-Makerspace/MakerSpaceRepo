@@ -32,6 +32,8 @@ document.addEventListener("turbo:load", function () {
       // Show the create event buttons if new event is being created (and hide edit buttons)
       document.getElementById("bookSave").style.display = "block";
       document.getElementById("bookUpdate").style.display = "none";
+      document.getElementById("subspace").style.display = "none";
+      document.getElementById("subspace_header").style.display = "none";
       document.getElementById("bookDelete").style.display = "none";
       document.getElementById("bookingModalLabel").innerText = "New Booking";
       document.getElementById("book-recurring").style.display = "inline-block";
@@ -54,6 +56,8 @@ document.addEventListener("turbo:load", function () {
       // Show the edit event buttons in an event is being edited (and hide create buttons)
       document.getElementById("bookSave").style.display = "none";
       document.getElementById("bookUpdate").style.display = "block";
+      document.getElementById("subspace").style.display = "block";
+      document.getElementById("subspace_header").style.display = "block";
       document.getElementById("bookingModalLabel").innerText = "Update Booking";
       document.getElementById("sub_space_booking_id").value =
         arg.event.id.split("_")[1];
