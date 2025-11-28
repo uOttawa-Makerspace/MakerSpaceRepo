@@ -106,6 +106,8 @@ class SubSpaceBooking < ApplicationRecord
     COLOR_LEGEND.find { |c| c[:id] == status }[:color]
   end
 
+  ##
+  # Posts a sub space booking into google cal (or updates an existing one)
   def self.upsert_booking(sub_space_booking)
     service = Google::Apis::CalendarV3::CalendarService.new
     service.authorization = authorizer
@@ -152,6 +154,8 @@ class SubSpaceBooking < ApplicationRecord
     end
   end
 
+  ##
+  # Deletes a google event if the sub space booking had one in google cal.
   def self.delete_booking(sub_space_booking)
     service = Google::Apis::CalendarV3::CalendarService.new
     service.authorization = authorizer
@@ -165,6 +169,7 @@ class SubSpaceBooking < ApplicationRecord
     end
   end
 
+  # Fill in the STM 124 and 126 links with the correct calendars when ready to link up.
   def self.return_sub_space_calendar(sub_space)
     if sub_space.name == "STM 124"
       "c_hbktsseobsqd92u5rufsjbcok8@group.calendar.google.com"
