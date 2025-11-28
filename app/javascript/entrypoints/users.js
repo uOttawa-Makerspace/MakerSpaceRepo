@@ -69,6 +69,7 @@ document.addEventListener("turbo:load", function () {
         document.querySelector(selector).style.display = show
           ? "block"
           : "none";
+        document.querySelector(selector).disabled = !show;
       }
     });
 

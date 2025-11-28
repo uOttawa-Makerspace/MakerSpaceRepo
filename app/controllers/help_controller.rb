@@ -1,18 +1,18 @@
 class HelpController < SessionsController
+  include TurnstileHelper
   skip_before_action :session_expiry
   before_action :current_user
-
-  layout "help"
 
   def main
     @help = Help.new
   end
+  
   def send_email
     @help = Help.new(params[:help])
-    if verify_recaptcha || params[:app_version].present?
+    if verify_turnstile
       if !@help.valid?
         flash[:alert] = "Please fill in all fields"
-        render "main", status: 422
+        render "main", status: :unprocessable_entity
       else
         @name = params[:help][:name]
         @email = params[:help][:email]

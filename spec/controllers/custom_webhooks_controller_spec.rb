@@ -7,7 +7,7 @@ RSpec.describe CustomWebhooksController, type: :controller do
         locker_rental = create(:locker_rental, :await_payment)
         post :orders_paid,
              params: {
-               tags: [ShopifyConcern.target_tag],
+               tags: [LockerRental.draft_order_operating_tag],
                "metafields": [
                  {
                    "namespace": "makerepo",
@@ -17,6 +17,22 @@ RSpec.describe CustomWebhooksController, type: :controller do
                ]
              }
         expect(locker_rental.reload.active?).to eq true
+      end
+
+      it "should respond to webhooks with the correct tag" do
+        locker = create(:locker_rental, :await_payment)
+        post :orders_paid,
+          params: {
+            tags: ["makerepo_locker"], # Send prod tag to test env
+            metafields: [
+              {
+                "namespace": "makerepo",
+                "key": "locker_db_reference",
+                "value": locker.id.to_s
+              }
+            ]
+          }
+        expect(locker.reload.active?).to eq false
       end
 
       it "should update discount code as used (usage count = 1)" do
