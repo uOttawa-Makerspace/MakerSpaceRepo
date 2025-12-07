@@ -1,6 +1,5 @@
 // Make a div containing a preview image and a hidden input
-function appendFileToPreview(file, previewContainer) {
-  console.log(file);
+function appendFileToPreview(file, previewContainer, fieldPrefix) {
   // Create preview wrapper
   const preview = document.createElement("div");
   preview.classList.add("file-upload-item-preview");
@@ -15,7 +14,7 @@ function appendFileToPreview(file, previewContainer) {
   const dataTransfer = new DataTransfer();
   dataTransfer.items.add(file);
   previewInput.files = dataTransfer.files;
-  previewInput.name = `repository[photos_attributes][${Date.now()}][image]`;
+  previewInput.name = `${fieldPrefix}[${Date.now()}][image]`;
   preview.append(previewInput);
 
   const previewDelete = document.createElement("button");
@@ -35,20 +34,30 @@ function appendFileToPreview(file, previewContainer) {
 // Called when file input receives new files
 function onFileUpload(evt) {
   const input = evt.currentTarget;
-  const previewContainer = document.querySelector("[data-file-upload-preview]");
+  const previewContainer = document.querySelector(
+    input.dataset.fileUploadPreviewSelector,
+  );
   // Create a preview element for each file
   Array.from(input.files).forEach((file) => {
-    appendFileToPreview(file, previewContainer);
+    appendFileToPreview(file, previewContainer, input.dataset.fileUploadPrefix);
   });
-
   // Clear input
   input.value = null;
+}
+
+function createFileInput(target) {
+  // Attach change handlers
+  target.addEventListener("change", onFileUpload);
+  // Copy name as a prefix
+  target.dataset.fileUploadPrefix = target.name;
+  // Clear name, we don't want to submit this input anymore
+  target.name = null;
 }
 
 document.addEventListener("turbo:load", function () {
   document
     .querySelectorAll("input[type=file][data-file-upload-helper]")
     .forEach((el) => {
-      el.addEventListener("change", onFileUpload);
+      createFileInput(el);
     });
 });

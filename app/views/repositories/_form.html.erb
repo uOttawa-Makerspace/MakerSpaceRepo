@@ -39,10 +39,14 @@
         <%= label_tag :photo, t('repository.gallery') , class: 'form-label' %>
         <div class="input-group mb-3">
             <%# this is a free-form param because the images are an association and not an attribute %>
-            <%= file_field_tag '',
+            <%# Additionally, not sure if there's a way to verify this name being correct %>
+            <%= file_field_tag 'repository[photos_attributes]',
                                type: :files,
                                multiple: true,
-                               data: {file_upload_helper: true},
+                               data: {
+                                   file_upload_helper: true,
+                                   file_upload_preview_selector: '[data-file-upload-preview]',
+                               },
                                class: 'form-control image-upload',
                                placeholder: 'Select pictures',
                                aria_label: 'Select Pictures / Selectionner des images' %>
