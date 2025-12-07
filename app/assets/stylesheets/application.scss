@@ -195,7 +195,10 @@ $dropdown-connection-size: 1rem;
 }
 
 .file-upload-item-preview {
-  display: inline-block;
+  @extend .border;
+  @extend .rounded-bottom;
+  display: inline-flex;
+  flex-direction: column;
   width: 10rem;
   height: 10rem;
   background-color: var(--bs-tertiary-bg);

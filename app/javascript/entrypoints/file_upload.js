@@ -31,7 +31,7 @@ function appendFileToPreview(file, previewContainer, fieldPrefix) {
   const previewDelete = document.createElement("button");
   previewDelete.innerHTML = "<i class='fa fa-remove'></i> Delete";
   previewDelete.classList.add("file-upload-item-delete");
-  previewDelete.role = "button"; // Prevent form submit
+  previewDelete.type = "button"; // Prevent form submit
   previewDelete.addEventListener("click", (evt) => {
     // Remove parent preview container
     preview.remove();
@@ -68,20 +68,23 @@ function createFileInput(target) {
   const preview = document.querySelector(
     target.dataset.fileUploadPreviewSelector,
   );
-  preview
-    .querySelectorAll("[data-file-upload-preview] .file-upload-item-preview")
-    .forEach((previewBox) => {
-      previewBox
-        .querySelectorAll("[data-file-upload-item-delete]")
-        .forEach((check) => {
-          check.addEventListener("click", (evt) => {
-            if (evt.currentTarget.checked) {
-              // We have to submit the _destroy flag to server, hide preview instead
-              previewBox.hidden = true;
-            }
-          });
-        });
-    });
+
+  // Find preview boxes under the target
+  const previewBoxes = preview.querySelectorAll(
+    "[data-file-upload-preview] .file-upload-item-preview",
+  );
+
+  previewBoxes.forEach((previewBox) => {
+    // Find delete buttons
+    previewBox
+      .querySelector("[data-file-upload-item-delete]")
+      .addEventListener("click", () => {
+        // We have to submit the _destroy flag to server, hide preview instead
+        previewBox.hidden = true;
+        previewBox.querySelector("[data-file-upload-hidden-destroy]").value =
+          true;
+      });
+  });
 }
 
 document.addEventListener("turbo:load", function () {

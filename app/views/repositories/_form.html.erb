@@ -54,23 +54,23 @@
                 <i class="fa fa-plus"></i>
             </button>
         </div>
+        <div class="form-text"><%= t('repository.gal_msg') %></div>
+        <!-- <div class="repo-image mx-auto">
+             <div id="dragndrop" ondrop="dragndrop(event);" ondragover="dragover(event);">
+             <%= fa_icon 'cloud-upload' %>
+             <p><%= t('repository.drag_drop') %></p>
+             </div>
+             </div> -->
         <div data-file-upload-preview>
             <%= f.fields_for :photos do |p| %>
                 <div class="file-upload-item-preview">
                     <%= image_tag p.object.image %>
                     <%= p.hidden_field :image, value: p.object.image.signed_id %>
                     <span><%= p.object.image.filename %></span>
-                    <%= p.check_box :_destroy, class: 'btn-check', data: {file_upload_item_delete: true} %>
-                    <%= p.label :_destroy, 'Delete', class: 'file-upload-item-delete' %>
+                    <%= p.hidden_field :_destroy, data: {file_upload_hidden_destroy: true } %>
+                    <%= button_tag 'Delete', class: 'file-upload-item-delete',  data: {file_upload_item_delete: true}, type: 'button' %>
                 </div>
             <% end %>
-        </div>
-        <div class="form-text"><%= t('repository.gal_msg') %></div>
-        <div class="repo-image mx-auto">
-            <div id="dragndrop" ondrop="dragndrop(event);" ondragover="dragover(event);">
-                <%= fa_icon 'cloud-upload' %>
-                <p><%= t('repository.drag_drop') %></p>
-            </div>
         </div>
     </div>
 
