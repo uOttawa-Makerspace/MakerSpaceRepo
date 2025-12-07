@@ -38,10 +38,28 @@
     <div class="mb-3 required">
         <%= label_tag :photo, t('repository.gallery') , class: 'form-label' %>
         <div class="input-group mb-3">
-            <%= file_field_tag 'images[]', type: :files, multiple: true, class: 'form-control image-upload', aria_label: 'Select Pictures / Selectionner des images' %>
+            <%# this is a free-form param because the images are an association and not an attribute %>
+            <%= file_field_tag '',
+                               type: :files,
+                               multiple: true,
+                               data: {file_upload_helper: true},
+                               class: 'form-control image-upload',
+                               placeholder: 'Select pictures',
+                               aria_label: 'Select Pictures / Selectionner des images' %>
             <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="new-photo-input">
                 <i class="fa fa-plus"></i>
             </button>
+        </div>
+        <div data-file-upload-preview>
+            <%= f.fields_for :photos do |p| %>
+                <div class="file-upload-item-preview">
+                    <%= image_tag p.object.image %>
+                    <%= p.hidden_field :image, value: p.object.image.signed_id %>
+                    <label>
+                        Destroy <%= p.check_box :_destroy %>
+                    </label>
+                </div>
+            <% end %>
         </div>
         <div class="form-text"><%= t('repository.gal_msg') %></div>
         <div class="repo-image mx-auto">
@@ -89,7 +107,7 @@
     <div class="mb-3">
         <%# Controller looks for a freeform owner param %>
         <%= label_tag(:owner, t('repository.new_owner') , class: 'form-label') %>
-        <%= select_tag(:owner, '', prompt: t('repository.search_user'), class: 'owner_select form-control', id: 'owner_select', multiple: true) %>
+        <%= select_tag(:owner, '', prompt: t('repository.search_user'), class: 'owner_select form-control', id: 'owner_select', multiple: true, autocomplete: false) %>
     </div>
 
 

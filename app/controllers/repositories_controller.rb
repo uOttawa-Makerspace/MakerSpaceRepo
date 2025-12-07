@@ -126,9 +126,7 @@ class RepositoriesController < SessionsController
   end
 
   def edit
-    if @repository.users.pluck(:email).include?(@user.email) ||
-         (@user.role == "admin")
-      @photos = @repository.photos.joins(:image_attachment).first(5)
+    if @repository.users.pluck(:email).include?(@user.email) || (@user.role == "admin")
       @files = @repository.repo_files.joins(:file_attachment)
       @categories = @repository.categories
       @equipments = @repository.equipments
@@ -194,29 +192,14 @@ class RepositoriesController < SessionsController
       update_files
       create_categories
       create_equipments
-      begin
-        update_photos
-      rescue FastImage::ImageFetchFailure,
-             FastImage::UnknownImageType,
-             FastImage::SizeNotFound => e
-        Airbrake.notify(e)
-        flash[
-          :alert_yellow
-        ] = "Something went wrong while uploading photos, try uploading them again later. Other changes have been saved."
-        redirect_to repository_path(
-                      @repository.user_username,
-                      @repository.slug
-                    ).to_s
-      else
-        flash[:notice] = "Project updated successfully!"
-        redirect_to repository_path(
-                      @repository.user_username,
-                      @repository.slug
-                    ).to_s
-      end
+      flash[:notice] = "Project updated successfully!"
+      redirect_to repository_path(
+                    @repository.user_username,
+                    @repository.slug
+                  ).to_s
     else
       flash[:alert] = "Unable to apply the changes."
-      render json: @repository.errors["title"].first,
+      render json: @repository.errors.to_hash(true),
              status: :unprocessable_entity
     end
   end
@@ -413,7 +396,8 @@ class RepositoriesController < SessionsController
       :youtube_link,
       :project_proposal_id,
       categories: [],
-      equipments: []
+      equipments: [],
+      photos_attributes: [:id, :image, :_destroy]
     )
   end
 

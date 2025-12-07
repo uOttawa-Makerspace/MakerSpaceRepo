@@ -194,6 +194,15 @@ $dropdown-connection-size: 1rem;
   border-top-color: var(--bs-dropdown-bg);
 }
 
+.file-upload-item-preview {
+  @extend .border; // Bootstrap's border
+  display: inline-block;
+  width: 8rem;
+  img {
+    width: 100%;
+  }
+}
+
 .sort-handle {
   cursor: move;
   cursor: grab;

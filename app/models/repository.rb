@@ -7,6 +7,10 @@ class Repository < ApplicationRecord
   has_and_belongs_to_many :users
   belongs_to :project_proposal, optional: true
   has_many :photos, dependent: :destroy
+  # https://api.rubyonrails.org/classes/ActiveRecord/NestedAttributes/ClassMethods.html
+  # This method requires us to mark photos for deletion.
+  # TODO: Move the attachments into a concern?
+  accepts_nested_attributes_for :photos, allow_destroy: true
   has_many :repo_files, dependent: :destroy
   has_many :categories, dependent: :destroy
   has_many :equipments, dependent: :destroy
