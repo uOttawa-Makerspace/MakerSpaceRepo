@@ -59,9 +59,9 @@
                 <div class="file-upload-item-preview">
                     <%= image_tag p.object.image %>
                     <%= p.hidden_field :image, value: p.object.image.signed_id %>
-                    <label>
-                        Destroy <%= p.check_box :_destroy %>
-                    </label>
+                    <span><%= p.object.image.filename %></span>
+                    <%= p.check_box :_destroy, class: 'btn-check', data: {file_upload_item_delete: true} %>
+                    <%= p.label :_destroy, 'Delete', class: 'file-upload-item-delete' %>
                 </div>
             <% end %>
         </div>

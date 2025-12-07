@@ -195,11 +195,23 @@ $dropdown-connection-size: 1rem;
 }
 
 .file-upload-item-preview {
-  @extend .border; // Bootstrap's border
   display: inline-block;
-  width: 8rem;
+  width: 10rem;
+  height: 10rem;
+  background-color: var(--bs-tertiary-bg);
+
   img {
     width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .file-upload-item-delete {
+    width: 100%;
+    @extend .btn;
+    @extend .btn-danger;
+    @extend .p-0;
+    border-top-right-radius: 0;
+    border-top-left-radius: 0;
   }
 }
 
