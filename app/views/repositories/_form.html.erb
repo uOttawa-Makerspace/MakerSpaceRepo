@@ -48,6 +48,7 @@
                                    file_upload_preview_selector: '[data-file-upload-preview]',
                                    file_upload_limit: 5,
                                },
+                               accept: Photo::ALLOWED_CONTENT_TYPES.join(','),
                                class: 'form-control image-upload',
                                placeholder: 'Select pictures',
                                aria_label: 'Select Pictures / Selectionner des images' %>

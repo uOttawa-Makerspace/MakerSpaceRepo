@@ -207,12 +207,20 @@ $dropdown-connection-size: 1rem;
 
   flex-direction: column;
   height: 10rem;
+  min-width: 0; // For the span text clipping
   background-color: var(--bs-tertiary-bg);
 
   img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+  }
+  span {
+    font-family: monospace;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: clip;
   }
   .file-upload-item-delete {
     width: 100%;

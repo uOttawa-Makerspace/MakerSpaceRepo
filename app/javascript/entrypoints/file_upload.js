@@ -29,7 +29,7 @@ function appendFileToPreview(file, previewContainer, fieldPrefix) {
 
   // For non-persisted files this is a button
   const previewDelete = document.createElement("button");
-  previewDelete.innerHTML = "<i class='fa fa-remove'></i> Delete";
+  previewDelete.innerHTML = "Delete";
   previewDelete.classList.add("file-upload-item-delete");
   previewDelete.type = "button"; // Prevent form submit
   previewDelete.addEventListener("click", (evt) => {
