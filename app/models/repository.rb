@@ -53,6 +53,10 @@ class Repository < ApplicationRecord
             },
             if: :private?
 
+  # This seems to work fine for limiting association counts.
+  # Max 5 gallery photos per repository.
+  validates :photos, length: {maximum: 5}
+
   # validates :category,
   #           inclusion: { within: CategoryOption.show_options },
   #           presence: { message: "A category is required."},

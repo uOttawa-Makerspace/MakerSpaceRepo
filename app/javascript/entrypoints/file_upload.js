@@ -48,10 +48,24 @@ function onFileUpload(evt) {
   const previewContainer = document.querySelector(
     input.dataset.fileUploadPreviewSelector,
   );
+
+  const fileUploadLimit = parseInt(input.dataset.fileUploadLimit);
+  // Count files currently candidates for upload
+  const currentFileCount = previewContainer.querySelectorAll(
+    ".file-upload-item-preview:not([hidden])",
+  ).length;
   // Create a preview element for each file
-  Array.from(input.files).forEach((file) => {
-    appendFileToPreview(file, previewContainer, input.dataset.fileUploadPrefix);
+  Array.from(input.files).forEach((file, index) => {
+    // if the limit is undefined, or total count is less than limit
+    if (!fileUploadLimit || index + currentFileCount < fileUploadLimit) {
+      appendFileToPreview(
+        file,
+        previewContainer,
+        input.dataset.fileUploadPrefix,
+      );
+    }
   });
+
   // Clear input
   input.value = null;
 }
