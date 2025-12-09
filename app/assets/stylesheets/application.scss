@@ -194,12 +194,18 @@ $dropdown-connection-size: 1rem;
   border-top-color: var(--bs-dropdown-bg);
 }
 
+[data-file-upload-preview] {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.5rem;
+}
+
 .file-upload-item-preview {
   @extend .border;
   @extend .rounded-bottom;
-  display: inline-flex;
+  display: flex;
+
   flex-direction: column;
-  width: 10rem;
   height: 10rem;
   background-color: var(--bs-tertiary-bg);
 
