@@ -39,17 +39,17 @@
         <%= label_tag :photo, t('repository.gallery') , class: 'form-label' %>
         <div class="input-group mb-3">
             <%# this is a free-form param because the images are an association and not an attribute %>
-            <%# Additionally, not sure if there's a way to verify this name being correct %>
+            <%# Additionally, not sure if there's a way to verify this name being correct via internal rails methods %>
             <%= file_field_tag 'repository[photos_attributes]',
                                type: :files,
                                multiple: true,
                                data: {
                                    file_upload_helper: true,
-                                   file_upload_preview_selector: '[data-file-upload-preview]',
+                                   file_upload_preview_selector: '[data-file-upload-repo-preview]',
                                    file_upload_limit: 5,
                                },
                                accept: Photo::ALLOWED_CONTENT_TYPES.join(','),
-                               class: 'form-control image-upload',
+                               class: 'form-control',
                                placeholder: 'Select pictures',
                                aria_label: 'Select Pictures / Selectionner des images' %>
             <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="new-photo-input">
@@ -57,13 +57,7 @@
             </button>
         </div>
         <div class="form-text"><%= t('repository.gal_msg') %></div>
-        <!-- <div class="repo-image mx-auto">
-             <div id="dragndrop" ondrop="dragndrop(event);" ondragover="dragover(event);">
-             <%= fa_icon 'cloud-upload' %>
-             <p><%= t('repository.drag_drop') %></p>
-             </div>
-             </div> -->
-        <div data-file-upload-preview>
+        <div data-file-upload-repo-preview class="file-upload-preview-pane">
             <%= f.fields_for :photos do |p| %>
                 <div class="file-upload-item-preview">
                     <%= image_tag p.object.image %>
@@ -76,7 +70,6 @@
         </div>
     </div>
 
-    <div id="image-container"></div>
     <div class="mb-3">
         <%= f.label :youtube_link, t('repository.youtube') , class: 'form-label' %>
         <%= f.text_field :youtube_link, class: 'form-control' %>

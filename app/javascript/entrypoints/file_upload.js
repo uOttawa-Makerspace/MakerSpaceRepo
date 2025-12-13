@@ -1,3 +1,11 @@
+/* Makerepo file upload utility. Attaches to a file upload input and provides an
+ * editable preview pane. Developed with the repository upload/edit page in
+ * mind. See docs for more info */
+
+// TODO: Respond properly to multiple/single file uploads
+// TODO: Drag and drop spaces
+// FIXME: What happens if no preview pane is found?
+
 // Make a div containing a preview image and a hidden input
 function appendFileToPreview(file, previewContainer, fieldPrefix) {
   // Create preview wrapper
@@ -84,12 +92,10 @@ function createFileInput(target) {
   );
 
   // Find preview boxes under the target
-  const previewBoxes = preview.querySelectorAll(
-    "[data-file-upload-preview] .file-upload-item-preview",
-  );
+  const previewBoxes = preview.querySelectorAll(".file-upload-item-preview");
 
   previewBoxes.forEach((previewBox) => {
-    // Find delete buttons
+    // Find delete buttons inside each preview box
     previewBox
       .querySelector("[data-file-upload-item-delete]")
       .addEventListener("click", () => {

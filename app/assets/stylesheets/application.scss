@@ -194,7 +194,7 @@ $dropdown-connection-size: 1rem;
   border-top-color: var(--bs-dropdown-bg);
 }
 
-[data-file-upload-preview] {
+.file-upload-preview-pane {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 0.5rem;
