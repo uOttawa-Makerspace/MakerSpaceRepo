@@ -11,7 +11,10 @@ class Repository < ApplicationRecord
   # This method requires us to mark photos for deletion.
   # TODO: Move the attachments into a concern?
   accepts_nested_attributes_for :photos, allow_destroy: true
+  
   has_many :repo_files, dependent: :destroy
+  accepts_nested_attributes_for :repo_files, allow_destroy: true
+
   has_many :categories, dependent: :destroy
   has_many :equipments, dependent: :destroy
   has_many :comments, dependent: :destroy

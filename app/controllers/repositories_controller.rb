@@ -1,7 +1,7 @@
 class RepositoriesController < SessionsController
   include BCrypt
   before_action :current_user, :check_session
-  before_action :signed_in, except: %i[index show download download_files]
+  before_action :signed_in, except: %i[show download_files]
   before_action :set_repository,
                 only: %i[
                   show
@@ -61,7 +61,7 @@ class RepositoriesController < SessionsController
         recently_viewed[this_link] = this_proj_name
         recently_viewed = recently_viewed.take(5).to_h
       end
-    rescue Exception => e
+    rescue StandardError
       # nuke cookies
       cookies[:recently_viewed] = nil
     else # success running
@@ -141,7 +141,6 @@ class RepositoriesController < SessionsController
   end
 
   def create
-    # @repository = @user.repositories.build(repository_params)
     @repository =
       Repository.new(repository_params.except(:categories, :equipments))
     @repository.user_id = @user.id
@@ -160,23 +159,10 @@ class RepositoriesController < SessionsController
         end
         @repository.save
       end
-      begin
-        create_photos
-      rescue FastImage::ImageFetchFailure,
-             FastImage::UnknownImageType,
-             FastImage::SizeNotFound => e
-        Airbrake.notify(e)
-        flash[
-          :alert
-        ] = "Something went wrong while uploading photos, please try again later."
-        @repository.destroy
-        redirect_to request.path
-      else
-        create_files
-        create_categories
-        create_equipments
-        redirect_to repository_path(@user.username, @repository.slug).to_s
-      end
+      
+      create_categories
+      create_equipments
+      redirect_to repository_path(@user.username, @repository.slug).to_s
     else
       @project_proposals =
         ProjectProposal.approved.order(title: :asc).pluck(:title, :id)
@@ -189,7 +175,6 @@ class RepositoriesController < SessionsController
     @repository.equipments.destroy_all
     update_password
     if @repository.update(repository_params.except(:categories, :equipments))
-      update_files
       create_categories
       create_equipments
       flash[:notice] = "Project updated successfully!"
@@ -397,7 +382,8 @@ class RepositoriesController < SessionsController
       :project_proposal_id,
       categories: [],
       equipments: [],
-      photos_attributes: [:id, :image, :_destroy]
+      photos_attributes: [:id, :image, :_destroy],
+      repo_files_attributes: [:id, :file, :_destroy]
     )
   end
 
@@ -409,72 +395,6 @@ class RepositoriesController < SessionsController
       "upvote DESC"
     else
       "upvote DESC"
-    end
-  end
-
-  def create_photos
-    if params[:images].present?
-      params[:images]
-        .first(5)
-        .each do |img|
-          dimension = FastImage.size(img.tempfile, raise_on_failure: true)
-          Photo.create(
-            image: img,
-            repository_id: @repository.id,
-            width: dimension.first,
-            height: dimension.last
-          )
-        end
-    end
-  end
-
-  def create_files
-    if params[:files].present?
-      params[:files].each do |f|
-        RepoFile.create(file: f, repository_id: @repository.id)
-      end
-    end
-  end
-
-  def update_photos
-    if params[:deleteimages].present?
-      @repository.photos.each do |img|
-        if params[:deleteimages].include?(img.image.filename.to_s)
-          # checks if the file should be deleted
-          img.image.purge
-          img.destroy
-        end
-      end
-    end
-
-    if params["images"].present?
-      params["images"].each do |img|
-        dimension = FastImage.size(img.tempfile, raise_on_failure: true)
-        Photo.create(
-          image: img,
-          repository_id: @repository.id,
-          width: dimension.first,
-          height: dimension.last
-        )
-      end
-    end
-  end
-
-  def update_files
-    if params["deletefiles"].present?
-      @repository.repo_files.each do |f|
-        if params["deletefiles"].include?(f.file.id.to_s)
-          # checks if the file should be deleted
-          f.file.purge
-          f.destroy
-        end
-      end
-    end
-
-    if params["files"].present?
-      params["files"].each do |f|
-        RepoFile.create(file: f, repository_id: @repository.id)
-      end
     end
   end
 

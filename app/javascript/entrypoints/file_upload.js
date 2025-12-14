@@ -2,12 +2,14 @@
  * editable preview pane. Developed with the repository upload/edit page in
  * mind. See docs for more info */
 
-// TODO: Respond properly to multiple/single file uploads
+// TODO: This probably doesn't work for one-file uploads, due to appending the
+// ID to each preview.
+//
 // TODO: Drag and drop spaces
 // FIXME: What happens if no preview pane is found?
 
 // Make a div containing a preview image and a hidden input
-function appendFileToPreview(file, previewContainer, fieldPrefix) {
+function appendFileToPreview(file, previewContainer, fieldPrefix, fieldSuffix) {
   // Create preview wrapper
   const preview = document.createElement("div");
   preview.classList.add("file-upload-item-preview");
@@ -32,7 +34,12 @@ function appendFileToPreview(file, previewContainer, fieldPrefix) {
   previewInput.files = dataTransfer.files;
   // Rails requires arrays to be assigned an index for nested attributes to
   // work with pre-existing files. Unix timestamp are okay.
-  previewInput.name = `${fieldPrefix}[${Date.now()}][image]`;
+  previewInput.name = `${fieldPrefix}[${Date.now()}]`;
+  // Append an extra attribute if needed. This is because of workarounds how
+  // files and image are attached to repos via a model indirection. Annoying
+  if (fieldSuffix) {
+    previewInput.name += `[${fieldSuffix}]`;
+  }
   preview.append(previewInput);
 
   // For non-persisted files this is a button
@@ -70,6 +77,7 @@ function onFileUpload(evt) {
         file,
         previewContainer,
         input.dataset.fileUploadPrefix,
+        input.dataset.fileUploadSuffix,
       );
     }
   });
@@ -84,12 +92,18 @@ function createFileInput(target) {
   // Copy name as a prefix
   target.dataset.fileUploadPrefix = target.name;
   // Clear name, we don't want to submit this input anymore
-  target.name = null;
+  target.removeAttribute("name");
 
   // For pre-existing preview boxes attach a delete handler to the checkboxes
   const preview = document.querySelector(
     target.dataset.fileUploadPreviewSelector,
   );
+
+  if (!preview) {
+    throw new Error(
+      "Preview pane not found or not specified, file upload helper cannot function without a place to store hidden file inputs.",
+    );
+  }
 
   // Find preview boxes under the target
   const previewBoxes = preview.querySelectorAll(".file-upload-item-preview");

@@ -16,10 +16,28 @@
     <%= label_tag :file, t('repository.proj_files') .html_safe, class: 'form-label mb-2' %>
     <div class="mb-3">
         <div class="input-group mb-3">
-            <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'form-control', aria_label: 'Project Files / Fichiers du projet' %>
-            <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="new-file-input">
-                <i class="fa fa-plus"></i>
-            </button>
+            <%= file_field_tag 'repository[repo_files_attributes]',
+             multiple: true,
+             data: {
+                 file_upload_helper: true,
+                 file_upload_preview_selector: '[data-file-upload-file-preview]',
+                 file_upload_suffix: 'file'
+             },
+             class: 'form-control',
+             aria_label: 'Project Files / Fichiers du projet' %>
+        </div>
+        
+        <div data-file-upload-file-preview class="file-upload-preview-pane">
+            <%= f.fields_for :repo_files do |p| %>
+                <div class="file-upload-item-preview">
+                    <div class="file-upload-preview-failed">
+                    </div>
+                    <%= p.hidden_field :file, value: p.object.file.signed_id %>
+                    <span title="<%= p.object.file.filename %>"><%= p.object.file.filename %></span>
+                    <%= p.hidden_field :_destroy, data: {file_upload_hidden_destroy: true } %>
+                    <%= button_tag 'Delete', class: 'file-upload-item-delete',  data: {file_upload_item_delete: true}, type: 'button' %>
+                </div>
+            <% end %>
         </div>
     </div>
 
@@ -52,17 +70,14 @@
                                class: 'form-control',
                                placeholder: 'Select pictures',
                                aria_label: 'Select Pictures / Selectionner des images' %>
-            <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="new-photo-input">
-                <i class="fa fa-plus"></i>
-            </button>
         </div>
-        <div class="form-text"><%= t('repository.gal_msg') %></div>
+        <p class="form-text"><%= t('repository.gal_msg') %></p>
         <div data-file-upload-repo-preview class="file-upload-preview-pane">
             <%= f.fields_for :photos do |p| %>
                 <div class="file-upload-item-preview">
                     <%= image_tag p.object.image %>
                     <%= p.hidden_field :image, value: p.object.image.signed_id %>
-                    <span><%= p.object.image.filename %></span>
+                    <span title="<%= p.object.image.filename %>"><%= p.object.image.filename %></span>
                     <%= p.hidden_field :_destroy, data: {file_upload_hidden_destroy: true } %>
                     <%= button_tag 'Delete', class: 'file-upload-item-delete',  data: {file_upload_item_delete: true}, type: 'button' %>
                 </div>

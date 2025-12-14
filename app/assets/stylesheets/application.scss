@@ -210,10 +210,12 @@ $dropdown-connection-size: 1rem;
   min-width: 0; // For the span text clipping
   background-color: var(--bs-tertiary-bg);
 
-  img {
+  img,
+  .file-upload-preview-failed {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    background-color: var(--bs-primary);
   }
   span {
     font-family: monospace;

@@ -14,7 +14,7 @@ Active Storage came out and the paperclip guys themselves said that it's over. T
 
 The plugin attaches to a file input's `change` event handler and copies each file selected to an editable list of hidden file inputs.
 
-It was developed with `repositories/_form.html.erb` in mind, however I tried my best to make it generic.
+It was developed with `repositories/_form.html.erb` in mind, however I tried my best to make it generic. Repositories has photos attached via a `accepts_nested_attributes_for` for historic reasons. **You can use any column name as a straight-forward POST form upload**
 
 ## Basic usage
 
@@ -38,4 +38,4 @@ The plugin depends on an file input element and a preview div element. `file_upl
 
 `data-file-upload-limit` limits the number of files allowed by the input file. Any files selected that go over the limit will silently be ignored. If you're allowing multiple file uploads then I recommend you set `multiple` as well. By default no limit is enforced.
 
-`name` is a
+`name` is copied from the main input element and appended to the name of each
