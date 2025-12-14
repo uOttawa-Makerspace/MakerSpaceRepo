@@ -63,11 +63,11 @@ document.addEventListener("DOMContentLoaded", async function () {
           buttonText: "5 day",
         },
         timeGridSevenDay: {
-          type: "timeGrid",
-          duration: { days: 7 },
+          type: "timeGridWeek",
           buttonText: "7 day",
         },
       },
+      firstDay: 0,
       headerToolbar: {
         left: "prev",
         center: "title",
