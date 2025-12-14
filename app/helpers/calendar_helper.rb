@@ -1,5 +1,5 @@
 module CalendarHelper
-  def parse_ics_calendar(ics_url, name: "Unnamed Calendar", color: nil, all_day_as_background: false)
+  def parse_ics_calendar(ics_url, name: "Unnamed Calendar", color: nil )
     return [] if ics_url.blank?
 
     background_color = color.presence || generate_color_from_id(ics_url)
@@ -39,7 +39,7 @@ module CalendarHelper
                 description: main_event.description,
               },
               allDay: all_day,
-              display: all_day_as_background && all_day ? 'background' : 'auto',
+              display: 'auto',
               start: start_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S"),
               end: end_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S")
             }

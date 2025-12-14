@@ -80,7 +80,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       timeZone: "America/Toronto",
       nowIndicator: true,
       slotEventOverlap: false,
-      allDaySlot: false,
+      allDaySlot: isHoursPage,
       slotMinTime: "08:00:00",
       slotMaxTime: "22:00:00",
       slotDuration: "01:00:00",

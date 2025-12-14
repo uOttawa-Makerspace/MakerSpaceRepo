@@ -138,7 +138,6 @@ class StaticPagesController < SessionsController
         calendar_record.calendar_url,
         name: calendar_record.space&.name || calendar_record.name.presence || "Unnamed Calendar",
         color: calendar_record.color,
-        all_day_as_background: true
       )
     end
 
