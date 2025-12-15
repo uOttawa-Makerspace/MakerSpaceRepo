@@ -35,12 +35,7 @@ class Admin::CalendarController < AdminAreaController
 
         duration = (u.end_time.to_time - u.start_time.to_time) * 1000
 
-        rrule_data = if u.recurrence_rule.present?
-          rrule = u.recurrence_rule          
-          rrule_without_dtstart = rrule.gsub(/DTSTART[^;]*;/, '').gsub(/;DTSTART[^;]*/, '')          
-          dtstart_toronto = u.start_time.in_time_zone("America/Toronto")&.strftime("%Y%m%dT%H%M%S")          
-          "DTSTART:#{dtstart_toronto}\nRRULE:#{rrule_without_dtstart}"
-        end
+        rrule_data = helpers.date_formatted_recurrence_rule(u)
 
         {
           id: u.id,

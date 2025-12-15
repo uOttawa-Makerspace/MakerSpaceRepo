@@ -155,7 +155,18 @@ module CalendarHelper
     (l1 + 0.05) / (l2 + 0.05)
   end
 
-  # RRULE HELPERS  
+  # RRULE HELPERS
+  def date_formatted_recurrence_rule(event)
+    return unless event.recurrence_rule.present?
+    
+    rrule = event.recurrence_rule
+    rrule_parts = rrule.split(/[;\n]/).reject { |part| part.strip.start_with?('DTSTART') }
+    rrule_without_dtstart = rrule_parts.join(';').gsub(/;EXDATE/, "\nEXDATE")
+    dtstart_toronto = event.start_time.in_time_zone("America/Toronto")&.strftime("%Y%m%dT%H%M%S")
+    
+    "DTSTART:#{dtstart_toronto}\n#{rrule_without_dtstart}"
+  end 
+  
   def parse_rrule_and_dtstart(rule_string)
     lines = rule_string.strip.split("\n")
     rrule_line = lines.find { |l| l.start_with?("RRULE:") }&.sub("RRULE:", "")

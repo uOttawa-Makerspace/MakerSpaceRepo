@@ -251,13 +251,7 @@ Time.parse(event_params[:utc_start_time]).utc)
           # seconds to milliseconds because javascript
           duration = (event.end_time.to_time - event.start_time.to_time) * 1000
 
-          rrule_data = if event.recurrence_rule.present?
-            rrule = event.recurrence_rule          
-            rrule_parts = rrule.split(/[;\n]/).reject { |part| part.strip.start_with?('DTSTART') }
-            rrule_without_dtstart = rrule_parts.join(';').gsub(/;EXDATE/, "\nEXDATE")
-            dtstart_toronto = event.start_time.in_time_zone("America/Toronto")&.strftime("%Y%m%dT%H%M%S")          
-            "DTSTART:#{dtstart_toronto}\n#{rrule_without_dtstart}"
-          end
+          rrule_data = helpers.date_formatted_recurrence_rule(event)
 
           background = if event.event_assignments.empty?
             "linear-gradient(to right, #bbb 0.0%, #bbb 100.0%);#{' opacity: 0.8;' if event.draft}"
