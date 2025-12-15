@@ -28,6 +28,7 @@ The plugin depends on an file input element and a preview div element. `file_upl
         file_upload_helper: true,
         file_upload_preview_selector: '[data-file-upload-preview]',
         file_upload_limit: 5,
+        file_upload_suffix: 'image',
         }  %>
 
 ```
@@ -36,6 +37,8 @@ The plugin depends on an file input element and a preview div element. `file_upl
 
 `data-file-upload-preview-selector` specifies the selector to find the preview pane. This can be any `querySelector` compatible string. Only one preview pane can be attached to the input element. The first matching element will be used. I recommend using a data attribute to imply it's uniqueness.
 
-`data-file-upload-limit` limits the number of files allowed by the input file. Any files selected that go over the limit will silently be ignored. If you're allowing multiple file uploads then I recommend you set `multiple` as well. By default no limit is enforced.
+`data-file-upload-limit` (optional) limits the number of files allowed by the input file. Any files selected that go over the limit will silently be ignored. If you're allowing multiple file uploads then I recommend you set `multiple` as well. By default no limit is enforced.
+
+`data-file-upload-suffix` (optional) appends an extra name component to the uploaded file. The final form field name would become "Input field name" + "random ID" + "file upload suffix".
 
 `name` is copied from the main input element and appended to the name of each

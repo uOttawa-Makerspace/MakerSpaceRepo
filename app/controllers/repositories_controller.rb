@@ -149,7 +149,7 @@ class RepositoriesController < SessionsController
     @repository.user_username = @user.username
     update_password
 
-    if @repository.save!
+    if @repository.save
       @user.increment!(:reputation, 25)
 
       if params[:owner].present?
@@ -348,8 +348,8 @@ class RepositoriesController < SessionsController
   def check_ownership
     # admins can modify repo
     unless @user.admin? || @repository.users.include?(@user)
-      head :unauthorized
-      return
+      flash[:alert] = "You are not allowed to perform this action!"
+      redirect_to repository_path(@repository.user_username, @repository.slug)
     end
   end
 
@@ -381,7 +381,6 @@ class RepositoriesController < SessionsController
   end
 
   def repository_params
-    ActionController::Parameters.action_on_unpermitted_parameters = :raise
     params.require(:repository).permit(
       :title,
       :description,
