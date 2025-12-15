@@ -409,6 +409,7 @@ class RepositoriesController < SessionsController
   def create_categories
     if params[:repository][:categories].present?
       params[:repository][:categories]
+        .filter(&:present?)
         .first(5)
         .each { |c| Category.create(name: c, repository_id: @repository.id) }
     end
@@ -417,6 +418,7 @@ class RepositoriesController < SessionsController
   def create_equipments
     if params[:repository][:equipments].present?
       params[:repository][:equipments]
+        .filter(&:present?)
         .first(5)
         .each { |e| Equipment.create(name: e, repository_id: @repository.id) }
     end

@@ -98,14 +98,22 @@
     </div>
     <div class="mb-3 required">
         <%= f.label :categories, t('repository.cat') , class: 'form-label' %>
-        <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :name, :name), { include_blank: t('repository.sel_cat'), include_hidden: false }, { class: 'profile-text form-control form-select', multiple: true } %>
-        <div class="form-text"><%= t('repository.cat_msg') %></div>
+        <%= f.select :categories, options_for_select(
+            CategoryOption.show_options.collect(&:name),
+            selected: @repository.categories.collect(&:name)),
+         { multiple: true, class: 'form-control form-select', include_blank: t('repository.sel_cat') }
+        %>
+        <span class="form-text"><%= t('repository.cat_msg') %></span>
     </div>
 
     <div class="mb-3">
-        <%= f.label :equipment, t('repository.equip') , class: 'form-label' %>
-        <%= f.select :equipments, options_from_collection_for_select(EquipmentOption.show_options, :name, :name), { include_blank: t('repository.sel_cat'), include_hidden: false }, { class: 'profile-text form-control form-select', multiple: true } %>
-        <div class="form-text"><%= t('repository.equip_msg') %></div>
+        <%= f.label :equipments, t('repository.equip') , class: 'form-label' %>
+        <%= f.select :equipments, options_for_select(
+            EquipmentOption.show_options.collect(&:name),
+            selected: @repository.equipments.collect(&:name)),
+         { multiple: true, class: 'form-control form-select', include_blank: t('repository.sel_cat') }
+         %>
+        <span class="form-text"><%= t('repository.equip_msg') %></span>
     </div>
 
 
