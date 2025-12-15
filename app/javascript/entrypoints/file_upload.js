@@ -8,6 +8,16 @@
 // TODO: Drag and drop spaces
 // FIXME: What happens if no preview pane is found?
 
+// Rails requires arrays to be assigned an index for
+// accepts_nested_attributes_for to work with pre-existing files. Date.now() is
+// in milliseconds resolution and my dev machine is fast enough to get duplicate
+// indices.
+let counter = 1;
+function getNextCounter() {
+  counter += 1;
+  return counter;
+}
+
 // Make a div containing a preview image and a hidden input
 function appendFileToPreview(file, previewContainer, fieldPrefix, fieldSuffix) {
   // Create preview wrapper
@@ -32,9 +42,7 @@ function appendFileToPreview(file, previewContainer, fieldPrefix, fieldSuffix) {
   const dataTransfer = new DataTransfer();
   dataTransfer.items.add(file);
   previewInput.files = dataTransfer.files;
-  // Rails requires arrays to be assigned an index for nested attributes to
-  // work with pre-existing files. Unix timestamp are okay.
-  previewInput.name = `${fieldPrefix}[${Date.now()}]`;
+  previewInput.name = `${fieldPrefix}[${getNextCounter()}]`;
   // Append an extra attribute if needed. This is because of workarounds how
   // files and image are attached to repos via a model indirection. Annoying
   if (fieldSuffix) {
