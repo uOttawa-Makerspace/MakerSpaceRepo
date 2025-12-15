@@ -25,10 +25,6 @@ class RepositoriesController < SessionsController
                   ) and return
     end
 
-    @photos = @repository.photos.joins(:image_attachment)&.first(5) || []
-    @files = @repository.repo_files.joins(:file_attachment)
-    @categories = @repository.categories
-    @equipments = @repository.equipments
     @comments = @repository.comments.order(comment_filter).page params[:page]
     @vote =
       @user
@@ -37,8 +33,7 @@ class RepositoriesController < SessionsController
         .pluck(:comment_id, :downvote)
     @project_proposals =
       ProjectProposal.approved.order(title: :asc).pluck(:title, :id)
-    @members = @repository.users
-    @all_users = User.where.not(id: @members.pluck(:id)).pluck(:name, :id)
+    # @members = @repository.users
     @liked = @repository.likes.find_by(user_id: @user.id).nil? ? false : true
 
     # Add this repo to recently viewed cookie
@@ -127,19 +122,17 @@ class RepositoriesController < SessionsController
   end
 
   def edit
-    if @repository.users.pluck(:email).include?(@user.email) || (@user.role == "admin")
-      @files = @repository.repo_files.joins(:file_attachment)
-      @categories = @repository.categories
-      @equipments = @repository.equipments
+    if @repository.users.include?(@user) || @user.admin?
       @project_proposals =
-      ProjectProposal.approved.order(title: :asc).pluck(:title, :id) if params[
-      :project_proposal_id
-    ].blank?
+        ProjectProposal.approved.order(title: :asc).pluck(:title, :id) if params[
+        :project_proposal_id
+      ].blank?
     else
-      flash[:alert] = "You are not allowed to perform this action!"
+      flash[:alert] = 'You are not allowed to perform this action!'
       redirect_to repository_path(@repository.user_username, @repository.slug)
     end
   end
+
 
   def create
     @repository =
@@ -369,15 +362,20 @@ class RepositoriesController < SessionsController
 
   def set_repository
     id = params[:id].split(".", 2)[0]
-    @repository =
-      if Repository.where(id: id).present?
-        Repository.find(id)
-      elsif Repository.find_by(slug: id)
-        Repository.find_by(slug: id)
-      else
-        Repository.find_by(title: id)
-      end
-    redirect_to root_path, alert: "Repository not found" unless @repository
+    @repository = Repository
+                    .includes(photos: {image_attachment: :blob})
+                    .includes(repo_files: {file_attachment: :blob})
+                    .includes(:categories,
+                              :equipments,
+                              :project_proposal,
+                              :makes,
+                              :comments,
+                              :users)
+                    .where(id: id)
+                    .or(Repository.where(slug: id))
+                    .or(Repository.where(title: id))
+                    .first!
+    @repository.strict_loading!
   end
 
   def repository_params

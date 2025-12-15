@@ -45,7 +45,7 @@
     </div>
 
     <div id="file-container">
-        <% @files&.each do |f| %>
+        <% @repository.repo_files.each do |f| %>
             <table>
                 <tr class="file-item">
                     <td><%= fa_icon 'file-text-o' %> <%= f.file.filename %></td>
