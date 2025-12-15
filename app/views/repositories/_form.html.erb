@@ -29,14 +29,17 @@
         
         <div data-file-upload-file-preview class="file-upload-preview-pane">
             <%= f.fields_for :repo_files do |p| %>
-                <div class="file-upload-item-preview">
-                    <div class="file-upload-preview-failed">
+                <%# This is a big workaround, because files aren't directly attached to the model %>
+                <% if p.object.file.attached? && p.object.file.persisted? %>
+                    <div class="file-upload-item-preview">
+                        <div class="file-upload-preview-failed">
+                        </div>
+                        <%= p.hidden_field :file, value: p.object.file.signed_id %>
+                        <span title="<%= p.object.file.filename %>"><%= p.object.file.filename %></span>
+                        <%= p.hidden_field :_destroy, data: {file_upload_hidden_destroy: true } %>
+                        <%= button_tag 'Delete', class: 'file-upload-item-delete',  data: {file_upload_item_delete: true}, type: 'button' %>
                     </div>
-                    <%= p.hidden_field :file, value: p.object.file.signed_id %>
-                    <span title="<%= p.object.file.filename %>"><%= p.object.file.filename %></span>
-                    <%= p.hidden_field :_destroy, data: {file_upload_hidden_destroy: true } %>
-                    <%= button_tag 'Delete', class: 'file-upload-item-delete',  data: {file_upload_item_delete: true}, type: 'button' %>
-                </div>
+                <% end %>
             <% end %>
         </div>
     </div>
@@ -65,6 +68,7 @@
                                    file_upload_helper: true,
                                    file_upload_preview_selector: '[data-file-upload-repo-preview]',
                                    file_upload_limit: 5,
+                                   file_upload_suffix: 'image'
                                },
                                accept: Photo::ALLOWED_CONTENT_TYPES.join(','),
                                class: 'form-control',
@@ -74,13 +78,15 @@
         <p class="form-text"><%= t('repository.gal_msg') %></p>
         <div data-file-upload-repo-preview class="file-upload-preview-pane">
             <%= f.fields_for :photos do |p| %>
-                <div class="file-upload-item-preview">
-                    <%= image_tag p.object.image %>
-                    <%= p.hidden_field :image, value: p.object.image.signed_id %>
-                    <span title="<%= p.object.image.filename %>"><%= p.object.image.filename %></span>
-                    <%= p.hidden_field :_destroy, data: {file_upload_hidden_destroy: true } %>
-                    <%= button_tag 'Delete', class: 'file-upload-item-delete',  data: {file_upload_item_delete: true}, type: 'button' %>
-                </div>
+                <% if p.object.image.attached? && p.object.image.persisted? %>
+                    <div class="file-upload-item-preview">
+                        <%= image_tag p.object.image %>
+                        <%= p.hidden_field :image, value: p.object.image.signed_id %>
+                        <span title="<%= p.object.image.filename %>"><%= p.object.image.filename %></span>
+                        <%= p.hidden_field :_destroy, data: {file_upload_hidden_destroy: true } %>
+                        <%= button_tag 'Delete', class: 'file-upload-item-delete',  data: {file_upload_item_delete: true}, type: 'button' %>
+                    </div>
+                <% end %>
             <% end %>
         </div>
     </div>

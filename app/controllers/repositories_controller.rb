@@ -15,6 +15,7 @@ class RepositoriesController < SessionsController
                   password_entry
                 ]
   before_action :check_auth, only: [:show]
+  before_action :check_ownership, only: %i[edit update destroy]
 
   def show
     if @repository.private? && !@check_passed
@@ -148,7 +149,7 @@ class RepositoriesController < SessionsController
     @repository.user_username = @user.username
     update_password
 
-    if @repository.save
+    if @repository.save!
       @user.increment!(:reputation, 25)
 
       if params[:owner].present?
@@ -166,7 +167,7 @@ class RepositoriesController < SessionsController
     else
       @project_proposals =
         ProjectProposal.approved.order(title: :asc).pluck(:title, :id)
-      render "new", status: 422
+      render "new", status: :unprocessable_entity
     end
   end
 
@@ -343,6 +344,15 @@ class RepositoriesController < SessionsController
 
   private
 
+  # Block if user is not authorized to modify repository
+  def check_ownership
+    # admins can modify repo
+    unless @user.admin? || @repository.users.include?(@user)
+      head :unauthorized
+      return
+    end
+  end
+
   def check_session
     @authorized = true if authorized_repo_ids.include? params[:id]
   end
@@ -371,6 +381,7 @@ class RepositoriesController < SessionsController
   end
 
   def repository_params
+    ActionController::Parameters.action_on_unpermitted_parameters = :raise
     params.require(:repository).permit(
       :title,
       :description,
