@@ -40,8 +40,8 @@ class Admin::CalendarController < AdminAreaController
         {
           id: u.id,
           title: "🚫 #{staff.name} - #{u.title}",
-          start: u.start_time,
-          end: u.end_time,
+          start: u.start_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S"),
+          end: u.end_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S"),
           **(u.recurrence_rule.present? ? { rrule: rrule_data, duration: duration } : {}),
           allDay: u.start_time.to_time == u.end_time.to_time - 1.day,
           extendedProps: {

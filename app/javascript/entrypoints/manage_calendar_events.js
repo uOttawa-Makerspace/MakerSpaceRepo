@@ -1,5 +1,5 @@
 import { Collapse } from "bootstrap";
-import { RRule, rrulestr } from "rrule";
+import { RRule, RRuleSet, rrulestr } from "rrule";
 import TomSelect from "tom-select";
 
 import {
@@ -104,6 +104,25 @@ document.addEventListener("turbo:load", async () => {
     }
   }
 
+  function parseWithCurrentTorontoOffset(dateStr) {
+    // Get current Toronto offset in HH:MM format
+    const now = new Date();
+    const torontoNow = new Date(
+      now.toLocaleString("en-US", {
+        timeZone: "America/Toronto",
+      }),
+    );
+
+    // Calculate offset (-5:00 or -4:00 based on current date)
+    const offsetMinutes = torontoNow.getTimezoneOffset();
+    const offsetHours = Math.abs(Math.floor(offsetMinutes / 60));
+    const offsetSign = offsetMinutes > 0 ? "-" : "+";
+    const offsetString = `${offsetSign}${offsetHours.toString().padStart(2, "0")}:00`;
+
+    // Append current offset to the date string and parse
+    return new Date(dateStr + offsetString);
+  }
+
   function isUnavailableDuring(unavailabilities) {
     const eventStart = parseLocalDatetimeString(startTimeField.value);
     const eventEnd = parseLocalDatetimeString(endTimeField.value);
@@ -112,18 +131,47 @@ document.addEventListener("turbo:load", async () => {
     const conflicts = [];
 
     for (const unavail of unavailabilities) {
-      const start = new Date(unavail.start);
+      const start = parseWithCurrentTorontoOffset(unavail.start);
+      console.log(unavail, "#1", start);
       // if duration present, use it (rrule present), else calculate it
       const duration =
         typeof unavail.duration === "number"
           ? unavail.duration
-          : new Date(unavail.end) - start;
-      const end = new Date(start.getTime() + duration);
+          : parseLocalDatetimeString(unavail.end) - start;
+      const end = parseLocalDatetimeString(start.getTime() + duration);
 
       // Recurring event vs recurring unavailability
       if (unavail.rrule) {
         try {
-          const unavailRule = rrulestr(unavail.rrule);
+          // FIXME: currently has one hour off error for events set in previous DST and is fully broken for BYDAY recurring events whose DTSTART in UTC rolls over to next day (since rrule.js doesnt like timezones and BYDAY then points to the wrong day for UTC)
+          const unavailRule = rrulestr(unavail.rrule, {
+            dtstart: new Date(unavail.start),
+            tzid: "America/Toronto",
+          });
+
+          console.log(
+            unavail,
+            unavailRule.origOptions.tzid,
+            unavailRule.origOptions.dtstart,
+          );
+
+          if (
+            unavailRule.origOptions.tzid != null &&
+            unavailRule.origOptions.dtstart != null
+          ) {
+            const dtstart = unavailRule.origOptions.dtstart;
+            unavailRule.origOptions.dtstart = new Date(
+              dtstart.getUTCFullYear(),
+              dtstart.getUTCMonth(),
+              dtstart.getUTCDate(),
+              dtstart.getUTCHours(),
+              dtstart.getUTCMinutes(),
+              dtstart.getUTCSeconds(),
+              dtstart.getUTCMilliseconds(),
+            );
+            console.log(unavail.title, "#2", unavailRule.origOptions.dtstart);
+          }
+
           if (eventRule) {
             const eventDuration = eventEnd - eventStart;
             const windowStart = new Date(Math.min(start, eventStart));
@@ -157,13 +205,17 @@ document.addEventListener("turbo:load", async () => {
           } else {
             // One-time event vs recurring unavailability
             const unavailOccurrences = unavailRule.between(
-              new Date(eventStart.getTime() - duration),
-              new Date(eventEnd.getTime() + duration),
+              parseLocalDatetimeString(eventStart.getTime() - duration),
+              parseLocalDatetimeString(eventEnd.getTime() + duration),
               true,
             );
 
+            console.log(unavail, "#3", unavailOccurrences);
+
             for (const uaStart of unavailOccurrences) {
-              const uaEnd = new Date(uaStart.getTime() + duration);
+              const uaEnd = parseLocalDatetimeString(
+                uaStart.getTime() + duration,
+              );
               if (eventStart < uaEnd && eventEnd > uaStart) {
                 conflicts.push(eventStart);
               }
