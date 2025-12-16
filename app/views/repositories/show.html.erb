@@ -76,40 +76,47 @@
             </div>
             <p><b><%= t('repository.published') %></b> <%= @repository.created_at.strftime('%b %e %Y') %></p>
             <% if @repository.repo_files.any? %>
-                <div>
-                    <div class="d-flex justify-content-between">
-                        <b> <%= t('repository.proj_files') %> </b>
-                        <%= link_to fa_icon('download', text: t('repository.download')),
-                                    download_files_repositories_path(@repository.user_username, @repository.id),
-                                    class: 'btn btn-primary btn-sm' %>
-                    </div>
+                <div class="clearfix">
+                    <b> <%= t('repository.proj_files') %> </b>
                     <div class="files-show">
                         <% @repository.repo_files.find_each do |f| %>
-                            <div class="file-item-show">
-                                <u>
+                            <ul class="file-item-show">
+                                <li>
                                     <%= fa_icon 'file-text-o' %>
                                     <%= link_to f.file.filename, rails_blob_path(f.file), target: '_blank', rel: 'noopener' %>
-                                </u>
-                                <span><%= f.file.byte_size / 1000 %> KB</span>
-                            </div>
+                                    <span><%= f.file.byte_size / 1000 %> KB</span>
+                                </li>
+                            </ul>
                         <% end %>
                     </div>
+                    <%= link_to fa_icon('download', text: t('repository.download')),
+                                download_files_repositories_path(@repository.user_username, @repository.id),
+                                class: 'btn btn-primary btn-sm float-end' %>
                 </div>
             <% end %>
 
-            <span class="title"> <%= t('repository.categories') %> </span>
-            <% @repository.categories.find_each do |category| %>
-                <div class="repo-info-item">
-                    <%= link_to category.name, category_path(slug: category.name.gsub(' ', '-').downcase), class: 'btn btn-secondary btn-sm m-1' %>
+            <% if @repository.license.present? %>
+                <div class="mb-3">
+                    <b> <%= t('repository.license_proj') %>:</b>
+                    <%= link_to @repository.license, license_url[@repository.license] %>
                 </div>
             <% end %>
+
+            <span class="title"><%= t('repository.categories') %></span>
+            <ul class="list-group mb-3">
+                <% @repository.categories.find_each do |category| %>
+                    <%= link_to category.name, category_path(slug: category.name.gsub(' ', '-').downcase),
+                                class: "list-group-item list-group-item-action text-primary" %>
+                <% end %>
+            </ul>
             
-            <span class="title"> <%= t('repository.equipment') %> </span>
-            <% @repository.equipments.find_each do |equipment| %>
-                <div class="repo-info-item">
-                    <%= link_to equipment.name, equipment_path(slug: equipment.name.gsub(' ', '-').downcase), class: 'btn btn-secondary btn-sm m-1' %>
-                </div>
-            <% end %>
+            <span class="title"><%= t('repository.equipment') %></span>
+            <ul class="list-group">
+                <% @repository.equipments.find_each do |equipment| %>
+                    <%= link_to equipment.name, equipment_path(slug: equipment.name.gsub(' ', '-').downcase),
+                                class: "list-group-item list-group-item-action text-primary" %>
+                <% end %>
+            </ul>
 
             <div class="repo-info-item mb-3">
                 <span class="like<%= @liked ? ' liked' : '' %>" style="color: white;">
@@ -131,12 +138,6 @@
                     <div class="rect5"></div>
                 </div>
             </div>
-            <% if @repository.license.present? %>
-                <div class="mb-3">
-                    <b> <%= t('repository.license_proj') %></b>
-                    <%= link_to @repository.license, license_url[@repository.license] %>
-                </div>
-            <% end %>
 
             <% if @repository.project_proposal %>
                 <div>

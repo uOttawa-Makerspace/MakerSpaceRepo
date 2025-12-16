@@ -32,8 +32,11 @@
                 <%# This is a big workaround, because files aren't directly attached to the model %>
                 <% if p.object.file.attached? && p.object.file.persisted? %>
                     <div class="file-upload-item-preview">
-                        <div class="file-upload-preview-failed">
-                        </div>
+                        <% if p.object.file.image? %>
+                            <%= image_tag p.object.file %>
+                        <% else %>
+                            <div class="file-upload-preview-failed"></div>
+                        <% end %>
                         <%= p.hidden_field :file, value: p.object.file.signed_id %>
                         <span title="<%= p.object.file.filename %>"><%= p.object.file.filename %></span>
                         <%= p.hidden_field :_destroy, data: {file_upload_hidden_destroy: true } %>
@@ -44,18 +47,6 @@
         </div>
     </div>
 
-    <div id="file-container">
-        <% @repository.repo_files.each do |f| %>
-            <table>
-                <tr class="file-item">
-                    <td><%= fa_icon 'file-text-o' %> <%= f.file.filename %></td>
-                    <td><span><%= f.file.byte_size / 1000 %> KB</span></td>
-                    <td><span id="<%= f.file.id %>" class="file-remove">remove</span></td>
-                </tr>
-            </table>
-        <% end %>
-        <%= hidden_field_tag 'deletefiles' %>
-    </div>
     <div class="mb-3 required">
         <%= label_tag :photo, t('repository.gallery') , class: 'form-label' %>
         <div class="input-group mb-3">
