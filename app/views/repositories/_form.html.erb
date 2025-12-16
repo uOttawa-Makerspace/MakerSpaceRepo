@@ -119,7 +119,9 @@
             <%= f.hidden_field :project_proposal_id, value: params[:project_proposal_id] %>
         <% else %>
             <%= f.label :license, t('repository.reason') , class: 'form-label' %>
-            <%= f.select(:project_proposal_id, options_for_select(@project_proposals), { include_blank: true }, { class: 'form-control form-select' }) %>
+            <%= f.select(:project_proposal_id,
+                         options_for_select(@project_proposals, selected: @repository.project_proposal_id),
+                         { include_blank: 'No project linked', class: 'form-control form-select' }) %>
         <% end %>
     </div>
 

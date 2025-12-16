@@ -33,7 +33,7 @@ class RepositoriesController < SessionsController
         .pluck(:comment_id, :downvote)
     @project_proposals =
       ProjectProposal.approved.order(title: :asc).pluck(:title, :id)
-    # @members = @repository.users
+
     @liked = @repository.likes.find_by(user_id: @user.id).nil? ? false : true
 
     # Add this repo to recently viewed cookie
