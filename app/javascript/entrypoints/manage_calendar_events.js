@@ -1,5 +1,5 @@
 import { Collapse } from "bootstrap";
-import { RRule, RRuleSet, rrulestr } from "rrule";
+import { RRule, RRuleSet, rrulestr, datetime } from "rrule";
 import TomSelect from "tom-select";
 
 import {
@@ -104,25 +104,6 @@ document.addEventListener("turbo:load", async () => {
     }
   }
 
-  function parseWithCurrentTorontoOffset(dateStr) {
-    // Get current Toronto offset in HH:MM format
-    const now = new Date();
-    const torontoNow = new Date(
-      now.toLocaleString("en-US", {
-        timeZone: "America/Toronto",
-      }),
-    );
-
-    // Calculate offset (-5:00 or -4:00 based on current date)
-    const offsetMinutes = torontoNow.getTimezoneOffset();
-    const offsetHours = Math.abs(Math.floor(offsetMinutes / 60));
-    const offsetSign = offsetMinutes > 0 ? "-" : "+";
-    const offsetString = `${offsetSign}${offsetHours.toString().padStart(2, "0")}:00`;
-
-    // Append current offset to the date string and parse
-    return new Date(dateStr + offsetString);
-  }
-
   function isUnavailableDuring(unavailabilities) {
     const eventStart = parseLocalDatetimeString(startTimeField.value);
     const eventEnd = parseLocalDatetimeString(endTimeField.value);
@@ -131,8 +112,7 @@ document.addEventListener("turbo:load", async () => {
     const conflicts = [];
 
     for (const unavail of unavailabilities) {
-      const start = parseWithCurrentTorontoOffset(unavail.start);
-      console.log(unavail, "#1", start);
+      const start = parseLocalDatetimeString(unavail.start);
       // if duration present, use it (rrule present), else calculate it
       const duration =
         typeof unavail.duration === "number"
@@ -144,33 +124,36 @@ document.addEventListener("turbo:load", async () => {
       if (unavail.rrule) {
         try {
           // FIXME: currently has one hour off error for events set in previous DST and is fully broken for BYDAY recurring events whose DTSTART in UTC rolls over to next day (since rrule.js doesnt like timezones and BYDAY then points to the wrong day for UTC)
-          const unavailRule = rrulestr(unavail.rrule, {
-            dtstart: new Date(unavail.start),
-            tzid: "America/Toronto",
-          });
+
+          // since rrule.js is really bad with timezones, we force DTSTART to UTC by reconstructing it (making it look like its +4 or +5 hours off)
+          const dtstart = new Date(
+            start.getUTCFullYear(),
+            start.getUTCMonth(),
+            start.getUTCDate(),
+            start.getUTCHours(),
+            start.getUTCMinutes(),
+            start.getUTCSeconds(),
+            start.getUTCMilliseconds(),
+          );
+
+          const newUnavail = unavail.rrule.replace(
+            /DTSTART:\d{8}T\d{6}/,
+            () => {
+              const dt = toLocalDatetimeString(dtstart).replace(/[-:]/g, "");
+              return `DTSTART:${dt}00Z`;
+            },
+          );
+
+          const unavailRule = rrulestr(newUnavail);
 
           console.log(
             unavail,
-            unavailRule.origOptions.tzid,
-            unavailRule.origOptions.dtstart,
+            "#2",
+            unavailRule,
+            unavailRule.toString(),
+            "vs",
+            newUnavail,
           );
-
-          if (
-            unavailRule.origOptions.tzid != null &&
-            unavailRule.origOptions.dtstart != null
-          ) {
-            const dtstart = unavailRule.origOptions.dtstart;
-            unavailRule.origOptions.dtstart = new Date(
-              dtstart.getUTCFullYear(),
-              dtstart.getUTCMonth(),
-              dtstart.getUTCDate(),
-              dtstart.getUTCHours(),
-              dtstart.getUTCMinutes(),
-              dtstart.getUTCSeconds(),
-              dtstart.getUTCMilliseconds(),
-            );
-            console.log(unavail.title, "#2", unavailRule.origOptions.dtstart);
-          }
 
           if (eventRule) {
             const eventDuration = eventEnd - eventStart;
