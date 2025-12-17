@@ -64,7 +64,7 @@ module CalendarHelper
               end
               
               all_exdates.compact.uniq.each do |d|
-                exdate_str = d.utc.strftime("%Y%m%dT%H%M%SZ")
+                exdate_str = d.in_time_zone("America/Toronto")&.strftime("%Y%m%dT%H%M%S")
                 rrule_string_parts << "EXDATE:#{exdate_str}"
               rescue StandardError
                 # Skip invalid dates
