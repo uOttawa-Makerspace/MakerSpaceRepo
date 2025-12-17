@@ -77,6 +77,58 @@ class Admin::CalendarController < AdminAreaController
     render json: result
   end
 
+  def utc_unavailabilities_json
+    return render json: { error: "Space ID is required" }, status: :bad_request if params[:id].blank?
+
+    staff_user_ids = StaffSpace.where(space_id: params[:id]).pluck(:user_id)
+    
+    result = User
+               .where(id: staff_user_ids, role: ['admin', 'staff'])
+               .order(name: :desc).map do |staff|
+      local_unavails = StaffUnavailability.where(user_id: staff.id).map do |u| 
+
+        duration = (u.end_time.to_time - u.start_time.to_time) * 1000
+
+        {
+          id: u.id,
+          title: "🚫 #{staff.name} - #{u.title}",
+          start: u.start_time,
+          end: u.end_time,
+          **(u.recurrence_rule.present? ? { rrule: u.recurrence_rule, duration: duration } : {}),
+          allDay: u.start_time.to_time == u.end_time.to_time - 1.day,
+          extendedProps: {
+            name: staff.name,
+            description: u.description
+          },
+          className: "unavailability"
+        }
+      end
+
+      ics_unavails = staff.staff_external_unavailabilities.flat_map do |external|
+        parsed = helpers.parse_ics_calendar(
+          external.ics_url,
+          name: "#{staff.name} External Unavailability",
+        )
+
+        parsed.flat_map do |calendar|
+          calendar[:events].map do |event|
+            event.merge(title: "🚫 #{staff.name} - #{event[:title]}", className: "unavailability")
+          end
+        end
+      end
+
+      {
+        id: staff.id,
+        # for users with no unavails, we pull the name from here
+        name: staff.name,
+        color: StaffSpace.find_by(user_id: staff.id, space_id: params[:id])&.color,
+        unavailabilities: local_unavails + ics_unavails
+    }
+    end
+
+    render json: result
+  end
+
   def imported_calendars_json
     return render json: { error: "Space ID is required" }, status: :bad_request if params[:id].blank?
 

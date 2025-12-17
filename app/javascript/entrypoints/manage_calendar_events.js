@@ -34,7 +34,7 @@ document.addEventListener("turbo:load", async () => {
   let tomSelect;
 
   const fetchedStaffUnavailabilitiesRes = await fetch(
-    "/admin/calendar/unavailabilities_json/" +
+    "/admin/calendar/utc_unavailabilities_json/" +
       document.getElementById("space_id").value,
   ).catch((error) => console.log(error));
   const fetchedStaffUnavailabilities =
@@ -123,37 +123,7 @@ document.addEventListener("turbo:load", async () => {
       // Recurring event vs recurring unavailability
       if (unavail.rrule) {
         try {
-          // FIXME: currently has one hour off error for events set in previous DST and is fully broken for BYDAY recurring events whose DTSTART in UTC rolls over to next day (since rrule.js doesnt like timezones and BYDAY then points to the wrong day for UTC)
-
-          // since rrule.js is really bad with timezones, we force DTSTART to UTC by reconstructing it (making it look like its +4 or +5 hours off)
-          const dtstart = new Date(
-            start.getUTCFullYear(),
-            start.getUTCMonth(),
-            start.getUTCDate(),
-            start.getUTCHours(),
-            start.getUTCMinutes(),
-            start.getUTCSeconds(),
-            start.getUTCMilliseconds(),
-          );
-
-          const newUnavail = unavail.rrule.replace(
-            /DTSTART:\d{8}T\d{6}/,
-            () => {
-              const dt = toLocalDatetimeString(dtstart).replace(/[-:]/g, "");
-              return `DTSTART:${dt}00Z`;
-            },
-          );
-
-          const unavailRule = rrulestr(newUnavail);
-
-          console.log(
-            unavail,
-            "#2",
-            unavailRule,
-            unavailRule.toString(),
-            "vs",
-            newUnavail,
-          );
+          const unavailRule = rrulestr(unavail.rrule);
 
           if (eventRule) {
             const eventDuration = eventEnd - eventStart;
@@ -193,7 +163,7 @@ document.addEventListener("turbo:load", async () => {
               true,
             );
 
-            console.log(unavail, "#3", unavailOccurrences);
+            console.log(unavail, "#3", unavailRule, unavailRule.all()); // FIXME: returning the day before for some reason on events with UTC time a different day than local
 
             for (const uaStart of unavailOccurrences) {
               const uaEnd = parseLocalDatetimeString(
