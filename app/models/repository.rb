@@ -6,8 +6,18 @@ class Repository < ApplicationRecord
 
   has_and_belongs_to_many :users
   belongs_to :project_proposal, optional: true
+  
   has_many :photos, dependent: :destroy
+  # https://api.rubyonrails.org/classes/ActiveRecord/NestedAttributes/ClassMethods.html
+  # This method requires us to mark photos for deletion.
+  # TODO: Move the attachments into a concern?
+  accepts_nested_attributes_for :photos, allow_destroy: true
+  validates_associated :photos
+  
   has_many :repo_files, dependent: :destroy
+  accepts_nested_attributes_for :repo_files, allow_destroy: true
+  validates_associated :repo_files
+
   has_many :categories, dependent: :destroy
   has_many :equipments, dependent: :destroy
   has_many :comments, dependent: :destroy
@@ -48,6 +58,10 @@ class Repository < ApplicationRecord
               message: "Password is required for private projects"
             },
             if: :private?
+
+  # This seems to work fine for limiting association counts.
+  # Max 5 gallery photos per repository.
+  validates :photos, length: {maximum: 5}
 
   # validates :category,
   #           inclusion: { within: CategoryOption.show_options },

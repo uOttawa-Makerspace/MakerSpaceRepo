@@ -1,5 +1,5 @@
 import { Collapse } from "bootstrap";
-import { RRule, rrulestr } from "rrule";
+import { RRule, RRuleSet, rrulestr, datetime } from "rrule";
 import TomSelect from "tom-select";
 
 import {
@@ -34,7 +34,7 @@ document.addEventListener("turbo:load", async () => {
   let tomSelect;
 
   const fetchedStaffUnavailabilitiesRes = await fetch(
-    "/admin/calendar/unavailabilities_json/" +
+    "/admin/calendar/utc_unavailabilities_json/" +
       document.getElementById("space_id").value,
   ).catch((error) => console.log(error));
   const fetchedStaffUnavailabilities =
@@ -112,18 +112,19 @@ document.addEventListener("turbo:load", async () => {
     const conflicts = [];
 
     for (const unavail of unavailabilities) {
-      const start = new Date(unavail.start);
+      const start = parseLocalDatetimeString(unavail.start);
       // if duration present, use it (rrule present), else calculate it
       const duration =
         typeof unavail.duration === "number"
           ? unavail.duration
-          : new Date(unavail.end) - start;
-      const end = new Date(start.getTime() + duration);
+          : parseLocalDatetimeString(unavail.end) - start;
+      const end = parseLocalDatetimeString(start.getTime() + duration);
 
       // Recurring event vs recurring unavailability
       if (unavail.rrule) {
         try {
           const unavailRule = rrulestr(unavail.rrule);
+
           if (eventRule) {
             const eventDuration = eventEnd - eventStart;
             const windowStart = new Date(Math.min(start, eventStart));
@@ -157,13 +158,17 @@ document.addEventListener("turbo:load", async () => {
           } else {
             // One-time event vs recurring unavailability
             const unavailOccurrences = unavailRule.between(
-              new Date(eventStart.getTime() - duration),
-              new Date(eventEnd.getTime() + duration),
+              parseLocalDatetimeString(eventStart.getTime() - duration),
+              parseLocalDatetimeString(eventEnd.getTime() + duration),
               true,
             );
 
+            console.log(unavail, "#3", unavailRule, unavailRule.all()); // FIXME: returning the day before for some reason on events with UTC time a different day than local
+
             for (const uaStart of unavailOccurrences) {
-              const uaEnd = new Date(uaStart.getTime() + duration);
+              const uaEnd = parseLocalDatetimeString(
+                uaStart.getTime() + duration,
+              );
               if (eventStart < uaEnd && eventEnd > uaStart) {
                 conflicts.push(eventStart);
               }
