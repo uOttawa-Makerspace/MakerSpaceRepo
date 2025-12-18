@@ -84,7 +84,8 @@
 
     <div class="mb-3">
         <%= f.label :youtube_link, t('repository.youtube') , class: 'form-label' %>
-        <%= f.text_field :youtube_link, class: 'form-control' %>
+        <%= f.text_field :youtube_link, class: 'form-control',
+               placeholder: "https://www.youtube.com/watch?v=..." %>
         <div class="form-text"><%= t('repository.youtube_msg') =%></div>
     </div>
     <div class="mb-3 required">
