@@ -1,7 +1,10 @@
 <% provide(:title, 'Explore') %>
 <section class="container mt-5">
     <%= render partial: 'search_bar' %>
-    <%= will_paginate @repositories, inner_window: 2, outer_window: 1, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
+    <div class="text-center">
+        <p><%= @repositories.count %> repositories were found</p>
+        <%= will_paginate @repositories, inner_window: 2, outer_window: 1, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
+    </div>
     <div class="row g-3">
         <% @repositories.each do |repository| %>
             <div class="col-md-4 col-lg-4">

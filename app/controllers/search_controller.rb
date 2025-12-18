@@ -57,6 +57,8 @@ class SearchController < SessionsController
         ).distinct
     end
     @photos = photo_hash
+    # Shim the explore page
+    render :explore
   end
 
   def category
