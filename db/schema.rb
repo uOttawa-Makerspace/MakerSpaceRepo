@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_11_09_204236) do
+ActiveRecord::Schema[7.2].define(version: 2025_12_18_185143) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_trgm"
   enable_extension "plpgsql"
@@ -317,6 +317,16 @@ ActiveRecord::Schema[7.2].define(version: 2025_11_09_204236) do
     t.index ["slug", "sluggable_type"], name: "index_friendly_id_slugs_on_slug_and_sluggable_type"
     t.index ["sluggable_id"], name: "index_friendly_id_slugs_on_sluggable_id"
     t.index ["sluggable_type"], name: "index_friendly_id_slugs_on_sluggable_type"
+  end
+
+  create_table "google_calendar_channels", force: :cascade do |t|
+    t.string "channel_id", null: false
+    t.string "resource_id", null: false
+    t.datetime "expires_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "sync_token"
+    t.index ["channel_id"], name: "index_google_calendar_channels_on_channel_id", unique: true
   end
 
   create_table "job_options", force: :cascade do |t|

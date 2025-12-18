@@ -576,6 +576,8 @@ Rails.application.routes.draw do
     end
   end
 
+  post "/google/calendar/webhook", to: "google_calendar#webhook"
+
   resources :development_programs, only: [:index] do
     collection do
       get :join_development_program

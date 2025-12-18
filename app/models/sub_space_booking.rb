@@ -11,10 +11,11 @@ class SubSpaceBooking < ApplicationRecord
   validates :end_time, presence: true
   validate :end_time_after_start_time
 
-  before_save :upsert_google_booking,
-    if: ->(sub_space_booking) {[10, 11].include?(sub_space_booking.sub_space_id)}
+  # FIXME: THIS DOESNT REALLY WORK FOR ICS TO MAKERROOM AND BREAKS THE GCAL INTEGRATION
+  # before_save :upsert_google_booking,
+  #   if: ->(sub_space_booking) {[10, 11].include?(sub_space_booking.sub_space_id)}
   
-  before_destroy :delete_google_booking
+  # before_destroy :delete_google_booking
 
   def upsert_google_booking
     SubSpaceBooking.upsert_booking(self)
