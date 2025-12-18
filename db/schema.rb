@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_10_30_154155) do
+ActiveRecord::Schema[7.2].define(version: 2025_11_09_204236) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_trgm"
   enable_extension "plpgsql"
@@ -205,6 +205,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_10_30_154155) do
     t.date "day"
     t.string "sheet_key"
     t.boolean "is_live"
+    t.boolean "show_floorplans", default: true
   end
 
   create_table "discount_codes", id: :serial, force: :cascade do |t|
