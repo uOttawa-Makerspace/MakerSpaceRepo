@@ -31,6 +31,8 @@ The `staff/my_calendar` page is super simple, fetching the events JSON and displ
 
 ## Caveats and Gotchas
 
+TLDR: everything broken has to do with `isUnavailableDuring()` inside `manage_calendar_events.js` unavailability calculations are off by 1 hour when recurring staff unavails are created in previous timezone offset (DST/ST) and when recurring staff unavails start late enough that in UTC they are the next day. an attempted fix can be found in #2d9411c which may be worth referencing but didn't work enough so I resorted back to using UTC for the calculation.
+
 ### 1. DTSTART, EXDATES, RDATES, EXRULES
 
 DTSTART is a date time string of the beginning of a recurring event.
