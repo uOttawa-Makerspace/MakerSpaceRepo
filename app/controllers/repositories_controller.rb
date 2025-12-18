@@ -370,12 +370,14 @@ class RepositoriesController < SessionsController
                               :project_proposal,
                               :makes,
                               :comments,
+                              :likes,
                               :users)
                     .where(id: id)
                     .or(Repository.where(slug: id))
                     .or(Repository.where(title: id))
                     .first!
-    @repository.strict_loading!
+    # Too scared to keep this in prod
+    # @repository.strict_loading!
   end
 
   def repository_params
