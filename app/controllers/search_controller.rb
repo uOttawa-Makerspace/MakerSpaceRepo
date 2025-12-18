@@ -44,17 +44,7 @@ class SearchController < SessionsController
           .order([sort_order].to_h)
     end
     if params[:q].present?
-      @repositories =
-        @repositories.where(
-          "lower(title) LIKE ?
-    OR lower(description) LIKE ?
-    OR lower(user_username) LIKE ?
-    OR lower(category) LIKE ?",
-          "%#{params[:q].downcase}%",
-          "%#{params[:q].downcase}%",
-          "%#{params[:q].downcase}%",
-          "%#{params[:q].downcase}%"
-        ).distinct
+      @repositories = @repositories.fuzzy_search(params[:q])
     end
     @photos = photo_hash
     # Shim the explore page

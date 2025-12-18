@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_11_09_204236) do
+ActiveRecord::Schema[7.2].define(version: 2025_12_18_214926) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_trgm"
   enable_extension "plpgsql"
@@ -1066,6 +1066,9 @@ ActiveRecord::Schema[7.2].define(version: 2025_11_09_204236) do
     t.string "youtube_link"
     t.integer "project_proposal_id"
     t.boolean "deleted"
+    t.index ["category"], name: "index_repositories_on_category", opclass: :gin_trgm_ops, using: :gin
+    t.index ["description"], name: "index_repositories_on_description", opclass: :gin_trgm_ops, using: :gin
+    t.index ["title"], name: "index_repositories_on_title", opclass: :gin_trgm_ops, using: :gin
     t.index ["user_id"], name: "index_repositories_on_user_id"
   end
 
