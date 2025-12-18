@@ -97,26 +97,30 @@
 
             <% if @repository.license.present? %>
                 <div class="mb-3">
-                    <b> <%= t('repository.license_proj') %>:</b>
+                    <b> <%= t('repository.license_proj') %></b><br />
                     <%= link_to @repository.license, license_url[@repository.license] %>
                 </div>
             <% end %>
 
-            <span class="title"><%= t('repository.categories') %></span>
-            <ul class="list-group mb-3">
-                <% @repository.categories.find_each do |category| %>
-                    <%= link_to category.name, category_path(slug: category.name.gsub(' ', '-').downcase),
-                                class: "list-group-item list-group-item-action text-primary" %>
-                <% end %>
-            </ul>
-            
-            <span class="title"><%= t('repository.equipment') %></span>
-            <ul class="list-group">
-                <% @repository.equipments.find_each do |equipment| %>
-                    <%= link_to equipment.name, equipment_path(slug: equipment.name.gsub(' ', '-').downcase),
-                                class: "list-group-item list-group-item-action text-primary" %>
-                <% end %>
-            </ul>
+            <div class="mb-3">
+                <b><%= t('repository.categories') %></b>
+                <ul class="list-group mb-3">
+                    <% @repository.categories.find_each do |category| %>
+                        <%= link_to category.name, category_path(slug: category.name.gsub(' ', '-').downcase),
+                                    class: "list-group-item list-group-item-action text-primary" %>
+                    <% end %>
+                </ul>
+            </div>
+
+            <div class="mb-3">
+                <b><%= t('repository.equipment') %></b>
+                <ul class="list-group">
+                    <% @repository.equipments.find_each do |equipment| %>
+                        <%= link_to equipment.name, equipment_path(slug: equipment.name.gsub(' ', '-').downcase),
+                                    class: "list-group-item list-group-item-action text-primary" %>
+                    <% end %>
+                </ul>
+            </div>
 
             <div class="repo-info-item mb-3">
                 <span class="like<%= @liked ? ' liked' : '' %>" style="color: white;">
@@ -140,10 +144,10 @@
             </div>
 
             <% if @repository.project_proposal %>
-                <div>
-                    <b><%= t('repository.link_proj') %> </b>
+                <p>
+                    <b><%= t('repository.link_to_prop') %></b> <br />
                     <%= link_to @repository.project_proposal.title, project_proposal_path(@repository.project_proposal) %>
-                </div>
+                </p>
             <% end %>
 
             <% if @repository.users.include?(@user) || @user.admin? || @user.staff? %>
@@ -152,7 +156,7 @@
                     <%= form_for :repo, url: { controller: 'repositories', action: 'link_to_pp' }, method: :patch do |f| %>
                         <div class="mb-3 input-group">
                             <%= f.hidden_field :repository_id, value: @repository.id %>
-                            <%= f.select(:project_proposal_id, @project_proposals, { prompt: t('repository.choose') }, { class: 'form-control', id: 'search_project_proposals' }) %>
+                            <%= f.select(:project_proposal_id, @project_proposals, { prompt: t('repository.choose_proposal') }, { class: 'form-control', id: 'search_project_proposals' }) %>
                             <br> </br>
                             <%= f.submit t('repository.link_proj'), class: 'btn btn-primary' %>
                         </div>
