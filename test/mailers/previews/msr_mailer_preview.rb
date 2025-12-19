@@ -183,7 +183,8 @@ class MsrMailerPreview < ActionMailer::Preview
       "Julia",
       "julia@gmail.com",
       "issue",
-      "photo upload not working"
+      "photo upload not working",
+      "0xDEADBEEF"  # app_version
     )
   end
 
