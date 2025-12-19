@@ -358,12 +358,11 @@ class MsrMailer < ApplicationMailer
     mail(to: email, subject: "Please Sign The Release Agreement!")
   end
 
-  def issue_email(name, email, subject, comments, app_version)
+  def issue_email(name, email, subject, comments)
     @name = name
     @email = email
     @subject = subject
     @comments = comments
-    @app_version = app_version
 
     mail(
       to: @email,
