@@ -18,7 +18,13 @@
             </div>
             <div id="photo-slide">
                 <% @repository.photos.find_each do |p| %>
-                    <%= image_tag p.image.variant(:photo_slide), alt: 'Repository Image', data: { src: url_for(p.image), width: p.width, height: p.height } %>
+                    <%= image_tag p.image.variant(:photo_slide),
+                                  alt: 'Repository Image',
+                                  data: {
+                                      src: url_for(p.image),
+                                      width: p.image.metadata['width'],
+                                      height: p.image.metadata['height']
+                                  } %>
                 <% end %>
             </div>
         </div>
