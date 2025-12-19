@@ -1,14 +1,14 @@
-<div class="row g-3 justify-content-center">
-    <div class="col-lg-8">
-        <%= form_with url: search_url, method: 'GET' do |form| %>
+<div>
+    <div class="mb-3">
+        <%= form_with url: search_url, method: :get do |form| %>
             <div class="input-group">
-                <%= form.text_field :q, class: 'form-control' %>
-                <%= form.submit t('explore.search'), name: '', class: 'btn btn-primary' %>
+                <%= form.text_field :q, class: 'form-control', value: params[:q], placeholder: 'Project title or description...' %>
+                <%= form.submit t('explore.search'), class: 'btn btn-primary' %>
             </div>
         <% end %>
     </div>
-    <div class="col-lg-2">
-        <div class="btn-group">
+    <div class="clearfix mb-1">
+        <div class="btn-group float-end">
             <div class="btn-group">
                 <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
                     <%= t('home.sort.by') %>
@@ -44,5 +44,9 @@
                 </ul>
             </div>
         </div>
+    </div>
+    <div class="text-center">
+        <%= will_paginate @repositories, inner_window: 2, outer_window: 1, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
+        <span><%= @repositories.count %> repositories were found</span>
     </div>
 </div>

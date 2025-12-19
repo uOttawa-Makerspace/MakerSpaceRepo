@@ -26,30 +26,28 @@ class SearchController < SessionsController
 
   def search
     sort_arr = sort_order
-    if params[:category].blank?
+    
+    @repositories =
+      Repository
+        .paginate(per_page: 12, page: params[:page])
+        .public_repos
+        .order([sort_arr].to_h)
+
+    if params[:category].present?
       @repositories =
-        Repository
-          .paginate(per_page: 12, page: params[:page])
-          .public_repos
-          .order([sort_arr].to_h)
-    else
-      @repositories =
-        Repository
-          .paginate(per_page: 12, page: params[:page])
-          .public_repos
-          .includes(:categories)
-          .where(
-            { categories: { name: SLUG_TO_CATEGORY_MODEL[params[:category]] } }
-          )
-          .order([sort_order].to_h)
+        @repositories.includes(:categories).where(
+          { categories: { name: SLUG_TO_CATEGORY_MODEL[params[:category]] } }
+        )
     end
+    
     if params[:q].present?
       @repositories = @repositories.fuzzy_search(params[:q])
     end
-    @photos = photo_hash
+    
     # Shim the explore page
     render :explore
   end
+
 
   def category
     sort_arr = sort_order
