@@ -49,7 +49,7 @@ FactoryBot.define do
       categories { ["Laser", "3D Printing"] }
       equipments { ["Laser Cutter", "3D Printer"] }
     end
-
+    
     trait :broken_link do
       youtube_link { "https://google.ca" }
     end

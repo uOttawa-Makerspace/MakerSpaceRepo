@@ -27,4 +27,5 @@ class RepoFile < ApplicationRecord
               allow: [ALLOWED_CONTENT_TYPES],
               if: -> { file.attached? and proficient_project_id.present? }
             }
+  validates :file, presence: true
 end

@@ -4,8 +4,8 @@ RSpec.describe RepositoriesController, type: :controller do
   describe "#show" do
     context "show" do
       before(:each) do
-        user = create(:user, :regular_user)
-        session[:user_id] = user.id
+        @user = create(:user, :regular_user)
+        session[:user_id] = @user.id
         session[:expires_at] = Time.zone.now + 10_000
       end
 
@@ -148,24 +148,26 @@ RSpec.describe RepositoriesController, type: :controller do
       end
 
       it "should create a repository with images and files" do
-        repo_params = FactoryBot.attributes_for(:repository)
+        repo_params = FactoryBot.attributes_for(:repository).merge(
+          repo_files_attributes: [
+            file: fixture_file_upload(
+              Rails.root.join("spec/support/assets", "RepoFile1.pdf"),
+              "application/pdf"
+            )
+          ],
+          photos_attributes: [
+            image: fixture_file_upload(
+              Rails.root.join("spec/support/assets", "avatar.png"),
+              "image/png"
+            )
+          ]
+        )
+        
         expect {
           post :create,
                params: {
                  user_username: User.last.username,
                  repository: repo_params,
-                 files: [
-                   fixture_file_upload(
-                     Rails.root.join("spec/support/assets", "RepoFile1.pdf"),
-                     "application/pdf"
-                   )
-                 ],
-                 images: [
-                   fixture_file_upload(
-                     Rails.root.join("spec/support/assets", "avatar.png"),
-                     "image/png"
-                   )
-                 ]
                }
         }.to change(Repository, :count).by(1)
         expect(Repository.last.users.first.id).to eq(User.last.id)
@@ -227,69 +229,87 @@ RSpec.describe RepositoriesController, type: :controller do
   describe "#update" do
     context "update" do
       before(:each) do
-        user = create(:user, :regular_user)
-        session[:user_id] = user.id
+        @user = create(:user, :regular_user)
+        session[:user_id] = @user.id
         session[:expires_at] = Time.zone.now + 10_000
       end
 
       it "should update the repository" do
-        create(:repository)
-        patch :update,
-              params: {
-                user_username: User.last.username,
-                id: Repository.last.id,
-                repository: {
-                  title: "abc"
+        create(:repository) do |repo|
+          repo.users << @user
+          
+          patch :update,
+                params: {
+                  user_username: User.last.username,
+                  id: repo.id,
+                  repository: {
+                    title: "abc"
+                  }
                 }
-              }
-        expect(response.body).to redirect_to(
-          repository_path(
-            Repository.last.user_username,
-            Repository.last.id,
-            Repository.last.title
-          )
-        )
-        expect(flash[:notice]).to eq("Project updated successfully!")
+          
+          expect(flash[:notice]).to eq("Project updated successfully!")
+          expect(response.body).to redirect_to(
+                                     repository_path(
+                                       repo.user_username,
+                                       repo.id,
+                                       "abc"
+                                     )
+                                   )
+        end
       end
 
       it "should update the repository with photos and files" do
-        create(:repository, :with_repo_files)
+        repo = create(:repository, :with_repo_files, users: [@user])
+        repo.photos.reload
+        repo.repo_files.reload
         patch :update,
               params: {
                 user_username: User.last.username,
                 id: Repository.last.id,
                 repository: {
-                  title: "abc"
+                  title: "abc",
+                  repo_files_attributes: {
+                    '0' => {
+                      file: fixture_file_upload(
+                        Rails.root.join("spec/support/assets/RepoFile2.pdf"),
+                        "application/pdf"
+                      ),
+                    },
+                    '1' => {
+                      id: repo.repo_files.last.id,
+                      _destroy: '1',
+                    }
+                  },
+                  photos_attributes: {
+                    '0' => {
+                      image: fixture_file_upload(
+                        Rails.root.join("spec/support/assets/avatar.png"),
+                        "image/png"
+                      )
+                    },
+                    '1' => {
+                      id: repo.photos.last.id,
+                      _destroy: '1'
+                    }
+                  },
                 },
-                files: [
-                  fixture_file_upload(
-                    Rails.root.join("spec/support/assets", "RepoFile1.pdf"),
-                    "application/pdf"
-                  )
-                ],
-                images: [
-                  fixture_file_upload(
-                    Rails.root.join("spec/support/assets", "avatar.png"),
-                    "image/png"
-                  )
-                ],
-                deleteimages: [Photo.last.image.filename.to_s],
-                deletefiles: [RepoFile.last.file.id.to_s]
               }
-        expect(response.body).to redirect_to(
-          repository_path(
-            Repository.last.user_username,
-            Repository.last.id,
-            Repository.last.title
-          )
-        )
-        expect(RepoFile.count).to eq(1)
-        expect(Photo.count).to eq(1)
+        
         expect(flash[:notice]).to eq("Project updated successfully!")
+        expect(response.body).to redirect_to(
+                                   repository_path(
+                                     Repository.last.user_username,
+                                     Repository.last.id,
+                                     Repository.last.title
+                                   )
+                                 )
+        
+        expect(repo.repo_files.reload.count).to eq(1)
+        expect(repo.photos.count).to eq(1)
       end
 
       it "should create a private repository" do
-        create(:repository, :private)
+        create(:repository, :private, users: [@user])
         old_pass = Repository.last.password
         patch :update,
               params: {
@@ -322,7 +342,7 @@ RSpec.describe RepositoriesController, type: :controller do
         user = create(:user, :regular_user)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
-        create(:repository)
+        create(:repository, users: [user])
         expect {
           delete :destroy,
                  params: {
