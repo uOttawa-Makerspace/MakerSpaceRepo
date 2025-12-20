@@ -37,7 +37,10 @@ namespace :users do
 
   def merge_duplicated_user(email)
     # FIXME: does the heuristic actually work???
-    users = User.where('lower(email) like ?', email).sort(&:count_association)
+    users =
+      User
+        .where('lower(email) like ?', email)
+        .sort_by { |u| count_associations(u) }
     puts "#{email} had #{users.count} records"
     # Prefer staff roles
     primary = users.find(&:staff?) || users.last # or most associations
@@ -86,6 +89,10 @@ namespace :users do
         .klass # Get model class and run a query to find duplicate
         .where(assoc.foreign_key => duplicated.id)
         .find_each do |foreign_record|
+          if assoc.name == :user_booking_approvals &&
+               foreign_record.identity.blank?
+            foreign_record.identity = 'Other'
+          end
           # update in a map to get validations to run
           foreign_record.update!(assoc.foreign_key => primary.id)
         rescue ActiveRecord::RecordInvalid => e
@@ -145,6 +152,21 @@ namespace :users do
     return unless foreign_record
     # This is usually the rfid model, assuming we can simply move it over
     foreign_record.update!(assoc.foreign_key => primary.id)
+  end
+
+  def merge_habtm_association(primary, duplicate, assoc)
+    # for a HABTM association the join table is only two ids, we have to run on
+    # model for validations. Here we can also assume plurality of the accessor method
+    duplicate
+      .send(assoc.plural_name)
+      .each do |foreign_record|
+        # Remove duplicate
+        foreign_record.users.delete(duplicate.id)
+        # Add primary unless already present
+        unless foreign_record.users.include? primary
+          foreign_record.users << primary
+        end
+      end
   end
 
   def count_associations(user)

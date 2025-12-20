@@ -9,13 +9,17 @@ class User < ApplicationRecord
   has_one :rfid, dependent: :destroy
   has_many :upvotes, dependent: :destroy
   has_many :comments, dependent: :destroy
-  has_and_belongs_to_many :repositories, dependent: :destroy
+  has_and_belongs_to_many :repositories # Membership: many to many
+  has_many :repositories # Ownership: many to one
+  has_many :likes
   has_many :certifications, class_name: 'Certification', dependent: :destroy
   has_many :demotion_staff,
            class_name: 'Certification',
            foreign_key: 'demotion_staff_id',
            dependent: :destroy
   has_many :lab_sessions, dependent: :destroy
+  # NOTE: This was converted to a has_many because of merge_duplicate_users.rake
+  # This is actually a has_and_belongs_to_many assoc, maybe convert or refactor later
   has_many :training_sessions, through: :training_sessions_users # join table points to participants
   accepts_nested_attributes_for :repositories
   has_many :project_proposals
