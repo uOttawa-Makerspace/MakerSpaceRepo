@@ -16,7 +16,7 @@ class User < ApplicationRecord
            foreign_key: 'demotion_staff_id',
            dependent: :destroy
   has_many :lab_sessions, dependent: :destroy
-  has_and_belongs_to_many :training_sessions
+  has_and_belongs_to_many :training_sessions, class_name: 'TrainingSession', through: :user_training_sessions
   accepts_nested_attributes_for :repositories
   has_many :project_proposals
   has_many :project_joins, dependent: :destroy
@@ -24,11 +24,11 @@ class User < ApplicationRecord
   has_many :volunteer_hours
   has_many :volunteer_tasks
   has_many :volunteer_task_joins
-  has_many :training_sessions
+  has_many :training_sessions, class_name: 'TrainingSession'
   has_many :announcements
   has_many :questions
   has_many :exams
-  has_many :exam_responses
+  has_many :exam_responses, through: :exams
   has_many :print_orders
   has_many :volunteer_task_requests
   has_many :cc_moneys, dependent: :destroy
@@ -58,7 +58,7 @@ class User < ApplicationRecord
   has_many :supervised_spaces, through: :space_manager_joins, source: :space
   has_many :staff_spaces, dependent: :destroy
   has_many :spaces, through: :staff_spaces
-  has_many :printer_issues # Don't delete issues when a user is deleted
+  has_many :printer_issues, inverse_of: 'reporter'  # Don't delete issues when a user is deleted
   has_many :locker_rentals, foreign_key: 'rented_by'
   has_many :staff_unavailabilities
   has_many :staff_external_unavailabilities, dependent: :destroy
@@ -85,7 +85,14 @@ class User < ApplicationRecord
               maximum: 20
             }
 
-  validates :email, presence: true, on: :create, uniqueness: true, email: true
+  validates :email,
+            presence: true,
+            on: :create,
+            uniqueness: {
+              case_sensitive: false
+            },
+            email: true
+  normalizes :email, with: ->(email) { email.strip.downcase }
 
   validates :how_heard_about_us, length: { maximum: 250 }
 
