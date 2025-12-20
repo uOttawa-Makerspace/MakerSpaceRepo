@@ -36,12 +36,12 @@ namespace :users do
   end
 
   def merge_duplicated_user(email)
-    users = User.where('lower(email) like ?', email)
+    # FIXME: does the heuristic actually work???
+    users = User.where('lower(email) like ?', email).sort(&:count_association)
     puts "#{email} had #{users.count} records"
-
-    # TODO: Find which one has the most associations
-    primary = users.first
-    duplicates = users[1..]
+    # Prefer staff roles
+    primary = users.find(&:staff?) || users.last # or most associations
+    duplicates = users.excluding(primary)
 
     duplicates.each do |duplicate|
       ActiveRecord::Base.transaction { merge_record(primary, duplicate) }
@@ -71,6 +71,9 @@ namespace :users do
     end
 
     duplicate.destroy!
+  rescue ActiveRecord::InvalidForeignKey => e
+    binding.pry
+    raise e
   end
 
   def merge_has_many_association(primary, duplicated, assoc)
@@ -110,13 +113,18 @@ namespace :users do
         # Check if the join record itself could be discarded too. Rather unlikely
         # but I want to find out
         record_attrs =
-          foreign_record.attributes.except('id', through_assoc.foreign_key, 'created_at', 'updated_at')
+          foreign_record.attributes.except(
+            'id',
+            through_assoc.foreign_key,
+            'created_at',
+            'updated_at'
+          )
         other_records =
           through_assoc
             .klass
             .where(through_assoc.foreign_key => primary.id)
             .where(record_attrs)
-      
+
         if other_records.exists?
           # No need to move this over, delete
           foreign_record.destroy
@@ -139,6 +147,39 @@ namespace :users do
     foreign_record.update!(assoc.foreign_key => primary.id)
   end
 
-  def merge_habtm_association(primary, duplicate, assoc)
+  def count_associations(user)
+    count = 0
+    User.reflect_on_all_associations.each do |assoc|
+      next if assoc.macro == :belongs_to
+
+      case assoc.macro
+      when :has_many, :has_one
+        if assoc.options[:through]
+          through_assoc = User.reflect_on_association(assoc.options[:through])
+          count +=
+            through_assoc
+              .klass
+              .where(through_assoc.foreign_key => user.id)
+              .count if through_assoc
+        else
+          fk = assoc.foreign_key.to_s
+          count += assoc.klass.where(fk => user.id).count if assoc
+            .klass
+            .column_names
+            .include?(fk)
+        end
+      when :has_and_belongs_to_many
+        join_table = assoc.join_table
+        fk = assoc.foreign_key.to_s
+        count +=
+          ActiveRecord::Base
+            .connection
+            .select_value(
+              "SELECT COUNT(*) FROM #{join_table} WHERE #{fk} = #{user.id}"
+            )
+            .to_i
+      end
+    end
+    count
   end
 end
