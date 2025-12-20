@@ -31,8 +31,6 @@ namespace :users do
     duplicates.each do |duplicate|
       raise 'dude what' if duplicate.id == primary.id
       ActiveRecord::Base.transaction { merge_record(primary, duplicate) }
-    rescue StandardError
-      binding.pry
     end
   end
 
@@ -68,27 +66,25 @@ namespace :users do
 
   def merge_has_many_association(primary, duplicated, assoc)
     if assoc.options[:through]
+      # For repositories
       merge_through_association(primary, duplicated, assoc)
     else
       assoc
         .klass # Get model class and run a query to find duplicate
         .where(assoc.foreign_key => duplicated.id)
-        .find_each do |foreign_record|
+        .each do |foreign_record|
           # update in a map to get validations to run
           foreign_record.update!(assoc.foreign_key => primary.id)
-        rescue ActiveRecord::RecordInvalid => e
+        rescue StandardError => e
           # At the time of writing this, there's only one space you can sign a
           # sheet for. Assuming you've signed it we can discard the second copy.
           if assoc.name == :walk_in_safety_sheets
             foreign_record.destroy
           else
             binding.pry
-            raise e
           end
         end
     end
-  rescue StandardError => e
-    binding.pry
   end
 
   def merge_through_association(primary, duplicated, assoc)
@@ -99,7 +95,7 @@ namespace :users do
     through_assoc
       .klass
       .where(through_assoc.foreign_key => duplicated.id)
-      .find_each do |foreign_record|
+      .each do |foreign_record|
         # Check if the join record itself could be discarded too. Rather unlikely
         # but I want to find out
         record_attrs =

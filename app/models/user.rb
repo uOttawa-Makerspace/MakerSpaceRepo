@@ -16,7 +16,7 @@ class User < ApplicationRecord
            foreign_key: 'demotion_staff_id',
            dependent: :destroy
   has_many :lab_sessions, dependent: :destroy
-  has_and_belongs_to_many :training_sessions, class_name: 'TrainingSession', through: :user_training_sessions
+  has_many :training_sessions, through: :training_sessions_users # join table points to participants
   accepts_nested_attributes_for :repositories
   has_many :project_proposals
   has_many :project_joins, dependent: :destroy
@@ -24,7 +24,7 @@ class User < ApplicationRecord
   has_many :volunteer_hours
   has_many :volunteer_tasks
   has_many :volunteer_task_joins
-  has_many :training_sessions, class_name: 'TrainingSession'
+  has_many :training_sessions # Direct, points to trainer
   has_many :announcements
   has_many :questions
   has_many :exams
