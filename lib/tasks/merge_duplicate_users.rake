@@ -19,6 +19,7 @@ namespace :users do
     duplicated_emails = email_tally.keys
 
     User
+      .unscope(where: :deleted)
       .where('lower(email) in (?)', duplicated_emails)
       .pluck(:username, :email, :created_at)
       .sort_by(&:last)
@@ -32,15 +33,27 @@ namespace :users do
   private
 
   def email_tally
-    User.all.pluck(:email).map(&:downcase).sort.tally.filter { |k, v| v > 1 }
+    User
+      .all
+      .unscope(where: :deleted)
+      .pluck(:email)
+      .map(&:downcase)
+      .sort
+      .tally
+      .filter { |k, v| v > 1 }
   end
 
   def merge_duplicated_user(email)
-    # FIXME: does the heuristic actually work???
     users =
       User
         .where('lower(email) like ?', email)
+        .unscope(where: :deleted)
         .sort_by { |u| count_associations(u) }
+    if users.count == 1
+      binding.pry
+      # FIXME: There are two deleted users, what's up with that?
+      raise "Duplicated records were not found again for email #{email}. Probably a deleted user exists?"
+    end
     puts "#{email} had #{users.count} records"
     # Prefer staff roles
     primary = users.find(&:staff?) || users.last # or most associations
@@ -57,7 +70,6 @@ namespace :users do
     # User.reflect_on_all_associations.map(&:macro).uniq
     # We're going to hit all possible assocs, need to make sure there's a record to update
     User.reflect_on_all_associations.each do |assoc|
-      puts "Processing #{assoc.name}: :#{assoc.macro}"
       case assoc.macro
       when :has_many
         merge_has_many_association(primary, duplicate, assoc)
@@ -74,9 +86,6 @@ namespace :users do
     end
 
     duplicate.destroy!
-  rescue ActiveRecord::InvalidForeignKey => e
-    binding.pry
-    raise e
   end
 
   def merge_has_many_association(primary, duplicated, assoc)
@@ -95,13 +104,14 @@ namespace :users do
           end
           # update in a map to get validations to run
           foreign_record.update!(assoc.foreign_key => primary.id)
+          puts "\tUpdating has_many association #{assoc.name}"
         rescue ActiveRecord::RecordInvalid => e
           # At the time of writing this, there's only one space you can sign a
           # sheet for. Assuming you've signed it we can discard the second copy.
           if assoc.name == :walk_in_safety_sheets
+            puts "\tRecord already has a safety sheet, discarding..."
             foreign_record.destroy
           else
-            binding.pry
             raise e
           end
         end
@@ -133,11 +143,13 @@ namespace :users do
             .where(record_attrs)
 
         if other_records.exists?
+          puts "\tRecord already has through association #{assoc.name}, discarding..."
           # No need to move this over, delete
           foreign_record.destroy
         else
+          puts "\tUpdating has_many through assocation #{assoc.name}"
           # Move over this record to point to primary
-          foreign_record.update(through_assoc.foreign_key => primary.id)
+          foreign_record.update!(through_assoc.foreign_key => primary.id)
         end
       end
   end
