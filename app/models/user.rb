@@ -57,6 +57,8 @@ class User < ApplicationRecord
   has_many :space_manager_joins, dependent: :destroy
   has_many :supervised_spaces, through: :space_manager_joins, source: :space
   has_many :staff_spaces, dependent: :destroy
+  has_many :user_booking_approvals, inverse_of: :staff
+  has_many :user_booking_approvals
   has_many :spaces, through: :staff_spaces
   has_many :printer_issues, inverse_of: 'reporter'  # Don't delete issues when a user is deleted
   has_many :locker_rentals, foreign_key: 'rented_by'
