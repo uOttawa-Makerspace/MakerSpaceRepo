@@ -9,13 +9,20 @@ namespace :users do
   task :merge_duplicates, [] => :environment do
     duplicated_emails = email_tally.keys
 
-    puts "#{duplicated_emails.count} duplicated emails found"
+    puts "#{duplicated_emails.count} duplicated emails found."
 
-    duplicated_emails.each { |email| merge_duplicated_user(email) }
+    duplicated_emails.each { |email| merge_duplicated_email(email) }
+
+    duplicated_usernames = username_tally.keys
+    puts "After email merge, there are #{duplicated_usernames.count} usernames duplicated."
+
+    duplicated_usernames.each do |username|
+      rename_duplicated_username(username)
+    end
   end
 
   desc 'Count users duplicated by email'
-  task :count_duplicates, [] => :environment do
+  task :count_duplicated_emails, [] => :environment do
     duplicated_emails = email_tally.keys
 
     User
@@ -28,6 +35,22 @@ namespace :users do
       end
 
     puts "There are #{duplicated_emails.count} duplicated emails in total"
+  end
+
+  task :count_duplicated_usernames, [] => :environment do
+    duplicated = username_tally.keys
+    duplicated.each do |username|
+      User
+        .unscope(where: :deleted)
+        .where('lower(username) ilike ?', username)
+        .pluck(:username, :email, :created_at)
+        .sort_by(&:last)
+        .each do |username, email, created_at|
+          puts "#{username}, #{email}, #{created_at.to_fs(:long)}"
+        end
+    end
+
+    puts "There are #{duplicated.count} duplicated usernames in total"
   end
 
   private
@@ -43,15 +66,50 @@ namespace :users do
       .filter { |k, v| v > 1 }
   end
 
-  def merge_duplicated_user(email)
+  def username_tally
+    User
+      .all
+      .unscope(where: :deleted)
+      .pluck(:username)
+      .map(&:downcase)
+      .sort
+      .tally
+      .filter { |k, v| v > 1 }
+  end
+
+  def rename_duplicated_username(username)
+    users = User
+              .unscope(where: :deleted)
+              .where('lower(username) ilike ?', username)
+    
+    # Sanity check
+    if users.count == 1
+      raise "No duplicate records found for username #{username}. probably a deleted user?"
+    end
+
+    # Check if there's one and only one user deleted
+    if users.where(deleted: false) == 1
+      # the rest are deleted users, change those instead
+      users = users.where(deleted: true)
+    end
+    
+    suffixes = (111..999).to_a
+    users
+      .zip(suffixes.sample(users.count))
+      .each do |user, suffix|
+        user.username = user.username + suffix.to_s
+        puts "#{user.username_was} => #{user.username}"
+        user.save!
+      end
+  end
+
+  def merge_duplicated_email(email)
     users =
       User
         .where('lower(email) like ?', email)
         .unscope(where: :deleted)
         .sort_by { |u| count_associations(u) }
     if users.count == 1
-      binding.pry
-      # FIXME: There are two deleted users, what's up with that?
       raise "Duplicated records were not found again for email #{email}. Probably a deleted user exists?"
     end
     puts "#{email} had #{users.count} records"
