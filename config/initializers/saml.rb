@@ -24,10 +24,17 @@ SamlIdp.configure do |config|
     "wiki-server.makerepo.com" => {
       metadata_url: "https://makerepo.com/saml/wiki_metadata",
       response_hosts: %w[wiki-server.makerepo.com localhost]
+    # principal is passed in when `encode_response` is called
+    },
+    
+    "https://wikijs.makerepo.com" => {
+      metadata_url: "https://wikijs.makerepo.com/login/saml/metadata",
+      response_hosts: %w[wikijs.makerepo.com],
+      # Wiki.js callback URL
+      acs_url: "https://wikijs.makerepo.com/login/saml/callback"
     }
   }
 
-  # principal is passed in when `encode_response` is called
   config.name_id.formats = {
     persistent: ->(principal) { principal.id },
     transient: ->(principal) { principal.username },
@@ -39,10 +46,18 @@ SamlIdp.configure do |config|
     email_address: {
       getter: ->(principal) { principal.email }
     },
+    # Add 'email' as Wiki.js often looks for this specific attribute name
+    email: {
+      getter: ->(principal) { principal.email }
+    },
     username: {
       getter: ->(principal) { principal.username }
     },
     name: {
+      getter: ->(principal) { principal.name }
+    },
+    # Add displayName for Wiki.js compatibility
+    displayName: {
       getter: ->(principal) { principal.name }
     },
     is_staff: {
