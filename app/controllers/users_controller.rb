@@ -353,14 +353,12 @@ class UsersController < SessionsController
   def show
     @repo_user =
       if @user.admin? || @user.staff?
-        User.unscoped.find_by username: params[:username]
+        User.unscoped.find_by_username params[:username]
       else
-        User.find_by username: params[:username]
+        User.find_by_username params[:username]
       end
 
     raise ActiveRecord::RecordNotFound if @repo_user.nil?
-
-    #redirect_to root_path, alert: "User not found."
 
     @programs = @repo_user.programs.pluck(:program_type)
     begin

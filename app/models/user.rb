@@ -211,6 +211,11 @@ class User < ApplicationRecord
             if: :student?
 
   default_scope { where(deleted: false) }
+
+  def self.find_by_username(username)
+      find_by('lower(username) = ?', username.downcase)
+  end
+
   scope :no_waiver_users, -> { where('read_and_accepted_waiver_form = false') }
   scope :between_dates_picked,
         ->(start_date, end_date) {
@@ -336,7 +341,7 @@ class User < ApplicationRecord
 
   def self.username_or_email(username_email)
     User
-      .where(username: username_email)
+      .where('lower(username) = ?', username_email.downcase)
       .or(User.where('lower(email) = ?', username_email.downcase))
       .first
   end

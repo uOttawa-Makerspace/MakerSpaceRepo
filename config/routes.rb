@@ -699,11 +699,7 @@ Rails.application.routes.draw do
   resources :repositories,
             path: "/:user_username",
             param: :id,
-            except: :index,
-            constraints:
-              lambda { |request|
-                User.find_by(username: request.params[:user_username]).present?
-              } do
+            except: :index do
     post "add_like", on: :member
     collection do
       get ":id/download_files",
