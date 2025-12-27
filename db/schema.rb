@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_11_09_204236) do
+ActiveRecord::Schema[7.2].define(version: 2025_12_19_210239) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_trgm"
   enable_extension "plpgsql"
@@ -1425,6 +1425,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_11_09_204236) do
     t.datetime "locked_until", precision: nil
     t.integer "auth_attempts", default: 0
     t.string "student_id"
+    t.index "lower((email)::text)", name: "index_users_on_lowercase_email", unique: true
+    t.index "lower((username)::text)", name: "index_users_on_lowercase_username", unique: true
     t.index ["name"], name: "index_users_on_name", opclass: :gin_trgm_ops, using: :gin
     t.index ["space_id"], name: "index_users_on_space_id"
     t.index ["username"], name: "index_users_on_username", opclass: :gin_trgm_ops, using: :gin
