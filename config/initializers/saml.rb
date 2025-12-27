@@ -27,11 +27,11 @@ SamlIdp.configure do |config|
     # principal is passed in when `encode_response` is called
     },
     
-    "https://wikijs.makerepo.com" => {
+    "wikijs.makerepo.com" => {
       metadata_url: "https://wikijs.makerepo.com/login/saml/metadata",
       response_hosts: %w[wikijs.makerepo.com],
       # Wiki.js callback URL
-      acs_url: "https://wikijs.makerepo.com/login/saml/callback"
+      acs_url: "https://wikijs.makerepo.com/login/258365f7-0b23-403c-817a-5d1ca2be771f/callback"
     }
   }
 
