@@ -25,10 +25,10 @@ RSpec.describe "SamlConfig", type: :configuration do
         metadata_url: "https://makerepo.com/saml/wiki_metadata",
         response_hosts: %w[wiki-server.makerepo.com localhost]
       },
-      "https://wikijs.makerepo.com" => {
+      "wikijs.makerepo.com" => {
         metadata_url: "https://wikijs.makerepo.com/login/saml/metadata",
         response_hosts: %w[wikijs.makerepo.com],
-        acs_url: "https://wikijs.makerepo.com/login/saml/callback"
+        acs_url: "https://wikijs.makerepo.com/login/258365f7-0b23-403c-817a-5d1ca2be771f/callback"
       }
     }
 
