@@ -20,6 +20,15 @@ RSpec.describe "SamlConfig", type: :configuration do
       "print.makerepo.com" => {
         metadata_url: "https://print.makerepo.com/saml/metadata",
         response_hosts: %w[print.makerepo.com localhost]
+      },
+      "wiki-server.makerepo.com" => {
+        metadata_url: "https://makerepo.com/saml/wiki_metadata",
+        response_hosts: %w[wiki-server.makerepo.com localhost]
+      },
+      "https://wikijs.makerepo.com" => {
+        metadata_url: "https://wikijs.makerepo.com/login/saml/metadata",
+        response_hosts: %w[wikijs.makerepo.com],
+        acs_url: "https://wikijs.makerepo.com/login/saml/callback"
       }
     }
 
@@ -55,9 +64,11 @@ RSpec.describe "SamlConfig", type: :configuration do
     principal = FactoryBot.create(:user)
 
     attributes = {
-      username: principal.username,
       email_address: principal.email,
+      email: principal.email,
+      username: principal.username,
       name: principal.name,
+      displayName: principal.name,
       is_staff: principal.staff?,
       is_admin: principal.admin?,
       is_volunteer: principal.volunteer?,
