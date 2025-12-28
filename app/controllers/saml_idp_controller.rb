@@ -48,13 +48,6 @@ class SamlIdpController < ApplicationController
     if @current_user.nil?
       render template: "saml/login"
     else
-      # Debug logging - remove after fixing
-      Rails.logger.info "=== SAML Debug ==="
-      Rails.logger.info "Issuer: #{saml_request&.issuer.inspect}"
-      Rails.logger.info "ACS URL: #{saml_acs_url.inspect}"
-      Rails.logger.info "User: #{@current_user.email}"
-      Rails.logger.info "=================="
-
       @saml_response = encode_response @current_user
       render template: "saml/saml_post"
     end
