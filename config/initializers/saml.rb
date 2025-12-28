@@ -3,6 +3,9 @@ SamlIdp.configure do |config|
   config.x509_certificate = IO.read(File.join(Rails.root, "certs/saml.crt"))
   config.secret_key = IO.read(File.join(Rails.root, "certs/saml.key"))
 
+  config.base_saml_location = "https://makerepo.com/saml"
+  config.entity_id = "https://makerepo.com/saml/metadata"
+
   service_providers = {
     "wiki.makerepo.com" => {
       metadata_url:
