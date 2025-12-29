@@ -46,7 +46,7 @@ SamlIdp.configure do |config|
   config.attributes = {
     # Standard SAML/WS-Federation claim URIs
     "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress" => {
-      getter: ->(principal) { if principal.admin? principal.email else nil end}
+      getter: ->(principal) { if principal.admin? then principal.email else nil end}
     },
     "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name" => {
       getter: ->(principal) { principal.name }
