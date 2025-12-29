@@ -531,6 +531,17 @@ class User < ApplicationRecord
     end
   end
 
+  def send_password_reset
+    user_hash = Rails.application.message_verifier(:user).generate(id)
+    expiry_date_hash =
+      Rails.application.message_verifier(:user).generate(1.day.from_now)
+    MsrMailer.forgot_password(
+      email,
+      user_hash,
+      expiry_date_hash
+    ).deliver_now
+  end
+
   def active_membership
     memberships.active.first
   end

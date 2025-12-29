@@ -97,7 +97,7 @@ class SessionsController < ApplicationController
             )
         else
           error_message =
-            "Could not find user with email or username #{params[:username_email]}"
+            "Could not find user with email or username: #{params[:username_email]}"
         end
         format.html do
           flash[:alert] = error_message
