@@ -345,10 +345,7 @@ class MsrMailer < ApplicationMailer
       reply_to: "makerspace@uottawa.ca",
       bcc: "uottawa.makerepo@gmail.com",
       subject: "Your 3D print on #{printer.number} has failed"
-    ) do |format|
-      format.html { render layout: "msr_mailer" } # special case, use consistent layout
-      #format.text # We don't send text mail, should strip tags do that sometime
-    end
+    )
   end
 
   # Not in use currently

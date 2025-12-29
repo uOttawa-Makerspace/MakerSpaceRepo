@@ -1,10 +1,16 @@
-<h1 style="font: 400 1.5em 'Roboto', sans-serif; color: #555;">Your monthly reports are ready!</h1>
+<% content_for :preheader do %>
+  MakerRepo - Training Reports Ready
+<% end %>
 
-<p style="font: 400 1.1em 'Roboto', sans-serif; color: #555;">
-  The training reports for the past month are attached.
-</p>
-
-<p style="font: 400 1.1em 'Roboto', sans-serif; color: #555;">
-  Cheers,<br>
+<% content_for :team_name do %>
   The MakerRepo Team
+<% end %>
+
+<% content_for :why_received do %>
+  You received this email from MakerRepo.
+<% end %>
+
+<h1 style="font-family: sans-serif; font-size: 24px; font-weight: 400; margin: 0; margin-bottom: 15px;">Your monthly reports are ready!</h1>
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
+  The training reports for the past month are attached.
 </p>

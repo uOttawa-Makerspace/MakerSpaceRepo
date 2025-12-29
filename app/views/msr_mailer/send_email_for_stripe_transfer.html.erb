@@ -1,13 +1,22 @@
-<p>MAKERSPACE(Makerstore) TRANSFER:</p>
-<p>
+<% content_for :preheader do %>
+  Makerepo - Stripe Transfer Notification
+<% end %>
+
+<% content_for :team_name do %>
+  Stripe
+<% end %>
+
+<% content_for :why_received do %>
+  You have received this email because a Stripe transfer was made from <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a>.
+<% end %>
+
+<p style="font-family: sans-serif; font-size: 14px; font-weight: bold; margin: 0; margin-bottom: 15px;">MAKERSPACE(Makerstore) TRANSFER:</p>
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
   Here is the information for the latest transfer: <br>
   TransferID: <%= @transfer_id %> <br>
   Date: <%= @date %> <br>
   Amount: $<%= @amount %> <br>
   Bank: <%= @bank %> <br>
-  Routing Number: <%= @routing_number %>< <br>
+  Routing Number: <%= @routing_number %> <br>
   Transfer to Faculty of Engineering(2016): <%= @faculty_of_eng_number %>
-<p>
-  --<br>
-  Stripe
 </p>
