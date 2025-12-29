@@ -65,7 +65,7 @@ RSpec.describe "SamlConfig", type: :configuration do
 
     attributes = {
       email_address: principal.email,
-      email: principal.email,
+      emailAddress: principal.email,
       username: principal.username,
       name: principal.name,
       displayName: principal.name,

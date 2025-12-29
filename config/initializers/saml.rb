@@ -47,8 +47,8 @@ SamlIdp.configure do |config|
     email_address: {
       getter: ->(principal) { principal.email }
     },
-    # Add 'email' as Wiki.js often looks for this specific attribute name
-    email: {
+    # Add 'emailAddress' as Wiki.js often looks for this specific attribute name
+    emailAddress: {
       getter: ->(principal) { principal.email }
     },
     username: {
