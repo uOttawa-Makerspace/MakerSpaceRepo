@@ -44,6 +44,16 @@ SamlIdp.configure do |config|
 
   # extra attributes sent along with SAML response
   config.attributes = {
+    # Standard SAML/WS-Federation claim URIs
+    "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress" => {
+      getter: ->(principal) { principal.email }
+    },
+    "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name" => {
+      getter: ->(principal) { principal.name }
+    },
+    "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname" => {
+      getter: ->(principal) { principal.name }
+    },
     email_address: {
       getter: ->(principal) { principal.email }
     },
