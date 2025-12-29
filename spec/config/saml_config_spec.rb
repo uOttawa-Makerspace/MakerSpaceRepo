@@ -85,7 +85,15 @@ RSpec.describe "SamlConfig", type: :configuration do
 
     SamlIdp.config.attributes.each do |key, attribute|
       value = attribute[:getter].call(principal)
-      expected_value = attributes[key] || attributes[key.to_sym] || attributes[key.to_s]
+      lookup_key = if attributes.key?(key)
+                    key
+                  elsif attributes.key?(key.to_sym)
+                    key.to_sym
+                  elsif attributes.key?(key.to_s)
+                    key.to_s
+                  end
+      
+      expected_value = attributes[lookup_key]
 
       expect(value).to eq(expected_value)
     end
