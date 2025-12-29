@@ -1,4 +1,15 @@
-<% provide :why_received, 'You have received this email because you have requested a locker' %>
-Hello <%= @user.username %>,
-<br />
-Your request has been completed, and you have been assigned a locker. Your locker is <b><%= @locker_rental.locker.specifier %></b> and is valid until <b><%= @locker_rental.owned_until.to_date %></b>.
+<% content_for :preheader do %>
+  MakerRepo - Your Locker Has Been Assigned
+<% end %>
+
+<% content_for :why_received do %>
+  You have received this email because you have requested a locker.
+<% end %>
+
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello <%= @user.username %>,</p>
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
+  Your request has been completed, and you have been assigned a locker. Your locker is <b><%= @locker_rental.locker.specifier %></b>.
+  <% if @locker_rental.owned_until.present? %>
+    <br>This locker is valid until <b><%= @locker_rental.owned_until.to_date %></b>.
+  <% end %>
+</p>
