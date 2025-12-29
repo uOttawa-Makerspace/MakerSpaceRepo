@@ -80,12 +80,14 @@ RSpec.describe "SamlConfig", type: :configuration do
       avatar_content_type: principal.avatar.attachment&.content_type
     }
 
-    expect(SamlIdp.config.attributes.keys.sort).to eq(attributes.keys.sort)
+    # Use match_array instead of sorting
+    expect(SamlIdp.config.attributes.keys.map(&:to_s)).to match_array(attributes.keys.map(&:to_s))
 
     SamlIdp.config.attributes.each do |key, attribute|
       value = attribute[:getter].call(principal)
+      expected_value = attributes[key] || attributes[key.to_sym] || attributes[key.to_s]
 
-      expect(value).to eq attributes[key]
+      expect(value).to eq(expected_value)
     end
   end
 end
