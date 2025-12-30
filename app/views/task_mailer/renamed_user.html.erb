@@ -1,0 +1,21 @@
+<% content_for :preheader do %>
+    Makerepo - Username changed
+<% end %>
+
+<% content_for :team_name do %>
+    The MakerRepo Team
+<% end %>
+
+<% content_for :why_received do %>
+    You have received this email because you have an account on <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a>.
+<% end %>
+
+<p>Hello,</p>
+<p>Due to database maintenance reasons, we have changed your account username.</p>
+<p>Your username was changed from <b><%= params[:previous_username] %></b> to <b><%= params[:new_username] %></b>.</p>
+<p>
+    You should use your new username to login to your account.
+    You can also login using your email as well.
+    Your password has not been changed.
+    If you would like to change your username or if you have another account you would like us to merge, please contact us for assistance or visit one of the CEED spaces at STEM.
+</p>

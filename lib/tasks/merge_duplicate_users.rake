@@ -11,14 +11,56 @@ namespace :users do
 
     puts "#{duplicated_emails.count} duplicated emails found."
 
-    duplicated_emails.each { |email| merge_duplicated_email(email) }
+    merged_users = []
+    duplicated_emails.each do |email|
+      username = merge_duplicated_email(email)
+      merged_users << { username: username, email: email }
+    end
+
+    # Writes this to root by default
+    File.write('merged_emails_list.json', merged_users.to_json)
+    puts "Wrote merged_emails_list.json to #{Dir.pwd}"
 
     duplicated_usernames = username_tally.keys
     puts "After email merge, there are #{duplicated_usernames.count} usernames duplicated."
 
+    renamed_users = []
     duplicated_usernames.each do |username|
-      rename_duplicated_username(username)
+      renamed << rename_duplicated_username(username)
     end
+
+    File.write('renamed_username_list.json', renamed_users.to_json)
+    puts "renamed_username_list.json written to #{Dir.pwd}"
+  end
+
+  task :notify_modified_users, [] => :environment do
+    # I just like json, could've been csv
+    renamed_users = JSON.parse(File.read('renamed_username_list.json'))
+    renamed_users
+      .take(4)
+      .each do |user|
+        TaskMailer
+          .with(
+            email: user['email'],
+            previous_username: user['previous_username'],
+            new_username: user['new_username']
+          )
+          .renamed_user
+          .deliver_now
+      rescue
+        binding.pry
+      end
+    puts 'Sent out emails for renamed usernames'
+
+    merged_emails = JSON.parse(File.read('merged_emails_list.json'))
+    merged_emails
+      .take(4)
+      .each do |user|
+        TaskMailer
+          .with(email: user['email'], username: user['username'])
+          .merged_user
+          .deliver_now
+      end
   end
 
   desc 'Count users duplicated by email'
@@ -78,10 +120,9 @@ namespace :users do
   end
 
   def rename_duplicated_username(username)
-    users = User
-              .unscope(where: :deleted)
-              .where('lower(username) ilike ?', username)
-    
+    users =
+      User.unscope(where: :deleted).where('lower(username) ilike ?', username)
+
     # Sanity check
     if users.count == 1
       raise "No duplicate records found for username #{username}. probably a deleted user?"
@@ -92,15 +133,24 @@ namespace :users do
       # the rest are deleted users, change those instead
       users = users.where(deleted: true)
     end
-    
+
+    changelog = {}
+
     suffixes = (111..999).to_a
     users
       .zip(suffixes.sample(users.count))
       .each do |user, suffix|
         user.username = user.username + suffix.to_s
         puts "#{user.username_was} => #{user.username}"
+        changelog = {
+          email: user.email,
+          previous_username: user.username_was,
+          new_username: user.username
+        }
         user.save!
       end
+
+    changelog
   end
 
   def merge_duplicated_email(email)
@@ -120,6 +170,9 @@ namespace :users do
     duplicates.each do |duplicate|
       ActiveRecord::Base.transaction { merge_record(primary, duplicate) }
     end
+
+    # Return the username left at the end
+    primary.username
   end
 
   def merge_record(primary, duplicate)
