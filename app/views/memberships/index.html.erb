@@ -76,8 +76,7 @@
       <tbody>
         <tr>
           <th scope="row"><%= t('memberships.index.row2') %></th>
-          <td>$<%= @membership_day.internal_price %>0</td>
-          <td>$<%= @membership_sem.internal_price %>0</td>
+          <td colspan="2"><%= t('memberships.index.row_faculty') %></td>
         </tr>
         <tr>
           <th scope="row"><%= t('memberships.index.row4') %></th>
@@ -95,11 +94,11 @@
 
     <div class="text-center" style="margin-top: 5rem; margin-bottom: 1rem;">
       <h3 class="fs-2 text-primary fw-bold text-uppercase"><%= t('memberships.index.more_info') %></h3>
-      <a class='fs-4' href="https://www.uottawa.ca/faculty-engineering/centre-entrepreneurship-engineering-design/facilities/richard-labbe-makerspace"><%= t('memberships.index.makerspace') %></a>
+      <a class='fs-4' href=<%= t('memberships.index.link.makerspace') %>><%= t('memberships.index.makerspace') %></a>
       <br>
-      <a class='fs-4' href="https://www.uottawa.ca/faculty-engineering/centre-entrepreneurship-engineering-design/facilities/brunsfield-centre"><%= t('memberships.index.brunsfield') %></a>
+      <a class='fs-4' href=<%= t('memberships.index.link.bruns') %>><%= t('memberships.index.brunsfield') %></a>
       <br>
-      <a class='fs-4' href="https://www.uottawa.ca/study/fees-financial-support/university-fees/ancillary-fees"><%= t('memberships.index.ancillary') %></a>
+      <a class='fs-4' href=<%= t('memberships.index.link.fees') %>><%= t('memberships.index.ancillary') %></a>
       <br>
     </div>
   </div>

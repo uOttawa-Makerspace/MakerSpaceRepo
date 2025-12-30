@@ -1,3 +1,6 @@
+# frozen_string_literal: true
+
+# Preview all emails at http://localhost:3000/rails/mailers/job_order_mailer
 class JobOrderMailerPreview < ActionMailer::Preview
   def send_job_submitted
     job_order = JobOrder.last || JobOrder.create!(user: User.last, expedited: true)

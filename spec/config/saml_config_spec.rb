@@ -20,6 +20,15 @@ RSpec.describe "SamlConfig", type: :configuration do
       "print.makerepo.com" => {
         metadata_url: "https://print.makerepo.com/saml/metadata",
         response_hosts: %w[print.makerepo.com localhost]
+      },
+      "wiki-server.makerepo.com" => {
+        metadata_url: "https://makerepo.com/saml/wiki_metadata",
+        response_hosts: %w[wiki-server.makerepo.com localhost]
+      },
+      "wikijs.makerepo.com" => {
+        metadata_url: "https://wikijs.makerepo.com/login/saml/metadata",
+        response_hosts: %w[wikijs.makerepo.com],
+        acs_url: "https://wikijs.makerepo.com/login/258365f7-0b23-403c-817a-5d1ca2be771f/callback"
       }
     }
 
@@ -55,9 +64,14 @@ RSpec.describe "SamlConfig", type: :configuration do
     principal = FactoryBot.create(:user)
 
     attributes = {
-      username: principal.username,
+      "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress" => if principal.admin? then principal.email else nil end,
+      "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name" => principal.name,
+      "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname" => principal.name,
       email_address: principal.email,
+      emailAddress: principal.email,
+      username: principal.username,
       name: principal.name,
+      displayName: principal.name,
       is_staff: principal.staff?,
       is_admin: principal.admin?,
       is_volunteer: principal.volunteer?,
@@ -66,12 +80,22 @@ RSpec.describe "SamlConfig", type: :configuration do
       avatar_content_type: principal.avatar.attachment&.content_type
     }
 
-    expect(SamlIdp.config.attributes.keys.sort).to eq(attributes.keys.sort)
+    # Use match_array instead of sorting
+    expect(SamlIdp.config.attributes.keys.map(&:to_s)).to match_array(attributes.keys.map(&:to_s))
 
     SamlIdp.config.attributes.each do |key, attribute|
       value = attribute[:getter].call(principal)
+      lookup_key = if attributes.key?(key)
+                    key
+                  elsif attributes.key?(key.to_sym)
+                    key.to_sym
+                  elsif attributes.key?(key.to_s)
+                    key.to_s
+                  end
+      
+      expected_value = attributes[lookup_key]
 
-      expect(value).to eq attributes[key]
+      expect(value).to eq(expected_value)
     end
   end
 end
