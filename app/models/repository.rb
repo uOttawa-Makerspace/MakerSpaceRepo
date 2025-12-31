@@ -5,7 +5,8 @@ class Repository < ApplicationRecord
   require "bcrypt"
 
   # There's two ways to reach a user, one is the user that created the repo
-  belongs_to :user
+  # NOTE: I have a suspicion this might be unused.
+  belongs_to :owner, class_name: 'User', foreign_key: 'user_id'
   # And the rest of the members added to the repo
   has_and_belongs_to_many :users
   belongs_to :project_proposal, optional: true

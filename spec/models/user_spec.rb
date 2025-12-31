@@ -85,12 +85,12 @@ RSpec.describe User, type: :model do
       it { should allow_value("johndoe").for(:username) }
       it { should validate_length_of(:username).is_at_most(20) }
       it { should validate_presence_of(:username) }
-      it { should validate_uniqueness_of(:username) }
+      it { should validate_uniqueness_of(:username).ignoring_case_sensitivity }
     end
 
     context "email" do
       it { should validate_presence_of(:email) }
-      it { should validate_uniqueness_of(:email) }
+      it { should validate_uniqueness_of(:email).ignoring_case_sensitivity }
     end
 
     context "how_heard_about_us" do
@@ -173,14 +173,15 @@ RSpec.describe User, type: :model do
       create(:user, :admin)
       create(:user, :staff)
       create(:user, :volunteer_with_volunteer_program)
-      4.times { create(:user, :regular_user, created_at: 1.month.ago) }
+      # Timezone convertion pushes this to next month around new years
+      4.times { create(:user, :regular_user, created_at: 2.months.ago) }
       5.times { create(:user, :student) }
       2.times { create(:user, :regular_user, created_at: 3.years.ago) }
     end
 
     context "#created_at_month" do
       it "should return 12" do
-        expect(User.created_at_month(Date.today.month).count).to eq(12)
+        expect(User.created_at_month(Time.zone.today.month).count).to eq(12)
       end
     end
 
@@ -218,7 +219,7 @@ RSpec.describe User, type: :model do
 
     context "#between_dates_picked" do
       it "should return one" do
-        start_date = 2.months.ago
+        start_date = 3.months.ago
         end_date = 1.day.ago
         expect(User.between_dates_picked(start_date, end_date).count).to eq(4)
       end

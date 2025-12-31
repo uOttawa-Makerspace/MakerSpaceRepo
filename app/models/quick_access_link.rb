@@ -16,6 +16,8 @@ class QuickAccessLink < ApplicationRecord
     details = Rails.application.routes.recognize_path(path, method: :get)
     errors.add(:path, "cannot point to a user") if details[:controller] == 'users' && details[:action] == 'show'
   rescue ActionController::RoutingError
+    # This error depends on the user route constraint being present, because any
+    # top-level route can be a username.
     errors.add(:path, "must be a valid path")
   end
 end

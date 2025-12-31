@@ -95,10 +95,8 @@ group :development do
   gem "web-console"
   gem "ruby-prof" # profiling
 
-  gem 'ruby-lsp-rails', require: false
-  gem "ruby-lsp-rspec", require: false
-  gem 'ruby-lsp-rubyfmt', require: false
-
+  gem 'solargraph', require: false
+  gem 'solargraph-rails', require: false
 
   # ssh deploymentque
   gem "bcrypt_pbkdf", "~> 1.0"
@@ -108,11 +106,11 @@ end
 group :test do
   gem "capybara"
   gem "database_cleaner-active_record"
-  gem "launchy", "~> 2.2"
+  gem "launchy", "~> 3.0"
   gem "rails-controller-testing"
   gem "rspec-retry"
-  gem "selenium-webdriver", "~> 3.142.7"
-  gem "shoulda-matchers", "~> 4.0"
+  gem "selenium-webdriver", "~> 4.39.0"
+  gem "shoulda-matchers", "~> 7.0"
 end
 
 gem "solid_queue", "~> 1.2"

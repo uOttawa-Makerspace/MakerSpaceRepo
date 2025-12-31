@@ -6,7 +6,9 @@ class TrainingSession < ApplicationRecord
   belongs_to :space, optional: true
   has_many :certifications, dependent: :destroy
   has_many :exams, dependent: :destroy
-  has_many :users, through: :training_sessions_users# , uniq: true
+  # This used to be a has_many
+  #has_many :users, through: :training_sessions_users, uniq: true
+  has_and_belongs_to_many :users
   belongs_to :course_name, optional: true
 
   validates :training, presence: { message: "A training subject is required" }

@@ -26,7 +26,7 @@ namespace :users do
 
     renamed_users = []
     duplicated_usernames.each do |username|
-      renamed << rename_duplicated_username(username)
+      renamed_users << rename_duplicated_username(username)
     end
 
     File.write('renamed_username_list.json', renamed_users.to_json)
