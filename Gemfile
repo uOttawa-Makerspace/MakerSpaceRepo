@@ -71,7 +71,7 @@ gem "solid_cable"
 gem "mission_control-jobs"
 
 group :development, :test do
-  gem "puma"
+  gem "puma", '~> 7.1'
   gem "byebug", platform: :mri
   gem "factory_bot_rails"
   gem "faker", "~> 3.1"
@@ -86,11 +86,11 @@ end
 group :development do
   # Capistrano deployment stuff
   gem "capistrano", "~> 3.10", require: false
-  gem "capistrano-bundler"
-  gem "capistrano-maintenance", "~> 1.2", require: false
-  gem "capistrano-passenger", ">= 0.2.1"
-  gem "capistrano-rails", "~> 1.6", require: false
-  gem "capistrano-rbenv", "~> 2.1"
+  gem "capistrano-bundler", require: false
+  gem "capistrano-maintenance", require: false
+  gem "capistrano3-puma", require: false
+  gem "capistrano-rails", require: false
+  gem "capistrano-rbenv", require: false
   gem "erb_lint", require: false
   gem "letter_opener" # Open emails in development
   gem "rubocop-rails"
