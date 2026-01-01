@@ -37,7 +37,7 @@ namespace :users do
     # I just like json, could've been csv
     renamed_users = JSON.parse(File.read('renamed_username_list.json'))
     renamed_users
-      .take(4)
+      # .take(4)
       .each do |user|
         TaskMailer
           .with(
@@ -46,20 +46,18 @@ namespace :users do
             new_username: user['new_username']
           )
           .renamed_user
-          .deliver_now
-      rescue
-        binding.pry
+          .deliver_later
       end
     puts 'Sent out emails for renamed usernames'
 
     merged_emails = JSON.parse(File.read('merged_emails_list.json'))
     merged_emails
-      .take(4)
+      # .take(4)
       .each do |user|
         TaskMailer
           .with(email: user['email'], username: user['username'])
           .merged_user
-          .deliver_now
+          .deliver_later
       end
   end
 
