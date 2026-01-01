@@ -4,32 +4,24 @@ class BadgesController < DevelopmentProgramsController
   before_action :set_orders, only: [:admin]
   skip_before_action :grant_access, only: [:show]
 
-
   def index
     @order_items =
       @user.order_items.completed_order.in_progress.joins(
         proficient_project: :badge_template
       )
-    @badge_data = if @user.admin? || @user.staff?
-      Certification
-          .includes(:training)
-          .where(training: { has_badge: true})
-          .order(user_id: :asc)
-          .paginate(page: params[:page], per_page: 20)
-          .all
-          
-    else
-      Certification
-          .includes(:training)
-          .where(training: { has_badge: true})
-          .where(user: @user)
-          .paginate(page: params[:page], per_page: 20)
-          .all
-    end
+    
+    @badge_data = fetch_badge_data(params[:search])
+    
     respond_to do |format|
       format.js
       format.html
     end
+  end
+
+  def search
+    @badge_data = fetch_badge_data(params[:search])
+    @search_term = params[:search] # Store search term for pagination
+    render partial: 'badges/badge_list', layout: false
   end
 
   def show
@@ -47,11 +39,40 @@ class BadgesController < DevelopmentProgramsController
       end
   end
 
+  private
+
+  def fetch_badge_data(search_term = nil)
+    certifications = Certification
+      .includes(:training, :user, :training_session)
+      .joins(:training, :training_session)
+      .where(trainings: { has_badge: true })
+
+    # Apply user filter if not admin/staff
+    certifications = certifications.where(user: @user) unless @user.admin? || @user.staff?
+
+    # Apply search if present
+    if search_term.present?
+      search_pattern = "%#{search_term}%"
+      certifications = certifications
+        .joins(:user)
+        .where(
+          "trainings.name_en ILIKE :search OR 
+           trainings.name_fr ILIKE :search OR 
+           users.username ILIKE :search OR 
+           users.name ILIKE :search",
+          search: search_pattern
+        )
+    end
+
+    certifications
+      .order(user_id: :asc)
+      .paginate(page: params[:page], per_page: 20)
+  end
+
   def only_admin_access
     return if current_user.admin?
-      redirect_to development_programs_path
-      flash[:alert] = "Only admin members can access this area."
-    
+    redirect_to development_programs_path
+    flash[:alert] = "Only admin members can access this area."
   end
 
   def set_orders

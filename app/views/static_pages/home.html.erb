@@ -6,7 +6,7 @@
     <%= render 'partials/announcements' %>
     <div class="row g-0">
       <!--Left column -->
-      <div class="col-xl-3  order-xl-0 order-1 offcanvas-lg offcanvas-start" id="offcanvas-shortcuts" aria-labelledby="shortcutsOffcanvasLabel">
+      <div class="col-xl-3 order-xl-0 order-1 offcanvas-xl offcanvas-start" id="offcanvas-shortcuts" aria-labelledby="shortcutsOffcanvasLabel">
         <div class="offcanvas-header pb-0">
           <h2 class="offcanvas-title" id="shortcutsOffcanvasLabel">Shortcuts</h2>
           <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#offcanvas-shortcuts" aria-label="Close"></button>
@@ -33,8 +33,11 @@
             <h2><%= t('home.general_resources.header') %></h2>
             <ul class="list-unstyled">
               <li><%= link_to t('home.general_resources.makeroom'), sub_space_booking_index_path %></li>
+              <li><%= link_to t('navbar.makerstore'), "https://makerstore.ca/" %></li>
               <li><%= link_to t('home.general_resources.job_orders'), job_orders_path %></li>
-              <li><%= link_to t('home.general_resources.locker_rentals'), locker_rentals_path %></li>
+              <% if LockerOption.lockers_enabled %>
+                  <li><%= link_to t('home.general_resources.locker_rentals'), locker_rentals_path %></li>
+              <% end %>
             </ul>
           </div>
         </div>
@@ -106,4 +109,7 @@
             <% end %>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
 </section>

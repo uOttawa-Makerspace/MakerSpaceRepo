@@ -78,11 +78,12 @@ class Event < ApplicationRecord
       end
     end
 
-    title = if event.title == event.event_type.capitalize && !event.event_assignments.empty?
-      "#{event.event_type.capitalize} for #{event.event_assignments.map { |ea| ea.user.name }.join(", ")}"
-    else 
-      event.title
-    end
+          title = if event.title == event.event_type.capitalize && !event.event_assignments.empty?
+            "#{event.event_type == 'training' ? "#{event.training.name} (#{event.course_name.name || ''} - #{event.language || ''})" : event.event_type.capitalize} for #{event.event_assignments.map do |ea|
+ ea.user.name end.join(", ")}"
+          else 
+            event.title
+          end
 
     description = event.description.to_s
     if event.event_type == 'training' && event.training_id.present?

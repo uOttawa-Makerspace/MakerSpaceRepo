@@ -81,6 +81,11 @@
     .container {
         max-width: none !important;
     }
+    
+    /* Prevent calendar scroll overflow from scrolling parent document */
+    .fc-scroller {
+        overscroll-behavior: contain;
+    }
 
     .fc-event:not(.fc-event-mirror) {
         opacity: 0;
@@ -92,5 +97,20 @@
 
     .unavailability {
         outline: 2px solid red;
+    }
+    /* Center text in all calendar events */
+    .fc-event-title,
+    .fc-event-time {
+        text-align: center;
+    }
+
+    /* Center the entire event content */
+    .fc-event-main {
+        text-align: center;
+    }
+
+    /* For list view events */
+    .fc-list-event-title {
+        text-align: center;
     }
 </style>

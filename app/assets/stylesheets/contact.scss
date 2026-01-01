@@ -1,8 +1,9 @@
-@import "lib";
 @import "./shared/variables";
 
 section#contact-us {
-  @include outer-container(60rem);
+  max-width: 60rem;
+  margin-left: auto;
+  margin-right: auto;
   background-color: #fff;
   padding: 0 5% 2rem;
 
@@ -18,7 +19,14 @@ section#contact-us {
   }
 
   div.container {
-    @include outer-container(100%);
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+
+    /* Add Grid for columns */
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 0.5%; /* 0.25 margin on each side = 0.5% total gap */
   }
 
   div.space {
@@ -33,9 +41,13 @@ section#contact-us {
   }
 
   div.column {
-    @include span-columns(4, 0.25);
-    display: inline-block;
+    grid-column: span 4; /* 4 out of 12 = 33.33% width */
     margin-bottom: 2rem;
+
+    /* Responsive: stack on mobile */
+    @media (max-width: 768px) {
+      grid-column: span 12; /* Full width on mobile */
+    }
   }
 
   // a:hover {

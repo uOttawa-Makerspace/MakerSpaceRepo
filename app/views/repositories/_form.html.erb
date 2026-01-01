@@ -1,17 +1,165 @@
-<%= form_for(@respository) do |f| %>
-  <% if @respository.errors.any? %>
-    <div id="error_explanation">
-      <h2><%= pluralize(@respository.errors.count, 'error') %> prohibited this respository from being saved:</h2>
-
-      <ul>
-      <% @respository.errors.full_messages.each do |message| %>
-        <li><%= message %></li>
-      <% end %>
-      </ul>
+<%# NOTE: The route for this isn't a proper nested route so this hack is necessary%>    
+<%= form_with model: @repository, url: {controller: 'repositories', action: @repository.persisted? ? :update : :create}, multipart: true do |f| %>
+    <%= text_field_tag :username_dont_autofill, {}, { hidden: true } %>
+    <div class="mb-3 required">
+        <%= f.label :title, t('repository.title'), class: 'form-label' %>
+        <%= f.text_field :title, class: 'form-control', required: true %>
+        <div class="form-text"><%= t('repository.title_msg') %></div>
     </div>
-  <% end %>
+    <div class="mb-3">
+        <%= f.label :description, class: 'form-label' %>
+        <div>
+            <%= f.trix_editor :description, class: 'form-control', style: 'height: auto!important;', required: true %>
+        </div>
+    </div>
 
-  <div class="actions">
-    <%= f.submit %>
-  </div>
+    <%= label_tag :file, t('repository.proj_files') .html_safe, class: 'form-label mb-2' %>
+    <div class="mb-3">
+        <div class="input-group mb-3">
+            <%= file_field_tag 'repository[repo_files_attributes]',
+             multiple: true,
+             data: {
+                 file_upload_helper: true,
+                 file_upload_preview_selector: '[data-file-upload-file-preview]',
+                 file_upload_suffix: 'file'
+             },
+             class: 'form-control',
+             aria_label: 'Project Files / Fichiers du projet' %>
+        </div>
+        
+        <div data-file-upload-file-preview class="file-upload-preview-pane">
+            <%= f.fields_for :repo_files do |p| %>
+                <%# This is a big workaround, because files aren't directly attached to the model %>
+                <% if p.object.file.attached? && p.object.file.persisted? %>
+                    <div class="file-upload-item-preview">
+                        <% if p.object.file.image? %>
+                            <%= image_tag p.object.file %>
+                        <% else %>
+                            <div class="file-upload-preview-failed"></div>
+                        <% end %>
+                        <%= p.hidden_field :file, value: p.object.file.signed_id %>
+                        <span title="<%= p.object.file.filename %>"><%= p.object.file.filename %></span>
+                        <%= p.hidden_field :_destroy, data: {file_upload_hidden_destroy: true } %>
+                        <%= button_tag 'Delete', class: 'file-upload-item-delete',  data: {file_upload_item_delete: true}, type: 'button' %>
+                    </div>
+                <% end %>
+            <% end %>
+        </div>
+    </div>
+
+    <div class="mb-3 required">
+        <%= label_tag :photo, t('repository.gallery') , class: 'form-label' %>
+        <div class="input-group mb-3">
+            <%# this is a free-form param because the images are an association and not an attribute %>
+            <%# Additionally, not sure if there's a way to verify this name being correct via internal rails methods %>
+            <%= file_field_tag 'repository[photos_attributes]',
+                               type: :files,
+                               multiple: true,
+                               data: {
+                                   file_upload_helper: true,
+                                   file_upload_preview_selector: '[data-file-upload-repo-preview]',
+                                   file_upload_limit: 5,
+                                   file_upload_suffix: 'image'
+                               },
+                               accept: Photo::ALLOWED_CONTENT_TYPES.join(','),
+                               class: 'form-control',
+                               placeholder: 'Select pictures',
+                               aria_label: 'Select Pictures / Selectionner des images' %>
+        </div>
+        <p class="form-text"><%= t('repository.gal_msg') %></p>
+        <div data-file-upload-repo-preview class="file-upload-preview-pane">
+            <%= f.fields_for :photos do |p| %>
+                <% if p.object.image.attached? && p.object.image.persisted? %>
+                    <div class="file-upload-item-preview">
+                        <%= image_tag p.object.image %>
+                        <%= p.hidden_field :image, value: p.object.image.signed_id %>
+                        <span title="<%= p.object.image.filename %>"><%= p.object.image.filename %></span>
+                        <%= p.hidden_field :_destroy, data: {file_upload_hidden_destroy: true } %>
+                        <%= button_tag 'Delete', class: 'file-upload-item-delete',  data: {file_upload_item_delete: true}, type: 'button' %>
+                    </div>
+                <% end %>
+            <% end %>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <%= f.label :youtube_link, t('repository.youtube') , class: 'form-label' %>
+        <%= f.text_field :youtube_link, class: 'form-control',
+               placeholder: "https://www.youtube.com/watch?v=..." %>
+        <div class="form-text"><%= t('repository.youtube_msg') =%></div>
+    </div>
+    <div class="mb-3 required">
+        <%= f.label :categories, t('repository.cat') , class: 'form-label' %>
+        <%= f.select :categories, options_for_select(
+            CategoryOption.show_options.collect(&:name),
+            selected: @repository.categories.collect(&:name)),
+         { multiple: true, class: 'form-control form-select', include_blank: t('repository.sel_cat') }
+        %>
+        <span class="form-text"><%= t('repository.cat_msg') %></span>
+    </div>
+
+    <div class="mb-3">
+        <%= f.label :equipments, t('repository.equip') , class: 'form-label' %>
+        <%= f.select :equipments, options_for_select(
+            EquipmentOption.show_options.collect(&:name),
+            selected: @repository.equipments.collect(&:name)),
+         { multiple: true, class: 'form-control form-select', include_blank: t('repository.sel_cat') }
+         %>
+        <span class="form-text"><%= t('repository.equip_msg') %></span>
+    </div>
+
+
+    <div class="mb-3">
+        <%= f.label :license, t('repository.license') , class: 'form-label' %>
+        <%= f.select :license, @repository.class.license_options, {}, { class: 'form-control form-select' } %>
+        <div class="form-text"><%= t('repository.lic_msg') %></div>
+    </div>
+
+    <div class="mb-3">
+        <% if params[:project_proposal_id].present? %>
+            <%= f.hidden_field :project_proposal_id, value: params[:project_proposal_id] %>
+        <% else %>
+            <%= f.label :license, t('repository.reason') , class: 'form-label' %>
+            <%= f.select(:project_proposal_id,
+                         options_for_select(@project_proposals, selected: @repository.project_proposal_id),
+                         { include_blank: 'No project linked', class: 'form-control form-select' }) %>
+        <% end %>
+    </div>
+
+    <div class="mb-3">
+        <%# Controller looks for a freeform owner param %>
+        <%= label_tag(:owner, t('repository.new_owner') , class: 'form-label') %>
+        <%= select_tag(:owner, '', prompt: t('repository.search_user'), class: 'owner_select form-control', id: 'owner_select', multiple: true, autocomplete: false) %>
+    </div>
+
+
+    <div class="mb-3">
+        <p><%= t('repository.proj_is') %></p>
+        <div class="form-check">
+            <%= f.radio_button(:share_type, 'public', class: 'form-check-input', onclick: 'hidePass();', required: true) %>
+            <%= f.label('share_type_public', class: 'form-check-label') do %>
+                <%= fa_icon('globe') %> Public <br /> <%= t('repository.pub_msg') %>
+        </div>
+            <% end %>
+            <div class="form-check">
+                <%= f.radio_button(:share_type, 'private' , class: 'form-check-input', onclick: 'showPass();', required: true) %>
+                <%= f.label('share_type_private', class: 'form-check-label') do %>
+                    <%= fa_icon('lock') %> <%= t('repository.private') %> <br /> <%= t('repository.priv_msg') %>
+                <% end %>
+            </div>
+            
+            <div id="pass" class="mb-3" style="display: <%= @repository.share_type == 'private' ? 'block' : 'none' %>;">
+                <%= f.label :password, 'Set repository password', class: 'form-label' %>
+                <%= password_field :password, nil, placeholder: 'Password', id: 'password_repo_field', 'aria-label': 'Password / Mot de Passe', class: 'form-control' %>
+            </div>
+            <div class="invalid-feedback">
+                Please Select a Share Type
+            </div>
+    </div>
+
+    <div class="text-center mb-3">
+        <%= f.submit class: 'btn btn-primary' %>
+    </div>
+    <span id="status-save"></span>
+    <div id="form-error-span"></div>
 <% end %>

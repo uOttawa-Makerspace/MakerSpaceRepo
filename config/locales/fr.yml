@@ -44,6 +44,7 @@ fr:
     subtext: "Voici tout ce qu'il faut savoir sur CEED"
   navbar:
     home: "Accueil"
+    theme: "Thème"
     # explore section
     explore: "Explorez"
     projects: "Projets"
@@ -603,25 +604,3 @@ fr:
       paragraph_1: "Voulez-vous en savoir plus ? Envoyez-nous un courriel et nous serons ravi de répondre à vos questions."
       contact_1: "Mohamed Elsageyer <br>Responsable D'équipe <br> melsa036@uottawa.ca"
       contact_2: "Stephanie Chiarotto <br>Coordonnatrice des bénévoles <br> volunteer@makerrepo.com"
-  memberships:
-    index:
-      title: "Vos Adhésions"
-      active:
-        heading: "Adhésion(s) Active(s)"
-        type: "Type :"
-        expires: "Expire le :"
-      no_active: "Vous n'avez pas d'adhésion active. Achetez-en une ci-dessous pour commencer."
-      purchase:
-        heading: "Acheter ou Renouveler"
-        button: "Acheter"
-        cutoff_tooltip: "Vous ne pouvez pas prolonger votre adhésion au-delà de la limite autorisée."
-      history:
-        heading: "Précédentes"
-        type: "Type"
-        purchase_date: "Date d'achat"
-        expiry_date: "Échéance"
-        status: "Statut"
-        active: "Active"
-        expired: "Expirée"
-        revoked: "Révoqué"
-        cancelled: "Annulé"

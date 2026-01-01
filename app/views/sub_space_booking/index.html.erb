@@ -107,19 +107,19 @@
             <%= f.label :identity, 'Please select which best describes you:', class: 'form-label' %>
 
             <div class="form-check">
-              <%= f.radio_button :identity, 'JMTS', class: 'form-check-input identity-button' %>
+              <%= f.radio_button :identity, 'JMTS', class: 'form-check-input identity-button', required: true %>
               <%= f.label :identity, 'JMTS team member', class: 'form-check-label' %>
             </div>
             <div class="form-check">
-              <%= f.radio_button :identity, 'Staff', class: 'form-check-input identity-button' %>
+              <%= f.radio_button :identity, 'Staff', class: 'form-check-input identity-button', required: true %>
               <%= f.label :identity, 'Staff member', class: 'form-check-label' %>
             </div>
             <div class="form-check">
-              <%= f.radio_button :identity, 'GNG', class: 'form-check-input identity-button' %>
+              <%= f.radio_button :identity, 'GNG', class: 'form-check-input identity-button', required: true %>
               <%= f.label :identity, 'Student involved with GNG courses', class: 'form-check-label' %>
             </div>
             <div class="form-check">
-              <%= f.radio_button :identity, 'Other', class: 'form-check-input identity-button' %>
+              <%= f.radio_button :identity, 'Other', class: 'form-check-input identity-button', required: true %>
               <%= f.label :identity, 'Other', class: 'form-check-label' %>
             </div>
           </div>
@@ -129,9 +129,9 @@
             <%= select_tag :supervisor, options_for_select(@supervisors), class: 'form-select form-control' %>
           </div>
 
-          <div class="mb-4" id="comments-container" style="display: none;">
-            <%= f.label :comments, 'Comments (Optional)', class: 'form-label' %>
-            <%= f.text_field :comments, class: 'form-control', placeholder: 'Comments (Optional)' %>
+          <div class="mb-4">
+            <%= f.label :comments, 'Reason for Booking Access *', class: 'form-label' %>
+            <%= f.text_area :comments, class: 'form-control', placeholder: 'Please explain why you need access to book rooms', required: true, rows: 4 %>
           </div>
 
           <div class="text-center">

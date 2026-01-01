@@ -1,9 +1,8 @@
-@import "lib";
 @import "./shared/variables";
 
 footer {
   overflow: clip;
-  margin-top: 3rem;
+  //margin-top: 3rem;
   //font-size: 1rem;
   color: #fff;
   background-color: #000;
@@ -11,7 +10,6 @@ footer {
   // Icons
   .fa {
     font-size: 1.5rem;
-    color: $primary;
     padding: 1rem;
     &:hover {
       color: #fff;
@@ -41,16 +39,16 @@ footer {
     //margin-left: 1.5rem;
     margin-right: 1.5rem;
     a {
-      border-left: solid 1px white;
+      border-left: solid 1px;
+      border-color: inherit;
       padding: 0.5rem;
       padding-left: 2.5rem;
       margin: 0;
       display: block;
-      color: #fff !important;
+      color: white;
       font-weight: 700;
       &:hover {
-        color: $primary !important;
-        border-color: $primary;
+        color: var(--bs-link-color);
       }
     }
   }

@@ -1,27 +1,14 @@
 <% provide(:title, 'Explore') %>
 <section class="container mt-5">
-  <%= render partial: 'search_bar' %>
-  <%= will_paginate @repositories, inner_window: 2, outer_window: 1, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
-  <section id="repositories-container">
-    <% @repositories.each do |repository| %>
-      <div class="repository-container">
-        <div class="repo-display-wrapper" <%= "style=background-image:url('#{url_for(repository.photos.first.image.variant(:repo_display_wrapper)) if repository.photos.first.present?}')" %> >
-          <%= link_to '', repository_path(repository.user_username, repository.slug), class: 'link' %>
-        </div>
-
-        <div class="repo-info">
-          <div class="start">
-            <div class="likes<%= repository.likes.find_by(user_id: @user.id).nil? ? '' : ' text-info' %>"><%= fa_icon 'heart' %><br><%= repository.like %></div>
-            <div class="title">
-              <%= link_to repository.title, repository_path(user_username: repository.user_username, id: repository.slug) %>
+    <%= render partial: 'search_bar' %>
+    <%= will_paginate @repositories, inner_window: 2, outer_window: 1, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
+    <div class="row g-3">
+        <% @repositories.each do |repository| %>
+            <div class="col-md-4 col-lg-4">
+                <%= render 'repositories/repository_card', repository: %>
             </div>
-            <div>by <%= link_to repository.user_username, user_path(repository.user_username) %></div>
-            <div><%= time_ago_in_words(repository.created_at) %> <%= t('datetime.distance_in_words.ago') %></div>
-          </div>
-        </div>
-      </div>
-    <% end %>
-  </section>
+        <% end %>
+    </div>
 
-  <%= will_paginate @repositories, inner_window: 2, outer_window: 1, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
+    <%= will_paginate @repositories, inner_window: 2, outer_window: 1, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
 </section>

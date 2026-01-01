@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-class VolunteerTaskRequestsController < ApplicationController
-  layout "volunteer"
-
+class VolunteerTaskRequestsController < SessionsController
+  before_action -> { @with_volunteer_header = true }
+  
   def index
     current_user.staff? ?
       @volunteer_task_requests = VolunteerTaskRequest.all :

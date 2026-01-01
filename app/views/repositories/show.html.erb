@@ -2,101 +2,133 @@
 
 <section class="row container mx-auto mt-3">
     <section id="repository-photos" class="col-lg-8 order-lg-first order-last">
-        <% if @repository.youtube_link.present? %>
-            <%= youtube_video(@repository.youtube_link) %>
-        <% end %>
-        <div id="show-photo">
-            <% if @photos.present? and @photos.first.image.attached? %>
-                <%= image_tag @photos.first.image.variant(:photo_slide_first), alt: 'Repository Main image', data: { width: @photos.first.try(:width), height: @photos.first.try(:height) } %>
+        <div class="mb-3">
+            <% if @repository.youtube_link.present? %>
+                <%= youtube_video(@repository.youtube_link) %>
             <% end %>
-        </div>
-        <div id="photo-slide">
-            <% @photos.each do |p| %>
-                <%= image_tag p.image.variant(:photo_slide), alt: 'Repository Image', data: { src: url_for(p.image), width: p.width, height: p.height } %>
-            <% end %>
+            <div id="show-photo">
+                <% if @repository.photos.present? and @repository.photos.first.image.attached? %>
+                    <%= image_tag @repository.photos.first.image.variant(:photo_slide_first),
+                                  alt: 'Repository Main image',
+                                  data: {
+                                      width: @repository.photos.first.try(:width),
+                                      height: @repository.photos.first.try(:height)
+                                  } %>
+                <% end %>
+            </div>
+            <div id="photo-slide">
+                <% @repository.photos.find_each do |p| %>
+                    <%= image_tag p.image.variant(:photo_slide),
+                                  alt: 'Repository Image',
+                                  data: {
+                                      src: url_for(p.image),
+                                      width: p.image.metadata['width'],
+                                      height: p.image.metadata['height']
+                                  } %>
+                <% end %>
+            </div>
         </div>
 
-        <br></br>
         <% if @user.admin? %>
-            <%= t('repository.curr_feat') %> <%= @repository.featured.to_s.upcase %>
-            <% featured_text = @repository.featured? ? t('repository.unfeat') : t('repository.feat') %>
-            <%= button_to featured_text, pin_unpin_repository_admin_settings_path(repository_id: @repository.id), method: :patch,
-                          class: 'btn btn-primary my-3' %>
-
-            <%= button_to t('repository.del'), delete_repository_admin_users_path(id: @repository.id), method: :delete,
-                          class: 'btn btn-danger', data: { confirm: 'Are you sure?' } %>
+            <div class="d-flex justify-content-between">
+                <%= button_to @repository.featured? ? t('repository.unfeat') : t('repository.feat'),
+                              pin_unpin_repository_admin_settings_path(repository_id: @repository.id), method: :patch,
+                              class: 'btn btn-primary' %>
+                <%= button_to t('repository.del'), delete_repository_admin_users_path(id: @repository.id), method: :delete,
+                              class: 'btn btn-danger', data: { confirm: 'Are you sure you want to delete this repository?' } %>
+            </div>
         <% end %>
-
+        <hr />
 
         <% if @repository.description.present? %>
-            <div class="repo-desc">
-                <div class="title"><%= t('repository.desc') %></div>
-                <div style="word-break: break-word;" class="description"><%= @repository.description.html_safe %></div>
+            <div class="mb-5">
+                <p style="word-break: break-word;"><%= @repository.description.html_safe %></p>
             </div>
         <% end %>
     </section>
 
-    <section id="info" class="col-lg-4">
-        <div id="repo-title" class="mb-2">
-            <%= @repository.title %>
+    <section class="col-lg-4">
+        <h1><%= @repository.title %></h1>
+        <hr />
+        <div class="d-flex justify-content-around text-primary fs-4">
+            <div><%= fa_icon 'heart', text: @repository.like %></div>
+            <div><%= fa_icon 'code-fork', text: @repository.makes.count %></div>
+            <div><%= link_to fa_icon('comments', text:  @repository.comments.count), '#repo-comments' %></div>
         </div>
-        <% if @repository.users.pluck(:email).include?(@user.email) || @user.role.eql?("admin") %>
-            <%= link_to fa_icon('pencil', text: t('repository.edit_proj')),
-                        edit_repository_path(@repository.user_username, @repository.id), class: 'btn btn-sm btn-secondary' %>
+        <% if @repository.featured? %>
+            <p class="text-center text-primary">
+                <%= fa_icon :trophy, text: 'This is a featured project!' %>
+            </p>
         <% end %>
-        <div id="misc">
-            <span class="misc-item"><%= fa_icon 'heart' %><span class="like-count"><%= @repository.like %></span></span>
-            <span class="misc-item"><%= fa_icon 'code-fork', text: @repository.makes.count %></span>
-            <span class="misc-item"><%= link_to fa_icon('comments'), '#repo-comments' %>
-                <span class="comment-count"><%= link_to @repository.comments.count, '#repo-comments' %></span>
-            </span>
-        </div>
-        <div id="repo-info">
-            <div class="repo-info-item">
-                <div class="title"><%= t('repository.proj_by') %></div>
-                <% @repository.users.find_each do |u| %>
-                    <% if u.id == @repository.user_id %>
-                        <div class="name"><i class="fa fa-solid fa-star"></i><%= link_to u.username, user_path(u.username) %></div>
-                    <% else %>
-                        <div class="name"><%= link_to u.username, user_path(u.username) %></div>
+        <hr />
+        <div>
+            <div>
+                <div class="d-inline-block">
+                    <b><%= t('repository.proj_by') %></b>
+                    <% @repository.users.find_each do |u| %>
+                        <div>
+                            <% if u.id == @repository.user_id %>
+                                <%= fa_icon :star %>
+                            <% end %>
+                            <%= link_to u.username, user_path(u.username) %>
+                        </div>
                     <% end %>
+                </div>
+                <% if @repository.users.include?(@user) || @user.role.eql?("admin") %>
+                    <%= link_to fa_icon('pencil', text: t('repository.edit_proj')),
+                                edit_repository_path(@repository.user_username, @repository.id),
+                                class: 'btn btn-sm btn-secondary align-top float-end' %>
                 <% end %>
             </div>
-            <div class="repo-info-item">
-                <div class="title"><%= t('repository.published') %></div>
-                <div class="date"><%= @repository.created_at.strftime('%b %e %Y') %></div>
-            </div>
-            <% if @files.present? %>
-                <div class="repo-info-item">
-                    <table><tr><td class="title"> <%= t('repository.proj_files') %> </td><td><span id="download-zip" class="bg-download"><%= link_to fa_icon('download', text: t('repository.download')), download_files_repositories_path(@repository.user_username, @repository.id), id: 'download-zip-link' %></span></td></tr></table>
+            <p><b><%= t('repository.published') %></b> <%= @repository.created_at.strftime('%b %e %Y') %></p>
+            <% if @repository.repo_files.any? %>
+                <div class="clearfix">
+                    <b> <%= t('repository.proj_files') %> </b>
                     <div class="files-show">
-                        <% @files.each do |f| %>
-                            <div class="file-item-show">
-                                <u><%= fa_icon 'file-text-o' %> <%= link_to f.file.filename, rails_blob_path(f.file), target: '_blank', rel: 'noopener' %></u><span><%= f.file.byte_size / 1000 %> KB</span>
-                            </div>
+                        <% @repository.repo_files.find_each do |f| %>
+                            <ul class="file-item-show">
+                                <li>
+                                    <%= fa_icon 'file-text-o' %>
+                                    <%= link_to f.file.filename, rails_blob_path(f.file), target: '_blank', rel: 'noopener' %>
+                                    <span><%= f.file.byte_size / 1000 %> KB</span>
+                                </li>
+                            </ul>
                         <% end %>
                     </div>
+                    <%= link_to fa_icon('download', text: t('repository.download')),
+                                download_files_repositories_path(@repository.user_username, @repository.id),
+                                class: 'btn btn-primary btn-sm float-end' %>
                 </div>
             <% end %>
 
-            <% if @categories.present? %>
-                <div class="repo-info-item">
-                    <div class="title"> <%= t('repository.categories') %> </div>
-                    <% @categories.each do |t| %>
-                        <%= link_to t.name, category_path(slug: t.name.gsub(' ', '-').downcase), class: 'btn btn-secondary btn-sm m-1' %>
-                    <% end %>
-                </div>
-            <% end %>
-            <% if @equipments.present? %>
-                <div class="repo-info-item">
-                    <div class="title"> <%= t('repository.equipment') %> </div>
-                    <% @equipments.each do |t| %>
-                        <%= link_to t.name, equipment_path(slug: t.name.gsub(' ', '-').downcase), class: 'btn btn-secondary btn-sm m-1' %>
-                    <% end %>
+            <% if @repository.license.present? %>
+                <div class="mb-3">
+                    <b> <%= t('repository.license_proj') %></b><br />
+                    <%= link_to @repository.license, license_url[@repository.license] %>
                 </div>
             <% end %>
 
-            <div class="repo-info-item">
+            <div class="mb-3">
+                <b><%= t('repository.categories') %></b>
+                <ul class="list-group mb-3">
+                    <% @repository.categories.find_each do |category| %>
+                        <%= link_to category.name, category_path(slug: category.name.gsub(' ', '-').downcase),
+                                    class: "list-group-item list-group-item-action text-primary" %>
+                    <% end %>
+                </ul>
+            </div>
+
+            <div class="mb-3">
+                <b><%= t('repository.equipment') %></b>
+                <ul class="list-group">
+                    <% @repository.equipments.find_each do |equipment| %>
+                        <%= link_to equipment.name, equipment_path(slug: equipment.name.gsub(' ', '-').downcase),
+                                    class: "list-group-item list-group-item-action text-primary" %>
+                    <% end %>
+                </ul>
+            </div>
+
+            <div class="repo-info-item mb-3">
                 <span class="like<%= @liked ? ' liked' : '' %>" style="color: white;">
                     <% like_text = @liked ? t('repository.unlike_button') : t('repository.like_button') %>
                     <%= button_to(fa_icon('heart', text: like_text),
@@ -106,43 +138,31 @@
                     <%= link_to fa_icon('code-fork', text: t('repository.make_button')), makes_new_path(@repository.user_username, @repository.id), class: 'make' %>
                 </span>
             </div>
-            <div class="repo-info-item">
-                <div class="report">
-                    <%= link_to fa_icon('flag', text: t('repository.report_in')), report_repository_path(@repository.id), class: 'repository_report' %>
-                    <div class="spinner">
-                        <div class="rect1"></div>
-                        <div class="rect2"></div>
-                        <div class="rect3"></div>
-                        <div class="rect4"></div>
-                        <div class="rect5"></div>
-                    </div>
+            <div class="report mb-3">
+                <%= link_to fa_icon('flag', text: t('repository.report_in')), report_repository_path(@repository.id), class: 'repository_report', rel: 'nofollow' %>
+                <div class="spinner">
+                    <div class="rect1"></div>
+                    <div class="rect2"></div>
+                    <div class="rect3"></div>
+                    <div class="rect4"></div>
+                    <div class="rect5"></div>
                 </div>
             </div>
-            <% if @repository.license.present? %>
-                <div class="repo-info-item">
-                    <div class="title"> <%= t('repository.license_proj') %> </div>
-                    <span class="license"><%= link_to @repository.license, license_url[@repository.license] %></span>
-                </div>
+
+            <% if @repository.project_proposal %>
+                <p>
+                    <b><%= t('repository.link_to_prop') %></b> <br />
+                    <%= link_to @repository.project_proposal.title, project_proposal_path(@repository.project_proposal) %>
+                </p>
             <% end %>
 
-            <div class="repo-info-item">
-                <div class="title"><%= t('repository.link_proj') %> </div>
-                <div class="name">
-                    <% if @repository.project_proposal %>
-                        <%= link_to @repository.project_proposal.title, project_proposal_path(@repository.project_proposal) %>
-                    <% else %>
-                        None
-                    <% end %>
-                </div>
-            </div>
-
-            <% if @repository.users.pluck(:email).include?(@user.email) || @user.admin? || @user.staff? %>
+            <% if @repository.users.include?(@user) || @user.admin? || @user.staff? %>
                 <div class="repo-info-item">
                     <div class="title"><%= t('repository.link_to_prop') %> </div>
                     <%= form_for :repo, url: { controller: 'repositories', action: 'link_to_pp' }, method: :patch do |f| %>
                         <div class="mb-3 input-group">
                             <%= f.hidden_field :repository_id, value: @repository.id %>
-                            <%= f.select(:project_proposal_id, @project_proposals, { prompt: t('repository.choose') }, { class: 'form-control', id: 'search_project_proposals' }) %>
+                            <%= f.select(:project_proposal_id, @project_proposals, { prompt: t('repository.choose_proposal') }, { class: 'form-control', id: 'search_project_proposals' }) %>
                             <br> </br>
                             <%= f.submit t('repository.link_proj'), class: 'btn btn-primary' %>
                         </div>
@@ -166,7 +186,7 @@
                 <%= f.label t('repository.rem_mem'), class: 'form-label' %>
                 <div class="mb-3 input-group">
                     <%= f.hidden_field :repository_id, value: @repository.id %>
-                    <%= f.select(:owner_id, @members.pluck(:username, :id), { prompt: t('repository.search_user') }, { class: 'search_users_remove form-control', id: 'search_users_remove' }) %>
+                    <%= f.select(:owner_id, @repository.users.pluck(:username, :id), { prompt: t('repository.search_user') }, { class: 'search_users_remove form-control', id: 'search_users_remove' }) %>
                     <%= f.submit t('repository.remove'), class: 'btn btn-danger' %>
                 </div>
             <% end %>
@@ -176,7 +196,9 @@
                     <%= f.label t('repository.trans_own'), class: 'form-label' %>
                     <div class="mb-3 input-group required">
                         <%= f.hidden_field :repository_id, value: @repository.id %>
-                        <%= f.select(:owner_id, @members.pluck(:username, :id), { prompt: t('repository.search_user') }, { class: 'form-control', id: 'search_users_transfer' }) %>
+                        <%= f.collection_select :owner_id, @repository.users, :id, :username,
+                                     { prompt: t('repository.search_user') },
+                                     { class: 'form-control', id: 'search_users_transfer' } %>
                         <br> </br>
                         <%= f.submit t('repository.transfer'), class: 'btn btn-warning' %>
                     </div>
@@ -189,6 +211,7 @@
     </section>
 
     <section id="repo-comments" class="order-last col-12">
+        <hr />
         <div class="title"><%= t('repository.comments') %></div>
         <%= form_for('Comments', url: comments_create_path, id: 'comment', remote: true) do %>
             <div class="mb-3">
@@ -208,7 +231,7 @@
             <%= link_to t('repository.newest'), "#{repository_path(comment_filter: :newest)}#repo-comments", style: bold.first %>
         </div>
         <div id="comment-container">
-            <% @comments.each do |comment| %>
+            <% @comments.find_each do |comment| %>
                 <div class="comment">
                     <div class="comment-upvote">
                         <% color = @vote.include?([comment.id, false]) ? '#19c1a5' : '#999' %>

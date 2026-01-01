@@ -3,6 +3,10 @@ require "rails_helper"
 include ApplicationHelper
 
 RSpec.describe LockerRentalsController, type: :controller do
+  before(:all) do
+    LockerOption.lockers_enabled = true
+  end
+  
   before(:each) do
     @current_user = create(:user, :admin)
     session[:user_id] = @current_user.id
@@ -316,6 +320,30 @@ RSpec.describe LockerRentalsController, type: :controller do
         expect(last_rental.rented_by_id).to eq @current_user.id
         expect(last_rental.notes).to eq request_note
         expect(last_rental.state).to eq "reviewing"
+      end
+
+      it "should prevent requests when rentals are disabled" do
+        LockerOption.lockers_enabled = false
+        expect do
+          post :create,
+               params: {
+                 locker_rental:
+                   attributes_for(
+                     :locker_rental
+                   )
+               }
+        end.to change { LockerRental.count }.by(0)
+        expect(flash[:alert]).not_to be_nil
+        LockerOption.lockers_enabled = true
+        expect do
+          post :create,
+               params: {
+                 locker_rental:
+                   attributes_for(
+                     :locker_rental
+                   )
+               }
+        end.to change { LockerRental.count }.by(1)
       end
 
       it "should force only requests" do

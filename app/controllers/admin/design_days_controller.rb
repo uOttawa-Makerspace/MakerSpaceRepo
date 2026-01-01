@@ -1,4 +1,8 @@
 class Admin::DesignDaysController < AdminAreaController
+  # https://api.rubyonrails.org/v7.2/classes/ActiveStorage/SetCurrent.html
+  # Sets url options for disk service to generate public urls
+  include ActiveStorage::SetCurrent
+  
   before_action :make_variables, only: %i[show update data]
   skip_before_action :current_user, only: :data
   skip_before_action :ensure_admin, only: :data
@@ -13,8 +17,8 @@ class Admin::DesignDaysController < AdminAreaController
     # https://api.rubyonrails.org/classes/ActiveModel/Serializers/JSON.html#method-i-as_json
     render json:
              @design_day.as_json(
-               include: :design_day_schedules,
-               methods: %i[semester year]
+               include: [:design_day_schedules],
+               methods: %i[semester year floorplan_urls] # call methods on DesignDay
              )
   end
 
@@ -49,6 +53,8 @@ class Admin::DesignDaysController < AdminAreaController
       :day,
       :is_live,
       :sheet_key,
+      :show_floorplans,
+      floorplans: [],
       design_day_schedules_attributes: %i[
         id
         start

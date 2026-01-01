@@ -1,7 +1,10 @@
 # frozen_string_literal: true
 
 class StaticPagesController < SessionsController
+  include TurnstileHelper
+  
   before_action :current_user, except: [:reset_password]
+  before_action :no_container, except: :about
 
   def home
     @volunteer_program_shadowing_scheduled =
@@ -129,6 +132,20 @@ class StaticPagesController < SessionsController
     end
   end
 
+  def open_hours
+    calendars = StaffNeededCalendar.where(role: "open_hours")
+    
+    all_calendars = calendars.flat_map do |calendar_record|
+      helpers.parse_ics_calendar(
+        calendar_record.calendar_url,
+        name: calendar_record.space&.name || calendar_record.name.presence || "Unnamed Calendar",
+        color: calendar_record.color,
+      )
+    end
+
+    render json: all_calendars
+  end
+
   def calendar
   end
 
@@ -158,31 +175,34 @@ class StaticPagesController < SessionsController
   end
 
   def reset_password
-    unless verify_recaptcha
-      flash[:alert] = 'There was a problem with the captcha, please try again.'
-      redirect_to root_path
+    unless verify_turnstile
+      redirect_to :forgot_password,
+                  alert:
+                  'There was a problem with the captcha, please try again.'
       return
     end
-    if params[:email].present?
-      if User.find_by_email(params[:email]).present?
-        @user = User.find_by(email: params[:email])
-        user_hash = Rails.application.message_verifier(:user).generate(@user.id)
-        expiry_date_hash =
-          Rails.application.message_verifier(:user).generate(1.day.from_now)
-        MsrMailer.forgot_password(
-          params[:email],
-          user_hash,
-          expiry_date_hash
-        ).deliver_now
-      end
-      flash[
-        :notice
-      ] = 'A reset link email has been sent to the email if the account exists.'
-    else
-      flash[:alert] = 'There was a problem with, please try again.'
+    
+  if params[:email].present?
+    if User.find_by_email(params[:email]).present?
+      @user = User.find_by(email: params[:email])
+      user_hash = Rails.application.message_verifier(:user).generate(@user.id)
+      expiry_date_hash =
+        Rails.application.message_verifier(:user).generate(1.day.from_now)
+      MsrMailer.forgot_password(
+        params[:email],
+        user_hash,
+        expiry_date_hash
+      ).deliver_now
     end
-    redirect_to root_path
+    flash[
+      :notice
+    ] = 'A reset link email has been sent to the email if the account exists.'
+  else
+    flash[:alert] = 'There was a problem with, please try again.'
   end
+  redirect_to root_path
+end
+
 
   def report_repository
     if signed_in?

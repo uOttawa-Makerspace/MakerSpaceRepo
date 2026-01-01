@@ -32,13 +32,12 @@ import "./tabledata";
 import "./accordion-load";
 import "./clipboard";
 import "../controllers";
+import "./theme";
 
-import "bootstrap";
+import { Tooltip } from "bootstrap";
 import "toastr/toastr";
 
 import "@hotwired/turbo-rails";
-import { Turbo } from "@hotwired/turbo-rails";
-import { Tooltip } from "bootstrap";
 
 document.addEventListener("turbo:before-render", (event) => {
   event.detail.newBody

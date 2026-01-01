@@ -160,12 +160,15 @@ Time.parse(staff_params[:utc_start_time]).utc)
     
     local_unavails = @unavailabilities.map do |u| 
       duration = (u.end_time.to_time - u.start_time.to_time) * 1000
+
+      rrule_data = helpers.date_formatted_recurrence_rule(u)
+
       {
         id: u.id,
         title: u.title || "Unavailable",
         start: u.start_time.iso8601,
         end: u.end_time.iso8601,
-        **(u.recurrence_rule.present? ? { rrule: u.recurrence_rule, duration: duration } : {}),
+        **(u.recurrence_rule.present? ? { rrule: rrule_data, duration: duration } : {}),
         allDay: u.start_time.to_time == u.end_time.to_time - 1.day,
         extendedProps: {
           description: u.description

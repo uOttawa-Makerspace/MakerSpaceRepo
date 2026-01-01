@@ -61,15 +61,6 @@ Rails.application.routes.draw do
   get "/saml/metadata" => "saml_idp#metadata"
   get "/saml/wiki_metadata" => "saml_idp#wiki_metadata"
   post "/saml/auth" => "saml_idp#auth"
-
-  resources :print_orders,
-            only: %i[index create update new destroy edit show] do
-    get :edit_approval
-    collection do
-      get :index_new
-      patch :update_submission
-    end
-  end
     
   resources :job_orders, only: %i[index show create update new destroy] do
     get :steps
@@ -145,6 +136,7 @@ Rails.application.routes.draw do
     collection do
       # Update only
       put :price
+      put :enabled
     end
   end
   resources :locker_rentals do
@@ -162,6 +154,7 @@ Rails.application.routes.draw do
   resources :memberships, only: [:index, :create] do
     collection do
       post :admin_create_membership
+      get :your_memberships
     end
     member do
       patch :revoke
@@ -176,6 +169,7 @@ Rails.application.routes.draw do
     patch "reset_password"
     get "terms_of_service", as: "tos"
     get "hours"
+    get "open_hours"
     get "about"
     get "contact"
     get "calendar"
@@ -347,27 +341,7 @@ Rails.application.routes.draw do
     namespace :add_new_staff do
       get "/", as: "index", action: "index"
     end
-
-    resources :shifts, except: %i[new show] do
-      collection do
-        get :shifts
-        get :get_availabilities
-        get :get_shifts
-        get :get_staff_needed
-        get :get_external_staff_needed
-        get :get_users_hours_between_dates
-        get :get_shift
-        get :pending_shifts
-        get :shift_suggestions
-        get :ics
-        post :update_color
-        post :confirm_shifts
-        post :clear_pending_shifts
-        post :confirm_current_week_shifts
-        post :copy_to_next_week
-      end
-    end
-
+    
     resources :pi_readers, only: [:update]
 
     resources :trainings do
@@ -463,6 +437,7 @@ Rails.application.routes.draw do
 
     resources :calendar do
       collection do
+        get 'utc_unavailabilities_json/:id', to: 'calendar#utc_unavailabilities_json', as: :utc_unavailabilities_json
         get 'unavailabilities_json/:id', to: 'calendar#unavailabilities_json', as: :unavailabilities_json
         get 'imported_calendars_json/:id', to: 'calendar#imported_calendars_json', as: :imported_calendars_json
         get 'ics_to_json', to: 'calendar#ics_to_json', as: :ics_to_json 
@@ -512,9 +487,6 @@ Rails.application.routes.draw do
       post "certify_participant"
     end
 
-    resources :shifts_schedule, except: %i[new show destroy] do
-      collection { get :get_shifts }
-    end
     resources :my_calendar do
       collection do
         get 'json/:id', to: 'my_calendar#json', as: :json
@@ -582,7 +554,11 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :badges, only: [:index,:show] 
+  resources :badges, only: [:index, :show] do
+    collection do
+      get 'search'
+    end
+  end
 
   resources :proficient_projects do
     get :proficient_project_modal

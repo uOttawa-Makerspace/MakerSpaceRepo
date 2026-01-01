@@ -1,0 +1,64 @@
+en:
+  memberships:
+    navbar: "Memberships"
+    index:
+      title: "CEED Memberships"
+      sub_header: "Bring your ideas to life with"
+      purchase_btn: "Purchase now"
+      subtitle_1: "WHAT IS IT?"
+      text_1: "The CEED Membership gives you access to the
+        Centre for Entrepreneurship and Engineering Design’s facilities, including
+        the Richard L'Abbe Makerspace and Brunsfield Centre. With a membership, you
+        can explore design and manufacturing tools, create or continue personal
+        projects, and bring your ideas to life."
+      subtitle_2: "DO I ALREADY HAVE A MEMBERSHIP?"
+      subtitle_2_link: "https://www.uottawa.ca/study/fees-financial-support/university-fees/ancillary-fees"
+      text_2: "Students who have paid the ancillary fee for CEED automatically have their membership included. There is no additional cost."
+      subtitle_3: "WHAT ARE THE BENEFITS?"
+      text_3:
+        "All members enjoy the same level of access to CEED spaces. However, please note that the facilities operate on a priority basis:
+        classroom instruction, course work, and scheduled workshops take priority over general use."
+      subtitle_4: " WE WANT TO SEE YOUR CREATIVITY SHINE"
+      text_4:
+        "Whether you’re a student building a class project, a team preparing for a competition,
+        or an innovator developing a prototype, your CEED Membership is your gateway to one of Ottawa’s most
+        creative engineering and entrepreneurial communities."
+      prices: "PRICE BREAKDOWN"
+      col1: "Day"
+      col2: "Semester"
+      row1: "Member Type"
+      row2: "Engineering and Computer Science"
+      row_faculty: "Paid through ancillary fees​"
+      row4: "Other Students and Faculty"
+      row5: "External"
+      more_info: "MORE INFO"
+      makerspace: "Richard L'Abbe Makerspace"
+      brunsfield: "Brunsfield Centre"
+      ancillary: "Ancillary Fees"
+      ancillary_text: "Ancillary fees are added to tuition fees when calculating university fees. They’re mandatory fees that cover services beyond your program of study."
+      link:
+        makerspace: "https://www.uottawa.ca/faculty-engineering/centre-entrepreneurship-engineering-design/facilities/richard-labbe-makerspace"
+        bruns: "https://www.uottawa.ca/faculty-engineering/centre-entrepreneurship-engineering-design/facilities/brunsfield-centre"
+        fees: "https://www.uottawa.ca/study/fees-financial-support/university-fees/ancillary-fees"
+
+    purchase:
+      title: "Your Memberships"
+      active:
+        heading: "Active Membership(s)"
+        type: "Type:"
+        expires: "Expires:"
+      no_active: "You don't have an active membership. Purchase one below to get started."
+      purchase:
+        heading: "Purchase or Renew"
+        button: "Purchase"
+        cutoff_tooltip: "You cannot extend your membership beyond the allowed limit."
+      history:
+        heading: "History"
+        type: "Type"
+        purchase_date: "Purchase Date"
+        expiry_date: "Expiry Date"
+        status: "Status"
+        active: "Active"
+        expired: "Expired"
+        revoked: "Revoked"
+        cancelled: "Cancelled"

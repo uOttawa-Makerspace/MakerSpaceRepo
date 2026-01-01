@@ -1,20 +1,12 @@
 <% provide(:title, t('hours.title')) %>
 <section id="hours-of-operation">
-  <div class="container">
-    <h1 class="text-center text-primary"><%= t('hours.title') %></h1>
-    <div class="row justify-content-center">
-      <% @contact_info.each do |space| %>
-        <div class="col-md-6">
-          <div class="card h-100">
-            <div class="card-body">
-              <h4 class="card-title mb-4"><%= space.name %></h4>
-              <%= render partial: 'hours_embed', locals: { space: } %>
-            </div>
-          </div>
-        </div>
-      <% end %>
-      <p><i class="fa fa-asterisk mt-3" aria-hidden="true"></i> <%= t('hours.disclaimer') %></p>
-      <%= link_to 'Edit Contact Infos', admin_contact_infos_path if current_user.admin? %>
-    </div>
-  </div>
+    <h1 class="text-center"><%= t('hours.title') %></h1>
+
+    <div id="calendar" class="styled-calendar"></div>
+
+    <div id="filters" class='d-flex flex-wrap gap-3 mt-2'></div>
+
+    <p><i class="fa fa-asterisk" aria-hidden="true"></i> <%= t('hours.disclaimer') %></p>
 </section>
+
+<%= vite_javascript_tag 'fullcalendar_setup_homepage' %>

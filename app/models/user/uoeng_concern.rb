@@ -45,7 +45,7 @@ module User::UoengConcern
       # Either a fulltime engineering student, or enrolled in a CEED managed
       # course. Note the array intersection to detect courses
       (details['student_this_semester'] && details['faculty'] == 'GENIE') ||
-        (details.courses_enrolled.any? { |course| course.include? 'GNG' })
+        (details['courses_enrolled'].any? { |course| course.include? 'GNG' })
     rescue StandardError => e
       # For now return false on all errors
       Rails.logger.fatal e

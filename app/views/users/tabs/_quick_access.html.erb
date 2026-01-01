@@ -1,7 +1,7 @@
 <div class="tab-pane fade" id="admin-quick-access" role="tabpanel" aria-labelledby="admin-quick-access-pill">
   <p>Current Quick Access Paths:</p>
   <% QuickAccessLink.where(user_id: current_user).find_each do |quick_access| %>
-    <div class="row">
+    <div class="row gx-1">
       <%= form_with url: quick_access_links_update_path(quick_access.id, anchor: 'admin-quick-access'), method: 'post', controller: 'quick_access_links', class: 'col-md-10' do %>
         <div class="input-group mb-1">
           <label class="input-group-text" for="name">Name</label>
@@ -11,10 +11,7 @@
           <%= submit_tag 'Change', class: 'btn btn-success' %>
         </div>
       <% end %>
-      <div class="col-md-1">
-        <hr />
-      </div>
-      <div class="col-md-1">
+      <div class="col-md-2">
         <%= button_to 'Delete', quick_access_links_delete_path(quick_access), method: 'delete', controller: 'quick_access_links', class: 'btn btn-danger form-control' %>
       </div>
     </div>

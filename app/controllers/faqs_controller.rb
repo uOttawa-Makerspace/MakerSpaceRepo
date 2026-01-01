@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-class FaqsController < ApplicationController
-  layout "application"
+class FaqsController < SessionsController
+  before_action :no_container, only: :index
   before_action :ensure_admin, except: :index
 
   def index

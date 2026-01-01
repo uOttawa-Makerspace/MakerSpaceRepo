@@ -6,6 +6,7 @@ section#resources {
   #jumbotron {
     text-align: center;
     width: 100%;
+    background-position: center;
     &.jumbotron-get-involved {
       background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
         url("get_involved/jumbotron.png");
@@ -70,7 +71,7 @@ section#resources {
 
   .link-card {
     @include media-breakpoint-up(lg) {
-      box-shadow: 4px 4px 8px 2px #aaa;
+      box-shadow: 4px 4px 8px 2px var(--bs-secondary-bg);
     }
     img {
       object-fit: cover;
