@@ -118,24 +118,6 @@
     }
   }
 
-  // Fix for Firefox dropdown triangle cutoff issue
-  .navbar-nav {
-    overflow: visible;
-  }
-
-  .nav-item.dropdown {
-    overflow: visible;
-
-    &.d-flex {
-      align-items: baseline;
-
-      .dropdown-toggle::after {
-        vertical-align: 0.2em;
-        margin-left: 0.255em;
-      }
-    }
-  }
-
   @media (max-width: 1199.98px) {
     .navbar-collapse {
       // Force dropdown menus to display as stacked list on mobile
