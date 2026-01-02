@@ -9,6 +9,8 @@ class SessionsController < ApplicationController
   before_action :authorized_repo_ids
   before_action :rate_limit, only: [:login_authentication]
 
+  SUPPORT_EMAIL = "uottawa.makerepo@gmail.com"
+
   def rate_limit
     ip = request.env["REMOTE_ADDR"]
     key = "login_#{ip}"
@@ -33,13 +35,14 @@ class SessionsController < ApplicationController
             format.html do
               flash[
                 :alert
-              ] = "Your account has been locked due to too many failed login attempts. Please contact an administrator to unlock your account or wait #{distance_of_time_in_words user.locked_until, DateTime.now}."
+              ] = "Your account has been locked due to too many failed login attempts. Please #{view_context.link_to 'contact an administrator', "mailto:#{SUPPORT_EMAIL}?subject=Account%20Locked%20-%20#{user.username}", class: 'text-primary'} to unlock your account or wait #{distance_of_time_in_words user.locked_until, DateTime.now}.".html_safe
               render :login
             end
             format.json do
               render json: {
                        error:
-                         "Your account has been locked due to too many failed login attempts. Please contact an administrator to unlock your account or wait #{distance_of_time_in_words user.locked_until, DateTime.now}."
+                         "Your account has been locked due to too many failed login attempts. Please contact an administrator at #{SUPPORT_EMAIL} to unlock your account or wait #{distance_of_time_in_words user.locked_until, DateTime.now}.",
+                       support_email: SUPPORT_EMAIL
                      },
                      status: :unprocessable_entity
             end
@@ -54,11 +57,6 @@ class SessionsController < ApplicationController
       if @user
         if @user.confirmed?
           @user.update(last_signed_in_time: DateTime.now)
-          # if request.env["HTTP_REFERER"] == login_authentication_url
-          #   format.html { redirect_to root_path }
-          # else
-          #   format.html { redirect_back(fallback_location: root_path) }
-          # end
           format.html { redirect_to(params[:back_to] || root_path) }
           format.json do
             render json: {
@@ -88,7 +86,9 @@ class SessionsController < ApplicationController
           error_message =
             (
               if user.auth_attempts >= User::MAX_AUTH_ATTEMPTS
-                "Your account has been locked due to too many failed login attempts. You can try again in #{distance_of_time_in_words user.locked_until, DateTime.now}."
+                format.html? ? 
+                  "Your account has been locked due to too many failed login attempts. #{view_context.link_to 'Contact support', "mailto:#{SUPPORT_EMAIL}?subject=Account%20Locked%20-%20#{user.username}", class: 'text-primary'} to unlock your account or try again in #{distance_of_time_in_words user.locked_until, DateTime.now}.".html_safe :
+                  "Your account has been locked due to too many failed login attempts. Contact support at #{SUPPORT_EMAIL} to unlock your account or try again in #{distance_of_time_in_words user.locked_until, DateTime.now}."
               elsif user.auth_attempts > 1
                 "Incorrect password. You have #{User::MAX_AUTH_ATTEMPTS - user.auth_attempts} attempts left before your account is locked."
               else
@@ -104,7 +104,9 @@ class SessionsController < ApplicationController
           render :login, status: :unprocessable_entity
         end
         format.json do
-          render json: { error: error_message }, status: :unprocessable_entity
+          json_response = { error: error_message }
+          json_response[:support_email] = SUPPORT_EMAIL if user&.auth_attempts&.>= User::MAX_AUTH_ATTEMPTS
+          render json: json_response, status: :unprocessable_entity
         end
       end
     end
