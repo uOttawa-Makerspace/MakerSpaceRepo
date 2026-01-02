@@ -3,6 +3,7 @@ SamlIdp.configure do |config|
   config.x509_certificate = IO.read(File.join(Rails.root, "certs/saml.crt"))
   config.secret_key = IO.read(File.join(Rails.root, "certs/saml.key"))
 
+
   service_providers = {
     "wiki.makerepo.com" => {
       metadata_url:
@@ -24,10 +25,17 @@ SamlIdp.configure do |config|
     "wiki-server.makerepo.com" => {
       metadata_url: "https://makerepo.com/saml/wiki_metadata",
       response_hosts: %w[wiki-server.makerepo.com localhost]
+    # principal is passed in when `encode_response` is called
+    },
+    
+    "wikijs.makerepo.com" => {
+      metadata_url: "https://wikijs.makerepo.com/login/saml/metadata",
+      response_hosts: %w[wikijs.makerepo.com],
+      # Wiki.js callback URL
+      acs_url: "https://wikijs.makerepo.com/login/258365f7-0b23-403c-817a-5d1ca2be771f/callback"
     }
   }
 
-  # principal is passed in when `encode_response` is called
   config.name_id.formats = {
     persistent: ->(principal) { principal.id },
     transient: ->(principal) { principal.username },
@@ -36,13 +44,31 @@ SamlIdp.configure do |config|
 
   # extra attributes sent along with SAML response
   config.attributes = {
+    # Standard SAML/WS-Federation claim URIs
+    "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress" => {
+      getter: ->(principal) { if principal.admin? then principal.email else nil end}
+    },
+    "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name" => {
+      getter: ->(principal) { principal.name }
+    },
+    "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname" => {
+      getter: ->(principal) { principal.name }
+    },
     email_address: {
+      getter: ->(principal) { principal.email }
+    },
+    # Add 'emailAddress' as Wiki.js often looks for this specific attribute name
+    emailAddress: {
       getter: ->(principal) { principal.email }
     },
     username: {
       getter: ->(principal) { principal.username }
     },
     name: {
+      getter: ->(principal) { principal.name }
+    },
+    # Add displayName for Wiki.js compatibility
+    displayName: {
       getter: ->(principal) { principal.name }
     },
     is_staff: {

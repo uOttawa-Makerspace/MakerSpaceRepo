@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 #
 class LockerMailer < ApplicationMailer
-  layout "msr_mailer"
 
   before_action do
     @locker_rental = params[:locker_rental]

@@ -1,15 +1,16 @@
-@import "lib";
 @import "shared/variables";
 
-div#show-photo img {
-  display: block;
-  max-width: 100%;
-  max-height: 500px;
-  margin: 0 auto;
-  cursor: pointer;
-  // border: 2px solid #eee;
+div#show-photo {
+  width: 100%;
+  aspect-ratio: 1.5 / 1;
+  border: 2px solid #eee;
   // border-right-color: #ddd;
   // border-left-color: #ddd;
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
 }
 
 div#photo-slide {
@@ -42,7 +43,7 @@ span.forward {
 }
 
 a.edit-repo-link {
-  @include transition(100ms);
+  transition: 100ms linear;
   // position: absolute;
   // right: 0;
   // top: 0;
@@ -75,7 +76,7 @@ div#misc {
   padding-left: 5%;
 
   span.misc-item {
-    @include transition(100ms);
+    transition: 100ms linear;
     display: inline-block;
     height: 60px;
     line-height: 60px !important;
@@ -98,7 +99,7 @@ div#misc {
     }
 
     &:hover {
-      @include transition(100ms);
+      transition: 100ms linear;
       color: #000;
     }
   }
@@ -141,7 +142,7 @@ div.repo-info-item {
   }
 
   .bg-download {
-    @include transition(100ms);
+    transition: 100ms linear;
     background-color: $primary;
     color: #f9f9f9;
     cursor: pointer;
@@ -159,7 +160,7 @@ div.repo-info-item {
   }
 
   div.name {
-    @include transition(100ms);
+    transition: 100ms linear;
     color: #19c1a5;
     font-weight: 500;
 
@@ -208,7 +209,7 @@ div.repo-info-item {
 
   span.like,
   span.make {
-    @include transition(100ms);
+    transition: 100ms linear;
     display: inline-block;
     background-color: $primary;
     font-size: 1rem;
@@ -238,7 +239,7 @@ div.repo-info-item {
   }
 
   div.report {
-    @include transition(100ms);
+    transition: 100ms linear;
     color: #888;
     cursor: pointer;
 
@@ -337,13 +338,20 @@ section#repo-comments {
   }
 
   div#comment-container {
-    @include outer-container(75%);
+    max-width: 75%;
+    margin-left: auto;
+    margin-right: auto;
+
     font:
       400 1rem "Roboto",
       sans-serif;
     margin: 0;
+
     div.comment {
-      @include outer-container(100%);
+      max-width: 100%;
+      margin-left: auto;
+      margin-right: auto;
+
       margin: 0;
       padding: 1rem 0;
       background-color: #fff;
@@ -351,8 +359,14 @@ section#repo-comments {
       max-height: 20rem;
       overflow-y: scroll;
 
+      /* Add Grid for child elements */
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 2%;
+
       div.comment-upvote {
-        @include span-columns(0.5, 0);
+        grid-column: span 1;
+
         text-align: center;
         font-size: 1.5rem;
         font-weight: 300;
@@ -361,8 +375,10 @@ section#repo-comments {
           font-size: 1.2rem;
         }
       }
+
       div.comment-content {
-        @include span-columns(11.5, 2);
+        grid-column: span 11;
+
         color: #777;
         font-weight: 300;
         padding-top: 0.5rem;
@@ -370,7 +386,8 @@ section#repo-comments {
       }
 
       div.comment-header {
-        @include span-columns(11.5, 2);
+        grid-column: span 11;
+
         font-size: 0.7rem;
         color: #777;
         font-weight: 300;
