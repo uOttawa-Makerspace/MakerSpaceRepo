@@ -70,8 +70,9 @@ gem "solid_queue", "~> 1.2"
 gem "solid_cable"
 gem "mission_control-jobs"
 
+gem "puma", '~> 7.1'
+
 group :development, :test do
-  gem "puma", '~> 7.1'
   gem "byebug", platform: :mri
   gem "factory_bot_rails"
   gem "faker", "~> 3.1"
