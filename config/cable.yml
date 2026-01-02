@@ -20,6 +20,7 @@ staging:
       writing: cable
   polling_interval: 0.1.seconds
   message_retention: 1.day
+  silence_polling: true
 
 production:
   adapter: solid_cable
@@ -28,3 +29,4 @@ production:
       writing: cable
   polling_interval: 0.1.seconds
   message_retention: 1.day
+  silence_polling: true
