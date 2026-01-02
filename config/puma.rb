@@ -54,3 +54,4 @@ end
 
 # Allow puma to be restarted by `rails restart` command.
 plugin :tmp_restart
+plugin :solid_queue unless ENV["RAILS_ENV"] == "test"
