@@ -55,7 +55,7 @@ Rails.application.configure do
   # config.log_tags = [ :subdomain, :uuid ]
 
   # Use a different logger for distributed setups.
-  config.logger = Logger.new("#{Rails.root}/log/#{Rails.env}.log")
+  config.logger = ActiveSupport::Logger.new("#{Rails.root}/log/#{Rails.env}.log")
 
   # Use a different cache store in production.
   # config.cache_store = :mem_cache_store
