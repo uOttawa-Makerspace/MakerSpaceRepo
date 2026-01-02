@@ -1,5 +1,3 @@
-# NOTE: These have no effect on live servers (staging and production). Go to the
-# shared deploy folder on those servers instead.
 default: &default
   adapter: <%= Rails.application.credentials[Rails.env.to_sym][:database][:adapter] || postgresql %>
   host: <%= Rails.application.credentials[Rails.env.to_sym][:database][:host] || localhost %>

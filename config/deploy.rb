@@ -3,10 +3,11 @@
 set :application, 'MakerRepo'
 set :repo_url, 'https://github.com/uOttawa-Makerspace/MakerSpaceRepo.git'
 set :rbenv_type, :user
+set :rbenv_ruby, '3.4.7'
 
 set :linked_files, %w[config/master.key]
 set :linked_files,
-    fetch(:linked_files, []).push('config/database.yml', 'config/secrets.yml')
+    fetch(:linked_files, []).push('config/secrets.yml')
 set :linked_dirs,
     fetch(:linked_dirs, []).push(
       'log',
