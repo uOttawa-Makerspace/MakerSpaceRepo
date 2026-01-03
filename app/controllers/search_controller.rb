@@ -2,6 +2,7 @@
 
 class SearchController < SessionsController
   before_action :current_user
+  before_action :no_container
 
   def explore
     if params[:category].blank?

@@ -7,7 +7,7 @@
             </div>
         <% end %>
     </div>
-    <div class="clearfix mb-1">
+    <div class="clearfix mb-1" disabled hidden>
         <div class="btn-group float-end">
             <div class="btn-group">
                 <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
@@ -44,9 +44,5 @@
                 </ul>
             </div>
         </div>
-    </div>
-    <div class="text-center">
-        <%= will_paginate @repositories, inner_window: 2, outer_window: 1, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
-        <span><%= @repositories.count %> repositories were found</span>
     </div>
 </div>

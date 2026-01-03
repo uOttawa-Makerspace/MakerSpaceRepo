@@ -1,13 +1,61 @@
-<% provide(:title, 'Explore') %>
-<section class="container">
-    <%= render partial: 'search_bar' %>
-    <div class="row g-3">
-        <% @repositories.each do |repository| %>
-            <div class="col-md-4 col-lg-4">
-                <%= render 'repositories/repository_card', repository: %>
-            </div>
-        <% end %>
-    </div>
+<% if params[:q].present?
+    provide(:title, "Search results for \"#{params[:q]}\"")
+else
+    provide(:title, t('explore.explore'))
+end %>
 
-    <%= will_paginate @repositories, inner_window: 2, outer_window: 1, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
-</section>
+<div class="container">
+<h1 class="text-center">
+    <% if params[:q].present? %>
+        Search results for <%= params[:q] %>
+    <% else %>
+        Explore recent repositories
+    <% end %>
+</h1>
+
+<%= render partial: 'search_bar' %>
+</div>
+
+<div class="d-flex">
+    <aside class="collapse d-lg-block ms-3">
+        <fieldset class="border rounded px-3 pb-3 mt-n3">
+            <legend class="float-none w-auto fw-semibold">Sort by</legend>
+            <div class="form-check">
+                <%= label_tag :sort_most_liked, "Most Liked", class: 'form-check-label' %>
+                <%= radio_button_tag :sort, :most_liked, class: 'form-check-input' %>
+            </div>
+            <div class="form-check">
+                <%= label_tag :sort_most_makes, "Most makes", class: 'form-check-label' %>
+                <%= radio_button_tag :sort, :most_makes, class: 'form-check-input' %>
+            </div>
+            <div class="form-check">
+                <%= label_tag :sort_recent, "Recent", class: 'form-check-label' %>
+                <%= radio_button_tag :sort, :recent, class: 'form-check-input' %>
+            </div>
+        </fieldset>
+
+        <fieldset class="border rounded p-3 mb-2">
+            <legend class="float-none w-auto fw-semibold">Filter by</legend>
+            <%= collection_check_boxes(:filter, :category, CategoryOption.all, :name, :name) do |b| %>
+                <div class="form-check">
+                    <%= b.check_box(class: 'form-check-input') %>
+                    <%= b.label(class: 'form-check-label') %>
+                </div>
+            <% end %>
+
+        </fieldset>
+    </aside>
+
+    <section class="container-fluid">
+        <div class="row g-1">
+            <% @repositories.each do |repository| %>
+                <div class="col-md-3">
+                    <%= render 'repositories/repository_card', repository: %>
+                </div>
+            <% end %>
+        </div>
+        <div class="mb-3">
+        </div>
+    </section>
+</div>
+<%= will_paginate @repositories, inner_window: 2, outer_window: 1, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
