@@ -183,13 +183,14 @@ class StaticPagesController < SessionsController
     end
     
   if params[:email].present?
-    if User.find_by_email(params[:email]).present?
-      @user = User.find_by(email: params[:email])
+    user_email = params[:email].strip.downcase
+    if User.find_by_email(user_email).present?
+      @user = User.find_by(email: user_email)
       user_hash = Rails.application.message_verifier(:user).generate(@user.id)
       expiry_date_hash =
         Rails.application.message_verifier(:user).generate(1.day.from_now)
       MsrMailer.forgot_password(
-        params[:email],
+        user_email,
         user_hash,
         expiry_date_hash
       ).deliver_now

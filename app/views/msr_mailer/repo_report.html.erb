@@ -1,2 +1,19 @@
-<p>The Repository <%= link_to @repository.title, repository_url(@repository.user_username, @repository.id) %> was reported as inappropriate.</p>
-<p>Reported by: <%= link_to @user.name, user_url(@user.username) %></p>
+<% content_for :preheader do %>
+  Makerepo - Repository Reported
+<% end %>
+
+<% content_for :team_name do %>
+  The MakerRepo Team
+<% end %>
+
+<% content_for :why_received do %>
+  You have received this email because a repository was reported as inappropriate on <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a>.
+<% end %>
+
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello,</p>
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
+  The Repository <%= link_to @repository.title, repository_url(@repository.user_username, @repository.id) %> was reported as inappropriate.
+</p>
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
+  Reported by: <%= link_to @user.name, user_url(@user.username) %>
+</p>

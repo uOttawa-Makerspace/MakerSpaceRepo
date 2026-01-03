@@ -69,9 +69,12 @@
     color: white;
   }
 
-  // FIXME: This is hard to make sense in dark mode. CC money icon turns black
-  // on hover, and it's a PNG so recolors are hard.
   .ccLink {
+    .ccs {
+      transition: opacity 0.2s ease-in-out;
+    }
+
+    // Light mode
     #myCcWhite {
       display: none;
     }
@@ -89,11 +92,78 @@
         display: none;
       }
     }
+
+    // Dark mode: invert the logic
+    [data-bs-theme="dark"] & {
+      #myCcWhite {
+        display: unset;
+      }
+
+      #myCcBlack {
+        display: none;
+      }
+
+      &:hover {
+        #myCcWhite {
+          display: none;
+        }
+
+        #myCcBlack {
+          display: unset;
+          // Convert black PNG to #e24829
+          filter: brightness(0) saturate(100%) invert(44%) sepia(85%)
+            saturate(2473%) hue-rotate(346deg) brightness(99%) contrast(90%);
+        }
+      }
+    }
+  }
+
+  @media (max-width: 1199.98px) {
+    .navbar-collapse {
+      // Force dropdown menus to display as stacked list on mobile
+      .dropdown-menu {
+        position: static !important;
+        float: none;
+        width: auto;
+        margin-top: 0;
+        background-color: transparent;
+        border: 0;
+        box-shadow: none;
+        padding-left: 1.5rem;
+
+        .dropdown-item {
+          color: white;
+          padding: 0.5rem 1rem;
+
+          &:hover,
+          &:focus {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+          }
+
+          [data-bs-theme="dark"] & {
+            color: white;
+          }
+        }
+      }
+
+      // Make sure the split dropdown buttons don't create weird spacing
+      .nav-item.dropdown.d-flex {
+        display: block !important;
+
+        .nav-link,
+        .dropdown-toggle-split {
+          display: inline-block;
+        }
+      }
+    }
   }
 
   // Animate header shrinking when class is added
-  transition: margin 150ms;
-  transition: padding 150ms;
+  transition:
+    margin 150ms,
+    padding 150ms;
+
   &.header-small {
     padding-top: 0;
     padding-bottom: 0;
