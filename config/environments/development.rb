@@ -76,20 +76,8 @@ Rails.application.configure do
   config.action_mailer.perform_deliveries = true
   config.action_mailer.perform_caching = false
 
-  config.paperclip_defaults = {
-    storage: :s3,
-    s3_region: Rails.application.credentials[Rails.env.to_sym][:aws][:region],
-    s3_credentials: {
-      bucket:
-        Rails.application.credentials[Rails.env.to_sym][:aws][:bucket_name],
-      access_key_id:
-        Rails.application.credentials[Rails.env.to_sym][:aws][:access_key_id],
-      secret_access_key:
-        Rails.application.credentials[Rails.env.to_sym][:aws][
-          :secret_access_key
-        ]
-    }
-  }
+  # No HTTP basic auth on development.
+  config.mission_control.jobs.http_basic_auth_enabled = false
 
   # Raises error for missing translations.
   #config.i18n.raise_on_missing_translations = true
