@@ -490,4 +490,9 @@ class MsrMailer < ApplicationMailer
     @user_hash = user_hash
     mail(to: @user.email, subject: "Unlock your MakerRepo Account")
   end
+
+  def new_printer_issue(issue, recipient_email)
+    @issue = issue
+    mail(to: recipient_email, subject: "New Printer Issue: #{issue.summary}")
+  end
 end

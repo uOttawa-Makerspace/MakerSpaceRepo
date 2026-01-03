@@ -285,4 +285,31 @@ class MsrMailerPreview < ActionMailer::Preview
   def unlock_account
     MsrMailer.unlock_account(User.first, "sample_unlock_hash")
   end
+
+  def new_printer_issue
+    printer = Printer.first || OpenStruct.new(
+      id: 1,
+      name: "Prusa MK3S #1",
+      number: "PR-001"
+    )
+    
+    reporter = User.first || OpenStruct.new(
+      id: 1,
+      name: "John Doe",
+      email: "john.doe@uottawa.ca"
+    )
+    
+    issue = PrinterIssue.first || OpenStruct.new(
+      id: 42,
+      printer: printer,
+      reporter: reporter,
+      summary: "Extruder jamming during print",
+      description: "The extruder keeps jamming about 2 hours into prints. May need to clean the nozzle or check the filament path.",
+      active: true,
+      created_at: Time.current,
+      updated_at: Time.current
+    )
+    
+    MsrMailer.new_printer_issue(issue, "makerspace@uottawa.ca")
+  end
 end
