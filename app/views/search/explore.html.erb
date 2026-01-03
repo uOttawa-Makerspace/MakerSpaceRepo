@@ -18,7 +18,7 @@ end %>
 
 <div class="d-flex">
     <aside class="collapse d-lg-block ms-3">
-        <fieldset class="border rounded px-3 pb-3 mt-n3">
+        <fieldset class="border rounded px-3 pb-3 mt-n3 bg-body shadow">
             <legend class="float-none w-auto fw-semibold">Sort by</legend>
             <div class="form-check">
                 <%= label_tag :sort_most_liked, "Most Liked", class: 'form-check-label' %>
@@ -34,7 +34,7 @@ end %>
             </div>
         </fieldset>
 
-        <fieldset class="border rounded p-3 mb-2">
+        <fieldset class="border rounded p-3 mb-2 bg-body shadow">
             <legend class="float-none w-auto fw-semibold">Filter by</legend>
             <%= collection_check_boxes(:filter, :category, CategoryOption.all, :name, :name) do |b| %>
                 <div class="form-check">
@@ -47,7 +47,7 @@ end %>
     </aside>
 
     <section class="container-fluid">
-        <div class="row g-1">
+        <div class="row gx-1 gy-2">
             <% @repositories.each do |repository| %>
                 <div class="col-md-3">
                     <%= render 'repositories/repository_card', repository: %>
