@@ -12,13 +12,14 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:14
+        image: postgres:17
         env:
           POSTGRES_DB: makerspacerepo_test
           POSTGRES_PASSWORD: postgres
           POSTGRES_USER: postgres
         ports:
-          - 5432:5432
+          # map localhost:5433 to postgres:5433
+          - 5433:5432
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -33,7 +34,6 @@ jobs:
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: 3.4.7
           bundler-cache: true
       - uses: actions/setup-node@v3
         with:
@@ -55,7 +55,6 @@ jobs:
           dir: "config/"
       - name: Prepare Test
         env:
-          DATABASE_URL: postgres://postgres:@localhost:5432/makerspacerepo_test
           REDIS_URL: redis://localhost:6379/0
           RAILS_ENV: test
         run: |
@@ -65,7 +64,6 @@ jobs:
           openssl req -x509 -newkey rsa:4096 -keyout certs/saml.key -out certs/saml.crt -days 1 -nodes -subj "/C=CA/ST=Ontario/L=Ottawa/O=uOttawa/OU=Richard L'Abbé Makerspace/CN=makerepo.com/emailAddress=travis-ci@makerepo.com"
       - name: Migrate DB
         env:
-          DATABASE_URL: postgres://postgres:@localhost:5432/makerspacerepo_test
           REDIS_URL: redis://localhost:6379/0
           RAILS_ENV: test
         run: |
@@ -73,11 +71,9 @@ jobs:
           bundle exec rails db:migrate
       - name: Run tests
         env:
-          DATABASE_URL: postgres://postgres:@localhost:5432/makerspacerepo_test
           REDIS_URL: redis://localhost:6379/0
           RAILS_ENV: test
         run: |
-
           bundle exec rails spec
       - name: Deploy Staging
         if: github.ref == 'refs/heads/staging'

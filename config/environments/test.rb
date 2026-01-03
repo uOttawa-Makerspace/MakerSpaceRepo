@@ -59,4 +59,11 @@ Rails.application.configure do
 
   # Annotate rendered view with file names.
   # config.action_view.annotate_rendered_view_with_filenames = true
+
+  # Inline adapter executes job immediately
+  config.active_job.queue_adapter = :inline
+  
+  # No database connection in test environment.
+  #Environment attempts to connect to a database and fails otherwise
+  config.solid_queue.connects_to = nil
 end

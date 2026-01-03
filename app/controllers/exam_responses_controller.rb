@@ -1,4 +1,4 @@
-class ExamResponsesController < ApplicationController
+class ExamResponsesController < SessionsController
   before_action :current_user
   before_action :grant_access
 
