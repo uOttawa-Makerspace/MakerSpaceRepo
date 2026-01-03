@@ -221,11 +221,29 @@ document.addEventListener("turbo:load", function () {
     setTimeout(hideModal, 6000);
   }
 
-  // Start web socket connection
+  // Start web socket connection for modal popup
   staffDashboardChannelConnection((data) => {
     //console.log(data);
     if (data.add_user) {
       userTapIn(data.add_user);
     }
   });
+});
+// Reinitialize after DOM updated. There's no after-stream-render
+addEventListener("turbo:before-stream-render", (event) => {
+  const originalRender = event.detail.render;
+
+  let tables = DataTable.tables();
+
+  // HACK: Datatables doesn't understand that rows are removed
+  event.detail.render = function (streamElement) {
+    tables.forEach((t) => {
+      new DataTable(t).destroy();
+    });
+    originalRender(streamElement);
+    // Refresh all tables, in case they become empty
+    tables.forEach((t) => {
+      new DataTable(t);
+    });
+  };
 });

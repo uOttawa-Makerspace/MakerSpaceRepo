@@ -2,6 +2,9 @@
 # dashboard with membership details
 class CardTapJob < ApplicationJob
   queue_as :default
+  # Network call to faculty can take time, make sure we don't process double
+  # taps out of order. Only one job per space can run
+  limits_concurrency to: 1, key: ->(_rfid, space_id) { space_id }, duration: 1.minutes
 
   def perform(rfid, space_id)
     # Update faculty membership

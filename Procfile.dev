@@ -1,3 +1,2 @@
 vite: bin/vite dev
-job: bin/jobs
 web: bundle exec puma -p 3000

@@ -1,7 +1,11 @@
 # Communicates with the staff dashboard via a websocket connection. Used to
 # update the tables with any user activity
 class StaffDashboardChannel < ApplicationCable::Channel
+  # include Turbo::StreamsHelper
+
   def subscribed
+    # stream_from takes a string as an argument
+    # stream_for takes an object or a record
     stream_from "space_event_#{params[:space_id]}"
   end
 
@@ -41,35 +45,24 @@ class StaffDashboardChannel < ApplicationCable::Channel
   def self.broadcast_table_updates(space_id)
     space = Space.find(space_id)
 
-    Turbo::StreamsChannel.broadcast_update_to(
+    Turbo::StreamsChannel.broadcast_render_to(
       'signed_in_table',
-      target: 'table-js-signed-in',
-      partial: 'staff_dashboard/space_activity_row',
-      locals: {
-        space: space
-      },
-      collection:
-        User
-          .strict_loading
-          .includes(certifications: { training_session: %i[training user] })
-          .includes(:lab_sessions)
-          .where(
-            lab_sessions: {
-              sign_out_time: Time.zone.now..,
-              space: space_id
-            }
-          )
-    )
-
-    Turbo::StreamsChannel.broadcast_update_to(
-      'signed_in_table',
-      target: 'staffDashboardSignedOutTable',
-      partial: 'staff_dashboard/space_activity_row',
+      partial: 'staff_dashboard/table_broadcast',
       locals: {
         space: space,
-        signed_out: true
-      },
-      collection: space.recently_signed_out_users
+        signed_in_users:
+          User
+            .strict_loading
+            .includes(certifications: { training_session: %i[training user] })
+            .includes(:lab_sessions)
+            .where(
+              lab_sessions: {
+                sign_out_time: Time.zone.now..,
+                space: space_id
+              }
+            ),
+        signed_out_users: space.recently_signed_out_users
+      }
     )
   end
 end

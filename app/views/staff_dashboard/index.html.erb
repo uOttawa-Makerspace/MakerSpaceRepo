@@ -21,7 +21,7 @@
 <div class="table-responsive">
   <table class="table table-striped" data-datatable data-page-length="50" data-responsive="true" data-order="[]" id="signed-in-table">
     <caption id="user-count" class="text-center fs-3" align="top">
-        <%= pluralize @space.signed_in_users.count, 'user' %> inside <%= @space.name %>
+        <span id="SpaceUserCount"><%= pluralize @space.signed_in_users.count, 'user' %> inside <%= @space.name %></span>
         <div class="d-flex justify-content-around">
             <%= link_to staff_dashboard_sign_out_all_users_path, class: 'btn btn-danger', data: {confirm: 'Are you sure you want to sign out all users?'} do %>
                 <%= fa_icon('sign-out') %> Sign Out All Users
