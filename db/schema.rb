@@ -1066,6 +1066,9 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_19_215329) do
     t.string "youtube_link"
     t.integer "project_proposal_id"
     t.boolean "deleted"
+    t.index ["category"], name: "index_repositories_on_category", opclass: :gin_trgm_ops, using: :gin
+    t.index ["description"], name: "index_repositories_on_description", opclass: :gin_trgm_ops, using: :gin
+    t.index ["title"], name: "index_repositories_on_title", opclass: :gin_trgm_ops, using: :gin
     t.index ["user_id"], name: "index_repositories_on_user_id"
   end
 
@@ -1425,6 +1428,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_19_215329) do
     t.datetime "locked_until", precision: nil
     t.integer "auth_attempts", default: 0
     t.string "student_id"
+    t.index "lower((email)::text)", name: "index_users_on_lowercase_email", unique: true
+    t.index "lower((username)::text)", name: "index_users_on_lowercase_username", unique: true
     t.index ["name"], name: "index_users_on_name", opclass: :gin_trgm_ops, using: :gin
     t.index ["space_id"], name: "index_users_on_space_id"
     t.index ["username"], name: "index_users_on_username", opclass: :gin_trgm_ops, using: :gin
