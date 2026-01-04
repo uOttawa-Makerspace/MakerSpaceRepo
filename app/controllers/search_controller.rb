@@ -4,6 +4,13 @@ class SearchController < SessionsController
   before_action :current_user
   before_action :no_container
 
+  SEARCH_SORT_BY_OPTIONS = %i[
+    newest
+    most_likes
+    most_makes
+    recently_updated
+  ].freeze
+
   def explore
     if params[:category].blank?
       @repositories =
@@ -22,33 +29,33 @@ class SearchController < SessionsController
           )
           .order([sort_order].to_h).page params[:page]
     end
-    @photos = photo_hash
   end
 
   def search
-    sort_arr = sort_order
-    
     @repositories =
       Repository
         .paginate(per_page: 12, page: params[:page])
         .public_repos
-        .order([sort_arr].to_h)
+        .order([sort_order].to_h)
 
     if params[:category].present?
       @repositories =
         @repositories.includes(:categories).where(
-          { categories: { name: SLUG_TO_CATEGORY_MODEL[params[:category]] } }
+          {
+            categories: {
+              name: SLUG_TO_CATEGORY_MODEL.values_at(*params[:category])
+            }
+          }
         )
     end
-    
+
     if params[:q].present?
       @repositories = @repositories.fuzzy_search(params[:q])
     end
-    
+
     # Shim the explore page
     render :explore
   end
-
 
   def category
     sort_arr = sort_order
@@ -89,7 +96,7 @@ class SearchController < SessionsController
         .sort_by { |s| -s[sort_arr.first].to_i }
         .paginate(per_page: 12, page: params[:page])
 
-    if params["featured"]
+    if params['featured']
       @repositories =
         (@repositories1 + @repositories2 + @repositories3)
           .uniq
@@ -106,7 +113,7 @@ class SearchController < SessionsController
   def equipment
     sort_arr = sort_order
 
-    name = params[:slug].gsub("-", " ")
+    name = params[:slug].gsub('-', ' ')
     @repositories =
       Equipment
         .where(name: name)
@@ -124,13 +131,13 @@ class SearchController < SessionsController
 
   def sort_order
     case params[:sort]
-    when "newest"
+    when 'newest'
       %i[created_at desc]
-    when "most_likes"
+    when 'most_likes'
       %i[like desc]
-    when "most_makes"
+    when 'most_makes'
       %i[make desc]
-    when "recently_updated"
+    when 'recently_updated'
       %i[updated_at desc]
     else
       %i[created_at desc]
@@ -149,24 +156,24 @@ class SearchController < SessionsController
   end
 
   SLUG_TO_OLD_CATEGORY = {
-    "internet-of-things" => "Internet of Things",
-    "virtual-reality" => "Virtual Reality",
-    "health-sciences" => "Bio-Medical",
-    "mobile-development" => "Mobile",
-    "other-projects" => "3D-Model",
-    "wearable" => "Wearables"
+    'internet-of-things' => 'Internet of Things',
+    'virtual-reality' => 'Virtual Reality',
+    'health-sciences' => 'Bio-Medical',
+    'mobile-development' => 'Mobile',
+    'other-projects' => '3D-Model',
+    'wearable' => 'Wearables'
   }.freeze
 
   SLUG_TO_CATEGORY_MODEL = {
-    "internet-of-things" => "Internet of Things",
-    "course-related-projects" => "Course-related Projects",
-    "gng2101/gng2501" => "GNG2101/GNG2501",
-    "gng1103/gng1503" => "GNG1103/GNG1503",
-    "health-sciences" => "Health Sciences",
-    "wearable" => "Wearable",
-    "mobile-development" => "Mobile Development",
-    "virtual-reality" => "Virtual Reality",
-    "other-projects" => "Other Projects",
-    "uottawa-team-projects" => "uOttawa Team Projects"
+    'internet-of-things' => 'Internet of Things',
+    'course-related-projects' => 'Course-related Projects',
+    'gng2101/gng2501' => 'GNG2101/GNG2501',
+    'gng1103/gng1503' => 'GNG1103/GNG1503',
+    'health-sciences' => 'Health Sciences',
+    'wearable' => 'Wearable',
+    'mobile-development' => 'Mobile Development',
+    'virtual-reality' => 'Virtual Reality',
+    'other-projects' => 'Other Projects',
+    'uottawa-team-projects' => 'uOttawa Team Projects'
   }.freeze
 end

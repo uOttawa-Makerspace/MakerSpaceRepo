@@ -5,48 +5,50 @@ else
 end %>
 
 <div class="container">
-<h1 class="text-center">
-    <% if params[:q].present? %>
-        Search results for <%= params[:q] %>
-    <% else %>
-        Explore recent repositories
+    <h1 class="text-center">
+        <% if params[:q].present? %>
+            Search results for <%= params[:q] %>
+        <% else %>
+            Explore recent repositories
+        <% end %>
+    </h1>
+    <div class="mb-3">
+        <%= form_with url: search_url, method: :get, id: 'SearchForm' do |form| %>
+            <div class="input-group">
+                <%= form.text_field :q, class: 'form-control', value: params[:q], placeholder: 'Project title or description...' %>
+                <%= form.submit t('explore.search'), class: 'btn btn-primary', name: nil %>
+            </div>
+        <% end %>
+    </div>
+    <% if !@user.nil? && !@user.username.nil? %>
+        <li><%= link_to t('navbar.user.liked'), likes_user_path(@user.username), class: 'dropdown-item' %></li>
     <% end %>
-</h1>
-
-<%= render partial: 'search_bar' %>
 </div>
 
-<div class="d-flex">
-    <aside class="collapse d-lg-block ms-3">
-        <fieldset class="border rounded px-3 pb-3 mt-n3 bg-body shadow">
-            <legend class="float-none w-auto fw-semibold">Sort by</legend>
-            <div class="form-check">
-                <%= label_tag :sort_most_liked, "Most Liked", class: 'form-check-label' %>
-                <%= radio_button_tag :sort, :most_liked, class: 'form-check-input' %>
-            </div>
-            <div class="form-check">
-                <%= label_tag :sort_most_makes, "Most makes", class: 'form-check-label' %>
-                <%= radio_button_tag :sort, :most_makes, class: 'form-check-input' %>
-            </div>
-            <div class="form-check">
-                <%= label_tag :sort_recent, "Recent", class: 'form-check-label' %>
-                <%= radio_button_tag :sort, :recent, class: 'form-check-input' %>
-            </div>
+<div class="row">
+    <aside class="col-md-2">
+        <fieldset class="border rounded px-3 pb-3 mt-n3 mb-3 bg-body shadow">
+            <legend class="float-none w-auto fw-semibold"><%= t('home.sort.by') %></legend>
+            <% SearchController::SEARCH_SORT_BY_OPTIONS.each do |sort| %>
+                <div class="form-check">
+                    <%= label_tag "sort_#{sort}", t('home.sort')[sort], class: 'form-check-label' %>
+                    <%= radio_button_tag :sort, sort, checked: params[:sort] == sort.to_s, class: 'form-check-input', form: 'SearchForm' %>
+                </div>
+            <% end %>
         </fieldset>
 
         <fieldset class="border rounded p-3 mb-2 bg-body shadow">
-            <legend class="float-none w-auto fw-semibold">Filter by</legend>
-            <%= collection_check_boxes(:filter, :category, CategoryOption.all, :name, :name) do |b| %>
+            <legend class="float-none w-auto fw-semibold"><%= t('home.sort.filter_by') %></legend>
+            <% SearchController::SLUG_TO_CATEGORY_MODEL.each do |slug, name| %>
                 <div class="form-check">
-                    <%= b.check_box(class: 'form-check-input') %>
-                    <%= b.label(class: 'form-check-label') %>
+                    <%= label_tag "category_#{slug}", name, class: 'form-check-label' %>
+                    <%= check_box_tag 'category[]', slug, params[:category]&.include?(slug), id: "category_#{slug}", class: 'form-check-input', form: "SearchForm" %>
                 </div>
             <% end %>
-
         </fieldset>
     </aside>
 
-    <section class="container-fluid">
+    <section class="col-md-10">
         <div class="row gx-1 gy-2">
             <% @repositories.each do |repository| %>
                 <div class="col-md-3">
