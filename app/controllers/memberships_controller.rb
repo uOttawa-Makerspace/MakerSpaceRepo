@@ -18,7 +18,7 @@ class MembershipsController < SessionsController
   end
   
   def create
-    return flash.now[:alert] = t('memberships.index.purchase.cutoff_tooltip') if is_user_cutoff
+    return flash.now[:alert] = t('memberships.purchase.purchase.cutoff_tooltip') if is_user_cutoff
 
     @membership = current_user.memberships.new(membership_params)
     
