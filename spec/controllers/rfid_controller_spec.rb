@@ -222,14 +222,19 @@ RSpec.describe RfidController, type: :controller do
         }
         user = @rfid.user
         post :card_number, params: @rfid_params
-        
-        expect(user.reload.active_membership).to be_present
+
+        expect(user.reload.has_active_membership?).to be true
         # User dropped a course, changed programs, etc...
         # Hardcoded because why not...
         user.update(faculty: 'Social Sciences')
+        # Sign out
         post :card_number, params: @rfid_params
-        
-        expect(user.reload.active_membership).to be_blank
+        expect(response).to have_http_status :success
+        # Sign in again
+        post :card_number, params: @rfid_params
+        expect(response).to have_http_status :success
+        # membership now should be gone
+        expect(user.reload.has_active_membership?).to be false
       end
     end
   end
