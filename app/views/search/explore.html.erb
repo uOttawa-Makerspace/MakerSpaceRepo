@@ -20,44 +20,50 @@ end %>
             </div>
         <% end %>
     </div>
-    <% if !@user.nil? && !@user.username.nil? %>
-        <li><%= link_to t('navbar.user.liked'), likes_user_path(@user.username), class: 'dropdown-item' %></li>
-    <% end %>
 </div>
 
-<div class="row">
-    <aside class="col-md-2">
-        <fieldset class="border rounded px-3 pb-3 mt-n3 mb-3 bg-body shadow">
-            <legend class="float-none w-auto fw-semibold"><%= t('home.sort.by') %></legend>
-            <% SearchController::SEARCH_SORT_BY_OPTIONS.each do |sort| %>
-                <div class="form-check">
-                    <%= label_tag "sort_#{sort}", t('home.sort')[sort], class: 'form-check-label' %>
-                    <%= radio_button_tag :sort, sort, checked: params[:sort] == sort.to_s, class: 'form-check-input', form: 'SearchForm' %>
-                </div>
-            <% end %>
-        </fieldset>
+<div class="container-fluid">
+    <div class="row gx-3">
+        <aside class="col-md-2">
+            <fieldset class="border rounded px-3 pb-3 mt-n3 mb-3 bg-body shadow">
+                <legend class="float-none w-auto fw-semibold"><%= t('home.sort.by') %></legend>
+                <% SearchController::SEARCH_SORT_BY_OPTIONS.each do |sort| %>
+                    <div class="form-check">
+                        <%= label_tag "sort_#{sort}", t('home.sort')[sort], class: 'form-check-label' %>
+                        <%= radio_button_tag :sort, sort, checked: params[:sort] == sort.to_s, class: 'form-check-input', form: 'SearchForm' %>
+                    </div>
+                <% end %>
+            </fieldset>
 
-        <fieldset class="border rounded p-3 mb-2 bg-body shadow">
-            <legend class="float-none w-auto fw-semibold"><%= t('home.sort.filter_by') %></legend>
-            <% SearchController::SLUG_TO_CATEGORY_MODEL.each do |slug, name| %>
-                <div class="form-check">
-                    <%= label_tag "category_#{slug}", name, class: 'form-check-label' %>
-                    <%= check_box_tag 'category[]', slug, params[:category]&.include?(slug), id: "category_#{slug}", class: 'form-check-input', form: "SearchForm" %>
-                </div>
-            <% end %>
-        </fieldset>
-    </aside>
+            <fieldset class="border rounded px-3 pb-3 mb-2 bg-body shadow">
+                <legend class="float-none w-auto fw-semibold"><%= t('home.sort.filter_by') %></legend>
+                <% if signed_in? %>
+                    <div class="form-check">
+                        <%= label_tag :liked, t('explore.liked'), class: 'form-check-label' %>
+                        <%= check_box_tag :liked, params[:liked].present?, class: 'form-check-input', form: "SearchForm" %>
+                    </div>
+                <% end %>
+                <% SearchController::SLUG_TO_CATEGORY_MODEL.each do |slug, name| %>
+                    <div class="form-check">
+                        <%= label_tag "category_#{slug}", name, class: 'form-check-label' %>
+                        <%= check_box_tag 'category[]', slug, params[:category]&.include?(slug), id: "category_#{slug}", class: 'form-check-input', form: "SearchForm" %>
+                    </div>
+                <% end %>
+            </fieldset>
+        </aside>
 
-    <section class="col-md-10">
-        <div class="row gx-1 gy-2">
-            <% @repositories.each do |repository| %>
-                <div class="col-md-3">
-                    <%= render 'repositories/repository_card', repository: %>
-                </div>
-            <% end %>
-        </div>
-        <div class="mb-3">
-        </div>
-    </section>
+        <section class="col-md-10">
+            <div class="row gx-1 gy-2">
+                <% @repositories.each do |repository| %>
+                    <div class="col-md-3">
+                        <%= render 'repositories/repository_card', repository: %>
+                    </div>
+                <% end %>
+            </div>
+            <div class="mb-3">
+            </div>
+        </section>
+    </div>
 </div>
+
 <%= will_paginate @repositories, inner_window: 2, outer_window: 1, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>

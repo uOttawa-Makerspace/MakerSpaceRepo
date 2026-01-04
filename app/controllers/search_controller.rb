@@ -32,11 +32,19 @@ class SearchController < SessionsController
   end
 
   def search
+    # This depends on lazy evaluation of queries. Queries are only executed when
+    # actually evaluated (in a view, for example)
+
     @repositories =
       Repository
         .paginate(per_page: 12, page: params[:page])
         .public_repos
-        .order([sort_order].to_h)
+        .order([sort_order].to_h) # sort
+
+    if signed_in? && params[:liked].present?
+      @repositories =
+        @repositories.includes(:likes).where(likes: { user_id: @user.id })
+    end
 
     if params[:category].present?
       @repositories =
