@@ -51,7 +51,7 @@
               <div class="mb-3 col-md-4"></div>
               <div class="mb-3 col-md-4 text-center">
                 <%= f.label :end_time, 'End Date (Optional)', class: 'form-label' %>
-                <%= f.text_field 'end_date', autocomplete: 'off', class: 'form-control mb-3', id: 'end_date' %>
+                <%= f.date_field 'end_date', autocomplete: 'off', class: 'form-control mb-3', id: 'end_date' %>
                 <button class="btn btn-danger btn-sm" type="button" onclick="clearEndDate();">Clear End Date</button>
               </div>
               <div class="col-md-4"></div>
@@ -66,7 +66,3 @@
     </div>
   </div>
 </section>
-
-<script type="text/javascript" charset="utf-8">
-    document.querySelector('#end_date').flatpickr();
-</script>
