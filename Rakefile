@@ -16,4 +16,6 @@ Rake::Application.include TempFixForRakeLastComment
 Rails.application.load_tasks
 
 # Load parallel_tests tasks
-require 'parallel_tests/tasks'
+if %w[development test].include?(Rails.env)
+  require 'parallel_tests/tasks'
+end
