@@ -1,40 +1,14 @@
 import DataTable from "datatables.net-bs5";
-import "datatables.net-bs5/css/dataTables.bootstrap5.min.css";
-import toastr from "toastr/toastr";
-import * as bootstrap from "bootstrap";
-
-toastr.options = {
-  closeButton: true,
-  debug: false,
-  newestOnTop: false,
-  progressBar: true,
-  positionClass: "toast-bottom-full-width",
-  preventDuplicates: false,
-  showDuration: "300",
-  hideDuration: "1000",
-  timeOut: "5000",
-  extendedTimeOut: "1000",
-  showEasing: "swing",
-  hideEasing: "linear",
-  showMethod: "fadeIn",
-  hideMethod: "fadeOut",
-  escapeHTML: true,
-};
-
-// Testing Consent forms before they have been added
-
-function getRandomInt(max) {
-  return Math.floor(Math.random() * max);
-}
-
-const myModal = new bootstrap.Modal(document.getElementById("signinModal"), {
-  keyboard: true,
-});
+import { Modal } from "bootstrap";
+import { staffDashboardChannelConnection } from "../channels/staff_dashboard_channel";
 
 var modalClicked = false;
 const modal = document.getElementById("signinModal");
+const notifyModal = new Modal(modal);
+
 const progressBar = document.getElementById("outer-progress-bar");
 const innerBar = document.getElementById("signin-progress-bar");
+
 modal.addEventListener("click", function () {
   modalClicked = true;
   progressBar.classList.add("fading-progress-bar");
@@ -85,7 +59,7 @@ document.addEventListener("turbo:load", function () {
 
   function hideModal() {
     if (!modalClicked) {
-      myModal.hide();
+      notifyModal.hide();
     }
   }
 
@@ -138,7 +112,7 @@ document.addEventListener("turbo:load", function () {
     // Display/Refresh Modal
     modalClicked = false;
     innerBar.classList.add("moving-progress-bar");
-    myModal.show();
+    notifyModal.show();
     setTimeout(hideModal, 6000);
 
     // Setting Modal Text
@@ -197,38 +171,79 @@ document.addEventListener("turbo:load", function () {
     displayBefore = displayNow;
   }
 
-  function refreshTables() {
-    let token = Array.from(
-      document.querySelectorAll(`[data-user-id]`),
-      (el) => el.dataset.userId,
-    ).join("");
-    let url = "/staff_dashboard/refresh_tables?token=" + token;
-    fetch(url)
-      .then((response) => (response.status == 200 ? response.json() : {}))
-      .then((data) => {
-        if (data.users) {
-          if (document.getElementById("table-js-signed-out")) {
-            document.getElementById("table-js-signed-out").innerHTML =
-              data.signed_out;
-          }
-          if (document.getElementById("table-js-signed-in")) {
-            document.getElementById("table-js-signed-in").innerHTML =
-              data.signed_in;
-          }
-          notifyNewUserLogin(
-            data.users,
-            data.certification,
-            data.has_membership,
-            data.expiration_date,
-            data.is_student,
-            data.signed_sheet,
-          );
-        }
-      });
+  refreshCapacity();
+
+  function userTapIn(user) {
+    if (disableNotificationModal()) {
+      return;
+    }
+
+    innerBar.classList.add("moving-progress-bar");
+
+    document.getElementById("sign-in-username").innerText = user.username;
+    document.getElementById("sign-in-profile-link").href = user.username;
+    // '<a class="drop-username-cell fs-5" href="/' + e[2] + '">See Profile</a>';
+    document.getElementById("sign-in-email").innerText = user.email;
+    document.getElementById("no-membership").style.display = user.membership
+      ? "none"
+      : "block";
+    document.getElementById("has-membership").style.display = user.membership
+      ? "block"
+      : "none";
+    document.getElementById("sign-in-membership").innerText =
+      "Active until " + user.expiration_date;
+
+    document.getElementById("not-student").style.display = !user.is_student
+      ? "block"
+      : "none";
+    document.getElementById("is-student").style.display = user.is_student
+      ? "block"
+      : "none";
+    document.getElementById("unsigned-consent-form").style.display =
+      user.signed_sheet ? "none" : "block";
+    document.getElementById("signed-consent-form").style.display =
+      !user.signed_sheet ? "none" : "block";
+
+    console.log(user.certification);
+    let certificationsList = user.certification.map(
+      (name_en) =>
+        `<span class="badge text-bg-light text-black-50">${name_en}</span>`,
+    );
+    console.log(certificationsList);
+    document.getElementById("sign-in-certifications").innerHTML =
+      `<span class='.fs-4'>${certificationsList.join("")}</span>`;
+
+    const dt = new DataTable(document.querySelector("#signed-in-table"));
+    // Reflow table after table gets updated
+    dt.draw();
+
+    notifyModal.show();
+    setTimeout(hideModal, 6000);
   }
 
-  refreshCapacity();
-  setInterval(refreshCapacity, 60000);
-  refreshTables();
-  setInterval(refreshTables, 5000);
+  // Start web socket connection for modal popup
+  staffDashboardChannelConnection((data) => {
+    //console.log(data);
+    if (data.add_user) {
+      userTapIn(data.add_user);
+    }
+  });
+});
+// Reinitialize after DOM updated. There's no after-stream-render
+addEventListener("turbo:before-stream-render", (event) => {
+  const originalRender = event.detail.render;
+
+  let tables = DataTable.tables();
+
+  // HACK: Datatables doesn't understand that rows are removed
+  event.detail.render = function (streamElement) {
+    tables.forEach((t) => {
+      new DataTable(t).destroy();
+    });
+    originalRender(streamElement);
+    // Refresh all tables, in case they become empty
+    tables.forEach((t) => {
+      new DataTable(t);
+    });
+  };
 });

@@ -60,7 +60,6 @@
         </div>
         <div class="row mt-5 g-5 text-center justify-content-center sequence">
             <div class="col-lg-3">
-
                 <%= image_tag 'development_program/seq-1.png', class: 'img-fluid' %>
                 <p><%= t('devprog.block1.sequence.one') %></p>
             </div>
@@ -82,66 +81,78 @@
         <p class="text-primary text-center fw-bold fs-3 mb-5"><%= t('devprog.block1.sequence.text') %></p>
         <p class="fs-3 fw-bold m-3"><%= t('devprog.block1.footer') %></p>
     </div>
-    <div class="bg-body-tertiary p-3 text-center text-uppercase">
-        <h2 class="text-uppercase mt-5"><%= t('devprog.digital_badges.title') %></h2>
-        <p class="fs-3 fw-bold text-primary"><%= t('devprog.digital_badges.subtitle') %></p>
-        <div class="row mb-5">
-            <div class="col-lg-6 d-flex flex-column justify-content-between">
-                <div class="d-flex justify-content-around">
-                    <div class="arrow-box">Learn it</div>
-                    <div class="arrow-box">Earn it</div>
-                    <div class="arrow-box">Share it</div>
-                </div>
-                <div class="fs-3 fw-bold">Display your new achievements through our digital badges</div>
-                <div class="d-flex justify-content-center">
-                    <%# Hardcode these three badges %>
-                    <div class="mx-1">
-                    <%= render 'badges/badge_icon', width: 150, height: 150, name: "Digital Tech", skill: 2, level: "none" %>
-                    </div>
-                    <div class="mx-1">
-                    <%= render 'badges/badge_icon', width: 150, height: 150, name: "Professional Development", skill: 3, level: "none" %>
-                    </div>
-                    <div class="mx-1">
-                    <%= render 'badges/badge_icon', width: 150, height: 150, name: "Manufacturing Tech", skill: 1, level: "none" %>
-                    </div>
-                </div>
-                <%#%= image_tag 'development_program/1.png', class: 'w-100' %>
+    <div class="bg-body-tertiary py-5">
+        <div class="container-lg">
+            <!-- Header -->
+            <div class="text-center mb-5">
+                <h2 class="text-uppercase mt-3"><%= t('devprog.digital_badges.title') %></h2>
+                <p class="fs-4 fw-bold text-primary"><%= t('devprog.digital_badges.subtitle') %></p>
             </div>
-            <div class="col-lg-6">
-                <div class="row row-cols-lg-3 g-3">
-                    <div class="col">
-                        <div class="linkBox">
-                            <h4>Digital Technologies</h4>
-                            <ul>
-                              <li>3D Printing</li>
-                              <li>Laser Cutting</li>
-                              <li>Arduino</li>
-                              <li>Soldering</li>
-                              <li>Virtual Reality</li>
-                              <li>Embroidery</li>
+
+            <!-- Learn It / Earn It / Share It -->
+            <div class="arrow-container d-flex flex-wrap justify-content-center mb-5 gap-2 gap-md-0">
+                <div class="arrow-box-wrapper">
+                    <div class="arrow-box"><%= t('devprog.digital_badges.learn_it') %></div>
+                </div>
+                <div class="arrow-box-wrapper">
+                    <div class="arrow-box"><%= t('devprog.digital_badges.earn_it') %></div>
+                </div>
+                <div class="arrow-box-wrapper">
+                    <div class="arrow-box arrow-box-last"><%= t('devprog.digital_badges.share_it') %></div>
+                </div>
+            </div>  
+
+            <!-- Display Achievements Text -->
+            <p class="fs-4 fw-bold text-center mb-5"><%= t('devprog.digital_badges.display_achievements') %></p>
+
+            <!-- Badge Cards -->
+            <div class="row g-4 justify-content-center">
+                <!-- Digital Tech Badge -->
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <%= render 'badges/badge_icon', width: 120, height: 120, name: "Digital Tech", skill: 2, level: "none" %>
+                            </div>
+                            <h4 class="card-title"><%= t('devprog.digital_badges.categories.digital_tech.title') %></h4>
+                            <ul class="list-unstyled text-start mt-3">
+                                <% t('devprog.digital_badges.categories.digital_tech.items').each do |item| %>
+                                    <li class="mb-2"><%= item %></li>
+                                <% end %>
                             </ul>
                         </div>
                     </div>
-                    <div class="col">
-                        <div class="linkBox">
-                            <h4>Professional Development</h4>
-                            <ul>
-                              <li>Design Thinking</li>
-                              <li>Entrepreneurship basics</li>
-                              <li>Project Management</li>
-                              <li>Effective Communication (Written and Oral)</li>
+                </div>
+
+                <!-- Professional Development Badge -->
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <%= render 'badges/badge_icon', width: 120, height: 120, name: "Professional Development", skill: 3, level: "none" %>
+                            </div>
+                            <h4 class="card-title"><%= t('devprog.digital_badges.categories.professional_dev.title') %></h4>
+                            <ul class="list-unstyled text-start mt-3">
+                                <% t('devprog.digital_badges.categories.professional_dev.items').each do |item| %>
+                                    <li class="mb-2"><%= item %></li>
+                                <% end %>
                             </ul>
                         </div>
                     </div>
-                    <div class="col">
-                        <div class="linkBox">
-                            <h4>Manufacturing Technologies</h4>
-                            <ul>
-                              <li>Shop Fundamentals</li>
-                              <li>Lathe</li>
-                              <li>Mill</li>
-                              <li>CNC</li>
-                              <li>Welding</li>
+                </div>
+
+                <!-- Manufacturing Tech Badge -->
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <%= render 'badges/badge_icon', width: 120, height: 120, name: "Manufacturing Tech", skill: 1, level: "none" %>
+                            </div>
+                            <h4 class="card-title"><%= t('devprog.digital_badges.categories.manufacturing_tech.title') %></h4>
+                            <ul class="list-unstyled text-start mt-3">
+                                <% t('devprog.digital_badges.categories.manufacturing_tech.items').each do |item| %>
+                                    <li class="mb-2"><%= item %></li>
+                                <% end %>
                             </ul>
                         </div>
                     </div>
@@ -154,7 +165,7 @@
             <div>
                 <p class="fs-2 fw-bold text-uppercase"><%= t('devprog.volunteer.title') %></p>
                 <p class="fs-5"><%= t('devprog.volunteer.text') %></p>
-                <%= link_to 'More about volunteering', volunteers_path, class: 'header2' %>
+                <%= link_to t('devprog.volunteer.more_link'), volunteers_path, class: 'header2' %>
             </div>
             <div>
                 <h3><%= t('devprog.volunteer.list_header') %></h3>

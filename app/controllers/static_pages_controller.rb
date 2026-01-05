@@ -182,7 +182,7 @@ class StaticPagesController < SessionsController
     end
 
     if params[:email].present?
-      User.find_by(email: params[:email].downcase)&.send_password_reset
+      User.find_by(email: params[:email].strip.downcase)&.send_password_reset
       flash[
         :notice
         ] = 'A reset link email has been sent to the email if the account exists.'
