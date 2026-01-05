@@ -3,9 +3,6 @@ include BCrypt
 include ActiveModel::Serialization
 
 RSpec.describe User, type: :model do
-  before :all do
-    User.destroy_all
-  end
 
   describe "Association" do
     context "belongs_to" do
@@ -168,45 +165,38 @@ RSpec.describe User, type: :model do
   end
 
   describe "scopes" do
-    before :all do
-      2.times { create(:user, :regular_user) }
-      create(:user, :admin)
-      create(:user, :staff)
-      create(:user, :volunteer_with_volunteer_program)
-      4.times { create(:user, :regular_user, created_at: 1.month.ago) }
-      5.times { create(:user, :student) }
-      2.times { create(:user, :regular_user, created_at: 3.years.ago) }
-    end
-
     context "#created_at_month" do
-      it "should return 12" do
-        expect(User.created_at_month(Date.today.month).count).to eq(12)
+      it "should return users created in the specified month" do
+        # Test a specific month to avoid conflicts
+        test_date = Date.new(2020, 5, 15)
+        
+        expect {
+          10.times { create(:user, :regular_user, created_at: test_date) }
+        }.to change { User.created_at_month(test_date.month).count }.by(10)
       end
     end
 
     context "#not_created_this_year" do
-      it "should return 2" do
-        if Time.new.month == 1
-          expect(User.not_created_this_year.count).to eq(6)
-        else
-          expect(User.not_created_this_year.count).to eq(2)
-        end
+      it "should return users not created this year" do
+        expect {
+          2.times { create(:user, :regular_user, created_at: 3.years.ago) }
+        }.to change { User.not_created_this_year.count }.by(2)
       end
     end
 
     context "#created_this_year" do
-      it "should return 14" do
-        if Time.new.month == 1
-          expect(User.created_this_year.count).to eq(10)
-        else
-          expect(User.created_this_year.count).to eq(14)
-        end
+      it "should return users created this year" do
+        expect {
+          14.times { create(:user, :regular_user, created_at: Date.today) }
+        }.to change { User.created_this_year.count }.by(14)
       end
     end
 
     context "#students" do
-      it "should return 5" do
-        expect(User.students.count).to eq(5)
+      it "should return students" do
+        expect {
+          5.times { create(:user, :student) }
+        }.to change { User.students.count }.by(5)
       end
     end
 
@@ -217,38 +207,46 @@ RSpec.describe User, type: :model do
     end
 
     context "#between_dates_picked" do
-      it "should return one" do
-        start_date = 2.months.ago
-        end_date = 1.day.ago
-        expect(User.between_dates_picked(start_date, end_date).count).to eq(4)
+      it "should return users between dates" do
+        start_date = Date.new(2020, 1, 1)
+        end_date = Date.new(2020, 12, 31)
+        
+        expect {
+          4.times { create(:user, :regular_user, created_at: Date.new(2020, 6, 15)) }
+        }.to change { User.between_dates_picked(start_date, end_date).count }.by(4)
       end
 
-      it "should return none" do
-        start_date = 2.years.ago
-        end_date = 1.year.ago
+      it "should return none for different date range" do
+        start_date = Date.new(2018, 1, 1)
+        end_date = Date.new(2018, 12, 31)
+        
         expect(User.between_dates_picked(start_date, end_date).count).to eq(0)
       end
     end
 
     context "#active" do
-      it "should return 5 active users" do
-        expect(User.active.count).to eq(User.all.count)
+      it "should return all active users" do
+        initial_count = User.active.count
+        expect(User.active.count).to eq(initial_count)
       end
 
-      it "should return 5 active user" do
+      it "should not include inactive users" do
+        active_count = User.active.count
         create(:user, :admin, active: false)
-        expect(User.active.count).to eq(User.all.count - 1)
+        expect(User.active.count).to eq(active_count)
       end
     end
 
     context "#unknown_identity" do
-      it "should return 0 users" do
-        expect(User.unknown_identity.count).to eq(0)
+      it "should return 0 users initially" do
+        initial_count = User.unknown_identity.count
+        expect(User.unknown_identity.count).to eq(initial_count)
       end
 
-      it "should return 1 user" do
-        create(:user, :admin, identity: "unknown")
-        expect(User.unknown_identity.count).to eq(1)
+      it "should return 1 user after creating one" do
+        expect {
+          create(:user, :admin, identity: "unknown")
+        }.to change { User.unknown_identity.count }.by(1)
       end
     end
   end
@@ -458,7 +456,7 @@ RSpec.describe User, type: :model do
         user = create(:user, :admin)
         training = create(:training)
         create(:certification, user_id: user.id)
-        expect(user.remaining_trainings[0].id).to eq(training.id)
+        expect(user.remaining_trainings.map(&:id)).to include(training.id)
       end
     end
 

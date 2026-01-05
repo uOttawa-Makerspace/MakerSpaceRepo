@@ -73,6 +73,7 @@ gem "mission_control-jobs"
 gem "puma", '~> 7.1'
 
 group :development, :test do
+  gem 'rspec_junit_formatter'
   gem "byebug", platform: :mri
   gem "factory_bot_rails"
   gem "faker", "~> 3.1"
@@ -109,6 +110,7 @@ group :development do
 end
 
 group :test do
+  gem "parallel_tests"
   gem "capybara"
   gem "database_cleaner-active_record"
   gem "launchy", "~> 2.2"

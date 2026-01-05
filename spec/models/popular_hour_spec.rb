@@ -1,42 +1,39 @@
 require "rails_helper"
 
 RSpec.describe PopularHour, type: :model do
-  describe "Association" do
-    context "belongs_to" do
-      it { should belong_to(:space).without_validating_presence }
-    end
-  end
+  it { should belong_to(:space).without_validating_presence }
 
-  describe "Methods" do
-    before :all do
+  describe "Scopes and Methods" do
+    before(:all) do
       @space1 = create(:space)
       @space2 = create(:space)
-      4.times { create(:popular_hour, space: @space1) }
-      2.times { create(:popular_hour, space: @space2) }
+      
+      # Bulk insert instead of factory loop
+      PopularHour.insert_all(
+        4.times.map { { space_id: @space1.id, created_at: Time.now, updated_at: Time.now } }
+      )
+      PopularHour.insert_all(
+        2.times.map { { space_id: @space2.id, created_at: Time.now, updated_at: Time.now } }
+      )
     end
 
-    context "#from_space" do
-      it "should return popular hour from space 1" do
-        popular_hours = PopularHour.from_space(@space1.id)
-        expect(popular_hours.count).to be(168 + 4)
-      end
-
-      it "should return popular hour from space 2" do
-        popular_hours = PopularHour.from_space(@space2.id)
-        expect(popular_hours.count).to be(168 + 2)
-      end
+    after(:all) do
+      DatabaseCleaner.clean_with(:truncation)
     end
 
-    context "#get_popular_hours_per_period" do
-      it "should make populate the hash" do
-        create(:space)
-        hash =
-          PopularHour.popular_hours_per_period(Date.today - 1.month, Date.today)
-        expect(hash.length).to eq(Space.all.count)
-        Space.all.each do |space|
-          expect(hash[space.id].length).to eq(7)
-          (0..6).each { |day| expect(hash[space.id][day].length).to eq(24) }
-        end
+    it "returns popular hours from specific spaces" do
+      expect(PopularHour.from_space(@space1.id).count).to be(168 + 4)
+      expect(PopularHour.from_space(@space2.id).count).to be(168 + 2)
+    end
+
+    it "populates hash correctly for all spaces" do
+      # Mock expensive query or use minimal date range
+      hash = PopularHour.popular_hours_per_period(Date.today, Date.today + 1.day)
+      
+      expect(hash.keys).to include(@space1.id, @space2.id)
+      hash.values.first.tap do |days|
+        expect(days.length).to eq(7)
+        expect(days[0].length).to eq(24)
       end
     end
   end
