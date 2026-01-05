@@ -151,16 +151,6 @@
   resolved "https://registry.yarnpkg.com/@fullcalendar/daygrid/-/daygrid-6.1.20.tgz#fcf33af4ea908b46fd755414278341811e01bdf8"
   integrity sha512-AO9vqhkLP77EesmJzuU+IGXgxNulsA8mgQHynclJ8U70vSwAVnbcLG9qftiTAFSlZjiY/NvhE7sflve6cJelyQ==
 
-"@fullcalendar/google-calendar@6.1.20":
-  version "6.1.20"
-  resolved "https://registry.yarnpkg.com/@fullcalendar/google-calendar/-/google-calendar-6.1.20.tgz#bcc9eb854caad5a04a3d016901273d090a31fcd3"
-  integrity sha512-8IxW4U1pzTIk4VgJh22lZ+1+P+1kpi6hQgwQsI+wFbbqrcdtY5mGcrW/n2Rhjh64AZl2IdVDgvExTtZJ0UVqsg==
-
-"@fullcalendar/icalendar@^6.1.20":
-  version "6.1.20"
-  resolved "https://registry.yarnpkg.com/@fullcalendar/icalendar/-/icalendar-6.1.20.tgz#47caa2202f7d42977ff80aa41b7935bbfe8ef1fc"
-  integrity sha512-AwxnEGYrv18ulQQ8Eo+VLCKmvY0dpn3CmS1ryV8mMnX50QaE6yQ4/w5mVIGWkKsa5alRnFM7HOa2UNIP6UKj2A==
-
 "@fullcalendar/interaction@6.1.20":
   version "6.1.20"
   resolved "https://registry.yarnpkg.com/@fullcalendar/interaction/-/interaction-6.1.20.tgz#a73a53af5f93ac261f864b025ae80201609f1cd7"
@@ -338,7 +328,7 @@
   resolved "https://registry.yarnpkg.com/@prettier/plugin-ruby/-/plugin-ruby-4.0.4.tgz#73d85fc2a1731a3f62b57ac3116cf1c234027cb6"
   integrity sha512-lCpvfS/dQU5WrwN3AQ5vR8qrvj2h5gE41X08NNzAAXvHdM4zwwGRcP2sHSxfu6n6No+ljWCVx95NvJPFTTjCTg==
 
-"@rails/actioncable@>=7.0":
+"@rails/actioncable@>=7.0", "@rails/actioncable@^8.1.100":
   version "8.1.100"
   resolved "https://registry.yarnpkg.com/@rails/actioncable/-/actioncable-8.1.100.tgz#b1f85f3482425fb91e5eba1deb55152ee0bb2f85"
   integrity sha512-j4vJQqz51CDVYv2UafKRu4jiZi5/gTnm7NkyL+VMIgEw3s8jtVtmzu9uItUaZccUg9NJ6o05yVyBAHxNfTuCRA==
@@ -762,11 +752,6 @@ browserify@16.3.0:
     util "~0.10.1"
     vm-browserify "^1.0.0"
     xtend "^4.0.0"
-
-bs-custom-file-input@^1.3.4:
-  version "1.3.4"
-  resolved "https://registry.yarnpkg.com/bs-custom-file-input/-/bs-custom-file-input-1.3.4.tgz#c275cb8d4f1c02ba026324292509fa9a747dbda8"
-  integrity sha512-NBsQzTnef3OW1MvdKBbMHAYHssCd613MSeJV7z2McXznWtVMnJCy7Ckyc+PwxV6Pk16cu6YBcYWh/ZE0XWNKCA==
 
 buffer-from@^1.0.0:
   version "1.1.2"
@@ -1434,11 +1419,6 @@ husky@^9.1.7:
   resolved "https://registry.yarnpkg.com/husky/-/husky-9.1.7.tgz#d46a38035d101b46a70456a850ff4201344c0b2d"
   integrity sha512-5gs5ytaNjBrh5Ow3zrvdUUY+0VxIuWVL4i9irt6friV+BqdCfmV11CQTWMiBYWHbXhco+J1kHfTOUkePhCDvMA==
 
-ical.js@^1.4.0:
-  version "1.5.0"
-  resolved "https://registry.yarnpkg.com/ical.js/-/ical.js-1.5.0.tgz#23213accd1d8f7248d01705acb06270a70d20662"
-  integrity sha512-7ZxMkogUkkaCx810yp0ZGKvq1ZpRgJeornPttpoxe6nYZ3NLesZe1wWMXDdwTkj/b5NtXT+Y16Aakph/ao98ZQ==
-
 ieee754@^1.1.13:
   version "1.2.1"
   resolved "https://registry.yarnpkg.com/ieee754/-/ieee754-1.2.1.tgz#8eb7a10a63fff25d15a57b001586d177d1b0d352"
@@ -1594,11 +1574,6 @@ labeled-stream-splicer@^2.0.0:
   dependencies:
     inherits "^2.0.1"
     stream-splicer "^2.0.0"
-
-lightgallery@^2.9.0:
-  version "2.9.0"
-  resolved "https://registry.yarnpkg.com/lightgallery/-/lightgallery-2.9.0.tgz#b3b6e15169eb9b840f70e14d67b9ec0a213cc612"
-  integrity sha512-58Ud1DyhD2ao58t+kPEqSZrjFxg23tGd5ZKr75erm7q31g5xhUtWUJH3sTUkhHzlyJAKHj5eTrJ37HQRXG4Wbg==
 
 lint-staged@^16.2.7:
   version "16.2.7"
@@ -1932,11 +1907,6 @@ process@~0.11.0:
   version "0.11.10"
   resolved "https://registry.yarnpkg.com/process/-/process-0.11.10.tgz#7332300e840161bda3e69a1d1d91a7d4bc16f182"
   integrity sha512-cdGef/drWFoydD1JsMzuFf8100nZl+GT+yacc2bEced5f9Rjk4z+WtFUTBu9PhOi9j/jfmBPu0mMEY4wIdAF8A==
-
-progress-tracker@^3.1.0:
-  version "3.1.0"
-  resolved "https://registry.yarnpkg.com/progress-tracker/-/progress-tracker-3.1.0.tgz#9977ed0ebdcefee7e50cbc9ad5d0f629514921d5"
-  integrity sha512-IVbKMeUijFK6XsWM2+ZHMTfD1COXg+qjiO8wLREb4EcM2Psy27nUwLrAWj8RCjfsRokksnVBeqBy44PRe7yaxQ==
 
 public-encrypt@^4.0.3:
   version "4.0.3"
