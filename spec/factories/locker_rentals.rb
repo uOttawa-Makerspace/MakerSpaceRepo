@@ -21,21 +21,21 @@ FactoryBot.define do
     end
 
     trait :notes do
-      notes { "Test note #{SecureRandom.hex(4)}" } # Faster than Faker
+      notes { "Test note" }
     end
 
     trait :active do
       association :locker
       state { :active }
       association :decided_by, factory: :user
-      owned_until { 30.days.from_now } # Static date, much faster than Faker
+      owned_until { 30.days.from_now }
     end
 
     trait :await_payment do
       association :locker
       state { :await_payment }
       association :decided_by, factory: :user
-      owned_until { 30.days.from_now } # Static date instead of Faker
+      owned_until { 30.days.from_now }
     end
   end
 end
