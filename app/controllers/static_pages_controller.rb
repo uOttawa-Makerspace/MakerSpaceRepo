@@ -176,13 +176,17 @@ class StaticPagesController < SessionsController
 
   def reset_password
     unless verify_turnstile
-      redirect_to :forgot_password,
-                  alert:
-                  'There was a problem with the captcha, please try again.'
+      flash.now[:alert] = 'There was a problem with the captcha, please try again.'
+      render :forgot_password
       return
     end
     
-  if params[:email].present?
+    if params[:email].blank?
+      flash.now[:alert] = 'Please enter an email address.'
+      render :forgot_password
+      return
+    end
+    
     user_email = params[:email].strip.downcase
     if User.find_by_email(user_email).present?
       @user = User.find_by(email: user_email)
@@ -195,14 +199,10 @@ class StaticPagesController < SessionsController
         expiry_date_hash
       ).deliver_now
     end
-    flash[
-      :notice
-    ] = 'A reset link email has been sent to the email if the account exists.'
-  else
-    flash[:alert] = 'There was a problem with, please try again.'
+    
+    flash.now[:notice] = 'A reset link email has been sent to the email if the account exists.'
+    render :forgot_password
   end
-  redirect_to root_path
-end
 
 
   def report_repository
