@@ -1,22 +1,49 @@
 default: &default
-  adapter: <%= Rails.application.credentials[Rails.env.to_sym][:database][:adapter] || postgresql %>
-  host: <%= Rails.application.credentials[Rails.env.to_sym][:database][:host] || localhost %>
-  port: <%= Rails.application.credentials[Rails.env.to_sym][:database][:port] || 5432 %>
-  username: <%= Rails.application.credentials[Rails.env.to_sym][:database][:username] || postgres %>
-  password: <%= Rails.application.credentials[Rails.env.to_sym][:database][:password] || postgres %>
+  adapter: "<%= Rails.application.credentials[Rails.env.to_sym][:database][:adapter] || postgresql %>"
+  host: "<%= Rails.application.credentials[Rails.env.to_sym][:database][:host] || localhost %>"
+  port: "<%= Rails.application.credentials[Rails.env.to_sym][:database][:port] || 5432 %>"
+  username: "<%= Rails.application.credentials[Rails.env.to_sym][:database][:username] || postgres %>"
+  password: "<%= Rails.application.credentials[Rails.env.to_sym][:database][:password] || postgres %>"
 
 development:
-  <<: *default
-  database: <%= Rails.application.credentials[Rails.env.to_sym][:database][:name] || makerspacerepo %>
+  primary:
+    <<: *default
+    database: "<%= Rails.application.credentials[Rails.env.to_sym][:database][:name] || makerspacerepo %>"
+  queue:
+    <<: *default
+    database: makerspacerepo_queue
+    migrations_paths: db/queue_migrate
+  cable:
+    <<: *default
+    database: makerspacerepo_cable
+    migrations_paths: db/cable_migrate
 
 test:
   <<: *default
-  database: <%= Rails.application.credentials[Rails.env.to_sym][:database][:name] || makerspacerepo_test %>
+  database: <%= Rails.application.credentials[Rails.env.to_sym][:database][:name] || makerspacerepo_test %>_<%= ENV['TEST_ENV_NUMBER'] %>
 
 production:
-  <<: *default
-  database: <%= Rails.application.credentials[Rails.env.to_sym][:database][:name] %>
+  primary:
+    <<: *default
+    database: "<%= Rails.application.credentials[Rails.env.to_sym][:database][:name] %>"
+  queue:
+    <<: *default
+    database: makerspacerepo_queue
+    migrations_paths: db/queue_migrate
+  cable:
+    <<: *default
+    database: makerspacerepo_cable
+    migrations_paths: db/cable_migrate
 
 staging:
-  <<: *default
-  database: <%= Rails.application.credentials[Rails.env.to_sym][:database][:name] %>
+  primary:
+    <<: *default
+    database: "<%= Rails.application.credentials[Rails.env.to_sym][:database][:name] %>"
+  queue:
+    <<: *default
+    database: makerspacerepo_queue_staging
+    migrations_paths: db/queue_migrate
+  cable:
+    <<: *default
+    database: makerspacerepo_cable
+    migrations_paths: db/cable_migrate

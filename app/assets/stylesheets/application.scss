@@ -80,6 +80,12 @@ body {
   main {
     flex: 1;
   }
+
+  // background-color: $tertiary;
+  // background-image:
+  //     repeating-linear-gradient(0deg, rgba($primary, 0.2), rgba($primary, 0.2) 5%, transparent 5%, transparent),
+  //     repeating-linear-gradient(90deg, rgba($primary, 0.2), rgba($primary, 0.2) 5%, transparent 5%, transparent);
+  // background-size: 50px 50px, 50px 50px, 20px 20px;
 }
 
 // Default/light mode display
@@ -255,6 +261,16 @@ $dropdown-connection-size: 1rem;
   padding-right: 0.75rem;
 }
 
+/* Limit a text tag to 3 lines */
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  /* Backwards compat? */
+  max-height: 4.5rem;
+}
+
 // Hide this element on screens smaller than xl
 @include media-breakpoint-down(xl) {
   .hide-on-mobile {
@@ -277,31 +293,8 @@ p {
 
 a {
   text-decoration: none;
-  font-weight: 550; // To make it stand out from the white background
+  // font-weight: 550; // To make it stand out from the white background
   transition: color 100ms;
-  //   &:not(
-  //       .btn,
-  //       .nav-item,
-  //       .nav-link,
-  //       .dropdown-item,
-  //       .navbar-brand,
-  //       .overlay,
-  //       .username,
-  //       .user_name,
-  //       .edit-repo-link,
-  //       .certify-button,
-  //       .like,
-  //       .make
-  //     ) {
-  //     color: $primary; // !important;
-  //   }
-  //   &::visited {
-  //     color: #789;
-  //   }
-  //   &:hover {
-  //     transition: 100ms linear;
-  //     color: #000;
-  //   }
 }
 
 .btn-primary,

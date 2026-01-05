@@ -1,4 +1,4 @@
-class ChatMessagesController < ApplicationController
+class ChatMessagesController < SessionsController
   def create
     @chat_message = ChatMessage.new(chat_message_params)
     @chat_message.sender = current_user

@@ -1,4 +1,4 @@
-class SubSpaceBookingController < ApplicationController
+class SubSpaceBookingController < SessionsController
   before_action :no_container
   before_action :user_account
   before_action :user_signed_in, only: %i[index request_access bookings]

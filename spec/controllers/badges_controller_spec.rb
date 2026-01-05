@@ -2,8 +2,8 @@ require "rails_helper"
 
 RSpec.describe BadgesController, type: :controller do
   before(:each) do
-    OrderStatus.create(name: "In progress")
-    OrderStatus.create(name: "Completed")
+    OrderStatus.find_by!(name: "In progress")
+    OrderStatus.find_by!(name: "Completed")
   end
 
   describe "#index" do

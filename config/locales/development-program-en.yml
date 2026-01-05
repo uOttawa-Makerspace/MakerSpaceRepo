@@ -33,16 +33,46 @@ en:
         text: "Progress from beginner, intermediate, advanced, to master."
     digital_badges:
       title: "Digital Badges"
-      subtitle: "Example of what employeers see on each badge profile"
+      subtitle: "Example of what employers see on each badge profile"
+      learn_it: "Learn it"
+      earn_it: "Earn it"
+      share_it: "Share it"
+      display_achievements: "Display your new achievements through our digital badges"
+      categories:
+        digital_tech:
+          title: "Digital Technologies"
+          items:
+            - "3D Printing"
+            - "Laser Cutting"
+            - "Arduino"
+            - "Soldering"
+            - "Virtual Reality"
+            - "Embroidery"
+        professional_dev:
+          title: "Professional Development"
+          items:
+            - "Design Thinking"
+            - "Entrepreneurship basics"
+            - "Project Management"
+            - "Effective Communication (Written and Oral)"
+        manufacturing_tech:
+          title: "Manufacturing Technologies"
+          items:
+            - "Shop Fundamentals"
+            - "Lathe"
+            - "Mill"
+            - "CNC"
+            - "Welding"
     volunteer:
       title: "Volunteer"
       text: "Volunteering is a great way to gain valuable skills and boost self-confidence while making a difference. Our enhanced development program will guide volunteers through more challenging tasks, helping them grow and earn rewards along the way. Learn more about how the volunteer program works by clicking here."
+      more_link: "More about volunteering"
       list_header: "Volunteers can now:"
       list:
-        - Unlock different tasks based on their skill level
-        - Track their skill progress through their MakerRepo account.
-        - Each task will reward CEED Credit (CC) to be used in our makerstore
-        - Each task will have predetermined hours to be rewarded upon completion
+        - "Unlock different tasks based on their skill level"
+        - "Track their skill progress through their MakerRepo account."
+        - "Each task will reward CEED Credit (CC) to be used in our makerstore"
+        - "Each task will have predetermined hours to be rewarded upon completion"
     employment:
       title: "Employment"
       subtitle: "CEED development program will make you more attractive to employers."

@@ -1,4 +1,4 @@
-class JobTasksController < ApplicationController
+class JobTasksController < SessionsController
   before_action :set_job_order_and_task, except: [:create]
 
   def destroy

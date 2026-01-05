@@ -22,6 +22,10 @@ fr:
       locker_rentals: Location de casiers
     shortcuts:
       header: "Raccourcis"
+      my_repositories: "Mes dépôts"
+      no_repositories: "Vous n'avez pas encore de dépôts."
+      view_all_repos: "Voir tous les dépôts"
+      create_first_repo: "Créer votre premier dépôt"
       recently_opened: "Récemment consultés"
       no_recently_opened: "Aucune projet consulté récemment"
       explore_more: "Explorer plus"

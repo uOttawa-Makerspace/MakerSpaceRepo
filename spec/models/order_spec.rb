@@ -2,8 +2,8 @@ require "rails_helper"
 
 RSpec.describe Order, type: :model do
   before(:all) do
-    OrderStatus.create(name: "In progress")
-    OrderStatus.create(name: "Completed")
+    OrderStatus.find_by!(name: "In progress")
+    OrderStatus.find_by!(name: "Completed")
   end
 
   describe "Association" do

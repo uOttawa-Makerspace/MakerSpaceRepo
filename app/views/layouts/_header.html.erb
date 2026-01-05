@@ -103,15 +103,13 @@
                                 <a class="dropdown-item" href="<%= logout_path %>"><%= t('navbar.user.sign_out') %></a>
                             </div>
 
-                            <li class="nav-item">
-                                <a class="ccLink" href="<%= discount_codes_path %>">
-                                    <%= image_tag('cc_white.png', alt: 'CC', class: 'ccs', id: 'myCcWhite') %>
-                                    <%= image_tag('cc.png', alt: 'CC', class: 'ccs hidden', id: 'myCcBlack') %>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="ccLink" href="<%= discount_codes_path %>">
-                                    <b class="nav-link"><%= current_user.get_total_cc %></b>
+                            <li class="nav-item cc-container">
+                                <a class="ccLink d-inline-flex align-items-center" href="<%= discount_codes_path %>">
+                                    <span class="me-2">
+                                        <%= image_tag('cc_white.png', alt: 'CC', class: 'ccs', id: 'myCcWhite') %>
+                                        <%= image_tag('cc.png', alt: 'CC', class: 'ccs', id: 'myCcBlack') %>
+                                    </span>
+                                    <b class="nav-link d-inline p-0"><%= current_user.get_total_cc %></b>
                                 </a>
                             </li>
                         </li>
