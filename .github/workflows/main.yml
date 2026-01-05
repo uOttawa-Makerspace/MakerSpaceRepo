@@ -131,21 +131,3 @@ jobs:
           eval "$(ssh-agent -s)"
           ssh-add /tmp/deploy_key
           bundle exec cap production deploy
-
-      - name: Notify Slack
-        uses: ravsamhq/notify-slack@v2
-        if: always()
-        with:
-          status: ${{ job.status }}
-          notify_when: "success,failure,warnings"
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
-      - name: Notify MS Teams
-        uses: toko-bifrost/ms-teams-deploy-card@master
-        if: always()
-        with:
-          github-token: ${{ github.token }}
-          webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
-          timezone: "America/Montreal"
-          show-on-start: false
