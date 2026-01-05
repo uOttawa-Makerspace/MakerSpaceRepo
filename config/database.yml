@@ -20,7 +20,7 @@ development:
 
 test:
   <<: *default
-  database: "<%= Rails.application.credentials[Rails.env.to_sym][:database][:name] || makerspacerepo_test %>"
+  database: <%= Rails.application.credentials[Rails.env.to_sym][:database][:name] || makerspacerepo_test %>_<%= ENV['TEST_ENV_NUMBER'] %>
 
 production:
   primary:

@@ -78,7 +78,7 @@ macOS developers need to install [Homebrew if not already installed](https://bre
    mv ~/Downloads/master.key config/master.key
    ```
 
-6. Change the default PostgreSQL port from 5432 to 5433. Start PostgreSQL and access a PostgreSQL shell. When inside nano, press `Ctrl-W` to start search.
+6. Start PostgreSQL and access a PostgreSQL shell. When inside nano, press `Ctrl-W` to start search.
 
    ```bash
    # Find the postgres config file and open in nano

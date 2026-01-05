@@ -4,8 +4,8 @@ RSpec.describe OrdersController, type: :controller do
   describe "#index" do
     context "index" do
       before(:each) do
-        OrderStatus.create(name: "In progress")
-        OrderStatus.create(name: "Completed")
+        OrderStatus.find_by!(name: "In progress")
+        OrderStatus.find_by!(name: "Completed")
         create(:order, :completed)
         create(:order, :completed)
         create(:order)
@@ -37,8 +37,8 @@ RSpec.describe OrdersController, type: :controller do
   describe "#create" do
     context "create" do
       before(:each) do
-        OrderStatus.create(name: "In progress")
-        OrderStatus.create(name: "Completed")
+        OrderStatus.find_by!(name: "In progress")
+        OrderStatus.find_by!(name: "Completed")
         user = create(:user, :volunteer_with_dev_program)
         create(:order_item, :order_in_progress)
         session[:user_id] = user.id
@@ -63,8 +63,8 @@ RSpec.describe OrdersController, type: :controller do
 
     context "create with kit" do
       it "should create an order with a kit" do
-        OrderStatus.create(name: "In progress")
-        OrderStatus.create(name: "Completed")
+        OrderStatus.find_by!(name: "In progress")
+        OrderStatus.find_by!(name: "Completed")
         user = create(:user, :volunteer_with_dev_program)
         create(:order_item, :order_in_progress_with_kit)
         session[:user_id] = user.id
@@ -110,8 +110,8 @@ RSpec.describe OrdersController, type: :controller do
         admin = create(:user, :admin)
         session[:user_id] = admin.id
         session[:expires_at] = Time.zone.now + 10_000
-        OrderStatus.create(name: "In progress")
-        OrderStatus.create(name: "Completed")
+        OrderStatus.find_by!(name: "In progress")
+        OrderStatus.find_by!(name: "Completed")
         create(:order_item, :awarded_with_badge)
         #badge_template_id = OrderItem.last.proficient_project.badge_template.id
         # Badge.create(

@@ -48,14 +48,17 @@ RSpec.describe ProficientProject, type: :model do
   describe "Scopes" do
     context "#filter_by_level" do
       it "should only get private repos" do
-        create(:proficient_project)
-        create(:proficient_project)
-        create(:proficient_project, :intermediate)
-        create(:proficient_project, :intermediate)
+        # Create exactly what we need for THIS test
+        beginner_count = 2
+        create_list(:proficient_project, beginner_count)
+        create_list(:proficient_project, 2, :intermediate)
         create(:proficient_project, :advanced)
-        proficient_project_count = ProficientProject.all.count
+        
+        total_count = ProficientProject.count
+        intermediate_and_advanced_count = 3
+        
         expect(ProficientProject.filter_by_level("Beginner").count).to eq(
-          proficient_project_count - 3
+          total_count - intermediate_and_advanced_count
         )
       end
     end
@@ -71,13 +74,13 @@ RSpec.describe ProficientProject, type: :model do
     end
 
     context "#filter_by_attribute" do
+      # Add cleanup to ensure clean slate
       before(:each) do
-        create(:proficient_project)
-        create(:proficient_project)
-        create(:proficient_project)
+        ProficientProject.destroy_all
+        
+        create_list(:proficient_project, 3) # 3 Beginners (default)
         create(:proficient_project, :intermediate)
-        create(:proficient_project, :advanced)
-        create(:proficient_project, :advanced)
+        create_list(:proficient_project, 2, :advanced)
       end
 
       it "should get the right level" do
@@ -133,19 +136,21 @@ RSpec.describe ProficientProject, type: :model do
     end
 
     describe "URLS in description" do
-      before :all do
-        @pp_with_link =
-          create(
-            :proficient_project,
-            description:
-              "Description, description... https://en.wiki.makerepo.com/wiki/Virtual_Reality https://makerepo.com/ https://en.wiki.makerepo.com/wiki/Raspberry_Pi"
-          )
-        @pp_without_link = create(:proficient_project, description: "no link")
+      let(:pp_with_link) do
+        create(
+          :proficient_project,
+          description:
+            "Description, description... https://en.wiki.makerepo.com/wiki/Virtual_Reality https://makerepo.com/ https://en.wiki.makerepo.com/wiki/Raspberry_Pi"
+        )
+      end
+      
+      let(:pp_without_link) do
+        create(:proficient_project, description: "no link")
       end
 
       context "#extract_urls" do
         it "should return all urls" do
-          expect(@pp_with_link.extract_urls).to eq(
+          expect(pp_with_link.extract_urls).to eq(
             %w[
               https://en.wiki.makerepo.com/wiki/Virtual_Reality
               https://makerepo.com/
@@ -155,13 +160,13 @@ RSpec.describe ProficientProject, type: :model do
         end
 
         it "should return []" do
-          expect(@pp_without_link.extract_urls).to eq([])
+          expect(pp_without_link.extract_urls).to eq([])
         end
       end
 
       context "#extract_valid_urls" do
         it "should return urls from wiki.makerepo" do
-          expect(@pp_with_link.extract_valid_urls).to eq(
+          expect(pp_with_link.extract_valid_urls).to eq(
             %w[
               https://en.wiki.makerepo.com/wiki/Virtual_Reality
               https://en.wiki.makerepo.com/wiki/Raspberry_Pi
@@ -170,7 +175,7 @@ RSpec.describe ProficientProject, type: :model do
         end
 
         it "should return nil" do
-          expect(@pp_without_link.extract_valid_urls).to eq([])
+          expect(pp_without_link.extract_valid_urls).to eq([])
         end
       end
     end
