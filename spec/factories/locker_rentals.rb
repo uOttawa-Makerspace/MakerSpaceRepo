@@ -1,17 +1,19 @@
 FactoryBot.define do
   factory :locker_rental do
-    rented_by factory: :user
+    association :rented_by, factory: :user
     state { :reviewing }
     requested_as { 'general' }
 
     trait :student do
-      requested_as {'student'}
+      requested_as { 'student' }
     end
+    
     trait :general do
-      requested_as {'general'}
+      requested_as { 'general' }
     end
+    
     trait :staff do
-      requested_as {'staff'}
+      requested_as { 'staff' }
     end
 
     trait :with_repository do
@@ -19,21 +21,21 @@ FactoryBot.define do
     end
 
     trait :notes do
-      notes { Faker::Alphanumeric.alpha }
+      notes { "Test note #{SecureRandom.hex(4)}" } # Faster than Faker
     end
 
     trait :active do
-      locker
+      association :locker
       state { :active }
-      decided_by factory: :user
-      owned_until { Faker::Date.forward }
+      association :decided_by, factory: :user
+      owned_until { 30.days.from_now } # Static date, much faster than Faker
     end
 
     trait :await_payment do
-      locker
+      association :locker
       state { :await_payment }
-      decided_by factory: :user
-      owned_until { Faker::Date.forward }
+      association :decided_by, factory: :user
+      owned_until { 30.days.from_now } # Static date instead of Faker
     end
   end
 end
