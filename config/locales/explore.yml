@@ -4,9 +4,12 @@ en:
     search: "Search"
     sort_by: "Sort By"
     filter_by: "Filter By"
+    liked: "Your Likes"
+
 fr:
   explore:
     explore: "Explorez"
     search: "Rechercher"
     sort_by: "Trier par"
     filter_by: "Filtrer par"
+    liked: "Vos favoris"

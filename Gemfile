@@ -73,6 +73,7 @@ gem "mission_control-jobs"
 gem "puma", '~> 7.1'
 
 group :development, :test do
+  gem 'rspec_junit_formatter'
   gem "byebug", platform: :mri
   gem "factory_bot_rails"
   gem "faker", "~> 3.1"
@@ -98,15 +99,13 @@ group :development do
   gem "web-console"
   gem "ruby-prof" # profiling
 
-  gem 'solargraph', require: false
-  gem 'solargraph-rails', require: false
-
   # ssh deploymentque
   gem "bcrypt_pbkdf", "~> 1.0"
   gem "ed25519", "~> 1.2"
 end
 
 group :test do
+  gem 'test-prof'
   gem "capybara"
   gem "database_cleaner-active_record"
   gem "launchy", "~> 3.0"

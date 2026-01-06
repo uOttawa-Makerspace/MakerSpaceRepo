@@ -10,7 +10,6 @@ export default defineConfig({
       "@fullcalendar/timegrid",
       "@fullcalendar/interaction",
       "@fullcalendar/rrule",
-      "@fullcalendar/icalendar",
     ],
   },
 });

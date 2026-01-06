@@ -35,6 +35,21 @@ class Repository < ApplicationRecord
 
   scope :public_repos, -> { where(share_type: "public") }
 
+  scope :fuzzy_search,
+        ->(query) {
+          where(
+              'LOWER(UNACCENT(title)) % LOWER(UNACCENT(:query)) OR
+                LOWER(UNACCENT(description)) % LOWER(UNACCENT(:query))',
+              query:
+            )
+            .order(
+              sanitize_sql_for_order(
+                [Arel.sql('similarity(title, ?) DESC'), [query]]
+              )
+            )
+            .limit(30)
+        }
+
   def self.license_options
     [
       "Creative Commons - Attribution",

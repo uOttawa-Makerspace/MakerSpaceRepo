@@ -176,19 +176,19 @@ class StaticPagesController < SessionsController
 
   def reset_password
     unless verify_turnstile
-      redirect_to :forgot_password,
-                  alert: 'There was a problem with the captcha, please try again.'
+      flash.now[:alert] = 'There was a problem with the captcha, please try again.'
+      render :forgot_password
+      return
+    end
+    
+    if params[:email].blank?
+      flash.now[:alert] = 'Please enter an email address.'
+      render :forgot_password
       return
     end
 
-    if params[:email].present?
-      User.find_by(email: params[:email].strip.downcase)&.send_password_reset
-      flash[
-        :notice
-        ] = 'A reset link email has been sent to the email if the account exists.'
-    else
-      flash[:alert] = 'There was a problem with, please try again.'
-    end
+    User.find_by(email: params[:email].strip.downcase)&.send_password_reset
+    flash[:notice] = 'A reset link email has been sent to the email if the account exists.'
     redirect_to root_path
   end
 

@@ -50,7 +50,7 @@ external_price: 40)
       it "renders index with flash alert" do
         allow_any_instance_of(MembershipsController).to receive(:is_user_cutoff).and_return(true)
         post :create, params: { membership: { membership_tier_id: @tier.id } }
-        expect(flash.now[:alert]).to eq(I18n.t('memberships.index.purchase.cutoff_tooltip'))
+        expect(flash.now[:alert]).to eq(I18n.t('memberships.purchase.purchase.cutoff_tooltip'))
       end
     end
   end
