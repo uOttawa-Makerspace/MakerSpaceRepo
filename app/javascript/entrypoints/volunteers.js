@@ -1,5 +1,6 @@
 import TomSelect from "tom-select";
 import "flatpickr";
+
 document.addEventListener("turbo:load", function () {
   if (document.getElementById("user_select")) {
     if (!document.getElementById("user_select").tomselect) {
@@ -22,7 +23,7 @@ document.addEventListener("turbo:load", function () {
                 callback(
                   data.users.map((user) => {
                     return { id: user.id, name: user.name };
-                  })
+                  }),
                 );
               });
           }
