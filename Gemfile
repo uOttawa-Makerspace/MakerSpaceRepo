@@ -103,14 +103,13 @@ group :development do
   gem "ruby-lsp-rspec", require: false
   gem 'ruby-lsp-rubyfmt', require: false
 
-
   # ssh deploymentque
   gem "bcrypt_pbkdf", "~> 1.0"
   gem "ed25519", "~> 1.2"
 end
 
 group :test do
-  gem "parallel_tests"
+  gem 'test-prof'
   gem "capybara"
   gem "database_cleaner-active_record"
   gem "launchy", "~> 2.2"
