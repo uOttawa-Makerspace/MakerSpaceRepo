@@ -55,7 +55,7 @@ Rails.application.configure do
   # config.log_tags = [ :subdomain, :uuid ]
 
   # Use a different logger for distributed setups.
-  config.logger = Logger.new("#{Rails.root}/log/#{Rails.env}.log")
+  config.logger = ActiveSupport::Logger.new("#{Rails.root}/log/#{Rails.env}.log")
 
   # Use a different cache store in production.
   # config.cache_store = :mem_cache_store
@@ -93,19 +93,4 @@ Rails.application.configure do
   # SMTP settings
   config.action_mailer.default_url_options = { host: "staging.makerepo.com" }
   config.action_mailer.asset_host = "https://staging.makerepo.com"
-
-  config.paperclip_defaults = {
-    storage: :s3,
-    s3_credentials: {
-      bucket:
-        Rails.application.credentials[Rails.env.to_sym][:aws][:bucket_name],
-      access_key_id:
-        Rails.application.credentials[Rails.env.to_sym][:aws][:access_key_id],
-      secret_access_key:
-        Rails.application.credentials[Rails.env.to_sym][:aws][
-          :secret_access_key
-        ],
-      s3_region: Rails.application.credentials[Rails.env.to_sym][:aws][:region]
-    }
-  }
 end

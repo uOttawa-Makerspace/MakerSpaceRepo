@@ -1,4 +1,4 @@
-class CcMoneysController < ApplicationController
+class CcMoneysController < SessionsController
   before_action :signed_in, only: %i[link_cc_to_user redeem]
   before_action :set_verifier, only: %i[link_cc_to_user redeem]
 

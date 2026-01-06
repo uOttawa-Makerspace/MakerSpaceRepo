@@ -1,25 +1,33 @@
 # frozen_string_literal: true
 
-set :application, "MakerRepo"
-set :repo_url, "https://github.com/uOttawa-Makerspace/MakerSpaceRepo.git"
+set :application, 'MakerRepo'
+set :repo_url, 'https://github.com/uOttawa-Makerspace/MakerSpaceRepo.git'
 set :rbenv_type, :user
+set :rbenv_ruby, '3.4.7'
+
 set :linked_files, %w[config/master.key]
 set :linked_files,
-    fetch(:linked_files, []).push("config/database.yml", "config/secrets.yml")
+    fetch(:linked_files, []).push('config/secrets.yml')
 set :linked_dirs,
     fetch(:linked_dirs, []).push(
-      "log",
-      "tmp/pids",
-      "tmp/cache",
-      "tmp/sockets",
-      "vendor/bundle",
-      "public/system",
-      "certs",
-      "node_modules",
-      "public/packs"
+      'log',
+      'tmp/pids',
+      'tmp/cache',
+      'tmp/sockets',
+      'vendor/bundle',
+      'public/system',
+      'certs',
+      'node_modules',
+      'public/packs'
     )
-set :default_env,
-    { "PASSENGER_INSTANCE_REGISTRY_DIR" => "/var/passenger_instance_registry" }
+
+# set :puma_user, 'deploy'
+# puma:enable tries to enable lingering but that needs a sudo password. Disable
+# since we already have it enabled on servers
+set :puma_enable_lingering, false
+
+# set :default_env,
+#     { "PASSENGER_INSTANCE_REGISTRY_DIR" => "/var/passenger_instance_registry" }
 
 # before "deploy:assets:precompile", "deploy:yarn_install"
 # namespace :deploy do

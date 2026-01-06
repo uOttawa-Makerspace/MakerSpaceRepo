@@ -258,7 +258,7 @@ class RepositoriesController < SessionsController
   def add_member
     repository = Repository.find params[:repo_owner][:repository_id]
     member_username = params[:repo_owner][:owner_username]
-    member = User.find_by(username: member_username)
+    member = User.find_by_username(member_username)
 
     if member.nil?
       flash[:alert] = "Couldn't find user, please try again."
@@ -353,7 +353,7 @@ class RepositoriesController < SessionsController
   def check_auth
     @check_passed =
       if @authorized || @user.admin? || @user.staff? ||
-           (@repository.user_username == @user.username)
+           (@repository.user_username.downcase == @user.username.downcase)
         true
       else
         false

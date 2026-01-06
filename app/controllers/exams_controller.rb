@@ -1,4 +1,4 @@
-class ExamsController < ApplicationController
+class ExamsController < SessionsController
   before_action :current_user
   before_action :set_exam
   before_action :grant_access, only: [:show]

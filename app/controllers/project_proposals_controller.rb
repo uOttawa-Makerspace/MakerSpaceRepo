@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class ProjectProposalsController < ApplicationController
+class ProjectProposalsController < SessionsController
   include TurnstileHelper
   
   before_action :set_project_proposal, only: %i[show edit update destroy]

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_11_09_204236) do
+ActiveRecord::Schema[7.2].define(version: 2025_12_19_215329) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_trgm"
   enable_extension "plpgsql"
@@ -498,7 +498,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_11_09_204236) do
   create_table "job_task_quotes", force: :cascade do |t|
     t.bigint "job_task_id", null: false
     t.decimal "price", precision: 10, scale: 2
-    t.decimal "service_quantity", precision: 10, default: "1"
+    t.decimal "service_quantity", precision: 10, scale: 4, default: "1.0"
     t.decimal "service_price", precision: 10, scale: 2
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -1066,6 +1066,9 @@ ActiveRecord::Schema[7.2].define(version: 2025_11_09_204236) do
     t.string "youtube_link"
     t.integer "project_proposal_id"
     t.boolean "deleted"
+    t.index ["category"], name: "index_repositories_on_category", opclass: :gin_trgm_ops, using: :gin
+    t.index ["description"], name: "index_repositories_on_description", opclass: :gin_trgm_ops, using: :gin
+    t.index ["title"], name: "index_repositories_on_title", opclass: :gin_trgm_ops, using: :gin
     t.index ["user_id"], name: "index_repositories_on_user_id"
   end
 
@@ -1425,6 +1428,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_11_09_204236) do
     t.datetime "locked_until", precision: nil
     t.integer "auth_attempts", default: 0
     t.string "student_id"
+    t.index "lower((email)::text)", name: "index_users_on_lowercase_email", unique: true
+    t.index "lower((username)::text)", name: "index_users_on_lowercase_username", unique: true
     t.index ["name"], name: "index_users_on_name", opclass: :gin_trgm_ops, using: :gin
     t.index ["space_id"], name: "index_users_on_space_id"
     t.index ["username"], name: "index_users_on_username", opclass: :gin_trgm_ops, using: :gin

@@ -13,9 +13,14 @@ module TurnstileHelper
     # }
   end
 
-  def turnstile_tag()
+  def turnstile_tag(**options)
     provide(:insert_turnstile_scripts, true)
-    tag.div class: 'cf-turnstile', data: { sitekey: creds[:site_key] }
+  
+    options[:class] = ["cf-turnstile", options[:class]].compact.join(" ")
+    options[:data] ||= {}
+    options[:data][:sitekey] = creds[:site_key]
+  
+    tag.div(**options)
   end
 
   def verify_turnstile

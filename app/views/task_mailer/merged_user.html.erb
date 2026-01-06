@@ -1,0 +1,26 @@
+<% content_for :preheader do %>
+    Makerepo - Accounts merged
+<% end %>
+
+<% content_for :team_name do %>
+    The MakerRepo Team
+<% end %>
+
+<% content_for :why_received do %>
+    You have received this email because you have duplicated accounts on <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a>.
+<% end %>
+
+<p>Hello,</p>
+<p>During database maintenance, we have found multiple accounts registered to this email address: <b><%= params[:email] %></b>.</p>
+<p>
+    We have merged all your accounts into the one we detected to be the most active.
+    Your username is <b><%= params[:username] %></b>.
+    You can still login with your email to verify the data appended to your account.
+</p>
+<p>If your stored login details still work, there is no action needed from you.</p>
+<p>
+    If you cannot remember your password, or your password no longer works, you can reset it via the <%= link_to 'forgot password form', forgot_password_url(email: params[:email]) %>.
+</p>
+<p>
+    If you need assistance, or if you have any questions, feel free to reach out to us or visit one of the CEED spaces in STEM.
+</p>

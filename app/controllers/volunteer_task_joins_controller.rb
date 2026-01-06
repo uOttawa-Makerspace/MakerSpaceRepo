@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class VolunteerTaskJoinsController < ApplicationController
+class VolunteerTaskJoinsController < SessionsController
   def create
     volunteer_join = VolunteerTaskJoin.new(volunteer_task_joins_params)
     volunteer_task = volunteer_join.volunteer_task

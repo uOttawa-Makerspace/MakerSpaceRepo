@@ -4,6 +4,10 @@ class Repository < ApplicationRecord
   include BCrypt
   require "bcrypt"
 
+  # There's two ways to reach a user, one is the user that created the repo
+  # NOTE: I have a suspicion this might be unused.
+  belongs_to :owner, class_name: 'User', foreign_key: 'user_id'
+  # And the rest of the members added to the repo
   has_and_belongs_to_many :users
   belongs_to :project_proposal, optional: true
   
@@ -30,6 +34,21 @@ class Repository < ApplicationRecord
   paginates_per 12
 
   scope :public_repos, -> { where(share_type: "public") }
+
+  scope :fuzzy_search,
+        ->(query) {
+          where(
+              'LOWER(UNACCENT(title)) % LOWER(UNACCENT(:query)) OR
+                LOWER(UNACCENT(description)) % LOWER(UNACCENT(:query))',
+              query:
+            )
+            .order(
+              sanitize_sql_for_order(
+                [Arel.sql('similarity(title, ?) DESC'), [query]]
+              )
+            )
+            .limit(30)
+        }
 
   def self.license_options
     [

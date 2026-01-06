@@ -1,5 +1,4 @@
 import { Calendar } from "@fullcalendar/core";
-import "@fullcalendar/common/main.css";
 import interactionPlugin from "@fullcalendar/interaction";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import listPlugin from "@fullcalendar/list";

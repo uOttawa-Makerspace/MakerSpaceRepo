@@ -11,39 +11,41 @@
           <h2 class="offcanvas-title" id="shortcutsOffcanvasLabel">Shortcuts</h2>
           <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#offcanvas-shortcuts" aria-label="Close"></button>
         </div>
-        <!-- Staff Resources -->
-        <% if @user.staff? %>
+        <div class="offcanvas-body p-xl-0 d-flex flex-column">
+          <!-- Staff Resources -->
+          <% if @user.staff? %>
+            <div class="card home-card">
+              <div class="card-body">
+                <h2><%= t('home.staff_resources.header') %></h2>
+                <ul class="list-unstyled">
+                  <% if @user.admin? %>
+                    <li><%= link_to t('home.staff_resources.admin_area'), admin_settings_path %></li>
+                  <% end %>
+                  <li><%= link_to t('home.staff_resources.staff_area'), staff_dashboard_index_path %></li>
+                  <li><%= link_to t('home.staff_resources.shifts'), staff_my_calendar_index_path %></li>
+                  <li><%= link_to t('home.staff_resources.job_order_admin'), admin_job_orders_path %></li>
+                </ul>
+              </div>
+            </div>
+          <% end %>
+          <!-- General Resources -->
           <div class="card home-card">
             <div class="card-body">
-              <h2><%= t('home.staff_resources.header') %></h2>
+              <h2><%= t('home.general_resources.header') %></h2>
               <ul class="list-unstyled">
-                <% if @user.admin? %>
-                  <li><%= link_to t('home.staff_resources.admin_area'), admin_settings_path %></li>
+                <li><%= link_to t('home.general_resources.makeroom'), sub_space_booking_index_path %></li>
+                <li><%= link_to t('navbar.makerstore'), "https://makerstore.ca/" %></li>
+                <li><%= link_to t('home.general_resources.job_orders'), job_orders_path %></li>
+                <% if LockerOption.lockers_enabled %>
+                    <li><%= link_to t('home.general_resources.locker_rentals'), locker_rentals_path %></li>
                 <% end %>
-                <li><%= link_to t('home.staff_resources.staff_area'), staff_dashboard_index_path %></li>
-                <li><%= link_to t('home.staff_resources.shifts'), staff_my_calendar_index_path %></li>
-                <li><%= link_to t('home.staff_resources.job_order_admin'), admin_job_orders_path %></li>
               </ul>
             </div>
           </div>
-        <% end %>
-        <!-- General Resources -->
-        <div class="card home-card">
-          <div class="card-body">
-            <h2><%= t('home.general_resources.header') %></h2>
-            <ul class="list-unstyled">
-              <li><%= link_to t('home.general_resources.makeroom'), sub_space_booking_index_path %></li>
-              <li><%= link_to t('navbar.makerstore'), "https://makerstore.ca/" %></li>
-              <li><%= link_to t('home.general_resources.job_orders'), job_orders_path %></li>
-              <% if LockerOption.lockers_enabled %>
-                  <li><%= link_to t('home.general_resources.locker_rentals'), locker_rentals_path %></li>
-              <% end %>
-            </ul>
-          </div>
+          <%= render 'static_pages/home_shortcuts' %>
+          <%= render 'static_pages/home_volunteer' if signed_in? && current_user.volunteer? %>
+          <%= render 'static_pages/home_development' if signed_in? && current_user.dev_program? %>
         </div>
-        <%= render 'static_pages/home_shortcuts' %>
-        <%= render 'static_pages/home_volunteer' if signed_in? && current_user.volunteer? %>
-        <%= render 'static_pages/home_development' if signed_in? && current_user.dev_program? %>
       </div>
       <!--Middle column -->
       <div class="col-xl-6 order-xl-1 order-0">

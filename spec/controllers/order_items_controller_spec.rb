@@ -3,8 +3,8 @@ require "rails_helper"
 RSpec.describe OrderItemsController, type: :controller do
   before(:all) do
     @volunteer = create(:user, :volunteer_with_dev_program)
-    OrderStatus.create(name: "In progress")
-    OrderStatus.create(name: "Completed")
+    OrderStatus.find_by!(name: "In progress")
+    OrderStatus.find_by!(name: "Completed")
   end
 
   before(:each) do

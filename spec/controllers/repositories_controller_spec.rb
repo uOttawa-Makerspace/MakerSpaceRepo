@@ -108,10 +108,10 @@ RSpec.describe RepositoriesController, type: :controller do
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
         create(:repository)
-        Repository.last.users << User.last
+        Repository.last.users << user
         get :edit,
             params: {
-              user_username: User.last.username,
+              user_username: user.username,
               id: Repository.last.id
             }
         expect(response).to have_http_status(:success)
