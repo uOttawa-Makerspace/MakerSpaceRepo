@@ -33,7 +33,7 @@
             <td>
               <%= key.status.humanize.capitalize %>
               <% unless key.additional_info.blank? %>
-                - <%= sanitize(key.additional_info.truncate(30) %>
+                - <%= sanitize(key.additional_info.truncate(30)) %>
               <% end %>
             </td>
           <% end %>
