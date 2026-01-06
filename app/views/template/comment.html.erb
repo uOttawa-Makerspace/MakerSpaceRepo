@@ -15,7 +15,7 @@ link_to fa_icon('angle-down'), vote_path(comment_id: params['comment_id'],
     <%= tag.div("#{time_ago_in_words(params['created_at'].to_datetime)} ago", class: 'time') %>
   </div>
   <div class="comment-content">
-    <%= sanitize(params['content']) %>
+    <%= sanitize params['content'] %>
   </div>
 </div> 
 

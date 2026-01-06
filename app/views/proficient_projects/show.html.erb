@@ -1,185 +1,191 @@
 <% provide(:title, 'Proficient Project') %>
 <section class="mx-5 <%= return_border_color(@proficient_project.level) %>">
-  <div>
-    <%= button_to 'Delete', @proficient_project, method: :delete, class: 'btn btn-danger float-start ms-5 mt-5', style: 'opacity: 0.5', data: { confirm: 'Are you sure? This will delete all the purchases and give all the users the CC points used to purchase this project.' } if current_user.admin? %>
-    <b class="float-start ms-5 mt-5 text-info p-1"><%= @proficient_project.cc.nil? || @proficient_project.cc.eql?(0) ? sanitize("<b class='text-success'>FREE</b>") : "#{@proficient_project.cc} Ccs" %></b>
-    <%= link_to 'Edit', edit_proficient_project_path(@proficient_project.id), class: 'btn btn-primary float-end me-5 mt-5', style: 'opacity: 0.5' if current_user.admin? %>
-  </div>
-  <% if @order_item.present? %>
-    <div class="text-center mb-3">
-      <h4 class="btn disabled pp-status-button"><%= @order_item.status %></h4>
-    </div>
-  <% end %>
-  <div class="text-center">
-    Badge that will be Awarded:
-    <br/>
-    <% training = @proficient_project.training %>
-    <% if training.present? %>
-      <%= render "badges/badge_icon", width: 230, height: 230, level: @proficient_project.level, name: training.localized_name, skill: training.skill_id %>
-    <% else %>
-      None
-    <% end %>
-  </div>
-  <div class="col-lg-7 mx-auto">
-    <br/>
-    <h2 class="text-center title"><%= sanitize(@proficient_project.title) %></h2>
-    <% if current_user.admin? %>
-      <%= form_tag project_requirements_path, method: :post do %>
-        <div class="w-auto d-inline-block">
-          <%= hidden_field_tag(:id, @proficient_project.id) %>
-          <% label_tag 'required_project_id', class: 'form-label' %>
-          <%= select_tag 'required_project_id', options_from_collection_for_select(@proficient_projects_selected, 'id', 'title'), prompt: 'Select required project' %>
-          <br>
-          <%= submit_tag 'Add Required Project', class: 'btn btn-primary' %>
-        </div>
-      <% end %>
-    <% end %>
-    <div class="container my-4">
-      <div class="text-center">
-        <%= @proficient_project.training.localized_name %>
-        -
-        <%= @proficient_project.level %>
-      </div>
-
-      <div class="text-center">
-        Virtual Project - <%= @proficient_project.is_virtual? ? 'Yes' : 'No' %>
-      </div>
-
-      <% if @proficient_project.drop_off_location.present? %>
-        <div class="text-center">
-          Drop-off location: <b><%= @proficient_project.drop_off_location.name %></b>
-        </div>
-      <% end %>
-      <br/>
-      <div class="row">
-        <div class="col-lg-12">
-          <div class="jumbotron card bg-light text-center text-wrap">
-            <%= sanitize(@proficient_project.description) %>
-          </div>
-          <div id="show-photo">
-            <%= image_tag @photos.first.image, alt: 'Proficient Project Image', data: { width: @photos.first.try(:width), height: @photos.first.try(:height) } %>
-          </div>
-          <div id="photo-slide">
-            <% @photos.each do |p| %>
-              <%= image_tag p.image, alt: 'Proficient Project Image', data: { width: p.width, height: p.height } %>
+    <div>
+        <%= button_to 'Delete', @proficient_project, method: :delete, class: 'btn btn-danger float-start ms-5 mt-5', style: 'opacity: 0.5', data: { confirm: 'Are you sure? This will delete all the purchases and give all the users the CC points used to purchase this project.' } if current_user.admin? %>
+        <b class="float-start ms-5 mt-5 p-1">
+            <% if @proficient_project.cc.nil? || @proficient_project.cc.eql?(0) %>
+                FREE
+            <% else %>
+                <%= @proficient_project.cc %> Ccs
             <% end %>
-          </div>
+        </b>
+        <%= link_to 'Edit', edit_proficient_project_path(@proficient_project.id), class: 'btn btn-primary float-end me-5 mt-5', style: 'opacity: 0.5' if current_user.admin? %>
+    </div>
+    <% if @order_item.present? %>
+        <div class="text-center mb-3">
+            <h4 class="btn disabled pp-status-button"><%= @order_item.status %></h4>
         </div>
-      </div>
+    <% end %>
+    <div class="text-center">
+        Badge that will be Awarded:
+        <br/>
+        <% training = @proficient_project.training %>
+        <% if training.present? %>
+            <%= render "badges/badge_icon", width: 230, height: 230, level: @proficient_project.level, name: training.localized_name, skill: training.skill_id %>
+        <% else %>
+            None
+        <% end %>
+    </div>
+    <div class="col-lg-7 mx-auto">
+        <br/>
+        <h2 class="text-center title"><%= sanitize @proficient_project.title %></h2>
+        <% if current_user.admin? %>
+            <%= form_tag project_requirements_path, method: :post do %>
+                <div class="w-auto d-inline-block">
+                    <%= hidden_field_tag(:id, @proficient_project.id) %>
+                    <% label_tag 'required_project_id', class: 'form-label' %>
+                    <%= select_tag 'required_project_id', options_from_collection_for_select(@proficient_projects_selected, 'id', 'title'), prompt: 'Select required project' %>
+                    <br>
+                    <%= submit_tag 'Add Required Project', class: 'btn btn-primary' %>
+                </div>
+            <% end %>
+        <% end %>
+        <div class="container my-4">
+            <div class="text-center">
+                <%= @proficient_project.training.localized_name %>
+                -
+                <%= @proficient_project.level %>
+            </div>
+
+            <div class="text-center">
+                Virtual Project - <%= @proficient_project.is_virtual? ? 'Yes' : 'No' %>
+            </div>
+
+            <% if @proficient_project.drop_off_location.present? %>
+                <div class="text-center">
+                    Drop-off location: <b><%= @proficient_project.drop_off_location.name %></b>
+                </div>
+            <% end %>
+            <br/>
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="jumbotron card bg-light text-center text-wrap">
+                        <%= sanitize @proficient_project.description %>
+                    </div>
+                    <div id="show-photo">
+                        <%= image_tag @photos.first.image, alt: 'Proficient Project Image', data: { width: @photos.first.try(:width), height: @photos.first.try(:height) } %>
+                    </div>
+                    <div id="photo-slide">
+                        <% @photos.each do |p| %>
+                            <%= image_tag p.image, alt: 'Proficient Project Image', data: { width: p.width, height: p.height } %>
+                        <% end %>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <% if @order_item&.status == "In progress" %>
+            <%= form_for :order_item, url: complete_project_proficient_projects_path, method: :put, multipart: true, html: { id: 'submit-project-form' }, data: { confirm: 'Are you sure you want to submit this project? Please make sure you have dropped off your project at the specified location before submitting.' } do |f| %>
+                <%= hidden_field_tag(:id, @proficient_project.id) %>
+                <div class='mb-3'>
+                    <%= f.label :user_comments, 'Add comments:', class: 'form-label' %>
+                    <%= f.trix_editor :user_comments, class: 'form-control mb-3' %>
+                    <%= f.label :files, 'Attach files:', class: 'form-label mb-0' %>
+                    <div class="text-muted mb-2">Allowed file types: PDF, Images, Programming Files, 3D Modeling</div>
+                    <%= f.file_field :files, multiple: true, class: 'form-control' %>
+                </div>
+
+                <div class="text-center">
+                    <p>If you think you <b>fully</b> understand the proficient project, you can click on the button to complete the proficient project. It will then be reviewed by an admin in about 5 business days.</p>
+                    <%= f.submit 'Submit Project', class: 'btn btn-primary' %>
+                    <br><br>
+                </div>
+            <% end %>
+        <% end %>
+
+        <% if @order_item&.status == "Awarded" || @order_item&.status == "Revoked" %>
+            <div class="p-4 gap-1 card bg-light text-wrap">
+                Admin Comments:
+                <p class="m-0"><%= @order_item.admin_comments == '' ? 'None' : sanitize(@order_item.admin_comments) %></p>
+            </div>
+        <% end %>
+
     </div>
 
-    <% if @order_item&.status == "In progress" %>
-      <%= form_for :order_item, url: complete_project_proficient_projects_path, method: :put, multipart: true, html: { id: 'submit-project-form' }, data: { confirm: 'Are you sure you want to submit this project? Please make sure you have dropped off your project at the specified location before submitting.' } do |f| %>
-        <%= hidden_field_tag(:id, @proficient_project.id) %>
-        <div class='mb-3'>
-          <%= f.label :user_comments, 'Add comments:', class: 'form-label' %>
-          <%= f.trix_editor :user_comments, class: 'form-control mb-3' %>
-          <%= f.label :files, 'Attach files:', class: 'form-label mb-0' %>
-          <div class="text-muted mb-2">Allowed file types: PDF, Images, Programming Files, 3D Modeling</div>
-          <%= f.file_field :files, multiple: true, class: 'form-control' %>
+    <% if @valid_urls.present? %>
+        <div class="col-lg-12">
+            <% @valid_urls.each do |url| %>
+                <iframe width="100%" height="600px" src="<%= url %>"></iframe>
+            <% end %>
         </div>
-
-        <div class="text-center">
-          <p>If you think you <b>fully</b> understand the proficient project, you can click on the button to complete the proficient project. It will then be reviewed by an admin in about 5 business days.</p>
-          <%= f.submit 'Submit Project', class: 'btn btn-primary' %>
-          <br><br>
-        </div>
-      <% end %>
     <% end %>
-
-    <% if @order_item&.status == "Awarded" || @order_item&.status == "Revoked" %>
-      <div class="p-4 gap-1 card bg-light text-wrap">
-        Admin Comments: 
-        <p class="m-0"><%= @order_item.admin_comments == '' ? 'None' : sanitize(@order_item.admin_comments) %></p>
-      </div>
-    <% end %>
-
-  </div>
-
-  <% if @valid_urls.present? %>
-    <div class="col-lg-12">
-      <% @valid_urls.each do |url| %>
-        <iframe width="100%" height="600px" src="<%= url %>"></iframe>
-      <% end %>
-    </div>
-  <% end %>
 
 </section>
 
 <% @videos.each do |f| %>
-  <% f.video.each do |video| %>
-    <div class="imgbox">
-      <%= video_tag url_for(video), controls: true, controlslist: 'nodownload', class: 'center-fit' if f.video.attached? %>
-    </div>
-    <br/>
-  <% end %>
+    <% f.video.each do |video| %>
+        <div class="imgbox">
+            <%= video_tag url_for(video), controls: true, controlslist: 'nodownload', class: 'center-fit' if f.video.attached? %>
+        </div>
+        <br/>
+    <% end %>
 <% end %>
 
 <% @files.each do |f| %>
-  <div class="ratio ratio-16x9">
-    <iframe src="<%= url_for(f.file) %>" allowfullscreen></iframe>
-    <br/>
-  </div>
+    <div class="ratio ratio-16x9">
+        <iframe src="<%= url_for(f.file) %>" allowfullscreen></iframe>
+        <br/>
+    </div>
 <% end %>
 
 
 
 <% if !@project_requirements.blank? %>
-  <br/>
-  <br/>
-  <h2 class="text-center title my-3"> Some projects that are pre-requisite for this project:</h2>
-  <div class="row text-center">
-    <% @project_requirements.each do |project_requirement| %>
-      <% project_required = project_requirement.required_project %>
-      <div class="col-md-4 mb-5 mt-3 card  <%= return_hover_and_text_colors(project_required.level) %>" style="border-width:2px !important;">
-        <form class="w-auto d-inline-block">
-          <div class="mb-3">
-            <%= link_to 'Edit', edit_proficient_project_path(project_required.id), class: 'btn btn-primary', style: 'opacity: 0.5' if current_user.admin? %>
-          </div>
-          <div class="mb-3 mx-auto">
-            <p><h6 class="text-center py-3"><strong><%= project_required.training.localized_name %></strong></h6></p>
-          </div>
-          <div class="mb-3">
-            <%= button_to 'Unfollow', project_requirement, method: :delete, class: 'btn btn-danger', style: 'opacity: 0.5', data: { confirm: 'Are you sure? This will delete the Project Requirement, but not the Project itself.' } if current_user.admin? %>
-          </div>
-        </form>
-        <a href="<%= proficient_project_path(project_required.id) %>">
-          <div class="card card-image projects-image" style="background-image: url(<%= url_for(project_required.photos.first.image) %>);">
-          </div>
-        </a>
-        <div>
-          <a href="<%= proficient_project_path(project_required.id) %>">
-            <h6 class="pt-3 fw-bold text-center"><strong><%= project_required.title %></strong></h6></a>
-          <p><%= project_required.level %></p>
-        </div>
-      </div>
-    <% end %>
-  </div>
+    <br/>
+    <br/>
+    <h2 class="text-center title my-3"> Some projects that are pre-requisite for this project:</h2>
+    <div class="row text-center">
+        <% @project_requirements.each do |project_requirement| %>
+            <% project_required = project_requirement.required_project %>
+            <div class="col-md-4 mb-5 mt-3 card  <%= return_hover_and_text_colors(project_required.level) %>" style="border-width:2px !important;">
+                <form class="w-auto d-inline-block">
+                    <div class="mb-3">
+                        <%= link_to 'Edit', edit_proficient_project_path(project_required.id), class: 'btn btn-primary', style: 'opacity: 0.5' if current_user.admin? %>
+                    </div>
+                    <div class="mb-3 mx-auto">
+                        <p><h6 class="text-center py-3"><strong><%= project_required.training.localized_name %></strong></h6></p>
+                    </div>
+                    <div class="mb-3">
+                        <%= button_to 'Unfollow', project_requirement, method: :delete, class: 'btn btn-danger', style: 'opacity: 0.5', data: { confirm: 'Are you sure? This will delete the Project Requirement, but not the Project itself.' } if current_user.admin? %>
+                    </div>
+                </form>
+                <a href="<%= proficient_project_path(project_required.id) %>">
+                    <div class="card card-image projects-image" style="background-image: url(<%= url_for(project_required.photos.first.image) %>);">
+                    </div>
+                </a>
+                <div>
+                    <a href="<%= proficient_project_path(project_required.id) %>">
+                        <h6 class="pt-3 fw-bold text-center"><strong><%= project_required.title %></strong></h6></a>
+                    <p><%= project_required.level %></p>
+                </div>
+            </div>
+        <% end %>
+    </div>
 <% end %>
 
 <% if !@inverse_required_projects.blank? %>
 
-  <h2 class="text-center title"> Some projects that could be done after this project:</h2>
-  <div class="row text-center">
-    <% @inverse_required_projects.each do |inverse_required_project| %>
-      <div class="col-md-4 mb-5 mt-3 card <%= return_hover_and_text_colors(inverse_required_project.level) %>" style="border-width:2px !important;">
-        <form class="w-auto d-inline-block">
-          <div class="mb-3 mx-auto">
-            <p><h6 class="text-center py-3"><strong><%= inverse_required_project.training.localized_name %></strong></h6></p>
-          </div>
-        </form>
-        <a href="<%= proficient_project_path(inverse_required_project.id) %>">
-          <div class="card card-image projects-image" style="background-image: url(<%= url_for(inverse_required_project.photos.first.image) %>);">
-          </div>
-        </a>
-        <div>
-          <a href="<%= proficient_project_path(inverse_required_project.id) %>">
-            <h6 class="pt-3 fw-bold text-center"><strong><%= inverse_required_project.title %></strong></h6>
-          </a>
-          <p><%= inverse_required_project.level %></p>
-        </div>
-      </div>
-    <% end %>
-  </div>
+    <h2 class="text-center title"> Some projects that could be done after this project:</h2>
+    <div class="row text-center">
+        <% @inverse_required_projects.each do |inverse_required_project| %>
+            <div class="col-md-4 mb-5 mt-3 card <%= return_hover_and_text_colors(inverse_required_project.level) %>" style="border-width:2px !important;">
+                <form class="w-auto d-inline-block">
+                    <div class="mb-3 mx-auto">
+                        <p><h6 class="text-center py-3"><strong><%= inverse_required_project.training.localized_name %></strong></h6></p>
+                    </div>
+                </form>
+                <a href="<%= proficient_project_path(inverse_required_project.id) %>">
+                    <div class="card card-image projects-image" style="background-image: url(<%= url_for(inverse_required_project.photos.first.image) %>);">
+                    </div>
+                </a>
+                <div>
+                    <a href="<%= proficient_project_path(inverse_required_project.id) %>">
+                        <h6 class="pt-3 fw-bold text-center"><strong><%= inverse_required_project.title %></strong></h6>
+                    </a>
+                    <p><%= inverse_required_project.level %></p>
+                </div>
+            </div>
+        <% end %>
+    </div>
 <% end %>
 <%= render 'layouts/photoswipe' %>

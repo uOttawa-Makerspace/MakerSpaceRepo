@@ -21,7 +21,9 @@
             <td class="action-cell">
               <div class="d-flex flex-column gap-2">
                 <% oi.files.first(5).each do |file| %>
-                  <%= link_to sanitize("<i class='fa fa-download'></i> #{file.filename}"), rails_blob_path(file, disposition: 'attachment'), class: 'btn btn-primary btn-sm' %>
+                  <%= link_to rails_blob_path(file, disposition: 'attachment'), class: 'btn btn-primary btn-sm' do %>
+                      <i class="fa fa-download"></i> <%= file.filename %>
+                  <% end %>
                 <% end %>
                 <% if oi.files.length > 5 %>
                   .....
