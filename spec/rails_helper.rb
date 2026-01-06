@@ -44,22 +44,6 @@ RSpec.configure do |config|
   config.infer_spec_type_from_file_location!
   config.filter_rails_from_backtrace!
 
-  # [SPEED] Stub Geocoder to stop API calls during Space creation
-  config.before(:all) do
-    if defined?(Geocoder)
-      Geocoder.configure(lookup: :test, ip_lookup: :test)
-      # Stub generic queries so they don't hit the network
-      Geocoder::Lookup::Test.add_stub(
-        "Makerspace Address", 
-        [{ 'latitude' => 40.7143528, 'longitude' => -74.0059731 }]
-      )
-      # Catch-all stub for any query not matched above
-      Geocoder::Lookup::Test.set_default_stub(
-        [{ 'latitude' => 40.7143528, 'longitude' => -74.0059731 }]
-      )
-    end
-  end
-
   # [SPEED] Mock Google Calendar Sync for Events
   config.before(:each) do
     # Stub the class methods on Event to do nothing

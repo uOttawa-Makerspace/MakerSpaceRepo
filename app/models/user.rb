@@ -9,14 +9,18 @@ class User < ApplicationRecord
   has_one :rfid, dependent: :destroy
   has_many :upvotes, dependent: :destroy
   has_many :comments, dependent: :destroy
-  has_and_belongs_to_many :repositories, dependent: :destroy
+  has_and_belongs_to_many :repositories # Membership: many to many through a join table
+  has_many :owned_repositories, class_name: 'Repository', dependent: :destroy # Ownership: many to one via foreign key
+  has_many :likes
   has_many :certifications, class_name: 'Certification', dependent: :destroy
   has_many :demotion_staff,
            class_name: 'Certification',
            foreign_key: 'demotion_staff_id',
            dependent: :destroy
   has_many :lab_sessions, dependent: :destroy
-  has_and_belongs_to_many :training_sessions
+  # NOTE: This was converted to a has_many because of merge_duplicate_users.rake
+  # This is actually a has_and_belongs_to_many assoc, maybe convert or refactor later
+  has_and_belongs_to_many :training_sessions # join table points to participants
   accepts_nested_attributes_for :repositories
   has_many :project_proposals
   has_many :project_joins, dependent: :destroy
@@ -24,11 +28,11 @@ class User < ApplicationRecord
   has_many :volunteer_hours
   has_many :volunteer_tasks
   has_many :volunteer_task_joins
-  has_many :training_sessions
+  has_many :training_sessions # Direct, points to trainer
   has_many :announcements
   has_many :questions
   has_many :exams
-  has_many :exam_responses
+  has_many :exam_responses, through: :exams
   has_many :print_orders
   has_many :volunteer_task_requests
   has_many :cc_moneys, dependent: :destroy
@@ -57,8 +61,10 @@ class User < ApplicationRecord
   has_many :space_manager_joins, dependent: :destroy
   has_many :supervised_spaces, through: :space_manager_joins, source: :space
   has_many :staff_spaces, dependent: :destroy
+  has_many :user_booking_approvals, inverse_of: :staff
+  has_many :user_booking_approvals
   has_many :spaces, through: :staff_spaces
-  has_many :printer_issues # Don't delete issues when a user is deleted
+  has_many :printer_issues, inverse_of: 'reporter'  # Don't delete issues when a user is deleted
   has_many :locker_rentals, foreign_key: 'rented_by'
   has_many :staff_unavailabilities
   has_many :staff_external_unavailabilities, dependent: :destroy
@@ -77,7 +83,9 @@ class User < ApplicationRecord
 
   validates :username,
             presence: true,
-            uniqueness: true,
+            uniqueness: {
+              case_sensitive: false
+            },
             format: {
               with: /\A[a-zA-ZÀ-ÿ\d]*\z/
             },
@@ -85,7 +93,14 @@ class User < ApplicationRecord
               maximum: 20
             }
 
-  validates :email, presence: true, on: :create, uniqueness: true, email: true
+  validates :email,
+            presence: true,
+            on: :create,
+            uniqueness: {
+              case_sensitive: false
+            },
+            email: true
+  normalizes :email, with: ->(email) { email.strip.downcase }
 
   validates :how_heard_about_us, length: { maximum: 250 }
 
@@ -196,6 +211,11 @@ class User < ApplicationRecord
             if: :student?
 
   default_scope { where(deleted: false) }
+
+  def self.find_by_username(username)
+      find_by('lower(username) = ?', username.downcase)
+  end
+
   scope :no_waiver_users, -> { where('read_and_accepted_waiver_form = false') }
   scope :between_dates_picked,
         ->(start_date, end_date) {
@@ -321,7 +341,7 @@ class User < ApplicationRecord
 
   def self.username_or_email(username_email)
     User
-      .where(username: username_email)
+      .where('lower(username) = ?', username_email.downcase)
       .or(User.where('lower(email) = ?', username_email.downcase))
       .first
   end
@@ -509,6 +529,17 @@ class User < ApplicationRecord
     else
       identity.titleize
     end
+  end
+
+  def send_password_reset
+    user_hash = Rails.application.message_verifier(:user).generate(id)
+    expiry_date_hash =
+      Rails.application.message_verifier(:user).generate(1.day.from_now)
+    MsrMailer.forgot_password(
+      email,
+      user_hash,
+      expiry_date_hash
+    ).deliver_now
   end
 
   def active_membership

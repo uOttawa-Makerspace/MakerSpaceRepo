@@ -353,14 +353,12 @@ class UsersController < SessionsController
   def show
     @repo_user =
       if @user.admin? || @user.staff?
-        User.unscoped.find_by username: params[:username]
+        User.unscoped.find_by_username params[:username]
       else
-        User.find_by username: params[:username]
+        User.find_by_username params[:username]
       end
 
     raise ActiveRecord::RecordNotFound if @repo_user.nil?
-
-    #redirect_to root_path, alert: "User not found."
 
     @programs = @repo_user.programs.pluck(:program_type)
     begin
@@ -369,26 +367,18 @@ class UsersController < SessionsController
     rescue Octokit::Unauthorized
       @github_username = nil
     end
-    @repositories =
-      if params[:username] == @user.username || @user.admin? || @user.staff?
-        @repo_user
-          .repositories
-          .where(make_id: nil)
-          .paginate(page: params[:page], per_page: 18)
-      else
-        @repo_user
-          .repositories
-          .public_repos
-          .where(make_id: nil)
-          .paginate(page: params[:page], per_page: 18)
-      end
 
-    @acclaim_badge_url =
-      if params[:username] == @user.username
-        'https://www.youracclaim.com/earner/earned/share/'
-      else
-        'https://www.youracclaim.com/badges/'
-      end
+    # Get repositories owned by user
+    @repositories =
+        @repo_user
+          .repositories
+          .where(make_id: nil)
+          .paginate(page: params[:page], per_page: 18)
+
+    # Staff and current user can see private repos
+    unless @user.staff? || @repo_user == @user
+      @repositories = @repositories.public_repos
+    end
 
     @acclaim_data = @repo_user.certifications
     @makes = @repo_user.repositories.where.not(make_id: nil).page params[:page]

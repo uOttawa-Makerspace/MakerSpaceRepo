@@ -186,24 +186,11 @@ class StaticPagesController < SessionsController
       render :forgot_password
       return
     end
-    
-    user_email = params[:email].strip.downcase
-    if User.find_by_email(user_email).present?
-      @user = User.find_by(email: user_email)
-      user_hash = Rails.application.message_verifier(:user).generate(@user.id)
-      expiry_date_hash =
-        Rails.application.message_verifier(:user).generate(1.day.from_now)
-      MsrMailer.forgot_password(
-        user_email,
-        user_hash,
-        expiry_date_hash
-      ).deliver_now
-    end
-    
-    flash.now[:notice] = 'A reset link email has been sent to the email if the account exists.'
+
+    User.find_by(email: params[:email].strip.downcase)&.send_password_reset
+    flash[:notice] = 'A reset link email has been sent to the email if the account exists.'
     render :forgot_password
   end
-
 
   def report_repository
     if signed_in?
