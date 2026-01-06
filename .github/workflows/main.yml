@@ -16,11 +16,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
-    strategy:
-      fail-fast: true
-      matrix:
-        shard: [1, 2]
-
     services:
       postgres:
         image: postgres:17
@@ -37,7 +32,7 @@ jobs:
           --shm-size=512mb
 
     steps:
-      - name: Configure PostgreSQL for speed and create databases
+      - name: Configure PostgreSQL for speed
         run: |
           PGPASSWORD=postgres psql -h localhost -U postgres <<EOF
           ALTER SYSTEM SET fsync = off;
@@ -63,7 +58,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
-          node-version: "18.20.3"
+          node-version: "24.12.0"
           cache: "yarn"
 
       - name: Install Node dependencies
@@ -86,14 +81,11 @@ jobs:
       - name: Create Credentials File
         run: echo '${{ secrets.CREDENTIALS_JSON }}' > config/makerepo-1632742c49cc.json
 
-      - name: Setup Parallel Databases
-        run: |
-          bundle exec rake parallel:setup[4]
+      - name: Prepare Database
+        run: bin/rails db:test:prepare
 
-      - name: Run Parallel RSpec Tests (Shard ${{ matrix.shard }}/2, 4 processes each)
-        run: |
-          TEST_FILES=$(find spec -name '*_spec.rb' -type f | sort | awk "NR % 2 == (${{ matrix.shard }} - 1)")
-          bundle exec parallel_rspec $TEST_FILES -n 4
+      - name: Run RSpec
+        run: bundle exec rspec
 
   deploy:
     needs: test

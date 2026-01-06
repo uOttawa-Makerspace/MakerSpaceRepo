@@ -2,6 +2,7 @@ include ActionDispatch::TestProcess
 
 FactoryBot.define do
   factory :repository do
+    association :owner, factory: :user
     title { Faker::Lorem.unique.word }
     description { Faker::Lorem.paragraph }
     share_type { "public" }

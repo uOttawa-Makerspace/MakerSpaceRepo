@@ -316,7 +316,7 @@ end
 
   def user_profile
     if params[:username].present? and
-         User.find_by(username: params[:username]).present?
+         User.find_by_username(params[:username]).present?
       redirect_to user_path(params[:username])
     elsif params[:query].present?
       redirect_to staff_dashboard_search_path(query: params[:query])

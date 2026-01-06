@@ -87,6 +87,10 @@ RSpec.describe StaticPagesController, type: :controller do
   end
 
   describe "GET /reset_password" do
+    before(:each) do
+      allow(controller).to receive(:verify_turnstile).and_return(true)
+    end
+
     context "logged as regular user" do
       it "should send reset password email" do
         user = create(:user, :regular_user)
@@ -97,18 +101,46 @@ RSpec.describe StaticPagesController, type: :controller do
         expect(flash[:notice]).to eq(
           "A reset link email has been sent to the email if the account exists."
         )
-        expect(response).to redirect_to root_path
+        expect(response).to have_http_status(:ok)
+        expect(response).to render_template(:forgot_password)
       end
     end
 
     context "trying a not working email" do
-      it "should reset not password" do
+      it "should not reset password" do
         patch :reset_password, params: { email: "abc123@jdjjsgjjdsj.ca" }
         expect(ActionMailer::Base.deliveries.count).to eq(0)
         expect(flash[:notice]).to eq(
           "A reset link email has been sent to the email if the account exists."
         )
-        expect(response).to redirect_to root_path
+        expect(response).to have_http_status(:ok)
+        expect(response).to render_template(:forgot_password)
+      end
+    end
+
+    context "with failed turnstile verification" do
+      it "should show error and not send email" do
+        allow(controller).to receive(:verify_turnstile).and_return(false)
+        user = create(:user, :regular_user)
+        patch :reset_password, params: { email: user.email }
+        expect(ActionMailer::Base.deliveries.count).to eq(0)
+        expect(flash[:alert]).to eq(
+          "There was a problem with the captcha, please try again."
+        )
+        expect(response).to have_http_status(:ok)
+        expect(response).to render_template(:forgot_password)
+      end
+    end
+
+    context "with blank email" do
+      it "should show error and not send email" do
+        patch :reset_password, params: { email: "" }
+        expect(ActionMailer::Base.deliveries.count).to eq(0)
+        expect(flash[:alert]).to eq(
+          "Please enter an email address."
+        )
+        expect(response).to have_http_status(:ok)
+        expect(response).to render_template(:forgot_password)
       end
     end
   end
