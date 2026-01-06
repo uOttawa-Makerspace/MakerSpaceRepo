@@ -1,21 +1,29 @@
 /* SETTING LAYOUT */
-
-@import "lib";
 @import "bootstrap/scss/bootstrap";
 @import "shared/variables";
 
 div.setting-title {
   line-height: 5rem !important;
-  font: 400 3rem "Roboto", sans-serif;
+  font:
+    400 3rem "Roboto",
+    sans-serif;
   color: #555;
 }
 
 div.setting-grid {
-  @include outer-container(68rem);
+  max-width: 68rem;
+  margin-left: auto;
+  margin-right: auto;
+
   min-height: calc(100vh - 50px);
   background-color: #fff;
   padding: 0 1rem;
   /*position: relative;*/
+
+  /* Add Grid for layout */
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 0;
 
   .btn-secondary {
     color: #fff;
@@ -64,18 +72,22 @@ section#waivers {
 }
 
 div.setting-side-panel {
-  @include span-columns(2.5, 0);
+  grid-column: span 3;
+
   position: relative;
   padding: 3rem 1rem 0;
   color: #333;
-  font: 400 1.2rem "Roboto", helvetica, sans-serif;
+  font:
+    400 1.2rem "Roboto",
+    helvetica,
+    sans-serif;
 
   li {
     display: block;
     height: 2.5rem;
 
     a {
-      @include transition(100ms);
+      transition: 100ms linear;
 
       &:hover:not(.vp-button) {
         padding-left: 0.4rem;
@@ -84,6 +96,7 @@ div.setting-side-panel {
     }
   }
 }
+
 @include media-breakpoint-down(md) {
   div.setting-side-panel {
     li {
@@ -93,6 +106,7 @@ div.setting-side-panel {
     }
   }
 }
+
 @include media-breakpoint-between(md, xl) {
   div.setting-side-panel {
     li {
@@ -102,6 +116,7 @@ div.setting-side-panel {
     }
   }
 }
+
 @include media-breakpoint-up(xl) {
   div.setting-side-panel {
     li {
@@ -119,18 +134,26 @@ div.setting-side-panel {
 
 label.profile-label {
   display: block;
-  font: 400 0.9rem "Roboto", helvetica, sans-serif;
+  font:
+    400 0.9rem "Roboto",
+    helvetica,
+    sans-serif;
   color: #777;
 }
 
 label.radio-label {
   padding-top: -10px;
-  font: 400 0.9rem "Roboto", helvetica, sans-serif;
+  font:
+    400 0.9rem "Roboto",
+    helvetica,
+    sans-serif;
   color: #777;
 }
 
 input.profile-text {
-  font: 300 0.9em "Roboto", sans-serif;
+  font:
+    300 0.9em "Roboto",
+    sans-serif;
   color: #555;
   padding: 0.5rem;
   margin: 0.5rem 0 1rem;
@@ -142,7 +165,9 @@ input.profile-text {
 }
 
 textarea.profile-text {
-  font: 300 0.9em "Roboto", sans-serif;
+  font:
+    300 0.9em "Roboto",
+    sans-serif;
   color: #555;
   padding: 0.5rem;
   margin: 0.5rem 0 1rem;
@@ -155,7 +180,9 @@ textarea.profile-text {
 }
 
 select.profile-select {
-  font: 300 0.9em "Roboto", sans-serif;
+  font:
+    300 0.9em "Roboto",
+    sans-serif;
   color: #555;
   padding: 0.5rem;
   margin: 0.5rem 0 1rem;
@@ -167,7 +194,9 @@ select.profile-select {
 }
 
 div.section-desc {
-  font: 400 1rem "Roboto", sans-serif;
+  font:
+    400 1rem "Roboto",
+    sans-serif;
   width: 100%;
   max-width: 400px;
   padding: 10px 0;
@@ -175,13 +204,18 @@ div.section-desc {
   color: $primary;
 
   & span {
-    font: 400 0.75rem "Roboto", helvetica, sans-serif;
+    font:
+      400 0.75rem "Roboto",
+      helvetica,
+      sans-serif;
     color: #aaa;
   }
 }
 
 input.save-button {
-  font: 300 1em "Roboto", sans-serif;
+  font:
+    300 1em "Roboto",
+    sans-serif;
   padding: 0.5rem 1rem;
   border: none;
   text-transform: uppercase;
@@ -252,18 +286,23 @@ a.vp-button {
 div.avatar-column {
   position: relative;
   color: #333;
-  font: 400 1rem "Roboto", sans-serif;
+  font:
+    400 1rem "Roboto",
+    sans-serif;
   display: inline-block;
   margin: 0.5rem 0;
 }
 
 div.edit-column {
-  @include span-columns(8, 0);
+  grid-column: span 8;
+
   //  border-left: 260px solid #f0f5f5;
   //  margin-left: -260px;
   padding-left: 2rem;
   color: #333;
-  font: 400 1rem "Roboto", sans-serif;
+  font:
+    400 1rem "Roboto",
+    sans-serif;
   padding-top: 2rem;
   min-height: calc(100vh - 50px);
 
@@ -295,7 +334,7 @@ div.edit-column {
   }
 
   a.edit-user-link {
-    @include transition(100ms);
+    transition: 100ms linear;
     position: relative;
     left: 700px;
     top: 50px;
@@ -338,7 +377,9 @@ div.edit-column {
       height: 5rem;
       line-height: 5rem !important;
       font-size: 75%;
-      font: 500 2rem "Roboto", sans-serif;
+      font:
+        500 2rem "Roboto",
+        sans-serif;
       background-color: #cd5c5c;
       color: #fff;
       z-index: 2;
@@ -350,11 +391,15 @@ div.edit-column {
       background-color: #f2b3ac;
 
       p {
-        font: 500 1rem "Roboto", sans-serif;
+        font:
+          500 1rem "Roboto",
+          sans-serif;
       }
 
       p#intro {
-        font: 500 1.2rem "Roboto", sans-serif;
+        font:
+          500 1.2rem "Roboto",
+          sans-serif;
       }
     }
   }
@@ -368,7 +413,7 @@ div.edit-column {
   }
 
   label.custom-file-upload {
-    @include transition(100);
+    transition: 100ms linear;
     font-size: 10px;
     background-color: #eee;
     padding: 5px 10px;
@@ -390,11 +435,14 @@ div.edit-column {
   /* CHANGE PASSWORD */
 
   div.cp-column {
-    @include span-columns(9, 0);
+    grid-column: span 9;
+
     border-right: 1px solid #ddd;
     padding-left: 2rem;
     color: #333;
-    font: 400 1rem "Roboto", sans-serif;
+    font:
+      400 1rem "Roboto",
+      sans-serif;
   }
 
   @media screen and (max-width: 700px) {
@@ -403,7 +451,8 @@ div.edit-column {
     }
 
     div.edit-column {
-      @include span-columns(12, 3);
+      grid-column: span 12;
+
       padding: 0;
       border: none;
 
@@ -421,7 +470,10 @@ div.edit-column {
     border-radius: 2px;
     border: 1px solid #aaa;
     margin: 0.5rem 0 1rem;
-    font: 300 1rem "Roboto", helvetica, sans-serif;
+    font:
+      300 1rem "Roboto",
+      helvetica,
+      sans-serif;
   }
 
   .link_pp {
@@ -432,6 +484,9 @@ div.edit-column {
     border-radius: 2px;
     border: 1px solid #aaa;
     margin: 0.5rem 0 1rem;
-    font: 300 1rem "Roboto", helvetica, sans-serif;
+    font:
+      300 1rem "Roboto",
+      helvetica,
+      sans-serif;
   }
 }

@@ -104,8 +104,8 @@ RSpec.describe Repository, type: :model do
         user = create(:user, :regular_user)
         repo = create(:repository)
         Repository.find(repo.id).users << User.find(user.id)
-        Repository.find(repo.id).destroy
-        expect(User.last.reputation).to eq(-25)
+        Repository.find(repo.id).destroy!
+        expect(user.reload.reputation).to eq(-25)
       end
     end
   end

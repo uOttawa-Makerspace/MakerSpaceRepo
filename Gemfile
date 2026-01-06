@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 source "https://rubygems.org"
-ruby "3.4.1"
+ruby "3.4.7"
 gem "rails", "~> 7.2.0"
 
 # no longer standard since 3.4
@@ -34,14 +34,13 @@ gem "mocha"
 gem "net-ssh"
 gem "nobspw_rails7"
 gem "octokit", "~> 4.21.0"
-gem "pg", "~> 1.5"
+gem "pg", "~> 1.6"
 gem "prettier_print"
 gem "pry", "~> 0.15"
 gem "pry-rails", "~> 0.3", group: :development
 gem "psych", "~> 4.0"
 gem "quick_random_records", "~> 0.3.2"
 gem "rack-cors"
-gem "recaptcha"
 gem "roo", "~> 2.10.0"
 gem "roo-xls"
 gem 'rrule'
@@ -60,7 +59,6 @@ gem "syntax_tree"
 gem "syntax_tree-haml"
 gem "syntax_tree-rbs"
 gem 'terser', '~> 1.2'
-gem "thin", "~> 2.0"
 gem "toastr-rails"
 gem "trix-rails", "~> 2.4", require: "trix"
 gem "vite_rails"
@@ -68,9 +66,14 @@ gem "whenever", require: false
 gem "will_paginate", "~> 3.3.0"
 gem "will_paginate-bootstrap-style"
 gem "youtube_id"
+gem "solid_queue", "~> 1.2"
+gem "solid_cable"
 gem "mission_control-jobs"
 
+gem "puma", '~> 7.1'
+
 group :development, :test do
+  gem 'rspec_junit_formatter'
   gem "byebug", platform: :mri
   gem "factory_bot_rails"
   gem "faker", "~> 3.1"
@@ -85,21 +88,16 @@ end
 group :development do
   # Capistrano deployment stuff
   gem "capistrano", "~> 3.10", require: false
-  gem "capistrano-bundler"
-  gem "capistrano-maintenance", "~> 1.2", require: false
-  gem "capistrano-passenger", ">= 0.2.1"
-  gem "capistrano-rails", "~> 1.6", require: false
-  gem "capistrano-rbenv", "~> 2.1"
+  gem "capistrano-bundler", require: false
+  gem "capistrano-maintenance", require: false
+  gem "capistrano3-puma", require: false
+  gem "capistrano-rails", require: false
+  gem "capistrano-rbenv", require: false
   gem "erb_lint", require: false
   gem "letter_opener" # Open emails in development
   gem "rubocop-rails"
   gem "web-console"
   gem "ruby-prof" # profiling
-
-  gem 'ruby-lsp-rails', require: false
-  gem "ruby-lsp-rspec", require: false
-  gem 'ruby-lsp-rubyfmt', require: false
-
 
   # ssh deploymentque
   gem "bcrypt_pbkdf", "~> 1.0"
@@ -107,13 +105,12 @@ group :development do
 end
 
 group :test do
+  gem 'test-prof'
   gem "capybara"
   gem "database_cleaner-active_record"
-  gem "launchy", "~> 2.2"
+  gem "launchy", "~> 3.0"
   gem "rails-controller-testing"
   gem "rspec-retry"
-  gem "selenium-webdriver", "~> 3.142.7"
-  gem "shoulda-matchers", "~> 4.0"
+  gem "selenium-webdriver", "~> 4.39.0"
+  gem "shoulda-matchers", "~> 7.0"
 end
-
-gem "solid_queue", "~> 1.2"

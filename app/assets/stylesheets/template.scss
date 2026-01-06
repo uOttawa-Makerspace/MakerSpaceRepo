@@ -1,4 +1,3 @@
-@import "lib";
 /* ADDING A FILE */
 
 div#file-container {
@@ -12,7 +11,7 @@ div#video-container {
   overflow-y: scroll;
 }
 tr.file-item {
-  @include transition(200ms);
+  transition: 200ms linear;
   font-size: 0.8rem;
   color: #666;
   padding: 0.2rem;
@@ -52,30 +51,29 @@ span.video-remove {
 }
 div.files-show {
   padding: 0.2rem;
-  max-height: 105px;
+  max-height: 8rem;
   overflow-y: scroll;
+  margin-bottom: 0.4rem;
 }
-div.file-item-show {
-  @include transition(200ms);
-  font-size: 0.8rem;
+
+.file-item-show {
+  list-style: none;
+  padding: 0;
+  margin-bottom: unset;
+  font-size: 0.9rem;
   color: #666;
-  padding: 0.1rem;
-  max-width: 300px;
-  u {
-    width: 80%;
-    overflow-x: hidden;
+  min-width: 0;
+  a {
+    text-wrap: nowrap;
     text-overflow: ellipsis;
-    white-space: nowrap;
+    display: inline-block;
+    max-width: 80%;
   }
   span {
-    display: inline-block;
-    width: 20%;
-    text-align: right;
-  }
-  i {
-    padding-right: 5px;
+    float: right;
   }
 }
+
 nav.pagination {
   text-align: center;
   color: #eee;

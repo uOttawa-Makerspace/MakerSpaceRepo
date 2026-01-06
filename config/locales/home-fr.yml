@@ -22,6 +22,10 @@ fr:
       locker_rentals: Location de casiers
     shortcuts:
       header: "Raccourcis"
+      my_repositories: "Mes dépôts"
+      no_repositories: "Vous n'avez pas encore de dépôts."
+      view_all_repos: "Voir tous les dépôts"
+      create_first_repo: "Créer votre premier dépôt"
       recently_opened: "Récemment consultés"
       no_recently_opened: "Aucune projet consulté récemment"
       explore_more: "Explorer plus"
@@ -79,6 +83,7 @@ fr:
       welcome_to: "Bienvenue à MakerRepo"
       welcome_subheader: "Voici le site de dépôt du <b>CEED</b>"
       hour_header: "Heures d'ouverture des espaces de la semaine"
+      view_hours: "Voir le calendrier complet"
     socials:
       subtext: "Restez informé grâce a nos réseaux sociaux"
     hours:

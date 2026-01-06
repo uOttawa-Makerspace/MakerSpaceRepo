@@ -28,14 +28,30 @@ document.addEventListener("DOMContentLoaded", async function () {
       return;
     }
 
-    // Determine initial view based on screen size
+    // Check if on hours page
+    const isHoursPage = window.location.pathname === "/hours";
     const isMobile = window.innerWidth < 1000;
-    const initialView = isMobile ? "timeGridThreeDay" : "timeGridFiveDay";
+
+    // Determine initial view based on page and screen size
+    const getView = (mobile) => {
+      if (isHoursPage) {
+        return mobile ? "timeGridThreeDay" : "timeGridSevenDay";
+      } else {
+        return mobile ? "timeGridTwoDay" : "timeGridFiveDay";
+      }
+    };
+
+    const initialView = getView(isMobile);
 
     const calendar = new Calendar(calendarEl, {
       plugins: [timeGridPlugin, dayGridPlugin, rrulePlugin],
       initialView: initialView,
       views: {
+        timeGridTwoDay: {
+          type: "timeGrid",
+          duration: { days: 2 },
+          buttonText: "2 day",
+        },
         timeGridThreeDay: {
           type: "timeGrid",
           duration: { days: 3 },
@@ -46,7 +62,12 @@ document.addEventListener("DOMContentLoaded", async function () {
           duration: { days: 5 },
           buttonText: "5 day",
         },
+        timeGridSevenDay: {
+          type: "timeGridWeek",
+          buttonText: "7 day",
+        },
       },
+      firstDay: 0,
       headerToolbar: {
         left: "prev",
         center: "title",
@@ -59,7 +80,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       timeZone: "America/Toronto",
       nowIndicator: true,
       slotEventOverlap: false,
-      allDaySlot: false,
+      allDaySlot: isHoursPage,
       slotMinTime: "08:00:00",
       slotMaxTime: "22:00:00",
       slotDuration: "01:00:00",
@@ -72,17 +93,64 @@ document.addEventListener("DOMContentLoaded", async function () {
       },
       windowResize: (view) => {
         const isMobileView = window.innerWidth < 1000;
+        const targetView = getView(isMobileView);
         const currentView = calendar.view.type;
 
-        if (isMobileView && currentView === "timeGridFiveDay") {
-          calendar.changeView("timeGridThreeDay");
-        } else if (!isMobileView && currentView === "timeGridThreeDay") {
-          calendar.changeView("timeGridFiveDay");
+        if (currentView !== targetView) {
+          calendar.changeView(targetView);
         }
       },
     });
 
     calendar.render();
+
+    // Create checkboxes for event sources
+    const checkboxContainer = document.getElementById("filters");
+
+    eventSources.forEach((source, index) => {
+      const sourceId = source.id;
+      const sourceName = source.events?.[0].extendedProps.name;
+      const sourceColor = source.color || source.backgroundColor || "#3788d8";
+
+      if (!sourceId || !sourceName) return;
+
+      const checkboxWrapper = document.createElement("div");
+      checkboxWrapper.className = "d-flex align-items-center gap-2";
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.className = "form-check-input";
+      checkbox.id = `filter-${sourceId}`;
+      checkbox.style.backgroundColor = sourceColor;
+      checkbox.style.borderColor = sourceColor;
+      checkbox.style.width = "20px";
+      checkbox.style.height = "20px";
+      checkbox.checked = true;
+      checkbox.dataset.sourceId = sourceId;
+
+      const label = document.createElement("label");
+      label.className = "form-check-label mt-1";
+      label.htmlFor = `filter-${sourceId}`;
+      label.innerHTML = sourceName;
+
+      checkboxWrapper.appendChild(checkbox);
+      checkboxWrapper.appendChild(label);
+      checkboxContainer.appendChild(checkboxWrapper);
+
+      // Add event listener to toggle event source
+      checkbox.addEventListener("change", (e) => {
+        const sourceToToggle = calendar.getEventSourceById(sourceId);
+
+        if (sourceToToggle) {
+          sourceToToggle.remove();
+        }
+
+        if (e.target.checked) {
+          calendar.addEventSource(eventSources[index]);
+        }
+      });
+    });
+
     console.log(`Loaded ${eventSources.length} open hours events`);
   } catch (error) {
     console.error("Error initializing calendar:", error);

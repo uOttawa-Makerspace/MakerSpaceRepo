@@ -21,6 +21,10 @@ en:
       job_orders: "Job Orders"
       locker_rentals: "Locker rentals"
     shortcuts:
+      my_repositories: "My Repositories"
+      no_repositories: "You don't have any repositories yet."
+      view_all_repos: "View all repositories"
+      create_first_repo: "Create your first repository"
       header: "Shortcuts"
       recently_opened: "Recently Opened"
       no_recently_opened: "No recently viewed projects"
@@ -79,5 +83,6 @@ en:
       welcome_to: "Welcome to MakerRepo"
       welcome_subheader: "This is <b>CEED's</b> repository website"
       hour_header: "Space hours this week"
+      view_hours: "View full hours"
     socials:
       subtext: "Stay up to date with our socials"

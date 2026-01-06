@@ -11,6 +11,7 @@ fr:
         l’espace de création Richard L’Abbé et le Centre Brunsfield. Grâce à votre adhésion, vous
         pouvez explorer les outils de conception et de fabrication, créer ou poursuivre des projets personnels et donner vie à vos idées."
       subtitle_2: "AI-JE DÉJÀ UN ADHÉSION?"
+      subtitle_2_link: "https://www.uottawa.ca/etudes/droits-universitaires-soutien-financier/droits-universitaires/droits-accessoires"
       text_2: "Les étudiants ayant réglé les frais annexes du CEED bénéficient automatiquement de l'adhésion. Il n'y a aucun frais supplémentaire."
       subtitle_3: "QUELS SONT LES AVANTAGES?"
       text_3: "Tous les membres bénéficient du même niveau d'accès aux espaces du CEED. Cependant, veuillez noter que l'utilisation des installations est soumise à un système de priorités :les cours, les travaux pratiques et les ateliers programmés sont prioritaires sur l'utilisation générale."
@@ -18,11 +19,23 @@ fr:
       text_4:
         "Que vous soyez étudiant réalisant un projet de classe, une équipe se préparant à une compétition,
         ou un innovateur développant un prototype, votre adhésion au CEED est votre porte d’entrée vers l’une des communautés d’ingénierie et d’entrepreneuriat les plus créatives d’Ottawa."
+      prices: "DÉTAIL DES PRIX"
+      col1: "Jour"
+      col2: "Semestre"
+      row1: "Type de membre"
+      row2: "Ingénierie et Informatique"
+      row_faculty: "Payé par les droits d'accessoires​"
+      row4: "Autres étudiants et professeurs"
+      row5: "Externe"
       more_info: "PLUS D'INFOS"
-      makerspace: "Richard L'Abbe Makerspace"
-      brunsfield: "Brunsfield Centre"
-      ancillary: "Frais accessoires"
-      ancillary_text: "Les frais accessoires s'ajoutent aux frais de scolarité pour calculer les frais universitaires. Ce sont des frais obligatoires qui couvrent des services non liés à votre programme d'études."
+      makerspace: "Atelier Makerspace Richard-L’Abbé"
+      brunsfield: "Centre Brunsfield"
+      ancillary: "Droits d'accessoires​"
+      ancillary_text: "Les droits d'accessoires​ s'ajoutent aux frais de scolarité pour calculer les frais universitaires. Ce sont des frais obligatoires qui couvrent des services non liés à votre programme d'études."
+      link:
+        makerspace: "https://www.uottawa.ca/faculte-genie/centre-genie-entrepreneurial-conception/installations/atelier-makerspace-richard-labbe"
+        bruns: "https://www.uottawa.ca/faculte-genie/centre-genie-entrepreneurial-conception/installations/centre-brunsfield"
+        fees: "https://www.uottawa.ca/etudes/droits-universitaires-soutien-financier/droits-universitaires/droits-accessoires"
 
     purchase:
       title: "Vos Adhésions"

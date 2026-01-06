@@ -1,12 +1,9 @@
 require "rails_helper"
 
 RSpec.describe Order, type: :model do
-  before(:all) do
-    OrderStatus.create(name: "In progress")
-    OrderStatus.create(name: "Completed")
-  end
-
   describe "Association" do
+    subject { create(:order) }
+
     context "has_many" do
       it { should have_many(:order_items) }
       it { should have_many(:proficient_projects) }
@@ -22,21 +19,17 @@ RSpec.describe Order, type: :model do
   describe "#before_validation" do
     context "set_order_status" do
       it "should set the order status" do
-        create(:order)
-        expect(Order.last.order_status_id).to eq(
-          OrderStatus.find_by_name("In progress").id
-        )
+        order = create(:order)
+        expect(order.order_status.name).to eq("In progress")
       end
     end
   end
 
   describe "#scopes" do
     context "completed" do
-      it "should set the order status" do
-        create(:order)
-        create(:order)
-        create(:order, :completed)
-        create(:order, :completed)
+      it "should return only completed orders" do
+        create_list(:order, 2)
+        create_list(:order, 2, :completed)
         expect(Order.completed.count).to eq(2)
       end
     end
@@ -45,20 +38,20 @@ RSpec.describe Order, type: :model do
   describe "model methods" do
     context "#subtotal" do
       it "should calculate the subtotal" do
-        create(:order_item)
-        expect(Order.last.subtotal).to eq(10) # 10 because the PP CC is 10
+        order_item = create(:order_item)
+        expect(order_item.order.reload.subtotal).to eq(10)
       end
     end
 
     context "#completed?" do
       it "should check if the order is completed (true)" do
-        create(:order, :completed)
-        expect(Order.last.completed?).to be_truthy
+        order = create(:order, :completed)
+        expect(order.completed?).to be_truthy
       end
 
       it "should check if the order is completed (false)" do
-        create(:order)
-        expect(Order.last.completed?).to be_falsey
+        order = create(:order)
+        expect(order.completed?).to be_falsey
       end
     end
   end

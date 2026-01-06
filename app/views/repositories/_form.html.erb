@@ -16,58 +16,96 @@
     <%= label_tag :file, t('repository.proj_files') .html_safe, class: 'form-label mb-2' %>
     <div class="mb-3">
         <div class="input-group mb-3">
-            <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'form-control', aria_label: 'Project Files / Fichiers du projet' %>
-            <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="new-file-input">
-                <i class="fa fa-plus"></i>
-            </button>
+            <%= file_field_tag 'repository[repo_files_attributes]',
+             multiple: true,
+             data: {
+                 file_upload_helper: true,
+                 file_upload_preview_selector: '[data-file-upload-file-preview]',
+                 file_upload_suffix: 'file'
+             },
+             class: 'form-control',
+             aria_label: 'Project Files / Fichiers du projet' %>
+        </div>
+        
+        <div data-file-upload-file-preview class="file-upload-preview-pane">
+            <%= f.fields_for :repo_files do |p| %>
+                <%# This is a big workaround, because files aren't directly attached to the model %>
+                <% if p.object.file.attached? && p.object.file.persisted? %>
+                    <div class="file-upload-item-preview">
+                        <% if p.object.file.image? %>
+                            <%= image_tag p.object.file %>
+                        <% else %>
+                            <div class="file-upload-preview-failed"></div>
+                        <% end %>
+                        <%= p.hidden_field :file, value: p.object.file.signed_id %>
+                        <span title="<%= p.object.file.filename %>"><%= p.object.file.filename %></span>
+                        <%= p.hidden_field :_destroy, data: {file_upload_hidden_destroy: true } %>
+                        <%= button_tag 'Delete', class: 'file-upload-item-delete',  data: {file_upload_item_delete: true}, type: 'button' %>
+                    </div>
+                <% end %>
+            <% end %>
         </div>
     </div>
 
-    <div id="file-container">
-        <% @files&.each do |f| %>
-            <table>
-                <tr class="file-item">
-                    <td><%= fa_icon 'file-text-o' %> <%= f.file.filename %></td>
-                    <td><span><%= f.file.byte_size / 1000 %> KB</span></td>
-                    <td><span id="<%= f.file.id %>" class="file-remove">remove</span></td>
-                </tr>
-            </table>
-        <% end %>
-        <%= hidden_field_tag 'deletefiles' %>
-    </div>
     <div class="mb-3 required">
         <%= label_tag :photo, t('repository.gallery') , class: 'form-label' %>
         <div class="input-group mb-3">
-            <%= file_field_tag 'images[]', type: :files, multiple: true, class: 'form-control image-upload', aria_label: 'Select Pictures / Selectionner des images' %>
-            <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="new-photo-input">
-                <i class="fa fa-plus"></i>
-            </button>
+            <%# this is a free-form param because the images are an association and not an attribute %>
+            <%# Additionally, not sure if there's a way to verify this name being correct via internal rails methods %>
+            <%= file_field_tag 'repository[photos_attributes]',
+                               type: :files,
+                               multiple: true,
+                               data: {
+                                   file_upload_helper: true,
+                                   file_upload_preview_selector: '[data-file-upload-repo-preview]',
+                                   file_upload_limit: 5,
+                                   file_upload_suffix: 'image'
+                               },
+                               accept: Photo::ALLOWED_CONTENT_TYPES.join(','),
+                               class: 'form-control',
+                               placeholder: 'Select pictures',
+                               aria_label: 'Select Pictures / Selectionner des images' %>
         </div>
-        <div class="form-text"><%= t('repository.gal_msg') %></div>
-        <div class="repo-image mx-auto">
-            <div id="dragndrop" ondrop="dragndrop(event);" ondragover="dragover(event);">
-                <%= fa_icon 'cloud-upload' %>
-                <p><%= t('repository.drag_drop') %></p>
-            </div>
+        <p class="form-text"><%= t('repository.gal_msg') %></p>
+        <div data-file-upload-repo-preview class="file-upload-preview-pane">
+            <%= f.fields_for :photos do |p| %>
+                <% if p.object.image.attached? && p.object.image.persisted? %>
+                    <div class="file-upload-item-preview">
+                        <%= image_tag p.object.image %>
+                        <%= p.hidden_field :image, value: p.object.image.signed_id %>
+                        <span title="<%= p.object.image.filename %>"><%= p.object.image.filename %></span>
+                        <%= p.hidden_field :_destroy, data: {file_upload_hidden_destroy: true } %>
+                        <%= button_tag 'Delete', class: 'file-upload-item-delete',  data: {file_upload_item_delete: true}, type: 'button' %>
+                    </div>
+                <% end %>
+            <% end %>
         </div>
     </div>
 
-    <div id="image-container"></div>
     <div class="mb-3">
         <%= f.label :youtube_link, t('repository.youtube') , class: 'form-label' %>
-        <%= f.text_field :youtube_link, class: 'form-control' %>
+        <%= f.text_field :youtube_link, class: 'form-control',
+               placeholder: "https://www.youtube.com/watch?v=..." %>
         <div class="form-text"><%= t('repository.youtube_msg') =%></div>
     </div>
     <div class="mb-3 required">
         <%= f.label :categories, t('repository.cat') , class: 'form-label' %>
-        <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :name, :name), { include_blank: t('repository.sel_cat'), include_hidden: false }, { class: 'profile-text form-control form-select', multiple: true } %>
-        <div class="form-text"><%= t('repository.cat_msg') %></div>
+        <%= f.select :categories, options_for_select(
+            CategoryOption.show_options.collect(&:name),
+            selected: @repository.categories.collect(&:name)),
+         { multiple: true, class: 'form-control form-select', include_blank: t('repository.sel_cat') }
+        %>
+        <span class="form-text"><%= t('repository.cat_msg') %></span>
     </div>
 
     <div class="mb-3">
-        <%= f.label :equipment, t('repository.equip') , class: 'form-label' %>
-        <%= f.select :equipments, options_from_collection_for_select(EquipmentOption.show_options, :name, :name), { include_blank: t('repository.sel_cat'), include_hidden: false }, { class: 'profile-text form-control form-select', multiple: true } %>
-        <div class="form-text"><%= t('repository.equip_msg') %></div>
+        <%= f.label :equipments, t('repository.equip') , class: 'form-label' %>
+        <%= f.select :equipments, options_for_select(
+            EquipmentOption.show_options.collect(&:name),
+            selected: @repository.equipments.collect(&:name)),
+         { multiple: true, class: 'form-control form-select', include_blank: t('repository.sel_cat') }
+         %>
+        <span class="form-text"><%= t('repository.equip_msg') %></span>
     </div>
 
 
@@ -82,14 +120,16 @@
             <%= f.hidden_field :project_proposal_id, value: params[:project_proposal_id] %>
         <% else %>
             <%= f.label :license, t('repository.reason') , class: 'form-label' %>
-            <%= f.select(:project_proposal_id, options_for_select(@project_proposals), { include_blank: true }, { class: 'form-control form-select' }) %>
+            <%= f.select(:project_proposal_id,
+                         options_for_select(@project_proposals, selected: @repository.project_proposal_id),
+                         { include_blank: 'No project linked', class: 'form-control form-select' }) %>
         <% end %>
     </div>
 
     <div class="mb-3">
         <%# Controller looks for a freeform owner param %>
         <%= label_tag(:owner, t('repository.new_owner') , class: 'form-label') %>
-        <%= select_tag(:owner, '', prompt: t('repository.search_user'), class: 'owner_select form-control', id: 'owner_select', multiple: true) %>
+        <%= select_tag(:owner, '', prompt: t('repository.search_user'), class: 'owner_select form-control', id: 'owner_select', multiple: true, autocomplete: false) %>
     </div>
 
 

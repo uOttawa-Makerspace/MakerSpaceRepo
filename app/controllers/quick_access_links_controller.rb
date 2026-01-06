@@ -1,4 +1,4 @@
-class QuickAccessLinksController < ApplicationController
+class QuickAccessLinksController < SessionsController
   before_action :check_user
 
   def check_user

@@ -1,22 +1,18 @@
-<section style="padding-left: 8vw;padding-top: 5vw;">
-<p style="font: 400 1.3em 'Roboto', sans-serif;color: #333;"><h1>
-    Hello!
- </h1>
-</p>
+<% content_for :preheader do %>
+  Makerepo - Volunteer Task Update
+<% end %>
 
-<br style="font: 400 1.1em 'Roboto', sans-serif;color: #333; line-height: 35px;">
-  An update was made for the Task <b><%= @volunteer_task.title.capitalize %></b>.  <br />
-
-  Check it <%= link_to 'here', 'https://makerepo.com/volunteer_task_requests/' %>.
-
-  If you need more information, you can send an email to <%= @email_staff %>.
-  <br />
-
-</p>
-
-
-<p style="  font: 400 1.1em 'Roboto', sans-serif;color: #333;">
-  Cheers,<br>
+<% content_for :team_name do %>
   The MakerRepo Team
+<% end %>
+
+<% content_for :why_received do %>
+  You have received this email because a volunteer task you're interested in was updated on <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a>.
+<% end %>
+
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello!</p>
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
+  An update was made for the Task <b><%= @volunteer_task.title.capitalize %></b>. <br />
+  Check it <%= link_to 'here', 'https://makerepo.com/volunteer_task_requests/' %>.<br />
+  If you need more information, you can send an email to <%= @email_staff %>.
 </p>
-</section>

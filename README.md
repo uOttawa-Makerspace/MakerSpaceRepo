@@ -62,8 +62,8 @@ macOS developers need to install [Homebrew if not already installed](https://bre
 3. [Install NVM](https://github.com/nvm-sh/nvm), Node, then Yarn.
    ```bash
    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
-   nvm install 18 --lts
-   nvm use 18
+   nvm install 24 --lts
+   nvm use 24
    npm install -g yarn
    yarn install
    ```
@@ -78,7 +78,7 @@ macOS developers need to install [Homebrew if not already installed](https://bre
    mv ~/Downloads/master.key config/master.key
    ```
 
-6. Change the default PostgreSQL port from 5432 to 5433. Start PostgreSQL and access a PostgreSQL shell. When inside nano, press `Ctrl-W` to start search.
+6. Start PostgreSQL and access a PostgreSQL shell. When inside nano, press `Ctrl-W` to start search.
 
    ```bash
    # Find the postgres config file and open in nano

@@ -604,3 +604,75 @@ fr:
       paragraph_1: "Voulez-vous en savoir plus ? Envoyez-nous un courriel et nous serons ravi de répondre à vos questions."
       contact_1: "Mohamed Elsageyer <br>Responsable D'équipe <br> melsa036@uottawa.ca"
       contact_2: "Stephanie Chiarotto <br>Coordonnatrice des bénévoles <br> volunteer@makerrepo.com"
+  terms_of_service:
+    title: "Conditions d'utilisation"
+    license_title: "Licence"
+    repo_license: "Licence du dépôt"
+    terms_and_conditions: "Termes et conditions"
+
+    licenses:
+      cca: "Creative Commons - Attribution"
+      ccasa: "Creative Commons - Attribution - Partage dans les mêmes conditions"
+      ccand: "Creative Commons - Attribution - Pas de modification"
+      ccanc: "Creative Commons - Attribution - Pas d'utilisation commerciale"
+      ancsa: "Attribution - Pas d'utilisation commerciale - Partage dans les mêmes conditions"
+      ancnd: "Attribution - Pas d'utilisation commerciale - Pas de modification"
+
+    section1:
+      heading: "1. Termes"
+      content: "En accédant au site web www.makerepo.com, vous acceptez d'être lié par ces conditions d'utilisation, toutes les lois et réglementations applicables, et vous acceptez d'être responsable du respect de toutes les lois locales applicables. Si vous n'acceptez pas ces conditions, il vous est interdit d'utiliser ou d'accéder à ce site. Les documents contenus dans ce site sont protégés par les lois applicables sur le droit d'auteur et les marques de commerce."
+
+    section2:
+      heading: "2. Commentaires, retours et autres soumissions des utilisateurs"
+      intro: "Le Site peut vous offrir la possibilité de soumettre, publier ou afficher du contenu et des documents, y compris, sans s'y limiter, des photographies, du texte, des fichiers, des commentaires, des suggestions ou des informations personnellement identifiables. Vous conservez la propriété de tous les droits de propriété intellectuelle que vous détenez sur le Contenu."
+      items:
+        item1: "Votre Contenu doit être le vôtre et ne doit pas enfreindre les droits d'un tiers. MakerRepo se réserve le droit de supprimer tout Contenu de ce Site Web à tout moment sans préavis."
+        item2: "Pour éviter tout doute, vous reconnaissez et acceptez que nous pouvons :"
+        item3: "supprimer votre Contenu à notre seule discrétion (même si vous n'avez pas enfreint ces Conditions)"
+        item4: "utiliser tout ou partie de votre Contenu pour promouvoir nos produits et services ;"
+        item5: "Vous garantissez et déclarez que votre Contenu ne sera pas inapproprié. Sans limitation, le Contenu sera considéré comme inapproprié s'il :"
+        item6: "Pour votre sécurité, n'incluez jamais votre numéro de téléphone, votre adresse courriel, votre adresse ou d'autres informations personnelles dans une publication. Vos commentaires sont visibles par tous."
+      sub_items:
+        - "est diffamatoire, plagié, abusif, malveillant, menaçant, faux, trompeur, offensant, insultant, discriminatoire, vulgaire, harcelant, raciste, sexiste, indécent, obscène, pornographique ou haineux ;"
+        - "viole la confidentialité ou la vie privée d'une autre personne ;"
+        - "contient des accusations d'irrégularité ou des critiques personnelles de notre personnel ;"
+        - "est techniquement nuisible (y compris, sans limitation, les virus informatiques, les bombes logiques, les chevaux de Troie, les vers, les composants nuisibles, les données corrompues ou d'autres logiciels malveillants, données ou comportements nuisibles) ;"
+        - "fait la publicité ou la promotion d'un produit ou service ou fait des demandes de dons ou de soutien financier ;"
+        - "est du spam ou du contenu indésirable ;"
+        - "usurpe l'identité d'une autre personne ou déforme autrement votre identité, affiliation ou statut ;"
+        - "constituerait une infraction pénale, donne lieu à une responsabilité civile ou est autrement illégal ; et/ou"
+        - "enfreint ces Conditions"
+
+    section3:
+      heading: "3. Licence d'utilisation"
+      items:
+        item1: "L'autorisation est accordée de télécharger temporairement une copie des documents (informations ou logiciels) sur le site Web de MakerRepo pour un usage personnel et non commercial uniquement. Il s'agit de l'octroi d'une licence, et non d'un transfert de titre, et sous cette licence, vous ne pouvez pas :"
+        item2: "Cette licence prendra automatiquement fin si vous violez l'une de ces restrictions et peut être résiliée par MakerRepo à tout moment. À la fin de votre consultation de ces documents ou à la résiliation de cette licence, vous devez détruire tous les documents téléchargés en votre possession, que ce soit en format électronique ou imprimé."
+      sub_items:
+        - "modifier ou copier les documents ;"
+        - "utiliser les documents à des fins commerciales ou pour toute présentation publique (commerciale ou non commerciale) ;"
+        - "tenter de décompiler ou de désosser tout logiciel contenu sur le site Web de MakerRepo ;"
+        - "supprimer tout droit d'auteur ou autres mentions de propriété des documents ; ou"
+        - "transférer les documents à une autre personne ou « refléter » les documents sur tout autre serveur."
+
+    section4:
+      heading: "4. Avertissement"
+      items:
+        item1: "Les documents sur le site Web de MakerRepo sont fournis « tels quels ». MakerRepo ne donne aucune garantie, expresse ou implicite, et décline par la présente toutes les autres garanties, y compris, sans limitation, les garanties implicites ou les conditions de qualité marchande, d'adéquation à un usage particulier ou de non-violation de la propriété intellectuelle ou d'autres violations de droits."
+        item2: "De plus, MakerRepo ne garantit ni ne fait de déclaration concernant l'exactitude, les résultats probables ou la fiabilité de l'utilisation des documents sur son site Web ou concernant ces documents ou sur tout site lié à ce site."
+
+    section5:
+      heading: "5. Limitations"
+      content: "En aucun cas, MakerRepo ou ses fournisseurs ne seront responsables de tout dommage (y compris, sans limitation, les dommages pour perte de données ou de profit, ou en raison d'une interruption d'activité) résultant de l'utilisation ou de l'impossibilité d'utiliser les documents sur le site Web de MakerRepo, même si MakerRepo ou un représentant autorisé de MakerRepo a été informé oralement ou par écrit de la possibilité de tels dommages. Parce que certaines juridictions n'autorisent pas les limitations sur les garanties implicites ou les limitations de responsabilité pour les dommages consécutifs ou accessoires, ces limitations peuvent ne pas s'appliquer à vous."
+
+    section6:
+      heading: "6. Exactitude des documents"
+      content: "Les documents apparaissant sur le site Web de MakerRepo peuvent contenir des erreurs techniques, typographiques ou photographiques. MakerRepo ne garantit pas que l'un des documents sur son site Web soit exact, complet ou actuel. MakerRepo peut apporter des modifications aux documents contenus sur son site Web à tout moment sans préavis. Cependant, MakerRepo ne s'engage pas à mettre à jour les documents."
+
+    section7:
+      heading: "7. Liens"
+      content: "MakerRepo n'a pas examiné tous les sites liés à son site Web et n'est pas responsable du contenu de ces sites liés. L'inclusion de tout lien n'implique pas l'approbation par MakerRepo du site. L'utilisation de tout site lié se fait aux propres risques de l'utilisateur."
+
+    section8:
+      heading: "8. Modifications"
+      content: "MakerRepo peut réviser ces conditions d'utilisation de son site Web à tout moment sans préavis. En utilisant ce site Web, vous acceptez d'être lié par la version actuelle de ces conditions d'utilisation."

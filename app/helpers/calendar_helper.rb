@@ -1,5 +1,5 @@
 module CalendarHelper
-  def parse_ics_calendar(ics_url, name: "Unnamed Calendar", color: nil)
+  def parse_ics_calendar(ics_url, name: "Unnamed Calendar", color: nil )
     return [] if ics_url.blank?
 
     background_color = color.presence || generate_color_from_id(ics_url)
@@ -26,6 +26,7 @@ module CalendarHelper
           if main_event
             start_time = safe_to_time(main_event.dtstart)
             end_time = safe_to_time(main_event.dtend)
+            all_day = main_event.dtstart.is_a?(Icalendar::Values::Date)
 
             next if main_event.rrule.empty? && end_time < (Time.now.utc - 2.months)
 
@@ -37,7 +38,8 @@ module CalendarHelper
                 name: name,
                 description: main_event.description,
               },
-              allDay: main_event.dtstart.is_a?(Icalendar::Values::Date),
+              allDay: all_day,
+              display: 'auto',
               start: start_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S"),
               end: end_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S")
             }
@@ -45,12 +47,14 @@ module CalendarHelper
             rrule_obj = main_event.rrule&.first
 
             if rrule_obj.present?
-              event_hash[:rrule] = convert_to_js_rrule(rrule_obj)
-              event_hash[:rrule][:dtstart] = start_time.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S")
-            
-              duration_seconds = end_time.to_i - start_time.to_i
-              event_hash[:duration] = duration_seconds * 1000
-            
+              rrule_string_parts = []
+              
+              dtstart_toronto = start_time.in_time_zone("America/Toronto")&.strftime("%Y%m%dT%H%M%S")
+              rrule_string_parts << "DTSTART:#{dtstart_toronto}"
+              
+              rrule_line = convert_rrule_to_string(rrule_obj)
+              rrule_string_parts << "RRULE:#{rrule_line}"
+              
               all_exdates = main_event.exdate.map(&:value).flatten.map { |d| safe_to_time(d) }
               
               # Add recurrence-id dates from modified instances to exdates
@@ -59,13 +63,17 @@ module CalendarHelper
                 all_exdates << recurrence_time if recurrence_time
               end
               
-              exs = all_exdates.map do |d|
- 
-                                            d.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S")
-                                          rescue StandardError
-                                            nil
-                                           end.compact.uniq
-              event_hash[:exdate] = exs if exs.any?
+              all_exdates.compact.uniq.each do |d|
+                exdate_str = d.in_time_zone("America/Toronto")&.strftime("%Y%m%dT%H%M%S")
+                rrule_string_parts << "EXDATE:#{exdate_str}"
+              rescue StandardError
+                # Skip invalid dates
+              end
+              
+              event_hash[:rrule] = rrule_string_parts.join("\n")
+              
+              duration_seconds = end_time.to_i - start_time.to_i
+              event_hash[:duration] = duration_seconds * 1000
             end
             
             results << event_hash
@@ -153,7 +161,53 @@ module CalendarHelper
     (l1 + 0.05) / (l2 + 0.05)
   end
 
-  # RRULE HELPERS  
+  # RRULE HELPERS
+  def convert_rrule_to_string(rrule_obj)
+    parts = []
+    
+    parts << "FREQ=#{rrule_obj.frequency}" if rrule_obj.frequency
+    parts << "INTERVAL=#{rrule_obj.interval}" if rrule_obj.interval && rrule_obj.interval != 1
+    parts << "BYDAY=#{rrule_obj.by_day.join(',')}" if rrule_obj.by_day&.any?
+    parts << "BYMONTHDAY=#{rrule_obj.by_month_day.join(',')}" if rrule_obj.by_month_day&.any?
+    parts << "BYMONTH=#{rrule_obj.by_month.join(',')}" if rrule_obj.by_month&.any?
+    parts << "BYYEARDAY=#{rrule_obj.by_year_day.join(',')}" if rrule_obj.by_year_day&.any?
+    parts << "BYWEEKNO=#{rrule_obj.by_week_number.join(',')}" if rrule_obj.by_week_number&.any?
+    parts << "BYSETPOS=#{rrule_obj.by_set_position.join(',')}" if rrule_obj.by_set_position&.any?
+    
+    if rrule_obj.until
+      until_time = safe_to_time(rrule_obj.until)
+      parts << "UNTIL=#{until_time.utc.strftime('%Y%m%dT%H%M%SZ')}" if until_time
+    end
+    
+    parts << "COUNT=#{rrule_obj.count}" if rrule_obj.count
+    parts << "WKST=#{rrule_obj.week_start}" if rrule_obj.week_start
+    
+    parts.join(';')
+  end
+  
+  def date_formatted_recurrence_rule(event)
+    return unless event.recurrence_rule.present?
+    
+    rrule = event.recurrence_rule
+    rrule_parts = rrule.split(/[;\n]/).reject { |part| part.strip.start_with?('DTSTART') }
+    
+    # Convert EXDATE values to Toronto timezone
+    rrule_parts = rrule_parts.map do |part|
+      if part.strip.start_with?('EXDATE')
+        part.gsub(/(\d{8}T\d{6}Z?)/) do |datetime|
+          datetime.in_time_zone("America/Toronto").strftime("%Y%m%dT%H%M%S")
+        end
+      else
+        part
+      end
+    end
+    
+    rrule_without_dtstart = rrule_parts.join(';').gsub(/;EXDATE/, "\nEXDATE")
+    dtstart_toronto = event.start_time.in_time_zone("America/Toronto")&.strftime("%Y%m%dT%H%M%S")
+    
+    "DTSTART:#{dtstart_toronto}\n#{rrule_without_dtstart}"
+  end
+  
   def parse_rrule_and_dtstart(rule_string)
     lines = rule_string.strip.split("\n")
     rrule_line = lines.find { |l| l.start_with?("RRULE:") }&.sub("RRULE:", "")
