@@ -38,7 +38,7 @@
                     <td><%= issue.id %></td>
                     <td><%= issue.printer.name %></td>
                     <td><%= issue.summary %></td>
-                    <td><%= issue.description.html_safe %></td>
+                    <td><%= sanitize(issue.description) %></td>
                     <td><%= issue.reporter.name %></td>
                     <td><%= issue.created_at.to_formatted_s :db %></td>
                     <td><%= issue.updated_at.to_formatted_s :db %></td>
@@ -74,7 +74,7 @@
                     <td><%= issue.id %></td>
                     <td><%= issue.printer.name %></td>
                     <td><%= issue.summary %></td>
-                    <td><%= issue.description.html_safe %></td>
+                    <td><%= sanitize(issue.description) %></td>
                     <td><%= issue.reporter.name %></td>
                     <td><%= issue.created_at.to_formatted_s :db %></td>
                     <td><%= issue.updated_at.to_formatted_s :db %></td>

@@ -2,7 +2,7 @@
 <section class="mx-5 <%= return_border_color(@proficient_project.level) %>">
   <div>
     <%= button_to 'Delete', @proficient_project, method: :delete, class: 'btn btn-danger float-start ms-5 mt-5', style: 'opacity: 0.5', data: { confirm: 'Are you sure? This will delete all the purchases and give all the users the CC points used to purchase this project.' } if current_user.admin? %>
-    <b class="float-start ms-5 mt-5 text-info p-1"><%= @proficient_project.cc.nil? || @proficient_project.cc.eql?(0) ? "<b class='text-success'>FREE</b>".html_safe : "#{@proficient_project.cc} Ccs" %></b>
+    <b class="float-start ms-5 mt-5 text-info p-1"><%= @proficient_project.cc.nil? || @proficient_project.cc.eql?(0) ? sanitize("<b class='text-success'>FREE</b>") : "#{@proficient_project.cc} Ccs" %></b>
     <%= link_to 'Edit', edit_proficient_project_path(@proficient_project.id), class: 'btn btn-primary float-end me-5 mt-5', style: 'opacity: 0.5' if current_user.admin? %>
   </div>
   <% if @order_item.present? %>
@@ -22,7 +22,7 @@
   </div>
   <div class="col-lg-7 mx-auto">
     <br/>
-    <h2 class="text-center title"><%= @proficient_project.title.html_safe %></h2>
+    <h2 class="text-center title"><%= sanitize(@proficient_project.title) %></h2>
     <% if current_user.admin? %>
       <%= form_tag project_requirements_path, method: :post do %>
         <div class="w-auto d-inline-block">
@@ -54,7 +54,7 @@
       <div class="row">
         <div class="col-lg-12">
           <div class="jumbotron card bg-light text-center text-wrap">
-            <%= @proficient_project.description.html_safe %>
+            <%= sanitize(@proficient_project.description) %>
           </div>
           <div id="show-photo">
             <%= image_tag @photos.first.image, alt: 'Proficient Project Image', data: { width: @photos.first.try(:width), height: @photos.first.try(:height) } %>
@@ -90,7 +90,7 @@
     <% if @order_item&.status == "Awarded" || @order_item&.status == "Revoked" %>
       <div class="p-4 gap-1 card bg-light text-wrap">
         Admin Comments: 
-        <p class="m-0"><%= @order_item.admin_comments == '' ? 'None' : @order_item.admin_comments.html_safe %></p>
+        <p class="m-0"><%= @order_item.admin_comments == '' ? 'None' : sanitize(@order_item.admin_comments) %></p>
       </div>
     <% end %>
 

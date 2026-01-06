@@ -16,12 +16,12 @@
           <td><%= link_to oi.order.user.username, user_path(oi.order.user.username) %></td>
           <td><%= link_to oi.proficient_project.title, oi.proficient_project %></td>
           <td><%= oi.updated_at.strftime('%Y/%m/%d') %></td>
-          <td><%= oi.user_comments.truncate(120).html_safe %></td>
+          <td><%= sanitize(oi.user_comments.truncate(120)) %></td>
           <% if oi.files.attached? %>
             <td class="action-cell">
               <div class="d-flex flex-column gap-2">
                 <% oi.files.first(5).each do |file| %>
-                  <%= link_to "<i class='fa fa-download'></i> #{file.filename}".html_safe, rails_blob_path(file, disposition: 'attachment'), class: 'btn btn-primary btn-sm' %>
+                  <%= link_to sanitize("<i class='fa fa-download'></i> #{file.filename}"), rails_blob_path(file, disposition: 'attachment'), class: 'btn btn-primary btn-sm' %>
                 <% end %>
                 <% if oi.files.length > 5 %>
                   .....

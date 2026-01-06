@@ -11,7 +11,7 @@
     <div class="card">
         <div class="card-header bg-primary text-light">User Comments</div>
         <div class="card-body">
-            <%= @order_item.user_comments == '' ? 'None' : @order_item.user_comments.html_safe %>
+            <%= @order_item.user_comments == '' ? 'None' : sanitize(@order_item.user_comments) %>
         </div>
     </div>
     <div class="card">
@@ -19,7 +19,7 @@
         <div class="card-body">
             <% if @order_item.files.attached? %>
                 <% @order_item.files.each do |file| %>
-                    <%= link_to "<i class='fa fa-download'></i> #{file.filename}".html_safe, rails_blob_path(file, disposition: 'attachment'), class: 'btn btn-primary btn-sm' %>
+                    <%= link_to sanitize("<i class='fa fa-download'></i> #{file.filename}"), rails_blob_path(file, disposition: 'attachment'), class: 'btn btn-primary btn-sm' %>
                 <% end %>
 
                 <% images = @order_item.files.select { |file| file.content_type.starts_with?('image/') } %>
