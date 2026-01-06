@@ -189,7 +189,7 @@ class StaticPagesController < SessionsController
 
     User.find_by(email: params[:email].strip.downcase)&.send_password_reset
     flash[:notice] = 'A reset link email has been sent to the email if the account exists.'
-    redirect_to root_path
+    render :forgot_password
   end
 
   def report_repository
