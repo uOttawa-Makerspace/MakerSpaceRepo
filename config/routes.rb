@@ -21,18 +21,6 @@ Rails.application.routes.draw do
       },
       as: "download_video"
 
-  require "sidekiq/web"
-  Sidekiq::Web.use Rack::Auth::Basic do |username, password|
-    get_username =
-      Rails.application.credentials[Rails.env.to_sym][:sidekiq][:username] ||
-        "adam"
-    get_password =
-      Rails.application.credentials[Rails.env.to_sym][:sidekiq][:password] ||
-        "Password1"
-    username == get_username && password == get_password
-  end
-  mount Sidekiq::Web => "/sidekiq"
-
   mount StripeEvent::Engine, at: "/stripe/webhooks"
 
   resources :project_kits, only: %i[index new create destroy] do
