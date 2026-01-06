@@ -68,7 +68,13 @@ RSpec.describe Space, type: :model do
 
     context "#after_create :create_popular_hours" do
       it "should create popular hours after creating space" do
+        # Enable callback temporarily for this specific test
+        Space.set_callback(:create, :after, :create_popular_hours)
+        
         expect { create(:space) }.to change(PopularHour, :count).by(168)
+        
+        # Disable it again so other tests stay fast
+        Space.skip_callback(:create, :after, :create_popular_hours)
       end
     end
 

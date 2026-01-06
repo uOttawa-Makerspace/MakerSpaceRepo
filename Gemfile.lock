@@ -2057,8 +2057,6 @@ GEM
     os (1.1.4)
     ostruct (0.6.3)
     parallel (1.27.0)
-    parallel_tests (5.5.0)
-      parallel
     parser (3.3.10.0)
       ast (~> 2.4.1)
       racc
@@ -2351,6 +2349,7 @@ GEM
     temple (0.10.4)
     terser (1.2.6)
       execjs (>= 0.3.0, < 3)
+    test-prof (1.5.0)
     thor (1.4.0)
     tilt (2.6.1)
     timeout (0.6.0)
@@ -2457,7 +2456,6 @@ DEPENDENCIES
   net-ssh
   nobspw_rails7
   octokit (~> 4.21.0)
-  parallel_tests
   pg (~> 1.6)
   prettier_print
   pry (~> 0.15)
@@ -2502,6 +2500,7 @@ DEPENDENCIES
   syntax_tree-haml
   syntax_tree-rbs
   terser (~> 1.2)
+  test-prof
   toastr-rails
   trix-rails (~> 2.4)
   vite_rails

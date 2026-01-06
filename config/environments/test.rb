@@ -60,10 +60,16 @@ Rails.application.configure do
   # Annotate rendered view with file names.
   # config.action_view.annotate_rendered_view_with_filenames = true
 
-  # Inline adapter executes job immediately
-  config.active_job.queue_adapter = :inline
+  # Stop running background jobs immediately
+  config.active_job.queue_adapter = :test
   
   # No database connection in test environment.
   #Environment attempts to connect to a database and fails otherwise
   config.solid_queue.connects_to = nil
+
+  # This makes creating users and signing in (Auth) nearly instant.
+  ActiveModel::SecurePassword.min_cost = true
+
+  config.active_support.test_parallelization_threshold = 1000
+  config.active_support.parallelization(workers: :number_of_processors)
 end
