@@ -11,7 +11,7 @@
           <div class="my-3 card p-2">
             <div class="form-check-inline">
               <% if o.description.present? %>
-                <p><%= o.description.html_safe %></p>
+                <p><%= sanitize(o.description) %></p>
               <% end %>
               
               <% if is_job_wide %>
@@ -55,7 +55,7 @@
                       <li class="list-group-item me-1 d-flex justify-content-between align-items-center">
                         <p><%= existing_option.option_file.filename %></p>
                         <div class="text-end">
-                          <%= link_to "<i class='fa fa-download'></i>".html_safe, rails_blob_path(existing_option.option_file, disposition: 'attachment') %>
+                          <%= link_to sanitize("<i class='fa fa-download'></i>"), rails_blob_path(existing_option.option_file, disposition: 'attachment') %>
                         </div>
                       </li>
                     </ul>

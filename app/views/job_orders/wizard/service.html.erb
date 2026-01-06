@@ -56,7 +56,7 @@
                     <%= label_tag nil, file.filename, class: 'form-check-label text-truncate flex-grow-1 m-0', style: 'min-width: 0;' %>
                   </div>
                   <div class="flex-shrink-0 ps-2">
-                    <%= link_to "<i class='fa fa-download'></i>".html_safe, rails_blob_path(file, disposition: 'attachment'), class: 'text-decoration-none' %>
+                    <%= link_to sanitize("<i class='fa fa-download'></i>"), rails_blob_path(file, disposition: 'attachment'), class: 'text-decoration-none' %>
                   </div>
                 </li>
               <% end %>

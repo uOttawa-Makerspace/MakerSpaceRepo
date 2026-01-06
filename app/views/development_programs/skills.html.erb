@@ -22,7 +22,7 @@
                               <button class="btn btn-link" type="button"><%= training.localized_name %></button>
                             </div>
                             <div class="col-4 pe-3">
-                              <%= training_status(training.id, current_user.id).html_safe %>
+                              <%= sanitize(training_status(training.id, current_user.id)) %>
                             </div>
                           </div>
                         </div>

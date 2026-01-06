@@ -1,7 +1,7 @@
 <% provide :title, t('devprog.title') %>
 <section id="developmentIndex" class="mt-n3">
     <div class="jumbotron developmentJumbotron">
-        <h1 class="display-1"><%= t('devprog.header').html_safe %></h1>
+        <h1 class="display-1"><%= sanitize(t('devprog.header')) %></h1>
         <%= tag.p t('devprog.subtext') %>
         <%= link_to t('devprog.join_button'), join_development_program_development_programs_path, class: 'btn btn-primary' %>
     </div>
@@ -12,7 +12,7 @@
         <div class="row">
             <div class="col-lg-6">
                 <p class="fs-4 text-primary fw-bold text-uppercase"><%= t('devprog.block1.title') %></p>
-                <h2 class="mb-5 display-5"><%= t('devprog.block1.subtext').html_safe %></h2>
+                <h2 class="mb-5 display-5"><%= sanitize(t('devprog.block1.subtext')) %></h2>
             </div>
             <div class="offset-lg-1 col-lg-5">
                 <div class="header1"></div>
@@ -192,7 +192,7 @@
     <div class="container">
         <div class="box-subtext mt-5">
             <h2><%= t('devprog.more.header') %></h2>
-            <p><%= t('devprog.more.text').html_safe %></p>
+            <p><%= sanitize(t('devprog.more.text')) %></p>
         </div>
     </div>
 </section>
