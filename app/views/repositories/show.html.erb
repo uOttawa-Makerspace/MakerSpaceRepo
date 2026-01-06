@@ -254,7 +254,7 @@
                         <% end %>
                     </div>
                     <div class="comment-content">
-                        <%= comment.content.html_safe %>
+                        <%= sanitize comment.content %>
                     </div>
                 </div>
             <% end %>
