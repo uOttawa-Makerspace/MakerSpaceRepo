@@ -15,7 +15,7 @@
                       <button class="btn btn-link"><%= training.localized_name %></button>
                     </div>
                     <div class="col-4">
-                      <%= training_status(training.id, current_user.id).html_safe %>
+                      <%= sanitize(training_status(training.id, current_user.id)) %>
                     </div>
                 </div>
 
@@ -71,7 +71,7 @@
                               <% end %>
                             <% end %>
                             <div>
-                              <b class="float-end pt-2  text-info"><%= pp.cc.nil? || pp.cc.eql?(0) ? "<b class='text-success'>FREE</b>".html_safe : "#{pp.cc} Ccs" %></b>
+                              <b class="float-end pt-2  text-info"><%= pp.cc.nil? || pp.cc.eql?(0) ? sanitize("<b class='text-success'>FREE</b>") : "#{pp.cc} Ccs" %></b>
                               <br />
                               <br />
                               <h6 class="fw-bold text-center"><strong><%= pp.title %></strong></h6>

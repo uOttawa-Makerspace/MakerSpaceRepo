@@ -15,7 +15,7 @@ RSpec.describe SessionsController, type: :controller do
         expect(response).to redirect_to root_path
       end
 
-      it 'should not login the user that isn\'t confirmed' do
+      it 'should not login the user that isnt confirmed' do
         @user = create(:user, :regular_user_not_confirmed)
         post :login_authentication,
              params: {
@@ -24,7 +24,7 @@ RSpec.describe SessionsController, type: :controller do
              }
         expect(response).to have_http_status(200)
         expect(flash[:alert]).to eq(
-          "Please confirm your account before logging in, you can resend the email <a class=\"text-primary\" href=\"#{resend_email_confirmation_path(email: @user.email)}\">here</a>".html_safe
+          ActionController::Base.helpers.sanitize("Please confirm your account before logging in, you can resend the email <a class=\"text-primary\" href=\"#{resend_email_confirmation_path(email: @user.email)}\">here</a>")
         )
       end
 

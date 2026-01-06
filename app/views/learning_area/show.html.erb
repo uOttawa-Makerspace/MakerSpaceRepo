@@ -6,7 +6,7 @@
   </div>
   <div class="col-lg-7 mx-auto">
     <br />
-    <h2 class="text-center title"><%= @learning_module.title.html_safe %></h2>
+    <h2 class="text-center title"><%= @learning_module.title %></h2>
     <div class="container my-4">
       <div class="text-center">
         <%= @learning_module.training.localized_name %>
@@ -32,7 +32,7 @@
       <div class="row">
         <div class="col-lg-12">
           <div class="jumbotron card bg-light text-center text-wrap">
-            <%= @learning_module.description.html_safe %>
+            <%= sanitize @learning_module.description %>
           </div>
           <div id="show-photo">
             <%= image_tag @photos.first.image, alt: 'Learning Area First Picture', data: { width: @photos.first.try(:width), height: @photos.first.try(:height) } %>
