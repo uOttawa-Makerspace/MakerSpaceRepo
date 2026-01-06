@@ -33,9 +33,11 @@ class SessionsController < ApplicationController
         else
           respond_to do |format|
             format.html do
-              flash[
-                :alert
-              ] = "Your account has been locked due to too many failed login attempts. Please #{view_context.link_to 'contact an administrator', "mailto:#{SUPPORT_EMAIL}?subject=Account%20Locked%20-%20#{user.username}", class: 'text-primary'} to unlock your account or wait #{sanitize(distance_of_time_in_words user.locked_until, DateTime.now)}."
+              flash[:alert] = ActionController::Base.helpers.sanitize("""
+              Your account has been locked due to too many failed login attempts. 
+              Please #{view_context.link_to('contact an administrator', "mailto:#{SUPPORT_EMAIL}?subject=Account%20Locked", class: 'text-primary')} 
+              to unlock your account or wait #{distance_of_time_in_words(user.locked_until, DateTime.now)}.
+              """)
               render :login
             end
             format.json do
@@ -71,7 +73,7 @@ class SessionsController < ApplicationController
           format.html do
             flash.now[
               :alert
-            ] = "Please confirm your account before logging in, you can resend the email #{sanitize(view_context.link_to "here", resend_email_confirmation_path(email: params[:username_email]), class: "text-primary")}"
+            ] = ActionController::Base.helpers.sanitize("Please confirm your account before logging in, you can resend the email #{view_context.link_to "here", resend_email_confirmation_path(email: params[:username_email]), class: "text-primary"}")
             render :login
           end
           format.json do
