@@ -2150,10 +2150,6 @@ GEM
       tsort
     redirect_safely (1.0.0)
       activemodel
-    redis (5.4.1)
-      redis-client (>= 0.22.0)
-    redis-client (0.26.2)
-      connection_pool
     regexp_parser (2.11.3)
     reline (0.6.3)
       io-console (~> 0.5)
@@ -2272,10 +2268,6 @@ GEM
       sprockets-rails (>= 2.0.0)
     shoulda-matchers (7.0.1)
       activesupport (>= 7.1)
-    sidekiq (6.4.2)
-      connection_pool (>= 2.2.2)
-      rack (~> 2.0)
-      redis (>= 4.2.0)
     signet (0.21.0)
       addressable (~> 2.8)
       faraday (>= 0.17.5, < 3.a)
@@ -2480,7 +2472,6 @@ DEPENDENCIES
   selenium-webdriver (~> 4.39.0)
   shopify_app (~> 22.5)
   shoulda-matchers (~> 7.0)
-  sidekiq (~> 6.4.0)
   simplecov (~> 0.21.2)
   solid_cable
   solid_queue (~> 1.2)
