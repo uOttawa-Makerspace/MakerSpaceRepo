@@ -42,7 +42,7 @@
 
         <% if @repository.description.present? %>
             <div class="mb-5">
-                <p style="word-break: break-word;"><%= @repository.description.html_safe %></p>
+                <p style="word-break: break-word;"><%= sanitize @repository.description %></p>
             </div>
         <% end %>
     </section>
