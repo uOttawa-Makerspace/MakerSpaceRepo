@@ -19,5 +19,5 @@ ActionView::Base.field_error_proc =
     else
       html_tag.insert html_tag.index(">"), ' class="is-invalid"'
     end
-    html_tag + format_error_message_to_html_list(html_tag, _instance).html_safe
+    html_tag + sanitize(format_error_message_to_html_list(html_tag, _instance))
   end

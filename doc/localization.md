@@ -4,7 +4,7 @@
 
 Make sure to always localize text. They're in `config/locales` and should contain all text in the website. For smallish pages it's okay to keep both languages in a file, but for longer files it's better to split them off for easier debugging and cleaner edit history tracking. The project is setup to (recursively?) load all yaml files and merge them.
 
-Localization is just putting text in a YAML file, a subset of JSON. Getting a localized key is like accessing a hash, you might receive a string, an array, or another hash. You can put HTML in there, call `.html_safe` on the string. Keys that end with `_html` are automatically marked html safe and not escaped. You can also put links, to send users to the french or english version of a page (university website for example).
+Localization is just putting text in a YAML file, a subset of JSON. Getting a localized key is like accessing a hash, you might receive a string, an array, or another hash. You can put HTML in there, call `.html_safe` (dont use this please we spent an hour removing these sins) on the string. Keys that end with `_html` are automatically marked html safe and not escaped. You can also put links, to send users to the french or english version of a page (university website for example).
 
 You can use regular YAML structures. Lists for bullet points are okay. Don't overdo them, other people changing the text after you're gone should not risk a runtime error. You're localizing static text that doesn't change much after it's published. Don't encode the entire page into a B Tree.
 

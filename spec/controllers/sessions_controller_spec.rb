@@ -24,7 +24,7 @@ RSpec.describe SessionsController, type: :controller do
              }
         expect(response).to have_http_status(200)
         expect(flash[:alert]).to eq(
-          "Please confirm your account before logging in, you can resend the email <a class=\"text-primary\" href=\"#{resend_email_confirmation_path(email: @user.email)}\">here</a>".html_safe
+          sanitize("Please confirm your account before logging in, you can resend the email <a class=\"text-primary\" href=\"#{resend_email_confirmation_path(email: @user.email)}\">here</a>")
         )
       end
 
