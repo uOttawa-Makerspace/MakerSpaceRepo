@@ -1,23 +1,23 @@
-# bin/security_audit
-
 #!/bin/bash
+set -e
+
 echo "Running Security Audit..."
 echo ""
 
-echo "=== Bundle Audit (Gem Vulnerabilities) ==="
-bundle audit check --update
+echo "=== 1. Brakeman (Static Analysis) ==="
+bundle exec brakeman -w2
 
 echo ""
-echo "=== Ruby Audit ==="
-ruby-audit check
+echo "=== 2. Bundle Audit (Gem Vulnerabilities) ==="
+bundle exec bundle-audit check --update
 
 echo ""
-echo "=== Checking for Outdated Gems ==="
-bundle outdated --strict
+echo "=== 3. Ruby Audit ==="
+bundle exec ruby-audit check
 
 echo ""
-echo "=== Brakeman (Static Analysis) ==="
-brakeman -q -w2 --exit-on-warn
+echo "=== 4. Checking for Outdated Gems ==="
+bundle outdated --strict || true
 
 echo ""
 echo "Security Audit Complete"
