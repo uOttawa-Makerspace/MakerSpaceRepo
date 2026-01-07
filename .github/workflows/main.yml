@@ -87,6 +87,27 @@ jobs:
       - name: Run RSpec
         run: bundle exec rspec
 
+  security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      - name: Install security tools
+        run: gem install brakeman bundler-audit ruby_audit
+
+      - name: Run Security Audit
+        run: |
+          chmod +x scripts/security_audit.sh
+          ./scripts/security_audit.sh || true
+
   deploy:
     needs: test
     if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/staging')
