@@ -178,11 +178,11 @@ class Admin::UsersController < AdminAreaController
 
   def safe_order_clause
     column = safe_sort_column
-    direction = SORT_DIRECTIONS.include?(params[:direction]) ? params[:direction] : 'desc'
-    
+    direction = SORT_DIRECTIONS.include?(params[:direction]) ? params[:direction].to_sym : :desc
+
     return nil unless column
-    
-    "#{column} #{direction}"
+
+    [column, direction]
   end
 
   def valid_role_update_params?
@@ -224,9 +224,13 @@ class Admin::UsersController < AdminAreaController
                                .where("LOWER(pi_readers.pi_location) = LOWER(?)", params[:location])
     end
 
-    order_clause = safe_order_clause || "lab_sessions.sign_in_time desc"
-    @users_temp = @users_temp.order(Arel.sql(order_clause))
-                             .paginate(page: params[:page], per_page: 20)
+    if (order_clause = safe_order_clause)
+      column, direction = order_clause
+      @users_temp = @users_temp.order(column => direction)
+    else
+      @users_temp = @users_temp.order(lab_sessions: { sign_in_time: :desc })
+    end
+    @users_temp = @users_temp.paginate(page: params[:page], per_page: 20)
     
     @users = @users_temp.includes(:user).map(&:user)
     @total_pages = @users_temp.total_pages
