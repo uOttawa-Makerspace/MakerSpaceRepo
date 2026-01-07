@@ -6,10 +6,11 @@ class CustomWebhooksController < ApplicationController
   include ShopifyConcern
 
   def orders_paid
-    params.permit!
+    # We now handle whitelisting in the webhook_params method below.
 
     # This is a locker marked as paid. We use the tags to determine which model
-    # reads the webhook
+    # reads the webhook.
+    # Note: webhook_params is now a safe Hash thanks to Strong Parameters.
     order_hook = webhook_params.to_h
 
     # handle lockers
@@ -46,8 +47,24 @@ class CustomWebhooksController < ApplicationController
 
   private
 
+  # Explicitly define the keys we expect from Shopify
   def webhook_params
-    params.except(:controller, :action, :type)
+    params.permit(
+      :id,
+      :tags,
+      :admin_graphql_api_id,
+      :email,
+      # Allow tags to be an array (common in tests) or scalar
+      tags: [],
+      # Allow array of hashes for metafields with common keys
+      metafields: [:namespace, :key, :value, :value_type, :description, :id],
+      # Allow array of hashes for discount codes
+      discount_codes: [:code, :amount, :type],
+      # Allow array of hashes for line items with standard fields
+      line_items: [:product_id, :quantity, :title, :variant_id, :sku, :price, :name],
+      # Allow specific keys for customer
+      customer: [:id, :email, :first_name, :last_name]
+    )
   end
 
   def process_locker_hook(order_hook)

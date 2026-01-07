@@ -72,11 +72,23 @@
     <p>Generating reports could take a while, please wait for the reports to generate.</p>
   <% end %>
 
-  <% if params[:report_type].present? %>
+  <% 
+     # 1. Generate a list of allowed strings from your controller variable.
+     allowed_reports = @report_types.map { |t| t[1].to_s }
+     
+     # 2. Find the match in the SAFE list. 
+     # Brakeman sees that 'report_to_render' comes from 'allowed_reports', not 'params'.
+     report_to_render = allowed_reports.find { |r| r == params[:report_type] }
+  %>
+
+  <% if report_to_render %>
     <hr />
     <div id="report">
-      <%= render params[:report_type] %>
+      <%= render report_to_render %>
     </div>
+  <% elsif params[:report_type].present? %>
+    <hr />
+    <div class="alert alert-danger">Invalid report type specified.</div>
   <% end %>
 </section>
 
