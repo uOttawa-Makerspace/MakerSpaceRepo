@@ -12,7 +12,12 @@
   <div class="comment-header">
     <% 
        url = params['user_url'].to_s
-       safe_url = url.match?(%r{\Ahttps?://}) ? url : '#'
+       begin
+         parsed_url = URI.parse(url)
+         safe_url = parsed_url.is_a?(URI::HTTP) ? parsed_url.to_s : '#'
+       rescue URI::InvalidURIError
+         safe_url = '#'
+       end
     %>
 
     <%= link_to safe_url do %>
