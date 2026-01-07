@@ -23,7 +23,7 @@
           Notes
         </div>
         <div class="card-body">
-          <%= @key.additional_info.empty? ? 'None' : @key.additional_info.html_safe %>
+          <%= @key.additional_info.empty? ? 'None' : sanitize(@key.additional_info) %>
         </div>
       </div>
     </div>

@@ -26,7 +26,7 @@
       </div>
       <div class="card-body">
         <ul class="list-unstyled">
-          <li><b><%= t('project_proposal.possible_tech') %>:</b> <%= @project_proposal.equipments.html_safe %></li>
+          <li><b><%= t('project_proposal.possible_tech') %>:</b> <%= sanitize(@project_proposal.equipments) %></li>
           <li><b><%= t('project_proposal.project_type') %>:</b> <%= @project_proposal.project_type %></li>
           <li><b><%= t('project_proposal.expected_budget') %>:</b> <%= @project_proposal.prototype_cost.present? ? "$#{@project_proposal.prototype_cost}" : 'Not available' %></li>
           <li><b><%= t('project_proposal.expected_cost') %>:</b> <%= @project_proposal.project_cost.present? ? "$#{@project_proposal.project_cost}" : 'Not available' %></li>
@@ -43,13 +43,13 @@
               <li><b>Client:</b> <%= @project_proposal.client %></li>
               <li><b><%= t('project_proposal.client_type') %>:</b> <%= @project_proposal.client_type %></li>
               <li><b><%= t('project_proposal.client_interest') %>:</b> <%= @project_proposal.client_interest %></li>
-              <li><b><%= t('project_proposa.client_background') %>:</b> <%= @project_proposal.client_background.html_safe %></li>
+              <li><b><%= t('project_proposa.client_background') %>:</b> <%= sanitize(@project_proposal.client_background) %></li>
             </ul>
           </div>
           <% if @project_proposal.supervisor_background.present? %>
             <span style="word-break: break-word">
               <b>Supervisor Background:</b>
-              <%= @project_proposal.supervisor_background.html_safe %>
+              <%= sanitize(@project_proposal.supervisor_background) %>
             </span>
           <% end %>
         <% else %>
@@ -66,7 +66,7 @@
       <div class="card mb-3">
         <div class="card-header"><%= t('project_proposal.project_background') %></div>
         <div class="card-body">
-          <div style="word-break: break-word;"><%= @project_proposal.description.html_safe %></div>
+          <div style="word-break: break-word;"><%= sanitize(@project_proposal.description) %></div>
         </div>
       </div>
     <% end %>
@@ -76,7 +76,7 @@
         <div class="card-header"><%= t('project_proposal.past_attempts') %></div>
         <div class="card-body">
           <% if @project_proposal.past_experiences.split("|")[0].present? %>
-            <%= @project_proposal.past_experiences.split('|')[0].html_safe %><!-- <br> -->
+            <%= sanitize(@project_proposal.past_experiences.split('|')[0]) %><!-- <br> -->
           <% end %>
           <% if @project_proposal.past_experiences.split("|")[1].present? %>
             <% @project_proposal.past_experiences.split('|')[1].split(',').each do |links| %>

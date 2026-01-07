@@ -101,7 +101,7 @@
                     </div>
                 </div>
 
-                <%= label_tag :file, t('project_proposal.new.project_files').html_safe, class: 'form-label' %>
+                <%= label_tag :file, t('project_proposal.new.project_files'), class: 'form-label' %>
                 <div class="mb-3">
                     <div class="input-group mb-3">
                         <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'form-control files_', aria_label: t('project_proposal.new.project_files') %>

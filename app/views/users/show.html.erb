@@ -30,7 +30,7 @@
             </div>
             <div class="col-md-6">
               <span style="font-size: 15px;">
-                <%= certification_status(certification.training_session.level).html_safe %>
+                <%= sanitize(certification_status(certification.training_session.level)) %>
               </span>
             </div>
           </div>
