@@ -1,6 +1,7 @@
 import { addEventClick } from "./calendar_helper";
 import "./fullcalendar_setup_admin";
 import "./manage_calendar_events";
+import "flatpickr";
 
 document.addEventListener("turbo:load", () => {
   document
@@ -41,3 +42,23 @@ function updateColor(userId, color) {
       console.error("An error occurred: " + error.message);
     });
 }
+
+/* For the event modal */
+document.addEventListener("turbo:load", () => {
+  const fp1 = flatpickr("#source_range", {
+    mode: "range",
+    dateFormat: "Y-m-d",
+  });
+
+  const fp2 = flatpickr("#target_date", {
+    dateFormat: "Y-m-d",
+  });
+
+  let copyEventsModal = document.getElementById("copyEventsModal");
+  if (copyEventsModal) {
+    copyEventsModal.addEventListener("hide.bs.modal", (e) => {
+      fp1.flatpickr().destroy();
+      fp2.flatpickr().destroy();
+    });
+  }
+});
