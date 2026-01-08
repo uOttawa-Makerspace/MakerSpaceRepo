@@ -163,7 +163,9 @@ document.addEventListener("turbo:load", async () => {
               true,
             );
 
-            console.log(unavail, "#3", unavailRule, unavailRule.all()); // FIXME: returning the day before for some reason on events with UTC time a different day than local
+            // FIXME: returning the day before for some reason on events with UTC time a different day than local
+            // This debug log slows down busy calendars a lot.
+            // console.log(unavail, "#3", unavailRule, unavailRule.all());
 
             for (const uaStart of unavailOccurrences) {
               const uaEnd = parseLocalDatetimeString(
