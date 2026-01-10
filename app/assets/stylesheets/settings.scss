@@ -7,18 +7,16 @@ div.setting-title {
   font:
     400 3rem "Roboto",
     sans-serif;
-  color: #555;
+  color: var(--bs-body-color);
 }
 
 div.setting-grid {
   max-width: 68rem;
   margin-left: auto;
   margin-right: auto;
-
   min-height: calc(100vh - 50px);
-  background-color: #fff;
-  padding: 0 1rem;
-  /*position: relative;*/
+  background-color: var(--bs-body-bg);
+  padding: 0 0rem;
 
   /* Add Grid for layout */
   display: grid;
@@ -27,6 +25,10 @@ div.setting-grid {
 
   .btn-secondary {
     color: #fff;
+  }
+  form {
+    grid-column: 4 / -1; /* Starts at column 4, ends at the last column */
+    padding: 0 0.5rem;
   }
 }
 
@@ -73,10 +75,9 @@ section#waivers {
 
 div.setting-side-panel {
   grid-column: span 3;
-
   position: relative;
-  padding: 3rem 1rem 0;
-  color: #333;
+  padding: 3rem 0 0 0;
+  color: var(--bs-body-color);
   font:
     400 1.2rem "Roboto",
     helvetica,
@@ -88,10 +89,13 @@ div.setting-side-panel {
 
     a {
       transition: 100ms linear;
+      color: var(--bs-link-color);
+      text-decoration: none;
 
       &:hover:not(.vp-button) {
         padding-left: 0.4rem;
         border-left: 5px solid $secondary;
+        color: var(--bs-link-hover-color);
       }
     }
   }
@@ -138,7 +142,8 @@ label.profile-label {
     400 0.9rem "Roboto",
     helvetica,
     sans-serif;
-  color: #777;
+  color: var(--bs-secondary-color);
+  margin-bottom: 0.5rem;
 }
 
 label.radio-label {
@@ -147,50 +152,21 @@ label.radio-label {
     400 0.9rem "Roboto",
     helvetica,
     sans-serif;
-  color: #777;
+  color: var(--bs-secondary-color);
 }
 
-input.profile-text {
-  font:
-    300 0.9em "Roboto",
-    sans-serif;
-  color: #555;
-  padding: 0.5rem;
-  margin: 0.5rem 0 1rem;
-  max-width: 400px;
-  width: calc(100% - 1rem);
-  border-radius: 3px;
-  border: 1px solid #aaa;
-  display: block;
-}
-
-textarea.profile-text {
-  font:
-    300 0.9em "Roboto",
-    sans-serif;
-  color: #555;
-  padding: 0.5rem;
-  margin: 0.5rem 0 1rem;
-  max-width: 400px;
-  width: calc(100% - 1rem);
-  border-radius: 3px;
-  border: 1px solid #aaa;
-  display: block;
-  height: 120px;
-}
-
+input.profile-text,
+textarea.profile-text,
 select.profile-select {
   font:
     300 0.9em "Roboto",
     sans-serif;
-  color: #555;
-  padding: 0.5rem;
+  width: 100%;
   margin: 0.5rem 0 1rem;
-  max-width: 400px;
-  width: calc(100% - 1rem);
-  border-radius: 3px;
-  border: 1px solid #aaa;
-  display: block;
+}
+
+textarea.profile-text {
+  height: 120px;
 }
 
 div.section-desc {
@@ -198,7 +174,6 @@ div.section-desc {
     400 1rem "Roboto",
     sans-serif;
   width: 100%;
-  max-width: 400px;
   padding: 10px 0;
   margin: 10px 0;
   color: $primary;
@@ -208,7 +183,7 @@ div.section-desc {
       400 0.75rem "Roboto",
       helvetica,
       sans-serif;
-    color: #aaa;
+    color: var(--bs-secondary-color);
   }
 }
 
@@ -238,16 +213,13 @@ div.general-settings {
 
   input#equipment_option_name,
   input#category_option_name {
-    width: 400px;
+    width: 100%;
+    max-width: 400px;
     display: inline;
   }
 
   input {
     display: inline;
-  }
-
-  select.profile-select {
-    width: 378px;
   }
 
   select#rename_equipment,
@@ -262,10 +234,7 @@ div.general-settings {
 }
 
 div.search-form {
-  select {
-    display: inline;
-  }
-
+  select,
   input {
     display: inline;
   }
@@ -275,17 +244,19 @@ a.vp-button {
   font-size: 1rem;
   text-align: center;
   margin-top: 1rem;
-  border: 1px solid #ddd;
+  border: 1px solid var(--bs-border-color);
   padding: 0.6rem 2.25rem;
+  color: var(--bs-body-color);
 
   &:hover {
     background-color: rgba(238, 238, 238, 0.2);
+    text-decoration: none;
   }
 }
 
 div.avatar-column {
   position: relative;
-  color: #333;
+  color: var(--bs-body-color);
   font:
     400 1rem "Roboto",
     sans-serif;
@@ -295,11 +266,8 @@ div.avatar-column {
 
 div.edit-column {
   grid-column: span 8;
-
-  //  border-left: 260px solid #f0f5f5;
-  //  margin-left: -260px;
   padding-left: 2rem;
-  color: #333;
+  color: var(--bs-body-color);
   font:
     400 1rem "Roboto",
     sans-serif;
@@ -317,18 +285,9 @@ div.edit-column {
     height: 35px;
   }
 
-  .btn-primary {
-    color: #fff;
-  }
-
-  .btn-success {
-    color: #fff;
-  }
-
-  .btn-info {
-    color: #fff;
-  }
-
+  .btn-primary,
+  .btn-success,
+  .btn-info,
   .btn-danger {
     color: #fff;
   }
@@ -336,8 +295,8 @@ div.edit-column {
   a.edit-user-link {
     transition: 100ms linear;
     position: relative;
-    left: 700px;
-    top: 50px;
+    float: right;
+    margin-top: 50px;
     background-color: #789;
     color: #fff;
     padding: 0.25rem 0.5rem;
@@ -389,6 +348,7 @@ div.edit-column {
     section#old_users {
       padding: 10px;
       background-color: #f2b3ac;
+      color: #333;
 
       p {
         font:
@@ -406,6 +366,9 @@ div.edit-column {
 
   img.edit-avatar {
     height: 150px;
+    width: 150px;
+    object-fit: cover;
+    border-radius: 50%;
   }
 
   input[type="file"] {
@@ -415,7 +378,8 @@ div.edit-column {
   label.custom-file-upload {
     transition: 100ms linear;
     font-size: 10px;
-    background-color: #eee;
+    background-color: var(--bs-gray-200);
+    color: var(--bs-gray-800);
     padding: 5px 10px;
     border-radius: 3px;
     position: absolute;
@@ -425,21 +389,21 @@ div.edit-column {
     margin: 0 auto;
     width: 100px;
     text-align: center;
+    border: 1px solid var(--bs-border-color);
 
     &:hover {
       background-color: rgba(119, 136, 153, 0.95);
+      color: #fff;
       cursor: pointer;
     }
   }
 
   /* CHANGE PASSWORD */
-
   div.cp-column {
     grid-column: span 9;
-
-    border-right: 1px solid #ddd;
+    border-right: 1px solid var(--bs-border-color);
     padding-left: 2rem;
-    color: #333;
+    color: var(--bs-body-color);
     font:
       400 1rem "Roboto",
       sans-serif;
@@ -452,8 +416,7 @@ div.edit-column {
 
     div.edit-column {
       grid-column: span 12;
-
-      padding: 0;
+      padding: 1rem;
       border: none;
 
       div.title {
@@ -462,28 +425,17 @@ div.edit-column {
     }
   }
 
-  .programs {
-    display: block;
-    padding: 0.1rem;
-    width: 415px;
-    height: 40px;
-    border-radius: 2px;
-    border: 1px solid #aaa;
-    margin: 0.5rem 0 1rem;
-    font:
-      300 1rem "Roboto",
-      helvetica,
-      sans-serif;
-  }
-
+  .programs,
   .link_pp {
     display: block;
-    padding: 0.1rem;
-    width: 250px;
-    height: 40px;
+    padding: 0.375rem 0.75rem;
+    width: 100%;
+    height: auto;
     border-radius: 2px;
-    border: 1px solid #aaa;
+    border: 1px solid var(--bs-border-color);
     margin: 0.5rem 0 1rem;
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
     font:
       300 1rem "Roboto",
       helvetica,
