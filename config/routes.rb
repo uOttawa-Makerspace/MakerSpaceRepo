@@ -689,7 +689,10 @@ Rails.application.routes.draw do
             param: :id,
             except: :index,
             constraints: lambda { |request|
-                User.find_by(username: request.params[:user_username]).present?
+              # This is disabled because the username has no effect on finding repositories
+              # Usernames can change, and we ran a mass rename migration
+              # Cool URLs dont break however, so we'll just ignore the username for now...
+              true || User.find_by(username: request.params[:user_username]).present?
               } do
     post "add_like", on: :member
     collection do
