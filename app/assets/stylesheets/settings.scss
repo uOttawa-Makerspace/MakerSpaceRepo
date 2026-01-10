@@ -11,12 +11,13 @@ div.setting-title {
 }
 
 div.setting-grid {
-  max-width: 68rem;
+  max-width: 100%;
   margin-left: auto;
   margin-right: auto;
   min-height: calc(100vh - 50px);
   background-color: var(--bs-body-bg);
-  padding: 0 0rem;
+  padding: 0 2rem;
+  color: var(--bs-body-color);
 
   /* Add Grid for layout */
   display: grid;
