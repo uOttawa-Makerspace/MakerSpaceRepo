@@ -10,8 +10,9 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_12_19_215329) do
+ActiveRecord::Schema[7.2].define(version: 2026_01_10_202457) do
   # These are extensions that must be enabled in order to support this database
+  enable_extension "citext"
   enable_extension "pg_trgm"
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -1390,13 +1391,13 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_19_215329) do
   end
 
   create_table "users", id: :serial, force: :cascade do |t|
-    t.string "username"
+    t.citext "username"
     t.string "password"
     t.string "url"
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
     t.text "description"
-    t.string "email"
+    t.citext "email"
     t.string "avatar_file_name"
     t.string "avatar_content_type"
     t.integer "avatar_file_size"
