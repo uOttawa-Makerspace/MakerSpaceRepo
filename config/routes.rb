@@ -684,18 +684,28 @@ Rails.application.routes.draw do
   end
 
   # REPOSITORY RESOURCES
+  # /:user_username/:id.title-is-ignored
   resources :repositories,
-            path: "/:user_username",
+            path: '/:user_username',
             param: :id,
             except: :index,
-            constraints: lambda { |request|
-                User.find_by(username: request.params[:user_username]).present?
+            # This is disabled because the username has no effect on finding repositories
+            # Usernames can change, and we ran a mass rename migration
+            # Cool URLs dont break however, so we'll just ignore the username for now...
+            # User.find_by(username: request.params[:user_username]).present?
+            constraints:
+              lambda { |request|
+                begin
+                  Repository.find(request.params[:id])
+                rescue StandardError
+                  false
+                end
               } do
-    post "add_like", on: :member
+    post 'add_like', on: :member
     collection do
-      get ":id/download_files",
-          as: "download_files",
-          action: "download_files",
+      get ':id/download_files',
+          as: 'download_files',
+          action: 'download_files',
           constraints: {
             id: %r{[^/]+}
           }
@@ -705,10 +715,11 @@ Rails.application.routes.draw do
       patch :transfer_owner
     end
     member do
-      get "/password_entry", as: "password_entry", action: "password_entry"
-      post "pass_authenticate"
+      get '/password_entry', as: 'password_entry', action: 'password_entry'
+      post 'pass_authenticate'
     end
   end
+
   get "/repositories/populate_users", to: "repositories#populate_users"
 
   namespace :makes, path: "makes/:user_username/:id" do
