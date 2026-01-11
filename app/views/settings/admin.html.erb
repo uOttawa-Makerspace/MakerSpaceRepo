@@ -1,65 +1,119 @@
 <% provide(:title, 'Settings') %>
 
-<div class="edit-column">
-  <div class="setting-title">Account Setting</div>
-  <div class="section-desc">Changing Password</div>
-
-  <%= form_for @user, url: change_password_user_path(@user.username) do |f| %>
-
-    <div class="mb-3">
-    <%= f.label :old_password, 'Old Password', class: 'form-label profile-label' %>
-    <%= tag.span(flash[:alert], class: 'form-error') if flash[:alert] %>
-    <%= f.password_field :old_password, value: nil, class: 'profile-text form-control', autofocus: true %>
+<div class="cert-card p-4">
+  
+  <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+    <div>
+      <h4 class="m-0"><%= t('settings.admin.title', default: 'Account Settings') %></h4>
     </div>
-    <div class="mb-3">
-    <%= f.label :password, 'New Password', class: 'form-label profile-label' %>
-    <%= tag.span(@user.errors[:password].first, class: 'form-error') %>
-    <%= f.password_field :password, value: nil, class: 'profile-text form-control' %>
-    </div>
-    <div class="mb-3">
-    <%= f.label :password_confirmation, 'New Password Confirmation', class: 'form-label profile-label' %>
-    <%= tag.span(@user.errors[:password_confirmation].first, class: 'form-error') %>
-    <%= f.password_field :password_confirmation, class: 'profile-text form-control' %>
-    </div>
-    <%= f.submit 'Update Password', class: 'btn btn-secondary' %>
-
-  <% end %>
-
-  <div class="seperator"></div>
-
-  <div class="section-desc">Changing Email</div>
-  <%= form_tag change_email_users_path, method: :get do %>
-
-    <div class="mb-3">
-      <%= label_tag :new_email, 'New Email', class: 'form-label profile-label' %>
-      <%= email_field_tag :new_email, '', { class: 'profile-text form-control', autofocus: true } %>
-      <%= label_tag :confirm_new_email, 'Confirm the New Email', class: 'form-label profile-label' %>
-      <%= email_field_tag :confirm_new_email, '', { class: 'profile-text form-control', autofocus: true } %>
-    </div>
-    <%= submit_tag 'Update Email', class: 'btn btn-secondary' %>
-
-  <% end %>
-
-  <div class="seperator"></div>
-
-  <div class="section-desc">
-    Github Account<br>
-    <span>Link your Github account to MakerRepo for additional functionality.</span>
   </div>
-  <% unless github? %>
-    <div class="info">
-      You currently do not have a github account linked to MakerRepo.
-      <br><br>
-    </div>
-    <%= link_to fa_icon('github', text: 'Authorize access to your Github'),
-                github_authorize_path, class: 'btn btn-secondary' %>
-  <% else %>
-    <div class="github-info">
-      Connected as: <%= link_to "@#{@client.login}", @client_info.html_url %>
-      <%= "(#{@client.user.name})" if @client.user.name.present? %>
-      <%= link_to fa_icon('github', text: ' Revoke access...'),
-                  github_unauthorize_path, class: 'github-unauth' %>
-    </div>
-  <% end %>
 
+  <div class="row g-4 h-100">
+    
+    <!-- ============================== -->
+    <!-- LEFT COLUMN: PASSWORD SECURITY -->
+    <!-- ============================== -->
+    <div class="col-lg-6 d-flex flex-column">
+      <div class="p-3 bg-body-tertiary rounded h-100 border">
+        
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-shield-lock-fill text-primary me-2 fs-5"></i>
+          <h6 class="m-0 fw-bold">Change Password</h6>
+        </div>
+
+        <%= form_for @user, url: change_password_user_path(@user.username) do |f| %>
+          
+          <% if flash[:alert] %>
+            <div class="alert alert-danger py-2 px-3 small mb-3"><%= flash[:alert] %></div>
+          <% end %>
+
+          <div class="mb-3">
+            <%= f.label :old_password, 'Current Password', class: 'form-label small text-muted' %>
+            <%= f.password_field :old_password, value: nil, class: 'form-control form-control-sm', autocomplete: "current-password" %>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-md-6">
+              <%= f.label :password, 'New Password', class: 'form-label small text-muted' %>
+              <%= f.password_field :password, value: nil, class: 'form-control form-control-sm', autocomplete: "new-password" %>
+              <% if @user.errors[:password].any? %>
+                <div class="text-danger small" style="font-size: 0.75rem;"><%= @user.errors[:password].first %></div>
+              <% end %>
+            </div>
+
+            <div class="col-md-6">
+              <%= f.label :password_confirmation, 'Confirm', class: 'form-label small text-muted' %>
+              <%= f.password_field :password_confirmation, class: 'form-control form-control-sm', autocomplete: "new-password" %>
+            </div>
+          </div>
+
+          <div class="mt-auto pt-2">
+            <%= f.submit 'Update Password', class: 'btn btn-primary btn-sm w-100' %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- ============================================= -->
+    <!-- RIGHT COLUMN: EMAIL & INTEGRATIONS            -->
+    <!-- ============================================= -->
+    <div class="col-lg-6 d-flex flex-column gap-4">
+      
+      <!-- 1. CHANGE EMAIL BLOCK -->
+      <div class="p-3 bg-body-tertiary rounded border flex-fill">
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-envelope-at-fill text-info me-2 fs-5"></i>
+          <h6 class="m-0 fw-bold">Change Email</h6>
+        </div>
+
+        <%= form_tag change_email_users_path, method: :get do %>
+          <div class="mb-2">
+            <%= label_tag :new_email, 'New Email Address', class: 'form-label small text-muted' %>
+            <%= email_field_tag :new_email, '', { class: 'form-control form-control-sm', placeholder: 'name@example.com' } %>
+          </div>
+
+          <div class="mb-3">
+            <%= label_tag :confirm_new_email, 'Confirm Email', class: 'form-label small text-muted' %>
+            <%= email_field_tag :confirm_new_email, '', { class: 'form-control form-control-sm', placeholder: 'name@example.com' } %>
+          </div>
+
+          <%= submit_tag 'Update Email', class: 'btn btn-outline-primary btn-sm w-100' %>
+        <% end %>
+      </div>
+
+      <!-- 2. GITHUB BLOCK -->
+      <div class="p-3 bg-body-tertiary rounded border">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <div class="d-flex align-items-center">
+            <i class="bi bi-github text-body me-2 fs-5"></i>
+            <h6 class="m-0 fw-bold">GitHub</h6>
+          </div>
+          <% if github? %>
+            <span class="badge bg-success bg-opacity-10 text-success border border-success px-2">Connected</span>
+          <% else %>
+            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary px-2">Not Linked</span>
+          <% end %>
+        </div>
+
+        <div class="small text-muted mb-3">
+          <% if github? %>
+            Linked as <%= link_to "@#{@client.login}", @client_info.html_url, class: "fw-bold text-decoration-none", target: "_blank", rel: "noopener" %>
+          <% else %>
+             Link your account for extra features.
+          <% end %>
+        </div>
+
+        <% unless github? %>
+          <%= link_to github_authorize_path, class: 'btn btn-dark btn-sm w-100' do %>
+            <i class="bi bi-github me-1"></i> Connect GitHub
+          <% end %>
+        <% else %>
+          <%= link_to github_unauthorize_path, class: 'btn btn-outline-danger btn-sm w-100' do %>
+             Revoke Access
+          <% end %>
+        <% end %>
+      </div>
+
+    </div>
+  </div>
 </div>
