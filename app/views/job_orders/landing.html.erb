@@ -5,7 +5,7 @@
     <div style="background: url(<%= asset_path('job_orders/header.png') %>) center center / cover no-repeat; filter: brightness(40%); position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;"></div>
 
     <div class="container position-relative z-1">
-      <h1 class="display-1 text-white"><%= t('job_orders.header').html_safe %></h1>
+      <h1 class="display-1 text-white"><%= sanitize(t('job_orders.header')) %></h1>
       <p class="lead text-white"><%= t('job_orders.subtext') %></p>
       <div class="mt-4 pb-5 d-flex justify-content-center flex-wrap gap-3">
         <%= link_to t('job_orders.request_button'), new_job_order_path, class: 'btn btn-primary btn-lg px-5 py-3' %>
@@ -20,7 +20,7 @@
     <div class="row align-items-center">
       <div class="col-lg-7">
         <p class="fs-4 text-primary fw-bold text-uppercase"><%= t('job_orders.intro.title') %></p>
-        <h2 class="mb-4 display-5"><%= t('job_orders.intro.text').html_safe %></h2>
+        <h2 class="mb-4 display-5"><%= sanitize(t('job_orders.intro.text')) %></h2>
       </div>
 
       <div class="col-lg-5 text-center">

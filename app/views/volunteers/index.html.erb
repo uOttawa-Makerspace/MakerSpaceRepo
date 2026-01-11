@@ -37,13 +37,13 @@
             <div class="row ps-3">
                 <ul class="col-lg-3">
                     <% t('volunteers.volunteer_opportunities.points')[0..3].each do |point| %>
-                        <li><%= point.html_safe %></li>
+                        <li><%= sanitize(point) %></li>
                     <% end %>
                     <% t('volunteers') %>
                 </ul>
                 <ul class="col-lg-3">
                     <% t('volunteers.volunteer_opportunities.points')[4..8].each do |point| %>
-                        <li><%= point.html_safe %></li>
+                        <li><%= sanitize(point) %></li>
                     <% end %>
                 </ul>
                 <div class="align-content-center col-lg-6">

@@ -66,7 +66,7 @@ class PrinterIssuesController < StaffAreaController
       new # set previous variables
       flash[
         :alert
-      ] = "Failed to create issue: #{@issue.errors.full_messages.join("<br />")}".html_safe
+      ] = "Failed to create issue: #{sanitize(@issue.errors.full_messages.join("<br />"))}"
       # All this to keep form data on error
       render :new, status: :unprocessable_entity
     end

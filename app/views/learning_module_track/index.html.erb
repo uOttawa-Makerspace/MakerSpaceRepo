@@ -17,7 +17,7 @@
             <div class="accordion" id="accordion-<%= training.id %>">
               <div class="accordion-item m-3">
                 <div class="accordion-header" id="header-<%= training.id %>">
-                  <p style="float: right"><%= get_lower_level_lm(training.id).html_safe %></p>
+                  <p style="float: right"><%= sanitize(get_lower_level_lm(training.id)) %></p>
                   <h2 class="mb-0">
                     <button class="accordion-button btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#training-<%= training.id %>">
                       <%= training.localized_name %>

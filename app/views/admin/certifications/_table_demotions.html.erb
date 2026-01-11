@@ -20,7 +20,7 @@
         <% if demotion.training_session.present? %>
           <td>
             <%= link_to '', staff_training_session_path(demotion.training_session.id), class: 'mb-2' %>
-            <%= certification_status(demotion.training_session.level).html_safe %>
+            <%= sanitize(certification_status(demotion.training_session.level)) %>
           </td>
           <td><%= demotion.trainer.name %></td>
           <td>

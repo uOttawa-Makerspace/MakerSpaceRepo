@@ -1,3 +1,5 @@
+import "flatpickr";
+
 const depositDateInput = document.getElementById("deposit-return-date");
 if (depositDateInput) {
   const depositDatePicker = depositDateInput.flatpickr({

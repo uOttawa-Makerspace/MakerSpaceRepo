@@ -1,4 +1,7 @@
 en:
+  memberships:
+    index:
+      no_history: "No membership history found"
   time:
     formats:
       time_only: "%l:%M %p" # 2:30 PM
@@ -88,6 +91,7 @@ en:
       most_likes: "Most Likes"
       most_makes: "Most Makes"
       recently_updated: "Recently Updated"
+      filter_by: "Filter by"
   footer:
     about: "About"
     tos: "Terms of Service"
