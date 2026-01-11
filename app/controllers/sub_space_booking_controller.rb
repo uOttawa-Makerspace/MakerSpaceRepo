@@ -45,6 +45,9 @@ class SubSpaceBookingController < SessionsController
         .order(start_time: :desc)
     if current_user.admin?
       # Use a consistent timestamp for all queries
+      # NOTE: this gives system time, set in config.time_zone
+      # Keep it because we're using Time.zone elsewhere in this controller
+      # https://thoughtbot.com/blog/its-about-time-zones
       @current_time = Time.now
       
       # Need to get the booking status from the sub space booking status table for the booking
