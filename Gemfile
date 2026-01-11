@@ -10,7 +10,6 @@ gem "csv"
 
 gem "airbrake"
 gem "bootsnap", require: false
-gem "aws-sdk", "~> 3.0"
 gem "aws-sdk-s3", require: false
 gem "bcrypt", "~> 3.1"
 gem "caxlsx", "~> 3.3.0"
@@ -98,6 +97,9 @@ group :development do
   gem "web-console"
   gem "ruby-prof" # profiling
 
+  gem "solargraph", require: false
+  gem "solargraph-rails", require: false
+  
   # ssh deploymentque
   gem "bcrypt_pbkdf", "~> 1.0"
   gem "ed25519", "~> 1.2"
