@@ -28,7 +28,7 @@ class Admin::DesignDaysController < AdminAreaController
       redirect_to @design_day
     else
       flash[:alert] = "Failed to update configuration"
-      render :show, status: :unprocessable_entity
+      render :show, status: :unprocessable_content
     end
   end
 

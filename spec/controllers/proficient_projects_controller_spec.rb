@@ -136,7 +136,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
         expect do
           post :create, params: { proficient_project: pp_params }
         end.to change(ProficientProject, :count).by(0)
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(flash[:alert]).to eq("Something went wrong")
       end
     end
@@ -259,7 +259,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
                 }
               }
         expect(flash[:alert]).to eq("Unable to apply the changes.")
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
     end
   end

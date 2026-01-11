@@ -36,19 +36,19 @@ RSpec.describe WalkInSafetySheetsController do
       current_user
       walk_in_safety_sheet = build(:walk_in_safety_sheet, :is_adult).attributes
       post :create, params: { walk_in_safety_sheet: }
-      expect(response).to have_http_status :unprocessable_entity
+      expect(response).to have_http_status :unprocessable_content
       post :create,
            params: {
              walk_in_safety_sheet:,
              agreement: WalkInSafetySheetsController.complete_agreements * 2
            }
-      expect(response).to have_http_status :unprocessable_entity
+      expect(response).to have_http_status :unprocessable_content
       post :create,
            params: {
              walk_in_safety_sheet:,
              agreement: WalkInSafetySheetsController.complete_agreements.take(3)
            }
-      expect(response).to have_http_status :unprocessable_entity
+      expect(response).to have_http_status :unprocessable_content
     end
 
     it 'should accept sheets that have all agreements' do
@@ -74,7 +74,7 @@ RSpec.describe WalkInSafetySheetsController do
              walk_in_safety_sheet:,
              agreement: WalkInSafetySheetsController.complete_agreements
            }
-      expect(response).to have_http_status :unprocessable_entity
+      expect(response).to have_http_status :unprocessable_content
       expect(current_user.walk_in_safety_sheets).not_to exist
     end
 
@@ -94,7 +94,7 @@ RSpec.describe WalkInSafetySheetsController do
              walk_in_safety_sheet:,
              agreement: WalkInSafetySheetsController.complete_agreements
            }
-      expect(response).to have_http_status :unprocessable_entity
+      expect(response).to have_http_status :unprocessable_content
       expect(current_user.walk_in_safety_sheets.count).to eq 1
     end
 

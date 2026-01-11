@@ -159,7 +159,7 @@ class RepositoriesController < SessionsController
     else
       @project_proposals =
         ProjectProposal.approved.order(title: :asc).pluck(:title, :id)
-      render "new", status: :unprocessable_entity
+      render "new", status: :unprocessable_content
     end
   end
 
@@ -178,7 +178,7 @@ class RepositoriesController < SessionsController
     else
       flash[:alert] = "Unable to apply the changes."
       render json: @repository.errors.to_hash(true),
-             status: :unprocessable_entity
+             status: :unprocessable_content
     end
   end
 
