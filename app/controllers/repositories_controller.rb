@@ -139,7 +139,6 @@ class RepositoriesController < SessionsController
       Repository.new(repository_params.except(:categories, :equipments))
     @repository.user_id = @user.id
     @repository.users << @user
-    @repository.user_username = @user.username
     update_password
 
     if @repository.save
@@ -317,7 +316,7 @@ class RepositoriesController < SessionsController
       flash[:alert] = "This user is not a member of your repository."
     elsif member.id == repository.user_id
       flash[:alert] = "This user is already the owner of the repository."
-    elsif repository.update(user_id: member_id, user_username: member.username)
+    elsif repository.update(user_id: member_id)
       flash[:notice] = "Repository ownership was successfully transferred."
     else
       flash[
@@ -353,7 +352,7 @@ class RepositoriesController < SessionsController
   def check_auth
     @check_passed =
       if @authorized || @user.admin? || @user.staff? ||
-           (@repository.user_username.downcase == @user.username.downcase)
+           @repository.user_username.casecmp?(@user.username)
         true
       else
         false
