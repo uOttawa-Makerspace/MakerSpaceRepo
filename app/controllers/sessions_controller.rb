@@ -33,9 +33,11 @@ class SessionsController < ApplicationController
         else
           respond_to do |format|
             format.html do
-              flash[
-                :alert
-              ] = "Your account has been locked due to too many failed login attempts. Please #{view_context.link_to 'contact an administrator', "mailto:#{SUPPORT_EMAIL}?subject=Account%20Locked%20-%20#{user.username}", class: 'text-primary'} to unlock your account or wait #{distance_of_time_in_words user.locked_until, DateTime.now}.".html_safe
+              flash[:alert] = ActionController::Base.helpers.sanitize("""
+              Your account has been locked due to too many failed login attempts. 
+              Please #{view_context.link_to('contact an administrator', "mailto:#{SUPPORT_EMAIL}?subject=Account%20Locked", class: 'text-primary')} 
+              to unlock your account or wait #{distance_of_time_in_words(user.locked_until, DateTime.now)}.
+              """)
               render :login
             end
             format.json do
@@ -71,7 +73,7 @@ class SessionsController < ApplicationController
           format.html do
             flash.now[
               :alert
-            ] = "Please confirm your account before logging in, you can resend the email #{view_context.link_to "here", resend_email_confirmation_path(email: params[:username_email]), class: "text-primary"}".html_safe
+            ] = ActionController::Base.helpers.sanitize("Please confirm your account before logging in, you can resend the email #{view_context.link_to "here", resend_email_confirmation_path(email: params[:username_email]), class: "text-primary"}")
             render :login
           end
           format.json do
@@ -87,7 +89,7 @@ class SessionsController < ApplicationController
             (
               if user.auth_attempts >= User::MAX_AUTH_ATTEMPTS
                 format.html? ? 
-                  "Your account has been locked due to too many failed login attempts. #{view_context.link_to 'Contact support', "mailto:#{SUPPORT_EMAIL}?subject=Account%20Locked%20-%20#{user.username}", class: 'text-primary'} to unlock your account or try again in #{distance_of_time_in_words user.locked_until, DateTime.now}.".html_safe :
+                  "Your account has been locked due to too many failed login attempts. #{view_context.link_to 'Contact support', "mailto:#{SUPPORT_EMAIL}?subject=Account%20Locked%20-%20#{user.username}", class: 'text-primary'} to unlock your account or try again in #{sanitize(distance_of_time_in_words user.locked_until, DateTime.now)}." :
                   "Your account has been locked due to too many failed login attempts. Contact support at #{SUPPORT_EMAIL} to unlock your account or try again in #{distance_of_time_in_words user.locked_until, DateTime.now}."
               elsif user.auth_attempts > 1
                 "Incorrect password. You have #{User::MAX_AUTH_ATTEMPTS - user.auth_attempts} attempts left before your account is locked."
@@ -97,7 +99,7 @@ class SessionsController < ApplicationController
             )
         else
           error_message =
-            "Could not find user with email or username #{params[:username_email]}"
+            "Could not find user with email or username: #{params[:username_email]}"
         end
         format.html do
           flash[:alert] = error_message

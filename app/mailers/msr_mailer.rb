@@ -137,7 +137,7 @@ class MsrMailer < ApplicationMailer
     @quote = quote
     @user = user
     @pickup_id = pickup_id
-    @message = message.html_safe
+    @message = sanitize(message)
     mail(
       to: @user.email,
       reply_to: "makerspace@uottawa.ca",
@@ -336,10 +336,9 @@ class MsrMailer < ApplicationMailer
   # 7 hours to receive a pile of plastic
   def print_failed(printer, user, notes)
     @message =
-      JobOrderMessage
+      sanitize(JobOrderMessage
         .print_failed
-        .format_print_failed(printer, user, notes)
-        .html_safe
+        .format_print_failed(printer, user, notes))
     mail(
       to: user.email,
       reply_to: "makerspace@uottawa.ca",

@@ -62,8 +62,8 @@ macOS developers need to install [Homebrew if not already installed](https://bre
 3. [Install NVM](https://github.com/nvm-sh/nvm), Node, then Yarn.
    ```bash
    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
-   nvm install 18 --lts
-   nvm use 18
+   nvm install 24 --lts
+   nvm use 24
    npm install -g yarn
    yarn install
    ```

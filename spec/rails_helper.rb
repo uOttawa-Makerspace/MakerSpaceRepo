@@ -3,9 +3,13 @@
 require "spec_helper"
 require "factory_bot"
 require "support/factory_bot"
-require "support/database_cleaner"
+# require "support/database_cleaner" # <--- Disabled: Use native transactions for speed
 require "simplecov"
 require "rspec/json_expectations"
+
+# [SPEED] Enable let_it_be for fast object creation
+require "test_prof/recipes/rspec/let_it_be"
+
 SimpleCov.start
 
 ENV["RAILS_ENV"] ||= "test"
@@ -15,20 +19,7 @@ if Rails.env.production?
   abort("The Rails environment is running in production mode!")
 end
 require "rspec/rails"
-# Add additional requires below this line. Rails is not loaded until this point!
-# Requires supporting ruby files with custom matchers and macros, etc, in
-# spec/support/ and its subdirectories. Files matching `spec/**/*_spec.rb` are
-# run as spec files by default. This means that files in spec/support that end
-# in _spec.rb will both be required and run as specs, causing the specs to be
-# run twice. It is recommended that you do not name files matching this glob to
-# end with _spec.rb. You can configure this pattern with the --pattern
-# option on the command line or in ~/.rspec, .rspec or `.rspec-local`.
-#
-# The following line is provided for convenience purposes. It has the downside
-# of increasing the boot-up time by auto-requiring all files in the support
-# directory. Alternatively, in the individual `*_spec.rb` files, manually
-# require only the support files necessary.
-#
+
 Dir[Rails.root.join("spec", "support", "**", "*.rb")].sort.each do |f|
   require f
 end
@@ -36,47 +27,32 @@ end
 # Fastest encryption when testing
 BCrypt::Engine.cost = BCrypt::Engine::MIN_COST
 
-# Checks for pending migrations and applies them before tests are run.
-# If you are not using ActiveRecord, you can remove these lines.
 begin
   ActiveRecord::Migration.maintain_test_schema!
 rescue ActiveRecord::PendingMigrationError => e
   puts e.to_s.strip
   exit 1
 end
+
 RSpec.configure do |config|
   include ActiveJob::TestHelper
   
-  # Remove this line if you're not using ActiveRecord or ActiveRecord fixtures
-  #config.fixture_paths << "#{::Rails.root}/spec/fixtures"
+  # [SPEED] Use transactions. 
+  # This is much faster than DatabaseCleaner truncation strategies.
+  config.use_transactional_fixtures = true
 
-  # If you're not using ActiveRecord, or you'd prefer not to run each of your
-  # examples within a transaction, remove the following line or assign false
-  # instead of true.
-  config.use_transactional_fixtures = false
-
-  # You can uncomment this line to turn off ActiveRecord support entirely.
-  # config.use_active_record = false
-
-  # RSpec Rails can automatically mix in different behaviours to your tests
-  # based on their file location, for example enabling you to call `get` and
-  # `post` in specs under `spec/controllers`.
-  #
-  # You can disable this behaviour by removing the line below, and instead
-  # explicitly tag your specs with their type, e.g.:
-  #
-  #     RSpec.describe UsersController, type: :controller do
-  #       # ...
-  #     end
-  #
-  # The different available types are documented in the features, such as in
-  # https://relishapp.com/rspec/rspec-rails/docs
   config.infer_spec_type_from_file_location!
-
-  # Filter lines from Rails gems in backtraces.
   config.filter_rails_from_backtrace!
-  # arbitrary gems may also be filtered via:
-  # config.filter_gems_from_backtrace("gem name")
+
+  # [SPEED] Mock Google Calendar Sync for Events
+  config.before(:each) do
+    # Stub the class methods on Event to do nothing
+    allow(Event).to receive(:upsert_event).and_return(true)
+    allow(Event).to receive(:delete_event).and_return(true)
+    
+    # Also stub authorizer just in case something calls it directly
+    allow(Event).to receive(:authorizer).and_return(double("GoogleAuthorizer", fetch_access_token!: true))
+  end
 end
 
 Shoulda::Matchers.configure do |config|

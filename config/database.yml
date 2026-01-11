@@ -1,14 +1,14 @@
 default: &default
-  adapter: "<%= Rails.application.credentials[Rails.env.to_sym][:database][:adapter] || postgresql %>"
-  host: "<%= Rails.application.credentials[Rails.env.to_sym][:database][:host] || localhost %>"
+  adapter: "<%= Rails.application.credentials[Rails.env.to_sym][:database][:adapter] || 'postgresql' %>"
+  host: "<%= Rails.application.credentials[Rails.env.to_sym][:database][:host] || 'localhost' %>"
   port: "<%= Rails.application.credentials[Rails.env.to_sym][:database][:port] || 5432 %>"
-  username: "<%= Rails.application.credentials[Rails.env.to_sym][:database][:username] || postgres %>"
-  password: "<%= Rails.application.credentials[Rails.env.to_sym][:database][:password] || postgres %>"
+  username: "<%= Rails.application.credentials[Rails.env.to_sym][:database][:username] || 'postgres' %>"
+  password: "<%= Rails.application.credentials[Rails.env.to_sym][:database][:password] || 'postgres' %>"
 
 development:
   primary:
     <<: *default
-    database: "<%= Rails.application.credentials[Rails.env.to_sym][:database][:name] || makerspacerepo %>"
+    database: "<%= Rails.application.credentials[Rails.env.to_sym][:database][:name] || 'makerspacerepo' %>"
   queue:
     <<: *default
     database: makerspacerepo_queue
@@ -20,7 +20,7 @@ development:
 
 test:
   <<: *default
-  database: <%= Rails.application.credentials[Rails.env.to_sym][:database][:name] || makerspacerepo_test %>_<%= ENV['TEST_ENV_NUMBER'] %>
+  database: makerspacerepo_test
 
 production:
   primary:

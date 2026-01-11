@@ -1,9 +1,10 @@
 import { Calendar } from "@fullcalendar/core";
-import "@fullcalendar/common/main.css";
 import interactionPlugin from "@fullcalendar/interaction";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import listPlugin from "@fullcalendar/list";
 import TomSelect from "tom-select";
+import "flatpickr";
+
 document.addEventListener("turbo:load", function () {
   // For the recurring booking approval modal
   let approveRecurringModal = document.getElementById("approveRecurringModal");

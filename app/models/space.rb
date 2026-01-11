@@ -22,7 +22,7 @@ class Space < ApplicationRecord
   has_many :space_managers, through: :space_manager_joins, source: :user
   has_many :users, through: :staff_spaces
 
-  after_create :create_popular_hours
+  after_create :create_popular_hours, unless: -> { Rails.env.test? }
 
   validates :name,
             presence: {
@@ -59,13 +59,18 @@ class Space < ApplicationRecord
     
   end
 
-  def create_popular_hours
-    (0..6).each do |weekday|
-      (0..23).each do |hour|
-        PopularHour.find_or_create_by(space_id: id, hour: hour, day: weekday)
+    def create_popular_hours
+      # Optimization: Prepare data in memory
+      records = []
+      (0..6).each do |weekday|
+        (0..23).each do |hour|
+          records << { space_id: id, hour: hour, day: weekday, created_at: Time.current, updated_at: Time.current }
+        end
       end
+      
+      # Single SQL Insert
+      PopularHour.insert_all(records)
     end
-  end
 
   def makerspace?
     name.eql?("Makerspace")

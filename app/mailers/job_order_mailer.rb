@@ -82,12 +82,11 @@ class JobOrderMailer < ApplicationMailer
 
     @message =
       if message.present?
-        message.html_safe
+        sanitize(message)
       else
-        JobOrderMessage
+        sanitize(JobOrderMessage
           .find_by(name: "processed")
-          .retrieve_message(@job_order.id)
-          .html_safe
+          .retrieve_message(@job_order.id))
       end
 
     mail(

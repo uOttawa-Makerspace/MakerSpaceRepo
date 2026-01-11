@@ -3,11 +3,11 @@
     <li>
       <div class="d-flex justify-content-between">
         <p><%= jos.job_status.name %>
-          <%= "(By: #{link_to jos.user.name, user_path(username: jos.user.username)})".html_safe if jos.job_status == JobStatus::BEING_PROCESSED || jos.job_status == JobStatus::COMPLETED %>
+          <%= sanitize("(By: #{link_to jos.user.name, user_path(username: jos.user.username)})") if [JobStatus::BEING_PROCESSED, JobStatus::COMPLETED].include?(jos.job_status) %>
         </p>
         <p class="float-right"><%= jos.created_at.strftime('%b %e %Y at %H:%M') %></p>
       </div>
-      <p><%= jos.job_status.description %></p>
+      <p><%= sanitize(jos.job_status.description) %></p>
     </li>
   <% end %>
 </ul>

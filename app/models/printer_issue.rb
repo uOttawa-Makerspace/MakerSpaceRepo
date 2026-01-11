@@ -1,6 +1,6 @@
 class PrinterIssue < ApplicationRecord
   belongs_to :printer
-  belongs_to :reporter, class_name: "User", foreign_key: :reporter_id
+  belongs_to :reporter, class_name: "User"
   # Ensure uniqueness, at least block duplicate active summaries
   # Might cause problems when reopening a closed issue with the same summary
   # as a currently active issue. AKA when someone sends 'nozzle clogged', closes it,

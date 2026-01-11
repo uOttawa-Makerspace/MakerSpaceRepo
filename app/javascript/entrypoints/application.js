@@ -13,12 +13,9 @@
 //
 // const images = require.context('../images', true)
 // const imagePath = (name) => images(name, true)
-import "regenerator-runtime/runtime";
 import "trix";
-import "@shopify/buy-button-js";
 import "photoswipe";
 import "clipboard";
-import "flatpickr";
 import "./validation";
 import "./direct_uploads";
 import "./effects";

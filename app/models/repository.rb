@@ -4,6 +4,14 @@ class Repository < ApplicationRecord
   include BCrypt
   require "bcrypt"
 
+  # There's two ways to reach a user, one is the user that created the repo
+  # NOTE: I have a suspicion this might be unused.
+  belongs_to :owner, class_name: 'User', foreign_key: 'user_id'
+  # creates a method user_username, sends 'username' to 'owner'
+  # This is to override the column 'user_username'
+  delegate :username, to: :owner, prefix: :user
+  
+  # And the rest of the members added to the repo
   has_and_belongs_to_many :users
   belongs_to :project_proposal, optional: true
   
@@ -63,7 +71,7 @@ class Repository < ApplicationRecord
             },
             uniqueness: {
               message: "Project title is already in use.",
-              scope: :user_username
+              scope: :user_id # :owner
             }
 
   validates :share_type, inclusion: { in: %w[public private], message: "" }

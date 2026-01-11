@@ -1,4 +1,15 @@
 <div class="tab-pane fade" id="admin-rename" role="tabpanel" aria-labelledby="admin-rename-pill">
+    <% unless @user.deleted? %>
+        <div>
+            <p>Send a password reset email to the user associated with this account.
+                This will auto-fill and auto-submit the password reset email.
+                <%= link_to 'Go to reset form', forgot_password_path(email: @repo_user.email) %>
+            </p>
+        </div>
+
+        <hr />
+    <% end %>
+
     <%= form_with url: rename_user_admin_users_path, method: :patch, autocomplete: :off do |f| %>
         <%= f.hidden_field :id, value: @repo_user.id %>
         <div class="input-group">
@@ -7,4 +18,16 @@
             <%= f.submit 'Update username', class: 'btn btn-primary' %>
         </div>
     <% end %>
+
+    <hr />
+
+    <div>
+        <% if @user.deleted? %>
+            <p>User is deleted.</p>
+        <% else %>
+            <p class="text-danger">Deleting a user will erase all associated data including certifications, repositories, etc.</p>
+            <button type="button" class="btn btn-danger" data-bs-toggle="modal"
+                    data-bs-target="#delete-modal">Delete User</button>
+        <% end %>
+    </div>
 </div>

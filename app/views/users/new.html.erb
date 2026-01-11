@@ -137,7 +137,7 @@
           <div class="mb-3">
             <div class="form-check">
               <%= form.check_box :read_and_accepted_waiver_form, class: 'form-check-input', required: true %>
-              <%= form.label :read_and_accepted_waiver_form, t('users.new.form.accept_waiver_html') + '<span class="required"></span>'.html_safe, class: 'form-check-label' %>
+              <%= form.label :read_and_accepted_waiver_form, t('users.new.form.accept_waiver_html') + sanitize('<span class="required"></span>'), class: 'form-check-label' %>
               <% @new_user.errors[:read_and_accepted_waiver_form].each do |err| %>
                 <%= tag.div(err, class: 'invalid-feedback') %>
               <% end %>

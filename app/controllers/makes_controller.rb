@@ -13,7 +13,6 @@ class MakesController < SessionsController
         r.license = @repository.license
         r.github = @repository.github
         r.github_url = @repository.github_url
-        r.user_username = @user.username
         r.user_id = @user.id
         r.share_type = "public"
       end
@@ -53,7 +52,7 @@ class MakesController < SessionsController
 
   def set_repository
     @repository =
-      Repository.find_by(user_username: params[:user_username], id: params[:id])
+      Repository.includes(:owner).find_by(owner: {username: params[:user_username]}, id: params[:id])
   end
 
   def create_photos

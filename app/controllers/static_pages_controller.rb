@@ -176,34 +176,21 @@ class StaticPagesController < SessionsController
 
   def reset_password
     unless verify_turnstile
-      redirect_to :forgot_password,
-                  alert:
-                  'There was a problem with the captcha, please try again.'
+      flash.now[:alert] = 'There was a problem with the captcha, please try again.'
+      render :forgot_password
       return
     end
     
-  if params[:email].present?
-    user_email = params[:email].strip.downcase
-    if User.find_by_email(user_email).present?
-      @user = User.find_by(email: user_email)
-      user_hash = Rails.application.message_verifier(:user).generate(@user.id)
-      expiry_date_hash =
-        Rails.application.message_verifier(:user).generate(1.day.from_now)
-      MsrMailer.forgot_password(
-        user_email,
-        user_hash,
-        expiry_date_hash
-      ).deliver_now
+    if params[:email].blank?
+      flash.now[:alert] = 'Please enter an email address.'
+      render :forgot_password
+      return
     end
-    flash[
-      :notice
-    ] = 'A reset link email has been sent to the email if the account exists.'
-  else
-    flash[:alert] = 'There was a problem with, please try again.'
-  end
-  redirect_to root_path
-end
 
+    User.find_by(email: params[:email].strip.downcase)&.send_password_reset
+    flash[:notice] = 'A reset link email has been sent to the email if the account exists.'
+    render :forgot_password
+  end
 
   def report_repository
     if signed_in?

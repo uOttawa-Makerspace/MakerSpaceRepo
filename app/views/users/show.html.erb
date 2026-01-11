@@ -30,7 +30,7 @@
             </div>
             <div class="col-md-6">
               <span style="font-size: 15px;">
-                <%= certification_status(certification.training_session.level).html_safe %>
+                <%= sanitize(certification_status(certification.training_session.level)) %>
               </span>
             </div>
           </div>
@@ -172,14 +172,11 @@
             <div class="tab-pane fade" id="adminTabPane" role="tabpanel">
               <div class="d-flex align-items-start">
                 <div class="nav flex-column nav-underline me-5 text-nowrap" role="tablist" aria-orientation="vertical">
-                  <a class="nav-link active" id="admin-roles-pill" data-bs-toggle="pill" href="#admin-roles" role="tab" aria-controls="admin-roles" aria-selected="true">Role manager</a>
-                  <a class="nav-link" id="admin-rename-pill" data-bs-toggle="pill" href="#admin-rename" role="tab" aria-controls="admin-rename" aria-selected="false">Rename</a>
-                  <a class="nav-link" id="admin-membership-pill" data-bs-toggle="pill" href="#admin-membership" role="tab" aria-controls="admin-membership" aria-selected="false">Manage membership</a>
+                  <a class="nav-link active" id="admin-roles-pill" data-bs-toggle="pill" href="#admin-roles" role="tab" aria-controls="admin-roles" aria-selected="true">Roles</a>
+                  <a class="nav-link" id="admin-rename-pill" data-bs-toggle="pill" href="#admin-rename" role="tab" aria-controls="admin-rename" aria-selected="false">Account</a>
+                  <a class="nav-link" id="admin-membership-pill" data-bs-toggle="pill" href="#admin-membership" role="tab" aria-controls="admin-membership" aria-selected="false">Membership</a>
                   <% if current_user == @repo_user %>
                     <a class="nav-link" id="admin-quick-access-pill" data-bs-toggle="pill" href="#admin-quick-access" role="tab" aria-controls="admin-quick-access" aria-selected="false">Quick access</a>
-                  <% end %>
-                  <% unless @repo_user.deleted? %>
-                    <a class="nav-link" id="admin-delete-pill" data-bs-toggle="pill" href="#admin-delete" role="tab" aria-controls="admin-delete" aria-selected="false">Delete user</a>
                   <% end %>
                 </div>
                 <div class="tab-content w-100">
@@ -187,7 +184,6 @@
                   <%= render partial: 'users/tabs/rename', locals: { user: @user, repo_user: @repo_user } %>
                   <%= render partial: 'users/tabs/membership', locals: { user: @user, repo_user: @repo_user } %>
                   <%= render partial: 'users/tabs/quick_access', locals: { user: @user, repo_user: @repo_user } if current_user == @repo_user %>
-                  <%= render partial: 'users/tabs/delete' unless @repo_user.deleted? %>
                 </div>
               </div>
             </div>
