@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_01_10_202457) do
+ActiveRecord::Schema[7.2].define(version: 2026_01_11_182102) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_trgm"
@@ -1057,7 +1057,6 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_10_202457) do
     t.string "github"
     t.string "github_url"
     t.integer "like", default: 0
-    t.string "user_username"
     t.integer "make_id"
     t.integer "make", default: 0
     t.string "slug"

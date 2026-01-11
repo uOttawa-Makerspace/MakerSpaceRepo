@@ -9,7 +9,6 @@ class Repository < ApplicationRecord
   belongs_to :owner, class_name: 'User', foreign_key: 'user_id'
   # creates a method user_username, sends 'username' to 'owner'
   # This is to override the column 'user_username'
-  # FIXME: Remove user_username
   delegate :username, to: :owner, prefix: :user
   
   # And the rest of the members added to the repo
@@ -73,7 +72,7 @@ class Repository < ApplicationRecord
             },
             uniqueness: {
               message: "Project title is already in use.",
-              scope: :user_username
+              scope: :user_id # :owner
             }
 
   validates :share_type, inclusion: { in: %w[public private], message: "" }
