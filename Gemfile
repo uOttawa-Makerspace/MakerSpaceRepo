@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 source "https://rubygems.org"
-ruby "3.4.7"
+ruby "3.4.8"
 gem "rails", "~> 7.2.0"
 
 # no longer standard since 3.4
@@ -82,6 +82,11 @@ group :development, :test do
   gem "rspec-rails", "~> 7.1.0"
   gem "spring", "~> 4.1.0"
   gem "spring-watcher-listen", "~> 2.1.0"
+  gem 'brakeman', require: false          # Static analysis
+  gem 'bundler-audit', require: false     # Dependency vulnerabilities
+  gem 'ruby_audit', require: false        # Ruby vulnerabilities
+  gem 'rails_best_practices', require: false
+  gem 'bullet'                            # N+1 and security issues
 end
 
 group :development do
