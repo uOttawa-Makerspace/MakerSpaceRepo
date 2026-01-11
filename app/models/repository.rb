@@ -14,7 +14,6 @@ class Repository < ApplicationRecord
   # And the rest of the members added to the repo
   has_and_belongs_to_many :users
   belongs_to :project_proposal, optional: true
-
   
   has_many :photos, dependent: :destroy
   # https://api.rubyonrails.org/classes/ActiveRecord/NestedAttributes/ClassMethods.html
