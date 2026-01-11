@@ -45,7 +45,7 @@ RSpec.describe Repository, type: :model do
       end
       it do
         should validate_uniqueness_of(:title).scoped_to(
-                 :user_username
+                 :user_id # :owner
                ).with_message("Project title is already in use.")
       end
     end

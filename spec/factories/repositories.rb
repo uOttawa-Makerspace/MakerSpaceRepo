@@ -6,7 +6,6 @@ FactoryBot.define do
     title { Faker::Lorem.unique.word }
     description { Faker::Lorem.paragraph }
     share_type { "public" }
-    user_username { "Bob" }
     youtube_link { "" }
 
     trait :private do
