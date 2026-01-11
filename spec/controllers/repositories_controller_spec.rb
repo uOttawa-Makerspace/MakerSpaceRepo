@@ -9,6 +9,17 @@ RSpec.describe RepositoriesController, type: :controller do
         session[:expires_at] = Time.zone.now + 10_000
       end
 
+      it "should show the repo when logged out (no password)" do
+        session[:user_id] = nil
+        create(:repository)
+        get :show,
+            params: {
+              id: Repository.last.id,
+              user_username: Repository.last.user_username
+            }
+        expect(response).to have_http_status(:success)
+      end
+
       it "should show the repo (no password)" do
         create(:repository)
         get :show,

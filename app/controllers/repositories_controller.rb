@@ -352,7 +352,7 @@ class RepositoriesController < SessionsController
   def check_auth
     @check_passed =
       if @authorized || @user.admin? || @user.staff? ||
-           (@repository.user_username.downcase == @user.username.downcase)
+           @repository.user_username.casecmp?(@user.username)
         true
       else
         false
