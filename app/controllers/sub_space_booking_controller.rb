@@ -31,7 +31,7 @@ class SubSpaceBookingController < SessionsController
       end
       @rules << "bookings (Name and Description of event) are public by default" if @subspace.default_public
       if @subspace.max_automatic_approval_hour.present? &&
-           @subspace.approval_required
+          @subspace.approval_required
         @rules << "Bookings require manual approval, bookings of #{@subspace.max_automatic_approval_hour} hours or less will be automatically approved"
       elsif @subspace.approval_required
         @rules << "bookings will require manual approval"
@@ -44,8 +44,17 @@ class SubSpaceBookingController < SessionsController
         .includes(:sub_space, :sub_space_booking_status)
         .order(start_time: :desc)
     if current_user.admin?
+      # Use a consistent timestamp for all queries
+      # NOTE: this gives system time, set in config.time_zone
+      # Keep it because we're using Time.zone elsewhere in this controller
+      # https://thoughtbot.com/blog/its-about-time-zones
+      @current_time = Time.now
+      
       # Need to get the booking status from the sub space booking status table for the booking
       @pending_bookings = current_bookings(BookingStatus::PENDING.id)
+      
+      load_recurring_bookings_for_page(@pending_bookings)
+      
       @approved_bookings = current_bookings(BookingStatus::APPROVED.id)
       @declined_bookings = current_bookings(BookingStatus::DECLINED.id)
       @old_pending_bookings = old_bookings(BookingStatus::PENDING.id)
@@ -693,6 +702,28 @@ class SubSpaceBookingController < SessionsController
 
   private
 
+  def load_recurring_bookings_for_page(paginated_bookings)
+    # Get unique recurring_booking_ids from current page
+    recurring_ids = paginated_bookings.map(&:recurring_booking_id).compact.uniq
+    
+    @recurring_bookings_map = {}
+    
+    return if recurring_ids.empty?
+    
+    # Load ALL pending bookings for these recurring groups (not just current page)
+    # Use the same timestamp as the main query to avoid timing issues
+    all_recurring_bookings = SubSpaceBooking
+      .includes(:approved_by, :user, :sub_space_booking_status, sub_space: :space)
+      .joins(:sub_space_booking_status)
+      .where(recurring_booking_id: recurring_ids)
+      .where(sub_space_booking_statuses: { booking_status_id: BookingStatus::PENDING.id })
+      .where('sub_space_bookings.end_time > ?', @current_time)
+      .order(start_time: :asc)
+    
+    # Group them by recurring_booking_id
+    @recurring_bookings_map = all_recurring_bookings.group_by(&:recurring_booking_id)
+  end
+
   def destroy_booking(booking)
     # FIXME: This is a one to one relation, so we have to unset
     # the relation before deleting to avoid foreign key issues.
@@ -708,23 +739,21 @@ class SubSpaceBookingController < SessionsController
 
   def current_bookings(booking_status_id)
     SubSpaceBookingStatus
-      .includes(sub_space_booking: [:approved_by, :user, {sub_space: :space}])
+      .includes(sub_space_booking: [:approved_by, :user, :recurring_booking, {sub_space: :space}])
       .where(booking_status_id: booking_status_id)
       .order("sub_space_bookings.start_time": :asc)
       .map { |booking_status| booking_status.sub_space_booking }
-      .select { |booking| booking.end_time > Time.now }
-      #.sort_by { |booking| booking.start_time }
+      .select { |booking| booking.end_time > @current_time }  # Use consistent timestamp
       .paginate(page: params[:pending_page], per_page: 15)
   end
 
   def old_bookings(booking_status_id)
     SubSpaceBookingStatus
-      .includes(sub_space_booking: [:approved_by, :user, {sub_space: :space}])
+      .includes(sub_space_booking: [:approved_by, :user, :recurring_booking, {sub_space: :space}])
       .where(booking_status_id: booking_status_id)
       .order("sub_space_bookings.start_time": :asc)
       .map { |booking_status| booking_status.sub_space_booking }
-      .select { |booking| booking.end_time < Time.now }
-      #.sort_by { |booking| booking.start_time }
+      .select { |booking| booking.end_time < @current_time }  # Use consistent timestamp
       .reverse
       .paginate(page: params[:old_approved_page], per_page: 15)
   end

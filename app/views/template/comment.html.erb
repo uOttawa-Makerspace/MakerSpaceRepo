@@ -1,21 +1,33 @@
 <div class="comment">
   <div class="comment-upvote">
-link_to fa_icon('angle-up'), vote_path(comment_id: params['comment_id'],
-                                             voted: false, downvote: 'f'), class: 'vote upvote', remote: true, method: :post
-    %>
+    <%= link_to fa_icon('angle-up'), vote_path(comment_id: params['comment_id'],
+                                             voted: false, downvote: 'f'), class: 'vote upvote', remote: true, method: :post %>
+    
     <div class="upvote upvote-<%= params['comment_id'] %>">0</div>
-link_to fa_icon('angle-down'), vote_path(comment_id: params['comment_id'],
-                                               voted: false, downvote: 't'), class: 'vote downvote', remote: true, method: :post
-    %>
+    
+    <%= link_to fa_icon('angle-down'), vote_path(comment_id: params['comment_id'],
+                                               voted: false, downvote: 't'), class: 'vote downvote', remote: true, method: :post %>
   </div>
+  
   <div class="comment-header">
-    <%= link_to params['user_url'] do %>
+    <% 
+       url = params['user_url'].to_s
+       begin
+         parsed_url = URI.parse(url)
+         safe_url = parsed_url.is_a?(URI::HTTP) ? parsed_url.to_s : '#'
+       rescue URI::InvalidURIError
+         safe_url = '#'
+       end
+    %>
+
+    <%= link_to safe_url do %>
       <div><%= params['username'] %><div class="rep"><%= params['rep'] %></div> </div>
      <% end %>
+     
     <%= tag.div("#{time_ago_in_words(params['created_at'].to_datetime)} ago", class: 'time') %>
   </div>
+  
   <div class="comment-content">
     <%= sanitize params['content'] %>
   </div>
-</div> 
-
+</div>

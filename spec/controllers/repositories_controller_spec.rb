@@ -9,6 +9,17 @@ RSpec.describe RepositoriesController, type: :controller do
         session[:expires_at] = Time.zone.now + 10_000
       end
 
+      it "should show the repo when logged out (no password)" do
+        session[:user_id] = nil
+        create(:repository)
+        get :show,
+            params: {
+              id: Repository.last.id,
+              user_username: Repository.last.user_username
+            }
+        expect(response).to have_http_status(:success)
+      end
+
       it "should show the repo (no password)" do
         create(:repository)
         get :show,
@@ -486,13 +497,8 @@ RSpec.describe RepositoriesController, type: :controller do
         session[:user_id] = @owner.id
         session[:expires_at] = Time.zone.now + 10_000
 
-        @repo =
-          create(
-            :repository,
-            user_id: @owner.id,
-            user_username: @owner.username
-          )
-        Repository.find(@repo.id).users = [@owner]
+        @repo = create(:repository, user_id: @owner.id)
+        @repo.users << @owner
       end
 
       it "should not add member twice" do
@@ -528,12 +534,7 @@ RSpec.describe RepositoriesController, type: :controller do
         session[:user_id] = @owner.id
         session[:expires_at] = Time.zone.now + 10_000
 
-        @repo =
-          create(
-            :repository,
-            user_id: @owner.id,
-            user_username: @owner.username
-          )
+        @repo = create(:repository, user_id: @owner.id)
         Repository.find(@repo.id).users = [@owner]
       end
 
@@ -613,7 +614,6 @@ RSpec.describe RepositoriesController, type: :controller do
           create(
             :repository,
             user_id: @owner.id,
-            user_username: @owner.username
           )
         Repository.find(@repo.id).users = [@owner, @member]
       end

@@ -1,55 +1,143 @@
-<section id="setting" style="width:100%">
-<div class="setting-grid">
-<section class="w-75 mx-auto">
-  <h2 class="m-0 fw-bold py-4 text-center">Key Request #<%= @key_request.id %> - <%= @key_request.status.humanize.capitalize %></h2>
-
-  <div class="mb-5 d-flex flex-row align-items-center justify-content-center gap-3">
-    <%= link_to 'View Certifications', key_certification_path(@key_request.user.key_certification.id), class: 'btn btn-primary' unless @key_request.user.key_certification.nil? %>
-    <%= link_to 'Edit Key Request', key_request_steps_path(key_request_id: @key_request.id, step: 1), class: 'btn btn-primary' if @user.eql?(@key_request.user) %>
-  </div>
-
-  <div class="mb-5 mt-4">
-    <h4 class="mb-3">Key Request Information</h4>
-    <h6><span class="fw-bold">Space:</span> <%= @key_request.space.name %></h6>
-    <h6><span class="fw-bold">User:</span> <%= link_to @key_request.user.name, user_path(@key_request.user.username), target: '_blank', rel: 'noopener' %></h6>
-    <h6><span class="fw-bold">Supervisor:</span> <%= link_to @key_request.supervisor.name, user_path(@key_request.supervisor.username), target: '_blank', rel: 'noopener' %></h6>
-    <h6><span class="fw-bold">Form Status:</span> <%= @key_request.status.humanize.capitalize %></h6>
-  </div>
-
-  <div class="mb-5">
-    <h4 class="mb-3">User Information</h4>
-    <h6><span class="fw-bold">User Status:</span> <%= @key_request.user_status.humanize.capitalize %></h6>
-    <h6><span class="fw-bold">Email:</span> <%= @key_request.user&.email %></h6>
-    <h6><span class="fw-bold">Student/Employee Number:</span> <%= @key_request.student_number %></h6>
-    <h6><span class="fw-bold">Phone Number:</span> <%= @key_request.phone_number %></h6>
-    <h6><span class="fw-bold">Emergency Contact:</span> <%= @key_request.emergency_contact %></h6>
-    <h6><span class="fw-bold">Relation to Emergency Contact:</span> <%= @key_request.emergency_contact_relation %></h6>
-    <h6><span class="fw-bold">Emergency Contact Phone Number:</span> <%= @key_request.emergency_contact_phone_number %></h6>
-    <h6><span class="fw-bold">Read and understood lab rules:</span> <%= @key_request.read_lab_rules? ? 'yes' : 'no' %></h6>
-    <h6><span class="fw-bold">Read and understood policies:</span> <%= @key_request.read_policies? ? 'yes' : 'no' %></h6>
-    <h6><span class="fw-bold">Read and accepted agreement:</span> <%= @key_request.read_agreement? ? 'yes' : 'no' %></h6>
-  </div>
-
-  <div class="mb-5">
-    <h4 class="mb-3">Safety Questionnaire Answers</h4>
-    <% (1..KeyRequest::NUMBER_OF_QUESTIONS).each do |i| %>
-      <div class="card mb-3">
-        <div class="card-header bg-primary text-light">
-          <%= "Q#{i} - #{KeyRequest::QUESTIONS[i - 1]}" %><br>
+<section id="setting">
+  <div class="setting-grid">
+    <div class="container py-4">
+      <div class="cert-card p-4 p-md-5 mx-auto" style="max-width: 1000px;">
+        
+        <!-- HEADER SECTION -->
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-start mb-4 border-bottom pb-4">
+          <div>
+            <h3 class="mb-2">Key Request #<%= @key_request.id %></h3>
+            <p class="text-muted mb-0">
+              Current Status: 
+              <span class="badge <%= if @key_request.status == 'approved'
+'bg-success'
+else
+(@key_request.status == 'denied' ? 'bg-danger' : 'bg-warning text-dark')
+end %>">
+                <%= @key_request.status.humanize.capitalize %>
+              </span>
+            </p>
+          </div>
+          
+          <div class="d-flex gap-2 mt-3 mt-md-0">
+            <% unless @key_request.user.key_certification.nil? %>
+              <%= link_to key_certification_path(@key_request.user.key_certification.id), class: 'btn btn-outline-secondary btn-sm' do %>
+                <i class="bi bi-file-earmark-pdf"></i> View Certifications
+              <% end %>
+            <% end %>
+            
+            <% if @user.eql?(@key_request.user) %>
+              <%= link_to key_request_steps_path(key_request_id: @key_request.id, step: 1), class: 'btn btn-primary btn-sm' do %>
+                <i class="bi bi-pencil"></i> Edit Request
+              <% end %>
+            <% end %>
+          </div>
         </div>
-        <div class="card-body">
-          <%= @key_request.send("question_#{i}").nil? ? 'No Answer' : @key_request.send("question_#{i}") %>
+
+        <!-- INFO GRID -->
+        <div class="row g-4 mb-5">
+          <!-- Column 1: Request Details -->
+          <div class="col-md-6">
+            <h6 class="text-muted text-uppercase mb-3" style="font-size: 0.8rem; letter-spacing: 1px;">Request Information</h6>
+            
+            <div class="mb-3">
+              <label class="small text-muted d-block">Space</label>
+              <span class="fw-bold"><%= @key_request.space.name %></span>
+            </div>
+            
+            <div class="mb-3">
+              <label class="small text-muted d-block">User</label>
+              <%= link_to @key_request.user.name, user_path(@key_request.user.username), class: 'text-decoration-none fw-medium', target: '_blank', rel: 'noopener' %>
+            </div>
+
+            <div class="mb-3">
+              <label class="small text-muted d-block">Supervisor</label>
+              <%= link_to @key_request.supervisor.name, user_path(@key_request.supervisor.username), class: 'text-decoration-none fw-medium', target: '_blank', rel: 'noopener' %>
+            </div>
+          </div>
+
+          <!-- Column 2: User Details -->
+          <div class="col-md-6">
+            <h6 class="text-muted text-uppercase mb-3" style="font-size: 0.8rem; letter-spacing: 1px;">User Information</h6>
+            
+            <div class="row">
+              <div class="col-sm-6 mb-3">
+                <label class="small text-muted d-block">User Status</label>
+                <span><%= @key_request.user_status.humanize.capitalize %></span>
+              </div>
+              <div class="col-sm-6 mb-3">
+                 <label class="small text-muted d-block">ID Number</label>
+                 <span><%= @key_request.student_number %></span>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="small text-muted d-block">Contact Info</label>
+              <div><i class="bi bi-envelope me-1 text-muted"></i> <%= @key_request.user&.email %></div>
+              <div><i class="bi bi-telephone me-1 text-muted"></i> <%= @key_request.phone_number %></div>
+            </div>
+
+            <div class="p-3 bg-body-tertiary rounded border">
+              <label class="small text-muted d-block mb-1">Emergency Contact</label>
+              <strong><%= @key_request.emergency_contact %></strong> (<%= @key_request.emergency_contact_relation %>)<br>
+              <span class="small"><i class="bi bi-telephone"></i> <%= @key_request.emergency_contact_phone_number %></span>
+            </div>
+          </div>
         </div>
+
+        <!-- AGREEMENTS SECTION -->
+        <div class="mb-5">
+          <h6 class="text-muted text-uppercase mb-3" style="font-size: 0.8rem; letter-spacing: 1px;">Agreements & Policies</h6>
+          <div class="d-flex flex-wrap gap-4">
+            <div class="d-flex align-items-center">
+              <i class="bi <%= @key_request.read_lab_rules? ? 'bi-check-circle-fill text-success' : 'bi-x-circle-fill text-danger' %> me-2"></i>
+              <span>Lab Rules</span>
+            </div>
+            <div class="d-flex align-items-center">
+              <i class="bi <%= @key_request.read_policies? ? 'bi-check-circle-fill text-success' : 'bi-x-circle-fill text-danger' %> me-2"></i>
+              <span>Policies</span>
+            </div>
+            <div class="d-flex align-items-center">
+              <i class="bi <%= @key_request.read_agreement? ? 'bi-check-circle-fill text-success' : 'bi-x-circle-fill text-danger' %> me-2"></i>
+              <span>Agreement</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- QUESTIONS SECTION -->
+        <div class="mb-5">
+           <h6 class="text-muted text-uppercase mb-3" style="font-size: 0.8rem; letter-spacing: 1px;">Safety Questionnaire</h6>
+           
+           <div class="d-flex flex-column gap-3">
+            <% (1..KeyRequest::NUMBER_OF_QUESTIONS).each do |i| %>
+              <div class="p-3 rounded border bg-body-tertiary">
+                <div class="d-flex text-primary mb-2">
+                  <span class="fw-bold me-2">Q<%= i %>.</span>
+                  <span class="fw-medium"><%= KeyRequest::QUESTIONS[i - 1] %></span>
+                </div>
+                <div class="ps-4 text-muted border-start border-3">
+                  <%= @key_request.send("question_#{i}").presence || 'No Answer' %>
+                </div>
+              </div>
+            <% end %>
+           </div>
+        </div>
+
+        <!-- ADMIN ACTIONS FOOTER -->
+        <% if @user.admin? && @key_request.status_waiting_for_approval? %>
+          <div class="border-top pt-4 d-flex justify-content-end align-items-center gap-3">
+            <span class="text-muted small">Admin Actions:</span>
+            <%= button_to deny_key_request_admin_keys_path(id: @key_request.id), class: 'btn btn-outline-danger', method: :patch, data: { confirm: 'Are you sure you want to deny this key request?' } do %>
+               <i class="bi bi-x-lg"></i> Deny
+            <% end %>
+            
+            <%= button_to approve_key_request_admin_keys_path(id: @key_request.id), class: 'btn btn-success px-4', method: :patch do %>
+               <i class="bi bi-check-lg"></i> Approve
+            <% end %>
+          </div>
+        <% end %>
+
       </div>
-    <% end %>
-  </div>
-
-  <% if @user.admin? %>
-    <div class="d-flex flex-row align-items-center justify-content-center gap-2">
-      <%= button_to 'Approve', approve_key_request_admin_keys_path(id: @key_request.id), class: 'btn btn-success', method: :patch if @key_request.status_waiting_for_approval? %>
-      <%= button_to 'Deny', deny_key_request_admin_keys_path(id: @key_request.id), class: 'btn btn-danger', method: :patch, data: { confirm: 'Are you sure you want to deny this key request?' } if @key_request.status_waiting_for_approval? %>
     </div>
-  <% end %>
-</section>
-</div>
+  </div>
 </section>
