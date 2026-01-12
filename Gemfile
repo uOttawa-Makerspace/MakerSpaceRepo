@@ -8,6 +8,7 @@ gem "rails", "~> 7.2.0"
 gem "abbrev"
 gem "csv"
 
+gem "sitemap_generator", "~> 6.3"
 gem "airbrake"
 gem "bootsnap", require: false
 gem "aws-sdk-s3", require: false
