@@ -15,7 +15,7 @@ class Staff::MakerstoreLinksController < StaffAreaController
     @makerstore_link = MakerstoreLink.new(makerstore_link_params)
     unless makerstore_link_params[:image]
       render :new,
-             status: :unprocessable_entity,
+             status: :unprocessable_content,
              alert: "Cannot create makerstore link without an image"
       return
     end
@@ -35,7 +35,7 @@ class Staff::MakerstoreLinksController < StaffAreaController
     else
       flash[:alert] = "Link not created: " +
         @makerstore_link.errors.full_messages.join(", ")
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
   end
 
@@ -63,7 +63,7 @@ class Staff::MakerstoreLinksController < StaffAreaController
       flash[:notice] = "Link updated"
       redirect_to staff_makerstore_links_path
     else
-      render :edit, status: :unprocessable_entity
+      render :edit, status: :unprocessable_content
     end
   end
 

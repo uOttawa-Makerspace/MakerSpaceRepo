@@ -148,7 +148,7 @@ class ProjectProposalsController < SessionsController
       # If not logged in and captcha fails
       if current_user.id.nil? && !verify_turnstile
         flash[:alert] = 'Captcha error, please try again'
-        format.html { render :new, status: :unprocessable_entity }
+        format.html { render :new, status: :unprocessable_content }
       elsif  @project_proposal.save
         begin
           create_photos
@@ -182,9 +182,9 @@ class ProjectProposalsController < SessionsController
         flash[
           :alert
         ] = "An error occurred while creating the project proposal, try again later."
-        format.html { render :new, status: :unprocessable_entity }
+        format.html { render :new, status: :unprocessable_content }
         format.json do
-          render json: @project_proposal.errors, status: :unprocessable_entity
+          render json: @project_proposal.errors, status: :unprocessable_content
         end
       end
     end
@@ -319,9 +319,9 @@ class ProjectProposalsController < SessionsController
         flash[
           :alert
         ] = "An error occurred while updating the project proposal, try again later."
-        format.html { render :edit, status: :unprocessable_entity }
+        format.html { render :edit, status: :unprocessable_content }
         format.json do
-          render json: @project_proposal.errors, status: :unprocessable_entity
+          render json: @project_proposal.errors, status: :unprocessable_content
         end
       end
     end

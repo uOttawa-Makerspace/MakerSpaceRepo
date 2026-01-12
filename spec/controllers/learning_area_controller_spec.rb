@@ -108,7 +108,7 @@ RSpec.describe LearningAreaController, type: :controller do
         expect do
           post :create, params: { learning_module: learning_module_params }
         end.to change(LearningModule, :count).by(0)
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(flash[:alert]).to eq("Something went wrong")
       end
     end
@@ -209,7 +209,7 @@ RSpec.describe LearningAreaController, type: :controller do
                 }
               }
         expect(flash[:alert]).to eq("Unable to apply the changes.")
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
     end
   end
