@@ -10,7 +10,7 @@ module GoogleCalendar
 
       sub_space = SubSpace.find_by!(name: location)
 
-      if event.status == "cancelled"
+      if event.status == "cancelled" || event.start.nil? || event.end.nil?
         delete_ss_booking(event)
       else
         upsert_ss_booking(event, sub_space)
@@ -18,10 +18,9 @@ module GoogleCalendar
     end
 
     def self.upsert_ss_booking(event, sub_space)
-      booking =
-        SubSpaceBooking.find_or_initialize_by(
-          google_booking_id: event.id
-        )
+      booking = SubSpaceBooking.find_or_initialize_by(
+        google_booking_id: event.id
+      )
 
       booking.assign_attributes(
         name: event.summary.presence || "Google Calendar Event",
@@ -29,22 +28,29 @@ module GoogleCalendar
         start_time: event.start.date_time,
         end_time: event.end.date_time,
         sub_space: sub_space,
-        blocking: true
+        blocking: true,
+        user: User.find_by(email: event.creator.email) ||
+              User.find_by(email: "avend029@uottawa.ca")
       )
 
-      booking.save!
+      booking.save
 
-      booking.sub_space_booking_status ||=
-        SubSpaceBookingStatus.create!(
-          booking_status_id: BookingStatus::PENDING.id,
-          sub_space_booking: booking
-        )
+      return if booking.sub_space_booking_status_id.present?
+      status = SubSpaceBookingStatus.new(
+        sub_space_booking_id: booking.id,
+        booking_status_id: BookingStatus::APPROVED.id
+      )    
+      status.save
+
+      booking.update(sub_space_booking_status_id: status.id)
     end
 
     def self.delete_ss_booking(event)
-      SubSpaceBooking.find_by(
-        google_booking_id: event.id
-      )&.destroy
+      booking = SubSpaceBooking.find_by(google_booking_id: event.id)
+      return unless booking
+
+      booking.update_column(:sub_space_booking_status_id, nil)
+      booking.delete
     end
   end
 end
