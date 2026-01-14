@@ -1,279 +1,262 @@
 <% provide(:title, @project_proposal.title.to_s) %>
 
 <section class="row container mx-auto mt-3">
-  <section class="col-lg-8 order-lg-first order-last">
-    <h1 class="border-bottom d-lg-block d-none mb-3"><%= @project_proposal.title %></h1>
-    <% if @project_proposal.youtube_link.present? %>
-      <%= youtube_video(@project_proposal.youtube_link) %>
-    <% end %>
-
-    <% if @project_photos.present? and @project_photos.first.image.attached? %>
-      <div id="show-photo">
-        <%= image_tag @project_photos.first.image, alt: 'Project Proposal Picture', data: { width: @project_photos.first.try(:width), height: @project_photos.first.try(:height) } %>
-      </div>
-
-      <div id="photo-slide">
-        <% @project_photos.each do |p| %>
-          <%= image_tag p.image, alt: 'Related Repository Image', data: { width: p.width, height: p.height } %>
+    <section class="col-lg-8 order-lg-first order-last">
+        <h1 class="border-bottom d-lg-block d-none mb-3"><%= @project_proposal.title %></h1>
+        <% if @project_proposal.youtube_link.present? %>
+            <%= youtube_video(@project_proposal.youtube_link) %>
         <% end %>
-      </div>
-      <br>
-    <% end %>
 
-    <div class="card mb-3">
-      <div class="card-header">
-        <%= t('project_proposal.project_information') %>
-      </div>
-      <div class="card-body">
-        <ul class="list-unstyled">
-          <li><b><%= t('project_proposal.possible_tech') %>:</b> <%= sanitize(@project_proposal.equipments) %></li>
-          <li><b><%= t('project_proposal.project_type') %>:</b> <%= @project_proposal.project_type %></li>
-          <li><b><%= t('project_proposal.expected_budget') %>:</b> <%= @project_proposal.prototype_cost.present? ? "$#{@project_proposal.prototype_cost}" : 'Not available' %></li>
-          <li><b><%= t('project_proposal.expected_cost') %>:</b> <%= @project_proposal.project_cost.present? ? "$#{@project_proposal.project_cost}" : 'Not available' %></li>
-        </ul>
-      </div>
-    </div>
-
-    <div class="card mb-3">
-      <div class="card-header"><%= t('project_proposal.client_information') %></div>
-      <div class="card-body">
-        <% if signed_in? %>
-          <div>
-            <ul class="list-unstyled">
-              <li><b>Client:</b> <%= @project_proposal.client %></li>
-              <li><b><%= t('project_proposal.client_type') %>:</b> <%= @project_proposal.client_type %></li>
-              <li><b><%= t('project_proposal.client_interest') %>:</b> <%= @project_proposal.client_interest %></li>
-              <li><b><%= t('project_proposa.client_background') %>:</b> <%= sanitize(@project_proposal.client_background) %></li>
-            </ul>
-          </div>
-          <% if @project_proposal.supervisor_background.present? %>
-            <span style="word-break: break-word">
-              <b>Supervisor Background:</b>
-              <%= sanitize(@project_proposal.supervisor_background) %>
-            </span>
-          <% end %>
-        <% else %>
-          <div class="word-break">
-            <div class="alert alert-info">
-              Please <%= link_to 'sign in', login_path, class: 'text-decoration-underline' %> to view client info.
+        <% if @project_photos.present? and @project_photos.first.image.attached? %>
+            <div id="show-photo">
+                <%= image_tag @project_photos.first.image, alt: 'Project Proposal Picture', data: { width: @project_photos.first.try(:width), height: @project_photos.first.try(:height) } %>
             </div>
-          </div>
-        <% end %>
-      </div>
-    </div>
 
-    <% if @project_proposal.description.present? %>
-      <div class="card mb-3">
-        <div class="card-header"><%= t('project_proposal.project_background') %></div>
-        <div class="card-body">
-          <div style="word-break: break-word;"><%= sanitize(@project_proposal.description) %></div>
-        </div>
-      </div>
-    <% end %>
-
-    <% unless @project_proposal.past_experiences.nil? %>
-      <div class="card mb-3">
-        <div class="card-header"><%= t('project_proposal.past_attempts') %></div>
-        <div class="card-body">
-          <% if @project_proposal.past_experiences.split("|")[0].present? %>
-            <%= sanitize(@project_proposal.past_experiences.split('|')[0]) %><!-- <br> -->
-          <% end %>
-          <% if @project_proposal.past_experiences.split("|")[1].present? %>
-            <% @project_proposal.past_experiences.split('|')[1].split(',').each do |links| %>
-              <%= link_to links, links %> <br>
-            <% end %>
-          <% end %>
-        </div>
-      </div>
-    <% end %>
-
-    <% unless @linked_pp.nil? %>
-      <div class="card mb-3">
-        <div class="card-header"><%= t('project_proposal.linked_proposal') %></div>
-        <div class="card-body">
-          <%= link_to t('project_proposal.linked_proposal_button'), project_proposal_path(@linked_pp.slug), class: 'btn btn-primary' %>
-        </div>
-      </div>
-    <% end %>
-
-    <% if @revisions.present? %>
-      <div class="card mb-3">
-        <div class="card-header">
-          Revision(s) of the project proposal / Revision(s) de la proposition de projet
-        </div>
-        <div class="card-body">
-          <% @revisions.each do |revision| %>
-            <%= link_to revision.title, project_proposal_path(revision.slug), style: 'hover {text-decoration: underline}' %>
+            <div id="photo-slide">
+                <% @project_photos.each do |p| %>
+                    <%= image_tag p.image, alt: 'Related Repository Image', data: { width: p.width, height: p.height } %>
+                <% end %>
+            </div>
             <br>
-          <% end %>
+        <% end %>
+
+        <div class="card mb-3">
+            <div class="card-header">
+                <%= t('project_proposal.project_information') %>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li><b><%= t('project_proposal.possible_tech') %>:</b> <%= sanitize(@project_proposal.equipments) %></li>
+                    <li><b><%= t('project_proposal.project_type') %>:</b> <%= @project_proposal.project_type %></li>
+                    <li><b><%= t('project_proposal.expected_budget') %>:</b> <%= @project_proposal.prototype_cost.present? ? "$#{@project_proposal.prototype_cost}" : 'Not available' %></li>
+                    <li><b><%= t('project_proposal.expected_cost') %>:</b> <%= @project_proposal.project_cost.present? ? "$#{@project_proposal.project_cost}" : 'Not available' %></li>
+                </ul>
+            </div>
         </div>
-      </div>
-    <% end %>
 
-    <% if @project_proposal.project_joins.present? %>
-      <p><%= t('project_proposal.users_joined') %>:</p>
-      <div>
-        <% @project_proposal.project_joins.find_each do |pj| %>
-          <% user_pj = User.find(pj.user_id).username %>
-          <div class="username"><%= link_to user_pj, user_path(user_pj) %></div>
-        <% end %>
-      </div>
-    <% end %>
-
-    <% if @user.admin? %>
-      <div class="mt-3">
-        <%= button_to t('project_proposal.admin.delete'), destroy_project_proposals_path(id: @project_proposal.id), method: :delete,
-                                                                                                                    class: 'btn btn-danger', data: { confirm: 'Are you sure?' } %>
-        <% if @project_proposal.approved.present? && @project_proposal.admin_id.present? %>
-          <% admin_username = @project_proposal.admin.username %>
-          <p><%= t('project_proposal.reviewed_by') %>: <%= link_to admin_username, user_path(admin_username), class: 'admin_username' %></p>
-        <% elsif @project_proposal.approved.present? %>
-          <div class="title">This project was reviewed.</div>
-        <% else %>
-          <div class="title">This project was not reviewed yet.</div>
-        <% end %>
-      </div>
-    <% end %>
-  </section>
-
-  <section id="info" class="col-lg-4">
-    <h1 class="border-bottom d-lg-none"><%= @project_proposal.title %></h1>
-    <% if @project_proposal.user_id.eql?(@user.id) || @user.role.eql?("admin") %>
-      <%= link_to fa_icon('pencil', text: t('project_proposal.edit_proposal')), edit_project_proposal_path(@project_proposal), class: 'btn btn-secondary mb-3' %>
-    <% end %>
-    <% if @user.admin? %>
-      <br />
-      <div class="btn-group mb-3">
-        <%= button_to t('project_proposal.admin.approve'), approve_project_proposals_path(id: @project_proposal.id), method: :post,
-                                                                                                                     class: 'btn btn-success', data: { confirm: 'Are you sure? This will approve the project.' } %>
-        <%= button_to t('project_proposal.admin.decline'), decline_project_proposals_path(id: @project_proposal.id), method: :post,
-                                                                                                                     class: 'btn btn-danger', data: { confirm: 'Are you sure? This will decline the project.' } %>
-      </div>
-    <% end %>
-
-    <div>
-      <p class="text-secondary"><%= t('project_proposal.proposed_by') %>
-        <% if @project_proposal.user_id %>
-          <% project_username = @project_proposal.user.username %>
-          <%= link_to project_username, user_path(project_username) %>
-        <% else %>
-          <%= @project_proposal.try(:username) %>
-        <% end %>
-      </p>
-      <p class="text-secondary">
-        <%= t('project_proposal.proposed_on') %>
-        <%= @project_proposal.created_at.strftime('%b %e %Y') %>
-      </p>
-      <p class="text-secondary"><%= t('project_proposal.contact') %>: <%= mail_to @project_proposal.email %></p>
-
-      <% if @project_files.present? %>
-        <div class="repo-info-item">
-          <div class="title"><%= t('project_proposal.project_files') %></div>
-          <div class="files-show">
-            <% @project_files.each do |f| %>
-              <div class="file-item-show">
-                <u><%= fa_icon 'file-text-o' %> <%= link_to f.file.filename, rails_blob_path(f.file), download: 'download' %></u><span><%= f.file.byte_size / 1000 %>
-                  KB</span>
-              </div>
-            <% end %>
-          </div>
+        <div class="card mb-3">
+            <div class="card-header"><%= t('project_proposal.client_information') %></div>
+            <div class="card-body">
+                <% if signed_in? %>
+                    <div>
+                        <ul class="list-unstyled">
+                            <li><b>Client:</b> <%= @project_proposal.client %></li>
+                            <li><b><%= t('project_proposal.client_type') %>:</b> <%= @project_proposal.client_type %></li>
+                            <li><b><%= t('project_proposal.client_interest') %>:</b> <%= @project_proposal.client_interest %></li>
+                            <li><b><%= t('project_proposal.client_background') %>:</b> <%= sanitize(@project_proposal.client_background) %></li>
+                        </ul>
+                    </div>
+                    <% if @project_proposal.supervisor_background.present? %>
+                        <span style="word-break: break-word">
+                            <b>Supervisor Background:</b>
+                            <%= sanitize(@project_proposal.supervisor_background) %>
+                        </span>
+                    <% end %>
+                <% else %>
+                    <div class="word-break">
+                        <div class="alert alert-info">
+                            Please <%= link_to 'sign in', login_path, class: 'text-decoration-underline' %> to view client info.
+                        </div>
+                    </div>
+                <% end %>
+            </div>
         </div>
-      <% end %>
-      <% if @user.admin? %>
+
+        <% if @project_proposal.description.present? %>
+            <div class="card mb-3">
+                <div class="card-header"><%= t('project_proposal.project_background') %></div>
+                <div class="card-body">
+                    <div style="word-break: break-word;"><%= sanitize(@project_proposal.description) %></div>
+                </div>
+            </div>
+        <% end %>
+
+        <% unless @project_proposal.past_experiences.nil? %>
+            <div class="card mb-3">
+                <div class="card-header"><%= t('project_proposal.past_attempts') %></div>
+                <div class="card-body">
+                    <% if @project_proposal.past_experiences.split("|")[0].present? %>
+                        <%= sanitize(@project_proposal.past_experiences.split('|')[0]) %><!-- <br> -->
+                    <% end %>
+                    <% if @project_proposal.past_experiences.split("|")[1].present? %>
+                        <% @project_proposal.past_experiences.split('|')[1].split(',').each do |links| %>
+                            <%= link_to links, links %> <br>
+                        <% end %>
+                    <% end %>
+                </div>
+            </div>
+        <% end %>
+
+        <% unless @linked_pp.nil? %>
+            <div class="card mb-3">
+                <div class="card-header"><%= t('project_proposal.linked_proposal') %></div>
+                <div class="card-body">
+                    <%= link_to t('project_proposal.linked_proposal_button'), project_proposal_path(@linked_pp.slug), class: 'btn btn-primary' %>
+                </div>
+            </div>
+        <% end %>
+
+        <% if @revisions.present? %>
+            <div class="card mb-3">
+                <div class="card-header">
+                    Revision(s) of the project proposal / Revision(s) de la proposition de projet
+                </div>
+                <div class="card-body">
+                    <% @revisions.each do |revision| %>
+                        <%= link_to revision.title, project_proposal_path(revision.slug), style: 'hover {text-decoration: underline}' %>
+                        <br>
+                    <% end %>
+                </div>
+            </div>
+        <% end %>
+
+        <% if @project_proposal.project_joins.present? %>
+            <p><%= t('project_proposal.users_joined') %>:</p>
+            <div>
+                <% @project_proposal.project_joins.find_each do |pj| %>
+                    <% user_pj = User.find(pj.user_id).username %>
+                    <div class="username"><%= link_to user_pj, user_path(user_pj) %></div>
+                <% end %>
+            </div>
+        <% end %>
+
+        <% if @user.admin? %>
+            <div class="mt-3">
+                <%= button_to t('project_proposal.admin.delete'), destroy_project_proposals_path(id: @project_proposal.id), method: :delete,
+                              class: 'btn btn-danger', data: { confirm: 'Are you sure?' } %>
+                <% if @project_proposal.approved.present? && @project_proposal.admin_id.present? %>
+                    <% admin_username = @project_proposal.admin.username %>
+                    <p><%= t('project_proposal.reviewed_by') %>: <%= link_to admin_username, user_path(admin_username), class: 'admin_username' %></p>
+                <% elsif @project_proposal.approved.present? %>
+                    <div class="title">This project was reviewed.</div>
+                <% else %>
+                    <div class="title">This project was not reviewed yet.</div>
+                <% end %>
+            </div>
+        <% end %>
+    </section>
+
+    <section id="info" class="col-lg-4">
+        <h1 class="border-bottom d-lg-none"><%= @project_proposal.title %></h1>
+        <% if @project_proposal.user_id.eql?(@user.id) || @user.role.eql?("admin") %>
+            <%= link_to fa_icon('pencil', text: t('project_proposal.edit_proposal')), edit_project_proposal_path(@project_proposal), class: 'btn btn-secondary mb-3' %>
+        <% end %>
+        <% if @user.admin? %>
+            <br />
+            <div class="btn-group mb-3">
+                <%= button_to t('project_proposal.admin.approve'), approve_project_proposals_path(id: @project_proposal.id), method: :post,
+                              class: 'btn btn-success', data: { confirm: 'Are you sure? This will approve the project.' } %>
+                <%= button_to t('project_proposal.admin.decline'), decline_project_proposals_path(id: @project_proposal.id), method: :post,
+                              class: 'btn btn-danger', data: { confirm: 'Are you sure? This will decline the project.' } %>
+            </div>
+        <% end %>
+
         <div>
-          <p class="text-secondary">Validation:</p>
-          <% case @project_proposal.approved
-          when 0 %>
-            <div class="declined"><%= t('project_proposal.validation.declined') %></div>
-          <% when 1 %>
-            <div class="approved"><%= t('project_proposal.validation.approved') %></div>
-          <% when nil %>
-            <div><%= t('project_proposal.validation.not_validated') %></div>
-          <% end %>
+            <p class="text-secondary"><%= t('project_proposal.proposed_by') %>
+                <% if @project_proposal.user_id %>
+                    <% project_username = @project_proposal.user.username %>
+                    <%= link_to project_username, user_path(project_username) %>
+                <% else %>
+                    <%= @project_proposal.try(:username) %>
+                <% end %>
+            </p>
+            <p class="text-secondary">
+                <%= t('project_proposal.proposed_on') %>
+                <%= @project_proposal.created_at.strftime('%b %e %Y') %>
+            </p>
+            <p class="text-secondary"><%= t('project_proposal.contact') %>: <%= mail_to @project_proposal.email %></p>
+
+            <% if @project_files.present? %>
+                <div class="repo-info-item">
+                    <div class="title"><%= t('project_proposal.project_files') %></div>
+                    <div class="files-show">
+                        <% @project_files.each do |f| %>
+                            <div class="file-item-show">
+                                <u><%= fa_icon 'file-text-o' %> <%= link_to f.file.filename, rails_blob_path(f.file), download: 'download' %></u><span><%= f.file.byte_size / 1000 %>
+                                    KB</span>
+                            </div>
+                        <% end %>
+                    </div>
+                </div>
+            <% end %>
+            <% if @user.admin? %>
+                <div>
+                    <p class="text-secondary">Validation:</p>
+                    <% case @project_proposal.approved
+                    when 0 %>
+                        <div class="declined"><%= t('project_proposal.validation.declined') %></div>
+                    <% when 1 %>
+                        <div class="approved"><%= t('project_proposal.validation.approved') %></div>
+                    <% when nil %>
+                        <div><%= t('project_proposal.validation.not_validated') %></div>
+                    <% end %>
+                </div>
+            <% end %>
+            <% if @categories.present? %>
+                <div class="repo-info-item">
+                    <p class="text-secondary">Categories</p>
+                    <% @categories.each do |t| %>
+                        <span class="tags"><%= link_to t.name, category_path(slug: t.name.gsub(' ', '-').downcase) %></span>
+                    <% end %>
+                </div>
+            <% end %>
+            <% if @user.id.present? %>
+                <div class="repo-info-item">
+                    <%= link_to t('project_proposal.document_project'), new_repository_path(@user.username, project_proposal_id: @project_proposal.id), method: :get,
+                                class: 'btn btn-success',
+                                data: { confirm: 'This action will create a repository related to this project proposal' } %>
+                </div>
+            <% end %>
+            <% if @user.admin? %>
+                <div class="repo-info-item">
+                    <%= button_to t('project_proposal.create_revision'), create_revision_project_proposals_path(old_project_proposal_id: @project_proposal.id), method: :post, class: 'btn btn-success' %>
+                </div>
+            <% end %>
+            <% @project_join = find_project_join(@user.id, @project_proposal.id) %>
+            <div class="repo-info-item">
+                <% if @project_join.present? %>
+                    <%= button_to t('project_proposal.leave_project'), unjoin_project_proposal_project_proposals_path(project_proposal_id: @project_proposal.id, project_join_id: @project_join.id), method: :get,
+                                  class: 'btn btn-danger', data: { confirm: 'Are you sure that you want to join this project?' } %>
+                <% elsif @user.id.present? %>
+                    <%= button_to t('project_proposal.join_project'), join_project_proposal_project_proposals_path(project_proposal_id: @project_proposal.id), method: :get,
+                                  class: 'btn btn-primary', data: { confirm: 'Are you sure that you want to join this project?' } %>
+                <% end %>
+            </div>
+            <div class="repo-info-item">
+                <div class="report">
+                    <%= link_to fa_icon('flag', text: t('project_proposal.report_inappropriate')), report_repository_path(@project_proposal.id), class: 'repository_report' %>
+                    <div class="spinner">
+                        <div class="rect1"></div>
+                        <div class="rect2"></div>
+                        <div class="rect3"></div>
+                        <div class="rect4"></div>
+                        <div class="rect5"></div>
+                    </div>
+                </div>
+            </div>
         </div>
-      <% end %>
-      <% if @categories.present? %>
-        <div class="repo-info-item">
-          <p class="text-secondary">Categories</p>
-          <% @categories.each do |t| %>
-            <span class="tags"><%= link_to t.name, category_path(slug: t.name.gsub(' ', '-').downcase) %></span>
-          <% end %>
-        </div>
-      <% end %>
-      <% if @user.id.present? %>
-        <div class="repo-info-item">
-          <%= link_to t('project_proposal.document_project'), new_repository_path(@user.username, project_proposal_id: @project_proposal.id), method: :get,
-                                                                                                                                              class: 'btn btn-success',
-                                                                                                                                              data: { confirm: 'This action will create a repository related to this project proposal' } %>
-        </div>
-      <% end %>
-      <% if @user.admin? %>
-        <div class="repo-info-item">
-          <%= button_to t('project_proposal.create_revision'), create_revision_project_proposals_path(old_project_proposal_id: @project_proposal.id), method: :post, class: 'btn btn-success' %>
-        </div>
-      <% end %>
-      <% @project_join = find_project_join(@user.id, @project_proposal.id) %>
-      <div class="repo-info-item">
-        <% if @project_join.present? %>
-          <%= button_to t('project_proposal.leave_project'), unjoin_project_proposal_project_proposals_path(project_proposal_id: @project_proposal.id, project_join_id: @project_join.id), method: :get,
-                                                                                                                                                                                           class: 'btn btn-danger', data: { confirm: 'Are you sure that you want to join this project?' } %>
-        <% elsif @user.id.present? %>
-          <%= button_to t('project_proposal.join_project'), join_project_proposal_project_proposals_path(project_proposal_id: @project_proposal.id), method: :get,
-                                                                                                                                                     class: 'btn btn-primary', data: { confirm: 'Are you sure that you want to join this project?' } %>
-        <% end %>
-      </div>
-      <div class="repo-info-item">
-        <div class="report">
-          <%= link_to fa_icon('flag', text: t('project_proposal.report_inappropriate')), report_repository_path(@project_proposal.id), class: 'repository_report' %>
-          <div class="spinner">
-            <div class="rect1"></div>
-            <div class="rect2"></div>
-            <div class="rect3"></div>
-            <div class="rect4"></div>
-            <div class="rect5"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+    </section>
 </section>
 
 
 <% if @repositories.present? %>
-  <hr class="w-50 mx-auto"/>
-  <section id="repositories-index" class="mt-3">
+    <hr class="w-50 mx-auto"/>
     <h3><%= t('project_proposal.repos_related') %>:</h3>
     <ul class="ms-3 list-group list-group-horizontal">
-      <li class="list-group-item"><%= t('project_proposal.sort_by') %>:</li>
-      <li class="list-group-item"><%= link_to t('project_proposal.newest'), project_proposal_path(sort: :newest) %></li>
-      <li class="list-group-item"><%= link_to t('project_proposa.most_likes'), project_proposal_path(sort: :most_likes) %></li>
-      <li class="list-group-item"><%= link_to t('project_proposal.most_makes'), project_proposal_path(sort: :most_makes) %></li>
-      <li class="list-group-item"><%= link_to t('project_proposal.recently_updated'), project_proposal_path(sort: :recently_updated) %></li>
+        <li class="list-group-item"><%= t('project_proposal.sort_by') %>:</li>
+        <li class="list-group-item"><%= link_to t('project_proposal.newest'), project_proposal_path(sort: :newest) %></li>
+        <li class="list-group-item"><%= link_to t('project_proposal.most_likes'), project_proposal_path(sort: :most_likes) %></li>
+        <li class="list-group-item"><%= link_to t('project_proposal.most_makes'), project_proposal_path(sort: :most_makes) %></li>
+        <li class="list-group-item"><%= link_to t('project_proposal.recently_updated'), project_proposal_path(sort: :recently_updated) %></li>
     </ul>
-
-    <section id="repositories-container">
-      <div class="pagination"><%= will_paginate @repositories, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %></div>
-      <% @repositories.each do |repository| %>
-        <div class="repository-container">
-
-          <div class="repo-display-wrapper" <%= "style=background-image:url('#{url_for(repository.photos.first.image) if repository.photos.first.present?}')" %> >
-            <%= link_to '', repository_path(repository.user_username, repository.slug), class: 'link' %>
-          </div>
-
-          <div class="repo-info">
-            <div class="start">
-              <div class="likes"><%= fa_icon 'heart' %><br><%= repository.like %></div>
-              <div class="title">
-                <%= link_to repository.title, repository_path(user_username: repository.user_username, id: repository.slug) %>
-              </div>
-              <div>by <%= link_to repository.user_username, user_path(repository.user_username) %></div>
-              <div><%= time_ago_in_words(repository.created_at) %> ago</div>
+    <div class="pagination"><%= will_paginate @repositories, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %></div>
+    <div class="row gx-1 gy-2">
+        <% @repositories.each do |repository| %>
+            <div class="col-md-4 col-lg-4">
+                <%= render 'repositories/repository_card', repository: %>
             </div>
-          </div>
-        </div>
-      <% end %>
-    </section>
-  </section>
+        <% end %>
+    </div>    
 <% end %>
 
 <%= render 'layouts/photoswipe' %>
