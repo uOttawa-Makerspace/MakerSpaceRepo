@@ -685,22 +685,22 @@ Rails.application.routes.draw do
 
   # REPOSITORY RESOURCES
   # /:user_username/:id.title-is-ignored
+  # This is disabled because the username has no effect on finding repositories
+  # Usernames can change, and we ran a mass rename migration
+  # Cool URLs dont break however, so we'll just ignore the username for now...
+  # User.find_by(username: request.params[:user_username]).present?
+  # constraints:
+  #   lambda { |request|
+  #     begin
+  #       Repository.find(request.params[:id])
+  #     rescue StandardError
+  #       false
+  #     end
+  #   }
   resources :repositories,
             path: '/:user_username',
             param: :id,
-            except: :index,
-            # This is disabled because the username has no effect on finding repositories
-            # Usernames can change, and we ran a mass rename migration
-            # Cool URLs dont break however, so we'll just ignore the username for now...
-            # User.find_by(username: request.params[:user_username]).present?
-            constraints:
-              lambda { |request|
-                begin
-                  Repository.find(request.params[:id])
-                rescue StandardError
-                  false
-                end
-              } do
+            except: :index do
     post 'add_like', on: :member
     collection do
       get ':id/download_files',
