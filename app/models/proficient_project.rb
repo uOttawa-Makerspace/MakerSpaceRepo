@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+require "uri"
 
 class ProficientProject < ApplicationRecord
   include Filterable
@@ -78,7 +79,15 @@ class ProficientProject < ApplicationRecord
   end
 
   def extract_valid_urls
-    extract_urls.uniq.select { |url| url.include?("wiki.makerepo.com") }
+    extract_urls.uniq.select do |url|
+      begin
+        uri = URI.parse(url)
+        host = uri.host
+        host == "wiki.makerepo.com"
+      rescue URI::InvalidURIError
+        false
+      end
+    end
   end
 
   def self.training_status(training_id, user_id)
