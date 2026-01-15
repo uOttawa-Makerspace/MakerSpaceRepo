@@ -91,7 +91,7 @@ class LockerRental < ApplicationRecord
   end
 
   def expired?
-    active? && owned_until && owned_until >= DateTime.current
+    active? && owned_until && owned_until <= DateTime.current
   end
 
   # Is a rental not confirmed yet? Usually means users can cancel rental
