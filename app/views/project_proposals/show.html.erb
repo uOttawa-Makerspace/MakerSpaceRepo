@@ -1,6 +1,6 @@
 <% provide(:title, @project_proposal.title.to_s) %>
 
-<section class="row container mx-auto mt-3">
+<section class="row">
     <section class="col-lg-8 order-lg-first order-last">
         <h1 class="border-bottom d-lg-block d-none mb-3"><%= @project_proposal.title %></h1>
         <% if @project_proposal.youtube_link.present? %>
@@ -123,9 +123,6 @@
 
     <section id="info" class="col-lg-4">
         <h1 class="border-bottom d-lg-none"><%= @project_proposal.title %></h1>
-        <% if @project_proposal.user_id.eql?(@user.id) || @user.role.eql?("admin") %>
-            <%= link_to fa_icon('pencil', text: t('project_proposal.edit_proposal')), edit_project_proposal_path(@project_proposal), class: 'btn btn-secondary mb-3' %>
-        <% end %>
 
         <div>
             <p class="text-secondary"><%= t('project_proposal.proposed_by') %>
@@ -134,6 +131,10 @@
                     <%= link_to project_username, user_path(project_username) %>
                 <% else %>
                     <%= @project_proposal.try(:username) %>
+                <% end %>
+                <% if @project_proposal.user_id.eql?(@user.id) || @user.admin? %>
+                    <%= link_to fa_icon('pencil', text: t('project_proposal.edit_proposal')),
+                                edit_project_proposal_path(@project_proposal), class: 'btn btn-secondary mb-3 float-end' %>
                 <% end %>
             </p>
             <p class="text-secondary">
@@ -201,7 +202,7 @@
 
             <% if @user.admin? %>
                 <hr />
-                <p class="fw-bold">Project review</p>
+                <b>Project review</b>
                 <p><%= t('project_proposal.reviewed_by') %> <%= link_to @project_proposal.admin.username, user_path(@project_proposal.admin.username) %></p>
                 <div>
                     <div class="clearfix mb-3">
@@ -221,7 +222,8 @@
                     <hr />
 
                     <div class="clearfix">
-                        <p class="fw-bold">Admin tools</p>
+                        <b>Admin tools</b>
+                        <p>Create a revision or delete this proposal</p>
                         <%= button_to t('project_proposal.create_revision'),
                                       create_revision_project_proposals_path(old_project_proposal_id: @project_proposal.id),
                                       method: :post, class: 'btn btn-success float-start' %>
@@ -252,7 +254,7 @@
 <% if @repositories.present? %>
     <hr class="w-50 mx-auto"/>
     <h3><%= t('project_proposal.repos_related') %>:</h3>
-    <ul class="ms-3 list-group list-group-horizontal">
+    <ul class="mb-3 list-group list-group-horizontal">
         <li class="list-group-item"><%= t('project_proposal.sort_by') %>:</li>
         <li class="list-group-item"><%= link_to t('project_proposal.newest'), project_proposal_path(sort: :newest) %></li>
         <li class="list-group-item"><%= link_to t('project_proposal.most_likes'), project_proposal_path(sort: :most_likes) %></li>
