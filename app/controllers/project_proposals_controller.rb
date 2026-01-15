@@ -90,7 +90,7 @@ class ProjectProposalsController < SessionsController
 
     @categories = @project_proposal.categories
     @repositories =
-      @project_proposal.repositories.order([sort_order].to_h).page params[:page]
+      @project_proposal.repositories.order([sort_order].to_h).paginate(per_page: 9, page: params[:page])
     @photos = photo_hash
     @project_photos =
       @project_proposal.photos.joins(:image_attachment)&.first(5) || []

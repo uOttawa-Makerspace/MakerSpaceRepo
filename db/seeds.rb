@@ -19,7 +19,7 @@ OrderStatus.find_or_create_by(id: 2, name: "Completed")
 [
   "Makerspace",
   "MTC",
-  "Brunsfield Center",
+  "Brunsfield Centre",
   "PITS",
   "Makerlab 121",
   "Makerlab 119",

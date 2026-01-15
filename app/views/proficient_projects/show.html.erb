@@ -1,116 +1,118 @@
 <% provide(:title, 'Proficient Project') %>
-<section class="mx-5 <%= return_border_color(@proficient_project.level) %>">
-    <div>
-        <%= button_to 'Delete', @proficient_project, method: :delete, class: 'btn btn-danger float-start ms-5 mt-5', style: 'opacity: 0.5', data: { confirm: 'Are you sure? This will delete all the purchases and give all the users the CC points used to purchase this project.' } if current_user.admin? %>
-        <b class="float-start ms-5 mt-5 p-1">
-            <% if @proficient_project.cc.nil? || @proficient_project.cc.eql?(0) %>
-                FREE
-            <% else %>
-                <%= @proficient_project.cc %> Ccs
-            <% end %>
-        </b>
-        <%= link_to 'Edit', edit_proficient_project_path(@proficient_project.id), class: 'btn btn-primary float-end me-5 mt-5', style: 'opacity: 0.5' if current_user.admin? %>
+<!-- <section class="<%= return_border_color(@proficient_project.level) %>"> -->
+<% if @order_item.present? %>
+    <div class="text-center mb-3">
+        <h4 class="btn disabled pp-status-button"><%= @order_item.status %></h4>
     </div>
-    <% if @order_item.present? %>
-        <div class="text-center mb-3">
-            <h4 class="btn disabled pp-status-button"><%= @order_item.status %></h4>
-        </div>
+<% end %>
+<h1 class="text-center mb-3"><%= @proficient_project.title %></h1>
+<div class="row row-cols-auto justify-content-around mb-3">
+    <% training = @proficient_project.training %>
+    <% if training.present? %>
+        <%= render "badges/badge_icon", width: 230, height: 230, level: @proficient_project.level, name: training.localized_name, skill: training.skill_id %>
+    <% else %>
+        None
     <% end %>
-    <div class="text-center">
-        Badge that will be Awarded:
-        <br/>
-        <% training = @proficient_project.training %>
-        <% if training.present? %>
-            <%= render "badges/badge_icon", width: 230, height: 230, level: @proficient_project.level, name: training.localized_name, skill: training.skill_id %>
-        <% else %>
-            None
-        <% end %>
-    </div>
-    <div class="col-lg-7 mx-auto">
-        <br/>
-        <h2 class="text-center title"><%= sanitize @proficient_project.title %></h2>
-        <% if current_user.admin? %>
-            <%= form_tag project_requirements_path, method: :post do %>
-                <div class="w-auto d-inline-block">
+    <% if current_user.admin? %>
+        <div class="border rounded p-3 bg-body-tertiary">
+            <h2>Admin tools</h2>
+                <%= form_tag project_requirements_path, method: :post, class: 'mb-3' do %>
                     <%= hidden_field_tag(:id, @proficient_project.id) %>
-                    <% label_tag 'required_project_id', class: 'form-label' %>
-                    <%= select_tag 'required_project_id', options_from_collection_for_select(@proficient_projects_selected, 'id', 'title'), prompt: 'Select required project' %>
-                    <br>
-                    <%= submit_tag 'Add Required Project', class: 'btn btn-primary' %>
-                </div>
-            <% end %>
-        <% end %>
-        <div class="container my-4">
-            <div class="text-center">
-                <%= @proficient_project.training.localized_name %>
-                -
-                <%= @proficient_project.level %>
-            </div>
-
-            <div class="text-center">
-                Virtual Project - <%= @proficient_project.is_virtual? ? 'Yes' : 'No' %>
-            </div>
-
-            <% if @proficient_project.drop_off_location.present? %>
-                <div class="text-center">
-                    Drop-off location: <b><%= @proficient_project.drop_off_location.name %></b>
-                </div>
-            <% end %>
-            <br/>
-            <div class="row">
-                <div class="col-lg-12">
-                    <div class="jumbotron card bg-light text-center text-wrap">
-                        <%= sanitize @proficient_project.description %>
+                    <%= label_tag 'required_project_id', 'Prerequisite project for this project',  class: 'form-label' %>
+                    <div class="input-group">
+                        <%= select_tag 'required_project_id', options_from_collection_for_select(@proficient_projects_selected, 'id', 'title'),
+                                       prompt: 'Select required project', class: 'form-select' %>
+                        <%= submit_tag 'Add Required Project', class: 'btn btn-primary' %>
                     </div>
-                    <div id="show-photo">
-                        <%= image_tag @photos.first.image, alt: 'Proficient Project Image', data: { width: @photos.first.try(:width), height: @photos.first.try(:height) } %>
-                    </div>
-                    <div id="photo-slide">
-                        <% @photos.each do |p| %>
-                            <%= image_tag p.image, alt: 'Proficient Project Image', data: { width: p.width, height: p.height } %>
+                <% end %>
+
+                <div class="d-flex justify-content-between">
+                    <span class="border rounded bg-body p-2">
+                        <% if @proficient_project.cc.nil? || @proficient_project.cc.eql?(0) %>
+                            <%= t('proficient_projects.free') %>
+                        <% else %>
+                            <%= @proficient_project.cc %> Ccs
                         <% end %>
-                    </div>
+                    </span>
+
+                    <%= link_to fa_icon(:pencil, text: 'Edit'), edit_proficient_project_path(@proficient_project.id), class: 'btn btn-secondary' %>
+
+                    <%= button_to fa_icon(:trash, text: 'Delete'), @proficient_project, method: :delete, class: 'btn btn-danger',
+                                  data: { confirm: 'Are you sure? This will delete all the purchases and give all the users the CC points used to purchase this project.' } %>
+                </div>
+        </div>
+    <% end %>
+</div>
+<div class="col-lg-7 mx-auto">
+    <div class="container my-4">
+        <div class="text-center">
+            <%= @proficient_project.training.localized_name %>
+            -
+            <%= @proficient_project.level %>
+        </div>
+
+        <div class="text-center">
+            Virtual Project - <%= @proficient_project.is_virtual? ? 'Yes' : 'No' %>
+        </div>
+
+        <% if @proficient_project.drop_off_location.present? %>
+            <div class="text-center">
+                Drop-off location: <b><%= @proficient_project.drop_off_location.name %></b>
+            </div>
+        <% end %>
+        <br/>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="jumbotron card bg-body-tertiary text-center text-wrap">
+                    <%= sanitize @proficient_project.description %>
+                </div>
+                <div id="show-photo">
+                    <%= image_tag @photos.first.image, alt: 'Proficient Project Image', data: { width: @photos.first.try(:width), height: @photos.first.try(:height) } %>
+                </div>
+                <div id="photo-slide">
+                    <% @photos.each do |p| %>
+                        <%= image_tag p.image, alt: 'Proficient Project Image', data: { width: p.width, height: p.height } %>
+                    <% end %>
                 </div>
             </div>
         </div>
-
-        <% if @order_item&.status == "In progress" %>
-            <%= form_for :order_item, url: complete_project_proficient_projects_path, method: :put, multipart: true, html: { id: 'submit-project-form' }, data: { confirm: 'Are you sure you want to submit this project? Please make sure you have dropped off your project at the specified location before submitting.' } do |f| %>
-                <%= hidden_field_tag(:id, @proficient_project.id) %>
-                <div class='mb-3'>
-                    <%= f.label :user_comments, 'Add comments:', class: 'form-label' %>
-                    <%= f.trix_editor :user_comments, class: 'form-control mb-3' %>
-                    <%= f.label :files, 'Attach files:', class: 'form-label mb-0' %>
-                    <div class="text-muted mb-2">Allowed file types: PDF, Images, Programming Files, 3D Modeling</div>
-                    <%= f.file_field :files, multiple: true, class: 'form-control' %>
-                </div>
-
-                <div class="text-center">
-                    <p>If you think you <b>fully</b> understand the proficient project, you can click on the button to complete the proficient project. It will then be reviewed by an admin in about 5 business days.</p>
-                    <%= f.submit 'Submit Project', class: 'btn btn-primary' %>
-                    <br><br>
-                </div>
-            <% end %>
-        <% end %>
-
-        <% if @order_item&.status == "Awarded" || @order_item&.status == "Revoked" %>
-            <div class="p-4 gap-1 card bg-light text-wrap">
-                Admin Comments:
-                <p class="m-0"><%= @order_item.admin_comments == '' ? 'None' : sanitize(@order_item.admin_comments) %></p>
-            </div>
-        <% end %>
-
     </div>
 
-    <% if @valid_urls.present? %>
-        <div class="col-lg-12">
-            <% @valid_urls.each do |url| %>
-                <iframe width="100%" height="600px" src="<%= url %>"></iframe>
-            <% end %>
+    <% if @order_item&.status == "In progress" %>
+        <%= form_for :order_item, url: complete_project_proficient_projects_path, method: :put, multipart: true, html: { id: 'submit-project-form' }, data: { confirm: 'Are you sure you want to submit this project? Please make sure you have dropped off your project at the specified location before submitting.' } do |f| %>
+            <%= hidden_field_tag(:id, @proficient_project.id) %>
+            <div class='mb-3'>
+                <%= f.label :user_comments, 'Add comments:', class: 'form-label' %>
+                <%= f.trix_editor :user_comments, class: 'form-control mb-3' %>
+                <%= f.label :files, 'Attach files:', class: 'form-label mb-0' %>
+                <div class="text-muted mb-2">Allowed file types: PDF, Images, Programming Files, 3D Modeling</div>
+                <%= f.file_field :files, multiple: true, class: 'form-control' %>
+            </div>
+
+            <div class="text-center">
+                <p>If you think you <b>fully</b> understand the proficient project, you can click on the button to complete the proficient project. It will then be reviewed by an admin in about 5 business days.</p>
+                <%= f.submit 'Submit Project', class: 'btn btn-primary' %>
+                <br><br>
+            </div>
+        <% end %>
+    <% end %>
+
+    <% if @order_item&.status == "Awarded" || @order_item&.status == "Revoked" %>
+        <div class="p-4 gap-1 card bg-light text-wrap">
+            Admin Comments:
+            <p class="m-0"><%= @order_item.admin_comments == '' ? 'None' : sanitize(@order_item.admin_comments) %></p>
         </div>
     <% end %>
 
-</section>
+</div>
+
+<% if @valid_urls.present? %>
+    <div class="col-lg-12">
+        <% @valid_urls.each do |url| %>
+            <iframe width="100%" height="600px" src="<%= url %>" loading="lazy"></iframe>
+        <% end %>
+    </div>
+<% end %>
 
 <% @videos.each do |f| %>
     <% f.video.each do |video| %>
@@ -123,12 +125,10 @@
 
 <% @files.each do |f| %>
     <div class="ratio ratio-16x9">
-        <iframe src="<%= url_for(f.file) %>" allowfullscreen></iframe>
+        <iframe src="<%= url_for(f.file) %>" allowfullscreen loading="lazy"></iframe>
         <br/>
     </div>
 <% end %>
-
-
 
 <% if !@project_requirements.blank? %>
     <br/>
