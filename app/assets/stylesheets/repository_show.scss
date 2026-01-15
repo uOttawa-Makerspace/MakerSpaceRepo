@@ -18,6 +18,7 @@ div#photo-slide {
   height: 5rem;
   white-space: nowrap;
   overflow-x: scroll;
+  overflow-y: clip;
 
   img {
     display: inline-block;
