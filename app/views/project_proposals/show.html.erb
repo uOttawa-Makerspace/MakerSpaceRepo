@@ -181,25 +181,29 @@
             <% end %>
             <% if @user.admin? %>
                 <div>
-                    <p class="text-secondary">Validation:</p>
-                    <% case @project_proposal.approved
-                    when 0 %>
-                        <div class="declined"><%= t('project_proposal.validation.declined') %></div>
-                    <% when 1 %>
-                        <div class="approved"><%= t('project_proposal.validation.approved') %></div>
-                    <% when nil %>
-                        <div><%= t('project_proposal.validation.not_validated') %></div>
-                    <% end %>
+                    <p class="text-secondary">Validation:
+                        <% case @project_proposal.approved
+                        when 0 %>
+                            <span class="text-danger"><%= t('project_proposal.validation.declined') %></span>
+                        <% when 1 %>
+                            <span class="text-success"><%= t('project_proposal.validation.approved') %></span>
+                        <% when nil %>
+                            <span><%= t('project_proposal.validation.not_validated') %></span>
+                        <% end %>
+                    </p>
                 </div>
             <% end %>
-            <% if @categories.present? %>
-                <div class="repo-info-item">
-                    <p class="text-secondary">Categories</p>
-                    <% @categories.each do |t| %>
-                        <span class="tags"><%= link_to t.name, category_path(slug: t.name.gsub(' ', '-').downcase) %></span>
+
+            <div class="mb-3">
+                <b><%= t('repository.categories') %></b>
+                <ul class="list-group mb-3">
+                    <% @project_proposal.categories.find_each do |category| %>
+                        <%= link_to category.name, category_path(slug: category.name.gsub(' ', '-').downcase),
+                                    class: "list-group-item list-group-item-action text-primary" %>
                     <% end %>
-                </div>
-            <% end %>
+                </ul>
+            </div>
+
             <% if @user.id.present? %>
                 <div class="repo-info-item">
                     <%= link_to t('project_proposal.document_project'), new_repository_path(@user.username, project_proposal_id: @project_proposal.id), method: :get,
@@ -249,14 +253,12 @@
         <li class="list-group-item"><%= link_to t('project_proposal.most_makes'), project_proposal_path(sort: :most_makes) %></li>
         <li class="list-group-item"><%= link_to t('project_proposal.recently_updated'), project_proposal_path(sort: :recently_updated) %></li>
     </ul>
-    <div class="pagination"><%= will_paginate @repositories, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %></div>
-    <div class="row gx-1 gy-2">
+    <div class="row gx-1 gy-2 mb-3">
         <% @repositories.each do |repository| %>
             <div class="col-md-4 col-lg-4">
                 <%= render 'repositories/repository_card', repository: %>
             </div>
         <% end %>
-    </div>    
+    </div>
+    <%= will_paginate @repositories, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
 <% end %>
-
-<%= render 'layouts/photoswipe' %>
