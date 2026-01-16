@@ -70,7 +70,7 @@
 
     <hr />
 
-    <div class="text-center">
+    <div class="text-center border rounded bg-body-tertiary p-3">
         <% if LockerOption.lockers_enabled %>
             <span class="fs-2"><%= fa_icon :check, class: 'text-success' %> New locker rentals are enabled.</span>
             <%= button_to 'Click here to disable locker rentals', enabled_lockers_path,
@@ -80,6 +80,8 @@
             <%= button_to 'Click here to enable locker rentals', enabled_lockers_path,
                                                 method: :put, params: {value: 't'}, class: 'btn btn-success' %>
         <% end %>
+        <p>Enabling lockers will enable <%= link_to "locker request form submissions", locker_rentals_path %>,
+            and will display links to it on the homepage and resources header dropdown.</p>
     </div>
 
     <hr />
