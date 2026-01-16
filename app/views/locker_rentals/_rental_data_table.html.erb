@@ -21,7 +21,7 @@
                         <td class="dt-center">
                             <%= link_to "##{rental.locker&.specifier}", rental, class: 'link' %>
                         </td>
-                        <td><%= link_to rental.rented_by.username, user_path(rental.rented_by) %>
+                        <td><%= link_to rental.rented_by.username, user_path(rental.rented_by.username) %>
                             <%= tag.span(rental.rented_by.role.humanize, class: 'badge text-bg-primary') if rental.rented_by.staff? %></td>
                         <td data-search="<%= rental.state %>">
                             <%= tag.i class: "fa #{rental.state_icon}" %> <%= t("lockers.state.#{rental.state}") %>
