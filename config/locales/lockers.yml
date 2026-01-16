@@ -20,14 +20,14 @@ en:
     locker_id: Locker ID
     rented_by: Rented by
     details: Details
-    submitted_on_for: Submitted on
+    submitted_on: Submitted on
     for: for
     paid_on: Paid on
     notes: Notes
 
     state:
       state: State
-      reviewing: Reviewing
+      reviewing: Pending review
       await_payment: Await payment
       active: Active
       cancelled: Cancelled
@@ -66,7 +66,7 @@ fr:
 
     state:
       state: État
-      reviewing: Révision
+      reviewing: En attente de révision
       await_payment: Attendre le paiement
       active: Active
       cancelled: Annulée
