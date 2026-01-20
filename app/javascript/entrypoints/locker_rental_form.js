@@ -11,4 +11,6 @@ document.addEventListener("turbo:load", function () {
       },
     },
   });
+
+  new TomSelect("#locker_id");
 });

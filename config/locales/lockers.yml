@@ -88,6 +88,10 @@ fr:
 
     actions:
       cancel_rental: Annuler la demande
+      cancel_request_description: |
+        Réfuser or annuler cette demande.
+        L'utilisateur sera notifié de l'annulation or réfusal de sa demande.
+        Le casier sera disponible pour une nouvelle affectation.
 
     new_request:
       header: Nouvelle demande de casier

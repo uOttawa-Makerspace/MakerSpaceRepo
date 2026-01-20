@@ -16,16 +16,18 @@
         <% end %>
 
         <div class="card">
-            <%= image_tag "locker/STEM_lockers.jpg", class: "card-img-top" %>
+            <%= image_tag "locker/STEM_lockers.jpg", class: "card-img-top object-fit-cover", style: "height: 10rem" %>
             <div class="card-body">
                 <p class="fs-3 card-title">CEED Lockers</p>
-                <% if @own_locker_rentals.pending.any? %>
+                <% if @own_locker_rentals.reviewing.any? %>
                     <span class="badge text-bg-secondary">Under review</span>
+                <% elsif @own_locker_rentals.await_payment.any? %>
+                    <span class="badge text-bg-info">Awaiting payment</span>
                 <% end %>
                 <p class="card-text">Various lockers located around the STEM building</p>
                 <p class="card-text"><small class="text-body-secondary">$<%= @locker_rental_price %> per semester</small></p>
                 <% if @own_locker_rentals.pending.any? %>
-                    <%= link_to 'Review request', new_locker_rental_path, class: 'btn btn-primary stretched-link' %>
+                    <%= link_to 'Review request', @own_locker_rentals.pending.first, class: 'btn btn-primary stretched-link' %>
                 <% else %>
                     <%= link_to new_locker_rental_path, class: 'btn btn-success stretched-link' do %>
                         <%= fa_icon :plus %> Request a locker

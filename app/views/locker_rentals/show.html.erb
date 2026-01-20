@@ -23,26 +23,39 @@
             No repository linked with this student request
         <% end if @locker_rental.requested_as_student? %>
     </div>
-    <% if @locker_rental.notes.present? %>
-        <div class="col-md">
+    <div class="col-md">
+        <% if @locker_rental.notes.present? %>
             <h2 class="card-title"><%= t('lockers.notes') %></h2>
             <p><%= @locker_rental.notes %></p>
-        </div>
-    <% end %>
-</div>
-<% if @locker_rental.pending? %>
-    <% if @locker_rental.reviewing? %>
-        <p>This request has not been approved yet.</p>
-    <% elsif @locker_rental.await_payment? %>
-        <p>This request is awaiting payment.
-            <% if @locker_rental.rented_by == current_user %>
-                <%= link_to('Click here to proceed to checkout', @locker_rental.checkout_link) %>
-            <% end %>
-        </p>
-    <% end %>
+        <% end %>
 
-    <p>To cancel this request, click on <b>Cancel</b> below.</p>
-<% end %>
+        <% if @locker_rental.pending? %>
+            <% if @locker_rental.reviewing? %>
+                <p>This request has not been approved yet.</p>
+            <% elsif @locker_rental.await_payment? %>
+                <div class="card bg-info-subtle mb-3">
+                    <div class="card-body">
+                        <p>Your locker has been approved, and is ready for checkout.</p>
+                    </div>
+                    <div class="card-footer">
+                        <%= link_to 'Checkout', @locker_rental.checkout_link, class: 'btn btn-info stretched-link float-end' %>
+                    </div>
+                </div>
+            <% end %>
+
+            <div class="card bg-danger-subtle">
+                <div class="card-body">
+                    <p>You can cancel your request now before paying the locker rental fee.
+                        The locker rental fee is non-refundable.</p>
+                </div>
+                <%= form_with model: @locker_rental, class: 'card-footer' do |f| %>
+                    <%= f.hidden_field :state, value: 'cancelled' %>
+                    <%= f.button 'Cancel rental', class: 'btn btn-danger float-end', data: { confirm: "Are you sure you want to cancel this locker?" } %>
+                <% end %>
+            </div>
+        <% end %>
+    </div>
+</div>
 
 <hr />
 <%= form_with model: @locker_rental do |f| %>
@@ -56,7 +69,7 @@
         <div class="col-md">
             <% if current_user.staff? && !@locker_rental.cancelled? %>
                 <%= f.select :locker_id,
-                  options_for_select(Locker.order_by_specifier.available.pluck(:specifier, :id).map{ |specifier, id| ["Locker ##{specifier}", id]}),
+                    options_for_select(Locker.order_by_specifier.available.pluck(:specifier, :id).map{ |specifier, id| ["Locker ##{specifier}", id]}),
                  {prompt: 'Select a locker...'}, { class: 'form-select'} %>
                 <div class="input-group">
                     <%= f.date_field :owned_until, value: end_of_this_semester, class: 'form-control' %>

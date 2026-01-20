@@ -16,6 +16,6 @@
 </div>
 <%= render partial: 'rental_data_table', locals: { locker_rentals: LockerRental.not_cancelled } %>
 
-<h2>Cancelled and finished requests</h2>
-<p>List of locker rentals that are finished.</p>
-<%#= render partial: 'rental_data_table', locals: {locker_rentals: LockerRental.cancelled } %>
+<h2>Cancelled, rejected, and finished requests</h2>
+<p>List of locker rentals that are no longer relevant.</p>
+<%= render partial: 'rental_data_table', locals: {locker_rentals: LockerRental.cancelled } %>
