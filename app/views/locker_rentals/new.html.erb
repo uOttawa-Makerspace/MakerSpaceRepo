@@ -1,17 +1,9 @@
 <% provide :title, 'Request a locker' %>
 
 <div class="container">
-    <h1 class="text-center pt-3">New Locker Request</h1>
+    <h1 class="text-center pt-3"><%= t('lockers.new_request.header') %></h1>
     <hr class="w-50 mx-auto" />
-    <p>Here you can submit a request for a locker. Once sent, you'll be notified once your request is approved and payment is received.
-        You may cancel your request before it is paid, however once paid the locker rental fee is non-refundable.</p>
-    <p>You may be approved for a locker free of charge if you are:</p>
-    <ul>
-        <li>a GNG1103, GNG2101, or GNG5140 student, or</li>
-        <li>a staff member.</li>
-    </ul>
-    <p>For any questions, contact us at <a href="mailto:ceed@uottawa.ca">ceed@uottawa.ca</a></p>
-    <p>You may have only one pending request at a time.</p>
+    <%= t('lockers.new_request.description_html') %>
     <hr />
     <% if !LockerOption.lockers_enabled %>
         Locker requests are not currently accepted.
@@ -33,7 +25,7 @@
                 <p class="mb-3">If applying as a GNG student, please provide a link to your repository page here to help speed up your application</p>
                 <%= f.select :repository_id, options_for_select(@user_repositories),
                  {prompt: @user_repositories.empty? ? 'No repositories are linked to your account' : 'Select a repository'},
-                 {class: 'form-select mb-3', disabled: @user_repositories.empty?, required: true} %>
+                 {class: 'form-select mb-3', disabled: @user_repositories.empty? } %>
             </fieldset>
             <%= f.label :notes, 'Notes with request:' %>
             <%= f.text_area :notes, class: 'form-control mb-3' %>

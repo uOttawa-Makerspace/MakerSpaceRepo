@@ -32,14 +32,6 @@ function setupRentalTable() {
     language: {
       emptyTable: "Nothing.",
     },
-    // FIXME what is this even doing here
-    // search: {
-    //   fixed: {
-    //     rentals: (a, b, c) => {
-    //       return false;
-    //     },
-    //   },
-    // },
   });
 
   table

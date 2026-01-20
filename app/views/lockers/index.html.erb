@@ -3,7 +3,13 @@
 <div>
     <h1 class="text-center">Locker Management</h1>
     <details class="mb-3">
+        <summary>Assign a locker</summary>
+        <p>Assign a locker to someone, active immediately. The locker owner will be notified by email. Intended to assign lockers to staff.</p>
+        <%= render 'locker_rentals/assign_locker_form' %>
+    </details>
+    <details class="mb-3">
         <summary>Make new lockers</summary>
+        <p>Create lockers with numbers start from up to and including end of range. For example, 100 to 150 would create 50 lockers named 100, 101, 102...</p>
         <%= form_with controller: :lockers do |f| %>
             <div class="d-md-flex align-items-baseline">
                 <span class="me-3">
@@ -87,7 +93,7 @@
     <hr />
 
     <fieldset class="border p-3">
-        <legend class="w-auto float-none">Lockers available</legend>
+        <legend class="w-auto float-none">Lockers</legend>
         <% if @lockers.blank? %>
             <p>There are no lockers on record.</p>
         <% else %>

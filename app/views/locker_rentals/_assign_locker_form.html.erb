@@ -1,4 +1,4 @@
-<%= form_with model: @locker_rental, class: 'container' do |f| %>
+<%= form_with model: @locker_rental do |f| %>
     <div class="row mb-3">
         <div class="col-md-2">
             <%= f.label :locker_selected, "Select a locker" %>
@@ -14,7 +14,7 @@
             <%= f.label :rented_by_username, class: 'form-label' %>
         </div>
         <div class="col-md">
-            <%= f.select :rented_by_username, options_for_select([]), { prompt: 'Select user...' }, { class: 'form-select', data: {user_search_bar: ''} } %>
+            <%= f.select :rented_by_username, options_for_select([]), { prompt: 'Select user...' }, { autocomplete: 'new-password', class: 'form-select', data: {user_search_bar: ''} } %>
         </div>
     </div>
     <div class="row mb-3">
