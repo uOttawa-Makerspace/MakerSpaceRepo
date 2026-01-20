@@ -14,9 +14,11 @@ class LockerRental < ApplicationRecord
   belongs_to :decided_by, class_name: 'User', optional: true
   # optional because some students don't always have a repository ready beforehand
   belongs_to :repository, optional: true
+  belongs_to :course_name, optional: true
 
   after_save :send_email_notification
   after_save :sync_shopify_draft_order
+  after_save :log_locker_rental_modification
 
   enum :state,
        {
@@ -72,6 +74,11 @@ class LockerRental < ApplicationRecord
 
   # Locker rental always has an owner
   validates :rented_by, presence: true
+
+  # If rented by a GNG student, make sure details are given
+  # validates :course_name, presence: true, if: :requested_as_student?
+  # validates :section_name, presence: true, if: :requested_as_student?
+  # validates :team_name, presence: true, if: :requested_as_student?
 
   # Scopes to aid sorting rentals
   scope :pending, -> { where(state: %i[reviewing await_payment]) }
@@ -131,6 +138,10 @@ class LockerRental < ApplicationRecord
     end
   end
 
+  def log_locker_rental_modification
+    
+  end
+  
   # Fetch checkout link from shopify .Returns nil if API call fails or checkout
   # is not possible now.
   def checkout_link

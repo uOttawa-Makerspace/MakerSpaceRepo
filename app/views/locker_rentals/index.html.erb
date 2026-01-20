@@ -40,7 +40,7 @@
     <hr />
 
     <details>
-        <summary>Locker history</summary>
+        <summary>My locker history</summary>
         <%= render partial: 'rental_data_table',
                    locals: { locker_rentals: @own_locker_rentals.order(:state),
                        header_title: t('lockers.your_locker_requests'), hide_actions: true } %>

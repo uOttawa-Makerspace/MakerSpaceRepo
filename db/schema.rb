@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_01_11_182102) do
+ActiveRecord::Schema[7.2].define(version: 2026_01_16_213131) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_trgm"
@@ -673,6 +673,10 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_11_182102) do
     t.date "paid_at"
     t.bigint "decided_by_id"
     t.bigint "locker_id"
+    t.bigint "course_name_id"
+    t.string "section_name"
+    t.string "team_name"
+    t.index ["course_name_id"], name: "index_locker_rentals_on_course_name_id"
     t.index ["decided_by_id"], name: "index_locker_rentals_on_decided_by_id"
     t.index ["locker_id"], name: "index_locker_rentals_on_locker_id"
     t.index ["rented_by_id"], name: "index_locker_rentals_on_rented_by_id"

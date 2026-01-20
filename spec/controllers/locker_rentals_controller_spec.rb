@@ -322,6 +322,36 @@ RSpec.describe LockerRentalsController, type: :controller do
         expect(last_rental.state).to eq "reviewing"
       end
 
+      it "should require GNG project information" do
+        # Missing course information
+        expect do
+          post :create,
+               params: {
+                 locker_rental: attributes_for(:locker_rental, :student, :with_repository)
+                   
+               }
+        end.to change { LockerRental.count }.by(0)
+        
+        rental_attributes = attributes_for(:locker_rental,
+                                  :student,
+                                  :with_repository,
+                                  :with_section_information)
+        expect do
+          post :create,
+               params: {
+                 locker_rental: rental_attributes
+               }
+        binding.pry
+        end.to change { LockerRental.count }.by(1)
+        last_rental = LockerRental.last
+        
+        expect(last_rental.rented_by_id).to eq @current_user.id
+        expect(last_rental.state).to eq "reviewing"
+        
+        expect(last_rental.section_name).to eq rental_attributes.section_name
+        expect(last_rental.team_name).to eq rental_attributes.team_name
+      end
+
       it "should prevent requests when rentals are disabled" do
         LockerOption.lockers_enabled = false
         expect do
