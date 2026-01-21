@@ -26,25 +26,25 @@
                     <%= link_to @locker_rental.repository.title, repository_path(@locker_rental.rented_by.username, @locker_rental.repository.id) %>.
                 <% end %>
                 Team name is <%= begin
-                                   tag.b {@locker_rental.team_name}
-                                 rescue StandardError
-                                   "not given"
-                                 end %>,
+                             tag.b {@locker_rental.team_name}
+                             rescue StandardError
+                             "not given"
+                             end %>,
                 course is <%= begin
-                                tag.b{ @locker_rental.course_name.name }
-                              rescue StandardError
-                                "not given"
-                              end %> section <%= begin
-                                                                                                           tag.b { @locker_rental.section_name }
-                                                                                                         rescue StandardError
-                                                                                                           "not given"
-                                                                                                         end %>
+                          tag.b{ @locker_rental.course_name.name }
+                          rescue StandardError
+                          "not given"
+                          end %> section <%= begin
+                                         tag.b { @locker_rental.section_name }
+                                         rescue StandardError
+                                         "not given"
+                                         end %>
             </p>
         <% end %>
     </div>
     <div class="col-md">
         <% if @locker_rental.notes.present? %>
-            <div class="card">
+            <div class="card mb-3">
                 <h2 class="card-header"><%= t('lockers.notes') %></h2>
                 <div class="card-body">
                     <p class="card-text"><%= @locker_rental.notes %></p>
@@ -94,7 +94,7 @@
         <div class="col-md">
             <% if current_user.staff? && !@locker_rental.cancelled? %>
                 <%= f.select :locker_id,
-                    options_for_select(Locker.order_by_specifier.available.pluck(:specifier, :id).map{ |specifier, id| ["Locker ##{specifier}", id]}),
+                  options_for_select(Locker.order_by_specifier.available.pluck(:specifier, :id).map{ |specifier, id| ["Locker ##{specifier}", id]}),
                  {prompt: 'Select a locker...'}, { class: 'form-select'} %>
                 <div class="input-group">
                     <%= f.date_field :owned_until, value: end_of_this_semester, class: 'form-control' %>
@@ -108,7 +108,7 @@
         <div class="row row-cols-lg-3 gx-2 gy-1">
             <% if @locker_rental.reviewing? %>
                 <div>
-                    <div class="bg-success-subtle rounded border border-success p-3 h-100">
+                    <div class="bg-success-subtle rounded border border-success p-3 h-100 d-flex flex-column justify-content-between">
                         <p>Email user a notification that their locker is ready for payment. Once paid the locker will be automatically assigned.</p>
                         <%= f.button 'Send to checkout', name: 'locker_rental[state]', value: 'await_payment', class: 'btn btn-success', data: {confirm: "Are you sure you want to send to checkout?"} %>
                     </div>
@@ -116,7 +116,7 @@
             <% end %>
 
             <div>
-                <div class="bg-info-subtle rounded border border-info p-3 h-100">
+                <div class="bg-info-subtle rounded border border-info p-3 h-100 d-flex flex-column justify-content-between">
                     <p>Emails user a notification that a locker has been assigned or moved.
                         Immediately assigns a locker without asking for payment.</p>
                     <%= f.button name: 'locker_rental[state]', value: 'active', class: 'btn btn-info', data: {confirm: "Are you sure you want to assign this locker?"} do %>
@@ -132,7 +132,7 @@
             <%# Staff can cancel any rental. %>
             <% if (current_user.staff? && !@locker_rental.cancelled?) || @locker_rental.pending? %>
                 <div>
-                    <div class="bg-danger-subtle rounded border border-danger p-3 h-100">
+                    <div class="bg-danger-subtle rounded border border-danger p-3 h-100 d-flex flex-column justify-content-between">
                         <p><%= t('lockers.actions.cancel_request_description') %></p>
                         <%= f.button 'Cancel rental', name: 'locker_rental[state]', value: 'cancelled',
                          class: 'btn btn-danger', data: {confirm: "Are you sure you want to cancel this locker?"} %>

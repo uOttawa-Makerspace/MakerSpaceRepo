@@ -1,0 +1,20 @@
+<% provide(:title, "Locker #{@locker.specifier} history") %>
+<h1 class="text-center">Locker <%= @locker.specifier %></h1>
+<div class="text-center">
+    <%= link_to fa_icon('arrow-left', text: "Back"), lockers_path %>
+</div>
+
+<% if @active_locker_rental %>
+    <div>
+        <p>Locker is currently occupied, owned by <%= link_to @active_locker_rental.rented_by.username, user_path(@active_locker_rental.rented_by.username) %></p>
+    </div>
+<% end %>
+<%# only picks up rentals attached to this locker. %>
+<% @locker.locker_rentals.order(created_at: :desc).each do |rental| %>
+    <%= link_to locker_rental_path(rental), class: 'd-block text-body rounded border p-3' do %>
+        <%= rental.created_at.to_date.to_formatted_s :long %>
+        Owned by <b><%= rental.rented_by.username %></b>
+        until <%= rental.owned_until.to_date.to_formatted_s :long %>
+        state is <%= rental.state %>
+    <% end %>
+<% end %>

@@ -12,5 +12,7 @@ document.addEventListener("turbo:load", function () {
     },
   });
 
-  new TomSelect("#locker_id");
+  if (document.querySelector("#locker_id")) {
+    new TomSelect("#locker_id");
+  }
 });
