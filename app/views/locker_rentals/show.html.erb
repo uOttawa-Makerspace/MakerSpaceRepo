@@ -7,7 +7,11 @@
         <p><%= t('lockers.submitted_on') %> <b><%= @locker_rental.created_at.to_date %></b> <%= t('lockers.for') %>
             <%= link_to @locker_rental.rented_by.username, user_url(@locker_rental.rented_by.username) %>
             <%= tag.span(@locker_rental.rented_by.role.humanize, class: 'badge text-bg-primary') if @locker_rental.rented_by.staff? %></p>
-        <p><b><%= t('lockers.locker') %>:</b> <%= @locker_rental.locker&.specifier || '-' %></p>
+        <p>
+            <b><%= t('lockers.locker') %>:</b> <%= @locker_rental.locker&.specifier || '-' %>
+            <br /> <b>Preferred locker:</b> <%= @locker_rental.preferred_locker&.specifier %>
+        </p>
+        <p></p>
         <p><b><%= t('lockers.state.state') %>:</b> <%= @locker_rental.state.humanize %>
             <% if @locker_rental.expired? %>
                 | <span class="text-danger"><%= fa_icon :times %> Expired</span>
@@ -16,17 +20,36 @@
         <p><b><%= t('lockers.paid_on') %>:</b> <%= @locker_rental.paid_at&.to_date&.to_fs(:long) || '-' %></p>
         <p><b>Approved by:</b> <%= @locker_rental.decided_by&.name %></p>
         <p><b>Requested as:</b> <%= @locker_rental.requested_as&.humanize %></p>
-        <% if @locker_rental.repository %>
-            <b>Repository linked to this locker rental request:</b>
-            <%= link_to @locker_rental.repository.title, repository_path(@locker_rental.rented_by.username, @locker_rental.repository.id) %>
-        <% else %>
-            No repository linked with this student request
-        <% end if @locker_rental.requested_as_student? %>
+        <% if @locker_rental.requested_as_student? %>
+            <p class="d-block ms-md-3">
+                <% if @locker_rental.repository %>
+                    <%= link_to @locker_rental.repository.title, repository_path(@locker_rental.rented_by.username, @locker_rental.repository.id) %>.
+                <% end %>
+                Team name is <%= begin
+                                   tag.b {@locker_rental.team_name}
+                                 rescue StandardError
+                                   "not given"
+                                 end %>,
+                course is <%= begin
+                                tag.b{ @locker_rental.course_name.name }
+                              rescue StandardError
+                                "not given"
+                              end %> section <%= begin
+                                                                                                           tag.b { @locker_rental.section_name }
+                                                                                                         rescue StandardError
+                                                                                                           "not given"
+                                                                                                         end %>
+            </p>
+        <% end %>
     </div>
     <div class="col-md">
         <% if @locker_rental.notes.present? %>
-            <h2 class="card-title"><%= t('lockers.notes') %></h2>
-            <p><%= @locker_rental.notes %></p>
+            <div class="card">
+                <h2 class="card-header"><%= t('lockers.notes') %></h2>
+                <div class="card-body">
+                    <p class="card-text"><%= @locker_rental.notes %></p>
+                </div>
+            </div>
         <% end %>
 
         <% if @locker_rental.pending? %>
@@ -43,7 +66,7 @@
                 </div>
             <% end %>
 
-            <div class="card bg-danger-subtle">
+            <div class="card bg-danger-subtle mb-3">
                 <div class="card-body">
                     <p>You can cancel your request now before paying the locker rental fee.
                         The locker rental fee is non-refundable.</p>
@@ -54,6 +77,10 @@
                 <% end %>
             </div>
         <% end %>
+
+        <%= link_to current_user.staff? ? admin_locker_rentals_path : locker_rentals_path, class: 'btn btn-secondary' do %>
+            <i class="fa fa-arrow-left"></i> Back to locker rentals
+        <% end %>
     </div>
 </div>
 
@@ -61,9 +88,7 @@
 <%= form_with model: @locker_rental do |f| %>
     <div class="row justify-content-between gy-3 mb-3">
         <div class="col-md-auto">
-            <%= link_to current_user.staff? ? admin_locker_rentals_path : locker_rentals_path, class: 'btn btn-secondary' do %>
-                <i class="fa fa-arrow-left"></i> Back to locker rentals
-            <% end %>
+
         </div>
 
         <div class="col-md">

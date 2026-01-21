@@ -138,6 +138,7 @@ class LockerRentalsController < SessionsController
 
   def locker_rental_params
     common_permitted = %i[
+      preferred_locker_id
       notes
       requested_as
       repository_id

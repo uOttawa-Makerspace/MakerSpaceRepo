@@ -20,8 +20,8 @@
                     <%= f.select :requested_as, options_for_select(@available_fors), {}, { class: 'form-select w-auto', required: true } %>
                 </div>
                 <div>
-                    <%= f.label :preferred_locker, 'You can request for a locker, if it is available', class: 'form-label' %>
-                    <%= f.collection_select :preferred_locker, Locker.available, :id, :specifier, {}, {class: 'form-select'} %>
+                    <%= f.label :preferred_locker_id, 'You can request for a locker, if it is available', class: 'form-label' %>
+                    <%= f.collection_select :preferred_locker_id, Locker.available, :id, :specifier, {}, {class: 'form-select'} %>
                     <div class="form-text">Locker location is dependent on availability.</div>
                 </div>
             </div>

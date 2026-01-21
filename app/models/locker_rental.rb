@@ -10,6 +10,7 @@ class LockerRental < ApplicationRecord
 
   # Associated when assigned
   belongs_to :locker, optional: true
+  belongs_to :preferred_locker, class_name: 'Locker', optional: true
   belongs_to :rented_by, class_name: 'User'
   belongs_to :decided_by, class_name: 'User', optional: true
   # optional because some students don't always have a repository ready beforehand
