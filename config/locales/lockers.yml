@@ -30,13 +30,16 @@ en:
       reviewing: Pending review
       await_payment: Await payment
       active: Active
-      cancelled: Cancelled
+      cancelled: Ended
     assigned_on: Assigned on
     owned_until: Owned until
 
     actions:
       cancel_request: Cancel request
-      cancel_request_description: Refuse or cancel this request. User will be notified of their request being cancelled or refused. The locker will become free to be re-assigned after.
+      cancel_request_description: Refuse this request. User will be notified of their request being rejected.
+      end_rental_description: |
+        End this locker rental. User will be notified by email.
+        If given a grace period, they will be informed that they have one week to clear the locker.
 
     new_request:
       header: New locker request
@@ -82,7 +85,7 @@ fr:
       reviewing: En attente de révision
       await_payment: Attendre le paiement
       active: Active
-      cancelled: Annulée
+      cancelled: Terminée
     assigned_on: Assigné le
     owned_until: Possédée jusqu'à
 
@@ -92,6 +95,8 @@ fr:
         Réfuser or annuler cette demande.
         L'utilisateur sera notifié de l'annulation or réfusal de sa demande.
         Le casier sera disponible pour une nouvelle affectation.
+      end_rental_description: |
+        Terminer cette location de casier. L'utilisateur sera notifié de l'annulation. Si donné une période de grâce, l'utilisateur sera informé qu'il a une semaine pour vider le casier.
 
     new_request:
       header: Nouvelle demande de casier

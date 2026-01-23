@@ -1,19 +1,24 @@
 <% content_for :preheader do %>
-  MakerRepo - Your Locker Rental Has Been Cancelled
+    MakerRepo - Your Locker Rental Has Been Cancelled
 <% end %>
 
 <% content_for :why_received do %>
-  You have received this email because you have a locker assigned to you.
+    <% if @locker_rental.locker %>
+        You have received this email because you have a locker assigned to you.
+    <% else %>
+        You have received this email because you have made a locker request.
+    <% end %>
 <% end %>
 
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello <%= @user.name %>,</p>
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-  <% if @locker_rental.locker %>
-    Your locker rental for locker <b><%= @locker_rental.locker.specifier %></b> has been cancelled.
-  <% else %>
-    Your locker rental has been cancelled.
-  <% end %>
-  <% if @locker_rental.owned_until %>
-    <br>Please ensure it is empty before <b><%= @locker_rental.owned_until.to_date %></b>.
-  <% end %>
+    <% if @locker_rental.locker %>
+        Your rental for locker <b><%= @locker_rental.locker.specifier %></b> has been cancelled on <%= @locker_rental.expired_since.to_date.to_formatted_s :long %>
+    <% else %>
+        Your locker request has been rejected.
+    <% end %>
+    <br />
+    <% if @locker_rental.expired_since %>
+        You have one week to clear it. Please ensure it is empty before <b><%= (@locker_rental.expired_since + 1.week).to_date.to_formatted_s :long %></b>.
+    <% end %>
 </p>

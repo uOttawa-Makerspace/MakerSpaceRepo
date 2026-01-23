@@ -130,7 +130,7 @@ class LockerRentalsController < SessionsController
     @available_fors = {
       staff: ("CEED staff member" if current_user.staff?),
       student: ("GNG student" if current_user.student?),
-      general: "community member"
+      general: "General request"
     }.compact.invert
     # Don't allow new request if user already has an active or pending request
     @pending_locker_request = current_user.locker_rentals.pending.first

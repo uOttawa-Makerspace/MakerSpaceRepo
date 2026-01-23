@@ -1,5 +1,9 @@
 <% provide :title, t('lockers.view_locker_request') %>
-<h1 class="text-center"><%= t('lockers.locker_request') %> #<%= @locker_rental.id %> - <%= t("lockers.state.#{@locker_rental.state}") %></h1>
+<h1 class="text-center">
+    <%= t('lockers.locker_request') %> #<%= @locker_rental.id %>
+    -
+    <%= t("lockers.state.#{@locker_rental.state}") %>
+</h1>
 <hr class="w-50 mx-auto" />
 <div class="row justify-content-between">
     <div class="col-md">
@@ -8,13 +12,21 @@
             <%= link_to @locker_rental.rented_by.username, user_url(@locker_rental.rented_by.username) %>
             <%= tag.span(@locker_rental.rented_by.role.humanize, class: 'badge text-bg-primary') if @locker_rental.rented_by.staff? %></p>
         <p>
-            <b><%= t('lockers.locker') %>:</b> <%= @locker_rental.locker&.specifier || '-' %>
-            <br /> <b>Preferred locker:</b> <%= @locker_rental.preferred_locker&.specifier %>
+            <b><%= t('lockers.locker') %>:</b> <%= @locker_rental.locker&.specifier || '-' %>,
+            <b>Preferred locker:</b> <%= @locker_rental.preferred_locker&.specifier %>
         </p>
-        <p></p>
         <p><b><%= t('lockers.state.state') %>:</b> <%= @locker_rental.state.humanize %>
             <% if @locker_rental.expired? %>
-                | <span class="text-danger"><%= fa_icon :times %> Expired</span>
+                | <span class="text-danger"><%= fa_icon :times %> Expired</span> for
+                <%= tag.span(time_ago_in_words(@locker_rental.expired_since), class: ('text-danger' if @locker_rental.overdue?)) %>
+                <% if @locker_rental.notified_of_cancellation %>
+                    and was sent an automatic cancellation notification by email.
+                <% else %>
+                    but has<b> not received a notification</b>.
+                <% end %>
+            <% end %>
+            <% if @locker_rental.cancelled? %>
+                on <%= @locker_rental.cancelled_at&.to_formatted_s :long %>
             <% end %>
         </p>
         <p><b><%= t('lockers.paid_on') %>:</b> <%= @locker_rental.paid_at&.to_date&.to_fs(:long) || '-' %></p>
@@ -73,7 +85,7 @@
                 </div>
                 <%= form_with model: @locker_rental, class: 'card-footer' do |f| %>
                     <%= f.hidden_field :state, value: 'cancelled' %>
-                    <%= f.button 'Cancel rental', class: 'btn btn-danger float-end', data: { confirm: "Are you sure you want to cancel this locker?" } %>
+                    <%= f.button 'Cancel request', class: 'btn btn-danger float-end', data: { confirm: "Are you sure you want to cancel this locker?" } %>
                 <% end %>
             </div>
         <% end %>
@@ -94,11 +106,11 @@
         <div class="col-md">
             <% if current_user.staff? && !@locker_rental.cancelled? %>
                 <%= f.select :locker_id,
-                  options_for_select(Locker.order_by_specifier.available.pluck(:specifier, :id).map{ |specifier, id| ["Locker ##{specifier}", id]}),
+                    options_for_select(Locker.order_by_specifier.available.pluck(:specifier, :id).map{ |specifier, id| ["Locker ##{specifier}", id]}),
                  {prompt: 'Select a locker...'}, { class: 'form-select'} %>
                 <div class="input-group">
-                    <%= f.date_field :owned_until, value: end_of_this_semester, class: 'form-control' %>
                     <span class="input-group-text">Owned until</span>
+                    <%= f.date_field :owned_until, value: @locker_rental.owned_until || end_of_this_semester, class: 'form-control' %>
                 </div>
             <% end %>
         </div>
@@ -133,9 +145,26 @@
             <% if (current_user.staff? && !@locker_rental.cancelled?) || @locker_rental.pending? %>
                 <div>
                     <div class="bg-danger-subtle rounded border border-danger p-3 h-100 d-flex flex-column justify-content-between">
-                        <p><%= t('lockers.actions.cancel_request_description') %></p>
-                        <%= f.button 'Cancel rental', name: 'locker_rental[state]', value: 'cancelled',
-                         class: 'btn btn-danger', data: {confirm: "Are you sure you want to cancel this locker?"} %>
+                        <% if @locker_rental.pending? %>
+                            <p><%= t('lockers.actions.cancel_request_description') %></p>
+                        <% elsif @locker_rental.active? %>
+                            <p><%= t('lockers.actions.end_rental_description') %></p>
+                        <% end %>
+
+                        <% if @locker_rental.active? && false %>
+                            <div class="form-check">
+                                <%= f.label :grace_period, 'Give a grace period of one week', class: 'form-check-label' %>
+                                <%= f.check_box :grace_period, checked: true, class: 'form-check-input' %>
+                            </div>
+                        <% end %>
+                        <%= f.button name: 'locker_rental[state]', value: 'cancelled',
+                         class: 'btn btn-danger', data: {confirm: "Are you sure you want to cancel this locker?"} do %>
+                            <% if @locker_rental.pending? %>
+                                Cancel request
+                            <% elsif @locker_rental.active? %>
+                                End rental
+                            <% end %>
+                        <% end %>
                     </div>
                 </div>
             <% end %>
