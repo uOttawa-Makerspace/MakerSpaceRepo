@@ -166,6 +166,23 @@ document.addEventListener("turbo:load", function () {
         document.getElementById("book-name").value = "";
         document.getElementById("book-description").value = "";
         recurring_picker.setDate(null);
+
+        document.getElementById("bookSave").removeAttribute("disabled");
+        document.getElementById("bookUpdate").removeAttribute("disabled");
+
+        const invalidInputs = modal.querySelectorAll(".is-invalid");
+        invalidInputs.forEach((input) => {
+          input.classList.remove("is-invalid");
+        });
+
+        const feedbacks = modal.querySelectorAll(
+          ".invalid-feedback:not(#end-date-validation)",
+        );
+        feedbacks.forEach((feedback) => {
+          feedback.remove();
+        });
+
+        document.getElementById("end-date-validation").classList.add("d-none");
       }
     }
     function bookEvent(e) {
@@ -176,6 +193,7 @@ document.addEventListener("turbo:load", function () {
           .classList.remove("d-none");
         document.getElementById("book-end").classList.add("is-invalid");
         end_picker.altInput.classList.add("is-invalid");
+        e.target.removeAttribute("disabled");
         return;
       } else {
         document.getElementById("end-date-validation").classList.add("d-none");
@@ -212,12 +230,15 @@ document.addEventListener("turbo:load", function () {
       makeRequest(request);
     }
     function updateEvent() {
+      const updateBtn = document.getElementById("bookUpdate");
+      updateBtn.setAttribute("disabled", "");
       if (start_picker.selectedDates[0] >= end_picker.selectedDates[0]) {
         document
           .getElementById("end-date-validation")
           .classList.remove("d-none");
         document.getElementById("book-end").classList.add("is-invalid");
         end_picker.altInput.classList.add("is-invalid");
+        updateBtn.removeAttribute("disabled");
         return;
       } else {
         document.getElementById("end-date-validation").classList.add("d-none");
@@ -326,6 +347,8 @@ document.addEventListener("turbo:load", function () {
                 }
               }
             }
+            document.getElementById("bookSave").removeAttribute("disabled");
+            document.getElementById("bookUpdate").removeAttribute("disabled");
           } catch (e) {
             console.log(e);
             closeModal();
@@ -334,6 +357,8 @@ document.addEventListener("turbo:load", function () {
         })
         .catch((error) => {
           console.log(error);
+          document.getElementById("bookSave").removeAttribute("disabled");
+          document.getElementById("bookUpdate").removeAttribute("disabled");
         });
     }
     let bookedCalendar = new Calendar(bookedCalendarEl, {
