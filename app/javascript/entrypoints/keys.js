@@ -1,4 +1,5 @@
 import TomSelect from "tom-select";
+import "flatpickr";
 
 document.addEventListener("DOMContentLoaded", () => {
   const depositDateInput = document.getElementById("deposit-return-date");

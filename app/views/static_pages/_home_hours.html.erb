@@ -1,10 +1,5 @@
 <div class="card home-card" id="home-hours">
     <div class="card-body px-0">
-        <%= image_tag('redesign/site.jpg',
-            alt: 'People watching a project demonstration in SITE',
-            loading: 'lazy',
-            class: 'w-100 rounded-top') %>
-
         <h2 class="my-3">
             <%= t('home.welcome.welcome_to') %>
             <% if signed_in? %>
@@ -12,19 +7,21 @@
             <% end %>
         </h2>
 
-        <div class="row g-3">
-            <% @contact_info.each do |space| %>
-                <div class="col-lg-6">
-                    <div class="border rounded p-3 h-100">
-                        <h4 class="fw-semibold"><%= space.name %></h4>
-                        <%= render partial: 'hours_embed', locals: { space: } %>
-                    </div>
-                </div>
-            <% end %>
-        </div>
+        <%= image_tag('redesign/site.jpg',
+            alt: 'People watching a project demonstration in SITE',
+            loading: 'lazy',
+            class: 'w-100 rounded-top') %>
 
-        <h3 class="fw-bold mt-3">
-            <%= link_to t('home.welcome.hour_header'), hours_url %>
-        </h3>
+        <h3 class="text-center mt-4"><%= t('home.welcome.hour_header') %></h3>
+
+        <div id="calendar" class="styled-calendar"></div>
+
+        <div class="styled-calendar mt-3 d-flex flex-wrap justify-content-between align-items-center">
+            <%= link_to t('home.welcome.view_hours'), hours_path, class: 'fc-button' %>
+
+            <div id="filters" class='d-flex flex-wrap gap-3'></div>
+        </div>
     </div>
 </div>
+
+<%= vite_javascript_tag 'fullcalendar_setup_homepage' %>

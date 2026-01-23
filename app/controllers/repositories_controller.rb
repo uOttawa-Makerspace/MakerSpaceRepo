@@ -1,7 +1,7 @@
 class RepositoriesController < SessionsController
   include BCrypt
   before_action :current_user, :check_session
-  before_action :signed_in, except: %i[index show download download_files]
+  before_action :signed_in, except: %i[show download_files]
   before_action :set_repository,
                 only: %i[
                   show
@@ -15,6 +15,7 @@ class RepositoriesController < SessionsController
                   password_entry
                 ]
   before_action :check_auth, only: [:show]
+  before_action :check_ownership, only: %i[edit update destroy]
 
   def show
     if @repository.private? && !@check_passed
@@ -24,10 +25,6 @@ class RepositoriesController < SessionsController
                   ) and return
     end
 
-    @photos = @repository.photos.joins(:image_attachment)&.first(5) || []
-    @files = @repository.repo_files.joins(:file_attachment)
-    @categories = @repository.categories
-    @equipments = @repository.equipments
     @comments = @repository.comments.order(comment_filter).page params[:page]
     @vote =
       @user
@@ -36,8 +33,7 @@ class RepositoriesController < SessionsController
         .pluck(:comment_id, :downvote)
     @project_proposals =
       ProjectProposal.approved.order(title: :asc).pluck(:title, :id)
-    @members = @repository.users
-    @all_users = User.where.not(id: @members.pluck(:id)).pluck(:name, :id)
+
     @liked = @repository.likes.find_by(user_id: @user.id).nil? ? false : true
 
     # Add this repo to recently viewed cookie
@@ -61,7 +57,7 @@ class RepositoriesController < SessionsController
         recently_viewed[this_link] = this_proj_name
         recently_viewed = recently_viewed.take(5).to_h
       end
-    rescue Exception => e
+    rescue StandardError
       # nuke cookies
       cookies[:recently_viewed] = nil
     else # success running
@@ -126,29 +122,23 @@ class RepositoriesController < SessionsController
   end
 
   def edit
-    if @repository.users.pluck(:email).include?(@user.email) ||
-         (@user.role == "admin")
-      @photos = @repository.photos.joins(:image_attachment).first(5)
-      @files = @repository.repo_files.joins(:file_attachment)
-      @categories = @repository.categories
-      @equipments = @repository.equipments
+    if @repository.users.include?(@user) || @user.admin?
       @project_proposals =
-      ProjectProposal.approved.order(title: :asc).pluck(:title, :id) if params[
-      :project_proposal_id
-    ].blank?
+        ProjectProposal.approved.order(title: :asc).pluck(:title, :id) if params[
+        :project_proposal_id
+      ].blank?
     else
-      flash[:alert] = "You are not allowed to perform this action!"
+      flash[:alert] = 'You are not allowed to perform this action!'
       redirect_to repository_path(@repository.user_username, @repository.slug)
     end
   end
 
+
   def create
-    # @repository = @user.repositories.build(repository_params)
     @repository =
       Repository.new(repository_params.except(:categories, :equipments))
     @repository.user_id = @user.id
     @repository.users << @user
-    @repository.user_username = @user.username
     update_password
 
     if @repository.save
@@ -162,27 +152,14 @@ class RepositoriesController < SessionsController
         end
         @repository.save
       end
-      begin
-        create_photos
-      rescue FastImage::ImageFetchFailure,
-             FastImage::UnknownImageType,
-             FastImage::SizeNotFound => e
-        Airbrake.notify(e)
-        flash[
-          :alert
-        ] = "Something went wrong while uploading photos, please try again later."
-        @repository.destroy
-        redirect_to request.path
-      else
-        create_files
-        create_categories
-        create_equipments
-        redirect_to repository_path(@user.username, @repository.slug).to_s
-      end
+      
+      create_categories
+      create_equipments
+      redirect_to repository_path(@user.username, @repository.slug).to_s
     else
       @project_proposals =
         ProjectProposal.approved.order(title: :asc).pluck(:title, :id)
-      render "new", status: 422
+      render "new", status: :unprocessable_entity
     end
   end
 
@@ -191,32 +168,16 @@ class RepositoriesController < SessionsController
     @repository.equipments.destroy_all
     update_password
     if @repository.update(repository_params.except(:categories, :equipments))
-      update_files
       create_categories
       create_equipments
-      begin
-        update_photos
-      rescue FastImage::ImageFetchFailure,
-             FastImage::UnknownImageType,
-             FastImage::SizeNotFound => e
-        Airbrake.notify(e)
-        flash[
-          :alert_yellow
-        ] = "Something went wrong while uploading photos, try uploading them again later. Other changes have been saved."
-        redirect_to repository_path(
-                      @repository.user_username,
-                      @repository.slug
-                    ).to_s
-      else
-        flash[:notice] = "Project updated successfully!"
-        redirect_to repository_path(
-                      @repository.user_username,
-                      @repository.slug
-                    ).to_s
-      end
+      flash[:notice] = "Project updated successfully!"
+      redirect_to repository_path(
+                    @repository.user_username,
+                    @repository.slug
+                  ).to_s
     else
       flash[:alert] = "Unable to apply the changes."
-      render json: @repository.errors["title"].first,
+      render json: @repository.errors.to_hash(true),
              status: :unprocessable_entity
     end
   end
@@ -296,7 +257,7 @@ class RepositoriesController < SessionsController
   def add_member
     repository = Repository.find params[:repo_owner][:repository_id]
     member_username = params[:repo_owner][:owner_username]
-    member = User.find_by(username: member_username)
+    member = User.find_by_username(member_username)
 
     if member.nil?
       flash[:alert] = "Couldn't find user, please try again."
@@ -355,7 +316,7 @@ class RepositoriesController < SessionsController
       flash[:alert] = "This user is not a member of your repository."
     elsif member.id == repository.user_id
       flash[:alert] = "This user is already the owner of the repository."
-    elsif repository.update(user_id: member_id, user_username: member.username)
+    elsif repository.update(user_id: member_id)
       flash[:notice] = "Repository ownership was successfully transferred."
     else
       flash[
@@ -375,6 +336,15 @@ class RepositoriesController < SessionsController
 
   private
 
+  # Block if user is not authorized to modify repository
+  def check_ownership
+    # admins can modify repo
+    unless @user.admin? || @repository.users.include?(@user)
+      flash[:alert] = "You are not allowed to perform this action!"
+      redirect_to repository_path(@repository.user_username, @repository.slug)
+    end
+  end
+
   def check_session
     @authorized = true if authorized_repo_ids.include? params[:id]
   end
@@ -382,7 +352,7 @@ class RepositoriesController < SessionsController
   def check_auth
     @check_passed =
       if @authorized || @user.admin? || @user.staff? ||
-           (@repository.user_username == @user.username)
+           @repository.user_username.casecmp?(@user.username)
         true
       else
         false
@@ -391,15 +361,22 @@ class RepositoriesController < SessionsController
 
   def set_repository
     id = params[:id].split(".", 2)[0]
-    @repository =
-      if Repository.where(id: id).present?
-        Repository.find(id)
-      elsif Repository.find_by(slug: id)
-        Repository.find_by(slug: id)
-      else
-        Repository.find_by(title: id)
-      end
-    redirect_to root_path, alert: "Repository not found" unless @repository
+    @repository = Repository
+                    .includes(photos: {image_attachment: :blob})
+                    .includes(repo_files: {file_attachment: :blob})
+                    .includes(:categories,
+                              :equipments,
+                              :project_proposal,
+                              :makes,
+                              :comments,
+                              :likes,
+                              :users)
+                    .where(id: id)
+                    .or(Repository.where(slug: id))
+                    .or(Repository.where(title: id))
+                    .first!
+    # Too scared to keep this in prod
+    # @repository.strict_loading!
   end
 
   def repository_params
@@ -413,7 +390,9 @@ class RepositoriesController < SessionsController
       :youtube_link,
       :project_proposal_id,
       categories: [],
-      equipments: []
+      equipments: [],
+      photos_attributes: [:id, :image, :_destroy],
+      repo_files_attributes: [:id, :file, :_destroy]
     )
   end
 
@@ -428,75 +407,10 @@ class RepositoriesController < SessionsController
     end
   end
 
-  def create_photos
-    if params[:images].present?
-      params[:images]
-        .first(5)
-        .each do |img|
-          dimension = FastImage.size(img.tempfile, raise_on_failure: true)
-          Photo.create(
-            image: img,
-            repository_id: @repository.id,
-            width: dimension.first,
-            height: dimension.last
-          )
-        end
-    end
-  end
-
-  def create_files
-    if params[:files].present?
-      params[:files].each do |f|
-        RepoFile.create(file: f, repository_id: @repository.id)
-      end
-    end
-  end
-
-  def update_photos
-    if params[:deleteimages].present?
-      @repository.photos.each do |img|
-        if params[:deleteimages].include?(img.image.filename.to_s)
-          # checks if the file should be deleted
-          img.image.purge
-          img.destroy
-        end
-      end
-    end
-
-    if params["images"].present?
-      params["images"].each do |img|
-        dimension = FastImage.size(img.tempfile, raise_on_failure: true)
-        Photo.create(
-          image: img,
-          repository_id: @repository.id,
-          width: dimension.first,
-          height: dimension.last
-        )
-      end
-    end
-  end
-
-  def update_files
-    if params["deletefiles"].present?
-      @repository.repo_files.each do |f|
-        if params["deletefiles"].include?(f.file.id.to_s)
-          # checks if the file should be deleted
-          f.file.purge
-          f.destroy
-        end
-      end
-    end
-
-    if params["files"].present?
-      params["files"].each do |f|
-        RepoFile.create(file: f, repository_id: @repository.id)
-      end
-    end
-  end
-
   def create_categories
     if params[:repository][:categories].present?
       params[:repository][:categories]
+        .filter(&:present?)
         .first(5)
         .each { |c| Category.create(name: c, repository_id: @repository.id) }
     end
@@ -505,6 +419,7 @@ class RepositoriesController < SessionsController
   def create_equipments
     if params[:repository][:equipments].present?
       params[:repository][:equipments]
+        .filter(&:present?)
         .first(5)
         .each { |e| Equipment.create(name: e, repository_id: @repository.id) }
     end

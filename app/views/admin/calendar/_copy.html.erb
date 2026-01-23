@@ -30,21 +30,3 @@
     </div>
   </div>
 </div>
-
-<script>
-  document.addEventListener("turbo:load", () => {
-    const fp1 = flatpickr("#source_range", {
-      mode: "range",
-      dateFormat: "Y-m-d"
-    });
-
-    const fp2 = flatpickr("#target_date", {
-      dateFormat: "Y-m-d"
-    });
-
-    document.getElementById("copyEventsModal").addEventListener("hide.bs.modal", (e) => {
-        fp1.flatpickr().destroy();
-        fp2.flatpickr().destroy();
-    });
-  });
-</script>

@@ -5,6 +5,6 @@ class CouponCode < ApplicationRecord
   scope :unclaimed, -> { where(user_id: nil) }
   scope :claimed, -> { where.not(user_id: nil) }
   def title
-    "$#{dollar_cost} off #{link_to("MakerStore", "https://makerstore.ca/")}".html_safe
+    "$#{dollar_cost} off #{sanitize(link_to("MakerStore", "https://makerstore.ca/"))}"
   end
 end

@@ -81,6 +81,11 @@
     .container {
         max-width: none !important;
     }
+    
+    /* Prevent calendar scroll overflow from scrolling parent document */
+    .fc-scroller {
+        overscroll-behavior: contain;
+    }
 
     .fc-event:not(.fc-event-mirror) {
         opacity: 0;

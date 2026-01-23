@@ -178,6 +178,9 @@ document.addEventListener("turbo:load", async () => {
   document.getElementById("spinner_container").style.display = "none";
   calendar.render();
 
+  // scroll to fullcalendar by default
+  window.scrollTo(0, document.getElementById("calendar").offsetTop - 180);
+
   // Set custom button text
   document.querySelector(".fc-toggleWeekends-button").innerHTML =
     calendar.getOption("weekends") ? "Hide Weekends" : "Show Weekends";

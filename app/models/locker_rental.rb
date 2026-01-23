@@ -91,7 +91,7 @@ class LockerRental < ApplicationRecord
   end
 
   def expired?
-    active? && owned_until && owned_until >= DateTime.current
+    active? && owned_until && owned_until <= DateTime.current
   end
 
   # Is a rental not confirmed yet? Usually means users can cancel rental
@@ -193,7 +193,7 @@ class LockerRental < ApplicationRecord
 
   # name of the metafield key stored on shopify side
   # This is constant per model, do not change at all please.
-  def shopify_draft_order_key_name
+  def self.shopify_draft_order_key_name
     'locker'
   end
 end

@@ -251,20 +251,17 @@ Time.parse(event_params[:utc_start_time]).utc)
           # seconds to milliseconds because javascript
           duration = (event.end_time.to_time - event.start_time.to_time) * 1000
 
-          rrule_data = if event.recurrence_rule.present?
-            rrule = event.recurrence_rule          
-            rrule_parts = rrule.split(/[;\n]/).reject { |part| part.strip.start_with?('DTSTART') }
-            rrule_without_dtstart = rrule_parts.join(';').gsub(/;EXDATE/, "\nEXDATE")
-            dtstart_toronto = event.start_time.in_time_zone("America/Toronto")&.strftime("%Y%m%dT%H%M%S")          
-            "DTSTART:#{dtstart_toronto}\n#{rrule_without_dtstart}"
-          end
+          rrule_data = helpers.date_formatted_recurrence_rule(event)
 
-          background = "linear-gradient(to right, #{event.event_assignments.map.with_index do |ea, i|
+          background = if event.event_assignments.empty?
+            "linear-gradient(to right, #bbb 0.0%, #bbb 100.0%);#{' opacity: 0.8;' if event.draft}"
+          else
+          "linear-gradient(to right, #{event.event_assignments.map.with_index do |ea, i|
  c = StaffSpace.find_by(user_id: ea.user_id, space_id: params[:id])&.color
  s = (100.0 / event.event_assignments.size) * i
  e = (100.0 / event.event_assignments.size) * (i + 1)
  "#{c} #{s}%, #{c} #{e}%" end.join(', ')});#{' opacity: 0.8;' if event.draft}"
-
+          end
 
           {
             id: "event-#{event.id}",
@@ -281,7 +278,13 @@ Time.parse(event_params[:utc_start_time]).utc)
               trainingId: event.training_id,
               language: event.language,
               course_name: event.course_name, # not just the id... pass the object
-              assignedUsers: event.event_assignments.map { |ea| { id: ea.user.id, name: ea.user.name } },
+              assignedUsers: if event.event_assignments.empty?
+  [{id: 0, 
+name: 'Unassigned'}]
+else
+  event.event_assignments.map do |ea|
+ { id: ea.user.id, name: ea.user.name } end
+end,
               background: background
             },
           }

@@ -99,7 +99,7 @@
                               <button class="btn btn-link" type="button"><%= training.localized_name %></button>
                             </div>
                             <div class="col-4">
-                              <%= training_status(training.id, @user.id).html_safe %>
+                              <%= sanitize(training_status(training.id, @user.id)) %>
                             </div>
                         </div>
 

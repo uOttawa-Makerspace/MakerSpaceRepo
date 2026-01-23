@@ -10,8 +10,9 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_12_18_185143) do
+ActiveRecord::Schema[7.2].define(version: 2026_01_22_153357) do
   # These are extensions that must be enabled in order to support this database
+  enable_extension "citext"
   enable_extension "pg_trgm"
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -508,7 +509,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_18_185143) do
   create_table "job_task_quotes", force: :cascade do |t|
     t.bigint "job_task_id", null: false
     t.decimal "price", precision: 10, scale: 2
-    t.decimal "service_quantity", precision: 10, default: "1"
+    t.decimal "service_quantity", precision: 10, scale: 4, default: "1.0"
     t.decimal "service_price", precision: 10, scale: 2
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -682,8 +683,16 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_18_185143) do
     t.date "paid_at"
     t.bigint "decided_by_id"
     t.bigint "locker_id"
+    t.bigint "course_name_id"
+    t.string "section_name"
+    t.string "team_name"
+    t.bigint "preferred_locker_id"
+    t.datetime "cancelled_at"
+    t.boolean "notified_of_cancellation"
+    t.index ["course_name_id"], name: "index_locker_rentals_on_course_name_id"
     t.index ["decided_by_id"], name: "index_locker_rentals_on_decided_by_id"
     t.index ["locker_id"], name: "index_locker_rentals_on_locker_id"
+    t.index ["preferred_locker_id"], name: "index_locker_rentals_on_preferred_locker_id"
     t.index ["rented_by_id"], name: "index_locker_rentals_on_rented_by_id"
     t.index ["repository_id"], name: "index_locker_rentals_on_repository_id"
   end
@@ -1066,7 +1075,6 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_18_185143) do
     t.string "github"
     t.string "github_url"
     t.integer "like", default: 0
-    t.string "user_username"
     t.integer "make_id"
     t.integer "make", default: 0
     t.string "slug"
@@ -1076,6 +1084,9 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_18_185143) do
     t.string "youtube_link"
     t.integer "project_proposal_id"
     t.boolean "deleted"
+    t.index ["category"], name: "index_repositories_on_category", opclass: :gin_trgm_ops, using: :gin
+    t.index ["description"], name: "index_repositories_on_description", opclass: :gin_trgm_ops, using: :gin
+    t.index ["title"], name: "index_repositories_on_title", opclass: :gin_trgm_ops, using: :gin
     t.index ["user_id"], name: "index_repositories_on_user_id"
   end
 
@@ -1398,13 +1409,13 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_18_185143) do
   end
 
   create_table "users", id: :serial, force: :cascade do |t|
-    t.string "username"
+    t.citext "username"
     t.string "password"
     t.string "url"
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
     t.text "description"
-    t.string "email"
+    t.citext "email"
     t.string "avatar_file_name"
     t.string "avatar_content_type"
     t.integer "avatar_file_size"
@@ -1436,6 +1447,8 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_18_185143) do
     t.datetime "locked_until", precision: nil
     t.integer "auth_attempts", default: 0
     t.string "student_id"
+    t.index "lower((email)::text)", name: "index_users_on_lowercase_email", unique: true
+    t.index "lower((username)::text)", name: "index_users_on_lowercase_username", unique: true
     t.index ["name"], name: "index_users_on_name", opclass: :gin_trgm_ops, using: :gin
     t.index ["space_id"], name: "index_users_on_space_id"
     t.index ["username"], name: "index_users_on_username", opclass: :gin_trgm_ops, using: :gin
@@ -1571,6 +1584,7 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_18_185143) do
   add_foreign_key "likes", "repositories"
   add_foreign_key "likes", "users"
   add_foreign_key "locker_rentals", "lockers"
+  add_foreign_key "locker_rentals", "lockers", column: "preferred_locker_id"
   add_foreign_key "locker_rentals", "users", column: "decided_by_id"
   add_foreign_key "locker_rentals", "users", column: "rented_by_id"
   add_foreign_key "memberships", "membership_tiers"

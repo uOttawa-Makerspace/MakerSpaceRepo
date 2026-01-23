@@ -9,6 +9,8 @@ class SessionsController < ApplicationController
   before_action :authorized_repo_ids
   before_action :rate_limit, only: [:login_authentication]
 
+  SUPPORT_EMAIL = "uottawa.makerepo@gmail.com"
+
   def rate_limit
     ip = request.env["REMOTE_ADDR"]
     key = "login_#{ip}"
@@ -31,15 +33,18 @@ class SessionsController < ApplicationController
         else
           respond_to do |format|
             format.html do
-              flash[
-                :alert
-              ] = "Your account has been locked due to too many failed login attempts. Please contact an administrator to unlock your account or wait #{distance_of_time_in_words user.locked_until, DateTime.now}."
+              flash[:alert] = ActionController::Base.helpers.sanitize("""
+              Your account has been locked due to too many failed login attempts. 
+              Please #{view_context.link_to('contact an administrator', "mailto:#{SUPPORT_EMAIL}?subject=Account%20Locked", class: 'text-primary')} 
+              to unlock your account or wait #{distance_of_time_in_words(user.locked_until, DateTime.now)}.
+              """)
               render :login
             end
             format.json do
               render json: {
                        error:
-                         "Your account has been locked due to too many failed login attempts. Please contact an administrator to unlock your account or wait #{distance_of_time_in_words user.locked_until, DateTime.now}."
+                         "Your account has been locked due to too many failed login attempts. Please contact an administrator at #{SUPPORT_EMAIL} to unlock your account or wait #{distance_of_time_in_words user.locked_until, DateTime.now}.",
+                       support_email: SUPPORT_EMAIL
                      },
                      status: :unprocessable_entity
             end
@@ -54,12 +59,7 @@ class SessionsController < ApplicationController
       if @user
         if @user.confirmed?
           @user.update(last_signed_in_time: DateTime.now)
-          # if request.env["HTTP_REFERER"] == login_authentication_url
-          #   format.html { redirect_to root_path }
-          # else
-          #   format.html { redirect_back(fallback_location: root_path) }
-          # end
-          format.html { redirect_to params[:back_to] || root_path }
+          format.html { redirect_to(params[:back_to] || root_path) }
           format.json do
             render json: {
                      user: @user.as_json,
@@ -73,7 +73,7 @@ class SessionsController < ApplicationController
           format.html do
             flash.now[
               :alert
-            ] = "Please confirm your account before logging in, you can resend the email #{view_context.link_to "here", resend_email_confirmation_path(email: params[:username_email]), class: "text-primary"}".html_safe
+            ] = ActionController::Base.helpers.sanitize("Please confirm your account before logging in, you can resend the email #{view_context.link_to "here", resend_email_confirmation_path(email: params[:username_email]), class: "text-primary"}")
             render :login
           end
           format.json do
@@ -88,7 +88,9 @@ class SessionsController < ApplicationController
           error_message =
             (
               if user.auth_attempts >= User::MAX_AUTH_ATTEMPTS
-                "Your account has been locked due to too many failed login attempts. You can try again in #{distance_of_time_in_words user.locked_until, DateTime.now}."
+                format.html? ? 
+                  "Your account has been locked due to too many failed login attempts. #{view_context.link_to 'Contact support', "mailto:#{SUPPORT_EMAIL}?subject=Account%20Locked%20-%20#{user.username}", class: 'text-primary'} to unlock your account or try again in #{sanitize(distance_of_time_in_words user.locked_until, DateTime.now)}." :
+                  "Your account has been locked due to too many failed login attempts. Contact support at #{SUPPORT_EMAIL} to unlock your account or try again in #{distance_of_time_in_words user.locked_until, DateTime.now}."
               elsif user.auth_attempts > 1
                 "Incorrect password. You have #{User::MAX_AUTH_ATTEMPTS - user.auth_attempts} attempts left before your account is locked."
               else
@@ -97,14 +99,16 @@ class SessionsController < ApplicationController
             )
         else
           error_message =
-            "Could not find user with email or username #{params[:username_email]}"
+            "Could not find user with email or username: #{params[:username_email]}"
         end
         format.html do
           flash[:alert] = error_message
           render :login, status: :unprocessable_entity
         end
         format.json do
-          render json: { error: error_message }, status: :unprocessable_entity
+          json_response = { error: error_message }
+          json_response[:support_email] = SUPPORT_EMAIL if user&.auth_attempts&.>= User::MAX_AUTH_ATTEMPTS
+          render json: json_response, status: :unprocessable_entity
         end
       end
     end
@@ -124,7 +128,6 @@ class SessionsController < ApplicationController
 
   def login
     redirect_to root_path if signed_in?
-    #@user = User.new
   end
 
   def logout
@@ -160,7 +163,7 @@ class SessionsController < ApplicationController
   private
 
   def get_session_time_left
-    expire_time = session[:expires_at] || Time.zone.now
+    expire_time = session[:expires_at] || 72.hours.from_now
     @session_time_left = (expire_time.to_time - Time.zone.now).to_i
   end
 end

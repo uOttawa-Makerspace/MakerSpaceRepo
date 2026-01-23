@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
-class ProjectProposalsController < ApplicationController
+class ProjectProposalsController < SessionsController
+  include TurnstileHelper
+  
   before_action :set_project_proposal, only: %i[show edit update destroy]
   before_action :current_user
   # before_action :show_only_project_approved, only: [:show]
@@ -143,7 +145,11 @@ class ProjectProposalsController < ApplicationController
     @project_proposal.user_id = @user.try(:id)
 
     respond_to do |format|
-      if (verify_recaptcha(model: @project_proposal) || !current_user.id.nil?) && @project_proposal.save
+      # If not logged in and captcha fails
+      if current_user.id.nil? && !verify_turnstile
+        flash[:alert] = 'Captcha error, please try again'
+        format.html { render :new, status: :unprocessable_entity }
+      elsif  @project_proposal.save
         begin
           create_photos
         rescue FastImage::ImageFetchFailure,

@@ -7,13 +7,24 @@
                 <%= youtube_video(@repository.youtube_link) %>
             <% end %>
             <div id="show-photo">
-                <% if @photos.present? and @photos.first.image.attached? %>
-                    <%= image_tag @photos.first.image.variant(:photo_slide_first), alt: 'Repository Main image', data: { width: @photos.first.try(:width), height: @photos.first.try(:height) } %>
+                <% if @repository.photos.present? and @repository.photos.first.image.attached? %>
+                    <%= image_tag @repository.photos.first.image.variant(:photo_slide_first),
+                                  alt: 'Repository Main image',
+                                  data: {
+                                      width: @repository.photos.first.try(:width),
+                                      height: @repository.photos.first.try(:height)
+                                  } %>
                 <% end %>
             </div>
             <div id="photo-slide">
-                <% @photos.each do |p| %>
-                    <%= image_tag p.image.variant(:photo_slide), alt: 'Repository Image', data: { src: url_for(p.image), width: p.width, height: p.height } %>
+                <% @repository.photos.find_each do |p| %>
+                    <%= image_tag p.image.variant(:photo_slide),
+                                  alt: 'Repository Image',
+                                  data: {
+                                      src: url_for(p.image),
+                                      width: p.image.metadata['width'],
+                                      height: p.image.metadata['height']
+                                  } %>
                 <% end %>
             </div>
         </div>
@@ -31,7 +42,7 @@
 
         <% if @repository.description.present? %>
             <div class="mb-5">
-                <p style="word-break: break-word;"><%= @repository.description.html_safe %></p>
+                <p style="word-break: break-word;"><%= sanitize @repository.description %></p>
             </div>
         <% end %>
     </section>
@@ -51,56 +62,71 @@
         <% end %>
         <hr />
         <div>
-            <% if @repository.users.pluck(:email).include?(@user.email) || @user.role.eql?("admin") %>
-                <%= link_to fa_icon('pencil', text: t('repository.edit_proj')),
-                            edit_repository_path(@repository.user_username, @repository.id), class: 'btn btn-sm btn-secondary' %>
-            <% end %>
             <div>
-                <b><%= t('repository.proj_by') %></b>
-                <% @repository.users.find_each do |u| %>
-                    <div>
-                        <% if u.id == @repository.user_id %>
-                            <%= fa_icon :star %>
-                        <% end %>
-                        <%= link_to u.username, user_path(u.username) %>
-                    </div>
+                <div class="d-inline-block">
+                    <b><%= t('repository.proj_by') %></b>
+                    <% @repository.users.find_each do |u| %>
+                        <div>
+                            <% if u.id == @repository.user_id %>
+                                <%= fa_icon :star %>
+                            <% end %>
+                            <%= link_to u.username, user_path(u.username) %>
+                        </div>
+                    <% end %>
+                </div>
+                <% if @repository.users.include?(@user) || @user.role.eql?("admin") %>
+                    <%= link_to fa_icon('pencil', text: t('repository.edit_proj')),
+                                edit_repository_path(@repository.user_username, @repository.id),
+                                class: 'btn btn-sm btn-secondary align-top float-end' %>
                 <% end %>
             </div>
             <p><b><%= t('repository.published') %></b> <%= @repository.created_at.strftime('%b %e %Y') %></p>
-            <% if @files.present? %>
-                <div>
-                    <div class="d-flex justify-content-between">
-                        <b> <%= t('repository.proj_files') %> </b>
-                        <%= link_to fa_icon('download', text: t('repository.download')),
-                                    download_files_repositories_path(@repository.user_username, @repository.id),
-                                    class: 'btn btn-primary btn-sm' %>
-                    </div>
+            <% if @repository.repo_files.any? %>
+                <div class="clearfix">
+                    <b> <%= t('repository.proj_files') %> </b>
                     <div class="files-show">
-                        <% @files.each do |f| %>
-                            <div class="file-item-show">
-                                <u><%= fa_icon 'file-text-o' %> <%= link_to f.file.filename, rails_blob_path(f.file), target: '_blank', rel: 'noopener' %></u><span><%= f.file.byte_size / 1000 %> KB</span>
-                            </div>
+                        <% @repository.repo_files.find_each do |f| %>
+                            <ul class="file-item-show">
+                                <li>
+                                    <%= fa_icon 'file-text-o' %>
+                                    <%= link_to f.file.filename, rails_blob_path(f.file), target: '_blank', rel: 'noopener' %>
+                                    <span><%= f.file.byte_size / 1000 %> KB</span>
+                                </li>
+                            </ul>
                         <% end %>
                     </div>
+                    <%= link_to fa_icon('download', text: t('repository.download')),
+                                download_files_repositories_path(@repository.user_username, @repository.id),
+                                class: 'btn btn-primary btn-sm float-end' %>
                 </div>
             <% end %>
 
-            <% if @categories.present? %>
-                <div class="repo-info-item">
-                    <div class="title"> <%= t('repository.categories') %> </div>
-                    <% @categories.each do |t| %>
-                        <%= link_to t.name, category_path(slug: t.name.gsub(' ', '-').downcase), class: 'btn btn-secondary btn-sm m-1' %>
-                    <% end %>
+            <% if @repository.license.present? %>
+                <div class="mb-3">
+                    <b> <%= t('repository.license_proj') %></b><br />
+                    <%= link_to @repository.license, license_url[@repository.license] %>
                 </div>
             <% end %>
-            <% if @equipments.present? %>
-                <div class="repo-info-item">
-                    <div class="title"> <%= t('repository.equipment') %> </div>
-                    <% @equipments.each do |t| %>
-                        <%= link_to t.name, equipment_path(slug: t.name.gsub(' ', '-').downcase), class: 'btn btn-secondary btn-sm m-1' %>
+
+            <div class="mb-3">
+                <b><%= t('repository.categories') %></b>
+                <ul class="list-group mb-3">
+                    <% @repository.categories.find_each do |category| %>
+                        <%= link_to category.name, category_path(slug: category.name.gsub(' ', '-').downcase),
+                                    class: "list-group-item list-group-item-action text-primary" %>
                     <% end %>
-                </div>
-            <% end %>
+                </ul>
+            </div>
+
+            <div class="mb-3">
+                <b><%= t('repository.equipment') %></b>
+                <ul class="list-group">
+                    <% @repository.equipments.find_each do |equipment| %>
+                        <%= link_to equipment.name, equipment_path(slug: equipment.name.gsub(' ', '-').downcase),
+                                    class: "list-group-item list-group-item-action text-primary" %>
+                    <% end %>
+                </ul>
+            </div>
 
             <div class="repo-info-item mb-3">
                 <span class="like<%= @liked ? ' liked' : '' %>" style="color: white;">
@@ -122,27 +148,21 @@
                     <div class="rect5"></div>
                 </div>
             </div>
-            <% if @repository.license.present? %>
-                <div class="mb-3">
-                    <b> <%= t('repository.license_proj') %></b>
-                    <%= link_to @repository.license, license_url[@repository.license] %>
-                </div>
-            <% end %>
 
             <% if @repository.project_proposal %>
-                <div>
-                    <b><%= t('repository.link_proj') %> </b>
+                <p>
+                    <b><%= t('repository.link_to_prop') %></b> <br />
                     <%= link_to @repository.project_proposal.title, project_proposal_path(@repository.project_proposal) %>
-                </div>
+                </p>
             <% end %>
 
-            <% if @repository.users.pluck(:email).include?(@user.email) || @user.admin? || @user.staff? %>
+            <% if @repository.users.include?(@user) || @user.admin? || @user.staff? %>
                 <div class="repo-info-item">
                     <div class="title"><%= t('repository.link_to_prop') %> </div>
                     <%= form_for :repo, url: { controller: 'repositories', action: 'link_to_pp' }, method: :patch do |f| %>
                         <div class="mb-3 input-group">
                             <%= f.hidden_field :repository_id, value: @repository.id %>
-                            <%= f.select(:project_proposal_id, @project_proposals, { prompt: t('repository.choose') }, { class: 'form-control', id: 'search_project_proposals' }) %>
+                            <%= f.select(:project_proposal_id, @project_proposals, { prompt: t('repository.choose_proposal') }, { class: 'form-control', id: 'search_project_proposals' }) %>
                             <br> </br>
                             <%= f.submit t('repository.link_proj'), class: 'btn btn-primary' %>
                         </div>
@@ -166,7 +186,7 @@
                 <%= f.label t('repository.rem_mem'), class: 'form-label' %>
                 <div class="mb-3 input-group">
                     <%= f.hidden_field :repository_id, value: @repository.id %>
-                    <%= f.select(:owner_id, @members.pluck(:username, :id), { prompt: t('repository.search_user') }, { class: 'search_users_remove form-control', id: 'search_users_remove' }) %>
+                    <%= f.select(:owner_id, @repository.users.pluck(:username, :id), { prompt: t('repository.search_user') }, { class: 'search_users_remove form-control', id: 'search_users_remove' }) %>
                     <%= f.submit t('repository.remove'), class: 'btn btn-danger' %>
                 </div>
             <% end %>
@@ -176,7 +196,9 @@
                     <%= f.label t('repository.trans_own'), class: 'form-label' %>
                     <div class="mb-3 input-group required">
                         <%= f.hidden_field :repository_id, value: @repository.id %>
-                        <%= f.select(:owner_id, @members.pluck(:username, :id), { prompt: t('repository.search_user') }, { class: 'form-control', id: 'search_users_transfer' }) %>
+                        <%= f.collection_select :owner_id, @repository.users, :id, :username,
+                                     { prompt: t('repository.search_user') },
+                                     { class: 'form-control', id: 'search_users_transfer' } %>
                         <br> </br>
                         <%= f.submit t('repository.transfer'), class: 'btn btn-warning' %>
                     </div>
@@ -209,7 +231,7 @@
             <%= link_to t('repository.newest'), "#{repository_path(comment_filter: :newest)}#repo-comments", style: bold.first %>
         </div>
         <div id="comment-container">
-            <% @comments.each do |comment| %>
+            <% @comments.find_each do |comment| %>
                 <div class="comment">
                     <div class="comment-upvote">
                         <% color = @vote.include?([comment.id, false]) ? '#19c1a5' : '#999' %>
@@ -232,7 +254,7 @@
                         <% end %>
                     </div>
                     <div class="comment-content">
-                        <%= comment.content.html_safe %>
+                        <%= sanitize comment.content %>
                     </div>
                 </div>
             <% end %>

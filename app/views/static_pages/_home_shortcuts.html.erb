@@ -1,15 +1,37 @@
 <div class="card home-card home-shortcuts">
     <div class="card-body">
-        <h2><%= t('home.shortcuts.recently_opened') %></h2>
         <% if signed_in? %>
-            <ul class="list-unstyled mb-0">
-                <% begin JSON.parse(cookies[:recently_viewed]).each do |link, proj_name| %>
-                    <li><a href="<%= link %>"><i class="fa fa-square text-secondary"></i> <%= proj_name %></a></li>
+            <!-- User's Own Repositories Section -->
+            <h2><%= t('home.shortcuts.my_repositories') %></h2>
+            <% if current_user.repositories.any? %>
+                <ul class="list-unstyled mb-4">
+                    <% current_user.repositories.limit(5).each do |repository| %>
+                        <li>
+                            <a href="<%= repository_path(user_username: current_user.username, id: repository) %>">
+                                <i class="fa fa-folder text-primary"></i> <%= repository.title %>
+                            </a>
+                        </li>
+                    <% end %>
+                </ul>
+                <% if current_user.repositories.count > 5 %>
+                    <%= link_to t('home.shortcuts.view_all_repos'), user_path(current_user), class: 'mb-3 d-block' %>
                 <% end %>
+            <% else %>
+                <p><%= t('home.shortcuts.no_repositories') %></p>
+                <%= link_to t('home.shortcuts.create_first_repo'), new_repository_path(user_username: current_user.username), class: 'btn btn-primary btn-sm mb-3' %>
+            <% end %>
+
+            <!-- Recently Opened Section -->
+            <h2><%= t('home.shortcuts.recently_opened') %></h2>
+            <ul class="list-unstyled mb-0">
+                <% begin %>
+                    <% JSON.parse(cookies[:recently_viewed]).each do |link, proj_name| %>
+                        <li><a href="<%= link %>"><i class="fa fa-square text-secondary"></i> <%= proj_name %></a></li>
+                    <% end %>
                 <% rescue %>
-                <p><%= t('home.shortcuts.no_recently_opened') %></p>
-                <%= link_to t('home.shortcuts.explore_more'), explore_path %>
-        <% end %>
+                    <p><%= t('home.shortcuts.no_recently_opened') %></p>
+                    <%= link_to t('home.shortcuts.explore_more'), explore_path %>
+                <% end %>
             </ul>
         <% else %>
             <p class="guest-shortcuts"><%= t('home.shortcuts.ask_for_sign_in') %></p>

@@ -1,0 +1,11 @@
+<%= turbo_stream.update 'SpaceUserCount' do %>
+    <%= pluralize signed_in_users.count, 'user' %> inside <%= space.name %>
+<% end %>
+
+<%= turbo_stream.update 'table-js-signed-in' do %>
+    <%= render partial: 'staff_dashboard/space_activity_row', collection: signed_in_users, locals: {space: space} %>
+<% end %>
+
+<%= turbo_stream.update 'staffDashboardSignedOutTable' do %>
+    <%= render partial: 'staff_dashboard/space_activity_row', collection: signed_out_users, locals: {space: space, signed_out: true} %>
+<% end %>

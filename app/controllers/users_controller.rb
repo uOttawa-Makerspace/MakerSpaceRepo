@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class UsersController < SessionsController
+  include TurnstileHelper
+  
   skip_before_action :session_expiry, only: [:create]
   before_action :current_user,
                 except: %i[
@@ -27,21 +29,30 @@ class UsersController < SessionsController
     @new_user = User.new(user_params)
     @new_user.pword = params[:user][:password] if @new_user.valid?
 
-    respond_to do |format|
-      if @new_user.save
-        hash = Rails.application.message_verifier(:user).generate(@new_user.id)
-        MsrMailer.confirmation_email(@new_user, hash).deliver_now
+    if !verify_turnstile
+      flash[:alert] = 'Captcha error, try again.'
+      respond_to do |format|
+        format.html { render :new, status: :unprocessable_entity }
+        format.json { render json: {errors: 'captcha failure'}, status: :unprocessable_entity }
+      end 
+    elsif @new_user.save
+      hash = Rails.application.message_verifier(:user).generate(@new_user.id)
+      MsrMailer.confirmation_email(@new_user, hash).deliver_now
+      
+      respond_to do |format| 
         format.html do
           redirect_to root_path,
                       notice:
-                        'Account has been created, please look in your emails to confirm your email address.'
+                      'Account has been created, please look in your emails to confirm your email address.'
         end
         format.json do
           render json:
-                   'Account has been created, please look in your emails to confirm your email address.',
+                 'Account has been created, please look in your emails to confirm your email address.',
                  status: :unprocessable_entity
         end
-      else
+      end
+    else
+      respond_to do |format| 
         format.html { render 'new', status: :unprocessable_entity }
         format.json do
           render json: @new_user.errors, status: :unprocessable_entity
@@ -342,14 +353,12 @@ class UsersController < SessionsController
   def show
     @repo_user =
       if @user.admin? || @user.staff?
-        User.unscoped.find_by username: params[:username]
+        User.unscoped.find_by_username params[:username]
       else
-        User.find_by username: params[:username]
+        User.find_by_username params[:username]
       end
 
     raise ActiveRecord::RecordNotFound if @repo_user.nil?
-
-    #redirect_to root_path, alert: "User not found."
 
     @programs = @repo_user.programs.pluck(:program_type)
     begin
@@ -358,26 +367,18 @@ class UsersController < SessionsController
     rescue Octokit::Unauthorized
       @github_username = nil
     end
-    @repositories =
-      if params[:username] == @user.username || @user.admin? || @user.staff?
-        @repo_user
-          .repositories
-          .where(make_id: nil)
-          .paginate(page: params[:page], per_page: 18)
-      else
-        @repo_user
-          .repositories
-          .public_repos
-          .where(make_id: nil)
-          .paginate(page: params[:page], per_page: 18)
-      end
 
-    @acclaim_badge_url =
-      if params[:username] == @user.username
-        'https://www.youracclaim.com/earner/earned/share/'
-      else
-        'https://www.youracclaim.com/badges/'
-      end
+    # Get repositories owned by user
+    @repositories =
+        @repo_user
+          .repositories
+          .where(make_id: nil)
+          .paginate(page: params[:page], per_page: 18)
+
+    # Staff and current user can see private repos
+    unless @user.staff? || @repo_user == @user
+      @repositories = @repositories.public_repos
+    end
 
     @acclaim_data = @repo_user.certifications
     @makes = @repo_user.repositories.where.not(make_id: nil).page params[:page]

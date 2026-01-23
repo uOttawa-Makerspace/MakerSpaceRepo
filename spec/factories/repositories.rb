@@ -2,10 +2,10 @@ include ActionDispatch::TestProcess
 
 FactoryBot.define do
   factory :repository do
+    association :owner, factory: :user
     title { Faker::Lorem.unique.word }
     description { Faker::Lorem.paragraph }
     share_type { "public" }
-    user_username { "Bob" }
     youtube_link { "" }
 
     trait :private do
@@ -49,7 +49,7 @@ FactoryBot.define do
       categories { ["Laser", "3D Printing"] }
       equipments { ["Laser Cutter", "3D Printer"] }
     end
-
+    
     trait :broken_link do
       youtube_link { "https://google.ca" }
     end

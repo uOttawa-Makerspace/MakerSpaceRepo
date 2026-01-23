@@ -6,6 +6,8 @@ class MembershipsController < SessionsController
   before_action :no_container, only: :index
 
   def index
+    @membership_day = MembershipTier.find(1)
+    @membership_sem = MembershipTier.find(2)
   end
 
   def your_memberships
@@ -16,7 +18,7 @@ class MembershipsController < SessionsController
   end
   
   def create
-    return flash.now[:alert] = t('memberships.index.purchase.cutoff_tooltip') if is_user_cutoff
+    return flash.now[:alert] = t('memberships.purchase.purchase.cutoff_tooltip') if is_user_cutoff
 
     @membership = current_user.memberships.new(membership_params)
     

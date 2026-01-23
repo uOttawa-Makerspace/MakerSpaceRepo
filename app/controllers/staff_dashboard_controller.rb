@@ -1,7 +1,18 @@
 # frozen_string_literal: true
 
 class StaffDashboardController < StaffAreaController
+  # NOTE: @space is set by StaffAreaController
+  
   def index
+    # Strict loading because this is used in table views
+    # FIXME: Temporarily disabled because of space 119
+    @signed_in_users = User
+                         .includes(certifications: {training_session: [:training, :user]})
+                         .includes(:lab_sessions)
+                         .where(lab_sessions: {sign_out_time: Time.zone.now.., space: @space })
+
+    @signed_out_users = @space.recently_signed_out_users
+    
     respond_to do |format|
       format.html do
         @users = User.order(id: :desc).limit(10)
@@ -202,31 +213,31 @@ class StaffDashboardController < StaffAreaController
   end
 
   def sign_in_users
-  alert = []
+    alert = []
 
-  # Staff dashboard changed, but we keep compat with app.
-  user_query = params[:added_users] || params[:username]
+    # Staff dashboard changed, but we keep compat with app.
+    user_query = params[:added_users] || params[:username]
 
-  users = User.where(username: user_query).find_each do |user|
-    lab_session =
-      LabSession.new(
-        user_id: user.id,
-        space_id: @space.id,
-        sign_in_time: Time.zone.now,
-        sign_out_time: Time.zone.now + 6.hours
-      )
-    alert << user.name unless lab_session.save
-  end
-
-  respond_to do |format|
-    format.html do
-      flash[:alert] = "Error signing #{alert.join(', ')} in" if alert.length > 0
-      redirect_to staff_dashboard_index_path(space_id: @space.id)
+    users = User.where(username: user_query).find_each do |user|
+      lab_session =
+        LabSession.new(
+          user_id: user.id,
+          space_id: @space.id,
+          sign_in_time: Time.zone.now,
+          sign_out_time: Time.zone.now + 6.hours
+        )
+      alert << user.name unless lab_session.save
     end
-    format.js
-    format.json { render json: { status: 'ok' } }
+
+    respond_to do |format|
+      format.html do
+        flash[:alert] = "Error signing #{alert.join(', ')} in" if alert.length > 0
+        redirect_to staff_dashboard_index_path(space_id: @space.id)
+      end
+      format.js
+      format.json { render json: { status: 'ok' } }
+    end
   end
-end
 
   def change_space
     new_space = Space.find_by(id: params[:space_id])
@@ -305,7 +316,7 @@ end
 
   def user_profile
     if params[:username].present? and
-         User.find_by(username: params[:username]).present?
+         User.find_by_username(params[:username]).present?
       redirect_to user_path(params[:username])
     elsif params[:query].present?
       redirect_to staff_dashboard_search_path(query: params[:query])

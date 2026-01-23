@@ -6,34 +6,29 @@ class CustomWebhooksController < ApplicationController
   include ShopifyConcern
 
   def orders_paid
-    params.permit!
+    # We now handle whitelisting in the webhook_params method below.
 
-    # This is a locker marked as paid
+    # This is a locker marked as paid. We use the tags to determine which model
+    # reads the webhook.
+    # Note: webhook_params is now a safe Hash thanks to Strong Parameters.
     order_hook = webhook_params.to_h
 
-    # get order ID from metafields
-    locker_id_metafield = order_hook['metafields']&.find do |m|
-      m['namespace'] == 'makerepo' && m['key'] == 'locker_db_reference'
+    # handle lockers
+    if LockerRental.draft_order_processable? order_hook["tags"]
+      process_locker_hook(order_hook)
     end
-
-    # Because the webhook doesn't really return the metafield
-    locker_id_metafield ||=
-      draft_order_metafields(order_hook["admin_graphql_api_id"])&.find do |field|
-        field["key"] == "locker_db_reference"
-      end
-
-    # Filter out staging/production tags
-    if locker_id_metafield &&
-         order_hook["tags"]&.include?(ShopifyConcern.target_tag)
-      process_locker_hook(locker_id_metafield["value"])
-    end
-
+    
     # handle memberships
-    process_membership_hook(order_hook)
+    if Membership.draft_order_processable? order_hook["tags"]
+      process_membership_hook(order_hook)
+    end
     
     # handle job orders
-    process_job_orders_hook(order_hook)
+    if JobOrder.draft_order_processable? order_hook["tags"]
+      process_job_orders_hook(order_hook)
+    end
 
+    # REVIEW: Old code. No clue if this works still
     discount_code_params = webhook_params.to_h
     if discount_code_params["discount_codes"].present?
       shopify_discount_code = discount_code_params["discount_codes"][0]["code"]
@@ -52,12 +47,40 @@ class CustomWebhooksController < ApplicationController
 
   private
 
+  # Explicitly define the keys we expect from Shopify
   def webhook_params
-    params.except(:controller, :action, :type)
+    params.permit(
+      :id,
+      :tags,
+      :admin_graphql_api_id,
+      :email,
+      # Allow tags to be an array (common in tests) or scalar
+      tags: [],
+      # Allow array of hashes for metafields with common keys
+      metafields: [:namespace, :key, :value, :value_type, :description, :id],
+      # Allow array of hashes for discount codes
+      discount_codes: [:code, :amount, :type],
+      # Allow array of hashes for line items with standard fields
+      line_items: [:product_id, :quantity, :title, :variant_id, :sku, :price, :name],
+      # Allow specific keys for customer
+      customer: [:id, :email, :first_name, :last_name]
+    )
   end
 
-  def process_locker_hook(locker_id)
-    locker_rental = LockerRental.find(locker_id)
+  def process_locker_hook(order_hook)
+    # get order ID from metafields
+    locker_id_metafield = order_hook['metafields']&.find do |m|
+      m['namespace'] == 'makerepo' && m['key'] == 'locker_db_reference'
+    end
+
+    # Because the webhook doesn't return the metafield (last I checked, at
+    # least), we fetch it with a second call to get ID of the DB record
+    locker_id_metafield ||=
+      draft_order_metafields(order_hook["admin_graphql_api_id"])&.find do |field|
+        field["key"] == "locker_db_reference"
+      end
+    
+    locker_rental = LockerRental.find(locker_id_metafield["value"])
     # state change, auto assign, and sends mail
     locker_rental.auto_assign if locker_rental.present?
   end

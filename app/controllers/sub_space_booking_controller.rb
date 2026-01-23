@@ -1,4 +1,4 @@
-class SubSpaceBookingController < ApplicationController
+class SubSpaceBookingController < SessionsController
   before_action :no_container
   before_action :user_account
   before_action :user_signed_in, only: %i[index request_access bookings]
@@ -31,7 +31,7 @@ class SubSpaceBookingController < ApplicationController
       end
       @rules << "bookings (Name and Description of event) are public by default" if @subspace.default_public
       if @subspace.max_automatic_approval_hour.present? &&
-           @subspace.approval_required
+          @subspace.approval_required
         @rules << "Bookings require manual approval, bookings of #{@subspace.max_automatic_approval_hour} hours or less will be automatically approved"
       elsif @subspace.approval_required
         @rules << "bookings will require manual approval"
@@ -44,8 +44,17 @@ class SubSpaceBookingController < ApplicationController
         .includes(:sub_space, :sub_space_booking_status)
         .order(start_time: :desc)
     if current_user.admin?
+      # Use a consistent timestamp for all queries
+      # NOTE: this gives system time, set in config.time_zone
+      # Keep it because we're using Time.zone elsewhere in this controller
+      # https://thoughtbot.com/blog/its-about-time-zones
+      @current_time = Time.now
+      
       # Need to get the booking status from the sub space booking status table for the booking
       @pending_bookings = current_bookings(BookingStatus::PENDING.id)
+      
+      load_recurring_bookings_for_page(@pending_bookings)
+      
       @approved_bookings = current_bookings(BookingStatus::APPROVED.id)
       @declined_bookings = current_bookings(BookingStatus::DECLINED.id)
       @old_pending_bookings = old_bookings(BookingStatus::PENDING.id)
@@ -336,9 +345,9 @@ class SubSpaceBookingController < ApplicationController
     booking.user_id = current_user.id
     unless booking.save
       render json: {
-               errors: booking.errors.full_messages
-             },
-             status: :unprocessable_entity
+              errors: booking.errors.full_messages
+            },
+            status: :unprocessable_entity
       return
     end
 
@@ -356,24 +365,24 @@ class SubSpaceBookingController < ApplicationController
       )
 
     if params[:sub_space_booking][:blocking] != "true" &&
-         SubSpaceBooking
-           .where(sub_space_id: params[:sub_space_booking][:sub_space_id])
-           .where(blocking: true)
-           .where.not(id: booking.id)
-           .where(
-             "(start_time, end_time) OVERLAPS (?,?)",
-             start_datetime.utc + 1.minute, # OVERLAPS performs half-open intersection
-             end_datetime.utc - 1.minute
-           )
-           .any?
+        SubSpaceBooking
+          .where(sub_space_id: params[:sub_space_booking][:sub_space_id])
+          .where(blocking: true)
+          .where.not(id: booking.id)
+          .where(
+            "(start_time, end_time) OVERLAPS (?,?)",
+            start_datetime.utc + 1.minute, # OVERLAPS performs half-open intersection
+            end_datetime.utc - 1.minute
+          )
+          .any?
       booking.destroy
       flash[:alert] = "This time slot is already booked."
       respond_to do |format|
         format.json do
           render json: {
-                   errors: ["TimeSlot This time slot is already booked."]
-                 },
-                 status: :unprocessable_entity
+                  errors: ["TimeSlot This time slot is already booked."]
+                },
+                status: :unprocessable_entity
         end
         format.html do
           redirect_to sub_space_booking_index_path(
@@ -388,23 +397,23 @@ class SubSpaceBookingController < ApplicationController
     # Check time violations
     duration = (booking.end_time - booking.start_time) / 1.hour
     if !SubSpace
-         .find(params[:sub_space_booking][:sub_space_id])
-         .maximum_booking_duration
-         .nil? && !current_user.admin? && (duration > booking.sub_space.maximum_booking_duration)
+        .find(params[:sub_space_booking][:sub_space_id])
+        .maximum_booking_duration
+        .nil? && !current_user.admin? && (duration > booking.sub_space.maximum_booking_duration)
         render json: {
-                 errors: [
-                   "DurationHour You cannot book #{booking.sub_space.name} for more than #{booking.sub_space.maximum_booking_duration} hours."
-                 ]
-               },
-               status: :unprocessable_entity
+                errors: [
+                  "DurationHour You cannot book #{booking.sub_space.name} for more than #{booking.sub_space.maximum_booking_duration} hours."
+                ]
+              },
+              status: :unprocessable_entity
         booking.destroy
         return
       end
 
     if !SubSpace
-         .find(params[:sub_space_booking][:sub_space_id])
-         .maximum_booking_hours_per_week
-         .nil? && !current_user.admin?
+        .find(params[:sub_space_booking][:sub_space_id])
+        .maximum_booking_hours_per_week
+        .nil? && !current_user.admin?
       user_bookings =
         SubSpaceBooking
           .where(sub_space_id: booking.sub_space.id)
@@ -418,11 +427,11 @@ class SubSpaceBookingController < ApplicationController
       total_duration /= 1.hour
       if total_duration > booking.sub_space.maximum_booking_hours_per_week
         render json: {
-                 errors: [
-                   "DurationWeek You cannot book #{booking.sub_space.name} for more than #{booking.sub_space.maximum_booking_hours_per_week} hours per week."
-                 ]
-               },
-               status: :unprocessable_entity
+                errors: [
+                  "DurationWeek You cannot book #{booking.sub_space.name} for more than #{booking.sub_space.maximum_booking_hours_per_week} hours per week."
+                ]
+              },
+              status: :unprocessable_entity
         booking.destroy
         return
       end
@@ -433,13 +442,16 @@ class SubSpaceBookingController < ApplicationController
         sub_space_booking_id: booking.id,
         booking_status_id:
           (
-            if SubSpace.find(
-                 params[:sub_space_booking][:sub_space_id]
-               ).approval_required
+            # Auto-approve bookings made by admins
+            if current_user.admin?
+              BookingStatus::APPROVED.id
+            elsif SubSpace.find(
+                params[:sub_space_booking][:sub_space_id]
+              ).approval_required
               if SubSpace
-                   .find(params[:sub_space_booking][:sub_space_id])
-                   .max_automatic_approval_hour
-                   .nil?
+                  .find(params[:sub_space_booking][:sub_space_id])
+                  .max_automatic_approval_hour
+                  .nil?
                 BookingStatus::PENDING.id
               elsif duration <=
                     SubSpace.find(
@@ -462,24 +474,29 @@ class SubSpaceBookingController < ApplicationController
     booking.public =
       SubSpace.find(params[:sub_space_booking][:sub_space_id]).default_public
     booking.recurring_booking = recurring_booking # Attach the RecurringBooking handle, is saved with the booking itself
+    
+    # Set approved_at and approved_by for admin bookings
+    if current_user.admin? && status.booking_status_id == BookingStatus::APPROVED.id
+      booking.approved_at = DateTime.now
+      booking.approved_by_id = current_user.id
+    end
+    
     booking.save
     flash[
       :notice
     ] = "Booking for #{booking.sub_space.name} created successfully."
     return unless send_email
-      if booking.sub_space.approval_required &&
-           booking.sub_space_booking_status.booking_status_id ==
-             BookingStatus::PENDING.id
+      if booking.sub_space_booking_status.booking_status_id == BookingStatus::PENDING.id
         BookingMailer.send_booking_needs_approval(booking.id).deliver_now
-      elsif !booking.sub_space.approval_required &&
-            booking.sub_space_booking_status.booking_status_id ==
-              BookingStatus::APPROVED.id
-        BookingMailer.send_booking_automatically_approved(
-          booking.id
-        ).deliver_now
-        BookingMailer.send_booking_approved(booking.id).deliver_now
+      elsif booking.sub_space_booking_status.booking_status_id == BookingStatus::APPROVED.id
+        # Send appropriate confirmation for approved bookings
+        if current_user.admin?
+          BookingMailer.send_booking_approved(booking.id).deliver_now
+        else
+          BookingMailer.send_booking_automatically_approved(booking.id).deliver_now
+          BookingMailer.send_booking_approved(booking.id).deliver_now
+        end
       end
-    
   end
 
   def edit
@@ -685,6 +702,28 @@ class SubSpaceBookingController < ApplicationController
 
   private
 
+  def load_recurring_bookings_for_page(paginated_bookings)
+    # Get unique recurring_booking_ids from current page
+    recurring_ids = paginated_bookings.map(&:recurring_booking_id).compact.uniq
+    
+    @recurring_bookings_map = {}
+    
+    return if recurring_ids.empty?
+    
+    # Load ALL pending bookings for these recurring groups (not just current page)
+    # Use the same timestamp as the main query to avoid timing issues
+    all_recurring_bookings = SubSpaceBooking
+      .includes(:approved_by, :user, :sub_space_booking_status, sub_space: :space)
+      .joins(:sub_space_booking_status)
+      .where(recurring_booking_id: recurring_ids)
+      .where(sub_space_booking_statuses: { booking_status_id: BookingStatus::PENDING.id })
+      .where('sub_space_bookings.end_time > ?', @current_time)
+      .order(start_time: :asc)
+    
+    # Group them by recurring_booking_id
+    @recurring_bookings_map = all_recurring_bookings.group_by(&:recurring_booking_id)
+  end
+
   def destroy_booking(booking)
     # FIXME: This is a one to one relation, so we have to unset
     # the relation before deleting to avoid foreign key issues.
@@ -700,23 +739,21 @@ class SubSpaceBookingController < ApplicationController
 
   def current_bookings(booking_status_id)
     SubSpaceBookingStatus
-      .includes(sub_space_booking: [:approved_by, :user, {sub_space: :space}])
+      .includes(sub_space_booking: [:approved_by, :user, :recurring_booking, {sub_space: :space}])
       .where(booking_status_id: booking_status_id)
       .order("sub_space_bookings.start_time": :asc)
       .map { |booking_status| booking_status.sub_space_booking }
-      .select { |booking| booking.end_time > Time.now }
-      #.sort_by { |booking| booking.start_time }
+      .select { |booking| booking.end_time > @current_time }  # Use consistent timestamp
       .paginate(page: params[:pending_page], per_page: 15)
   end
 
   def old_bookings(booking_status_id)
     SubSpaceBookingStatus
-      .includes(sub_space_booking: [:approved_by, :user, {sub_space: :space}])
+      .includes(sub_space_booking: [:approved_by, :user, :recurring_booking, {sub_space: :space}])
       .where(booking_status_id: booking_status_id)
       .order("sub_space_bookings.start_time": :asc)
       .map { |booking_status| booking_status.sub_space_booking }
-      .select { |booking| booking.end_time < Time.now }
-      #.sort_by { |booking| booking.start_time }
+      .select { |booking| booking.end_time < @current_time }  # Use consistent timestamp
       .reverse
       .paginate(page: params[:old_approved_page], per_page: 15)
   end
