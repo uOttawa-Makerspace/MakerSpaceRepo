@@ -14,4 +14,4 @@
         </div>
     <% end %>
 </div>
-<%= render partial: 'rental_data_table', locals: { locker_rentals: LockerRental.not_cancelled } %>
+<%= render partial: 'rental_data_table', locals: { locker_rentals: @locker_rentals } %>

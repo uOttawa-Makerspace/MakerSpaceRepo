@@ -15,7 +15,7 @@
             <b><%= t('lockers.locker') %>:</b> <%= @locker_rental.locker&.specifier || '-' %>,
             <b>Preferred locker:</b> <%= @locker_rental.preferred_locker&.specifier %>
         </p>
-        <p><b><%= t('lockers.state.state') %>:</b> <%= @locker_rental.state.humanize %>
+        <p><b><%= t('lockers.state.state') %>:</b> <%= t("lockers.state.#{@locker_rental.state}") %>
             <% if @locker_rental.expired? %>
                 | <span class="text-danger"><%= fa_icon :times %> Expired</span> for
                 <%= tag.span(time_ago_in_words(@locker_rental.expired_since), class: ('text-danger' if @locker_rental.overdue?)) %>
@@ -29,7 +29,7 @@
                 on <%= @locker_rental.cancelled_at&.to_formatted_s :long %>
             <% end %>
         </p>
-        <p><b><%= t('lockers.paid_on') %>:</b> <%= @locker_rental.paid_at&.to_date&.to_fs(:long) || '-' %></p>
+        <p><b><%= t('lockers.paid_on') %>:</b> <%= @locker_rental.paid_at&.to_date&.to_fs(:long) || 'unpaid' %></p>
         <p><b>Approved by:</b> <%= @locker_rental.decided_by&.name %></p>
         <p><b>Requested as:</b> <%= @locker_rental.requested_as&.humanize %></p>
         <% if @locker_rental.requested_as_student? %>
@@ -96,80 +96,81 @@
     </div>
 </div>
 
-<hr />
-<%= form_with model: @locker_rental do |f| %>
-    <div class="row justify-content-between gy-3 mb-3">
-        <div class="col-md-auto">
+<% if current_user.staff? %>
+    <hr />
+    <%= form_with model: @locker_rental do |f| %>
+        <div class="row justify-content-between gy-3 mb-3">
+            <div class="col-md-auto">
 
-        </div>
-
-        <div class="col-md">
-            <% if current_user.staff? && !@locker_rental.cancelled? %>
-                <%= f.select :locker_id,
-                    options_for_select(Locker.order_by_specifier.available.pluck(:specifier, :id).map{ |specifier, id| ["Locker ##{specifier}", id]}),
-                 {prompt: 'Select a locker...'}, { class: 'form-select'} %>
-                <div class="input-group">
-                    <span class="input-group-text">Owned until</span>
-                    <%= f.date_field :owned_until, value: @locker_rental.owned_until || end_of_this_semester, class: 'form-control' %>
-                </div>
-            <% end %>
-        </div>
-    </div>
-
-    <% unless @locker_rental.cancelled? %>
-        <div class="row row-cols-lg-3 gx-2 gy-1">
-            <% if @locker_rental.reviewing? %>
-                <div>
-                    <div class="bg-success-subtle rounded border border-success p-3 h-100 d-flex flex-column justify-content-between">
-                        <p>Email user a notification that their locker is ready for payment. Once paid the locker will be automatically assigned.</p>
-                        <%= f.button 'Send to checkout', name: 'locker_rental[state]', value: 'await_payment', class: 'btn btn-success', data: {confirm: "Are you sure you want to send to checkout?"} %>
-                    </div>
-                </div>
-            <% end %>
-
-            <div>
-                <div class="bg-info-subtle rounded border border-info p-3 h-100 d-flex flex-column justify-content-between">
-                    <p>Emails user a notification that a locker has been assigned or moved.
-                        Immediately assigns a locker without asking for payment.</p>
-                    <%= f.button name: 'locker_rental[state]', value: 'active', class: 'btn btn-info', data: {confirm: "Are you sure you want to assign this locker?"} do %>
-                        <% if @locker_rental.active? %>
-                            Move locker
-                        <% else %>
-                            Assign now
-                        <% end %>
-                    <% end %>
-                </div>
             </div>
 
-            <%# Staff can cancel any rental. %>
-            <% if (current_user.staff? && !@locker_rental.cancelled?) || @locker_rental.pending? %>
-                <div>
-                    <div class="bg-danger-subtle rounded border border-danger p-3 h-100 d-flex flex-column justify-content-between">
-                        <% if @locker_rental.pending? %>
-                            <p><%= t('lockers.actions.cancel_request_description') %></p>
-                        <% elsif @locker_rental.active? %>
-                            <p><%= t('lockers.actions.end_rental_description') %></p>
-                        <% end %>
+            <div class="col-md">
+                <% if current_user.staff? && !@locker_rental.cancelled? %>
+                    <%= f.select :locker_id,
+                      options_for_select(Locker.order_by_specifier.available.pluck(:specifier, :id).map{ |specifier, id| ["Locker ##{specifier}", id]}),
+                     {prompt: 'Select a locker...'}, { class: 'form-select'} %>
+                    <div class="input-group">
+                        <span class="input-group-text">Owned until</span>
+                        <%= f.date_field :owned_until, value: @locker_rental.owned_until || end_of_this_semester, class: 'form-control' %>
+                    </div>
+                <% end %>
+            </div>
+        </div>
 
-                        <% if @locker_rental.active? && false %>
-                            <div class="form-check">
-                                <%= f.label :grace_period, 'Give a grace period of one week', class: 'form-check-label' %>
-                                <%= f.check_box :grace_period, checked: true, class: 'form-check-input' %>
-                            </div>
-                        <% end %>
-                        <%= f.button name: 'locker_rental[state]', value: 'cancelled',
-                         class: 'btn btn-danger', data: {confirm: "Are you sure you want to cancel this locker?"} do %>
-                            <% if @locker_rental.pending? %>
-                                Cancel request
-                            <% elsif @locker_rental.active? %>
-                                End rental
+        <% unless @locker_rental.cancelled? %>
+            <div class="row row-cols-lg-3 gx-2 gy-1">
+                <% if @locker_rental.reviewing? %>
+                    <div>
+                        <div class="bg-success-subtle rounded border border-success p-3 h-100 d-flex flex-column justify-content-between">
+                            <p>Email user a notification that their locker is ready for payment. Once paid the locker will be automatically assigned.</p>
+                            <%= f.button 'Send to checkout', name: 'locker_rental[state]', value: 'await_payment', class: 'btn btn-success', data: {confirm: "Are you sure you want to send to checkout?"} %>
+                        </div>
+                    </div>
+                <% end %>
+
+                <div>
+                    <div class="bg-info-subtle rounded border border-info p-3 h-100 d-flex flex-column justify-content-between">
+                        <p>Emails user a notification that a locker has been assigned or moved.
+                            Immediately assigns a locker without asking for payment.</p>
+                        <%= f.button name: 'locker_rental[state]', value: 'active', class: 'btn btn-info', data: {confirm: "Are you sure you want to assign this locker?"} do %>
+                            <% if @locker_rental.active? %>
+                                Move locker
+                            <% else %>
+                                Assign now
                             <% end %>
                         <% end %>
                     </div>
                 </div>
-            <% end %>
-        </div>
-    <% end %>
-<% end %>
 
-<%= vite_javascript_tag 'locker_rental_form', 'data-turbo-track': 'reload' %>
+                <%# Staff can cancel any rental. %>
+                <% if (current_user.staff? && !@locker_rental.cancelled?) || @locker_rental.pending? %>
+                    <div>
+                        <div class="bg-danger-subtle rounded border border-danger p-3 h-100 d-flex flex-column justify-content-between">
+                            <% if @locker_rental.pending? %>
+                                <p><%= t('lockers.actions.cancel_request_description') %></p>
+                            <% elsif @locker_rental.active? %>
+                                <p><%= t('lockers.actions.end_rental_description') %></p>
+                            <% end %>
+
+                            <% if @locker_rental.active? && false %>
+                                <div class="form-check">
+                                    <%= f.label :grace_period, 'Give a grace period of one week', class: 'form-check-label' %>
+                                    <%= f.check_box :grace_period, checked: true, class: 'form-check-input' %>
+                                </div>
+                            <% end %>
+                            <%= f.button name: 'locker_rental[state]', value: 'cancelled',
+                             class: 'btn btn-danger', data: {confirm: "Are you sure you want to cancel this locker?"} do %>
+                                <% if @locker_rental.pending? %>
+                                    Cancel request
+                                <% elsif @locker_rental.active? %>
+                                    End rental
+                                <% end %>
+                            <% end %>
+                        </div>
+                    </div>
+                <% end %>
+            </div>
+        <% end %>
+    <% end %>
+    <%= vite_javascript_tag 'locker_rental_form', 'data-turbo-track': 'reload' %>
+<% end %>

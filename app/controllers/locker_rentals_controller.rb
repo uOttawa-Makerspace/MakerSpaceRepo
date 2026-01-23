@@ -20,9 +20,9 @@ class LockerRentalsController < SessionsController
     @current_rental_state = params[:rental_state] || "reviewing"
 
     @locker_rentals =
-      LockerRental.includes(:locker_type, :rented_by).order(
-        locker_type_id: :asc
-      )
+      LockerRental.includes(:locker, :rented_by).order(
+        created_at: :desc
+      ).not_cancelled
 
     respond_to do |format|
       format.json { render json: @locker_rentals }

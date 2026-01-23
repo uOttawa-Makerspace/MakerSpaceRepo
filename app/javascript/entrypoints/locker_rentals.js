@@ -3,7 +3,9 @@ import "datatables.net-bs5/css/dataTables.bootstrap5.min.css";
 import TomSelect from "tom-select";
 
 document.addEventListener("turbo:load", () => {
-  new TomSelect("#locker_rental_preferred_locker_id");
+  if (document.querySelector("#locker_rental_preferred_locker_id")) {
+    new TomSelect("#locker_rental_preferred_locker_id");
+  }
 });
 
 document.addEventListener("turbo:load", () => {
