@@ -13,7 +13,7 @@ class Photo < ApplicationRecord
     # actual max height of 65
     attachable.variant :photo_slide, resize_to_limit: [65*3, 65]
     attachable.variant :photo_slide_first, resize_to_limit: [500*2, 500]
-    attachable.variant :repo_display_wrapper, resize_to_limit: [225*2, 225]
+    attachable.variant :repo_display_wrapper, resize_to_fill: [225*2, 225*2]
   end
 
   ALLOWED_CONTENT_TYPES = %w[

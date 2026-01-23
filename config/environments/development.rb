@@ -59,6 +59,9 @@ Rails.application.configure do
   # Suppress logger output for asset requests.
   config.assets.quiet = true
 
+  # Disable asset cache
+  config.assets.debug = true
+
   config.console = Pry
 
   Octokit.configure do |c|
