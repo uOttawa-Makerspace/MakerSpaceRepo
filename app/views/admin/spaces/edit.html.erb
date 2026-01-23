@@ -166,7 +166,7 @@
             <input type="color" id="colorpicker" name="staff_needed_calendar_color[]" class="form-control form-control-color" style="aspect-ratio: 1;" value="<%= snc.color %>" title="Choose your color">
             <%= text_field_tag 'staff_needed_calendar_name[]', snc.name, { class: 'form-control w-25', placeholder: 'Enter name...' } %>
             <%= text_field_tag 'staff_needed_calendar[]', snc.calendar_url, { class: 'form-control', placeholder: 'Enter ICS URL...' } %>
-            <%= select_tag 'staff_needed_calendar_role[]', options_for_select([['No role', ''], ['Open Hours', 'open_hours']], snc.role), class: "form-select w-25" %>
+            <%= select_tag 'staff_needed_calendar_role[]', options_for_select([['No role', ''], ['Open Hours', 'open_hours'], ['Send to Makeroom', 'makeroom']], snc.role), class: "form-select w-25" %>
             <button class="btn btn-danger snc-delete-button ms-2" type="button">
               <i class="fa fa-trash"></i>
             </button>
@@ -182,7 +182,7 @@
       <input type="color" id="colorpicker" name="staff_needed_calendar_color[]" class="form-control form-control-color" style="aspect-ratio: 1;" value="navyblue" title="Choose your color">
       <%= text_field_tag 'staff_needed_calendar_name[]', nil, { class: 'form-control w-25', placeholder: 'Enter name...' } %>
       <%= text_field_tag 'staff_needed_calendar[]', nil, { class: 'form-control', placeholder: 'Enter ICS URL...' } %>
-      <%= select_tag 'staff_needed_calendar_role[]', options_for_select([['No role', ''], ['Open Hours', 'open_hours']]), class: "form-select w-25" %>
+      <%= select_tag 'staff_needed_calendar_role[]', options_for_select([['No role', ''], ['Open Hours', 'open_hours'], ['Send to Makeroom', 'makeroom']]), class: "form-select w-25" %>
       <button class="btn btn-danger snc-delete-button ms-2" type="button">
         <i class="fa fa-trash"></i>
       </button>
