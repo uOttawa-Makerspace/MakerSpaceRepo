@@ -305,8 +305,9 @@ RSpec.describe LockerRentalsController, type: :controller do
                  locker_rental:
                    attributes_for(:locker_rental, notes: request_note)
                }
-        end.to change { LockerRental.count }.by(1)
-        #.and change {ActionMailer::Base.deliveries.count}.by(1)
+        end.to change { LockerRental.count }.by(
+          1
+        ).and have_enqueued_mail LockerMailer, :locker_requested
         last_rental = LockerRental.last
         expect(last_rental.rented_by_id).to eq @current_user.id
         expect(last_rental.notes).to eq request_note
@@ -332,9 +333,11 @@ RSpec.describe LockerRentalsController, type: :controller do
           )
         expect do
           post :create, params: { locker_rental: rental_attributes }
-        end.to change { LockerRental.count }.by(1)
-        last_rental = LockerRental.last
+        end.to change { LockerRental.count }.by(
+          1
+        ).and have_enqueued_mail LockerMailer, :locker_requested
 
+        last_rental = LockerRental.last
         expect(last_rental.rented_by_id).to eq @current_user.id
         expect(last_rental.state).to eq 'reviewing'
 
@@ -371,7 +374,9 @@ RSpec.describe LockerRentalsController, type: :controller do
                      locker_id: @locker.id
                    )
                }
-        end.to change { LockerRental.count }.by(1)
+        end.to change { LockerRental.count }.by(
+          1
+        ).and have_enqueued_mail LockerMailer, :locker_requested
         expect(LockerRental.last.state).to eq 'reviewing'
         expect(LockerRental.last.locker_id).to be_nil
       end

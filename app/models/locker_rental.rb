@@ -152,7 +152,7 @@ class LockerRental < ApplicationRecord
     when :cancelled
       LockerMailer.with(locker_rental: self).locker_cancelled.deliver_later
     when :reviewing
-      nil # do nothing
+      LockerMailer.with(locker_rental: self).locker_requested.deliver_later
     else
       raise "Unknown state #{state.to_sym}"
     end
