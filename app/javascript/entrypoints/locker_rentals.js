@@ -1,5 +1,12 @@
 import DataTable from "datatables.net-bs5";
 import "datatables.net-bs5/css/dataTables.bootstrap5.min.css";
+import TomSelect from "tom-select";
+
+document.addEventListener("turbo:load", () => {
+  if (document.querySelector("#locker_rental_preferred_locker_id")) {
+    new TomSelect("#locker_rental_preferred_locker_id");
+  }
+});
 
 document.addEventListener("turbo:load", () => {
   setupRentalTable();
@@ -32,14 +39,6 @@ function setupRentalTable() {
     language: {
       emptyTable: "Nothing.",
     },
-    // FIXME what is this even doing here
-    // search: {
-    //   fixed: {
-    //     rentals: (a, b, c) => {
-    //       return false;
-    //     },
-    //   },
-    // },
   });
 
   table

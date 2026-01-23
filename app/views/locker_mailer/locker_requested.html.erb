@@ -1,0 +1,20 @@
+<% content_for :preheader do %>
+    MakerRepo - New locker request <%= @locker_rental.id %>
+<% end %>
+
+<% content_for :why_received do %>
+    You have received this email someone has submitted a locker request.
+<% end %>
+
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
+    <% if @locker_rental.requested_as_student? %>
+        A user has submitted a request for a locker
+        for course <%= @locker_rental.course_name&.name %>,
+        section <%= @locker_rental.section_name %>,
+        team <%= @locker_rental.team_name %>.
+    <% else %>
+        A user has submitted a request for a locker.
+    <% end %>
+    <br />
+    <a href="<%= locker_rental_url(@locker_rental) %>" target="_blank">View the request here.</a>
+</p>

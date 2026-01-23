@@ -20,9 +20,9 @@ class LockerRentalsController < SessionsController
     @current_rental_state = params[:rental_state] || "reviewing"
 
     @locker_rentals =
-      LockerRental.includes(:locker_type, :rented_by).order(
-        locker_type_id: :asc
-      )
+      LockerRental.includes(:locker, :rented_by).order(
+        created_at: :desc
+      ).not_cancelled
 
     respond_to do |format|
       format.json { render json: @locker_rentals }
@@ -130,47 +130,53 @@ class LockerRentalsController < SessionsController
     @available_fors = {
       staff: ("CEED staff member" if current_user.staff?),
       student: ("GNG student" if current_user.student?),
-      general: "community member"
+      general: "General request"
     }.compact.invert
     # Don't allow new request if user already has an active or pending request
     @pending_locker_request = current_user.locker_rentals.pending.first
   end
 
-  # Admins are allowed to cancel and assign
-  def admin_locker_rental_params
-    admin_params =
-      params.require(:locker_rental).permit(
-        :locker_id,
-        :rented_by_id,
-        :repository,
-        :requested_as,
-        :state,
-        :owned_until,
-        :notes
-      )
-    # FIXME replace that search with a different one, return ID instead
-    # If username is given (since search can do that)
-    rented_by_user =
-      User.find_by(username: params.dig(:locker_rental, :rented_by_username))
-    if rented_by_user
-      # then convert to user id
-      admin_params.reverse_merge!(rented_by_id: rented_by_user.id)
-    end
-    return admin_params
-  end
-
   def locker_rental_params
+    common_permitted = %i[
+      preferred_locker_id
+      notes
+      requested_as
+      repository_id
+      course_name_id
+      section_name
+      team_name
+    ]
+
+    staff_additional_permitted = %i[
+      locker_id
+      rented_by_id
+      repository_id
+      requested_as
+      state
+      owned_until
+      notes
+    ]
+
     if current_user.staff?
-      admin_locker_rental_params
+      admin_params = params.require(:locker_rental).permit(
+        *common_permitted,
+        *staff_additional_permitted)
+      
+      # FIXME replace that search with a different one, return ID instead
+      # If username is given (since search can do that)
+      rented_by_user =
+        User.find_by(username: params.dig(:locker_rental, :rented_by_username))
+      if rented_by_user
+        # then convert to user id
+        admin_params.reverse_merge!(rented_by_id: rented_by_user.id)
+      end
+
+      admin_params
     elsif params[:id]
       # If updating, only allow cancellations
       params.require(:locker_rental).permit(:state)
-    else # If new, only allow some details
-      params.require(:locker_rental).permit(
-        :notes,
-        :requested_as,
-        :repository_id
-      )
+    else
+      params.require(:locker_rental).permit(*common_permitted)
     end
   end
 end

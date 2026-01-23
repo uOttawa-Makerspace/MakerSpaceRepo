@@ -1,46 +1,58 @@
 <div class="table-responsive">
-    <table class="table table-striped" id="rental-data-table">
+    <table class="table table-striped table-sm" data-datatable>
         <% if local_assigns[:header_title] %>
             <caption class="text-center fs-3" align="top"><%= header_title %></caption>
         <% end %>
         <thead class="table-primary">
             <tr>
-                <th class="w-auto dt-center" data-type="num"><%= t('lockers.locker_id') %> assigned</th>
-                <th><%= t('lockers.rented_by') %></th>
+                <th class="w-auto dt-center" data-type="num"><%= t('lockers.locker') %></th>
                 <th><%= t('lockers.state.state') %></th>
-                <th>Requested on</th>
+                <th><%= t('lockers.rented_by') %></th>
                 <th>Requested as</th>
+                <th>Requested on</th>
                 <th><%= t('lockers.assigned_on') %></th>
                 <th><%= t('lockers.owned_until') %></th>
+                <th>Actions</th>
             </tr>
         </thead>
-        <tbody>
+        <tbody class="align-middle">
             <% if locker_rentals.present? %>
                 <% locker_rentals.each do |rental| %>
                     <tr>
                         <td class="dt-center">
-                            <%= link_to "##{rental.locker&.specifier}", rental, class: 'link' %>
-                        </td>
-                        <td><%= link_to rental.rented_by.username, user_path(rental.rented_by) %>
-                            <%= tag.span(rental.rented_by.role.humanize, class: 'badge text-bg-primary') if rental.rented_by.staff? %></td>
-                        <td data-search="<%= rental.state %>">
-                            <%= tag.i class: "fa #{rental.state_icon}" %> <%= t("lockers.state.#{rental.state}") %>
-                            <% if rental.expired? %>
-                                | <span class="text-danger"><%= fa_icon :times %> Expired</span>
+                            <% if rental.locker.present? %>
+                                <%= link_to"##{rental.locker.specifier}", rental.locker, class: 'btn btn-sm btn-outline-primary' %>
                             <% end %>
                         </td>
-                        <td><%= rental.created_at.to_date.to_formatted_s :long %></td>
+                        <td data-search="<%= rental.state %>" class="pe-1">
+                            <% btn_class = { 'active' => 'btn-outline-success',
+                                'reviewing' => 'btn-outline-secondary',
+                                'await_payment' => 'btn-outline-info' }
+                            %>
+                            <%= link_to rental, class: "w-100 btn btn-sm #{btn_class[rental.state]}" do %>
+                                <%= tag.i class: "fa #{rental.state_icon}" %> <%= t("lockers.state.#{rental.state}") %>
+                                <% if rental.expired? %>
+                                    <span class="text-danger"><%= fa_icon :times %> Expired</span>
+                                <% end %>
+                            <% end %>
+                        </td>
+                        <td><%= link_to rental.rented_by.username, user_path(rental.rented_by.username) %>
+                            <%= tag.span(rental.rented_by.role.humanize, class: 'badge text-bg-primary') if rental.rented_by.staff? %></td>
                         <td>
                             <%= rental.requested_as.to_s.humanize %>
+                            <br />
                             <% if rental.repository %>
-                                -
                                 <%= link_to "Linked repository", repository_path(rental.rented_by.username, rental.repository.id), title: rental.repository.title %>
                             <% else %>
-                                - No repository
+                                No repository
                             <% end if rental.requested_as_student? %>
                         </td>
-                        <td><%= rental.updated_at&.to_date %></td>
-                        <td><%= rental.owned_until&.to_date || 'Unapproved yet' %></td>
+                        <td><%= rental.created_at.to_date.to_formatted_s :long %></td>
+                        <td><%= rental.updated_at&.to_date&.to_formatted_s :long %></td>
+                        <td><%= rental.owned_until&.to_date&.to_formatted_s(:long) || 'Unapproved yet' %></td>
+                        <td>
+                            <%= link_to 'View request', rental, class: 'btn btn-sm btn-primary' %>
+                        </td>
                     </tr>
                 <% end %>
             <% end %>

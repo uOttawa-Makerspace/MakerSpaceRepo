@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_01_11_182102) do
+ActiveRecord::Schema[7.2].define(version: 2026_01_22_153357) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_trgm"
@@ -673,8 +673,16 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_11_182102) do
     t.date "paid_at"
     t.bigint "decided_by_id"
     t.bigint "locker_id"
+    t.bigint "course_name_id"
+    t.string "section_name"
+    t.string "team_name"
+    t.bigint "preferred_locker_id"
+    t.datetime "cancelled_at"
+    t.boolean "notified_of_cancellation"
+    t.index ["course_name_id"], name: "index_locker_rentals_on_course_name_id"
     t.index ["decided_by_id"], name: "index_locker_rentals_on_decided_by_id"
     t.index ["locker_id"], name: "index_locker_rentals_on_locker_id"
+    t.index ["preferred_locker_id"], name: "index_locker_rentals_on_preferred_locker_id"
     t.index ["rented_by_id"], name: "index_locker_rentals_on_rented_by_id"
     t.index ["repository_id"], name: "index_locker_rentals_on_repository_id"
   end
@@ -1565,6 +1573,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_11_182102) do
   add_foreign_key "likes", "repositories"
   add_foreign_key "likes", "users"
   add_foreign_key "locker_rentals", "lockers"
+  add_foreign_key "locker_rentals", "lockers", column: "preferred_locker_id"
   add_foreign_key "locker_rentals", "users", column: "decided_by_id"
   add_foreign_key "locker_rentals", "users", column: "rented_by_id"
   add_foreign_key "memberships", "membership_tiers"

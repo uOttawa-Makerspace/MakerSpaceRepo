@@ -7,6 +7,20 @@ class LockerMailer < ApplicationMailer
     @user = @locker_rental.rented_by
   end
 
+  def locker_requested
+    if @locker_rental.requested_as_student?
+      mail(
+        to: "makerlab@uottawa.ca",
+        subject: "New locker request for a GNG project"
+      )
+    else
+      mail(
+        to: "ceed@uottawa.ca",
+        subject:  "New locker request"
+      )
+    end
+  end
+
   def locker_assigned
     mail(
       to: @user.email,

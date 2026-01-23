@@ -10,13 +10,18 @@ class LockerRental < ApplicationRecord
 
   # Associated when assigned
   belongs_to :locker, optional: true
+  belongs_to :preferred_locker, class_name: 'Locker', optional: true
   belongs_to :rented_by, class_name: 'User'
   belongs_to :decided_by, class_name: 'User', optional: true
   # optional because some students don't always have a repository ready beforehand
   belongs_to :repository, optional: true
+  belongs_to :course_name, optional: true
 
+  before_validation :set_cancellation_date, if: :cancelled?
+  
   after_save :send_email_notification
   after_save :sync_shopify_draft_order
+  after_save :log_locker_rental_modification
 
   enum :state,
        {
@@ -70,8 +75,16 @@ class LockerRental < ApplicationRecord
   # Which staff member approved the request, or if owner cancelled the request
   validates :decided_by, presence: true, unless: :reviewing?
 
+  # Track when rental was finished
+  validates :cancelled_at, presence: true, if: :cancelled?
+
   # Locker rental always has an owner
   validates :rented_by, presence: true
+
+  # If rented by a GNG student, make sure details are given
+  validates :course_name, presence: true, if: :requested_as_student?
+  validates :section_name, presence: true, if: :requested_as_student?
+  validates :team_name, presence: true, if: :requested_as_student?
 
   # Scopes to aid sorting rentals
   scope :pending, -> { where(state: %i[reviewing await_payment]) }
@@ -94,6 +107,25 @@ class LockerRental < ApplicationRecord
     active? && owned_until && owned_until <= DateTime.current
   end
 
+  def expired_since
+    # If there's a cancellation date, give that
+    # else owned_until if it's expired
+    cancelled_at || (owned_until if expired?)
+  end
+
+  # If expired for more than a week. Expired if owned_until or cancelled_at is
+  # one week old
+  def overdue?
+    # safe navigation to call comparison operator
+    expired? && expired_since < 1.week.ago
+  end
+
+  def overdue_for
+    if overdue?
+      
+    end
+  end
+
   # Is a rental not confirmed yet? Usually means users can cancel rental
   def pending?
     reviewing? || await_payment?
@@ -105,18 +137,22 @@ class LockerRental < ApplicationRecord
     await_payment? || active?
   end
 
+  def set_cancellation_date
+    self.cancelled_at = DateTime.now
+  end
+
   # Send emails when state changes
   def send_email_notification
     return unless saved_change_to_state?
     case state.to_sym
     when :await_payment
-      LockerMailer.with(locker_rental: self).locker_checkout.deliver_now
+      LockerMailer.with(locker_rental: self).locker_checkout.deliver_later
     when :active
-      LockerMailer.with(locker_rental: self).locker_assigned.deliver_now
+      LockerMailer.with(locker_rental: self).locker_assigned.deliver_later
     when :cancelled
-      LockerMailer.with(locker_rental: self).locker_cancelled.deliver_now
+      LockerMailer.with(locker_rental: self).locker_cancelled.deliver_later
     when :reviewing
-      nil # do nothing
+      LockerMailer.with(locker_rental: self).locker_requested.deliver_later
     else
       raise "Unknown state #{state.to_sym}"
     end
@@ -131,6 +167,10 @@ class LockerRental < ApplicationRecord
     end
   end
 
+  def log_locker_rental_modification
+    
+  end
+  
   # Fetch checkout link from shopify .Returns nil if API call fails or checkout
   # is not possible now.
   def checkout_link
