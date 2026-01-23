@@ -93,9 +93,7 @@ jobs:
       - name: Run Google Calendar Sync
         if: github.ref == 'refs/heads/staging'
         env:
-          RAILS_ENV: staging
-          DATABASE_URL: postgres://postgres:@localhost:5432/makerspacerepo_test
-          REDIS_URL: redis://localhost:6379/0
+          # RAILS_ENV: staging
         run: |
           bin/rails runner "GoogleCalendarSyncJob.perform_now"
 
