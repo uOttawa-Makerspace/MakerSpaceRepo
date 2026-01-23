@@ -82,9 +82,9 @@ class LockerRental < ApplicationRecord
   validates :rented_by, presence: true
 
   # If rented by a GNG student, make sure details are given
-  # validates :course_name, presence: true, if: :requested_as_student?
-  # validates :section_name, presence: true, if: :requested_as_student?
-  # validates :team_name, presence: true, if: :requested_as_student?
+  validates :course_name, presence: true, if: :requested_as_student?
+  validates :section_name, presence: true, if: :requested_as_student?
+  validates :team_name, presence: true, if: :requested_as_student?
 
   # Scopes to aid sorting rentals
   scope :pending, -> { where(state: %i[reviewing await_payment]) }
