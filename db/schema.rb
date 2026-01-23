@@ -320,6 +320,16 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_22_153357) do
     t.index ["sluggable_type"], name: "index_friendly_id_slugs_on_sluggable_type"
   end
 
+  create_table "google_calendar_channels", force: :cascade do |t|
+    t.string "channel_id", null: false
+    t.string "resource_id", null: false
+    t.datetime "expires_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "sync_token"
+    t.index ["channel_id"], name: "index_google_calendar_channels_on_channel_id", unique: true
+  end
+
   create_table "job_options", force: :cascade do |t|
     t.string "name", null: false
     t.text "description"
@@ -1268,6 +1278,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_22_153357) do
     t.bigint "approved_by_id"
     t.datetime "approved_at"
     t.bigint "recurring_booking_id"
+    t.string "google_booking_id"
     t.index ["approved_by_id"], name: "index_sub_space_bookings_on_approved_by_id"
     t.index ["recurring_booking_id"], name: "index_sub_space_bookings_on_recurring_booking_id"
     t.index ["sub_space_booking_status_id"], name: "index_sub_space_bookings_on_sub_space_booking_status_id"

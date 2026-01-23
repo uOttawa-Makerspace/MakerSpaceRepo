@@ -25,14 +25,16 @@ document.addEventListener("turbo:load", function () {
       modalBody.replaceChildren(...newOptions);
     });
   }
-
+  // SET UP POPUP MODAL ON CALENDAR
   let bookedCalendarEl = document.getElementById("booked-calendar");
   if (bookedCalendarEl) {
     function createEvent(arg) {
       let modal = document.getElementById("bookModal");
-
+      // Show the create event buttons if new event is being created (and hide edit buttons)
       document.getElementById("bookSave").style.display = "block";
       document.getElementById("bookUpdate").style.display = "none";
+      document.getElementById("subspace").style.display = "none";
+      document.getElementById("subspace_header").style.display = "none";
       document.getElementById("bookDelete").style.display = "none";
       document.getElementById("bookingModalLabel").innerText = "New Booking";
       document.getElementById("book-recurring").style.display = "inline-block";
@@ -52,9 +54,11 @@ document.addEventListener("turbo:load", function () {
     }
     function editEvent(arg) {
       let modal = document.getElementById("bookModal");
-
+      // Show the edit event buttons in an event is being edited (and hide create buttons)
       document.getElementById("bookSave").style.display = "none";
       document.getElementById("bookUpdate").style.display = "block";
+      document.getElementById("subspace").style.display = "block";
+      document.getElementById("subspace_header").style.display = "block";
       document.getElementById("bookingModalLabel").innerText = "Update Booking";
       document.getElementById("sub_space_booking_id").value =
         arg.event.id.split("_")[1];
@@ -94,6 +98,8 @@ document.addEventListener("turbo:load", function () {
 
             modal.style.display = "block";
             modal.classList.add("show");
+
+            document.getElementById("subspace").value = data.sub_space_id;
 
             toggleRecurring();
           });
@@ -252,6 +258,7 @@ document.addEventListener("turbo:load", function () {
           description: document.getElementById("book-description").value,
           start_time: start_picker.input.value,
           end_time: end_picker.input.value,
+          sub_space_id: document.getElementById("subspace").value,
           blocking: document.getElementById("book-blocking")
             ? document.getElementById("book-blocking").checked
             : false,
