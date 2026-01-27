@@ -42,3 +42,7 @@ The plugin depends on an file input element and a preview div element. `file_upl
 `data-file-upload-suffix` (optional) appends an extra name component to the uploaded file. The final form field name would become "Input field name" + "random ID" + "file upload suffix".
 
 `name` is copied from the main input element and appended to the name of each
+
+## No route matches [POST]
+
+This might be because of an internal rails exception being converted into a 404. To double check, run `request.params` in the console and see if the parameters cause an error.

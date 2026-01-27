@@ -176,9 +176,12 @@ class RepositoriesController < SessionsController
                     @repository.slug
                   ).to_s
     else
+      @project_proposals =
+        ProjectProposal.approved.order(title: :asc).pluck(:title, :id) if params[
+        :project_proposal_id
+      ].blank?
       flash[:alert] = "Unable to apply the changes."
-      render json: @repository.errors.to_hash(true),
-             status: :unprocessable_content
+      render 'edit', status: :unprocessable_content
     end
   end
 
