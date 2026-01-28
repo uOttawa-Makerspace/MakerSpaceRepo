@@ -84,7 +84,7 @@ class Repository < ApplicationRecord
 
   # This seems to work fine for limiting association counts.
   # Max 5 gallery photos per repository.
-  validates :photos, length: {maximum: 5}
+  validates :photos, length: { maximum: 5, minimum: 1, message: "Must have between 1 and 5 photos" }
 
   # validates :category,
   #           inclusion: { within: CategoryOption.show_options },
