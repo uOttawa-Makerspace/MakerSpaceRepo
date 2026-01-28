@@ -1,6 +1,10 @@
 <div class="card h-100 shadow">
-    <%= link_to repository_path(repository.user_username, repository.slug), class: 'card-img-top bg-dark border-bottom', style: 'height: 16rem' do %>
-        <%= image_tag(url_for(repository.photos.first.image.variant(:repo_display_wrapper)), class: 'w-100 h-100 object-fit-cover') if repository.photos.first.present? %>
+    <%= link_to repository_path(repository.user_username, repository.slug), class: 'card-img-top border-bottom', style: 'height: 16rem' do %>
+        <% if repository.photos.any? %>
+            <%= image_tag(url_for(repository.photos.first.image.variant(:repo_display_wrapper)), class: 'w-100 h-100 object-fit-cover') %>
+        <% else %>
+            <%= image_tag 'C_square.svg', class: 'w-100 h-100 object-fit-fit' %>
+        <% end %>
     <% end %>
 
     <%= link_to repository_path(user_username: repository.user_username, id: repository.slug), class: "card-body py-2 d-flex flex-column" do %>
