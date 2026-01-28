@@ -1,20 +1,51 @@
 <% provide(:title, 'Project Proposals') %>
-<div id="projectProposals">
-  <h1 class="text-center mt-3">Project Proposals</h1>
-  <div class="my-3">
+<h1 class="text-center">Project Proposals</h1>
+
+<div class="my-3">
     <%= form_tag(project_proposals_path, method: :get) do %>
-      <div class="d-flex justify-content-center">
         <%= fa_icon 'search', class: 'fa-2x pe-2' %>
         <div class="col-md-4 search_bar" >
-          <%= text_field_tag(:search, '', placeholder: 'Search', class: 'form-control') %>
+            <%= text_field_tag(:search, '', placeholder: 'Search', class: 'form-control') %>
         </div>
         <%# If search exists in the params, display back button %>
         <% if params[:search] && !params[:search].empty? %>
-          <%= link_to 'Back', project_proposals_path, class: 'btn btn-secondary' %>
+            <%= link_to 'Back', project_proposals_path, class: 'btn btn-secondary' %>
         <% end %>
-      </div>
     <% end %>
-  </div>
+</div>
 
-  <%= render 'project_proposal_listing' %>
+<div class="rounded-top-3 table-responsive">
+    <table class="table border">
+        <thead class="table-secondary">
+            <tr>
+                <th scope="col">ID</th>
+                <th scope="col">Proposer</th>
+                <th scope="col">Project Title</th>
+                <th scope="col">Categories</th>
+                <th scope="col">Client Interest</th>
+                <th scope="col">Date Proposed</th>
+                <th scope="col">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <%= render partial: 'proposal_row', collection: @approved_project_proposals, as: :project_proposal %>
+        </tbody>
+    </table>
+</div>
+
+<% if @user.admin? %>
+    <h2 class="text-center">Pending Project Proposals</h2>
+    <div>
+        <%= render partial: 'listing', locals: { title: 'Pending Project Proposals', project_proposals: @pending_project_proposals, param_name: 'page_pending' } %>
+    </div>
+<% end %>
+
+<h2 class="text-center">Approved Project Proposals</h2>
+<div>
+    <%= render partial: 'listing', locals: { title: 'Approved Project Proposals', project_proposals: @approved_project_proposals, param_name: 'page_approved' } %>
+</div>
+
+<h2 class="text-center">Project Proposals not approved</h2>
+<div id="declinedAccordion" class="accordion-collapse collapse <%= 'show' if params[:search] %>" data-bs-parent="proposalAccordion">
+    <%= render partial: 'listing', locals: { title: 'Project Proposals not approved', project_proposals: @not_approved_project_proposals, param_name: 'page_not_approved' } %>
 </div>

@@ -1,0 +1,37 @@
+<tr>
+    <th scope="row"><%= project_proposal.id %></th>
+    <td><%= project_proposal.username %></td>
+    <td><%= project_proposal.title %></td>
+    <td>
+        <% project_proposal.categories.find_each do |c| %>
+            <%= c.name.split('/').first %>
+        <% end %>
+    </td>
+    <td>
+        <% case project_proposal.client_interest.split('/').first.squish %>
+        <% when "Low" %>
+            Low
+            <div class="bg-body-secondary rounded-5 overflow-hidden">
+                <div class="w-25 bg-danger" style="height: 1rem"></div>
+            </div>
+        <% when "Medium" %>
+            Medium
+            <div class="bg-body-secondary rounded-5 overflow-hidden">
+                <div class="w-50 bg-warning" style="height: 1rem"></div>
+            </div>
+        <% when "High" %>
+            High
+            <div class="bg-body-secondary rounded-5 overflow-hidden">
+                <div class="w-75 bg-success" style="height: 1rem"></div>
+            </div>
+        <% end %>
+    </td>
+    <td><%= project_proposal.created_at.to_formatted_s :long %></td>
+    <td>
+        <div class="d-flex justify-content-between">
+            <button>
+            <button class="btn btn-sm btn-success"><%= fa_icon :check %></button>
+            <button class="btn btn-sm btn-danger"><%= fa_icon :times %></button>
+        </div>
+    </td>
+</tr>

@@ -41,7 +41,6 @@ class ProjectProposalsController < SessionsController
           .order(created_at: :desc)
           .where(approved: 1)
           .paginate(per_page: 15, page: params[:page_approved])
-      #raise 'huh'
       @not_approved_project_proposals =
         ProjectProposal
           .left_outer_joins(:user)
