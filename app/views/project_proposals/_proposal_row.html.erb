@@ -1,7 +1,11 @@
 <tr>
     <th scope="row"><%= project_proposal.id %></th>
-    <td><%= project_proposal.username %></td>
-    <td><%= project_proposal.title %></td>
+    <td class="w-25"><%= project_proposal.username %></td>
+    <td class="w-25">
+        <span title="<%= project_proposal.title %>">
+            <%= project_proposal.title %>
+        </span>
+    </td>
     <td>
         <% project_proposal.categories.find_each do |c| %>
             <%= c.name.split('/').first %>
@@ -12,24 +16,26 @@
         <% when "Low" %>
             Low
             <div class="bg-body-secondary rounded-5 overflow-hidden">
-                <div class="w-25 bg-danger" style="height: 1rem"></div>
+                <div class="w-25 bg-danger rounded-5" style="height: 1rem"></div>
             </div>
         <% when "Medium" %>
             Medium
             <div class="bg-body-secondary rounded-5 overflow-hidden">
-                <div class="w-50 bg-warning" style="height: 1rem"></div>
+                <div class="w-50 bg-warning rounded-5" style="height: 1rem"></div>
             </div>
         <% when "High" %>
             High
             <div class="bg-body-secondary rounded-5 overflow-hidden">
-                <div class="w-75 bg-success" style="height: 1rem"></div>
+                <div class="w-75 bg-success rounded-5" style="height: 1rem"></div>
             </div>
         <% end %>
     </td>
     <td><%= project_proposal.created_at.to_formatted_s :long %></td>
     <td>
         <div class="d-flex justify-content-between">
-            <button>
+            <%= link_to fa_icon(:eye), project_proposal_path(project_proposal), class: 'btn btn-sm btn-outline-secondary', title: 'Show project proposal' %>
+            <%= link_to fa_icon(:pencil), edit_project_proposal_path(project_proposal), class: 'btn btn-sm btn-outline-secondary', title: 'Edit project proposal' %>
+            <div class="vr"></div>
             <button class="btn btn-sm btn-success"><%= fa_icon :check %></button>
             <button class="btn btn-sm btn-danger"><%= fa_icon :times %></button>
         </div>
