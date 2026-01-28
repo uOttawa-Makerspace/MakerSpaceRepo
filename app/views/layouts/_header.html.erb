@@ -93,7 +93,7 @@
                     <% else %>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href=" <%= user_path(@user.username) %>" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="text-transform: none;">
-                                <%= image_tag @user.display_avatar, class: 'avatar', alt: 'Avatar', loading: 'lazy' %>
+                                <%= image_tag url_for(@user.display_avatar), class: 'avatar', alt: 'Avatar', loading: 'lazy' %>
                                 <%= @user.username %>
                             </a>
                             <div class="dropdown-menu dropdown-menu-right">
