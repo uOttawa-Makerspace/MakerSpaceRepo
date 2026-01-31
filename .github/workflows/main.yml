@@ -92,8 +92,6 @@ jobs:
         # Run Google Calendar Sync Job (staging only)
       - name: Run Google Calendar Sync
         if: github.ref == 'refs/heads/staging'
-        env:
-          # RAILS_ENV: staging
         run: |
           bin/rails runner "GoogleCalendarSyncJob.perform_now"
 
