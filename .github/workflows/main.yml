@@ -5,8 +5,6 @@ on:
     branches: [master, staging]
   pull_request:
     branches: [master, staging]
-  schedule:
-    - cron: "0 3 * * 0" # Sunday 3am UTC refresh webhooks
 
 env:
   RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
@@ -89,12 +87,6 @@ jobs:
       - name: Run RSpec
         run: bundle exec rspec
 
-        # Run Google Calendar Sync Job (staging only)
-      - name: Run Google Calendar Sync
-        if: github.ref == 'refs/heads/staging'
-        run: |
-          bin/rails runner "GoogleCalendarSyncJob.perform_now"
-
   security:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -157,46 +149,3 @@ jobs:
           eval "$(ssh-agent -s)"
           ssh-add /tmp/deploy_key
           bundle exec cap production deploy
-
-  refresh_webhooks:
-    if: github.event_name == 'schedule'
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:17
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_USER: postgres
-          PGDATA: /dev/shm/pgdata
-        ports: ["5432:5432"]
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 5s
-          --health-timeout 3s
-          --health-retries 3
-          --shm-size=512mb
-
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          bundler-cache: true
-      - name: Create Credentials File
-        run: echo '${{ secrets.CREDENTIALS_JSON }}' > config/makerepo-1632742c49cc.json
-
-      - name: Setup SSL certificates
-        run: |
-          mkdir -p certs
-          if [ ! -f certs/saml.crt ]; then
-            openssl req -x509 -newkey rsa:2048 -keyout certs/saml.key -out certs/saml.crt -days 365 -nodes -subj "/C=CA/ST=Ontario/L=Ottawa/O=uOttawa/OU=Richard L'Abbé Makerspace/CN=makerepo.com/emailAddress=ci@makerepo.com"
-          fi
-
-      - name: Setup Database
-        run: |
-          bundle exec rails db:prepare
-          bundle exec rails db:migrate
-
-      - name: Refresh Google Calendar Webhooks
-        run: |
-          bin/rails runner "GoogleCalendar::WebhookRegistrar.register!"
