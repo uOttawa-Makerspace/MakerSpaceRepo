@@ -1,13 +1,8 @@
-// Place all the styles related to the Staff controller here.
-// They will automatically be included in application.css.
-// You can use Sass (SCSS) here: http://sass-lang.com/
-/* SETTING LAYOUT */
-
+/* 1. Global Animations */
 @keyframes signin-progress-bar {
   from {
     width: 0%;
   }
-
   to {
     width: 100%;
   }
@@ -17,7 +12,6 @@
   from {
     opacity: 1;
   }
-
   to {
     opacity: 0;
   }
@@ -37,48 +31,108 @@ div.fading-progress-bar {
   animation-duration: 0.5s;
 }
 
+/* 2. Modal & Dark Mode Support */
+[data-bs-theme="dark"] {
+  .ts-control {
+    background-color: var(--bs-body-bg);
+    border-color: var(--bs-border-color);
+    color: var(--bs-body-color);
+    input {
+      color: var(--bs-body-color);
+    }
+  }
+
+  .ts-dropdown {
+    background-color: var(--bs-body-bg);
+    border-color: var(--bs-border-color);
+    color: var(--bs-body-color);
+
+    .active {
+      background-color: var(--bs-primary);
+      color: #fff;
+    }
+    .option {
+      color: var(--bs-body-color);
+    }
+    .option:hover,
+    .option.active {
+      background-color: var(--bs-tertiary-bg);
+    }
+  }
+}
+
+.modal-backdrop {
+  opacity: 0.5 !important;
+}
+
+.modal-content {
+  transition: height 0.3s ease-in-out;
+}
+
+@media (min-width: 768px) {
+  .modal-dialog {
+    /* Force alignment to the left */
+    margin-right: auto !important;
+    margin-left: 0 !important;
+
+    /* Layout */
+    max-width: 28vw;
+    min-width: 450px; /* Prevents it from getting too thin */
+  }
+}
+
+/* Tom Select General Styling */
+.ts-dropdown {
+  z-index: 1060 !important;
+}
+#staff_select_container {
+  .ts-wrapper {
+    width: 100%;
+  }
+  .ts-control {
+    border-radius: 0.375rem;
+    min-height: 38px;
+    padding: 0.375rem 0.75rem;
+  }
+}
+
+.staff-color-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 8px;
+}
+
+/* 3. Legacy Components with CSS Variables */
 h1.modal-title {
   font-size: 20px;
+  color: var(--bs-heading-color);
 }
 
 .badge.cert-badge {
   font-size: 0.7em;
   background: #e24829;
-  color: white;
+  color: #fff;
   width: auto;
   height: 18px;
   text-align: center;
   line-height: 18px;
-  border-radius: 25%;
-  box-shadow: 0 0 1px #333;
-  margin-top: 7px;
-  margin-right: 5px;
+  border-radius: 4px;
+  box-shadow: 0 0 1px var(--bs-border-color);
+  margin: 7px 5px 0 0;
   float: left;
   padding: 1em;
   font-size: 18px;
 }
 
-div#space-top-corner {
-  font:
-    400 0.75rem "Roboto",
-    helvetica,
-    sans-serif;
-  display: inline;
-  float: right;
-  padding-left: 3px;
-  padding-right: 3px;
-  margin-left: 100px;
-}
-
 div.setting-top-panel {
-  position: center;
   padding: 3rem 1rem 0;
-  color: #333;
+  color: var(--bs-body-color);
   font:
     400 1.2rem "Roboto",
     helvetica,
     sans-serif;
-
   li.setting-menu-item {
     padding-top: 5px;
   }
@@ -86,9 +140,23 @@ div.setting-top-panel {
 
 div.panel-title:hover {
   padding-left: 5px;
-
+  transition: padding 0.2s ease;
   &:hover:not(.vp-button) {
     border-left: 5px solid #5f9ea0;
+  }
+}
+
+.download-button,
+.update-button {
+  border: none;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  border-radius: 4px;
+  color: #fff;
+  transition: opacity 0.2s;
+  &:hover {
+    cursor: pointer;
+    opacity: 0.9;
   }
 }
 
@@ -98,21 +166,8 @@ div.panel-title:hover {
     300 10px "Roboto",
     sans-serif;
   padding: 0.5rem 0.34rem;
-  border: none;
-  text-transform: uppercase;
-  color: #777;
-  letter-spacing: 0.15em;
-  border-radius: 2px;
   background-color: #5a42e8;
-  color: #fff;
-  margin-right: 5px;
-  margin-top: 11px;
-  margin-bottom: 5px;
-
-  &:hover {
-    cursor: pointer;
-    background-color: transparentize(#5a42e8, 0.4);
-  }
+  margin: 11px 5px 5px 0;
 }
 
 .update-button {
@@ -120,143 +175,12 @@ div.panel-title:hover {
     300 1em "Roboto",
     sans-serif;
   padding: 0.5rem 1rem;
-  border: none;
-  text-transform: uppercase;
-  color: #777;
-  letter-spacing: 0.15em;
-  border-radius: 2px;
   background-color: #5f9ea0;
-  color: #fff;
   margin-bottom: 20px;
-
-  &:hover:not(.vp-button) {
-    background-color: #73b2b4;
-  }
-
-  &:hover {
-    cursor: pointer;
-  }
 }
-
-/*
-table {
-  font-size: 14px;
-  width: 110%;
-  th {
-    background-color: #c2d6d6;
-    color: #366;
-    padding: 5px;
-    a {
-      text-decoration: underline;
-    }
-    i {
-      margin-left: 1px;
-      line-height: 10px;
-      width: 10px;
-      height: 13px;
-      text-align: center;
-    }
-    i.fa-sort-asc {
-      vertical-align: bottom;
-    }
-    i.fa-sort-desc {
-      vertical-align: top;
-    }
-  }
-  .action-header {
-    width: max(100px);
-  }
-  .last-seen-header {
-    width: max(220px);
-  }
-  .certifications-header {
-    width: max(220px);
-  }
-  .email-header {
-    width: max(220px);
-  }
-
-  td {
-    text-align: center;
-    padding: 5px;
-  }
-  td.action-cell {
-    .btn {
-      color: #fff;
-    }
-
-    .x-button {
-      color: #af0000;
-      font-size: 1.4em;
-    }
-    .check-button {
-      color: #006200;
-      font-size: 1.4em;
-    }
-
-    .visit-button {
-      font: 300 10px "Roboto", sans-serif;
-      padding: 0.5rem 1.6rem;
-      margin-top: 0.65rem;
-      margin-bottom: 0.88rem;
-      border: none;
-      text-transform: uppercase;
-      color: #777;
-      letter-spacing: 0.15em;
-      border-radius: 2px;
-      background-color: #5f9ea0;
-      color: #fff;
-      &:hover {
-        cursor: pointer;
-      }
-    }
-
-    .destroy-button {
-      font: 300 10px "Roboto", sans-serif;
-      padding: 0.5rem 0.8rem;
-      margin-top: 0.65rem;
-      margin-bottom: 0.88rem;
-      border: none;
-      text-transform: uppercase;
-      color: #777;
-      letter-spacing: 0.15em;
-      border-radius: 2px;
-      background-color: #a61e10;
-      color: #fff;
-
-      &:hover {
-        cursor: pointer;
-      }
-    }
-  }
-
-  //tr {
-  //    background-color: #f0f5f5;
-  //}
-  tr.current-session {
-    background-color: #b3e6cc;
-  }
-  .link-table {
-    color: #366;
-    text-align: center;
-  }
-  tr.cert-row-red {
-    background-color: transparentize(#ff8282, 0.5);
-  }
-
-  tr#no-waiver {
-    background-color: transparentize(yellow, 0.6);
-  }
-}
-
-.edit-column {
-  width: 110%;
-}*/
 
 div#staff-buttons {
-  align: center;
   float: left;
-
   .staff-button {
     font:
       300 2.4em "Roboto",
@@ -264,8 +188,8 @@ div#staff-buttons {
     letter-spacing: 0.15em;
     padding-left: 1rem;
     border-left: 3px solid transparentize(#5f9ea0, 0.4);
-    color: #333333;
-
+    color: var(--bs-body-color);
+    transition: all 0.2s;
     &:hover:not(.vp-button) {
       border-left: 5px solid #5f9ea0;
     }
@@ -276,13 +200,14 @@ div#cert-details {
   visibility: hidden;
   width: 150px;
   border: 1px solid var(--bs-border-color);
-  background-color: var(--bs-tertiary-bg);
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
   text-align: center;
   border-radius: 6px;
   padding-bottom: 2px;
-  /* Position the tooltip */
   position: absolute;
-  z-index: 1;
+  z-index: 1070;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 div.cert-name {
@@ -291,38 +216,20 @@ div.cert-name {
 
 div.cert-name-red {
   cursor: pointer;
-  background-color: #ff8282;
+  background-color: rgba(255, 130, 130, 0.2);
+  color: var(--bs-danger);
 }
 
 div.cert-name:hover div#cert-details {
   visibility: visible;
 }
-
 div.cert-name-red:hover div#cert-details {
   visibility: visible;
-  background-color: #ff8282;
+  background-color: var(--bs-body-bg);
+  border-color: var(--bs-danger);
 }
 
-div#notice {
-  display: none;
-  position: absolute;
-  top: 81px;
-  width: 100vw;
-  left: 0;
-  right: 0;
-  margin: 0 auto;
-  height: 2rem;
-  line-height: 2rem !important;
-  font-size: 75%;
-  font:
-    300 1.1rem "Roboto",
-    sans-serif;
-  background-color: #5cb85c;
-  color: #fff;
-  z-index: 2;
-  text-align: center;
-}
-
+div#notice,
 div#alert {
   display: none;
   position: absolute;
@@ -336,8 +243,13 @@ div#alert {
   font:
     300 1.1rem "Roboto",
     sans-serif;
-  background-color: #cd5c5c;
-  color: #fff;
-  z-index: 2;
+  z-index: 2000;
   text-align: center;
+  color: #fff;
+}
+div#notice {
+  background-color: #198754;
+}
+div#alert {
+  background-color: #dc3545;
 }

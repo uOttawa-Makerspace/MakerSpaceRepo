@@ -1,14 +1,21 @@
 import { RRule } from "rrule";
-import { Modal } from "bootstrap";
+import { Modal, Collapse } from "bootstrap";
 import TomSelect from "tom-select";
 
-// Global variables for this module
+// Global variables
 let staffSelectInstance = null;
 let allStaffData = [];
 
-/*
- * Converts a Date object to a local datetime string in the format YYYY-MM-DDTHH:MM
- */
+// ============================================================
+// DATE & TIME HELPERS
+// ============================================================
+
+export function formatCalendarDateForInput(dateStr) {
+  if (!dateStr) return "";
+  if (dateStr.indexOf("T") === -1) return dateStr;
+  return dateStr.substring(0, 16);
+}
+
 export function toLocalDatetimeString(date) {
   if (!date) return null;
   const pad = (n) => (n < 10 ? "0" + n : n);
@@ -39,26 +46,31 @@ function initStaffSelect(isMultiple) {
   const staffSelect = document.getElementById("staff_select");
   if (!staffSelect) return;
 
+  // 1. Destroy existing instance
   if (staffSelectInstance) {
     staffSelectInstance.destroy();
     staffSelectInstance = null;
   }
 
+  // 2. Clear content and set multiple attribute
   staffSelect.innerHTML = "";
   staffSelect.multiple = isMultiple;
 
+  // 3. Re-initialize Tom Select
   staffSelectInstance = new TomSelect(staffSelect, {
     options: allStaffData,
     items: [],
+    // We add 'remove_button' even for single select if you want the design to look similar
+    // though usually single select behaves like a dropdown.
     plugins: isMultiple ? ["remove_button"] : [],
     maxItems: isMultiple ? null : 1,
-    placeholder: isMultiple
-      ? "Search for staff..."
-      : "Select a staff member...",
+    placeholder: "Select staff...", // Common placeholder
     valueField: "value",
     labelField: "text",
     searchField: ["text"],
     create: false,
+    // This ensures the input style matches Bootstrap's form-control
+    controlInput: "<input>",
     render: {
       option: function (data, escape) {
         return "<div>" + escape(data.text) + "</div>";
@@ -67,11 +79,16 @@ function initStaffSelect(isMultiple) {
         return "<div>" + escape(data.text) + "</div>";
       },
     },
+    onInitialize: function () {
+      // Fix: Ensure the visual control does not inherit 'is-invalid' class from the underlying select
+      this.wrapper.classList.remove("is-invalid");
+      this.control.classList.remove("is-invalid");
+    },
   });
 }
 
 // ============================================================
-// CATEGORY SWITCHER & FORM HANDLING
+// FORM HANDLING & TOGGLES
 // ============================================================
 
 let originalFormAction = null;
@@ -83,6 +100,10 @@ export function initCategorySwitcher() {
     "category_unavailability",
   );
   const form = document.getElementById("eventForm");
+
+  initAllDayToggle();
+  initEventTypeToggle();
+  initRecurrenceLogic();
 
   if (!categoryEvent || !categoryUnavailability || !form) return;
 
@@ -99,23 +120,133 @@ export function initCategorySwitcher() {
   form.addEventListener("submit", handleFormSubmit);
 }
 
-function switchToEventMode() {
+// Clears Red Validation Box
+function clearFormValidation() {
   const form = document.getElementById("eventForm");
-  const eventOnlyFields = document.getElementById("event_only_fields");
+  const errorDiv = document.getElementById("unavailability_staff_error");
+
+  // Remove Bootstrap validation state
+  if (form) form.classList.remove("was-validated");
+
+  // Hide manual error message
+  if (errorDiv) errorDiv.classList.add("d-none");
+
+  // Remove red border from Tom Select if it exists
+  if (staffSelectInstance) {
+    staffSelectInstance.wrapper.classList.remove("is-invalid");
+    staffSelectInstance.control.classList.remove("is-invalid");
+  }
+}
+
+function initAllDayToggle() {
+  const allDayCheckbox = document.getElementById("all_day_checkbox");
+  const startField = document.getElementById("start_time_field");
+  const endField = document.getElementById("end_time_field");
+
+  if (!allDayCheckbox || !startField || !endField) return;
+
+  allDayCheckbox.addEventListener("change", function () {
+    if (this.checked) {
+      const datePart = startField.value ? startField.value.split("T")[0] : "";
+      startField.type = "date";
+      endField.type = "date";
+      if (datePart) {
+        startField.value = datePart;
+        endField.value = datePart;
+      }
+    } else {
+      const startVal = startField.value ? startField.value + "T09:00" : "";
+      const endVal = endField.value ? endField.value + "T17:00" : "";
+      startField.type = "datetime-local";
+      endField.type = "datetime-local";
+      if (startField.value.indexOf("T") === -1 && startField.value !== "")
+        startField.value = startVal;
+      if (endField.value.indexOf("T") === -1 && endField.value !== "")
+        endField.value = endVal;
+    }
+  });
+
+  startField.addEventListener("change", function () {
+    if (allDayCheckbox.checked && startField.value) {
+      endField.value = startField.value;
+    }
+  });
+}
+
+function initEventTypeToggle() {
+  const eventTypeSelect = document.getElementById("event_type_select");
+  const trainingFields = document.getElementById("training-fields");
+
+  if (!eventTypeSelect || !trainingFields) return;
+
+  eventTypeSelect.addEventListener("change", function () {
+    if (this.value === "training") {
+      trainingFields.style.display = "block";
+    } else {
+      trainingFields.style.display = "none";
+      document.getElementById("training_select").value = "";
+      document.getElementById("language_select").value = "";
+      document.getElementById("course_select").value = "";
+    }
+  });
+}
+
+function initRecurrenceLogic() {
+  const freqSelect = document.getElementById("recurrence_frequency");
+  const optionsDiv = document.getElementById("recurrence_options");
+  const weeklyDiv = document.getElementById("weekly_options");
+
+  if (!freqSelect || !optionsDiv || !weeklyDiv) return;
+
+  freqSelect.addEventListener("change", function () {
+    const val = this.value;
+
+    if (val === "") {
+      // Does not repeat
+      optionsDiv.style.display = "none";
+      weeklyDiv.style.display = "none";
+    } else {
+      // Show general options (Until date)
+      optionsDiv.style.display = "block";
+
+      // Show weekly checkboxes only if Weekly
+      if (val === "WEEKLY") {
+        weeklyDiv.style.display = "block";
+      } else {
+        weeklyDiv.style.display = "none";
+      }
+    }
+  });
+}
+
+function switchToEventMode() {
+  clearFormValidation();
+
+  const form = document.getElementById("eventForm");
   const staffSelectLabel = document.getElementById("staff_select_label");
   const staffSelectHelp = document.getElementById("staff_select_help");
   const staffSelect = document.getElementById("staff_select");
   const eventTypeSelect = document.getElementById("event_type_select");
   const modalTitle = document.getElementById("eventModalLabel");
-  const accordion = document.getElementById("accordion");
+  const saveButton = document.getElementById("save_button");
 
-  if (eventOnlyFields) eventOnlyFields.style.display = "block";
-  if (accordion) accordion.style.display = "block";
+  const collapseEl = document.getElementById("event_mode_content");
+  if (collapseEl && !collapseEl.classList.contains("show")) {
+    const bsCollapse = new Collapse(collapseEl, { toggle: false });
+    bsCollapse.show();
+  }
+
+  if (saveButton) {
+    saveButton.value = "Save Draft";
+    saveButton.classList.remove("btn-info");
+    saveButton.classList.add("btn-success");
+  }
+
   if (staffSelectLabel) staffSelectLabel.textContent = "Assigned Staff";
 
   if (staffSelect) {
     staffSelect.name = "staff_select[]";
-    staffSelect.required = false;
+    staffSelect.required = false; // Not required in Event mode
   }
   if (staffSelectHelp) staffSelectHelp.classList.add("d-none");
 
@@ -140,29 +271,38 @@ function switchToEventMode() {
     methodInput.remove();
   }
 
-  document
-    .getElementById("unavailability_staff_error")
-    ?.classList.add("d-none");
-
   initStaffSelect(true);
 }
 
 function switchToUnavailabilityMode() {
+  clearFormValidation();
+
   const form = document.getElementById("eventForm");
-  const eventOnlyFields = document.getElementById("event_only_fields");
   const staffSelectLabel = document.getElementById("staff_select_label");
   const staffSelectHelp = document.getElementById("staff_select_help");
   const staffSelect = document.getElementById("staff_select");
   const eventTypeSelect = document.getElementById("event_type_select");
   const modalTitle = document.getElementById("eventModalLabel");
-  const accordion = document.getElementById("accordion");
+  const saveButton = document.getElementById("save_button");
 
-  if (eventOnlyFields) eventOnlyFields.style.display = "none";
-  if (accordion) accordion.style.display = "none";
+  const collapseEl = document.getElementById("event_mode_content");
+  if (collapseEl) {
+    const bsCollapse = new Collapse(collapseEl, { toggle: false });
+    bsCollapse.hide();
+  }
+
+  if (saveButton) {
+    saveButton.value = "Publish";
+    saveButton.classList.remove("btn-success");
+    saveButton.classList.add("btn-info");
+  }
+
   if (staffSelectLabel) staffSelectLabel.textContent = "Staff Member";
 
   if (staffSelect) {
     staffSelect.name = "staff_unavailability[user_id]";
+    // Note: We set required=true, but we cleared validation above,
+    // so it won't turn red until the user clicks submit and it fails.
     staffSelect.required = true;
   }
   if (staffSelectHelp) staffSelectHelp.classList.remove("d-none");
@@ -188,23 +328,98 @@ function handleFormSubmit(e) {
     "category_unavailability",
   )?.checked;
   const errorDiv = document.getElementById("unavailability_staff_error");
+  const form = document.getElementById("eventForm");
 
-  // 1. Calculate UTC times from Local inputs (FIXES "no time information" ERROR)
+  if (form) form.classList.add("was-validated");
+
+  // --- 1. GENERATE RECURRENCE RULE ---
+  // We must calculate the RRule string from the visible inputs and put it
+  // into the hidden field before Rails processes it.
+  const freq = document.getElementById("recurrence_frequency").value;
+  const ruleField = document.getElementById("recurrence_rule_field");
+
+  if (freq) {
+    const rruleOptions = {
+      freq: RRule[freq], // Maps "DAILY" -> RRule.DAILY, etc.
+    };
+
+    // Handle Until Date
+    const untilVal = document.getElementById("recurrence_until").value;
+    if (untilVal) {
+      // Create date at end of day to be inclusive
+      const untilDate = new Date(untilVal);
+      untilDate.setHours(23, 59, 59);
+      rruleOptions.until = untilDate;
+    }
+
+    // Handle Weekly Days
+    if (freq === "WEEKLY") {
+      const days = [];
+      const dayMap = {
+        SU: RRule.SU,
+        MO: RRule.MO,
+        TU: RRule.TU,
+        WE: RRule.WE,
+        TH: RRule.TH,
+        FR: RRule.FR,
+        SA: RRule.SA,
+      };
+
+      document.querySelectorAll(".dayCheckbox:checked").forEach((cb) => {
+        if (dayMap[cb.value]) days.push(dayMap[cb.value]);
+      });
+
+      // Validation: If Weekly is selected, at least one day must be checked
+      if (days.length === 0) {
+        e.preventDefault();
+        document.getElementById("day_freq_error").classList.remove("d-none");
+        return false;
+      } else {
+        document.getElementById("day_freq_error").classList.add("d-none");
+        rruleOptions.byweekday = days;
+      }
+    }
+
+    // Generate the string (e.g., "FREQ=WEEKLY;BYDAY=MO,TU")
+    ruleField.value = new RRule(rruleOptions).toString();
+  } else {
+    ruleField.value = ""; // Clear rule if "Does not repeat"
+  }
+
+  // --- 2. TIME CONVERSION LOGIC ---
   const startField = document.getElementById("start_time_field");
   const endField = document.getElementById("end_time_field");
   const utcStart = document.getElementById("utc_start_time");
   const utcEnd = document.getElementById("utc_end_time");
 
-  if (startField && startField.value) {
-    utcStart.value = new Date(startField.value).toISOString();
-  }
-  if (endField && endField.value) {
-    utcEnd.value = new Date(endField.value).toISOString();
+  let startDateObj, endDateObj;
+
+  if (startField && startField.type === "date") {
+    if (startField.value)
+      startDateObj = new Date(startField.value + "T00:00:00");
+  } else if (startField && startField.value) {
+    startDateObj = new Date(startField.value);
   }
 
-  // 2. Unavailability specific logic
+  if (endField && endField.type === "date") {
+    if (endField.value) endDateObj = new Date(endField.value + "T23:59:59");
+  } else if (endField && endField.value) {
+    endDateObj = new Date(endField.value);
+  }
+
+  // Time validation check
+  if (startDateObj && endDateObj && endDateObj < startDateObj) {
+    e.preventDefault();
+    document.getElementById("time_error").classList.remove("d-none");
+    return false;
+  }
+  document.getElementById("time_error").classList.add("d-none");
+
+  if (startDateObj) utcStart.value = startDateObj.toISOString();
+  if (endDateObj) utcEnd.value = endDateObj.toISOString();
+
+  // --- 3. UNAVAILABILITY LOGIC ---
   if (isUnavailability) {
-    // Validate Staff Selection
     const selectedStaff = staffSelectInstance
       ? staffSelectInstance.getValue()
       : "";
@@ -216,14 +431,15 @@ function handleFormSubmit(e) {
     }
     errorDiv?.classList.add("d-none");
 
-    // Rename fields so the Controller params work
-    const rruleField = document.getElementById("recurrence_rule_field");
     const titleField = document.getElementById("title");
     const descField = document.getElementById("description");
 
     if (utcStart) utcStart.name = "staff_unavailability[utc_start_time]";
     if (utcEnd) utcEnd.name = "staff_unavailability[utc_end_time]";
-    if (rruleField) rruleField.name = "staff_unavailability[recurrence_rule]";
+
+    // Rename the recurrence field for the Unavailability model
+    if (ruleField) ruleField.name = "staff_unavailability[recurrence_rule]";
+
     if (titleField) titleField.name = "staff_unavailability[title]";
     if (descField) descField.name = "staff_unavailability[description]";
   }
@@ -252,11 +468,16 @@ export function setCategorySelectorVisible(visible) {
 }
 
 export function resetModalForm() {
+  clearFormValidation();
+
   const form = document.getElementById("eventForm");
   if (!form) return;
 
   form.reset();
   initStaffSelect(true);
+
+  const collapseEl = document.getElementById("event_mode_content");
+  if (collapseEl) collapseEl.classList.add("show");
 
   setModalCategory("event");
   setCategorySelectorVisible(true);
@@ -267,7 +488,6 @@ export function resetModalForm() {
 
   form.querySelector('input[name="_method"]')?.remove();
 
-  // Reset names back to Event defaults
   const utcStart = document.getElementById("utc_start_time");
   const utcEnd = document.getElementById("utc_end_time");
   const rruleField = document.getElementById("recurrence_rule_field");
@@ -293,22 +513,28 @@ export function resetModalForm() {
     .querySelectorAll(".dayCheckbox")
     .forEach((cb) => (cb.checked = false));
 
+  document.getElementById("all_day_checkbox").checked = false;
+  document.getElementById("start_time_field").type = "datetime-local";
+  document.getElementById("end_time_field").type = "datetime-local";
+  document.getElementById("end_time_field").disabled = false;
+  document.getElementById("training-fields").style.display = "none";
+
   document.getElementById("eventModalLabel").textContent = "Add Event";
   const saveButton = document.getElementById("save_button");
-  if (saveButton) saveButton.value = "Save Draft";
+  if (saveButton) {
+    saveButton.value = "Save Draft";
+    saveButton.classList.remove("btn-info");
+    saveButton.classList.add("btn-success");
+  }
 
   document.getElementById("modal_buttons").style.display = "flex";
   document.getElementById("publish_and_delete_forms").style.display = "none";
   document.getElementById("update_dropdown").style.display = "none";
-
-  document.getElementById("event_only_fields").style.display = "block";
-  document.getElementById("accordion").style.display = "block";
-  document.getElementById("training-fields").style.display = "none";
 }
 
-// -------------------
-// Full Calendar Event Helpers
-// -------------------
+// ============================================================
+// FULL CALENDAR CALLBACKS
+// ============================================================
 
 export function addEventClick() {
   const form = document.querySelector("#eventModal form");
@@ -327,6 +553,34 @@ export function addEventClick() {
   setCategorySelectorVisible(true);
 
   if (staffSelectInstance) staffSelectInstance.clear();
+}
+
+export function eventCreate(info) {
+  resetModalForm();
+  const startField = document.getElementById("start_time_field");
+  const endField = document.getElementById("end_time_field");
+  const allDayCheckbox = document.getElementById("all_day_checkbox");
+
+  if (info.allDay) {
+    allDayCheckbox.checked = true;
+    startField.type = "date";
+    endField.type = "date";
+    startField.value = info.startStr;
+    const endDate = new Date(info.endStr);
+    endDate.setDate(endDate.getDate() - 1);
+    const pad = (n) => (n < 10 ? "0" + n : n);
+    endField.value = `${endDate.getFullYear()}-${pad(endDate.getMonth() + 1)}-${pad(endDate.getDate())}`;
+  } else {
+    allDayCheckbox.checked = false;
+    startField.type = "datetime-local";
+    endField.type = "datetime-local";
+    startField.value = formatCalendarDateForInput(info.startStr);
+    endField.value = formatCalendarDateForInput(info.endStr);
+  }
+
+  document.getElementById("training-fields").style.display = "none";
+  document.getElementById("addEventButton").click();
+  addEventClick();
 }
 
 export function eventClick(eventImpl) {
@@ -354,21 +608,30 @@ export function eventClick(eventImpl) {
 
   const startTimeField = document.getElementById("start_time_field");
   const endTimeField = document.getElementById("end_time_field");
+  const allDayCheckbox = document.getElementById("all_day_checkbox");
 
   if (eventImpl.allDay) {
-    document.getElementById("all_day_checkbox").checked = true;
-    const startDate = new Date(eventImpl.startStr);
-    startDate.setHours(0, 0, 0, 0);
-    const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + 1);
-    startTimeField.value = toLocalDatetimeString(startDate);
-    endTimeField.value = toLocalDatetimeString(endDate);
-    endTimeField.disabled = true;
+    allDayCheckbox.checked = true;
+    startTimeField.type = "date";
+    endTimeField.type = "date";
+    startTimeField.value = eventImpl.startStr;
+
+    if (eventImpl.endStr) {
+      const endDate = new Date(eventImpl.endStr);
+      endDate.setDate(endDate.getDate() - 1);
+      const pad = (n) => (n < 10 ? "0" + n : n);
+      endTimeField.value = `${endDate.getFullYear()}-${pad(endDate.getMonth() + 1)}-${pad(endDate.getDate())}`;
+    } else {
+      endTimeField.value = eventImpl.startStr;
+    }
+    endTimeField.disabled = false;
   } else {
-    const start = new Date(eventImpl.startStr);
-    startTimeField.value = toLocalDatetimeString(start);
-    const end = new Date(eventImpl.endStr);
-    endTimeField.value = toLocalDatetimeString(end);
+    allDayCheckbox.checked = false;
+    startTimeField.type = "datetime-local";
+    endTimeField.type = "datetime-local";
+    startTimeField.value = formatCalendarDateForInput(eventImpl.startStr);
+    endTimeField.value = formatCalendarDateForInput(eventImpl.endStr);
+    endTimeField.disabled = false;
   }
 
   document.getElementById("title").value =
@@ -419,7 +682,7 @@ export function eventClick(eventImpl) {
 
   const trainingFields = document.getElementById("training-fields");
   if (eventTypeSelect.value === "training") {
-    trainingFields.style.display = "";
+    trainingFields.style.display = "block";
     document.getElementById("training_select").value =
       extendedProps.trainingId || null;
     document.getElementById("language_select").value =
@@ -473,7 +736,7 @@ export function eventClick(eventImpl) {
   }
 
   document.querySelectorAll(".delete_start_date").forEach((e) => {
-    e.value = parseLocalDatetimeString(eventImpl.startStr).toISOString();
+    e.value = eventImpl.startStr;
   });
 
   singleForm.action = `/admin/events/${id}/delete_with_scope`;
@@ -502,21 +765,29 @@ export function unavailabilityClick(eventImpl) {
 
   const startTimeField = document.getElementById("start_time_field");
   const endTimeField = document.getElementById("end_time_field");
+  const allDayCheckbox = document.getElementById("all_day_checkbox");
 
   if (eventImpl.allDay) {
-    document.getElementById("all_day_checkbox").checked = true;
-    const startDate = new Date(eventImpl.startStr);
-    startDate.setHours(0, 0, 0, 0);
-    const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + 1);
-    startTimeField.value = toLocalDatetimeString(startDate);
-    endTimeField.value = toLocalDatetimeString(endDate);
-    endTimeField.disabled = true;
+    allDayCheckbox.checked = true;
+    startTimeField.type = "date";
+    endTimeField.type = "date";
+    startTimeField.value = eventImpl.startStr;
+    if (eventImpl.endStr) {
+      const endDate = new Date(eventImpl.endStr);
+      endDate.setDate(endDate.getDate() - 1);
+      const pad = (n) => (n < 10 ? "0" + n : n);
+      endTimeField.value = `${endDate.getFullYear()}-${pad(endDate.getMonth() + 1)}-${pad(endDate.getDate())}`;
+    } else {
+      endTimeField.value = eventImpl.startStr;
+    }
+    endTimeField.disabled = false;
   } else {
-    const start = new Date(eventImpl.startStr);
-    startTimeField.value = toLocalDatetimeString(start);
-    const end = new Date(eventImpl.endStr);
-    endTimeField.value = toLocalDatetimeString(end);
+    allDayCheckbox.checked = false;
+    startTimeField.type = "datetime-local";
+    endTimeField.type = "datetime-local";
+    startTimeField.value = formatCalendarDateForInput(eventImpl.startStr);
+    endTimeField.value = formatCalendarDateForInput(eventImpl.endStr);
+    endTimeField.disabled = false;
   }
 
   document.getElementById("title").value = event.title || "Unavailable";
@@ -528,6 +799,7 @@ export function unavailabilityClick(eventImpl) {
     staffSelectInstance.addItem(extendedProps.userId);
   }
 
+  // Reuse recurrence logic
   if (
     event.recurringDef &&
     event.recurringDef.typeData &&
@@ -596,7 +868,7 @@ export function unavailabilityClick(eventImpl) {
   }
 
   document.querySelectorAll(".delete_start_date").forEach((e) => {
-    e.value = parseLocalDatetimeString(eventImpl.startStr).toISOString();
+    e.value = eventImpl.startStr;
   });
 
   singleForm.action = `/admin/staff_unavailabilities/${id}/delete_with_scope`;
@@ -605,19 +877,4 @@ export function unavailabilityClick(eventImpl) {
 
   const modal = new Modal(document.getElementById("eventModal"));
   modal.show();
-}
-
-export function eventCreate(info) {
-  resetModalForm();
-
-  document.getElementById("start_time_field").value = toLocalDatetimeString(
-    new Date(info.startStr),
-  );
-  document.getElementById("end_time_field").value = toLocalDatetimeString(
-    new Date(info.endStr),
-  );
-  document.getElementById("training-fields").style.display = "none";
-
-  document.getElementById("addEventButton").click();
-  addEventClick();
 }
