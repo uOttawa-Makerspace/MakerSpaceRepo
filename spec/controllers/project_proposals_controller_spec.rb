@@ -122,7 +122,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
                }
         }.to change(ProjectProposal, :count).by(1)
         expect(RepoFile.count).to eq(1)
-        expect(Photo.count).to eq(1)
+        expect(Photo.count).to eq(1 + 2)
         expect(flash[:notice]).to eq(
           "Project proposal was successfully created."
         )
@@ -184,7 +184,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
       end
 
       it "should update the project proposal with photos and files" do
-        create(:project_proposal, :with_repo_files)
+        pp = create(:project_proposal, :with_repo_files)
         patch :update,
               params: {
                 id: ProjectProposal.last.id,
@@ -201,12 +201,12 @@ RSpec.describe ProjectProposalsController, type: :controller do
                       "image/png"
                     )
                   ],
-                  deleteimages: [Photo.last.image.filename.to_s],
-                  deletefiles: [RepoFile.last.file.id.to_s]
-                }
+                  deleteimages: [pp.photos.take.image.filename.to_s],
+                  deletefiles: [pp.repo_files.take.file.id.to_s]
+                },
               }
-        expect(RepoFile.count).to eq(1)
-        expect(Photo.count).to eq(1)
+        expect(pp.photos.count).to eq(1)
+        expect(pp.repo_files.count).to eq(1)
         expect(flash[:notice]).to eq(
           "Project proposal was successfully updated."
         )

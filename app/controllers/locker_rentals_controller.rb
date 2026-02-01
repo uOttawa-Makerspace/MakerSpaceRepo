@@ -70,7 +70,7 @@ class LockerRentalsController < SessionsController
       redirect_back fallback_location: :new_locker_rental
     else
       new_instance_attributes
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
   end
 
@@ -95,7 +95,7 @@ class LockerRentalsController < SessionsController
     if @locker_rental.state_changed?(from: :active, to: :cancelled) &&
          !current_user.staff?
       flash[:alert] = "Please contact administration for cancelling a locker"
-      render :show, status: :unprocessable_entity
+      render :show, status: :unprocessable_content
       return
     end
 

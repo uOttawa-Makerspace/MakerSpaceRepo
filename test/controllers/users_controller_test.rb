@@ -5,7 +5,7 @@ require "test_helper"
 class UsersControllerTest < ActionController::TestCase
   ##########
   # create tests
-  test "creating the same username or email again return unprocessable_entity" do
+  test "creating the same username or email again return unprocessable_content" do
     post :create,
          params: {
            user: {
@@ -16,7 +16,7 @@ class UsersControllerTest < ActionController::TestCase
              password: "Password1"
            }
          }
-    assert_response :unprocessable_entity,
+    assert_response :unprocessable_content,
                     "How is bob processable when bob is a fixture"
   end
 

@@ -245,7 +245,7 @@ class SubSpaceBookingController < SessionsController
       render json: {
                errors: booking.errors.full_messages
              },
-             status: :unprocessable_entity
+             status: :unprocessable_content
       return
     end
     if params[:sub_space_booking][:blocking] == true && !current_user.admin?
@@ -259,7 +259,7 @@ class SubSpaceBookingController < SessionsController
         render json: {
                  errors: "Invalid recurring parameters"
                },
-               status: :unprocessable_entity
+               status: :unprocessable_content
         return
       end
       recurrence =
@@ -347,7 +347,7 @@ class SubSpaceBookingController < SessionsController
       render json: {
               errors: booking.errors.full_messages
             },
-            status: :unprocessable_entity
+            status: :unprocessable_content
       return
     end
 
@@ -382,7 +382,7 @@ class SubSpaceBookingController < SessionsController
           render json: {
                   errors: ["TimeSlot This time slot is already booked."]
                 },
-                status: :unprocessable_entity
+                status: :unprocessable_content
         end
         format.html do
           redirect_to sub_space_booking_index_path(
@@ -405,7 +405,7 @@ class SubSpaceBookingController < SessionsController
                   "DurationHour You cannot book #{booking.sub_space.name} for more than #{booking.sub_space.maximum_booking_duration} hours."
                 ]
               },
-              status: :unprocessable_entity
+              status: :unprocessable_content
         booking.destroy
         return
       end
@@ -431,7 +431,7 @@ class SubSpaceBookingController < SessionsController
                   "DurationWeek You cannot book #{booking.sub_space.name} for more than #{booking.sub_space.maximum_booking_hours_per_week} hours per week."
                 ]
               },
-              status: :unprocessable_entity
+              status: :unprocessable_content
         booking.destroy
         return
       end
@@ -552,7 +552,7 @@ class SubSpaceBookingController < SessionsController
           render json: {
                    errors: ["TimeSlot This time slot is already booked."]
                  },
-                 status: :unprocessable_entity
+                 status: :unprocessable_content
         end
         format.html { redirect_to sub_space_booking_edit_path }
       end

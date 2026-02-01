@@ -46,7 +46,7 @@ class SessionsController < ApplicationController
                          "Your account has been locked due to too many failed login attempts. Please contact an administrator at #{SUPPORT_EMAIL} to unlock your account or wait #{distance_of_time_in_words user.locked_until, DateTime.now}.",
                        support_email: SUPPORT_EMAIL
                      },
-                     status: :unprocessable_entity
+                     status: :unprocessable_content
             end
           end
           return
@@ -77,7 +77,7 @@ class SessionsController < ApplicationController
             render :login
           end
           format.json do
-            render json: "Account not confirmed", status: :unprocessable_entity
+            render json: "Account not confirmed", status: :unprocessable_content
           end
         end
         format.json { render json: { role: :guest }, status: :ok }
@@ -103,12 +103,12 @@ class SessionsController < ApplicationController
         end
         format.html do
           flash[:alert] = error_message
-          render :login, status: :unprocessable_entity
+          render :login, status: :unprocessable_content
         end
         format.json do
           json_response = { error: error_message }
           json_response[:support_email] = SUPPORT_EMAIL if user&.auth_attempts&.>= User::MAX_AUTH_ATTEMPTS
-          render json: json_response, status: :unprocessable_entity
+          render json: json_response, status: :unprocessable_content
         end
       end
     end

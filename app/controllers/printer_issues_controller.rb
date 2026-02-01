@@ -68,7 +68,7 @@ class PrinterIssuesController < StaffAreaController
         :alert
       ] = "Failed to create issue: #{sanitize(@issue.errors.full_messages.join("<br />"))}"
       # All this to keep form data on error
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
   end
 
