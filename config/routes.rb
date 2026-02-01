@@ -447,6 +447,13 @@ Rails.application.routes.draw do
     end
 
     resources :memberships, only: [:index, :update]
+
+    resources :staff_unavailabilities, only: [:create, :update, :destroy] do
+      member do
+        delete :delete_with_scope
+      end
+    end
+    
   end
   # For singular routes
   resolve('DesignDay') {[:admin, :design_day]}

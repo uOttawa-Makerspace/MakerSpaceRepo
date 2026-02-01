@@ -5,13 +5,21 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 
 import { rrulestr } from "rrule";
-
 import { Tooltip } from "bootstrap";
 
-import { eventClick, eventCreate } from "./calendar_helper.js";
+import {
+  eventClick,
+  eventCreate,
+  initCategorySwitcher,
+  initStaffLoader,
+} from "./calendar_helper.js";
 
 document.addEventListener("turbo:load", async () => {
   const calendarEl = document.getElementById("calendar");
+  if (!calendarEl) return;
+
+  // Initialize category switcher for Event/Unavailability toggle
+  initCategorySwitcher();
 
   let hiddenUserIds = new Set();
 
@@ -84,7 +92,13 @@ document.addEventListener("turbo:load", async () => {
           `background: ${info.event.extendedProps.background}`,
         );
       }
+
+      // Add unavailability styling
+      if (info.event.extendedProps.type === "unavailability") {
+        info.el.classList.add("unavailability");
+      }
     },
+
     eventClick: (info) => eventClick(info.event),
     select: (info) => eventCreate(info),
     initialDate: localStorage.fullCalendarDefaultDateAdmin,
@@ -157,6 +171,9 @@ document.addEventListener("turbo:load", async () => {
   ).catch((error) => console.log(error));
   const data = await res.json();
 
+  // Initialize the Staff Dropdown with this data
+  initStaffLoader(data);
+
   const staffUnavailabilitiesEventSources = generateEventsFromStaffData(data);
 
   createAllStaffCheckboxes();
@@ -216,17 +233,15 @@ document.addEventListener("turbo:load", async () => {
   }
 
   /**
-   * @param {Array} data - The array of staff members returned from the server. NOT AN EVENT LIST! Since we want the individual staff details (name, color, etc.) to be displayed in the checkboxes which will be used to filter the events.
-   * @param {Array} hiddenStaff - The array of staff IDs that are hidden from query params. This is used to filter out events for those staff members.
+   * @param {Array} data - The array of staff members returned from the server.
+   * @param {Array} hiddenStaff - The array of staff IDs that are hidden.
    * @returns {Object} - FullCalendar event source object.
-   * @description This function generates events from the staff data returned from the server.
    */
   function generateEventsFromStaffData(data) {
     try {
       const allUnavails = [];
       data.map((staff) => {
-        // If there are no unavailabilities for this staff member, we add a placeholder event
-        if (staff.unavailabilities.length === 0)
+        if (staff.unavailabilities.length === 0) {
           return allUnavails.push({
             events: [
               {
@@ -238,18 +253,34 @@ document.addEventListener("turbo:load", async () => {
                 allDay: true,
                 extendedProps: {
                   name: staff.name + " (0 unavailabilities)",
+                  type: "unavailability",
                 },
               },
             ],
             id: staff.id,
             color: staff.color,
           });
+        }
 
-        // Unshift to prepend to ensure any staff who haven't set their unavailability yet are at the bottom
+        // Mark each unavailability event with type and userId
+        const unavailsWithType = staff.unavailabilities.map((unavail) => ({
+          ...unavail,
+          extendedProps: {
+            ...(unavail.extendedProps || {}),
+            name: staff.name,
+            type: "unavailability",
+            userId: staff.id,
+            userName: staff.name,
+            dbId: unavail.id,
+            description:
+              unavail.extendedProps?.description || unavail.description,
+          },
+        }));
+
         allUnavails.unshift({
           id: staff.id,
           color: staff.color,
-          events: staff.unavailabilities,
+          events: unavailsWithType,
         });
       });
 
@@ -260,8 +291,7 @@ document.addEventListener("turbo:load", async () => {
   }
 
   /**
-   * @description Creates a checkbox for all staff members to toggle visibility of all staff checkboxes and their events.
-   * @returns {void}
+   * Creates a checkbox for all staff members.
    */
   function createAllStaffCheckboxes() {
     const allCheckboxDiv = document.createElement("div");
@@ -312,7 +342,6 @@ document.addEventListener("turbo:load", async () => {
         "input[type='checkbox'].staff",
       );
       checkboxes.forEach((checkbox) => {
-        // Unforch we can't just dispatch the change event here since we aren't toggling the display property, we're adding and remove event sources... so we just need to check if the event source is already shown or hidden and go from there
         checkbox.checked = allCheckbox.checked;
         updateHiddenParam(checkbox.value, "hidden_staff", !allCheckbox.checked);
 
@@ -339,13 +368,7 @@ document.addEventListener("turbo:load", async () => {
   }
 
   /**
-   * @param {Array} eventSource - EventSourceObject -> https://fullcalendar.io/docs/event-source-object. Must contain an `id` and `events` property. `events` should have `color` and `extendedProps.name` properties.
-   * @param {HTMLElement} containerElem - The container element to append the checkbox to.
-   * @param {String} urlParam - The URL parameter to update when the checkbox is checked/unchecked.
-   * @param {HTMLElement=null} groupCheckboxElem - The group checkbox element to toggle visibility of the calendar.
-   * @param {String=""} classes - Additional classes to add to the checkbox.
-   * @returns {void}
-   * @description Creates a checkbox for a given event source and adds it to the DOM. Hides the calendar if the checkbox is unchecked on page load and responds to checkbox state changes.
+   * Appends a checkbox for a given event source.
    */
   function appendCheckbox(
     eventSource,
@@ -425,12 +448,7 @@ document.addEventListener("turbo:load", async () => {
   }
 
   /**
-   * @param {String} id - The ID of the checkbox (and, as a result, the staff/event id).
-   * @param {String} name - The name of the checkbox (displayed next to the checkbox).
-   * @param {String} color - The color of the checkbox (used for styling).
-   * @param {String} classes - Additional classes to add to the checkbox.
-   * @returns {Object} An object containing the checkbox and label elements.
-   * @description Creates a checkbox element with the given parameters.
+   * Creates a checkbox element.
    */
   function createCheckboxElement(id, name, color, classes = "") {
     const checkbox = document.createElement("input");
@@ -452,11 +470,7 @@ document.addEventListener("turbo:load", async () => {
   }
 
   /**
-   * @param {string} id - The ID of the checkbox (and, as a result, the staff/event id).
-   * @param {string} param - The URL parameter to update.
-   * @param {boolean} shouldHide - Whether to hide or show the event.
-   * @returns {Array} - An array of the hidden params
-   * @description Updates the URL parameter and refreshes the calendar events.
+   * Updates the URL parameter.
    */
   function updateHiddenParam(id, param, shouldHide) {
     const url = new URL(window.location.href);
