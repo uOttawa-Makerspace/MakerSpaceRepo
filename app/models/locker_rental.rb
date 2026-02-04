@@ -13,8 +13,6 @@ class LockerRental < ApplicationRecord
   belongs_to :preferred_locker, class_name: 'Locker', optional: true
   belongs_to :rented_by, class_name: 'User'
   belongs_to :decided_by, class_name: 'User', optional: true
-  # optional because some students don't always have a repository ready beforehand
-  belongs_to :repository, optional: true
   belongs_to :course_name, optional: true
 
   before_validation :set_cancellation_date, if: :cancelled?
@@ -84,6 +82,7 @@ class LockerRental < ApplicationRecord
   # If rented by a GNG student, make sure details are given
   validates :course_name, presence: true, if: :requested_as_student?
   validates :section_name, presence: true, if: :requested_as_student?
+  # This is now group number, but I kept it this just in case
   validates :team_name, presence: true, if: :requested_as_student?
 
   # Scopes to aid sorting rentals

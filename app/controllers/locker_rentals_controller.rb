@@ -125,7 +125,6 @@ class LockerRentalsController < SessionsController
   end
 
   def new_instance_attributes
-    @user_repositories = current_user.repositories.pluck(:title, :id)
     # FIXME localize this later
     @available_fors = {
       staff: ("CEED staff member" if current_user.staff?),

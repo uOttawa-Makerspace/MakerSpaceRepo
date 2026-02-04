@@ -26,10 +26,6 @@
                 </div>
             </div>
             <fieldset id="repo-select" class="border rounded p-3 mb-3" hidden disabled>
-                <%= f.label :repository_id, "If applying as a GNG student, please provide a link to your repository page here to help speed up your application", class: 'form-label' %>
-                <%= f.select :repository_id, options_for_select(@user_repositories),
-                 {prompt: @user_repositories.empty? ? 'No repositories are linked to your account' : 'Select a repository'},
-                 {class: 'form-select mb-3', disabled: @user_repositories.empty? } %>
                 <div class="row">
                     <div class="col">
                         <%= f.label :course_name_id, 'What course are you enrolled in?', class: 'form-label' %>
@@ -40,7 +36,7 @@
                         <%= f.text_field :section_name, class: 'form-control', required: true %>
                     </div>
                     <div class="col">
-                        <%= f.label :team_name, 'What is your team name?', class: 'form-label' %>
+                        <%= f.label :team_name, 'What is your group number?', class: 'form-label' %>
                         <%= f.text_field :team_name, class: 'form-control', required: true %>
                     </div>
                 </div>

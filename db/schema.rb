@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_01_22_153357) do
+ActiveRecord::Schema[7.2].define(version: 2026_02_04_201601) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_trgm"
@@ -678,7 +678,6 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_22_153357) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "shopify_draft_order_id"
-    t.bigint "repository_id"
     t.string "requested_as"
     t.date "paid_at"
     t.bigint "decided_by_id"
@@ -694,7 +693,6 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_22_153357) do
     t.index ["locker_id"], name: "index_locker_rentals_on_locker_id"
     t.index ["preferred_locker_id"], name: "index_locker_rentals_on_preferred_locker_id"
     t.index ["rented_by_id"], name: "index_locker_rentals_on_rented_by_id"
-    t.index ["repository_id"], name: "index_locker_rentals_on_repository_id"
   end
 
   create_table "lockers", force: :cascade do |t|
