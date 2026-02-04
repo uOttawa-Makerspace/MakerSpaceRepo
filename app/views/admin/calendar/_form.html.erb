@@ -67,8 +67,9 @@
 
                         <div class="mb-3">
                             <label class="form-label">Event Type</label>
+                            <!-- Added Unavailability option -->
                             <%= f.select :event_type,
-                                options_for_select([['Shift', 'shift'], ['Training', 'training'], ['Meeting', 'meeting'], ['Other', 'other']]),
+                                options_for_select([['Shift', 'shift'], ['Training', 'training'], ['Meeting', 'meeting'], ['Other', 'other'], ['Unavailability', 'unavailability']]),
                                 {include_blank: 'Select an event type'},
                                 class: 'form-select',
                                 id: 'event_type_select',

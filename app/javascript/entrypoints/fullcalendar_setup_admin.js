@@ -216,8 +216,7 @@ document.addEventListener("turbo:load", async () => {
   }
 
   /**
-   * @param {Array} data - The array of staff members returned from the server. NOT AN EVENT LIST! Since we want the individual staff details (name, color, etc.) to be displayed in the checkboxes which will be used to filter the events.
-   * @param {Array} hiddenStaff - The array of staff IDs that are hidden from query params. This is used to filter out events for those staff members.
+   * @param {Array} data - The array of staff members returned from the server.
    * @returns {Object} - FullCalendar event source object.
    * @description This function generates events from the staff data returned from the server.
    */
@@ -245,11 +244,23 @@ document.addEventListener("turbo:load", async () => {
             color: staff.color,
           });
 
+        // Add eventType and userId to unavailabilities so helper knows how to treat them
+        const processedEvents = staff.unavailabilities.map((u) => {
+          return {
+            ...u,
+            extendedProps: {
+              ...u.extendedProps,
+              eventType: "unavailability",
+              userId: staff.id,
+            },
+          };
+        });
+
         // Unshift to prepend to ensure any staff who haven't set their unavailability yet are at the bottom
         allUnavails.unshift({
           id: staff.id,
           color: staff.color,
-          events: staff.unavailabilities,
+          events: processedEvents,
         });
       });
 
@@ -312,7 +323,6 @@ document.addEventListener("turbo:load", async () => {
         "input[type='checkbox'].staff",
       );
       checkboxes.forEach((checkbox) => {
-        // Unforch we can't just dispatch the change event here since we aren't toggling the display property, we're adding and remove event sources... so we just need to check if the event source is already shown or hidden and go from there
         checkbox.checked = allCheckbox.checked;
         updateHiddenParam(checkbox.value, "hidden_staff", !allCheckbox.checked);
 
@@ -339,13 +349,12 @@ document.addEventListener("turbo:load", async () => {
   }
 
   /**
-   * @param {Array} eventSource - EventSourceObject -> https://fullcalendar.io/docs/event-source-object. Must contain an `id` and `events` property. `events` should have `color` and `extendedProps.name` properties.
+   * @param {Array} eventSource - EventSourceObject
    * @param {HTMLElement} containerElem - The container element to append the checkbox to.
    * @param {String} urlParam - The URL parameter to update when the checkbox is checked/unchecked.
    * @param {HTMLElement=null} groupCheckboxElem - The group checkbox element to toggle visibility of the calendar.
    * @param {String=""} classes - Additional classes to add to the checkbox.
    * @returns {void}
-   * @description Creates a checkbox for a given event source and adds it to the DOM. Hides the calendar if the checkbox is unchecked on page load and responds to checkbox state changes.
    */
   function appendCheckbox(
     eventSource,
@@ -425,12 +434,7 @@ document.addEventListener("turbo:load", async () => {
   }
 
   /**
-   * @param {String} id - The ID of the checkbox (and, as a result, the staff/event id).
-   * @param {String} name - The name of the checkbox (displayed next to the checkbox).
-   * @param {String} color - The color of the checkbox (used for styling).
-   * @param {String} classes - Additional classes to add to the checkbox.
-   * @returns {Object} An object containing the checkbox and label elements.
-   * @description Creates a checkbox element with the given parameters.
+   * Creates a checkbox element.
    */
   function createCheckboxElement(id, name, color, classes = "") {
     const checkbox = document.createElement("input");
@@ -452,11 +456,7 @@ document.addEventListener("turbo:load", async () => {
   }
 
   /**
-   * @param {string} id - The ID of the checkbox (and, as a result, the staff/event id).
-   * @param {string} param - The URL parameter to update.
-   * @param {boolean} shouldHide - Whether to hide or show the event.
-   * @returns {Array} - An array of the hidden params
-   * @description Updates the URL parameter and refreshes the calendar events.
+   * Updates the URL parameter.
    */
   function updateHiddenParam(id, param, shouldHide) {
     const url = new URL(window.location.href);
