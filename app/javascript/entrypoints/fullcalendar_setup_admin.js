@@ -5,21 +5,13 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 
 import { rrulestr } from "rrule";
+
 import { Tooltip } from "bootstrap";
 
-import {
-  eventClick,
-  eventCreate,
-  initCategorySwitcher,
-  initStaffLoader,
-} from "./calendar_helper.js";
+import { eventClick, eventCreate } from "./calendar_helper.js";
 
 document.addEventListener("turbo:load", async () => {
   const calendarEl = document.getElementById("calendar");
-  if (!calendarEl) return;
-
-  // Initialize category switcher for Event/Unavailability toggle
-  initCategorySwitcher();
 
   let hiddenUserIds = new Set();
 
@@ -92,13 +84,7 @@ document.addEventListener("turbo:load", async () => {
           `background: ${info.event.extendedProps.background}`,
         );
       }
-
-      // Add unavailability styling
-      if (info.event.extendedProps.type === "unavailability") {
-        info.el.classList.add("unavailability");
-      }
     },
-
     eventClick: (info) => eventClick(info.event),
     select: (info) => eventCreate(info),
     initialDate: localStorage.fullCalendarDefaultDateAdmin,
@@ -171,9 +157,6 @@ document.addEventListener("turbo:load", async () => {
   ).catch((error) => console.log(error));
   const data = await res.json();
 
-  // Initialize the Staff Dropdown with this data
-  initStaffLoader(data);
-
   const staffUnavailabilitiesEventSources = generateEventsFromStaffData(data);
 
   createAllStaffCheckboxes();
@@ -234,14 +217,15 @@ document.addEventListener("turbo:load", async () => {
 
   /**
    * @param {Array} data - The array of staff members returned from the server.
-   * @param {Array} hiddenStaff - The array of staff IDs that are hidden.
    * @returns {Object} - FullCalendar event source object.
+   * @description This function generates events from the staff data returned from the server.
    */
   function generateEventsFromStaffData(data) {
     try {
       const allUnavails = [];
       data.map((staff) => {
-        if (staff.unavailabilities.length === 0) {
+        // If there are no unavailabilities for this staff member, we add a placeholder event
+        if (staff.unavailabilities.length === 0)
           return allUnavails.push({
             events: [
               {
@@ -253,34 +237,30 @@ document.addEventListener("turbo:load", async () => {
                 allDay: true,
                 extendedProps: {
                   name: staff.name + " (0 unavailabilities)",
-                  type: "unavailability",
                 },
               },
             ],
             id: staff.id,
             color: staff.color,
           });
-        }
 
-        // Mark each unavailability event with type and userId
-        const unavailsWithType = staff.unavailabilities.map((unavail) => ({
-          ...unavail,
-          extendedProps: {
-            ...(unavail.extendedProps || {}),
-            name: staff.name,
-            type: "unavailability",
-            userId: staff.id,
-            userName: staff.name,
-            dbId: unavail.id,
-            description:
-              unavail.extendedProps?.description || unavail.description,
-          },
-        }));
+        // Add eventType and userId to unavailabilities so helper knows how to treat them
+        const processedEvents = staff.unavailabilities.map((u) => {
+          return {
+            ...u,
+            extendedProps: {
+              ...u.extendedProps,
+              eventType: "unavailability",
+              userId: staff.id,
+            },
+          };
+        });
 
+        // Unshift to prepend to ensure any staff who haven't set their unavailability yet are at the bottom
         allUnavails.unshift({
           id: staff.id,
           color: staff.color,
-          events: unavailsWithType,
+          events: processedEvents,
         });
       });
 
@@ -291,7 +271,8 @@ document.addEventListener("turbo:load", async () => {
   }
 
   /**
-   * Creates a checkbox for all staff members.
+   * @description Creates a checkbox for all staff members to toggle visibility of all staff checkboxes and their events.
+   * @returns {void}
    */
   function createAllStaffCheckboxes() {
     const allCheckboxDiv = document.createElement("div");
@@ -368,7 +349,12 @@ document.addEventListener("turbo:load", async () => {
   }
 
   /**
-   * Appends a checkbox for a given event source.
+   * @param {Array} eventSource - EventSourceObject
+   * @param {HTMLElement} containerElem - The container element to append the checkbox to.
+   * @param {String} urlParam - The URL parameter to update when the checkbox is checked/unchecked.
+   * @param {HTMLElement=null} groupCheckboxElem - The group checkbox element to toggle visibility of the calendar.
+   * @param {String=""} classes - Additional classes to add to the checkbox.
+   * @returns {void}
    */
   function appendCheckbox(
     eventSource,
