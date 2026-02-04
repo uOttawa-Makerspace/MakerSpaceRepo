@@ -63,7 +63,7 @@ class LearningAreaController < DevelopmentProgramsController
       flash[:alert] = "Something went wrong"
       @training_levels ||= TrainingSession.return_levels
       @training_categories = Training.all.order(:name).pluck(:name, :id)
-      render "new", status: :unprocessable_entity
+      render "new", status: :unprocessable_content
     end
   end
 
@@ -101,7 +101,7 @@ class LearningAreaController < DevelopmentProgramsController
       flash[:alert] = "Unable to apply the changes."
       @training_categories = Training.all.order(:name).pluck(:name, :id)
       @training_levels ||= TrainingSession.return_levels
-      render "edit", status: :unprocessable_entity
+      render "edit", status: :unprocessable_content
     end
   end
 

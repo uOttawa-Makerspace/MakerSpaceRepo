@@ -5,18 +5,24 @@
         <div class="mb-3">
             <% if @repository.youtube_link.present? %>
                 <%= youtube_video(@repository.youtube_link) %>
-            <% end %>
-            <div id="show-photo">
-                <% if @repository.photos.present? and @repository.photos.first.image.attached? %>
+            <% elsif @repository.photos.present? and @repository.photos.first.image.attached? %>
+                <div id="show-photo">
                     <%= image_tag @repository.photos.first.image.variant(:photo_slide_first),
                                   alt: 'Repository Main image',
                                   data: {
                                       width: @repository.photos.first.try(:width),
                                       height: @repository.photos.first.try(:height)
                                   } %>
-                <% end %>
-            </div>
+                </div>
+            <% end %>
             <div id="photo-slide">
+                <% if false && @repository.youtube_link.present? %>
+                    <%= image_tag "https://img.youtube.com/vi/#{YoutubeID.from(@repository.youtube_link)}/maxresdefault.jpg",
+                                  data: {
+                                      youtube: @repository.youtube_link
+                                  }
+                    %>
+                <% end %>
                 <% @repository.photos.find_each do |p| %>
                     <%= image_tag p.image.variant(:photo_slide),
                                   alt: 'Repository Image',

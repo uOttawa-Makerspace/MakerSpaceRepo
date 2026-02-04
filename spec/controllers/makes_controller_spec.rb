@@ -20,14 +20,14 @@ RSpec.describe MakesController, type: :controller do
                  user_username: Repository.last.user_username,
                  "#{Repository.find(repo.id).title}": {
                    title: Faker::Lorem.word,
-                   description: Faker::Lorem.paragraph
-                 },
-                 images: [
-                   fixture_file_upload(
-                     Rails.root.join("spec/support/assets", "avatar.png"),
-                     "image/png"
-                   )
-                 ]
+                   description: Faker::Lorem.paragraph,
+                   photos_attributes: [
+                     image: fixture_file_upload(
+                       Rails.root.join("spec/support/assets", "avatar.png"),
+                       "image/png"
+                     )
+                   ]
+                 }
                }
         }.to change(Repository, :count).by(1)
         expect(Repository.last.photos.last.image).to be_attached

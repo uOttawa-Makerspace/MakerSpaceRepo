@@ -20,6 +20,12 @@ FactoryBot.define do
       repository
     end
 
+    trait :with_section_information do
+      course_name_id { CourseName.take.id }
+      section_name { "C3" }
+      team_name { "The makerepo design club (tm)" }
+    end
+
     trait :notes do
       notes { "Test note" }
     end

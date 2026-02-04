@@ -30,7 +30,7 @@ class PriceRulesController < DevelopmentProgramsController
       else
         format.html { render :new }
         format.json do
-          render json: @price_rule.errors, status: :unprocessable_entity
+          render json: @price_rule.errors, status: :unprocessable_content
         end
       end
     end
@@ -52,7 +52,7 @@ class PriceRulesController < DevelopmentProgramsController
       else
         format.html { render :edit }
         format.json do
-          render json: @price_rule.errors, status: :unprocessable_entity
+          render json: @price_rule.errors, status: :unprocessable_content
         end
       end
     end

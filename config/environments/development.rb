@@ -59,6 +59,9 @@ Rails.application.configure do
   # Suppress logger output for asset requests.
   config.assets.quiet = true
 
+  # Disable asset cache
+  config.assets.debug = true
+
   config.console = Pry
 
   Octokit.configure do |c|
@@ -86,4 +89,7 @@ Rails.application.configure do
 
   # Uncomment if you wish to allow Action Cable access from any origin.
   # config.action_cable.disable_request_forgery_protection = true
+
+  config.hosts.clear  # Disables host checking for ngrok to work
+  config.active_job.queue_adapter = :inline
 end

@@ -18,6 +18,7 @@
         <script>(function(d){var s = d.createElement("script");s.setAttribute("data-account", "va12Fyrpbl");s.setAttribute("src", "https://cdn.userway.org/widget.js");(d.body || d.head).appendChild(s);})(document)</script>
         <noscript><div id="noscript-warning">Please ensure Javascript is enabled for purposes of <a href="https://userway.org">website accessibility</a></div></noscript>
         <%= vite_client_tag %>
+        <%= favicon_link_tag 'apple-touch-icon.png', rel: 'apple-touch-icon', type: 'image/png' %>
     </head>
     <body>
         <%= render 'layouts/header', with_volunteer: @with_volunteer_header, with_development: @with_development_header %>

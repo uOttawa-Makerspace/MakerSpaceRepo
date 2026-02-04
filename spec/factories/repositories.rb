@@ -8,6 +8,16 @@ FactoryBot.define do
     share_type { "public" }
     youtube_link { "" }
 
+    # Need to have min one photo
+    after(:build) do |repo|
+      repo.photos.build(
+          image:
+            Rack::Test::UploadedFile.new(
+              Rails.root.join('spec/support/assets/avatar.png'),
+              'image/png')
+      )
+    end
+
     trait :private do
       password do
         "$2a$12$fJ1zqqOdQVXHt6GZVFWyQu2o4ZUU3KxzLkl1JJSDT0KbhfnoGUvg2"
