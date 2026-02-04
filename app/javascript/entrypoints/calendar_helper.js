@@ -143,14 +143,23 @@ export function addEventClick() {
   document.getElementById("update_dropdown").style.display = "none";
   document.getElementById("publish_and_delete_forms").style.display = "none";
 
-  // Reset Select
   const staffSelect = document.getElementById("staff_select");
-  staffSelect.innerHTML = "";
+
+  // Ensure it is multiple (Events default)
+  staffSelect.setAttribute("multiple", "multiple");
+
+  // Clear any lingering value property
+  staffSelect.value = null;
+
+  // Loop through all options and explicitly uncheck them
+  // This fixes the issue where the first option stays selected
+  Array.from(staffSelect.options).forEach((option) => {
+    option.selected = false;
+  });
 
   // Re-attach listener for Event Type change
   const eventTypeSelect = document.getElementById("event_type_select");
 
-  // Remove old listeners to prevent stacking
   const newSelect = eventTypeSelect.cloneNode(true);
   eventTypeSelect.parentNode.replaceChild(newSelect, eventTypeSelect);
 
