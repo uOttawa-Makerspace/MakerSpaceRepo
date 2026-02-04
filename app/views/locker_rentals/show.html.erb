@@ -10,7 +10,13 @@
         <h2><%= t('lockers.details') %></h2>
         <p><%= t('lockers.submitted_on') %> <b><%= @locker_rental.created_at.to_date %></b> <%= t('lockers.for') %>
             <%= link_to @locker_rental.rented_by.username, user_url(@locker_rental.rented_by.username) %>
-            <%= tag.span(@locker_rental.rented_by.role.humanize, class: 'badge text-bg-primary') if @locker_rental.rented_by.staff? %></p>
+            <%= tag.span(@locker_rental.rented_by.role.humanize, class: 'badge text-bg-primary') if @locker_rental.rented_by.staff? %>
+            <br />
+            <% if current_user.staff? %>
+                <b>Contact email:</b> <%= mail_to @locker_rental.rented_by.email, @locker_rental.rented_by.email %>
+            <% end %>
+        </p>
+        
         <p>
             <b><%= t('lockers.locker') %>:</b> <%= @locker_rental.locker&.specifier || '-' %>,
             <b>Preferred locker:</b> <%= @locker_rental.preferred_locker&.specifier %>
@@ -70,7 +76,7 @@
             <% elsif @locker_rental.await_payment? %>
                 <div class="card bg-info-subtle mb-3">
                     <div class="card-body">
-                        <p>Your locker has been approved, and is ready for checkout.</p>
+                        <p>Your locker has been approved, and is ready for payment.</p>
                     </div>
                     <div class="card-footer">
                         <%= link_to 'Checkout', @locker_rental.checkout_link, class: 'btn btn-info stretched-link float-end' %>
@@ -107,7 +113,7 @@
             <div class="col-md">
                 <% if current_user.staff? && !@locker_rental.cancelled? %>
                     <%= f.select :locker_id,
-                      options_for_select(Locker.order_by_specifier.available.pluck(:specifier, :id).map{ |specifier, id| ["Locker ##{specifier}", id]}),
+                        options_for_select(Locker.order_by_specifier.available.pluck(:specifier, :id).map{ |specifier, id| ["Locker ##{specifier}", id]}),
                      {prompt: 'Select a locker...'}, { class: 'form-select'} %>
                     <div class="input-group">
                         <span class="input-group-text">Owned until</span>
