@@ -27,6 +27,8 @@ set :puma_enable_lingering, false
 
 # We seem to be hitting an IO bug because yjit is lazy-enabled. Startup ruby
 # with YJIT enabled immediately
+# NOTE: This doesn't have an effect because systemd starts a separate user
+# session and does not load .profile either
 set :default_env, { 'RUBYOPT' => '--yjit' }
 
 # before "deploy:assets:precompile", "deploy:yarn_install"
