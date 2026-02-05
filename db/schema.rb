@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_02_04_201601) do
+ActiveRecord::Schema[7.2].define(version: 2026_02_05_173620) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_trgm"
@@ -695,11 +695,22 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_04_201601) do
     t.index ["rented_by_id"], name: "index_locker_rentals_on_rented_by_id"
   end
 
+  create_table "locker_sizes", force: :cascade do |t|
+    t.string "size"
+    t.decimal "member_cost"
+    t.decimal "non_member_cost"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "lockers", force: :cascade do |t|
     t.string "specifier"
     t.boolean "available", default: true, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "locker_sizes_id"
+    t.boolean "staff_only"
+    t.index ["locker_sizes_id"], name: "index_lockers_on_locker_sizes_id"
     t.index ["specifier"], name: "index_lockers_on_specifier"
   end
 
