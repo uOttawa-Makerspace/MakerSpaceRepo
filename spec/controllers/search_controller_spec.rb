@@ -3,8 +3,7 @@ require "rails_helper"
 RSpec.describe SearchController, type: :controller do
   describe "GET /explore" do
     context "explore" do
-      before(:all) { (0..15).each { create(:repository) } }
-      after(:all) { @repos.each(&:destroy) }
+      before(:each) { (0..15).each { create(:repository) } }
 
       it "should get a 200" do
         get :explore
