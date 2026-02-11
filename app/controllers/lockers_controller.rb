@@ -18,6 +18,11 @@ class LockersController < AdminAreaController
     @locker_product_info = LockerOption.locker_product_info
   end
 
+  def show
+    @locker = Locker.find(params[:id])
+    @active_locker_rental = @locker.locker_rentals.active.first
+  end
+
   # Make a range of lockers
   # Maybe later this can be modified to take explicit non-numeric names
   def create

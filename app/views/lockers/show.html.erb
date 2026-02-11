@@ -1,0 +1,36 @@
+<% provide(:title, "Locker #{@locker.specifier} history") %>
+<h1 class="text-center">Locker <%= @locker.specifier %></h1>
+<div class="text-center mb-3">
+    <%= link_to fa_icon('arrow-left', text: "Back"), lockers_path %>
+</div>
+
+<% if @active_locker_rental %>
+    <div class="border rounded p-2 mb-3">
+        <p>Locker is currently
+            <% if @active_locker_rental.expired? %>
+                <span class="text-danger">
+                    <%= fa_icon :times %> Expired
+                </span>
+            <% else %>
+                <%= locker_rental_state_display @active_locker_rental %>
+            <% end %> since <%= @active_locker_rental.created_at.to_date.to_formatted_s :long %>
+            
+            <%= link_to fa_icon('arrow-right', text: 'View rental details', right: true), @active_locker_rental, class: 'float-end' %>
+        </p>
+    </div>
+<% else %>
+    <p>Locker is currently unoccupied</p>
+<% end %>
+
+<h2 class="text-center">Locker history</h2>
+<p class="text-center">Log of previous owners of this locker<p>
+
+<%# only picks up rentals that have ever been attached to this locker. %>
+<% @locker.locker_rentals.order(created_at: :desc).each do |rental| %>
+    <%= link_to locker_rental_path(rental), class: 'd-block text-body rounded border p-3' do %>
+        <%= rental.created_at.to_date.to_formatted_s :long %>
+        Owned by <b><%= rental.rented_by.username %></b>
+        until <%= rental.owned_until.to_date.to_formatted_s :long %>
+        state is <%= rental.state %>
+    <% end %>
+<% end %>

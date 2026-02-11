@@ -3,10 +3,10 @@
 require "test_helper"
 
 class RfidControllerTest < ActionController::TestCase
-  test "posting without params returns unprocessable_entity" do
+  test "posting without params returns unprocessable_content" do
     post :card_number
 
-    assert_response :unprocessable_entity
+    assert_response :unprocessable_content
   end
 
   test "posting new rfid creates new record" do
@@ -15,14 +15,14 @@ class RfidControllerTest < ActionController::TestCase
     end
   end
 
-  test "posting new rfid returns unprocessable_entity" do
+  test "posting new rfid returns unprocessable_content" do
     post :card_number,
          params: {
            rfid: "completly new",
            mac_address: "m4k3rsp4c3-pi-1"
          }
 
-    assert_response :unprocessable_entity
+    assert_response :unprocessable_content
   end
 
   test "posting existing card does not create a new record" do
@@ -51,7 +51,7 @@ class RfidControllerTest < ActionController::TestCase
     assert_not_equal old_timestamp, rfid.updated_at.to_i
   end
 
-  test "posting existing card with no user returns unprocessable_entity" do
+  test "posting existing card with no user returns unprocessable_content" do
     rfid = rfids(:no_user)
 
     post :card_number,
@@ -60,7 +60,7 @@ class RfidControllerTest < ActionController::TestCase
            mac_address: rfid.mac_address
          }
 
-    assert_response :unprocessable_entity
+    assert_response :unprocessable_content
   end
 
   test "posting existing card with user returns ok" do

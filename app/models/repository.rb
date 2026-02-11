@@ -41,9 +41,8 @@ class Repository < ApplicationRecord
 
   scope :fuzzy_search,
         ->(query) {
-          where(
-              'LOWER(UNACCENT(title)) % LOWER(UNACCENT(:query)) OR
-                LOWER(UNACCENT(description)) % LOWER(UNACCENT(:query))',
+          where('SIMILARITY(LOWER(UNACCENT(title)), LOWER(UNACCENT(:query))) > 0.15 OR
+          SIMILARITY(LOWER(UNACCENT(description)), LOWER(UNACCENT(:query))) > 0.15',
               query:
             )
             .order(
@@ -51,7 +50,6 @@ class Repository < ApplicationRecord
                 [Arel.sql('similarity(title, ?) DESC'), [query]]
               )
             )
-            .limit(30)
         }
 
   def self.license_options
@@ -84,7 +82,7 @@ class Repository < ApplicationRecord
 
   # This seems to work fine for limiting association counts.
   # Max 5 gallery photos per repository.
-  validates :photos, length: {maximum: 5}
+  validates :photos, length: { maximum: 5, minimum: 1, message: "Must have between 1 and 5 photos" }
 
   # validates :category,
   #           inclusion: { within: CategoryOption.show_options },

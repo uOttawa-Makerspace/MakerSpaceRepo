@@ -21,7 +21,7 @@ class FaqsController < SessionsController
       render :new
     else
       flash[:alert] = "Created FAQ successfully"
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
   end
 
@@ -36,7 +36,7 @@ class FaqsController < SessionsController
       redirect_to faqs_path
     else
       flash[:alert] = "Failed to update entry"
-      render :edit, status: :unprocessable_entity
+      render :edit, status: :unprocessable_content
     end
   end
 

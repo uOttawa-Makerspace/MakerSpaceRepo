@@ -12,7 +12,7 @@ class HelpController < SessionsController
     if verify_turnstile
       if !@help.valid?
         flash[:alert] = "Please fill in all fields"
-        render "main", status: :unprocessable_entity
+        render "main", status: :unprocessable_content
       else
         @name = params[:help][:name]
         @email = params[:help][:email]

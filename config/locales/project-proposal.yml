@@ -9,7 +9,7 @@ en:
     expected_budget: Expected prototype budget
     expected_cost: Expected project cost
 
-    client_infomation: "Client information"
+    client_information: "Client information"
     client_type: Client type
     client_interest: Client interest
     client_background: Client background
