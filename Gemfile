@@ -18,7 +18,6 @@ gem "chartkick"
 gem "clipboard-rails"
 gem "concurrent-ruby", "~> 1.1", ">= 1.1.6"
 gem "excon"
-gem "faraday", "~> 0.17.0"
 gem 'fastimage', '~> 2.4'
 gem "file_validators"
 gem "font-awesome-rails", "~> 4.7.0.9"
