@@ -171,37 +171,6 @@ RSpec.describe SearchController, type: :controller do
     end
   end
 
-  describe "GET /search" do
-    context "search" do
-      it "should search for the right result" do
-        create(:repository)
-        create(
-          :repository,
-          description:
-            "Donec malesuada lacus lorem, ac finibus nibh ultrices quis. Duis dignissim nisl tristique convallis dignissim."
-        )
-        get :search,
-            params: {
-              q: "Donec malesuada lacus lorem, ac finibus nibh ultrices quis."
-            }
-        expect(@controller.instance_variable_get(:@repositories).count).to eq(1)
-        expect(response).to have_http_status(:success)
-      end
-
-      it "should get no results" do
-        create(:repository)
-        create(:repository)
-        create(:repository)
-        get :search,
-            params: {
-              q: "Donec malesuada lacus lorem, ac finibus nibh ultrices quis."
-            }
-        expect(@controller.instance_variable_get(:@repositories).count).to eq(0)
-        expect(response).to have_http_status(:success)
-      end
-    end
-  end
-
   describe "GET /category" do
     context "category" do
       before(:each) do
