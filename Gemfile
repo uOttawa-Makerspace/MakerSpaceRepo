@@ -22,7 +22,7 @@ gem 'fastimage', '~> 2.4'
 gem "file_validators"
 gem "font-awesome-rails", "~> 4.7.0.9"
 gem "google-api-client", "~> 0.53.0", require: ["google/apis/calendar_v3"]
-gem "googleauth", "~> 0.15.0"
+gem "googleauth"
 gem "graphlient"
 gem "groupdate"
 gem 'icalendar'
@@ -32,7 +32,7 @@ gem "kaminari"
 gem "mocha"
 gem "net-ssh"
 gem "nobspw_rails7"
-gem "octokit", "~> 4.21.0"
+gem "octokit"
 gem "pg", "~> 1.6"
 gem "prettier_print"
 gem "pry", "~> 0.15"
