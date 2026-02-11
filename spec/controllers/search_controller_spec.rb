@@ -4,6 +4,7 @@ RSpec.describe SearchController, type: :controller do
   describe "GET /explore" do
     context "explore" do
       before(:all) { (0..15).each { create(:repository) } }
+      after(:all) { @repos.each(&:destroy) }
 
       it "should get a 200" do
         get :explore
