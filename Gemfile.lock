@@ -223,6 +223,8 @@ GEM
       logger
     faraday-net_http (3.4.2)
       net-http (~> 0.5)
+    faraday-retry (2.4.0)
+      faraday (~> 2.0)
     fastimage (2.4.0)
     ffi (1.17.3-aarch64-linux-gnu)
     ffi (1.17.3-aarch64-linux-musl)
@@ -853,6 +855,7 @@ DEPENDENCIES
   excon
   factory_bot_rails
   faker (~> 3.1)
+  faraday-retry (~> 2.4)
   fastimage (~> 2.4)
   file_validators
   font-awesome-rails (~> 4.7.0.9)

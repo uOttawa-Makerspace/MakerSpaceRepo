@@ -86,6 +86,7 @@ group :development, :test do
   gem 'ruby_audit', require: false        # Ruby vulnerabilities
   gem 'rails_best_practices', require: false
   gem 'bullet'                            # N+1 and security issues
+  gem "faraday-retry", "~> 2.4"
 end
 
 group :development do
