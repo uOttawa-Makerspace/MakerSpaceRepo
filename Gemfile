@@ -44,7 +44,7 @@ gem "roo", "~> 2.10.0"
 gem "roo-xls"
 gem 'rrule'
 gem "rubyzip", "~> 2.1", require: "zip"
-gem "saml_idp", "~> 0.9.0"
+gem "saml_idp", "~> 1.0"
 gem "sass-rails", "~> 6.0.0"
 gem "sdoc", "~> 1.1.0", group: :doc
 gem "shopify_app", "~> 22.5"
