@@ -195,13 +195,6 @@ class Admin::EventsController < AdminAreaController
     @event = Event.find(params[:id])
     scope = params[:scope]
 
-    Rails.logger.info "=== EVENT DELETE_WITH_SCOPE ==="
-    Rails.logger.info "Event ID: #{@event.id}"
-    Rails.logger.info "Scope: #{scope}"
-    Rails.logger.info "Start Date: #{params[:start_date]}"
-    Rails.logger.info "Recurrence Rule: #{@event.recurrence_rule.inspect}"
-    Rails.logger.info "==============================="
-
     if @event.recurrence_rule.blank?
       # No recurrence: just delete it normally
       @event.destroy
@@ -251,7 +244,6 @@ class Admin::EventsController < AdminAreaController
       redirect_back(fallback_location: admin_calendar_index_path, notice: "Event series deleted.")
       
     else
-      Rails.logger.error "Invalid scope received: #{scope}"
       redirect_back(fallback_location: admin_calendar_index_path, alert: "Invalid delete scope: #{scope}")
     end
   end
