@@ -34,208 +34,70 @@ export function parseLocalDatetimeString(value) {
 }
 
 // -------------------
-// Helper to switch input names between "event[name]" and "staff_unavailability[name]"
+// Reset modal to clean state
 // -------------------
-function setFormScope(scope) {
-  const inputs = document.querySelectorAll(
-    "#eventModal input, #eventModal select, #eventModal textarea",
-  );
-
-  inputs.forEach((input) => {
-    // Skip the type select itself, submit buttons, and method spoofers
-    if (
-      input.id === "event_type_select" ||
-      input.name === "_method" ||
-      input.type === "submit" ||
-      input.type === "button"
-    )
-      return;
-
-    // Handle the staff select specifically
-    if (input.id === "staff_select") {
-      if (scope === "staff_unavailability") {
-        input.name = "staff_unavailability[user_id]";
-        input.removeAttribute("multiple");
-      } else {
-        input.name = "staff_select[]";
-        input.setAttribute("multiple", "multiple");
-      }
-      return;
-    }
-
-    // Handle recurrence_rule_field specifically
-    if (input.id === "recurrence_rule_field") {
-      input.name = `${scope}[recurrence_rule]`;
-      return;
-    }
-
-    // Handle start_time_field specifically
-    if (input.id === "start_time_field") {
-      input.name = `${scope}[utc_start_time]`;
-      return;
-    }
-
-    // Handle end_time_field specifically
-    if (input.id === "end_time_field") {
-      input.name = `${scope}[utc_end_time]`;
-      return;
-    }
-
-    // Handle title specifically
-    if (input.id === "title") {
-      input.name = `${scope}[title]`;
-      return;
-    }
-
-    // Handle description specifically
-    if (input.id === "description") {
-      input.name = `${scope}[description]`;
-      return;
-    }
-
-    // General regex to swap the scope prefix
-    const name = input.name;
-    if (name) {
-      // Replace event[...] or staff_unavailability[...] with scope[...]
-      const newName = name.replace(
-        /^(event|staff_unavailability)\[/,
-        `${scope}[`,
-      );
-      input.name = newName;
-    }
-  });
-}
-
-// Helper to toggle between Event Mode and Unavailability Mode
-function toggleFormMode(type) {
+function resetModalState() {
   const form = document.querySelector("#eventModal form");
-  const trainingFields = document.getElementById("training-fields");
-
-  // Reset visibility
-  trainingFields.style.display = "none";
-
-  if (type === "unavailability") {
-    // UNAVAILABILITY MODE
-
-    // Change Form Action (for Create) - Edit action is handled in eventClick
-    if (
-      !form.action.includes("/edit") &&
-      !form.querySelector('input[name="_method"]')
-    ) {
-      form.action = "/staff/unavailabilities";
-    }
-
-    // Change Input Scoping
-    setFormScope("staff_unavailability");
-  } else {
-    // EVENT MODE (Shift, Meeting, etc)
-
-    // Change Form Action (for Create)
-    if (
-      !form.action.includes("/edit") &&
-      !form.querySelector('input[name="_method"]')
-    ) {
-      form.action = "/admin/events";
-    }
-
-    // Change Input Scoping
-    setFormScope("event");
-
-    // Specific Logic
-    if (type === "training") {
-      trainingFields.style.display = "block";
-    }
-  }
-}
-
-// Helper to lock/unlock event type dropdown
-function setEventTypeLock(isLocked, form) {
+  const saveButton = document.getElementById("save_button");
+  const saveButtonContainer = document.getElementById("save_button_container");
+  const dropdownSaveContainer = document.getElementById(
+    "dropdown_save_button_container",
+  );
+  const updateDropdown = document.getElementById("update_dropdown");
   const eventTypeSelect = document.getElementById("event_type_select");
-  const eventTypeContainer =
-    eventTypeSelect.closest(".mb-3") || eventTypeSelect.parentElement;
+  const staffSelect = document.getElementById("staff_select");
 
-  if (isLocked) {
-    eventTypeSelect.disabled = true;
-    eventTypeContainer.classList.add("unavailability-locked");
+  // Move save button back to main container
+  if (
+    saveButton &&
+    saveButtonContainer &&
+    !saveButtonContainer.contains(saveButton)
+  ) {
+    saveButtonContainer.appendChild(saveButton);
+  }
 
-    // Add a hidden input to ensure the value is submitted since disabled inputs aren't
-    let hiddenTypeInput = form.querySelector(
-      'input[name="staff_unavailability[event_type]"]',
-    );
-    if (!hiddenTypeInput) {
-      hiddenTypeInput = document.createElement("input");
-      hiddenTypeInput.type = "hidden";
-      hiddenTypeInput.name = "staff_unavailability[event_type]";
-      hiddenTypeInput.id = "event_type_hidden";
-      form.appendChild(hiddenTypeInput);
-    }
-    hiddenTypeInput.value = "unavailability";
+  // Hide the update dropdown
+  if (updateDropdown) {
+    updateDropdown.style.display = "none";
+  }
 
-    // Add visual indicator if not present
-    let lockIndicator = eventTypeContainer.querySelector(".lock-indicator");
-    if (!lockIndicator) {
-      lockIndicator = document.createElement("small");
-      lockIndicator.className = "lock-indicator text-muted d-block mt-1";
-      lockIndicator.textContent = "🔒 Unavailability type cannot be changed";
-      eventTypeContainer.appendChild(lockIndicator);
-    }
-  } else {
+  // Reset save button text
+  if (saveButton) {
+    saveButton.value = "Save Draft";
+  }
+
+  // Remove any _method input (used for PATCH/DELETE)
+  const methodInput = form?.querySelector('input[name="_method"]');
+  if (methodInput) methodInput.remove();
+
+  // Reset form action
+  if (form) {
+    form.action = "/admin/events";
+  }
+
+  // Reset event type select
+  if (eventTypeSelect) {
     eventTypeSelect.disabled = false;
-    eventTypeContainer.classList.remove("unavailability-locked");
+    eventTypeSelect.value = "";
 
-    // Remove hidden type input if it exists
-    const hiddenTypeInput = form.querySelector(
+    // Remove lock indicator if present
+    const lockIndicator =
+      eventTypeSelect.parentElement?.querySelector(".lock-indicator");
+    if (lockIndicator) lockIndicator.remove();
+
+    // Remove hidden type input
+    const hiddenTypeInput = form?.querySelector(
       'input[name="staff_unavailability[event_type]"]',
     );
     if (hiddenTypeInput) hiddenTypeInput.remove();
-
-    // Remove lock indicator if present
-    const lockIndicator = eventTypeContainer.querySelector(".lock-indicator");
-    if (lockIndicator) lockIndicator.remove();
-  }
-}
-
-// -------------------
-// Full Calendar Event Helpers
-// -------------------
-export function addEventClick() {
-  const form = document.querySelector("#eventModal form");
-  form.action = "/admin/events";
-
-  // Reset Scope to default :event
-  setFormScope("event");
-
-  const existingMethodInput = form.querySelector('input[name="_method"]');
-  if (existingMethodInput) existingMethodInput.remove();
-
-  document.getElementById("eventModalLabel").textContent = "Add Event";
-  const saveButton = document.getElementById("save_button");
-  saveButton.value = "Save Draft";
-
-  const mainFooter = document.getElementById("modal_buttons");
-  if (!mainFooter.contains(saveButton)) {
-    mainFooter.appendChild(saveButton);
   }
 
-  document.getElementById("update_dropdown").style.display = "none";
-  document.getElementById("publish_and_delete_forms").style.display = "none";
-
-  const staffSelect = document.getElementById("staff_select");
-
-  // Ensure it is multiple (Events default)
-  staffSelect.setAttribute("multiple", "multiple");
-
-  // Clear any lingering value property
-  staffSelect.value = null;
-
-  // Loop through all options and explicitly uncheck them
-  // This fixes the issue where the first option stays selected
-  Array.from(staffSelect.options).forEach((option) => {
-    option.selected = false;
-  });
-
-  // Reset event type dropdown state (unlock it for new events)
-  setEventTypeLock(false, form);
+  // Reset staff select
+  if (staffSelect) {
+    staffSelect.innerHTML = "";
+    staffSelect.setAttribute("multiple", "multiple");
+    staffSelect.name = "staff_select[]";
+  }
 
   // Reset recurrence fields
   const frequency = document.querySelector("#recurrence_frequency");
@@ -245,32 +107,265 @@ export function addEventClick() {
   const ruleField = document.querySelector("#recurrence_rule_field");
   const dayCheckboxes = [...document.querySelectorAll(".dayCheckbox")];
 
-  frequency.value = "";
-  options.style.display = "none";
-  weeklyOptions.style.display = "none";
-  ruleField.value = "";
-  untilInput.value = "";
+  if (frequency) frequency.value = "";
+  if (options) options.style.display = "none";
+  if (weeklyOptions) weeklyOptions.style.display = "none";
+  if (ruleField) ruleField.value = "";
+  if (untilInput) untilInput.value = "";
   dayCheckboxes.forEach((cb) => (cb.checked = false));
 
   // Reset other form fields
-  document.getElementById("title").value = "";
-  document.getElementById("description").value = "";
-  document.getElementById("all_day_checkbox").checked = false;
-  document.getElementById("end_time_field").disabled = false;
+  const titleField = document.getElementById("title");
+  const descField = document.getElementById("description");
+  const allDayCheckbox = document.getElementById("all_day_checkbox");
+  const endTimeField = document.getElementById("end_time_field");
+  const trainingFields = document.getElementById("training-fields");
 
-  // Re-attach listener for Event Type change
-  const eventTypeSelect = document.getElementById("event_type_select");
-  eventTypeSelect.value = "shift"; // Default to shift
+  if (titleField) titleField.value = "";
+  if (descField) descField.value = "";
+  if (allDayCheckbox) allDayCheckbox.checked = false;
+  if (endTimeField) endTimeField.disabled = false;
+  if (trainingFields) trainingFields.style.display = "none";
 
-  const newSelect = eventTypeSelect.cloneNode(true);
-  eventTypeSelect.parentNode.replaceChild(newSelect, eventTypeSelect);
+  // Reset update scope radio buttons
+  const updateThis = document.getElementById("update_this");
+  if (updateThis) updateThis.checked = true;
 
-  newSelect.addEventListener("change", (e) => {
-    toggleFormMode(e.target.value);
+  // Hide publish/delete footer
+  document.getElementById("publish_and_delete_forms").style.display = "none";
+  document.getElementById("publish_form").style.display = "none";
+  document.getElementById("delete_following_form").style.display = "none";
+  document.getElementById("delete_all_form").style.display = "none";
+
+  // Reset modal title
+  document.getElementById("eventModalLabel").textContent = "Add Event";
+
+  // Reset form scope to event
+  setFormScope("event");
+}
+
+// -------------------
+// Helper to switch input names between "event[name]" and "staff_unavailability[name]"
+// -------------------
+function setFormScope(scope) {
+  const form = document.querySelector("#eventModal form");
+  if (!form) return;
+
+  // Define field mappings
+  const fieldMappings = {
+    start_time_field: "utc_start_time",
+    end_time_field: "utc_end_time",
+    recurrence_rule_field: "recurrence_rule",
+    title: "title",
+    description: "description",
+    utc_start_time: "utc_start_time",
+    utc_end_time: "utc_end_time",
+  };
+
+  // Update specific fields
+  Object.entries(fieldMappings).forEach(([fieldId, paramName]) => {
+    const field = document.getElementById(fieldId);
+    if (field) {
+      field.name = `${scope}[${paramName}]`;
+    }
   });
 
-  // Trigger default state
-  toggleFormMode(newSelect.value || "shift");
+  // Handle staff select specifically
+  const staffSelect = document.getElementById("staff_select");
+  if (staffSelect) {
+    if (scope === "staff_unavailability") {
+      staffSelect.name = "staff_unavailability[user_id]";
+      staffSelect.removeAttribute("multiple");
+    } else {
+      staffSelect.name = "staff_select[]";
+      staffSelect.setAttribute("multiple", "multiple");
+    }
+  }
+
+  // Handle space_id
+  const spaceIdField = form.querySelector(
+    'input[id$="space_id"], input[name$="[space_id]"]',
+  );
+  if (spaceIdField) {
+    spaceIdField.name = `${scope}[space_id]`;
+  }
+}
+
+// -------------------
+// Helper to toggle between Event Mode and Unavailability Mode
+// -------------------
+function toggleFormMode(type) {
+  const form = document.querySelector("#eventModal form");
+  const trainingFields = document.getElementById("training-fields");
+
+  // Reset visibility
+  if (trainingFields) trainingFields.style.display = "none";
+
+  if (type === "unavailability") {
+    // UNAVAILABILITY MODE
+    const methodInput = form?.querySelector('input[name="_method"]');
+    if (!form.action.includes("/unavailabilities") && !methodInput) {
+      form.action = "/staff/unavailabilities";
+    }
+
+    // Change Input Scoping
+    setFormScope("staff_unavailability");
+  } else {
+    // EVENT MODE
+    const methodInput = form?.querySelector('input[name="_method"]');
+    if (!form.action.includes("/events/") && !methodInput) {
+      form.action = "/admin/events";
+    }
+
+    // Change Input Scoping
+    setFormScope("event");
+
+    if (type === "training" && trainingFields) {
+      trainingFields.style.display = "block";
+    }
+  }
+}
+
+// -------------------
+// Helper to lock/unlock event type dropdown
+// -------------------
+function setEventTypeLock(isLocked) {
+  const form = document.querySelector("#eventModal form");
+  const eventTypeSelect = document.getElementById("event_type_select");
+  if (!eventTypeSelect) return;
+
+  const eventTypeContainer =
+    eventTypeSelect.closest(".mb-3") || eventTypeSelect.parentElement;
+
+  if (isLocked) {
+    eventTypeSelect.disabled = true;
+
+    // Add hidden input for form submission
+    let hiddenTypeInput = form?.querySelector(
+      'input[name="staff_unavailability[event_type]"]',
+    );
+    if (!hiddenTypeInput && form) {
+      hiddenTypeInput = document.createElement("input");
+      hiddenTypeInput.type = "hidden";
+      hiddenTypeInput.name = "staff_unavailability[event_type]";
+      hiddenTypeInput.id = "event_type_hidden";
+      hiddenTypeInput.value = "unavailability";
+      form.appendChild(hiddenTypeInput);
+    }
+
+    // Add visual indicator
+    let lockIndicator = eventTypeContainer?.querySelector(".lock-indicator");
+    if (!lockIndicator && eventTypeContainer) {
+      lockIndicator = document.createElement("small");
+      lockIndicator.className = "lock-indicator text-muted d-block mt-1";
+      lockIndicator.textContent = "🔒 Unavailability type cannot be changed";
+      eventTypeContainer.appendChild(lockIndicator);
+    }
+  } else {
+    eventTypeSelect.disabled = false;
+
+    // Remove hidden type input
+    const hiddenTypeInput = form?.querySelector(
+      'input[name="staff_unavailability[event_type]"]',
+    );
+    if (hiddenTypeInput) hiddenTypeInput.remove();
+
+    // Remove lock indicator
+    const lockIndicator = eventTypeContainer?.querySelector(".lock-indicator");
+    if (lockIndicator) lockIndicator.remove();
+  }
+}
+
+// -------------------
+// Position save button correctly based on recurrence
+// -------------------
+function positionSaveButton(hasRecurrence, isEditing) {
+  const saveButton = document.getElementById("save_button");
+  const saveButtonContainer = document.getElementById("save_button_container");
+  const dropdownSaveContainer = document.getElementById(
+    "dropdown_save_button_container",
+  );
+  const updateDropdown = document.getElementById("update_dropdown");
+
+  if (!saveButton) return;
+
+  if (hasRecurrence && isEditing) {
+    // Move to dropdown for recurring event edits
+    if (dropdownSaveContainer && !dropdownSaveContainer.contains(saveButton)) {
+      dropdownSaveContainer.appendChild(saveButton);
+    }
+    if (updateDropdown) updateDropdown.style.display = "block";
+    saveButton.value = "Update";
+  } else {
+    // Keep in main container
+    if (saveButtonContainer && !saveButtonContainer.contains(saveButton)) {
+      saveButtonContainer.appendChild(saveButton);
+    }
+    if (updateDropdown) updateDropdown.style.display = "none";
+    saveButton.value = isEditing ? "Update" : "Save Draft";
+  }
+}
+
+// -------------------
+// Populate staff users for the select
+// -------------------
+async function populateStaffSelect() {
+  const staffSelect = document.getElementById("staff_select");
+  if (!staffSelect) return;
+
+  // Only populate if empty
+  if (staffSelect.options.length > 0) return;
+
+  try {
+    const spaceIdElem =
+      document.getElementById("space_id") ||
+      document.querySelector('input[name="event[space_id]"]') ||
+      document.querySelector('input[name="staff_unavailability[space_id]"]');
+
+    if (!spaceIdElem) return;
+
+    const response = await fetch(
+      `/admin/calendar/staff_json/${spaceIdElem.value}`,
+    );
+    if (!response.ok) return;
+
+    const staffData = await response.json();
+
+    staffData.forEach((staff) => {
+      const option = document.createElement("option");
+      option.value = staff.id;
+      option.textContent = staff.name;
+      staffSelect.appendChild(option);
+    });
+  } catch (error) {
+    console.error("Error fetching staff data:", error);
+  }
+}
+
+// -------------------
+// Full Calendar Event Helpers
+// -------------------
+export function addEventClick() {
+  // Reset everything first
+  resetModalState();
+
+  // Populate staff options if needed
+  populateStaffSelect();
+
+  // Set up event type change listener
+  const eventTypeSelect = document.getElementById("event_type_select");
+  if (eventTypeSelect) {
+    // Clone to remove old listeners
+    const newSelect = eventTypeSelect.cloneNode(true);
+    eventTypeSelect.parentNode.replaceChild(newSelect, eventTypeSelect);
+
+    newSelect.addEventListener("change", (e) => {
+      toggleFormMode(e.target.value);
+    });
+  }
+
+  // Default state
+  toggleFormMode("shift");
 }
 
 export function eventClick(eventImpl) {
@@ -278,12 +373,15 @@ export function eventClick(eventImpl) {
   const id = eventImpl.id.replace("event-", "");
   const isUnavailability = event.extendedProps.eventType === "unavailability";
 
-  // Only edit events (ex. shifts, trainings, meetings, other, unavailability)
+  // Only edit events with an eventType
   if (!event.extendedProps.eventType) return;
+
+  // Reset modal first
+  resetModalState();
 
   const form = document.querySelector("#eventModal form");
 
-  // SETUP FORM ACTION & SCOPE
+  // SETUP FORM ACTION & METHOD
   if (isUnavailability) {
     form.action = `/staff/unavailabilities/${eventImpl.id}`;
     setFormScope("staff_unavailability");
@@ -292,28 +390,44 @@ export function eventClick(eventImpl) {
     setFormScope("event");
   }
 
+  // Add PATCH method
   const methodInput = document.createElement("input");
   methodInput.type = "hidden";
   methodInput.name = "_method";
   methodInput.value = "patch";
-
-  // Remove existing method input if any
-  const oldMethod = form.querySelector('input[name="_method"]');
-  if (oldMethod) oldMethod.remove();
   form.appendChild(methodInput);
 
-  // HANDLE EVENT TYPE DROPDOWN LOCKING
-  const eventTypeSelect = document.getElementById("event_type_select");
+  // 2. SET MODAL TITLE
+  document.getElementById("eventModalLabel").textContent = isUnavailability
+    ? "Edit Unavailability"
+    : "Edit Event";
 
-  if (isUnavailability) {
-    // Lock the event type dropdown for unavailabilities
-    eventTypeSelect.value = "unavailability";
-    setEventTypeLock(true, form);
-  } else {
-    // Unlock for regular events
-    eventTypeSelect.value = event.extendedProps.eventType || "other";
-    setEventTypeLock(false, form);
+  // 3. HANDLE EVENT TYPE DROPDOWN
+  const eventTypeSelect = document.getElementById("event_type_select");
+  if (eventTypeSelect) {
+    if (isUnavailability) {
+      eventTypeSelect.value = "unavailability";
+      setEventTypeLock(true);
+    } else {
+      eventTypeSelect.value = event.extendedProps.eventType || "other";
+      setEventTypeLock(false);
+
+      // Clone and add listener
+      const newSelect = eventTypeSelect.cloneNode(true);
+      eventTypeSelect.parentNode.replaceChild(newSelect, eventTypeSelect);
+      newSelect.value = event.extendedProps.eventType || "other";
+      newSelect.addEventListener("change", (e) => {
+        toggleFormMode(e.target.value);
+      });
+    }
   }
+
+  // Trigger form mode
+  toggleFormMode(
+    isUnavailability
+      ? "unavailability"
+      : event.extendedProps.eventType || "other",
+  );
 
   // TIME FIELDS
   const startTimeField = document.getElementById("start_time_field");
@@ -322,12 +436,10 @@ export function eventClick(eventImpl) {
 
   if (eventImpl.allDay) {
     allDayCheckbox.checked = true;
-
     const startDate = new Date(eventImpl.startStr);
     if (eventImpl.startStr.indexOf("T") === -1) {
       startDate.setHours(0, 0, 0, 0);
     }
-
     const endDate = eventImpl.end
       ? new Date(eventImpl.endStr)
       : new Date(startDate);
@@ -347,13 +459,13 @@ export function eventClick(eventImpl) {
     endTimeField.disabled = false;
   }
 
+  // TITLE & DESCRIPTION
   document.getElementById("title").value =
     event.title.replace(/✎/g, "").trim() || "";
   document.getElementById("description").value =
     event.extendedProps.description || "";
 
   // RECURRENCE
-  // unbuild the rrule
   let rruleData = null;
 
   if (event.recurringDef?.typeData?.rruleSet) {
@@ -376,14 +488,6 @@ export function eventClick(eventImpl) {
   const ruleField = document.querySelector("#recurrence_rule_field");
   const dayCheckboxes = [...document.querySelectorAll(".dayCheckbox")];
 
-  // Reset recurrence
-  frequency.value = "";
-  options.style.display = "none";
-  weeklyOptions.style.display = "none";
-  ruleField.value = "";
-  untilInput.value = "";
-  dayCheckboxes.forEach((cb) => (cb.checked = false));
-
   if (rruleData) {
     const rule = new RRule(rruleData);
     options.style.display = "block";
@@ -395,7 +499,6 @@ export function eventClick(eventImpl) {
       case RRule.WEEKLY:
         frequency.value = "WEEKLY";
         weeklyOptions.style.display = "block";
-
         if (rule.options.byweekday) {
           rule.options.byweekday.forEach((day) => {
             const dayMap = {
@@ -418,36 +521,22 @@ export function eventClick(eventImpl) {
         break;
     }
 
-    if (rule.options.until)
+    if (rule.options.until) {
       untilInput.value = toLocalDateString(rule.options.until);
+    }
     ruleField.value = rule.toString();
   }
 
-  // RE-ATTACH EVENT TYPE LISTENER (only for non-unavailabilities)
-  const newSelect = eventTypeSelect.cloneNode(true);
-  eventTypeSelect.parentNode.replaceChild(newSelect, eventTypeSelect);
-
-  if (isUnavailability) {
-    newSelect.disabled = true;
-    newSelect.value = "unavailability";
-  } else {
-    newSelect.disabled = false;
-    newSelect.value = event.extendedProps.eventType || "other";
-    newSelect.addEventListener("change", (e) => {
-      toggleFormMode(e.target.value);
-    });
-  }
-
-  toggleFormMode(newSelect.value);
-
   // TRAINING FIELDS
-  if (newSelect.value === "training") {
+  const trainingFields = document.getElementById("training-fields");
+  if (event.extendedProps.eventType === "training") {
+    trainingFields.style.display = "block";
     document.getElementById("training_select").value =
-      event.extendedProps.trainingId || null;
+      event.extendedProps.trainingId || "";
     document.getElementById("language_select").value =
-      event.extendedProps.language || null;
+      event.extendedProps.language || "";
     document.getElementById("course_select").value =
-      event.extendedProps.course_name?.id || null;
+      event.extendedProps.course_name?.id || "";
   }
 
   // STAFF SELECTION
@@ -480,25 +569,11 @@ export function eventClick(eventImpl) {
     staffSelect.name = "staff_select[]";
   }
 
-  // 8. FOOTER THINGS
-  document.getElementById("eventModalLabel").textContent = isUnavailability
-    ? "Edit Unavailability"
-    : "Edit Event";
-  const saveButton = document.getElementById("save_button");
-  saveButton.value = "Update";
-
+  // POSITION SAVE BUTTON
   const hasRecurrence = event.recurringDef || rruleData;
+  positionSaveButton(hasRecurrence, true);
 
-  // Show update type dropdown if recurrency present
-  if (hasRecurrence) {
-    document.getElementById("update_dropdown_items").appendChild(saveButton);
-    document.getElementById("update_dropdown").style.display = "block";
-  } else {
-    document.getElementById("modal_buttons").appendChild(saveButton);
-    document.getElementById("update_dropdown").style.display = "none";
-  }
-
-  // Handle publish button
+  // HANDLE PUBLISH BUTTON (events only)
   const publishForm = document.getElementById("publish_form");
   if (event.extendedProps.draft && !isUnavailability) {
     publishForm.action = `/admin/events/${id}/publish`;
@@ -507,7 +582,7 @@ export function eventClick(eventImpl) {
     publishForm.style.display = "none";
   }
 
-  // 9. HANDLE DELETE BUTTONS
+  // HANDLE DELETE BUTTONS
   document.getElementById("publish_and_delete_forms").style.display = "flex";
 
   const singleForm = document.getElementById("delete_single_form");
@@ -522,7 +597,7 @@ export function eventClick(eventImpl) {
     allForm.style.display = "none";
   }
 
-  // Set the start_date for deletion - this is crucial for recurring events
+  // Set start_date for deletion
   const startDateValue = parseLocalDatetimeString(
     eventImpl.startStr,
   ).toISOString();
@@ -530,7 +605,7 @@ export function eventClick(eventImpl) {
     e.value = startDateValue;
   });
 
-  // Set form actions based on event type
+  // Set form actions
   if (isUnavailability) {
     singleForm.action = `/staff/unavailabilities/${eventImpl.id}/delete_with_scope`;
     followingForm.action = `/staff/unavailabilities/${eventImpl.id}/delete_with_scope`;
@@ -541,7 +616,7 @@ export function eventClick(eventImpl) {
     allForm.action = `/admin/events/${id}/delete_with_scope`;
   }
 
-  // Show modal FINALLY
+  // SHOW MODAL
   const modal = new Modal(document.getElementById("eventModal"));
   modal.show();
 }
@@ -554,9 +629,7 @@ export function eventCreate(info) {
     new Date(info.endStr),
   );
 
-  document.getElementById("training-fields").style.display = "none";
-
-  // This must be called after the start and end times are set
+  // Click the add button then call addEventClick
   document.getElementById("addEventButton").click();
   addEventClick();
 }
