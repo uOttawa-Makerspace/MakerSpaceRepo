@@ -29,6 +29,13 @@ class Staff::UnavailabilitiesController < StaffAreaController
     @staff_unavailability = StaffUnavailability.find(params[:id])
     authorize_unavailability!(@staff_unavailability)
 
+    # Check if trying to change event type (not allowed for unavailabilities)
+    if params[:staff_unavailability][:event_type].present? && 
+       params[:staff_unavailability][:event_type] != "unavailability"
+      flash[:alert] = "Cannot change an unavailability to another event type."
+      return redirect_to after_action_path
+    end
+
     update_scope = @staff_unavailability.recurrence_rule.present? ? params[:update_scope] : "non-recurring"
 
     case update_scope
@@ -38,6 +45,8 @@ class Staff::UnavailabilitiesController < StaffAreaController
       update_all_occurrences
     when "this"
       update_this_occurrence
+    else
+      flash[:alert] = "Invalid update scope."
     end
 
     redirect_to after_action_path
@@ -56,6 +65,13 @@ class Staff::UnavailabilitiesController < StaffAreaController
     authorize_unavailability!(@unavailability)
     scope = params[:scope]
 
+    Rails.logger.info "=== DELETE_WITH_SCOPE ==="
+    Rails.logger.info "Unavailability ID: #{@unavailability.id}"
+    Rails.logger.info "Scope: #{scope}"
+    Rails.logger.info "Start Date: #{params[:start_date]}"
+    Rails.logger.info "Recurrence Rule: #{@unavailability.recurrence_rule.inspect}"
+    Rails.logger.info "========================"
+
     if @unavailability.recurrence_rule.blank?
       @unavailability.destroy
       return redirect_to after_action_path, notice: "Unavailability deleted."
@@ -70,7 +86,8 @@ class Staff::UnavailabilitiesController < StaffAreaController
       @unavailability.destroy
       redirect_to after_action_path, notice: "All occurrences deleted."
     else
-      head :bad_request
+      Rails.logger.error "Invalid scope received: #{scope}"
+      redirect_to after_action_path, alert: "Invalid delete scope: #{scope}"
     end
   end
 
@@ -90,7 +107,10 @@ class Staff::UnavailabilitiesController < StaffAreaController
         **(u.recurrence_rule.present? ? { rrule: rrule_data, duration: duration } : {}),
         allDay: u.start_time.to_time == u.end_time.to_time - 1.day,
         extendedProps: {
-          description: u.description
+          description: u.description,
+          eventType: "unavailability",
+          userId: u.user_id,
+          isAdminCreated: u.title&.include?("(Admin)")
         }
       }
     end.compact
@@ -143,7 +163,7 @@ class Staff::UnavailabilitiesController < StaffAreaController
 
   def staff_params
     params.require(:staff_unavailability).permit(
-      :user_id, :title, :description, :utc_start_time, :utc_end_time, :recurrence_rule
+      :user_id, :title, :description, :utc_start_time, :utc_end_time, :recurrence_rule, :event_type
     )
   end
 
@@ -208,9 +228,9 @@ class Staff::UnavailabilitiesController < StaffAreaController
     if @staff_unavailability.update(
         title: staff_params[:title].presence || "Unavailable",
         description: ActionController::Base.helpers.strip_tags(staff_params[:description].to_s),
-        start_time: staff_params[:utc_start_time],
-        end_time: staff_params[:utc_end_time],
-        recurrence_rule: staff_params[:recurrence_rule]
+        start_time: parse_time(staff_params[:utc_start_time]),
+        end_time: parse_time(staff_params[:utc_end_time]),
+        recurrence_rule: staff_params[:recurrence_rule].presence
       )
       flash[:notice] = "Unavailability updated successfully."
     else
@@ -221,15 +241,15 @@ class Staff::UnavailabilitiesController < StaffAreaController
   def update_all_occurrences
     old_date_new_time_start = helpers.combine_date_and_time(
       @staff_unavailability.start_time.utc,
-      Time.parse(staff_params[:utc_start_time]).utc
+      parse_time(staff_params[:utc_start_time])
     )
-    duration = (Time.parse(staff_params[:utc_end_time]).utc - Time.parse(staff_params[:utc_start_time]).utc).to_i
+    duration = (parse_time(staff_params[:utc_end_time]) - parse_time(staff_params[:utc_start_time])).to_i
     old_date_new_time_end = old_date_new_time_start + duration
 
     old_rrule, old_dtstart, old_extra_lines = helpers.parse_rrule_and_dtstart(@staff_unavailability.recurrence_rule)
     new_rrule, new_dtstart, _new_extra_lines = helpers.parse_rrule_and_dtstart(staff_params[:recurrence_rule])
 
-    rule_to_use = if old_rrule == new_rrule
+    rule_to_use = if old_rrule == new_rrule && old_dtstart && new_dtstart
       combined_dtstart = old_dtstart.change(
         hour: new_dtstart.hour,
         min: new_dtstart.min,
@@ -246,7 +266,7 @@ class Staff::UnavailabilitiesController < StaffAreaController
 
     if @staff_unavailability.update(
         title: staff_params[:title].presence || "Unavailable",
-        description: staff_params[:description],
+        description: ActionController::Base.helpers.strip_tags(staff_params[:description].to_s),
         start_time: old_date_new_time_start,
         end_time: old_date_new_time_end,
         recurrence_rule: rule_to_use
@@ -259,7 +279,7 @@ class Staff::UnavailabilitiesController < StaffAreaController
 
   def update_this_occurrence
     exclusion_start_time = helpers.combine_date_and_time(
-      Time.parse(staff_params[:utc_start_time]).utc,
+      parse_time(staff_params[:utc_start_time]),
       @staff_unavailability.start_time.utc
     )
 
@@ -269,9 +289,9 @@ class Staff::UnavailabilitiesController < StaffAreaController
 
     StaffUnavailability.create!(
       title: staff_params[:title].presence || "Unavailable",
-      description: staff_params[:description],
-      start_time: staff_params[:utc_start_time],
-      end_time: staff_params[:utc_end_time],
+      description: ActionController::Base.helpers.strip_tags(staff_params[:description].to_s),
+      start_time: parse_time(staff_params[:utc_start_time]),
+      end_time: parse_time(staff_params[:utc_end_time]),
       recurrence_rule: nil,
       user_id: @staff_unavailability.user_id
     )
@@ -280,6 +300,10 @@ class Staff::UnavailabilitiesController < StaffAreaController
   end
 
   def delete_single_occurrence
+    if params[:start_date].blank?
+      return redirect_to after_action_path, alert: "Start date is required for deleting a single occurrence."
+    end
+
     rrule_line, dtstart, rest_of_lines = helpers.parse_rrule_and_dtstart(@unavailability.recurrence_rule)
     exdate = Time.parse(params[:start_date]).utc.strftime("%Y%m%dT%H%M%SZ")
 
@@ -295,6 +319,10 @@ class Staff::UnavailabilitiesController < StaffAreaController
   end
 
   def delete_following_occurrences
+    if params[:start_date].blank?
+      return redirect_to after_action_path, alert: "Start date is required for deleting following occurrences."
+    end
+
     rrule_line, dtstart, rest_of_lines = helpers.parse_rrule_and_dtstart(@unavailability.recurrence_rule)
     previous_day = Time.parse(params[:start_date]).utc - 24.hours
     rrule_line = "#{helpers.remove_until_from_rrule(rrule_line)};UNTIL=#{previous_day.strftime("%Y%m%dT%H%M%SZ")}"
@@ -307,5 +335,10 @@ class Staff::UnavailabilitiesController < StaffAreaController
 
     @unavailability.update!(recurrence_rule: (recurrence_lines + rest_of_lines).join("\n"))
     redirect_to after_action_path, notice: "This and following deleted."
+  end
+
+  def parse_time(time_string)
+    return nil if time_string.blank?
+    Time.parse(time_string).utc
   end
 end

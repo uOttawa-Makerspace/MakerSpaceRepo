@@ -63,6 +63,36 @@ function setFormScope(scope) {
       return;
     }
 
+    // Handle recurrence_rule_field specifically
+    if (input.id === "recurrence_rule_field") {
+      input.name = `${scope}[recurrence_rule]`;
+      return;
+    }
+
+    // Handle start_time_field specifically
+    if (input.id === "start_time_field") {
+      input.name = `${scope}[utc_start_time]`;
+      return;
+    }
+
+    // Handle end_time_field specifically
+    if (input.id === "end_time_field") {
+      input.name = `${scope}[utc_end_time]`;
+      return;
+    }
+
+    // Handle title specifically
+    if (input.id === "title") {
+      input.name = `${scope}[title]`;
+      return;
+    }
+
+    // Handle description specifically
+    if (input.id === "description") {
+      input.name = `${scope}[description]`;
+      return;
+    }
+
     // General regex to swap the scope prefix
     const name = input.name;
     if (name) {
@@ -118,6 +148,53 @@ function toggleFormMode(type) {
   }
 }
 
+// Helper to lock/unlock event type dropdown
+function setEventTypeLock(isLocked, form) {
+  const eventTypeSelect = document.getElementById("event_type_select");
+  const eventTypeContainer =
+    eventTypeSelect.closest(".mb-3") || eventTypeSelect.parentElement;
+
+  if (isLocked) {
+    eventTypeSelect.disabled = true;
+    eventTypeContainer.classList.add("unavailability-locked");
+
+    // Add a hidden input to ensure the value is submitted since disabled inputs aren't
+    let hiddenTypeInput = form.querySelector(
+      'input[name="staff_unavailability[event_type]"]',
+    );
+    if (!hiddenTypeInput) {
+      hiddenTypeInput = document.createElement("input");
+      hiddenTypeInput.type = "hidden";
+      hiddenTypeInput.name = "staff_unavailability[event_type]";
+      hiddenTypeInput.id = "event_type_hidden";
+      form.appendChild(hiddenTypeInput);
+    }
+    hiddenTypeInput.value = "unavailability";
+
+    // Add visual indicator if not present
+    let lockIndicator = eventTypeContainer.querySelector(".lock-indicator");
+    if (!lockIndicator) {
+      lockIndicator = document.createElement("small");
+      lockIndicator.className = "lock-indicator text-muted d-block mt-1";
+      lockIndicator.textContent = "🔒 Unavailability type cannot be changed";
+      eventTypeContainer.appendChild(lockIndicator);
+    }
+  } else {
+    eventTypeSelect.disabled = false;
+    eventTypeContainer.classList.remove("unavailability-locked");
+
+    // Remove hidden type input if it exists
+    const hiddenTypeInput = form.querySelector(
+      'input[name="staff_unavailability[event_type]"]',
+    );
+    if (hiddenTypeInput) hiddenTypeInput.remove();
+
+    // Remove lock indicator if present
+    const lockIndicator = eventTypeContainer.querySelector(".lock-indicator");
+    if (lockIndicator) lockIndicator.remove();
+  }
+}
+
 // -------------------
 // Full Calendar Event Helpers
 // -------------------
@@ -157,8 +234,33 @@ export function addEventClick() {
     option.selected = false;
   });
 
+  // Reset event type dropdown state (unlock it for new events)
+  setEventTypeLock(false, form);
+
+  // Reset recurrence fields
+  const frequency = document.querySelector("#recurrence_frequency");
+  const options = document.querySelector("#recurrence_options");
+  const weeklyOptions = document.querySelector("#weekly_options");
+  const untilInput = document.querySelector("#recurrence_until");
+  const ruleField = document.querySelector("#recurrence_rule_field");
+  const dayCheckboxes = [...document.querySelectorAll(".dayCheckbox")];
+
+  frequency.value = "";
+  options.style.display = "none";
+  weeklyOptions.style.display = "none";
+  ruleField.value = "";
+  untilInput.value = "";
+  dayCheckboxes.forEach((cb) => (cb.checked = false));
+
+  // Reset other form fields
+  document.getElementById("title").value = "";
+  document.getElementById("description").value = "";
+  document.getElementById("all_day_checkbox").checked = false;
+  document.getElementById("end_time_field").disabled = false;
+
   // Re-attach listener for Event Type change
   const eventTypeSelect = document.getElementById("event_type_select");
+  eventTypeSelect.value = "shift"; // Default to shift
 
   const newSelect = eventTypeSelect.cloneNode(true);
   eventTypeSelect.parentNode.replaceChild(newSelect, eventTypeSelect);
@@ -181,7 +283,7 @@ export function eventClick(eventImpl) {
 
   const form = document.querySelector("#eventModal form");
 
-  // 1. SETUP FORM ACTION & SCOPE
+  // SETUP FORM ACTION & SCOPE
   if (isUnavailability) {
     form.action = `/staff/unavailabilities/${eventImpl.id}`;
     setFormScope("staff_unavailability");
@@ -200,6 +302,20 @@ export function eventClick(eventImpl) {
   if (oldMethod) oldMethod.remove();
   form.appendChild(methodInput);
 
+  // HANDLE EVENT TYPE DROPDOWN LOCKING
+  const eventTypeSelect = document.getElementById("event_type_select");
+
+  if (isUnavailability) {
+    // Lock the event type dropdown for unavailabilities
+    eventTypeSelect.value = "unavailability";
+    setEventTypeLock(true, form);
+  } else {
+    // Unlock for regular events
+    eventTypeSelect.value = event.extendedProps.eventType || "other";
+    setEventTypeLock(false, form);
+  }
+
+  // TIME FIELDS
   const startTimeField = document.getElementById("start_time_field");
   const endTimeField = document.getElementById("end_time_field");
   const allDayCheckbox = document.getElementById("all_day_checkbox");
@@ -236,7 +352,7 @@ export function eventClick(eventImpl) {
   document.getElementById("description").value =
     event.extendedProps.description || "";
 
-  // 4. RECURRENCE
+  // RECURRENCE
   // unbuild the rrule
   let rruleData = null;
 
@@ -280,21 +396,22 @@ export function eventClick(eventImpl) {
         frequency.value = "WEEKLY";
         weeklyOptions.style.display = "block";
 
-        rule.options.byweekday.forEach((day) => {
-          // Simple mapping for standard RRule integers to SU/MO/etc
-          const dayMap = {
-            0: "MO",
-            1: "TU",
-            2: "WE",
-            3: "TH",
-            4: "FR",
-            5: "SA",
-            6: "SU",
-          };
-          const dayCode = dayMap[day];
-          const cb = document.getElementById(`day_${dayCode}`);
-          if (cb) cb.checked = true;
-        });
+        if (rule.options.byweekday) {
+          rule.options.byweekday.forEach((day) => {
+            const dayMap = {
+              0: "MO",
+              1: "TU",
+              2: "WE",
+              3: "TH",
+              4: "FR",
+              5: "SA",
+              6: "SU",
+            };
+            const dayCode = dayMap[day];
+            const cb = document.getElementById(`day_${dayCode}`);
+            if (cb) cb.checked = true;
+          });
+        }
         break;
       case RRule.MONTHLY:
         frequency.value = "MONTHLY";
@@ -306,20 +423,25 @@ export function eventClick(eventImpl) {
     ruleField.value = rule.toString();
   }
 
-  // EVENT TYPE & TRAININGS
-  const eventTypeSelect = document.getElementById("event_type_select");
-  eventTypeSelect.value = event.extendedProps.eventType || "other";
-
-  // Re-attach listener
+  // RE-ATTACH EVENT TYPE LISTENER (only for non-unavailabilities)
   const newSelect = eventTypeSelect.cloneNode(true);
   eventTypeSelect.parentNode.replaceChild(newSelect, eventTypeSelect);
-  newSelect.addEventListener("change", (e) => {
-    toggleFormMode(e.target.value);
-  });
 
-  toggleFormMode(eventTypeSelect.value);
+  if (isUnavailability) {
+    newSelect.disabled = true;
+    newSelect.value = "unavailability";
+  } else {
+    newSelect.disabled = false;
+    newSelect.value = event.extendedProps.eventType || "other";
+    newSelect.addEventListener("change", (e) => {
+      toggleFormMode(e.target.value);
+    });
+  }
 
-  if (eventTypeSelect.value === "training") {
+  toggleFormMode(newSelect.value);
+
+  // TRAINING FIELDS
+  if (newSelect.value === "training") {
     document.getElementById("training_select").value =
       event.extendedProps.trainingId || null;
     document.getElementById("language_select").value =
@@ -336,7 +458,7 @@ export function eventClick(eventImpl) {
     ? [
         {
           id: event.extendedProps.userId,
-          name: event.extendedProps.name?.split("(")[0] || "User",
+          name: event.extendedProps.name?.split("(")[0]?.trim() || "User",
         },
       ]
     : event.extendedProps.assignedUsers || [];
@@ -358,15 +480,17 @@ export function eventClick(eventImpl) {
     staffSelect.name = "staff_select[]";
   }
 
-  // FOOTER THINGS
+  // 8. FOOTER THINGS
   document.getElementById("eventModalLabel").textContent = isUnavailability
     ? "Edit Unavailability"
     : "Edit Event";
   const saveButton = document.getElementById("save_button");
   saveButton.value = "Update";
 
+  const hasRecurrence = event.recurringDef || rruleData;
+
   // Show update type dropdown if recurrency present
-  if (event.recurringDef || rruleData) {
+  if (hasRecurrence) {
     document.getElementById("update_dropdown_items").appendChild(saveButton);
     document.getElementById("update_dropdown").style.display = "block";
   } else {
@@ -383,14 +507,14 @@ export function eventClick(eventImpl) {
     publishForm.style.display = "none";
   }
 
-  // Handle delete buttons
+  // 9. HANDLE DELETE BUTTONS
   document.getElementById("publish_and_delete_forms").style.display = "flex";
 
   const singleForm = document.getElementById("delete_single_form");
   const followingForm = document.getElementById("delete_following_form");
   const allForm = document.getElementById("delete_all_form");
 
-  if (event.recurringDef || rruleData) {
+  if (hasRecurrence) {
     followingForm.style.display = "block";
     allForm.style.display = "block";
   } else {
@@ -398,10 +522,15 @@ export function eventClick(eventImpl) {
     allForm.style.display = "none";
   }
 
+  // Set the start_date for deletion - this is crucial for recurring events
+  const startDateValue = parseLocalDatetimeString(
+    eventImpl.startStr,
+  ).toISOString();
   document.querySelectorAll(".delete_start_date").forEach((e) => {
-    e.value = parseLocalDatetimeString(eventImpl.startStr).toISOString();
+    e.value = startDateValue;
   });
 
+  // Set form actions based on event type
   if (isUnavailability) {
     singleForm.action = `/staff/unavailabilities/${eventImpl.id}/delete_with_scope`;
     followingForm.action = `/staff/unavailabilities/${eventImpl.id}/delete_with_scope`;

@@ -12,6 +12,7 @@ import { eventClick, eventCreate } from "./calendar_helper.js";
 
 document.addEventListener("turbo:load", async () => {
   const calendarEl = document.getElementById("calendar");
+  if (!calendarEl) return;
 
   let hiddenUserIds = new Set();
 
@@ -84,6 +85,11 @@ document.addEventListener("turbo:load", async () => {
           `background: ${info.event.extendedProps.background}`,
         );
       }
+
+      // Add visual indicator for admin-created unavailabilities
+      if (info.event.extendedProps.isAdminCreated) {
+        info.el.classList.add("admin-created-unavailability");
+      }
     },
     eventClick: (info) => eventClick(info.event),
     select: (info) => eventCreate(info),
@@ -103,12 +109,14 @@ document.addEventListener("turbo:load", async () => {
       // update publish/delete button names
       const pubDraftButt = document.getElementById("publish_drafts_button");
       const delDraftButt = document.getElementById("delete_drafts_button");
-      if (info.view.type === "timeGridWeek") {
-        pubDraftButt.innerText = "Publish This Week's Drafts";
-        delDraftButt.innerText = "Delete This Week's Drafts";
-      } else {
-        pubDraftButt.innerText = "Publish This Month's Drafts";
-        delDraftButt.innerText = "Delete This Month's Drafts";
+      if (pubDraftButt && delDraftButt) {
+        if (info.view.type === "timeGridWeek") {
+          pubDraftButt.innerText = "Publish This Week's Drafts";
+          delDraftButt.innerText = "Delete This Week's Drafts";
+        } else {
+          pubDraftButt.innerText = "Publish This Month's Drafts";
+          delDraftButt.innerText = "Delete This Month's Drafts";
+        }
       }
 
       updateUserHourBadges();
@@ -116,21 +124,34 @@ document.addEventListener("turbo:load", async () => {
   });
 
   // Init events
+  const spaceIdElem = document.getElementById("space_id");
+  if (!spaceIdElem) {
+    console.error("space_id element not found");
+    return;
+  }
+
   const eventsRes = await fetch(
-    "/admin/events/json/" + document.getElementById("space_id").value,
+    "/admin/events/json/" + spaceIdElem.value,
   ).catch((error) => console.log(error));
   const eventsData = await eventsRes.json();
 
   eventsData.forEach((eventSource) => {
     eventSource.events.forEach((event) => {
-      if (event.rrule) event.rrule = rrulestr(event.rrule).toString();
+      if (event.rrule) {
+        try {
+          event.rrule = rrulestr(event.rrule).toString();
+        } catch (e) {
+          console.error("Error parsing rrule:", e, event.rrule);
+        }
+      }
     });
 
-    appendCheckbox(
-      eventSource,
-      document.getElementById("events_checkbox_container"),
-      "hidden_events",
+    const checkboxContainer = document.getElementById(
+      "events_checkbox_container",
     );
+    if (checkboxContainer) {
+      appendCheckbox(eventSource, checkboxContainer, "hidden_events");
+    }
   });
 
   calendar.addEventSource({
@@ -152,8 +173,7 @@ document.addEventListener("turbo:load", async () => {
 
   // Init staff unavailabilities
   const res = await fetch(
-    "/admin/calendar/unavailabilities_json/" +
-      document.getElementById("space_id").value,
+    "/admin/calendar/unavailabilities_json/" + spaceIdElem.value,
   ).catch((error) => console.log(error));
   const data = await res.json();
 
@@ -163,62 +183,82 @@ document.addEventListener("turbo:load", async () => {
 
   staffUnavailabilitiesEventSources.forEach((eventSource) => {
     calendar.addEventSource(eventSource);
-    // Unavails cb
-    appendCheckbox(
-      eventSource,
-      document.getElementById("staff_checkbox_container"),
-      "hidden_staff",
-      document.querySelector(".all_checkbox"),
-      "staff",
+    const staffCheckboxContainer = document.getElementById(
+      "staff_checkbox_container",
     );
+    if (staffCheckboxContainer) {
+      appendCheckbox(
+        eventSource,
+        staffCheckboxContainer,
+        "hidden_staff",
+        document.querySelector(".all_checkbox"),
+        "staff",
+      );
+    }
   });
 
   // Render and SHOW IT!!!
-  document.getElementById("calendar_container").style.display = "block";
-  document.getElementById("spinner_container").style.display = "none";
+  const calendarContainer = document.getElementById("calendar_container");
+  const spinnerContainer = document.getElementById("spinner_container");
+  if (calendarContainer) calendarContainer.style.display = "block";
+  if (spinnerContainer) spinnerContainer.style.display = "none";
   calendar.render();
 
   // scroll to fullcalendar by default
   window.scrollTo(0, document.getElementById("calendar").offsetTop - 180);
 
   // Set custom button text
-  document.querySelector(".fc-toggleWeekends-button").innerHTML =
-    calendar.getOption("weekends") ? "Hide Weekends" : "Show Weekends";
+  const toggleWeekendsBtn = document.querySelector(".fc-toggleWeekends-button");
+  if (toggleWeekendsBtn) {
+    toggleWeekendsBtn.innerHTML = calendar.getOption("weekends")
+      ? "Hide Weekends"
+      : "Show Weekends";
+  }
 
-  document.querySelector(".fc-toggleEventOverlap-button").innerHTML =
-    calendar.getOption("slotEventOverlap")
+  const toggleOverlapBtn = document.querySelector(
+    ".fc-toggleEventOverlap-button",
+  );
+  if (toggleOverlapBtn) {
+    toggleOverlapBtn.innerHTML = calendar.getOption("slotEventOverlap")
       ? "Disable Event Overlap"
       : "Enable Event Overlap";
+  }
 
   // Init imported calendars
   const importedCalendarsRes = await fetch(
-    "/admin/calendar/imported_calendars_json/" +
-      document.getElementById("space_id").value,
+    "/admin/calendar/imported_calendars_json/" + spaceIdElem.value,
   ).catch((error) => console.log(error));
   const importedCalendars = await importedCalendarsRes.json();
 
   importedCalendars.forEach((eventSource) => {
     calendar.addEventSource(eventSource);
 
-    appendCheckbox(
-      eventSource,
-      document.getElementById("calendars_checkbox_container"),
-      "hidden_calendars",
+    const calendarsCheckboxContainer = document.getElementById(
+      "calendars_checkbox_container",
     );
+    if (calendarsCheckboxContainer) {
+      appendCheckbox(
+        eventSource,
+        calendarsCheckboxContainer,
+        "hidden_calendars",
+      );
+    }
   });
+
   const importedCalStatusSpan = document.getElementById(
     "imported_calendars_status",
   );
-  if (importedCalendars.length) {
-    importedCalStatusSpan.style.display = "none";
-  } else {
-    importedCalStatusSpan.innerText = "No calendars found";
+  if (importedCalStatusSpan) {
+    if (importedCalendars.length) {
+      importedCalStatusSpan.style.display = "none";
+    } else {
+      importedCalStatusSpan.innerText = "No calendars found";
+    }
   }
 
   /**
    * @param {Array} data - The array of staff members returned from the server.
    * @returns {Object} - FullCalendar event source object.
-   * @description This function generates events from the staff data returned from the server.
    */
   function generateEventsFromStaffData(data) {
     try {
@@ -244,14 +284,24 @@ document.addEventListener("turbo:load", async () => {
             color: staff.color,
           });
 
-        // Add eventType and userId to unavailabilities so helper knows how to treat them
+        // Process events with rrule parsing
         const processedEvents = staff.unavailabilities.map((u) => {
+          // Parse rrule if present
+          if (u.rrule) {
+            try {
+              u.rrule = rrulestr(u.rrule).toString();
+            } catch (e) {
+              console.error("Error parsing unavailability rrule:", e, u.rrule);
+            }
+          }
+
           return {
             ...u,
             extendedProps: {
               ...u.extendedProps,
               eventType: "unavailability",
               userId: staff.id,
+              isAdminCreated: u.title?.includes("(Admin)"),
             },
           };
         });
@@ -267,12 +317,12 @@ document.addEventListener("turbo:load", async () => {
       return allUnavails;
     } catch (error) {
       console.error("Error fetching unavailability data:", error);
+      return [];
     }
   }
 
   /**
-   * @description Creates a checkbox for all staff members to toggle visibility of all staff checkboxes and their events.
-   * @returns {void}
+   * Creates a checkbox for all staff members to toggle visibility
    */
   function createAllStaffCheckboxes() {
     const allCheckboxDiv = document.createElement("div");
@@ -288,6 +338,8 @@ document.addEventListener("turbo:load", async () => {
     );
 
     const container = document.getElementById("staff_checkbox_container");
+    if (!container) return;
+
     const urlParams = new URLSearchParams(window.location.search);
 
     // For staff events
@@ -349,12 +401,7 @@ document.addEventListener("turbo:load", async () => {
   }
 
   /**
-   * @param {Array} eventSource - EventSourceObject
-   * @param {HTMLElement} containerElem - The container element to append the checkbox to.
-   * @param {String} urlParam - The URL parameter to update when the checkbox is checked/unchecked.
-   * @param {HTMLElement=null} groupCheckboxElem - The group checkbox element to toggle visibility of the calendar.
-   * @param {String=""} classes - Additional classes to add to the checkbox.
-   * @returns {void}
+   * Appends a checkbox for an event source
    */
   function appendCheckbox(
     eventSource,
@@ -364,7 +411,9 @@ document.addEventListener("turbo:load", async () => {
     classes = "",
   ) {
     const container = containerElem;
-    container.previousElementSibling.style.display = "block";
+    if (container.previousElementSibling) {
+      container.previousElementSibling.style.display = "block";
+    }
 
     const urlParams = new URLSearchParams(window.location.search);
     const hiddenCalendars = urlParams.get(urlParam) || "";
@@ -418,7 +467,10 @@ document.addEventListener("turbo:load", async () => {
           hiddenUserIds.delete(userId);
         } else {
           hiddenUserIds.add(userId);
-          document.querySelector(".all_events_checkbox").checked = false;
+          const allEventsCheckboxElem = document.querySelector(
+            ".all_events_checkbox",
+          );
+          if (allEventsCheckboxElem) allEventsCheckboxElem.checked = false;
         }
         updateHiddenParam(userId, "hidden_staff_events", !e.target.checked);
         calendar.refetchEvents();

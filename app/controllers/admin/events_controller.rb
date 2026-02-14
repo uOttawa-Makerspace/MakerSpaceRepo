@@ -16,7 +16,7 @@ class Admin::EventsController < AdminAreaController
       # the dates are already in utc but for consistent formatting with @event, we will do it explicitly
       start_time: Time.parse(event_params[:utc_start_time]).utc,
       end_time: Time.parse(event_params[:utc_end_time]).utc,
-      recurrence_rule: event_params[:recurrence_rule],
+      recurrence_rule: event_params[:recurrence_rule].presence,
       created_by_id: current_user.id,
       space_id: event_params[:space_id],
       event_type: event_params[:event_type],
@@ -67,7 +67,7 @@ class Admin::EventsController < AdminAreaController
         # the dates are already in utc but for consistent formatting with @event, we will do it explicitly
         start_time: Time.parse(event_params[:utc_start_time]).utc,
         end_time: Time.parse(event_params[:utc_end_time]).utc,
-        recurrence_rule: event_params[:recurrence_rule],
+        recurrence_rule: event_params[:recurrence_rule].presence,
         created_by_id: current_user.id,
         space_id: event_params[:space_id],
         event_type: event_params[:event_type],
@@ -93,18 +93,18 @@ class Admin::EventsController < AdminAreaController
         flash[:alert] = "Failed to update event: #{@event.errors.full_messages.to_sentence}"
       end
     when "all"
-      old_date_new_time_start = helpers.combine_date_and_time(@event.start_time.utc, 
-Time.parse(event_params[:utc_start_time]).utc)
+      old_date_new_time_start = helpers.combine_date_and_time(
+        @event.start_time.utc, 
+        Time.parse(event_params[:utc_start_time]).utc
+      )
       duration = (Time.parse(event_params[:utc_end_time]).utc - Time.parse(event_params[:utc_start_time]).utc).to_i
       old_date_new_time_end = old_date_new_time_start + duration
-
 
       old_rrule, old_dtstart, old_extra_lines = helpers.parse_rrule_and_dtstart(@event.recurrence_rule)
       new_rrule, new_dtstart, _new_extra_lines = helpers.parse_rrule_and_dtstart(event_params[:recurrence_rule])
 
-      rule_to_use = if old_rrule == new_rrule
-        # the freq is the same, so we just need to make the dtstart time correct
-          combined_dtstart = old_dtstart.change(
+      rule_to_use = if old_rrule == new_rrule && old_dtstart && new_dtstart
+        combined_dtstart = old_dtstart.change(
           hour: new_dtstart.hour,
           min: new_dtstart.min,
           sec: new_dtstart.sec
@@ -143,13 +143,15 @@ Time.parse(event_params[:utc_start_time]).utc)
           @event.event_assignments << @event_assignments
         end
 
-        flash[:notice] = "Unavailability updated successfully."
+        flash[:notice] = "All occurrences updated successfully."
       else
-        flash[:alert] = "Failed to update unavailability: #{@event.errors.full_messages.to_sentence}"
+        flash[:alert] = "Failed to update event: #{@event.errors.full_messages.to_sentence}"
       end
     when "this"
-      exclusion_start_time = helpers.combine_date_and_time(Time.parse(event_params[:utc_start_time]).utc, 
-@event.start_time.utc)
+      exclusion_start_time = helpers.combine_date_and_time(
+        Time.parse(event_params[:utc_start_time]).utc, 
+        @event.start_time.utc
+      )
 
       updated_rule = helpers.add_exdate_to_rrule(@event.recurrence_rule, exclusion_start_time)
 
@@ -161,14 +163,14 @@ Time.parse(event_params[:utc_start_time]).utc)
         # the dates are already in utc but for consistent formatting with @event, we will do it explicitly
         start_time: Time.parse(event_params[:utc_start_time]).utc,
         end_time: Time.parse(event_params[:utc_end_time]).utc,
-        recurrence_rule: '',
+        recurrence_rule: nil,
         created_by_id: current_user.id,
         space_id: event_params[:space_id],
         event_type: event_params[:event_type],
         training_id: event_params[:training_id],
         language: event_params[:language],
         course_name_id: event_params[:course_name]
-        )
+      )
 
       # Update event assignments
       unless participants.empty?
@@ -182,6 +184,8 @@ Time.parse(event_params[:utc_start_time]).utc)
       end 
 
       flash[:notice] = "This event occurrence updated successfully."
+    else
+      flash[:alert] = "Invalid update scope."
     end
 
     redirect_back(fallback_location: admin_calendar_index_path)
@@ -191,6 +195,13 @@ Time.parse(event_params[:utc_start_time]).utc)
     @event = Event.find(params[:id])
     scope = params[:scope]
 
+    Rails.logger.info "=== EVENT DELETE_WITH_SCOPE ==="
+    Rails.logger.info "Event ID: #{@event.id}"
+    Rails.logger.info "Scope: #{scope}"
+    Rails.logger.info "Start Date: #{params[:start_date]}"
+    Rails.logger.info "Recurrence Rule: #{@event.recurrence_rule.inspect}"
+    Rails.logger.info "==============================="
+
     if @event.recurrence_rule.blank?
       # No recurrence: just delete it normally
       @event.destroy
@@ -198,36 +209,51 @@ Time.parse(event_params[:utc_start_time]).utc)
       return
     end
 
-    rrule_line, dtstart, rest_of_lines = helpers.parse_rrule_and_dtstart(@event.recurrence_rule)
-    exdates = []
-
     case scope
     when "single"
-      exdates << Time.parse(params[:start_date]).utc.strftime("%Y%m%dT%H%M%SZ")
+      if params[:start_date].blank?
+        return redirect_back(fallback_location: admin_calendar_index_path, alert: "Start date is required.")
+      end
+      
+      rrule_line, dtstart, rest_of_lines = helpers.parse_rrule_and_dtstart(@event.recurrence_rule)
+      exdate = Time.parse(params[:start_date]).utc.strftime("%Y%m%dT%H%M%SZ")
+      
+      rule = RRule::Rule.new(rrule_line, dtstart: dtstart || @event.start_time)
+      recurrence_lines = [
+        "DTSTART:#{rule.dtstart.utc.strftime("%Y%m%dT%H%M%SZ")}",
+        "RRULE:#{rule}",
+        "EXDATE:#{exdate}"
+      ]
+      
+      @event.update!(recurrence_rule: (recurrence_lines + rest_of_lines).join("\n"))
+      redirect_back(fallback_location: admin_calendar_index_path, notice: "This occurrence deleted.")
+      
     when "following"
-      previous_day = Time.parse(params[:start_date]).utc - 24 * 60 * 60
+      if params[:start_date].blank?
+        return redirect_back(fallback_location: admin_calendar_index_path, alert: "Start date is required.")
+      end
+      
+      rrule_line, dtstart, rest_of_lines = helpers.parse_rrule_and_dtstart(@event.recurrence_rule)
+      previous_day = Time.parse(params[:start_date]).utc - 24.hours
       rrule_line = "#{helpers.remove_until_from_rrule(rrule_line)};UNTIL=#{previous_day.strftime("%Y%m%dT%H%M%SZ")}"
+      
+      rule = RRule::Rule.new(rrule_line, dtstart: dtstart || @event.start_time)
+      recurrence_lines = [
+        "DTSTART:#{rule.dtstart.utc.strftime("%Y%m%dT%H%M%SZ")}",
+        "RRULE:#{rule}"
+      ]
+      
+      @event.update!(recurrence_rule: (recurrence_lines + rest_of_lines).join("\n"))
+      redirect_back(fallback_location: admin_calendar_index_path, notice: "This and following deleted.")
+      
     when "all"
       @event.destroy
       redirect_back(fallback_location: admin_calendar_index_path, notice: "Event series deleted.")
-      return
-
+      
     else
-      head :bad_request
-      return
+      Rails.logger.error "Invalid scope received: #{scope}"
+      redirect_back(fallback_location: admin_calendar_index_path, alert: "Invalid delete scope: #{scope}")
     end
-
-    rule = RRule::Rule.new(rrule_line, dtstart: dtstart || @event.start_time)
-    recurrence_lines = []
-    recurrence_lines << "DTSTART:#{rule.dtstart.utc.strftime("%Y%m%dT%H%M%SZ")}"
-    recurrence_lines << "RRULE:#{rule}"
-    exdates.each do |ex|
-      recurrence_lines << "EXDATE:#{ex}"
-    end
-
-    @event.update!(recurrence_rule: (recurrence_lines + rest_of_lines).join("\n"))
-
-    redirect_back(fallback_location: admin_calendar_index_path, notice: "Event deleted (#{scope}).")
   end
 
   def json
@@ -242,8 +268,7 @@ Time.parse(event_params[:utc_start_time]).utc)
           title = if event.title == event.event_type.capitalize && !event.event_assignments.empty?
             "#{if event.draft
                  '✎ '
-               end}#{event.event_type == 'training' ? "#{event.training.name} (#{event.course_name.name || ''} - #{event.language || ''})" : event.event_type.capitalize} for #{event.event_assignments.map do |ea|
- ea.user.name end.join(", ")}"
+               end}#{event.event_type == 'training' ? "#{event.training.name} (#{event.course_name&.name || ''} - #{event.language || ''})" : event.event_type.capitalize} for #{event.event_assignments.map { |ea| ea.user.name }.join(", ")}"
           else 
             "#{'✎ ' if event.draft}#{event.title}"
           end
@@ -256,11 +281,12 @@ Time.parse(event_params[:utc_start_time]).utc)
           background = if event.event_assignments.empty?
             "linear-gradient(to right, #bbb 0.0%, #bbb 100.0%);#{' opacity: 0.8;' if event.draft}"
           else
-          "linear-gradient(to right, #{event.event_assignments.map.with_index do |ea, i|
- c = StaffSpace.find_by(user_id: ea.user_id, space_id: params[:id])&.color
- s = (100.0 / event.event_assignments.size) * i
- e = (100.0 / event.event_assignments.size) * (i + 1)
- "#{c} #{s}%, #{c} #{e}%" end.join(', ')});#{' opacity: 0.8;' if event.draft}"
+            "linear-gradient(to right, #{event.event_assignments.map.with_index do |ea, i|
+              c = StaffSpace.find_by(user_id: ea.user_id, space_id: params[:id])&.color
+              s = (100.0 / event.event_assignments.size) * i
+              e = (100.0 / event.event_assignments.size) * (i + 1)
+              "#{c} #{s}%, #{c} #{e}%"
+            end.join(', ')});#{' opacity: 0.8;' if event.draft}"
           end
 
           {
@@ -277,14 +303,12 @@ Time.parse(event_params[:utc_start_time]).utc)
               eventType: event.event_type,
               trainingId: event.training_id,
               language: event.language,
-              course_name: event.course_name, # not just the id... pass the object
+              course_name: event.course_name,
               assignedUsers: if event.event_assignments.empty?
-  [{id: 0, 
-name: 'Unassigned'}]
-else
-  event.event_assignments.map do |ea|
- { id: ea.user.id, name: ea.user.name } end
-end,
+                [{id: 0, name: 'Unassigned'}]
+              else
+                event.event_assignments.map { |ea| { id: ea.user.id, name: ea.user.name } }
+              end,
               background: background
             },
           }
@@ -300,7 +324,7 @@ end,
       start_date = Time.parse(params[:view_start_date]).utc
       end_date = Time.parse(params[:view_end_date]).utc
       space_id = params[:space_id]
-      return if space_id.empty?
+      return redirect_back(fallback_location: admin_calendar_index_path, alert: "Space ID is required.") if space_id.blank?
 
       updated_count = 0
 
@@ -317,7 +341,6 @@ end,
         flash[:alert] = "Failed to publish event: #{@event.errors.full_messages.to_sentence}"
       end
     end
-    
 
     redirect_back(fallback_location: admin_calendar_index_path)
   end
@@ -326,14 +349,13 @@ end,
     start_date = Time.parse(params[:view_start_date]).utc
     end_date = Time.parse(params[:view_end_date]).utc
     space_id = params[:space_id]
-    return if space_id.empty?
+    return redirect_back(fallback_location: admin_calendar_index_path, alert: "Space ID is required.") if space_id.blank?
 
-    draft_events = Event.where(space_id: space_id, start_time: start_date..end_date, draft: true, 
-recurrence_rule: [nil, ""])
+    draft_events = Event.where(space_id: space_id, start_time: start_date..end_date, draft: true, recurrence_rule: [nil, ""])
     deleted_count = draft_events.destroy_all.size
         
     redirect_back(fallback_location: admin_calendar_index_path, 
-notice: "#{deleted_count} draft event(s) deleted. Any recurring events were untouched and must be deleted separately.")
+      notice: "#{deleted_count} draft event(s) deleted. Any recurring events were untouched and must be deleted separately.")
   end
 
   def copy
@@ -342,8 +364,7 @@ notice: "#{deleted_count} draft event(s) deleted. Any recurring events were unto
     space_id = params[:space_id]
 
     if source_range.blank? || target_date.blank? || space_id.blank?
-      return redirect_back(fallback_location: admin_calendar_index_path, 
-alert: "Please fill out all fields before copying.")
+      return redirect_back(fallback_location: admin_calendar_index_path, alert: "Please fill out all fields before copying.")
     end
 
     begin
