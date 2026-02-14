@@ -207,12 +207,12 @@ class LockerRental < ApplicationRecord
   # Definitions for the shopify concern
 
   def shopify_draft_order_line_items
-    if Rails.env.production?
+    if Rails.env.production? || true
       [
         {
           quantity: 1,
           variantId:
-            "gid://shopify/ProductVariant/#{LockerOption.locker_product_variant_id}"
+            "gid://shopify/ProductVariant/#{locker.locker_size.shopify_gid}"
         }
       ]
     else

@@ -41,7 +41,7 @@ class LockersController < AdminAreaController
 
   def price
     # Updates db value
-    LockerOption.locker_product_link = params.require(:value)
+    LockerOption.locker_product_link = "gid://shopify/Product/#{params.require(:value)}"
     redirect_to lockers_path
   end
 

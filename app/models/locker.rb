@@ -1,7 +1,9 @@
 class Locker < ApplicationRecord
   has_many :locker_rentals
+  belongs_to :locker_size
 
   validates :specifier, uniqueness: true
+  validates :locker_size, presence: true
 
   scope :order_by_specifier, -> { order specifier: :asc }
 

@@ -1,0 +1,100 @@
+<%= form_with controller: :lockers, url: {action: :price}, method: :put, class: 'mb-3' do |f| %>
+    <%= f.label 'shopifyProductLink', class: 'form-label' do %>
+        Enter the shopify product link from the admin page here. This will attempt to extract the product ID from the URL and place it below.<br />
+    <% end %>
+
+    <%= f.text_field 'shopifyProductLink', class: 'form-control mb-2',
+     placeholder: 'URL should look like https://admin.shopify.com/store/uottawa-makerspace/products/10478024917048' %>
+
+    <div class="d-flex align-items-baseline">
+        <span class="input-group-text">Extracted GID: gid://shopify/Product/</span>
+        <%= f.text_field :value, class: 'w-auto flex-fill form-control-plaintext', readonly: true %>
+        <%= f.submit class: 'btn btn-primary' %>
+    </div>
+    <div class="form-text">
+        <span>Currently linked with <%= @locker_product_link ? tag.b(@locker_product_link) : 'nothing' %></span>
+    </div>
+<% end %>
+
+<%#= debug @locker_product_info %>
+<% if @locker_product_info %>
+    <div class="card mb-3">
+        <div class="row g-0">
+            <div class="col-md-4">
+                <%= image_tag @locker_product_info[:image], class: 'rounded-start object-fit-cover w-100 h-100', style: "max-height: 15em" %>
+            </div>
+            <div class="col-md-8">
+                <div class="card-body">
+                    <h3 class="card-subtitle text-body-secondary"><%= @locker_product_info[:title] %></h3>
+                    <h4 class="card-subtitle text-body-secondary">Main product</h4>
+                    <p class="card-text">This is the product where product variants are chosen and assigned to a locker for checkout.</p>
+                    <p class="card-text">
+                        <b>Status</b> <code><%= @locker_product_info[:status] %></code> <br />
+                        <b>Product ID</b> <code><%= @locker_product_info[:id] %></code> <br />
+                        <b>Received pricing</b> <code><%= @locker_product_info[:price] %> CAD</code>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h3>Product variants</h3>
+    <% @locker_product_info[:variants].each do |variant| %>
+        <div class="card mb-3">
+            <div class="row g-0">
+                <div class="col-md-3" style="max-height: 15em">
+                    <% if variant[:image] %>
+                        <%= image_tag variant[:image], class: 'rounded-start object-fit-cover w-100 h-100' %>
+                    <% else %>
+                        <div class="bg-secondary-subtle w-100 h-100 rounded-start">
+                        </div>
+                    <% end %>
+                </div>
+                <div class="col-md-9">
+                    <div class="card-body">
+                        <p class="card-text">
+                            <b>SKU</b> <code><%= variant[:sku] %></code> <br />
+                            <b>Variant ID</b> <code><%= variant[:id] %></code> <br />
+                            <b>Received pricing</b> <code><%= variant[:price] %> CAD</code>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <% end %>
+    <hr />
+    <div>
+        <%= LockerSize.find_each do |locker_size| %>
+            <div class="card mb-3">
+                <div class="card-body">
+                    <p>
+                        <%= locker_size.lockers.count %> Lockers of size <%= locker_size.size %>.
+                        <code>Shopify gid: <%= locker_size.shopify_gid %></code>
+                    </p>
+                </div>
+            </div>
+        <% end %>
+        <hr />
+        <%= form_with model: LockerSize.new do |f| %>
+            <h3>Create a new locker size</h3>
+            <p>Create a new locker size and link it to a store product variant.</p>
+            <div class="input-group mb-3">
+                <%= f.label :size, 'Locker dimensions', class: 'input-group-text' %>
+                <%= f.text_field :size, placeholder: 'For example, 16x16', class: 'form-control' %>
+
+                <%= f.label :shopify_gid, 'Select a product variant to use during checkout', class: 'input-group-text' %>
+                <%= f.select :shopify_gid, @locker_product_info[:variants].map {|v| [ v[:displayName], v[:id], { 'data-data' => v.to_json} ] },
+                 {include_blank: 'Select variant...'},
+                 {class: 'form-select locker-variant-select'} %>
+                <%= f.submit class: 'btn btn-success' %>
+            </div>
+        <% end %>
+    </div>
+
+<% elsif @locker_product_link %>
+    <p class="text-center text-danger fw-bold">
+        Failed to load product information.
+    </p>
+<% else %>
+    <p class="text-center">No valid link assigned...</p>
+<% end %>

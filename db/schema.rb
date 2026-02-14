@@ -697,8 +697,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_05_173620) do
 
   create_table "locker_sizes", force: :cascade do |t|
     t.string "size"
-    t.decimal "member_cost"
-    t.decimal "non_member_cost"
+    t.string "shopify_gid"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
@@ -708,9 +707,9 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_05_173620) do
     t.boolean "available", default: true, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.bigint "locker_sizes_id"
+    t.bigint "locker_size_id"
     t.boolean "staff_only"
-    t.index ["locker_sizes_id"], name: "index_lockers_on_locker_sizes_id"
+    t.index ["locker_size_id"], name: "index_lockers_on_locker_size_id"
     t.index ["specifier"], name: "index_lockers_on_specifier"
   end
 
