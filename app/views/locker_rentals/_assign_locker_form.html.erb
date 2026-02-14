@@ -4,9 +4,9 @@
             <%= f.label :locker_selected, "Select a locker" %>
         </div>
         <div class="col-md">
-            <%= f.select :locker_id,
-                options_for_select(Locker.order_by_specifier.available.pluck(:specifier, :id).map{ |specifier, id| ["Locker ##{specifier}", id]}),
-             {prompt: 'Select a locker...'}, { class: 'form-select'} %>
+            <%= f.select :locker_id, Locker.available.order_by_specifier.map { |locker|
+                [locker.specifier, locker.id, {data: {size: locker.locker_size.size}}]
+            }, { include_blank: 'Select a locker...' }, { class: 'form-select' } %>
         </div>
     </div>
     <div class="row mb-3">

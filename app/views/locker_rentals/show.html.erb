@@ -1,9 +1,9 @@
 <% provide :title, t('lockers.view_locker_request') %>
+
 <h1 class="text-center">
-    <%= t('lockers.locker_request') %> #<%= @locker_rental.id %>
-    -
-    <%= t("lockers.state.#{@locker_rental.state}") %>
+    <%= t('lockers.locker_request') %> #<%= @locker_rental.id %>  
 </h1>
+<p class="fs-2 text-center"><%= t("lockers.state.#{@locker_rental.state}") %></p>
 <hr class="w-50 mx-auto" />
 <div class="row justify-content-between">
     <div class="col-md">
@@ -112,9 +112,9 @@
 
             <div class="col-md">
                 <% if current_user.staff? && !@locker_rental.cancelled? %>
-                    <%= f.select :locker_id,
-                        options_for_select(Locker.order_by_specifier.available.pluck(:specifier, :id).map{ |specifier, id| ["Locker ##{specifier}", id]}),
-                     {prompt: 'Select a locker...'}, { class: 'form-select'} %>
+                    <%= f.select :locker_id, Locker.available.order_by_specifier.map { |locker|
+                        [locker.specifier, locker.id, {data: {size: locker.locker_size.size}}]
+                    }, { include_blank: 'Select a locker.' }, { class: 'form-select' } %>
                     <div class="input-group">
                         <span class="input-group-text">Owned until</span>
                         <%= f.date_field :owned_until, value: @locker_rental.owned_until || end_of_this_semester, class: 'form-control' %>

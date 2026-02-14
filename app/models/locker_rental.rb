@@ -211,8 +211,7 @@ class LockerRental < ApplicationRecord
       [
         {
           quantity: 1,
-          variantId:
-            "gid://shopify/ProductVariant/#{locker.locker_size.shopify_gid}"
+          variantId: locker.locker_size.shopify_gid
         }
       ]
     else

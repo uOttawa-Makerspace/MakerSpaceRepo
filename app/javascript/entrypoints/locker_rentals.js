@@ -4,11 +4,25 @@ import TomSelect from "tom-select";
 
 document.addEventListener("turbo:load", () => {
   if (document.querySelector("#locker_rental_preferred_locker_id")) {
-    new TomSelect("#locker_rental_preferred_locker_id");
+    new TomSelect("#locker_rental_preferred_locker_id", {
+      render: {
+        option: function (data, escape) {
+          let size = escape(data.size);
+          let text = escape(data.text);
+          return `<div>Locker ${text} - Size ${size}</div>`;
+        },
+        item: function (data, escape) {
+          let size = escape(data.size);
+          let text = escape(data.text);
+          return `<div>Locker ${text} - Size ${size}</div>`;
+        },
+      },
+    });
   }
 });
 
 document.addEventListener("turbo:load", () => {
+  // FIXME: RIP remove this what.
   setupRentalTable();
 
   // For user facing locker request form
