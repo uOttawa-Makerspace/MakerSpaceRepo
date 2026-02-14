@@ -52,9 +52,7 @@
     </div>
 
     <hr />
-
-    <%= debug @locker_product_info %>
-
+    <%#= debug @locker_product_info %>
     <h2>Lockers in store</h2>
     <% if @lockers.blank? %>
         <p>There are no lockers on record.</p>
@@ -63,7 +61,8 @@
             <thead class="table-primary">
                 <tr>
                     <th scope="col">Locker</th>
-                    <th scope="col">Product SKU</th>
+                    <th scope="col">Size</th>
+                    <th scope="col">SKU</th>
                     <th scope="col">Owned by</th>
                     <th scope="col">Locker expires on</th>
                     <th scope="col">Approved on</th>
@@ -81,7 +80,8 @@
                         <td scope="row" class="dt-center" data-sort="<%= locker.specifier %>">
                             <%= link_to "##{locker.specifier}", locker, class: 'btn btn-sm btn-outline-primary' %>
                         </td>
-                        <td><%= locker_variant[:sku] %></td>
+                        <td><%= locker.locker_size.size %></td>
+                        <td><code><%= locker_variant[:sku] %></code></td>
                         <td><%= current_rental&.rented_by&.username %></td>
                         <td><%= current_rental&.owned_until&.to_date&.to_fs :long %></td>
                         <td><%= current_rental&.updated_at %></td>

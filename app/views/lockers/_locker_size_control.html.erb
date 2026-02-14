@@ -31,7 +31,8 @@
                     <p class="card-text">
                         <b>Status</b> <code><%= @locker_product_info[:status] %></code> <br />
                         <b>Product ID</b> <code><%= @locker_product_info[:id] %></code> <br />
-                        <b>Received pricing</b> <code><%= @locker_product_info[:price] %> CAD</code>
+                        <b>Received pricing</b> <code><%= @locker_product_info[:price] %> CAD</code> <br />
+                        <b>Variants attached</b> <code><%= @locker_product_info[:variants].count %></code>
                     </p>
                 </div>
             </div>
@@ -39,6 +40,7 @@
     </div>
 
     <h3>Product variants</h3>
+    <p>Product variants fetched from makerstore. The prices and display names are fetched from Makerstore.</p>
     <% @locker_product_info[:variants].each do |variant| %>
         <div class="card mb-3">
             <div class="row g-0">
@@ -62,34 +64,46 @@
             </div>
         </div>
     <% end %>
-    <hr />
-    <div>
-        <%= LockerSize.find_each do |locker_size| %>
-            <div class="card mb-3">
-                <div class="card-body">
-                    <p>
-                        <%= locker_size.lockers.count %> Lockers of size <%= locker_size.size %>.
-                        <code>Shopify gid: <%= locker_size.shopify_gid %></code>
-                    </p>
-                </div>
-            </div>
-        <% end %>
-        <hr />
-        <%= form_with model: LockerSize.new do |f| %>
-            <h3>Create a new locker size</h3>
-            <p>Create a new locker size and link it to a store product variant.</p>
-            <div class="input-group mb-3">
-                <%= f.label :size, 'Locker dimensions', class: 'input-group-text' %>
-                <%= f.text_field :size, placeholder: 'For example, 16x16', class: 'form-control' %>
 
-                <%= f.label :shopify_gid, 'Select a product variant to use during checkout', class: 'input-group-text' %>
-                <%= f.select :shopify_gid, @locker_product_info[:variants].map {|v| [ v[:displayName], v[:id], { 'data-data' => v.to_json} ] },
-                 {include_blank: 'Select variant...'},
-                 {class: 'form-select locker-variant-select'} %>
-                <%= f.submit class: 'btn btn-success' %>
-            </div>
-        <% end %>
-    </div>
+    <h3>Locker Sizes</h3>
+    <p>List of locker sizes available on Makerepo. This is what users request when filling out a locker rental request.
+        Each locker size has a Makerstore product variant associated with it.</p>
+    
+    <table class="table table-hover">
+        <thead class="table-primary">
+            <tr>
+                <th>Locker size</th>
+                <th>Lockers associated</th>
+                <th>SKU</th>
+                <th>Shopify GID</th>
+            </tr>
+        </thead>
+        <tbody>
+            <%= LockerSize.find_each do |locker_size| %>
+                <tr>
+                    <td><%= locker_size.size %></td>
+                    <td><%= locker_size.lockers.count %></td>
+                    <td><%= %></td>
+                    <td><code><%= locker_size.shopify_gid %></code></td>
+                </tr>
+            <% end %>
+        </tbody>
+    </table>
+    
+    <%= form_with model: LockerSize.new do |f| %>
+        <h4>Create a new locker size</h4>
+        <p>Create a new locker size and link it to a store product variant.</p>
+        <div class="input-group mb-3">
+            <%= f.label :size, 'Locker dimensions', class: 'input-group-text' %>
+            <%= f.text_field :size, placeholder: 'For example, 16x16', class: 'form-control' %>
+
+            <%= f.label :shopify_gid, 'Select a product variant to use during checkout', class: 'input-group-text' %>
+            <%= f.select :shopify_gid, @locker_product_info[:variants].map {|v| [ v[:displayName], v[:id], { 'data-data' => v.to_json} ] },
+             {include_blank: 'Select variant...'},
+             {class: 'form-select locker-variant-select'} %>
+            <%= f.submit class: 'btn btn-success' %>
+        </div>
+    <% end %>
 
 <% elsif @locker_product_link %>
     <p class="text-center text-danger fw-bold">
