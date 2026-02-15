@@ -36,13 +36,10 @@
             </div>
         </div>
     </div>
-
+    
     <hr />
-
-    <details>
-        <summary>My locker history</summary>
-        <%= render partial: 'rental_data_table',
-                   locals: { locker_rentals: @own_locker_rentals.order(:state),
-                       header_title: t('lockers.your_locker_requests'), hide_actions: true } %>
-    </details>
+    <h2>My locker history</h2>
+    <%= render partial: 'rental_data_table',
+               locals: { locker_rentals: @own_locker_rentals.order(:state),
+                   header_title: t('lockers.your_locker_requests'), hide_actions: true } %>
 </div>

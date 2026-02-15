@@ -422,6 +422,8 @@ class UsersController < SessionsController
     @keys_supervising = Key.where(supervisor_id: @repo_user.id)
     @key_cert = @repo_user.key_certification
 
+    @locker_rentals = @repo_user.locker_rentals
+
     respond_to do |format|
       format.html
       format.json do
@@ -432,8 +434,7 @@ class UsersController < SessionsController
                    certifications: @certifications.as_json(include: :training)
                  }
         else
-          render json:
-                   'This page has restricted access. If you think you need this access, please contact uottawa.makerepo@gmail.com'
+          head :unauthorized
         end
       end
     end
