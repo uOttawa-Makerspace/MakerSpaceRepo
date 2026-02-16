@@ -1,43 +1,107 @@
 <% provide :title, t('lockers.view_locker_request') %>
 
 <h1 class="text-center">
-    <%= t('lockers.locker_request') %> #<%= @locker_rental.id %>  
+    <%= t('lockers.locker_request') %> #<%= @locker_rental.id %>
 </h1>
-<p class="fs-2 text-center"><%= t("lockers.state.#{@locker_rental.state}") %></p>
+<p class="fs-2 text-center">
+    <%= t("lockers.state.#{@locker_rental.state}") %>
+</p>
+
+<p>
+    <b><%= t('lockers.state.state') %>:</b> <%= t("lockers.state.#{@locker_rental.state}") %>
+    <% if @locker_rental.expired? %>
+        | <span class="text-danger"><%= fa_icon :times %> Expired</span> for
+        <%= tag.span(time_ago_in_words(@locker_rental.expired_since), class: ('text-danger' if @locker_rental.overdue?)) %>
+        <% if @locker_rental.notified_of_cancellation %>
+            and was sent an automatic cancellation notification by email.
+        <% else %>
+            but has<b> not received a notification</b>.
+        <% end %>
+    <% end %>
+    <% if @locker_rental.cancelled? %>
+        on <%= @locker_rental.cancelled_at&.to_formatted_s :long %>
+    <% end %>
+</p>
+
 <hr class="w-50 mx-auto" />
+
 <div class="row justify-content-between">
     <div class="col-md">
         <h2><%= t('lockers.details') %></h2>
-        <p><%= t('lockers.submitted_on') %> <b><%= @locker_rental.created_at.to_date %></b> <%= t('lockers.for') %>
-            <%= link_to @locker_rental.rented_by.username, user_url(@locker_rental.rented_by.username) %>
-            <%= tag.span(@locker_rental.rented_by.role.humanize, class: 'badge text-bg-primary') if @locker_rental.rented_by.staff? %>
-            <br />
+
+        <ul class="list-group mb-3">
+            <li class="list-group-item d-flex justify-content-between">
+                <span>Requested by</span>
+                <span>
+                    <%= link_to @locker_rental.rented_by.username, user_url(@locker_rental.rented_by.username) %>
+                    <%= tag.span(@locker_rental.rented_by.role.humanize, class: 'badge text-bg-primary') if @locker_rental.rented_by.staff? %>
+                </span>
+            </li>
+
+            <li class="list-group-item d-flex justify-content-between">
+                Requested as <b><%= @locker_rental.requested_as&.humanize %></b>
+            </li>
+
             <% if current_user.staff? %>
-                <b>Contact email:</b> <%= mail_to @locker_rental.rented_by.email, @locker_rental.rented_by.email %>
+                <li class="list-group-item d-flex justify-content-between">
+                    Contact email <%= mail_to @locker_rental.rented_by.email, @locker_rental.rented_by.email %>
+                </li>
             <% end %>
-        </p>
-        
-        <p>
-            <b><%= t('lockers.locker') %>:</b> <%= @locker_rental.locker&.specifier || '-' %>,
-            <b>Preferred locker:</b> <%= @locker_rental.preferred_locker&.specifier %>
-        </p>
-        <p><b><%= t('lockers.state.state') %>:</b> <%= t("lockers.state.#{@locker_rental.state}") %>
-            <% if @locker_rental.expired? %>
-                | <span class="text-danger"><%= fa_icon :times %> Expired</span> for
-                <%= tag.span(time_ago_in_words(@locker_rental.expired_since), class: ('text-danger' if @locker_rental.overdue?)) %>
-                <% if @locker_rental.notified_of_cancellation %>
-                    and was sent an automatic cancellation notification by email.
-                <% else %>
-                    but has<b> not received a notification</b>.
+
+            <li class="list-group-item d-flex justify-content-between">
+                <%= t('lockers.submitted_on') %> <b><%= @locker_rental.created_at.to_date %></b>
+            </li>
+
+            <% if @locker_rental.owned_until %>
+                <li class="list-group-item d-flex justify-content-between">
+                    Owned until <b><%= @locker_rental.owned_until.to_fs :long %></b>
+                </li>
+            <% end %>
+
+            <% if @locker_rental.decided_by %>
+                <li class="list-group-item d-flex justify-content-between">
+                    Approved by <%= link_to @locker_rental.decided_by&.name, user_url(@locker_rental.decided_by.username) %>
+                </li>
+            <% end %>
+
+            <li class="list-group-item d-flex justify-content-between">
+                <% if @locker_rental.locker %>
+                    <% if @locker_rental.reserves_locker? %>
+                        Currently holding
+                    <% else %>
+                        Was holding
+                    <% end %>
+
+                    <%= link_to locker_path(@locker_rental.locker) do %>
+                        <b>Locker <%= @locker_rental.locker.specifier %></b>
+                    <% end %>
+                <% elsif @locker_rental.reviewing? %>
+                    <%# Has a preferred locker, display if no decision made yet %>
+                    <% if @locker_rental.preferred_locker %>
+                        Preferred locker
+                        <%= link_to locker_path(@locker_rental.preferred_locker) do %>
+                            <b>Locker <%= @locker_rental.preferred_locker.specifier %></b>
+                        <% end %>
+                    <% else %>
+                        No preferred locker
+                    <% end %>
                 <% end %>
-            <% end %>
-            <% if @locker_rental.cancelled? %>
-                on <%= @locker_rental.cancelled_at&.to_formatted_s :long %>
-            <% end %>
-        </p>
-        <p><b><%= t('lockers.paid_on') %>:</b> <%= @locker_rental.paid_at&.to_date&.to_fs(:long) || 'unpaid' %></p>
-        <p><b>Approved by:</b> <%= @locker_rental.decided_by&.name %></p>
-        <p><b>Requested as:</b> <%= @locker_rental.requested_as&.humanize %></p>
+            </li>
+
+            <li class="list-group-item d-flex justify-content-between">
+                <% if @locker_rental.paid_at %>
+                    <%= t('lockers.paid_on') %> <b><%= @locker_rental.paid_at&.to_date&.to_fs(:long) || 'unpaid' %></b>
+                <% else %>
+                    <span>Locker is <b>unpaid</b></span>
+                    <% if @locker_rental.await_payment? %>
+                        <button class="btn btn-primary">
+                            <%= fa_icon :mail, text: 'Send reminder?' %>
+                        </button>
+                    <% end %>
+                <% end %>
+            </li>
+        </ul>
+
         <% if @locker_rental.requested_as_student? %>
             <p class="d-block ms-md-3">
                 <% if @locker_rental.repository %>
@@ -58,6 +122,10 @@
                                          "not given"
                                          end %>
             </p>
+        <% end %>
+
+        <%= link_to current_user.staff? ? admin_locker_rentals_path : locker_rentals_path, class: 'btn btn-secondary' do %>
+            <i class="fa fa-arrow-left"></i> Back to locker rentals
         <% end %>
     </div>
     <div class="col-md">
@@ -94,10 +162,6 @@
                     <%= f.button 'Cancel request', class: 'btn btn-danger float-end', data: { confirm: "Are you sure you want to cancel this locker?" } %>
                 <% end %>
             </div>
-        <% end %>
-
-        <%= link_to current_user.staff? ? admin_locker_rentals_path : locker_rentals_path, class: 'btn btn-secondary' do %>
-            <i class="fa fa-arrow-left"></i> Back to locker rentals
         <% end %>
     </div>
 </div>
