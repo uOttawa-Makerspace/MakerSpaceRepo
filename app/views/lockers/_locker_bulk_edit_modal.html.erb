@@ -16,8 +16,7 @@
                     <%= f.label :locker_size_id, 'Change locker size', class: 'form-label' %>
                     <%= f.select :locker_size_id, @locker_sizes.map { |size|
                         [ size.size, size.id, { 'data-data' => @locker_product_info[:variants][size.shopify_gid].to_json } ]},
-                     {include_blank: 'Select variant...'},
-                     {class: 'form-select locker-variant-select'} %>
+                     {include_blank: 'Select variant...'}, {class: 'form-select locker-variant-select'} %>
                     <%= f.submit class: 'btn btn-success float-end' %>
                 <% end %>
             </div>

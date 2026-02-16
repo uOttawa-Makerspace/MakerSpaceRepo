@@ -1,26 +1,25 @@
-<table class="table table-striped" id="locker_inventory_table"
+<table class="table table-sm table-striped" id="locker_inventory_table"
        data-page-length="-1" data-select-style="multi" data-select-selector="tr">
     <caption class="caption-top">
         <button type="button" data-bs-toggle="modal" data-bs-target="#lockerBulkEditModal" class="btn btn-primary">
             <%= fa_icon :pencil %> Bulk edit selected lockers
         </button>
-        <p>Shift-click to select multiple </p>
-        <!-- <div class="form-check form-switch fs-4">
-             <input class="form-check-input" type="checkbox" role="switch" id="lockerEditToggle"/>
-             <label class="form-check-label" for="lockerEditToggle">Toggle table size editing</label>
-             </div> -->
+        <div class="form-check form-switch fs-5 float-end">
+            <input class="form-check-input" type="checkbox" role="switch" id="lockerEditToggle"/>
+            <label class="form-check-label" for="lockerEditToggle">Toggle inline table editing</label>
+        </div>
+        <p>Shift-click to select multiple</p>
     </caption>
     <thead class="table-primary">
         <tr>
             <th></th>
-            <th scope="col">Locker</th>
-            <th scope="col">Size</th>
-            <th scope="col">SKU</th>
+            <th data-width="1%" scope="col">Locker</th>
+            <th data-width="20%" scope="col">Size & SKU</th>
             <th scope="col">Owned by</th>
             <th scope="col">Locker expires on</th>
             <th scope="col">Approved on</th>
-            <th scope="col">Last actioned by</th>
-            <th scope="col">Occupied?</th>
+            <!-- <th scope="col">Last actioned by</th> -->
+            <th data-width="1%" scope="col">Occupied?</th>
         </tr>
     </thead>
     <tbody>
@@ -34,13 +33,21 @@
                     <%= link_to "##{locker.specifier}", locker, class: 'btn btn-sm btn-outline-primary' %>
                 </td>
                 <td>
-                    <%= locker.locker_size.size %>
+                    <div class="position-relative">
+                        <%= select_tag :locker_size_id, options_for_select(@locker_sizes.map { |size|
+                            [ size.size, size.id, { 'data-data' => @locker_product_info[:variants][size.shopify_gid].to_json } ]
+                        }, locker.locker_size.id), class: 'form-select locker-variant-select', disabled: true, data: { locker_size_for: locker.id } %>
+                        
+                        <div class="spinner-border spinner-border-sm position-absolute top-0 end-0" hidden>
+                            <span class="visually-hidden">Changing size...</span>
+                        </div>
+                        <%= fa_icon :check, class: 'position-absolute top-0 end-0 text-success', hidden: true %>
+                    </div>
                 </td>
-                <td><code><%= locker_variant[:sku] %></code></td>
                 <td><%= current_rental&.rented_by&.username %></td>
                 <td><%= current_rental&.owned_until&.to_date&.to_fs :long %></td>
-                <td><%= current_rental&.updated_at %></td>
-                <td><%= current_rental&.decided_by&.username %></td>
+                <td><%= current_rental&.updated_at&.to_fs :long %></td>
+                <!-- <td><%= current_rental&.decided_by&.username %></td> -->
                 <td>
                     <% if current_rental.present? %>
                         <% if current_rental.expired? %>
