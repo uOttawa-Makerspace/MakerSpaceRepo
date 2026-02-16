@@ -319,9 +319,6 @@ Rails.application.routes.draw do
         patch :update_keycode
         patch :add_space_manager
         patch :remove_space_manager
-        post :add_space_hours
-        delete :delete_space_hour
-        post :add_training_levels
         put :update_staff_needed_calendars
       end
     end
