@@ -347,6 +347,23 @@ class Admin::SpacesController < AdminAreaController
     redirect_back(fallback_location: root_path)
   end
 
+  def update_sub_space
+    sub_space = SubSpace.find(params[:id])
+    old_name = sub_space.name
+
+    if params[:name].blank?
+      flash[:alert] = "Sub Space name cannot be blank."
+    elsif sub_space.update(name: params[:name])
+      flash[:notice] = "You've successfully renamed '#{old_name}' to '#{sub_space.name}'."
+    else
+      flash[:alert] = "Failed to rename sub space: #{sub_space.errors.full_messages.join(', ')}"
+    end
+
+    redirect_back(
+      fallback_location: edit_admin_space_path(id: params[:space_id], anchor: "sub_space_area")
+    )
+  end
+
   private
 
   def space_params

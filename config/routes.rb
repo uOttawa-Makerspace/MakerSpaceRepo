@@ -313,6 +313,9 @@ Rails.application.routes.draw do
       post "/edit/:id",
            as: "change_sub_space_default_public",
            action: "change_sub_space_default_public"
+      patch "/edit/:id/rename", 
+           as: "update_sub_space", 
+           action: "update_sub_space"
 
       collection do
         post :update_max_capacity
