@@ -38,8 +38,8 @@ class LockerOption < ApplicationRecord
       id: product['id'],
       image: product['media']['nodes'].first&.dig('preview', 'image', 'url'),
       variants:
-        product['variants']['nodes'].map do |node|
-          {
+        product['variants']['nodes'].each_with_object({}) do |node, memo|
+          memo[node['id']] = {
             id: node['id'],
             displayName: node['displayName'],
             price: node['price'],
@@ -48,9 +48,9 @@ class LockerOption < ApplicationRecord
           }
         end
     }
-  # rescue StandardError => e
-  #   Rails.logger.fatal e
-  #   nil
+    # rescue StandardError => e
+    #   Rails.logger.fatal e
+    #   nil
   end
 
   def self.locker_product_variant_id

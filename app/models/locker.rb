@@ -13,6 +13,7 @@ class Locker < ApplicationRecord
             .missing(:locker_rentals)
             .or(where.not(locker_rentals: { state: :active }))
             .distinct
+            .includes(:locker_size)
         }
   scope :assigned,
         -> {

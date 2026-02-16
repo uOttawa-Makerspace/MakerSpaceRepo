@@ -41,7 +41,7 @@
 
     <h3>Product variants</h3>
     <p>Product variants fetched from makerstore. The prices and display names are fetched from Makerstore.</p>
-    <% @locker_product_info[:variants].each do |variant| %>
+    <% @locker_product_info[:variants].each do |gid, variant| %>
         <div class="card mb-3">
             <div class="row g-0">
                 <div class="col-md-3" style="max-height: 15em">
@@ -97,8 +97,8 @@
             <%= f.label :size, 'Locker dimensions', class: 'input-group-text' %>
             <%= f.text_field :size, placeholder: 'For example, 16x16', class: 'form-control' %>
 
-            <%= f.label :shopify_gid, 'Select a product variant to use during checkout', class: 'input-group-text' %>
-            <%= f.select :shopify_gid, @locker_product_info[:variants].map {|v| [ v[:displayName], v[:id], { 'data-data' => v.to_json} ] },
+            <%= f.label :shopify_gid, 'Select a product variant to use for checkout', class: 'input-group-text' %>
+            <%= f.select :shopify_gid, @locker_product_info[:variants].map {|_gid, v| [ v[:displayName], v[:id], { 'data-data' => v.to_json} ] },
              {include_blank: 'Select variant...'},
              {class: 'form-select locker-variant-select'} %>
             <%= f.submit class: 'btn btn-success' %>

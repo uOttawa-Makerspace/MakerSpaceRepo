@@ -125,6 +125,7 @@ Rails.application.routes.draw do
       # Update only
       put :price
       put :enabled
+      patch :bulk_edit
     end
   end
   
