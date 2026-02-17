@@ -5,7 +5,6 @@ class ApplicationController < ActionController::Base
   # For APIs, use :null_session instead.
   rescue_from ActionController::ParameterMissing, with: :parameter_missing
   protect_from_forgery with: :exception, unless: -> { request.format.json? }
-  protect_from_forgery with: :null_session, if: -> { request.format.json? }
   include ApplicationHelper
   require "zip"
   require "will_paginate/array"
