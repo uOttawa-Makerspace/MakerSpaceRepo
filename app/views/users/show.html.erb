@@ -18,11 +18,16 @@
           <%
             raw_url = @repo_user.url.to_s.strip
             raw_url = "https://#{raw_url}" unless raw_url.match?(%r{\Ahttps?://}i)
-            safe_url = if raw_url.match?(%r{\Ahttps?://[^\s<>"'{}|\\^`]+\z}i)
-                         raw_url
-                       else
-                         '#'
-                       end
+            safe_url = begin
+              uri = URI.parse(raw_url)
+              if uri.is_a?(URI::HTTP) || uri.is_a?(URI::HTTPS)
+                uri.to_s
+              else
+                '#'
+              end
+            rescue URI::InvalidURIError
+              '#'
+            end
           %>
           <%= fa_icon('link') %>
           <% if safe_url != '#' %>
