@@ -153,9 +153,13 @@ class User < ApplicationRecord
               if: -> { avatar.attached? }
             }
 
-  validates :name, 
-            presence: true, 
-            length: { maximum: 50 }
+  validates :name,
+            presence: true,
+            length: { maximum: 50 },
+            format: {
+              without: /[<>&"']/,
+              message: 'must not contain special HTML characters'
+            }
 
   validates :username,
             presence: true,
@@ -217,6 +221,13 @@ class User < ApplicationRecord
             allow_blank: true,
             presence: true,
             if: :student?
+  
+  validates :url,
+            format: {
+              with: %r{\Ahttps?://}i,
+              message: 'must start with http:// or https://'
+            },
+            allow_blank: true
 
   # ============================================
   # Normalizations & Callbacks

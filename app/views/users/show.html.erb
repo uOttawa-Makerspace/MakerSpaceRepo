@@ -8,7 +8,7 @@
       <!--      MORE INFO Section-->
       <div class="profile-work">
         <p>More info</p>
-        <%= fa_icon 'location-arrow', text: @repo_user.location if @repo_user.location.present? %><br />
+        <%= fa_icon 'location-arrow' %> <%= @repo_user.location.presence %><br />
         <%= fa_icon 'clock-o', text: "Joined on #{@repo_user.created_at.to_date.to_fs :long}" %><br />
         <% if @github_username.present? %>
           <%= fa_icon 'github-alt' %>
@@ -16,7 +16,10 @@
         <% end %>
         <% if @repo_user.url.present? %>
           <%= fa_icon('link') %>
-          <%= link_to @repo_user.url.gsub(%r{\Ahttps?://}, '').to_s, @repo_user.url %> <br />
+          <% if @repo_user.url.present? && @repo_user.url.match?(%r{\Ahttps?://}i) %>
+            <%= fa_icon('link') %>
+            <%= link_to @repo_user.url.gsub(%r{\Ahttps?://}, '').to_s, @repo_user.url %> <br />
+          <% end %> <br />
         <% end %>
         <p>Skills</p>
         <% @certifications.each do |certification| %>
