@@ -224,8 +224,8 @@ class User < ApplicationRecord
   
   validates :url,
             format: {
-              with: %r{\Ahttps?://}i,
-              message: 'must start with http:// or https://'
+              with: %r{\Ahttps?://[^\s<>"'{}|\\^`]+\z}i,
+              message: 'must be a valid URL starting with http:// or https://'
             },
             allow_blank: true
 
