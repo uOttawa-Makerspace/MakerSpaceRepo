@@ -22,7 +22,7 @@
     </head>
     <body>
         <%= render 'layouts/header', with_volunteer: @with_volunteer_header, with_development: @with_development_header %>
-        <main <% unless @no_container %>class="container"<% end %> >
+        <main <% unless @no_container %>class="container-lg"<% end %> >
             <div class="flash" id="flash" style="padding-left: 20px; padding-right: 20px; z-index: 100;">
                 <%= render 'layouts/flash' %>
             </div>
