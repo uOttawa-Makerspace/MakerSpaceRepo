@@ -13,9 +13,9 @@ external_price: 30)
 
   describe "GET #index" do
     it "allows regular members to view index" do
-      @tier_day = create(:membership_tier, id: 1, title_en: "1 Day Membership", internal_price: 5, external_price: 10)
-      @tier_sem = create(:membership_tier, id: 2, title_en: "1 Semester Membership", internal_price: 25, 
-external_price: 40)
+      @tier_day = create(:membership_tier, title_en: "1 Day Membership", internal_price: 5, external_price: 10)
+      @tier_sem = create(:membership_tier, title_en: "1 Semester Membership",
+                   internal_price: 25, external_price: 40)
       get :index
       expect(response).to have_http_status :success
     end

@@ -3,8 +3,8 @@ FactoryBot.define do
     read_and_accepted_waiver_form { true }
     active { true }
     email { Faker::Internet.unique.username + "@uottawa.ca" }
-    name { Faker::Name.name }
-    username { Faker::Name.unique.first_name }
+    sequence(:name) { |n| "User #{n}" }
+    sequence(:username) { |n| "user#{n}" }
     wallet { 1000 }
     confirmed { true }
     password { "$2a$12$t3MkhdxmndlLDLHiJiVqBOdBAjFZWidydW/vd53.pS5ej7DcIZ1LC" }
