@@ -44,7 +44,7 @@ class LearningModule < ApplicationRecord
   def extract_valid_urls
     extract_urls.uniq.select do |url|
       uri = URI.parse(url)
-      uri.is_a?(URI::HTTP) && uri.host == "wiki.makerepo.com"
+      uri.host == "wiki.makerepo.com" || uri.host&.end_with?(".wiki.makerepo.com")
     rescue URI::InvalidURIError
       false
     end
