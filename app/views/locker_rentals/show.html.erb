@@ -1,34 +1,12 @@
 <% provide :title, t('lockers.view_locker_request') %>
 
-<h1 class="text-center">
-    <%= t('lockers.locker_request') %> #<%= @locker_rental.id %>
-</h1>
-<p class="fs-2 text-center">
-    <%= t("lockers.state.#{@locker_rental.state}") %>
-</p>
-
-<p>
-    <b><%= t('lockers.state.state') %>:</b> <%= t("lockers.state.#{@locker_rental.state}") %>
-    <% if @locker_rental.expired? %>
-        | <span class="text-danger"><%= fa_icon :times %> Expired</span> for
-        <%= tag.span(time_ago_in_words(@locker_rental.expired_since), class: ('text-danger' if @locker_rental.overdue?)) %>
-        <% if @locker_rental.notified_of_cancellation %>
-            and was sent an automatic cancellation notification by email.
-        <% else %>
-            but has<b> not received a notification</b>.
-        <% end %>
-    <% end %>
-    <% if @locker_rental.cancelled? %>
-        on <%= @locker_rental.cancelled_at&.to_formatted_s :long %>
-    <% end %>
-</p>
+<h1 class="text-center"><%= t('lockers.locker_request') %></h1>
+<p class="lead text-center">Request #<%= @locker_rental.id %></p>
 
 <hr class="w-50 mx-auto" />
 
 <div class="row justify-content-between">
     <div class="col-md">
-        <h2><%= t('lockers.details') %></h2>
-
         <ul class="list-group mb-3">
             <li class="list-group-item d-flex justify-content-between">
                 <span>Requested by</span>
@@ -128,12 +106,62 @@
             <i class="fa fa-arrow-left"></i> Back to locker rentals
         <% end %>
     </div>
+
     <div class="col-md">
+        <div class="card p-2 mb-3">
+            <h2><%= t("lockers.state.#{@locker_rental.state}") %></h2>
+            <div class="card-body">
+                <% if @locker_rental.expired? %>
+                    <span class="text-danger"><%= fa_icon :times %> Expired</span> for
+                    <%= tag.span(time_ago_in_words(@locker_rental.expired_since), class: ('text-danger' if @locker_rental.overdue?)) %>
+                    <% if @locker_rental.notified_of_cancellation %>
+                        and was sent an automatic cancellation notification by email.
+                    <% else %>
+                        but has<b> not received a notification</b>.
+                    <% end %>
+                <% end %>
+                <% if @locker_rental.cancelled? %>
+                    on <%= @locker_rental.cancelled_at&.to_formatted_s :long %>
+                <% end %>
+            </div>
+        </div>
         <% if @locker_rental.notes.present? %>
             <div class="card mb-3">
                 <h2 class="card-header"><%= t('lockers.notes') %></h2>
                 <div class="card-body">
                     <p class="card-text"><%= @locker_rental.notes %></p>
+                </div>
+            </div>
+        <% end %>
+
+        <% if @locker_rental.active? %>
+            <div class="card p-2 mb-3 border-danger">
+                <div class="row">
+                    <div class="col-md-4 text-center align-content-center fs-1">
+                        <% if @locker_rental.expired? %>
+                            <%= fa_icon 'clock-o', class: 'text-danger' %>
+                        <% else %>
+                            <%= fa_icon :calendar %>
+                        <% end %>
+                    </div>
+                    <div class="col-md-8">
+                        <% if @locker_rental.expired? %>
+                            <div>Rental expired on</div>
+                        <% else %>
+                            <div>Rental expires on</div>
+                        <% end %>
+                        <b class="fs-3"><%= @locker_rental.owned_until.to_date.to_fs :long %></b>
+                        <div>
+                            <% if @locker_rental.expired? %>
+                                Expired <%= time_ago_in_words @locker_rental.owned_until.to_date, highest_measure: true %> ago
+                                <% if @locker_rental.notified_of_cancellation %>
+                                    and was sent a notification by email.
+                                <% end %>
+                            <% else %>
+                                <%= time_ago_in_words @locker_rental.owned_until.to_date, highest_measure: true %>
+                            <% end %>
+                        </div>
+                    </div>
                 </div>
             </div>
         <% end %>
@@ -168,6 +196,7 @@
 
 <% if current_user.staff? %>
     <hr />
+    <h2>Staff actions</h2>
     <%= form_with model: @locker_rental do |f| %>
         <div class="row justify-content-between gy-3 mb-3">
             <div class="col-md-auto">
