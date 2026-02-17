@@ -15,11 +15,19 @@
           <%= link_to @github_username, "https://github.com/#{@github_username}" %><br />
         <% end %>
         <% if @repo_user.url.present? %>
+          <%
+            raw_url = @repo_user.url.to_s.strip
+            raw_url = "https://#{raw_url}" unless raw_url.match?(%r{\Ahttps?://}i)
+            safe_url = if raw_url.match?(%r{\Ahttps?://[^\s<>"'{}|\\^`]+\z}i)
+                         raw_url
+                       else
+                         '#'
+                       end
+          %>
           <%= fa_icon('link') %>
-          <% if @repo_user.url.present? && @repo_user.url.match?(%r{\Ahttps?://}i) %>
-            <%= fa_icon('link') %>
-            <%= link_to @repo_user.url.gsub(%r{\Ahttps?://}, '').to_s, @repo_user.url %> <br />
-          <% end %> <br />
+          <% if safe_url != '#' %>
+            <%= link_to safe_url.gsub(%r{\Ahttps?://}i, ''), safe_url %> <br />
+          <% end %>
         <% end %>
         <p>Skills</p>
         <% @certifications.each do |certification| %>
