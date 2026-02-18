@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_02_05_173620) do
+ActiveRecord::Schema[7.2].define(version: 2026_02_16_041128) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_trgm"
@@ -1169,21 +1169,6 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_05_173620) do
     t.index ["user_id"], name: "index_space_manager_joins_on_user_id"
   end
 
-  create_table "space_staff_hours", force: :cascade do |t|
-    t.time "start_time"
-    t.time "end_time"
-    t.integer "day"
-    t.bigint "space_id"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.string "language"
-    t.bigint "training_level_id"
-    t.bigint "course_name_id"
-    t.index ["course_name_id"], name: "index_space_staff_hours_on_course_name_id"
-    t.index ["space_id"], name: "index_space_staff_hours_on_space_id"
-    t.index ["training_level_id"], name: "index_space_staff_hours_on_training_level_id"
-  end
-
   create_table "spaces", id: :serial, force: :cascade do |t|
     t.string "name"
     t.datetime "created_at", precision: nil, null: false
@@ -1329,14 +1314,6 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_05_173620) do
     t.date "end_date"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-  end
-
-  create_table "training_levels", force: :cascade do |t|
-    t.string "name"
-    t.bigint "space_id", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["space_id"], name: "index_training_levels_on_space_id"
   end
 
   create_table "training_requirements", force: :cascade do |t|
@@ -1621,9 +1598,6 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_05_173620) do
   add_foreign_key "shadowing_hours", "users"
   add_foreign_key "shifts", "spaces"
   add_foreign_key "shifts", "trainings"
-  add_foreign_key "space_staff_hours", "course_names"
-  add_foreign_key "space_staff_hours", "spaces"
-  add_foreign_key "space_staff_hours", "training_levels"
   add_foreign_key "staff_availabilities", "time_periods"
   add_foreign_key "staff_availabilities", "users"
   add_foreign_key "staff_external_unavailabilities", "users"
@@ -1639,7 +1613,6 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_05_173620) do
   add_foreign_key "sub_space_bookings", "users"
   add_foreign_key "sub_space_bookings", "users", column: "approved_by_id"
   add_foreign_key "sub_spaces", "spaces"
-  add_foreign_key "training_levels", "spaces"
   add_foreign_key "training_requirements", "proficient_projects"
   add_foreign_key "training_requirements", "trainings"
   add_foreign_key "training_sessions", "trainings"
