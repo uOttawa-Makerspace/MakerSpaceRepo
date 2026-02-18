@@ -222,7 +222,12 @@
       </thead>
       <% SubSpace.where(space: @space).order(:name).each do |sub_space| %>
         <tr>
-          <td><%= sub_space.name %></td>
+          <td>
+            <%= form_tag admin_space_update_sub_space_path(space_id: @space.id, id: sub_space.id), method: :patch, class: 'input-group input-group-sm' do %>
+              <%= text_field_tag :name, sub_space.name, class: 'form-control', required: true %>
+              <%= submit_tag 'Rename', class: 'btn btn-outline-primary btn-sm', data: { confirm: 'Are you sure you want to rename this sub space?' } %>
+            <% end %>
+          </td>
           <td><%= button_to "#{sub_space.approval_required ? 'Enable' : 'Disable'} Automatic Booking Approval", admin_space_change_sub_space_approval_path(space_id: @space.id, id: sub_space.id), method: :put, action: :change_sub_space_approval, class: 'btn btn-primary btn-sm' %></td>
           <td>
             <%= form_tag admin_space_set_max_automatic_approval_hour_path(space_id: @space.id, sub_space_id: sub_space.id), action: :set_auto_approve_booking_duration, method: :patch, class: 'input-group' do %>
