@@ -24,7 +24,7 @@
         </div>
         <div class="mb-3">
           <%= f.label :phone_number, class: 'form-label' %> <%= fa_icon('asterisk', class: 'text-danger') %>
-          <%= f.text_field :phone_number, class: 'form-control', required: true %>
+          <%= f.telephone_field :phone_number, class: 'form-control', required: true %>
         </div>
         <div class="mb-3">
           <%= f.label :emergency_contact, class: 'form-label' %> <%= fa_icon('asterisk', class: 'text-danger') %>
@@ -36,7 +36,7 @@
         </div>
         <div class="mb-3">
           <%= f.label :emergency_contact_phone_number, class: 'form-label' %> <%= fa_icon('asterisk', class: 'text-danger') %>
-          <%= f.text_field :emergency_contact_phone_number, class: 'form-control', required: true %>
+          <%= f.telephone_field :emergency_contact_phone_number, class: 'form-control', required: true %>
         </div>
         <div class="mb-3">
           <%= f.label :space_id, 'Department', class: 'form-label' %>
