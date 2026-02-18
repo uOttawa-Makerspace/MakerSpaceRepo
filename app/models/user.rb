@@ -210,13 +210,13 @@ class User < ApplicationRecord
   # Old: /[0-9]/ - only checked for presence of ANY digit
   # New: /\A[0-9]{9}\z/ - ensures EXACTLY 9 digits, nothing else
   validates :student_id,
-            format: {
-              with: /\A[0-9]{9}\z/,
-              message: 'must be exactly 9 digits'
-            },
-            allow_blank: true,
-            presence: true,
-            if: :student?
+          format: {
+            with: /\A[0-9]{7,12}\z/,
+            message: 'must be between 7 and 12 digits'
+          },
+          allow_blank: true,
+          presence: true,
+          if: :student?
 
   # ============================================
   # Normalizations & Callbacks
