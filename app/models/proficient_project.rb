@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+require "uri"
 
 class ProficientProject < ApplicationRecord
   include Filterable
@@ -44,13 +45,14 @@ class ProficientProject < ApplicationRecord
     elsif attribute == "category"
       joins(:training).where(trainings: { name: value })
     elsif attribute == "search"
+      sanitized = sanitize_sql_like(value)
       where(
-        "LOWER(title) like LOWER(?) OR
-                 LOWER(level) like LOWER(?) OR
-                 LOWER(description) like LOWER(?)",
-        "%#{value}%",
-        "%#{value}%",
-        "%#{value}%"
+        "LOWER(title) LIKE LOWER(?) OR
+        LOWER(level) LIKE LOWER(?) OR
+        LOWER(description) LIKE LOWER(?)",
+        "%#{sanitized}%",
+        "%#{sanitized}%",
+        "%#{sanitized}%"
       )
     elsif attribute == "price"
       bool = true if value.eql?("Paid")
@@ -78,7 +80,12 @@ class ProficientProject < ApplicationRecord
   end
 
   def extract_valid_urls
-    extract_urls.uniq.select { |url| url.include?("wiki.makerepo.com") }
+    extract_urls.uniq.select do |url|
+      uri = URI.parse(url)
+      uri.host == "wiki.makerepo.com" || uri.host&.end_with?(".wiki.makerepo.com")
+    rescue URI::InvalidURIError
+      false
+    end
   end
 
   def self.training_status(training_id, user_id)
