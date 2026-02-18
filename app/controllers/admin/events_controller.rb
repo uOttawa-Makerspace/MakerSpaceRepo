@@ -150,14 +150,10 @@ class Admin::EventsController < AdminAreaController
           @event.event_assignments << @event_assignments
         end
 
-<<<<<<< admin_can_add_unavail
-        flash[:notice] = "All occurrences updated successfully."
-=======
         @event.reload
         Event.upsert_event(@event) unless @event.draft
 
         flash[:notice] = "Unavailability updated successfully."
->>>>>>> staging
       else
         flash[:alert] = "Failed to update event: #{@event.errors.full_messages.to_sentence}"
       end
