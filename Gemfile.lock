@@ -125,7 +125,7 @@ GEM
       smart_properties
     bigdecimal (4.0.1)
     bindex (0.8.1)
-    bootsnap (1.22.0)
+    bootsnap (1.23.0)
       msgpack (~> 1.2)
     brakeman (8.0.2)
       racc
@@ -359,8 +359,6 @@ GEM
     loofah (2.25.0)
       crass (~> 1.0.2)
       nokogiri (>= 1.12.0)
-    macaddr (1.7.2)
-      systemu (~> 2.6.5)
     mail (2.9.0)
       logger
       mini_mime (>= 0.1.1)
@@ -389,7 +387,7 @@ GEM
       railties (>= 7.1)
       stimulus-rails
       turbo-rails
-    mocha (3.0.1)
+    mocha (3.0.2)
       ruby2_keywords (>= 0.0.5)
     msgpack (1.8.0)
     multi_json (1.19.1)
@@ -398,7 +396,7 @@ GEM
     mutex_m (0.3.0)
     net-http (0.9.1)
       uri (>= 0.11.1)
-    net-imap (0.6.2)
+    net-imap (0.6.3)
       date
       net-protocol
     net-pop (0.1.2)
@@ -582,7 +580,7 @@ GEM
     rspec-support (3.13.7)
     rspec_junit_formatter (0.6.0)
       rspec-core (>= 2, < 4, != 2.12.0)
-    rubocop (1.84.1)
+    rubocop (1.84.2)
       json (~> 2.3)
       language_server-protocol (~> 3.17.0.2)
       lint_roller (~> 1.1.0)
@@ -613,11 +611,13 @@ GEM
     ruby_audit (3.1.0)
       bundler-audit (~> 0.9.0)
     rubyzip (2.4.1)
-    saml_idp (0.9.0)
-      activesupport (>= 3.2)
+    saml_idp (1.0.0)
+      activesupport (>= 5.2)
       builder (>= 3.0)
       nokogiri (>= 1.6.2)
-      uuid (>= 2.3)
+      ostruct
+      rexml
+      xmlenc (>= 0.7.1)
     sass-rails (6.0.0)
       sassc-rails (~> 2.1, >= 2.1.1)
     sassc (2.4.0)
@@ -714,7 +714,7 @@ GEM
       fugit (~> 1.11)
       railties (>= 7.1)
       thor (>= 1.3.1)
-    sorbet-runtime (0.6.12935)
+    sorbet-runtime (0.6.12940)
     spreadsheet (1.3.4)
       bigdecimal
       logger
@@ -755,7 +755,6 @@ GEM
       prettier_print
       rbs
       syntax_tree (>= 2.0.1)
-    systemu (2.6.5)
     temple (0.10.4)
     terser (1.2.6)
       execjs (>= 0.3.0, < 3)
@@ -781,8 +780,6 @@ GEM
     uniform_notifier (1.18.0)
     uri (1.1.1)
     useragent (0.16.11)
-    uuid (2.3.9)
-      macaddr (~> 1.0)
     vite_rails (3.0.20)
       railties (>= 5.1, < 9)
       vite_ruby (~> 3.0, >= 3.2.2)
@@ -807,6 +804,13 @@ GEM
     will_paginate (3.3.1)
     will_paginate-bootstrap-style (0.2.4)
       will_paginate (~> 3.0, >= 3.0.0)
+    xmlenc (0.8.0)
+      activemodel (>= 3.0.0)
+      activesupport (>= 3.0.0)
+      nokogiri (>= 1.6.0, < 2.0.0)
+      xmlmapper (>= 0.7.3)
+    xmlmapper (0.8.1)
+      nokogiri (~> 1.11)
     xpath (3.2.0)
       nokogiri (~> 1.8)
     yard (0.9.38)
@@ -898,7 +902,7 @@ DEPENDENCIES
   ruby-prof
   ruby_audit
   rubyzip (~> 2.1)
-  saml_idp (~> 0.9.0)
+  saml_idp (~> 1.0)
   sass-rails (~> 6.0.0)
   sdoc (~> 1.1.0)
   selenium-webdriver (~> 4.39.0)
