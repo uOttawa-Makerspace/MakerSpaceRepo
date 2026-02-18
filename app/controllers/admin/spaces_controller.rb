@@ -101,7 +101,6 @@ class Admin::SpacesController < AdminAreaController
 
   def edit
     @staff_needed_calendars = StaffNeededCalendar.where(space: params[:id])
-    @space_staff_hours = SpaceStaffHour.where(space: params[:id])
     @new_training = Training.new
     @sub_spaces = SubSpace.where(space: Space.find(params[:id]))
     admins = User.where(role: "admin").order("LOWER(name) ASC")
@@ -176,37 +175,6 @@ class Admin::SpacesController < AdminAreaController
     end
   end
 
-  def add_space_hours
-    unless params[:space_id].present? && params[:day].present? &&
-             params[:start_time].present? && params[:end_time].present? &&
-             params[:language].present? && params[:training_course].present? &&
-             params[:training_level].present?
-      flash[:notice] = "Make sure you sent all the information and try again."
-      redirect_to edit_admin_space_path(
-                    params[:space_id],
-                    fallback_location: root_path
-                  )
-    end
-    SpaceStaffHour.create(
-      space_id: params[:space_id],
-      day: params[:day],
-      start_time: params[:start_time],
-      end_time: params[:end_time],
-      language: params[:language],
-      course_name_id: CourseName.find(params[:training_course]).id,
-      training_level_id: TrainingLevel.find(params[:training_level]).id
-    )
-    redirect_back(fallback_location: root_path)
-  end
-
-  def delete_space_hour
-    unless params[:space_staff_hour_id] &&
-             SpaceStaffHour.find(params[:space_staff_hour_id]).present? &&
-             SpaceStaffHour.find(params[:space_staff_hour_id]).destroy
-      flash[:notice] = "An issue occurred while deleting the slot."
-    end
-    redirect_back(fallback_location: root_path)
-  end
   def set_max_booking_duration
     if params[:max_hours].present? && params[:sub_space_id].present?
       SubSpace.find(params[:sub_space_id]).update!(
@@ -265,30 +233,6 @@ class Admin::SpacesController < AdminAreaController
     redirect_to edit_admin_space_path(id: params[:space_id])
   end
 
-  def add_training_levels
-    unless params[:space_id].present? && params[:name].present?
-      flash[:notice] = "Make sure you sent all the information and try again."
-      redirect_to edit_admin_space_path(
-                    params[:space_id],
-                    fallback_location: root_path
-                  )
-    end
-    training_level =
-      TrainingLevel.new(
-        space: Space.find(params[:space_id]),
-        name: params[:name]
-      )
-    flash[:notice] = if training_level.save
-      "Training Level added !"
-    else
-      "An issue occurred while adding the training level."
-                     end
-    redirect_to edit_admin_space_path(
-                  params[:space_id],
-                  fallback_location: root_path
-                )
-  end
-
   def destroy
     space = Space.find(params[:id])
     if params[:admin_input] == space.name.upcase
@@ -345,6 +289,23 @@ class Admin::SpacesController < AdminAreaController
 
     flash[:notice] = "Calendars updated successfully."
     redirect_back(fallback_location: root_path)
+  end
+
+  def update_sub_space
+    sub_space = SubSpace.find(params[:id])
+    old_name = sub_space.name
+
+    if params[:name].blank?
+      flash[:alert] = "Sub Space name cannot be blank."
+    elsif sub_space.update(name: params[:name])
+      flash[:notice] = "You've successfully renamed '#{old_name}' to '#{sub_space.name}'."
+    else
+      flash[:alert] = "Failed to rename sub space: #{sub_space.errors.full_messages.join(', ')}"
+    end
+
+    redirect_back(
+      fallback_location: edit_admin_space_path(id: params[:space_id], anchor: "sub_space_area")
+    )
   end
 
   private

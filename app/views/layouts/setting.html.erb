@@ -58,6 +58,9 @@
 
           <!-- CONTENT COLUMN (9 cols wide on desktop) -->
           <div class="col-lg-9">
+            <div class="flash" id="flash" style="z-index: 100;">
+              <%= render 'layouts/flash' %>
+            </div>
             <!-- This renders the page content (Profile or Certifications) -->
             <%= yield %>
           </div>
