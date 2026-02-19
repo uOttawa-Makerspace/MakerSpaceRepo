@@ -3,11 +3,10 @@
 set :application, 'MakerRepo'
 set :repo_url, 'https://github.com/uOttawa-Makerspace/MakerSpaceRepo.git'
 set :rbenv_type, :user
-set :rbenv_ruby, '3.4.7'
+# set :rbenv_ruby, '3.4.7'
 
 set :linked_files, %w[config/master.key]
-set :linked_files,
-    fetch(:linked_files, []).push('config/secrets.yml')
+set :linked_files, fetch(:linked_files, []).push('config/secrets.yml')
 set :linked_dirs,
     fetch(:linked_dirs, []).push(
       'log',
@@ -26,8 +25,11 @@ set :linked_dirs,
 # since we already have it enabled on servers
 set :puma_enable_lingering, false
 
-# set :default_env,
-#     { "PASSENGER_INSTANCE_REGISTRY_DIR" => "/var/passenger_instance_registry" }
+# We seem to be hitting an IO bug because yjit is lazy-enabled. Startup ruby
+# with YJIT enabled immediately
+# NOTE: This doesn't have an effect because systemd starts a separate user
+# session and does not load .profile either
+set :default_env, { 'RUBYOPT' => '--yjit' }
 
 # before "deploy:assets:precompile", "deploy:yarn_install"
 # namespace :deploy do

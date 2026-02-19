@@ -3,7 +3,7 @@
 <section class="container">
   <h2 class="fw-bold text-center my-3">Job Orders Settings</h2>
 
-  <p class="text-muted text-center">
+  <p class="text-body-secondary text-center">
     <b>Job Types</b> define the main service categories (like 3D printing or laser cutting). 
     Each type contains <b>Service Groups</b> that specify materials (like PLA or resin), 
     and each group offers individual <b>Services</b> with quality/color options and pricing. 
@@ -17,11 +17,11 @@
 
   <% @job_types.each do |type| %>
     <div class="card shadow-sm overflow-hidden mb-4">
-      <div class="card-header bg-light p-3">
+      <div class="card-header bg-body-secondary p-3">
         <div class="d-flex justify-content-between align-items-center">
           <div>
             <h4 class="fw-bold mb-1"><%= type.name %></h4>
-            <p class="mb-0 text-muted"><%= type.comments.present? ? sanitize(type.comments) : 'No description provided' %></p>
+            <p class="mb-0 text-body-secondary"><%= type.comments.present? ? sanitize(type.comments) : 'No description provided' %></p>
           </div>
           <div class="d-flex align-items-center gap-3">
             <strong class="fs-5"><%= number_to_currency(type.service_fee) %></strong>
@@ -66,7 +66,7 @@ end %>
                       <% @services.where(job_service_group_id: service_group.id).find_each do |service| %>
                         <div class="accordion-item border-0 mb-2">
                           <h3 class="accordion-header" id="service-heading-<%= service.id %>">
-                            <button class="accordion-button collapsed bg-light-subtle py-2" type="button" data-bs-toggle="collapse" data-bs-target="#service-collapse-<%= service.id %>" aria-expanded="false" aria-controls="service-collapse-<%= service.id %>">
+                            <button class="accordion-button collapsed service-accordion-btn py-2" type="button" data-bs-toggle="collapse" data-bs-target="#service-collapse-<%= service.id %>" aria-expanded="false" aria-controls="service-collapse-<%= service.id %>">
                               <div class="d-flex w-100 align-items-center">
                                 <span class="fw-semibold me-3"><%= service.name.presence || 'Unnamed Service' %></span>
                                 <span class="badge bg-<%= service.required? ? 'danger' : 'warning' %> me-2">
@@ -76,7 +76,7 @@ end %>
                             </button>
                           </h3>
                           <div id="service-collapse-<%= service.id %>" class="accordion-collapse collapse" aria-labelledby="service-heading-<%= service.id %>" data-bs-parent="#services-accordion-<%= service_group.id %>">
-                            <div class="accordion-body bg-light-subtle rounded-bottom">
+                            <div class="accordion-body service-accordion-body rounded-bottom">
                               <div class="row">
                                 <div class="col-md-6">
                                   <p class="mb-3"><%= service.description.presence || 'No description provided' %></p>
@@ -87,7 +87,7 @@ end %>
                                     <div class="d-flex align-items-center">
                                       <strong><%= number_to_currency(service.internal_price) %></strong>
                                       <% if service.unit.present? %>
-                                        <span class="ms-1 text-muted">/ <%= service.unit %></span>
+                                        <span class="ms-1 text-body-secondary">/ <%= service.unit %></span>
                                       <% end %>
                                     </div>
                                   </div>
@@ -96,7 +96,7 @@ end %>
                                     <div class="d-flex align-items-center">
                                       <strong><%= number_to_currency(service.external_price) %></strong>
                                       <% if service.unit.present? %>
-                                        <span class="ms-1 text-muted">/ <%= service.unit %></span>
+                                        <span class="ms-1 text-body-secondary">/ <%= service.unit %></span>
                                       <% end %>
                                     </div>
                                   </div>
@@ -111,7 +111,7 @@ end %>
                         </div>
                       <% end %>
                       <% if !@services.where(job_service_group_id: service_group.id).present? %>
-                        <span class="text-muted">None yet</span>
+                        <span class="text-body-secondary">None yet</span>
                       <% end %>
                     </div>
 
@@ -135,7 +135,7 @@ end %>
   <hr class="mt-2 mb-4">
 
   <div class="card shadow-sm">
-    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <div class="card-header bg-body-secondary d-flex justify-content-between align-items-center">
       <h2 class="h4 mb-0">Job Options</h2>
       <%= link_to 'New Option', new_admin_job_option_path, class: 'btn btn-primary' %>
     </div>
@@ -143,7 +143,7 @@ end %>
     <div class="card-body p-0">
       <div class="table-responsive">
         <table class="table table-hover mb-0 notDataTable">
-          <thead class="table-light">
+          <thead>
             <tr>
               <th class="align-middle">Name</th>
               <th class="align-middle">Description</th>
@@ -173,7 +173,7 @@ end %>
                       <% end %>
                     </div>
                   <% else %>
-                    <span class="text-muted">Not assigned</span>
+                    <span class="text-body-secondary">Not assigned</span>
                   <% end %>
                 </td>
                 <td class="align-middle text-end">
@@ -206,7 +206,7 @@ end %>
     </div>
 
     <% if @options.empty? %>
-      <div class="card-footer text-center text-muted py-4">
+      <div class="card-footer text-center text-body-secondary py-4">
         No job options found.
       </div>
     <% end %>
@@ -215,7 +215,7 @@ end %>
 
 <style>
   .accordion-button:not(.collapsed) {
-    background-color: rgba(0, 0, 0, 0.03);
+    background-color: var(--bs-tertiary-bg);
     box-shadow: none;
   }
 
@@ -223,14 +223,14 @@ end %>
     padding: 1.25rem;
   }
 
-  .service-accordion .accordion-button {
+  .service-accordion .service-accordion-btn {
     padding: 0.75rem 1.25rem;
     font-size: 0.9rem;
-    background-color: #f8f9fa;
+    background-color: var(--bs-tertiary-bg);
   }
 
-  .service-accordion .accordion-body {
-    background-color: #f8f9fa;
+  .service-accordion .service-accordion-body {
+    background-color: var(--bs-tertiary-bg);
     padding: 1rem 1.25rem;
   }
 
@@ -245,16 +245,12 @@ end %>
     font-weight: 500;
   }
 
-  .bg-light-subtle {
-    background-color: #f8f9fa;
-  }
-
   .table th {
     font-weight: 600;
     text-transform: uppercase;
     font-size: 0.75rem;
     letter-spacing: 0.05em;
-    color: #6c757d;
+    color: var(--bs-secondary-color);
   }
 
   .table td {

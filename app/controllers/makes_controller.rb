@@ -5,54 +5,55 @@ class MakesController < SessionsController
   before_action :signed_in
   before_action :set_repository
 
+  # A make is just another repository that points to another one
   def create
-    @repo =
+    @make =
       @repository.makes.build do |r|
-        r.title = params[@repository.title][:title]
-        r.description = params[@repository.title][:description]
+        r.title = make_params[:title]
+        r.description = make_params[:description]
         r.license = @repository.license
         r.github = @repository.github
         r.github_url = @repository.github_url
         r.user_id = @user.id
-        r.share_type = "public"
+        r.share_type = 'public'
+        r.photos_attributes = make_params[:photos_attributes]
+        r.slug =
+          "#{r.id}.#{r.title.downcase.gsub(/[^0-9a-z ]/i, '').gsub(/\s+/, '-')}"
       end
 
-    if @repo.save
-      begin
-        create_photos
-      rescue FastImage::ImageFetchFailure,
-             FastImage::UnknownImageType,
-             FastImage::SizeNotFound => e
-        @repo.destroy
-        redirect_to request.path,
-                    alert:
-                      "Something went wrong while uploading photos, but the make was created. Try uploading them again later."
-      else
-        @repo.update(
-          slug:
-            @repo.id.to_s + "." +
-              @repo.title.downcase.gsub(/[^0-9a-z ]/i, "").gsub(/\s+/, "-")
-        )
-        copy_categories_and_equipment
-        @repository.increment!(:make)
-        redirect_to repository_path(@user.username, @repo.slug)
-        @user.increment!(:reputation, 15)
-      end
+    if @make.save
+      copy_categories_and_equipment
+      @repository.increment!(:make)
+      redirect_to repository_path(@user.username, @make.slug)
+      @user.increment!(:reputation, 15)
     else
-      flash[:alert] = "Something went wrong"
+      flash[:alert] = 'Something went wrong'
       render :new
     end
   end
 
   def new
-    @repo = @repository
+    @make = @repository
   end
 
   private
 
+  def make_params
+    params.require(@repository.title).permit(
+      :title,
+      :description,
+      photos_attributes: %i[id image _destroy]
+    )
+  end
+
   def set_repository
     @repository =
-      Repository.includes(:owner).find_by(owner: {username: params[:user_username]}, id: params[:id])
+      Repository.includes(:owner).find_by(
+        owner: {
+          username: params[:user_username]
+        },
+        id: params[:id]
+      )
   end
 
   def create_photos
@@ -61,7 +62,7 @@ class MakesController < SessionsController
         dimension = FastImage.size(img.tempfile, raise_on_failure: true)
         Photo.create(
           image: img,
-          repository_id: @repo.id,
+          repository_id: @make.id,
           width: dimension.first,
           height: dimension.last
         )
@@ -73,12 +74,12 @@ class MakesController < SessionsController
     @repository.categories.each do |c|
       Category.create(
         name: c.name,
-        repository_id: @repo.id,
+        repository_id: @make.id,
         category_option_id: c.category_option_id
       )
     end
     @repository.equipments.each do |e|
-      Equipment.create(name: e.name, repository_id: @repo.id)
+      Equipment.create(name: e.name, repository_id: @make.id)
     end
   end
 end

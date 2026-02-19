@@ -19,7 +19,7 @@ OrderStatus.find_or_create_by(id: 2, name: "Completed")
 [
   "Makerspace",
   "MTC",
-  "Brunsfield Center",
+  "Brunsfield Centre",
   "PITS",
   "Makerlab 121",
   "Makerlab 119",
@@ -92,11 +92,4 @@ end
 # Drop-off locations
 %w[MTC Makerspace].each do |location_name|
   DropOffLocation.create(name: location_name)
-end
-
-# Training Levels, add to all spaces
-%w[None Basic].each do |level_name|
-  Space.all.each do |space|
-    TrainingLevel.find_or_create_by(name: level_name, space_id: space.id)
-  end
 end

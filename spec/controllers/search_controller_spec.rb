@@ -3,7 +3,7 @@ require "rails_helper"
 RSpec.describe SearchController, type: :controller do
   describe "GET /explore" do
     context "explore" do
-      before(:all) { (0..15).each { create(:repository) } }
+      before(:all) { @repos = (0..15).map { create(:repository) } }
 
       it "should get a 200" do
         get :explore
@@ -135,37 +135,6 @@ RSpec.describe SearchController, type: :controller do
               sort: "most_likes"
             }
         expect(@controller.instance_variable_get(:@repositories).count).to eq(1)
-        expect(response).to have_http_status(:success)
-      end
-    end
-  end
-
-  describe "GET /search" do
-    context "search" do
-      it "should search for the right result" do
-        create(:repository)
-        create(
-          :repository,
-          description:
-            "Donec malesuada lacus lorem, ac finibus nibh ultrices quis. Duis dignissim nisl tristique convallis dignissim."
-        )
-        get :search,
-            params: {
-              q: "Donec malesuada lacus lorem, ac finibus nibh ultrices quis."
-            }
-        expect(@controller.instance_variable_get(:@repositories).count).to eq(1)
-        expect(response).to have_http_status(:success)
-      end
-
-      it "should get no results" do
-        create(:repository)
-        create(:repository)
-        create(:repository)
-        get :search,
-            params: {
-              q: "Donec malesuada lacus lorem, ac finibus nibh ultrices quis."
-            }
-        expect(@controller.instance_variable_get(:@repositories).count).to eq(0)
         expect(response).to have_http_status(:success)
       end
     end

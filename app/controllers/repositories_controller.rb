@@ -159,7 +159,7 @@ class RepositoriesController < SessionsController
     else
       @project_proposals =
         ProjectProposal.approved.order(title: :asc).pluck(:title, :id)
-      render "new", status: :unprocessable_entity
+      render "new", status: :unprocessable_content
     end
   end
 
@@ -176,9 +176,12 @@ class RepositoriesController < SessionsController
                     @repository.slug
                   ).to_s
     else
+      @project_proposals =
+        ProjectProposal.approved.order(title: :asc).pluck(:title, :id) if params[
+        :project_proposal_id
+      ].blank?
       flash[:alert] = "Unable to apply the changes."
-      render json: @repository.errors.to_hash(true),
-             status: :unprocessable_entity
+      render 'edit', status: :unprocessable_content
     end
   end
 
@@ -352,7 +355,7 @@ class RepositoriesController < SessionsController
   def check_auth
     @check_passed =
       if @authorized || @user.admin? || @user.staff? ||
-           (@repository.user_username.downcase == @user.username.downcase)
+           @repository.user_username.casecmp?(@user.username)
         true
       else
         false

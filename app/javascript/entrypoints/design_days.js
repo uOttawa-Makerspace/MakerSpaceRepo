@@ -92,13 +92,20 @@ function addTemplateField(event) {
   // Find all elements named with template and replace with a random name, to
   // prevent conflicts
   let newName = Date.now();
-  // XSS waiting to happen lol
-  newField.innerHTML = newField.innerHTML.replaceAll("TEMPLATE", newName);
-  // newField.querySelectorAll("[name], [for]").forEach((el) => {
-  //   el.name = el.name.replaceAll("TEMPLATE", newName);
-  // });
 
-  // Insert above target button
+  // only replace TEMPLATE in specific attributes, never in innerHTML
+  newField.querySelectorAll("[name], [for], [id]").forEach((el) => {
+    if (el.name) {
+      el.name = el.name.replaceAll("TEMPLATE", newName);
+    }
+    if (el.id) {
+      el.id = el.id.replaceAll("TEMPLATE", newName);
+    }
+    if (el.htmlFor) {
+      el.htmlFor = el.htmlFor.replaceAll("TEMPLATE", newName);
+    }
+  });
+
   btn.insertAdjacentElement("beforebegin", newField);
 
   // Attach event listeners

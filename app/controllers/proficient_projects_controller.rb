@@ -110,7 +110,7 @@ class ProficientProjectsController < DevelopmentProgramsController
       @training_categories = Training.all.order(:name_en).pluck(:name_en, :id)
       @drop_off_location = DropOffLocation.all.order(name: :asc)
       flash[:alert] = "Something went wrong"
-      render "new", status: :unprocessable_entity
+      render "new", status: :unprocessable_content
     end
   end
 
@@ -154,7 +154,7 @@ class ProficientProjectsController < DevelopmentProgramsController
       end
     else
       flash[:alert] = "Unable to apply the changes."
-      render "edit", status: :unprocessable_entity
+      render "edit", status: :unprocessable_content
     end
   end
 

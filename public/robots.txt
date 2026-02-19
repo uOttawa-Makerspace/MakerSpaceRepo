@@ -1,25 +1,86 @@
 # See http://www.robotstxt.org/robotstxt.html for documentation on how to use the robots.txt file
 
-# Prevent explore page, full of heavy images
+# ============================================
+# GENERAL CRAWLERS
+# ============================================
 User-agent: *
+
+# Existing exclusions
 Disallow: /explore
-
-# Prevent search, nothing shows up here
-User-agent: *
 Disallow: /search
-
-# Prevent assets folder, full of heavy assets
-User-agent: *
 Disallow: /rails/active_storage
 
+# Admin & Staff areas
+Disallow: /solid_queue/
+Disallow: /admin/
+Disallow: /staff/
+Disallow: /staff_dashboard/
+
+# Authentication & Account
+Disallow: /login
+Disallow: /logout
+Disallow: /forgot_password
+Disallow: /reset_password
+Disallow: /settings/
+Disallow: /confirm
+Disallow: /resend_confirmation
+Disallow: /unlock_account
+
+# Internal systems
+Disallow: /stripe/
+Disallow: /custom_webhooks/
+Disallow: /saml/
+Disallow: /rfid/
+Disallow: /kiosk/
+Disallow: /template/
+Disallow: /github/
+
+# Transactional & Private
+Disallow: /carts
+Disallow: /orders
+Disallow: /order_items
+Disallow: /price_rules
+Disallow: /discount_codes
+Disallow: /coupon_codes
+Disallow: /cc_moneys
+Disallow: /chat_messages
+
+# Keys & Certifications
+Disallow: /key_requests
+Disallow: /key_certifications
+
+# Exams
+Disallow: /exams
+Disallow: /exam_responses
+
+# Internal Management
+Disallow: /project_kits
+Disallow: /printer_issues
+Disallow: /printers
+Disallow: /volunteer_hours
+Disallow: /volunteer_task_requests
+Disallow: /volunteer_task_joins
+Disallow: /staff_spaces
+Disallow: /staff_availabilities
+Disallow: /walk_in_safety_sheets
+Disallow: /quick_access_links
+Disallow: /require_trainings
+Disallow: /locker_rentals
+Disallow: /sub_space_booking
+Disallow: /memberships
+
+# ============================================
+# SEO BOTS
+# ============================================
 User-agent: SemrushBot
 Disallow: /
 
 User-agent: AhrefsBot
 Disallow: /
 
-# Cloudflare Managed Robots.txt to block AI related bots.
-
+# ============================================
+# AI BOTS (Cloudflare Managed)
+# ============================================
 User-agent: AI2Bot
 Disallow: /
 
@@ -154,3 +215,8 @@ Disallow: /
 
 User-agent: YouBot
 Disallow: /
+
+# ============================================
+# SITEMAP
+# ============================================
+Sitemap: https://makerepo.com/sitemap.xml.gz

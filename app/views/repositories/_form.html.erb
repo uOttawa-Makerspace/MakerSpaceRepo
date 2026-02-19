@@ -1,5 +1,5 @@
-<%# NOTE: The route for this isn't a proper nested route so this hack is necessary%>    
-<%= form_with model: @repository, url: {controller: 'repositories', action: @repository.persisted? ? :update : :create}, multipart: true do |f| %>
+<%# NOTE: The route for this isn't a proper nested route so specifying url is important %>
+<%= form_with model: @repository, url: {controller: 'repositories', action: @repository.persisted? ? :update : :create} do |f| %>
     <%= text_field_tag :username_dont_autofill, {}, { hidden: true } %>
     <div class="mb-3 required">
         <%= f.label :title, t('repository.title'), class: 'form-label' %>
@@ -15,16 +15,16 @@
 
     <%= label_tag :file, t('repository.proj_files'), class: 'form-label mb-2' %>
     <div class="mb-3">
-        <div class="input-group mb-3">
+        <div class="input-group">
             <%= file_field_tag 'repository[repo_files_attributes]',
-             multiple: true,
-             data: {
-                 file_upload_helper: true,
-                 file_upload_preview_selector: '[data-file-upload-file-preview]',
-                 file_upload_suffix: 'file'
-             },
-             class: 'form-control',
-             aria_label: 'Project Files / Fichiers du projet' %>
+                               multiple: true,
+                               data: {
+                                   file_upload_helper: true,
+                                   file_upload_preview_selector: '[data-file-upload-file-preview]',
+                                   file_upload_suffix: 'file'
+                               },
+                               class: 'form-control',
+                               aria_label: 'Project Files / Fichiers du projet' %>
         </div>
         
         <div data-file-upload-file-preview class="file-upload-preview-pane">
@@ -50,10 +50,10 @@
     <div class="mb-3 required">
         <%= label_tag :photo, t('repository.gallery') , class: 'form-label' %>
         <div class="input-group mb-3">
-            <%# this is a free-form param because the images are an association and not an attribute %>
             <%# Additionally, not sure if there's a way to verify this name being correct via internal rails methods %>
-            <%= file_field_tag 'repository[photos_attributes]',
-                               type: :files,
+            <%# NOTE: include_hidden is important to make sure controller doesn't receive a string%>
+            <%= f.file_field :photos, name: 'repository[photos_attributes]',
+             include_hidden: false,
                                multiple: true,
                                data: {
                                    file_upload_helper: true,

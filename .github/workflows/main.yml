@@ -5,7 +5,9 @@ on:
     branches: [master, staging]
   pull_request:
     branches: [master, staging]
-  workflow_dispatch:
+
+permissions:
+  contents: read
 
 env:
   RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
@@ -13,6 +15,7 @@ env:
 
 jobs:
   test:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
@@ -86,6 +89,33 @@ jobs:
 
       - name: Run RSpec
         run: bundle exec rspec
+
+  security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      - name: Brakeman (Static Analysis)
+        run: bundle exec brakeman -w2
+
+      - name: Bundle Audit (Gem Vulnerabilities)
+        run: bundle exec bundle-audit check --update
+
+      - name: Ruby Audit
+        run: bundle exec ruby-audit check
+
+      - name: Outdated Gems (Informational)
+        run: |
+          bundle config unset deployment
+          bundle outdated --strict || true
 
   deploy:
     needs: test

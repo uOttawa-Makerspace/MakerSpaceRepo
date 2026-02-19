@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_01_11_182102) do
+ActiveRecord::Schema[7.2].define(version: 2026_02_16_041128) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_trgm"
@@ -318,6 +318,16 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_11_182102) do
     t.index ["slug", "sluggable_type"], name: "index_friendly_id_slugs_on_slug_and_sluggable_type"
     t.index ["sluggable_id"], name: "index_friendly_id_slugs_on_sluggable_id"
     t.index ["sluggable_type"], name: "index_friendly_id_slugs_on_sluggable_type"
+  end
+
+  create_table "google_calendar_channels", force: :cascade do |t|
+    t.string "channel_id", null: false
+    t.string "resource_id", null: false
+    t.datetime "expires_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "sync_token"
+    t.index ["channel_id"], name: "index_google_calendar_channels_on_channel_id", unique: true
   end
 
   create_table "job_options", force: :cascade do |t|
@@ -673,8 +683,16 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_11_182102) do
     t.date "paid_at"
     t.bigint "decided_by_id"
     t.bigint "locker_id"
+    t.bigint "course_name_id"
+    t.string "section_name"
+    t.string "team_name"
+    t.bigint "preferred_locker_id"
+    t.datetime "cancelled_at"
+    t.boolean "notified_of_cancellation"
+    t.index ["course_name_id"], name: "index_locker_rentals_on_course_name_id"
     t.index ["decided_by_id"], name: "index_locker_rentals_on_decided_by_id"
     t.index ["locker_id"], name: "index_locker_rentals_on_locker_id"
+    t.index ["preferred_locker_id"], name: "index_locker_rentals_on_preferred_locker_id"
     t.index ["rented_by_id"], name: "index_locker_rentals_on_rented_by_id"
     t.index ["repository_id"], name: "index_locker_rentals_on_repository_id"
   end
@@ -1143,21 +1161,6 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_11_182102) do
     t.index ["user_id"], name: "index_space_manager_joins_on_user_id"
   end
 
-  create_table "space_staff_hours", force: :cascade do |t|
-    t.time "start_time"
-    t.time "end_time"
-    t.integer "day"
-    t.bigint "space_id"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.string "language"
-    t.bigint "training_level_id"
-    t.bigint "course_name_id"
-    t.index ["course_name_id"], name: "index_space_staff_hours_on_course_name_id"
-    t.index ["space_id"], name: "index_space_staff_hours_on_space_id"
-    t.index ["training_level_id"], name: "index_space_staff_hours_on_training_level_id"
-  end
-
   create_table "spaces", id: :serial, force: :cascade do |t|
     t.string "name"
     t.datetime "created_at", precision: nil, null: false
@@ -1260,6 +1263,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_11_182102) do
     t.bigint "approved_by_id"
     t.datetime "approved_at"
     t.bigint "recurring_booking_id"
+    t.string "google_booking_id"
     t.index ["approved_by_id"], name: "index_sub_space_bookings_on_approved_by_id"
     t.index ["recurring_booking_id"], name: "index_sub_space_bookings_on_recurring_booking_id"
     t.index ["sub_space_booking_status_id"], name: "index_sub_space_bookings_on_sub_space_booking_status_id"
@@ -1302,14 +1306,6 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_11_182102) do
     t.date "end_date"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-  end
-
-  create_table "training_levels", force: :cascade do |t|
-    t.string "name"
-    t.bigint "space_id", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["space_id"], name: "index_training_levels_on_space_id"
   end
 
   create_table "training_requirements", force: :cascade do |t|
@@ -1565,6 +1561,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_11_182102) do
   add_foreign_key "likes", "repositories"
   add_foreign_key "likes", "users"
   add_foreign_key "locker_rentals", "lockers"
+  add_foreign_key "locker_rentals", "lockers", column: "preferred_locker_id"
   add_foreign_key "locker_rentals", "users", column: "decided_by_id"
   add_foreign_key "locker_rentals", "users", column: "rented_by_id"
   add_foreign_key "memberships", "membership_tiers"
@@ -1593,9 +1590,6 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_11_182102) do
   add_foreign_key "shadowing_hours", "users"
   add_foreign_key "shifts", "spaces"
   add_foreign_key "shifts", "trainings"
-  add_foreign_key "space_staff_hours", "course_names"
-  add_foreign_key "space_staff_hours", "spaces"
-  add_foreign_key "space_staff_hours", "training_levels"
   add_foreign_key "staff_availabilities", "time_periods"
   add_foreign_key "staff_availabilities", "users"
   add_foreign_key "staff_external_unavailabilities", "users"
@@ -1611,7 +1605,6 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_11_182102) do
   add_foreign_key "sub_space_bookings", "users"
   add_foreign_key "sub_space_bookings", "users", column: "approved_by_id"
   add_foreign_key "sub_spaces", "spaces"
-  add_foreign_key "training_levels", "spaces"
   add_foreign_key "training_requirements", "proficient_projects"
   add_foreign_key "training_requirements", "trainings"
   add_foreign_key "training_sessions", "trainings"

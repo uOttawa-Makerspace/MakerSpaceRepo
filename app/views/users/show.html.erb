@@ -8,15 +8,31 @@
       <!--      MORE INFO Section-->
       <div class="profile-work">
         <p>More info</p>
-        <%= fa_icon 'location-arrow', text: @repo_user.location if @repo_user.location.present? %><br />
+        <%= fa_icon 'location-arrow' %> <%= @repo_user.location.presence %><br />
         <%= fa_icon 'clock-o', text: "Joined on #{@repo_user.created_at.to_date.to_fs :long}" %><br />
         <% if @github_username.present? %>
           <%= fa_icon 'github-alt' %>
           <%= link_to @github_username, "https://github.com/#{@github_username}" %><br />
         <% end %>
         <% if @repo_user.url.present? %>
+          <%
+            raw_url = @repo_user.url.to_s.strip
+            raw_url = "https://#{raw_url}" unless raw_url.match?(%r{\Ahttps?://}i)
+            safe_url = begin
+              uri = URI.parse(raw_url)
+              if uri.is_a?(URI::HTTP) || uri.is_a?(URI::HTTPS)
+                uri.to_s
+              else
+                '#'
+              end
+            rescue URI::InvalidURIError
+              '#'
+            end
+          %>
           <%= fa_icon('link') %>
-          <%= link_to @repo_user.url.gsub(%r{\Ahttps?://}, '').to_s, @repo_user.url %> <br />
+          <% if safe_url != '#' %>
+            <%= link_to safe_url.gsub(%r{\Ahttps?://}i, ''), safe_url %> <br />
+          <% end %>
         <% end %>
         <p>Skills</p>
         <% @certifications.each do |certification| %>

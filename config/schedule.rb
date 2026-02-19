@@ -29,6 +29,18 @@ every 1.month do
   rake "increment_year:increment_one_year"
 end
 
+# On staging run sync job. Fetch events from calendar
+if @environment == 'staging'
+  every :sunday, at: '3am' do
+    runner 'GoogleCalendarSyncJob.perform_now'
+  end
+end
+
+# Always register webhook however
+every :sunday, at: '3am' do
+  runner "GoogleCalendar::WebhookRegistrar.register!"
+end
+
 # Send CDEL Reports to sharepoint folder
 # The receiving mail inbox has a 'Power Automation' that grabs all
 # emails with a subject line containing "CDEL Report" from ceedinfo@makerepo.com

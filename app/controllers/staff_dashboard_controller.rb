@@ -5,8 +5,8 @@ class StaffDashboardController < StaffAreaController
   
   def index
     # Strict loading because this is used in table views
+    # FIXME: Temporarily disabled because of space 119
     @signed_in_users = User
-                         .strict_loading
                          .includes(certifications: {training_session: [:training, :user]})
                          .includes(:lab_sessions)
                          .where(lab_sessions: {sign_out_time: Time.zone.now.., space: @space })

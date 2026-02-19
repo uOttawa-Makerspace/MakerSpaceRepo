@@ -9,6 +9,17 @@ RSpec.describe RepositoriesController, type: :controller do
         session[:expires_at] = Time.zone.now + 10_000
       end
 
+      it "should show the repo when logged out (no password)" do
+        session[:user_id] = nil
+        create(:repository)
+        get :show,
+            params: {
+              id: Repository.last.id,
+              user_username: Repository.last.user_username
+            }
+        expect(response).to have_http_status(:success)
+      end
+
       it "should show the repo (no password)" do
         create(:repository)
         get :show,
@@ -128,7 +139,12 @@ RSpec.describe RepositoriesController, type: :controller do
       end
 
       it "should create a repository" do
-        repo_params = FactoryBot.attributes_for(:repository)
+        repo_params = attributes_for(:repository).merge(
+          photos_attributes: [image: fixture_file_upload(
+                                Rails.root.join("spec/support/assets/avatar.png"),
+                                "image/png"
+                              )]
+        )
         expect {
           post :create,
                params: {
@@ -172,8 +188,8 @@ RSpec.describe RepositoriesController, type: :controller do
         }.to change(Repository, :count).by(1)
         expect(Repository.last.users.first.id).to eq(User.last.id)
         expect(User.last.reputation).to eq(25)
-        expect(RepoFile.count).to eq(1)
-        expect(Photo.count).to eq(1)
+        expect(Repository.last.repo_files.count).to eq(1)
+        expect(Repository.last.photos.count).to eq(1)
         expect(response.body).to redirect_to(
           repository_path(
             Repository.last.user_username,
@@ -184,9 +200,18 @@ RSpec.describe RepositoriesController, type: :controller do
       end
 
       it "should create a repository with categories and equipements" do
-        repo_params = FactoryBot.attributes_for(:repository)
-        repo_params[:categories] = ["Laser", "3D Printing"]
-        repo_params[:equipments] = ["Laser Cutter", "3D Printer"]
+        repo_params =
+          attributes_for(:repository).merge(
+            photos_attributes: [
+              image:
+                fixture_file_upload(
+                  Rails.root.join('spec/support/assets/avatar.png'),
+                  'image/png'
+                )
+            ]
+          )
+        repo_params[:categories] = ['Laser', '3D Printing']
+        repo_params[:equipments] = ['Laser Cutter', '3D Printer']
         expect {
           post :create,
                params: {
@@ -208,7 +233,12 @@ RSpec.describe RepositoriesController, type: :controller do
       end
 
       it "should create a private repository" do
-        repo_params = FactoryBot.attributes_for(:repository, :private)
+        repo_params = attributes_for(:repository, :private).merge(
+          photos_attributes: [image: fixture_file_upload(
+                                Rails.root.join("spec/support/assets/avatar.png"),
+                                "image/png"
+                              )]
+        )
         expect {
           post :create,
                params: {
@@ -259,6 +289,7 @@ RSpec.describe RepositoriesController, type: :controller do
       end
 
       it "should update the repository with photos and files" do
+        # This has two images now
         repo = create(:repository, :with_repo_files, users: [@user])
         repo.photos.reload
         repo.repo_files.reload
@@ -305,7 +336,7 @@ RSpec.describe RepositoriesController, type: :controller do
                                  )
         
         expect(repo.repo_files.reload.count).to eq(1)
-        expect(repo.photos.count).to eq(1)
+        expect(repo.photos.count).to eq(2)
       end
 
       it "should create a private repository" do

@@ -46,7 +46,7 @@ class StaffDashboardChannel < ApplicationCable::Channel
     space = Space.find(space_id)
 
     Turbo::StreamsChannel.broadcast_render_to(
-      'signed_in_table',
+      "signed_in_table_space_#{space_id}",
       partial: 'staff_dashboard/table_broadcast',
       locals: {
         space: space,

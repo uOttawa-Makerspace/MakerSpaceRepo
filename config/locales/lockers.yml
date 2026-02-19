@@ -20,24 +20,40 @@ en:
     locker_id: Locker ID
     rented_by: Rented by
     details: Details
-    submitted_on_for: Submitted on
+    submitted_on: Submitted on
     for: for
     paid_on: Paid on
     notes: Notes
 
     state:
       state: State
-      reviewing: Reviewing
+      reviewing: Pending review
       await_payment: Await payment
       active: Active
-      cancelled: Cancelled
+      cancelled: Ended
     assigned_on: Assigned on
     owned_until: Owned until
 
-    new_request: New request
-
     actions:
       cancel_request: Cancel request
+      cancel_request_description: Refuse this request. User will be notified of their request being rejected.
+      end_rental_description: |
+        End this locker rental. User will be notified by email.
+        If given a grace period, they will be informed that they have one week to clear the locker.
+
+    new_request:
+      header: New locker request
+      description_html: |
+        <p>Here you can submit a request for a locker. Lockers are available for uOttawa students and community members.<p>
+        <p>Once your request is sent, we'll review it and check for availability. You will be notified by email once your request is approved and is ready for payment.
+        You may cancel your request at any point untill it is paid, however once paid the locker rental fee is non-refundable.
+            <b>You may have only one pending request at a time.</b></p>
+        <p>You may be approved for a locker free of charge if you are:</p>
+        <ul>
+            <li>a student with a project for GNG1103, GNG2101, or other design courses, or</li>
+            <li>a staff member.</li>
+        </ul>
+        <p>For any questions, contact us at <a href="mailto:ceed@uottawa.ca">ceed@uottawa.ca</a></p>
 fr:
   lockers:
     locker: Casier
@@ -66,13 +82,34 @@ fr:
 
     state:
       state: État
-      reviewing: Révision
+      reviewing: En attente de révision
       await_payment: Attendre le paiement
       active: Active
-      cancelled: Annulée
+      cancelled: Terminée
     assigned_on: Assigné le
     owned_until: Possédée jusqu'à
 
-    new_request: Nouvelle demande
     actions:
       cancel_rental: Annuler la demande
+      cancel_request_description: |
+        Réfuser or annuler cette demande.
+        L'utilisateur sera notifié de l'annulation or réfusal de sa demande.
+        Le casier sera disponible pour une nouvelle affectation.
+      end_rental_description: |
+        Terminer cette location de casier. L'utilisateur sera notifié de l'annulation. Si donné une période de grâce, l'utilisateur sera informé qu'il a une semaine pour vider le casier.
+
+    new_request:
+      header: Nouvelle demande de casier
+      description_html: |
+        <p>Ici vous pouvez demander une caiser. Des casiers sont disponibles pour des étudiants de uOttawa et les members de la communauté.</p>
+        <p>Dès que votre demande est envoyée, nous l'exameinerons et verifierons de la disponibilité.
+        Vous serez notifié par courriel quand votre demande est approuvé et est prêt pour la payement.
+        Vous pouvez annuler la demande à tout moment, cependant après la payement la frais de la location de casier est non-remboursable.
+        <b>Vous pouvez avoir juste une seule demande active à la fois.</b></p>
+
+        <p>Vouz pouvez être approuvé pour une caiser sans frais si vous êtes:</p>
+        <ul>
+            <li>un étudiant avec un projet pour GNG1503, GNG2501, ou une autre cours de conception, ou</li>
+            <li>un membre du personnel.</li>
+        </ul>
+        <p>Si vous avez de questions, contactez-nous à <a href="mailto:ceed@uottawa.ca">ceed@uottawa.ca</a></p>

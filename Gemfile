@@ -1,16 +1,16 @@
 # frozen_string_literal: true
 
 source "https://rubygems.org"
-ruby "3.4.7"
+ruby "3.4.8"
 gem "rails", "~> 7.2.0"
 
 # no longer standard since 3.4
 gem "abbrev"
 gem "csv"
 
+gem "sitemap_generator", "~> 6.3"
 gem "airbrake"
 gem "bootsnap", require: false
-gem "aws-sdk", "~> 3.0"
 gem "aws-sdk-s3", require: false
 gem "bcrypt", "~> 3.1"
 gem "caxlsx", "~> 3.3.0"
@@ -18,12 +18,11 @@ gem "chartkick"
 gem "clipboard-rails"
 gem "concurrent-ruby", "~> 1.1", ">= 1.1.6"
 gem "excon"
-gem "faraday", "~> 0.17.0"
 gem 'fastimage', '~> 2.4'
 gem "file_validators"
 gem "font-awesome-rails", "~> 4.7.0.9"
 gem "google-api-client", "~> 0.53.0", require: ["google/apis/calendar_v3"]
-gem "googleauth", "~> 0.15.0"
+gem "googleauth"
 gem "graphlient"
 gem "groupdate"
 gem 'icalendar'
@@ -33,7 +32,7 @@ gem "kaminari"
 gem "mocha"
 gem "net-ssh"
 gem "nobspw_rails7"
-gem "octokit", "~> 4.21.0"
+gem "octokit"
 gem "pg", "~> 1.6"
 gem "prettier_print"
 gem "pry", "~> 0.15"
@@ -45,7 +44,7 @@ gem "roo", "~> 2.10.0"
 gem "roo-xls"
 gem 'rrule'
 gem "rubyzip", "~> 2.1", require: "zip"
-gem "saml_idp", "~> 0.9.0"
+gem "saml_idp", "~> 1.0"
 gem "sass-rails", "~> 6.0.0"
 gem "sdoc", "~> 1.1.0", group: :doc
 gem "shopify_app", "~> 22.5"
@@ -82,6 +81,12 @@ group :development, :test do
   gem "rspec-rails", "~> 7.1.0"
   gem "spring", "~> 4.1.0"
   gem "spring-watcher-listen", "~> 2.1.0"
+  gem 'brakeman', require: false          # Static analysis
+  gem 'bundler-audit', require: false     # Dependency vulnerabilities
+  gem 'ruby_audit', require: false        # Ruby vulnerabilities
+  gem 'rails_best_practices', require: false
+  gem 'bullet'                            # N+1 and security issues
+  gem "faraday-retry", "~> 2.4"
 end
 
 group :development do
@@ -98,6 +103,9 @@ group :development do
   gem "web-console"
   gem "ruby-prof" # profiling
 
+  gem "solargraph", require: false
+  gem "solargraph-rails", require: false
+  
   # ssh deploymentque
   gem "bcrypt_pbkdf", "~> 1.0"
   gem "ed25519", "~> 1.2"

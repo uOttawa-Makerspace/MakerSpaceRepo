@@ -313,15 +313,15 @@ Rails.application.routes.draw do
       post "/edit/:id",
            as: "change_sub_space_default_public",
            action: "change_sub_space_default_public"
+      patch "/edit/:id/rename", 
+           as: "update_sub_space", 
+           action: "update_sub_space"
 
       collection do
         post :update_max_capacity
         patch :update_keycode
         patch :add_space_manager
         patch :remove_space_manager
-        post :add_space_hours
-        delete :delete_space_hour
-        post :add_training_levels
         put :update_staff_needed_calendars
       end
     end
@@ -447,6 +447,7 @@ Rails.application.routes.draw do
     end
 
     resources :memberships, only: [:index, :update]
+    
   end
   # For singular routes
   resolve('DesignDay') {[:admin, :design_day]}
@@ -533,6 +534,8 @@ Rails.application.routes.draw do
       get :get_sub_space_booking
     end
   end
+
+  post "/google/calendar/webhook", to: "google_calendar#webhook"
 
   resources :development_programs, only: [:index] do
     collection do
@@ -685,22 +688,22 @@ Rails.application.routes.draw do
 
   # REPOSITORY RESOURCES
   # /:user_username/:id.title-is-ignored
+  # This is disabled because the username has no effect on finding repositories
+  # Usernames can change, and we ran a mass rename migration
+  # Cool URLs dont break however, so we'll just ignore the username for now...
+  # User.find_by(username: request.params[:user_username]).present?
+  # constraints:
+  #   lambda { |request|
+  #     begin
+  #       Repository.find(request.params[:id])
+  #     rescue StandardError
+  #       false
+  #     end
+  #   }
   resources :repositories,
             path: '/:user_username',
             param: :id,
-            except: :index,
-            # This is disabled because the username has no effect on finding repositories
-            # Usernames can change, and we ran a mass rename migration
-            # Cool URLs dont break however, so we'll just ignore the username for now...
-            # User.find_by(username: request.params[:user_username]).present?
-            constraints:
-              lambda { |request|
-                begin
-                  Repository.find(request.params[:id])
-                rescue StandardError
-                  false
-                end
-              } do
+            except: :index do
     post 'add_like', on: :member
     collection do
       get ':id/download_files',

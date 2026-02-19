@@ -12,8 +12,8 @@ class Space < ApplicationRecord
   has_many :volunteer_tasks, dependent: :destroy
   has_many :popular_hours, dependent: :destroy
   has_many :shadowing_hours
-  has_many :users
-  has_many :staff_spaces
+  has_many :users, dependent: :nullify
+  has_many :staff_spaces, dependent: :destroy
   has_many :space_staff_hour
   has_many :shifts, dependent: :destroy
   has_many :sub_spaces, dependent: :destroy

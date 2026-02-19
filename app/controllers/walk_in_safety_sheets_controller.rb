@@ -36,7 +36,7 @@ class WalkInSafetySheetsController < SessionsController
     unless params[:agreement] ==
              WalkInSafetySheetsController.complete_agreements
       render :show,
-             status: :unprocessable_entity,
+             status: :unprocessable_content,
              notice: 'Please agree to all terms before signing'
       return
     end
@@ -44,7 +44,7 @@ class WalkInSafetySheetsController < SessionsController
     if @walk_in_safety_sheet.save
       render :show, status: :created # HTTP 201 reloads page
     else
-      render :show, status: :unprocessable_entity
+      render :show, status: :unprocessable_content
     end
   end
 
@@ -56,7 +56,7 @@ class WalkInSafetySheetsController < SessionsController
       # The actual path is weird, we give the space ID instead
       redirect_to walk_in_safety_sheet_path(@walk_in_safety_sheet.space_id)
     else
-      render :show, status: :unprocessable_entity
+      render :show, status: :unprocessable_content
     end
   end
 
