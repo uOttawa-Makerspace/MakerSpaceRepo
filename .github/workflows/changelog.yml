@@ -1,0 +1,112 @@
+name: Generate Changelog
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - master
+
+jobs:
+  changelog:
+    if: >
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.head.ref == 'staging'
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: master
+
+      # Get the previous tag to determine the range
+      - name: Get Previous Tag
+        id: previoustag
+        run: |
+          TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      # Generate a new version tag
+      - name: Bump Version
+        id: version
+        run: |
+          # Simple date-based versioning; replace with semver if preferred
+          VERSION="v$(date +'%Y.%m.%d-%H%M%S')"
+          echo "new_tag=$VERSION" >> $GITHUB_OUTPUT
+
+      # Build the changelog from merged PRs between tags
+      - name: Build Changelog
+        id: changelog
+        uses: mikepenz/release-changelog-builder-action@v4
+        with:
+          fromTag: ${{ steps.previoustag.outputs.tag }}
+          toTag: master
+          configurationJson: |
+            {
+              "categories": [
+                {
+                  "title": "## 🚀 Features",
+                  "labels": ["feature", "enhancement"]
+                },
+                {
+                  "title": "## 🐛 Bug Fixes",
+                  "labels": ["bug", "fix"]
+                },
+                {
+                  "title": "## 🧪 Tests",
+                  "labels": ["test"]
+                },
+                {
+                  "title": "## 📦 Other Changes",
+                  "labels": []
+                }
+              ],
+              "template": "#changelog\n\n#{{CHANGELOG}}\n\n**Full Changelog**: #{{RELEASE_DIFF}}",
+              "pr_template": "- #{{TITLE}} (##{{NUMBER}}) by @#{{AUTHOR}}"
+            }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Prepend to CHANGELOG.md
+      - name: Update CHANGELOG.md
+        run: |
+          TAG="${{ steps.version.outputs.new_tag }}"
+          DATE=$(date +'%Y-%m-%d')
+
+          ENTRY="# ${TAG} (${DATE})
+
+          ${{ steps.changelog.outputs.changelog }}
+
+          ---
+          "
+
+          if [ -f CHANGELOG.md ]; then
+            echo "$ENTRY" | cat - CHANGELOG.md > temp && mv temp CHANGELOG.md
+          else
+            echo "$ENTRY" > CHANGELOG.md
+          fi
+
+      - name: Commit Changelog
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git diff --staged --quiet || {
+            git commit -m "docs: update CHANGELOG.md [skip ci]"
+            git push origin master
+          }
+
+      # Also create a GitHub Release
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.new_tag }}
+          body: ${{ steps.changelog.outputs.changelog }}
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
