@@ -171,12 +171,9 @@ step: params[:step]))
   def submit_for_approval
     return if @job_order.job_order_statuses.last&.job_status != JobStatus::DRAFT
 
-    # List job types that don't require a service
-    job_types_without_service = ["Design Services", "Fabrication or manufacturing services"]
-
     @tasks_missing_information = @job_order.job_tasks.select do |task|
       task.job_type.blank? ||
-        (!job_types_without_service.include?(task.job_type.name) && task.job_service.blank?)
+        (task.job_type.job_service_groups.any? && task.job_service.blank?)
     end
     return if @tasks_missing_information.any?
 
