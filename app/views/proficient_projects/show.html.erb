@@ -67,7 +67,9 @@
                     <%= sanitize @proficient_project.description %>
                 </div>
                 <div id="show-photo">
-                    <%= image_tag @photos.first.image, alt: 'Proficient Project Image', data: { width: @photos.first.try(:width), height: @photos.first.try(:height) } %>
+                    <% if @photos.present? && @photos.first %>
+                        <%= image_tag @photos.first.image, alt: 'Proficient Project Image', data: { width: @photos.first.try(:width), height: @photos.first.try(:height) } %>
+                    <% end %>
                 </div>
                 <div id="photo-slide">
                     <% @photos.each do |p| %>

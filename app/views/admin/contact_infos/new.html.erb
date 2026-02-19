@@ -37,13 +37,18 @@
               </div>
 
               <div class="mb-3">
-                <%= f.fields_for :opening_hour do |h| %>
-                  <%= h.label :students, 'Opening Hours for Students', class: 'form-label' %>
-                  <%= h.trix_editor :students, class: 'repo form-control', style: 'height: auto!important;' %>
-                  <%= h.label :public, 'Opening Hours for the public', class: 'form-label' %>
-                  <%= h.trix_editor :public, class: 'repo form-control', style: 'height: auto!important;' %>
-                  <%= h.label :summer, 'Opening Hours for Summer', class: 'form-label' %>
-                  <%= h.trix_editor :summer, class: 'repo form-control', style: 'height: auto!important;' %>
+                <%= f.fields_for :opening_hours do |h| %>
+                  <%= h.label :target_en, 'Target Audience (English)', class: 'form-label' %>
+                  <%= h.trix_editor :target_en, class: 'repo form-control', style: 'height: auto!important;' %>
+
+                  <%= h.label :target_fr, 'Target Audience (French)', class: 'form-label' %>
+                  <%= h.trix_editor :target_fr, class: 'repo form-control', style: 'height: auto!important;' %>
+
+                  <%= h.label :notes_en, 'Notes (English)', class: 'form-label' %>
+                  <%= h.trix_editor :notes_en, class: 'repo form-control', style: 'height: auto!important;' %>
+
+                  <%= h.label :notes_fr, 'Notes (French)', class: 'form-label' %>
+                  <%= h.trix_editor :notes_fr, class: 'repo form-control', style: 'height: auto!important;' %>
                 <% end %>
               </div>
 

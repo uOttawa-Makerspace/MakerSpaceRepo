@@ -40,7 +40,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
         admin = create(:user, :admin)
         session[:user_id] = admin.id
         session[:expires_at] = Time.zone.now + 10_000
-        create(:proficient_project)
+        create(:proficient_project, :with_files)
         get :show, params: { id: ProficientProject.last.id }
         expect(response).to have_http_status(:success)
       end
@@ -51,8 +51,20 @@ RSpec.describe ProficientProjectsController, type: :controller do
         session[:expires_at] = Time.zone.now + 10_000
         OrderStatus.find_or_create_by(name: "Completed")
         create(:order_item, :awarded)
+
+        project = ProficientProject.last
+
+        # Create photo
+        photo = project.photos.new(width: 100, height: 100)
+        photo.image.attach(
+          io: File.open(Rails.root.join("spec/support/assets/avatar.png")),
+          filename: "avatar.png",
+          content_type: "image/png"
+        )
+        photo.save!
+
         Order.last.update(user_id: user.id)
-        get :show, params: { id: ProficientProject.last.id }
+        get :show, params: { id: project.id }
         expect(response).to have_http_status(:success)
       end
 
