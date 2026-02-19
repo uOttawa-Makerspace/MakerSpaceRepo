@@ -3,6 +3,18 @@
 <h1 class="text-center pt-3"><%= t('lockers.new_request.header') %></h1>
 <hr class="w-50 mx-auto" />
 <%= t('lockers.new_request.description_html') %>
+Current prices are:
+<table>
+    <% LockerSize.find_each do |size| %>
+        <tbody>
+            <tr>
+                <td><%= @locker_product_info[:variants][size.shopify_gid][:sku] %></td>
+                <td><%= size.size %></td>
+                <td><%= @locker_product_info[:variants][size.shopify_gid][:price] %></td>
+            </tr>
+        </tbody>
+    <% end %>
+</table>
 <hr />
 <% if !LockerOption.lockers_enabled %>
     Locker requests are not currently accepted.

@@ -1,408 +1,304 @@
 <% provide :title, t('lockers.view_locker_request') %>
 
 <%
-  status_color = if @locker_rental.cancelled?
- 'danger'
-                 elsif @locker_rental.expired?
- 'warning'
-                 elsif @locker_rental.active?
- 'success'
-                 elsif @locker_rental.await_payment?
- 'info'
-                 else
-                   'secondary'
-                 end
+status_color = if @locker_rental.cancelled?
+'danger'
+elsif @locker_rental.expired?
+    'warning'
+elsif @locker_rental.active?
+    'success'
+elsif @locker_rental.await_payment?
+    'info'
+else
+    'secondary'
+end
 %>
 
 <%# ── Header ── %>
 <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4">
-  <div>
-    <div class="mb-1">
-      <%= link_to(current_user.staff? ? admin_locker_rentals_path : locker_rentals_path,
-                  class: 'text-muted text-decoration-none') do %>
-        <i class="fa fa-arrow-left me-1"></i> All Requests
-      <% end %>
+    <div>
+        <div class="mb-1">
+            <%= link_to(current_user.staff? ? admin_locker_rentals_path : locker_rentals_path,
+                        class: 'text-muted text-decoration-none') do %>
+                <i class="fa fa-arrow-left me-1"></i> All Requests
+            <% end %>
+        </div>
+        <h1 class="mb-1"><%= t('lockers.locker_request') %></h1>
+        <span class="text-muted fs-5">Request #<%= @locker_rental.id %></span>
     </div>
-    <h1 class="mb-1"><%= t('lockers.locker_request') %></h1>
-    <span class="text-muted fs-5">Request #<%= @locker_rental.id %></span>
-  </div>
 
-  <div class="mt-3 mt-md-0 text-md-end">
-    <span class="badge rounded-pill bg-<%= status_color %> fs-6 px-3 py-2">
-      <% if @locker_rental.expired? %>
-        <%= fa_icon 'exclamation-triangle', text: 'Expired' %>
-      <% elsif @locker_rental.cancelled? %>
-        <%= fa_icon 'times-circle', text: 'Cancelled' %>
-      <% elsif @locker_rental.active? %>
-        <%= fa_icon 'check-circle', text: 'Active' %>
-      <% elsif @locker_rental.await_payment? %>
-        <%= fa_icon 'credit-card', text: 'Awaiting Payment' %>
-      <% else %>
-        <%= fa_icon 'hourglass-half', text: t("lockers.state.#{@locker_rental.state}") %>
-      <% end %>
-    </span>
-    <div class="text-muted mt-1">
-      <%= t('lockers.submitted_on') %> <%= @locker_rental.created_at.to_date.to_fs(:long) %>
+    <div class="mt-3 mt-md-0 text-md-end">
+        <span class="badge rounded-pill bg-<%= status_color %> fs-6 px-3 py-2">
+            <% if @locker_rental.expired? %>
+                <%= fa_icon 'exclamation-triangle', text: 'Expired' %>
+            <% elsif @locker_rental.cancelled? %>
+                <%= fa_icon 'times-circle', text: 'Cancelled' %>
+            <% elsif @locker_rental.active? %>
+                <%= fa_icon 'check-circle', text: 'Active' %>
+            <% elsif @locker_rental.await_payment? %>
+                <%= fa_icon 'credit-card', text: 'Awaiting Payment' %>
+            <% else %>
+                <%= fa_icon 'hourglass-half', text: t("lockers.state.#{@locker_rental.state}") %>
+            <% end %>
+        </span>
+        <div class="text-muted mt-1">
+            <%= t('lockers.submitted_on') %> <%= @locker_rental.created_at.to_date.to_fs(:long) %>
+        </div>
     </div>
-  </div>
 </div>
 
 <div class="row g-4">
-  <%# ── LEFT COLUMN ── %>
-  <div class="col-lg-7">
+    <%# ── LEFT COLUMN ── %>
+    <div class="col-lg-7">
 
-    <%# ── Requester ── %>
-    <div class="card shadow-sm mb-4">
-      <div class="card-header bg-white">
-        <h5 class="card-title mb-0"><%= fa_icon :user, class: 'text-muted me-2' %>Requester</h5>
-      </div>
-      <ul class="list-group list-group-flush">
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          <span class="text-muted">Name</span>
-          <span>
-            <%= link_to @locker_rental.rented_by.username, user_url(@locker_rental.rented_by.username) %>
-            <% if @locker_rental.rented_by.staff? %>
-              <span class="badge text-bg-primary ms-1"><%= @locker_rental.rented_by.role.humanize %></span>
-            <% end %>
-          </span>
-        </li>
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          <span class="text-muted">Requested as</span>
-          <span class="fw-medium"><%= @locker_rental.requested_as&.humanize %></span>
-        </li>
-        <% if current_user.staff? %>
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            <span class="text-muted">Contact</span>
-            <%= mail_to @locker_rental.rented_by.email, @locker_rental.rented_by.email %>
-          </li>
-        <% end %>
-        <% if @locker_rental.requested_as_student? %>
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            <span class="text-muted">Team</span>
-            <span class="fw-medium">
-              <%= @locker_rental.team_name.presence || tag.span('Not provided', class: 'text-muted fst-italic') %>
-            </span>
-          </li>
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            <span class="text-muted">Course / Section</span>
-            <span class="fw-medium">
-              <%= @locker_rental.course_name&.name.presence || tag.span('Not provided', class: 'text-muted fst-italic') %>
-              <% if @locker_rental.section_name.present? %>
-                <span class="text-muted mx-1">/</span> <%= @locker_rental.section_name %>
-              <% end %>
-            </span>
-          </li>
-        <% end %>
-      </ul>
-    </div>
-
-    <%# ── Locker Details ── %>
-    <div class="card shadow-sm mb-4">
-      <div class="card-header bg-white">
-        <h5 class="card-title mb-0"><%= fa_icon :lock, class: 'text-muted me-2' %>Locker Details</h5>
-      </div>
-      <ul class="list-group list-group-flush">
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          <span class="text-muted">Locker</span>
-          <span>
-            <% if @locker_rental.locker %>
-              <%= link_to "Locker #{@locker_rental.locker.specifier}", locker_path(@locker_rental.locker), class: 'fw-bold' %>
-              <% if @locker_rental.reserves_locker? %>
-                <span class="badge bg-success ms-1">Assigned</span>
-              <% else %>
-                <span class="badge bg-secondary ms-1">Previously held</span>
-              <% end %>
-            <% elsif @locker_rental.reviewing? && @locker_rental.preferred_locker %>
-              <%= link_to "Locker #{@locker_rental.preferred_locker.specifier}", locker_path(@locker_rental.preferred_locker), class: 'fw-bold' %>
-              <span class="badge bg-warning text-dark ms-1">Preferred — pending assignment</span>
-            <% elsif @locker_rental.reviewing? %>
-              <span class="text-muted fst-italic">No preference — pending assignment</span>
-            <% else %>
-              <span class="text-muted fst-italic">None</span>
-            <% end %>
-          </span>
-        </li>
-        <% if @locker_rental.decided_by %>
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            <span class="text-muted">Approved by</span>
-            <%= link_to @locker_rental.decided_by.name, user_url(@locker_rental.decided_by.username) %>
-          </li>
-        <% end %>
-        <% if @locker_rental.owned_until %>
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            <span class="text-muted">Owned until</span>
-            <span class="fw-medium"><%= @locker_rental.owned_until.to_fs(:long) %></span>
-          </li>
-        <% end %>
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          <span class="text-muted">Payment</span>
-          <span>
-            <% if @locker_rental.paid_at %>
-              <span class="text-success fw-semibold">
-                <%= fa_icon 'check-circle' %> Paid on <%= @locker_rental.paid_at.to_date.to_fs(:long) %>
-              </span>
-            <% else %>
-              <span class="text-warning fw-semibold">
-                <%= fa_icon 'exclamation-circle' %> Unpaid
-              </span>
-              <% if @locker_rental.await_payment? && current_user.staff? %>
-                <button class="btn btn-outline-primary ms-2">
-                  <%= fa_icon :envelope, text: 'Send reminder' %>
-                </button>
-              <% end %>
-            <% end %>
-          </span>
-        </li>
-      </ul>
-    </div>
-
-    <%# ── Notes ── %>
-    <% if @locker_rental.notes.present? %>
-      <div class="card shadow-sm mb-4">
-        <div class="card-header bg-white">
-          <h5 class="card-title mb-0"><%= fa_icon 'sticky-note', class: 'text-muted me-2' %><%= t('lockers.notes') %></h5>
-        </div>
-        <div class="card-body">
-          <%= simple_format(@locker_rental.notes) %>
-        </div>
-      </div>
-    <% end %>
-  </div>
-
-  <%# ── RIGHT COLUMN ── %>
-  <div class="col-lg-5">
-
-    <%# ── Active rental expiration ── %>
-    <% if @locker_rental.active? %>
-      <div class="card shadow-sm mb-4 border-<%= @locker_rental.expired? ? 'danger' : 'success' %> border-2">
-        <div class="card-body text-center py-4">
-          <div class="mb-3">
-            <% if @locker_rental.expired? %>
-              <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-danger bg-opacity-10 text-danger"
-                    style="width: 72px; height: 72px;">
-                <i class="fa fa-clock-o fa-2x"></i>
-              </span>
-            <% else %>
-              <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-success bg-opacity-10 text-success"
-                    style="width: 72px; height: 72px;">
-                <i class="fa fa-calendar-check-o fa-2x"></i>
-              </span>
-            <% end %>
-          </div>
-
-          <div class="text-muted text-uppercase fw-semibold mb-1">
-            <%= @locker_rental.expired? ? 'Rental expired' : 'Rental expires' %>
-          </div>
-          <div class="fs-3 fw-bold mb-2">
-            <%= @locker_rental.owned_until.to_date.to_fs(:long) %>
-          </div>
-          <div>
-            <% if @locker_rental.expired? %>
-              <span class="text-danger fw-medium">
-                Expired <%= time_ago_in_words(@locker_rental.owned_until.to_date) %> ago
-              </span>
-              <% if @locker_rental.notified_of_cancellation %>
-                <br><span class="text-muted mt-1 d-block"><%= fa_icon :envelope %> Cancellation notice sent</span>
-              <% end %>
-            <% else %>
-              <span class="text-success fw-medium">
-                <%= time_ago_in_words(@locker_rental.owned_until.to_date) %> remaining
-              </span>
-            <% end %>
-          </div>
-        </div>
-      </div>
-    <% end %>
-
-    <%# ── Expired / Cancelled alerts ── %>
-    <% if @locker_rental.expired? && !@locker_rental.active? %>
-      <div class="alert alert-warning shadow-sm" role="alert">
-        <div class="d-flex align-items-start gap-2">
-          <%= fa_icon 'exclamation-triangle', class: 'mt-1' %>
-          <div>
-            <strong>Expired</strong> <%= time_ago_in_words(@locker_rental.expired_since) %> ago
-            <% if @locker_rental.notified_of_cancellation %>
-              — cancellation notification sent by email.
-            <% else %>
-              — <strong class="text-danger">no notification sent</strong>.
-            <% end %>
-          </div>
-        </div>
-      </div>
-    <% end %>
-
-    <% if @locker_rental.cancelled? && @locker_rental.cancelled_at %>
-      <div class="alert alert-danger shadow-sm" role="alert">
-        <div class="d-flex align-items-start gap-2">
-          <%= fa_icon 'times-circle', class: 'mt-1' %>
-          <div>Cancelled on <strong><%= @locker_rental.cancelled_at.to_fs(:long) %></strong></div>
-        </div>
-      </div>
-    <% end %>
-
-    <%# ── Pending user actions ── %>
-    <% if @locker_rental.pending? %>
-
-      <% if @locker_rental.reviewing? %>
-        <div class="card shadow-sm mb-4 border-start border-4 border-secondary">
-          <div class="card-body">
-            <div class="d-flex align-items-center gap-2 mb-2">
-              <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-secondary bg-opacity-10 text-secondary"
-                    style="width: 40px; height: 40px;">
-                <i class="fa fa-hourglass-half"></i>
-              </span>
-              <h5 class="mb-0">Pending Review</h5>
+        <%# ── Requester ── %>
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0"><%= fa_icon :user, class: 'text-muted me-2' %>Requester</h5>
             </div>
-            <p class="text-muted mb-0">
-              This request hasn't been reviewed yet. You'll be notified once a decision is made.
-            </p>
-          </div>
-        </div>
-      <% end %>
-
-      <% if @locker_rental.await_payment? %>
-        <div class="card shadow-sm mb-4 border-start border-4 border-info">
-          <div class="card-body">
-            <div class="d-flex align-items-center gap-2 mb-2">
-              <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-info bg-opacity-10 text-info"
-                    style="width: 40px; height: 40px;">
-                <i class="fa fa-credit-card"></i>
-              </span>
-              <h5 class="mb-0">Ready for Payment</h5>
-            </div>
-            <p class="text-muted mb-3">
-              Your locker has been approved! Complete payment to finalize the assignment.
-            </p>
-            <%= link_to @locker_rental.checkout_link, class: 'btn btn-info btn-lg w-100' do %>
-              <%= fa_icon 'external-link', text: 'Proceed to Checkout' %>
-            <% end %>
-          </div>
-        </div>
-      <% end %>
-
-      <div class="card shadow-sm mb-4">
-        <div class="card-body">
-          <h6 class="text-danger mb-2"><%= fa_icon 'exclamation-circle', text: 'Cancel Request' %></h6>
-          <p class="text-muted mb-3">
-            You may cancel before paying the rental fee. The locker rental fee is <strong>non-refundable</strong>.
-          </p>
-          <%= form_with model: @locker_rental do |f| %>
-            <%= f.hidden_field :state, value: 'cancelled' %>
-            <%= f.button class: 'btn btn-outline-danger w-100',
-                         data: { confirm: 'Are you sure you want to cancel this locker request?' } do %>
-              <%= fa_icon 'times', text: 'Cancel Request' %>
-            <% end %>
-          <% end %>
-        </div>
-      </div>
-    <% end %>
-  </div>
-</div>
-
-<%# ── STAFF ACTIONS ── %>
-<% if current_user.staff? %>
-  <hr class="my-5" />
-
-  <div class="card shadow-sm border-0 bg-light">
-    <div class="card-header bg-dark text-white d-flex align-items-center gap-2">
-      <%= fa_icon :shield, class: 'fs-5' %>
-      <h5 class="mb-0">Staff Actions</h5>
-    </div>
-
-    <div class="card-body">
-      <%= form_with model: @locker_rental do |f| %>
-        <% unless @locker_rental.cancelled? %>
-          <div class="row g-3 mb-4">
-            <div class="col-md-6">
-              <label class="form-label fw-semibold">Assign Locker</label>
-              <%= f.select :locker_id,
-                    Locker.available.order_by_specifier.map { |locker|
-                      [locker.specifier, locker.id, { data: { size: locker.locker_size.size } }]
-                    },
-                    { include_blank: '— Select a locker —' },
-                    { class: 'form-select' } %>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-semibold">Owned until</label>
-              <%= f.date_field :owned_until,
-                    value: @locker_rental.owned_until || end_of_this_semester,
-                    class: 'form-control' %>
-            </div>
-          </div>
-
-          <div class="row g-3">
-            <% if @locker_rental.reviewing? %>
-              <div class="col-md-4">
-                <div class="card h-100 border-success">
-                  <div class="card-body d-flex flex-column">
-                    <h6 class="card-title text-success">
-                      <%= fa_icon 'paper-plane', text: 'Send to Checkout' %>
-                    </h6>
-                    <p class="card-text text-muted flex-grow-1">
-                      Notify the user by email that their locker is approved and ready for payment.
-                      The locker will be assigned automatically once paid.
-                    </p>
-                    <%= f.button name: 'locker_rental[state]', value: 'await_payment',
-                          class: 'btn btn-success w-100 mt-auto',
-                          data: { confirm: 'Send payment notification to the user?' } do %>
-                      <%= fa_icon 'paper-plane', text: 'Send to Checkout' %>
-                    <% end %>
-                  </div>
-                </div>
-              </div>
-            <% end %>
-
-            <div class="col-md-4">
-              <div class="card h-100 border-info">
-                <div class="card-body d-flex flex-column">
-                  <h6 class="card-title text-info">
-                    <%= fa_icon 'bolt', text: (@locker_rental.active? ? 'Move Locker' : 'Assign Now') %>
-                  </h6>
-                  <p class="card-text text-muted flex-grow-1">
-                    Immediately assign or move a locker without requiring payment.
-                    The user will receive an email notification.
-                  </p>
-                  <%= f.button name: 'locker_rental[state]', value: 'active',
-                        class: 'btn btn-info w-100 mt-auto',
-                        data: { confirm: 'Assign this locker immediately?' } do %>
-                    <%= fa_icon 'bolt', text: (@locker_rental.active? ? 'Move Locker' : 'Assign Now') %>
-                  <% end %>
-                </div>
-              </div>
-            </div>
-
-            <% unless @locker_rental.cancelled? %>
-              <div class="col-md-4">
-                <div class="card h-100 border-danger">
-                  <div class="card-body d-flex flex-column">
-                    <h6 class="card-title text-danger">
-                      <%= fa_icon 'ban', text: (@locker_rental.active? ? 'End Rental' : 'Cancel Request') %>
-                    </h6>
-                    <p class="card-text text-muted flex-grow-1">
-                        <% if @locker_rental.active? %>
-                            <%= t('lockers.actions.end_rental_description') %>
-                        <% else %>
-                            <%= t('lockers.actions.cancel_request_description') %>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span class="text-muted">Name</span>
+                    <span>
+                        <%= link_to @locker_rental.rented_by.username, user_url(@locker_rental.rented_by.username) %>
+                        <% if @locker_rental.rented_by.staff? %>
+                            <span class="badge text-bg-primary ms-1"><%= @locker_rental.rented_by.role.humanize %></span>
                         <% end %>
-                    </p>
-                    <%= f.button name: 'locker_rental[state]', value: 'cancelled',
-                     class: 'btn btn-outline-danger w-100 mt-auto',
-                     data: { confirm: 'Are you sure you want to cancel this locker?' } do %>
-                        <% if @locker_rental.active? %>
-                            <%= fa_icon 'ban', text: 'End Rental' %>
+                    </span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span class="text-muted">Requested as</span>
+                    <span class="fw-medium"><%= @locker_rental.requested_as&.humanize %></span>
+                </li>
+                <% if current_user.staff? %>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Contact</span>
+                        <%= mail_to @locker_rental.rented_by.email, @locker_rental.rented_by.email %>
+                    </li>
+                <% end %>
+                <% if @locker_rental.requested_as_student? %>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Team</span>
+                        <span class="fw-medium">
+                            <%= @locker_rental.team_name.presence || tag.span('Not provided', class: 'text-muted fst-italic') %>
+                        </span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Course / Section</span>
+                        <span class="fw-medium">
+                            <%= @locker_rental.course_name&.name.presence || tag.span('Not provided', class: 'text-muted fst-italic') %>
+                            <% if @locker_rental.section_name.present? %>
+                                <span class="text-muted mx-1">/</span> <%= @locker_rental.section_name %>
+                            <% end %>
+                        </span>
+                    </li>
+                <% end %>
+            </ul>
+        </div>
+
+        <%# ── Locker Details ── %>
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0"><%= fa_icon :lock, class: 'text-muted me-2' %>Locker Details</h5>
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span class="text-muted">Locker</span>
+                    <span>
+                        <% if @locker_rental.locker %>
+                            <%= link_to "Locker #{@locker_rental.locker.specifier}", locker_path(@locker_rental.locker), class: 'fw-bold' %>
+                            <% if @locker_rental.reserves_locker? %>
+                                <span class="badge bg-success ms-1">Assigned</span>
+                            <% else %>
+                                <span class="badge bg-secondary ms-1">Previously held</span>
+                            <% end %>
+                        <% elsif @locker_rental.reviewing? && @locker_rental.preferred_locker %>
+                            <%= link_to "Locker #{@locker_rental.preferred_locker.specifier}", locker_path(@locker_rental.preferred_locker), class: 'fw-bold' %>
+                            <span class="badge bg-warning text-dark ms-1">Preferred — pending assignment</span>
+                        <% elsif @locker_rental.reviewing? %>
+                            <span class="text-muted fst-italic">No preference — pending assignment</span>
                         <% else %>
+                            <span class="text-muted fst-italic">None</span>
+                        <% end %>
+                    </span>
+                </li>
+                <% if @locker_rental.decided_by %>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Approved by</span>
+                        <%= link_to @locker_rental.decided_by.name, user_url(@locker_rental.decided_by.username) %>
+                    </li>
+                <% end %>
+                <% if @locker_rental.owned_until %>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Owned until</span>
+                        <span class="fw-medium"><%= @locker_rental.owned_until.to_fs(:long) %></span>
+                    </li>
+                <% end %>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span class="text-muted">Payment</span>
+                    <span>
+                        <% if @locker_rental.paid_at %>
+                            <span class="text-success fw-semibold">
+                                <%= fa_icon 'check-circle' %> Paid on <%= @locker_rental.paid_at.to_date.to_fs(:long) %>
+                            </span>
+                        <% else %>
+                            <b>Unpaid</b>
+                            <% if @locker_rental.await_payment? && current_user.staff? %>
+                                <button class="btn btn-outline-primary ms-2">
+                                    <%= fa_icon :envelope, text: 'Send reminder' %>
+                                </button>
+                            <% end %>
+                        <% end %>
+                    </span>
+                </li>
+            </ul>
+        </div>
+
+        <%# ── Notes ── %>
+        <% if @locker_rental.notes.present? %>
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0"><%= fa_icon 'sticky-note', class: 'text-muted me-2' %><%= t('lockers.notes') %></h5>
+                </div>
+                <div class="card-body">
+                    <%= simple_format(@locker_rental.notes) %>
+                </div>
+            </div>
+        <% end %>
+    </div>
+
+    <%# ── RIGHT COLUMN ── %>
+    <div class="col-lg-5">
+
+        <%# ── Active rental expiration ── %>
+        <% if @locker_rental.active? %>
+            <div class="card shadow-sm mb-4 border-<%= @locker_rental.expired? ? 'danger' : 'success' %> border-2">
+                <div class="card-body text-center py-4">
+                    <div class="mb-3">
+                        <% if @locker_rental.expired? %>
+                            <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-danger bg-opacity-10 text-danger"
+                                  style="width: 72px; height: 72px;">
+                                <i class="fa fa-clock-o fa-2x"></i>
+                            </span>
+                        <% else %>
+                            <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-success bg-opacity-10 text-success"
+                                  style="width: 72px; height: 72px;">
+                                <i class="fa fa-calendar-check-o fa-2x"></i>
+                            </span>
+                        <% end %>
+                    </div>
+
+                    <div class="text-muted text-uppercase fw-semibold mb-1">
+                        <%= @locker_rental.expired? ? 'Rental expired' : 'Rental expires' %>
+                    </div>
+                    <div class="fs-3 fw-bold mb-2">
+                        <%= @locker_rental.owned_until.to_date.to_fs(:long) %>
+                    </div>
+                    <div>
+                        <% if @locker_rental.expired? %>
+                            <span class="text-danger fw-medium">
+                                Expired <%= time_ago_in_words(@locker_rental.owned_until.to_date) %> ago
+                            </span>
+                            <% if @locker_rental.notified_of_cancellation %>
+                                <br><span class="text-muted mt-1 d-block"><%= fa_icon :envelope %> Cancellation notice sent</span>
+                            <% end %>
+                        <% else %>
+                            <span class="text-success fw-medium">
+                                <%= time_ago_in_words(@locker_rental.owned_until.to_date) %> remaining
+                            </span>
+                        <% end %>
+                    </div>
+                </div>
+            </div>
+        <% end %>
+
+        <%# ── Expired / Cancelled alerts ── %>
+        <% if @locker_rental.expired? && !@locker_rental.active? %>
+            <div class="alert alert-warning shadow-sm" role="alert">
+                <div class="d-flex align-items-start gap-2">
+                    <%= fa_icon 'exclamation-triangle', class: 'mt-1' %>
+                    <div>
+                        <strong>Expired</strong> <%= time_ago_in_words(@locker_rental.expired_since) %> ago
+                        <% if @locker_rental.notified_of_cancellation %>
+                            — cancellation notification sent by email.
+                        <% else %>
+                            — <strong class="text-danger">no notification sent</strong>.
+                        <% end %>
+                    </div>
+                </div>
+            </div>
+        <% end %>
+
+        <% if @locker_rental.cancelled? && @locker_rental.cancelled_at %>
+            <div class="alert alert-danger shadow-sm" role="alert">
+                <div class="d-flex align-items-start gap-2">
+                    <%= fa_icon 'times-circle', class: 'mt-1' %>
+                    <div>Cancelled on <strong><%= @locker_rental.cancelled_at.to_fs(:long) %></strong></div>
+                </div>
+            </div>
+        <% end %>
+
+        <%# ── Pending user actions ── %>
+        <% if @locker_rental.pending? %>
+
+            <% if @locker_rental.reviewing? %>
+                <div class="card shadow-sm mb-4 border-start border-4 border-secondary">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-secondary bg-opacity-10 text-secondary"
+                                  style="width: 40px; height: 40px;">
+                                <i class="fa fa-hourglass-half"></i>
+                            </span>
+                            <h5 class="mb-0">Pending Review</h5>
+                        </div>
+                        <p class="text-muted mb-0">
+                            This request hasn't been reviewed yet. You'll be notified once a decision is made.
+                        </p>
+                    </div>
+                </div>
+            <% end %>
+
+            <% if @locker_rental.await_payment? %>
+                <div class="card shadow-sm mb-4 border-start border-4 border-info">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-info bg-opacity-10 text-info"
+                                  style="width: 40px; height: 40px;">
+                                <i class="fa fa-credit-card"></i>
+                            </span>
+                            <h5 class="mb-0">Ready for Payment</h5>
+                        </div>
+                        <p class="text-muted mb-3">
+                            Your locker has been approved! Complete payment to finalize the assignment.
+                        </p>
+                        <%= link_to @locker_rental.checkout_link, class: 'btn btn-info btn-lg w-100' do %>
+                            <%= fa_icon 'external-link', text: 'Proceed to Checkout' %>
+                        <% end %>
+                    </div>
+                </div>
+            <% end %>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h6 class="text-danger mb-2"><%= fa_icon 'exclamation-circle', text: 'Cancel Request' %></h6>
+                    <p class="text-muted mb-3">
+                        You may cancel before paying the rental fee. The locker rental fee is <strong>non-refundable</strong>.
+                    </p>
+                    <%= form_with model: @locker_rental do |f| %>
+                        <%= f.hidden_field :state, value: 'cancelled' %>
+                        <%= f.button class: 'btn btn-outline-danger w-100',
+                          data: { confirm: 'Are you sure you want to cancel this locker request?' } do %>
                             <%= fa_icon 'times', text: 'Cancel Request' %>
                         <% end %>
                     <% end %>
-                  </div>
                 </div>
-              </div>
-            <% end %>
-          </div>
+            </div>
         <% end %>
-      <% end %>
     </div>
-  </div>
 
-  <%= vite_javascript_tag 'locker_rental_form', 'data-turbo-track': 'reload' %>
+    <p class="text-center text-muted">If you have any questions about your locker, please contact us at <%= mail_to 'makerspace@uottawa.ca' %></p>
+</div>
+
+<% if current_user.staff? %>
+    <%= render partial: 'staff_actions' %>
 <% end %>

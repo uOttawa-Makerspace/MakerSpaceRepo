@@ -8,7 +8,6 @@ class LockerRentalsController < SessionsController
 
   def index
     @own_locker_rentals = current_user.locker_rentals
-    @locker_rental_price = LockerOption.locker_rental_price
   end
 
   def expired
@@ -133,6 +132,7 @@ class LockerRentalsController < SessionsController
     }.compact.invert
     # Don't allow new request if user already has an active or pending request
     @pending_locker_request = current_user.locker_rentals.pending.first
+    @locker_product_info = LockerOption.locker_product_info
   end
 
   def locker_rental_params

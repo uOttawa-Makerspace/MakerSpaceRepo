@@ -1,4 +1,3 @@
-<h3>My Lockers</h3>
 <div class="row">
     <% @locker_rentals.active.find_each do |locker_rental| %>
         <div class="col-lg-4">
@@ -10,5 +9,9 @@
                 </div>
             </div>
         </div>
+    <% end %>
+    <% if @locker_rentals.active.blank? %>
+        <p class="fs-4">No active rentals...</p>
+        <%= link_to "Submit a locker request", locker_rentals_path %>
     <% end %>
 </div>

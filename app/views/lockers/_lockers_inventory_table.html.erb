@@ -44,7 +44,7 @@
                         <%= fa_icon :check, class: 'position-absolute top-0 end-0 text-success', hidden: true %>
                     </div>
                 </td>
-                <td><%= current_rental&.rented_by&.username %></td>
+                <td><%= link_to current_rental&.rented_by&.username, current_rental&.rented_by&.username if current_rental&.rented_by %></td>
                 <td><%= current_rental&.owned_until&.to_date&.to_fs :long %></td>
                 <td><%= current_rental&.updated_at&.to_fs :long %></td>
                 <!-- <td><%= current_rental&.decided_by&.username %></td> -->

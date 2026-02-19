@@ -1,36 +1,64 @@
-<% provide(:title, "Locker #{@locker.specifier} history") %>
-<h1 class="text-center">Locker <%= @locker.specifier %></h1>
-<div class="text-center mb-3">
-    <%= link_to fa_icon('arrow-left', text: "Back"), lockers_path %>
+<% provide(:title, "Locker #{@locker.specifier} History") %>
+
+<div class="mb-4">
+    <%= link_to lockers_path, class: 'text-muted text-decoration-none' do %>
+        <%= fa_icon 'arrow-left', text: 'Back to Lockers' %>
+    <% end %>
 </div>
 
-<% if @active_locker_rental %>
-    <div class="border rounded p-2 mb-3">
-        <p>Locker is currently
-            <% if @active_locker_rental.expired? %>
-                <span class="text-danger">
-                    <%= fa_icon :times %> Expired
-                </span>
-            <% else %>
-                <%= locker_rental_state_display @active_locker_rental %>
-            <% end %> since <%= @active_locker_rental.created_at.to_date.to_formatted_s :long %>
-            
-            <%= link_to fa_icon('arrow-right', text: 'View rental details', right: true), @active_locker_rental, class: 'float-end' %>
-        </p>
+<h1 class="text-center mb-4">Locker <%= @locker.specifier %></h1>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h2 class="card-title">Current Status</h2>
+        <% if @active_locker_rental %>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <% if @active_locker_rental.expired? %>
+                        <span class="badge bg-danger">
+                            <%= fa_icon :times %> Expired
+                        </span>
+                    <% else %>
+                        <%= locker_rental_state_display @active_locker_rental %>
+                    <% end %>
+                    <span class="text-muted ms-2">
+                        since <%= @active_locker_rental.created_at.to_date.to_formatted_s(:long) %>
+                    </span>
+                </div>
+                <%= link_to @active_locker_rental, class: 'btn btn-outline-secondary btn-sm' do %>
+                    View rental details <%= fa_icon 'arrow-right' %>
+                <% end %>
+            </div>
+        <% else %>
+            <span class="badge bg-secondary">Unoccupied</span>
+        <% end %>
+    </div>
+</div>
+
+<h2 class="text-center">Rental History</h2>
+<p class="text-center text-muted mb-4">Log of previous owners of this locker</p>
+
+<% rentals = @locker.locker_rentals.order(created_at: :desc) %>
+
+<% if rentals.any? %>
+    <div class="list-group">
+        <% rentals.each do |rental| %>
+            <%= link_to locker_rental_path(rental), class: 'list-group-item list-group-item-action' do %>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong><%= rental.rented_by.username %></strong>
+                        <br>
+                        <small class="text-muted">
+                            <%= rental.created_at.to_date.to_formatted_s(:long) %>
+                            &mdash;
+                            <%= rental.owned_until.to_date.to_formatted_s(:long) %>
+                        </small>
+                    </div>
+                    <span class="badge bg-secondary"><%= rental.state %></span>
+                </div>
+            <% end %>
+        <% end %>
     </div>
 <% else %>
-    <p>Locker is currently unoccupied</p>
-<% end %>
-
-<h2 class="text-center">Locker history</h2>
-<p class="text-center">Log of previous owners of this locker<p>
-
-<%# only picks up rentals that have ever been attached to this locker. %>
-<% @locker.locker_rentals.order(created_at: :desc).each do |rental| %>
-    <%= link_to locker_rental_path(rental), class: 'd-block text-body rounded border p-3' do %>
-        <%= rental.created_at.to_date.to_formatted_s :long %>
-        Owned by <b><%= rental.rented_by.username %></b>
-        until <%= rental.owned_until.to_date.to_formatted_s :long %>
-        state is <%= rental.state %>
-    <% end %>
+    <p class="text-center text-muted">No rental history for this locker.</p>
 <% end %>

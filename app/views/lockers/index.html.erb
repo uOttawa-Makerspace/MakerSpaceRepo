@@ -2,17 +2,18 @@
 
 <div>
     <h1 class="text-center">Locker Management</h1>
-    <%= link_to 'Show pending locker requests', admin_locker_rentals_path, class: 'text-center' %>
-    <details class="mb-3">
-        <summary>Assign a locker</summary>
-        <p>Assign a locker to someone, active immediately. The locker owner will be notified by email. Intended to assign lockers to staff.</p>
-        <%= render 'locker_rentals/assign_locker_form' %>
-    </details>
+    <div class="text-center">
+        <%= link_to 'Show pending locker requests', admin_locker_rentals_path, class: 'fw-bold' %>
+    </div>
 
-    <details open class="mb-3">
-        <summary>Configure locker options</summary>
-        <%= render 'locker_size_control' %>
-    </details>
+    <h2>Assign a locker</h2>
+    <p>Assign a locker to someone, active immediately. The locker owner will be notified by email. Intended to assign lockers to staff.</p>
+    <%= render 'locker_rentals/assign_locker_form' %>
+
+    <hr />
+
+    <h2>Configure locker options</h2>
+    <%= render 'locker_size_control' %>
 
     <hr />
 
@@ -31,13 +32,14 @@
     </div>
 
     <hr />
-    
+
     <h2 class="text-center">Locker Inventory</h2>
-    <div class="border p-3 mb-3">
+    
+    <div class="mb-3">
         <h3>Make new lockers</h3>
         <p>Create lockers with numbers start from up to and including end of range. For example, 100 to 150 would create 50 lockers named 100, 101, 102...</p>
         <%= form_with controller: :lockers do |f| %>
-            <div class="d-md-flex align-items-baseline">
+            <div class="d-md-flex align-items-baseline mb-3">
                 <span class="me-3">
                     Create new lockers ranging from
                 </span>
@@ -50,6 +52,12 @@
                 <div class="me-3">
                     <%= f.number_field :range_end, class: 'form-control', required: true %>
                 </div>
+            </div>
+            <div class="input-group">
+                <%= f.label :locker_size_id, 'Change locker size', class: 'input-group-text' %>
+                <%= f.select :locker_size_id, @locker_sizes.map { |size|
+                    [ size.size, size.id, { 'data-data' => @locker_product_info[:variants][size.shopify_gid].to_json } ]},
+                 {include_blank: 'Select variant...'}, { class: 'form-select locker-variant-select' } %>
                 <%= f.submit class: 'btn btn-primary' %>
             </div>
         <% end %>
@@ -58,7 +66,10 @@
     <div>
         <% if @lockers.blank? %>
             <p>There are no lockers on record.</p>
+        <% elsif !@locker_product_info %>
+            <p>No locker product link loaded.</p>
         <% else %>
+            <h3>Edit current lockers</h3>
             <%= render 'locker_bulk_edit_modal' %>
             <%= render 'lockers_inventory_table' %>
         <% end %>

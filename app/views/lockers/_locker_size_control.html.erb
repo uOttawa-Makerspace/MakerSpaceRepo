@@ -6,7 +6,7 @@
     <%= f.text_field 'shopifyProductLink', class: 'form-control mb-2',
      placeholder: 'URL should look like https://admin.shopify.com/store/uottawa-makerspace/products/10478024917048' %>
 
-    <div class="d-flex align-items-baseline">
+    <div class="input-group">
         <span class="input-group-text">Extracted GID: gid://shopify/Product/</span>
         <%= f.text_field :value, class: 'w-auto flex-fill form-control-plaintext', readonly: true %>
         <%= f.submit class: 'btn btn-primary' %>
