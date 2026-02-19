@@ -88,6 +88,9 @@ class ShopifyService
     response = admin_client.query(query:)
     puts response.body['data']
     response.body['data']['product']
+  rescue StandardError => e
+    Rails.logger.error e
+    nil
   end
 
   def self.product_variants(gid)

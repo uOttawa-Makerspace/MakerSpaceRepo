@@ -48,9 +48,9 @@ class LockerOption < ApplicationRecord
           }
         end
     }
-    # rescue StandardError => e
-    #   Rails.logger.fatal e
-    #   nil
+    rescue StandardError => e
+      Rails.logger.fatal e
+      nil
   end
 
   def self.locker_product_variant_id
