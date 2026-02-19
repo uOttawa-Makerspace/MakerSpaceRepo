@@ -32,9 +32,6 @@ RSpec.describe Admin::ContactInfosController, type: :controller do
   describe "GET /new" do
     context "logged as admin" do
       it "should return a 200" do
-      # Temporarily skip view rendering due to
-      # view referencing non-existent OpeningHour columns
-      controller.class.skip_before_action(:verify_authenticity_token) rescue nil
       admin = create(:user, :admin)
       session[:user_id] = admin.id
       session[:expires_at] = Time.zone.now + 10_000
