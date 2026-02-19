@@ -157,7 +157,7 @@ class User < ApplicationRecord
             presence: true,
             length: { maximum: 50 },
             format: {
-              without: /[<>&"']/,
+              without: /[<>&"]/,
               message: 'must not contain special HTML characters'
             }
 
