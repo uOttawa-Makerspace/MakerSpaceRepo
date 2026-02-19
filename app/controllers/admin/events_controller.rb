@@ -424,3 +424,4 @@ class Admin::EventsController < AdminAreaController
     )
   end
 end
+
