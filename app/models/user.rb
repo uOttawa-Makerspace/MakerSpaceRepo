@@ -215,8 +215,8 @@ class User < ApplicationRecord
   # New: /\A[0-9]{9}\z/ - ensures EXACTLY 9 digits, nothing else
   validates :student_id,
             format: {
-              with: /\A[0-9]{9}\z/,
-              message: 'must be exactly 9 digits'
+              with: /\A[0-9]{7,12}\z/,
+              message: 'must be between 7 and 12 digits'
             },
             allow_blank: true,
             presence: true,

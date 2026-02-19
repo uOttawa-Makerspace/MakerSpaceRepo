@@ -35,6 +35,10 @@ class Admin::EventsController < AdminAreaController
     end
 
     if @event.save && Array(@event_assignments).all?(&:save)
+
+      @event.reload
+      Event.upsert_event(@event) unless @event.draft
+
       flash[:notice] = "Event created successfully."
     else
       flash[:alert] = "Failed to create event: #{@event.errors.full_messages.to_sentence}"
@@ -86,7 +90,10 @@ class Admin::EventsController < AdminAreaController
             )
           end
           @event.event_assignments << @event_assignments
-        end 
+        end
+
+        @event.reload
+        Event.upsert_event(@event) unless @event.draft
         
         flash[:notice] = "Event updated successfully."
       else
@@ -143,6 +150,9 @@ Time.parse(event_params[:utc_start_time]).utc)
           @event.event_assignments << @event_assignments
         end
 
+        @event.reload
+        Event.upsert_event(@event) unless @event.draft
+
         flash[:notice] = "Unavailability updated successfully."
       else
         flash[:alert] = "Failed to update unavailability: #{@event.errors.full_messages.to_sentence}"
@@ -180,6 +190,9 @@ Time.parse(event_params[:utc_start_time]).utc)
         end
         @new_event.event_assignments << @event_assignments
       end 
+
+      @new_event.reload
+      Event.upsert_event(@new_event) unless @new_event.draft
 
       flash[:notice] = "This event occurrence updated successfully."
     end

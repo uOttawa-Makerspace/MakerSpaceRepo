@@ -165,6 +165,9 @@ en:
       email: "Email address"
       submit: "Submit"
   activerecord:
+    attributes:
+      user:
+        student_id: "Student Number"
     errors:
       models:
         user:
