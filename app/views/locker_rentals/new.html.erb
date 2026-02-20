@@ -3,24 +3,35 @@
 <h1 class="text-center pt-3"><%= t('lockers.new_request.header') %></h1>
 <hr class="w-50 mx-auto" />
 <%= t('lockers.new_request.description_html') %>
-Current prices are:
-<table>
-    <% LockerSize.find_each do |size| %>
-        <tbody>
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th scope="col">Available count</th>
+            <th scope="col">Size</th>
+            <th scope="col">Cost</th>
+        </tr>
+    </thead>
+    <tbody>
+        <% LockerSize.find_each do |size| %>
             <tr>
-                <td><%= @locker_product_info[:variants][size.shopify_gid][:sku] %></td>
+                <td><%= size.lockers.available.count %></td>
                 <td><%= size.size %></td>
-                <td><%= @locker_product_info[:variants][size.shopify_gid][:price] %></td>
+                <td>$<%= @locker_product_info[:variants][size.shopify_gid][:price] %> per semester</td>
             </tr>
-        </tbody>
-    <% end %>
+        <% end %>
+    </tbody>
+    <caption class="caption-top">Current lockers available are</caption>
 </table>
+
 <hr />
+
 <% if !LockerOption.lockers_enabled %>
     Locker requests are not currently accepted.
+<% elsif Locker.available.none? %>
+    There are no lockers available for request right now.
 <% elsif @pending_locker_request&.reviewing? %>
     <p>You have a pending request for a locker submitted on <b><%= @pending_locker_request.created_at.to_date %></b>.
-        You will receive a response shortly.</p>
+        You will receive a response shortly. <%= link_to fa_icon('arrow-right', text: 'View current locker request', right: true), @pending_locker_request %></p>
 <% elsif @pending_locker_request&.await_payment? %>
     <p>Your request has been accepted, and now is pending payment to be finalized. <%= link_to 'Click here to view your request and to proceed to checkout', @pending_locker_request, class: '' %></p>
 <% else %>
