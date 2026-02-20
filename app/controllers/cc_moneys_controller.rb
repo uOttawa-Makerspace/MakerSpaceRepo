@@ -25,7 +25,7 @@ class CcMoneysController < SessionsController
   def redeem
     cc_token = params[:token]
     cc_id = @verifier.verify(cc_token)
-    user = User.find_by(user_params)
+    user = User.find_by(email: user_params[:email])
     cc_money = CcMoney.find_by_id(cc_id)
     if !cc_money.linked? && user.present?
       cc_money.update(user: user, linked: true)

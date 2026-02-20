@@ -447,6 +447,7 @@ Rails.application.routes.draw do
     end
 
     resources :memberships, only: [:index, :update]
+    
   end
   # For singular routes
   resolve('DesignDay') {[:admin, :design_day]}
