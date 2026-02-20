@@ -16,10 +16,12 @@ class LockerRental < ApplicationRecord
   belongs_to :course_name, optional: true
 
   before_validation :set_cancellation_date, if: :cancelled?
-  
+
+  # Notify of state change
   after_save :send_email_notification
+  # Notify of active locker move
+  after_save :send_move_notification
   after_save :sync_shopify_draft_order
-  after_save :log_locker_rental_modification
 
   enum :state,
        {
@@ -145,13 +147,25 @@ class LockerRental < ApplicationRecord
     when :active
       LockerMailer.with(locker_rental: self).locker_assigned.deliver_later
     when :cancelled
-      # Request was approved in some way, then cancelled. Send full details
       LockerMailer.with(locker_rental: self).locker_cancelled.deliver_later
     when :reviewing
       LockerMailer.with(locker_rental: self).locker_requested.deliver_later
     else
       raise "Unknown state #{state.to_sym}"
     end
+  end
+
+  def send_move_notification
+    return unless saved_change_to_locker_id? || saved_change_to_owned_until?
+
+    LockerMailer
+      .with(
+        locker_rental: self,
+        moved_locker: saved_change_to_locker_id?,
+        moved_date: saved_change_to_owned_until
+      )
+      .locker_moved
+      .deliver_later
   end
 
   def sync_shopify_draft_order
@@ -163,10 +177,6 @@ class LockerRental < ApplicationRecord
     end
   end
 
-  def log_locker_rental_modification
-    
-  end
-  
   # Fetch checkout link from shopify .Returns nil if API call fails or checkout
   # is not possible now.
   def checkout_link
@@ -205,12 +215,7 @@ class LockerRental < ApplicationRecord
 
   def shopify_draft_order_line_items
     if Rails.env.production?
-      [
-        {
-          quantity: 1,
-          variantId: locker.locker_size.shopify_gid
-        }
-      ]
+      [{ quantity: 1, variantId: locker.locker_size.shopify_gid }]
     else
       # Make a free locker, yay
       [

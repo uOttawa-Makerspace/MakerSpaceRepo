@@ -45,10 +45,9 @@
                                 The user will receive an email notification.
                             </p>
                             <%= form_with model: @locker_rental do |f| %>
+                                
                                 <%= f.select :locker_id,
-                                  Locker.available.order_by_specifier.map { |locker|
-                                      [locker.specifier, locker.id, { data: { size: locker.locker_size.size } }]
-                                  },
+                                  @locker_select_options,
                                  { include_blank: 'Select a locker' },
                                  { class: 'form-select mb-2' } %>
                                 <%= f.date_field :owned_until,
@@ -57,7 +56,7 @@
                                 <%= f.button name: 'locker_rental[state]', value: 'active',
                                  class: 'btn btn-info w-100 mt-auto',
                                  data: { confirm: 'Assign this locker immediately?' } do %>
-                                    <%= fa_icon 'bolt', text: (@locker_rental.active? ? 'Move Locker' : 'Assign Now') %>
+                                    <%= @locker_rental.active? ? 'Move Locker' : 'Assign Now' %>
                                 <% end %>
                             <% end %>
                         </div>

@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 #
 class LockerMailer < ApplicationMailer
-
   before_action do
     @locker_rental = params[:locker_rental]
     @user = @locker_rental.rented_by
@@ -10,14 +9,11 @@ class LockerMailer < ApplicationMailer
   def locker_requested
     if @locker_rental.requested_as_student?
       mail(
-        to: "makerlab@uottawa.ca",
-        subject: "New locker request for a GNG project"
+        to: 'makerlab@uottawa.ca',
+        subject: 'New locker request for a GNG project'
       )
     else
-      mail(
-        to: "ceed@uottawa.ca",
-        subject:  "New locker request"
-      )
+      mail(to: 'ceed@uottawa.ca', subject: 'New locker request')
     end
   end
 
@@ -47,9 +43,15 @@ class LockerMailer < ApplicationMailer
           if @locker_rental.locker
             "Your locker rental for locker #{@locker_rental.locker.specifier} has been cancelled"
           else
-            "Your locker rental request has been cancelled"
+            'Your locker rental request has been cancelled'
           end
         )
     )
+  end
+
+  def locker_moved
+    @moved_locker = params[:moved_locker]
+    @moved_date = params[:moved_date]
+    mail(to: @user.email, subject: 'Your locker rental has been modified')
   end
 end
