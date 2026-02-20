@@ -123,7 +123,8 @@ QUERY
       end
 
       raise "Key name must not be blank" if shopify_draft_order_key_name.blank?
-      if shopify_draft_order_line_items.blank?
+      
+      unless defined?(shopify_draft_order_line_items)
         raise "Line items must not be blank"
       end
     end
@@ -144,6 +145,7 @@ QUERY
     def destroy_shopify_draft_order
       ensure_can_use_draft_order
 
+      # Make sure we have a draft order first
       return false if shopify_draft_order_id.blank?
 
       start_shopify_session

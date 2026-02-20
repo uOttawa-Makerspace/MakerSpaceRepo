@@ -1,0 +1,34 @@
+<div class="modal" id="lockerBulkEditModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Bulk edit lockers</h4>
+                <button type="button" data-bs-dismiss="modal" class="btn-close"></button>
+            </div>
+
+            <div class="modal-body">
+                <%= form_with url: bulk_edit_lockers_path, method: :patch do |f| %>
+                    <div>
+                        <ul id="lockerBulkEditList" class="row row-cols-md-4">
+                        </ul>
+                    </div>
+
+                    <%= f.label :locker_size_id, 'Change locker size', class: 'form-label' %>
+                    <%= f.select :locker_size_id, @locker_sizes.map { |size|
+                        [ size.size, size.id, { 'data-data' => @locker_product_info[:variants][size.shopify_gid].to_json } ]},
+                     {include_blank: 'Select variant...'}, {class: 'form-select locker-variant-select'} %>
+                    <%= f.submit class: 'btn btn-success float-end' %>
+                <% end %>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Close
+                </button>
+                <button type="button" class="btn btn-primary">
+                    Update
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

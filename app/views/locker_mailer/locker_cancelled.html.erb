@@ -1,5 +1,5 @@
 <% content_for :preheader do %>
-    MakerRepo - Your Locker Rental Has Been Cancelled
+    MakerRepo - Your locker rental has been cancelled
 <% end %>
 
 <% content_for :why_received do %>
@@ -15,10 +15,6 @@
     <% if @locker_rental.locker %>
         Your rental for locker <b><%= @locker_rental.locker.specifier %></b> has been cancelled on <%= @locker_rental.expired_since.to_date.to_formatted_s :long %>
     <% else %>
-        Your locker request has been rejected.
-    <% end %>
-    <br />
-    <% if @locker_rental.expired_since %>
-        You have one week to clear it. Please ensure it is empty before <b><%= (@locker_rental.expired_since + 1.week).to_date.to_formatted_s :long %></b>.
+        Your locker request, created on <%= @locker_rental.created_at.to_fs :long %>, has been rejected.
     <% end %>
 </p>

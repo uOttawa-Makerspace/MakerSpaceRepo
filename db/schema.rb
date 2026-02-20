@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_02_16_041128) do
+ActiveRecord::Schema[7.2].define(version: 2026_02_20_190516) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_trgm"
@@ -678,9 +678,8 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_16_041128) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "shopify_draft_order_id"
-    t.bigint "repository_id"
     t.string "requested_as"
-    t.date "paid_at"
+    t.datetime "paid_at"
     t.bigint "decided_by_id"
     t.bigint "locker_id"
     t.bigint "course_name_id"
@@ -688,13 +687,20 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_16_041128) do
     t.string "team_name"
     t.bigint "preferred_locker_id"
     t.datetime "cancelled_at"
-    t.boolean "notified_of_cancellation"
+    t.datetime "sent_to_checkout_at"
+    t.datetime "notified_of_cancellation_at"
     t.index ["course_name_id"], name: "index_locker_rentals_on_course_name_id"
     t.index ["decided_by_id"], name: "index_locker_rentals_on_decided_by_id"
     t.index ["locker_id"], name: "index_locker_rentals_on_locker_id"
     t.index ["preferred_locker_id"], name: "index_locker_rentals_on_preferred_locker_id"
     t.index ["rented_by_id"], name: "index_locker_rentals_on_rented_by_id"
-    t.index ["repository_id"], name: "index_locker_rentals_on_repository_id"
+  end
+
+  create_table "locker_sizes", force: :cascade do |t|
+    t.string "size"
+    t.string "shopify_gid"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "lockers", force: :cascade do |t|
@@ -702,6 +708,9 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_16_041128) do
     t.boolean "available", default: true, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "locker_size_id"
+    t.boolean "staff_only"
+    t.index ["locker_size_id"], name: "index_lockers_on_locker_size_id"
     t.index ["specifier"], name: "index_lockers_on_specifier"
   end
 

@@ -3,12 +3,11 @@ class LockerRentalsController < SessionsController
   before_action :signed_in
   # Also sets @locker_rental
   before_action :check_permission, except: %i[index new create]
-  layout "staff_area", only: [:admin] # as in admin tools but staff can access it
-  layout "admin_area", only: [:assign_locker]
+  layout 'staff_area', only: [:admin] # as in admin tools but staff can access it
+  layout 'admin_area', only: [:assign_locker]
 
   def index
     @own_locker_rentals = current_user.locker_rentals
-    @locker_rental_price = LockerOption.locker_rental_price
   end
 
   def expired
@@ -17,16 +16,17 @@ class LockerRentalsController < SessionsController
   end
 
   def admin
-    @current_rental_state = params[:rental_state] || "reviewing"
+    @current_rental_state = params[:rental_state] || 'reviewing'
 
     @locker_rentals =
-      LockerRental.includes(:locker, :rented_by).order(
-        created_at: :desc
-      ).not_cancelled
+      LockerRental
+        .includes(:locker, :rented_by)
+        .order(created_at: :desc)
+        .not_cancelled
 
     respond_to do |format|
       format.json { render json: @locker_rentals }
-      format.all { render layout: "staff_area" }
+      format.all { render layout: 'staff_area' }
     end
   end
 
@@ -35,6 +35,22 @@ class LockerRentalsController < SessionsController
   end
 
   def show
+    @locker_select_options =
+      Locker.available.order_by_specifier.map do |locker|
+        [
+          locker.specifier,
+          locker.id,
+          { data: { size: locker.locker_size.size } }
+        ]
+      end
+
+    if @locker_rental&.locker
+      @locker_select_options.prepend [
+        @locker_rental.locker.specifier,
+        @locker_rental.locker.id,
+        { data: { size: @locker_rental.locker.locker_size.size } }
+      ]
+    end
   end
 
   def edit
@@ -50,11 +66,11 @@ class LockerRentalsController < SessionsController
 
   def create
     unless LockerOption.lockers_enabled
-      flash[:alert] = "New locker rentals are not currently accepted."
+      flash[:alert] = 'New locker rentals are not currently accepted.'
       redirect_to locker_rentals_path
       return
     end
-    
+
     @locker_rental =
       LockerRental.new(
         locker_rental_params.with_defaults(rented_by_id: current_user.id)
@@ -94,15 +110,15 @@ class LockerRentalsController < SessionsController
     # Only staff can cancel a paid locker
     if @locker_rental.state_changed?(from: :active, to: :cancelled) &&
          !current_user.staff?
-      flash[:alert] = "Please contact administration for cancelling a locker"
+      flash[:alert] = 'Please contact administration for cancelling a locker'
       render :show, status: :unprocessable_content
       return
     end
 
     if @locker_rental.save
-      flash[:notice] = "Locker rental updated"
+      flash[:notice] = 'Locker rental updated'
     else
-      flash[:alert] = "Failed to update locker rental" + helpers.tag.br +
+      flash[:alert] = 'Failed to update locker rental' + helpers.tag.br +
         @locker_rental.errors.full_messages.join(helpers.tag.br)
     end
 
@@ -125,15 +141,15 @@ class LockerRentalsController < SessionsController
   end
 
   def new_instance_attributes
-    @user_repositories = current_user.repositories.pluck(:title, :id)
     # FIXME localize this later
     @available_fors = {
-      staff: ("CEED staff member" if current_user.staff?),
-      student: ("GNG student" if current_user.student?),
-      general: "General request"
+      staff: ('CEED staff member' if current_user.staff?),
+      student: ('GNG student' if current_user.student?),
+      general: 'General request'
     }.compact.invert
     # Don't allow new request if user already has an active or pending request
     @pending_locker_request = current_user.locker_rentals.pending.first
+    @locker_product_info = LockerOption.locker_product_info
   end
 
   def locker_rental_params
@@ -158,10 +174,12 @@ class LockerRentalsController < SessionsController
     ]
 
     if current_user.staff?
-      admin_params = params.require(:locker_rental).permit(
-        *common_permitted,
-        *staff_additional_permitted)
-      
+      admin_params =
+        params.require(:locker_rental).permit(
+          *common_permitted,
+          *staff_additional_permitted
+        )
+
       # FIXME replace that search with a different one, return ID instead
       # If username is given (since search can do that)
       rented_by_user =

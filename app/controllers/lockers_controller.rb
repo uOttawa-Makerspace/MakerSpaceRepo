@@ -13,7 +13,8 @@ class LockersController < AdminAreaController
   def index
     # For the locker rental form
     # This works on the basis that there's only one active locker rental
-    @lockers = Locker.includes(locker_rentals: [:rented_by, :decided_by])
+    @lockers = Locker.includes(locker_rentals: [:rented_by, :decided_by]).includes(:locker_size)
+    @locker_sizes = LockerSize.all
     @locker_product_link = LockerOption.locker_product_link
     @locker_product_info = LockerOption.locker_product_info
   end
@@ -39,9 +40,21 @@ class LockersController < AdminAreaController
     render action: :index, status: :created
   end
 
+  def update
+    Locker.find(params[:id]).update(locker_params)
+  end
+
+  def bulk_edit
+    Locker.where(id: params[:id]).find_each do |locker| 
+      locker.update(locker_params)
+    end
+
+    redirect_to lockers_path
+  end
+
   def price
     # Updates db value
-    LockerOption.locker_product_link = params.require(:value)
+    LockerOption.locker_product_link = "gid://shopify/Product/#{params.require(:value)}"
     redirect_to lockers_path
   end
 
@@ -53,7 +66,7 @@ class LockersController < AdminAreaController
   private
 
   def locker_params
-    params.permit(:range_start, :range_end)
+    params.permit(:range_start, :range_end, :locker_size_id)
   end
 
   def rental_state_icon(state)

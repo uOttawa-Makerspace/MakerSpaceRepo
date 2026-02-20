@@ -1,0 +1,101 @@
+<div class="card shadow-sm border-0 bg-light">
+    <h5 class="card-header bg-dark text-white mb-0">Staff Actions</h5>
+
+    <div class="card-body">
+        <% unless @locker_rental.cancelled? %>
+            <div class="row g-3">
+                <% if @locker_rental.reviewing? %>
+                    <div class="col-md-4">
+                        <div class="card h-100 border-success">
+                            <div class="card-body d-flex flex-column">
+                                <h6 class="card-title text-success">
+                                    <%= fa_icon 'paper-plane', text: 'Send to Checkout' %>
+                                </h6>
+                                <p class="card-text text-muted flex-grow-1">
+                                    Notify the user by email that their locker is approved and ready for payment.
+                                    The locker will then be assigned automatically once paid.
+                                </p>
+                                <%= form_with model: @locker_rental do |f| %>
+                                    <%= f.select :locker_id,
+                                      Locker.available.order_by_specifier.map { |locker|
+                                          [locker.specifier, locker.id, { data: { size: locker.locker_size.size } }]
+                                      }, { include_blank: 'Select a locker' }, { class: 'form-select mb-2', required: true } %>
+                                    <%= f.date_field :owned_until,
+                                     value: @locker_rental.owned_until || end_of_this_semester,
+                                     class: 'form-control mb-2' %>
+                                    <%= f.button name: 'locker_rental[state]', value: 'await_payment',
+                                     class: 'btn btn-success w-100 mt-auto',
+                                     data: { confirm: 'Send payment notification to the user?' } do %>
+                                        <%= fa_icon 'paper-plane', text: 'Send to Checkout' %>
+                                    <% end %>
+                                <% end %>
+                            </div>
+                        </div>
+                    </div>
+                <% end %>
+
+                <div class="col-md-4">
+                    <div class="card h-100 border-info">
+                        <div class="card-body d-flex flex-column">
+                            <h6 class="card-title text-info">
+                                <%= @locker_rental.active? ? 'Move Locker' : 'Assign Now' %>
+                            </h6>
+                            <p class="card-text text-muted flex-grow-1">
+                                Immediately assign or move a locker without requiring payment.
+                                The user will receive an email notification.
+                            </p>
+                            <%= form_with model: @locker_rental do |f| %>
+                                
+                                <%= f.select :locker_id,
+                                  @locker_select_options,
+                                 { include_blank: 'Select a locker' },
+                                 { class: 'form-select mb-2' } %>
+                                <%= f.date_field :owned_until,
+                                 value: @locker_rental.owned_until || end_of_this_semester,
+                                 class: 'form-control mb-2' %>
+                                <%= f.button name: 'locker_rental[state]', value: 'active',
+                                 class: 'btn btn-info w-100 mt-auto',
+                                 data: { confirm: 'Assign this locker immediately?' } do %>
+                                    <%= @locker_rental.active? ? 'Move Locker' : 'Assign Now' %>
+                                <% end %>
+                            <% end %>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card h-100 border-danger">
+                        <div class="card-body d-flex flex-column">
+                            <h6 class="card-title text-danger">
+                                <%= fa_icon 'ban', text: (@locker_rental.active? ? 'End Rental' : 'Cancel Request') %>
+                            </h6>
+                            <p class="card-text text-muted flex-grow-1">
+                                <% if @locker_rental.active? %>
+                                    <%= t('lockers.actions.end_rental_description') %>
+                                <% else %>
+                                    <%= t('lockers.actions.cancel_request_description') %>
+                                <% end %>
+                            </p>
+                            <%= form_with model: @locker_rental do |f| %>
+                                <%= f.button name: 'locker_rental[state]', value: 'cancelled',
+                                 class: 'btn btn-outline-danger w-100 mt-auto',
+                                 data: { confirm: 'Are you sure you want to cancel this locker?' } do %>
+                                    <% if @locker_rental.active? %>
+                                        <%= fa_icon 'ban', text: 'End Rental' %>
+                                    <% else %>
+                                        <%= fa_icon 'times', text: 'Cancel Request' %>
+                                    <% end %>
+                                <% end %>
+                            <% end %>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        <% else %>
+            This locker request has been finished and cannot be re-enabled.
+        <% end %>
+    </div>
+</div>
+
+<%= vite_javascript_tag 'locker_rental_form', 'data-turbo-track': 'reload' %>

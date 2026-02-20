@@ -8,9 +8,15 @@ class LockerOption < ApplicationRecord
   LOCKER_PRODUCT_LINK = 'locker_product_link'.freeze
   LOCKERS_ENABLED = 'lockers_enabled'.freeze
 
-  # Store the product link for a shopify product. Note this is the public URL,
-  # we then use the public json response to fetch the variant ID. Refer to
-  # documentation for more information.
+  validates :value,
+            format: {
+              with: %r{gid://shopify/Product/[0-9]+}
+            },
+            if: -> { name == LOCKER_PRODUCT_LINK }
+
+  # Store the main product GID for a shopify product. This used to be a public
+  # facing link, but we delisted the locker product and now can't access without
+  # admin auth.
   def self.locker_product_link=(link)
     find_or_create_by(name: LOCKER_PRODUCT_LINK).update(value: link)
   end
@@ -23,33 +29,28 @@ class LockerOption < ApplicationRecord
   def self.locker_product_info
     return unless locker_product_link
 
-    # Get public API response
-    # Receive a product link, extract product variant ID using the public API
-    shop_response = Excon.get("#{locker_product_link}.json")&.body
-    return unless shop_response
-    shop_json = JSON.parse(shop_response)
-
-    product_json = shop_json['product']
-
-    main_variant =
-      shop_json['product']['variants'].find do |v|
-        v['product_id'] == shop_json['product']['id']
-      end
-
-    return unless main_variant
+    product = ShopifyService.product(locker_product_link)
 
     {
-      title: product_json['title'],
-      updated_at: product_json['updated_at'],
-      product_id: main_variant['product_id'],
-      variant_id: main_variant['id'],
-      price: main_variant['price'],
-      sku: main_variant['sku'],
-      image_url: shop_json.dig('product', 'image', 'src')
+      title: product['title'],
+      status: product['status'],
+      updated_at: product['updated_at'],
+      id: product['id'],
+      image: product['media']['nodes'].first&.dig('preview', 'image', 'url'),
+      variants:
+        product['variants']['nodes'].each_with_object({}) do |node, memo|
+          memo[node['id']] = {
+            id: node['id'],
+            displayName: node['displayName'],
+            price: node['price'],
+            sku: node['sku'],
+            image: node['media']['nodes'].first&.dig('preview', 'url')
+          }
+        end
     }
-  rescue StandardError => e
-    Rails.logger.fatal e
-    nil
+    rescue StandardError => e
+      Rails.logger.fatal e
+      nil
   end
 
   def self.locker_product_variant_id

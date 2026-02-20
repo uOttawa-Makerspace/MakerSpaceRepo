@@ -1,0 +1,19 @@
+<% content_for :preheader do %>
+  MakerRepo - Your locker rental has been modified
+<% end %>
+
+<% content_for :why_received do %>
+  You have received this email because you have a locker occupied.
+<% end %>
+
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello <%= @user.username %>,</p>
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
+    Your locker rental #<%= @locker_rental.id %> has been modified.
+    <% if @moved_locker %>
+        Your rental has been moved to locker <%= @locker_rental.locker.specifier %>.
+    <% end %>
+
+    <% if @moved_date && @locker_rental.owned_until.present? %>
+        Your rental is now active until <%= @locker_rental.owned_until.to_date.to_fs :long %>.
+    <% end %>
+</p>
