@@ -37,6 +37,7 @@ class LockerMailer < ApplicationMailer
     )
   end
 
+  # Sent when a locker is finished
   def locker_cancelled
     # Sometimes requests are cancelled before they're assigned
     mail(

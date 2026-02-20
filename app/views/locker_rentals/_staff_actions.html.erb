@@ -3,7 +3,6 @@
 
     <div class="card-body">
         <% unless @locker_rental.cancelled? %>
-
             <div class="row g-3">
                 <% if @locker_rental.reviewing? %>
                     <div class="col-md-4">
@@ -14,11 +13,16 @@
                                 </h6>
                                 <p class="card-text text-muted flex-grow-1">
                                     Notify the user by email that their locker is approved and ready for payment.
-                                    The locker will be assigned automatically once paid.
+                                    The locker will then be assigned automatically once paid.
                                 </p>
                                 <%= form_with model: @locker_rental do |f| %>
-                                    <%= f.hidden_field :locker_id %>
-                                    <%= f.hidden_field :owned_until, value: @locker_rental.owned_until || end_of_this_semester %>
+                                    <%= f.select :locker_id,
+                                      Locker.available.order_by_specifier.map { |locker|
+                                          [locker.specifier, locker.id, { data: { size: locker.locker_size.size } }]
+                                      }, { include_blank: 'Select a locker' }, { class: 'form-select mb-2', required: true } %>
+                                    <%= f.date_field :owned_until,
+                                     value: @locker_rental.owned_until || end_of_this_semester,
+                                     class: 'form-control mb-2' %>
                                     <%= f.button name: 'locker_rental[state]', value: 'await_payment',
                                      class: 'btn btn-success w-100 mt-auto',
                                      data: { confirm: 'Send payment notification to the user?' } do %>
@@ -45,7 +49,7 @@
                                   Locker.available.order_by_specifier.map { |locker|
                                       [locker.specifier, locker.id, { data: { size: locker.locker_size.size } }]
                                   },
-                                 { include_blank: '— Select a locker —' },
+                                 { include_blank: 'Select a locker' },
                                  { class: 'form-select mb-2' } %>
                                 <%= f.date_field :owned_until,
                                  value: @locker_rental.owned_until || end_of_this_semester,
@@ -89,6 +93,8 @@
                 </div>
 
             </div>
+        <% else %>
+            This locker request has been finished and cannot be re-enabled.
         <% end %>
     </div>
 </div>

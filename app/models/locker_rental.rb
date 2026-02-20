@@ -93,19 +93,22 @@ class LockerRental < ApplicationRecord
   # Used by the automated payment system, picks the first available
   # specifier and owned until end of this semester
   def auto_assign
-    update(
+    Rails.logger.debug "Auto assigning locker rental #{id}"
+    update!(
       {
         state: (:active unless active?),
         owned_until: (end_of_this_semester if owned_until.blank?),
-        paid_at: Date.current
+        paid_at: Time.current
       }.compact
     )
   end
 
+  # Expired if a locker is active (not cancelled or unpaid) and time has passed owned_until
   def expired?
     active? && owned_until && owned_until <= DateTime.current
   end
 
+  # How long was this expired for
   def expired_since
     # If there's a cancellation date, give that
     # else owned_until if it's expired
@@ -115,14 +118,7 @@ class LockerRental < ApplicationRecord
   # If expired for more than a week. Expired if owned_until or cancelled_at is
   # one week old
   def overdue?
-    # safe navigation to call comparison operator
-    expired? && expired_since < 1.week.ago
-  end
-
-  def overdue_for
-    if overdue?
-      
-    end
+    expired? && expired_since && expired_since < 1.week.ago
   end
 
   # Is a rental not confirmed yet? Usually means users can cancel rental
@@ -149,6 +145,7 @@ class LockerRental < ApplicationRecord
     when :active
       LockerMailer.with(locker_rental: self).locker_assigned.deliver_later
     when :cancelled
+      # Request was approved in some way, then cancelled. Send full details
       LockerMailer.with(locker_rental: self).locker_cancelled.deliver_later
     when :reviewing
       LockerMailer.with(locker_rental: self).locker_requested.deliver_later
@@ -207,7 +204,7 @@ class LockerRental < ApplicationRecord
   # Definitions for the shopify concern
 
   def shopify_draft_order_line_items
-    if Rails.env.production? || true
+    if Rails.env.production?
       [
         {
           quantity: 1,
