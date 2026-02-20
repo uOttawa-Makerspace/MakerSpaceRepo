@@ -11,7 +11,7 @@
     <div class="card">
         <div class="card-header bg-primary text-light">User Comments</div>
         <div class="card-body">
-            <%= @order_item.user_comments.blank? ? 'None' : sanitize(@order_item.user_comments) %>
+            <%= sanitize(@order_item.user_comments, tags: %w[p br b i em strong ul ol li], attributes: []) %>
         </div>
     </div>
     <div class="card">

@@ -1,8 +1,8 @@
 window.setProficientProject = function () {
   var proficient_project_id = document.getElementById(
-    "select_proficient_id"
+    "select_proficient_id",
   ).value;
-  document.getElementById("proficient_project").innerHTML =
+  document.getElementById("proficient_project").textContent =
     "Proficient Project id chosen: " + proficient_project_id;
   check_proficient_project(proficient_project_id);
 };
@@ -18,12 +18,12 @@ window.check_proficient_project = function (proficient_project_id) {
 window.fetch_attachment_name = function () {
   var file_input = document.getElementById("video");
   var filename = file_input.value;
-  document.getElementById("video-name").innerHTML = filename;
+  document.getElementById("video-name").textContent = filename;
 };
 
 window.setLearningModule = function () {
   var learning_module_id = document.getElementById("select_module_id").value;
-  document.getElementById("learning_module").innerHTML =
+  document.getElementById("learning_module").textContent =
     "Learning Module id chosen: " + learning_module_id;
   check_learning_module(learning_module_id);
 };
@@ -39,5 +39,5 @@ window.check_learning_module = function (learning_module_id) {
 window.fetch_attachment_name_2 = function () {
   var file_input = document.getElementById("video-2");
   var filename = file_input.value;
-  document.getElementById("video-name-2").innerHTML = filename;
+  document.getElementById("video-name-2").textContent = filename;
 };

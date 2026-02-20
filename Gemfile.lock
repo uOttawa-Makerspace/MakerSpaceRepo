@@ -430,7 +430,6 @@ GEM
       sawyer (~> 0.9)
     oj (3.16.15)
       bigdecimal (>= 3.0)
-      ostruct (>= 0.2)
     open3 (0.2.1)
     openssl (4.0.0)
     os (1.1.4)
