@@ -57,7 +57,7 @@ end
             </div>
             <ul class="list-group list-group-flush">
                 <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <span class="text-muted">Name</span>
+                    <span class="text-muted">User</span>
                     <span>
                         <%= link_to @locker_rental.rented_by.username, user_url(@locker_rental.rented_by.username) %>
                         <% if @locker_rental.rented_by.staff? %>
@@ -105,7 +105,11 @@ end
                     <span class="text-muted">Locker</span>
                     <span class="ms-1">
                         <% if @locker_rental.locker %>
-                            <%= link_to "Locker #{@locker_rental.locker.specifier}", locker_path(@locker_rental.locker), class: 'fw-bold' %>
+                            <% if current_user.admin? %>
+                                <%= link_to "Locker #{@locker_rental.locker.specifier}", locker_path(@locker_rental.locker), class: 'fw-bold' %>
+                            <% else %>
+                                Locker <%= @locker_rental.locker.specifier %>
+                            <% end %>
                             <% if @locker_rental.reserves_locker? %>
                                 <span class="badge bg-success ms-1">Assigned</span>
                             <% else %>
