@@ -490,10 +490,6 @@ Rails.application.routes.draw do
         delete :delete_with_scope
       end
     end
-
-    resources :makerstore_links, only: %i[index edit update create new] do
-      collection { put :reorder }
-    end
   end
 
   namespace :staff_dashboard do

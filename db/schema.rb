@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_02_16_041128) do
+ActiveRecord::Schema[7.2].define(version: 2026_02_18_163653) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_trgm"
@@ -703,13 +703,6 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_16_041128) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["specifier"], name: "index_lockers_on_specifier"
-  end
-
-  create_table "makerstore_links", force: :cascade do |t|
-    t.integer "order", default: 0
-    t.string "title"
-    t.string "url"
-    t.boolean "shown", default: true
   end
 
   create_table "membership_tiers", force: :cascade do |t|
