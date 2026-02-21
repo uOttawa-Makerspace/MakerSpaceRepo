@@ -48,12 +48,21 @@ document.addEventListener("turbo:load", function () {
 
   function refreshCapacity() {
     let url = "/staff_dashboard/refresh_capacity";
-    fetch(url)
+    const csrfToken = document.querySelector(
+      'meta[name="csrf-token"]',
+    )?.content;
+
+    fetch(url, {
+      headers: {
+        "X-Requested-With": "XMLHttpRequest",
+        Accept: "text/html",
+        "X-CSRF-Token": csrfToken,
+      },
+    })
       .then((response) => response.text())
       .then((data) => {
-        if (document.getElementsByClassName("max_capacity_alert")[0])
-          document.getElementsByClassName("max_capacity_alert")[0].innerHTML =
-            data;
+        const el = document.getElementsByClassName("max_capacity_alert")[0];
+        if (el) el.innerHTML = data;
       });
   }
 
