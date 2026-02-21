@@ -43,7 +43,9 @@ class StaffDashboardController < StaffAreaController
   end
 
   def refresh_capacity
-    respond_to { |format| format.js }
+    respond_to do |format|
+      format.html { render partial: "capacity_alert", layout: false }
+    end
   end
 
   def refresh_tables
