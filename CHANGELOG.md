@@ -1,3 +1,18 @@
+# v2026.02.21-013846 (2026-02-21)
+
+#changelog
+
+## 📦 Other Changes
+
+- fixing the changelog generator (#1893) by @UnknownCrafts
+- Staging (#1894) by @UnknownCrafts
+
+
+
+**Full Changelog**: https://github.com/uOttawa-Makerspace/MakerSpaceRepo/compare/v2026.02.20-181554...v2026.02.21-013846
+
+---
+
 # v2026.02.20-181554 (2026-02-20)
 
 #changelog
