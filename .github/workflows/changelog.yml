@@ -91,24 +91,17 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Prepend to CHANGELOG.md
+      # Overwrite the CHANGELOG.md
       - name: Update CHANGELOG.md
         run: |
           TAG="${{ steps.version.outputs.new_tag }}"
           DATE=$(date +'%Y-%m-%d')
 
-          ENTRY="# ${TAG} (${DATE})
+          cat > CHANGELOG.md <<EOF
+          # ${TAG} (${DATE})
 
           ${{ steps.changelog.outputs.changelog }}
-
-          ---
-          "
-
-          if [ -f CHANGELOG.md ]; then
-            echo "$ENTRY" | cat - CHANGELOG.md > temp && mv temp CHANGELOG.md
-          else
-            echo "$ENTRY" > CHANGELOG.md
-          fi
+          EOF
 
       - name: Commit Changelog
         run: |
