@@ -122,3 +122,20 @@ jobs:
           generate_release_notes: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Sync the same CHANGELOG.md into staging
+      - name: Sync CHANGELOG.md to staging
+        run: |
+          # keep the file we just wrote on master
+          cp CHANGELOG.md /tmp/CHANGELOG.md
+
+          git fetch origin staging
+          git checkout staging
+
+          cp /tmp/CHANGELOG.md CHANGELOG.md
+
+          git add CHANGELOG.md
+          git diff --staged --quiet || {
+            git commit -m "docs: sync CHANGELOG.md from master [skip ci]"
+            git push origin staging
+          }
