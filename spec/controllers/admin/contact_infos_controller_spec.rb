@@ -32,9 +32,12 @@ RSpec.describe Admin::ContactInfosController, type: :controller do
   describe "GET /new" do
     context "logged as admin" do
       it "should return a 200" do
-        get :new
-        expect(response).to have_http_status(:success)
-      end
+      admin = create(:user, :admin)
+      session[:user_id] = admin.id
+      session[:expires_at] = Time.zone.now + 10_000
+      get :new
+      expect(response).to have_http_status(:success)
+    end
     end
   end
 

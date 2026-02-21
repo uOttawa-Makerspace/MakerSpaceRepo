@@ -4,6 +4,7 @@ FactoryBot.define do
   factory :volunteer_hour do
     association :user, :volunteer_with_volunteer_program
     association :volunteer_task
+    date_of_task { Date.today }
 
     trait :approved1 do
       total_time { 10 }

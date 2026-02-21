@@ -40,6 +40,7 @@ RSpec.configure do |config|
   # [SPEED] Use transactions. 
   # This is much faster than DatabaseCleaner truncation strategies.
   config.use_transactional_fixtures = true
+  config.render_views
 
   config.infer_spec_type_from_file_location!
   config.filter_rails_from_backtrace!

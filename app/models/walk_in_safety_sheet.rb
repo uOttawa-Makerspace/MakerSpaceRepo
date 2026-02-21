@@ -39,8 +39,8 @@ class WalkInSafetySheet < ApplicationRecord
   # convenience function to choose between supervisor on file or the current
   # space supervisor. Returns [['name', 'phone'], ['name', 'phone']]
   def supervisor_information
-    names = supervisor_names.split(',')
-    contacts = supervisor_contacts.split(',')
+    names = (supervisor_names || '').split(',') 
+    contacts = (supervisor_contacts || '').split(',')
     names.zip contacts
   end
 

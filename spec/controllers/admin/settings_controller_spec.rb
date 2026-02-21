@@ -20,6 +20,18 @@ RSpec.describe Admin::SettingsController, type: :controller do
 
     context "logged as admin" do
       it "should return 200" do
+        admin = create(:user, :admin)
+        session[:user_id] = admin.id
+        session[:expires_at] = Time.zone.now + 10_000
+
+        # Ensure these records exist so @job_order_processed_message isn't nil
+        JobOrderMessage.find_or_create_by(name: "processed") do |msg|
+          msg.message = "Your job order has been processed."
+        end
+        JobOrderMessage.find_or_create_by(name: "print_failed") do |msg|
+          msg.message = "Your print has failed."
+        end
+
         get :index
         expect(response).to have_http_status(:success)
       end
