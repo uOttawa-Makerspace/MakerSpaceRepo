@@ -123,19 +123,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Sync the same CHANGELOG.md into staging
-      - name: Sync CHANGELOG.md to staging
+      # Sync staging to master
+      - name: Fast-forward staging to master
         run: |
-          # keep the file we just wrote on master
-          cp CHANGELOG.md /tmp/CHANGELOG.md
-
-          git fetch origin staging
-          git checkout staging
-
-          cp /tmp/CHANGELOG.md CHANGELOG.md
-
-          git add CHANGELOG.md
-          git diff --staged --quiet || {
-            git commit -m "docs: sync CHANGELOG.md from master [skip ci]"
-            git push origin staging
-          }
+          git push origin master:refs/heads/staging --force
