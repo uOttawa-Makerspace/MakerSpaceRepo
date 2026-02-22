@@ -4,7 +4,8 @@ class ApplicationController < ActionController::Base
   # Prevent CSRF attacks by raising an exception.
   # For APIs, use :null_session instead.
   rescue_from ActionController::ParameterMissing, with: :parameter_missing
-  protect_from_forgery with: :null_session, unless: -> { request.format.json? }
+  protect_from_forgery with: :null_session,
+                       only: proc { |c| c.request.format == "application/json" }
   include ApplicationHelper
   require "zip"
   require "will_paginate/array"
