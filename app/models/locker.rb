@@ -1,5 +1,5 @@
 class Locker < ApplicationRecord
-  has_many :locker_rentals
+  has_many :locker_rentals, dependent: :destroy
   belongs_to :locker_size
 
   validates :specifier, uniqueness: true

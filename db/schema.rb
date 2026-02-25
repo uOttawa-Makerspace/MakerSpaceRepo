@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_02_20_190516) do
+ActiveRecord::Schema[7.2].define(version: 2026_02_25_220420) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_trgm"
@@ -1570,7 +1570,6 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_20_190516) do
   add_foreign_key "likes", "repositories"
   add_foreign_key "likes", "users"
   add_foreign_key "locker_rentals", "lockers"
-  add_foreign_key "locker_rentals", "lockers", column: "preferred_locker_id"
   add_foreign_key "locker_rentals", "users", column: "decided_by_id"
   add_foreign_key "locker_rentals", "users", column: "rented_by_id"
   add_foreign_key "memberships", "membership_tiers"
