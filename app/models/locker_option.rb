@@ -10,7 +10,7 @@ class LockerOption < ApplicationRecord
 
   validates :value,
             format: {
-              with: \Agid:\/\/shopify\/Product\/[0-9]+\z
+              with: %r{\Agid://shopify/Product/[0-9]+\z}
             },
             if: -> { name == LOCKER_PRODUCT_LINK }
 
