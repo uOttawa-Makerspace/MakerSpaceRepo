@@ -49,7 +49,7 @@ class CustomWebhooksController < ApplicationController
 
   # Explicitly define the keys we expect from Shopify
   def webhook_params
-    params.permit! # brakeman:disable:MassAssignment
+    params.permit!
     # NOTE: This doesn't let tags through.
     # params.permit(
     #   :id,
