@@ -6,7 +6,30 @@
     <% end %>
 </div>
 
-<h1 class="text-center mb-4">Locker <%= @locker.specifier %></h1>
+<h1 class="text-center mb-4">Locker <%= @locker.specifier_was %></h1>
+
+<% if current_user.admin? %>
+    <div class="mb-3 clearfix">
+        <h2>Edit this locker</h2>
+        <%= form_with model: @locker do |f| %>
+            <div class="mb-3">
+                <div class="input-group mb-3">
+                    <%= f.label :specifier, class: 'input-group-text' %>
+                    <%= f.text_field :specifier, class: 'form-control', required: true, inputmode: 'numeric', pattern: '\d+' %>
+                </div>
+                
+                <div class="input-group">
+                    <%= f.label :locker_size_id, 'Change locker size', class: 'input-group-text' %>
+                    <%= f.select :locker_size_id, @locker_sizes.map { |size|
+                        [ size.size, size.id, { 'data-data' => @locker_product_info[:variants][size.shopify_gid].to_json } ]},
+                     {include_blank: 'Select variant...'}, { class: 'form-select locker-variant-select' } %>
+                </div>
+                <div class="form-text">Numeric specifiers only</div>
+                <%= f.submit class: 'btn btn-primary float-end' %>
+            </div>
+        <% end %>
+    </div>
+<% end %>
 
 <div class="card mb-4">
     <div class="card-body">
@@ -62,3 +85,5 @@
 <% else %>
     <p class="text-center text-muted">No rental history for this locker.</p>
 <% end %>
+
+<%= button_to 'Delete locker', @locker, method: :delete, class: 'btn btn-danger' %>
