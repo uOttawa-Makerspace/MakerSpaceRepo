@@ -24,11 +24,25 @@ jobs:
           fetch-depth: 0
           ref: master
 
-      # Get the previous tag to determine the range
+      # Ensure all tags (including those created via GitHub API) are fetched
+      - name: Fetch all tags
+        run: git fetch --tags --force
+
       - name: Get Previous Tag
         id: previoustag
         run: |
           TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+
+          if [ -z "$TAG" ]; then
+            # No tags exist yet — fall back to the first parent of HEAD.
+            # HEAD^1 is the previous master tip before the staging merge,
+            # so the changelog will only cover THIS merge's changes.
+            TAG=$(git rev-parse HEAD^1)
+            echo "No previous tag found. Falling back to HEAD^1: $TAG"
+          else
+            echo "Found previous tag: $TAG"
+          fi
+
           echo "tag=$TAG" >> $GITHUB_OUTPUT
 
       # Generate a new version tag
@@ -39,13 +53,18 @@ jobs:
           VERSION="v$(date +'%Y.%m.%d-%H%M%S')"
           echo "new_tag=$VERSION" >> $GITHUB_OUTPUT
 
-      # Build the changelog from merged PRs between tags
+      # Create the tag NOW so toTag is a real, resolvable ref
+      - name: Create Git Tag
+        run: |
+          git tag "${{ steps.version.outputs.new_tag }}"
+          git push origin "${{ steps.version.outputs.new_tag }}"
+
       - name: Build Changelog
         id: changelog
         uses: mikepenz/release-changelog-builder-action@v4
         with:
           fromTag: ${{ steps.previoustag.outputs.tag }}
-          toTag: master
+          toTag: ${{ steps.version.outputs.new_tag }}
           configurationJson: |
             {
               "categories": [
@@ -72,24 +91,17 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Prepend to CHANGELOG.md
+      # Overwrite the CHANGELOG.md
       - name: Update CHANGELOG.md
         run: |
           TAG="${{ steps.version.outputs.new_tag }}"
           DATE=$(date +'%Y-%m-%d')
 
-          ENTRY="# ${TAG} (${DATE})
+          cat > CHANGELOG.md <<EOF
+          # ${TAG} (${DATE})
 
           ${{ steps.changelog.outputs.changelog }}
-
-          ---
-          "
-
-          if [ -f CHANGELOG.md ]; then
-            echo "$ENTRY" | cat - CHANGELOG.md > temp && mv temp CHANGELOG.md
-          else
-            echo "$ENTRY" > CHANGELOG.md
-          fi
+          EOF
 
       - name: Commit Changelog
         run: |
@@ -110,3 +122,8 @@ jobs:
           generate_release_notes: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Sync staging to master
+      - name: Fast-forward staging to master
+        run: |
+          git push origin master:refs/heads/staging --force

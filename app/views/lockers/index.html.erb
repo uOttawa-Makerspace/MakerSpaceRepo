@@ -2,78 +2,18 @@
 
 <div>
     <h1 class="text-center">Locker Management</h1>
-    <%= link_to 'Show pending locker requests', admin_locker_rentals_path, class: 'text-center' %>
-    <details class="mb-3">
-        <summary>Assign a locker</summary>
-        <p>Assign a locker to someone, active immediately. The locker owner will be notified by email. Intended to assign lockers to staff.</p>
-        <%= render 'locker_rentals/assign_locker_form' %>
-    </details>
-    <details class="mb-3">
-        <summary>Make new lockers</summary>
-        <p>Create lockers with numbers start from up to and including end of range. For example, 100 to 150 would create 50 lockers named 100, 101, 102...</p>
-        <%= form_with controller: :lockers do |f| %>
-            <div class="d-md-flex align-items-baseline">
-                <span class="me-3">
-                    Create new lockers ranging from
-                </span>
-                <div class="me-3">
-                    <%= f.number_field :range_start, class: 'form-control', required: true %>
-                </div>
-                <span class="me-3">
-                    to
-                </span>
-                <div class="me-3">
-                    <%= f.number_field :range_end, class: 'form-control', required: true %>
-                </div>
-                <%= f.submit class: 'btn btn-primary' %>
-            </div>
-        <% end %>
-    </details>
+    <div class="text-center">
+        <%= link_to 'Show pending locker requests', admin_locker_rentals_path, class: 'fw-bold' %>
+    </div>
 
-    <details open class="mb-3">
-        <summary>Configure locker options</summary>
-        <%= form_with controller: :lockers, url: {action: :price}, method: :put, class: 'mb-3' do |f| %>
-            <%= f.label :value, 'Link to shopify product URL', class: 'form-label' %>
-            <div class="input-group">
-                <%= f.text_field :value, id: 'shopifyProductLink', class: 'form-control' %>
-                <%= f.button name: :name, value: :shopify_product_link, class: 'btn btn-primary' %>
-            </div>
-            <div class="form-text">
-                <span>Currently linked with </span> <%= @locker_product_link ? link_to(@locker_product_link, @locker_product_link) : 'nothing' %>
-            </div>
-        <% end %>
+    <h2>Assign a locker</h2>
+    <p>Assign a locker to someone, active immediately. The locker owner will be notified by email. Intended to assign lockers to staff.</p>
+    <%= render 'locker_rentals/assign_locker_form' %>
 
-        <% if @locker_product_info %>
-            <div class="card">
-                <div class="row">
-                    <div class="col-md-3" style="max-height: 15em">
-                        <%= image_tag @locker_product_info[:image_url], class: 'rounded-start object-fit-cover w-100 h-100' %>
-                    </div>
-                    <div class="col-md-9">
-                        <div class="card-body">
-                            <p class="card-title fs-3 fw-bold"><%= @locker_product_info[:title] %></p>
-                            <p class="card-text">
-                                <b>SKU</b> <code><%= @locker_product_info[:sku] %></code> <br />
-                                <b>Product ID</b> <code><%= @locker_product_info[:product_id] %></code> <br />
-                                <b>Variant ID</b> <code><%= @locker_product_info[:variant_id] %></code> <br />
-                                <b>Received pricing</b> <code><%= @locker_product_info[:price] %> CAD</code>
-                            </p>
-                            <p class="card-text">
-                                Last updated on <%= @locker_product_info[:updated_at].to_datetime.to_fs :long %>.
-                                <%= link_to 'View product', @locker_product_link %>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        <% elsif @locker_product_link %>
-            <p class="text-center text-danger fw-bold">
-                Failed to load product information.
-            </p>
-        <% else %>
-            <p class="text-center">No valid link assigned...</p>
-        <% end %>
-    </details>
+    <hr />
+
+    <h2>Configure locker options</h2>
+    <%= render 'locker_size_control' %>
 
     <hr />
 
@@ -93,51 +33,45 @@
 
     <hr />
 
-    <fieldset class="border p-3">
-        <legend class="w-auto float-none">Lockers</legend>
+    <h2 class="text-center">Locker Inventory</h2>
+    
+    <div class="mb-3">
+        <h3>Make new lockers</h3>
+        <p>Create lockers with numbers start from up to and including end of range. For example, 100 to 150 would create 50 lockers named 100, 101, 102...</p>
+        <%= form_with controller: :lockers do |f| %>
+            <div class="d-md-flex align-items-baseline mb-3">
+                <span class="me-3">
+                    Create new lockers ranging from
+                </span>
+                <div class="me-3">
+                    <%= f.number_field :range_start, class: 'form-control', required: true %>
+                </div>
+                <span class="me-3">
+                    to
+                </span>
+                <div class="me-3">
+                    <%= f.number_field :range_end, class: 'form-control', required: true %>
+                </div>
+            </div>
+            <div class="input-group">
+                <%= f.label :locker_size_id, 'Change locker size', class: 'input-group-text' %>
+                <%= f.select :locker_size_id, @locker_sizes.map { |size|
+                    [ size.size, size.id, { 'data-data' => @locker_product_info[:variants][size.shopify_gid].to_json } ]},
+                 {include_blank: 'Select variant...'}, { class: 'form-select locker-variant-select' } %>
+                <%= f.submit class: 'btn btn-primary' %>
+            </div>
+        <% end %>
+    </div>
+
+    <div>
         <% if @lockers.blank? %>
             <p>There are no lockers on record.</p>
+        <% elsif !@locker_product_info %>
+            <p>No locker product link loaded.</p>
         <% else %>
-            <table class="table table-striped" data-datatable data-page-length="25">
-                <thead class="table-primary">
-                    <tr>
-                        <th scope="col" class="dt-center">Locker</th>
-                        <th scope="col">Owned by</th>
-                        <th scope="col">Locker expires on</th>
-                        <th scope="col">Approved on</th>
-                        <th scope="col">Last actioned by</th>
-                        <th scope="col">Occupied?</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <% @lockers.each do |locker| %>
-                        <% current_rental = locker.locker_rentals.find(&:active?) %>
-                        <tr>
-                            <td scope="row" class="dt-center">
-                                <%= link_to "##{locker.specifier}", locker, class: 'btn btn-sm btn-outline-primary' %>
-                            </td>
-                            <td><%= current_rental&.rented_by&.username %></td>
-                            <td><%= current_rental&.owned_until&.to_date&.to_fs :long %></td>
-                            <td><%= current_rental&.updated_at %></td>
-                            <td><%= current_rental&.decided_by&.username %></td>
-                            <td>
-                                <% if current_rental.present? %>
-                                    <% if current_rental.expired? %>
-                                        <%= link_to current_rental, class: "btn btn-sm btn-outline-danger" do %>
-                                            <%= fa_icon :times %> Expired
-                                        <% end %>
-                                    <% else %>
-                                        <%= link_to current_rental, class: "btn btn-sm btn-outline-success" do %>
-                                            <%= fa_icon :check %> Valid
-                                        <% end %>
-                                    <% end %>
-                                <% end %>
-                            </td>
-                        </tr>
-                    <% end %>
-                </tbody>
-            </table>
+            <h3>Edit current lockers</h3>
+            <%= render 'locker_bulk_edit_modal' %>
+            <%= render 'lockers_inventory_table' %>
         <% end %>
-    </fieldset>
-
+    </div>
 </div>

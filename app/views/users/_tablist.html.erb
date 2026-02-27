@@ -1,90 +1,97 @@
-<li class="nav-item">
-  <a class="nav-link active" id="home-tab" data-bs-toggle="tab" href="#home" role="tab" aria-controls="home"
-    aria-selected="true">About</a>
-</li>
-<% if !@repo_user.deleted? %>
+<ul class="nav nav-tabs" role="tablist">
   <li class="nav-item">
-    <a class="nav-link" id="skills-tab" data-bs-toggle="tab" href="#profile-skills" role="tab"
-      aria-controls="profile" aria-selected="false">Skills Roadmap</a>
+    <a class="nav-link active" id="home-tab" data-bs-toggle="tab" href="#home"
+       role="tab" aria-selected="true">About</a>
   </li>
-  <li class="nav-item">
-          <a class="nav-link" id="certifications-tab" data-bs-toggle="tab"
-            href="#certifications-manager" role="tab" aria-controls="profile"
-            aria-selected="false">Certifications</a>
-        </li>
-  <li class="nav-item">
-    <a href="#programs-manager" class="nav-link" id="programs-tab" data-bs-toggle="tab" role="tab"
-      aria-controls="profile" aria-selected="false">Programs</a>
-  </li>
-  <% if @repo_user == current_user %>
+
+  <% if !@repo_user.deleted? %>
     <li class="nav-item">
-      <a href="#profile-safety-sheets" class="nav-link" id="safety-sheets-tab" data-bs-toggle="tab" role="tab"
-         aria-selected="false">Consent form</a>
+      <a class="nav-link" id="skills-tab" data-bs-toggle="tab" href="#profile-skills"
+         role="tab" aria-selected="false">Skills Roadmap</a>
     </li>
-  <% end %>
 
-  <!--- Staff Tabs -->
-  <% if @user.staff? %>
-    <div class="nav-item dropdown">
-      <a class="nav-link dropdown-toggle text-secondary" data-bs-toggle="dropdown" href="#" role="button"
-        aria-haspopup="true" aria-expanded="false">Staff</a>
-      <ul class="dropdown-menu">
-        <li class="nav-item">
-          <% if current_user.admin? %>
-            <%= link_to 'Staff Unavailabilities',  admin_calendar_index_path, class: 'dropdown-item' %>
-          <% else %>
-            <%= link_to 'Staff Unavailabilities', staff_my_calendar_index_path, class: 'dropdown-item' %>
-          <% end %>
-        </li>
+    <li class="nav-item">
+      <a class="nav-link" id="certifications-tab" data-bs-toggle="tab" href="#certifications-manager"
+         role="tab" aria-selected="false">Certifications</a>
+    </li>
 
-        
-        <li class="nav-item">
-          <a class="dropdown-item" id="keys-tab" data-bs-toggle="tab" href="#keys-manager" role="tab" aria-controls="profile" aria-selected="false">
-            Staff Keys
-          </a>
-        </li>
-        <% if @user.eql?(@repo_user) || @user.admin? %>
-          <li class="nav-item">
-            <a class="dropdown-item" id="key-certs-tab" data-bs-toggle="tab" href="#key-certs-manager" role="tab" aria-controls="profile" aria-selected="false">
-              Key Certifications
-            </a>
+    <li class="nav-item">
+      <a class="nav-link" id="programs-tab" data-bs-toggle="tab" href="#programs-manager"
+         role="tab" aria-selected="false">Programs</a>
+    </li>
+
+    <% if @repo_user == current_user %>
+      <li class="nav-item">
+        <a class="nav-link" id="safety-sheets-tab" data-bs-toggle="tab" href="#profile-safety-sheets"
+           role="tab" aria-selected="false">Consent Form</a>
+      </li>
+
+      <li class="nav-item">
+        <a class="nav-link" id="lockers-tab" data-bs-toggle="tab" href="#profile-lockers"
+           role="tab" aria-selected="false">Lockers</a>
+      </li>
+    <% end %>
+
+    <%# Staff Dropdown %>
+    <% if @user.staff? %>
+      <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle text-secondary" data-bs-toggle="dropdown"
+           href="#" role="button" aria-expanded="false">Staff</a>
+        <ul class="dropdown-menu">
+          <li>
+            <% path = current_user.admin? ? admin_calendar_index_path : staff_my_calendar_index_path %>
+            <%= link_to 'Staff Unavailabilities', path, class: 'dropdown-item' %>
           </li>
-          <% if @user.eql?(@repo_user) %>
-            <li class="nav-item">
-              <%= link_to 'Request Keys', key_requests_path, class: 'dropdown-item' %>
+
+          <li>
+            <a class="dropdown-item" id="keys-tab" data-bs-toggle="tab" href="#keys-manager"
+               role="tab" aria-selected="false">Staff Keys</a>
+          </li>
+
+          <% if @user.eql?(@repo_user) || @user.admin? %>
+            <li>
+              <a class="dropdown-item" id="key-certs-tab" data-bs-toggle="tab" href="#key-certs-manager"
+                 role="tab" aria-selected="false">Key Certifications</a>
             </li>
+
+            <% if @user.eql?(@repo_user) %>
+              <li>
+                <%= link_to 'Request Keys', key_requests_path, class: 'dropdown-item' %>
+              </li>
+            <% end %>
           <% end %>
-        <% end %>
-      </ul>
-    </div>
-  <% elsif @user.programs.pluck(:program_type).include?(Program::TEAMS) && @user.eql?(@repo_user) %>
-    <div class="nav-item dropdown">
-      <a class="nav-link dropdown-toggle text-secondary" data-bs-toggle="dropdown" href="#" role="button"
-         aria-haspopup="true" aria-expanded="false">Teams</a>
-      <ul class="dropdown-menu">
-        <li class="nav-item">
-          <a class="dropdown-item" id="key-certs-tab" data-bs-toggle="tab" href="#key-certs-manager" role="tab" aria-controls="profile" aria-selected="false">
-            Key Certifications
-          </a>
-        </li>
-        <li class="nav-item">
-          <%= link_to 'Request Keys', key_requests_path, class: 'dropdown-item' %>
-        </li>
-      </ul>
-    </div>
-  <% end %>
-  <!--- Admin Tabs -->
-  <% if @user.admin? %>
+        </ul>
+      </li>
+
+    <%# Teams Dropdown %>
+    <% elsif @user.eql?(@repo_user) && @user.programs.pluck(:program_type).include?(Program::TEAMS) %>
+      <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle text-secondary" data-bs-toggle="dropdown"
+           href="#" role="button" aria-expanded="false">Teams</a>
+        <ul class="dropdown-menu">
+          <li>
+            <a class="dropdown-item" id="key-certs-tab" data-bs-toggle="tab" href="#key-certs-manager"
+               role="tab" aria-selected="false">Key Certifications</a>
+          </li>
+          <li>
+            <%= link_to 'Request Keys', key_requests_path, class: 'dropdown-item' %>
+          </li>
+        </ul>
+      </li>
+    <% end %>
+
+    <%# Admin Tab %>
+    <% if @user.admin? %>
+      <li class="nav-item">
+        <a class="nav-link text-danger" id="admin-tab" data-bs-toggle="tab" href="#profile-admin"
+           role="tab" aria-selected="false">Admin</a>
+      </li>
+    <% end %>
+
+  <% else %>
     <li class="nav-item">
-      <a class="nav-link text-danger" id="admin-tab" data-bs-toggle="tab" data-bs-target="#adminTabPane" href="#profile-admin" role="tab"
-         aria-controls="adminTabPane" aria-selected="false">Admin</a>
+        <a class="nav-link text-danger" id="restore-tab" data-bs-toggle="tab" href="#user-restore"
+           role="tab" aria-selected="false">Restore User</a>
     </li>
   <% end %>
-<% else %>
-  <li class="nav-item">
-    <a class="nav-link text-danger" id="restore-tab" data-bs-toggle="tab" href="#user-restore"
-      role="tab" aria-controls="profile" aria-selected="false">
-          Restore User
-        </a>
-  </li>
-<% end %>
+</ul>

@@ -33,7 +33,7 @@ RSpec.describe StaffDashboardController, type: :controller do
   describe "GET /refresh_capacity" do
     context "logged as admin" do
       it "should return 200" do
-        get :refresh_capacity, format: :js, xhr: true
+        get :refresh_capacity, xhr: true
         expect(response).to have_http_status(:success)
       end
     end

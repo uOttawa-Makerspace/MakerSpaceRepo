@@ -170,8 +170,10 @@ step: params[:step]))
 
   def submit_for_approval
     return if @job_order.job_order_statuses.last&.job_status != JobStatus::DRAFT
+
     @tasks_missing_information = @job_order.job_tasks.select do |task|
-      task.job_type.blank? || (task.job_type.name != "Design Services" && task.job_service.blank?)
+      task.job_type.blank? ||
+        (task.job_type.job_service_groups.any? && task.job_service.blank?)
     end
     return if @tasks_missing_information.any?
 

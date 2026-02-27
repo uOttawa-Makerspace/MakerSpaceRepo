@@ -82,7 +82,8 @@ class JobOrdersController < SessionsController
 JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_statuses.last&.job_status) && @job_order.user_id == current_user.id
 
     @tasks_missing_information = @job_order.job_tasks.select do |task|
-      task.job_type.blank? || (task.job_type.name != "Design Services" && task.job_service.blank?)
+      # job type is missing or job type has a service not chosen
+      task.job_type.blank? || (task.job_type.job_service_groups.any? && task.job_service.blank?)
     end
     flash[:alert] = 
 "#{t('job_orders.alerts.missing_info')} #{@tasks_missing_information.map(&:title).join(', ')}" if @tasks_missing_information.any? 
