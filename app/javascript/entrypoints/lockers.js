@@ -99,7 +99,7 @@ function validateRange() {
   const lockersPossible = [...createSet.difference(currentLockers)].sort(
     (a, b) => a.length - b.length || a.localeCompare(b),
   );
-  console.log("lockers possible", lockersPossible);
+  // console.log("lockers possible", lockersPossible);
   const newRangeLockersPossible = document.querySelector(
     "#newRangeLockersPossible",
   );
@@ -190,10 +190,57 @@ document.addEventListener("turbo:load", function () {
       const formData = new FormData();
       formData.append(this.name, this.value);
 
+      const prevValue = this.tomselect.getValue();
       fetch(`/lockers/${lockerId}`, {
         method: "PATCH",
         headers: {
           "X-CSRF-Token": document.querySelector('[name="csrf-token"]').content,
+          Accept: "application/json",
+        },
+        body: formData,
+      })
+        .catch((error) => {
+          console.error(error);
+          // Put the value to what it was
+          this.tomSelect.setValue(prevValue);
+        })
+        .finally(() => {
+          // Hide spinner
+          spinner.hidden = true;
+          this.tomselect.enable();
+          // Show checkmark
+          checkmark.hidden = false;
+          // Hide after 300ms
+          setTimeout(() => {
+            checkmark.hidden = true;
+          }, 400);
+        });
+    });
+  });
+
+  const lockerAvailableSwitches = document.querySelectorAll(
+    "input[name='locker[available]']",
+  );
+
+  lockerAvailableSwitches.forEach((el) => {
+    el.addEventListener("change", function () {
+      // Find parent cell
+      let cell = this.closest("td");
+
+      // Show spinner
+      let spinner = cell.querySelector(".spinner-border");
+      spinner.hidden = false;
+
+      let checkmark = cell.querySelector("i");
+      let lockerId = this.dataset.lockerId;
+      const formData = new FormData();
+      formData.append(this.name, this.value);
+      // console.log(lockerId)
+      fetch(`/lockers/${lockerId}`, {
+        method: "PATCH",
+        headers: {
+          "X-CSRF-Token": document.querySelector('[name="csrf-token"]').content,
+          Accept: "application/json",
         },
         body: formData,
       })
@@ -203,7 +250,6 @@ document.addEventListener("turbo:load", function () {
         .finally(() => {
           // Hide spinner
           spinner.hidden = true;
-          this.tomselect.enable();
           // Show checkmark
           checkmark.hidden = false;
           // Hide after 300ms
@@ -220,6 +266,7 @@ document.addEventListener("turbo:load", function () {
     lockerSizeSelects.forEach((el) => {
       this.checked ? el.tomselect.enable() : el.tomselect.disable();
     });
+    lockerAvailableSwitches?.forEach((el) => (el.disabled = !this.checked));
   });
 });
 

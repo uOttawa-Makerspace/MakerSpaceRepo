@@ -63,15 +63,20 @@ class LockersController < AdminAreaController
           }
         end
       )
-    flash[:notice] = "Lockers created"
+    flash[:notice] = 'Lockers created'
     redirect_to lockers_path(anchor: 'lockerInventory')
   end
 
   def update
     @locker = Locker.find(params[:id])
     if @locker.update(locker_params)
-      flash[:notice] = 'Locker updated successfully'
-      redirect_to @locker
+      respond_to do |format|
+        format.html do
+          flash[:notice] = 'Locker updated successfully'
+          redirect_to @locker
+        end
+        format.json { head :no_content }
+      end
     else
       render :show, status: :unprocessable_content
     end
@@ -116,11 +121,11 @@ class LockersController < AdminAreaController
   end
 
   def locker_range_create_params
-    params.permit(:range_start, :range_end, :locker_size_id)
+    params.permit(:range_start, :range_end, :locker_size_id, :available)
   end
 
   def locker_params
-    params.require(:locker).permit(:locker_size_id, :specifier)
+    params.require(:locker).permit(:locker_size_id, :specifier, :available)
   end
 
   def rental_state_icon(state)
