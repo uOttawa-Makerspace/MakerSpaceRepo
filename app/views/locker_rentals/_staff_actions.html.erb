@@ -17,9 +17,8 @@
                                 </p>
                                 <%= form_with model: @locker_rental do |f| %>
                                     <%= f.select :locker_id,
-                                      Locker.available.order_by_specifier.map { |locker|
-                                          [locker.specifier, locker.id, { data: { size: locker.locker_size.size } }]
-                                      }, { include_blank: 'Select a locker' }, { class: 'form-select mb-2', required: true } %>
+                                    @locker_select_options,                                                                                                                                                                                             { include_blank: 'Select a locker' },
+                                     { class: 'form-select mb-2', required: true } %>
                                     <%= f.date_field :owned_until,
                                      value: @locker_rental.owned_until || end_of_this_semester,
                                      class: 'form-control mb-2' %>
@@ -48,8 +47,8 @@
                                 
                                 <%= f.select :locker_id,
                                   @locker_select_options,
-                                 { include_blank: 'Select a locker' },
-                                 { class: 'form-select mb-2' } %>
+                                  { include_blank: 'Select a locker' },
+                                 { class: 'form-select mb-2', required: true } %>
                                 <%= f.date_field :owned_until,
                                  value: @locker_rental.owned_until || end_of_this_semester,
                                  class: 'form-control mb-2' %>

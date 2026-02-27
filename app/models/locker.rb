@@ -7,6 +7,9 @@ class Locker < ApplicationRecord
 
   scope :order_by_specifier, -> { order specifier: :asc }
 
+  # Because :public is reserved
+  scope :public_shown, -> { where(available: true) }
+  
   scope :available,
         -> {
           where

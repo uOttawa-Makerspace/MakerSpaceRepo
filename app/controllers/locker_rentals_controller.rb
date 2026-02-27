@@ -40,7 +40,7 @@ class LockerRentalsController < SessionsController
         [
           locker.specifier,
           locker.id,
-          { data: { size: locker.locker_size.size } }
+          { data: { size: locker.locker_size.size, staff_only: !locker.available } }
         ]
       end
 
