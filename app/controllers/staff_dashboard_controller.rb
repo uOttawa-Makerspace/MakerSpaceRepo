@@ -39,13 +39,16 @@ class StaffDashboardController < StaffAreaController
           space_users:
             users_with_certs
               .map do |u|
-                u.attributes.except("password").merge(
+                u.attributes.except("password").merge({
                   "certifications" => u.certifications.map do |c|
                     {
                       id: c.id,
                       name: c.training_session&.training&.name_en || "Unknown"
                     }
-                  end
+                    end,
+                    "signed_safety_sheet" => u.walk_in_safety_sheets.any?,
+                    "membership_status" => u.has_active_membership?
+                  }
                 )
               end
               .as_json,
