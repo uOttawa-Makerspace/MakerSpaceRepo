@@ -26,7 +26,8 @@
         <% @lockers.each do |locker| %>
             <% current_rental = locker.locker_rentals.find(&:active?) %>
             <% locker_variant = @locker_product_info[:variants][locker.locker_size.shopify_gid] || {} %>
-            <tr data-locker-id="<%= locker.id %>">
+            <%# Embed locker id and specifier for other scripts to read %>
+            <tr data-locker-id="<%= locker.id %>" data-locker-specifier="<%= locker.specifier %>">
                 <td>
                 </td>
                 <td scope="row" class="dt-center" data-sort="<%= locker.specifier %>">

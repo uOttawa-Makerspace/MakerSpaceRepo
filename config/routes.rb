@@ -122,6 +122,7 @@ Rails.application.routes.draw do
 
   resources :lockers do
     collection do
+      post :create_multiple
       # Update only
       put :price
       put :enabled
