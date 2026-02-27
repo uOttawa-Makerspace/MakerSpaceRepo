@@ -67,6 +67,7 @@ class ShopifyService
             nodes {
               id
               displayName
+              title
               price
               sku
               media(first: 1) {

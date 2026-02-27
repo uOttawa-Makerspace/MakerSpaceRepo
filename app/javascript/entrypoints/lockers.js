@@ -89,7 +89,7 @@ document.addEventListener("turbo:load", function () {
 
   // Toggle to prevent accidental changes
   let lockerEditToggle = document.querySelector("#lockerEditToggle");
-  lockerEditToggle.addEventListener("change", function () {
+  lockerEditToggle?.addEventListener("change", function () {
     lockerSizeSelects.forEach((el) => {
       this.checked ? el.tomselect.enable() : el.tomselect.disable();
     });
@@ -120,7 +120,7 @@ document.addEventListener("turbo:load", function () {
   let lockerBulkEditList = document.querySelector("#lockerBulkEditList");
 
   // Clear list
-  lockerBulkEditList.replaceChildren();
+  lockerBulkEditList?.replaceChildren();
 
   // Fetch list of selected rows before modal submit
   let lockerBulkEditModal = document.querySelector("#lockerBulkEditModal");

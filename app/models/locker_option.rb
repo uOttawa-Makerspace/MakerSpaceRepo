@@ -42,6 +42,7 @@ class LockerOption < ApplicationRecord
           memo[node['id']] = {
             id: node['id'],
             displayName: node['displayName'],
+            title: node['title'],
             price: node['price'],
             sku: node['sku'],
             image: node['media']['nodes'].first&.dig('preview', 'url')
