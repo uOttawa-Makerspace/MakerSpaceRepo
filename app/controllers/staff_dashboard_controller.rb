@@ -7,12 +7,12 @@ class StaffDashboardController < StaffAreaController
     # Strict loading because this is used in table views
     # FIXME: Temporarily disabled because of space 119
     @signed_in_users = User
-                         .includes(certifications: {training_session: [:training, :user]})
-                         .includes(:lab_sessions)
-                         .where(lab_sessions: {sign_out_time: Time.zone.now.., space: @space })
+      .includes(certifications: {training_session: [:training, :user]})
+      .includes(:lab_sessions)
+      .where(lab_sessions: {sign_out_time: Time.zone.now.., space: @space })
 
     @signed_out_users = @space.recently_signed_out_users
-    
+
     respond_to do |format|
       format.html do
         @users = User.order(id: :desc).limit(10)
@@ -29,15 +29,28 @@ class StaffDashboardController < StaffAreaController
         @table_column_count = 0
       end
       format.json do
+        signed_in_user_ids = @space.signed_in_users.map(&:id)
+        users_with_certs = User
+          .where(id: signed_in_user_ids)
+          .includes(certifications: { training_session: :training })
+
         render json: {
-                 space: @space.as_json,
-                 space_users:
-                   @space
-                     .signed_in_users
-                     .map { |u| u.attributes.except "password" }
-                     .as_json,
-                 space_list: Space.all.pluck(:name, :id)
-               }
+          space: @space.as_json,
+          space_users:
+            users_with_certs
+              .map do |u|
+                u.attributes.except("password").merge(
+                  "certifications" => u.certifications.map do |c|
+                    {
+                      id: c.id,
+                      name: c.training_session&.training&.name_en || "Unknown"
+                    }
+                  end
+                )
+              end
+              .as_json,
+          space_list: Space.all.pluck(:name, :id)
+        }
       end
     end
   end
