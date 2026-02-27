@@ -157,13 +157,13 @@ class LockerRental < ApplicationRecord
 
   def send_move_notification
     # Send move only if rental is active
-    return unless active?
+    return unless active? && !saved_change_to_state
     return unless saved_change_to_locker_id? || saved_change_to_owned_until?
 
     LockerMailer
       .with(
         locker_rental: self,
-        moved_locker: saved_change_to_locker_id?,
+        moved_locker: Locker.find_by(id: saved_change_to_locker_id.first),
         moved_date: saved_change_to_owned_until
       )
       .locker_moved
