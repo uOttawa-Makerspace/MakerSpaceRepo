@@ -234,7 +234,7 @@ document.addEventListener("turbo:load", function () {
       let checkmark = cell.querySelector("i");
       let lockerId = this.dataset.lockerId;
       const formData = new FormData();
-      formData.append(this.name, this.value);
+      formData.append(this.name, this.checked);
       // console.log(lockerId)
       fetch(`/lockers/${lockerId}`, {
         method: "PATCH",
