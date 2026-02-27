@@ -44,7 +44,7 @@ en:
     new_request:
       header: New locker request
       description_html: |
-        <p>Here you can submit a request for a locker. Lockers are available for uOttawa students and community members.<p>
+        <p>Here you can submit a request for a locker rental. Lockers are available for uOttawa students and community members.<p>
         <p>Once your request is sent, we'll review it and check for availability. You will be notified by email once your request is approved and is ready for payment.
         You may cancel your request at any point untill it is paid, however once paid the locker rental fee is non-refundable.
             <b>You may have only one pending request at a time.</b></p>
@@ -101,7 +101,7 @@ fr:
     new_request:
       header: Nouvelle demande de casier
       description_html: |
-        <p>Ici vous pouvez demander une caiser. Des casiers sont disponibles pour des étudiants de uOttawa et les members de la communauté.</p>
+        <p>Ici vous pouvez demander une location d'une caiser. Des casiers sont disponibles pour des étudiants de uOttawa et les members de la communauté.</p>
         <p>Dès que votre demande est envoyée, nous l'exameinerons et verifierons de la disponibilité.
         Vous serez notifié par courriel quand votre demande est approuvé et est prêt pour la payement.
         Vous pouvez annuler la demande à tout moment, cependant après la payement la frais de la location de casier est non-remboursable.

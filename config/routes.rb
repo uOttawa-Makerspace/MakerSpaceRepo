@@ -122,11 +122,16 @@ Rails.application.routes.draw do
 
   resources :lockers do
     collection do
+      post :create_multiple
       # Update only
       put :price
       put :enabled
+      patch :bulk_edit
     end
   end
+  
+  resources :locker_sizes, only: [:create, :update, :destroy]
+
   resources :locker_rentals do
     collection do
       get :admin
