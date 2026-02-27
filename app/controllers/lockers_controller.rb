@@ -1,6 +1,6 @@
 class LockersController < AdminAreaController
   before_action :signed_in
-  before_action :locker_queries, only: [:show, :edit, :update]
+  before_action :locker_queries, only: [:show, :create, :edit, :update]
 
   before_action do
     unless current_user.staff?
@@ -89,11 +89,12 @@ class LockersController < AdminAreaController
 
   def locker_queries
     @locker_sizes = LockerSize.all
+    @locker_product_link = LockerOption.locker_product_link
     @locker_product_info = LockerOption.locker_product_info
   end
 
   def locker_range_create_params
-    params.permit(:range_start, :range_end)
+    params.permit(:range_start, :range_end, :locker_size_id)
   end
 
   def locker_params

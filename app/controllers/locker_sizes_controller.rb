@@ -9,7 +9,7 @@ class LockerSizesController < AdminAreaController
       redirect_to lockers_path
   end
 
-  def delete
+  def destroy
     LockerSize.find(params[:id]).destroy
     redirect_to lockers_path
   end
