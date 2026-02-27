@@ -4,6 +4,7 @@
     <div class="card-body">
         <% unless @locker_rental.cancelled? %>
             <div class="row g-3">
+                <%# Show checkout if under review and not a staff request or GNG student. %>
                 <% if @locker_rental.reviewing? %>
                     <div class="col-md-4">
                         <div class="card h-100 border-success">
@@ -11,21 +12,33 @@
                                 <h6 class="card-title text-success">
                                     <%= fa_icon 'paper-plane', text: 'Send to Checkout' %>
                                 </h6>
-                                <p class="card-text text-muted flex-grow-1">
-                                    Notify the user by email that their locker is approved and ready for payment.
-                                    The locker will then be assigned automatically once paid.
-                                </p>
-                                <%= form_with model: @locker_rental do |f| %>
-                                    <%= f.select :locker_id,
-                                    @locker_select_options,                                                                                                                                                                                             { include_blank: 'Select a locker' },
-                                     { class: 'form-select mb-2', required: true } %>
-                                    <%= f.date_field :owned_until,
-                                     value: @locker_rental.owned_until || end_of_this_semester,
-                                     class: 'form-control mb-2' %>
-                                    <%= f.button name: 'locker_rental[state]', value: 'await_payment',
-                                     class: 'btn btn-success w-100 mt-auto',
-                                     data: { confirm: 'Send payment notification to the user?' } do %>
-                                        <%= fa_icon 'paper-plane', text: 'Send to Checkout' %>
+                                <% if @locker_rental.requested_as_student? %>
+                                    <p class="card-text text-muted flex-grow-1">
+                                        Locker was requested as a student and cannot be sent to checkout.
+                                        If this request is valid, assign it now. If not, cancel the request
+                                    </p>
+                                <% elsif @locker_rental.requested_as_staff? %>
+                                    <p class="card-text text-muted flex-grow-1">
+                                        Locker was requested as a staff member and cannot be sent to checkout.
+                                        If this request is valid, assign it now. If not, cancel the request
+                                    </p>
+                                <% else %>
+                                    <p class="card-text text-muted flex-grow-1">
+                                        Notify the user by email that their locker is approved and ready for payment.
+                                        The locker will then be assigned automatically once paid.
+                                    </p>
+                                    <%= form_with model: @locker_rental do |f| %>
+                                        <%= f.select :locker_id,
+                                          @locker_select_options,                                                                                                                                                                                             { include_blank: 'Select a locker' },
+                                         { class: 'form-select mb-2', required: true } %>
+                                        <%= f.date_field :owned_until,
+                                         value: @locker_rental.owned_until || end_of_this_semester,
+                                         class: 'form-control mb-2' %>
+                                        <%= f.button name: 'locker_rental[state]', value: 'await_payment',
+                                         class: 'btn btn-success w-100 mt-auto',
+                                         data: { confirm: 'Send payment notification to the user?' } do %>
+                                            <%= fa_icon 'paper-plane', text: 'Send to Checkout' %>
+                                        <% end %>
                                     <% end %>
                                 <% end %>
                             </div>
@@ -44,7 +57,7 @@
                                 The user will receive an email notification.
                             </p>
                             <%= form_with model: @locker_rental do |f| %>
-                                
+
                                 <%= f.select :locker_id,
                                   @locker_select_options,
                                   { include_blank: 'Select a locker' },
