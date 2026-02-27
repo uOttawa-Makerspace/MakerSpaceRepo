@@ -156,6 +156,8 @@ class LockerRental < ApplicationRecord
   end
 
   def send_move_notification
+    # Send move only if rental is active
+    return unless active?
     return unless saved_change_to_locker_id? || saved_change_to_owned_until?
 
     LockerMailer
