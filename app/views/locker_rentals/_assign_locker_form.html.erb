@@ -1,11 +1,11 @@
-<%= form_with model: @locker_rental do |f| %>
+<%= form_with model: LockerRental.new do |f| %>
     <div class="row mb-3">
         <div class="col-md-2">
-            <%= f.label :locker_selected, "Select a locker" %>
+            <%= f.label :locker_id, "Select a locker" %>
         </div>
         <div class="col-md">
             <%= f.select :locker_id, Locker.available.order_by_specifier.map { |locker|
-                [locker.specifier, locker.id, {data: {size: locker.locker_size.size}}]
+                [locker.specifier, locker.id, { data: { size: locker.locker_size.size, staff_only: !locker.available } }]
             }, { include_blank: 'Select a locker...' }, { class: 'form-select' } %>
         </div>
     </div>
@@ -28,5 +28,6 @@
     <%= f.hidden_field :state, value: LockerRental.states[:active] %>
     <%= f.submit 'Assign locker', class: 'btn btn-success' %>
 <% end %>
+
 <%= vite_javascript_tag 'staff_dashboard_search', 'data-turbo-track': 'reload' %>
 <%= vite_javascript_tag 'locker_rental_form', 'data-turbo-track': 'reload' %>
