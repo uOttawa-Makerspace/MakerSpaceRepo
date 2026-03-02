@@ -2,6 +2,16 @@ import TomSelect from "tom-select";
 import DataTable from "datatables.net-bs5";
 import "datatables.net-select-bs5";
 
+// Checkbox to toggle the student section on the form
+document.addEventListener("turbo:load", function () {
+  document
+    .querySelector("#locker_rental_requested_as")
+    ?.addEventListener("change", function () {
+      document.querySelector("#repo-select").hidden = !this.checked;
+      document.querySelector("#repo-select").disabled = !this.checked;
+    });
+});
+
 // Handle grabbing the product gid on link paste
 function handleLinkInput(evt) {
   const url = this.value;

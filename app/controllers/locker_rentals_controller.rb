@@ -72,6 +72,7 @@ class LockerRentalsController < SessionsController
       return
     end
 
+    # Force all new lockers to be assigned to the user submitting the request
     @locker_rental =
       LockerRental.new(
         locker_rental_params.with_defaults(rented_by_id: current_user.id)
