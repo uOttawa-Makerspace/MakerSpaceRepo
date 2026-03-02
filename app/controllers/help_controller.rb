@@ -17,6 +17,13 @@ class HelpController < SessionsController
 
     if @help.save
       redirect_to help_path, notice: 'Your issue has been submitted.'
+      MsrMailer.issue_email(
+        @help.name,
+        @help.email,
+        @help.subject,
+        @help.comments.to_plain_text,
+        params[:app_version]
+      ).deliver_later
     else
       flash[:alert] = 'An error occurred while receiving your issue.'
       render :show, status: :unprocessable_entity
@@ -24,7 +31,7 @@ class HelpController < SessionsController
   rescue StandardError => e
     raise e unless Rails.env.production?
 
-    flash[:alert] = 'An error occurred while receiving your issue.'
+    flash[:alert] = 'An internal error occurred while receiving your issue.'
     render :show, status: :unprocessable_entity
   end
 

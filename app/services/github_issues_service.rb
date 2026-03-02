@@ -3,8 +3,8 @@ class GithubIssuesService
 
   # Send an issue and return the issue number
   def create_issue(reporter:, title:, body:)
-    return true unless Rails.env.development? || Rails.env.staging?
-
+    return {number: "111"} if Rails.env.test? || Rails.env.development?
+    
     # Hardcoded lol
     repo = 'uOttawa-Makerspace/CEED-Issues'
 
@@ -23,7 +23,7 @@ class GithubIssuesService
       title,
       final_body,
       { labels: %w[bug-report user-submitted] }
-    ).number
+    )
   rescue Octokit::Error => e
     Rails.logger.error("GitHub API Error: #{e.message}")
     false
