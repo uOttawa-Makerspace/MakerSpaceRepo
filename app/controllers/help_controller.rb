@@ -9,24 +9,23 @@ class HelpController < SessionsController
 
   def create
     @help = Help.new(help_params)
-    @help.validate
 
     unless verify_turnstile
+      flash[:alert] = 'Captcha check failed, please try again.'
+      render :show, status: :unprocessable_entity and return
     end
 
-    unless GithubIssuesService.new.create_issue(
-             reporter: @help.name,
-             title: @help.subject,
-             body: @help.comments
-           )
-      flash[:alert] = 'An error occured while receiving your issue.'
-      render :show
+    if @help.save
+      redirect_to help_path, notice: 'Your issue has been submitted.'
+    else
+      flash[:alert] = 'An error occurred while receiving your issue.'
+      render :show, status: :unprocessable_entity
     end
   rescue StandardError => e
     raise e unless Rails.env.production?
 
-    flash[:alert] = 'An error occured while receiving your issue.'
-    render :show
+    flash[:alert] = 'An error occurred while receiving your issue.'
+    render :show, status: :unprocessable_entity
   end
 
   def send_email
@@ -39,7 +38,9 @@ class HelpController < SessionsController
                       alert:
                         'Please make sure you fill out the captcha correctly.'
         end
-        format.json { render json: { status: 'error' }, status: :internal_server_error }
+        format.json do
+          render json: { status: 'error' }, status: :internal_server_error
+        end
       end
     end
 

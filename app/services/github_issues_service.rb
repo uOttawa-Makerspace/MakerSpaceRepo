@@ -1,10 +1,13 @@
 class GithubIssuesService
   TOKEN_EXPIRY_BUFFER = 300
 
+  # Send an issue and return the issue number
   def create_issue(reporter:, title:, body:)
+    return true unless Rails.env.development? || Rails.env.staging?
+
+    # Hardcoded lol
     repo = 'uOttawa-Makerspace/CEED-Issues'
 
-    # Combine user info with the description so you know who sent it
     final_body = <<~BODY
       **Reported by:** #{reporter}
       
@@ -20,7 +23,7 @@ class GithubIssuesService
       title,
       final_body,
       { labels: %w[bug-report user-submitted] }
-    )
+    ).number
   rescue Octokit::Error => e
     Rails.logger.error("GitHub API Error: #{e.message}")
     false

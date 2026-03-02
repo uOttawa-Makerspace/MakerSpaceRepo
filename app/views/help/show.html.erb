@@ -1,37 +1,41 @@
 <% provide(:title, 'Help Center') %>
 <section>
 
-  <h1 class="text-center">Help Center</h1>
-  <p class="text-center">If you're facing technical issues, please contact us.</p>
+    <h1 class="text-center"><%= t('.title') %></h1>
+    <p class="text-center"><%= t('.subtitle') %></p>
 
-  <div>
-    <%= form_with model: @help, url: help_path, html: { multipart: true } do |f| %>
-      <div class="mb-3">
-        <%= f.label :name, 'Full Name', class: 'form-label' %>
-        <%= f.text_field :name, autofocus: true, class: 'form-control' %>
-      </div>
-      <div class="mb-3">
-        <%= f.label :email, 'Email', class: 'form-label' %>
-        <%= f.text_field :email, class: 'form-control' %>
-      </div>
-      <div class="mb-3">
-        <%= f.label :subject, 'Subject', class: 'form-label' %>
-        <%= f.text_field :subject, class: 'form-control' %>
-      </div>
-      <div class="mb-3">
-          <%= f.label :type, 'Type of request', class: 'form-label' %>
-          <%= f.select :type, ["General question", "Technical issue", "Feature request", "Other"], {}, class: 'form-select' %>
-      </div>
-      <div class="mb-3">
-        <%= f.label :comments, 'Comments', class: 'form-label' %>
-        <%= f.rich_text_area :comments, placeholder: 'Please explain your issue.', class: 'form-control' %>
-      </div>
+    <div class="col-md-6 mx-auto">
+        <%= form_with model: @help, url: help_path, html: { multipart: true } do |f| %>
+            <div class="mb-3">
+                <%= f.label :name, t('.name'), class: 'form-label' %>
+                <%= f.text_field :name, autofocus: true, class: 'form-control', required: true, minlength: 2 %>
+            </div>
+            <div class="mb-3">
+                <%= f.label :email, t('.email'), class: 'form-label' %>
+                <%= f.text_field :email, class: 'form-control mb-2', required: true %>
+                <div class="form-check">
+                    <%= f.label :share_email, t('.share_email'), class: 'form-check-label' %>
+                    <%= f.check_box :share_email, class: 'form-check-input' %>
+                </div>
+            </div>
+            <div class="mb-3">
+                <%= f.label :subject, t('.subject'), class: 'form-label' %>
+                <%= f.text_field :subject, class: 'form-control', required: true, minlength: 10 %>
+            </div>
+            <div class="mb-3">
+                <%= f.label :type_of_request, t('.type_of_request'), class: 'form-label' %>
+                <%= f.select :type_of_request, ["General question", "Technical issue", "Feature request", "Other"], {}, class: 'form-select' %>
+            </div>
+            <div class="mb-3">
+                <%= f.label :comments, t('.comments'), class: 'form-label' %>
+                <%= f.rich_text_area :comments, placeholder: t('.comments_placeholder'), class: 'form-control', required: true, style: 'min-height: 12em' %>
+            </div>
 
-      <div class="mb-3">
-        <%#= turnstile_tag %>
-      </div>
+            <div class="mb-3">
+                <%= turnstile_tag %>
+            </div>
 
-      <%= submit_tag('Submit', class: 'btn btn-primary large') %>
-    <% end %>
-  </div>
+            <%= f.submit t('.submit'), class: 'btn btn-primary' %>
+        <% end %>
+    </div>
 </section>

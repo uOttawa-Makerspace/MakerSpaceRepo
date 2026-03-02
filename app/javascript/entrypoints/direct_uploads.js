@@ -1,3 +1,29 @@
+// application.js
+import "@rails/actiontext";
+import * as ActiveStorage from "@rails/activestorage";
+ActiveStorage.start();
+
+// Validate images only, max 5MB
+document.addEventListener("trix-file-accept", (e) => {
+  if (!e.file.type.startsWith("image/")) {
+    e.preventDefault();
+    alert("Only images can be attached");
+    return;
+  }
+  if (e.file.size > 5 * 1024 * 1024) {
+    e.preventDefault();
+    alert("Image must be under 5MB");
+  }
+});
+
+// Optional: track upload progress
+document.addEventListener("trix-attachment-add", (e) => {
+  const { attachment } = e;
+  if (attachment.file) {
+    console.log("Uploading:", attachment.file.name);
+  }
+});
+
 addEventListener("direct-upload:initialize", (event) => {
   const { target, detail } = event;
   const { id, file } = detail;
@@ -13,7 +39,7 @@ addEventListener("direct-upload:initialize", (event) => {
       <span class="direct-upload__filename">${file.name}</span>
     </div>
     <br />
-  `
+  `,
   );
 });
 
@@ -26,7 +52,7 @@ addEventListener("direct-upload:start", (event) => {
 addEventListener("direct-upload:progress", (event) => {
   const { id, progress } = event.detail;
   const progressElement = document.getElementById(
-    `direct-upload-progress-${id}`
+    `direct-upload-progress-${id}`,
   );
   progressElement.style.width = `${progress}%`;
 });
