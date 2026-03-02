@@ -223,8 +223,8 @@ Rails.application.routes.draw do
     get "admin"
   end
 
-  get "help", to: "help#main"
-  post "send_email", to: "help#send_email"
+  # HELP
+  resource :help, only: [:show, :create], controller: "help"
 
   # keep index singular, rename path
   # don't define second resourece, that breaks HTTP verbs

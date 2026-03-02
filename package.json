@@ -20,7 +20,7 @@
     "@hotwired/turbo-rails": "^8.0.20",
     "@popperjs/core": "^2.11.5",
     "@rails/actioncable": "^8.1.100",
-    "@rails/actiontext": "^8.1.100",
+    "@rails/actiontext": "^8.1.200",
     "@rails/activestorage": "^8.1.100",
     "@rails/ujs": "^7.1.3-4",
     "bootstrap": "^5.3.8",
