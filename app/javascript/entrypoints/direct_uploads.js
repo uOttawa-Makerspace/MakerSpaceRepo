@@ -3,7 +3,7 @@ import "@rails/actiontext";
 import * as ActiveStorage from "@rails/activestorage";
 ActiveStorage.start();
 
-// Validate images only, max 5MB
+// For when images get pasted into the trix editor
 document.addEventListener("trix-file-accept", (e) => {
   if (!e.file.type.startsWith("image/")) {
     e.preventDefault();
@@ -16,7 +16,6 @@ document.addEventListener("trix-file-accept", (e) => {
   }
 });
 
-// Optional: track upload progress
 document.addEventListener("trix-attachment-add", (e) => {
   const { attachment } = e;
   if (attachment.file) {
