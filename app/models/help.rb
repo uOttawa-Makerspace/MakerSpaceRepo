@@ -1,3 +1,4 @@
+# Bare class to help with validations
 class Help
   include ActiveModel::Validations
   include ActiveModel::Conversion
@@ -5,25 +6,10 @@ class Help
 
   attr_accessor :name, :email, :content, :subject, :comments
 
-  validates :name,
-            presence: {
-              message: "Veuillez entrer votre nom / You name is required."
-            }
-  validates :email,
-            presence: {
-              message:
-                "Veuillez entrer votre addresse couriel / An email address is required."
-            }
-  validates :subject,
-            presence: {
-              message:
-                "Veuillez entrer la ligne d'objet / Please enter the subject line"
-            }
-  validates :comments,
-            presence: {
-              message:
-                "Veuillez entrer vos commentaires / Please enter a message"
-            }
+  validates :name, presence: true, length: { minimum: 2 }
+  validates :email, presence: true, format: { with: URI::MailTo::EMAIL_REGEXP }
+  validates :subject, presence: true, length: { minimum: 10 }
+  validates :comments, length: { minimum: 50 }, presence: true
 
   def initialize(attributes = {})
     attributes.each { |name, value| send("#{name}=", value) }
