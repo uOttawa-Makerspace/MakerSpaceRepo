@@ -65,12 +65,14 @@ class LockerRentalsController < SessionsController
   end
 
   def create
-    unless LockerOption.lockers_enabled
+    # Allow staff to assign lockers
+    unless current_user.staff? || LockerOption.lockers_enabled
       flash[:alert] = 'New locker rentals are not currently accepted.'
       redirect_to locker_rentals_path
       return
     end
 
+    # Force all new lockers to be assigned to the user submitting the request
     @locker_rental =
       LockerRental.new(
         locker_rental_params.with_defaults(rented_by_id: current_user.id)
@@ -83,7 +85,8 @@ class LockerRentalsController < SessionsController
     end
 
     if @locker_rental.save
-      redirect_back fallback_location: :new_locker_rental
+      redirect_back fallback_location: :new_locker_rental,
+                    notice: ('Locker assigned' if @locker_rental.active?)
     else
       new_instance_attributes
       render :new, status: :unprocessable_content

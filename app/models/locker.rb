@@ -9,21 +9,29 @@ class Locker < ApplicationRecord
 
   # Because :public is reserved
   scope :public_shown, -> { where(available: true) }
-  
+
+  # Get all lockers, then subtract those with a subquery for lockers with an
+  # active rental.
   scope :available,
-        -> {
+        -> do
           where
-            .missing(:locker_rentals)
-            .or(where.not(locker_rentals: { state: :active }))
+            .not(
+              id:
+                joins(:locker_rentals).where(
+                  locker_rentals: {
+                    state: :active
+                  }
+                ).select(:id)
+            )
             .distinct
             .includes(:locker_size)
-        }
+        end
   scope :assigned,
-        -> {
+        -> do
           joins(:locker_rentals).where(
             locker_rentals: {
               state: :active
             }
           ).distinct
-        }
+        end
 end
