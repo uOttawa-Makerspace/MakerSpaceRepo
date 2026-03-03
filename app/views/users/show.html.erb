@@ -19,19 +19,13 @@
             <% end %>
             <p>Skills</p>
             <% @certifications.each do |certification| %>
-                <div class="row">
-                    <div class="col-md-6">
-                        <% if current_user.staff? %>
-                            <%= link_to certification.training.localized_name, staff_training_session_path(certification.training_session) %>
-                        <% else %>
-                            <%= certification.training.localized_name %>
-                        <% end %>
-                    </div>
-                    <div class="col-md-6">
-                        <span style="font-size: 15px;">
-                            <%= sanitize(certification_status(certification.training_session.level)) %>
-                        </span>
-                    </div>
+                <div class="d-flex flex-nowrap justify-content-between">
+                    <% if current_user.staff? %>
+                        <%= link_to certification.training.localized_name, staff_training_session_path(certification.training_session) %>
+                    <% else %>
+                        <%= certification.training.localized_name %>
+                    <% end %>
+                    <%= certification_status(certification.training_session.level) %>
                 </div>
             <% end %>
             <% if current_user.staff? || @repo_user == current_user %>
