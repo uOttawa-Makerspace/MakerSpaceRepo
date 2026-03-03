@@ -103,9 +103,9 @@ end
 #   rake "badges:get_and_update_badge_templates"
 # end
 
-every :day, at: "2am" do
-  rake "update_wiki_users:run"
-end
+# every :day, at: "2am" do
+#   rake "update_wiki_users:run"
+# end
 
 every :day, at: "9am" do
   rake "print_order_notifications:two_weeks_reminder"
