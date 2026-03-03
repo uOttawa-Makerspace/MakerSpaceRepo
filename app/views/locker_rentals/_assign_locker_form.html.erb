@@ -6,7 +6,7 @@
         <div class="col-md">
             <%= f.select :locker_id, Locker.available.order_by_specifier.map { |locker|
                 [locker.specifier, locker.id, { data: { size: locker.locker_size.size, staff_only: !locker.available } }]
-            }, { include_blank: 'Select a locker...' }, { class: 'form-select', required: true } %>
+            }, { include_blank: 'Search for a locker...' }, { class: 'form-select', required: true } %>
         </div>
     </div>
     <div class="row mb-3">
