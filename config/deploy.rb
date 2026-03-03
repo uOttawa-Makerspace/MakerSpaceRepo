@@ -19,6 +19,11 @@ set :linked_dirs,
     )
 
 
+# set :puma_user, 'deploy'
+# puma:enable tries to enable lingering but that needs a sudo password. Disable
+# since we already have it enabled on servers
+set :puma_enable_lingering, false
+
 # We seem to be hitting an IO bug because yjit is lazy-enabled. Startup ruby
 # with YJIT enabled immediately
 # NOTE: This doesn't have an effect because systemd starts a separate user
