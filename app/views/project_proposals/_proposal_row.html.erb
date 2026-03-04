@@ -33,8 +33,12 @@
     <td><%= project_proposal.created_at.to_formatted_s :long %></td>
     <td>
         <div class="d-flex justify-content-between">
-            <%= link_to fa_icon(:eye), project_proposal_path(project_proposal), class: 'btn btn-sm btn-outline-secondary', title: 'Show project proposal' %>
-            <%= link_to fa_icon(:pencil), edit_project_proposal_path(project_proposal), class: 'btn btn-sm btn-outline-secondary', title: 'Edit project proposal' %>
+            <div class="btn-group-vertical">
+                <%= link_to fa_icon(:eye, text: 'View'), project_proposal_path(project_proposal),
+                            class: 'btn btn-sm btn-outline-secondary', title: 'Show project proposal' %>
+                <%= link_to fa_icon(:pencil, text: 'Edit'), edit_project_proposal_path(project_proposal),
+                            class: 'btn btn-sm btn-outline-secondary', title: 'Edit project proposal' %>
+            </div>
             <div class="vr"></div>
             <button class="btn btn-sm btn-success"><%= fa_icon :check %></button>
             <button class="btn btn-sm btn-danger"><%= fa_icon :times %></button>

@@ -1,6 +1,6 @@
 <% if project_proposals.present? %>
     <div><%= will_paginate project_proposals, renderer: WillPaginate::ActionView::BootstrapLinkRenderer, param_name: (local_variables.include?(:param_name) ? param_name : 'page') %></div>
-    <table class="spacing_table text-center table table-striped">
+    <table class="text-center table table-striped table-hover">
         <thead class="table-primary">
             <tr>
                 <th>ID #</th>
