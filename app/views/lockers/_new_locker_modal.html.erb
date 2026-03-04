@@ -1,0 +1,79 @@
+<div class="modal" id="newRangeLockerModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Make a range of lockers</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                <p>Create lockers with numbers start from up to and including end of range. For example, 100 to 150 would create 50 lockers named 100, 101, 102...</p>
+                <%= form_with url: create_multiple_lockers_path, method: :post do |f| %>
+                    <div class="d-md-flex align-items-baseline mb-3">
+                        <span class="me-3">
+                            Create new lockers ranging from
+                        </span>
+                        <div class="me-3">
+                            <%= f.number_field :range_start, class: 'form-control', id: 'newLockerRangeStart', required: true %>
+                        </div>
+                        <span class="me-3">
+                            to
+                        </span>
+                        <div class="me-3">
+                            <%= f.number_field :range_end, class: 'form-control', id: 'newLockerRangeEnd', required: true %>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <%= f.label :locker_size_id, 'Change locker size', class: 'input-group-text' %>
+                        <%= f.select :locker_size_id, @locker_sizes.map { |size|
+                            [ size.size, size.id, { 'data-data' => @locker_product_info[:variants][size.shopify_gid].to_json } ]},
+                         {include_blank: 'Select variant...'}, { class: 'form-select locker-variant-select' } %>
+                        <%= f.submit class: 'btn btn-primary' %>
+                    </div>
+                <% end %>
+
+                <div id="newRangeLockersAlreadyPresent">
+                    <p>The following lockers are <b>already present</b> and will be skipped</p>
+                    <ul></ul>
+                </div>
+
+                <div id="newRangeLockersPossible">
+                    <p>The following lockers will be created</p>
+                    <ul></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="newLockerModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Make a single lockers</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                <p>Create a single locker</p>
+                <%= form_with controller: :lockers, model: Locker.new do |f| %>
+                    <div class="input-group mb-3">
+                        <%= f.label :specifier, class: 'input-group-text' %>
+                        <%= f.number_field :specifier, class: 'form-control', required: true %>
+                    </div>
+                    <div class="input-group mb-3">
+                        <%= f.label :locker_size_id, 'Change locker size', class: 'input-group-text' %>
+                        <%= f.select :locker_size_id, @locker_sizes.map { |size|
+                            [ size.size, size.id, { 'data-data' => @locker_product_info[:variants][size.shopify_gid].to_json } ]},
+                         {include_blank: 'Select variant...'}, { class: 'form-select locker-variant-select' } %>
+                    </div>
+                    <%= f.submit class: 'btn btn-primary float-end' %>
+                <% end %>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>

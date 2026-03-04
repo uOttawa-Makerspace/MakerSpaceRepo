@@ -40,12 +40,6 @@
                             <%= tag.span(rental.rented_by.role.humanize, class: 'badge text-bg-primary') if rental.rented_by.staff? %></td>
                         <td>
                             <%= rental.requested_as.to_s.humanize %>
-                            <br />
-                            <% if rental.repository %>
-                                <%= link_to "Linked repository", repository_path(rental.rented_by.username, rental.repository.id), title: rental.repository.title %>
-                            <% else %>
-                                No repository
-                            <% end if rental.requested_as_student? %>
                         </td>
                         <td><%= rental.created_at.to_date.to_formatted_s :long %></td>
                         <td><%= rental.updated_at&.to_date&.to_formatted_s :long %></td>

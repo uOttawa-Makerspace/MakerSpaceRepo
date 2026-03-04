@@ -106,21 +106,23 @@ RSpec.describe DiscountCode, type: :model do
     #   end
     # end
 
-    context "#delete_discount_code_from_shopify" do
-      it "should delete discount code from shop" do
-        shopify_price_rule_id = @discount_code.price_rule.shopify_price_rule_id
-        shopify_discount_code_id = @discount_code.shopify_discount_code_id
-        @discount_code.delete_discount_code_from_shopify
-        expect {
-        fetched_shopify_discount_code =
-          ShopifyAPI::DiscountCode.find(
-            id: shopify_discount_code_id,
-            price_rule_id: shopify_price_rule_id
-          )
-        }.to raise_error(ShopifyAPI::Errors::HttpResponseError)
-        #expect(fetched_shopify_discount_code.present?).to eq(false)
-      end
-    end
+    # NOTE: https://shopify.dev/changelog/removal-of-the-pricerule-resource-from-graphql-admin-api
+    # This is gone.
+    # context "#delete_discount_code_from_shopify" do
+    #   it "should delete discount code from shop" do
+    #     shopify_price_rule_id = @discount_code.price_rule.shopify_price_rule_id
+    #     shopify_discount_code_id = @discount_code.shopify_discount_code_id
+    #     @discount_code.delete_discount_code_from_shopify
+    #     expect {
+    #     fetched_shopify_discount_code =
+    #       ShopifyAPI::DiscountCode.find(
+    #         id: shopify_discount_code_id,
+    #         price_rule_id: shopify_price_rule_id
+    #       )
+    #     }.to raise_error(ShopifyAPI::Errors::HttpResponseError)
+    #     #expect(fetched_shopify_discount_code.present?).to eq(false)
+    #   end
+    # end
 
     after :context do
       PriceRule.delete_price_rule_from_shopify(@shopify_price_rule_id)

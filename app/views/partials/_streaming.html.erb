@@ -1,6 +1,14 @@
-<iframe width="650" height="365"
-        class="youtube-embed"
-        src= 'http://www.youtube.com/embed/<%= YoutubeID.from(url) %>?rel=0'
-        frameborder="0"
-        allowfullscreen>
-</iframe>
+<% youtube_id = YoutubeID.from(url).to_s %>
+<% if youtube_id.match?(/\A[a-zA-Z0-9_-]{11}\z/) %>
+  <iframe width="650" height="365"
+          class="youtube-embed"
+          src="https://www.youtube-nocookie.com/embed/<%= youtube_id %>?rel=0"
+          frameborder="0"
+          sandbox="allow-scripts allow-same-origin allow-popups"
+          referrerpolicy="no-referrer"
+          loading="lazy"
+          allowfullscreen>
+  </iframe>
+<% else %>
+  <p>Invalid video.</p>
+<% end %>
