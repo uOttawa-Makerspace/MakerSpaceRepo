@@ -86,4 +86,4 @@
     <p class="text-center text-muted">No rental history for this locker.</p>
 <% end %>
 
-<%= button_to 'Delete locker', @locker, method: :delete, class: 'btn btn-danger' %>
+<%= button_to 'Delete locker', @locker, method: :delete, class: 'btn btn-danger', data: {confirm: 'Are you sure you want to delete this locker?'} %>

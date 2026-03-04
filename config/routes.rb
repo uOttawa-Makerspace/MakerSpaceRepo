@@ -122,6 +122,7 @@ Rails.application.routes.draw do
 
   resources :lockers do
     collection do
+      post :create_multiple
       # Update only
       put :price
       put :enabled
@@ -129,7 +130,7 @@ Rails.application.routes.draw do
     end
   end
   
-  resources :locker_sizes, only: [:create, :update, :delete]
+  resources :locker_sizes, only: [:create, :update, :destroy]
 
   resources :locker_rentals do
     collection do
@@ -222,8 +223,8 @@ Rails.application.routes.draw do
     get "admin"
   end
 
-  get "help", to: "help#main"
-  post "send_email", to: "help#send_email"
+  # HELP
+  resource :help, only: [:show, :create], controller: "help"
 
   # keep index singular, rename path
   # don't define second resourece, that breaks HTTP verbs

@@ -10,12 +10,14 @@ document.addEventListener("turbo:load", function () {
           option: function (data, escape) {
             let size = escape(data.size);
             let text = escape(data.text);
-            return `<div>Locker ${text} - Size ${size}</div>`;
+            let staffOnly = data.staffOnly == "true" ? " - Staff only" : "";
+            return `<div>Locker ${text} - Size ${size}${staffOnly}</div>`;
           },
           item: function (data, escape) {
             let size = escape(data.size);
             let text = escape(data.text);
-            return `<div>Locker ${text} - Size ${size}</div>`;
+            let staffOnly = data.staffOnly == "true" ? " - Staff only" : "";
+            return `<div>Locker ${text} - Size ${size}${staffOnly}</div>`;
           },
         },
       });

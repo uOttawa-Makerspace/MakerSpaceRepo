@@ -1,10 +1,10 @@
 class LockersController < AdminAreaController
   before_action :signed_in
-  before_action :locker_queries, only: [:show, :edit, :update]
+  before_action :locker_queries, only: %i[show create create_multiple update]
 
   before_action do
     unless current_user.staff?
-      flash[:alert] = "You cannot access this area"
+      flash[:alert] = 'You cannot access this area'
       redirect_back(fallback_location: root_path)
     end
   end
@@ -31,7 +31,21 @@ class LockersController < AdminAreaController
   # Make a range of lockers
   # Maybe later this can be modified to take explicit non-numeric names
   def create
-    if locker_range_create_params[:range_start] >= locker_range_create_params[:range_end]
+    @locker = Locker.new(locker_params)
+
+    if @locker.save
+      flash[:notice] = "Created locker ##{@locker.specifier}"
+      redirect_to @locker
+    else
+      flash[:alert] = @locker.errors.full_messages.to_sentence.to_s
+      render :index, status: :unprocessable_entity
+    end
+  end
+
+  # Custom route to create a range
+  def create_multiple
+    if locker_range_create_params[:range_start] >=
+         locker_range_create_params[:range_end]
       flash[:alert] = 'Range end must be larger than range start'
       return
     end
@@ -39,17 +53,30 @@ class LockersController < AdminAreaController
     @lockers =
       Locker.create(
         (
-          locker_range_create_params[:range_start].to_i..locker_range_create_params[:range_end].to_i
-        ).map { |specifier| { specifier: } }
+          locker_range_create_params[
+            :range_start
+          ].to_i..locker_range_create_params[:range_end].to_i
+        ).map do |specifier| # Map params to a create hash
+          {
+            specifier:,
+            locker_size_id: locker_range_create_params[:locker_size_id]
+          }
+        end
       )
-    render action: :index, status: :created
+    flash[:notice] = 'Lockers created'
+    redirect_to lockers_path(anchor: 'lockerInventory')
   end
 
   def update
     @locker = Locker.find(params[:id])
     if @locker.update(locker_params)
-      flash[:notice] = 'Locker updated successfully'
-      redirect_to @locker
+      respond_to do |format|
+        format.html do
+          flash[:notice] = 'Locker updated successfully'
+          redirect_to @locker
+        end
+        format.json { head :no_content }
+      end
     else
       render :show, status: :unprocessable_content
     end
@@ -58,7 +85,7 @@ class LockersController < AdminAreaController
   def destroy
     @locker = Locker.find(params[:id])
     if @locker.destroy
-      flash[:notice] = "Locker removed"
+      flash[:notice] = 'Locker removed'
       redirect_to lockers_path
     else
       redirect_to @locker, alert: @discount.errors.full_messages.to_sentence
@@ -89,15 +116,16 @@ class LockersController < AdminAreaController
 
   def locker_queries
     @locker_sizes = LockerSize.all
+    @locker_product_link = LockerOption.locker_product_link
     @locker_product_info = LockerOption.locker_product_info
   end
 
   def locker_range_create_params
-    params.permit(:range_start, :range_end)
+    params.permit(:range_start, :range_end, :locker_size_id, :available)
   end
 
   def locker_params
-    params.require(:locker).permit(:locker_size_id, :specifier)
+    params.require(:locker).permit(:locker_size_id, :specifier, :available)
   end
 
   def rental_state_icon(state)

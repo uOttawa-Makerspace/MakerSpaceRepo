@@ -1,11 +1,13 @@
-# v2026.02.21-025751 (2026-02-21)
+# v2026.03.02-221010 (2026-03-02)
 
 #changelog
 
 ## 📦 Other Changes
 
-- fix test (#1899) by @UnknownCrafts
+- add certifications to the API output for makerapp (#1902) by @UnknownCrafts
+- Feat/help to GitHub (#1906) by @PencilAmazing
+- Staging (#1905) by @PencilAmazing
 
 
 
-**Full Changelog**: https://github.com/uOttawa-Makerspace/MakerSpaceRepo/compare/v2026.02.21-025345...v2026.02.21-025751
+**Full Changelog**: https://github.com/uOttawa-Makerspace/MakerSpaceRepo/compare/v2026.02.27-200104...v2026.03.02-221010

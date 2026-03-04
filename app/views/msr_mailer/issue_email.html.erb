@@ -1,24 +1,28 @@
 <% content_for :preheader do %>
-  Makerepo - Issue Report Received
+    Makerepo - Issue Report Received
 <% end %>
 
 <% content_for :team_name do %>
-  The MakerRepo Team
+    The MakerRepo Team
 <% end %>
 
 <% content_for :why_received do %>
-  You have received this email because you submitted an issue on <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a>.
+    You have received this email because you submitted an issue on <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a>.
 <% end %>
 
-<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello <%= @name %>,</p>
-<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-  New issue reported by <b><%= @name %>, <%= @email %></b>:
-  <br />
-  Subject: <b><%= @subject %></b> <br>
-  <%= @comments %>
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello <%= @name %>,
+    <br />
+    We have received the following help request from you:
+</p>
 
-  <% if @app_version.present? %>
-    <br>
-    App Version: <%= @app_version %>
-  <% end %>
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
+    New issue reported by <b><%= @name %>, <%= @email %></b>:
+    <br />
+    Subject: <b><%= @subject %></b> <br>
+    <%= @comments %>
+
+    <% if @app_version.present? %>
+        <br>
+        App Version: <%= @app_version %>
+    <% end %>
 </p>

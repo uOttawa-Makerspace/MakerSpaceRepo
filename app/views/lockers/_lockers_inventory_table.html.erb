@@ -15,10 +15,10 @@
             <th></th>
             <th data-width="1%" scope="col">Locker</th>
             <th data-width="20%" scope="col">Size & SKU</th>
+            <th scope="col">Public?</th>
             <th scope="col">Owned by</th>
             <th scope="col">Locker expires on</th>
             <th scope="col">Approved on</th>
-            <!-- <th scope="col">Last actioned by</th> -->
             <th data-width="1%" scope="col">Occupied?</th>
         </tr>
     </thead>
@@ -26,7 +26,8 @@
         <% @lockers.each do |locker| %>
             <% current_rental = locker.locker_rentals.find(&:active?) %>
             <% locker_variant = @locker_product_info[:variants][locker.locker_size.shopify_gid] || {} %>
-            <tr data-locker-id="<%= locker.id %>">
+            <%# Embed locker id and specifier for other scripts to read %>
+            <tr data-locker-id="<%= locker.id %>" data-locker-specifier="<%= locker.specifier %>">
                 <td>
                 </td>
                 <td scope="row" class="dt-center" data-sort="<%= locker.specifier %>">
@@ -34,14 +35,26 @@
                 </td>
                 <td>
                     <div class="position-relative">
-                        <%= select_tag :locker_size_id, options_for_select(@locker_sizes.map { |size|
+                        <%= select_tag 'locker[locker_size_id]', options_for_select(@locker_sizes.map { |size|
                             [ size.size, size.id, { 'data-data' => @locker_product_info[:variants][size.shopify_gid].to_json } ]
                         }, locker.locker_size.id), class: 'form-select locker-variant-select', disabled: true, data: { locker_size_for: locker.id } %>
                         
-                        <div class="spinner-border spinner-border-sm position-absolute top-0 end-0" hidden>
+                        <div class="spinner-border spinner-border-sm position-absolute top-0 end-0" style="z-index: 999" hidden>
                             <span class="visually-hidden">Changing size...</span>
                         </div>
-                        <%= fa_icon :check, class: 'position-absolute top-0 end-0 text-success', hidden: true %>
+                        <%= fa_icon :check, class: 'position-absolute top-0 end-0 text-success', style: "z-index: 999" , hidden: true %>
+                    </div>
+                </td>
+                <td class="position-relative">
+                    <div class="form-check form-switch">
+                        <%= check_box_tag 'locker[available]', id: nil, class: 'form-check-input',
+                                          type: 'checkbox', role: 'switch', disabled: true, checked: locker.available,
+                                          data: { locker_id: locker.id }
+                        %>
+                        <div class="spinner-border spinner-border-sm position-absolute top-0 end-0" style="z-index: 999" hidden>
+                            <span class="visually-hidden">Changing size...</span>
+                        </div>
+                        <%= fa_icon :check, class: 'position-absolute top-0 end-0 text-success', style: "z-index: 999" , hidden: true %>
                     </div>
                 </td>
                 <td><%= link_to current_rental&.rented_by&.username, current_rental&.rented_by&.username if current_rental&.rented_by %></td>

@@ -67,6 +67,7 @@ class ShopifyService
             nodes {
               id
               displayName
+              title
               price
               sku
               media(first: 1) {
@@ -86,7 +87,7 @@ class ShopifyService
     QUERY
 
     response = admin_client.query(query:)
-    puts response.body['data']
+    # puts response.body['data']
     response.body['data']['product']
   rescue StandardError => e
     Rails.logger.error e

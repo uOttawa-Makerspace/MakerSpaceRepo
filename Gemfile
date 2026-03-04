@@ -32,7 +32,7 @@ gem "kaminari"
 gem "mocha"
 gem "net-ssh"
 gem "nobspw_rails7"
-gem "octokit"
+gem "octokit", '~> 10.0'
 gem "pg", "~> 1.6"
 gem "prettier_print"
 gem "pry", "~> 0.15"

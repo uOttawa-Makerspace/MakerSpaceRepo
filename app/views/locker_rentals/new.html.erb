@@ -14,7 +14,13 @@
     <tbody>
         <% LockerSize.find_each do |size| %>
             <tr>
-                <td><%= size.lockers.available.count %></td>
+                <td>
+                    <% if current_user.staff? %>
+                        <%= size.lockers.available.count %>
+                    <% else %>
+                        <%= size.lockers.available.public_shown.count %>
+                    <% end %>
+                </td>
                 <td><%= size.size %></td>
                 <td>$<%= @locker_product_info[:variants][size.shopify_gid][:price] %> per semester</td>
             </tr>
@@ -27,8 +33,6 @@
 
 <% if !LockerOption.lockers_enabled %>
     Locker requests are not currently accepted.
-<% elsif Locker.available.none? %>
-    There are no lockers available for request right now.
 <% elsif @pending_locker_request&.reviewing? %>
     <p>You have a pending request for a locker submitted on <b><%= @pending_locker_request.created_at.to_date %></b>.
         You will receive a response shortly. <%= link_to fa_icon('arrow-right', text: 'View current locker request', right: true), @pending_locker_request %></p>
@@ -43,8 +47,11 @@
             </div>
             <div>
                 <%= f.label :preferred_locker_id, 'You can request for a specific locker, if it is available (optional)', class: 'form-label' %>
-                <%= f.select :preferred_locker_id, Locker.available.order_by_specifier.map { |locker|
-                    [locker.specifier, locker.id, {data: {size: locker.locker_size.size}}]
+                <%# This could be moved to a helper %>
+                <% preferrable_lockers = Locker.available %>
+                <% preferrable_lockers = preferrable_lockers.public_shown unless current_user.staff? %>
+                <%= f.select :preferred_locker_id, preferrable_lockers.order_by_specifier.map { |locker|
+                    [locker.specifier, locker.id, {data: {size: locker.locker_size.size, staff_only: !locker.available }}]
                 }, { include_blank: '' }, { class: 'form-select' } %>
                 <div class="form-text">Locker location is dependent on availability.</div>
             </div>
