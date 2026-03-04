@@ -60,7 +60,7 @@ class TrainingSession < ApplicationRecord
 
   scope :by_trainers, ->(trainer_id) { where(user_id: trainer_id) }
 
-  scope :by_course, ->(course) { where(course_names: course) }
+  scope :by_course, ->(course) { where(course_name_id: course) }
 
   scope :by_status,
         ->(status) {

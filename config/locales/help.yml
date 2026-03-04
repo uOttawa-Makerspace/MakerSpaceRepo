@@ -1,0 +1,27 @@
+en:
+  help:
+    show:
+      title: Help Center
+      subtitle: Please contact us if you have questions, issues, or suggestions!
+      share_email: Share your email with the team if we need to contact you
+      name: Name
+      email: Email address
+      subject: Subject
+      type_of_request: Type of request
+      comments: Comments
+      comments_placeholder: Please explain your issue and be as descriptive as you can. You can paste images.
+      submit: Submit
+
+fr:
+  help:
+    show:
+      title: Centre d'Aide
+      subtitle: Si vous avez des questions, des problèmes, ou des idées, contactez-nous!
+      share_email: Partager votre courriel avec l'equipe si nous avous besoin de vous contacter
+      name: Nom
+      email: Address de courriel
+      subject: Sujet
+      type_of_request: Type de demande
+      comments: Commentaire
+      comments_placeholder: Expliquer votre problème s'il vous plaît, et soyez aussi descriptif que nécessaire. Vous pouvez coller des images
+      submit: Soumettre

@@ -15,8 +15,8 @@ class KeyRequest < ApplicationRecord
     "The nearest first aid kit is in the following location:",
     "The nearest designated first-aider is in the following location:",
     "A list of all designated first aiders is in the following location:",
-    "Information concerning the Faculty’s Health and Safety staff members can be found online. The Health, Safety and Risk Manager for theFaculty of Engineering is:",
-    "The Office of Risk Management’s Health and safety committee webpage lists the names of all committee members. My representative on the Office Functional Occupational Health and Safety Committee or the Laboratory Functional Occupational Health and Safety Committee is:",
+    "Information concerning the Faculty's Health and Safety staff members can be found online. The Health, Safety and Risk Manager for theFaculty of Engineering is:",
+    "The Office of Risk Management's Health and safety committee webpage lists the names of all committee members. My representative on the Office Functional Occupational Health and Safety Committee or the Laboratory Functional Occupational Health and Safety Committee is:",
     "The nearest emergency eyewash station is in the following location:",
     "The nearest safety shower is in the following location",
     "The nearest spill kit is in the following location:",
@@ -32,8 +32,9 @@ class KeyRequest < ApplicationRecord
   validates :phone_number,
             :emergency_contact_phone_number,
             format: {
-              with: /\A\d{10}\z/,
-              message: "should be in xxxxxxxxxx format"
+             # Got regex from here: https://stackoverflow.com/questions/16699007/regular-expression-to-match-standard-10-digit-phone-number
+              with: /\A(\+\d{1,2}\s?)?\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4}\z/,
+              message: "only allows numbers, parentheses, dashes, spaces, dots, and +"
             }
 
   validates :student_number,

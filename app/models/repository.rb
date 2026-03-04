@@ -41,9 +41,8 @@ class Repository < ApplicationRecord
 
   scope :fuzzy_search,
         ->(query) {
-          where(
-              'LOWER(UNACCENT(title)) % LOWER(UNACCENT(:query)) OR
-                LOWER(UNACCENT(description)) % LOWER(UNACCENT(:query))',
+          where('SIMILARITY(LOWER(UNACCENT(title)), LOWER(UNACCENT(:query))) > 0.15 OR
+          SIMILARITY(LOWER(UNACCENT(description)), LOWER(UNACCENT(:query))) > 0.15',
               query:
             )
             .order(
@@ -51,7 +50,6 @@ class Repository < ApplicationRecord
                 [Arel.sql('similarity(title, ?) DESC'), [query]]
               )
             )
-            .limit(30)
         }
 
   def self.license_options

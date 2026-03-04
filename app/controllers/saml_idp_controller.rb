@@ -6,7 +6,7 @@ class SamlIdpController < ApplicationController
   include SamlIdp::Controller
   include ApplicationHelper
 
-  protect_from_forgery
+  protect_from_forgery with: :exception
 
   before_action :validate_saml_request, only: %i[login auth]
 

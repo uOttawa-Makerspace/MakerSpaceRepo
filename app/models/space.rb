@@ -8,7 +8,6 @@ class Space < ApplicationRecord
   has_many :users, through: :lab_sessions
   has_and_belongs_to_many :trainings
   has_many :training_sessions, dependent: :destroy
-  has_many :training_levels, dependent: :destroy
   has_many :certifications, through: :training_sessions
   has_many :volunteer_tasks, dependent: :destroy
   has_many :popular_hours, dependent: :destroy

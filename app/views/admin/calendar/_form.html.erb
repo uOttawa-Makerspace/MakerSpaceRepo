@@ -5,169 +5,177 @@
                 <h5 class="modal-title" id="eventModalLabel">Add Event</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-                <div class="modal-body">
-                    <%= form_with url: admin_events_path, scope: :event, local: false, html: { id: "eventForm", class: "useTurbo" }  do |f| %>
-                        <div id="staff_select_container" class="mb-3">
-                            <label class="form-label">Assigned Staff</label>
-                            <select name="staff_select[]" id="staff_select" class="form-select" multiple="true"></select>
-                        </div>
+            <div class="modal-body">
+                <%= form_with url: admin_events_path, scope: :event, local: false, html: { id: "eventForm", class: "useTurbo" } do |f| %>
+                    <div id="staff_select_container" class="mb-3">
+                        <label class="form-label">Assigned Staff</label>
+                        <select name="staff_select[]" id="staff_select" class="form-select" multiple></select>
+                    </div>
 
-                        <div class="form-check mb-3">
-                            <input class="form-check-input" type="checkbox" id="all_day_checkbox">
-                            <label class="form-check-label" for="all_day_checkbox">All Day</label>
-                        </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="all_day_checkbox">
+                        <label class="form-check-label" for="all_day_checkbox">All Day</label>
+                    </div>
 
-                        <div class="row">
-                            <div class="col">
+                    <div class="row">
+                        <div class="col">
                             <%= f.label :start_time, "Start Time", class: "form-label", required: "true" %>
                             <%= f.datetime_local_field :start_time, class: "form-control mb-3", id: "start_time_field", required: "true" %>
-                            </div>
-                            <div class="col">
+                        </div>
+                        <div class="col">
                             <%= f.label :end_time, "End Time", class: "form-label" %>
                             <%= f.datetime_local_field :end_time, class: "form-control mb-3", id: "end_time_field", disabled: false %>
-                            </div>
+                        </div>
+                    </div>
+
+                    <div id="time_error" class="alert alert-danger d-none mb-3">
+                        End time must be after start time
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Repeats</label>
+                        <select id="recurrence_frequency" class="form-select">
+                            <option value="">Does not repeat</option>
+                            <option value="DAILY">Daily</option>
+                            <option value="WEEKLY">Weekly</option>
+                            <option value="MONTHLY">Monthly</option>
+                        </select>
+                    </div>
+
+                    <div id="recurrence_options" style="display: none;">
+                        <div class="mb-3">
+                            <label class="form-label">Ends (Leave blank for never)</label>
+                            <input type="date" id="recurrence_until" class="form-control">
                         </div>
 
-                        <div id="time_error" class="alert alert-danger d-none mb-3">
-                            End time must be after start time
+                        <div id="weekly_options" class="mb-3" style="display: none;">
+                            <label class="form-label">Repeat On</label>
+                            <div class="d-flex gap-2">
+                                <% %w[SU MO TU WE TH FR SA].each do |day| %>
+                                <span>
+                                    <input class="form-check-input dayCheckbox" type="checkbox" value="<%= day %>" id="day_<%= day %>">
+                                    <label class="form-check-label" for="day_<%= day %>"><%= day %></label>
+                                </span>
+                                <% end %>
+                            </div>
+
+                            <div id="day_freq_error" class="alert alert-danger d-none my-3">
+                                At least one day must be selected
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Event Type</label>
+                        <%= f.select :event_type,
+                            options_for_select([['Shift', 'shift'], ['Training', 'training'], ['Meeting', 'meeting'], ['Other', 'other'], ['Unavailability', 'unavailability']]),
+                            {include_blank: 'Select an event type'},
+                            class: 'form-select',
+                            id: 'event_type_select',
+                            required: true %>
+                    </div>
+
+                    <div id="training-fields" style="display: none;">
+                        <div class="mb-3">
+                            <label class="form-label">Training</label>
+                            <%= f.collection_select :training_id,
+                                Training.joins(:spaces_trainings)
+                                        .where(spaces_trainings: { space_id: @space_id })
+                                        .select(:id, :name_en),
+                                :id, :name_en,
+                                {include_blank: 'Select a training'},
+                                id: 'training_select',
+                                class: 'form-select' %>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Repeats</label>
-                            <select id="recurrence_frequency" class="form-select">
-                                <option value="">Does not repeat</option>
-                                <option value="DAILY">Daily</option>
-                                <option value="WEEKLY">Weekly</option>
-                                <option value="MONTHLY">Monthly</option>
-                            </select>
-                        </div>
-
-                        <div id="recurrence_options" style="display: none;">
-                            <div class="mb-3">
-                                <label class="form-label">Ends (Leave blank for never)</label>
-                                <input type="date" id="recurrence_until" class="form-control">
-                            </div>
-
-                            <div id="weekly_options" class="mb-3" style="display: none;">
-                                <label class="form-label">Repeat On</label>
-                                <div class="d-flex gap-2">
-                                    <% %w[SU MO TU WE TH FR SA].each do |day| %>
-                                    <span>
-                                        <input class="form-check-input dayCheckbox" type="checkbox" value="<%= day %>" id="day_<%= day %>">
-                                        <label class="form-check-label" for="day_<%= day %>"><%= day %></label>
-                                    </span>
-                                    <% end %>
-                                </div>
-
-                                <div id="day_freq_error" class="alert alert-danger d-none my-3">
-                                    At least one day must be selected
-                                </div>
-                            </div>
+                            <label class="form-label">Language</label>
+                            <%= f.select :language,
+                                options_for_select([['English', 'en'], ['French', 'fr']]),
+                                {include_blank: 'Select language'},
+                                id: 'language_select',
+                                class: 'form-select' %>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Event Type</label>
-                            <%= f.select :event_type,
-                                options_for_select([['Shift', 'shift'], ['Training', 'training'], ['Meeting', 'meeting'], ['Other', 'other']]),
-                                {include_blank: 'Select an event type'},
-                                class: 'form-select',
-                                id: 'event_type_select',
-                                required: true %>
+                            <label class="form-label">Course</label>
+                            <%= f.select :course_name,
+                                options_for_select(CourseName.all.map {|c| [c.name, c.id]}),
+                                {include_blank: 'Select course'},
+                                id: 'course_select',
+                                class: 'form-select' %>
                         </div>
+                    </div>
 
-                        <div id="training-fields">
-                            <div class="mb-3">
-                                <label class="form-label">Training</label>
-                                <%= f.collection_select :training_id,
-                                    Training.joins(:spaces_trainings)
-                                            .where(spaces_trainings: { space_id: @space_id })
-                                            .select(:id, :name_en),
-                                    :id, :name_en,
-                                    {include_blank: 'Select a training'},
-                                    id: 'training_select',
-                                    class: 'form-select' %>
-                            </div>
+                    <%= f.hidden_field :utc_start_time, id: "utc_start_time" %>
+                    <%= f.hidden_field :utc_end_time, id: "utc_end_time" %>
+                    <%= f.hidden_field :recurrence_rule, id: "recurrence_rule_field" %>
+                    <%= f.hidden_field :space_id, value: @space_id %>
 
-                            <div class="mb-3">
-                                <label class="form-label">Language</label>
-                                <%= f.select :language,
-                                    options_for_select([['English', 'en'], ['French', 'fr']]),
-                                    {include_blank: 'Select language'},
-                                    id: 'language_select',
-                                    class: 'form-select' %>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label">Course</label>
-                                <%= f.select :course_name,
-                                    options_for_select(CourseName.all.map {|c| [c.name, c.id]}),
-                                    {include_blank: 'Select course'},
-                                    id: 'course_select',
-                                    class: 'form-select' %>
-                            </div>
-                        </div>
-
-                        <%= f.hidden_field :utc_start_time, id: "utc_start_time" %>
-                        <%= f.hidden_field :utc_end_time, id: "utc_end_time" %>
-                        <%= f.hidden_field :recurrence_rule, id: "recurrence_rule_field" %>
-                        <%= f.hidden_field :space_id, value: @space_id %>
-
-                        <div id="accordion" class="accordion mt-3">
-                            <div class="accordion-item">
+                    <div id="accordion" class="accordion mt-3">
+                        <div class="accordion-item">
                             <h2 class="accordion-header">
                                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#customFieldsCollapse">
-                                Custom Values (Optional)
+                                    Custom Values (Optional)
                                 </button>
                             </h2>
                             <div id="customFieldsCollapse" class="accordion-collapse collapse">
                                 <div class="accordion-body">
-                                <div class="mb-3">
-                                    <%= f.label :title, class: "form-label" %>
-                                    <%= f.text_field :title, class: "form-control", id: "title", placeholder: "Leave blank to autogenerate" %>
-                                </div>
-
-                                <div class="mb-3">
-                                    <%= f.label :description, class: "form-label" %>
-                                    <%= f.text_area :description, class: "form-control", rows: 2, id: "description" %>
-                                </div>
-                                </div>
-                            </div>
-                            </div>
-                        </div>
-                        <div class="modal-footer first" id="modal_buttons">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                            <%= f.submit "Update", class: "btn btn-success", id: "save_button" %>
-
-                            <div class="dropdown" id="update_dropdown" data-bs-auto-close="outside">
-                                <button class="btn btn-success dropdown-toggle hidden" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Save
-                                </button>
-                                <div class="dropdown-menu p-3" id="update_dropdown_items" style="min-width: 250px;">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="update_scope" id="update_this" value="this" checked>
-                                        <label class="form-check-label" for="update_this">
-                                            Update this event only
-                                        </label>
+                                    <div class="mb-3">
+                                        <%= f.label :title, class: "form-label" %>
+                                        <%= f.text_field :title, class: "form-control", id: "title", placeholder: "Leave blank to autogenerate" %>
                                     </div>
-                                    <div class="form-check mb-3">
-                                        <input class="form-check-input" type="radio" name="update_scope" id="update_all" value="all">
-                                        <label class="form-check-label" for="update_all">
-                                            Update all events
-                                        </label>
+
+                                    <div class="mb-3">
+                                        <%= f.label :description, class: "form-label" %>
+                                        <%= f.text_area :description, class: "form-control", rows: 2, id: "description" %>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    <% end %>
-                </div>
+                    </div>
 
-            <div class="modal-footer second" id="publish_and_delete_forms" style="display: none">
-                <%= form_with ur: "#", method: :patch, local: false, html: { class: "useTurbo", id: "publish_form" } do %>
+                    <div class="modal-footer first" id="modal_buttons">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        
+                        <!-- Primary save button - always exists here -->
+                        <div id="save_button_container">
+                            <%= f.submit "Save Draft", class: "btn btn-success", id: "save_button" %>
+                        </div>
+
+                        <!-- Dropdown for recurring event updates -->
+                        <div class="dropdown" id="update_dropdown" style="display: none;" data-bs-auto-close="outside">
+                            <button class="btn btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                Save
+                            </button>
+                            <div class="dropdown-menu p-3" id="update_dropdown_items" style="min-width: 250px;">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="update_scope" id="update_this" value="this" checked>
+                                    <label class="form-check-label" for="update_this">
+                                        Update this event only
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="radio" name="update_scope" id="update_all" value="all">
+                                    <label class="form-check-label" for="update_all">
+                                        Update all events
+                                    </label>
+                                </div>
+                                <!-- Save button will be moved here for recurring events -->
+                                <div id="dropdown_save_button_container"></div>
+                            </div>
+                        </div>
+                    </div>
+                <% end %>
+            </div>
+
+            <div class="modal-footer second" id="publish_and_delete_forms" style="display: none;">
+                <%= form_with url: "#", method: :patch, local: false, html: { class: "useTurbo", id: "publish_form", style: "display: none;" } do %>
                     <%= submit_tag "Publish", class: "btn btn-info" %>
                 <% end %>
 
                 <div class="btn-group dropup position-relative">
-                    <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                    <button type="button" class="btn btn-danger dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                         Delete
                     </button>
                     <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
@@ -206,9 +214,26 @@
         opacity: 20% !important;
     }
 
-    /* This removes the arrow from the dropup menu */
     .modal-footer .dropdown-menu::before,
     .modal-footer .dropdown-menu::after {
         display: none !important;
+    }
+
+    .unavailability-locked select:disabled {
+        background-color: #e9ecef !important;
+        cursor: not-allowed;
+    }
+
+    .lock-indicator {
+        font-size: 0.75rem;
+        color: #6c757d;
+    }
+
+    #save_button_container:empty {
+        display: none;
+    }
+
+    #dropdown_save_button_container:empty {
+        display: none;
     }
 </style>

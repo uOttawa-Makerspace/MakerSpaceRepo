@@ -14,7 +14,10 @@ class RequireTrainingsController < VolunteerTasksController
   end
 
   def remove_trainings
-    require_training = RequireTraining.where(require_training_params).last
+    require_training = RequireTraining.find_by(
+      volunteer_task_id: require_training_params[:volunteer_task_id],
+      training_id: require_training_params[:training_id]
+    )
     if require_training && current_user.staff?
       require_training.destroy
       flash[:notice] = "You've successfully deleted this required training"

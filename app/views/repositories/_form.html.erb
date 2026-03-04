@@ -1,5 +1,5 @@
 <%# NOTE: The route for this isn't a proper nested route so specifying url is important %>
-<%= form_with model: @repository, url: repository_path do |f| %>
+<%= form_with model: @repository, url: {controller: 'repositories', action: @repository.persisted? ? :update : :create} do |f| %>
     <%= text_field_tag :username_dont_autofill, {}, { hidden: true } %>
     <div class="mb-3 required">
         <%= f.label :title, t('repository.title'), class: 'form-label' %>

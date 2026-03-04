@@ -27,8 +27,11 @@
 
     <main class="main">
       <%= yield(:before_container) %>
-      <div class="container mt-3">
-        <%= yield %>
+        <div class="container mt-3">
+            <div class="flash" id="flash">
+                <%= render 'layouts/flash' %>
+            </div>
+            <%= yield %>
       </div>
     </main>
 

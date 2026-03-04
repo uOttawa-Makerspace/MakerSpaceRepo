@@ -25,7 +25,6 @@
                     <span class="badge text-bg-info">Awaiting payment</span>
                 <% end %>
                 <p class="card-text">Various lockers located around the STEM building</p>
-                <p class="card-text"><small class="text-body-secondary">$<%= @locker_rental_price %> per semester</small></p>
                 <% if @own_locker_rentals.pending.any? %>
                     <%= link_to 'Review request', @own_locker_rentals.pending.first, class: 'btn btn-primary stretched-link' %>
                 <% else %>
@@ -36,13 +35,10 @@
             </div>
         </div>
     </div>
-
+    
     <hr />
-
-    <details>
-        <summary>My locker history</summary>
-        <%= render partial: 'rental_data_table',
-                   locals: { locker_rentals: @own_locker_rentals.order(:state),
-                       header_title: t('lockers.your_locker_requests'), hide_actions: true } %>
-    </details>
+    <h2>My locker history</h2>
+    <%= render partial: 'rental_data_table',
+               locals: { locker_rentals: @own_locker_rentals.order(:state),
+                   header_title: t('lockers.your_locker_requests'), hide_actions: true } %>
 </div>

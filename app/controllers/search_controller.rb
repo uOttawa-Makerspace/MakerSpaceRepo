@@ -34,12 +34,19 @@ class SearchController < SessionsController
   def search
     # This depends on lazy evaluation of queries. Queries are only executed when
     # actually evaluated (in a view, for example)
+    @repositories = Repository.public_repos
+                      .includes(:users, :owner)
+                      .includes(photos: {image_attachment: :blob})
+                      .includes(repo_files: {file_attachment: :blob})
+    
+    if params[:q].present?
+      @repositories = @repositories.fuzzy_search(params[:q])
+    end
 
     @repositories =
-      Repository
+      @repositories
         .paginate(per_page: 12, page: params[:page])
-        .public_repos
-        .order([sort_order].to_h) # sort
+    .order([sort_order].to_h) # sort
 
     if signed_in? && params[:liked].present?
       @repositories =
@@ -56,11 +63,7 @@ class SearchController < SessionsController
           }
         )
     end
-
-    if params[:q].present?
-      @repositories = @repositories.fuzzy_search(params[:q])
-    end
-
+    
     # Shim the explore page
     render :explore
   end
