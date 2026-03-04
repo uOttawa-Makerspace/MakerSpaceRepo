@@ -1,34 +1,34 @@
 <ul class="nav nav-tabs" role="tablist">
   <li class="nav-item">
     <a class="nav-link active" id="home-tab" data-bs-toggle="tab" href="#home"
-       role="tab" aria-selected="true">About</a>
+       role="tab" aria-selected="true"><%= t('..about') %></a>
   </li>
 
   <% if !@repo_user.deleted? %>
     <li class="nav-item">
       <a class="nav-link" id="skills-tab" data-bs-toggle="tab" href="#profile-skills"
-         role="tab" aria-selected="false">Skills Roadmap</a>
+         role="tab" aria-selected="false"><%= t('.skills') %></a>
     </li>
 
     <li class="nav-item">
       <a class="nav-link" id="certifications-tab" data-bs-toggle="tab" href="#certifications-manager"
-         role="tab" aria-selected="false">Certifications</a>
+         role="tab" aria-selected="false"><%= t('.certifications') %></a>
     </li>
 
     <li class="nav-item">
       <a class="nav-link" id="programs-tab" data-bs-toggle="tab" href="#programs-manager"
-         role="tab" aria-selected="false">Programs</a>
+         role="tab" aria-selected="false"><%= t('.programs') %></a>
     </li>
 
     <% if @repo_user == current_user %>
       <li class="nav-item">
         <a class="nav-link" id="safety-sheets-tab" data-bs-toggle="tab" href="#profile-safety-sheets"
-           role="tab" aria-selected="false">Consent Form</a>
+           role="tab" aria-selected="false"><%= t('.consent_form') %></a>
       </li>
 
       <li class="nav-item">
         <a class="nav-link" id="lockers-tab" data-bs-toggle="tab" href="#profile-lockers"
-           role="tab" aria-selected="false">Lockers</a>
+           role="tab" aria-selected="false"><%= t('.lockers') %></a>
       </li>
     <% end %>
 
@@ -36,7 +36,7 @@
     <% if @user.staff? %>
       <li class="nav-item dropdown">
         <a class="nav-link dropdown-toggle text-secondary" data-bs-toggle="dropdown"
-           href="#" role="button" aria-expanded="false">Staff</a>
+           href="#" role="button" aria-expanded="false"><%= t('.staff') %></a>
         <ul class="dropdown-menu">
           <li>
             <% path = current_user.admin? ? admin_calendar_index_path : staff_my_calendar_index_path %>
@@ -83,8 +83,8 @@
     <%# Admin Tab %>
     <% if @user.admin? %>
       <li class="nav-item">
-        <a class="nav-link text-danger" id="admin-tab" data-bs-toggle="tab" href="#profile-admin"
-           role="tab" aria-selected="false">Admin</a>
+        <a class="nav-link text-danger" id="admin-tab" data-bs-toggle="tab" href="#adminTabPane"
+           role="tab" aria-selected="false"><%= t('.admin') %></a>
       </li>
     <% end %>
 

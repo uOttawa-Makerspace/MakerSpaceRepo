@@ -66,7 +66,6 @@
                                placeholder: 'Select pictures',
                                aria_label: 'Select Pictures / Selectionner des images' %>
         </div>
-        <p class="form-text"><%= t('repository.gal_msg') %></p>
         <div data-file-upload-repo-preview class="file-upload-preview-pane">
             <%= f.fields_for :photos do |p| %>
                 <% if p.object.image.attached? && p.object.image.persisted? %>
@@ -80,6 +79,7 @@
                 <% end %>
             <% end %>
         </div>
+        <p class="form-text"><%= t('repository.gal_msg') %></p>
     </div>
 
     <div class="mb-3">

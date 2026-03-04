@@ -1,0 +1,85 @@
+en:
+  users:
+    show:
+      more_info: More information
+      joined_on: Joined on
+      skills: Skills
+      sheet_signed: Signed
+      sheet_not_signed: Not signed
+
+      lock_user: Lock account
+      unlock_user: Unlock account
+      edit_profile: Edit profile
+      add_flag: Add flag
+      rfid_card_set: RFID card set
+      rfid_card_not_set: RFID card not set
+      unregister_rfid_card: Unregister RFID card
+      unregistered_cards: Recent non-registered cards
+
+      repositories: REPOSITORIES
+      makes: MAKES
+      joined_projects: JOINED PROJECTS
+
+    tablist:
+      about: About
+      skills: Skills Roadmap
+      certifications: Certifications
+      programs: Programs
+      consent_form: Consent Form
+      lockers: Lockers
+      staff: Staff
+      admin: Admin
+
+    tabs:
+      home:
+        username: Username
+        name: Name
+        email: Email
+        faculty: Faculty
+        program: Program
+        year_of_study: Year of study
+        identity: Identity
+        edit_profile: Edit your profile
+
+fr:
+  users:
+    show:
+      more_info: Plus d'information
+      joined_on: Inscrit le
+      skills: Compétences
+      sheet_signed: Signé
+      sheet_not_signed: Non signé
+
+      lock_user: Verrouiller le compte
+      unlock_user: Déverrouiller le compte
+      edit_profile: Modifier le profil
+      add_flag: Ajouter un drapeau
+      rfid_card_set: Carte RFID configurée
+      rfid_card_not_set: Carte RFID non configurée
+      unregister_rfid_card: Désenregistrer une carte
+      unregistered_cards: Cartes récentes non enregistrées
+
+      repositories: PROJETS
+      makes: CRÉATIONS
+      joined_projects: PROJETS PARTICIPÉS
+
+    tablist:
+      about: Profil
+      skills: Route des compétences
+      certifications: Certifications
+      programs: Programmes
+      consent_form: Formulaire de Consentement
+      lockers: Casiers
+      staff: Employés
+      admin: Admin
+
+    tabs:
+      home:
+        username: Nom d'utilisateur
+        name: Nom
+        email: Courriel
+        faculty: Faculté
+        program: Programme
+        year_of_study: Année d'études
+        identity: Identité
+        edit_profile: Modifier votre profil

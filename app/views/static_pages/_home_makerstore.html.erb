@@ -2,7 +2,6 @@
     <div class="card-body">
         <h2 class="d-inline">Makerstore</h2>
         <a href="https://makerstore.ca/"><%= t('home.show_all') %></a>
-        <%= link_to('Edit', staff_makerstore_links_path, class: 'ms-3') if current_user.staff? %>
         <p><%= t('home.makerstore.subtext') %></p>
         <div class="row flex-nowrap">
             <button class="col-auto btn btn-link text-secondary fs-1" onclick="document.getElementById('storeCarousel').scrollBy({left: -250, behavior: 'smooth'})"><i class="fa fa-angle-left"></i></button>
