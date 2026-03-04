@@ -84,7 +84,7 @@ class Repository < ApplicationRecord
   # Max 5 gallery photos per repository.
   validates :photos,
             length: {
-              maximum: 5,
+              maximum: 10,
               minimum: 1,
               message: 'Must have between 1 and 5 photos'
             }
