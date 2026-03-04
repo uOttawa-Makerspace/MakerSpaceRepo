@@ -2,7 +2,7 @@
 
 class Repository < ApplicationRecord
   include BCrypt
-  require "bcrypt"
+  require 'bcrypt'
 
   # There's two ways to reach a user, one is the user that created the repo
   # NOTE: I have a suspicion this might be unused.
@@ -10,18 +10,18 @@ class Repository < ApplicationRecord
   # creates a method user_username, sends 'username' to 'owner'
   # This is to override the column 'user_username'
   delegate :username, to: :owner, prefix: :user
-  
+
   # And the rest of the members added to the repo
   has_and_belongs_to_many :users
   belongs_to :project_proposal, optional: true
-  
+
   has_many :photos, dependent: :destroy
   # https://api.rubyonrails.org/classes/ActiveRecord/NestedAttributes/ClassMethods.html
   # This method requires us to mark photos for deletion.
   # TODO: Move the attachments into a concern?
   accepts_nested_attributes_for :photos, allow_destroy: true
   validates_associated :photos
-  
+
   has_many :repo_files, dependent: :destroy
   accepts_nested_attributes_for :repo_files, allow_destroy: true
   validates_associated :repo_files
@@ -30,59 +30,64 @@ class Repository < ApplicationRecord
   has_many :equipments, dependent: :destroy
   has_many :comments, dependent: :destroy
   has_many :likes, dependent: :destroy
-  has_many :makes, class_name: "Repository", foreign_key: "make_id"
+  has_many :makes, class_name: 'Repository', foreign_key: 'make_id'
   belongs_to :parent,
-             class_name: "Repository",
-             foreign_key: "make_id",
+             class_name: 'Repository',
+             foreign_key: 'make_id',
              optional: true
   paginates_per 12
 
-  scope :public_repos, -> { where(share_type: "public") }
+  scope :public_repos, -> { where(share_type: 'public') }
 
   scope :fuzzy_search,
-        ->(query) {
-          where('SIMILARITY(LOWER(UNACCENT(title)), LOWER(UNACCENT(:query))) > 0.15 OR
+        ->(query) do
+          where(
+            'SIMILARITY(LOWER(UNACCENT(title)), LOWER(UNACCENT(:query))) > 0.15 OR
           SIMILARITY(LOWER(UNACCENT(description)), LOWER(UNACCENT(:query))) > 0.15',
-              query:
+            query:
+          ).order(
+            sanitize_sql_for_order(
+              [Arel.sql('similarity(title, ?) DESC'), [query]]
             )
-            .order(
-              sanitize_sql_for_order(
-                [Arel.sql('similarity(title, ?) DESC'), [query]]
-              )
-            )
-        }
+          )
+        end
 
   def self.license_options
     [
-      "Creative Commons - Attribution",
-      "Creative Commons - Attribution - Share Alike",
-      "Creative Commons - Attribution - No Derivatives",
-      "Creative Commons - Attribution - Non-Commercial",
-      "Attribution - Non-Commercial - Share Alike",
-      "Attribution - Non-Commercial - No Derivatives"
+      'Creative Commons - Attribution',
+      'Creative Commons - Attribution - Share Alike',
+      'Creative Commons - Attribution - No Derivatives',
+      'Creative Commons - Attribution - Non-Commercial',
+      'Attribution - Non-Commercial - Share Alike',
+      'Attribution - Non-Commercial - No Derivatives'
     ]
   end
 
   validates :title,
             presence: {
-              message: "Project title is required."
+              message: 'Project title is required.'
             },
             uniqueness: {
-              message: "Project title is already in use.",
+              message: 'Project title is already in use.',
               scope: :user_id # :owner
             }
 
-  validates :share_type, inclusion: { in: %w[public private], message: "" }
+  validates :share_type, inclusion: { in: %w[public private], message: '' }
 
   validates :password,
             presence: {
-              message: "Password is required for private projects"
+              message: 'Password is required for private projects'
             },
             if: :private?
 
   # This seems to work fine for limiting association counts.
   # Max 5 gallery photos per repository.
-  validates :photos, length: { maximum: 5, minimum: 1, message: "Must have between 1 and 5 photos" }
+  validates :photos,
+            length: {
+              maximum: 5,
+              minimum: 1,
+              message: 'Must have between 1 and 5 photos'
+            }
 
   # validates :category,
   #           inclusion: { within: CategoryOption.show_options },
@@ -90,23 +95,38 @@ class Repository < ApplicationRecord
   #           length: {maximum: 5, message:"You may only select 5 categories."}
   default_scope { where(deleted: false) }
 
+  scope :between_dates_picked,
+        ->(start_date, end_date) do
+          where('created_at BETWEEN ? AND ? ', start_date, end_date)
+        end
+
   before_save do
     self.youtube_link = nil if youtube_link && !YoutubeID.from(youtube_link)
   end
 
   before_create do
-    self.slug = title.downcase.gsub(/[^0-9a-z ]/i, "").gsub(/\s+/, "-")
+    self.slug = title.downcase.gsub(/[^0-9a-z ]/i, '').gsub(/\s+/, '-')
   end
 
   before_update do
     self.slug =
-      id.to_s + "." + title.downcase.gsub(/[^0-9a-z ]/i, "").gsub(/\s+/, "-")
+      id.to_s + '.' + title.downcase.gsub(/[^0-9a-z ]/i, '').gsub(/\s+/, '-')
   end
 
   before_destroy { users.each { |u| u.decrement!(:reputation, 25) } }
 
+  def thumbnail_variant(variant)
+    return unless photos.any?
+    
+    if photos.first.image&.variable?
+      photos.first.image.variant(variant)
+    else
+      photos.first.image
+    end
+  end
+
   def private?
-    share_type.eql?("private")
+    share_type.eql?('private')
   end
 
   def self.authenticate(id, password)
@@ -126,11 +146,6 @@ class Repository < ApplicationRecord
   def self.to_csv(attributes)
     CSV.generate { |csv| attributes.each { |row| csv << row } }
   end
-
-  scope :between_dates_picked,
-        ->(start_date, end_date) {
-          where("created_at BETWEEN ? AND ? ", start_date, end_date)
-        }
 
   # validates :license,
   #   inclusion: { within: license_options },

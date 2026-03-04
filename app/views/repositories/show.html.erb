@@ -7,7 +7,7 @@
                 <%= youtube_video(@repository.youtube_link) %>
             <% elsif @repository.photos.present? and @repository.photos.first.image.attached? %>
                 <div id="show-photo">
-                    <%= image_tag @repository.photos.first.image.variant(:photo_slide_first),
+                    <%= image_tag @repository.thumbnail_variant(:photo_slide_first),
                                   alt: 'Repository Main image',
                                   data: {
                                       width: @repository.photos.first.try(:width),
@@ -24,13 +24,14 @@
                     %>
                 <% end %>
                 <% @repository.photos.find_each do |p| %>
-                    <%= image_tag p.image.variant(:photo_slide),
+                    <%= image_tag url_for(p.image.variable? ? p.image.variant(:photo_slide) : p.image),
                                   alt: 'Repository Image',
                                   data: {
                                       src: url_for(p.image),
                                       width: p.image.metadata['width'],
                                       height: p.image.metadata['height']
                                   } %>
+                    
                 <% end %>
             </div>
         </div>
@@ -203,8 +204,8 @@
                     <div class="mb-3 input-group required">
                         <%= f.hidden_field :repository_id, value: @repository.id %>
                         <%= f.collection_select :owner_id, @repository.users, :id, :username,
-                                     { prompt: t('repository.search_user') },
-                                     { class: 'form-control', id: 'search_users_transfer' } %>
+                            { prompt: t('repository.search_user') },
+                         { class: 'form-control', id: 'search_users_transfer' } %>
                         <br> </br>
                         <%= f.submit t('repository.transfer'), class: 'btn btn-warning' %>
                     </div>
