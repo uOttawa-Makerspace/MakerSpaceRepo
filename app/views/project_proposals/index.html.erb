@@ -1,37 +1,22 @@
 <% provide(:title, 'Project Proposals') %>
 <h1 class="text-center">Project Proposals</h1>
+<p>Search and view project proposals for upcoming </p>
+<%= form_with url: project_proposals_path, method: :get, class: 'input-group mb-3' do |f| %>
+    <div class="input-group-text bg-white">
+        <i class="fa fa-search" aria-hidden="true"></i>
+    </div>
+    <%= f.text_field :query, placeholder: "Search...", class: "form-control", aria: { label: "Search" } %>
+    <%= f.submit "Search", class: "btn btn-primary" %>
 
-<div class="my-3">
-    <%= form_tag(project_proposals_path, method: :get) do %>
-        <%= fa_icon 'search', class: 'fa-2x pe-2' %>
-        <div class="col-md-4 search_bar" >
-            <%= text_field_tag(:search, '', placeholder: 'Search', class: 'form-control') %>
-        </div>
-        <%# If search exists in the params, display back button %>
-        <% if params[:search] && !params[:search].empty? %>
-            <%= link_to 'Back', project_proposals_path, class: 'btn btn-secondary' %>
-        <% end %>
+    <%# If search exists in the params, display back button %>
+    <% if params[:search].present? %>
+        <%= link_to 'Back', project_proposals_path, class: 'btn btn-secondary' %>
     <% end %>
-</div>
+<% end %>
 
-<div class="rounded-top-3 table-responsive">
-    <table class="table border">
-        <thead class="table-secondary">
-            <tr class="align-middle">
-                <th scope="col">ID</th>
-                <th scope="col">Proposer</th>
-                <th scope="col">Project Title</th>
-                <th scope="col">Categories</th>
-                <th scope="col">Client Interest</th>
-                <th scope="col">Date Proposed</th>
-                <th scope="col">Actions</th>
-            </tr>
-        </thead>
-        <tbody class="align-middle">
-            <%= render partial: 'proposal_row', collection: @approved_project_proposals, as: :project_proposal %>
-        </tbody>
-    </table>
-</div>
+<ul class="list-unstyled">
+    <%= render partial: 'proposal_row', collection: @pending_project_proposals, as: :project_proposal %>
+</ul>
 
 <% if @user.admin? %>
     <h2 class="text-center">Pending Project Proposals</h2>
