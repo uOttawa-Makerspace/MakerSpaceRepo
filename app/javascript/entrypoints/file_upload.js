@@ -2,8 +2,16 @@
  * editable preview pane. Developed with the repository upload/edit page in
  * mind. See docs for more info */
 
-// Use Date.now() as the starting counter to guarantee no collision with
-// Rails form-builder indices (0, 1, 2…) for pre-existing records.
+// TODO: This probably doesn't work for one-file uploads, due to appending the
+// ID to each preview.
+//
+// TODO: Drag and drop spaces
+// FIXME: What happens if no preview pane is found?
+
+// Rails requires arrays to be assigned an index for
+// accepts_nested_attributes_for to work with pre-existing files. Date.now() is
+// in milliseconds resolution and my dev machine is fast enough to get duplicate
+// indices.
 let counter = Date.now();
 function getNextCounter() {
   return counter++;
