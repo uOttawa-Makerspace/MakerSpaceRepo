@@ -1,4 +1,27 @@
 fr:
+  layouts:
+    development_program_header:
+      learning_area: Zone d'apprentissage
+      new_learning_module: Nouveau module d'apprentissage
+      all_learning_modules: Tous les modules d'apprentissage
+      proficient_projects: Projets de compétence
+      requests: Demandes
+      new_proficient_project: Nouveau projet de compétence
+      all_proficient_projects: Tous les projets
+      badges: Badges
+      all_badges: Tous les badges
+      search_badges: Rechercher les badges obtenus
+      orders: Commandes
+      kits: Kits
+      new_kit: Créer un kit
+      coupons: Coupons
+      redeem: Utiliser un coupon
+      my_coupons: Mes coupons
+      manage_coupons: Gérer tous les coupons
+      videos: Vidéos
+      new_video: Nouvelle vidéo
+      all_videos: Toutes les videos
+
   devprog:
     nav:
       learning_area: "Zone d'apprentissage"

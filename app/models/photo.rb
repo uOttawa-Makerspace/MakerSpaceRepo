@@ -21,7 +21,6 @@ class Photo < ApplicationRecord
     image/png
     image/gif
     image/x-icon
-    image/svg+xml
   ].freeze
 
   validates :image,

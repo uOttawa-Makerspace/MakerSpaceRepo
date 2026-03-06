@@ -720,13 +720,6 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_02_022731) do
     t.index ["specifier"], name: "index_lockers_on_specifier"
   end
 
-  create_table "makerstore_links", force: :cascade do |t|
-    t.integer "order", default: 0
-    t.string "title"
-    t.string "url"
-    t.boolean "shown", default: true
-  end
-
   create_table "membership_tiers", force: :cascade do |t|
     t.string "title_en", null: false
     t.string "title_fr", null: false

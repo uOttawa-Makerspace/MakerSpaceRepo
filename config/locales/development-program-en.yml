@@ -1,4 +1,27 @@
 en:
+  layouts:
+    development_program_header:
+      learning_area: Learning area
+      new_learning_module: New learning module
+      all_learning_modules: All learning modules
+      proficient_projects: Proficient projects
+      requests: Requests
+      new_proficient_project: New proficient project
+      all_proficient_projects: All proficient projects
+      badges: Badges
+      all_badges: All badges
+      search_badges: Search earned badges
+      orders: Orders
+      kits: Kits
+      new_kit: Create a kit
+      coupons: Coupons
+      redeem: Redeem a coupon
+      my_coupons: My coupons
+      manage_coupons: Manage all coupons
+      videos: Videos
+      new_video: New video
+      all_videos: All videos
+
   devprog:
     nav:
       learning_area: "Learning area"
