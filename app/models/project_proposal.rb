@@ -16,7 +16,17 @@ class ProjectProposal < ApplicationRecord
              foreign_key: "linked_project_proposal_id",
              optional: true
 
+  enum :season, { fall: 0, summer: 1, winter: 2 }
+
   scope :approved, -> { where(approved: 1) }
+  scope :for_year, ->(year) { where(year: )}
+  scope :for_season, ->(season) { where(season: ) }
+
+  # Sort project proposals by semester
+  scope :by_semester, -> {
+    t = ProjectProposal.arel_table # hack to put nulls last on postgres
+    order(t[:year].desc.nulls_last, t[:season].asc.nulls_last)
+  }
 
   validates :username,
             presence: {
@@ -81,6 +91,10 @@ class ProjectProposal < ApplicationRecord
     else
       default_scoped
     end
+  end
+
+  def active_semester_label
+    "#{season.capitalize} #{year}" if season && year
   end
 
   def has_user

@@ -454,7 +454,7 @@ class ProjectProposalsController < SessionsController
 
   # Never trust parameters from the scary internet, only allow the white list through.
   def project_proposal_params
-    params.require(:project_proposal).permit(
+    permitted = [
       :user_id,
       :admin_id,
       :approved,
@@ -474,9 +474,12 @@ class ProjectProposalsController < SessionsController
       :prototype_cost,
       :past_experiences,
       :linked_project_proposal_id,
-      area: [],
-      categories: []
-    )
+      { area: [], categories: [] }
+    ]
+
+    permitted += [:season, :year] if current_user.admin?
+    
+    params.require(:project_proposal).permit(permitted)
   end
 
   def create_categories

@@ -1,6 +1,6 @@
 <% provide(:title, @repository.title.to_s) %>
 
-<section class="row container mx-auto mt-3">
+<section class="row">
     <section id="repository-photos" class="col-lg-8 order-lg-first order-last">
         <div class="mb-3">
             <% if @repository.youtube_link.present? %>
@@ -31,7 +31,7 @@
                                       width: p.image.metadata['width'],
                                       height: p.image.metadata['height']
                                   } %>
-                    
+
                 <% end %>
             </div>
         </div>
@@ -68,153 +68,147 @@
             </p>
         <% end %>
         <hr />
-        <div>
-            <div>
-                <div class="d-inline-block">
-                    <b><%= t('repository.proj_by') %></b>
-                    <% @repository.users.find_each do |u| %>
-                        <div>
-                            <% if u.id == @repository.user_id %>
-                                <%= fa_icon :star %>
-                            <% end %>
-                            <%= link_to u.username, user_path(u.username) %>
-                        </div>
+        <div class="d-inline-block">
+            <b><%= t('repository.proj_by') %></b>
+            <% @repository.users.find_each do |u| %>
+                <div>
+                    <% if u.id == @repository.user_id %>
+                        <%= fa_icon :star %>
+                    <% end %>
+                    <%= link_to u.username, user_path(u.username) %>
+                </div>
+            <% end %>
+        </div>
+        <% if @repository.users.include?(@user) || @user.role.eql?("admin") %>
+            <%= link_to fa_icon('pencil', text: t('repository.edit_proj')),
+                        edit_repository_path(@repository.user_username, @repository.id),
+                        class: 'btn btn-sm btn-secondary align-top float-end' %>
+        <% end %>
+        <p><b><%= t('repository.published') %></b> <%= @repository.created_at.strftime('%b %e %Y') %></p>
+        <% if @repository.repo_files.any? %>
+            <div class="clearfix">
+                <b> <%= t('repository.proj_files') %> </b>
+                <div class="files-show">
+                    <% @repository.repo_files.find_each do |f| %>
+                        <ul class="file-item-show">
+                            <li>
+                                <%= fa_icon 'file-text-o' %>
+                                <%= link_to f.file.filename, rails_blob_path(f.file), target: '_blank', rel: 'noopener' %>
+                                <span><%= f.file.byte_size / 1000 %> KB</span>
+                            </li>
+                        </ul>
                     <% end %>
                 </div>
-                <% if @repository.users.include?(@user) || @user.role.eql?("admin") %>
-                    <%= link_to fa_icon('pencil', text: t('repository.edit_proj')),
-                                edit_repository_path(@repository.user_username, @repository.id),
-                                class: 'btn btn-sm btn-secondary align-top float-end' %>
+                <%= link_to fa_icon('download', text: t('repository.download')),
+                            download_files_repositories_path(@repository.user_username, @repository.id),
+                            class: 'btn btn-primary btn-sm float-end' %>
+            </div>
+        <% end %>
+
+        <% if @repository.license.present? %>
+            <div class="mb-3">
+                <b> <%= t('repository.license_proj') %></b><br />
+                <%= link_to @repository.license, license_url[@repository.license] %>
+            </div>
+        <% end %>
+
+        <div class="mb-3">
+            <b><%= t('repository.categories') %></b>
+            <ul class="list-group mb-3">
+                <% @repository.categories.find_each do |category| %>
+                    <%= link_to category.name, category_path(slug: category.name.gsub(' ', '-').downcase),
+                                class: "list-group-item list-group-item-action text-primary" %>
                 <% end %>
-            </div>
-            <p><b><%= t('repository.published') %></b> <%= @repository.created_at.strftime('%b %e %Y') %></p>
-            <% if @repository.repo_files.any? %>
-                <div class="clearfix">
-                    <b> <%= t('repository.proj_files') %> </b>
-                    <div class="files-show">
-                        <% @repository.repo_files.find_each do |f| %>
-                            <ul class="file-item-show">
-                                <li>
-                                    <%= fa_icon 'file-text-o' %>
-                                    <%= link_to f.file.filename, rails_blob_path(f.file), target: '_blank', rel: 'noopener' %>
-                                    <span><%= f.file.byte_size / 1000 %> KB</span>
-                                </li>
-                            </ul>
-                        <% end %>
-                    </div>
-                    <%= link_to fa_icon('download', text: t('repository.download')),
-                                download_files_repositories_path(@repository.user_username, @repository.id),
-                                class: 'btn btn-primary btn-sm float-end' %>
-                </div>
-            <% end %>
-
-            <% if @repository.license.present? %>
-                <div class="mb-3">
-                    <b> <%= t('repository.license_proj') %></b><br />
-                    <%= link_to @repository.license, license_url[@repository.license] %>
-                </div>
-            <% end %>
-
-            <div class="mb-3">
-                <b><%= t('repository.categories') %></b>
-                <ul class="list-group mb-3">
-                    <% @repository.categories.find_each do |category| %>
-                        <%= link_to category.name, category_path(slug: category.name.gsub(' ', '-').downcase),
-                                    class: "list-group-item list-group-item-action text-primary" %>
-                    <% end %>
-                </ul>
-            </div>
-
-            <div class="mb-3">
-                <b><%= t('repository.equipment') %></b>
-                <ul class="list-group">
-                    <% @repository.equipments.find_each do |equipment| %>
-                        <%= link_to equipment.name, equipment_path(slug: equipment.name.gsub(' ', '-').downcase),
-                                    class: "list-group-item list-group-item-action text-primary" %>
-                    <% end %>
-                </ul>
-            </div>
-
-            <div class="repo-info-item mb-3">
-                <span class="like<%= @liked ? ' liked' : '' %>" style="color: white;">
-                    <% like_text = @liked ? t('repository.unlike_button') : t('repository.like_button') %>
-                    <%= button_to(fa_icon('heart', text: like_text),
-                                  add_like_repository_path, class: 'like border-0 bg-transparent', method: :post, style: 'color: inherit !important; padding: inherit !important;') %>
-                </span>
-                <span class="make" style="color: white;">
-                    <%= link_to fa_icon('code-fork', text: t('repository.make_button')), makes_new_path(@repository.user_username, @repository.id), class: 'make' %>
-                </span>
-            </div>
-            <div class="report mb-3">
-                <%= link_to fa_icon('flag', text: t('repository.report_in')), report_repository_path(@repository.id), class: 'repository_report', rel: 'nofollow' %>
-                <div class="spinner">
-                    <div class="rect1"></div>
-                    <div class="rect2"></div>
-                    <div class="rect3"></div>
-                    <div class="rect4"></div>
-                    <div class="rect5"></div>
-                </div>
-            </div>
-
-            <% if @repository.project_proposal %>
-                <p>
-                    <b><%= t('repository.link_to_prop') %></b> <br />
-                    <%= link_to @repository.project_proposal.title, project_proposal_path(@repository.project_proposal) %>
-                </p>
-            <% end %>
-
-            <% if @repository.users.include?(@user) || @user.admin? || @user.staff? %>
-                <div class="repo-info-item">
-                    <div class="title"><%= t('repository.link_to_prop') %> </div>
-                    <%= form_for :repo, url: { controller: 'repositories', action: 'link_to_pp' }, method: :patch do |f| %>
-                        <div class="mb-3 input-group">
-                            <%= f.hidden_field :repository_id, value: @repository.id %>
-                            <%= f.select(:project_proposal_id, @project_proposals, { prompt: t('repository.choose_proposal') }, { class: 'form-control', id: 'search_project_proposals' }) %>
-                            <br> </br>
-                            <%= f.submit t('repository.link_proj'), class: 'btn btn-primary' %>
-                        </div>
-                    <% end %>
-                </div>
+            </ul>
         </div>
 
-        <hr />
+        <div class="mb-3">
+            <b><%= t('repository.equipment') %></b>
+            <ul class="list-group">
+                <% @repository.equipments.find_each do |equipment| %>
+                    <%= link_to equipment.name, equipment_path(slug: equipment.name.gsub(' ', '-').downcase),
+                                class: "list-group-item list-group-item-action text-primary" %>
+                <% end %>
+            </ul>
+        </div>
 
-        <div class="repo-info-item">
-            <%= form_for :repo_owner, url: { controller: 'repositories', action: 'add_member' }, method: :patch do |f| %>
-                <%= f.label t('repository.add_member'), class: 'form-label' %>
+        <div class="repo-info-item mb-3">
+            <span class="like<%= @liked ? ' liked' : '' %>" style="color: white;">
+                <% like_text = @liked ? t('repository.unlike_button') : t('repository.like_button') %>
+                <%= button_to(fa_icon('heart', text: like_text),
+                              add_like_repository_path, class: 'like border-0 bg-transparent', method: :post, style: 'color: inherit !important; padding: inherit !important;') %>
+            </span>
+            <span class="make" style="color: white;">
+                <%= link_to fa_icon('code-fork', text: t('repository.make_button')), makes_new_path(@repository.user_username, @repository.id), class: 'make' %>
+            </span>
+        </div>
+        <div class="report mb-3">
+            <%= link_to fa_icon('flag', text: t('repository.report_in')), report_repository_path(@repository.id), class: 'repository_report', rel: 'nofollow' %>
+            <div class="spinner">
+                <div class="rect1"></div>
+                <div class="rect2"></div>
+                <div class="rect3"></div>
+                <div class="rect4"></div>
+                <div class="rect5"></div>
+            </div>
+        </div>
+
+        <% if @repository.project_proposal %>
+            <p>
+                <b><%= t('repository.link_to_prop') %></b> <br />
+                <%= link_to @repository.project_proposal.title, project_proposal_path(@repository.project_proposal) %>
+            </p>
+        <% end %>
+
+        <% if @repository.users.include?(@user) || @user.staff? %>
+            <%= form_for :repo, url: { controller: 'repositories', action: 'link_to_pp' }, method: :patch do |f| %>
+                <span class="text-muted"><%= t('repository.link_to_prop') %> </span>
                 <div class="mb-3 input-group">
                     <%= f.hidden_field :repository_id, value: @repository.id %>
-                    <%= f.select(:owner_username, '', { prompt: t('repository.search_user') }, { class: 'form-control', data: {user_search_bar: ''} }) %>
-                    <%= f.submit t('repository.add'), class: 'btn btn-success' %>
+                    <%= f.select(:project_proposal_id, @project_proposals, { prompt: t('repository.choose_proposal') },
+                                 { class: 'form-control', id: 'search_project_proposals' }) %>
+                    <%= f.submit t('repository.link_proj'), class: 'btn btn-primary' %>
                 </div>
             <% end %>
 
-            <%= form_for :repo_owner, url: { controller: 'repositories', action: 'remove_member' }, method: :patch do |f| %>
-                <%= f.label t('repository.rem_mem'), class: 'form-label' %>
-                <div class="mb-3 input-group">
-                    <%= f.hidden_field :repository_id, value: @repository.id %>
-                    <%= f.select(:owner_id, @repository.users.pluck(:username, :id), { prompt: t('repository.search_user') }, { class: 'search_users_remove form-control', id: 'search_users_remove' }) %>
-                    <%= f.submit t('repository.remove'), class: 'btn btn-danger' %>
-                </div>
-            <% end %>
+            <hr />
 
-            <% if @user.id == @repository.user_id || @user.admin? %>
-                <%= form_for :repo_owner, url: { controller: 'repositories', action: 'transfer_owner' }, method: :patch do |f| %>
-                    <%= f.label t('repository.trans_own'), class: 'form-label' %>
-                    <div class="mb-3 input-group required">
+            <div class="repo-info-item">
+                <%= form_for :repo_owner, url: { controller: 'repositories', action: 'add_member' }, method: :patch do |f| %>
+                    <%= f.label t('repository.add_member'), class: 'form-label' %>
+                    <div class="mb-3 input-group">
                         <%= f.hidden_field :repository_id, value: @repository.id %>
-                        <%= f.collection_select :owner_id, @repository.users, :id, :username,
-                            { prompt: t('repository.search_user') },
-                         { class: 'form-control', id: 'search_users_transfer' } %>
-                        <br> </br>
-                        <%= f.submit t('repository.transfer'), class: 'btn btn-warning' %>
+                        <%= f.select(:owner_username, '', { prompt: t('repository.search_user') }, { class: 'form-control', data: {user_search_bar: ''} }) %>
+                        <%= f.submit t('repository.add'), class: 'btn btn-success' %>
                     </div>
                 <% end %>
-        </div>
-            <% end %>
+
+                <%= form_for :repo_owner, url: { controller: 'repositories', action: 'remove_member' }, method: :patch do |f| %>
+                    <%= f.label t('repository.rem_mem'), class: 'form-label' %>
+                    <div class="mb-3 input-group">
+                        <%= f.hidden_field :repository_id, value: @repository.id %>
+                        <%= f.select(:owner_id, @repository.users.pluck(:username, :id), { prompt: t('repository.search_user') }, { class: 'search_users_remove form-control', id: 'search_users_remove' }) %>
+                        <%= f.submit t('repository.remove'), class: 'btn btn-danger' %>
+                    </div>
+                <% end %>
+
+                <% if @user.id == @repository.user_id || @user.admin? %>
+                    <%= form_for :repo_owner, url: { controller: 'repositories', action: 'transfer_owner' }, method: :patch do |f| %>
+                        <%= f.label t('repository.trans_own'), class: 'form-label' %>
+                        <div class="mb-3 input-group required">
+                            <%= f.hidden_field :repository_id, value: @repository.id %>
+                            <%= f.collection_select :owner_id, @repository.users, :id, :username,
+                                { prompt: t('repository.search_user') },
+                             { class: 'form-control', id: 'search_users_transfer' } %>
+                            <br> </br>
+                            <%= f.submit t('repository.transfer'), class: 'btn btn-warning' %>
+                        </div>
+                    <% end %>
+            </div>
+                <% end %>
 
         </div>
-            <% end %>
+        <% end %>
     </section>
 
     <section id="repo-comments" class="order-last col-12">
