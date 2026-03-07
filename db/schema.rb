@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_03_02_022731) do
+ActiveRecord::Schema[7.2].define(version: 2026_03_07_155356) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_trgm"
@@ -1117,6 +1117,14 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_02_022731) do
     t.datetime "updated_at", precision: nil, null: false
     t.string "mac_address"
     t.index ["user_id"], name: "index_rfids_on_user_id"
+  end
+
+  create_table "settings", force: :cascade do |t|
+    t.string "key", null: false
+    t.string "value"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["key"], name: "index_settings_on_key", unique: true
   end
 
   create_table "shadowing_hours", force: :cascade do |t|
