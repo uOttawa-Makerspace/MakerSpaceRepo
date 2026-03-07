@@ -2,12 +2,11 @@
 
 <section class="row">
     <section class="col-lg-8 order-lg-first order-last">
-        <h1 class="border-bottom d-lg-block d-none mb-3"><%= @project_proposal.title %></h1>
         <% if @project_proposal.youtube_link.present? %>
             <%= youtube_video(@project_proposal.youtube_link) %>
         <% end %>
 
-        <% if @project_photos.present? and @project_photos.first.image.attached? %>
+        <% if @project_photos.present? && @project_photos.first.image.attached? %>
             <div id="show-photo">
                 <%= image_tag @project_photos.first.image, alt: 'Project Proposal Picture', data: { width: @project_photos.first.try(:width), height: @project_photos.first.try(:height) } %>
             </div>
@@ -122,26 +121,26 @@
     </section>
 
     <section id="info" class="col-lg-4">
-        <h1 class="border-bottom d-lg-none"><%= @project_proposal.title %></h1>
+        <h1 class="border-bottom"><%= @project_proposal.title %></h1>
 
-        <div>
-            <p class="text-secondary"><%= t('project_proposal.proposed_by') %>
+        <% if @project_proposal.user_id.eql?(@user.id) || @user.admin? %>
+            <%= link_to fa_icon('pencil', text: t('project_proposal.edit_proposal')),
+                        edit_project_proposal_path(@project_proposal), class: 'btn btn-secondary btn-sm mb-3' %>
+        <% end %>
+        <ul class="list-unstyled">
+            <li class="text-secondary"><%= t('project_proposal.proposed_by') %>
                 <% if @project_proposal.user_id %>
                     <% project_username = @project_proposal.user.username %>
                     <%= link_to project_username, user_path(project_username) %>
                 <% else %>
                     <%= @project_proposal.try(:username) %>
                 <% end %>
-                <% if @project_proposal.user_id.eql?(@user.id) || @user.admin? %>
-                    <%= link_to fa_icon('pencil', text: t('project_proposal.edit_proposal')),
-                                edit_project_proposal_path(@project_proposal), class: 'btn btn-secondary mb-3 float-end' %>
-                <% end %>
-            </p>
-            <p class="text-secondary">
+            </li>
+            <li class="text-secondary">
                 <%= t('project_proposal.proposed_on') %>
                 <%= @project_proposal.created_at.strftime('%b %e %Y') %>
-            </p>
-            <p class="text-secondary"><%= t('project_proposal.contact') %>: <%= mail_to @project_proposal.email %></p>
+            </li>
+            <li class="text-secondary"><%= t('project_proposal.contact') %>: <%= mail_to @project_proposal.email %></li>
 
             <% if @project_files.present? %>
                 <div class="repo-info-item">
@@ -157,94 +156,107 @@
                 </div>
             <% end %>
             <% if @user.admin? %>
-                <div>
-                    <p class="text-secondary">Validation:
-                        <% case @project_proposal.approved
-                        when 0 %>
-                            <span class="text-danger"><%= t('project_proposal.validation.declined') %></span>
-                        <% when 1 %>
-                            <span class="text-success"><%= t('project_proposal.validation.approved') %></span>
-                        <% when nil %>
-                            <span><%= t('project_proposal.validation.not_validated') %></span>
-                        <% end %>
-                    </p>
-                </div>
+                <li class="text-secondary">Validation:
+                    <% case @project_proposal.approved
+                    when 0 %>
+                        <span class="text-danger"><%= t('project_proposal.validation.declined') %></span>
+                    <% when 1 %>
+                        <span class="text-success"><%= t('project_proposal.validation.approved') %></span>
+                    <% when nil %>
+                        <span><%= t('project_proposal.validation.not_validated') %></span>
+                    <% end %>
+                </li>
             <% end %>
-
-            <div class="mb-3">
-                <b><%= t('repository.categories') %></b>
-                <ul class="list-group mb-3">
-                    <% @project_proposal.categories.find_each do |category| %>
-                        <%= link_to category.name, category_path(slug: category.name.gsub(' ', '-').downcase),
-                                    class: "list-group-item list-group-item-action text-primary" %>
-                    <% end %>
-                </ul>
-            </div>
-
-            <div class="clearfix">
-                <% if @user.id.present? %>
-                    <%= link_to t('project_proposal.document_project'), new_repository_path(@user.username, project_proposal_id: @project_proposal.id), method: :get,
-                                class: 'btn btn-success float-start',
-                                data: { confirm: 'This action will create a repository related to this project proposal' } %>
+        </ul>
+        <div class="mb-3">
+            <b><%= t('repository.categories') %></b>
+            <ul class="list-group mb-3">
+                <% @project_proposal.categories.find_each do |category| %>
+                    <%= link_to category.name, category_path(slug: category.name.gsub(' ', '-').downcase),
+                                class: "list-group-item list-group-item-action text-primary" %>
                 <% end %>
-                <% @project_join = find_project_join(@user.id, @project_proposal.id) %>
-                <% if @project_join.present? %>
-                    <%= button_to t('project_proposal.leave_project'),
-                                  unjoin_project_proposal_project_proposals_path, method: :get,
-                                  params: { project_proposal_id: @project_proposal.id, project_join_id: @project_join.id },
-                                  class: 'btn btn-danger float-end', data: { confirm: 'Are you sure that you want to leave this project?' } %>
-                <% elsif @user.id.present? %>
-                    <%= button_to t('project_proposal.join_project'),
-                                  join_project_proposal_project_proposals_path, method: :get, params: { project_proposal_id: @project_proposal.id },
-                                  class: 'btn btn-primary float-end', data: { confirm: 'Are you sure that you want to join this project?' } %>
-                <% end %>
-            </div>
+            </ul>
+        </div>
 
-            <% if @user.admin? %>
+        <div class="clearfix">
+            <% if @user.id.present? %>
+                <%= link_to t('project_proposal.document_project'), new_repository_path(@user.username, project_proposal_id: @project_proposal.id), method: :get,
+                            class: 'btn btn-success float-start',
+                            data: { confirm: 'This action will create a repository related to this project proposal' } %>
+            <% end %>
+            <% @project_join = find_project_join(@user.id, @project_proposal.id) %>
+            <% if @project_join.present? %>
+                <%= button_to t('project_proposal.leave_project'),
+                              unjoin_project_proposal_project_proposals_path, method: :get,
+                              params: { project_proposal_id: @project_proposal.id, project_join_id: @project_join.id },
+                              class: 'btn btn-danger float-end', data: { confirm: 'Are you sure that you want to leave this project?' } %>
+            <% elsif @user.id.present? %>
+                <%= button_to t('project_proposal.join_project'),
+                              join_project_proposal_project_proposals_path, method: :get, params: { project_proposal_id: @project_proposal.id },
+                              class: 'btn btn-primary float-end', data: { confirm: 'Are you sure that you want to join this project?' } %>
+            <% end %>
+        </div>
+
+        <% if @user.admin? %>
+            <hr />
+            <b>Project review</b>
+
+            <div>
+                <div class="clearfix mb-3">
+                    <%= button_to fa_icon('thumbs-up', text: t('project_proposal.admin.approve')), approve_project_proposals_path(id: @project_proposal.id),
+                                  method: :post, class: 'btn btn-success float-start', data: { confirm: 'Are you sure? This will approve the project.' } %>
+                    <%= button_to fa_icon('thumbs-down', text: t('project_proposal.admin.decline')), decline_project_proposals_path(id: @project_proposal.id),
+                                  method: :post, class: 'btn btn-danger float-end', data: { confirm: 'Are you sure? This will decline the project.' } %>
+                </div>
+
+                <% if @project_proposal.approved.present? && @project_proposal.admin_id.present? %>
+
+                <% elsif @project_proposal.approved.present? %>
+                    <p>This project was reviewed.</p>
+                <% else %>
+                    <p>This project was not reviewed yet.</p>
+                <% end %>
                 <hr />
-                <b>Project review</b>
-                <p><%= t('project_proposal.reviewed_by') %> <%= link_to @project_proposal.admin.username, user_path(@project_proposal.admin.username) %></p>
-                <div>
-                    <div class="clearfix mb-3">
-                        <%= button_to fa_icon('thumbs-up', text: t('project_proposal.admin.approve')), approve_project_proposals_path(id: @project_proposal.id), method: :post,
-                                      class: 'btn btn-success float-start', data: { confirm: 'Are you sure? This will approve the project.' } %>
-                        <%= button_to fa_icon('thumbs-down', text: t('project_proposal.admin.decline')), decline_project_proposals_path(id: @project_proposal.id), method: :post,
-                                      class: 'btn btn-danger float-end', data: { confirm: 'Are you sure? This will decline the project.' } %>
-                    </div>
 
-                    <% if @project_proposal.approved.present? && @project_proposal.admin_id.present? %>
-
-                    <% elsif @project_proposal.approved.present? %>
-                        <p>This project was reviewed.</p>
-                    <% else %>
-                        <p>This project was not reviewed yet.</p>
-                    <% end %>
-                    <hr />
-
-                    <div class="clearfix">
-                        <b>Admin tools</b>
-                        <p>Create a revision or delete this proposal</p>
+                <div class="mb-3">
+                    <h2>Admin tools</h2>
+                    <p>Create a revision or delete this proposal</p>
+                    <div class="d-flex gap-3">
                         <%= button_to t('project_proposal.create_revision'),
                                       create_revision_project_proposals_path(old_project_proposal_id: @project_proposal.id),
-                                      method: :post, class: 'btn btn-success float-start' %>
+                                      method: :post, class: 'btn btn-success' %>
                         <%= button_to fa_icon('trash', text: t('project_proposal.admin.delete')),
                                       destroy_project_proposals_path(id: @project_proposal.id),
                                       data: { confirm: 'Are you sure you want to delete this proposal?' },
-                                      method: :delete, class: 'btn btn-danger float-end' %>
+                                      method: :delete, class: 'btn btn-danger' %>
                     </div>
-                    <hr />
                 </div>
-            <% end %>
 
-            <div class="report mb-3">
-                <%= link_to fa_icon('flag', text: t('project_proposal.report_inappropriate')), report_repository_path(@project_proposal.id), class: 'repository_report' %>
-                <div class="spinner">
-                    <div class="rect1"></div>
-                    <div class="rect2"></div>
-                    <div class="rect3"></div>
-                    <div class="rect4"></div>
-                    <div class="rect5"></div>
-                </div>
+                <%= form_with model: @project_proposal do |f| %>
+                    <%= f.label :season, 'Mark this project as active for a semester. This will help students when selecting their project proposals.', class: 'form-label' %>
+                    <div class="input-group">
+                        <%= f.select :season, ProjectProposal.seasons.keys.map {|s| [s.capitalize, s]},
+                         {include_blank: 'Choose a semester'}, {class: 'form-select', required: true} %>
+                        <%= f.number_field :year, placeholder: 'Year', min: 1900, max: 2100, class: 'form-control', required: true %>
+                        <%= f.submit "Set", class: 'btn btn-primary' %>
+                    </div>
+                    <% if @project_proposal.active_semester_label %>
+                        <p>Active for <b><%= @project_proposal.active_semester_label %></b></p>
+                    <% end %>
+                <% end %>
+            </div>
+            <hr />
+            </div>
+        <% end %>
+
+        <div class="report mb-3">
+            <%= link_to fa_icon('flag', text: t('project_proposal.report_inappropriate')), report_repository_path(@project_proposal.id), class: 'repository_report' %>
+            <div class="spinner">
+                <div class="rect1"></div>
+                <div class="rect2"></div>
+                <div class="rect3"></div>
+                <div class="rect4"></div>
+                <div class="rect5"></div>
             </div>
         </div>
     </section>

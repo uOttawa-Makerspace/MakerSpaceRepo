@@ -1,0 +1,91 @@
+<li>
+    <article class="card mb-1">
+        <div class="card-header d-flex align-items-center justify-content-between flex-wrap">
+            <span>Proposal ID #<%= project_proposal.id %></span>
+            <span class="badge"><%= project_proposal.approval_status %></span>
+            <time class="text-muted ms-auto" datetime="<%= project_proposal.created_at %>">
+                Proposed on <%= project_proposal.created_at.to_fs :long %>
+            </time>
+        </div>
+
+        <div class="card-body py-2">
+            <h1 class="fs-4 mb-1"><%= project_proposal.title %></h1>
+            <div class="row mb-n3">
+                <dl class="col-md">
+                    <dt>Submitted by</dt>
+                    <dd>
+                        <% if project_proposal.user.present? %>
+                            <%= link_to(project_proposal.user.username, user_path(project_proposal.user.username)) %>
+                        <% else %>
+                            <td><%= project_proposal.username %></td>
+                        <% end %>
+                    </dd>
+                </dl>
+                <dl class="col-md">
+                    <dt>Admin</dt>
+                    <dd>
+                        <% if project_proposal.admin.present? %>
+                            <%= link_to project_proposal.admin.username, user_path(project_proposal.admin.username) %>
+                        <% else %>
+                            -
+                        <% end %>
+                    </dd>
+                </dl>
+                <dl class="col-md">
+                    <dt>Client</dt>
+                    <dd>
+                        <%= project_proposal.client %>
+                    </dd>
+                </dl>
+                <dl class="col-md">
+                    <dt>Client type</dt>
+                    <dd><%= project_proposal.client_type %></dd>
+                </dl>
+
+                <dl class="col-md">
+                    <dt>Client interest</dt>
+                    <dd>
+                        <% case project_proposal.client_interest.split('/').first.squish %>
+                        <% when "Low" %>
+                            Low
+                            <div class="bg-body-secondary rounded-5 overflow-hidden">
+                                <div class="w-25 bg-danger rounded-5" style="height: 1rem"></div>
+                            </div>
+                        <% when "Medium" %>
+                            Medium
+                            <div class="bg-body-secondary rounded-5 overflow-hidden">
+                                <div class="w-50 bg-warning rounded-5" style="height: 1rem"></div>
+                            </div>
+                        <% when "High" %>
+                            High
+                            <div class="bg-body-secondary rounded-5 overflow-hidden">
+                                <div class="w-75 bg-success rounded-5" style="height: 1rem"></div>
+                            </div>
+                        <% end %>
+                    </dd>
+                </dl>
+            </div>
+
+            <div>
+                <ul class="list-unstyled d-flex flex-wrap gap-1">
+                    <% project_proposal.categories.find_each do |c| %>
+                        <span class="badge border p-2 bg-primary">
+                            <%= c.name.split('/').first %>
+                        </span>
+                    <% end %>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card-footer d-flex justify-content-end gap-2 px-3 py-1">
+            <%= link_to fa_icon(:eye, text: 'Show'), project_proposal_path(project_proposal),
+                        class: 'btn btn-sm btn-primary me-3', title: 'Show project proposal' %>
+            <button class="btn btn-sm btn-success"><%= fa_icon :check, text: 'Approve' %></button>
+            <button class="btn btn-sm btn-danger me-3"><%= fa_icon :times, text: 'Decline' %></button>
+            <%= link_to fa_icon(:pencil, text: 'Edit'), edit_project_proposal_path(project_proposal),
+                        class: 'btn btn-sm btn-outline-secondary', title: 'Edit project proposal' %>
+            <%= button_to 'Delete', project_proposal, method: :delete,
+                          class: 'btn btn-outline-danger btn-sm', data: { confirm: 'Are you sure?' } %>
+        </div>
+    </article>
+</li>
