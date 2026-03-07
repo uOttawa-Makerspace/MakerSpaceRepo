@@ -10,12 +10,17 @@ class LockerRental < ApplicationRecord
 
   # Associated when assigned
   belongs_to :locker, optional: true
+  belongs_to :preferred_locker, class_name: 'Locker', optional: true
   belongs_to :rented_by, class_name: 'User'
   belongs_to :decided_by, class_name: 'User', optional: true
-  # optional because some students don't always have a repository ready beforehand
-  belongs_to :repository, optional: true
+  belongs_to :course_name, optional: true
 
+  before_validation :set_cancellation_date, if: :cancelled?
+
+  # Notify of state change
   after_save :send_email_notification
+  # Notify of active locker move
+  after_save :send_move_notification
   after_save :sync_shopify_draft_order
 
   enum :state,
@@ -70,8 +75,17 @@ class LockerRental < ApplicationRecord
   # Which staff member approved the request, or if owner cancelled the request
   validates :decided_by, presence: true, unless: :reviewing?
 
+  # Track when rental was finished
+  validates :cancelled_at, presence: true, if: :cancelled?
+
   # Locker rental always has an owner
   validates :rented_by, presence: true
+
+  # If rented by a GNG student, make sure details are given
+  validates :course_name, presence: true, if: :requested_as_student?
+  validates :section_name, presence: true, if: :requested_as_student?
+  # This is now group number, but I kept it this just in case
+  validates :team_name, presence: true, if: :requested_as_student?
 
   # Scopes to aid sorting rentals
   scope :pending, -> { where(state: %i[reviewing await_payment]) }
@@ -81,17 +95,32 @@ class LockerRental < ApplicationRecord
   # Used by the automated payment system, picks the first available
   # specifier and owned until end of this semester
   def auto_assign
-    update(
+    Rails.logger.debug "Auto assigning locker rental #{id}"
+    update!(
       {
         state: (:active unless active?),
         owned_until: (end_of_this_semester if owned_until.blank?),
-        paid_at: Date.current
+        paid_at: Time.current
       }.compact
     )
   end
 
+  # Expired if a locker is active (not cancelled or unpaid) and time has passed owned_until
   def expired?
-    active? && owned_until && owned_until >= DateTime.current
+    active? && owned_until && owned_until <= DateTime.current
+  end
+
+  # How long was this expired for
+  def expired_since
+    # If there's a cancellation date, give that
+    # else owned_until if it's expired
+    cancelled_at || (owned_until if expired?)
+  end
+
+  # If expired for more than a week. Expired if owned_until or cancelled_at is
+  # one week old
+  def overdue?
+    expired? && expired_since && expired_since < 1.week.ago
   end
 
   # Is a rental not confirmed yet? Usually means users can cancel rental
@@ -105,21 +134,40 @@ class LockerRental < ApplicationRecord
     await_payment? || active?
   end
 
+  def set_cancellation_date
+    self.cancelled_at = DateTime.now
+  end
+
   # Send emails when state changes
   def send_email_notification
     return unless saved_change_to_state?
     case state.to_sym
     when :await_payment
-      LockerMailer.with(locker_rental: self).locker_checkout.deliver_now
+      LockerMailer.with(locker_rental: self).locker_checkout.deliver_later
     when :active
-      LockerMailer.with(locker_rental: self).locker_assigned.deliver_now
+      LockerMailer.with(locker_rental: self).locker_assigned.deliver_later
     when :cancelled
-      LockerMailer.with(locker_rental: self).locker_cancelled.deliver_now
+      LockerMailer.with(locker_rental: self).locker_cancelled.deliver_later
     when :reviewing
-      nil # do nothing
+      LockerMailer.with(locker_rental: self).locker_requested.deliver_later
     else
       raise "Unknown state #{state.to_sym}"
     end
+  end
+
+  def send_move_notification
+    # Send move only if rental is active
+    return unless active? && !saved_change_to_state
+    return unless saved_change_to_locker_id? || saved_change_to_owned_until?
+
+    LockerMailer
+      .with(
+        locker_rental: self,
+        moved_locker: Locker.find_by(id: saved_change_to_locker_id.first),
+        moved_date: saved_change_to_owned_until
+      )
+      .locker_moved
+      .deliver_later
   end
 
   def sync_shopify_draft_order
@@ -169,13 +217,7 @@ class LockerRental < ApplicationRecord
 
   def shopify_draft_order_line_items
     if Rails.env.production?
-      [
-        {
-          quantity: 1,
-          variantId:
-            "gid://shopify/ProductVariant/#{LockerOption.locker_product_variant_id}"
-        }
-      ]
+      [{ quantity: 1, variantId: locker.locker_size.shopify_gid }]
     else
       # Make a free locker, yay
       [

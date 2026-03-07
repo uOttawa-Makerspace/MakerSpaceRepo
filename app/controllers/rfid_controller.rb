@@ -46,7 +46,7 @@ class RfidController < SessionsController
         render json: {
                  new_rfid: "Error, missing space_id or mac_address param"
                },
-               status: :unprocessable_entity
+               status: :unprocessable_content
       )
     end
 
@@ -61,7 +61,7 @@ class RfidController < SessionsController
         render json: {
                  error: "Temporary RFID already exists"
                },
-               status: :unprocessable_entity
+               status: :unprocessable_content
       end
     else
       new_rfid =
@@ -73,12 +73,12 @@ class RfidController < SessionsController
         render json: {
                  new_rfid: "Temporary RFID created"
                },
-               status: :unprocessable_entity
+               status: :unprocessable_content
       else
         render json: {
                  new_rfid: "Error, requires rfid param"
                },
-               status: :unprocessable_entity
+               status: :unprocessable_content
       end
     end
   end

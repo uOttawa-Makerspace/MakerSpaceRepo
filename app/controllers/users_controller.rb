@@ -32,8 +32,8 @@ class UsersController < SessionsController
     if !verify_turnstile
       flash[:alert] = 'Captcha error, try again.'
       respond_to do |format|
-        format.html { render :new, status: :unprocessable_entity }
-        format.json { render json: {errors: 'captcha failure'}, status: :unprocessable_entity }
+        format.html { render :new, status: :unprocessable_content }
+        format.json { render json: {errors: 'captcha failure'}, status: :unprocessable_content }
       end 
     elsif @new_user.save
       hash = Rails.application.message_verifier(:user).generate(@new_user.id)
@@ -48,14 +48,14 @@ class UsersController < SessionsController
         format.json do
           render json:
                  'Account has been created, please look in your emails to confirm your email address.',
-                 status: :unprocessable_entity
+                 status: :unprocessable_content
         end
       end
     else
       respond_to do |format| 
-        format.html { render 'new', status: :unprocessable_entity }
+        format.html { render 'new', status: :unprocessable_content }
         format.json do
-          render json: @new_user.errors, status: :unprocessable_entity
+          render json: @new_user.errors, status: :unprocessable_content
         end
       end
     end
@@ -213,7 +213,7 @@ class UsersController < SessionsController
       flash[:notice] = 'Profile updated successfully.'
       redirect_to settings_profile_path
     else
-      flash[:alert] = 'Could not save changes.' +
+      flash[:alert] = 'Could not save changes. ' +
         @user.errors.full_messages.join('; ')
       redirect_to settings_profile_path
     end
@@ -422,6 +422,8 @@ class UsersController < SessionsController
     @keys_supervising = Key.where(supervisor_id: @repo_user.id)
     @key_cert = @repo_user.key_certification
 
+    @locker_rentals = @repo_user.locker_rentals
+
     respond_to do |format|
       format.html
       format.json do
@@ -432,8 +434,7 @@ class UsersController < SessionsController
                    certifications: @certifications.as_json(include: :training)
                  }
         else
-          render json:
-                   'This page has restricted access. If you think you need this access, please contact uottawa.makerepo@gmail.com'
+          head :unauthorized
         end
       end
     end

@@ -49,22 +49,24 @@ class CustomWebhooksController < ApplicationController
 
   # Explicitly define the keys we expect from Shopify
   def webhook_params
-    params.permit(
-      :id,
-      :tags,
-      :admin_graphql_api_id,
-      :email,
-      # Allow tags to be an array (common in tests) or scalar
-      tags: [],
-      # Allow array of hashes for metafields with common keys
-      metafields: [:namespace, :key, :value, :value_type, :description, :id],
-      # Allow array of hashes for discount codes
-      discount_codes: [:code, :amount, :type],
-      # Allow array of hashes for line items with standard fields
-      line_items: [:product_id, :quantity, :title, :variant_id, :sku, :price, :name],
-      # Allow specific keys for customer
-      customer: [:id, :email, :first_name, :last_name]
-    )
+    params.permit!
+    # NOTE: This doesn't let tags through.
+    # params.permit(
+    #   :id,
+    #   :tags,
+    #   :admin_graphql_api_id,
+    #   :email,
+    #   # Allow tags to be an array (common in tests) or scalar
+    #   tags: [],
+    #   # Allow array of hashes for metafields with common keys
+    #   metafields: [:namespace, :key, :value, :value_type, :description, :id],
+    #   # Allow array of hashes for discount codes
+    #   discount_codes: [:code, :amount, :type],
+    #   # Allow array of hashes for line items with standard fields
+    #   line_items: [:product_id, :quantity, :title, :variant_id, :sku, :price, :name],
+    #   # Allow specific keys for customer
+    #   customer: [:id, :email, :first_name, :last_name]
+    # )
   end
 
   def process_locker_hook(order_hook)

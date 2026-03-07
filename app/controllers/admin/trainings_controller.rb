@@ -27,7 +27,7 @@ class Admin::TrainingsController < AdminAreaController
       redirect_to admin_trainings_path
     else
       flash[:alert] = "Input is invalid"
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
   end
 
@@ -39,7 +39,7 @@ class Admin::TrainingsController < AdminAreaController
       redirect_to admin_trainings_path
     else      
       flash[:alert] = "Input is invalid"
-      render :edit, status: :unprocessable_entity
+      render :edit, status: :unprocessable_content
     end
     
   end

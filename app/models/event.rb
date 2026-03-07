@@ -130,7 +130,6 @@ class Event < ApplicationRecord
     end
 
     calendar_id = return_space_calendar(event.space)
-
     if event.google_event_id.present?
       begin
         service.update_event(calendar_id, event.google_event_id, gcal_event)

@@ -17,7 +17,7 @@ RSpec.describe RequireTrainingsController, type: :controller do
                params: {
                  require_training: {
                    training_id: training.id,
-                   volunteer_task: @task.id
+                   volunteer_task_id: @task.id
                  }
                }
         }.to change(RequireTraining, :count).by(1)
@@ -33,7 +33,7 @@ RSpec.describe RequireTrainingsController, type: :controller do
                params: {
                  require_training: {
                    training_id: "",
-                   volunteer_task: @task.id
+                   volunteer_task_id: @task.id
                  }
                }
         }.to change(RequireTraining, :count).by(0)
@@ -66,12 +66,12 @@ RSpec.describe RequireTrainingsController, type: :controller do
       it "should create the requirement" do
         expect {
           post :remove_trainings,
-               params: {
-                 require_training: {
-                   training_id: @require_training.training_id,
-                   volunteer_task: @require_training.volunteer_task_id
-                 }
-               }
+                params: {
+                  require_training: {
+                    training_id: @require_training.training_id,
+                    volunteer_task_id: @require_training.volunteer_task_id
+                  }
+                }
         }.to change(RequireTraining, :count).by(-1)
         expect(flash[:notice]).to eq(
           "You've successfully deleted this required training"
@@ -85,7 +85,7 @@ RSpec.describe RequireTrainingsController, type: :controller do
                params: {
                  require_training: {
                    training_id: "",
-                   volunteer_task: @require_training.volunteer_task_id
+                   volunteer_task_id: @require_training.volunteer_task_id
                  }
                }
         }.to change(RequireTraining, :count).by(0)

@@ -5,26 +5,33 @@
         <div class="mb-3">
             <% if @repository.youtube_link.present? %>
                 <%= youtube_video(@repository.youtube_link) %>
-            <% end %>
-            <div id="show-photo">
-                <% if @repository.photos.present? and @repository.photos.first.image.attached? %>
-                    <%= image_tag @repository.photos.first.image.variant(:photo_slide_first),
+            <% elsif @repository.photos.present? and @repository.photos.first.image.attached? %>
+                <div id="show-photo">
+                    <%= image_tag @repository.thumbnail_variant(:photo_slide_first),
                                   alt: 'Repository Main image',
                                   data: {
                                       width: @repository.photos.first.try(:width),
                                       height: @repository.photos.first.try(:height)
                                   } %>
-                <% end %>
-            </div>
+                </div>
+            <% end %>
             <div id="photo-slide">
+                <% if false && @repository.youtube_link.present? %>
+                    <%= image_tag "https://img.youtube.com/vi/#{YoutubeID.from(@repository.youtube_link)}/maxresdefault.jpg",
+                                  data: {
+                                      youtube: @repository.youtube_link
+                                  }
+                    %>
+                <% end %>
                 <% @repository.photos.find_each do |p| %>
-                    <%= image_tag p.image.variant(:photo_slide),
+                    <%= image_tag url_for(p.image.variable? ? p.image.variant(:photo_slide) : p.image),
                                   alt: 'Repository Image',
                                   data: {
                                       src: url_for(p.image),
                                       width: p.image.metadata['width'],
                                       height: p.image.metadata['height']
                                   } %>
+                    
                 <% end %>
             </div>
         </div>
@@ -132,7 +139,7 @@
                 <span class="like<%= @liked ? ' liked' : '' %>" style="color: white;">
                     <% like_text = @liked ? t('repository.unlike_button') : t('repository.like_button') %>
                     <%= button_to(fa_icon('heart', text: like_text),
-                                  add_like_repository_path, class: 'like border-0 bg-transparent', remote: true, method: :post, style: 'color: inherit !important; padding: inherit !important;') %>
+                                  add_like_repository_path, class: 'like border-0 bg-transparent', method: :post, style: 'color: inherit !important; padding: inherit !important;') %>
                 </span>
                 <span class="make" style="color: white;">
                     <%= link_to fa_icon('code-fork', text: t('repository.make_button')), makes_new_path(@repository.user_username, @repository.id), class: 'make' %>
@@ -197,8 +204,8 @@
                     <div class="mb-3 input-group required">
                         <%= f.hidden_field :repository_id, value: @repository.id %>
                         <%= f.collection_select :owner_id, @repository.users, :id, :username,
-                                     { prompt: t('repository.search_user') },
-                                     { class: 'form-control', id: 'search_users_transfer' } %>
+                            { prompt: t('repository.search_user') },
+                         { class: 'form-control', id: 'search_users_transfer' } %>
                         <br> </br>
                         <%= f.submit t('repository.transfer'), class: 'btn btn-warning' %>
                     </div>
@@ -213,7 +220,7 @@
     <section id="repo-comments" class="order-last col-12">
         <hr />
         <div class="title"><%= t('repository.comments') %></div>
-        <%= form_for('Comments', url: comments_create_path, id: 'comment', remote: true) do %>
+        <%= form_with(url: comments_create_path, id: 'comment') do %>
             <div class="mb-3">
                 <%= hidden_field_tag :content %>
                 <trix-editor input="content"></trix-editor>
@@ -236,12 +243,12 @@
                     <div class="comment-upvote">
                         <% color = @vote.include?([comment.id, false]) ? '#19c1a5' : '#999' %>
                         <%= button_to fa_icon('angle-up'), comments_vote_path(comment_id: comment.id, downvote: 'f'),
-                                      class: 'vote upvote border-0 bg-transparent', remote: true, method: :post, style: "color: #{color}"
+                                      class: 'vote upvote border-0 bg-transparent', method: :post, style: "color: #{color}"
                         %>
                         <div class="upvote upvote-<%= comment.id %>"><%= comment.upvote %></div>
                         <% color = @vote.include?([comment.id, true]) ? '#19c1a5' : '#999' %>
                         <%= button_to fa_icon('angle-down'), comments_vote_path(comment_id: comment.id, downvote: 't'),
-                                      class: 'vote upvote border-0 bg-transparent', remote: true, method: :post, style: "color: #{color}"
+                                      class: 'vote upvote border-0 bg-transparent', method: :post, style: "color: #{color}"
                         %>
                     </div>
                     <div class="comment-header">

@@ -2,13 +2,24 @@ import TomSelect from "tom-select";
 
 document.addEventListener("turbo:load", function () {
   // Search bar to pick an available locker
-  new TomSelect("#locker_rental_locker_id", {
-    searchPlaceholder: "Select a locker...",
-    render: {
-      option: (data, escape) => {
-        console.log(data);
-        return `<div>${escape(data.text)}</div>`;
-      },
-    },
-  });
+  document
+    .querySelectorAll("#locker_rental_locker_id, #locker_id")
+    .forEach((el) => {
+      new TomSelect(el, {
+        render: {
+          option: function (data, escape) {
+            let size = escape(data.size);
+            let text = escape(data.text);
+            let staffOnly = data.staffOnly == "true" ? " - Staff only" : "";
+            return `<div>Locker ${text} - Size ${size}${staffOnly}</div>`;
+          },
+          item: function (data, escape) {
+            let size = escape(data.size);
+            let text = escape(data.text);
+            let staffOnly = data.staffOnly == "true" ? " - Staff only" : "";
+            return `<div>Locker ${text} - Size ${size}${staffOnly}</div>`;
+          },
+        },
+      });
+    });
 });

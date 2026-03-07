@@ -1,18 +1,20 @@
 <div class="fw-bold row">
-  <span span class="col-md-2">Username</span>
-  <span class="text-primary col-md-10"><%= @repo_user.username %></span>
-  <span class="col-md-2">Name</span>
-  <span class="text-primary col-md-10"><%= @repo_user.name %></span>
-  <% if @user.staff? %>
-    <span class="col-md-2">Email</span>
-    <span class="text-primary col-md-10"><%= @repo_user.email %></span>
-    <span class="col-md-2">Faculty</span>
-    <span class="text-primary col-md-10"> <%= @repo_user.faculty.presence || '-' %></span>
-    <span class="col-md-2">Program</span>
-    <span class="text-primary col-md-10"><%= @repo_user.program.presence || '-' %></span>
-    <span class="col-md-2">Year of study</span>
-    <span class="text-primary col-md-10"><%= @repo_user.year_of_study.presence || '-' %></span>
-    <span class="col-md-2">Identity</span>
-    <span class="text-primary col-md-10"><%= @repo_user.identity.present? ? @repo_user.identity.humanize : '-' %></span>
-  <% end %>
+    <span span class="col-md-2"><%= t('.username') %></span>
+    <span class="text-secondary col-md-10"><%= @repo_user.username %></span>
+    <span class="col-md-2"><%= t('.name') %></span>
+    <span class="text-secondary col-md-10"><%= @repo_user.name %></span>
+    <% if @user.staff? %>
+        <span class="col-md-2"><%= t('.email') %></span>
+        <span class="text-secondary col-md-10"><%= @repo_user.email %></span>
+        <span class="col-md-2"><%= t('.faculty') %></span>
+        <span class="text-secondary col-md-10"> <%= @repo_user.faculty.presence || '-' %></span>
+        <span class="col-md-2"><%= t('.program') %></span>
+        <span class="text-secondary col-md-10"><%= @repo_user.program.presence || '-' %></span>
+        <span class="col-md-2"><%= t('.year_of_study') %></span>
+        <span class="text-secondary col-md-10"><%= @repo_user.year_of_study.presence || '-' %></span>
+        <span class="col-md-2"><%= t('.identity') %></span>
+        <span class="text-secondary col-md-10"><%= @repo_user.identity.present? ? @repo_user.identity.humanize : '-' %></span>
+    <% end %>
+
 </div>
+<%= link_to t('.edit_profile'), settings_profile_path, class: 'float-end' %>

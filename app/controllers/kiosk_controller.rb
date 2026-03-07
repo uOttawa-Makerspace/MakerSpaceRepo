@@ -26,7 +26,7 @@ class KioskController < ApplicationController
       return
     end
 
-    head :unprocessable_entity if space.nil?
+    head :unprocessable_content if space.nil?
 
     # Get last session (if it exists)
     # session has not ended yet if last sign out time is in future

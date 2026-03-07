@@ -1,84 +1,42 @@
-<div class="container">
-  <% @skills.each do |skill| %>
-    <div class="accordion mb-3" id="accordion-skill-<%= skill.name %>">
-      <div class="accordion-item">
-        <button class="accordion-button" type="button" data-bs-toggle="collapse"
-                data-bs-target="#trainings-skill-<%= skill.id %>" aria-expanded="false"
-                aria-controls="trainings-<%= skill.id %>">
-          <h6 id="header-skill-<%= skill.name %>">
-            <%= skill.name %>
-          </h6>
-        </button>
-        <div id="trainings-skill-<%= skill.id %>" class="accordion-collapse collapse">
-          <% skill.trainings.each do |training| %>
+<% @skills.each do |skill| %>
+    <details>
+        <summary><%= skill.name %></summary>
+        <% skill.trainings.each do |training| %>
+            <details>
+                <summary>
+                    <span><%= training.localized_name %></span>
+                    <span><%= training_status(training.id, @repo_user.id) %></span>
+                </summary>
 
-            <div class="accordion" id="accordion-<% training.localized_name %>">
-              <div class="accordion-item">
-                <div class="accordion-header" id="header-training-<% training.localized_name %>" type="button"
-                     data-bs-toggle="collapse" data-bs-target="#training-<%= training.id %>"
-                     aria-expanded="false" aria-controls="training-<%= training.id %>">
-                  <div class="row">
-                    <div class="col-4"></div>
-                    <div class="col-4 text-center">
-                      <button class="btn btn-link">
-                        <%= training.localized_name %>
-                      </button>
-                    </div>
-                    <div class="col-4">
-                      <%= sanitize(training_status(training.id, @repo_user.id)) %>
-                    </div>
-                  </div>
-                </div>
-
-                <div id="training-<%= training.id %>" class="accordion-collapse collapse"
-                     aria-labelledby="header-<% training.localized_name %>"
-                     data-bs-parent="#accordion-<% training.localized_name %>">
-                  <div class="accordion-body">
-                    <% if training.description.present? %>
-                      <div class="jumbotron card bg-light text-center text-wrap">
+                <% if training.description.present? %>
+                    <p>
                         <%= training.description %>
-                      </div>
-                    <% end %>
+                    </p>
+                <% end %>
 
+                <% badge = @repo_user.highest_badge(training) %>
+                <% unless badge.nil? %>
                     <div class="row">
-                      <% badge = @repo_user.highest_badge(training) %>
-                      <% unless badge.nil? %>
                         <div class="col-lg-4 text-center">
-                          <a style="width: 100px;" class="mx-auto w-100!important d-block" target="_blank" href="./badges/<%= badge.id %>">
-                            <%= render "badges/badge_icon", width: 100, height: 100, margin: "auto", display: "block", level: badge.level, name: badge.training.localized_name, skill: badge.get_skill_id %>
-                          </a>
+                            <a style="width: 100px;" class="mx-auto d-block" target="_blank" href="./badges/<%= badge.id %>">
+                                <%= render "badges/badge_icon", width: 100, height: 100, margin: "auto", display: "block",
+                                           level: badge.level, name: badge.training.localized_name, skill: badge.get_skill_id %>
+                            </a>
                         </div>
                         <div class="col-lg-8 my-auto">
-                          <b>
-                            <%= badge.training.localized_name %>
-                            :
-                          </b>
-                          <%= badge.training.description %>
+                            <b><%= badge.training.localized_name %>:</b>
+                            <%= badge.training.description %>
                         </div>
                         <div class="col-12 pt-2">
-                          <p>Skills Acquired: <b>
-                            <%= badge.training.list_of_skills %>
-                          </b></p>
+                            <p>Skills Acquired: <b><%= badge.training.list_of_skills %></b></p>
                         </div>
-                      <% end %>
                     </div>
-                    <p>Proficient projects awarded:
-                      <%= @proficient_projects_awarded.call(training).count %>
-                    </p>
-                    <p>Learning modules completed:
-                      <%= @learning_modules_completed.call(training).count %>
-                    </p>
-                    <p>Recommended hours before moving on:
-                      <%= @recomended_hours.call(training, return_levels(training.id, @repo_user.id)) %>
-                    </p>
+                <% end %>
 
-                  </div>
-                </div>
-              </div>
-            </div>
-          <% end %>
-        </div>
-      </div>
-    </div>
-  <% end %>
-</div>
+                <p>Proficient projects awarded: <%= @proficient_projects_awarded.call(training).count %></p>
+                <p>Learning modules completed: <%= @learning_modules_completed.call(training).count %></p>
+                <p>Recommended hours before moving on: <%= @recomended_hours.call(training, return_levels(training.id, @repo_user.id)) %></p>
+            </details>
+        <% end %>
+    </details>
+<% end %>

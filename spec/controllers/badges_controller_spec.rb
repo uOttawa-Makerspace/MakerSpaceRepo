@@ -28,7 +28,7 @@ RSpec.describe BadgesController, type: :controller do
         user = create(:user, :volunteer_with_dev_program)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
-        get :index, format: "js"
+        get :index, format: "js", xhr: true
         expect(response).to have_http_status(:success)
       end
 

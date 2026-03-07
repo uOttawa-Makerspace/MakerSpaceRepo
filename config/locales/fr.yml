@@ -193,6 +193,9 @@ fr:
       email: "Adresse courriel"
       submit: "Soumettre"
   activerecord:
+    attributes:
+      user:
+        student_id: Numéro d'étudiant
     errors:
       models:
         user:

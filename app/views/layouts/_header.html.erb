@@ -1,7 +1,7 @@
 <div class="sticky-md-top mb-3" id="sticky-header">
     <nav class="navbar navbar-expand-xl <%= controller_name %> <%= action_name %> shadow-lg">
         <div class="container-fluid">
-            <a class="ms-md-5 me-xl-5 navbar-brand" href="/"><strong>Maker</strong>Repo</a>
+            <a class="ms-xl-5 me-xl-5 navbar-brand" href="/"><strong>Maker</strong>Repo</a>
             <% unless signed_in? %>
                 <%# This is to show the register button outside the menu on mobile %>
                 <a class="nav-link d-xl-none order-xl-3" data-bs-toggle="modal" data-bs-target="#loginModal" href=""><%= t('navbar.sign_in') %></a>
@@ -31,16 +31,13 @@
                         </div>
                     </li>
 
-                    <li class="nav-item dropdown d-flex align-items-center">
-                        <%= link_to get_involved_path, class: 'nav-link custom-hover' do %>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <%= t('navbar.get_involved') %>
-                        <% end %>
-                        <a class="nav-link dropdown-toggle dropdown-toggle-split custom-hover" href="#" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="padding-left: 0.75rem; padding-right: 0.75rem;">
-                            <span class="visually-hidden">Toggle Dropdown</span>
                         </a>
                         <div class="dropdown-menu">
                             <%= link_to t('navbar.get_involved'), get_involved_path, class: 'dropdown-item' %>
-                            <a class="dropdown-item" href="https://simpli.events/u/uottawaceed"><%= t('navbar.workshops') %></a>
+                            <%= link_to t('navbar.workshops'), 'https://simpli.events/u/uottawaceed', class: 'dropdown-item' %>
                             <%= link_to t('navbar.join_a_team'), t('navbar.join_a_team_url'), class: 'dropdown-item' %>
                             <%= link_to t('navbar.volunteering'), volunteers_path, class: 'dropdown-item' %>
                             <%= link_to t('navbar.user.development_program'), development_programs_path, class: 'dropdown-item' %>
@@ -49,12 +46,9 @@
                         </div>
                     </li>
 
-                    <li class="nav-item dropdown d-flex align-items-center">
-                        <a class="nav-link custom-hover" href="<%= resources_path %>">
+                    <li class="nav-item dropdown">                        
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <%= t('navbar.resources') %>
-                        </a>
-                        <a class="nav-link dropdown-toggle dropdown-toggle-split custom-hover" href="#" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="padding-left: 0.75rem; padding-right: 0.75rem;">
-                            <span class="visually-hidden">Toggle Dropdown</span>
                         </a>
                         <div class="dropdown-menu">
                             <%= link_to t('navbar.resources'), resources_path, class: 'dropdown-item' %>
@@ -93,7 +87,7 @@
                     <% else %>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href=" <%= user_path(@user.username) %>" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="text-transform: none;">
-                                <%= image_tag @user.display_avatar, class: 'avatar', alt: 'Avatar' %>
+                                <%= image_tag @user.display_avatar, class: 'avatar', alt: 'Avatar', loading: 'lazy' %>
                                 <%= @user.username %>
                             </a>
                             <div class="dropdown-menu dropdown-menu-right">

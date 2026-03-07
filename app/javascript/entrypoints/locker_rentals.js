@@ -1,7 +1,30 @@
 import DataTable from "datatables.net-bs5";
 import "datatables.net-bs5/css/dataTables.bootstrap5.min.css";
+import TomSelect from "tom-select";
 
 document.addEventListener("turbo:load", () => {
+  if (document.querySelector("#locker_rental_preferred_locker_id")) {
+    new TomSelect("#locker_rental_preferred_locker_id", {
+      render: {
+        option: function (data, escape) {
+          let size = escape(data.size);
+          let text = escape(data.text);
+          let staffOnly = data.staffOnly == "true" ? " - Staff only" : "";
+          return `<div>Locker ${text} - Size ${size}${staffOnly}</div>`;
+        },
+        item: function (data, escape) {
+          let size = escape(data.size);
+          let text = escape(data.text);
+          let staffOnly = data.staffOnly == "true" ? " - Staff only" : "";
+          return `<div>Locker ${text} - Size ${size}${staffOnly}</div>`;
+        },
+      },
+    });
+  }
+});
+
+document.addEventListener("turbo:load", () => {
+  // FIXME: RIP remove this what.
   setupRentalTable();
 
   // For user facing locker request form
@@ -32,14 +55,6 @@ function setupRentalTable() {
     language: {
       emptyTable: "Nothing.",
     },
-    // FIXME what is this even doing here
-    // search: {
-    //   fixed: {
-    //     rentals: (a, b, c) => {
-    //       return false;
-    //     },
-    //   },
-    // },
   });
 
   table

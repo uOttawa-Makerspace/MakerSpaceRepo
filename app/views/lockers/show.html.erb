@@ -1,0 +1,89 @@
+<% provide(:title, "Locker #{@locker.specifier} History") %>
+
+<div class="mb-4">
+    <%= link_to lockers_path, class: 'text-muted text-decoration-none' do %>
+        <%= fa_icon 'arrow-left', text: 'Back to Lockers' %>
+    <% end %>
+</div>
+
+<h1 class="text-center mb-4">Locker <%= @locker.specifier_was %></h1>
+
+<% if current_user.admin? %>
+    <div class="mb-3 clearfix">
+        <h2>Edit this locker</h2>
+        <%= form_with model: @locker do |f| %>
+            <div class="mb-3">
+                <div class="input-group mb-3">
+                    <%= f.label :specifier, class: 'input-group-text' %>
+                    <%= f.text_field :specifier, class: 'form-control', required: true, inputmode: 'numeric', pattern: '\d+' %>
+                </div>
+                
+                <div class="input-group">
+                    <%= f.label :locker_size_id, 'Change locker size', class: 'input-group-text' %>
+                    <%= f.select :locker_size_id, @locker_sizes.map { |size|
+                        [ size.size, size.id, { 'data-data' => @locker_product_info[:variants][size.shopify_gid].to_json } ]},
+                     {include_blank: 'Select variant...'}, { class: 'form-select locker-variant-select' } %>
+                </div>
+                <div class="form-text">Numeric specifiers only</div>
+                <%= f.submit class: 'btn btn-primary float-end' %>
+            </div>
+        <% end %>
+    </div>
+<% end %>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h2 class="card-title">Current Status</h2>
+        <% if @active_locker_rental %>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <% if @active_locker_rental.expired? %>
+                        <span class="badge bg-danger">
+                            <%= fa_icon :times %> Expired
+                        </span>
+                    <% else %>
+                        <%= locker_rental_state_display @active_locker_rental %>
+                    <% end %>
+                    <span class="text-muted ms-2">
+                        since <%= @active_locker_rental.created_at.to_date.to_formatted_s(:long) %>
+                    </span>
+                </div>
+                <%= link_to @active_locker_rental, class: 'btn btn-outline-secondary btn-sm' do %>
+                    View rental details <%= fa_icon 'arrow-right' %>
+                <% end %>
+            </div>
+        <% else %>
+            <span class="badge bg-secondary">Unoccupied</span>
+        <% end %>
+    </div>
+</div>
+
+<h2 class="text-center">Rental History</h2>
+<p class="text-center text-muted mb-4">Log of previous owners of this locker</p>
+
+<% rentals = @locker.locker_rentals.order(created_at: :desc) %>
+
+<% if rentals.any? %>
+    <div class="list-group">
+        <% rentals.each do |rental| %>
+            <%= link_to locker_rental_path(rental), class: 'list-group-item list-group-item-action' do %>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong><%= rental.rented_by.username %></strong>
+                        <br>
+                        <small class="text-muted">
+                            <%= rental.created_at.to_date.to_formatted_s(:long) %>
+                            &mdash;
+                            <%= rental.owned_until.to_date.to_formatted_s(:long) %>
+                        </small>
+                    </div>
+                    <span class="badge bg-secondary"><%= rental.state %></span>
+                </div>
+            <% end %>
+        <% end %>
+    </div>
+<% else %>
+    <p class="text-center text-muted">No rental history for this locker.</p>
+<% end %>
+
+<%= button_to 'Delete locker', @locker, method: :delete, class: 'btn btn-danger', data: {confirm: 'Are you sure you want to delete this locker?'} %>

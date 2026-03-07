@@ -2,6 +2,8 @@
 
 class DevelopmentProgramsController < SessionsController
   before_action :current_user
+  before_action :with_development_header, except: :index
+
   # HACK: hardcode exception for this controller's index page only
   before_action :grant_access,
                 except: %i[join_development_program],

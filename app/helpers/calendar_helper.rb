@@ -2,16 +2,20 @@ module CalendarHelper
   def parse_ics_calendar(ics_url, name: "Unnamed Calendar", color: nil )
     return [] if ics_url.blank?
 
-    background_color = color.presence || generate_color_from_id(ics_url)
-    group_id = Digest::MD5.hexdigest(ics_url)
+    background_color = color.presence || generate_color_from_id(ics_url.to_s)
+    group_id = Digest::MD5.hexdigest(ics_url.to_s)
 
     events = []
 
     begin
-      response = HTTParty.get(ics_url, timeout: 10)
+      if ics_url.is_a? Pathname
+        response = File.read(ics_url) 
+        parsed_cals = ::Icalendar::Calendar.parse(response)
+      else
+        response = HTTParty.get(ics_url, timeout: 10)
       return [] unless response.success?
-
-      parsed_cals = ::Icalendar::Calendar.parse(response.body)
+        parsed_cals = ::Icalendar::Calendar.parse(response.body)
+      end
 
       events = parsed_cals.flat_map do |calendar|
         # Group events by UID to handle recurrence-id
@@ -278,5 +282,42 @@ module CalendarHelper
     js_rrule[:wkst] = openstruct_obj.week_start if openstruct_obj.week_start
     
     js_rrule
+  end
+
+  def create_makeroom_bookings_from_ics(snc, user_id, space)
+    # Parse ics events
+    @events = parse_ics_calendar(
+        snc.calendar_url,
+        name: snc.name.presence || "Unnamed Calendar",
+        color: snc.color
+      )
+    # Iteratee through every sub space of the given param space
+    space.sub_spaces.each do |sub_space|
+      # Iterate through all events, checking if one resides in a sub space
+      @events[0][:events].each do |event|
+        next unless event[:extendedProps][:location] == sub_space.name
+        # If match is found, create a MakerRoom booking
+        booking = SubSpaceBooking.new(
+          start_time: event[:start],
+          end_time: event[:end],
+          name: event[:title] || "Title",
+          description: event[:description] || "No Description",
+          sub_space_id: sub_space.id,
+          blocking: true,
+          user_id: user_id
+        )
+
+        booking.save
+        # Assign a pending status to the booking
+        status = SubSpaceBookingStatus.new(
+          sub_space_booking_id: booking.id,
+          booking_status_id: BookingStatus::PENDING.id
+        )
+      
+        status.save
+        # Once status is created, link its id in the booking instance
+        booking.update(sub_space_booking_status_id: status.id)
+      end
+    end
   end
 end

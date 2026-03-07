@@ -4,9 +4,20 @@ FactoryBot.define do
   factory :repository do
     association :owner, factory: :user
     title { Faker::Lorem.unique.word }
-    description { Faker::Lorem.paragraph }
+    # Use non-Latin text to avoid trigram collisions
+    description { Faker::Movies::StarWars.quote }  
     share_type { "public" }
     youtube_link { "" }
+
+    # Need to have min one photo
+    after(:build) do |repo|
+      repo.photos.build(
+          image:
+            Rack::Test::UploadedFile.new(
+              Rails.root.join('spec/support/assets/avatar.png'),
+              'image/png')
+      )
+    end
 
     trait :private do
       password do

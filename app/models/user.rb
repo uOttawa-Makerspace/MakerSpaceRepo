@@ -153,9 +153,13 @@ class User < ApplicationRecord
               if: -> { avatar.attached? }
             }
 
-  validates :name, 
-            presence: true, 
-            length: { maximum: 50 }
+  validates :name,
+            presence: true,
+            length: { maximum: 50 },
+            format: {
+              without: /[<>&"]/,
+              message: 'must not contain special HTML characters'
+            }
 
   validates :username,
             presence: true,
@@ -211,12 +215,19 @@ class User < ApplicationRecord
   # New: /\A[0-9]{9}\z/ - ensures EXACTLY 9 digits, nothing else
   validates :student_id,
             format: {
-              with: /\A[0-9]{9}\z/,
-              message: 'must be exactly 9 digits'
+              with: /\A[0-9]{7,12}\z/,
+              message: 'must be between 7 and 12 digits'
             },
             allow_blank: true,
             presence: true,
             if: :student?
+  
+  validates :url,
+            format: {
+              with: %r{\Ahttps?://[^\s<>"'{}|\\^`]+\z}i,
+              message: 'must be a valid URL starting with http:// or https://'
+            },
+            allow_blank: true
 
   # ============================================
   # Normalizations & Callbacks

@@ -22,6 +22,11 @@
                     <input id="book-end" autocomplete="false" class="form-control inanimate">
                     <span class="invalid-feedback d-none" id="end-date-validation" >The End Date needs to be greater than the Start Date.</span>
                     <br>
+                    <div class="mb-3">
+                        <label for="subspace" id="subspace_header">Subspace</label>
+                        <%= select_tag 'sub_space_booking', options_from_collection_for_select(SubSpace.all.where(space_id: @subspace.space_id), 'id', 'name'), id: "subspace", class: "form-control" %>
+                    </div>
+
                     <input type="checkbox" id="book-recurring" class="form-check-input">
                     <label for="book-recurring" id="book-recurring-label">Is this a recurring booking?</label>
                     <br>

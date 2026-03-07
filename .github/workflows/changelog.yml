@@ -1,0 +1,129 @@
+name: Generate Changelog
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - master
+
+jobs:
+  changelog:
+    if: >
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.head.ref == 'staging'
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: master
+
+      # Ensure all tags (including those created via GitHub API) are fetched
+      - name: Fetch all tags
+        run: git fetch --tags --force
+
+      - name: Get Previous Tag
+        id: previoustag
+        run: |
+          TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+
+          if [ -z "$TAG" ]; then
+            # No tags exist yet — fall back to the first parent of HEAD.
+            # HEAD^1 is the previous master tip before the staging merge,
+            # so the changelog will only cover THIS merge's changes.
+            TAG=$(git rev-parse HEAD^1)
+            echo "No previous tag found. Falling back to HEAD^1: $TAG"
+          else
+            echo "Found previous tag: $TAG"
+          fi
+
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      # Generate a new version tag
+      - name: Bump Version
+        id: version
+        run: |
+          # Simple date-based versioning; replace with semver if preferred
+          VERSION="v$(date +'%Y.%m.%d-%H%M%S')"
+          echo "new_tag=$VERSION" >> $GITHUB_OUTPUT
+
+      # Create the tag NOW so toTag is a real, resolvable ref
+      - name: Create Git Tag
+        run: |
+          git tag "${{ steps.version.outputs.new_tag }}"
+          git push origin "${{ steps.version.outputs.new_tag }}"
+
+      - name: Build Changelog
+        id: changelog
+        uses: mikepenz/release-changelog-builder-action@v4
+        with:
+          fromTag: ${{ steps.previoustag.outputs.tag }}
+          toTag: ${{ steps.version.outputs.new_tag }}
+          configurationJson: |
+            {
+              "categories": [
+                {
+                  "title": "## 🚀 Features",
+                  "labels": ["feature", "enhancement"]
+                },
+                {
+                  "title": "## 🐛 Bug Fixes",
+                  "labels": ["bug", "fix"]
+                },
+                {
+                  "title": "## 🧪 Tests",
+                  "labels": ["test"]
+                },
+                {
+                  "title": "## 📦 Other Changes",
+                  "labels": []
+                }
+              ],
+              "template": "#changelog\n\n#{{CHANGELOG}}\n\n**Full Changelog**: #{{RELEASE_DIFF}}",
+              "pr_template": "- #{{TITLE}} (##{{NUMBER}}) by @#{{AUTHOR}}"
+            }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Overwrite the CHANGELOG.md
+      - name: Update CHANGELOG.md
+        run: |
+          TAG="${{ steps.version.outputs.new_tag }}"
+          DATE=$(date +'%Y-%m-%d')
+
+          cat > CHANGELOG.md <<EOF
+          # ${TAG} (${DATE})
+
+          ${{ steps.changelog.outputs.changelog }}
+          EOF
+
+      - name: Commit Changelog
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git diff --staged --quiet || {
+            git commit -m "docs: update CHANGELOG.md [skip ci]"
+            git push origin master
+          }
+
+      # Also create a GitHub Release
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.new_tag }}
+          body: ${{ steps.changelog.outputs.changelog }}
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Sync staging to master
+      - name: Fast-forward staging to master
+        run: |
+          git push origin master:refs/heads/staging --force

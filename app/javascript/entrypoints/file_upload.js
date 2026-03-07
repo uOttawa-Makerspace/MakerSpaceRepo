@@ -12,10 +12,9 @@
 // accepts_nested_attributes_for to work with pre-existing files. Date.now() is
 // in milliseconds resolution and my dev machine is fast enough to get duplicate
 // indices.
-let counter = 1;
+let counter = Date.now();
 function getNextCounter() {
-  counter += 1;
-  return counter;
+  return counter++;
 }
 
 // Make a div containing a preview image and a hidden input
@@ -25,15 +24,20 @@ function appendFileToPreview(file, previewContainer, fieldPrefix, fieldSuffix) {
   preview.classList.add("file-upload-item-preview");
 
   const previewImage = document.createElement("img");
+  const objectURL = URL.createObjectURL(file);
   // If image errors out, this isn't something we can preview.
   previewImage.addEventListener("error", (evt) => {
+    URL.revokeObjectURL(objectURL);
     evt.currentTarget.removeAttribute("src");
   });
-  previewImage.src = URL.createObjectURL(file);
+  previewImage.addEventListener("load", () => {
+    URL.revokeObjectURL(objectURL);
+  });
+  previewImage.src = objectURL;
   preview.appendChild(previewImage);
 
   const previewFilename = document.createElement("span");
-  previewFilename.innerText = file.name;
+  previewFilename.textContent = file.name;
   preview.appendChild(previewFilename);
 
   const previewInput = document.createElement("input");
@@ -52,7 +56,7 @@ function appendFileToPreview(file, previewContainer, fieldPrefix, fieldSuffix) {
 
   // For non-persisted files this is a button
   const previewDelete = document.createElement("button");
-  previewDelete.innerHTML = "Delete";
+  previewDelete.textContent = "Delete";
   previewDelete.classList.add("file-upload-item-delete");
   previewDelete.type = "button"; // Prevent form submit
   previewDelete.addEventListener("click", (evt) => {
@@ -72,7 +76,7 @@ function onFileUpload(evt) {
     input.dataset.fileUploadPreviewSelector,
   );
 
-  const fileUploadLimit = parseInt(input.dataset.fileUploadLimit);
+  const fileUploadLimit = parseInt(input.dataset.fileUploadLimit, 10);
   // Count files currently candidates for upload
   const currentFileCount = previewContainer.querySelectorAll(
     ".file-upload-item-preview:not([hidden])",
@@ -95,6 +99,10 @@ function onFileUpload(evt) {
 }
 
 function createFileInput(target) {
+  // Guard against re-initialization on repeated turbo:load events
+  if (target.dataset.fileUploadInitialized) return;
+  target.dataset.fileUploadInitialized = "true";
+
   // Attach change handlers
   target.addEventListener("change", onFileUpload);
   // Copy name as a prefix
@@ -117,15 +125,20 @@ function createFileInput(target) {
   const previewBoxes = preview.querySelectorAll(".file-upload-item-preview");
 
   previewBoxes.forEach((previewBox) => {
-    // Find delete buttons inside each preview box
-    previewBox
-      .querySelector("[data-file-upload-item-delete]")
-      .addEventListener("click", () => {
+    const deleteBtn = previewBox.querySelector(
+      "[data-file-upload-item-delete]",
+    );
+    const destroyInput = previewBox.querySelector(
+      "[data-file-upload-hidden-destroy]",
+    );
+
+    if (deleteBtn && destroyInput) {
+      deleteBtn.addEventListener("click", () => {
         // We have to submit the _destroy flag to server, hide preview instead
         previewBox.hidden = true;
-        previewBox.querySelector("[data-file-upload-hidden-destroy]").value =
-          true;
+        destroyInput.value = true;
       });
+    }
   });
 }
 

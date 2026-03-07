@@ -112,18 +112,21 @@ document.addEventListener("turbo:load", () => {
     }),
   );
 
-  document.getElementById("new-tr").addEventListener("click", () => {
-    const clone = document.getElementById("new-link-input").cloneNode(true);
-    document.getElementById("link-container").append(clone);
-    clone.removeAttribute("id");
-    clone.querySelectorAll("input").forEach((input) => {
-      input.value = "";
+  let newTr = document.getElementById("new-tr");
+  if (newTr) {
+    newTr.addEventListener("click", () => {
+      const clone = document.getElementById("new-link-input").cloneNode(true);
+      document.getElementById("link-container").append(clone);
+      clone.removeAttribute("id");
+      clone.querySelectorAll("input").forEach((input) => {
+        input.value = "";
+      });
+      clone.querySelector("button").addEventListener("click", (el) => {
+        el.target.closest("button").parentNode.remove();
+      });
+      clone.style.visibility = "visible";
     });
-    clone.querySelector("button").addEventListener("click", (el) => {
-      el.target.closest("button").parentNode.remove();
-    });
-    clone.style.visibility = "visible";
-  });
+  }
 });
 
 new DataTable("#prof-proj-requests");
