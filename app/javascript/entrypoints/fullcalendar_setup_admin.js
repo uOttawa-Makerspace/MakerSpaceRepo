@@ -4,8 +4,6 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 
-import { rrulestr } from "rrule";
-
 import { Tooltip } from "bootstrap";
 
 import { eventClick, eventCreate } from "./calendar_helper.js";
@@ -136,16 +134,6 @@ document.addEventListener("turbo:load", async () => {
   const eventsData = await eventsRes.json();
 
   eventsData.forEach((eventSource) => {
-    eventSource.events.forEach((event) => {
-      if (event.rrule) {
-        try {
-          event.rrule = rrulestr(event.rrule).toString();
-        } catch (e) {
-          console.error("Error parsing rrule:", e, event.rrule);
-        }
-      }
-    });
-
     const checkboxContainer = document.getElementById(
       "events_checkbox_container",
     );
@@ -286,15 +274,6 @@ document.addEventListener("turbo:load", async () => {
 
         // Process events with rrule parsing
         const processedEvents = staff.unavailabilities.map((u) => {
-          // Parse rrule if present
-          if (u.rrule) {
-            try {
-              u.rrule = rrulestr(u.rrule).toString();
-            } catch (e) {
-              console.error("Error parsing unavailability rrule:", e, u.rrule);
-            }
-          }
-
           return {
             ...u,
             extendedProps: {
