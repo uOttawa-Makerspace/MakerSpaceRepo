@@ -49,16 +49,16 @@ class Staff::MyCalendarController < StaffAreaController
 
   def expand_recurring_event(event, start_date, end_date)
     require 'ice_cube'
-    
+
     expanded_events = []
-    
+
     begin
       # Parse the iCalendar format recurrence rule
       rrule_string = event.recurrence_rule.to_s
       
       # Extract just the RRULE part (remove DTSTART line)
       rrule_line = rrule_string.lines.find { |line| line.start_with?('RRULE:') }
-      
+
       if rrule_line.nil?
         # If no RRULE: prefix, assume the whole string is the rule
         rrule_line = rrule_string.include?('RRULE:') ? rrule_string : "RRULE:#{rrule_string}"
@@ -78,36 +78,44 @@ class Staff::MyCalendarController < StaffAreaController
       # Use a larger buffer to ensure we catch all occurrences
       occurrences = schedule.occurrences_between(start_date, end_date)
 
-      # Calculate duration
-      duration = event.end_time - event.start_time
-      
-      occurrences.each_with_index do |occurrence, index|
-        occurrence_end = occurrence + duration
-        
+      # Wall-clock safe duration: store components, not seconds
+      day_offset = (event.end_time.to_date - event.start_time.to_date).to_i
+      end_hour   = event.end_time.hour
+      end_min    = event.end_time.min
+      end_sec    = event.end_time.sec
+
+      occurrences.each do |occurrence|
+        # Rebuild end time from wall-clock components
+        target_date = occurrence.to_date + day_offset
+        occurrence_end = Time.zone.local(
+          target_date.year, target_date.month, target_date.day,
+          end_hour, end_min, end_sec
+        )
+
         formatted_event = format_event(event, occurrence, occurrence_end)
         # Create unique ID using timestamp to avoid collisions
         formatted_event[:id] = "event-#{event.id}-#{occurrence.to_i}"
         
         expanded_events << formatted_event
       end
-      
+
     rescue => e
       # Fallback: return the original event if within date range
       if event.start_time >= start_date && event.end_time <= end_date
         expanded_events << format_event(event)
       end
     end
-    
+
     expanded_events
   end
 
   def format_event(event, start_time = nil, end_time = nil)
     start_time ||= event.start_time
     end_time ||= event.end_time
-    
+
     title = if event.title == event.event_type.capitalize && !event.event_assignments.empty?
       "#{if event.draft then '✎ ' end}#{event.event_type == 'training' ? "#{event.training.name} (#{event.course_name.name || ''} - #{event.language || ''})" : event.event_type.capitalize} for #{event.event_assignments.map { |ea| ea.user.name }.join(", ")}"
-    else 
+    else
       "#{'✎ ' if event.draft}#{event.title}"
     end
 
@@ -122,12 +130,16 @@ class Staff::MyCalendarController < StaffAreaController
       '#3788d8'
     end
 
+    is_all_day = start_time.hour == 0 && start_time.min == 0 && start_time.sec == 0 &&
+                end_time.hour == 0 && end_time.min == 0 && end_time.sec == 0 &&
+                end_time.to_date > start_time.to_date
+
     {
       id: "event-#{event.id}",
       title: title,
       start: start_time.iso8601,
       end: end_time.iso8601,
-      allDay: start_time.to_time == end_time.to_time - 1.day,
+      allDay: is_all_day,
       extendedProps: {
         name: event.event_type.capitalize,
         draft: event.draft,
