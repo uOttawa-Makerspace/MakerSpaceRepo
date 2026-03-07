@@ -2,6 +2,40 @@
 <div class="text-center">
     <h1 class="title">Issue summary</h1>
     <%= render partial: 'printers/link_box', locals: { printer_issues_index: true } %>
+
+    <%# ── Notification Email Setting ── %>
+    <div class="card my-4 mx-auto" style="max-width: 600px;">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="fa fa-envelope"></i> Maintenance Notification Email</h5>
+        </div>
+        <div class="card-body">
+            <%= form_with url: update_notification_email_printer_issues_path, method: :patch, local: true, class: "d-flex align-items-center gap-2 justify-content-center" do |f| %>
+                <label for="notification_email" class="form-label mb-0 fw-bold">Send notifications to:</label>
+                <input
+                    type="email"
+                    name="notification_email"
+                    id="notification_email"
+                    value="<%= @maintenance_email %>"
+                    placeholder="e.g. maintenance@example.com"
+                    class="form-control"
+                    style="max-width: 300px;"
+                />
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa fa-save"></i> Save
+                </button>
+            <% end %>
+            <% if @maintenance_email.present? %>
+                <small class="text-muted mt-2 d-block">
+                    Currently sending to: <strong><%= @maintenance_email %></strong>
+                </small>
+            <% else %>
+                <small class="text-warning mt-2 d-block">
+                    <i class="fa fa-exclamation-triangle"></i> No notification email set. Emails will not be sent.
+                </small>
+            <% end %>
+        </div>
+    </div>
+
     <div class="row">
         <% @issues_summary.each do |summary, issues| %>
             <div class="col">
