@@ -27,6 +27,6 @@ class Photo < ApplicationRecord
             file_content_type: {
               allow: [ALLOWED_CONTENT_TYPES],
               if: -> { image.attached? }
-            }
+            }, on: :create
   validates :image, presence: true
 end
