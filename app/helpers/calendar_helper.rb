@@ -1,5 +1,8 @@
 module CalendarHelper
-  def parse_ics_calendar(ics_url, name: "Unnamed Calendar", color: nil )
+  CALENDAR_TZ_NAME = "America/Toronto"
+  CALENDAR_TZ = ActiveSupport::TimeZone[CALENDAR_TZ_NAME]
+
+  def parse_ics_calendar(ics_url, name: "Unnamed Calendar", color: nil)
     return [] if ics_url.blank?
 
     background_color = color.presence || generate_color_from_id(ics_url.to_s)
@@ -9,24 +12,24 @@ module CalendarHelper
 
     begin
       if ics_url.is_a? Pathname
-        response = File.read(ics_url) 
+        response = File.read(ics_url)
         parsed_cals = ::Icalendar::Calendar.parse(response)
       else
         response = HTTParty.get(ics_url, timeout: 10)
-      return [] unless response.success?
+        return [] unless response.success?
         parsed_cals = ::Icalendar::Calendar.parse(response.body)
       end
 
       events = parsed_cals.flat_map do |calendar|
         # Group events by UID to handle recurrence-id
         events_by_uid = calendar.events.group_by(&:uid)
-        
+
         events_by_uid.flat_map do |uid, event_group|
           main_event = event_group.find { |e| e.recurrence_id.nil? }
           modified_instances = event_group.select { |e| e.recurrence_id.present? }
-          
+
           results = []
-          
+
           if main_event
             start_time = safe_to_time(main_event.dtstart)
             end_time = safe_to_time(main_event.dtend)
@@ -44,52 +47,51 @@ module CalendarHelper
               },
               allDay: all_day,
               display: 'auto',
-              start: start_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S"),
-              end: end_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S")
+              start: start_time&.in_time_zone(CALENDAR_TZ)&.strftime("%Y-%m-%dT%H:%M:%S"),
+              end: end_time&.in_time_zone(CALENDAR_TZ)&.strftime("%Y-%m-%dT%H:%M:%S")
             }
 
             rrule_obj = main_event.rrule&.first
 
             if rrule_obj.present?
               rrule_string_parts = []
-              
-              dtstart_toronto = start_time.in_time_zone("America/Toronto")&.strftime("%Y%m%dT%H%M%S")
-              rrule_string_parts << "DTSTART:#{dtstart_toronto}"
-              
+
+              dtstart_local = start_time.in_time_zone(CALENDAR_TZ).strftime("%Y%m%dT%H%M%S")
+              rrule_string_parts << "DTSTART:#{dtstart_local}"
+
               rrule_line = convert_rrule_to_string(rrule_obj)
               rrule_string_parts << "RRULE:#{rrule_line}"
-              
+
               all_exdates = main_event.exdate.map(&:value).flatten.map { |d| safe_to_time(d) }
-              
-              # Add recurrence-id dates from modified instances to exdates
+
               modified_instances.each do |modified|
                 recurrence_time = safe_to_time(modified.recurrence_id)
                 all_exdates << recurrence_time if recurrence_time
               end
-              
+
               all_exdates.compact.uniq.each do |d|
-                exdate_str = d.in_time_zone("America/Toronto")&.strftime("%Y%m%dT%H%M%S")
+                exdate_str = d.in_time_zone(CALENDAR_TZ).strftime("%Y%m%dT%H%M%S")
                 rrule_string_parts << "EXDATE:#{exdate_str}"
               rescue StandardError
                 # Skip invalid dates
               end
-              
+
               event_hash[:rrule] = rrule_string_parts.join("\n")
-              
+
+              # Duration in ms — applied per-occurrence by FullCalendar
               duration_seconds = end_time.to_i - start_time.to_i
               event_hash[:duration] = duration_seconds * 1000
             end
-            
+
             results << event_hash
           end
-          
-          # Process modified instances as separate events
+
           modified_instances.each do |modified|
             start_time = safe_to_time(modified.dtstart)
             end_time = safe_to_time(modified.dtend)
-            
+
             next if end_time < (Time.now.utc - 2.months)
-            
+
             results << {
               id: "#{modified.uid}_#{safe_to_time(modified.recurrence_id)&.to_i}",
               groupId: group_id,
@@ -99,11 +101,11 @@ module CalendarHelper
                 description: modified.description,
               },
               allDay: modified.dtstart.is_a?(Icalendar::Values::Date),
-              start: start_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S"),
-              end: end_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S")
+              start: start_time&.in_time_zone(CALENDAR_TZ)&.strftime("%Y-%m-%dT%H:%M:%S"),
+              end: end_time&.in_time_zone(CALENDAR_TZ)&.strftime("%Y-%m-%dT%H:%M:%S")
             }
           end
-          
+
           results
         end.compact
       end
@@ -159,16 +161,17 @@ module CalendarHelper
       c /= 255.0
       c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
     end
-    l1 = 1.0 # luminance of white
-    l2 = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2] # luminance of the color
-
+    l1 = 1.0
+    l2 = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]
     (l1 + 0.05) / (l2 + 0.05)
   end
 
   # RRULE HELPERS
+
+  # UNTIL now uses floating local time, consistent with DTSTART
   def convert_rrule_to_string(rrule_obj)
     parts = []
-    
+
     parts << "FREQ=#{rrule_obj.frequency}" if rrule_obj.frequency
     parts << "INTERVAL=#{rrule_obj.interval}" if rrule_obj.interval && rrule_obj.interval != 1
     parts << "BYDAY=#{rrule_obj.by_day.join(',')}" if rrule_obj.by_day&.any?
@@ -177,41 +180,43 @@ module CalendarHelper
     parts << "BYYEARDAY=#{rrule_obj.by_year_day.join(',')}" if rrule_obj.by_year_day&.any?
     parts << "BYWEEKNO=#{rrule_obj.by_week_number.join(',')}" if rrule_obj.by_week_number&.any?
     parts << "BYSETPOS=#{rrule_obj.by_set_position.join(',')}" if rrule_obj.by_set_position&.any?
-    
+
     if rrule_obj.until
       until_time = safe_to_time(rrule_obj.until)
-      parts << "UNTIL=#{until_time.utc.strftime('%Y%m%dT%H%M%SZ')}" if until_time
-    end
-    
-    parts << "COUNT=#{rrule_obj.count}" if rrule_obj.count
-    parts << "WKST=#{rrule_obj.week_start}" if rrule_obj.week_start
-    
-    parts.join(';')
-  end
-  
-  def date_formatted_recurrence_rule(event)
-    return unless event.recurrence_rule.present?
-    
-    rrule = event.recurrence_rule
-    rrule_parts = rrule.split(/[;\n]/).reject { |part| part.strip.start_with?('DTSTART') }
-    
-    # Convert EXDATE values to Toronto timezone
-    rrule_parts = rrule_parts.map do |part|
-      if part.strip.start_with?('EXDATE')
-        part.gsub(/(\d{8}T\d{6}Z?)/) do |datetime|
-          datetime.in_time_zone("America/Toronto").strftime("%Y%m%dT%H%M%S")
-        end
-      else
-        part
+      if until_time
+        # Floating local — matches DTSTART format for rrule.js consistency
+        until_local = until_time.in_time_zone(CALENDAR_TZ).strftime("%Y%m%dT%H%M%S")
+        parts << "UNTIL=#{until_local}"
       end
     end
-    
-    rrule_without_dtstart = rrule_parts.join(';').gsub(/;EXDATE/, "\nEXDATE")
-    dtstart_toronto = event.start_time.in_time_zone("America/Toronto")&.strftime("%Y%m%dT%H%M%S")
-    
-    "DTSTART:#{dtstart_toronto}\n#{rrule_without_dtstart}"
+
+    parts << "COUNT=#{rrule_obj.count}" if rrule_obj.count
+    parts << "WKST=#{rrule_obj.week_start}" if rrule_obj.week_start
+
+    parts.join(';')
   end
-  
+
+  # Convert ALL UTC timestamps (with Z) to floating local, not just EXDATE
+  def date_formatted_recurrence_rule(event)
+    return unless event.recurrence_rule.present?
+
+    rrule = event.recurrence_rule
+    rrule_parts = rrule.split(/[;\n]/).reject { |part| part.strip.start_with?('DTSTART') }
+
+    # Convert ALL UTC timestamps (Z suffix) to floating local time
+    rrule_parts = rrule_parts.map do |part|
+      part.gsub(/(\d{8}T\d{6})Z/) do
+        Time.parse("#{$1}Z").in_time_zone(CALENDAR_TZ).strftime("%Y%m%dT%H%M%S")
+      end
+    end
+
+    rrule_without_dtstart = rrule_parts.join(';').gsub(/;EXDATE/, "\nEXDATE")
+    dtstart_local = event.start_time.in_time_zone(CALENDAR_TZ).strftime("%Y%m%dT%H%M%S")
+
+    "DTSTART:#{dtstart_local}\n#{rrule_without_dtstart}"
+  end
+
+  # Handle both UTC (Z suffix) and floating local DTSTART
   def parse_rrule_and_dtstart(rule_string)
     lines = rule_string.strip.split("\n")
     rrule_line = lines.find { |l| l.start_with?("RRULE:") }&.sub("RRULE:", "")
@@ -219,28 +224,43 @@ module CalendarHelper
 
     rest_of_lines = lines.reject { |l| l.start_with?("RRULE:", "DTSTART:") }
 
-    dtstart = dtstart_line.present? ? Time.parse(dtstart_line).utc : nil
-    
+    dtstart = if dtstart_line.present?
+      if dtstart_line.strip.end_with?('Z')
+        # Explicit UTC
+        Time.parse(dtstart_line).utc
+      else
+        # Floating local time — interpret as calendar timezone, store as UTC
+        CALENDAR_TZ.parse(dtstart_line).utc
+      end
+    else
+      nil
+    end
+
     [rrule_line, dtstart, rest_of_lines]
   end
 
   def add_exdate_to_rrule(rrule_str, date_to_exclude)
     return rrule_str if rrule_str.blank? || date_to_exclude.blank?
 
-    exdate = date_to_exclude.strftime('%Y%m%dT%H%M%SZ')
+    exdate = date_to_exclude.utc.strftime('%Y%m%dT%H%M%SZ')
     "#{rrule_str}\nEXDATE:#{exdate}"
   end
 
+  # Work in wall-clock time to handle DST correctly
+  # Before: UTC hour from EST event (18:00) applied to EDT date = 2PM EDT
+  # After:  wall-clock hour (1PM) applied to any date = 1PM local
   def combine_date_and_time(keep_date, keep_time)
-    keep_date.change(
-      hour: keep_time.hour,
-      min: keep_time.min,
-      sec: keep_time.sec
+    date_local = keep_date.in_time_zone(CALENDAR_TZ)
+    time_local = keep_time.in_time_zone(CALENDAR_TZ)
+
+    CALENDAR_TZ.local(
+      date_local.year, date_local.month, date_local.day,
+      time_local.hour, time_local.min, time_local.sec
     )
   end
 
   def remove_until_from_rrule(rrule_line)
-    rrule_line = rrule_line.gsub(/;UNTIL=[^;Z]*Z/, '') if rrule_line.include?('UNTIL=')
+    rrule_line = rrule_line.gsub(/;UNTIL=[^;Z]*Z?/, '') if rrule_line.include?('UNTIL=')
     rrule_line
   end
 
@@ -251,47 +271,44 @@ module CalendarHelper
       t = t.utc unless t.utc?
       return t
     end
-    Time.parse(value.to_s).utc # fallback
+    Time.parse(value.to_s).utc
   rescue StandardError
     nil
   end
 
   def convert_to_js_rrule(openstruct_obj)
     js_rrule = {}
-    
+
     js_rrule[:freq] = openstruct_obj.frequency.downcase if openstruct_obj.frequency
-    
     js_rrule[:interval] = openstruct_obj.interval if openstruct_obj.interval
-    
+
     if openstruct_obj.by_day
       js_rrule[:byweekday] = openstruct_obj.by_day.map do |day|
-        day.downcase[0..1] # maybe not needed but who knows anymore
+        day.downcase[0..1]
       end
     end
-    
+
     js_rrule[:until] = openstruct_obj.until if openstruct_obj.until
-    
     js_rrule[:count] = openstruct_obj.count if openstruct_obj.count
-    
-    %w[by_second by_minute by_hour by_month_day by_year_day 
+
+    %w[by_second by_minute by_hour by_month_day by_year_day
       by_week_number by_month by_set_position].each do |field|
       value = openstruct_obj.send(field)
       js_rrule[field.to_sym] = value if value
     end
-    
+
     js_rrule[:wkst] = openstruct_obj.week_start if openstruct_obj.week_start
-    
+
     js_rrule
   end
 
   def create_makeroom_bookings_from_ics(snc, user_id, space)
     # Parse ics events
     @events = parse_ics_calendar(
-        snc.calendar_url,
-        name: snc.name.presence || "Unnamed Calendar",
-        color: snc.color
-      )
-    # Iteratee through every sub space of the given param space
+      snc.calendar_url,
+      name: snc.name.presence || "Unnamed Calendar",
+      color: snc.color
+    )
     space.sub_spaces.each do |sub_space|
       # Iterate through all events, checking if one resides in a sub space
       @events[0][:events].each do |event|
@@ -313,7 +330,7 @@ module CalendarHelper
           sub_space_booking_id: booking.id,
           booking_status_id: BookingStatus::PENDING.id
         )
-      
+
         status.save
         # Once status is created, link its id in the booking instance
         booking.update(sub_space_booking_status_id: status.id)

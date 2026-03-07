@@ -353,5 +353,164 @@ RSpec.describe Staff::MyCalendarController, type: :controller do
         expect(JSON.parse(response.body)).to eq([])
       end
     end
+
+    context 'DST handling' do
+      # Force a DST-aware timezone for these tests
+      around(:each) do |example|
+        Time.use_zone('Eastern Time (US & Canada)') { example.run }
+      end
+
+      # 2025 US DST transitions:
+      # Spring forward: March 9  (2AM → 3AM, 23-hour day)
+      # Fall back:      November 2 (2AM → 1AM, 25-hour day)
+
+      describe 'all-day detection' do
+        it 'detects all-day event on spring forward day (23-hour day)' do
+          event = create(:event, space: @space, draft: false,
+            start_time: Time.zone.parse('2025-03-09 00:00:00'),
+            end_time:   Time.zone.parse('2025-03-10 00:00:00'))
+
+          get :json, params: {
+            id: @space.id,
+            start: '2025-03-08T00:00:00',
+            end:   '2025-03-11T00:00:00'
+          }, format: :json
+
+          event_data = JSON.parse(response.body).find { |e| e['id'] == "event-#{event.id}" }
+          expect(event_data['allDay']).to be(true), "Expected allDay on spring forward day (midnight-to-midnight = 23 hours)"
+        end
+
+        it 'detects all-day event on fall back day (25-hour day)' do
+          event = create(:event, space: @space, draft: false,
+            start_time: Time.zone.parse('2025-11-02 00:00:00'),
+            end_time:   Time.zone.parse('2025-11-03 00:00:00'))
+
+          get :json, params: {
+            id: @space.id,
+            start: '2025-11-01T00:00:00',
+            end:   '2025-11-04T00:00:00'
+          }, format: :json
+
+          event_data = JSON.parse(response.body).find { |e| e['id'] == "event-#{event.id}" }
+          expect(event_data['allDay']).to be(true), "Expected allDay on fall back day (midnight-to-midnight = 25 hours)"
+        end
+
+        it 'detects multi-day all-day event spanning DST transition' do
+          event = create(:event, space: @space, draft: false,
+            start_time: Time.zone.parse('2025-03-08 00:00:00'),
+            end_time:   Time.zone.parse('2025-03-11 00:00:00'))
+
+          get :json, params: {
+            id: @space.id,
+            start: '2025-03-07T00:00:00',
+            end:   '2025-03-12T00:00:00'
+          }, format: :json
+
+          event_data = JSON.parse(response.body).find { |e| e['id'] == "event-#{event.id}" }
+          expect(event_data['allDay']).to be(true), "Multi-day event spanning DST should be allDay"
+        end
+
+        it 'does not mark partial-day event as all-day on DST day' do
+          event = create(:event, space: @space, draft: false,
+            start_time: Time.zone.parse('2025-03-09 09:00:00'),
+            end_time:   Time.zone.parse('2025-03-09 17:00:00'))
+
+          get :json, params: {
+            id: @space.id,
+            start: '2025-03-08T00:00:00',
+            end:   '2025-03-10T00:00:00'
+          }, format: :json
+
+          event_data = JSON.parse(response.body).find { |e| e['id'] == "event-#{event.id}" }
+          expect(event_data['allDay']).to be(false)
+        end
+      end
+
+      describe 'recurring events' do
+        it 'preserves 1PM wall-clock time across spring forward' do
+          event = create(:event, space: @space, draft: false,
+            start_time: Time.zone.parse('2025-03-07 13:00:00'),
+            end_time:   Time.zone.parse('2025-03-07 15:00:00'),
+            recurrence_rule: 'FREQ=DAILY;COUNT=5')
+
+          get :json, params: {
+            id: @space.id,
+            start: '2025-03-07T00:00:00',
+            end:   '2025-03-12T00:00:00'
+          }, format: :json
+
+          occurrences = JSON.parse(response.body)
+            .select { |e| e['id'].include?("event-#{event.id}") }
+            .sort_by { |e| e['start'] }
+
+          expect(occurrences.length).to eq(5)
+          occurrences.each do |occ|
+            start_t = Time.zone.parse(occ['start'])
+            end_t   = Time.zone.parse(occ['end'])
+            expect(start_t.hour).to eq(13),
+              "Expected 1PM start on #{start_t.to_date}, got #{start_t.strftime('%l:%M%P').strip}"
+            expect(end_t.hour).to eq(15),
+              "Expected 3PM end on #{end_t.to_date}, got #{end_t.strftime('%l:%M%P').strip}"
+          end
+        end
+
+        it 'preserves 1PM wall-clock time across fall back' do
+          event = create(:event, space: @space, draft: false,
+            start_time: Time.zone.parse('2025-10-31 13:00:00'),
+            end_time:   Time.zone.parse('2025-10-31 15:00:00'),
+            recurrence_rule: 'FREQ=DAILY;COUNT=5')
+
+          get :json, params: {
+            id: @space.id,
+            start: '2025-10-31T00:00:00',
+            end:   '2025-11-05T00:00:00'
+          }, format: :json
+
+          occurrences = JSON.parse(response.body)
+            .select { |e| e['id'].include?("event-#{event.id}") }
+            .sort_by { |e| e['start'] }
+
+          expect(occurrences.length).to eq(5)
+          occurrences.each do |occ|
+            start_t = Time.zone.parse(occ['start'])
+            end_t   = Time.zone.parse(occ['end'])
+            expect(start_t.hour).to eq(13),
+              "Expected 1PM start on #{start_t.to_date}, got #{start_t.strftime('%l:%M%P').strip}"
+            expect(end_t.hour).to eq(15),
+              "Expected 3PM end on #{end_t.to_date}, got #{end_t.strftime('%l:%M%P').strip}"
+          end
+        end
+
+        it 'preserves overnight event end time across spring forward' do
+          # This is the case that breaks with seconds-based duration:
+          # 1AM-4AM = 10800 seconds, but on March 9 at 2AM clocks jump to 3AM
+          # Adding 10800s to 1AM gives 5AM EDT instead of 4AM EDT
+          event = create(:event, space: @space, draft: false,
+            start_time: Time.zone.parse('2025-03-07 01:00:00'),
+            end_time:   Time.zone.parse('2025-03-07 04:00:00'),
+            recurrence_rule: 'FREQ=DAILY;COUNT=3')
+
+          get :json, params: {
+            id: @space.id,
+            start: '2025-03-07T00:00:00',
+            end:   '2025-03-10T00:00:00'
+          }, format: :json
+
+          occurrences = JSON.parse(response.body)
+            .select { |e| e['id'].include?("event-#{event.id}") }
+            .sort_by { |e| e['start'] }
+
+          expect(occurrences.length).to eq(3)
+          occurrences.each do |occ|
+            start_t = Time.zone.parse(occ['start'])
+            end_t   = Time.zone.parse(occ['end'])
+            expect(start_t.hour).to eq(1),
+              "Expected 1AM start on #{start_t.to_date}, got #{start_t.strftime('%l:%M%P').strip}"
+            expect(end_t.hour).to eq(4),
+              "Expected 4AM end on #{end_t.to_date}, got #{end_t.strftime('%l:%M%P').strip}"
+          end
+        end
+      end
+    end
   end
 end

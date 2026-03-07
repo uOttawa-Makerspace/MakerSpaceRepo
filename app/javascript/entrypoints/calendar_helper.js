@@ -1,36 +1,118 @@
 import { RRule } from "rrule";
 import { Modal } from "bootstrap";
 
+const CALENDAR_TIMEZONE = "America/Toronto";
+
 /*
- * Converts a Date object to a local datetime string in the format YYYY-MM-DDTHH:MM
- * If the value is empty, it returns null.
+ * Converts a Date object to a datetime string in the CALENDAR timezone
+ * in the format YYYY-MM-DDTHH:MM (for datetime-local inputs)
  */
 export function toLocalDatetimeString(date) {
   if (!date) return null;
 
-  const pad = (n) => (n < 10 ? "0" + n : n);
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: CALENDAR_TIMEZONE,
+  });
+
+  const parts = formatter.formatToParts(date);
+  const get = (type) => parts.find((p) => p.type === type).value;
+
+  let hour = get("hour");
+  if (hour === "24") hour = "00"; // Intl may return 24 for midnight
+
+  return `${get("year")}-${get("month")}-${get("day")}T${hour}:${get("minute")}`;
 }
 
 /*
- * Converts a Date object to a local date string in the format YYYY-MM-DD
- * If the value is empty, it returns null.
+ * Converts a Date object to a date string in the CALENDAR timezone
+ * in the format YYYY-MM-DD
  */
 export function toLocalDateString(date) {
   if (!date) return null;
 
-  const pad = (n) => (n < 10 ? "0" + n : n);
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    timeZone: CALENDAR_TIMEZONE,
+  });
+
+  const parts = formatter.formatToParts(date);
+  const get = (type) => parts.find((p) => p.type === type).value;
+
+  return `${get("year")}-${get("month")}-${get("day")}`;
 }
 
 /*
- * Parses a local datetime string in the format YYYY-MM-DDTHH:MM
- * and returns a Date object.
- * If the value is empty, it returns the current date.
+ * Parses a datetime string (possibly with timezone offset) and returns a Date.
  */
 export function parseLocalDatetimeString(value) {
   if (!value) return new Date();
   return new Date(value);
+}
+
+/*
+ * Converts a datetime-local value (interpreted as CALENDAR_TIMEZONE wall-clock time)
+ * to a UTC ISO string for server submission.
+ */
+function datetimeLocalToUTC(datetimeLocalValue) {
+  if (!datetimeLocalValue) return "";
+
+  const [datePart, timePart] = datetimeLocalValue.split("T");
+  const [year, month, day] = datePart.split("-").map(Number);
+  const [hours, minutes] = timePart.split(":").map(Number);
+
+  // Create a Date near the target to determine the timezone offset
+  const approxDate = new Date(Date.UTC(year, month - 1, day, hours, minutes));
+
+  // Get America/Toronto offset at this instant (in ms)
+  const offsetMs = getTimezoneOffsetMs(CALENDAR_TIMEZONE, approxDate);
+
+  // wall-clock time minus offset = UTC
+  // e.g., 13:00 EDT (offset +4h) → UTC = 13:00 - (+4h) = 17:00 UTC... wait
+  // Actually offset is (local - UTC). So if EDT is UTC-4, offset = -4h.
+  // UTC = wall-clock - offset → UTC = 13:00 - (-4h) = 17:00 ✓
+  const utcMs = Date.UTC(year, month - 1, day, hours, minutes) - offsetMs;
+
+  return new Date(utcMs).toISOString();
+}
+
+/*
+ * Returns the offset (local - UTC) in milliseconds for a given timezone at a given instant.
+ * e.g., America/Toronto in EST: returns -5*3600*1000 = -18000000
+ *       America/Toronto in EDT: returns -4*3600*1000 = -14400000
+ */
+function getTimezoneOffsetMs(timezone, date) {
+  const utcStr = date.toLocaleString("en-US", { timeZone: "UTC" });
+  const tzStr = date.toLocaleString("en-US", { timeZone: timezone });
+  return new Date(tzStr) - new Date(utcStr);
+}
+
+/*
+ * Syncs the hidden UTC fields from the visible datetime-local fields.
+ * Called on form submission and whenever the user changes the time inputs.
+ */
+function syncUTCFields() {
+  const startField = document.getElementById("start_time_field");
+  const endField = document.getElementById("end_time_field");
+  const utcStartField = document.getElementById("utc_start_time");
+  const utcEndField = document.getElementById("utc_end_time");
+
+  if (startField && utcStartField) {
+    utcStartField.value = datetimeLocalToUTC(startField.value);
+  }
+  if (endField && utcEndField && !endField.disabled) {
+    utcEndField.value = datetimeLocalToUTC(endField.value);
+  } else if (endField && utcEndField && endField.disabled) {
+    // All-day: end time field is disabled, compute from start + 1 day
+    utcEndField.value = datetimeLocalToUTC(endField.value);
+  }
 }
 
 // -------------------
@@ -140,26 +222,38 @@ function resetModalState() {
   // Reset modal title
   document.getElementById("eventModalLabel").textContent = "Add Event";
 
-  // Reset form scope to event
+  // Clear hidden UTC fields
+  const utcStart = document.getElementById("utc_start_time");
+  const utcEnd = document.getElementById("utc_end_time");
+  if (utcStart) utcStart.value = "";
+  if (utcEnd) utcEnd.value = "";
+
   setFormScope("event");
 }
 
 // -------------------
 // Helper to switch input names between "event[name]" and "staff_unavailability[name]"
+// The visible start/end fields do NOT get a submission name —
+// only the hidden utc_ fields are submitted.
 // -------------------
 function setFormScope(scope) {
   const form = document.querySelector("#eventModal form");
   if (!form) return;
 
-  // Define field mappings
+  // Visible time fields: remove name so they don't submit
+  // (UTC hidden fields carry the correct values)
+  const startTimeField = document.getElementById("start_time_field");
+  const endTimeField = document.getElementById("end_time_field");
+  if (startTimeField) startTimeField.removeAttribute("name");
+  if (endTimeField) endTimeField.removeAttribute("name");
+
+  // Hidden fields and other inputs that DO get submitted
   const fieldMappings = {
-    start_time_field: "utc_start_time",
-    end_time_field: "utc_end_time",
+    utc_start_time: "utc_start_time",
+    utc_end_time: "utc_end_time",
     recurrence_rule_field: "recurrence_rule",
     title: "title",
     description: "description",
-    utc_start_time: "utc_start_time",
-    utc_end_time: "utc_end_time",
   };
 
   // Update specific fields
@@ -170,7 +264,7 @@ function setFormScope(scope) {
     }
   });
 
-  // Handle staff select specifically
+  // Handle staff select
   const staffSelect = document.getElementById("staff_select");
   if (staffSelect) {
     if (scope === "staff_unavailability") {
@@ -321,7 +415,6 @@ async function populateStaffSelect() {
       document.getElementById("space_id") ||
       document.querySelector('input[name="event[space_id]"]') ||
       document.querySelector('input[name="staff_unavailability[space_id]"]');
-
     if (!spaceIdElem) return;
 
     const response = await fetch(
@@ -330,7 +423,6 @@ async function populateStaffSelect() {
     if (!response.ok) return;
 
     const staffData = await response.json();
-
     staffData.forEach((staff) => {
       const option = document.createElement("option");
       option.value = staff.id;
@@ -343,6 +435,28 @@ async function populateStaffSelect() {
 }
 
 // -------------------
+// Set up form submit handler (once)
+// -------------------
+let formHandlerAttached = false;
+function ensureFormHandler() {
+  if (formHandlerAttached) return;
+  const form = document.querySelector("#eventModal form");
+  if (!form) return;
+
+  form.addEventListener("submit", () => {
+    syncUTCFields();
+  });
+
+  // Also sync when user manually edits time fields
+  const startField = document.getElementById("start_time_field");
+  const endField = document.getElementById("end_time_field");
+  if (startField) startField.addEventListener("change", syncUTCFields);
+  if (endField) endField.addEventListener("change", syncUTCFields);
+
+  formHandlerAttached = true;
+}
+
+// -------------------
 // Full Calendar Event Helpers
 // -------------------
 export function addEventClick() {
@@ -351,6 +465,7 @@ export function addEventClick() {
 
   // Populate staff options if needed
   populateStaffSelect();
+  ensureFormHandler();
 
   // Set up event type change listener
   const eventTypeSelect = document.getElementById("event_type_select");
@@ -358,7 +473,6 @@ export function addEventClick() {
     // Clone to remove old listeners
     const newSelect = eventTypeSelect.cloneNode(true);
     eventTypeSelect.parentNode.replaceChild(newSelect, eventTypeSelect);
-
     newSelect.addEventListener("change", (e) => {
       toggleFormMode(e.target.value);
     });
@@ -378,10 +492,11 @@ export function eventClick(eventImpl) {
 
   // Reset modal first
   resetModalState();
+  ensureFormHandler();
 
   const form = document.querySelector("#eventModal form");
 
-  // SETUP FORM ACTION & METHOD
+  // FORM ACTION & METHOD
   if (isUnavailability) {
     form.action = `/staff/unavailabilities/${eventImpl.id}`;
     setFormScope("staff_unavailability");
@@ -402,7 +517,7 @@ export function eventClick(eventImpl) {
     ? "Edit Unavailability"
     : "Edit Event";
 
-  // 3. HANDLE EVENT TYPE DROPDOWN
+  // EVENT TYPE DROPDOWN
   const eventTypeSelect = document.getElementById("event_type_select");
   if (eventTypeSelect) {
     if (isUnavailability) {
@@ -429,34 +544,48 @@ export function eventClick(eventImpl) {
       : event.extendedProps.eventType || "other",
   );
 
-  // TIME FIELDS
+  // TIME FIELDS — use FullCalendar's Date objects directly
   const startTimeField = document.getElementById("start_time_field");
   const endTimeField = document.getElementById("end_time_field");
   const allDayCheckbox = document.getElementById("all_day_checkbox");
+  const utcStartField = document.getElementById("utc_start_time");
+  const utcEndField = document.getElementById("utc_end_time");
 
   if (eventImpl.allDay) {
     allDayCheckbox.checked = true;
-    const startDate = new Date(eventImpl.startStr);
-    if (eventImpl.startStr.indexOf("T") === -1) {
-      startDate.setHours(0, 0, 0, 0);
-    }
-    const endDate = eventImpl.end
-      ? new Date(eventImpl.endStr)
-      : new Date(startDate);
-    if (!eventImpl.end) endDate.setDate(endDate.getDate() + 1);
 
-    startTimeField.value = toLocalDatetimeString(startDate);
-    endTimeField.value = toLocalDatetimeString(endDate);
+    // For all-day events, startStr is "YYYY-MM-DD" (no time component)
+    // Use the date string directly — no Date object needed
+    const startDateStr = eventImpl.startStr.split("T")[0];
+    startTimeField.value = `${startDateStr}T00:00`;
+
+    const endDateStr = eventImpl.endStr
+      ? eventImpl.endStr.split("T")[0]
+      : startDateStr;
+    endTimeField.value = `${endDateStr}T00:00`;
     endTimeField.disabled = true;
+
+    // Set UTC hidden fields
+    utcStartField.value = datetimeLocalToUTC(startTimeField.value);
+    utcEndField.value = datetimeLocalToUTC(endTimeField.value);
   } else {
     allDayCheckbox.checked = false;
+
+    // startStr includes timezone offset: "2025-03-09T13:00:00-04:00"
+    // new Date() correctly parses this to the right instant
     const start = new Date(eventImpl.startStr);
-    startTimeField.value = toLocalDatetimeString(start);
     const end = eventImpl.end
       ? new Date(eventImpl.endStr)
       : new Date(start.getTime() + 3600000);
+
+    // Display in calendar timezone
+    startTimeField.value = toLocalDatetimeString(start);
     endTimeField.value = toLocalDatetimeString(end);
     endTimeField.disabled = false;
+
+    // Hidden fields get proper UTC
+    utcStartField.value = start.toISOString();
+    utcEndField.value = end.toISOString();
   }
 
   // TITLE & DESCRIPTION
@@ -486,7 +615,6 @@ export function eventClick(eventImpl) {
   const weeklyOptions = document.querySelector("#weekly_options");
   const untilInput = document.querySelector("#recurrence_until");
   const ruleField = document.querySelector("#recurrence_rule_field");
-  const dayCheckboxes = [...document.querySelectorAll(".dayCheckbox")];
 
   if (rruleData) {
     const rule = new RRule(rruleData);
@@ -510,8 +638,7 @@ export function eventClick(eventImpl) {
               5: "SA",
               6: "SU",
             };
-            const dayCode = dayMap[day];
-            const cb = document.getElementById(`day_${dayCode}`);
+            const cb = document.getElementById(`day_${dayMap[day]}`);
             if (cb) cb.checked = true;
           });
         }
@@ -597,10 +724,7 @@ export function eventClick(eventImpl) {
     allForm.style.display = "none";
   }
 
-  // Set start_date for deletion
-  const startDateValue = parseLocalDatetimeString(
-    eventImpl.startStr,
-  ).toISOString();
+  const startDateValue = new Date(eventImpl.startStr).toISOString();
   document.querySelectorAll(".delete_start_date").forEach((e) => {
     e.value = startDateValue;
   });
@@ -622,14 +746,21 @@ export function eventClick(eventImpl) {
 }
 
 export function eventCreate(info) {
-  document.getElementById("start_time_field").value = toLocalDatetimeString(
-    new Date(info.startStr),
-  );
-  document.getElementById("end_time_field").value = toLocalDatetimeString(
-    new Date(info.endStr),
-  );
+  // FullCalendar select gives startStr/endStr with timezone offset
+  // e.g., "2025-03-09T13:00:00-04:00"
+  const startDate = new Date(info.startStr);
+  const endDate = new Date(info.endStr);
 
-  // Click the add button then call addEventClick
+  // Display in calendar timezone
+  document.getElementById("start_time_field").value =
+    toLocalDatetimeString(startDate);
+  document.getElementById("end_time_field").value =
+    toLocalDatetimeString(endDate);
+
+  // Set hidden UTC fields immediately
+  document.getElementById("utc_start_time").value = startDate.toISOString();
+  document.getElementById("utc_end_time").value = endDate.toISOString();
+
   document.getElementById("addEventButton").click();
   addEventClick();
 }
