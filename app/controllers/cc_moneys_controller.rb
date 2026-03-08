@@ -3,6 +3,11 @@ class CcMoneysController < SessionsController
   before_action :set_verifier, only: %i[link_cc_to_user redeem]
 
   def index
+    if current_user
+      current_user.update_wallet
+      @user_wallet = current_user.wallet || 0
+      @cc_activities = current_user.cc_moneys.order(created_at: :desc).limit(10)
+    end
   end
 
   def link_cc_to_user
@@ -15,9 +20,7 @@ class CcMoneysController < SessionsController
                     alert: "The CC Money has already been added to an account"
       end
     else
-      flash[
-        :alert
-      ] = "Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com"
+      flash[:alert] = "Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com"
       redirect_to cc_moneys_path
     end
   end
