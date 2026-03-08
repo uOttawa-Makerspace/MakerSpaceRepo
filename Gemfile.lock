@@ -540,6 +540,7 @@ GEM
       erb
       psych (>= 4.0.0)
       tsort
+    redcarpet (3.6.1)
     redirect_safely (1.0.0)
       activemodel
     regexp_parser (2.11.3)
@@ -899,6 +900,7 @@ DEPENDENCIES
   rails (~> 7.2.0)
   rails-controller-testing
   rails_best_practices
+  redcarpet
   roo (~> 2.10.0)
   roo-xls
   rrule

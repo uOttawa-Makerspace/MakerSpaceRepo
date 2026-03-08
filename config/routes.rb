@@ -156,6 +156,8 @@ Rails.application.routes.draw do
 
   root "static_pages#home"
 
+  get "changelog", to: "changelog#index"
+
   # STATIC PAGES
   namespace :static_pages, path: "/", as: nil do
     get "forgot_password"

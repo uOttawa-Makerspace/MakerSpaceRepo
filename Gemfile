@@ -69,6 +69,7 @@ gem "solid_cable"
 gem "mission_control-jobs"
 
 gem "puma", '~> 7.1'
+gem 'redcarpet'
 
 group :development, :test do
   gem 'rspec_junit_formatter'
