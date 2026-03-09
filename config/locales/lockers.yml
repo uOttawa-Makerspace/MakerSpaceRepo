@@ -24,6 +24,7 @@ en:
     for: for
     paid_on: Paid on
     notes: Notes
+    staff_notes: Staff notes
 
     state:
       state: State
@@ -79,6 +80,7 @@ fr:
     for: par
     paid_on: Payé le
     notes: Remarques
+    staff_notes: Remarques des employés
 
     state:
       state: État

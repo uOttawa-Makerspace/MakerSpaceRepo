@@ -291,6 +291,19 @@ end
                 </div>
             </div>
         <% end %>
+
+        <%# STAFF NOTES%>
+        <% if current_user.staff? %>
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0"><%= fa_icon 'clipboard', class: 'text-muted me-2' %><%= t('lockers.notes') %></h5>
+                </div>
+                <%= form_with model: @locker_rental, class: 'card-body' do |f| %>
+                    <%= f.text_area :staff_notes, class: 'form-control mb-2', placeholder: 'Staff notes are visible to staff only' %>
+                    <%= f.submit 'Update staff notes', class: 'btn btn-primary float-end' %>
+                <% end %>
+            </div>
+        <% end %>
     </div>
 
     <p class="text-center text-muted">If you have any questions about your locker, please contact us at <%= mail_to 'ceed@uottawa.ca' %></p>

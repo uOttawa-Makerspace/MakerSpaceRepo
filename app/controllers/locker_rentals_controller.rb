@@ -174,6 +174,7 @@ class LockerRentalsController < SessionsController
       state
       owned_until
       notes
+      staff_notes
     ]
 
     if current_user.staff?
