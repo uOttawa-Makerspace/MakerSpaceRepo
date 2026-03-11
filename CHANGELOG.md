@@ -10,6 +10,4 @@
 - Remove makerstore links (#1886) by @UnknownCrafts
 - Staging (#1912) by @PencilAmazing
 
-
-
 **Full Changelog**: https://github.com/uOttawa-Makerspace/MakerSpaceRepo/compare/v2026.03.02-221010...v2026.03.06-172729
