@@ -12,9 +12,14 @@ class Staff::TrainingSessionsController < StaffDashboardController
       format.html
       format.json do
         render json:
-                 TrainingSession.where(user_id: @user.id).as_json(
-                   include: %i[training space certifications]
-                 )
+                TrainingSession.where(user_id: @user.id).as_json(
+                  include: {
+                    training: {},
+                    space: {},
+                    certifications: {},
+                    users: { only: %i[id username name email role] }
+                  }
+                )
       end
     end
   end
