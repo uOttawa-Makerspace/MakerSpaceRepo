@@ -211,58 +211,40 @@
         <i class="fa fa-question-circle text-info me-2"></i>
         Frequently Asked Questions
       </h2>
-      <div class="accordion" id="ccFaqAccordion">
-        <div class="accordion-item">
-          <h2 class="accordion-header" id="faqOne">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapseOne">
-              Do CC points expire?
-            </button>
-          </h2>
-          <div id="faqCollapseOne" class="accordion-collapse collapse" data-bs-parent="#ccFaqAccordion">
-            <div class="accordion-body">
-              No, CC points do not expire. They stay in your account until you choose to redeem them.
-            </div>
-          </div>
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body p-4">
+          <h5 class="fw-bold mb-2">Do CC points expire?</h5>
+          <p class="mb-0 text-muted">
+            No, CC points do not expire. They stay in your account until you choose to redeem them.
+          </p>
         </div>
-        <div class="accordion-item">
-          <h2 class="accordion-header" id="faqTwo">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapseTwo">
-              Can I transfer CC points to another user?
-            </button>
-          </h2>
-          <div id="faqCollapseTwo" class="accordion-collapse collapse" data-bs-parent="#ccFaqAccordion">
-            <div class="accordion-body">
-              CC points are tied to your individual account and cannot be transferred at this time.
-            </div>
-          </div>
+      </div>
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body p-4">
+          <h5 class="fw-bold mb-2">Can I transfer CC points to another user?</h5>
+          <p class="mb-0 text-muted">
+            CC points are tied to your individual account and cannot be transferred at this time.
+          </p>
         </div>
-        <div class="accordion-item">
-          <h2 class="accordion-header" id="faqThree">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapseThree">
-              Where can I use my discount codes?
-            </button>
-          </h2>
-          <div id="faqCollapseThree" class="accordion-collapse collapse" data-bs-parent="#ccFaqAccordion">
-            <div class="accordion-body">
-              Discount codes can be used at checkout on the
-              <%= link_to 'MakerStore', 'http://makerstore.ca/', target: :blank %>.
-              Copy the code from your <%= link_to 'discount codes page', discount_codes_path %> and paste it at checkout.
-            </div>
-          </div>
+      </div>
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body p-4">
+          <h5 class="fw-bold mb-2">Where can I use my discount codes?</h5>
+          <p class="mb-0 text-muted">
+            Discount codes can be used at checkout on the
+            <%= link_to 'MakerStore', 'http://makerstore.ca/', target: :blank %>.
+            Copy the code from your <%= link_to 'discount codes page', discount_codes_path %> and paste it at checkout.
+          </p>
         </div>
-        <div class="accordion-item">
-          <h2 class="accordion-header" id="faqFour">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapseFour">
-              I have another question. Who do I contact?
-            </button>
-          </h2>
-          <div id="faqCollapseFour" class="accordion-collapse collapse" data-bs-parent="#ccFaqAccordion">
-            <div class="accordion-body">
-              Send us an email at
-              <a href="mailto:uottawa.makerepo@gmail.com">uottawa.makerepo@gmail.com</a>
-              and we'll be happy to help.
-            </div>
-          </div>
+      </div>
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body p-4">
+          <h5 class="fw-bold mb-2">I have another question. Who do I contact?</h5>
+          <p class="mb-0 text-muted">
+            Send us an email at
+            <a href="mailto:uottawa.makerepo@gmail.com">uottawa.makerepo@gmail.com</a>
+            and we'll be happy to help.
+          </p>
         </div>
       </div>
     </div>
