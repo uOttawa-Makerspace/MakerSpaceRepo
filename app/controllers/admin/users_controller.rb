@@ -237,16 +237,21 @@ class Admin::UsersController < AdminAreaController
   end
 
   def load_new_users
-    # Set default sort for new users
     if params[:sort].blank? && params[:direction].blank?
       params[:sort] = "created_at"
       params[:direction] = "desc"
     end
 
-    order_clause = safe_order_clause || "users.created_at desc"
-    @users = User.includes(:lab_sessions)
-                 .order(Arel.sql(order_clause))
-                 .paginate(page: params[:page], per_page: 20)
+    base_scope = User.includes(:lab_sessions)
+
+    if (order_clause = safe_order_clause)
+      column, direction = order_clause
+      base_scope = base_scope.order(Arel.sql(column) => direction)
+    else
+      base_scope = base_scope.order(created_at: :desc)
+    end
+
+    @users = base_scope.paginate(page: params[:page], per_page: 20)
     @total_pages = @users.total_pages
   end
 
@@ -260,12 +265,10 @@ class Admin::UsersController < AdminAreaController
   # ============================================
 
   def search_users(query, filter)
-    # Sanitize query for LIKE to prevent SQL injection
     sanitized_query = "%#{ActiveRecord::Base.sanitize_sql_like(query)}%"
-    order_clause = safe_order_clause || "users.created_at desc"
-    
+
     base_scope = User.includes(:lab_sessions)
-    
+
     scope = case filter
             when "Name"
               base_scope.where("LOWER(name) LIKE LOWER(?)", sanitized_query)
@@ -279,8 +282,15 @@ class Admin::UsersController < AdminAreaController
                 q: sanitized_query
               )
             end
-    
-    scope.order(Arel.sql(order_clause)).paginate(page: params[:page], per_page: 20)
+
+    if (order_clause = safe_order_clause)
+      column, direction = order_clause
+      scope = scope.order(Arel.sql(column) => direction)
+    else
+      scope = scope.order(created_at: :desc)
+    end
+
+    scope.paginate(page: params[:page], per_page: 20)
   end
 
   # ============================================
