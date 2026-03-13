@@ -36,6 +36,9 @@ import "toastr/toastr";
 
 import "@hotwired/turbo-rails";
 
+import * as ActiveStorage from "@rails/activestorage";
+ActiveStorage.start();
+
 document.addEventListener("turbo:before-render", (event) => {
   event.detail.newBody
     .querySelectorAll("#noscript-warning")
