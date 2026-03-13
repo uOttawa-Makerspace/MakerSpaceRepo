@@ -1,4 +1,266 @@
-<div class="text-center">
-  <div id="cc-money-shopify" style="display: inline-block"></div>
+<div class="container py-5">
+
+  <!-- Hero -->
+  <div class="text-center mb-5">
+    <h1 class="display-4 fw-bold">
+      <i class="fa fa-money text-warning"></i> CC Points
+    </h1>
+    <p class="lead text-muted">
+      Earn points by participating in the MakerSpace community and redeem them for real rewards.
+    </p>
+  </div>
+
+  <% if current_user %>
+    <!-- Wallet -->
+    <div class="row justify-content-center mb-5">
+      <div class="col-md-6">
+        <div class="card border-0 shadow text-center">
+          <div class="card-body py-4">
+            <h5 class="text-muted mb-1">Your CC Balance</h5>
+            <h2 class="display-5 fw-bold text-primary">
+              <%= @user_wallet %> <small class="fs-4">CCs</small>
+            </h2>
+            <%= link_to 'Redeem Points', new_discount_code_path, class: 'btn btn-primary mt-2' %>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- What Are CC Points -->
+  <div class="row justify-content-center mb-5">
+    <div class="col-lg-10">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+          <h2 class="card-title mb-3">
+            <i class="fa fa-question-circle text-primary me-2"></i>
+            What Are CC Points?
+          </h2>
+          <p class="card-text fs-5">
+            CC (Community Contribution) points are the MakerSpace's way of recognizing and rewarding
+            your participation in the maker community. Every time you contribute — whether by completing
+            training, helping peers, or engaging with events — you earn CC points that can be
+            redeemed for discounts at the
+            <%= link_to 'MakerStore', 'http://makerstore.ca/', target: :blank %>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- How to Earn -->
+  <div class="row justify-content-center mb-5">
+    <div class="col-lg-10">
+      <h2 class="text-center mb-4">
+        <i class="fa fa-line-chart text-success me-2"></i>
+        How to Earn CC Points
+      </h2>
+      <div class="row g-4">
+        <div class="col-md-4">
+          <div class="card h-100 border-0 shadow-sm text-center">
+            <div class="card-body p-4">
+              <i class="fa fa-graduation-cap fa-3x text-primary mb-3"></i>
+              <h5 class="card-title">Complete Training</h5>
+              <p class="card-text text-muted">
+                Finish training modules and certifications for MakerSpace equipment.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card h-100 border-0 shadow-sm text-center">
+            <div class="card-body p-4">
+              <i class="fa fa-calendar-check-o fa-3x text-success mb-3"></i>
+              <h5 class="card-title">Attend Events</h5>
+              <p class="card-text text-muted">
+                Participate in MakerSpace workshops, events, and community activities.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card h-100 border-0 shadow-sm text-center">
+            <div class="card-body p-4">
+              <i class="fa fa-users fa-3x text-warning mb-3"></i>
+              <h5 class="card-title">Volunteer &amp; Contribute</h5>
+              <p class="card-text text-muted">
+                Help during events, mentor other students, or contribute to community projects.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card h-100 border-0 shadow-sm text-center">
+            <div class="card-body p-4">
+              <i class="fa fa-qrcode fa-3x text-info mb-3"></i>
+              <h5 class="card-title">Scan CC Codes</h5>
+              <p class="card-text text-muted">
+                Scan QR codes distributed at MakerSpace events to instantly add CC points.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card h-100 border-0 shadow-sm text-center">
+            <div class="card-body p-4">
+              <i class="fa fa-lightbulb-o fa-3x text-danger mb-3"></i>
+              <h5 class="card-title">Share Projects</h5>
+              <p class="card-text text-muted">
+                Upload and share your maker projects on MakerRepo.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card h-100 border-0 shadow-sm text-center">
+            <div class="card-body p-4">
+              <i class="fa fa-trophy fa-3x text-secondary mb-3"></i>
+              <h5 class="card-title">Achievements</h5>
+              <p class="card-text text-muted">
+                Unlock badges and milestones within the Development Program.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- How to Redeem -->
+  <div class="row justify-content-center mb-5">
+    <div class="col-lg-10">
+      <h2 class="text-center mb-4">
+        <i class="fa fa-gift text-danger me-2"></i>
+        How to Redeem CC Points
+      </h2>
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+          <div class="row text-center">
+            <div class="col-md-3 mb-3">
+              <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px;">
+                <span class="fw-bold fs-5">1</span>
+              </div>
+              <h6>Earn CC Points</h6>
+              <p class="text-muted small">Participate in MakerSpace activities to accumulate points.</p>
+            </div>
+            <div class="col-md-3 mb-3">
+              <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px;">
+                <span class="fw-bold fs-5">2</span>
+              </div>
+              <h6>Choose a Reward</h6>
+              <p class="text-muted small">Visit the <%= link_to 'redemption page', new_discount_code_path %> and pick a discount tier.</p>
+            </div>
+            <div class="col-md-3 mb-3">
+              <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px;">
+                <span class="fw-bold fs-5">3</span>
+              </div>
+              <h6>Get Your Code</h6>
+              <p class="text-muted small">CC points are deducted and you receive a unique discount code.</p>
+            </div>
+            <div class="col-md-3 mb-3">
+              <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px;">
+                <span class="fw-bold fs-5">4</span>
+              </div>
+              <h6>Shop &amp; Save</h6>
+              <p class="text-muted small">Use the code at checkout in the <%= link_to 'MakerStore', 'http://makerstore.ca/', target: :blank %>.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <% if current_user && @cc_activities.present? %>
+    <!-- Recent Activity -->
+    <div class="row justify-content-center mb-5">
+      <div class="col-lg-10">
+        <h2 class="text-center mb-4">
+          <i class="fa fa-history text-secondary me-2"></i>
+          Your Recent CC Activity
+        </h2>
+        <div class="table-responsive">
+          <table class="table table-striped">
+            <thead class="table-primary">
+              <tr class="text-center">
+                <th>Date</th>
+                <th>CC Points</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @cc_activities.each do |cc| %>
+                <tr class="text-center">
+                  <td><%= cc.created_at.strftime('%Y/%m/%d') %></td>
+                  <td>
+                    <span class="badge bg-<%= cc.cc.to_i >= 0 ? 'success' : 'danger' %>">
+                      <%= cc.cc.to_i >= 0 ? '+' : '' %><%= cc.cc %> CC
+                    </span>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- FAQ -->
+  <div class="row justify-content-center mb-5">
+    <div class="col-lg-10">
+      <h2 class="text-center mb-4">
+        <i class="fa fa-question-circle text-info me-2"></i>
+        Frequently Asked Questions
+      </h2>
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body p-4">
+          <h5 class="fw-bold mb-2">Do CC points expire?</h5>
+          <p class="mb-0 text-muted">
+            No, CC points do not expire. They stay in your account until you choose to redeem them.
+          </p>
+        </div>
+      </div>
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body p-4">
+          <h5 class="fw-bold mb-2">Can I transfer CC points to another user?</h5>
+          <p class="mb-0 text-muted">
+            CC points are tied to your individual account and cannot be transferred at this time.
+          </p>
+        </div>
+      </div>
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body p-4">
+          <h5 class="fw-bold mb-2">Where can I use my discount codes?</h5>
+          <p class="mb-0 text-muted">
+            Discount codes can be used at checkout on the
+            <%= link_to 'MakerStore', 'http://makerstore.ca/', target: :blank %>.
+            Copy the code from your <%= link_to 'discount codes page', discount_codes_path %> and paste it at checkout.
+          </p>
+        </div>
+      </div>
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body p-4">
+          <h5 class="fw-bold mb-2">I have another question. Who do I contact?</h5>
+          <p class="mb-0 text-muted">
+            Send us an email at
+            <a href="mailto:uottawa.makerepo@gmail.com">uottawa.makerepo@gmail.com</a>
+            and we'll be happy to help.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <% unless current_user %>
+    <!-- Sign-in CTA -->
+    <div class="text-center mb-5">
+      <div class="card border-0 shadow bg-primary text-white">
+        <div class="card-body py-5">
+          <h3 class="fw-bold mb-3">Ready to Start Earning?</h3>
+          <p class="fs-5 mb-4">Sign in to view your CC balance and start redeeming rewards.</p>
+          <%= link_to 'Sign In', new_user_session_path, class: 'btn btn-light btn-lg fw-bold' %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
 </div>
-<%= vite_javascript_tag 'shopify', 'data-turbo-track': 'reload' %>
