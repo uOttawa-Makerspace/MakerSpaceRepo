@@ -495,6 +495,7 @@ Rails.application.routes.draw do
         delete :delete_with_scope
       end
     end
+    resource :tap_box_console, only: [:show], controller: "tap_box_console"
   end
 
   namespace :staff_dashboard do
