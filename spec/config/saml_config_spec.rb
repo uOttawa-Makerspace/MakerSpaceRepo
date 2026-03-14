@@ -29,6 +29,12 @@ RSpec.describe "SamlConfig", type: :configuration do
         metadata_url: "https://wikijs.makerepo.com/login/saml/metadata",
         response_hosts: %w[wikijs.makerepo.com],
         acs_url: "https://wikijs.makerepo.com/login/258365f7-0b23-403c-817a-5d1ca2be771f/callback"
+      },
+
+      "sedt-wikijs.makerepo.com" => {
+        metadata_url: "https://sedt-wikijs.makerepo.com/login/saml/metadata",
+        response_hosts: %w[sedt-wikijs.makerepo.com],
+        acs_url: "https://sedt-wikijs.makerepo.com/login/f0ee7ebd-2077-4a5d-aff0-553705102005/callback"
       }
     }
 
