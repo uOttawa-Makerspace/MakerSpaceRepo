@@ -25,6 +25,7 @@ FactoryBot.define do
 
     trait "approved" do
       approved { 1 }
+      admin { association(:user, :admin) }
       youtube_link { "" }
     end
 
