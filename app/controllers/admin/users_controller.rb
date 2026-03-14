@@ -237,6 +237,7 @@ class Admin::UsersController < AdminAreaController
   end
 
   def load_new_users
+    # Set default sort for new users
     if params[:sort].blank? && params[:direction].blank?
       params[:sort] = "created_at"
       params[:direction] = "desc"
