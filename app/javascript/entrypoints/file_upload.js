@@ -1,90 +1,138 @@
-/* Makerepo file upload utility. Attaches to a file upload input and provides an
- * editable preview pane. Developed with the repository upload/edit page in
- * mind. See docs for more info */
+/* Makerepo file upload utility.
+ *
+ * Features:
+ *   - Preview pane with editable file list
+ *   - Drag-and-drop file upload via drop zones
+ *   - Drag-and-drop reordering of gallery images (SortableJS)
+ *   - Position tracking for server-side ordering
+ */
 
-// TODO: This probably doesn't work for one-file uploads, due to appending the
-// ID to each preview.
-//
-// TODO: Drag and drop spaces
-// FIXME: What happens if no preview pane is found?
+import Sortable from "sortablejs";
 
-// Rails requires arrays to be assigned an index for
-// accepts_nested_attributes_for to work with pre-existing files. Date.now() is
-// in milliseconds resolution and my dev machine is fast enough to get duplicate
-// indices.
+// ── Unique index counter ───────────────────────────────────────────────
 let counter = Date.now();
 function getNextCounter() {
   return counter++;
 }
 
-// Make a div containing a preview image and a hidden input
+// ────────────────────────────────────────────────────────────────────────
+// POSITION TRACKING
+// ────────────────────────────────────────────────────────────────────────
+function updatePositions(container) {
+  container
+    .querySelectorAll(".file-upload-item-preview:not([hidden])")
+    .forEach((item, index) => {
+      const input = item.querySelector("[data-file-upload-position]");
+      if (input) input.value = index;
+    });
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// FILE TYPE CHECK
+// ────────────────────────────────────────────────────────────────────────
+function isFileAccepted(file, accept) {
+  if (!accept) return true;
+  return accept
+    .split(",")
+    .map((t) => t.trim().toLowerCase())
+    .some((type) => {
+      if (type.startsWith(".")) return file.name.toLowerCase().endsWith(type);
+      if (type.endsWith("/*"))
+        return file.type.startsWith(type.replace("/*", "/"));
+      return file.type === type;
+    });
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// BUILD A SINGLE PREVIEW ITEM
+// ────────────────────────────────────────────────────────────────────────
 function appendFileToPreview(file, previewContainer, fieldPrefix, fieldSuffix) {
-  // Create preview wrapper
+  const isSortable = previewContainer.hasAttribute("data-file-upload-sortable");
+
   const preview = document.createElement("div");
   preview.classList.add("file-upload-item-preview");
 
-  const previewImage = document.createElement("img");
-  const objectURL = URL.createObjectURL(file);
-  // If image errors out, this isn't something we can preview.
-  previewImage.addEventListener("error", (evt) => {
-    URL.revokeObjectURL(objectURL);
-    evt.currentTarget.removeAttribute("src");
-  });
-  previewImage.addEventListener("load", () => {
-    URL.revokeObjectURL(objectURL);
-  });
-  previewImage.src = objectURL;
-  preview.appendChild(previewImage);
-
-  const previewFilename = document.createElement("span");
-  previewFilename.textContent = file.name;
-  preview.appendChild(previewFilename);
-
-  const previewInput = document.createElement("input");
-  previewInput.type = "file";
-  previewInput.hidden = true;
-  const dataTransfer = new DataTransfer();
-  dataTransfer.items.add(file);
-  previewInput.files = dataTransfer.files;
-  previewInput.name = `${fieldPrefix}[${getNextCounter()}]`;
-  // Append an extra attribute if needed. This is because of workarounds how
-  // files and image are attached to repos via a model indirection. Annoying
-  if (fieldSuffix) {
-    previewInput.name += `[${fieldSuffix}]`;
+  // ── Drag handle (sortable containers only) ──
+  if (isSortable) {
+    const handle = document.createElement("span");
+    handle.classList.add("file-upload-drag-handle");
+    handle.innerHTML = "&#x2630;";
+    handle.title = "Drag to reorder";
+    preview.appendChild(handle);
   }
-  preview.append(previewInput);
 
-  // For non-persisted files this is a button
-  const previewDelete = document.createElement("button");
-  previewDelete.textContent = "Delete";
-  previewDelete.classList.add("file-upload-item-delete");
-  previewDelete.type = "button"; // Prevent form submit
-  previewDelete.addEventListener("click", (evt) => {
-    // Remove parent preview container
-    preview.remove();
-    evt.preventDefault();
+  // ── Thumbnail ──
+  const img = document.createElement("img");
+  const objectURL = URL.createObjectURL(file);
+  img.addEventListener("error", (e) => {
+    URL.revokeObjectURL(objectURL);
+    const placeholder = document.createElement("div");
+    placeholder.classList.add("file-upload-preview-failed");
+    e.currentTarget.replaceWith(placeholder);
   });
-  preview.append(previewDelete);
+  img.addEventListener("load", () => URL.revokeObjectURL(objectURL));
+  img.src = objectURL;
+  preview.appendChild(img);
+
+  // ── Filename ──
+  const nameSpan = document.createElement("span");
+  nameSpan.textContent = file.name;
+  nameSpan.title = file.name;
+  preview.appendChild(nameSpan);
+
+  // ── Hidden <input type="file"> carrying the actual blob ──
+  const itemIndex = getNextCounter();
+  const fileInput = document.createElement("input");
+  fileInput.type = "file";
+  fileInput.hidden = true;
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  fileInput.files = dt.files;
+  fileInput.name = `${fieldPrefix}[${itemIndex}]`;
+  if (fieldSuffix) fileInput.name += `[${fieldSuffix}]`;
+  preview.appendChild(fileInput);
+
+  // ── Position hidden input (sortable containers only) ──
+  if (isSortable) {
+    const posInput = document.createElement("input");
+    posInput.type = "hidden";
+    posInput.name = `${fieldPrefix}[${itemIndex}][position]`;
+    posInput.dataset.fileUploadPosition = "";
+    posInput.value = "0";
+    preview.appendChild(posInput);
+  }
+
+  // ── Delete button ──
+  const deleteBtn = document.createElement("button");
+  deleteBtn.textContent = "Delete";
+  deleteBtn.type = "button";
+  deleteBtn.classList.add("file-upload-item-delete");
+  deleteBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    preview.remove();
+    if (isSortable) updatePositions(previewContainer);
+  });
+  preview.appendChild(deleteBtn);
 
   previewContainer.appendChild(preview);
+  if (isSortable) updatePositions(previewContainer);
 }
 
-// Called when file input receives new files
+// ────────────────────────────────────────────────────────────────────────
+// FILE INPUT change HANDLER
+// ────────────────────────────────────────────────────────────────────────
 function onFileUpload(evt) {
   const input = evt.currentTarget;
   const previewContainer = document.querySelector(
     input.dataset.fileUploadPreviewSelector,
   );
-
-  const fileUploadLimit = parseInt(input.dataset.fileUploadLimit, 10);
-  // Count files currently candidates for upload
-  const currentFileCount = previewContainer.querySelectorAll(
+  const limit = parseInt(input.dataset.fileUploadLimit, 10);
+  const current = previewContainer.querySelectorAll(
     ".file-upload-item-preview:not([hidden])",
   ).length;
-  // Create a preview element for each file
-  Array.from(input.files).forEach((file, index) => {
-    // if the limit is undefined, or total count is less than limit
-    if (!fileUploadLimit || index + currentFileCount < fileUploadLimit) {
+
+  Array.from(input.files).forEach((file, i) => {
+    if (!limit || i + current < limit) {
       appendFileToPreview(
         file,
         previewContainer,
@@ -94,58 +142,155 @@ function onFileUpload(evt) {
     }
   });
 
-  // Clear input
   input.value = null;
 }
 
-function createFileInput(target) {
-  // Guard against re-initialization on repeated turbo:load events
-  if (target.dataset.fileUploadInitialized) return;
-  target.dataset.fileUploadInitialized = "true";
-
-  // Attach change handlers
-  target.addEventListener("change", onFileUpload);
-  // Copy name as a prefix
-  target.dataset.fileUploadPrefix = target.name;
-  // Clear name, we don't want to submit this input anymore
-  target.removeAttribute("name");
-
-  // For pre-existing preview boxes attach a delete handler to the checkboxes
-  const preview = document.querySelector(
-    target.dataset.fileUploadPreviewSelector,
-  );
-
-  if (!preview) {
-    throw new Error(
-      "Preview pane not found or not specified, file upload helper cannot function without a place to store hidden file inputs.",
-    );
-  }
-
-  // Find preview boxes under the target
-  const previewBoxes = preview.querySelectorAll(".file-upload-item-preview");
-
-  previewBoxes.forEach((previewBox) => {
-    const deleteBtn = previewBox.querySelector(
-      "[data-file-upload-item-delete]",
-    );
-    const destroyInput = previewBox.querySelector(
-      "[data-file-upload-hidden-destroy]",
-    );
-
-    if (deleteBtn && destroyInput) {
-      deleteBtn.addEventListener("click", () => {
-        // We have to submit the _destroy flag to server, hide preview instead
-        previewBox.hidden = true;
-        destroyInput.value = true;
-      });
+// ────────────────────────────────────────────────────────────────────────
+// SORTABLE (SortableJS)
+// ────────────────────────────────────────────────────────────────────────
+function setupSortable(container) {
+  // Add drag handles to any pre-existing server-rendered items
+  container.querySelectorAll(".file-upload-item-preview").forEach((item) => {
+    if (!item.querySelector(".file-upload-drag-handle")) {
+      const handle = document.createElement("span");
+      handle.classList.add("file-upload-drag-handle");
+      handle.innerHTML = "&#x2630;";
+      handle.title = "Drag to reorder";
+      item.prepend(handle);
     }
+  });
+
+  Sortable.create(container, {
+    animation: 150,
+    handle: ".file-upload-drag-handle",
+    ghostClass: "file-upload-dragging",
+    chosenClass: "file-upload-chosen",
+    dragClass: "file-upload-drag",
+    filter: "[hidden]", // skip hidden (soft-deleted) items
+    preventOnFilter: false,
+    onEnd: () => updatePositions(container),
   });
 }
 
-document.addEventListener("turbo:load", function () {
+// ────────────────────────────────────────────────────────────────────────
+// DROP ZONE
+// ────────────────────────────────────────────────────────────────────────
+function setupDropZone(dropZone, fileInput) {
+  const previewContainer = document.querySelector(
+    fileInput.dataset.fileUploadPreviewSelector,
+  );
+  let enterCount = 0;
+
+  dropZone.addEventListener("dragenter", (e) => {
+    if (!e.dataTransfer.types.includes("Files")) return;
+    e.preventDefault();
+    enterCount++;
+    dropZone.classList.add("file-upload-drop-active");
+  });
+
+  dropZone.addEventListener("dragover", (e) => {
+    if (!e.dataTransfer.types.includes("Files")) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  });
+
+  dropZone.addEventListener("dragleave", (e) => {
+    if (!e.dataTransfer.types.includes("Files")) return;
+    enterCount--;
+    if (enterCount <= 0) {
+      enterCount = 0;
+      dropZone.classList.remove("file-upload-drop-active");
+    }
+  });
+
+  dropZone.addEventListener("drop", (e) => {
+    if (!e.dataTransfer.files.length) return;
+    e.preventDefault();
+    e.stopPropagation();
+    enterCount = 0;
+    dropZone.classList.remove("file-upload-drop-active");
+
+    const limit = parseInt(fileInput.dataset.fileUploadLimit, 10);
+    const current = previewContainer.querySelectorAll(
+      ".file-upload-item-preview:not([hidden])",
+    ).length;
+    const accept = fileInput.accept || "";
+
+    Array.from(e.dataTransfer.files).forEach((file, i) => {
+      if (accept && !isFileAccepted(file, accept)) return;
+      if (!limit || i + current < limit) {
+        appendFileToPreview(
+          file,
+          previewContainer,
+          fileInput.dataset.fileUploadPrefix,
+          fileInput.dataset.fileUploadSuffix,
+        );
+      }
+    });
+  });
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// BOOTSTRAP
+// ────────────────────────────────────────────────────────────────────────
+function createFileInput(target) {
+  if (target.dataset.fileUploadInitialized) return;
+  target.dataset.fileUploadInitialized = "true";
+
+  target.dataset.fileUploadPrefix = target.name;
+  target.removeAttribute("name");
+  target.addEventListener("change", onFileUpload);
+
+  const preview = document.querySelector(
+    target.dataset.fileUploadPreviewSelector,
+  );
+  if (!preview) {
+    throw new Error(
+      "file_upload: preview pane not found for selector " +
+        target.dataset.fileUploadPreviewSelector,
+    );
+  }
+
+  // ── Pre-existing items: hook up delete buttons ──
+  preview.querySelectorAll(".file-upload-item-preview").forEach((box) => {
+    const deleteBtn = box.querySelector("[data-file-upload-item-delete]");
+    const destroyInput = box.querySelector("[data-file-upload-hidden-destroy]");
+    if (deleteBtn && destroyInput) {
+      deleteBtn.addEventListener("click", () => {
+        box.hidden = true;
+        destroyInput.value = true;
+        if (preview.hasAttribute("data-file-upload-sortable")) {
+          updatePositions(preview);
+        }
+      });
+    }
+  });
+
+  // ── Sortable reordering (gallery images) ──
+  if (preview.hasAttribute("data-file-upload-sortable")) {
+    setupSortable(preview);
+    updatePositions(preview);
+  }
+
+  // ── Drop zone ──
+  const dropZone = target.closest(".file-upload-drop-zone");
+  if (dropZone) {
+    setupDropZone(dropZone, target);
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// ENTRY POINT
+// ────────────────────────────────────────────────────────────────────────
+function init() {
   document
     .querySelectorAll("input[type=file][data-file-upload-helper]")
-    .forEach((el) => {
-      createFileInput(el);
-    });
-});
+    .forEach((el) => createFileInput(el));
+}
+
+document.addEventListener("turbo:load", init);
+if (document.readyState !== "loading") {
+  init();
+} else {
+  document.addEventListener("DOMContentLoaded", init);
+}
