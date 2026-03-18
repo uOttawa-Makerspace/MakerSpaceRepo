@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_03_09_013106) do
+ActiveRecord::Schema[7.2].define(version: 2026_03_14_170208) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_trgm"
@@ -820,6 +820,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_09_013106) do
     t.integer "learning_module_id"
     t.integer "project_proposal_id"
     t.integer "volunteer_task_id"
+    t.integer "position", default: 0, null: false
     t.index ["repository_id"], name: "index_photos_on_repository_id"
   end
 
@@ -1017,11 +1018,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_09_013106) do
     t.string "slug"
     t.bigint "linked_project_proposal_id"
     t.integer "prototype_cost"
-    t.integer "season"
-    t.integer "year"
     t.index ["linked_project_proposal_id"], name: "index_project_proposals_on_linked_project_proposal_id"
-    t.index ["title"], name: "index_project_proposals_on_title", opclass: :gin_trgm_ops, using: :gin
-    t.index ["year", "season"], name: "index_project_proposals_on_year_and_season"
   end
 
   create_table "project_requirements", id: :serial, force: :cascade do |t|
@@ -1303,6 +1300,23 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_09_013106) do
     t.boolean "default_public", default: false
     t.integer "max_automatic_approval_hour"
     t.index ["space_id"], name: "index_sub_spaces_on_space_id"
+  end
+
+  create_table "tap_box_logs", force: :cascade do |t|
+    t.string "event_type", null: false
+    t.string "card_number"
+    t.bigint "user_id"
+    t.bigint "space_id"
+    t.string "mac_address"
+    t.text "message", null: false
+    t.json "details", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["card_number"], name: "index_tap_box_logs_on_card_number"
+    t.index ["created_at"], name: "index_tap_box_logs_on_created_at"
+    t.index ["event_type"], name: "index_tap_box_logs_on_event_type"
+    t.index ["space_id"], name: "index_tap_box_logs_on_space_id"
+    t.index ["user_id"], name: "index_tap_box_logs_on_user_id"
   end
 
   create_table "team_memberships", force: :cascade do |t|
@@ -1625,6 +1639,8 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_09_013106) do
   add_foreign_key "sub_space_bookings", "users"
   add_foreign_key "sub_space_bookings", "users", column: "approved_by_id"
   add_foreign_key "sub_spaces", "spaces"
+  add_foreign_key "tap_box_logs", "spaces"
+  add_foreign_key "tap_box_logs", "users"
   add_foreign_key "training_requirements", "proficient_projects"
   add_foreign_key "training_requirements", "trainings"
   add_foreign_key "training_sessions", "trainings"
