@@ -5,6 +5,7 @@ en:
     locker_number: Locker number
     locker_rentals: Locker rentals
     locker_request: Locker request
+    all_locker_requests: All Locker Requests
 
     new_locker_request: New locker request
     view_locker_request: Locker request details
@@ -18,12 +19,27 @@ en:
     assign_a_locker: Assign a locker
 
     locker_id: Locker ID
+    requested_by: Requested by
+    user: User
+    requested_as: Requested as
     rented_by: Rented by
-    details: Details
+    contact: Contact
+
+    team: Team
+    course_section: Course and section
+
+    locker_details: Details
+    assigned: Assigned
+    previously_held: Previously held
+    preferred_not_assigned: Preferred, no locker assigned
+    no_preferred_not_assigned: No preference, no locker assigned
+    none: none
+
     submitted_on: Submitted on
     for: for
     paid_on: Paid on
     notes: Notes
+    staff_notes: Staff notes
 
     state:
       state: State
@@ -31,8 +47,26 @@ en:
       await_payment: Await payment
       active: Active
       cancelled: Ended
+
+    approved_by: Approved by
     assigned_on: Assigned on
     owned_until: Owned until
+
+    payment: Payment
+    unpaid: Unpaid
+
+    rental_expires_at: Rental expires at
+    rental_expired_on: Rental expired on
+    expired_ago: "Expired %{when} ago"
+    cancellation_notice_sent_on: Cancellation notice sent on
+    cancelled_on: Cancelled on
+    time_remaining: "%{time} remaining"
+
+    payment_description: Your locker has been approved! Complete payment to finalize the assignment.
+
+    reviewing_description: This request hasn't been reviewed yet. You'll be notified once a decision is made.
+
+    help_footer: If you have any questions about your locker, please contact us at
 
     actions:
       cancel_request: Cancel request
@@ -61,6 +95,7 @@ fr:
     locker_number: Numéro de casier
     locker_rentals: Locations de casiers
     locker_request: Demande de casier
+    all_locker_requests: Tous les demandes de casiers
 
     new_locker_request: Nouvelle demande de casier
     view_locker_request: Détails de la demande de casier
@@ -79,15 +114,35 @@ fr:
     for: par
     paid_on: Payé le
     notes: Remarques
+    staff_notes: Remarques des employés
 
     state:
       state: État
       reviewing: En attente de révision
       await_payment: Attendre le paiement
-      active: Active
+      active: Actif
       cancelled: Terminée
+      expired: Expirée
+
+    approved_by: Approuvé par
     assigned_on: Assigné le
     owned_until: Possédée jusqu'à
+
+    payment: Paiement
+    unpaid: impayé
+
+    rental_expires_at: Location expire le
+    rental_expired_on: Location expiré le
+    expired_ago: "Expiré il y a %{when}"
+    cancellation_notice_sent_on: Avis d'annulation envoyé le
+    cancelled_on: Annulé le
+    time_remaining: "%{time} restants"
+
+    payment_description: Votre casier est approuvé. Effectuez le paiement pour finaliser l'attribution.
+
+    reviewing_description: Cette demande n'a pas encore été examinée. Vous serez informé dès qu'une décision aura été prise.
+
+    help_footer: Si vous avez des questions concernant votre casier, veuillez nous contacter à
 
     actions:
       cancel_rental: Annuler la demande
