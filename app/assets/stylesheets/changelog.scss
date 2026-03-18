@@ -1,5 +1,5 @@
 .changelog-container {
-  max-width: 800px;
+  max-width: 120ch;
   margin: 2rem auto;
   padding: 0 1.5rem;
 }
@@ -36,14 +36,6 @@
   li {
     margin-bottom: 0.4rem;
     line-height: 1.6;
-  }
-
-  a {
-    color: #2563eb;
-    text-decoration: none;
-    &:hover {
-      text-decoration: underline;
-    }
   }
 
   strong {
