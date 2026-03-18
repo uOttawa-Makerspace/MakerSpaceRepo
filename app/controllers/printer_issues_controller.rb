@@ -106,7 +106,7 @@ class PrinterIssuesController < StaffAreaController
     email = params[:notification_email].to_s.strip
 
     if email.blank?
-      Setting.set("maintenance_notification_email", nil)
+      Setting.maintenance_email = nil
       flash[:notice] = "Notification email removed."
     elsif email.match?(/\A[^@\s]+@[^@\s]+\z/)
       Setting.maintenance_email = email
