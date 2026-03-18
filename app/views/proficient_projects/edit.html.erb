@@ -77,7 +77,7 @@
               <p class="alert alert-secondary mb-5" id="badge-acquired-text">No training will be acquired</p>      
 
               <%= label_tag :file, 'Project files', class: 'form-label' %>
-              <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'form-control mb-5', data: { direct_upload_url: rails_direct_uploads_url }, aria_label: 'Project Files / Fichiers du projet' %>
+              <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'form-control mb-5', aria_label: 'Project Files / Fichiers du projet' %>
               <div id="file-container">
 
                 <% @files.each do |f| %>

@@ -73,7 +73,7 @@
             <p class="alert alert-secondary mb-5" id="badge-acquired-text">No badge will be acquired</p>
 
             <%= label_tag :file, 'Project files', class: 'form-label' %>
-            <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'form-control', data: { direct_upload_url: rails_direct_uploads_url }, aria_label: 'Project Files / Fichiers du projet' %>
+            <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'form-control', aria_label: 'Project Files / Fichiers du projet' %>
             <div id="file-container"></div>
 
             <div class="mb-3 mt-5 required">
