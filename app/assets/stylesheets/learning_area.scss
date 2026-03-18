@@ -1,4 +1,13 @@
-.projects-image {
-  background-size: cover;
-  height: 270px;
+.learning-module-thumbnail-wrapper {
+  height: 15rem;
+  display: block;
+  overflow: hidden;
+  border-bottom: 1px solid black;
+  background-color: black;
+
+  .learning-module-thumbnail {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 }

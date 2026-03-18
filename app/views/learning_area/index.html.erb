@@ -1,109 +1,107 @@
-<section>
-  <h2 class="text-center py-4"><b>Learning Modules</b></h2>
-  <div class="text-center">
-    <div class="row mx-auto">
+<div class="mb-3">
+    <h1 class="display-2">Learning Modules</h1>
+    <p class="lead">Track your progress across all training areas</p>
+</div>
+<div class="row">
+    <div class="col-lg-2">
+        <ul class="list-group mb-5">
+            <% @skills.each do |skill| %>
+                <% skill.trainings.each do |training| %>
+                    <% next if training.learning_modules.blank? %>
+                    <%= link_to "##{training.localized_name.parameterize}", class: 'list-group-item list-group-item-action' do %>
+                        <%= training.localized_name %>
 
-      <div class="accordion col-md-12" id="training-accordion">
+                        <%#= @learning_modules_completed.call(training, level).count %>
+                        of <%#= @total_learning_modules_per_level.call(training, level).count %> completed
+                    <% end %>
+                <% end %>
+            <% end %>
+        </ul>
+    </div>
+    <div class="col-lg-10">
         <% @skills.each do |skill| %>
-          <% next if skill.trainings.blank? %>
-          <% skill.trainings.each do |training| %>
-            <% next if training.learning_modules.blank? %>
-            <div class="accordion-item">
-              <div class="accordion-header" id="header-training-training-<%= training.id %>">
-                <div class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#training-training-<%= training.id %>">
-                  <div class="col-4">
-                    <button class="btn btn-link float-start">
-                      <%= training.localized_name %>
-                    </button>
-                  </div>
-                  <div class="col-4 text-center">
-                      <span class="mx-auto">
-                        <% levels_ordered(training).each do |level| %>
-                          <span class="<%= return_text_color(level) %> p-3">
-                            <%= @learning_modules_completed.call(training, level).count %>
-                            /<%= @total_learning_modules_per_level.call(training, level).count %>
-                          </span>
-                        <% end %>
-                      </span>
-                  </div>
-                  <div class="col-4">
-                    <%= training_status(training.id, current_user.id) %>
-                  </div>
-                </div>
-              </div>
-              <div id="training-training-<%= training.id %>" class="accordion-collapse collapse" aria-labelledby="header-training-training-<%= training.id %>" data-bs-parent="accordion-<%= training.id %>">
-                <div class="accordion-body">
-                  <div class="row accordion" id="accordion-<%= training.id %>">
+            <% next if skill.trainings.blank? %>
+            <% skill.trainings.each do |training| %>
+                <% next if training.learning_modules.blank? %>
+
+                <div class="mb-5" id="<%= training.localized_name.parameterize %>">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between border-bottom pb-2 mb-4">
+                        <div>
+                            <h2 class="fs-4 fw-semibold d-inline"><%= training.localized_name %></h2>
+                            <%= link_to 'Top', '#', class: 'small' %>
+                        </div>
+                        <div class="d-flex align-items-center gap-3">
+                            <% levels_ordered(training).each do |level| %>
+                                <span class="badge rounded-pill border <%= return_border_color(level) %> <%= return_text_color(level) %>">
+                                    <%= @learning_modules_completed.call(training, level).count %>
+                                    / <%= @total_learning_modules_per_level.call(training, level).count %>
+                                    <%= level %>
+                                </span>
+                            <% end %>
+                            <%= training_status(training.id, current_user.id) %>
+                        </div>
+                    </div>
+
                     <% all_learning_modules = @all_learning_modules.call(training) %>
                     <% levels_ordered(training).each do |level| %>
-                      <% learning_modules_by_level = all_learning_modules.where(level:) %>
-                      <div class="accordion item col-md-12">
-                        <div class="accordion-header accordion-button" id="header-<%= training.id %>-<%= level %>" data-bs-toggle="collapse" data-bs-target="#training-training-<%= training.id %>-<%= level %>" aria-expanded="false" aria-controls="training-training-<%= training.id %>-<%= level %>">
-                              <span class="btn-link col-4" type="button"><%= level %>
-                              </span>
-                          <span class="col-4 float-end text-center">
-                                <span class="<%= return_text_color(level) %>">
-                                  <%= @learning_modules_completed.call(training, level).count %>
-                                  /<%= @total_learning_modules_per_level.call(training, level).count %>
-                                </span>
-                              </span>
-                        </div>
-                        <div id="training-training-<%= training.id %>-<%= level %>" class="accordion-collapse collapse" aria-labelledby="header-<%= training.id %>-<%= level %>" data-bs-parent="#accordion-<%= training.id %>">
-                          <% if @user.admin? %>
-                            <nav class="navbar bg-light">
-                              <div class="container-fluid">
-                                <div class="form-check form-switch">
-                                  <input class="form-check-input reorder" type="checkbox" role="switch" id="toggle-<%= training.id %>-<%= level %>" data-accordion="accordion-<%= training.id %>-<%= level %>">
-                                  <label class="form-check-label" for="toggle-<%= training.id %>-<%= level %>">Re-order</label>
-                                </div>
-                              </div>
-                            </nav>
-                          <% end %>
-                          <div class="row md-2" id="accordion-<%= training.id %>-<%= level %>">
-                            <% learning_modules_by_level.each do |learning_module| %>
-                              <div data-id="<%= learning_module.id %>" class="col-md-4 mb-5 mt-3 w3-hover-opacity <%= return_hover_and_text_colors(learning_module.level) %> <%= return_border_color(learning_module.level) %>" style="border-width:2px !important;">
-                                <div class="py-3">
-                                  <div class="row">
-                                    <div class="col-4">
-                                      <%= link_to 'Edit', edit_learning_area_path(learning_module.id), class: 'btn btn-primary', style: 'opacity: 0.5' if current_user.admin? %>
-                                    </div>
-                                    <div class="col-4">
-                                      <p><h6 class="text-center my-auto">
-                                      <strong><%= learning_module.training.localized_name %></strong></h6></p>
-                                    </div>
-                                    <div class="col-4 float-end">
-                                    <%= button_to 'Delete', learning_area_path(learning_module.id), method: :delete, class: 'btn btn-danger', style: 'opacity: 0.5', data: { confirm: 'Are you sure? This will delete the Learning Module.' } if current_user.admin? %>
-                                    </div>
-                                  </div>
-                                </div>
-                                <a href="<%= learning_area_path(learning_module.id) %>">
-                                  <div class="projects-image" style="background-image: url(<%= url_for(learning_module.photos.first.image) %>);">
-                                  </div>
-                                </a>
-                                <div>
-                                  <br/>
-                                  <h6 class="fw-bold text-center"><strong><%= learning_module.title %></strong></h6>
-                                  <p><%= learning_module.level %></p>
-                                </div>
-                                <div>
-                                  <% status = @learning_module_track.call(learning_module).present? ? @learning_module_track.call(learning_module).first.status : 'Not Started' %>
-                                  <button type='button' class='btn <%= return_button_class(status) %> disabled mb-2'><%= status %></button>
-                                </div>
-                              </div>
-                            <% end %>
-                          </div>
-                        </div>
-                      </div>
-                    <% end %>
-                  </div>
-                </div>
-              </div>
-            </div>
-          <% end %>
-        <% end %>
-      </div>
-    </div>
-  </div>
-</section>
+                        <% learning_modules_by_level = all_learning_modules.where(level:) %>
+                        <% next if learning_modules_by_level.blank? %>
 
+                        <div class="mb-4">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <div>
+                                    <h2 class="d-inline fs-6 <%= return_text_color(level) %>"><%= level %></h2>
+                                    <span class="text-muted">
+                                        <%= @learning_modules_completed.call(training, level).count %>
+                                        of <%= @total_learning_modules_per_level.call(training, level).count %> completed
+                                    </span>
+                                </div>
+                                <% if @user.admin? %>
+                                    <div class="form-check form-switch mb-0">
+                                        <input class="form-check-input reorder" type="checkbox" role="switch"
+                                               id="toggle-<%= training.id %>-<%= level %>"
+                                               data-accordion="accordion-<%= training.id %>-<%= level %>">
+                                        <label class="form-check-label small text-muted" for="toggle-<%= training.id %>-<%= level %>">
+                                            <i class="fa fa-sort me-1"></i>Re-order
+                                        </label>
+                                    </div>
+                                <% end %>
+                            </div>
+
+                            <div class="row row-cols-md-2 row-cols-lg-4 g-1">
+                                <% learning_modules_by_level.each do |learning_module| %>
+                                    <% status = @learning_module_track.call(learning_module).present? ? @learning_module_track.call(learning_module).first.status : 'Not Started' %>
+                                    <div data-id="<%= learning_module.id %>">
+                                        <div class="card h-100 border-1 <%= return_border_color(learning_module.level) %> shadow-sm">
+                                            <%= link_to learning_area_path(learning_module.id), class: 'learning-module-thumbnail-wrapper' do %>
+                                                <%= image_tag learning_module.photos.first.image,
+                                                              class: "card-img-top learning-module-thumbnail",
+                                                              alt: learning_module.title %>
+                                            <% end %>
+                                            <div class="card-body d-flex flex-column gap-2">
+                                                <p class="small text-muted mb-0"><%= learning_module.training.localized_name %></p>
+                                                <h6 class="fw-bold mb-0"><%= learning_module.title %></h6>
+                                                <button type="button" class="btn btn-sm <%= return_button_class(status) %> disabled mt-auto w-100">
+                                                    <%= status %>
+                                                </button>
+                                            </div>
+                                            <% if current_user.admin? %>
+                                                <div class="card-footer bg-transparent d-flex justify-content-between gap-2">
+                                                    <%= link_to edit_learning_area_path(learning_module.id), class: 'btn btn-sm btn-outline-primary w-50' do %>
+                                                        <i class="fa fa-pencil"></i> Edit
+                                                    <% end %>
+                                                </div>
+                                            <% end %>
+                                        </div>
+                                    </div>
+                                <% end %>
+                            </div>
+                        </div>
+                    <% end %>
+                </div>
+
+            <% end %>
+        <% end %>
+    </div>
+</div>
 <%= vite_javascript_tag 'learning_modules' %>

@@ -16,7 +16,7 @@ module ProficientProjectsHelper
   def return_border_color(level)
     case level
     when 'Beginner'
-      'w3-border-light-green'
+      'border-success'
     when 'Intermediate'
       'w3-border-yellow'
     when 'Advanced'

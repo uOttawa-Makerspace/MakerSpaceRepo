@@ -7,7 +7,7 @@ class SessionsController < ApplicationController
   before_action :update_activity_time
   before_action :current_user, only: [:login]
   before_action :authorized_repo_ids
-  before_action :rate_limit, only: [:login_authentication]
+  # before_action :rate_limit, only: [:login_authentication]
 
   SUPPORT_EMAIL = "uottawa.makerepo@gmail.com"
 
@@ -20,7 +20,7 @@ class SessionsController < ApplicationController
       count = 1
     end
     Rails.cache.write(key, count.to_i + 1, expires_in: 1.minute)
-    render status: 429, json: { error: "Too many requests" } if count.to_i > 10
+    render status: :too_many_requests if count.to_i > 10
   end
 
   def login_authentication
