@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_03_09_013106) do
+ActiveRecord::Schema[7.2].define(version: 2026_03_14_152759) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_trgm"
@@ -820,6 +820,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_09_013106) do
     t.integer "learning_module_id"
     t.integer "project_proposal_id"
     t.integer "volunteer_task_id"
+    t.integer "position", default: 0, null: false
     t.index ["repository_id"], name: "index_photos_on_repository_id"
   end
 
@@ -1017,11 +1018,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_09_013106) do
     t.string "slug"
     t.bigint "linked_project_proposal_id"
     t.integer "prototype_cost"
-    t.integer "season"
-    t.integer "year"
     t.index ["linked_project_proposal_id"], name: "index_project_proposals_on_linked_project_proposal_id"
-    t.index ["title"], name: "index_project_proposals_on_title", opclass: :gin_trgm_ops, using: :gin
-    t.index ["year", "season"], name: "index_project_proposals_on_year_and_season"
   end
 
   create_table "project_requirements", id: :serial, force: :cascade do |t|

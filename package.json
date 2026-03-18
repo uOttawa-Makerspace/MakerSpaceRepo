@@ -36,7 +36,7 @@
     "regenerator-runtime": "^0.14.1",
     "rrule": "^2.8.1",
     "sass": "^1.97.1",
-    "sortablejs": "^1.15.6",
+    "sortablejs": "^1.15.7",
     "stimulus-vite-helpers": "^3.1.0",
     "toastr": "^2.1.4",
     "tom-select": "^2.5.1",
