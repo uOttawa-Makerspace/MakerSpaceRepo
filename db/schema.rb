@@ -1124,6 +1124,14 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_09_013106) do
     t.index ["user_id"], name: "index_rfids_on_user_id"
   end
 
+  create_table "settings", force: :cascade do |t|
+    t.string "key", null: false
+    t.string "value"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["key"], name: "index_settings_on_key", unique: true
+  end
+
   create_table "shadowing_hours", force: :cascade do |t|
     t.bigint "user_id"
     t.string "event_id"

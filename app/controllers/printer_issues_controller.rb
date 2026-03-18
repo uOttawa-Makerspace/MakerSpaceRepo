@@ -11,10 +11,11 @@ class PrinterIssuesController < StaffAreaController
             issue.summary.include? s
           end || "Other"
         end
-    
-    # Add JSON response
+
+    @maintenance_email = Setting.maintenance_email
+
     respond_to do |format|
-      format.html # renders the HTML view
+      format.html
       format.json do
         render json: {
           issues: @issues.map do |issue|
@@ -61,13 +62,11 @@ class PrinterIssuesController < StaffAreaController
       )
 
     if @issue.save
+      send_notification_email(@issue)
       redirect_to @issue
     else
-      new # set previous variables
-      flash[
-        :alert
-      ] = "Failed to create issue: #{sanitize(@issue.errors.full_messages.join("<br />"))}"
-      # All this to keep form data on error
+      new
+      flash[:alert] = "Failed to create issue: #{sanitize(@issue.errors.full_messages.join("<br />"))}"
       render :new, status: :unprocessable_content
     end
   end
@@ -82,9 +81,7 @@ class PrinterIssuesController < StaffAreaController
     # Ideally, all updates happen from /printer_issues
     issue = PrinterIssue.find_by(id: params[:id])
     unless issue.update(printer_issue_params)
-      flash[
-        :alert
-      ] = "Failed to update printer issue #{params[:id]}, #{issue.errors.full_messages.join(";")}"
+      flash[:alert] = "Failed to update printer issue #{params[:id]}, #{issue.errors.full_messages.join(";")}"
       redirect_to printer_issues_path
     end
     if issue.active
@@ -105,6 +102,22 @@ class PrinterIssuesController < StaffAreaController
     redirect_to printer_issues_path, status: :see_other
   end
 
+  def update_notification_email
+    email = params[:notification_email].to_s.strip
+
+    if email.blank?
+      Setting.maintenance_email = nil
+      flash[:notice] = "Notification email removed."
+    elsif email.match?(/\A[^@\s]+@[^@\s]+\z/)
+      Setting.maintenance_email = email
+      flash[:notice] = "Notification email updated to #{email}."
+    else
+      flash[:alert] = "Invalid email address."
+    end
+
+    redirect_to printer_issues_path
+  end
+
   private
 
   def printer_issue_params
@@ -114,5 +127,14 @@ class PrinterIssuesController < StaffAreaController
       :description,
       :active
     )
+  end
+
+  def send_notification_email(issue)
+    recipient = Setting.maintenance_email
+    return if recipient.blank?
+
+    MsrMailer.new_printer_issue(issue, recipient).deliver_later
+  rescue StandardError => e
+    Rails.logger.error("Failed to send printer issue notification email: #{e.message}")
   end
 end
