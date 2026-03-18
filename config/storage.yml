@@ -15,6 +15,7 @@ amazon:
   bucket: <%= Rails.application.credentials[Rails.env.to_sym][:aws][:bucket_name] %>
   upload:
     cache_control: "max-age=15552000, private"
+    multipart_threshold: <%= 90.megabytes %>
 # Remember not to checkin your GCS keyfile to a repository
 # google:
 #   service: GCS
