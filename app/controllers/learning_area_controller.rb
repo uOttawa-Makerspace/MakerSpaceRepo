@@ -101,6 +101,9 @@ class LearningAreaController < DevelopmentProgramsController
       flash[:alert] = "Unable to apply the changes."
       @training_categories = Training.all.order(:name).pluck(:name, :id)
       @training_levels ||= TrainingSession.return_levels
+      @files = @learning_module.repo_files.order(created_at: :asc)
+      @photos = @learning_module.photos || []
+      @videos = @learning_module.videos.processed.order(created_at: :asc)
       render "edit", status: :unprocessable_content
     end
   end

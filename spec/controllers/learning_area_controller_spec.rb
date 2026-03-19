@@ -40,8 +40,18 @@ RSpec.describe LearningAreaController, type: :controller do
         admin = create(:user, :admin)
         session[:user_id] = admin.id
         session[:expires_at] = Time.zone.now + 10_000
-        create(:learning_module)
-        get :show, params: { id: LearningModule.last.id }
+        learning_module = create(:learning_module)
+
+        # Create a photo with an attached image
+        photo = learning_module.photos.new(width: 100, height: 100)
+        photo.image.attach(
+          io: File.open(Rails.root.join("spec/support/assets/avatar.png")),
+          filename: "avatar.png",
+          content_type: "image/png"
+        )
+        photo.save!
+
+        get :show, params: { id: learning_module.id }
         expect(response).to have_http_status(:success)
       end
 
@@ -49,8 +59,17 @@ RSpec.describe LearningAreaController, type: :controller do
         user = create(:user, :volunteer_with_dev_program)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
-        create(:learning_module)
-        get :show, params: { id: LearningModule.last.id }
+        learning_module = create(:learning_module)
+
+        photo = learning_module.photos.new(width: 100, height: 100)
+        photo.image.attach(
+          io: File.open(Rails.root.join("spec/support/assets/avatar.png")),
+          filename: "avatar.png",
+          content_type: "image/png"
+        )
+        photo.save!
+
+        get :show, params: { id: learning_module.id }
         expect(response).to have_http_status(:success)
       end
     end
