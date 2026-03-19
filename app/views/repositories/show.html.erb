@@ -2,38 +2,83 @@
 
 <section class="row container mx-auto mt-3">
     <section id="repository-photos" class="col-lg-8 order-lg-first order-last">
-        <div class="mb-3">
-            <% if @repository.youtube_link.present? %>
-                <%= youtube_video(@repository.youtube_link) %>
-            <% elsif @repository.photos.present? and @repository.photos.first.image.attached? %>
-                <div id="show-photo">
-                    <%= image_tag @repository.photos.first.image.variant(:photo_slide_first),
-                                  alt: 'Repository Main image',
-                                  data: {
-                                      width: @repository.photos.first.try(:width),
-                                      height: @repository.photos.first.try(:height)
-                                  } %>
+        <% photos = @repository.photos.to_a %>
+        <% has_youtube = @repository.youtube_link.present? %>
+        <% has_media = has_youtube || photos.any? %>
+        <% total_slides = photos.size + (has_youtube ? 1 : 0) %>
+
+        <% if has_media %>
+            <div id="repositoryCarousel" class="carousel slide mb-3" data-bs-ride="false">
+                <div class="carousel-inner rounded">
+                    <% if has_youtube %>
+                        <div class="carousel-item active">
+                            <div class="carousel-slide-wrapper">
+                                <div class="ratio ratio-16x9 w-100">
+                                    <%= youtube_video(@repository.youtube_link) %>
+                                </div>
+                            </div>
+                        </div>
+                    <% end %>
+
+                    <% photos.each_with_index do |p, i| %>
+                        <div class="carousel-item <%= 'active' if i == 0 && !has_youtube %>">
+                            <div class="carousel-slide-wrapper">
+                                <% if p.image.variable? %>
+                                    <%= image_tag url_for(p.image.variant(:photo_slide_first)),
+                                                class: 'carousel-main-image',
+                                                alt: "#{@repository.title} — image #{i + 1}" %>
+                                <% else %>
+                                    <%= image_tag url_for(p.image),
+                                                class: 'carousel-main-image',
+                                                alt: "#{@repository.title} — image #{i + 1}" %>
+                                <% end %>
+                            </div>
+                        </div>
+                    <% end %>
                 </div>
-            <% end %>
-            <div id="photo-slide">
-                <% if false && @repository.youtube_link.present? %>
-                    <%= image_tag "https://img.youtube.com/vi/#{YoutubeID.from(@repository.youtube_link)}/maxresdefault.jpg",
-                                  data: {
-                                      youtube: @repository.youtube_link
-                                  }
-                    %>
-                <% end %>
-                <% @repository.photos.find_each do |p| %>
-                    <%= image_tag p.image.variant(:photo_slide),
-                                  alt: 'Repository Image',
-                                  data: {
-                                      src: url_for(p.image),
-                                      width: p.image.metadata['width'],
-                                      height: p.image.metadata['height']
-                                  } %>
+
+                <% if total_slides > 1 %>
+                    <button class="carousel-control-prev" type="button"
+                            data-bs-target="#repositoryCarousel" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Previous</span>
+                    </button>
+                    <button class="carousel-control-next" type="button"
+                            data-bs-target="#repositoryCarousel" data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Next</span>
+                    </button>
                 <% end %>
             </div>
-        </div>
+
+            <% if total_slides > 1 %>
+                <div class="d-flex gap-1 flex-wrap mb-3" id="carousel-thumbnails">
+                    <% slide_offset = 0 %>
+                    <% if has_youtube %>
+                        <button type="button"
+                                class="carousel-thumbnail active"
+                                data-bs-target="#repositoryCarousel"
+                                data-bs-slide-to="0"
+                                aria-label="Video">
+                            <img src="https://img.youtube.com/vi/<%= YoutubeID.from(@repository.youtube_link) %>/default.jpg"
+                                alt="Video thumbnail">
+                        </button>
+                        <% slide_offset = 1 %>
+                    <% end %>
+
+                    <% photos.each_with_index do |p, i| %>
+                        <button type="button"
+                                class="carousel-thumbnail <%= 'active' if i == 0 && !has_youtube %>"
+                                data-bs-target="#repositoryCarousel"
+                                data-bs-slide-to="<%= i + slide_offset %>"
+                                aria-label="Image <%= i + 1 %>">
+                            <%= image_tag url_for(p.image.variable? ? p.image.variant(:photo_slide) : p.image),
+                                        alt: "Thumbnail #{i + 1}" %>
+                        </button>
+                    <% end %>
+                </div>
+            <% end %>
+        <% end %>
 
         <% if @user.admin? %>
             <div class="d-flex justify-content-between">
@@ -203,8 +248,8 @@
                     <div class="mb-3 input-group required">
                         <%= f.hidden_field :repository_id, value: @repository.id %>
                         <%= f.collection_select :owner_id, @repository.users, :id, :username,
-                                     { prompt: t('repository.search_user') },
-                                     { class: 'form-control', id: 'search_users_transfer' } %>
+                            { prompt: t('repository.search_user') },
+                         { class: 'form-control', id: 'search_users_transfer' } %>
                         <br> </br>
                         <%= f.submit t('repository.transfer'), class: 'btn btn-warning' %>
                     </div>
@@ -270,4 +315,4 @@
 </section>
 
 <%= vite_javascript_tag 'staff_dashboard_search', 'data-turbo-track': 'reload' %>
-<%#%= render 'layouts/photoswipe' %>
+<%= vite_javascript_tag 'carousel_thumbnails', 'data-turbo-track': 'reload' %>

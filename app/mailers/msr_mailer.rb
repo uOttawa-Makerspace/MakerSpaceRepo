@@ -357,12 +357,12 @@ class MsrMailer < ApplicationMailer
     mail(to: email, subject: "Please Sign The Release Agreement!")
   end
 
-  def issue_email(name, email, subject, comments, app_version)
+  def issue_email(name, email, subject, comments, share_email)
     @name = name
     @email = email
     @subject = subject
     @comments = comments
-    @app_version = app_version
+    @share_email = share_email
 
     mail(
       to: @email,
@@ -488,5 +488,10 @@ class MsrMailer < ApplicationMailer
     @user = user
     @user_hash = user_hash
     mail(to: @user.email, subject: "Unlock your MakerRepo Account")
+  end
+
+  def new_printer_issue(issue, recipient_email)
+    @issue = issue
+    mail(to: recipient_email, subject: "New Printer Issue: #{issue.summary}")
   end
 end

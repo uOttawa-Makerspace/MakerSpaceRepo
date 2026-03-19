@@ -1,15 +1,15 @@
 <%= form_with model: LockerRental.new do |f| %>
-    <div class="row mb-3">
+    <div class="row mb-1">
         <div class="col-md-2">
             <%= f.label :locker_id, "Select a locker" %>
         </div>
         <div class="col-md">
             <%= f.select :locker_id, Locker.available.order_by_specifier.map { |locker|
                 [locker.specifier, locker.id, { data: { size: locker.locker_size.size, staff_only: !locker.available } }]
-            }, { include_blank: 'Select a locker...' }, { class: 'form-select', required: true } %>
+            }, { include_blank: 'Search for a locker...' }, { class: 'form-select', required: true } %>
         </div>
     </div>
-    <div class="row mb-3">
+    <div class="row mb-1">
         <div class="col-md-2">
             <%= f.label :rented_by_username, class: 'form-label' %>
         </div>
@@ -17,7 +17,7 @@
             <%= f.select :rented_by_username, options_for_select([]), { prompt: 'Select user...' }, { autocomplete: 'new-password', class: 'form-select', data: {user_search_bar: ''}, required: true } %>
         </div>
     </div>
-    <div class="row mb-3">
+    <div class="row mb-1">
         <div class="col-md-2">
             <%= f.label :owned_until, class: 'form-label' %>
         </div>
@@ -25,6 +25,8 @@
             <%= f.date_field :owned_until, { value: end_of_this_semester.to_date, class: 'form-control' } %>
         </div>
     </div>
+
+    <%= f.text_area :staff_notes, class: 'form-control mb-2', placeholder: 'Staff notes are visible to staff only' %>
 
     <div class="form-check mb-3">
         <%= f.check_box :requested_as, {checked: false, class: 'form-check-input', include_hidden: false}, :student %>

@@ -93,7 +93,7 @@ GEM
       sshkit (>= 1.6.1, != 1.7.0)
     ast (2.4.3)
     aws-eventstream (1.4.0)
-    aws-partitions (1.1220.0)
+    aws-partitions (1.1221.0)
     aws-sdk-core (3.242.0)
       aws-eventstream (~> 1, >= 1.3.0)
       aws-partitions (~> 1, >= 1.992.0)
@@ -207,7 +207,7 @@ GEM
     erubis (2.7.0)
     et-orbi (1.4.0)
       tzinfo
-    excon (1.3.2)
+    excon (1.4.0)
       logger
     execjs (2.10.0)
     factory_bot (6.5.6)
@@ -370,13 +370,13 @@ GEM
       net-smtp
     marcel (1.1.0)
     matrix (0.4.3)
-    mcp (0.7.1)
+    mcp (0.8.0)
       json-schema (>= 4.1)
     method_source (1.1.0)
     mime-types (3.7.0)
       logger
       mime-types-data (~> 3.2025, >= 3.2025.0507)
-    mime-types-data (3.2026.0224)
+    mime-types-data (3.2026.0303)
     mini_magick (5.3.1)
       logger
     mini_mime (1.1.5)
@@ -463,7 +463,7 @@ GEM
       pry (>= 0.13.0)
     psych (4.0.6)
       stringio
-    public_suffix (7.0.2)
+    public_suffix (7.0.5)
     puma (7.2.0)
       nio4r (~> 2.0)
     quick_random_records (0.3.2)
@@ -540,6 +540,7 @@ GEM
       erb
       psych (>= 4.0.0)
       tsort
+    redcarpet (3.6.1)
     redirect_safely (1.0.0)
       activemodel
     regexp_parser (2.11.3)
@@ -722,7 +723,7 @@ GEM
       fugit (~> 1.11)
       railties (>= 7.1)
       thor (>= 1.3.1)
-    sorbet-runtime (0.6.12977)
+    sorbet-runtime (0.6.12982)
     spreadsheet (1.3.4)
       bigdecimal
       logger
@@ -899,6 +900,7 @@ DEPENDENCIES
   rails (~> 7.2.0)
   rails-controller-testing
   rails_best_practices
+  redcarpet
   roo (~> 2.10.0)
   roo-xls
   rrule

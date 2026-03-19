@@ -1,14 +1,14 @@
 <% provide(:title, "#{@repo_user.username}\'s Profile") %>
 
-<div class="row g-3">
+<div class="row">
     <div class="col-md-4">
         <!--      User's Avatar-->
         <%= image_tag @repo_user.display_avatar, alt: 'Avatar', class: 'profile-img' %>
         <!--      MORE INFO Section-->
         <div class="profile-work">
-            <p>More info</p>
+            <p><%= t('.more_info') %></p>
             <%= fa_icon 'location-arrow', text: @repo_user.location if @repo_user.location.present? %><br />
-            <%= fa_icon 'clock-o', text: "Joined on #{@repo_user.created_at.to_date.to_fs :long}" %><br />
+            <%= fa_icon 'clock-o' %> <%= t('.joined_on') %> <%= @repo_user.created_at.to_date.to_fs :long %><br />
             <% if @github_username.present? %>
                 <%= fa_icon 'github-alt' %>
                 <%= link_to @github_username, "https://github.com/#{@github_username}" %><br />
@@ -17,30 +17,24 @@
                 <%= fa_icon('link') %>
                 <%= link_to @repo_user.url.gsub(%r{\Ahttps?://}, '').to_s, @repo_user.url %> <br />
             <% end %>
-            <p>Skills</p>
+            <p><%= t('.skills') %></p>
             <% @certifications.each do |certification| %>
-                <div class="row">
-                    <div class="col-md-6">
-                        <% if current_user.staff? %>
-                            <%= link_to certification.training.localized_name, staff_training_session_path(certification.training_session) %>
-                        <% else %>
-                            <%= certification.training.localized_name %>
-                        <% end %>
-                    </div>
-                    <div class="col-md-6">
-                        <span style="font-size: 15px;">
-                            <%= sanitize(certification_status(certification.training_session.level)) %>
-                        </span>
-                    </div>
+                <div class="d-flex flex-nowrap justify-content-between">
+                    <% if current_user.staff? %>
+                        <%= link_to certification.training.localized_name, staff_training_session_path(certification.training_session) %>
+                    <% else %>
+                        <%= certification.training.localized_name %>
+                    <% end %>
+                    <%= certification_status(certification.training_session.level) %>
                 </div>
             <% end %>
             <% if current_user.staff? || @repo_user == current_user %>
                 <p><%= t('walk_in_safety_sheet.title') %></p>
                 <%= link_to walk_in_safety_sheets_path, class: 'mb-3' do %>
                     <% if @repo_user.walk_in_safety_sheets.any? %>
-                        Signed
+                        <%= t('.sheet_signed') %>
                     <% else %>
-                        Not signed
+                        <%= t('.sheet_not_signed') %>
                     <% end %>
                 <% end %>
             <% end %>
@@ -75,11 +69,16 @@
                     <!--      EDIT PROFILE Section-->
                     <div class="btn-group-vertical">
                         <% if current_user.admin? %>
-                            <%= button_to fa_icon(@repo_user.locked? ? 'unlock' : 'lock'),
-                                          toggle_lock_user_admin_users_path(id: @repo_user),
-                                          method: :put, class: 'btn p-0', form_class: "btn #{@repo_user.locked? ? 'btn-success' : 'btn-danger'}" %>
+                            <%= button_to toggle_lock_user_admin_users_path(id: @repo_user),
+                                          method: :put, class: 'btn p-0', form_class: "btn #{@repo_user.locked? ? 'btn-success' : 'btn-danger'}" do %>
+                                <% if @repo_user.locked? %>
+                                    <%= fa_icon('unlock', text: t('.unlock_user')) %>
+                                <% else %>
+                                    <%= fa_icon('lock', text: t('.lock_user')) %>
+                                <% end %>
+                            <% end %>
                         <% end %>
-                        <%= link_to fa_icon('cog', text: 'Edit Profile'), settings_profile_path, class: 'btn btn-secondary' if @repo_user.eql?(@user) %>
+                        <%= link_to fa_icon('cog', text: t('.edit_profile')), settings_profile_path, class: 'btn btn-secondary' if @repo_user.eql?(@user) %>
 
                         <% if @user.staff? %>
                             <%= render 'users/flag' %>
@@ -90,7 +89,7 @@
                                 </button>
                             <% else %>
                                 <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#flag_message">
-                                    Add Flag
+                                    <%= t('.add_flag') %>
                                 </button>
                             <% end %>
 
@@ -99,11 +98,11 @@
                                     <button class="btn btn-success dropdown-toggle" type="button"
                                             id="rfidUnregisterMenu" data-bs-toggle="dropdown" aria-haspopup="true"
                                             aria-expanded="false">
-                                        <%= fa_icon 'check', text: 'RFID Card Set' %>
+                                        <%= fa_icon 'check', text: t('.rfid_card_set') %>
                                     </button>
                                     <div class="dropdown-menu" aria-labelledby="rfidUnregisterMenu">
-                                        <h5 class="dropdown-header">RFID Card Set</h5>
-                                        <%= button_to 'Un-Register RFID', staff_dashboard_unlink_rfid_path(card_number: @repo_user.rfid.card_number), action: :link_rfid, method: :put, class: 'dropdown-item dropdown-item-danger' %>
+                                        <%= button_to t('.unregister_rfid_card'), staff_dashboard_unlink_rfid_path(card_number: @repo_user.rfid.card_number),
+                                                      action: :link_rfid, method: :put, class: 'dropdown-item dropdown-item-danger' %>
                                     </div>
                                 </div>
                             <% else %>
@@ -111,10 +110,10 @@
                                     <button class="btn btn-outline-danger dropdown-toggle" type="button"
                                             id="rfidUnregisterMenu" data-bs-toggle="dropdown" aria-haspopup="true"
                                             aria-expanded="false">
-                                        <%= fa_icon 'ban', text: 'RFID Card Not Set' %>
+                                        <%= fa_icon 'ban', text: t('.rfid_card_not_set') %>
                                     </button>
                                     <div class="dropdown-menu" aria-labelledby="rfidUnregisterMenu">
-                                        <h5 class="dropdown-header text-center">Un-Registered Cards</h5>
+                                        <h5 class="dropdown-header text-center"><%= t('.unregistered_cards') %></h5>
                                         <% Rfid.recent_unset.first(5).each do |rfid| %>
                                             <% space = begin
                                             PiReader.find_by(pi_mac_address: rfid.mac_address).space.name
@@ -206,13 +205,13 @@
     <!-- FOOTER Section-->
     <section id="user-show-links">
         <%= link_to "#{user_path(show: :repositories)}#user-show-links", class: ('tab-active' if !params[:show] || params[:show].eql?('repositories')) do %>
-            <span class="number"><%= @repositories.count %></span> REPOS
+            <span class="number"><%= @repositories.count %></span> <%= t('.repositories') %>
         <% end %>
         <%= link_to "#{user_path(show: :makes)}#user-show-links", class: ('tab-active' if params[:show].eql? 'makes') do %>
-            <span class="number"><%= @makes.count %></span> MAKES
+            <span class="number"><%= @makes.count %></span> <%= t('.makes') %>
         <% end %>
         <%= link_to "#{user_path(show: :projects_assigned)}#user-show-links", class: ('tab-active' if params[:show].eql? 'projects_assigned') do %>
-            <span class="number"><%= @joined_projects.count %></span> JOINED PROJECTS
+            <span class="number"><%= @joined_projects.count %></span> <%= t('.joined_projects') %>
         <% end %>
     </section>
     <section class="mb-3">
