@@ -1,12 +1,16 @@
 class LearningModule < ApplicationRecord
   include Filterable
   belongs_to :training, optional: true
-  has_many :photos, dependent: :destroy
-  has_many :repo_files, dependent: :destroy
-  has_many :videos, dependent: :destroy
+
+  # these are conflicting with models with the same name, remove those first
+  # before renaming to something more sensible.
+  has_many_attached :photos # was: has_many :photos
+  has_many_attached :project_files # was: has_many :repo_files
+  has_many_attached :videos # was: has_many :videos
+
   has_many :learning_module_tracks, dependent: :destroy
 
-  validates :title, presence: { message: "A title is required." }
+  validates :title, presence: { message: 'A title is required.' }
   validate :uniqueness
   before_save :capitalize_title
   before_create :set_order
@@ -18,16 +22,16 @@ class LearningModule < ApplicationRecord
   end
 
   def self.filter_by_attribute(attribute, value)
-    if attribute == "level"
+    if attribute == 'level'
       filter_by_level(value)
-    elsif attribute == "category"
+    elsif attribute == 'category'
       joins(:training).where(trainings: { name: value })
-    elsif attribute == "search"
+    elsif attribute == 'search'
       sanitized = sanitize_sql_like(value)
       where(
-        "LOWER(title) LIKE LOWER(?) OR
+        'LOWER(title) LIKE LOWER(?) OR
         LOWER(level) LIKE LOWER(?) OR
-        LOWER(description) LIKE LOWER(?)",
+        LOWER(description) LIKE LOWER(?)',
         "%#{sanitized}%",
         "%#{sanitized}%",
         "%#{sanitized}%"
@@ -44,7 +48,8 @@ class LearningModule < ApplicationRecord
   def extract_valid_urls
     extract_urls.uniq.select do |url|
       uri = URI.parse(url)
-      uri.host == "wiki.makerepo.com" || uri.host&.end_with?(".wiki.makerepo.com")
+      uri.host == 'wiki.makerepo.com' ||
+        uri.host&.end_with?('.wiki.makerepo.com')
     rescue URI::InvalidURIError
       false
     end
@@ -57,7 +62,7 @@ class LearningModule < ApplicationRecord
          .where(title: self.title, training_id: self.training_id)
          .where.not(id: self.id)
          .count > 0
-      self.errors.add(:title, "Title already exists")
+      self.errors.add(:title, 'Title already exists')
     end
   end
 

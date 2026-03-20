@@ -184,8 +184,8 @@ class LearningAreaController < DevelopmentProgramsController
 
   def set_files_photos_videos
     @photos = @learning_module.photos || []
-    @files = @learning_module.repo_files.order(created_at: :asc)
-    @videos = @learning_module.videos.processed.order(created_at: :asc)
+    @files = @learning_module.project_files.order(created_at: :asc)
+    @videos = @learning_module.videos.order(created_at: :asc)
   end
 
   def update_photos
