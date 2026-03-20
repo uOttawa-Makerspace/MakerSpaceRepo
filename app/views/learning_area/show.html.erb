@@ -1,76 +1,118 @@
 <% provide(:title, 'Learning Area') %>
-<section class="card <%= return_border_color(@learning_module.level) %>">
-  <div>
-    <%= button_to 'Delete', learning_area_path, method: :delete, class: 'btn btn-danger float-start ms-5 mt-5', style: 'opacity: 0.5', data: { confirm: 'Are you sure? This will delete all the purchases and give all the users the CC points used to purchase this project.' } if current_user.admin? %>
-    <%= link_to 'Edit', edit_learning_area_path(@learning_module.id), class: 'btn btn-primary float-end me-5 mt-5', style: 'opacity: 0.5' if current_user.admin? %>
-  </div>
-  <div class="col-lg-7 mx-auto">
-    <br />
-    <h2 class="text-center title"><%= @learning_module.title %></h2>
-    <div class="container my-4">
-      <div class="text-center">
-        <%= @learning_module.training.localized_name %>
-        -
-        <%= @learning_module.level %>
-        <br />
-        <br />
-        <% if @learning_module_track.blank? %>
-          <div class="alert alert-success">
-            <%= link_to 'Start', start_learning_module_track_index_path(learning_module_id: @learning_module.id), class: 'btn btn-primary' %>
-          </div>
-        <% elsif @learning_module_track.first.status == 'In progress' %>
-          <div class="alert alert-primary">
-            <%= link_to 'Change to Completed', completed_learning_module_track_index_path(learning_module_id: @learning_module.id), class: 'btn btn-primary' %>
-          </div>
-        <% elsif @learning_module_track.first.status == 'Completed' %>
-          <div class="alert alert-info">
-            <p>Congratulations on completing this Learning Module !</p>
-          </div>
-        <% end %>
-      </div>
-      <br />
-      <div class="row">
-        <div class="col-lg-12">
-          <div class="jumbotron card bg-light text-center text-wrap">
-            <%= sanitize @learning_module.description %>
-          </div>
-          <div id="show-photo">
-            <%= image_tag @photos.first.image, alt: 'Learning Area First Picture', data: { width: @photos.first.try(:width), height: @photos.first.try(:height) } %>
-          </div>
-          <div id="photo-slide">
-            <% @photos.each do |p| %>
-              <%= image_tag p.image, alt: 'Learning Area Picture', data: { width: p.width, height: p.height } %>
-            <% end %>
-          </div>
-          <br />
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <% if @valid_urls.present? %>
-    <div class="col-lg-12">
-      <% @valid_urls.each do |url| %>
-        <iframe width="100%" height="600px" src="<%= url %>"></iframe>
-      <% end %>
+<section class="card">
+    <% if @photos.any? %>
+        <div class="bg-dark" style="height: 320px;">
+            <%= image_tag @photos.first,
+                          alt: @learning_module.title,
+                          class: 'card-img-top',
+                          style: 'width: 100%; height: 320px; object-fit: cover;',
+                          loading: 'lazy' %>
+        </div>
+    <% end %>
+
+    <div class="card-body col-lg-8 mx-auto">
+        <% if current_user.admin? %>
+            <div class="d-flex justify-content-between mb-3">
+                <%= link_to 'Edit', edit_learning_area_path(@learning_module.id), class: 'btn btn-primary' %>
+                <%= button_to 'Delete', learning_area_path, method: :delete,
+                              class: 'btn btn-danger',
+                              data: { confirm: 'Are you sure? This will delete all the purchases and give all the users the CC points used to purchase this project.' } %>
+            </div>
+        <% end %>
+
+        <h1 class="fw-bold mb-1"><%= @learning_module.title %></h1>
+        <p class="mb-3">
+            <span class="badge rounded-pill border <%= return_border_color(@learning_module.level) %> <%= return_text_color(@learning_module.level) %>">
+                <%= @learning_module.level %>
+            </span>
+            <span class="ms-2"><%= @learning_module.training.localized_name %></span>
+        </p>
+
+        <% if @learning_module_track.blank? %>
+            <div class="d-flex align-items-center gap-3 border rounded-3 p-3 mb-4">
+                <div class="flex-grow-1">
+                    <p class="mb-0 fw-semibold">Ready to start?</p>
+                    <p class="small mb-0">You haven't begun this module yet.</p>
+                </div>
+                <%= link_to 'Start Module',
+                            start_learning_module_track_index_path(learning_module_id: @learning_module.id),
+                            class: 'btn btn-primary btn-sm' %>
+            </div>
+        <% elsif @learning_module_track.first.status == 'In progress' %>
+            <div class="d-flex align-items-center gap-3 border border-primary rounded-3 p-3 mb-4">
+                <div class="flex-grow-1">
+                    <p class="mb-0 fw-semibold">In Progress</p>
+                    <p class="small mb-0">Mark this module as complete when you're done.</p>
+                </div>
+                <%= link_to 'Mark Completed',
+                            completed_learning_module_track_index_path(learning_module_id: @learning_module.id),
+                            class: 'btn btn-primary btn-sm' %>
+            </div>
+        <% elsif @learning_module_track.first.status == 'Completed' %>
+            <div class="d-flex align-items-center gap-2 border border-success rounded-3 p-3 mb-4">
+                <i class="fa fa-check-circle text-success fs-5"></i>
+                <p class="mb-0">You've completed this module — great work!</p>
+            </div>
+        <% end %>
+
+        <div class="card bg-light border-0 rounded-3 p-3 mb-4">
+            <%= sanitize @learning_module.description %>
+        </div>
+
+        <% if @photos.length > 1 %>
+            <div class="d-flex flex-wrap gap-2 mb-4" id="photo-slide">
+                <% @photos.each do |p| %>
+                    <div class="bg-dark rounded border" style="width: 80px; height: 80px;">
+                        <%= image_tag p,
+                                      alt: 'Learning Area Picture',
+                                      class: 'rounded',
+                                      style: 'width: 80px; height: 80px; object-fit: cover; cursor: pointer;',
+                                      loading: 'lazy' %>
+                    </div>
+                <% end %>
+            </div>
+        <% end %>
+
     </div>
-  <% end %>
+
+    <%# ---- Wiki iframes ---- %>
+    <% if @valid_urls.present? %>
+        <div class="border-top">
+            <% @valid_urls.each do |url| %>
+                <iframe width="100%" height="600px" src="<%= url %>" class="d-block border-0"></iframe>
+            <% end %>
+        </div>
+    <% end %>
+
 </section>
 
-<% @videos.each do |f| %>
-  <% f.video.each do |video| %>
-    <div class="imgbox">
-      <%= video_tag url_for(video), controls: true, controlslist: 'nodownload', class: 'center-fit' if f.video.attached? %>
+<% if @videos.any? %>
+    <div class="col-lg-8 mx-auto mb-4">
+        <h5 class="mb-3">Videos</h5>
+        <div class="d-flex flex-column gap-3">
+            <% @videos.each do |video| %>
+                <%= video_tag url_for(video),
+                              controls: true,
+                              controlslist: 'nodownload',
+                              class: 'rounded border',
+                              style: 'width: 100%; max-height: 480px;' %>
+            <% end %>
+        </div>
     </div>
-    <br/>
-  <% end %>
 <% end %>
 
-<% @files.each do |f| %>
-  <div class="ratio ratio-16x9">
-    <iframe src="<%= url_for(f.file) %>" allowfullscreen></iframe>
-    <br />
-  </div>
+<% if @files.any? %>
+    <div class="col-lg-8 mx-auto mb-4">
+        <h5 class="mb-3">Files</h5>
+        <div class="d-flex flex-column gap-3">
+            <% @files.each do |f| %>
+                <div class="ratio ratio-16x9">
+                    <iframe src="<%= url_for(f) %>" allowfullscreen class="rounded border"></iframe>
+                </div>
+            <% end %>
+        </div>
+    </div>
 <% end %>
 
 <%= render 'layouts/photoswipe' %>

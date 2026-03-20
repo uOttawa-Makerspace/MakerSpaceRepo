@@ -4,6 +4,9 @@
 </div>
 <div class="row">
     <div class="col-lg-2">
+        <% if current_user.admin? %>
+            <%= link_to 'New learning module', new_learning_area_path, class: 'btn btn-success d-block mb-3' %>
+        <% end %>
         <ul class="list-group mb-5">
             <% @skills.each do |skill| %>
                 <% skill.trainings.each do |training| %>
@@ -74,7 +77,7 @@
                                     <div data-id="<%= learning_module.id %>">
                                         <div class="card h-100 border-1 <%= return_border_color(learning_module.level) %> shadow-sm">
                                             <%= link_to learning_area_path(learning_module.id), class: 'learning-module-thumbnail-wrapper' do %>
-                                                <%= image_tag learning_module.photos.first.image,
+                                                <%= image_tag learning_module.photos.first, loading: 'lazy',
                                                               class: "card-img-top learning-module-thumbnail",
                                                               alt: learning_module.title %>
                                             <% end %>
