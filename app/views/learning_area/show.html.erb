@@ -1,9 +1,9 @@
 <% provide(:title, 'Learning Area') %>
 
-<section class="card">
-    <% if @photos.any? %>
+<section class="card mb-3">
+    <% if @learning_module.photos.any? %>
         <div class="bg-dark" style="height: 320px;">
-            <%= image_tag @photos.first,
+            <%= image_tag @learning_module.photos.first,
                           alt: @learning_module.title,
                           class: 'card-img-top',
                           style: 'width: 100%; height: 320px; object-fit: cover;',
@@ -14,10 +14,10 @@
     <div class="card-body col-lg-8 mx-auto">
         <% if current_user.admin? %>
             <div class="d-flex justify-content-between mb-3">
-                <%= link_to 'Edit', edit_learning_area_path(@learning_module.id), class: 'btn btn-primary' %>
-                <%= button_to 'Delete', learning_area_path, method: :delete,
-                              class: 'btn btn-danger',
-                              data: { confirm: 'Are you sure? This will delete all the purchases and give all the users the CC points used to purchase this project.' } %>
+                <%= link_to 'Edit', edit_learning_area_path(@learning_module.id), class: 'btn btn-sm btn-primary' %>
+                <%= button_to 'Delete', learning_area_path(@learning_module.id), method: :delete,
+                              class: 'btn btn-sm btn-danger',
+                              data: { confirm: 'Are you sure? This will delete this learning module.' } %>
             </div>
         <% end %>
 
@@ -30,7 +30,7 @@
         </p>
 
         <% if @learning_module_track.blank? %>
-            <div class="d-flex align-items-center gap-3 border rounded-3 p-3 mb-4">
+            <div class="d-flex align-items-center gap-3 border rounded-3 p-3 mb-3">
                 <div class="flex-grow-1">
                     <p class="mb-0 fw-semibold">Ready to start?</p>
                     <p class="small mb-0">You haven't begun this module yet.</p>
@@ -40,7 +40,7 @@
                             class: 'btn btn-primary btn-sm' %>
             </div>
         <% elsif @learning_module_track.first.status == 'In progress' %>
-            <div class="d-flex align-items-center gap-3 border border-primary rounded-3 p-3 mb-4">
+            <div class="d-flex align-items-center gap-3 border border-primary rounded-3 p-3 mb-3">
                 <div class="flex-grow-1">
                     <p class="mb-0 fw-semibold">In Progress</p>
                     <p class="small mb-0">Mark this module as complete when you're done.</p>
@@ -50,22 +50,33 @@
                             class: 'btn btn-primary btn-sm' %>
             </div>
         <% elsif @learning_module_track.first.status == 'Completed' %>
-            <div class="d-flex align-items-center gap-2 border border-success rounded-3 p-3 mb-4">
+            <div class="d-flex align-items-center gap-2 border border-success rounded-3 p-3 mb-3">
                 <i class="fa fa-check-circle text-success fs-5"></i>
                 <p class="mb-0">You've completed this module — great work!</p>
             </div>
         <% end %>
 
-        <div class="card bg-light border-0 rounded-3 p-3 mb-4">
+        <div class="mb-3">
             <%= sanitize @learning_module.description %>
         </div>
 
-        <% if @photos.length > 1 %>
-            <div class="d-flex flex-wrap gap-2 mb-4" id="photo-slide">
-                <% @photos.each do |p| %>
+        <% if @learning_module.videos.any? %>
+            <div class="mb-3">
+                <%= video_tag url_for(@learning_module.videos.first),
+                              controls: true,
+                              controlslist: 'nodownload',
+                              class: 'rounded border w-100',
+                              style: 'max-height: 480px;' %>
+            </div>
+        <% end %>
+
+        <%# Photo gallery — thumbnails, skipping first since it's the hero %>
+        <% if @learning_module.photos.length > 1 %>
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                <% @learning_module.photos.each do |photo| %>
                     <div class="bg-dark rounded border" style="width: 80px; height: 80px;">
-                        <%= image_tag p,
-                                      alt: 'Learning Area Picture',
+                        <%= image_tag photo,
+                                      alt: 'Gallery photo',
                                       class: 'rounded',
                                       style: 'width: 80px; height: 80px; object-fit: cover; cursor: pointer;',
                                       loading: 'lazy' %>
@@ -74,9 +85,23 @@
             </div>
         <% end %>
 
+        <% if @learning_module.project_files.any? %>
+            <div class="mb-3">
+                <h6 class="mb-2">Project Files</h6>
+                <ul class="list-group list-group-flush">
+                    <% @learning_module.project_files.each do |file| %>
+                        <li class="list-group-item d-flex align-items-center gap-2 px-0">
+                            <i class="fa fa-file-o"></i>
+                            <%= link_to file.filename.to_s, url_for(file) %>
+                            <span class="small ms-auto"><%= (file.byte_size / 1000.0).round(1) %> KB</span>
+                        </li>
+                    <% end %>
+                </ul>
+            </div>
+        <% end %>
+
     </div>
 
-    <%# ---- Wiki iframes ---- %>
     <% if @valid_urls.present? %>
         <div class="border-top">
             <% @valid_urls.each do |url| %>
@@ -86,33 +111,5 @@
     <% end %>
 
 </section>
-
-<% if @videos.any? %>
-    <div class="col-lg-8 mx-auto mb-4">
-        <h5 class="mb-3">Videos</h5>
-        <div class="d-flex flex-column gap-3">
-            <% @videos.each do |video| %>
-                <%= video_tag url_for(video),
-                              controls: true,
-                              controlslist: 'nodownload',
-                              class: 'rounded border',
-                              style: 'width: 100%; max-height: 480px;' %>
-            <% end %>
-        </div>
-    </div>
-<% end %>
-
-<% if @files.any? %>
-    <div class="col-lg-8 mx-auto mb-4">
-        <h5 class="mb-3">Files</h5>
-        <div class="d-flex flex-column gap-3">
-            <% @files.each do |f| %>
-                <div class="ratio ratio-16x9">
-                    <iframe src="<%= url_for(f) %>" allowfullscreen class="rounded border"></iframe>
-                </div>
-            <% end %>
-        </div>
-    </div>
-<% end %>
 
 <%= render 'layouts/photoswipe' %>

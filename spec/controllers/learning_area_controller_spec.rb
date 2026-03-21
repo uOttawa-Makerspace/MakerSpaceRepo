@@ -69,42 +69,25 @@ RSpec.describe LearningAreaController, type: :controller do
         expect do
           post :create, params: { learning_module: learning_module_params }
         end.to change(LearningModule, :count).by(1)
-        expect(flash[:notice]).to eq(
-          "Learning Module has been successfully created."
-        )
+        expect(flash[:notice]).to eq("Learning Module has been successfully created.")
         expect(response).to redirect_to learning_area_path(LearningModule.last)
       end
 
       it "should create the learning module with images and files" do
-        learning_module_params = FactoryBot.attributes_for(:learning_module)
+        learning_module_params = FactoryBot.attributes_for(:learning_module).merge(
+          photos: [fixture_file_upload(Rails.root.join("spec/support/assets/avatar.png"), "image/png")],
+          project_files: [fixture_file_upload(Rails.root.join("spec/support/assets/RepoFile1.pdf"), "application/pdf")]
+        )
         expect do
-          post :create,
-               params: {
-                 learning_module: learning_module_params,
-                 files: [
-                   fixture_file_upload(
-                     Rails.root.join("spec/support/assets/RepoFile1.pdf"),
-                     "application/pdf"
-                   )
-                 ],
-                 images: [
-                   fixture_file_upload(
-                     Rails.root.join("spec/support/assets/avatar.png"),
-                     "image/png"
-                   )
-                 ]
-               }
+          post :create, params: { learning_module: learning_module_params }
         end.to change(LearningModule, :count).by(1)
-        expect(RepoFile.count).to eq(1)
-        expect(Photo.count).to eq(1)
-        expect(response.body).to redirect_to learning_area_path(
-                      LearningModule.last
-                    )
+        expect(LearningModule.last.photos.count).to eq(1)
+        expect(LearningModule.last.project_files.count).to eq(1)
+        expect(response).to redirect_to learning_area_path(LearningModule.last)
       end
 
       it "should fail to create the learning module" do
-        learning_module_params =
-          FactoryBot.attributes_for(:learning_module, :broken)
+        learning_module_params = FactoryBot.attributes_for(:learning_module, :broken)
         expect do
           post :create, params: { learning_module: learning_module_params }
         end.to change(LearningModule, :count).by(0)
@@ -125,9 +108,7 @@ RSpec.describe LearningAreaController, type: :controller do
           delete :destroy, params: { id: LearningModule.last.id }
         end.to change(LearningModule, :count).by(-1)
         expect(response).to redirect_to learning_area_index_path
-        expect(flash[:notice]).to eq(
-          "Learning Module has been successfully deleted."
-        )
+        expect(flash[:notice]).to eq("Learning Module has been successfully deleted.")
       end
     end
   end
@@ -158,13 +139,9 @@ RSpec.describe LearningAreaController, type: :controller do
         patch :update,
               params: {
                 id: LearningModule.last.id,
-                learning_module: {
-                  title: "abc"
-                }
+                learning_module: { title: "abc" }
               }
-        expect(response.body).to redirect_to learning_area_path(
-                      LearningModule.last
-                    )
+        expect(response).to redirect_to learning_area_path(LearningModule.last)
         expect(flash[:notice]).to eq("Learning module successfully updated.")
       end
 
@@ -174,28 +151,14 @@ RSpec.describe LearningAreaController, type: :controller do
               params: {
                 id: LearningModule.last.id,
                 learning_module: {
-                  title: "abc"
-                },
-                files: [
-                  fixture_file_upload(
-                    Rails.root.join("spec/support/assets/RepoFile1.pdf"),
-                    "application/pdf"
-                  )
-                ],
-                images: [
-                  fixture_file_upload(
-                    Rails.root.join("spec/support/assets/avatar.png"),
-                    "image/png"
-                  )
-                ],
-                deleteimages: [Photo.last.image.filename.to_s],
-                deletefiles: [RepoFile.last.file.filename.to_s]
+                  title: "abc",
+                  photos: [fixture_file_upload(Rails.root.join("spec/support/assets/avatar.png"), "image/png")],
+                  project_files: [fixture_file_upload(Rails.root.join("spec/support/assets/RepoFile1.pdf"), "application/pdf")]
+                }
               }
-        expect(response.body).to redirect_to learning_area_path(
-                      LearningModule.last
-                    )
-        expect(RepoFile.count).to eq(1)
-        expect(Photo.count).to eq(1)
+        expect(response).to redirect_to learning_area_path(LearningModule.last)
+        expect(LearningModule.last.photos.count).to eq(1)
+        expect(LearningModule.last.project_files.count).to eq(1)
         expect(flash[:notice]).to eq("Learning module successfully updated.")
       end
 
@@ -204,9 +167,7 @@ RSpec.describe LearningAreaController, type: :controller do
         patch :update,
               params: {
                 id: LearningModule.last.id,
-                learning_module: {
-                  title: ""
-                }
+                learning_module: { title: "" }
               }
         expect(flash[:alert]).to eq("Unable to apply the changes.")
         expect(response).to have_http_status(:unprocessable_content)
