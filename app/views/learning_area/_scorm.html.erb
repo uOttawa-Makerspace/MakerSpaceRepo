@@ -1,0 +1,39 @@
+<% if @learning_module.scorm_ready? %>
+    <script>
+     // Minimal SCORM 1.2 API — prevents undefined errors from packages
+     // that expect an LMS to be present
+     var API = {
+         LMSInitialize:    function() { return "true"; },
+         LMSFinish:        function() { return "true"; },
+         LMSGetValue:      function(key) { return ""; },
+         LMSSetValue:      function(key, value) { return "true"; },
+         LMSCommit:        function() { return "true"; },
+         LMSGetLastError:  function() { return "0"; },
+         LMSGetErrorString: function() { return ""; },
+         LMSGetDiagnostic: function() { return ""; }
+     };
+
+     // SCORM 2004
+     var API_1484_11 = {
+         Initialize:     function() { return "true"; },
+         Terminate:      function() { return "true"; },
+         GetValue:       function(key) { return ""; },
+         SetValue:       function(key, value) { return "true"; },
+         Commit:         function() { return "true"; },
+         GetLastError:   function() { return "0"; },
+         GetErrorString: function() { return ""; },
+         GetDiagnostic:  function() { return ""; }
+     };
+    </script>
+
+    <iframe src="<%= scorm_launch_learning_area_path(@learning_module) %>"
+            width="100%"
+            height="680px"
+            class="d-block border rounded mb-3"
+            allowfullscreen="true">
+    </iframe>
+<% elsif @learning_module.scorm_processing? %>
+    <p class="mb-3">SCORM package is being processed, check back shortly.</p>
+<% elsif @learning_module.scorm_failed? %>
+    <p class="mb-3">SCORM package failed to process. Please contact an administrator.</p>
+<% end %>

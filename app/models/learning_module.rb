@@ -8,6 +8,11 @@ class LearningModule < ApplicationRecord
   has_many_attached :project_files # was: has_many :repo_files
   has_many_attached :videos # was: has_many :videos
 
+  # SCORM packages are a zip file
+  has_one_attached :scorm_package
+
+  enum :scorm_status, { pending: 0, processing: 1, ready: 2, failed: 3 }, prefix: :scorm
+
   has_many :learning_module_tracks, dependent: :destroy
 
   validates :title, presence: { message: 'A title is required.' }
@@ -16,6 +21,18 @@ class LearningModule < ApplicationRecord
   before_create :set_order
 
   scope :filter_by_level, ->(level) { where(level: level) }
+
+  def scorm_asset_url(relative_path)
+    if relative_path.include?('..')
+      raise ArgumentError, 'Path traversal detected'
+    end
+
+    Rails.application.routes.url_helpers.scorm_asset_learning_area_url(
+      self,
+      path: relative_path,
+      host: Rails.application.credentials.host
+    )
+  end
 
   def capitalize_title
     self.title = title.upcase_first

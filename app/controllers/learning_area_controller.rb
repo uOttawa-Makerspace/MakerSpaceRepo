@@ -1,6 +1,6 @@
 class LearningAreaController < DevelopmentProgramsController
   before_action :only_admin_access, only: %i[new create edit update destroy]
-  before_action :set_learning_module, only: %i[show destroy edit update]
+  before_action :set_learning_module, only: %i[show destroy edit update scorm_launch serve_scorm_asset]
   before_action :set_training_categories, only: %i[new edit]
   before_action :set_training_levels, only: %i[new edit]
 
@@ -66,12 +66,44 @@ class LearningAreaController < DevelopmentProgramsController
 
   def update
     if @learning_module.update(learning_module_params)
-      redirect_to learning_area_path(@learning_module.id),
-                  notice: 'Learning module successfully updated.'
+      if @learning_module.scorm_package.attached? && scorm_package_changed?
+        @learning_module.update!(scorm_status: :processing)
+        ExtractScormJob.perform_later(@learning_module.id)
+      end
+      redirect_to learning_area_path(@learning_module.id)
     else
-      flash[:alert] = 'Unable to apply the changes.'
-      render 'edit', status: :unprocessable_content
+      render :edit
     end
+  end
+
+  def scorm_launch
+    unless @learning_module.scorm_ready?
+      return(
+        render json: {
+                 error: 'SCORM package not ready'
+               },
+               status: :unprocessable_entity
+      )
+    end
+
+    redirect_to scorm_asset_learning_area_url(
+                  @learning_module,
+                  path: @learning_module.scorm_entry_point
+                ),
+                allow_other_host: true
+  end
+
+  def serve_scorm_asset
+    return head :not_found unless @learning_module.scorm_ready?
+
+    service = ActiveStorage::Blob.service
+    key = "#{@learning_module.scorm_prefix}/#{params[:path]}"
+
+    return head :not_found unless service.exist?(key)
+
+    send_data service.download(key),
+              content_type: Marcel::MimeType.for(name: params[:path]),
+              disposition: :inline
   end
 
   def reorder
@@ -108,6 +140,10 @@ class LearningAreaController < DevelopmentProgramsController
     @learning_module = LearningModule.find(params[:id])
   end
 
+  def scorm_package_changed?
+    @learning_module.scorm_package.blob.created_at > 10.seconds.ago
+  end
+
   def set_training_categories
     @training_categories = Training.all.order(:name).pluck(:name, :id)
   end
@@ -124,6 +160,7 @@ class LearningAreaController < DevelopmentProgramsController
       :level,
       :cc,
       :badge_template_id,
+      :scorm_package,
       photos: [],
       project_files: [],
       videos: []

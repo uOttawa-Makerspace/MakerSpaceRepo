@@ -101,8 +101,8 @@
     </div>
 
     <div id="scorm-section" class="mb-3" style="display: none;">
-        <%= f.label :scorm_file, 'SCORM Package (.zip)', class: 'form-label' %>
-        <%= f.file_field :scorm_file,
+        <%= f.label :scorm_package, 'SCORM Package (.zip)', class: 'form-label' %>
+        <%= f.file_field :scorm_package,
                            class: 'form-control',
                            accept: '.zip',
                            aria_label: 'SCORM zip file' %>

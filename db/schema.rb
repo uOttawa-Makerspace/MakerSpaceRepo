@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_03_20_172014) do
+ActiveRecord::Schema[7.2].define(version: 2026_03_21_044428) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_trgm"
@@ -657,6 +657,9 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_20_172014) do
     t.datetime "updated_at", null: false
     t.string "level", default: "Beginner"
     t.integer "order"
+    t.string "scorm_prefix"
+    t.string "scorm_entry_point"
+    t.integer "scorm_status", default: 0
   end
 
   create_table "likes", id: :serial, force: :cascade do |t|

@@ -569,6 +569,13 @@ Rails.application.routes.draw do
       get :open_modal
       put :reorder
     end
+
+    member do
+      get :scorm_launch
+      # Set format: false to preserve the dot at the end. Without it we lose the
+      # file extension
+      get "scorm_assets/*path", to: "learning_area#serve_scorm_asset", as: :scorm_asset, format: false
+    end
   end
 
   resources :learning_module_track, only: %i[index] do

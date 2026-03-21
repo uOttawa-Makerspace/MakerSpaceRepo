@@ -1,0 +1,42 @@
+<div class="mb-3">
+    <%= sanitize @learning_module.description %>
+</div>
+
+<% if @learning_module.videos.any? %>
+    <div class="mb-3">
+        <%= video_tag url_for(@learning_module.videos.first),
+                      controls: true,
+                      controlslist: 'nodownload',
+                      class: 'rounded border w-100',
+                      style: 'max-height: 480px;' %>
+    </div>
+<% end %>
+
+<% if @learning_module.photos.length > 1 %>
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <% @learning_module.photos.each do |photo| %>
+            <div class="bg-dark rounded border" style="width: 80px; height: 80px;">
+                <%= image_tag photo,
+                              alt: 'Gallery photo',
+                              class: 'rounded',
+                              style: 'width: 80px; height: 80px; object-fit: cover; cursor: pointer;',
+                              loading: 'lazy' %>
+            </div>
+        <% end %>
+    </div>
+<% end %>
+
+<% if @learning_module.project_files.any? %>
+    <div class="mb-3">
+        <h6 class="mb-2">Project Files</h6>
+        <ul class="list-group list-group-flush">
+            <% @learning_module.project_files.each do |file| %>
+                <li class="list-group-item d-flex align-items-center gap-2 px-0">
+                    <i class="fa fa-file-o"></i>
+                    <%= link_to file.filename.to_s, url_for(file) %>
+                    <span class="small ms-auto"><%= (file.byte_size / 1000.0).round(1) %> KB</span>
+                </li>
+            <% end %>
+        </ul>
+    </div>
+<% end %>
