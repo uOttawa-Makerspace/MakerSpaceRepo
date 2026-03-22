@@ -32,13 +32,13 @@
 
     <div class="mb-3">
         <div class="form-check form-switch">
-            <%= f.check_box :scorm, class: 'form-check-input', role: 'switch' %>
+            <%= f.check_box :scorm, class: 'form-check-input', role: 'switch', checked: @learning_module.scorm_package.attached? %>
             <%= f.label :scorm, 'SCORM package', class: 'form-check-label' %>
         </div>
         <div class="form-text">Enable if uploading a SCORM <code>.zip</code> file instead of regular project files.</div>
     </div>
 
-    <div id="regular-files-section">
+    <fieldset id="regular-files-section">
         <div class="mb-3">
             <%= f.label :project_files, 'Project Files', class: 'form-label' %>
             <%= f.file_field :project_files, multiple: true, class: 'form-control', aria_label: 'Project Files' %>
@@ -96,18 +96,18 @@
              ondrop="dragndrop(event);"
              ondragover="dragover(event);">
             <%= fa_icon 'cloud-upload', class: 'fs-3' %>
-            <p class="mb-0 mt-1 small">Drag &amp; Drop files here</p>
+            <p class="mb-0 mt-1 small">Drag & Drop files here</p>
         </div>
-    </div>
+    </fieldset>
 
-    <div id="scorm-section" class="mb-3" style="display: none;">
+    <fieldset id="scorm-section" class="mb-3" style="display: none;">
         <%= f.label :scorm_package, 'SCORM Package (.zip)', class: 'form-label' %>
         <%= f.file_field :scorm_package,
                            class: 'form-control',
                            accept: '.zip',
-                           aria_label: 'SCORM zip file' %>
-        <div class="form-text">Upload a valid SCORM <code>.zip</code> package.</div>
-    </div>
+                           aria_label: 'SCORM zip file', required: !@learning_module.scorm_package.attached? %>
+        <p class="form-text">Upload a valid SCORM <code>.zip</code> package.</p>
+    </fieldset>
 
     <div class="text-center border-top pt-4">
         <%= f.submit @learning_module.persisted? ? 'Save Changes' : 'Create Learning Module',
