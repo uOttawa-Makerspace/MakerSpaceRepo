@@ -11,9 +11,8 @@ class LearningModule < ApplicationRecord
   # SCORM packages are a zip file
   has_one_attached :scorm_package
   # If scorm package changes, update extraction or purge
-  after_save :process_scorm_package,
+  before_save :process_scorm_package,
              if: -> { attachment_changes.key?('scorm_package') }
-
   # The unzipped files are attached to this model here. Need to clear if the
   # scorm package changes
   has_many_attached :scorm_package_files
@@ -83,12 +82,16 @@ class LearningModule < ApplicationRecord
 
   private
 
+  # Called when scorm package changes
   def process_scorm_package
     if scorm_package.attached?
-      update!(scorm_status: :processing)
+      self.scorm_status = :processing
+      # ExtractScorm purges files eventually.
       ExtractScormJob.perform_later(id)
     else
-      scorm_package_files.purge
+      # Package removed, delete files
+      # NOTE: This branch might never get called.
+      scorm_package_files.purge_later
     end
   end
 

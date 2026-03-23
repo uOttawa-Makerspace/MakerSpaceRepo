@@ -32,8 +32,8 @@
 
     <div class="mb-3">
         <div class="form-check form-switch">
-            <%= f.check_box :scorm, class: 'form-check-input', role: 'switch', checked: @learning_module.scorm_package.attached? %>
-            <%= f.label :scorm, 'SCORM package', class: 'form-check-label' %>
+            <%= f.check_box :scorm_enabled, class: 'form-check-input', role: 'switch', checked: @learning_module.scorm_package.attached? %>
+            <%= f.label :scorm_enabled, 'SCORM package', class: 'form-check-label' %>
         </div>
         <div class="form-text">Enable if uploading a SCORM <code>.zip</code> file instead of regular project files.</div>
     </div>

@@ -3,7 +3,7 @@ class ScormExtractor
   JUNK_PREFIXES = %w[__MACOSX .].freeze
 
   # Takes a learning module with a SCORM zip file, uncompresses and sends to
-  # ActiveStorage.
+  # ActiveStorage. Purges and replaces attached files.
   def self.extract(learning_module)
     # Name of the remote directory
     prefix =

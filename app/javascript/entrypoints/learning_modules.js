@@ -86,7 +86,7 @@ document.querySelectorAll(".video-remove").forEach((btn) => {
   btn.addEventListener("click", () => btn.closest(".video-item").remove());
 });
 
-const toggle = document.querySelector("#learning_module_scorm");
+const toggle = document.querySelector("#learning_module_scorm_enabled");
 const scormSection = document.querySelector("fieldset#scorm-section");
 const regularSection = document.querySelector("fieldset#regular-files-section");
 
