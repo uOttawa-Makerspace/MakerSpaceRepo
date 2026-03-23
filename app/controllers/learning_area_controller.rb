@@ -1,6 +1,14 @@
 class LearningAreaController < DevelopmentProgramsController
   before_action :only_admin_access, only: %i[new create edit update destroy]
-  before_action :set_learning_module, only: %i[show destroy edit update scorm_launch serve_scorm_asset]
+  before_action :set_learning_module,
+                only: %i[
+                  show
+                  destroy
+                  edit
+                  update
+                  scorm_launch
+                  serve_scorm_asset
+                ]
   before_action :set_training_categories, only: %i[new edit]
   before_action :set_training_levels, only: %i[new edit]
 
@@ -66,10 +74,6 @@ class LearningAreaController < DevelopmentProgramsController
 
   def update
     if @learning_module.update(learning_module_params)
-      if @learning_module.scorm_package.attached? && scorm_package_changed?
-        @learning_module.update!(scorm_status: :processing)
-        ExtractScormJob.perform_later(@learning_module.id)
-      end
       redirect_to learning_area_path(@learning_module.id)
     else
       render :edit
@@ -96,13 +100,14 @@ class LearningAreaController < DevelopmentProgramsController
   def serve_scorm_asset
     return head :not_found unless @learning_module.scorm_ready?
 
-    service = ActiveStorage::Blob.service
+    # Reconstruct blob key from request path and stored prefix
     key = "#{@learning_module.scorm_prefix}/#{params[:path]}"
 
-    return head :not_found unless service.exist?(key)
+    blob = @learning_module.scorm_package_files.blobs.find_by(key: key)
+    return head :not_found unless blob
 
-    send_data service.download(key),
-              content_type: Marcel::MimeType.for(name: params[:path]),
+    send_data blob.download,
+              content_type: blob.content_type,
               disposition: :inline
   end
 
@@ -138,10 +143,6 @@ class LearningAreaController < DevelopmentProgramsController
 
   def set_learning_module
     @learning_module = LearningModule.find(params[:id])
-  end
-
-  def scorm_package_changed?
-    @learning_module.scorm_package.blob.created_at > 10.seconds.ago
   end
 
   def set_training_categories

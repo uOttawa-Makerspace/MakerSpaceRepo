@@ -10,8 +10,17 @@ class LearningModule < ApplicationRecord
 
   # SCORM packages are a zip file
   has_one_attached :scorm_package
+  # If scorm package changes, update extraction or purge
+  after_save :process_scorm_package,
+             if: -> { attachment_changes.key?('scorm_package') }
 
-  enum :scorm_status, { pending: 0, processing: 1, ready: 2, failed: 3 }, prefix: :scorm
+  # The unzipped files are attached to this model here. Need to clear if the
+  # scorm package changes
+  has_many_attached :scorm_package_files
+
+  enum :scorm_status,
+       { pending: 0, processing: 1, ready: 2, failed: 3 },
+       prefix: :scorm
 
   has_many :learning_module_tracks, dependent: :destroy
 
@@ -73,6 +82,15 @@ class LearningModule < ApplicationRecord
   end
 
   private
+
+  def process_scorm_package
+    if scorm_package.attached?
+      update!(scorm_status: :processing)
+      ExtractScormJob.perform_later(id)
+    else
+      scorm_package_files.purge
+    end
+  end
 
   def uniqueness
     if LearningModule

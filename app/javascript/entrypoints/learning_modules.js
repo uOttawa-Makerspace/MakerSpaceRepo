@@ -86,15 +86,18 @@ document.querySelectorAll(".video-remove").forEach((btn) => {
   btn.addEventListener("click", () => btn.closest(".video-item").remove());
 });
 
-const toggle = document.getElementById("learning_module_scorm");
-const scormSection = document.getElementById("scorm-section");
-const regularSection = document.getElementById("regular-files-section");
+const toggle = document.querySelector("#learning_module_scorm");
+const scormSection = document.querySelector("fieldset#scorm-section");
+const regularSection = document.querySelector("fieldset#regular-files-section");
 
 if (toggle) {
   const applyScormToggle = () => {
     const isScorm = toggle.checked;
     scormSection.style.display = isScorm ? "" : "none";
+    scormSection.disabled = !isScorm;
+
     regularSection.style.display = isScorm ? "none" : "";
+    regularSection.disabled = isScorm;
   };
 
   toggle.addEventListener("change", applyScormToggle);
