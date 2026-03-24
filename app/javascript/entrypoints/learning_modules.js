@@ -1,36 +1,32 @@
 import Sortable from "sortablejs";
 
-const sortables = [];
-
 document.addEventListener("turbo:load", () => {
-  [...document.getElementsByClassName("reorder")].forEach((reorderElement) => {
-    reorderElement.addEventListener("change", (e) => {
-      const accordionId = e.target.dataset.accordion;
-      let entry = sortables.find((el) => el.name === accordionId);
-
-      if (!entry) {
-        const sortable = Sortable.create(document.getElementById(accordionId), {
-          disabled: !e.target.checked,
-          onEnd: (e) => {
-            fetch("/learning_area/reorder", {
-              method: "PUT",
-              headers: {
-                Accept: "application/json",
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                data: [...e.from.children].map((c) => c.dataset.id),
-                format: "json",
-              }),
-            }).catch((error) =>
-              console.error("Reorder failed:", error.message),
-            );
+  document.querySelectorAll("[data-order]").forEach((reorderSwitch) => {
+    // Find order container
+    const modules = document.querySelector(
+      `[data-order-container='${reorderSwitch.dataset.order}']`,
+    );
+    // Attach sortable
+    let sortable = new Sortable(modules, {
+      sort: reorderSwitch.checked,
+      handle: ".sort-handle",
+      onEnd: (e) => {
+        fetch("/learning_area/reorder", {
+          method: "PUT",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
           },
-        });
-        sortables.push({ name: accordionId, value: sortable });
-      } else {
-        entry.value.option("disabled", !e.target.checked);
-      }
+          body: JSON.stringify({
+            data: [...e.from.children].map((c) => c.dataset.id),
+            format: "json",
+          }),
+        }).catch((error) => console.error("Reorder failed:", error.message));
+      },
+    });
+
+    reorderSwitch.addEventListener("change", (ev) => {
+      sortable.option("sort", ev.currentTarget.checked);
     });
   });
 });

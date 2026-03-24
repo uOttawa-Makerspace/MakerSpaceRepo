@@ -20,6 +20,20 @@ class Training < ApplicationRecord
   validates :name_en, presence: true, uniqueness: true
   validates :name_fr, presence: true, uniqueness: true
 
+  # Returns all completed learning modules, optionally filters by level
+  def learning_modules_completed(user, level = nil)
+    scope =
+      learning_modules.joins(:learning_module_tracks).where(
+        learning_module_tracks: {
+          user: user,
+          status: 'Completed'
+        }
+      )
+
+    scope = scope.where(learning_modules: { level: level }) if level
+    scope
+  end
+
   def self.all_training_names
     order(name: :asc).pluck(:name)
   end
@@ -75,11 +89,10 @@ class Training < ApplicationRecord
   ##
   # returns and array containing every skill ever listed
   def self.all_skills_en
-    Training.all.pluck(:list_of_skills_en).flat_map { |l| l&.split(',')}.uniq
+    Training.all.pluck(:list_of_skills_en).flat_map { |l| l&.split(',') }.uniq
   end
 
   def self.all_skills_fr
-    Training.all.pluck(:list_of_skills_fr).flat_map { |l| l&.split(',')}.uniq
+    Training.all.pluck(:list_of_skills_fr).flat_map { |l| l&.split(',') }.uniq
   end
-
 end

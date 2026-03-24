@@ -12,10 +12,10 @@
                 <% skill.trainings.each do |training| %>
                     <% next if training.learning_modules.blank? %>
                     <%= link_to "##{training.localized_name.parameterize}", class: 'list-group-item list-group-item-action' do %>
+                        <%# Name of the training heading %>
                         <%= training.localized_name %>
-
-                        <%#= @learning_modules_completed.call(training, level).count %>
-                        of <%#= @total_learning_modules_per_level.call(training, level).count %> completed
+                        <br />
+                        <b><%= training.learning_modules_completed(current_user).count %> of <%= training.learning_modules.count %> completed</b>
                     <% end %>
                 <% end %>
             <% end %>
@@ -50,6 +50,7 @@
                         <% learning_modules_by_level = all_learning_modules.where(level:) %>
                         <% next if learning_modules_by_level.blank? %>
 
+                        <%# Level section (beginner, intermediate, or advanced) %>
                         <div class="mb-4">
                             <div class="d-flex align-items-center justify-content-between mb-3">
                                 <div>
@@ -61,9 +62,8 @@
                                 </div>
                                 <% if @user.admin? %>
                                     <div class="form-check form-switch mb-0">
-                                        <input class="form-check-input reorder" type="checkbox" role="switch"
-                                               id="toggle-<%= training.id %>-<%= level %>"
-                                               data-accordion="accordion-<%= training.id %>-<%= level %>">
+                                        <input class="form-check-input" type="checkbox" role="switch"
+                                               data-order="<%= training.name.parameterize %>-<%= level.parameterize %>">
                                         <label class="form-check-label small text-muted" for="toggle-<%= training.id %>-<%= level %>">
                                             <i class="fa fa-sort me-1"></i>Re-order
                                         </label>
@@ -71,7 +71,7 @@
                                 <% end %>
                             </div>
 
-                            <div class="row row-cols-md-2 row-cols-lg-4 g-1">
+                            <div class="row row-cols-md-2 row-cols-lg-4 g-1" data-order-container="<%= training.name.parameterize %>-<%= level.parameterize %>">
                                 <% learning_modules_by_level.each do |learning_module| %>
                                     <% status = @learning_module_track.call(learning_module).present? ? @learning_module_track.call(learning_module).first.status : 'Not Started' %>
                                     <div data-id="<%= learning_module.id %>">
@@ -93,6 +93,10 @@
                                                     <%= link_to edit_learning_area_path(learning_module.id), class: 'btn btn-sm btn-outline-primary w-50' do %>
                                                         <i class="fa fa-pencil"></i> Edit
                                                     <% end %>
+
+                                                    <div class="sort-handle">
+                                                        <%= fa_icon :arrows %>
+                                                    </div>
                                                 </div>
                                             <% end %>
                                         </div>
