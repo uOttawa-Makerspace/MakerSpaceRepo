@@ -38,25 +38,14 @@ class TapBoxLog < ApplicationRecord
     where("created_at < ?", days.days.ago).delete_all
   end
 
-  def as_broadcast
-    {
-      id: id,
-      event_type: event_type,
-      card_number: card_number,
-      user_name: user&.name,
-      user_id: user_id,
-      space_name: space&.name,
-      space_id: space_id,
-      mac_address: mac_address,
-      message: message,
-      details: details,
-      created_at: created_at.strftime("%Y-%m-%d %H:%M:%S.%L")
-    }
-  end
-
   private
 
   def broadcast_log
-    TapBoxConsoleChannel.broadcast_log(self)
+    Turbo::StreamsChannel.broadcast_append_to(
+      "tap_box_console",
+      target: "console-body",
+      partial: "staff/tap_box_console/log_row",
+      locals: { log: self, streamed: true }
+    )
   end
 end

@@ -10,6 +10,7 @@
 %>
 
 <tr
+  class="<%= 'console-new-row' if local_assigns[:streamed] %>"
   data-event-type="<%= log.event_type %>"
   data-searchable="<%= [log.card_number, log.user&.name, log.message, log.space&.name, log.mac_address, log.details&.to_json].compact.join(' ').downcase %>"
 >

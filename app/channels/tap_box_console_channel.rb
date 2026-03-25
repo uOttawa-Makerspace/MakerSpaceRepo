@@ -1,17 +1,13 @@
+# Thin channel used only for connection status indicator on the console page.
+# Content is delivered via Turbo Streams.
 class TapBoxConsoleChannel < ApplicationCable::Channel
   def subscribed
     if current_user&.staff?
-      stream_from "tap_box_console"
+      stream_from "tap_box_console_status"
     else
       reject
     end
   end
 
-  def unsubscribed
-    # cleanup
-  end
-
-  def self.broadcast_log(log)
-    ActionCable.server.broadcast("tap_box_console", log.as_broadcast)
-  end
+  def unsubscribed; end
 end
