@@ -27,6 +27,9 @@ document.addEventListener("turbo:load", () => {
 
     reorderSwitch.addEventListener("change", (ev) => {
       sortable.option("sort", ev.currentTarget.checked);
+      modules
+        .querySelectorAll(".sort-handle")
+        .forEach((el) => (el.hidden = !ev.currentTarget.checked));
     });
   });
 });
