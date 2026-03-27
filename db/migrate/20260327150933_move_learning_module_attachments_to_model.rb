@@ -8,7 +8,7 @@ class MoveLearningModuleAttachmentsToModel < ActiveRecord::Migration[7.2]
 
         LearningModule
           .find(photo.learning_module_id)
-          .gallery
+          .photos
           .attach(photo.image.blob)
       end
 
@@ -31,7 +31,7 @@ class MoveLearningModuleAttachmentsToModel < ActiveRecord::Migration[7.2]
         video.video.each do |vid|
           LearningModule
             .find(video.learning_module_id)
-            .video_files
+            .videos
             .attach(vid.blob)
         end
       end
