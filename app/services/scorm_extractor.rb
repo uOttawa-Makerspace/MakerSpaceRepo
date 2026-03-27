@@ -9,6 +9,10 @@ class ScormExtractor
     # learning module. A prefix prefix, perhaps even.
     prefix =
       "scorm/learning_modules/#{Rails.env}_#{learning_module.id}_#{SecureRandom.uuid}"
+    
+    Rails.logger.info "Starting SCORM extract for learning module #{learning_module.id}"
+    # Mark module as pending
+    learning_module.update!(scorm_status: :processing)
 
     learning_module.scorm_package.blob.open do |tmp|
       Zip::File.open(tmp.path) do |zip|
@@ -35,9 +39,10 @@ class ScormExtractor
 
         # REXML is built in but is too strict and wants all XML namespaces
         # defined in a manifest.
-        xml = Nokogiri::XML(manifest_entry.get_input_stream.read)
-        scorm_entry_point = xml.xpath("//*[local-name()='resource'][@href]").first&.[]('href')
-        
+        xml = Nokogiri.XML(manifest_entry.get_input_stream.read)
+        scorm_entry_point =
+          xml.xpath("//*[local-name()='resource'][@href]").first&.[]('href')
+
         # Update the module with the new entry directory.
         learning_module.update!(
           scorm_prefix: prefix,
