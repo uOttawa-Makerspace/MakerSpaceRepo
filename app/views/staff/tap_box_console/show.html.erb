@@ -35,10 +35,9 @@
     </div>
   </div>
 
-  <div id="tap-box-console">
-    <table id="console-table">
+  <div id="tap-box-console" class="font-monospace border rounded overflow-auto p-2 p-md-3">
+    <table class="table table-sm table-hover mb-0 w-100">
       <tbody id="console-body">
-        <%# Already ordered DESC — newest rows render at the top %>
         <% @logs.each do |log| %>
           <%= render partial: "staff/tap_box_console/log_row", locals: { log: log } %>
         <% end %>
@@ -46,9 +45,9 @@
     </table>
 
     <% if @logs.empty? %>
-      <div id="empty-state" class="console-empty-state">
-        <i class="fa fa-inbox fa-2x mb-2"></i>
-        <p>No tap events yet. Waiting for card taps&hellip;</p>
+      <div id="empty-state" class="text-center text-muted py-5">
+        <i class="fa fa-inbox fa-2x mb-2 d-block"></i>
+        <p class="mb-0">No tap events yet. Waiting for card taps&hellip;</p>
       </div>
     <% end %>
   </div>

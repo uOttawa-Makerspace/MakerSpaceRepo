@@ -5,7 +5,7 @@
       val = v.is_a?(Hash) || v.is_a?(Array) ? v.to_json : v.to_s
       "<span class='log-detail-key'>#{h k}=</span><span class='log-detail-value'>#{h val}</span>"
     end
-    details_html = " <span style='color:#555'>|</span> #{parts.join(' ')}".html_safe
+    details_html = " <span class='text-muted'>|</span> #{parts.join(' ')}".html_safe
   end
 
   # Format details safely for the data attribute to prevent quote collision
@@ -18,22 +18,24 @@
   data-event-type="<%= log.event_type %>"
   data-searchable="<%= CGI.escapeHTML(search_string) %>"
 >
-  <td class="log-timestamp"><%= log.created_at.strftime("%Y-%m-%d %H:%M:%S.%L") %></td>
-  <td class="log-badge-col"><span class="log-badge <%= log.event_type %>"><%= log.event_type.tr("_", " ") %></span></td>
-  <td class="log-card"><%= log.card_number || "—" %></td>
-  <td class="log-user">
+  <td class="log-timestamp text-nowrap"><%= log.created_at.strftime("%Y-%m-%d %H:%M:%S.%L") %></td>
+  <td class="log-badge-col text-nowrap">
+    <span class="badge text-uppercase log-badge <%= log.event_type %>"><%= log.event_type.tr("_", " ") %></span>
+  </td>
+  <td class="log-card text-nowrap"><%= log.card_number || "—" %></td>
+  <td class="log-user text-nowrap">
     <% if log.user %>
       <%= log.user.name %>
     <% else %>
-      <span style="color:#555">—</span>
+      <span class="text-muted">—</span>
     <% end %>
   </td>
-  <td class="log-space">
+  <td class="log-space text-nowrap">
     <% if log.space %>
       <%= log.space.name %>
     <% else %>
-      <span style="color:#555">—</span>
+      <span class="text-muted">—</span>
     <% end %>
   </td>
-  <td class="msg-col"><%= h log.message %><%= details_html %></td>
+  <td class="msg-col w-100 text-break"><%= h log.message %><%= details_html %></td>
 </tr>
