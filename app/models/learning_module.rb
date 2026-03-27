@@ -11,8 +11,10 @@ class LearningModule < ApplicationRecord
   # SCORM packages are a zip file
   has_one_attached :scorm_package
   # If scorm package changes, update extraction or purge
-  before_save :process_scorm_package,
-             if: -> { attachment_changes.key?('scorm_package') }
+  # File is available on commit, but change key is cleared after save.
+  # https://guides.rubyonrails.org/active_storage_overview.html#downloading-files
+  after_save -> { @scorm_changed = attachment_changes.key?('scorm_package') }
+  after_commit :process_scorm_package, if: -> { @scorm_changed }
   # The unzipped files are attached to this model here. Need to clear if the
   # scorm package changes
   has_many_attached :scorm_package_files
@@ -85,7 +87,10 @@ class LearningModule < ApplicationRecord
   # Called when scorm package changes
   def process_scorm_package
     if scorm_package.attached?
-      self.scorm_status = :processing
+      # Mark module as pending
+      update!(scorm_status: :processing)
+      
+      Rails.logger.info "Queued SCORM extract for learning module #{id}"
       # ExtractScorm purges files eventually.
       ExtractScormJob.perform_later(id)
     else

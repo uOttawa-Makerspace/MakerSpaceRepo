@@ -74,7 +74,7 @@ class LearningAreaController < DevelopmentProgramsController
 
   def update
     # Bit of a hack but I couldn't get the callback to function. Whatever
-    scorm_enabled = ActiveModel::Type::Boolean.new.cast(params[:scorm])
+    scorm_enabled = ActiveModel::Type::Boolean.new.cast(params[:scorm_enabled])
     unless scorm_enabled
       @learning_module.scorm_package.purge_later
       @learning_module.scorm_package_files.purge_later
@@ -168,7 +168,6 @@ class LearningAreaController < DevelopmentProgramsController
       :level,
       :cc,
       :badge_template_id,
-      # Used to determine if we need to remove scorm
       :scorm_package,
       photos: [],
       project_files: [],
