@@ -3,7 +3,10 @@ require 'zip'
 # Helper module to create a zip file for learning module scorm testing. Zip with
 # two files, one is the manifest and the other is an index
 module ScormZipHelper
-  def create_scorm_zip(entry_point: 'index.html')
+  extend self
+  extend ActionDispatch::TestProcess
+
+  def create_scorm_zip(entry_point = 'index.html')
     path = Rails.root.join('tmp', 'test_scorm.zip')
 
     Zip::OutputStream.open(path) do |zip|

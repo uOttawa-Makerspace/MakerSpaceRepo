@@ -5,7 +5,8 @@ class ScormExtractor
   # Takes a learning module with a SCORM zip file, uncompresses and sends to
   # ActiveStorage. Purges and replaces attached files.
   def self.extract(learning_module)
-    # Name of the remote directory
+    # Name of the remote directory NOTE: This whole prefix is put into the
+    # learning module. A prefix prefix, perhaps even.
     prefix =
       "scorm/learning_modules/#{Rails.env}_#{learning_module.id}_#{SecureRandom.uuid}"
 
@@ -32,15 +33,11 @@ class ScormExtractor
         manifest_entry = zip.find_entry(MANIFEST_FILE)
         return nil unless manifest_entry
 
-        xml = REXML::Document.new(manifest_entry.get_input_stream.read)
-        scorm_entry_point =
-          REXML::XPath.first(
-            xml,
-            "//*[local-name()='resource'][@href]"
-          )&.attributes[
-            'href'
-          ]
-
+        # REXML is built in but is too strict and wants all XML namespaces
+        # defined in a manifest.
+        xml = Nokogiri::XML(manifest_entry.get_input_stream.read)
+        scorm_entry_point = xml.xpath("//*[local-name()='resource'][@href]").first&.[]('href')
+        
         # Update the module with the new entry directory.
         learning_module.update!(
           scorm_prefix: prefix,
