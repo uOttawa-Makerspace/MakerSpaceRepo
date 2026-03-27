@@ -30,16 +30,10 @@ class RfidController < SessionsController
   def card_number
     tap_start = Time.current
 
-    TapBoxLog.log!(
-      event_type: TapBoxLog::CARD_TAP,
-      message: "Card tapped on reader",
+    TapBoxLog.log_card_tap(
       card_number: params[:rfid],
       mac_address: params[:mac_address],
-      details: {
-        rfid: params[:rfid],
-        mac_address: params[:mac_address],
-        space_id_param: params[:space_id]
-      }
+      space_id_param: params[:space_id]
     )
 
     # --- Resolve space ---
@@ -50,12 +44,7 @@ class RfidController < SessionsController
 
       unless pi_reader
         pi_reader = PiReader.create(pi_mac_address: params[:mac_address])
-        TapBoxLog.log!(
-          event_type: TapBoxLog::INFO,
-          message: "New Pi reader registered (not yet linked to a space)",
-          card_number: params[:rfid],
-          mac_address: params[:mac_address]
-        )
+        TapBoxLog.log_new_pi_reader(card_number: params[:rfid], mac_address: params[:mac_address])
       end
 
       space_id = pi_reader.space_id
@@ -64,19 +53,8 @@ class RfidController < SessionsController
     space = space_id ? Space.find_by(id: space_id) : nil
 
     unless space_id
-      TapBoxLog.log!(
-        event_type: TapBoxLog::ERROR,
-        message: "No space resolved — reader not linked to any space",
-        card_number: params[:rfid],
-        mac_address: params[:mac_address],
-        details: { reason: "no_space", suggestion: "Link this Pi reader to a space in admin settings" }
-      )
-      return(
-        render json: {
-                 new_rfid: "Error, missing space_id or mac_address param"
-               },
-               status: :unprocessable_content
-      )
+      TapBoxLog.log_no_space_resolved(card_number: params[:rfid], mac_address: params[:mac_address])
+      return render json: { new_rfid: "Error, missing space_id or mac_address param" }, status: :unprocessable_content
     end
 
     # --- Look up RFID ---
@@ -86,77 +64,24 @@ class RfidController < SessionsController
       if rfid.user_id
         # User has a card associated with their account
         user = rfid.user
-        TapBoxLog.log!(
-          event_type: TapBoxLog::INFO,
-          message: "Card recognized → #{user.name} (ID: #{user.id})",
-          card_number: params[:rfid],
-          user: user,
-          space: space,
-          mac_address: params[:mac_address],
-          details: {
-            user_email: user.email,
-            user_username: user.username,
-            resolve_time_ms: ((Time.current - tap_start) * 1000).round(1)
-          }
-        )
+        elapsed_ms = ((Time.current - tap_start) * 1000).round(1)
+        TapBoxLog.log_card_recognized(user: user, card_number: params[:rfid], space: space, mac_address: params[:mac_address], elapsed_ms: elapsed_ms)
         check_session(rfid, space_id)
       else
         rfid.mac_address = params[:mac_address]
         rfid.touch
         rfid.save
-        TapBoxLog.log!(
-          event_type: TapBoxLog::WARNING,
-          message: "Card exists but is NOT linked to any user — box will not flash green",
-          card_number: params[:rfid],
-          space: space,
-          mac_address: params[:mac_address],
-          details: {
-            reason: "unlinked_card",
-            suggestion: "Link this card to a user via the staff dashboard"
-          }
-        )
-        render json: {
-                 error: "Temporary RFID already exists"
-               },
-               status: :unprocessable_content
+        TapBoxLog.log_unlinked_card(card_number: params[:rfid], space: space, mac_address: params[:mac_address])
+        render json: { error: "Temporary RFID already exists" }, status: :unprocessable_content
       end
     else
-      new_rfid =
-        Rfid.create(
-          card_number: params[:rfid],
-          mac_address: params[:mac_address]
-        )
+      new_rfid = Rfid.create(card_number: params[:rfid], mac_address: params[:mac_address])
       if new_rfid.valid?
-        TapBoxLog.log!(
-          event_type: TapBoxLog::WARNING,
-          message: "Brand new unknown card — temporary RFID created, needs linking",
-          card_number: params[:rfid],
-          space: space,
-          mac_address: params[:mac_address],
-          details: {
-            reason: "new_unknown_card",
-            suggestion: "This could be a new student card, a replacement card, or a mistyped student number"
-          }
-        )
-        render json: {
-                 new_rfid: "Temporary RFID created"
-               },
-               status: :unprocessable_content
+        TapBoxLog.log_new_unknown_card(card_number: params[:rfid], space: space, mac_address: params[:mac_address])
+        render json: { new_rfid: "Temporary RFID created" }, status: :unprocessable_content
       else
-        TapBoxLog.log!(
-          event_type: TapBoxLog::ERROR,
-          message: "Failed to create RFID record — validation error",
-          card_number: params[:rfid],
-          mac_address: params[:mac_address],
-          details: {
-            reason: "invalid_rfid",
-            errors: new_rfid.errors.full_messages
-          }
-        )
-        render json: {
-                 new_rfid: "Error, requires rfid param"
-               },
-               status: :unprocessable_content
+        TapBoxLog.log_invalid_rfid(card_number: params[:rfid], mac_address: params[:mac_address], errors: new_rfid.errors.full_messages)
+        render json: { new_rfid: "Error, requires rfid param" }, status: :unprocessable_content
       end
     end
   end
@@ -192,43 +117,17 @@ class RfidController < SessionsController
       last_active_location = active_sessions.last.space_id
 
       if last_active_location != space_id
-        TapBoxLog.log!(
-          event_type: TapBoxLog::SIGN_OUT,
-          message: "#{rfid.user.name} signed out of #{Space.find_by(id: last_active_location)&.name || 'unknown'} (switching spaces)",
-          card_number: rfid.card_number,
-          user: rfid.user,
-          space: space,
-          mac_address: params[:mac_address],
-          details: { previous_space_id: last_active_location, action: "space_switch" }
-        )
+        previous_space = Space.find_by(id: last_active_location)
+        TapBoxLog.log_sign_out(user: rfid.user, card_number: rfid.card_number, space: space, mac_address: params[:mac_address], previous_space: previous_space)
         new_session(rfid, space_id)
       else
-        # Notify staff dashboard of user sign out
-        TapBoxLog.log!(
-          event_type: TapBoxLog::SIGN_OUT,
-          message: "#{rfid.user.name} signed out of #{space&.name}",
-          card_number: rfid.card_number,
-          user: rfid.user,
-          space: space,
-          mac_address: params[:mac_address]
-        )
+        TapBoxLog.log_sign_out(user: rfid.user, card_number: rfid.card_number, space: space, mac_address: params[:mac_address])
         StaffDashboardChannel.send_tap_out rfid.user, space_id
         render json: { success: "RFID sign out" }, status: :ok
       end
     else
       new_session(rfid, space_id)
-
-      # Here we're assuming the user is physically in the space. Query if they
-      # are eligible for a faculty membership and later send a notification to
-      # the staff dashboard
-      TapBoxLog.log!(
-        event_type: TapBoxLog::INFO,
-        message: "Queuing membership eligibility check for #{rfid.user.name}",
-        card_number: rfid.card_number,
-        user: rfid.user,
-        space: space,
-        mac_address: params[:mac_address]
-      )
+      TapBoxLog.log_membership_check_queued(user: rfid.user, card_number: rfid.card_number, space: space, mac_address: params[:mac_address])
       CardTapJob.perform_later(rfid, space_id)
     end
     # While membership check is running, return an HTTP code to card scanner to
@@ -238,27 +137,19 @@ class RfidController < SessionsController
   def new_session(rfid, new_location)
     space = Space.find_by(id: new_location)
 
-    session = LabSession.create_session(
+    LabSession.create_session(
       user: rfid.user,
       mac_address: params[:mac_address],
       space_id: new_location
     )
 
-    TapBoxLog.log!(
-      event_type: TapBoxLog::SIGN_IN,
-      message: "#{rfid.user.name} signed into #{space&.name}",
-      card_number: rfid.card_number,
-      user: rfid.user,
-      space: space,
-      mac_address: params[:mac_address]
-    )
-
+    TapBoxLog.log_sign_in(user: rfid.user, card_number: rfid.card_number, space: space, mac_address: params[:mac_address])
     render json: { success: "RFID sign in" }, status: :ok
   end
 
   def grant_access
     return if current_user.staff?
-      flash[:alert] = "You cannot access this area."
-      redirect_to root_path
+    flash[:alert] = "You cannot access this area."
+    redirect_to root_path
   end
 end

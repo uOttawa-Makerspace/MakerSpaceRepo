@@ -35,7 +35,138 @@ class TapBoxLog < ApplicationRecord
     Rails.logger.error("[TapBoxLog] Failed to write log: #{e.message}")
   end
 
-  # uOEng-specific loggers
+  # RFID loggers
+
+  def self.log_card_tap(card_number:, mac_address:, space_id_param: nil)
+    log!(
+      event_type: CARD_TAP,
+      message: "Card tapped on reader",
+      card_number: card_number,
+      mac_address: mac_address,
+      details: { rfid: card_number, mac_address: mac_address, space_id_param: space_id_param }
+    )
+  end
+
+  def self.log_new_pi_reader(card_number:, mac_address:)
+    log!(
+      event_type: INFO,
+      message: "New Pi reader registered (not yet linked to a space)",
+      card_number: card_number,
+      mac_address: mac_address
+    )
+  end
+
+  def self.log_no_space_resolved(card_number:, mac_address:)
+    log!(
+      event_type: ERROR,
+      message: "No space resolved — reader not linked to any space",
+      card_number: card_number,
+      mac_address: mac_address,
+      details: { reason: "no_space", suggestion: "Link this Pi reader to a space in admin settings" }
+    )
+  end
+
+  def self.log_card_recognized(user:, card_number:, space:, mac_address:, elapsed_ms:)
+    log!(
+      event_type: INFO,
+      message: "Card recognized → #{user.name} (ID: #{user.id})",
+      card_number: card_number,
+      user: user,
+      space: space,
+      mac_address: mac_address,
+      details: { user_email: user.email, user_username: user.username, resolve_time_ms: elapsed_ms }
+    )
+  end
+
+  def self.log_unlinked_card(card_number:, space:, mac_address:)
+    log!(
+      event_type: WARNING,
+      message: "Card exists but is NOT linked to any user — box will not flash green",
+      card_number: card_number,
+      space: space,
+      mac_address: mac_address,
+      details: { reason: "unlinked_card", suggestion: "Link this card to a user via the staff dashboard" }
+    )
+  end
+
+  def self.log_new_unknown_card(card_number:, space:, mac_address:)
+    log!(
+      event_type: WARNING,
+      message: "Brand new unknown card — temporary RFID created, needs linking",
+      card_number: card_number,
+      space: space,
+      mac_address: mac_address,
+      details: { reason: "new_unknown_card", suggestion: "This could be a new student card, a replacement card, or a mistyped student number" }
+    )
+  end
+
+  def self.log_invalid_rfid(card_number:, mac_address:, errors:)
+    log!(
+      event_type: ERROR,
+      message: "Failed to create RFID record — validation error",
+      card_number: card_number,
+      mac_address: mac_address,
+      details: { reason: "invalid_rfid", errors: errors }
+    )
+  end
+
+  def self.log_sign_in(user:, card_number:, space:, mac_address:)
+    log!(
+      event_type: SIGN_IN,
+      message: "#{user.name} signed into #{space&.name}",
+      card_number: card_number,
+      user: user,
+      space: space,
+      mac_address: mac_address
+    )
+  end
+
+  def self.log_sign_out(user:, card_number:, space:, mac_address:, previous_space: nil)
+    if previous_space
+      log!(
+        event_type: SIGN_OUT,
+        message: "#{user.name} signed out of #{previous_space.name} (switching spaces)",
+        card_number: card_number,
+        user: user,
+        space: space,
+        mac_address: mac_address,
+        details: { previous_space_id: previous_space.id, action: "space_switch" }
+      )
+    else
+      log!(
+        event_type: SIGN_OUT,
+        message: "#{user.name} signed out of #{space&.name}",
+        card_number: card_number,
+        user: user,
+        space: space,
+        mac_address: mac_address
+      )
+    end
+  end
+
+  def self.log_membership_check_queued(user:, card_number:, space:, mac_address:)
+    log!(
+      event_type: INFO,
+      message: "Queuing membership eligibility check for #{user.name}",
+      card_number: card_number,
+      user: user,
+      space: space,
+      mac_address: mac_address
+    )
+  end
+
+  def self.log_card_tap_job_failure(user:, card_number:, space:, exception:)
+    log!(
+      event_type: ERROR,
+      message: "CardTapJob failed for #{user&.name}: #{exception.message}",
+      card_number: card_number,
+      user: user,
+      space: space,
+      details: { reason: "card_tap_job_failure", exception_class: exception.class.name, backtrace: exception.backtrace&.first(5) }
+    )
+  end
+
+  # ── uOEng-specific loggers ──────────────────────────────────────────
 
   def self.log_no_queryable_identifier(user:, card_number: nil, space: nil)
     log!(
@@ -76,10 +207,7 @@ class TapBoxLog < ApplicationRecord
       card_number: card_number,
       user: user,
       space: space,
-      details: {
-        reason: "no_longer_engineering",
-        revoked_membership_ids: revoked_ids
-      }
+      details: { reason: "no_longer_engineering", revoked_membership_ids: revoked_ids }
     )
   end
 
