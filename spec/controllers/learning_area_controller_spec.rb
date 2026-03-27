@@ -232,9 +232,19 @@ RSpec.describe LearningAreaController, type: :controller do
         # Extraction should succeed
         expect(learning_module.scorm_ready?).to be true
         expect(learning_module.scorm_entry_point).to eq('index.html')
-        expect(learning_module.scorm_prefix).to eq(
-          "#{learning_module.scorm_prefix}"
-        )
+      end
+
+      it 'should serve extracted SCORM index' do
+        # This has to be in a separate unit test because the previous one keep
+        # left over multipart upload state data and so all future requests fail
+        # on an empty multipart body request.
+        learning_module = create(:learning_module, :with_scorm_object)
+        perform_enqueued_jobs
+        expect(learning_module.reload.scorm_ready?).to be true
+
+        get(:scorm_launch, params: { id: learning_module })
+        # Shortcut redirect to scorm index
+        expect(response).to redirect_to(%r{scorm_assets/index\.html})
       end
     end
   end

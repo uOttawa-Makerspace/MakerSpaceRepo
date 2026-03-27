@@ -87,9 +87,6 @@ class LearningModule < ApplicationRecord
   # Called when scorm package changes
   def process_scorm_package
     if scorm_package.attached?
-      # Mark module as pending
-      update!(scorm_status: :processing)
-      
       Rails.logger.info "Queued SCORM extract for learning module #{id}"
       # ExtractScorm purges files eventually.
       ExtractScormJob.perform_later(id)
