@@ -5,7 +5,9 @@
   font-size: 12.5px;
   line-height: 1.6;
   height: calc(100vh - 160px);
+  min-height: 400px;
   overflow-y: auto;
+  overflow-x: auto; /* Fallback for safe desktop viewing */
   border-radius: 6px;
   padding: 12px 16px;
   border: 1px solid #333;
@@ -31,6 +33,82 @@
         white-space: normal;
         word-break: break-word;
         width: 100%;
+      }
+    }
+  }
+
+  /* MOBILE-FRIENDLY CARD VIEW */
+  @media (max-width: 767px) {
+    height: calc(100vh - 220px); /* Adjust for taller wrapped header */
+    padding: 8px 12px;
+
+    #console-table {
+      display: block;
+
+      tbody,
+      tr {
+        display: block;
+        width: 100%;
+      }
+
+      tr {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        padding: 10px 0;
+        gap: 6px 12px;
+      }
+
+      td {
+        display: block;
+        padding: 0;
+        border: none;
+
+        /* Reorder layout for mobile viewing */
+        &.log-badge-col {
+          order: 1;
+        }
+
+        &.log-timestamp {
+          order: 2;
+          margin-left: auto; /* Pushes timestamp to right */
+          font-size: 11px;
+        }
+
+        &.log-card,
+        &.log-user,
+        &.log-space {
+          order: 3;
+          font-size: 11.5px;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+
+        /* Mobile context icons to replace table headers */
+        &.log-card::before {
+          content: "💳";
+          font-size: 10px;
+          opacity: 0.7;
+        }
+        &.log-user::before {
+          content: "👤";
+          font-size: 10px;
+          opacity: 0.7;
+        }
+        &.log-space::before {
+          content: "📍";
+          font-size: 10px;
+          opacity: 0.7;
+        }
+
+        &.msg-col {
+          order: 4;
+          width: 100%;
+          margin-top: 4px;
+          padding-top: 8px;
+          border-top: 1px dashed #333; /* Divider before message data */
+        }
       }
     }
   }

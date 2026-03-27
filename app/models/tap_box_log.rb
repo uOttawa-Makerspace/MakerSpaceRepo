@@ -41,7 +41,7 @@ class TapBoxLog < ApplicationRecord
   private
 
   def broadcast_log
-    Turbo::StreamsChannel.broadcast_append_to(
+    Turbo::StreamsChannel.broadcast_prepend_to(
       "tap_box_console",
       target: "console-body",
       partial: "staff/tap_box_console/log_row",

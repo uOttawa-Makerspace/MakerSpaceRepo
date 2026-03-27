@@ -39,15 +39,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
           applyFiltersToRow(node);
 
-          const nearBottom =
-            consoleEl.scrollHeight -
-              consoleEl.scrollTop -
-              consoleEl.clientHeight <
-            100;
-          if (nearBottom) consoleEl.scrollTop = consoleEl.scrollHeight;
+          // Auto-scroll to TOP so the newest row is visible
+          const nearTop = consoleEl.scrollTop < 100;
+          if (nearTop) consoleEl.scrollTop = 0;
 
+          // Trim oldest rows from the BOTTOM
           while (consoleBody.children.length > 1000) {
-            consoleBody.removeChild(consoleBody.firstElementChild);
+            consoleBody.removeChild(consoleBody.lastElementChild);
           }
         }
       }
@@ -55,8 +53,8 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   observer.observe(consoleBody, { childList: true });
 
-  // Scroll to bottom on initial load
-  consoleEl.scrollTop = consoleEl.scrollHeight;
+  // Start at the top (newest rows) on initial load
+  consoleEl.scrollTop = 0;
 
   function applyFiltersToRow(row) {
     const typeVal = filterType.value;

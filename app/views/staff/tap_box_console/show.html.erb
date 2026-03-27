@@ -1,19 +1,19 @@
 <% content_for :title, "Tap Box Console" %>
 <%= turbo_stream_from "tap_box_console" %>
 
-<div class="container-fluid py-3">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
+<div class="container-fluid py-3 console-page">
+  <div class="console-header">
+    <div class="console-title">
       <h4 class="mb-0">
         <i class="fa fa-terminal me-2"></i>Tap Box Debugger Console
       </h4>
       <small class="text-muted">Real-time RFID tap event log &mdash; newest first</small>
     </div>
-    <div class="d-flex gap-2 align-items-center">
+    <div class="console-controls">
       <div id="connection-status" class="badge bg-secondary">
         Connecting&hellip;
       </div>
-      <select id="filter-event-type" class="form-select form-select-sm" style="width: auto;">
+      <select id="filter-event-type" class="form-select form-select-sm">
         <option value="">All events</option>
         <option value="card_tap">Card Tap</option>
         <option value="sign_in">Sign In</option>
@@ -28,7 +28,6 @@
         id="filter-search"
         class="form-control form-control-sm"
         placeholder="Filter by card, user, message&hellip;"
-        style="width: 220px;"
       >
       <button id="btn-clear-console" class="btn btn-sm btn-outline-secondary">
         Clear view
@@ -39,14 +38,15 @@
   <div id="tap-box-console">
     <table id="console-table">
       <tbody id="console-body">
-        <% @logs.reverse_each do |log| %>
+        <%# Already ordered DESC — newest rows render at the top %>
+        <% @logs.each do |log| %>
           <%= render partial: "staff/tap_box_console/log_row", locals: { log: log } %>
         <% end %>
       </tbody>
     </table>
 
     <% if @logs.empty? %>
-      <div id="empty-state" class="text-center py-5" style="color: #666;">
+      <div id="empty-state" class="console-empty-state">
         <i class="fa fa-inbox fa-2x mb-2"></i>
         <p>No tap events yet. Waiting for card taps&hellip;</p>
       </div>
