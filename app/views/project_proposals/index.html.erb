@@ -14,8 +14,8 @@
         <%= f.submit "Search", name: nil, class: "btn btn-primary" %>
 
         <%# If search exists in the params, display back button %>
-        <% if params[:query].present? %>
-            <%= link_to 'Back', project_proposals_path, class: 'btn btn-secondary' %>
+        <% if params[:query].present? || params[:status].present? %>
+            <%= link_to 'Clear', project_proposals_path, class: 'btn btn-secondary' %>
         <% end %>
     <% end %>
 </div>
@@ -33,7 +33,7 @@
                 </div>
             <% end %>
 
-            <% {approved: '1', not_approved: '0', pending: nil}.each do |status, value| %>
+            <% {approved: '1', not_approved: '0', pending: 'pending'}.each do |status, value| %>
                 <div class="form-check">
                     <%= label_tag "status_#{status}", status.to_s.humanize, class: 'form-check-label' %>
                     <%= check_box_tag 'status[]', value, params[:status]&.include?(value), id: "status_#{status}", class: 'form-check-input', form: 'SearchForm' %>
@@ -47,7 +47,8 @@
                 ["#{season} #{year}", "#{season.downcase}_#{year}"]
                 end
                 end, params[:semester]
-            ), include_blank: "Search for a semester", class: "form-select", form: "SearchForm" %>
+            ), include_blank: "Search for a semester", class: "form-select mb-2", form: "SearchForm" %>
+            <span><%= @project_proposals.count %> results</span>
         </fieldset>
     </aside>
 

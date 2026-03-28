@@ -14,8 +14,8 @@ class ProjectProposalsController < SessionsController
       ProjectProposal
         .includes(:user, :admin, :categories)
         .order(created_at: :desc)
-        .search(params[:query])
-        .where(approved: params[:status] || [0, 1, nil])
+        .search(search_params[:query])
+        .where(approved: search_params[:approved])
         .paginate(per_page: 15, page: params[:page])
 
     # break down semester and year if given
@@ -360,6 +360,13 @@ class ProjectProposalsController < SessionsController
   end
 
   private
+
+  def search_params
+    @search_params ||= {
+      query: params[:query],
+      approved: params[:status]&.map { |s| s == 'nil' ? nil : s } || [0, 1, nil]
+    }
+  end
 
   def create_photos
     return unless params[:images].present?
