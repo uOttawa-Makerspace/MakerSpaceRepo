@@ -12,6 +12,7 @@ class ProjectProposalsController < SessionsController
   def index
     @project_proposals =
       ProjectProposal
+        .includes(:user, :admin, :categories)
         .order(created_at: :desc)
         .search(params[:query])
         .where(approved: params[:status] || [0, 1, nil])

@@ -1,14 +1,16 @@
 <% provide(:title, 'Project Proposals') %>
 
-<h1 class="text-center">Project Proposals</h1>
+<div class="mb-3">
+    <h1 class="display-2">Project Proposals</h1>
+    <p class="lead">Search and view project proposals</p>
+</div>
 
-<div class="container">
-    <p>Search and view project proposals for upcoming </p>
+<div>
     <%= form_with url: project_proposals_path, method: :get, class: 'input-group mb-3', id: 'SearchForm' do |f| %>
         <div class="input-group-text bg-white">
             <i class="fa fa-search" aria-hidden="true"></i>
         </div>
-        <%= f.text_field :query, placeholder: "Search...", class: "form-control", aria: { label: "Search" } %>
+        <%= f.text_field :query, value: params[:query], placeholder: "Search...", class: "form-control", aria: { label: "Search" } %>
         <%= f.submit "Search", name: nil, class: "btn btn-primary" %>
 
         <%# If search exists in the params, display back button %>

@@ -35,9 +35,28 @@ class ProjectProposal < ApplicationRecord
         ->(query) do
           normalized = query&.strip&.downcase
           return all if normalized.blank?
-          quoted = ActiveRecord::Base.connection.quote_string(normalized)
-          
-          where('LOWER(title) ILIKE ?', "%#{quoted}%")
+
+          q = ActiveRecord::Base.connection.quote("%#{normalized}%")
+          n = ActiveRecord::Base.connection.quote(normalized)
+
+          where(<<~SQL, term: "%#{normalized}%", normalized: normalized)
+            LOWER(title) ILIKE :term
+            OR LOWER(client) ILIKE :term
+            OR LOWER(description) ILIKE :term
+            OR LOWER(username) ILIKE :term
+            OR similarity(LOWER(title), :normalized) > 0.15
+            OR similarity(LOWER(client), :normalized) > 0.15
+            OR similarity(LOWER(description), :normalized) > 0.15
+            OR similarity(LOWER(username), :normalized) > 0.15
+          SQL
+            .order(Arel.sql("LOWER(title)       ILIKE #{q} DESC"))
+            .order(Arel.sql("LOWER(client)      ILIKE #{q} DESC"))
+            .order(Arel.sql("LOWER(username)    ILIKE #{q} DESC"))
+            .order(Arel.sql("LOWER(description) ILIKE #{q} DESC"))
+            .order(Arel.sql("similarity(LOWER(title),       #{n}) DESC"))
+            .order(Arel.sql("similarity(LOWER(client),      #{n}) DESC"))
+            .order(Arel.sql("similarity(LOWER(username),    #{n}) DESC"))
+            .order(Arel.sql("similarity(LOWER(description), #{n}) DESC"))
         end
 
   validates :username,
