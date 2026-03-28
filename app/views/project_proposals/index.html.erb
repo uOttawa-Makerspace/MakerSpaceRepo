@@ -1,20 +1,62 @@
 <% provide(:title, 'Project Proposals') %>
-<div id="projectProposals">
-  <h1 class="text-center mt-3">Project Proposals</h1>
-  <div class="my-3">
-    <%= form_tag(project_proposals_path, method: :get) do %>
-      <div class="d-flex justify-content-center">
-        <%= fa_icon 'search', class: 'fa-2x pe-2' %>
-        <div class="col-md-4 search_bar" >
-          <%= text_field_tag(:search, '', placeholder: 'Search', class: 'form-control') %>
-        </div>
-        <%# If search exists in the params, display back button %>
-        <% if params[:search] && !params[:search].empty? %>
-          <%= link_to 'Back', project_proposals_path, class: 'btn btn-secondary' %>
-        <% end %>
-      </div>
-    <% end %>
-  </div>
 
-  <%= render 'project_proposal_listing' %>
+<div class="mb-3">
+    <h1 class="display-2">Project Proposals</h1>
+    <p class="lead">Search and view project proposals</p>
+</div>
+
+<div>
+    <%= form_with url: project_proposals_path, method: :get, class: 'input-group mb-3', id: 'SearchForm' do |f| %>
+        <div class="input-group-text bg-white">
+            <i class="fa fa-search" aria-hidden="true"></i>
+        </div>
+        <%= f.text_field :query, value: params[:query], placeholder: "Search...", class: "form-control", aria: { label: "Search" } %>
+        <%= f.submit "Search", name: nil, class: "btn btn-primary" %>
+
+        <%# If search exists in the params, display back button %>
+        <% if params[:query].present? || params[:status].present? %>
+            <%= link_to 'Clear', project_proposals_path, class: 'btn btn-secondary' %>
+        <% end %>
+    <% end %>
+</div>
+
+<%= will_paginate @project_proposals, inner_window: 1, outer_window: 1 %>
+
+<div class="row gx-3">
+    <aside class="col-md-2">
+        <fieldset class="border rounded px-3 pb-3 mb-2 bg-body shadow">
+            <legend class="float-none w-auto fw-semibold"><%= t('explore.filter_by') %></legend>
+            <% if signed_in? && false %>
+                <div class="form-check">
+                    <%= label_tag :liked, t('explore.liked'), class: 'form-check-label' %>
+                    <%= check_box_tag :liked, params[:liked].present?, class: 'form-check-input', form: "SearchForm" %>
+                </div>
+            <% end %>
+
+            <% {approved: '1', not_approved: '0', pending: 'pending'}.each do |status, value| %>
+                <div class="form-check">
+                    <%= label_tag "status_#{status}", status.to_s.humanize, class: 'form-check-label' %>
+                    <%= check_box_tag 'status[]', value, params[:status]&.include?(value), id: "status_#{status}", class: 'form-check-input', form: 'SearchForm' %>
+                </div>
+            <% end %>
+
+            <%= label_tag :semester, "For semester", class: 'form-label' %>
+            <%= select_tag :semester, options_for_select(
+                (2015..Time.zone.today.year+1).to_a.reverse.flat_map do |year|
+                ["Winter", "Summer", "Fall"].map do |season|
+                ["#{season} #{year}", "#{season.downcase}_#{year}"]
+                end
+                end, params[:semester]
+            ), include_blank: "Search for a semester", class: "form-select mb-2", form: "SearchForm" %>
+            <span><%= @project_proposals.count %> results</span>
+        </fieldset>
+    </aside>
+
+    <div class="col-md-10">
+        <ul class="list-unstyled">
+            <%= render partial: 'proposal_row', collection: @project_proposals, as: :project_proposal %>
+        </ul>
+    </div>
+
+    <%= will_paginate @project_proposals, inner_window: 1, outer_window: 1 %>
 </div>
