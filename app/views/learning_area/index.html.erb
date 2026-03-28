@@ -79,7 +79,7 @@
                                             <%= link_to learning_area_path(learning_module.id), class: 'learning-module-thumbnail-wrapper' do %>
                                                 <%= image_tag learning_module.photos.first, loading: 'lazy',
                                                               class: "card-img-top learning-module-thumbnail",
-                                                              alt: learning_module.title %>
+                                                              alt: learning_module.title if learning_module.photos.any? %>
                                             <% end %>
                                             <div class="card-body d-flex flex-column gap-2">
                                                 <p class="small text-muted mb-0"><%= learning_module.training.localized_name %></p>
