@@ -547,3 +547,12 @@ summary {
   background-color: rgba(128, 128, 128, 0.3) !important;
   border-color: #ccc !important;
 }
+
+/* File Upload preview pane */
+.file-upload-preview-pane {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  min-height: 2rem;
+}

@@ -117,7 +117,10 @@ Rails.application.routes.draw do
   resources :printer_types, except: %i[show]
   resources :printer_issues,
             only: %i[index show new create edit update destroy] do
-    collection { get :history }
+    collection do
+      get :history
+      patch :update_notification_email
+    end
   end
 
   resources :lockers do
@@ -155,6 +158,8 @@ Rails.application.routes.draw do
   end
 
   root "static_pages#home"
+
+  get "changelog", to: "changelog#index"
 
   # STATIC PAGES
   namespace :static_pages, path: "/", as: nil do
