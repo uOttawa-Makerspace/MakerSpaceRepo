@@ -12,7 +12,7 @@ class SessionsController < ApplicationController
   }
 
   SUPPORT_EMAIL = "uottawa.makerepo@gmail.com"
-
+  
   def login_authentication
     if User.username_or_email(params[:username_email])
       user = User.username_or_email(params[:username_email])

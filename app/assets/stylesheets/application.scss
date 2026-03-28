@@ -63,6 +63,13 @@ html {
   min-height: 100%;
 }
 
+// For setting the fullscreen background color.
+// https://stackoverflow.com/a/16176519/
+:fullscreen,
+::backdrop {
+  background-color: white;
+}
+
 @font-face {
   font-family: "Roboto";
   font-style: normal;
@@ -515,14 +522,14 @@ summary {
   }
 }
 
-.subtitle {
-  font:
-    400 0.75rem "Roboto",
-    helvetica,
-    sans-serif;
-  color: #aaa;
-  margin-bottom: 0.5rem;
-}
+// .subtitle {
+//   font:
+//     400 0.75rem "Roboto",
+//     helvetica,
+//     sans-serif;
+//   color: #aaa;
+//   margin-bottom: 0.5rem;
+// }
 
 .checkbox-lg {
   width: 1.5rem;

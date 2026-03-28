@@ -1425,7 +1425,7 @@ class ReportGenerator
   # @param [Axlsx::Worksheet] worksheet
   # @param [String] title
   def self.title(worksheet, title)
-    worksheet.add_row [title, ""], b: true, u: true
+    worksheet.add_row [title, ""], b: true, u: :single
   end
 
   # @param [Axlsx::Worksheet] worksheet

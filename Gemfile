@@ -13,7 +13,7 @@ gem "airbrake"
 gem "bootsnap", require: false
 gem "aws-sdk-s3", require: false
 gem "bcrypt", "~> 3.1"
-gem "caxlsx", "~> 3.3.0"
+gem "caxlsx", "~> 4.0"
 gem "chartkick"
 gem "clipboard-rails"
 gem "concurrent-ruby", "~> 1.1", ">= 1.1.6"
@@ -40,10 +40,10 @@ gem "pry-rails", "~> 0.3", group: :development
 gem "psych", "~> 4.0"
 gem "quick_random_records", "~> 0.3.2"
 gem "rack-cors"
-gem "roo", "~> 2.10.0"
+gem "roo", "~> 3.0"
 gem "roo-xls"
 gem 'rrule'
-gem "rubyzip", "~> 2.1", require: "zip"
+gem "rubyzip", "~> 3.0", require: "zip"
 gem "saml_idp", "~> 1.0"
 gem "sass-rails", "~> 6.0.0"
 gem "sdoc", "~> 1.1.0", group: :doc

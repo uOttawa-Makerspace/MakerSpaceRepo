@@ -1,116 +1,104 @@
 import Sortable from "sortablejs";
 
-const sortables = [];
-
 document.addEventListener("turbo:load", () => {
-  const reorderElements = [...document.getElementsByClassName("reorder")];
-  reorderElements.forEach((reorderElement) => {
-    reorderElement.addEventListener("click", (e) => {
-      let sortable = sortables.find(
-        (el) => el.name === e.target.dataset.accordion
-      );
-      if (!sortable || !sortable.value) {
-        sortable = Sortable.create(
-          document.getElementById(e.target.dataset.accordion),
-          {
-            disabled: !e.target.checked,
-            onEnd: (e) => {
-              fetch("/learning_area/reorder", {
-                method: "PUT",
-                headers: {
-                  Accept: "application/json",
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  data: [...e.from.children].map((c) => c.dataset.id),
-                  format: "json",
-                }),
-              }).catch((error) => {
-                console.log("An error occurred: " + error.message);
-              });
-            },
-          }
-        );
-        sortables.push({
-          name: e.target.dataset.accordion,
-          value: sortable,
-        });
-      } else {
-        sortable.value.option("disabled", !e.target.checked);
-      }
+  document.querySelectorAll("[data-order]").forEach((reorderSwitch) => {
+    // Find order container
+    const modules = document.querySelector(
+      `[data-order-container='${reorderSwitch.dataset.order}']`,
+    );
+    // Attach sortable
+    let sortable = new Sortable(modules, {
+      sort: reorderSwitch.checked,
+      handle: ".sort-handle",
+      onEnd: (e) => {
+        fetch("/learning_area/reorder", {
+          method: "PUT",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            data: [...e.from.children].map((c) => c.dataset.id),
+            format: "json",
+          }),
+        }).catch((error) => console.error("Reorder failed:", error.message));
+      },
+    });
+
+    reorderSwitch.addEventListener("change", (ev) => {
+      sortable.option("sort", ev.currentTarget.checked);
+      modules
+        .querySelectorAll(".sort-handle")
+        .forEach((el) => (el.hidden = !ev.currentTarget.checked));
     });
   });
 });
-let form =
-  document.getElementById("new_learning_module") ||
-  document.getElementsByClassName("edit_repository")[0];
+
+// Only validate photo presence on new records, not edit
+const form = document.getElementById("new_learning_module");
 if (form) {
   form.addEventListener("submit", (e) => {
-    let images = document.getElementById("images_");
-    let image_feedback = document.createElement("div");
-    image_feedback.classList.add("text-center");
-    let uploaded_images = document.getElementsByClassName("image-item").length;
-    let total_images = uploaded_images + images.files.length;
-    if (total_images < 1) {
+    const photos = document.getElementById("learning_module_photos");
+    if (photos.files.length < 1) {
       e.preventDefault();
       e.stopPropagation();
-      document.getElementById("files_").focus();
-      if (!images.parentElement.querySelector(".invalid-feedback")) {
-        images.classList.add("is-invalid");
-        image_feedback.classList.add("invalid-feedback");
-        if (total_images < 1) {
-          image_feedback.innerHTML = "You must upload at least one image";
-        } else if (total_images > 5) {
-          image_feedback.innerHTML = "You can upload a maximum of 5 images";
-        }
-        images.parentNode.appendChild(image_feedback);
+      photos.focus();
+      if (!photos.parentElement.querySelector(".invalid-feedback")) {
+        photos.classList.add("is-invalid");
+        const feedback = document.createElement("div");
+        feedback.classList.add("invalid-feedback", "text-center");
+        feedback.textContent = "You must upload at least one image";
+        photos.parentNode.appendChild(feedback);
       }
     }
   });
 }
-[...document.getElementsByClassName("file-remove")].forEach((el) => {
-  el.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    document.getElementById("deletefiles").value += el.id + ",";
-    el.parentElement.parentElement.remove();
-  });
-});
-[...document.getElementsByClassName("image-remove")].forEach((el) => {
-  el.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    document.getElementById("deleteimages").value += el.id + ",";
-    el.parentElement.remove();
-  });
-});
-if (document.getElementById("new-file-input")) {
-  let cloneButton = document.getElementById("new-file-input");
-  cloneButton.addEventListener("click", () => {
-    let parent = cloneButton.parentElement;
-    let clone = parent.cloneNode(true);
-    clone.removeAttribute("id");
-    clone.children[0].value = null;
-    clone.children[1].className = "btn btn-danger";
-    clone.children[1].children[0].className = "fa fa-trash";
-    clone.children[1].addEventListener("click", (el) => {
-      el.target.closest(".input-group").remove();
-    });
+
+// Clone photo input row, turning the + button into a remove button on the clone
+const newPhotoBtn = document.getElementById("new-photo-input");
+if (newPhotoBtn) {
+  newPhotoBtn.addEventListener("click", () => {
+    const parent = newPhotoBtn.parentElement;
+    const clone = parent.cloneNode(true);
+
+    clone.querySelector('input[type="file"]').value = null;
+
+    const cloneBtn = clone.querySelector("button");
+    cloneBtn.removeAttribute("id");
+    cloneBtn.className = "btn btn-danger";
+    cloneBtn.querySelector("i").className = "fa fa-trash";
+    cloneBtn.addEventListener("click", () => clone.remove());
+
     parent.parentElement.appendChild(clone);
   });
 }
-if (document.getElementById("new-photo-input")) {
-  let cloneButton = document.getElementById("new-photo-input");
-  cloneButton.addEventListener("click", () => {
-    let parent = cloneButton.parentElement;
-    let clone = parent.cloneNode(true);
-    clone.removeAttribute("id");
-    clone.children[0].value = null;
-    clone.children[1].className = "btn btn-danger";
-    clone.children[1].children[0].className = "fa fa-trash";
-    clone.children[1].addEventListener("click", (el) => {
-      el.target.closest(".input-group").remove();
-    });
-    parent.parentElement.appendChild(clone);
+
+// Remove button deletes the whole image-item div
+document.querySelectorAll(".image-remove").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    btn.closest(".image-item").remove();
   });
+});
+
+// Remove existing video — drops signed_id from submission
+document.querySelectorAll(".video-remove").forEach((btn) => {
+  btn.addEventListener("click", () => btn.closest(".video-item").remove());
+});
+
+const toggle = document.querySelector("#learning_module_scorm_enabled");
+const scormSection = document.querySelector("fieldset#scorm-section");
+const regularSection = document.querySelector("fieldset#regular-files-section");
+
+if (toggle) {
+  const applyScormToggle = () => {
+    const isScorm = toggle.checked;
+    scormSection.style.display = isScorm ? "" : "none";
+    scormSection.disabled = !isScorm;
+
+    regularSection.style.display = isScorm ? "none" : "";
+    regularSection.disabled = isScorm;
+  };
+
+  toggle.addEventListener("change", applyScormToggle);
+  applyScormToggle();
 }
