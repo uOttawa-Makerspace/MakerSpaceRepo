@@ -81,9 +81,11 @@ class LearningAreaController < DevelopmentProgramsController
     end
     
     if @learning_module.update(learning_module_params)
-      redirect_to learning_area_path(@learning_module.id)
+      redirect_to learning_area_path(@learning_module.id),
+                  notice: "Learning module successfully updated."
     else
-      render :edit
+      flash.now[:alert] = 'Unable to apply the changes.'
+      render :edit, status: :unprocessable_entity
     end
   end
 

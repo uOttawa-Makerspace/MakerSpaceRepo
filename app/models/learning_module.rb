@@ -10,11 +10,12 @@ class LearningModule < ApplicationRecord
 
   # SCORM packages are a zip file
   has_one_attached :scorm_package
-  # If scorm package changes, update extraction or purge
-  # File is available on commit, but change key is cleared after save.
+  # If scorm package changes, update extraction or purge File is available onyl
+  # after commit, but change key is cleared after save. This would queue the
+  # job, and the job is configured to run after commit succeeds
   # https://guides.rubyonrails.org/active_storage_overview.html#downloading-files
-  after_save -> { @scorm_changed = attachment_changes.key?('scorm_package') }
-  after_commit :process_scorm_package, if: -> { @scorm_changed }
+  # https://codewithrails.com/blog/rails-enqueue-after-transaction-commit/
+  after_save :process_scorm_package, if: -> { attachment_changes.key?('scorm_package') }
   # The unzipped files are attached to this model here. Need to clear if the
   # scorm package changes
   has_many_attached :scorm_package_files

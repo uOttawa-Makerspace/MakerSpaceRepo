@@ -216,18 +216,21 @@ RSpec.describe LearningAreaController, type: :controller do
 
     context 'Uploading SCORM objects' do
       it 'should correctly extract SCORM zip files' do
-        post :create,
-             params: {
-               learning_module:
-                 attributes_for(:learning_module, :with_scorm_object)
-             }
+        # Run extraction job
+        perform_enqueued_jobs do
+          post :create,
+               params: {
+                 learning_module:
+                   attributes_for(:learning_module, :with_scorm_object)
+               }
+        end
 
         learning_module = assigns(:learning_module)
-        expect(learning_module).not_to be nil
         # Learning module should be created
+        expect(learning_module).to be_persisted
         expect(response).to redirect_to(learning_area_url(learning_module))
-        # Run extraction job
-        perform_enqueued_jobs
+        expect(learning_module.scorm_ready?).to be false
+
         learning_module.reload
         # Extraction should succeed
         expect(learning_module.scorm_ready?).to be true
@@ -238,8 +241,8 @@ RSpec.describe LearningAreaController, type: :controller do
         # This has to be in a separate unit test because the previous one keep
         # left over multipart upload state data and so all future requests fail
         # on an empty multipart body request.
-        learning_module = create(:learning_module, :with_scorm_object)
-        perform_enqueued_jobs
+        learning_module =
+          perform_enqueued_jobs { create(:learning_module, :with_scorm_object) }
         expect(learning_module.reload.scorm_ready?).to be true
 
         get(:scorm_launch, params: { id: learning_module })
