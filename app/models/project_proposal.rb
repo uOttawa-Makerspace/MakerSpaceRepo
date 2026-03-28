@@ -6,8 +6,6 @@ class ProjectProposal < ApplicationRecord
   has_many :categories, dependent: :destroy
   has_many :project_joins, dependent: :destroy
   has_many :repositories
-  has_many :photos, dependent: :destroy
-  has_many :repo_files, dependent: :destroy
   has_many :project_proposals,
            class_name: 'ProjectProposal',
            foreign_key: 'linked_project_proposal_id'
@@ -15,6 +13,9 @@ class ProjectProposal < ApplicationRecord
              class_name: 'ProjectProposal',
              foreign_key: 'linked_project_proposal_id',
              optional: true
+  
+  has_many_attached :photos
+  has_many_attached :project_files
 
   enum :approved, { not_approved: 0, approved: 1 }
   enum :season, { fall: 0, summer: 1, winter: 2 }
@@ -30,7 +31,6 @@ class ProjectProposal < ApplicationRecord
           order(t[:year].desc.nulls_last, t[:season].asc.nulls_last)
         end
 
-  # model
   scope :search,
         ->(query) do
           normalized = query&.strip&.downcase
