@@ -400,7 +400,7 @@ class RepositoriesController < SessionsController
       :project_proposal_id,
       categories: [],
       equipments: [],
-      photos_attributes: [:id, :image, :_destroy],
+      photos_attributes: [:id, :image, :_destroy, :position],
       repo_files_attributes: [:id, :file, :_destroy]
     )
   end

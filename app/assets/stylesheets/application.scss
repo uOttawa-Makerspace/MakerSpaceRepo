@@ -62,6 +62,13 @@ html {
   min-height: 100%;
 }
 
+// For setting the fullscreen background color.
+// https://stackoverflow.com/a/16176519/
+:fullscreen,
+::backdrop {
+  background-color: white;
+}
+
 @font-face {
   font-family: "Roboto";
   font-style: normal;
@@ -522,14 +529,14 @@ summary {
   }
 }
 
-.subtitle {
-  font:
-    400 0.75rem "Roboto",
-    helvetica,
-    sans-serif;
-  color: #aaa;
-  margin-bottom: 0.5rem;
-}
+// .subtitle {
+//   font:
+//     400 0.75rem "Roboto",
+//     helvetica,
+//     sans-serif;
+//   color: #aaa;
+//   margin-bottom: 0.5rem;
+// }
 
 .checkbox-lg {
   width: 1.5rem;
@@ -546,4 +553,13 @@ summary {
 .selected-shift {
   background-color: rgba(128, 128, 128, 0.3) !important;
   border-color: #ccc !important;
+}
+
+/* File Upload preview pane */
+.file-upload-preview-pane {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  min-height: 2rem;
 }

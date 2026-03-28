@@ -3,9 +3,10 @@ require "rails_helper"
 RSpec.describe LearningModule, type: :model do
   describe "Association" do
     context "has_many" do
-      it { should have_many(:photos) }
-      it { should have_many(:repo_files) }
-      it { should have_many(:videos) }
+      it { should have_many_attached(:photos) }
+      it { should have_many_attached(:project_files) }
+      it { should have_many_attached(:videos) }
+      it { should have_one_attached(:scorm_package) }
     end
 
     context "belongs_to" do

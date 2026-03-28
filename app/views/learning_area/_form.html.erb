@@ -1,0 +1,125 @@
+<%= form_with model: @learning_module, url: { controller: 'learning_area', action: @learning_module.persisted? ? 'update' : 'create' } do |f| %>
+    <div class="mb-3">
+        <%= f.label :title, 'Title', class: 'form-label' %>
+        <%= f.text_field :title,
+         id: 'repository_title',
+         placeholder: 'Title of the learning module…',
+         class: 'form-control' %>
+    </div>
+
+    <div class="mb-3">
+        <%= f.label :description, 'Description', class: 'form-label' %>
+        <div class="form-text mb-1">
+            You can input a <code>wiki.makerepo.com</code> link and the page will be displayed.
+        </div>
+        <%= f.trix_editor :description,
+            placeholder: 'Description of the learning module…',
+            class: 'form-control',
+            id: 'redactor',
+            'aria-label': 'Description' %>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-sm-6">
+            <%= f.label :training_id, 'Category', class: 'form-label' %>
+            <%= f.select :training_id, @training_categories, {}, { class: 'form-select' } %>
+        </div>
+        <div class="col-sm-6">
+            <%= f.label :level, 'Level', class: 'form-label' %>
+            <%= f.select :level, @training_levels, {}, { class: 'form-select' } %>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <div class="form-check form-switch">
+            <%= f.check_box :scorm_enabled, class: 'form-check-input', role: 'switch', checked: @learning_module.scorm_package.attached? %>
+            <%= f.label :scorm_enabled, 'SCORM package', class: 'form-check-label' %>
+        </div>
+        <div class="form-text">Enable if uploading a SCORM <code>.zip</code> file instead of regular project files.</div>
+    </div>
+
+    <fieldset id="regular-files-section">
+        <div class="mb-3">
+            <%= f.label :project_files, 'Project Files', class: 'form-label' %>
+            <%= f.file_field :project_files, multiple: true, class: 'form-control', aria_label: 'Project Files' %>
+            <div id="file-container"></div>
+        </div>
+
+        <div class="mb-3">
+            <%= f.label :videos, 'Videos', class: 'form-label' %>
+            <%= f.file_field :videos, multiple: true, class: 'form-control', aria_label: 'Videos' %>
+
+            <div id="video-container" class="d-flex flex-column gap-1 mt-2">
+                <% @learning_module.videos.each do |video| %>
+                    <div class="video-item d-flex align-items-center gap-2 border rounded p-2">
+                        <%= hidden_field_tag 'learning_module[videos][]', video.signed_id %>
+                        <i class="fa fa-file-video-o"></i>
+                        <span class="small flex-grow-1"><%= video.filename %></span>
+                        <span class="small"><%= (video.byte_size / 1.megabyte).round(1) %> MB</span>
+                        <button type="button" class="btn btn-danger btn-sm video-remove" aria-label="Remove video">&times;</button>
+                    </div>
+                <% end %>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <%= f.label :photos, 'Gallery', class: 'form-label' %>
+            <div class="input-group">
+                <%= f.file_field :photos, multiple: true, class: 'form-control image-upload', aria_label: 'Select Pictures' %>
+                <button class="btn btn-success" type="button" id="new-photo-input" aria-label="Add image input">
+                    <%= fa_icon 'plus' %>
+                </button>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 mt-2">
+            <% @learning_module.photos.each do |photo| %>
+                <div class="image-item">
+                    <%# signed_id hidden field keeps this photo on submit. Removing the div drops it %>
+                    <%= hidden_field_tag 'learning_module[photos][]', photo.signed_id %>
+                    <div class="bg-dark rounded" style="width: 80px; height: 80px;">
+                        <%= image_tag photo,
+                                      alt: 'Existing photo',
+                                      class: 'rounded',
+                                      style: 'width: 80px; height: 80px; object-fit: cover;',
+                                      loading: 'lazy' %>
+                    </div>
+                    <button type="button"
+                            class="btn btn-danger image-remove w-100"
+                            aria-label="Remove photo"><%= fa_icon :trash %></button>
+                </div>
+            <% end %>
+        </div>
+
+        <div id="dragndrop"
+             class="border rounded-3 text-center py-4 mb-3"
+             ondrop="dragndrop(event);"
+             ondragover="dragover(event);">
+            <%= fa_icon 'cloud-upload', class: 'fs-3' %>
+            <p class="mb-0 mt-1 small">Drag & Drop files here</p>
+        </div>
+    </fieldset>
+
+    <fieldset id="scorm-section" class="mb-3" style="display: none;">
+        <%= f.label :scorm_package, 'SCORM Package (.zip)', class: 'form-label' %>
+        <%= f.file_field :scorm_package,
+                           class: 'form-control',
+                           accept: '.zip',
+                           aria_label: 'SCORM zip file', required: !@learning_module.scorm_package.attached? %>
+        <p class="form-text">Upload a valid SCORM <code>.zip</code> package.</p>
+        <% if @learning_module.scorm_package.attached? %>
+            <p>Download current scorm package: <%= link_to @learning_module.scorm_package.filename, url_for(@learning_module.scorm_package) %></p>
+        <% end %>
+    </fieldset>
+
+    <div class="text-center border-top pt-4">
+        <%= f.submit @learning_module.persisted? ? 'Save Changes' : 'Create Learning Module',
+            class: 'btn btn-primary px-4',
+            id: 'waiting-save-button' %>
+        <p class="small mt-2 mb-0">
+            This could take several minutes — do not refresh this page.
+        </p>
+        <span id="status-save"></span>
+    </div>
+
+<% end %>

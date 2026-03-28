@@ -6,6 +6,7 @@ class Photo < ApplicationRecord
   belongs_to :learning_module, optional: true
   belongs_to :project_proposal, optional: true
   belongs_to :volunteer_task, optional: true
+  scope :ordered, -> { order(position: :asc, created_at: :asc) }
 
   has_one_attached :image do |attachable|
     attachable.variant :explore, resize_to_limit: [210*2, 230*2]
@@ -27,6 +28,6 @@ class Photo < ApplicationRecord
             file_content_type: {
               allow: [ALLOWED_CONTENT_TYPES],
               if: -> { image.attached? }
-            }
+            }, on: :create
   validates :image, presence: true
 end

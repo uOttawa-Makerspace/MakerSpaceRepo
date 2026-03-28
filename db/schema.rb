@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_03_07_220151) do
+ActiveRecord::Schema[7.2].define(version: 2026_03_27_192848) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_trgm"
@@ -657,6 +657,10 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_07_220151) do
     t.datetime "updated_at", null: false
     t.string "level", default: "Beginner"
     t.integer "order"
+    t.string "scorm_prefix"
+    t.string "scorm_entry_point"
+    t.integer "scorm_status", default: 0
+    t.string "subskill"
   end
 
   create_table "likes", id: :serial, force: :cascade do |t|
@@ -695,6 +699,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_07_220151) do
     t.datetime "cancelled_at"
     t.datetime "sent_to_checkout_at"
     t.datetime "notified_of_cancellation_at"
+    t.string "staff_notes"
     t.index ["course_name_id"], name: "index_locker_rentals_on_course_name_id"
     t.index ["decided_by_id"], name: "index_locker_rentals_on_decided_by_id"
     t.index ["locker_id"], name: "index_locker_rentals_on_locker_id"
@@ -819,6 +824,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_07_220151) do
     t.integer "learning_module_id"
     t.integer "project_proposal_id"
     t.integer "volunteer_task_id"
+    t.integer "position", default: 0, null: false
     t.index ["repository_id"], name: "index_photos_on_repository_id"
   end
 
@@ -1016,11 +1022,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_07_220151) do
     t.string "slug"
     t.bigint "linked_project_proposal_id"
     t.integer "prototype_cost"
-    t.integer "season"
-    t.integer "year"
     t.index ["linked_project_proposal_id"], name: "index_project_proposals_on_linked_project_proposal_id"
-    t.index ["title"], name: "index_project_proposals_on_title", opclass: :gin_trgm_ops, using: :gin
-    t.index ["year", "season"], name: "index_project_proposals_on_year_and_season"
   end
 
   create_table "project_requirements", id: :serial, force: :cascade do |t|
@@ -1121,6 +1123,14 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_07_220151) do
     t.datetime "updated_at", precision: nil, null: false
     t.string "mac_address"
     t.index ["user_id"], name: "index_rfids_on_user_id"
+  end
+
+  create_table "settings", force: :cascade do |t|
+    t.string "key", null: false
+    t.string "value"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["key"], name: "index_settings_on_key", unique: true
   end
 
   create_table "shadowing_hours", force: :cascade do |t|
