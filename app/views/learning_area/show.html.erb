@@ -26,14 +26,6 @@
             <%= render 'content', learning_module: @learning_module %>
         <% end %>
     </div>
-
-    <% if @valid_urls.present? %>
-        <div class="border-top">
-            <% @valid_urls.each do |url| %>
-                <iframe width="100%" height="600px" src="<%= url %>" class="d-block border-0"></iframe>
-            <% end %>
-        </div>
-    <% end %>
 </section>
 
 <%= render 'layouts/photoswipe' %>

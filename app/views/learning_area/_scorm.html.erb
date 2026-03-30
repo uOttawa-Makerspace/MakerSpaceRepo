@@ -1,3 +1,7 @@
+<% if current_user.admin? %>
+    <%= link_to 'Edit', edit_learning_area_path(learning_module.id), class: 'btn btn-sm btn-primary' %>
+<% end %>
+
 <% if learning_module.scorm_ready? %>
     <div id="scorm-container" class="mb-3"
          data-launch-url="<%= scorm_launch_learning_area_path(learning_module) %>"
@@ -33,4 +37,12 @@
     <p class="mb-3">SCORM package is being processed, check back shortly.</p>
 <% elsif learning_module.scorm_failed? %>
     <p class="mb-3">SCORM package failed to process. Please contact an administrator.</p>
+<% end %>
+
+<% if learning_module.extract_valid_urls.present? %>
+        <div class="border-top">
+            <% learning_module.extract_valid_urls.each do |url| %>
+                <iframe width="100%" height="600px" src="<%= url %>" class="d-block border-0"></iframe>
+            <% end %>
+        </div>
 <% end %>

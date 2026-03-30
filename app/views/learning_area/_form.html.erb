@@ -21,10 +21,10 @@
 
     <div class="mb-3">
         <%= f.label :subskill, 'Subskill (optional)', class: 'form-label' %>
-        <%= f.select :subskill, 
+        <%= f.select :subskill,
         options_for_select(@subskills, @learning_module.subskill),
          { include_blank: "Select or type a new subskill..." },
-         { class: 'form-select', 
+         { class: 'form-select',
              data: { controller: 'tomselect' } } %>
         <div class="form-text">Learning modules with the same subskill become merged together and accessible under a subskill page</div>
     </div>
@@ -113,9 +113,9 @@
     <fieldset id="scorm-section" class="mb-3" style="display: none;">
         <%= f.label :scorm_package, 'SCORM Package (.zip)', class: 'form-label' %>
         <%= f.file_field :scorm_package,
-                           class: 'form-control',
-                           accept: '.zip',
-                           aria_label: 'SCORM zip file', required: !@learning_module.scorm_package.attached? %>
+                 class: 'form-control',
+                 accept: '.zip',
+                 aria_label: 'SCORM zip file', required: !@learning_module.scorm_package.attached? %>
         <p class="form-text">Upload a valid SCORM <code>.zip</code> package.</p>
         <% if @learning_module.scorm_package.attached? %>
             <p>Download current scorm package: <%= link_to @learning_module.scorm_package.filename, url_for(@learning_module.scorm_package) %></p>
@@ -124,8 +124,8 @@
 
     <div class="text-center border-top pt-4">
         <%= f.submit @learning_module.persisted? ? 'Save Changes' : 'Create Learning Module',
-            class: 'btn btn-primary px-4',
-            id: 'waiting-save-button' %>
+                 class: 'btn btn-primary px-4',
+                 id: 'waiting-save-button' %>
         <p class="small mt-2 mb-0">
             This could take several minutes — do not refresh this page.
         </p>

@@ -70,3 +70,11 @@
         </ul>
     </div>
 <% end %>
+
+<% if learning_module.extract_valid_urls.present? %>
+    <div class="border-top">
+        <% learning_module.extract_valid_urls.each do |url| %>
+            <iframe width="100%" height="600px" src="<%= url %>" class="d-block border-0"></iframe>
+        <% end %>
+    </div>
+<% end %>

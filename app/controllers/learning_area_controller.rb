@@ -29,7 +29,6 @@ class LearningAreaController < DevelopmentProgramsController
   end
 
   def show
-    @valid_urls = @learning_module.extract_valid_urls
   end
 
   def subskill
