@@ -57,7 +57,7 @@ class LearningModule < ApplicationRecord
   end
 
   def tracks_for_user(user)
-    learning_module_tracks.where(user:)
+    learning_module_tracks.find_by(user:)
   end
 
   def capitalize_title

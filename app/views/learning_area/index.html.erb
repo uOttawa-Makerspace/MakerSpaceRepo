@@ -23,6 +23,7 @@
     <%# Displaying learning module cards %>
     <div class="col-lg-10">
         <% @learning_modules.each do |training, learning_modules| %>
+            <%# Top header of each training name %>
             <div class="mb-5" id="<%= training.localized_name.parameterize %>">
                 <div class="d-flex flex-wrap align-items-center justify-content-between border-bottom pb-2 mb-4">
                     <div>
@@ -42,6 +43,24 @@
                         <%= training_status(training.id, current_user.id) %>
                     </div>
                 </div>
+
+                <%# Subskills are show separately %>
+                <% learning_modules.map(&:subskill).uniq.compact.each do |subskill| %>
+                    <div class="mb-4">
+                        <div class="row row-cols-md-2 row-cols-lg-4 g-1">
+                            <div class="card h-100 border-1 shadow-sm">
+                                <%= link_to subskill_learning_area_index_path(subskill), class: 'learning-module-thumbnail-wrapper' do %>
+                                    <%#= image_tag learning_module.photos.first, loading: 'lazy',
+                                    class: "card-img-top learning-module-thumbnail",
+                                    alt: learning_module.title if learning_module.photos_attachments.any? %>
+                                <% end %>
+                                <div class="card-body d-flex flex-column gap-2">
+                                    <h6 class="fw-bold mb-0"><%= subskill %></h6>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <% end %>
 
                 <% learning_modules.group_by(&:level).each do |level, modules_by_level| %>
                     <div class="mb-4">
@@ -68,9 +87,9 @@
 
                         <div class="row row-cols-md-2 row-cols-lg-4 g-1" data-order-container="<%= training.name.parameterize %>-<%= level.parameterize %>">
                             <% modules_by_level.each do |learning_module| %>
-                                <% status = learning_module.tracks_for_user(current_user).take&.status || 'Not Started' %>
+                                <% status = learning_module.tracks_for_user(current_user)&.status || 'Not Started' %>
                                 <div data-id="<%= learning_module.id %>">
-                                    <div class="card h-100 border-1 <%= return_border_color(learning_module.level) %> shadow-sm">
+                                    <div class="card h-100 border-1 shadow-sm">
                                         <%= link_to learning_area_path(learning_module.id), class: 'learning-module-thumbnail-wrapper' do %>
                                             <%= image_tag learning_module.photos.first, loading: 'lazy',
                                                           class: "card-img-top learning-module-thumbnail",

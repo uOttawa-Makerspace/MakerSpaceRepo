@@ -13,12 +13,15 @@ class LearningAreaController < DevelopmentProgramsController
   before_action :form_training_data, only: %i[new edit create update]
 
   def index
+    # Get all modules, group by training and separate into subskills. Modules
+    # with no subskill get put in a separate subskill page.
     @learning_modules =
       LearningModule
         .with_attached_photos
         .includes(:training)
         .group_by(&:training)
         .sort_by { |training, _| training.name }
+        .to_h
   end
 
   def new
