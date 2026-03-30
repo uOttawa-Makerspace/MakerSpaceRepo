@@ -7,6 +7,7 @@
 <h1 class="mb-3"><%= @subskill %></h1>
 
 <% @learning_modules.each do |learning_module| %>
+    <hr />
     <% if learning_module.scorm_package.attached? %>
         <%= render 'scorm', learning_module: %>
     <% else %>

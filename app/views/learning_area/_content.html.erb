@@ -1,5 +1,5 @@
-<% if learning_module.tracks_for_user(current_user).blank? %>
-    <div class="d-flex align-items-center gap-3 border rounded-3 p-3 mb-3">
+<div class="d-flex align-items-center gap-3 border rounded-3 p-3 mb-3">
+    <% if learning_module.tracks_for_user(current_user).blank? %>
         <div class="flex-grow-1">
             <p class="mb-0">Ready to start?</p>
             <p class="small mb-0">You haven't begun this module yet.</p>
@@ -7,9 +7,7 @@
         <%= link_to 'Start Module',
                     start_learning_module_track_index_path(learning_module_id: learning_module.id),
                     class: 'btn btn-primary btn-sm' %>
-    </div>
-<% elsif learning_module.tracks_for_user(current_user).in_progress? %>
-    <div class="d-flex align-items-center gap-3 border border-primary rounded-3 p-3 mb-3">
+    <% elsif learning_module.tracks_for_user(current_user).in_progress? %>
         <div class="flex-grow-1">
             <p class="mb-0">In Progress</p>
             <p class="small mb-0">Mark this module as complete when you're done.</p>
@@ -17,13 +15,18 @@
         <%= link_to 'Mark Completed',
                     completed_learning_module_track_index_path(learning_module_id: learning_module.id),
                     class: 'btn btn-primary btn-sm' %>
-    </div>
-<% elsif learning_module.tracks_for_user(current_user).completed? %>
-    <div class="d-flex align-items-center gap-2 border border-success rounded-3 p-3 mb-3">
-        <i class="fa fa-check-circle text-success fs-5"></i>
-        <p class="mb-0">You've completed this module — great work!</p>
-    </div>
-<% end %>
+    <% elsif learning_module.tracks_for_user(current_user).completed? %>
+        <div class="flex-grow-1">
+            <p class="mb-0">
+                <i class="fa fa-check-circle text-success fs-5"></i>
+                You've completed this module — great work!
+            </p>
+        </div>
+    <% end %>
+    <% if current_user.admin? %>
+        <%= link_to 'Edit', edit_learning_area_path(learning_module.id), class: 'btn btn-sm btn-primary' %>
+    <% end %>
+</div>
 
 <div class="mb-3">
     <%= sanitize learning_module.description %>
