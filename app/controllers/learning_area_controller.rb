@@ -147,7 +147,7 @@ class LearningAreaController < DevelopmentProgramsController
   def form_training_data
     @training_categories ||= Training.all.order(:name).pluck(:name, :id)
     @training_levels ||= TrainingSession.return_levels
-    @subskills ||= LearningModule.distinct.pluck(:subskill)
+    @subskills ||= LearningModule.unscope(:order).distinct.pluck(:subskill)
   end
 
   def learning_module_params
