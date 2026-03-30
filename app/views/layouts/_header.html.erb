@@ -1,4 +1,4 @@
-<div class="sticky-md-top mb-3" id="sticky-header">
+<div class="mb-3" id="sticky-header">
     <nav class="navbar navbar-expand-xl <%= controller_name %> <%= action_name %> shadow-lg">
         <div class="container-fluid">
             <a class="ms-xl-5 me-xl-5 navbar-brand" href="/"><strong>Maker</strong>Repo</a>
@@ -87,7 +87,7 @@
                     <% else %>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href=" <%= user_path(@user.username) %>" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="text-transform: none;">
-                                <%= image_tag @user.display_avatar, class: 'avatar', alt: 'Avatar', loading: 'lazy' %>
+                                <%= image_tag @user.display_avatar, class: 'avatar', alt: 'Avatar', loading: 'lazy', decoding: 'async' %>
                                 <%= @user.username %>
                             </a>
                             <div class="dropdown-menu dropdown-menu-right">

@@ -30,9 +30,9 @@
         </p>
 
         <% if @learning_module.scorm_package.attached? %>
-            <%= render 'scorm' %>
+            <%= render 'scorm', learning_module: @learning_module %>
         <% else %>
-            <%= render 'content' %>
+            <%= render 'content', learning_module: @learning_module %>
         <% end %>
     </div>
 
