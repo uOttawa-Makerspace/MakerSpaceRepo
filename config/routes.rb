@@ -573,12 +573,12 @@ Rails.application.routes.draw do
     collection do
       get :open_modal
       put :reorder
+      get 'subskill/:subskill', to: 'learning_area#subskill', as: :subskill
     end
 
     member do
       get :scorm_launch
-      # Set format: false to preserve the dot at the end. Without it we lose the
-      # file extension
+      # format: false to preserve dot at URL end, else we lose file extension
       get "scorm_assets/*path", to: "learning_area#serve_scorm_asset", as: :scorm_asset, format: false
     end
   end

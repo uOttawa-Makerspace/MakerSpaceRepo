@@ -11,3 +11,7 @@
     object-fit: cover;
   }
 }
+
+iframe {
+  overscroll-behavior: contain;
+}

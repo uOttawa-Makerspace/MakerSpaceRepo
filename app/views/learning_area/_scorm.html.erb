@@ -1,81 +1,26 @@
-<% if @learning_module.scorm_ready? %>
-    <script>
-     var API = {
-         LMSInitialize:    function() { return "true"; },
-         LMSFinish:        function() { return "true"; },
-         LMSGetValue:      function(key) { return ""; },
-         LMSSetValue:      function(key, value) {
-             if (key === "cmi.core.lesson_status" && value === "completed") {
-                 var el = document.getElementById('scorm-container');
-                 fetch(el.dataset.completedUrl, {
-                     method: "PUT",
-                     headers: { "Content-Type": "application/json", "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]').content },
-                     body: JSON.stringify({ learning_module_id: el.dataset.learningModuleId })
-                 });
-             }
-             return "true";
-         },
-         LMSCommit:        function() { return "true"; },
-         LMSGetLastError:  function() { return "0"; },
-         LMSGetErrorString: function() { return ""; },
-         LMSGetDiagnostic: function() { return ""; }
-     };
+<% if current_user.admin? %>
+    <%= link_to 'Edit', edit_learning_area_path(learning_module.id), class: 'btn btn-sm btn-primary' %>
+<% end %>
 
-     var API_1484_11 = {
-         Initialize:     function() { return "true"; },
-         Terminate:      function() { return "true"; },
-         GetValue:       function(key) { return ""; },
-         SetValue:       function(key, value) {
-             if (key === "cmi.completion_status" && value === "completed") {
-                 var el = document.getElementById('scorm-container');
-                 fetch(el.dataset.completedUrl, {
-                     method: "PUT",
-                     headers: { "Content-Type": "application/json", "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]').content },
-                     body: JSON.stringify({ learning_module_id: el.dataset.learningModuleId })
-                 });
-             }
-             return "true";
-         },
-         Commit:         function() { return "true"; },
-         GetLastError:   function() { return "0"; },
-         GetErrorString: function() { return ""; },
-         GetDiagnostic:  function() { return ""; }
-     };
-
-     function popScorm() {
-         var el = document.getElementById('scorm-container');
-         var iframe = document.getElementById('scorm-iframe');
-         var placeholder = document.getElementById('scorm-placeholder');
-
-         var win = window.open(el.dataset.launchUrl, '_blank');
-
-         if (win) {
-             iframe.style.display = 'none';
-             placeholder.style.display = 'block';
-
-             var poll = setInterval(function() {
-                 if (win.closed) {
-                     clearInterval(poll);
-                     iframe.style.display = 'block';
-                     placeholder.style.display = 'none';
-                 }
-             }, 1000);
-         }
-     }
-    </script>
-
-    <div id="scorm-container"
-         class="mb-3"
-         data-launch-url="<%= scorm_launch_learning_area_path(@learning_module) %>"
+<% if learning_module.scorm_ready? %>
+    <div id="scorm-container" class="mb-3"
+         data-launch-url="<%= scorm_launch_learning_area_path(learning_module) %>"
          data-completed-url="<%= completed_learning_module_track_index_path %>"
-         data-learning-module-id="<%= @learning_module.id %>">
+         data-learning-module-id="<%= learning_module.id %>">
+
+        <%# This has to load before the iframe. If this causes trouble,
+        remove the src attribute and have the scorm script put it back in %>
+        <%= vite_javascript_tag 'learning_modules_scorm', 'data-turbo-track': 'reload' %>
 
         <button type="button" class="btn btn-outline-secondary mb-3 d-block mx-auto"
                 onclick="document.getElementById('scorm-iframe').requestFullscreen()">
             <i class="fa fa-expand"></i> Fullscreen
         </button>
+        <noscript>
+            You need to have javascript enabled to view this learning module!
+        </noscript>
         <iframe id="scorm-iframe"
-                src="<%= scorm_launch_learning_area_path(@learning_module) %>"
+                src="<%= scorm_launch_learning_area_path(learning_module) %>"
                 width="100%"
                 height="680px"
                 class="d-block border rounded"
@@ -88,8 +33,16 @@
         </div>
     </div>
 
-<% elsif @learning_module.scorm_processing? %>
+<% elsif learning_module.scorm_processing? %>
     <p class="mb-3">SCORM package is being processed, check back shortly.</p>
-<% elsif @learning_module.scorm_failed? %>
+<% elsif learning_module.scorm_failed? %>
     <p class="mb-3">SCORM package failed to process. Please contact an administrator.</p>
+<% end %>
+
+<% if learning_module.extract_valid_urls.present? %>
+        <div class="border-top">
+            <% learning_module.extract_valid_urls.each do |url| %>
+                <iframe width="100%" height="600px" src="<%= url %>" class="d-block border-0"></iframe>
+            <% end %>
+        </div>
 <% end %>

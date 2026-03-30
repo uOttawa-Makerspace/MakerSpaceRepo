@@ -9,32 +9,19 @@ class LearningAreaController < DevelopmentProgramsController
                   scorm_launch
                   serve_scorm_asset
                 ]
-  before_action :set_training_categories, only: %i[new edit]
-  before_action :set_training_levels, only: %i[new edit]
+
+  before_action :form_training_data, only: %i[new edit create update]
 
   def index
-    @skills = Skill.all
-    @learning_module_track =
-      proc do |learning_module|
-        learning_module.learning_module_tracks.where(user: current_user)
-      end
-    @all_learning_modules =
-      proc { |training| training.learning_modules.order(:order) }
-    @learning_modules_completed =
-      proc do |training, level|
-        training
-          .learning_modules
-          .joins(:learning_module_tracks)
-          .where(
-            learning_module_tracks: {
-              user: current_user,
-              status: 'Completed'
-            }
-          )
-          .where(learning_modules: { level: level })
-      end
-    @total_learning_modules_per_level =
-      proc { |training, level| training.learning_modules.where(level: level) }
+    # Get all modules, group by training and separate into subskills. Modules
+    # with no subskill get put in a separate subskill page.
+    @learning_modules =
+      LearningModule
+        .with_attached_photos
+        .includes(:training)
+        .group_by(&:training)
+        .sort_by { |training, _| training.name }
+        .to_h
   end
 
   def new
@@ -42,9 +29,11 @@ class LearningAreaController < DevelopmentProgramsController
   end
 
   def show
-    @valid_urls = @learning_module.extract_valid_urls
-    @learning_module_track =
-      @learning_module.learning_module_tracks.where(user: current_user)
+  end
+
+  def subskill
+    @subskill = params[:subskill]
+    @learning_modules = LearningModule.where(subskill: params[:subskill])
   end
 
   def create
@@ -79,10 +68,10 @@ class LearningAreaController < DevelopmentProgramsController
       @learning_module.scorm_package.purge_later
       @learning_module.scorm_package_files.purge_later
     end
-    
+
     if @learning_module.update(learning_module_params)
       redirect_to learning_area_path(@learning_module.id),
-                  notice: "Learning module successfully updated."
+                  notice: 'Learning module successfully updated.'
     else
       flash.now[:alert] = 'Unable to apply the changes.'
       render :edit, status: :unprocessable_entity
@@ -154,12 +143,10 @@ class LearningAreaController < DevelopmentProgramsController
     @learning_module = LearningModule.find(params[:id])
   end
 
-  def set_training_categories
-    @training_categories = Training.all.order(:name).pluck(:name, :id)
-  end
-
-  def set_training_levels
+  def form_training_data
+    @training_categories ||= Training.all.order(:name).pluck(:name, :id)
     @training_levels ||= TrainingSession.return_levels
+    @subskills ||= LearningModule.unscope(:order).distinct.pluck(:subskill)
   end
 
   def learning_module_params
@@ -169,11 +156,45 @@ class LearningAreaController < DevelopmentProgramsController
       :training_id,
       :level,
       :cc,
+      :subskill,
       :badge_template_id,
       :scorm_package,
       photos: [],
       project_files: [],
       videos: []
+    )
+  end
+
+  def scorm_state_params
+    params.require(:scorm_cmi).permit(
+      # SCORM 1.2 state data
+      'cmi.core.lesson_status',
+      'cmi.core.lesson_location',
+      'cmi.core.score.raw',
+      'cmi.core.score.min',
+      'cmi.core.score.max',
+      'cmi.core.session_time',
+      'cmi.core.total_time',
+      'cmi.suspend_data',
+      'cmi.core.entry',
+      'cmi.core.exit',
+      'cmi.core.credit',
+      'cmi.core.lesson_mode',
+      # SCORM 2004 state data
+      'cmi.completion_status',
+      'cmi.success_status',
+      'cmi.location',
+      'cmi.score.raw',
+      'cmi.score.min',
+      'cmi.score.max',
+      'cmi.score.scaled',
+      'cmi.session_time',
+      'cmi.total_time',
+      'cmi.entry',
+      'cmi.exit',
+      'cmi.credit',
+      'cmi.mode',
+      'cmi.progress_measure'
     )
   end
 end

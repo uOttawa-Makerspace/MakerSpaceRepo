@@ -1,5 +1,6 @@
 class Skill < ApplicationRecord
   has_many :trainings
+  has_many :learning_modules, through: :trainings
   before_destroy :remove_training_relation
 
   private

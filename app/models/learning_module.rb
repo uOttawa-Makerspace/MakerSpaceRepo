@@ -15,7 +15,8 @@ class LearningModule < ApplicationRecord
   # job, and the job is configured to run after commit succeeds
   # https://guides.rubyonrails.org/active_storage_overview.html#downloading-files
   # https://codewithrails.com/blog/rails-enqueue-after-transaction-commit/
-  after_save :process_scorm_package, if: -> { attachment_changes.key?('scorm_package') }
+  after_save :process_scorm_package,
+             if: -> { attachment_changes.key?('scorm_package') }
   # The unzipped files are attached to this model here. Need to clear if the
   # scorm package changes
   has_many_attached :scorm_package_files
@@ -32,6 +33,16 @@ class LearningModule < ApplicationRecord
   before_create :set_order
 
   scope :filter_by_level, ->(level) { where(level: level) }
+  scope :ordered_by_level,
+        -> do
+          order(
+            Arel.sql(
+              "CASE level WHEN 'beginner' THEN 0 WHEN 'intermediate' THEN 1 WHEN 'advanced' THEN 2 END"
+            )
+          )
+        end
+
+  default_scope { order(:order) }
 
   def scorm_asset_url(relative_path)
     if relative_path.include?('..')
@@ -43,6 +54,10 @@ class LearningModule < ApplicationRecord
       path: relative_path,
       host: Rails.application.credentials.host
     )
+  end
+
+  def tracks_for_user(user)
+    learning_module_tracks.find_by(user:)
   end
 
   def capitalize_title

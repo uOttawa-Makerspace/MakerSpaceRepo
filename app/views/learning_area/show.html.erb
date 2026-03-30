@@ -12,15 +12,6 @@
     <% end %>
 
     <div class="card-body">
-        <% if current_user.admin? %>
-            <div class="d-flex justify-content-between mb-3">
-                <%= link_to 'Edit', edit_learning_area_path(@learning_module.id), class: 'btn btn-sm btn-primary' %>
-                <%= button_to 'Delete', learning_area_path(@learning_module.id), method: :delete,
-                              class: 'btn btn-sm btn-danger',
-                              data: { confirm: 'Are you sure? This will delete this learning module.' } %>
-            </div>
-        <% end %>
-
         <h1 class="mb-1"><%= @learning_module.title %></h1>
         <p class="mb-3">
             <span class="badge rounded-pill border <%= return_border_color(@learning_module.level) %> <%= return_text_color(@learning_module.level) %>">
@@ -30,19 +21,11 @@
         </p>
 
         <% if @learning_module.scorm_package.attached? %>
-            <%= render 'scorm' %>
+            <%= render 'scorm', learning_module: @learning_module %>
         <% else %>
-            <%= render 'content' %>
+            <%= render 'content', learning_module: @learning_module %>
         <% end %>
     </div>
-
-    <% if @valid_urls.present? %>
-        <div class="border-top">
-            <% @valid_urls.each do |url| %>
-                <iframe width="100%" height="600px" src="<%= url %>" class="d-block border-0"></iframe>
-            <% end %>
-        </div>
-    <% end %>
 </section>
 
 <%= render 'layouts/photoswipe' %>
