@@ -44,13 +44,13 @@
                     </div>
                 </div>
 
-                <%# Subskills are show separately %>
-                <% learning_modules.map(&:subskill).uniq.compact.each do |subskill| %>
-                    <div class="mb-4">
-                        <div>
-                            <h2 class="fs-6">Subskills</h2>
-                        </div>
-                        <div class="row row-cols-md-2 row-cols-lg-4 g-1">
+                <%# Subskills are shown separately %>
+                <div class="mb-4">
+                    <div>
+                        <h2 class="fs-6">Subskills</h2>
+                    </div>
+                    <div class="row row-cols-md-2 row-cols-lg-4 g-1">
+                        <% learning_modules.map(&:subskill).uniq.compact.each do |subskill| %>
                             <div class="card h-100 border-1 shadow-sm">
                                 <%= link_to subskill_learning_area_index_path(subskill), class: 'learning-module-thumbnail-wrapper' do %>
                                     <%#= image_tag learning_module.photos.first, loading: 'lazy',
@@ -61,11 +61,12 @@
                                     <h6 class="fw-bold mb-0"><%= subskill %></h6>
                                 </div>
                             </div>
-                        </div>
+                        <% end %>
                     </div>
-                <% end %>
+                </div>
 
-                <% learning_modules.group_by(&:level).each do |level, modules_by_level| %>
+                <%# Show modules with no subskill %>
+                <% learning_modules.reject(&:subskill).group_by(&:level).each do |level, modules_by_level| %>
                     <div class="mb-4">
                         <div class="d-flex align-items-center justify-content-between mb-3">
                             <div>
