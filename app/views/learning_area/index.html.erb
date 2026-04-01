@@ -51,6 +51,7 @@
                     </div>
                     <div class="row row-cols-md-2 row-cols-lg-4 g-1">
                         <% learning_modules.map(&:subskill).uniq.compact.each do |subskill| %>
+                            <% next if subskill.blank? %>
                             <div class="card h-100 border-1 shadow-sm">
                                 <%= link_to subskill_learning_area_index_path(subskill), class: 'learning-module-thumbnail-wrapper' do %>
                                     <%#= image_tag learning_module.photos.first, loading: 'lazy',
