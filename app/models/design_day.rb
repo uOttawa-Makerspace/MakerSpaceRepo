@@ -34,4 +34,10 @@ class DesignDay < ApplicationRecord
   def floorplan_urls
     floorplans.map(&:url) if floorplans.attached?
   end
+
+  def floorplan_titles
+    if floorplans.attached?
+      floorplans.map { |floorplan| floorplan.metadata[:floorplan_title] }
+    end
+  end
 end

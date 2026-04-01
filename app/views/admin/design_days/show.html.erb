@@ -55,32 +55,33 @@
                 <button class="btn btn-success mb-3" data-floorplan-add><%= fa_icon 'plus' %> Add a floorplan</button>
             </div>
 
-            <div data-floorplan-container>
-                <div hidden disabled>
-                    <div class="input-group mb-3" data-floorplan-template>
-                        <%= f.file_field :floorplans, class: 'form-control', accept: 'image/*', autocomplete: 'off', multiple: true %>
-                        <button type="button" class="btn btn-danger" data-floorplan-delete><%= fa_icon :trash %></button>
-                    </div>
-                </div>
-            </div>
-            <hr />
-
             <div>
                 <h2 class="text-center">Floorplans currently on display</h3>
-                <div>
-                    <% unless @design_day.floorplans.attached? %>
-                        <p class="text-center">No floorplans attached...</p>
-                    <% end %>
-                    <% @design_day.floorplans.each do |image| %>
-                        <div class="input-group mb-3">
-                            <%= f.hidden_field :floorplans, multiple: true, value: image.signed_id %>
-                            <%= image_tag image, class: 'img-fluid', style: 'height: 5em' %>
-                            <%= link_to image.filename, image, class: 'input-group-text flex-fill' %>
-                            <%= button_tag fa_icon(:trash), class: 'btn btn-danger', data: {floorplan_delete: ''}, type: 'button' %>
-                        </div>
-                    <% end %>
-                </div>
+                    <div>
+                        <% unless @design_day.floorplans.attached? %>
+                            <p class="text-center">No floorplans attached...</p>
+                        <% end %>
+                        <% @design_day.floorplans.each do |image| %>
+                            <div class="d-flex align-items-center gap-2 mb-3">
+                                <%= image_tag image, style: 'height: 60px;' %>
+                                <%= text_field_tag "design_day[floorplan_title][]", image.blob.metadata['floorplan_title'], class: 'form-control' %>
+                                <%= f.hidden_field :floorplans, multiple: true, value: image.signed_id %>
+                                <%= link_to image.filename, image, class: 'btn btn-outline-secondary' %>
+                                <%= button_tag fa_icon(:trash), class: 'btn btn-outline-danger', data: { floorplan_delete: '' }, type: 'button' %>
+                            </div>
+                        <% end %>
+                    </div>
             </div>
+        </div>
+
+        <div data-floorplan-container>
+            <fieldset hidden disabled>
+                <div class="input-group mb-3" data-floorplan-template>
+                    <%= text_field_tag "design_day[floorplan_title][]", nil, class: 'form-control' %>
+                    <%= f.file_field :floorplans, class: 'form-control', accept: 'image/*', autocomplete: 'off', multiple: true %>
+                    <button type="button" class="btn btn-danger" data-floorplan-delete><%= fa_icon :trash %></button>
+                </div>
+            </fieldset>
         </div>
 
         <div class="text-center">

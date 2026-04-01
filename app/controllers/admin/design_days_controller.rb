@@ -2,7 +2,7 @@ class Admin::DesignDaysController < AdminAreaController
   # https://api.rubyonrails.org/v7.2/classes/ActiveStorage/SetCurrent.html
   # Sets url options for disk service to generate public urls
   include ActiveStorage::SetCurrent
-  
+
   before_action :make_variables, only: %i[show update data]
   skip_before_action :current_user, only: :data
   skip_before_action :ensure_admin, only: :data
@@ -18,16 +18,24 @@ class Admin::DesignDaysController < AdminAreaController
     render json:
              @design_day.as_json(
                include: [:design_day_schedules],
-               methods: %i[semester year floorplan_urls] # call methods on DesignDay
+               methods: %i[semester year floorplan_urls floorplan_titles] # call methods on DesignDay
              )
   end
 
   def update
     if @design_day.update(design_day_params)
-      flash[:notice] = "Design day configuration updated"
+      @design_day.floorplans.each_with_index do |floorplan, index|
+        # Takes the title from the form and inserts it into activestorage metadata
+        # Hopefully this doesn't get obliterated by some routine cleanup or post-processing?
+        title = params[:design_day][:floorplan_title][index]
+        floorplan.blob.update(
+          metadata: floorplan.blob.metadata.merge(floorplan_title: title)
+        )
+      end
+      flash[:notice] = 'Design day configuration updated'
       redirect_to @design_day
     else
-      flash[:alert] = "Failed to update configuration"
+      flash[:alert] = 'Failed to update configuration'
       render :show, status: :unprocessable_content
     end
   end
