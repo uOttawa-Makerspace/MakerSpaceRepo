@@ -58,11 +58,11 @@ class ProjectProposalsController < SessionsController
   # GET /project_proposals/1
   # GET /project_proposals/1.json
   def show
-    if !@user.admin? && !@project_proposal.user.eql?(@user) &&
-         @project_proposal.approved != 1
-      redirect_to root_path,
+    unless @project_proposal.approved?
+      unless @user.admin? || @project_proposal.user.eql?(@user)
+        redirect_to project_proposals_path,
                   alert: 'You are not allowed to access this project.'
-      return
+      end
     end
 
     @categories = @project_proposal.categories
@@ -71,10 +71,9 @@ class ProjectProposalsController < SessionsController
         .repositories
         .order([sort_order].to_h)
         .paginate(per_page: 9, page: params[:page])
-    @photos = photo_hash
     @project_photos =
-      @project_proposal.photos.joins(:image_attachment)&.first(5) || []
-    @project_files = @project_proposal.repo_files.joins(:file_attachment)
+      @project_proposal.photos.take(5)
+    @project_files = @project_proposal.project_files
     @linked_pp = @project_proposal.linked_project_proposal
     @revisions =
       ProjectProposal.where(linked_project_proposal_id: @project_proposal.id)
@@ -89,8 +88,8 @@ class ProjectProposalsController < SessionsController
   def edit
     @categories = @project_proposal.categories
     @category_options = CategoryOption.show_options
-    @photos = @project_proposal.photos.joins(:image_attachment).first(5)
-    @files = @project_proposal.repo_files.joins(:file_attachment)
+    @photos = @project_proposal.photos
+    @files = @project_proposal.project_files
   end
 
   def projects_assigned

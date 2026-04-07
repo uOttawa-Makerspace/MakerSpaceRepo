@@ -6,14 +6,18 @@
             <%= youtube_video(@project_proposal.youtube_link) %>
         <% end %>
 
-        <% if @project_photos.present? && @project_photos.first.image.attached? %>
+        <% if @project_photos.present? %>
             <div id="show-photo">
-                <%= image_tag @project_photos.first.image, alt: 'Project Proposal Picture', data: { width: @project_photos.first.try(:width), height: @project_photos.first.try(:height) } %>
+                <%= image_tag @project_photos.first, alt: 'Project Proposal Picture',
+                              loading: 'lazy', decoding: 'async',
+                              data: { width: @project_photos.first.try(:width), height: @project_photos.first.try(:height) } %>
             </div>
 
             <div id="photo-slide">
                 <% @project_photos.each do |p| %>
-                    <%= image_tag p.image, alt: 'Related Repository Image', data: { width: p.width, height: p.height } %>
+                    <%= image_tag p, alt: 'Related Repository Image',
+                                  loading: 'lazy', decoding: 'async',
+                                  data: { width: p.metadata[:width], height: p.metadata[:height] } %>
                 <% end %>
             </div>
             <br>
@@ -54,7 +58,7 @@
                 <% else %>
                     <div class="word-break">
                         <div class="alert alert-info">
-                            Please <%= link_to 'sign in', login_path, class: 'text-decoration-underline' %> to view client info.
+                            <%= link_to 'Sign in', login_path %> to view client info.
                         </div>
                     </div>
                 <% end %>
@@ -140,7 +144,13 @@
                 <%= t('project_proposal.proposed_on') %>
                 <%= @project_proposal.created_at.strftime('%b %e %Y') %>
             </li>
-            <li class="text-secondary"><%= t('project_proposal.contact') %>: <%= mail_to @project_proposal.email %></li>
+            <li class="text-secondary">
+                <% if signed_in? %>
+                    <%= t('project_proposal.contact') %>: <%= mail_to @project_proposal.email %>
+                <% else %>
+                    <%= link_to 'Sign in', login_path %> to view contact information
+                <% end %>
+            </li>
 
             <% if @project_files.present? %>
                 <div class="repo-info-item">
@@ -148,7 +158,7 @@
                     <div class="files-show">
                         <% @project_files.each do |f| %>
                             <div class="file-item-show">
-                                <u><%= fa_icon 'file-text-o' %> <%= link_to f.file.filename, rails_blob_path(f.file), download: 'download' %></u><span><%= f.file.byte_size / 1000 %>
+                                <u><%= fa_icon 'file-text-o' %> <%= link_to f.filename, f.url, download: 'download' %></u><span><%= f.byte_size / 1000 %>
                                     KB</span>
                             </div>
                         <% end %>

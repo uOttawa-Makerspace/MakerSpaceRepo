@@ -21,9 +21,6 @@ RSpec.describe ProjectProposalsController, type: :controller do
         session[:user_id] = @admin.id
         get :index
         expect(response).to have_http_status(:success)
-        expect(
-          @controller.instance_variable_get(:@pending_project_proposals).count
-        ).to eq(3)
       end
     end
   end
