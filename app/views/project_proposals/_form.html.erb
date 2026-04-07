@@ -105,26 +105,49 @@
         </div>
     </div>
 
-    <div id="file-container"></div>
+    <div class="mb-3">
+        <%= label_tag :gallery, t('project_proposal.new.gallery'), class: 'form-label' %>
+        <div class="file-upload-drop-zone">
+            <div class="input-group mb-3">
+                <%= f.file_field :photos,
+                 include_hidden: false,
+                 multiple: true,
+                 data: {
+                     file_upload_helper: true,
+                     file_upload_preview_selector: '[data-file-upload-proposal-preview]',
+                     file_upload_prefix: 'project_proposal[photos]',
+                     # file_upload_suffix: '',  # Leave empty or omit for Active Storage
+                     file_upload_limit: 5
+                 },
+                 accept: 'image/*',
+                 class: 'form-control',
+                 aria_label: t('project_proposal.new.gallery_aria_label') %>
+            </div>
 
-    <div class="mb-3">
-        <%= label_tag :photo, t('project_proposal.new.gallery'), class: 'form-label' %>
-        <div class="input-group mb-3">
-            <%= file_field_tag 'images[]', type: :files, multiple: true, class: 'form-control d-inline-block float-start image-upload', aria_label: t('project_proposal.new.gallery_aria_label') %>
-            <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="new-photo-input">
-                <i class="fa fa-plus"></i>
-            </button>
-        </div>
-    </div>
-    <div class="mb-3">
-        <div class="repo-image mx-auto">
-            <div id="dragndrop"  ondrop="dragndrop(event);" ondragover="dragover(event);">
-                <%= fa_icon 'cloud-upload' %>
-                <p>Drag &amp; Drop</p>
+            <p class="file-upload-drop-message">
+                <span class="text-muted"><%= fa_icon('cloud-upload') %> or drag & drop images here</span>
+            </p>
+
+            <div data-file-upload-proposal-preview
+                 data-file-upload-sortable
+                 class="file-upload-preview-pane">
+                <%# When removing all photos, ensure at least an array is
+                initialized to empty, to trigger attachment purge %>
+                <%= hidden_field_tag "project_proposal[photos][]", "" %>
+                <% @project_proposal.photos.each do |photo| %>
+                    <div class="file-upload-item-preview">
+                        <%= hidden_field_tag "project_proposal[photos][]", photo.signed_id %>
+                        <%= image_tag photo %>
+                        <span title="<%= photo.filename %>"><%= photo.filename %></span>
+                        <%= button_tag t('project_proposal.admin.delete'),
+                        class: 'file-upload-item-delete',
+                                       data: { file_upload_item_delete: true },
+                                       type: 'button' %>
+                    </div>
+                <% end %>
             </div>
         </div>
     </div>
-
 
     <div class="mb-3">
         <%= f.label :equipments, t('project_proposal.new.possible_tech_involved'), class: 'form-label' %>
@@ -190,8 +213,9 @@
     <div class="mb-3">
         <%= f.label :categories, t('project_proposal.new.categories'), class: 'form-label mb-0' %>
         <div class="form-text"><%= t('project_proposal.new.categories_sub') %></div>
-        <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :name, :name), { include_blank: t('project_proposal.new.category_placeholder'), include_hidden: false }, { class: 'profile-text form-control form-select', multiple: true } %>
-
+        <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :name, :name),
+         { include_blank: t('project_proposal.new.categories_placeholder'), include_hidden: false },
+         { class: 'form-control form-select', multiple: true } %>
     </div>
 
     <%# No captcha if logged in %>

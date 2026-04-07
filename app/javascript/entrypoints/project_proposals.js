@@ -1,4 +1,6 @@
 import TomSelect from "tom-select";
+import "./file_upload.js";
+
 if (document.getElementById("project_proposal_categories")) {
   if (!document.getElementById("project_proposal_categories").tomselect) {
     new TomSelect("#project_proposal_categories", {
@@ -37,7 +39,7 @@ if (document.getElementById("waiting-save-button")) {
     .getElementById("waiting-save-button")
     .addEventListener("click", function (event) {
       let past_exp = document.getElementById(
-        "project_proposal_past_experiences"
+        "project_proposal_past_experiences",
       );
       let past_exp_add = past_exp.value + "|";
       while (document.getElementsByClassName("main_ul")[0].lastChild) {
@@ -57,7 +59,7 @@ let form =
 if (form) {
   form.addEventListener("submit", (e) => {
     let clientBackground = document.querySelector(
-      "trix-editor[input='project_proposal_client_background']"
+      "trix-editor[input='project_proposal_client_background']",
     );
     let clientBackgroundValue = clientBackground.value;
     if (clientBackgroundValue.length < 1) {
@@ -76,7 +78,7 @@ if (form) {
       }
     }
     let projectDescription = document.querySelector(
-      "trix-editor[input='project_proposal_description']"
+      "trix-editor[input='project_proposal_description']",
     );
     let projectDescriptionValue = projectDescription.value;
     if (projectDescriptionValue.length < 1) {
@@ -93,7 +95,7 @@ if (form) {
           "Veuillez entrer une description de votre projet / Please enter a description of your project";
         projectDescription.classList.add("is-invalid");
         projectDescription.parentElement.appendChild(
-          projectDescriptionFeedback
+          projectDescriptionFeedback,
         );
       }
     }

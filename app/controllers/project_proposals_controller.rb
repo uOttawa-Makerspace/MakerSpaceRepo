@@ -271,28 +271,16 @@ class ProjectProposalsController < SessionsController
       if @project_proposal.update(project_proposal_params.except(:categories))
         update_files
         create_categories
-        begin
-          update_photos
-        rescue FastImage::ImageFetchFailure,
-               FastImage::UnknownImageType,
-               FastImage::SizeNotFound => e
-          Airbrake.notify(e)
-          flash[
-            :alert_yellow
-          ] = 'Something went wrong while uploading photos, try again later. Other changes have been saved. '
-          format.json { render json: { redirect_uri: request.path } }
-          format.html { redirect_back fallback_location: request.path }
-        else
-          format.html do
+
+        format.html do
             redirect_to project_proposal_path(@project_proposal.slug),
                         notice: 'Project proposal was successfully updated.'
-          end
-          format.json do
-            render json: {
-                     redirect_uri:
-                       project_proposal_path(@project_proposal.slug).to_s
-                   }
-          end
+        end
+        format.json do
+          render json: {
+                   redirect_uri:
+                   project_proposal_path(@project_proposal.slug).to_s
+                 }
         end
       else
         flash[
@@ -456,7 +444,7 @@ class ProjectProposalsController < SessionsController
       :prototype_cost,
       :past_experiences,
       :linked_project_proposal_id,
-      { area: [], categories: [] }
+      { area: [], categories: [], photos: [] }
     ]
 
     permitted += %i[season year] if current_user.admin?

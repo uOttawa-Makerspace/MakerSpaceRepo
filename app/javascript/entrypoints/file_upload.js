@@ -79,12 +79,18 @@ function appendFileToPreview(file, previewContainer, fieldPrefix, fieldSuffix) {
   const dt = new DataTransfer();
   dt.items.add(file);
   fileInput.files = dt.files;
-  fileInput.name = `${fieldPrefix}[${itemIndex}]`;
-  if (fieldSuffix) fileInput.name += `[${fieldSuffix}]`;
+  // Sometimes uploads are sent to a separate model (old paperclip), sometimes
+  // they're attached via has_many_attached (activestore). This allows us to
+  // have both.
+  if (fieldSuffix) {
+    fileInput.name = `${fieldPrefix}[${itemIndex}][${fieldSuffix}]`;
+  } else {
+    fileInput.name = `${fieldPrefix}[]`;
+  }
   preview.appendChild(fileInput);
 
   //  Position hidden input (sortable containers only)
-  if (isSortable) {
+  if (isSortable && fieldSuffix) {
     const posInput = document.createElement("input");
     posInput.type = "hidden";
     posInput.name = `${fieldPrefix}[${itemIndex}][position]`;
@@ -228,7 +234,11 @@ function createFileInput(target) {
   if (target.dataset.fileUploadInitialized) return;
   target.dataset.fileUploadInitialized = "true";
 
-  target.dataset.fileUploadPrefix = target.name;
+  if (!target.dataset.fileUploadPrefix) {
+    throw new Error(
+      "file_upload: data-file-upload-prefix is required on " + target.name,
+    );
+  }
   target.removeAttribute("name");
   target.addEventListener("change", onFileUpload);
 
