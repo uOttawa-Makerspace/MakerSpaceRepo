@@ -399,9 +399,10 @@ class ProjectProposalsController < SessionsController
     end
   end
 
+  # FIXME: This doesn't work anymore after moving to activestorage
   def update_files
     if params['deletefiles'].present?
-      @project_proposal.repo_files.each do |f|
+      @project_proposal.project_files.each do |f|
         next unless params['deletefiles'].include?(f.file.id.to_s)
         # checks if the file should be deleted
         f.file.purge
