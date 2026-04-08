@@ -31,6 +31,10 @@ FactoryBot.define do
       scorm_package { ScormZipHelper.create_scorm_zip }
     end
 
+    trait :with_nested_scorm_object do
+      scorm_package { ScormZipHelper.create_scorm_zip(nested_dir: 'scorm_directory') }
+    end
+
     trait :broken do
       title { "" }
     end

@@ -9,7 +9,7 @@ class ScormExtractor
     # learning module. A prefix prefix, perhaps even.
     prefix =
       "scorm/learning_modules/#{Rails.env}_#{learning_module.id}_#{SecureRandom.uuid}"
-    
+
     Rails.logger.info "Starting SCORM extract for learning module #{learning_module.id}"
     # Mark module as pending
     learning_module.update!(scorm_status: :processing)
@@ -19,23 +19,38 @@ class ScormExtractor
         # Remove previously attached files
         learning_module.scorm_package_files.purge
 
+        # Directly find manifest file and read entry point path.
+        # Sometimes the scorm is nested inside a directory
+        manifest_entry = zip.find_entry(MANIFEST_FILE)
+        manifest_entry ||=
+          zip.entries.find { |e| e.name.end_with?("/#{MANIFEST_FILE}") }
+        return nil unless manifest_entry
+
+        root_dir =
+          (
+            if manifest_entry.name == MANIFEST_FILE
+              nil
+            else
+              File.dirname(manifest_entry.name)
+            end
+          )
+
         zip.each do |entry|
           # Skip directories
           next if entry.directory?
           # Skip some files we don't want
           next if JUNK_PREFIXES.any? { |p| entry.name.start_with?(p) }
 
+          normalized_name =
+            root_dir ? entry.name.delete_prefix("#{root_dir}/") : entry.name
+
           # Attach all files with directory as a custom key
           learning_module.scorm_package_files.attach(
             io: entry.get_input_stream,
-            filename: entry.name,
-            key: "#{prefix}/#{entry.name}"
+            filename: normalized_name,
+            key: "#{prefix}/#{normalized_name}"
           )
         end
-
-        # Directly find manifest file and read entry point path from
-        manifest_entry = zip.find_entry(MANIFEST_FILE)
-        return nil unless manifest_entry
 
         # REXML is built in but is too strict and wants all XML namespaces
         # defined in a manifest.
