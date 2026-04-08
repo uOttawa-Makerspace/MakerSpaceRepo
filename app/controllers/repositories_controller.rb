@@ -394,7 +394,7 @@ class RepositoriesController < SessionsController
       :project_proposal_id,
       categories: [],
       equipments: [],
-      photos_attributes: [:id, :image, :_destroy],
+      photos_attributes: [:id, :image, :_destroy, :position],
       repo_files_attributes: [:id, :file, :_destroy]
     )
   end
@@ -420,11 +420,15 @@ class RepositoriesController < SessionsController
   end
 
   def create_equipments
-    if params[:repository][:equipments].present?
-      params[:repository][:equipments]
-        .filter(&:present?)
-        .first(5)
-        .each { |e| Equipment.create(name: e, repository_id: @repository.id) }
+    return if params[:repository][:equipments].blank?
+    
+    params[:repository][:equipments]
+      .filter(&:present?)
+      .first(5)
+      .each do |e|
+        # Create EquipmentOption if not there already.
+        EquipmentOption.find_or_create_by(name: e)
+        Equipment.create(name: e, repository_id: @repository.id)
     end
   end
 

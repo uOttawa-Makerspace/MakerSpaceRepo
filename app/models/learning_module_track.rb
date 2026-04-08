@@ -2,5 +2,7 @@ class LearningModuleTrack < ApplicationRecord
   belongs_to :learning_module, optional: true
   belongs_to :user, optional: true
 
-  scope :completed, -> { where(status: "Completed") }
+  enum :status, { in_progress: 'In progress', completed: 'Completed' }
+
+  validates :learning_module, uniqueness: { scope: :user }
 end

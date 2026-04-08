@@ -117,7 +117,10 @@ Rails.application.routes.draw do
   resources :printer_types, except: %i[show]
   resources :printer_issues,
             only: %i[index show new create edit update destroy] do
-    collection { get :history }
+    collection do
+      get :history
+      patch :update_notification_email
+    end
   end
 
   resources :lockers do
@@ -155,6 +158,8 @@ Rails.application.routes.draw do
   end
 
   root "static_pages#home"
+
+  get "changelog", to: "changelog#index"
 
   # STATIC PAGES
   namespace :static_pages, path: "/", as: nil do
@@ -569,6 +574,13 @@ Rails.application.routes.draw do
     collection do
       get :open_modal
       put :reorder
+      get 'subskill/:subskill', to: 'learning_area#subskill', as: :subskill
+    end
+
+    member do
+      get :scorm_launch
+      # format: false to preserve dot at URL end, else we lose file extension
+      get "scorm_assets/*path", to: "learning_area#serve_scorm_asset", as: :scorm_asset, format: false
     end
   end
 
@@ -655,7 +667,7 @@ Rails.application.routes.draw do
   end
 
   # :show and :update would take a space ID and use the logged in session user ID
-  resources :walk_in_safety_sheets, except: :delete
+  resources :walk_in_safety_sheets, except: :destroy
 
   # namespace :help do
   #   get 'main', path: '/'

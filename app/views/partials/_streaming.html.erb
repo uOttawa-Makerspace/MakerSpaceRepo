@@ -2,11 +2,11 @@
 <% if youtube_id.match?(/\A[a-zA-Z0-9_-]{11}\z/) %>
   <iframe width="650" height="365"
           class="youtube-embed"
-          src="https://www.youtube-nocookie.com/embed/<%= youtube_id %>?rel=0"
+          id="yt-player-<%= youtube_id %>"
+          src="https://www.youtube.com/embed/<%= youtube_id %>?enablejsapi=1"
           frameborder="0"
-          sandbox="allow-scripts allow-same-origin allow-popups"
-          referrerpolicy="no-referrer"
           loading="lazy"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowfullscreen>
   </iframe>
 <% else %>

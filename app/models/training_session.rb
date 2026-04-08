@@ -14,6 +14,7 @@ class TrainingSession < ApplicationRecord
   validates :training, presence: { message: "A training subject is required" }
   validates :user, presence: { message: "A trainer is required" }
   validates :level, presence: { message: "A level is required" }
+  validates :space, presence: true
   validate :is_staff
   before_save :check_course
 

@@ -40,10 +40,11 @@
                             <%= t('.proficient_projects') %>
                         </a>
                         <div class="dropdown-menu" aria-labelledby="dropdown-projects">
+                            <%= link_to t('.all_proficient_projects'), proficient_projects_path, class: 'dropdown-item' %>
+                            <div class="dropdown-divider"></div>
                             <%= link_to t('.requests'), requests_proficient_projects_path, class: 'dropdown-item' %>
                             <%= link_to t('.new_proficient_project'), new_proficient_project_path, class: 'dropdown-item' %>
-                            <div class="dropdown-divider"></div>
-                            <%= link_to t('.all_proficient_projects'), proficient_projects_path, class: 'dropdown-item' %>
+                            <%= link_to t('admin.drop_off_locations'), admin_drop_off_locations_path, class: 'dropdown-item' %>
                         </div>
                     </li>
                 <% else %>

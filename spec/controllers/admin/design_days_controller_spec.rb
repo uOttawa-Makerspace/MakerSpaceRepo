@@ -65,6 +65,7 @@ RSpec.describe Admin::DesignDaysController, type: :controller do
           year
           design_day_schedules
           show_floorplans
+          floorplan_titles
           floorplan_urls
         ].each { |k| expect(scheds).to have_key(k) }
 

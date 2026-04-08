@@ -1,0 +1,80 @@
+<div class="d-flex align-items-center gap-3 border rounded-3 p-3 mb-3">
+    <% if learning_module.tracks_for_user(current_user).blank? %>
+        <div class="flex-grow-1">
+            <p class="mb-0">Ready to start?</p>
+            <p class="small mb-0">You haven't begun this module yet.</p>
+        </div>
+        <%= link_to 'Start Module',
+                    start_learning_module_track_index_path(learning_module_id: learning_module.id),
+                    class: 'btn btn-primary btn-sm' %>
+    <% elsif learning_module.tracks_for_user(current_user).in_progress? %>
+        <div class="flex-grow-1">
+            <p class="mb-0">In Progress</p>
+            <p class="small mb-0">Mark this module as complete when you're done.</p>
+        </div>
+        <%= link_to 'Mark Completed',
+                    completed_learning_module_track_index_path(learning_module_id: learning_module.id),
+                    class: 'btn btn-primary btn-sm' %>
+    <% elsif learning_module.tracks_for_user(current_user).completed? %>
+        <div class="flex-grow-1">
+            <p class="mb-0">
+                <i class="fa fa-check-circle text-success fs-5"></i>
+                You've completed this module — great work!
+            </p>
+        </div>
+    <% end %>
+    <% if current_user.admin? %>
+        <%= link_to 'Edit', edit_learning_area_path(learning_module.id), class: 'btn btn-sm btn-primary' %>
+    <% end %>
+</div>
+
+<div class="mb-3">
+    <%= sanitize learning_module.description %>
+</div>
+
+<% if learning_module.videos.any? %>
+    <div class="mb-3">
+        <%= video_tag url_for(learning_module.videos.first),
+                      controls: true,
+                      controlslist: 'nodownload',
+                      class: 'rounded border w-100',
+                      style: 'max-height: 480px;' %>
+    </div>
+<% end %>
+
+<% if learning_module.photos.length > 1 %>
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <% learning_module.photos.each do |photo| %>
+            <div class="bg-dark rounded border" style="width: 80px; height: 80px;">
+                <%= image_tag photo,
+                              alt: 'Gallery photo',
+                              class: 'rounded',
+                              style: 'width: 80px; height: 80px; object-fit: cover; cursor: pointer;',
+                              loading: 'lazy' %>
+            </div>
+        <% end %>
+    </div>
+<% end %>
+
+<% if learning_module.project_files.any? %>
+    <div class="mb-3">
+        <h6 class="mb-2">Project Files</h6>
+        <ul class="list-group list-group-flush">
+            <% learning_module.project_files.each do |file| %>
+                <li class="list-group-item d-flex align-items-center gap-2 px-0">
+                    <i class="fa fa-file-o"></i>
+                    <%= link_to file.filename.to_s, url_for(file) %>
+                    <span class="small ms-auto"><%= (file.byte_size / 1000.0).round(1) %> KB</span>
+                </li>
+            <% end %>
+        </ul>
+    </div>
+<% end %>
+
+<% if learning_module.extract_valid_urls.present? %>
+    <div class="border-top">
+        <% learning_module.extract_valid_urls.each do |url| %>
+            <iframe width="100%" height="600px" src="<%= url %>" class="d-block border-0"></iframe>
+        <% end %>
+    </div>
+<% end %>

@@ -1,0 +1,48 @@
+<% if current_user.admin? %>
+    <%= link_to 'Edit', edit_learning_area_path(learning_module.id), class: 'btn btn-sm btn-primary' %>
+<% end %>
+
+<% if learning_module.scorm_ready? %>
+    <div id="scorm-container" class="mb-3"
+         data-launch-url="<%= scorm_launch_learning_area_path(learning_module) %>"
+         data-completed-url="<%= completed_learning_module_track_index_path %>"
+         data-learning-module-id="<%= learning_module.id %>">
+
+        <%# This has to load before the iframe. If this causes trouble,
+        remove the src attribute and have the scorm script put it back in %>
+        <%= vite_javascript_tag 'learning_modules_scorm', 'data-turbo-track': 'reload' %>
+
+        <button type="button" class="btn btn-outline-secondary mb-3 d-block mx-auto"
+                onclick="document.getElementById('scorm-iframe').requestFullscreen()">
+            <i class="fa fa-expand"></i> Fullscreen
+        </button>
+        <noscript>
+            You need to have javascript enabled to view this learning module!
+        </noscript>
+        <iframe id="scorm-iframe"
+                src="<%= scorm_launch_learning_area_path(learning_module) %>"
+                width="100%"
+                height="680px"
+                class="d-block border rounded"
+                sandbox="allow-scripts allow-same-origin allow-forms"
+                allowfullscreen="true">
+        </iframe>
+
+        <div id="scorm-placeholder" style="display: none;" class="border rounded p-3">
+            <p class="mb-0">Module is open in another tab. Close it to resume here.</p>
+        </div>
+    </div>
+
+<% elsif learning_module.scorm_processing? %>
+    <p class="mb-3">SCORM package is being processed, check back shortly.</p>
+<% elsif learning_module.scorm_failed? %>
+    <p class="mb-3">SCORM package failed to process. Please contact an administrator.</p>
+<% end %>
+
+<% if learning_module.extract_valid_urls.present? %>
+        <div class="border-top">
+            <% learning_module.extract_valid_urls.each do |url| %>
+                <iframe width="100%" height="600px" src="<%= url %>" class="d-block border-0"></iframe>
+            <% end %>
+        </div>
+<% end %>

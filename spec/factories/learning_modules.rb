@@ -27,6 +27,10 @@ FactoryBot.define do
       end
     end
 
+    trait :with_scorm_object do
+      scorm_package { ScormZipHelper.create_scorm_zip }
+    end
+
     trait :broken do
       title { "" }
     end
