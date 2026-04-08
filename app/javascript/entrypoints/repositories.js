@@ -135,6 +135,7 @@ document.addEventListener("turbo:load", () => {
         plugins: ["remove_button"],
         maxItems: 5,
         openOnFocus: true,
+        create: true,
       });
     }
   }
