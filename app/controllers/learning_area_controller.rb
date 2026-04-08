@@ -22,6 +22,9 @@ class LearningAreaController < DevelopmentProgramsController
         .group_by(&:training)
         .sort_by { |training, _| training.name }
         .to_h
+        .transform_values do |modules|
+          modules.sort_by { |m| LearningModule.levels.keys.index(m.level) }
+        end
   end
 
   def new
@@ -145,7 +148,7 @@ class LearningAreaController < DevelopmentProgramsController
 
   def form_training_data
     @training_categories ||= Training.all.order(:name).pluck(:name, :id)
-    @training_levels ||= TrainingSession.return_levels
+    @training_levels ||= LearningModule.levels.values
     @subskills ||= LearningModule.unscope(:order).distinct.pluck(:subskill)
   end
 

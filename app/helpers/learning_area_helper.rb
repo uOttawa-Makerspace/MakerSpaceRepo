@@ -35,20 +35,19 @@ module LearningAreaHelper
 
   def return_text_color(level)
     case level
-    when 'General'
+    when 'general'
       'text-body'
-    when 'Beginner'
+    when 'beginner'
       'text-success'
-    when 'Intermediate'
+    when 'intermediate'
       'text-warning'
-    when 'Advanced'
+    when 'advanced'
       'text-danger'
     end
   end
 
   def levels_ordered(training)
-    result = training.learning_modules.pluck(:level).uniq.sort
-    result.include?("Advanced") ? result = result.rotate(1) : result
-    result
+    order = LearningModule.levels.keys
+    training.learning_modules.pluck(:level).uniq.sort_by { |level| order.index(level) }
   end
 end

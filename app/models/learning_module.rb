@@ -8,6 +8,16 @@ class LearningModule < ApplicationRecord
   has_many_attached :project_files # was: has_many :repo_files
   has_many_attached :videos # was: has_many :videos
 
+  enum :level,
+       {
+         # AKA 'no level'
+         general: 'General',
+         beginner: 'Beginner',
+         intermediate: 'Intermediate',
+         advanced: 'Advanced'
+       },
+       validate: true
+
   # SCORM packages are a zip file
   has_one_attached :scorm_package
   # If scorm package changes, update extraction or purge File is available onyl
@@ -37,7 +47,13 @@ class LearningModule < ApplicationRecord
         -> do
           order(
             Arel.sql(
-              "CASE level WHEN 'beginner' THEN 0 WHEN 'intermediate' THEN 1 WHEN 'advanced' THEN 2 END"
+              "CASE level
+                WHEN 'general'      THEN 0
+                WHEN 'beginner'     THEN 1
+                WHEN 'intermediate' THEN 2
+                WHEN 'advanced'     THEN 3
+                ELSE 0
+                END"
             )
           )
         end

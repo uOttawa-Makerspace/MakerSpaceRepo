@@ -16,6 +16,7 @@
         <p class="mb-3">
             <span class="badge rounded-pill border <%= return_border_color(@learning_module.level) %> <%= return_text_color(@learning_module.level) %>">
                 <%= @learning_module.level %>
+                <%= @learning_module.level.humanize %>
             </span>
             <span class="ms-2"><%= @learning_module.training.localized_name %></span>
         </p>
