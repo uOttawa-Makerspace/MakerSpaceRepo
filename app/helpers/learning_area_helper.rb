@@ -35,12 +35,14 @@ module LearningAreaHelper
 
   def return_text_color(level)
     case level
-    when "Beginner"
-      "text-success"
-    when "Intermediate"
-      "text-warning"
-    when "Advanced"
-      "text-danger"
+    when 'General'
+      'text-body'
+    when 'Beginner'
+      'text-success'
+    when 'Intermediate'
+      'text-warning'
+    when 'Advanced'
+      'text-danger'
     end
   end
 
