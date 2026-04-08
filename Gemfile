@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 source "https://rubygems.org"
-ruby "3.4.8"
-gem "rails", "~> 7.2.0"
+ruby "4.0.2"
+gem "rails", "~> 8.1"
 
 # no longer standard since 3.4
 gem "abbrev"
@@ -37,7 +37,7 @@ gem "pg", "~> 1.6"
 gem "prettier_print"
 gem "pry", "~> 0.15"
 gem "pry-rails", "~> 0.3", group: :development
-gem "psych", "~> 4.0"
+gem "psych", "~> 5.0"
 gem "quick_random_records", "~> 0.3.2"
 gem "rack-cors"
 gem "roo", "~> 3.0"
@@ -46,9 +46,9 @@ gem 'rrule'
 gem "rubyzip", "~> 3.0", require: "zip"
 gem "saml_idp", "~> 1.0"
 gem "sass-rails", "~> 6.0.0"
-gem "sdoc", "~> 1.1.0", group: :doc
-gem "shopify_app", "~> 22.5"
-gem "simplecov", "~> 0.21.2"
+gem "sdoc", "~> 2.6", group: :doc
+gem "shopify_app", "~> 23.0"
+gem "simplecov", "~> 0.22"
 gem "sprockets-rails"
 gem "stimulus-rails"
 gem "stripe"
@@ -61,7 +61,7 @@ gem "toastr-rails"
 gem "trix-rails", "~> 2.4", require: "trix"
 gem "vite_rails"
 gem "whenever", require: false
-gem "will_paginate", "~> 3.3.0"
+gem "will_paginate", "~> 4.0"
 gem "will_paginate-bootstrap-style"
 gem "youtube_id"
 gem "solid_queue", "~> 1.2"
@@ -76,17 +76,17 @@ group :development, :test do
   gem "byebug", platform: :mri
   gem "factory_bot_rails"
   gem "faker", "~> 3.1"
-  gem "listen", "~> 3.7.1"
+  gem "listen", "~> 3.7"
   gem "railroady"
   gem "rspec-json_expectations"
-  gem "rspec-rails", "~> 7.1.0"
-  gem "spring", "~> 4.1.0"
+  gem "rspec-rails", "~> 8.0"
+  gem "spring", "~> 4.4"
   gem "spring-watcher-listen", "~> 2.1.0"
-  gem 'brakeman', require: false          # Static analysis
-  gem 'bundler-audit', require: false     # Dependency vulnerabilities
-  gem 'ruby_audit', require: false        # Ruby vulnerabilities
+  gem 'brakeman', require: false
+  gem 'bundler-audit', require: false
+  gem 'ruby_audit', require: false
   gem 'rails_best_practices', require: false
-  gem 'bullet'                            # N+1 and security issues
+  gem 'bullet'
   gem "faraday-retry", "~> 2.4"
 end
 
@@ -99,15 +99,15 @@ group :development do
   gem "capistrano-rails", require: false
   gem "capistrano-rbenv", require: false
   gem "erb_lint", require: false
-  gem "letter_opener" # Open emails in development
+  gem "letter_opener"
   gem "rubocop-rails"
   gem "web-console"
-  gem "ruby-prof" # profiling
+  gem "ruby-prof"
 
   gem "solargraph", require: false
   gem "solargraph-rails", require: false
-  
-  # ssh deploymentque
+
+  # ssh deployment
   gem "bcrypt_pbkdf", "~> 1.0"
   gem "ed25519", "~> 1.2"
 end
@@ -119,6 +119,6 @@ group :test do
   gem "launchy", "~> 3.0"
   gem "rails-controller-testing"
   gem "rspec-retry"
-  gem "selenium-webdriver", "~> 4.39.0"
+  gem "selenium-webdriver", "~> 4.0"
   gem "shoulda-matchers", "~> 7.0"
 end

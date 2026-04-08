@@ -1306,6 +1306,23 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_27_192848) do
     t.index ["space_id"], name: "index_sub_spaces_on_space_id"
   end
 
+  create_table "tap_box_logs", force: :cascade do |t|
+    t.string "event_type", null: false
+    t.string "card_number"
+    t.bigint "user_id"
+    t.bigint "space_id"
+    t.string "mac_address"
+    t.text "message", null: false
+    t.json "details", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["card_number"], name: "index_tap_box_logs_on_card_number"
+    t.index ["created_at"], name: "index_tap_box_logs_on_created_at"
+    t.index ["event_type"], name: "index_tap_box_logs_on_event_type"
+    t.index ["space_id"], name: "index_tap_box_logs_on_space_id"
+    t.index ["user_id"], name: "index_tap_box_logs_on_user_id"
+  end
+
   create_table "team_memberships", force: :cascade do |t|
     t.bigint "user_id"
     t.bigint "team_id"
@@ -1626,6 +1643,8 @@ ActiveRecord::Schema[7.2].define(version: 2026_03_27_192848) do
   add_foreign_key "sub_space_bookings", "users"
   add_foreign_key "sub_space_bookings", "users", column: "approved_by_id"
   add_foreign_key "sub_spaces", "spaces"
+  add_foreign_key "tap_box_logs", "spaces"
+  add_foreign_key "tap_box_logs", "users"
   add_foreign_key "training_requirements", "proficient_projects"
   add_foreign_key "training_requirements", "trainings"
   add_foreign_key "training_sessions", "trainings"
