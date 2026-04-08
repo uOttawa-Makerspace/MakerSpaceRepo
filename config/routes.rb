@@ -666,7 +666,7 @@ Rails.application.routes.draw do
   end
 
   # :show and :update would take a space ID and use the logged in session user ID
-  resources :walk_in_safety_sheets, except: :delete
+  resources :walk_in_safety_sheets, except: :destroy
 
   # namespace :help do
   #   get 'main', path: '/'

@@ -2,7 +2,7 @@
 
 source "https://rubygems.org"
 ruby "3.4.8"
-gem "rails", "~> 7.2.0"
+gem "rails", "~> 8.1"
 
 # no longer standard since 3.4
 gem "abbrev"
