@@ -138,8 +138,7 @@ class LearningAreaController < DevelopmentProgramsController
 
   def only_admin_access
     return if current_user.admin?
-    redirect_to development_programs_path,
-                alert: 'Only admin members can access this area.'
+    redirect_to learning_area_index_path
   end
 
   def set_learning_module

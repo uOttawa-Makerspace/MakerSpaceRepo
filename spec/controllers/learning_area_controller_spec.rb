@@ -23,15 +23,12 @@ RSpec.describe LearningAreaController, type: :controller do
         expect(response).to have_http_status(:success)
       end
 
-      it 'should redirect to development_programs_path' do
+      it 'should redirect to learning area' do
         user = create(:user, :regular_user)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
         get :new
-        expect(flash[:alert]).to eq(
-          'You must be a part of the Development Program to access this area.'
-        )
-        expect(response).to redirect_to root_path
+        expect(response).to redirect_to learning_area_index_path
       end
     end
   end

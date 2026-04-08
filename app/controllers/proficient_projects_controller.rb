@@ -279,9 +279,8 @@ class ProficientProjectsController < DevelopmentProgramsController
 
   def only_admin_access
     return if current_user.admin?
-      redirect_to development_programs_path
-      flash[:alert] = "Only admin members can access this area."
-    
+      redirect_to proficient_projects_path
+      # flash[:alert] = "Only admin members can access this area."
   end
 
   def only_staff_access

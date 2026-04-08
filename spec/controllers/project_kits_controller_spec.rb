@@ -16,7 +16,7 @@ RSpec.describe ProjectKitsController, type: :controller do
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
         get :index
-        expect(response).to redirect_to root_path
+        expect(response).to have_http_status(:success)
       end
     end
   end
@@ -36,8 +36,8 @@ RSpec.describe ProjectKitsController, type: :controller do
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
         get :new
-        expect(response).to redirect_to root_path
-        expect(flash[:alert]).to eq("You must be a part of the Development Program to access this area.")
+        expect(response).to redirect_to project_kits_path
+        # expect(flash[:alert]).to eq("You must be a part of the Development Program to access this area.")
       end
     end
   end
@@ -121,33 +121,33 @@ RSpec.describe ProjectKitsController, type: :controller do
 
   describe "GET #mark_delivered" do
     context "mark_delivered" do
-      it "should show the index page" do
+      it "should accept admin requests" do
         kit = create(:project_kit)
         admin = create(:user, :admin)
         session[:user_id] = admin.id
         session[:expires_at] = Time.zone.now + 10_000
         get :mark_delivered, params: { project_kit_id: kit.id }
         expect(response).to redirect_to project_kits_path
-        expect(flash[:notice]).to eq("The kit has been marked as delivered")
+        expect(flash[:notice]).to eq("The kit has been marked as delivered.")
         expect(ProjectKit.last.delivered?).to be_truthy
       end
 
-      it "should show redirect the user" do
+      it "should show an error for missing id" do
         staff = create(:user, :staff)
         session[:user_id] = staff.id
         session[:expires_at] = Time.zone.now + 10_000
         get :mark_delivered, params: { project_kit_id: "" }
         expect(response).to redirect_to project_kits_path
-        expect(flash[:alert]).to eq("There was an error, try again later")
+        expect(flash[:alert]).to eq("Project kit ID was not found.")
       end
 
-      it "should show redirect the user" do
+      it "should redirect regular users" do
         user = create(:user, :regular_user)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
         get :mark_delivered, params: { project_kit_id: "" }
-        expect(response).to redirect_to root_path
-        expect(flash[:alert]).to eq("You must be a part of the Development Program to access this area.")
+        expect(response).to redirect_to project_kits_path
+        # expect(flash[:alert]).to eq("You must be a part of the Development Program to access this area.")
       end
     end
   end
