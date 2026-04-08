@@ -8,9 +8,22 @@ class CardTapJob < ApplicationJob
 
   def perform(rfid, space_id)
     # Update faculty membership
-    rfid.user.validate_uoeng_membership
+    space = Space.find_by(id: space_id)
+
+    rfid.user.validate_uoeng_membership(
+      card_number: rfid.card_number,
+      space: space
+    )
 
     # Push notification to staff dashboard
     StaffDashboardChannel.send_tap_in(rfid.user, space_id)
+  rescue => e
+    TapBoxLog.log_card_tap_job_failure(
+      user: rfid.user,
+      card_number: rfid.card_number,
+      space: Space.find_by(id: space_id),
+      exception: e
+    )
+    raise
   end
 end

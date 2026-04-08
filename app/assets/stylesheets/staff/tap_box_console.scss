@@ -1,0 +1,165 @@
+// ── Console container (custom dark IDE theme) ─────────────────────────
+#tap-box-console {
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  border-color: #333 !important;
+  font-size: 0.78rem;
+  line-height: 1.6;
+  height: calc(100vh - 10rem);
+  min-height: 25rem;
+
+  // Override Bootstrap table variables for transparent dark theme
+  .table {
+    --bs-table-bg: transparent;
+    --bs-table-color: #d4d4d4;
+    --bs-table-hover-bg: #2a2d30;
+    --bs-table-hover-color: #d4d4d4;
+    --bs-table-border-color: #2a2a2a;
+  }
+
+  td {
+    vertical-align: top;
+  }
+}
+
+// ── Event-type badge colours ──────────────────────────────────────────
+.log-badge {
+  min-width: 4.375rem;
+
+  &.card_tap {
+    background-color: #264f78 !important;
+    color: #6cb6ff;
+  }
+  &.sign_in {
+    background-color: #1a4731 !important;
+    color: #3fb950;
+  }
+  &.sign_out {
+    background-color: #3b2e1a !important;
+    color: #d29922;
+  }
+  &.error {
+    background-color: #4a1a1a !important;
+    color: #f85149;
+  }
+  &.warning {
+    background-color: #3b2e1a !important;
+    color: #d29922;
+  }
+  &.info {
+    background-color: #1a3a4a !important;
+    color: #58a6ff;
+  }
+  &.membership_check {
+    background-color: #2d1a4a !important;
+    color: #bc8cff;
+  }
+}
+
+// ── Semantic column colours ───────────────────────────────────────────
+.log-detail-key {
+  color: #808080;
+}
+.log-detail-value {
+  color: #ce9178;
+}
+.log-card {
+  color: #dcdcaa;
+}
+.log-user {
+  color: #4ec9b0;
+}
+.log-space {
+  color: #c586c0;
+}
+.log-timestamp {
+  color: #666;
+}
+
+// ── Streamed-row flash animation ──────────────────────────────────────
+.console-new-row {
+  animation: flash-in 0.6s ease-out;
+}
+
+@keyframes flash-in {
+  0% {
+    background: #264f78;
+  }
+  100% {
+    background: transparent;
+  }
+}
+
+// ── Mobile card layout ────────────────────────────────────────────────
+@media (max-width: 767px) {
+  #tap-box-console {
+    height: calc(100vh - 13.75rem);
+
+    .table {
+      display: block;
+
+      tbody,
+      tr {
+        display: block;
+        width: 100%;
+      }
+
+      tr {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        padding: 0.625rem 0;
+        gap: 0.375rem 0.75rem;
+      }
+
+      td {
+        display: block;
+        padding: 0;
+        border: none;
+
+        &.log-badge-col {
+          order: 1;
+        }
+        &.log-timestamp {
+          order: 2;
+          margin-left: auto;
+          font-size: 0.6875rem;
+        }
+
+        &.log-card,
+        &.log-user,
+        &.log-space {
+          order: 3;
+          font-size: 0.72rem;
+          display: flex;
+          align-items: center;
+          gap: 0.25rem;
+        }
+
+        &.log-card::before {
+          content: "💳";
+          font-size: 0.625rem;
+          opacity: 0.7;
+        }
+        &.log-user::before {
+          content: "👤";
+          font-size: 0.625rem;
+          opacity: 0.7;
+        }
+        &.log-space::before {
+          content: "📍";
+          font-size: 0.625rem;
+          opacity: 0.7;
+        }
+
+        &.msg-col {
+          order: 4;
+          width: 100%;
+          margin-top: 0.25rem;
+          padding-top: 0.5rem;
+          border-top: 0.0625rem dashed #333;
+        }
+      }
+    }
+  }
+}

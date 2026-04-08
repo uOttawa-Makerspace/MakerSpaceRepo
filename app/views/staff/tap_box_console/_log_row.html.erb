@@ -1,0 +1,41 @@
+<%
+  details_html = ""
+  if log.details.present?
+    parts = log.details.map do |k, v|
+      val = v.is_a?(Hash) || v.is_a?(Array) ? v.to_json : v.to_s
+      "<span class='log-detail-key'>#{h k}=</span><span class='log-detail-value'>#{h val}</span>"
+    end
+    details_html = " <span class='text-muted'>|</span> #{parts.join(' ')}".html_safe
+  end
+
+  # Format details safely for the data attribute to prevent quote collision
+  search_details = log.details&.map { |k, v| "#{k} #{v}" }&.join(' ')
+  search_string = [log.card_number, log.user&.name, log.message, log.space&.name, log.mac_address, search_details].compact.join(' ').downcase
+%>
+
+<tr
+  class="<%= 'console-new-row' if local_assigns[:streamed] %>"
+  data-event-type="<%= log.event_type %>"
+  data-searchable="<%= CGI.escapeHTML(search_string) %>"
+>
+  <td class="log-timestamp text-nowrap"><%= log.created_at.strftime("%Y-%m-%d %H:%M:%S.%L") %></td>
+  <td class="log-badge-col text-nowrap">
+    <span class="badge text-uppercase log-badge <%= log.event_type %>"><%= log.event_type.tr("_", " ") %></span>
+  </td>
+  <td class="log-card text-nowrap"><%= log.card_number || "—" %></td>
+  <td class="log-user text-nowrap">
+    <% if log.user %>
+      <%= log.user.name %>
+    <% else %>
+      <span class="text-muted">—</span>
+    <% end %>
+  </td>
+  <td class="log-space text-nowrap">
+    <% if log.space %>
+      <%= log.space.name %>
+    <% else %>
+      <span class="text-muted">—</span>
+    <% end %>
+  </td>
+  <td class="msg-col w-100 text-break"><%= h log.message %><%= details_html %></td>
+</tr>
