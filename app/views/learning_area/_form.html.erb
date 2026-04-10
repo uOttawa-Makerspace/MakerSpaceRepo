@@ -22,7 +22,7 @@
     <div class="mb-3">
         <%= f.label :subskill, 'Subskill (optional)', class: 'form-label' %>
         <%= f.select :subskill,
-        options_for_select(@subskills, @learning_module.subskill),
+            options_for_select(@subskills, @learning_module.subskill),
          { include_blank: "Select or type a new subskill..." },
          { class: 'form-select',
              data: { controller: 'tomselect' } } %>
@@ -42,13 +42,15 @@
 
     <div class="mb-3">
         <div class="form-check form-switch">
-            <%= f.check_box :scorm_enabled, class: 'form-check-input', role: 'switch', checked: @learning_module.scorm_package.attached? %>
+            <%= f.check_box :scorm_enabled, class: 'form-check-input', role: 'switch' %>
             <%= f.label :scorm_enabled, 'SCORM package', class: 'form-check-label' %>
         </div>
         <div class="form-text">Enable if uploading a SCORM <code>.zip</code> file instead of regular project files.</div>
     </div>
 
     <fieldset id="regular-files-section">
+        <%# Include this to wipe out existing package %>
+        <%= f.hidden_field :scorm_package, value: nil %>
         <div class="mb-3">
             <%= f.label :project_files, 'Project Files', class: 'form-label' %>
             <%= f.file_field :project_files, multiple: true, class: 'form-control', aria_label: 'Project Files' %>
@@ -111,15 +113,22 @@
     </fieldset>
 
     <fieldset id="scorm-section" class="mb-3" style="display: none;">
-        <%= f.label :scorm_package, 'SCORM Package (.zip)', class: 'form-label' %>
-        <%= f.file_field :scorm_package,
-                 class: 'form-control',
-                 accept: '.zip',
-                 aria_label: 'SCORM zip file', required: !@learning_module.scorm_package.attached? %>
-        <p class="form-text">Upload a valid SCORM <code>.zip</code> package.</p>
+        <%# Retain existing attachment when no new file is chosen %>
         <% if @learning_module.scorm_package.attached? %>
-            <p>Download current scorm package: <%= link_to @learning_module.scorm_package.filename, url_for(@learning_module.scorm_package) %></p>
+            <%= f.hidden_field :scorm_package, value: @learning_module.scorm_package.signed_id %>
         <% end %>
+
+        <%= f.label :scorm_package, class: 'form-label' do %>
+            SCORM Package (.zip)
+            <% if @learning_module.scorm_package.attached? %>
+                <p>Download current scorm package: <%= link_to @learning_module.scorm_package.filename, url_for(@learning_module.scorm_package) %></p>
+            <% end %>
+        <% end %>
+        <%= f.file_field :scorm_package,
+           class: 'form-control',
+           accept: '.zip',
+           aria_label: 'SCORM zip file', required: !@learning_module.scorm_package.attached? %>
+        <p class="form-text">Upload a valid SCORM <code>.zip</code> package.</p>
     </fieldset>
 
     <div class="text-center border-top pt-4">
