@@ -134,8 +134,14 @@ class LearningAreaController < DevelopmentProgramsController
     redirect_to learning_area_index_path
   end
 
+  # Can get module by numeric ID or by a custom shortcut
   def set_learning_module
-    @learning_module = LearningModule.find(params[:id])
+    @learning_module =
+      if params[:shortcut]
+        LearningModule.find_by!(shortcut_name: params[:shortcut])
+      else
+        LearningModule.find(params[:id])
+      end
   end
 
   def form_training_data
@@ -148,6 +154,7 @@ class LearningAreaController < DevelopmentProgramsController
     params.require(:learning_module).permit(
       :title,
       :description,
+      :shortcut_name,
       :training_id,
       :level,
       :cc,

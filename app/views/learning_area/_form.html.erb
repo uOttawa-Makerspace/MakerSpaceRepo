@@ -19,6 +19,15 @@
             'aria-label': 'Description' %>
     </div>
 
+    <%= f.label :shortcut_name, 'Shortcut permanent link to this learning module', class: 'form-label' %>
+    <div class="form-text mb-1">
+        Only letters, numbers, and underscores
+    </div>
+    <div class="input-group mb-3">
+        <span class="input-group-text"><code>/learning_modules/s/</code></span>
+        <%= f.text_field :shortcut_name, class: 'form-control', pattern: '[a-zA-Z0-9_]*', title: 'Only letters, numbers, and underscores' %>
+    </div>
+
     <div class="mb-3">
         <%= f.label :subskill, 'Subskill (optional)', class: 'form-label' %>
         <%= f.select :subskill,

@@ -1,16 +1,6 @@
 <% provide(:title, 'Learning Area') %>
 
 <section class="card mb-3">
-    <% if @learning_module.photos.any? %>
-        <div class="bg-dark" style="height: 320px;">
-            <%= image_tag @learning_module.photos.first,
-                          alt: @learning_module.title,
-                          class: 'card-img-top',
-                          style: 'width: 100%; height: 320px; object-fit: cover;',
-                          loading: 'lazy' %>
-        </div>
-    <% end %>
-
     <div class="card-body">
         <h1 class="mb-1"><%= @learning_module.title %></h1>
         <p class="mb-3">

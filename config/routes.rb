@@ -570,6 +570,8 @@ Rails.application.routes.draw do
     end
   end
 
+  # Define standalone route before resources to take priority
+  get '/learning_area/s/:shortcut', to: 'learning_area#show', as: :shortcut_learning_area
   resources :learning_area do
     collection do
       get :open_modal
