@@ -90,7 +90,7 @@ RSpec.describe TrainingSession, type: :model do
 
     context "#return_levels" do
       it "should return list of levels" do
-        levels = %w[Beginner Intermediate Advanced]
+        levels = %w[General Beginner Intermediate Advanced]
         expect(TrainingSession.return_levels).to eq(levels)
       end
     end
