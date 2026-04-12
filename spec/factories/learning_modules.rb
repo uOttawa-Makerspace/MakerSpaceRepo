@@ -5,6 +5,7 @@ FactoryBot.define do
     title { Faker::Lorem.word }
     description { Faker::Lorem.paragraph }
     level { "Beginner" }
+    shortcut_name { Faker::Alphanumeric.unique.alphanumeric(number: 8) }
 
     trait :with_files do
       after(:create) do |pp|
