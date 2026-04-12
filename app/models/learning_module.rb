@@ -8,18 +8,54 @@ class LearningModule < ApplicationRecord
   has_many_attached :project_files # was: has_many :repo_files
   has_many_attached :videos # was: has_many :videos
 
+  # Normalization runs before validation, but we still want to catch if something breaks
+  normalizes :shortcut_name,
+             with: ->(shortcut_name) do
+               shortcut_name.strip.downcase.underscore.parameterize(
+                 separator: '_'
+               )
+             end
+  validates :shortcut_name, format: { with: /\A[a-zA-Z0-9_]+\z/ }, allow_blank: true
+  validates :shortcut_name, uniqueness: { case_sensitive: false }
+
+  enum :level,
+       {
+         # AKA 'no level'
+         general: 'General',
+         beginner: 'Beginner',
+         intermediate: 'Intermediate',
+         advanced: 'Advanced'
+       },
+       validate: true
+
   # SCORM packages are a zip file
   has_one_attached :scorm_package
-  # If scorm package changes, update extraction or purge File is available onyl
+
+  # Check if we need to reprocess package. We need the is_a? check because
+  # sometimes no file is uploaded.
+  before_save -> do
+                new_blob = attachment_changes['scorm_package']
+                @scorm_package_changed =
+                  new_blob.is_a?(ActiveStorage::Attached::Changes::CreateOne) &&
+                    !new_blob.blob.persisted? # Is this really a new package
+                @scorm_package_cleared =
+                  new_blob.is_a?(ActiveStorage::Attached::Changes::DeleteOne)
+              end
+
+  # If scorm package changes, update extraction or purge File is available only
   # after commit, but change key is cleared after save. This would queue the
   # job, and the job is configured to run after commit succeeds
   # https://guides.rubyonrails.org/active_storage_overview.html#downloading-files
   # https://codewithrails.com/blog/rails-enqueue-after-transaction-commit/
   after_save :process_scorm_package,
-             if: -> { attachment_changes.key?('scorm_package') }
+             if: -> { @scorm_package_changed || @scorm_package_cleared }
   # The unzipped files are attached to this model here. Need to clear if the
   # scorm package changes
   has_many_attached :scorm_package_files
+
+  # Value to receive from the edit form
+  attribute :scorm_enabled, :boolean, default: false
+  after_initialize -> { self.scorm_enabled = scorm_package.attached? }
 
   enum :scorm_status,
        { pending: 0, processing: 1, ready: 2, failed: 3 },
@@ -37,7 +73,13 @@ class LearningModule < ApplicationRecord
         -> do
           order(
             Arel.sql(
-              "CASE level WHEN 'beginner' THEN 0 WHEN 'intermediate' THEN 1 WHEN 'advanced' THEN 2 END"
+              "CASE level
+                WHEN 'general'      THEN 0
+                WHEN 'beginner'     THEN 1
+                WHEN 'intermediate' THEN 2
+                WHEN 'advanced'     THEN 3
+                ELSE 0
+                END"
             )
           )
         end
@@ -108,7 +150,6 @@ class LearningModule < ApplicationRecord
       ExtractScormJob.perform_later(id)
     else
       # Package removed, delete files
-      # NOTE: This branch might never get called.
       scorm_package_files.purge_later
     end
   end

@@ -22,6 +22,9 @@ class LearningAreaController < DevelopmentProgramsController
         .group_by(&:training)
         .sort_by { |training, _| training.name }
         .to_h
+        .transform_values do |modules|
+          modules.sort_by { |m| LearningModule.levels.keys.index(m.level) }
+        end
   end
 
   def new
@@ -62,13 +65,6 @@ class LearningAreaController < DevelopmentProgramsController
   end
 
   def update
-    # Bit of a hack but I couldn't get the callback to function. Whatever
-    scorm_enabled = ActiveModel::Type::Boolean.new.cast(params[:scorm_enabled])
-    unless scorm_enabled
-      @learning_module.scorm_package.purge_later
-      @learning_module.scorm_package_files.purge_later
-    end
-
     if @learning_module.update(learning_module_params)
       redirect_to learning_area_path(@learning_module.id),
                   notice: 'Learning module successfully updated.'
@@ -135,17 +131,22 @@ class LearningAreaController < DevelopmentProgramsController
 
   def only_admin_access
     return if current_user.admin?
-    redirect_to development_programs_path,
-                alert: 'Only admin members can access this area.'
+    redirect_to learning_area_index_path
   end
 
+  # Can get module by numeric ID or by a custom shortcut
   def set_learning_module
-    @learning_module = LearningModule.find(params[:id])
+    @learning_module =
+      if params[:shortcut]
+        LearningModule.find_by!(shortcut_name: params[:shortcut])
+      else
+        LearningModule.find(params[:id])
+      end
   end
 
   def form_training_data
     @training_categories ||= Training.all.order(:name).pluck(:name, :id)
-    @training_levels ||= TrainingSession.return_levels
+    @training_levels ||= LearningModule.levels.values
     @subskills ||= LearningModule.unscope(:order).distinct.pluck(:subskill)
   end
 
@@ -153,12 +154,14 @@ class LearningAreaController < DevelopmentProgramsController
     params.require(:learning_module).permit(
       :title,
       :description,
+      :shortcut_name,
       :training_id,
       :level,
       :cc,
       :subskill,
       :badge_template_id,
       :scorm_package,
+      :scorm_enabled,
       photos: [],
       project_files: [],
       videos: []

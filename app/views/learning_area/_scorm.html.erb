@@ -1,5 +1,12 @@
 <% if current_user.admin? %>
-    <%= link_to 'Edit', edit_learning_area_path(learning_module.id), class: 'btn btn-sm btn-primary' %>
+    <div class="d-flex justify-content-between">
+        <div class="input-group w-auto">
+            <span id="permalink" class="form-control"><%= shortcut_learning_area_url(learning_module.shortcut_name) %></span>
+            <button onclick="copyField('#permalink', this)" class="btn btn-primary">Copy permalink</button>
+        </div>
+        
+        <%= link_to 'Edit', edit_learning_area_path(learning_module.id), class: 'btn btn-sm btn-primary' %>
+    </div>
 <% end %>
 
 <% if learning_module.scorm_ready? %>
@@ -40,9 +47,9 @@
 <% end %>
 
 <% if learning_module.extract_valid_urls.present? %>
-        <div class="border-top">
-            <% learning_module.extract_valid_urls.each do |url| %>
-                <iframe width="100%" height="600px" src="<%= url %>" class="d-block border-0"></iframe>
-            <% end %>
-        </div>
+    <div class="border-top">
+        <% learning_module.extract_valid_urls.each do |url| %>
+            <iframe width="100%" height="600px" src="<%= url %>" class="d-block border-0"></iframe>
+        <% end %>
+    </div>
 <% end %>

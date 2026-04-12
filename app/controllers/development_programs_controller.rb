@@ -100,10 +100,6 @@ class DevelopmentProgramsController < SessionsController
   private
 
   def grant_access
-    unless current_user.dev_program? || current_user.admin? ||
-             current_user.staff?
-      redirect_to root_path
-      flash[:alert] = "You must be a part of the Development Program to access this area."
-    end
+    signed_in
   end
 end

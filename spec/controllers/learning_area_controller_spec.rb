@@ -23,15 +23,12 @@ RSpec.describe LearningAreaController, type: :controller do
         expect(response).to have_http_status(:success)
       end
 
-      it 'should redirect to development_programs_path' do
+      it 'should redirect to learning area' do
         user = create(:user, :regular_user)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
         get :new
-        expect(flash[:alert]).to eq(
-          'You must be a part of the Development Program to access this area.'
-        )
-        expect(response).to redirect_to root_path
+        expect(response).to redirect_to learning_area_index_path
       end
     end
   end
@@ -222,6 +219,28 @@ RSpec.describe LearningAreaController, type: :controller do
                params: {
                  learning_module:
                    attributes_for(:learning_module, :with_scorm_object)
+               }
+        end
+
+        learning_module = assigns(:learning_module)
+        # Learning module should be created
+        expect(learning_module).to be_persisted
+        expect(response).to redirect_to(learning_area_url(learning_module))
+        expect(learning_module.scorm_ready?).to be false
+
+        learning_module.reload
+        # Extraction should succeed
+        expect(learning_module.scorm_ready?).to be true
+        expect(learning_module.scorm_entry_point).to eq('index.html')
+      end
+
+      it 'should extract nested SCORM zip files' do
+        # Run extraction job
+        perform_enqueued_jobs do
+          post :create,
+               params: {
+                 learning_module:
+                   attributes_for(:learning_module, :with_nested_scorm_object)
                }
         end
 

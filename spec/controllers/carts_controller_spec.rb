@@ -1,4 +1,4 @@
-require "rails_helper"
+require 'rails_helper'
 
 RSpec.describe CartsController, type: :controller do
   before(:all) do
@@ -12,22 +12,27 @@ RSpec.describe CartsController, type: :controller do
     session[:order_id] = @order.id
   end
 
-  describe "GET /index" do
-    context "logged as admin" do
-      it "should return 200 response" do
+  describe 'GET /index' do
+    context 'logged as admin' do
+      it 'should return 200 response' do
         get :index
         expect(response).to have_http_status(:success)
         expect(@controller.instance_variable_get(:@order_items).count).to eq(4)
       end
     end
 
-    context "logged as regular user" do
-      it "should redirect user to root" do
+    context 'accessing carts' do
+      it 'should redirect guests to login' do
+        session[:user_id] = nil
+        get :index
+        expect(response).to redirect_to login_path(back_to: request.path)
+      end
+
+      it 'should allow logged in users' do
         user = create(:user, :regular_user)
         session[:user_id] = user.id
         get :index
-        expect(response).to redirect_to root_path
-        expect(flash[:alert]).to eq("You must be a part of the Development Program to access this area.")
+        expect(response).to have_http_status :success
       end
     end
   end

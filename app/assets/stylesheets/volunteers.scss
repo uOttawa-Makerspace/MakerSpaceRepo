@@ -7,9 +7,15 @@ section#volunteersIndex,
 section#developmentIndex,
 section#faq {
   .jumbotron {
+    height: 80vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+
     &.volunteerJumbotron {
       //background-image: linear-gradient(rgba(black, 0.3) 20%, $primary),
-      background-image: linear-gradient(rgba(black, 0.3) 20%, black),
+      background-image:
+        linear-gradient(rgba(black, 0.3) 20%, black),
         url("volunteer/jumbotron.png");
     }
     background-size: cover;
@@ -21,10 +27,7 @@ section#faq {
     // actually don't set height, breaks mobile
     //height: 55rem;
     text-align: center;
-    padding-left: 20%;
-    padding-right: 20%;
-    padding-bottom: 5%;
-    padding-top: 10%;
+
     & > * {
       margin-bottom: 3rem;
     }

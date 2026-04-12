@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_28_190305) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_10_025738) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -657,10 +657,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_28_190305) do
     t.string "scorm_entry_point"
     t.string "scorm_prefix"
     t.integer "scorm_status", default: 0
+    t.string "shortcut_name"
     t.string "subskill"
     t.string "title"
     t.integer "training_id"
     t.datetime "updated_at", null: false
+    t.index ["shortcut_name"], name: "index_learning_modules_on_shortcut_name", unique: true
   end
 
   create_table "likes", id: :serial, force: :cascade do |t|

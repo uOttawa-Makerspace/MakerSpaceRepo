@@ -13,16 +13,6 @@ module ProficientProjectsHelper
     end
   end
 
-  def return_border_color(level)
-    case level
-    when 'Beginner'
-      'border-success'
-    when 'Intermediate'
-      'w3-border-yellow'
-    when 'Advanced'
-      'w3-border-red'
-    end
-  end
   def training_status(training_id, user_id)
     user = User.find(user_id)
     level =
