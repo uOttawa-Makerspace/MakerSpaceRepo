@@ -581,7 +581,7 @@ Rails.application.routes.draw do
 
     member do
       get :scorm_launch
-      post :scorm_commit
+      post :scorm_commit, defaults: { format: :json }
       # format: false to preserve dot at URL end, else we lose file extension
       get "scorm_assets/*path", to: "learning_area#serve_scorm_asset", as: :scorm_asset, format: false
     end

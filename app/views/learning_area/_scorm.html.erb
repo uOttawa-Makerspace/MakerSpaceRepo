@@ -4,6 +4,8 @@
     </div>
 <% end %>
 
+<%= debug current_user.learning_module_tracks.find_by(learning_module: learning_module).scorm_state %>
+
 <% if learning_module.scorm_ready? %>
     <div class="mb-3">
         <%# This has to load before the iframe. If this causes trouble,
@@ -30,7 +32,9 @@
                 allowfullscreen="true"
                 data-launch-url="<%= scorm_launch_learning_area_path(learning_module) %>"
                 data-completed-url="<%= completed_learning_module_track_index_path %>"
-                data-learning-module-id="<%= learning_module.id %>">
+                data-learning-module-id="<%= learning_module.id %>"
+                data-cmi="<%= current_user.learning_module_tracks.find_by(learning_module: learning_module).scorm_state.to_json %>"
+        >
         </iframe>
 
         <div id="scorm-placeholder" style="display: none;" class="border rounded p-3">
