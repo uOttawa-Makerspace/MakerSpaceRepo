@@ -18,9 +18,18 @@ class LockersController < AdminAreaController
       Locker.includes(locker_rentals: %i[rented_by decided_by]).includes(
         :locker_size
       )
-    @locker_sizes = LockerSize.all
+
+    # Link to makerstore object
     @locker_product_link = LockerOption.locker_product_link
+
+    # Locker sizes stored in DB
+    @locker_sizes = LockerSize.all
+    # Locker sizes received from makerstore
     @locker_product_info = LockerOption.locker_product_info
+
+    @local_lookup = @locker_sizes.index_by(&:shopify_gid)
+    @makerstore_lookup =
+      @locker_product_info[:variants].transform_keys { |gid| gid }
   end
 
   def show
@@ -113,6 +122,10 @@ class LockersController < AdminAreaController
   end
 
   private
+
+  def locker_sizes_lineup
+    makerstore_sizes = @locker_product_info
+  end
 
   def locker_queries
     @locker_sizes = LockerSize.all

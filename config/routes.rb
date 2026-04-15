@@ -133,7 +133,7 @@ Rails.application.routes.draw do
     end
   end
   
-  resources :locker_sizes, only: [:create, :update, :destroy]
+  resources :locker_sizes, only: [:create, :show, :update, :destroy]
 
   resources :locker_rentals do
     collection do
