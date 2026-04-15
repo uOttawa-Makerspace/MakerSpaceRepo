@@ -169,35 +169,35 @@ class LearningAreaController < DevelopmentProgramsController
   end
 
   def scorm_state_params
-    params.require(:scorm_cmi).permit(
-      # SCORM 1.2 state data
-      'cmi.core.lesson_status',
+    # Limit suspend data to 64kb, per the standard
+    raw = params.dig(:scorm_state, 'cmi.suspend_data')
+    if raw.is_a?(String) && raw.length > 64_000
+      raise ActionController::BadRequest,
+            'suspend_data exceeds 64k character limit'
+    end
+
+    params.require(:scorm_state).permit(
+      # SCORM 1.2 (writable)
       'cmi.core.lesson_location',
+      'cmi.core.lesson_status',
       'cmi.core.score.raw',
-      'cmi.core.score.min',
       'cmi.core.score.max',
-      'cmi.core.session_time',
-      'cmi.core.total_time',
-      'cmi.suspend_data',
-      'cmi.core.entry',
+      'cmi.core.score.min',
       'cmi.core.exit',
-      'cmi.core.credit',
-      'cmi.core.lesson_mode',
-      # SCORM 2004 state data
+      'cmi.core.session_time',
+      'cmi.suspend_data',
+      'cmi.comments',
+      # SCORM 2004 (writable)
+      'cmi.location',
       'cmi.completion_status',
       'cmi.success_status',
-      'cmi.location',
+      'cmi.score.scaled',
       'cmi.score.raw',
       'cmi.score.min',
       'cmi.score.max',
-      'cmi.score.scaled',
-      'cmi.session_time',
-      'cmi.total_time',
-      'cmi.entry',
+      'cmi.progress_measure',
       'cmi.exit',
-      'cmi.credit',
-      'cmi.mode',
-      'cmi.progress_measure'
+      'cmi.session_time'
     )
   end
 end
