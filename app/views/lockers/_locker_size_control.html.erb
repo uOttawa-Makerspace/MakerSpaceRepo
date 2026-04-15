@@ -59,6 +59,7 @@
                 <div class="col-md-9">
                     <div class="card-body">
                         <p class="card-text">
+                            <b>Makerstore product variant</b> <br />
                             <b>Title</b> <%= variant[:title] %> <br />
                             <b>SKU</b> <code><%= variant[:sku] %></code> <br />
                             <b>Variant ID</b> <code><%= variant[:id] %></code> <br />
@@ -73,8 +74,9 @@
                                 <span>
                                     <b>Linked to:</b> <%= local.size %>
                                 </span>
-                                <button class="btn btn-sm btn-outline-danger">Unlink</button>
-                                <button class="btn btn-sm btn-outline-secondary">Edit</button>
+                                <%= button_to 'Delete variant', locker_size_path(local), method: :delete, class: 'btn btn-sm btn-outline-danger',
+                                              data: {confirm: "Are you sure you want to delete locker size #{local.size}?"} %>
+                                <%= link_to 'Edit', locker_size_path(local), class: 'btn btn-sm btn-outline-secondary' %>
                             </div>
                         <% else %>
                             <%= button_to 'Create local size', locker_sizes_path,
