@@ -105,6 +105,10 @@ class LearningAreaController < DevelopmentProgramsController
               disposition: :inline
   end
 
+  def scorm_commit
+    Rails.logger.info "Commit scorm!"
+  end
+
   def reorder
     if params[:data].present?
       lm_order =
