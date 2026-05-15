@@ -17,13 +17,17 @@ class LearningAreaController < DevelopmentProgramsController
     # with no subskill get put in a separate subskill page.
     @learning_modules =
       LearningModule
-        .with_attached_photos
-        .includes(:training)
+        .includes(
+          :training,
+          photos: [image_attachment: :blob]
+        )
         .group_by(&:training)
         .sort_by { |training, _| training.name }
         .to_h
         .transform_values do |modules|
-          modules.sort_by { |m| LearningModule.levels.keys.index(m.level) }
+          modules.sort_by do |m|
+            LearningModule.levels.keys.index(m.level)
+          end
         end
   end
 
