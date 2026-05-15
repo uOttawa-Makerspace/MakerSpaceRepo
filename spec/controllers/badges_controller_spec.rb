@@ -35,7 +35,7 @@ RSpec.describe BadgesController, type: :controller do
       it "should prevent unauthenticated users" do
         session[:user_id] = nil
         get :index
-        expect(response).to redirect_to root_path
+        expect(response).to redirect_to login_path(back_to: '/badges')
       end
     end
   end

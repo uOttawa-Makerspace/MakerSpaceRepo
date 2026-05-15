@@ -1,0 +1,56 @@
+<% content_for :title, "Tap Box Console" %>
+<%= turbo_stream_from "tap_box_console" %>
+
+<div class="container-fluid py-3 console-page">
+  <div class="console-header">
+    <div class="console-title">
+      <h4 class="mb-0">
+        <i class="fa fa-terminal me-2"></i>Tap Box Debugger Console
+      </h4>
+      <small class="text-muted">Real-time RFID tap event log &mdash; newest first</small>
+    </div>
+    <div class="console-controls">
+      <div id="connection-status" class="badge bg-secondary">
+        Connecting&hellip;
+      </div>
+      <select id="filter-event-type" class="form-select form-select-sm">
+        <option value="">All events</option>
+        <option value="card_tap">Card Tap</option>
+        <option value="sign_in">Sign In</option>
+        <option value="sign_out">Sign Out</option>
+        <option value="error">Error</option>
+        <option value="warning">Warning</option>
+        <option value="info">Info</option>
+        <option value="membership_check">Membership Check</option>
+      </select>
+      <input
+        type="text"
+        id="filter-search"
+        class="form-control form-control-sm"
+        placeholder="Filter by card, user, message&hellip;"
+      >
+      <button id="btn-clear-console" class="btn btn-sm btn-outline-secondary">
+        Clear view
+      </button>
+    </div>
+  </div>
+
+  <div id="tap-box-console" class="font-monospace border rounded overflow-auto p-2 p-md-3">
+    <table class="table table-sm table-hover mb-0 w-100">
+      <tbody id="console-body">
+        <% @logs.each do |log| %>
+          <%= render partial: "staff/tap_box_console/log_row", locals: { log: log } %>
+        <% end %>
+      </tbody>
+    </table>
+
+    <% if @logs.empty? %>
+      <div id="empty-state" class="text-center text-muted py-5">
+        <i class="fa fa-inbox fa-2x mb-2 d-block"></i>
+        <p class="mb-0">No tap events yet. Waiting for card taps&hellip;</p>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<%= vite_javascript_tag 'tap_box_console' %>

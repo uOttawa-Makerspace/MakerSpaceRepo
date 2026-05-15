@@ -15,6 +15,4 @@
 - Feat/ Repo photo gallery overhaul (#1922) by @UnknownCrafts
 - Staging (#1925) by @PencilAmazing
 
-
-
 **Full Changelog**: https://github.com/uOttawa-Makerspace/MakerSpaceRepo/compare/v2026.03.06-172729...v2026.03.24-133602
