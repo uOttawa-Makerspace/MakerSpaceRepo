@@ -136,6 +136,10 @@ Rails.application.routes.draw do
   resources :locker_sizes, only: [:create, :update, :destroy]
 
   resources :locker_rentals do
+    member do
+      patch :renew
+    end
+
     collection do
       get :admin
       get :assign_locker
