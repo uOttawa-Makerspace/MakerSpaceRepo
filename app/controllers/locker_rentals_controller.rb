@@ -128,6 +128,34 @@ class LockerRentalsController < SessionsController
     redirect_back fallback_location: :locker_rentals
   end
 
+  def renew
+    @locker_rental = LockerRental.find(params[:id])
+    unless current_user.staff? || current_user == @locker_rental.rented_by
+      redirect_to locker_rentals_path
+      return
+    end
+
+    unless @locker_rental.renewable?
+      redirect_to @locker_rental, alert: 'This locker rental is not renewable.'
+      return
+    end
+
+    @locker_rental.assign_attributes(
+      state: :await_payment,
+      decided_by: current_user,
+      owned_until: end_of_this_semester
+    )
+
+    if @locker_rental.save
+      redirect_to @locker_rental,
+                  notice: 'Locker renewal started. Please complete checkout to renew your locker.'
+    else
+      flash[:alert] = 'Could not start renewal: ' +
+        @locker_rental.errors.full_messages.to_sentence
+      render :show, status: :unprocessable_content
+    end
+  end
+
   private
 
   def check_permission
