@@ -4,7 +4,7 @@
     </div>
 <% end %>
 
-<%= debug current_user.learning_module_tracks.find_by(learning_module: learning_module).scorm_state %>
+<%#%= debug current_user.learning_module_tracks.find_by(learning_module: learning_module).scorm_state %>
 
 <% if learning_module.scorm_ready? %>
     <div class="mb-3">
