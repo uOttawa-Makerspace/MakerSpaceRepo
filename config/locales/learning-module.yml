@@ -1,0 +1,12 @@
+en:
+  learning_module_track:
+    status:
+      not_started: Not started
+      in_progress: In progress
+      completed: Completed
+fr:
+  learning_module_track:
+    status:
+      not_started: Non commencé
+      in_progress: En cours
+      completed: Complète
