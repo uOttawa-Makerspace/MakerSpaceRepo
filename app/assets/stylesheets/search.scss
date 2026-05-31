@@ -1,82 +1,44 @@
 section#repositories-index {
-  max-width: 64rem;
-  margin-left: auto;
-  margin-right: auto;
-
   min-height: calc(100vh - 65px - 6rem);
-  /*	left:0;right:0;
-	position: absolute;
-	top: 65px;*/
-  //padding: 3rem 3rem;
-  background-color: #fff;
 
   span.found {
     float: right;
-    /*color: #4682b4;*/
-    color: #999;
+    color: var(--bs-secondary-color);
     font-size: 1rem;
   }
-
-  div.like-title {
-    font-size: 4rem;
-    color: #5f9ea0;
-    text-align: center;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 2rem;
-    margin-bottom: 2rem;
-  }
 }
 
-h2.subtitle {
-  font-size: 2rem;
-  color: #5f9ea0;
-  text-align: center;
-  padding-bottom: 0.6rem;
-  margin-bottom: 0.6rem;
-  overflow: auto;
+// Custom modern hover effect for Bootstrap cards
+.repository-card {
+  transition:
+    transform 0.2s ease-in-out,
+    box-shadow 0.2s ease-in-out;
+  border-radius: 0.5rem;
 
-  .focused {
-    display: inline-block;
-    padding: 10px 10px;
-    border-style: double;
-    background-color: #c4dcdb;
-
-    &:hover {
-      background-color: #bee2e1;
-    }
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175) !important;
   }
 
-  .not-focused {
-    display: inline-block;
-    padding: 10px 10px;
-    color: #5f9ea0;
+  .repo-display-wrapper {
+    height: 220px;
+    background-size: cover;
+    background-position: center;
+    border-top-left-radius: 0.5rem;
+    border-top-right-radius: 0.5rem;
+    transition: opacity 0.2s ease-in-out;
 
     &:hover {
-      background-color: #bee2e1;
+      opacity: 0.9;
     }
   }
 }
 
+// Legacy featured styling
 a.featured {
   font:
     400 0.9rem "Roboto",
     helvetica,
     sans-serif;
-  color: #999;
-}
-
-div.empty-star {
-  margin: 5px 0;
-  position: relative;
-  display: block;
-  color: red;
-  width: 0px;
-  height: 0px;
-  border-right: 10px solid transparent;
-  border-bottom: 7px solid red;
-  border-left: 10px solid transparent;
-  -moz-transform: rotate(35deg);
-  -webkit-transform: rotate(35deg);
-  -ms-transform: rotate(35deg);
-  -o-transform: rotate(35deg);
+  color: var(--bs-secondary-color);
 }
