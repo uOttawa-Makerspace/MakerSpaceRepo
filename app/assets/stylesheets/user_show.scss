@@ -4,12 +4,14 @@ section#user-show {
   max-width: 70rem;
   margin-left: auto;
   margin-right: auto;
-
   position: relative;
-  background-color: #fff;
+
+  // Use Bootstrap CSS variables for Dark Mode compatibility
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
   padding-bottom: 3rem;
 
-  /* Add Grid for layout */
+  /* Grid for user layout */
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   gap: 4%;
@@ -17,11 +19,11 @@ section#user-show {
   div.user-avatar {
     margin: 3rem 0;
     grid-column: span 5;
-
     position: relative;
 
     img {
       width: 100%;
+      border-radius: 0.5rem;
     }
 
     div.edit-avatar {
@@ -36,49 +38,47 @@ section#user-show {
       line-height: calc(2rem - 6px);
       margin-bottom: 1rem;
       text-transform: uppercase;
-      background-color: #789;
-      border: 3px solid #789;
-      color: #fff;
+      background-color: var(--bs-secondary);
+      border: 3px solid var(--bs-secondary);
+      color: var(--bs-white);
 
       &:hover {
-        background-color: #fff;
-        color: #789;
+        background-color: var(--bs-body-bg);
+        color: var(--bs-secondary);
       }
     }
   }
 
   div#user-info {
     grid-column: span 7;
-
     padding: 3rem 0;
     margin: 0;
 
-    /* Add Grid for child elements */
     display: grid;
     grid-template-columns: repeat(12, 1fr);
     gap: 0;
 
     div.fullname {
       grid-column: span 12;
-
       font-size: 3rem;
-      color: #333;
+      color: var(--bs-heading-color);
     }
 
     div.username {
       grid-column: span 12;
       font-size: 1.75rem;
-      color: #555;
+      color: var(--bs-secondary-color);
       padding-bottom: 2rem;
     }
 
     div.user-info {
       grid-column: span 6;
-      color: #777;
+      color: var(--bs-tertiary-color);
       padding-bottom: 2rem;
 
-      i {
-        color: #366;
+      i,
+      span {
+        color: var(--bs-primary);
         padding-right: 5%;
         font-size: 1.5rem;
       }
@@ -88,37 +88,35 @@ section#user-show {
         overflow: hidden !important;
         text-overflow: ellipsis;
         display: inline-block;
-      }
+        color: var(--bs-body-color);
 
-      a:hover {
-        color: #4682b4;
-      }
-
-      span {
-        color: #366;
-        padding-right: 5%;
-        font-size: 1.5rem;
+        &:hover {
+          color: var(--bs-primary);
+        }
       }
 
       span.date {
         font-size: 1rem;
+        color: var(--bs-secondary-color);
       }
     }
   }
 }
 
+// RFID Container
 div#rfid-thing.user-info {
   width: 400px;
+
   div#rfid-details {
     visibility: hidden;
-    background-color: #c2d6d6;
-    color: #366;
+    background-color: var(--bs-tertiary-bg);
+    color: var(--bs-primary);
     text-align: center;
     border-radius: 4px;
     padding: 4px;
-    /* Position the tooltip */
     position: absolute;
     z-index: 1;
+    border: 1px solid var(--bs-border-color);
 
     label.unregistered-label {
       padding: 5px 8px;
@@ -128,18 +126,18 @@ div#rfid-thing.user-info {
 
   div.rfid-status {
     cursor: pointer;
+    &:hover div#rfid-details {
+      visibility: visible;
+    }
   }
 
-  div.rfid-status:hover div#rfid-details {
-    visibility: visible;
-  }
   div.unregistered-card {
     a {
       padding: 4px 8px;
-    }
-    a:hover {
-      border-radius: 4px;
-      background-color: transparentize(#a6e0e7, 0.4);
+      &:hover {
+        border-radius: 4px;
+        background-color: rgba(var(--bs-primary-rgb), 0.1);
+      }
     }
   }
 
@@ -151,189 +149,60 @@ div#rfid-thing.user-info {
     font:
       300 0.4em "Roboto",
       sans-serif;
-    float: bottom;
     padding: 0.5rem 1rem;
     border: none;
     text-transform: uppercase;
-    color: #777;
     letter-spacing: 0.11em;
     border-radius: 2px;
-    background-color: #a61e10;
-    color: #fff;
+    background-color: var(--bs-danger);
+    color: var(--bs-white);
   }
 }
 
 a.edit-user-profile {
   transition: 100ms linear;
-  //position: absolute;
   right: 2rem;
-  background-color: #789;
-  color: #fff;
+  background-color: var(--bs-secondary);
+  color: var(--bs-white);
   padding: 0.5rem 1rem;
-  border: 3px solid #789;
+  border: 3px solid var(--bs-secondary);
+  border-radius: 0.25rem;
 
   &:hover {
-    background-color: #fff;
-    color: #789;
+    background-color: var(--bs-body-bg);
+    color: var(--bs-secondary);
   }
 }
 
 section#user-show-links {
   border-top: 1px solid var(--bs-border-color);
-  //background-color: #eee;
   text-align: center;
   padding-top: 0.5em;
   display: flex;
   gap: 40px;
   justify-content: center;
+
   a {
     display: inline-block;
     font-size: 1.25rem;
-    color: #555;
+    color: var(--bs-secondary-color);
     padding: 0;
     text-align: center;
-    border-bottom: 5px solid #eee;
+    border-bottom: 5px solid transparent;
+    text-decoration: none;
+
     span {
       font-size: 2rem;
+    }
+
+    &:hover {
+      color: var(--bs-body-color);
     }
   }
 
   .tab-active {
-    border-color: $primary;
-  }
-}
-
-div#role-container {
-  font: "Roboto", sans-serif;
-  font-size: 1.1rem;
-  color: #366;
-
-  .update-button {
-    font:
-      300 0.7em "Roboto",
-      sans-serif;
-    padding: 0.3rem 0.13em;
-    border: none;
-    text-transform: uppercase;
-    color: #777;
-    letter-spacing: 0.09em;
-    border-radius: 2px;
-    background-color: #5f9ea0;
-    color: #fff;
-    margin-bottom: 12px;
-
-    &:hover {
-      cursor: pointer;
-    }
-  }
-
-  input[type="radio"] {
-    color: black;
-    background: black;
-  }
-
-  label {
-    font-size: 0.95rem;
-    font-weight: normal;
-    padding-left: 3px;
-    padding-right: 15px;
-    text-transform: lowercase;
-  }
-}
-
-section#repositories-container {
-  max-width: 100%;
-  margin-left: auto;
-  margin-right: auto;
-
-  /* Add Grid for repository cards */
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap: 2%;
-
-  div.repository-container {
-    grid-column: span 4;
-    margin-left: calc(2% - 1px);
-    margin-right: calc(2% - 1px);
-    border: 1px solid #eee;
-    margin-bottom: 2rem;
-
-    div.repo-display-wrapper {
-      position: relative;
-      background-size: cover;
-      height: 225px;
-      background-color: black;
-      a.link {
-        display: block;
-        height: 100%;
-      }
-    }
-
-    img {
-      display: block;
-      width: 100%;
-    }
-
-    .fa-star {
-      font-size: 1.5em;
-      color: $primary;
-    }
-
-    div.repo-info {
-      font:
-        400 0.7rem "Roboto",
-        helvetica,
-        sans-serif;
-      padding: 5%;
-      max-width: 90%;
-      margin-left: auto;
-      margin-right: auto;
-      background-color: #fff;
-      color: #aaa;
-
-      div.left {
-        float: left;
-        width: 90%;
-      }
-
-      div.title {
-        white-space: nowrap;
-        overflow: hidden !important;
-        text-overflow: ellipsis;
-      }
-
-      div a {
-        //color: #5f9ea0;
-        font-size: 0.9rem;
-
-        &:hover {
-          text-decoration: underline;
-        }
-      }
-
-      div.likes {
-        float: right;
-        color: $primary;
-        font-size: 1rem;
-        text-align: center;
-      }
-    }
-  }
-}
-
-@media screen and (max-width: 900px) {
-  section#repositories-container div.repository-container {
-    grid-column: span 6;
-    margin-left: calc(2% - 1px);
-    margin-right: calc(2% - 1px);
-    display: inline-block;
-  }
-}
-
-@media screen and (max-width: 550px) {
-  section#repositories-container div.repository-container {
-    grid-column: span 12;
-    display: inline-block;
+    border-color: var(--bs-primary);
+    color: var(--bs-body-color);
   }
 }
 
@@ -342,19 +211,5 @@ div.empty-repo {
   width: 100%;
   text-align: center;
   font-size: 2rem;
-  color: #333;
+  color: var(--bs-secondary-color);
 }
-
-/*a.delete-repo{
-	transition: 100ms linear;
-  float: right;
-  margin: 5px 2.5px;
-  background-color: #008080;
-  color: #eee;
-  padding: 3px;
-  display: none;
-
-  &:hover{
-  	background-color: #366;
-  }
-}*/
