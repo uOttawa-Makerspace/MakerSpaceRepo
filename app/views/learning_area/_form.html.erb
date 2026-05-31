@@ -101,24 +101,26 @@
 
         <div class="d-flex flex-wrap gap-2 mt-2">
             <% @learning_module.photos.each do |photo| %>
-                <div class="image-item">
-                    <%# signed_id hidden field keeps this photo on submit. Removing the div drops it %>
-                    <% if photo.persisted? %>
-                        <%= hidden_field_tag 'learning_module[photos][]', photo.signed_id %>
-                    <% elsif photo.blob&.persisted? %>
-                        <%= hidden_field_tag 'learning_module[photos][]', photo.blob.signed_id %>
-                    <% end %>
-                    <div class="bg-dark rounded" style="width: 80px; height: 80px;">
-                        <%= image_tag photo,
-                                      alt: 'Existing photo',
-                                      class: 'rounded',
-                                      style: 'width: 80px; height: 80px; object-fit: cover;',
-                                      loading: 'lazy' %>
+                <%# Only render the HTML block if the photo actually exists on disk %>
+                <% if photo.persisted? || photo.blob&.persisted? %>
+                    <div class="image-item">
+                        <% if photo.persisted? %>
+                            <%= hidden_field_tag 'learning_module[photos][]', photo.signed_id %>
+                        <% elsif photo.blob&.persisted? %>
+                            <%= hidden_field_tag 'learning_module[photos][]', photo.blob.signed_id %>
+                        <% end %>
+                        <div class="bg-dark rounded" style="width: 80px; height: 80px;">
+                            <%= image_tag photo,
+                                          alt: 'Existing photo',
+                                          class: 'rounded',
+                                          style: 'width: 80px; height: 80px; object-fit: cover;',
+                                          loading: 'lazy' %>
+                        </div>
+                        <button type="button"
+                                class="btn btn-danger image-remove w-100"
+                                aria-label="Remove photo"><%= fa_icon :trash %></button>
                     </div>
-                    <button type="button"
-                            class="btn btn-danger image-remove w-100"
-                            aria-label="Remove photo"><%= fa_icon :trash %></button>
-                </div>
+                <% end %>
             <% end %>
         </div>
 
@@ -143,7 +145,7 @@
 
         <%= f.label :scorm_package, class: 'form-label' do %>
             SCORM Package (.zip)
-            <% if @learning_module.scorm_package.attached? %>
+            <% if @learning_module.scorm_package.attached? && (@learning_module.scorm_package.persisted? || @learning_module.scorm_package.blob&.persisted?) %>
                 <p>Download current scorm package: <%= link_to @learning_module.scorm_package.filename, url_for(@learning_module.scorm_package) %></p>
             <% end %>
         <% end %>
