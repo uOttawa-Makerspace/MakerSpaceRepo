@@ -73,7 +73,13 @@
             <div id="video-container" class="d-flex flex-column gap-1 mt-2">
                 <% @learning_module.videos.each do |video| %>
                     <div class="video-item d-flex align-items-center gap-2 border rounded p-2">
-                        <%= hidden_field_tag 'learning_module[videos][]', video.signed_id %>
+                        <% if video.persisted? %>
+                            <%= hidden_field_tag 'learning_module[videos][]', video.signed_id %>
+                        <% elsif video.blob&.persisted? %>
+                            <%= hidden_field_tag 'learning_module[videos][]', video.blob.signed_id %>
+                        <% else %>
+                            <%= hidden_field_tag 'learning_module[videos][]', nil %>
+                        <% end %>
                         <i class="fa fa-file-video-o"></i>
                         <span class="small flex-grow-1"><%= video.filename %></span>
                         <span class="small"><%= (video.byte_size / 1.megabyte).round(1) %> MB</span>
@@ -97,7 +103,11 @@
             <% @learning_module.photos.each do |photo| %>
                 <div class="image-item">
                     <%# signed_id hidden field keeps this photo on submit. Removing the div drops it %>
-                    <%= hidden_field_tag 'learning_module[photos][]', photo.signed_id %>
+                    <% if photo.persisted? %>
+                        <%= hidden_field_tag 'learning_module[photos][]', photo.signed_id %>
+                    <% elsif photo.blob&.persisted? %>
+                        <%= hidden_field_tag 'learning_module[photos][]', photo.blob.signed_id %>
+                    <% end %>
                     <div class="bg-dark rounded" style="width: 80px; height: 80px;">
                         <%= image_tag photo,
                                       alt: 'Existing photo',
@@ -124,7 +134,11 @@
     <fieldset id="scorm-section" class="mb-3" style="display: none;">
         <%# Retain existing attachment when no new file is chosen %>
         <% if @learning_module.scorm_package.attached? %>
-            <%= f.hidden_field :scorm_package, value: @learning_module.scorm_package.signed_id %>
+            <% if @learning_module.scorm_package.persisted? %>
+                <%= f.hidden_field :scorm_package, value: @learning_module.scorm_package.signed_id %>
+            <% elsif @learning_module.scorm_package.blob&.persisted? %>
+                <%= f.hidden_field :scorm_package, value: @learning_module.scorm_package.blob.signed_id %>
+            <% end %>
         <% end %>
 
         <%= f.label :scorm_package, class: 'form-label' do %>
