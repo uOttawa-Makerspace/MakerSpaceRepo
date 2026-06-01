@@ -165,29 +165,24 @@ class SubSpaceBookingController < SessionsController
     UserBookingApproval
       .where(id: params[:user_booking_approval_ids])
       .each do |uba|
-        uba.assign_attributes(
+        # Use update! (with the bang !) so if validation fails, it triggers the rescue block below
+        # We also do NOT overwrite the 'identity' field here, as it was already set during the request.
+        uba.update!(
           approved: true,
-          staff_id: current_user.id,
-          identity: identity
+          staff_id: current_user.id
         )
-        if uba.save
-          uba.user.update!(booking_approval: true)
-          BookingMailer.send_booking_approval_request_approved(
-            uba.id
-          ).deliver_later
-        else
-          Rails.logger.error(
-            "Failed to save UserBookingApproval: #{uba.errors.full_messages.join(", ")}"
-          )
-        end
+        
+        uba.user.update!(booking_approval: true)
+        
+        BookingMailer.send_booking_approval_request_approved(uba.id).deliver_later
       end
 
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                notice: "All access requests approved successfully."
+                notice: "All selected access requests approved successfully."
   rescue ActiveRecord::RecordInvalid => e
+    # Because we used update! above, any failures will now properly jump here and show you the exact error
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                alert:
-                  "Failed to approve: #{e.record.errors.full_messages.join(", ")}"
+                alert: "Failed to approve: #{e.record.errors.full_messages.join(", ")}"
   end
 
   def users
