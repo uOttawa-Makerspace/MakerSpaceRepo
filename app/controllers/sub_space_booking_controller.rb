@@ -644,48 +644,6 @@ class SubSpaceBookingController < SessionsController
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab")
   end
 
-  def decline
-    booking =
-      SubSpaceBookingStatus.find(
-        SubSpaceBooking.find(
-          params[:sub_space_booking_id]
-        ).sub_space_booking_status_id
-      )
-    booking.booking_status_id = BookingStatus::DECLINED.id
-    booking.save
-    redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                notice:
-                  "Booking for #{SubSpaceBooking.find(params[:sub_space_booking_id]).sub_space.name} declined successfully."
-  end
-
-  def bulk_approve_decline
-    bulk_status = params[:bulk_status]
-    booking_statuses =
-      SubSpaceBookingStatus.joins(:sub_space_booking).where(
-        sub_space_booking: {
-          id: params[:sub_space_booking_ids]
-        }
-      )
-    if bulk_status == "approve"
-      booking_statuses.update_all(booking_status_id: BookingStatus::APPROVED.id)
-      SubSpaceBooking.where(id: params[:sub_space_booking_ids]).update_all(
-        approved_at: DateTime.now,
-        approved_by_id: current_user.id
-      )
-      # Send approval emails for each booking
-      SubSpaceBooking.where(id: params[:sub_space_booking_ids]).find_each do |booking|
-        BookingMailer.send_booking_approved(booking.id).deliver_later
-      end
-      flash[:notice] = "Bookings approved"
-    elsif bulk_status == "decline"
-      booking_statuses.update_all(booking_status_id: BookingStatus::DECLINED.id)
-      flash[:notice] = "Bookings declined"
-    else
-      flash[:alert] = "Failed to bulk update booking status"
-    end
-    redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab")
-  end
-
   def publish
     booking = SubSpaceBooking.find(params[:sub_space_booking_id])
     booking.public = !booking.public
