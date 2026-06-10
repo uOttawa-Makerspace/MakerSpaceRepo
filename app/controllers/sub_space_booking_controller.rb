@@ -153,41 +153,38 @@ class SubSpaceBookingController < SessionsController
   end
 
   def bulk_approve_access
-    # set identity to 'Regular' if it's null
-    identity = params[:identity].presence || "Regular"
-
     if params[:user_booking_approval_ids].blank?
       redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                   alert: "No approvals selected."
       return
     end
 
+    valid_identities = %w[JMTS Staff GNG Other]
+
     UserBookingApproval
       .where(id: params[:user_booking_approval_ids])
       .each do |uba|
-        uba.assign_attributes(
-          approved: true,
-          staff_id: current_user.id,
-          identity: identity
-        )
-        if uba.save
-          uba.user.update!(booking_approval: true)
-          BookingMailer.send_booking_approval_request_approved(
-            uba.id
-          ).deliver_later
-        else
-          Rails.logger.error(
-            "Failed to save UserBookingApproval: #{uba.errors.full_messages.join(", ")}"
-          )
+        unless valid_identities.include?(uba.identity)
+          uba.identity = "Other"
         end
+
+        uba.update!(
+          identity: uba.identity,
+          approved: true,
+          staff_id: current_user.id
+        )
+
+        uba.user.update!(booking_approval: true)
+
+        BookingMailer.send_booking_approval_request_approved(uba.id).deliver_later
       end
 
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                notice: "All access requests approved successfully."
+                notice: "All selected access requests approved successfully."
   rescue ActiveRecord::RecordInvalid => e
+    # Because we used update! above, any failures will now properly jump here and show you the exact error
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                alert:
-                  "Failed to approve: #{e.record.errors.full_messages.join(", ")}"
+                alert: "Failed to approve: #{e.record.errors.full_messages.join(", ")}"
   end
 
   def users
@@ -577,62 +574,70 @@ class SubSpaceBookingController < SessionsController
   end
 
   def approve
-    booking =
-      SubSpaceBookingStatus.find(
-        SubSpaceBooking.find(
-          params[:sub_space_booking_id]
-        ).sub_space_booking_status_id
-      )
-    booking.booking_status_id = BookingStatus::APPROVED.id
-    booking.save
-    SubSpaceBooking.find(params[:sub_space_booking_id]).update(
+    sub_space_booking = SubSpaceBooking.find(params[:sub_space_booking_id])
+    
+    # 1. Update status
+    status = SubSpaceBookingStatus.find(sub_space_booking.sub_space_booking_status_id)
+    status.update!(booking_status_id: BookingStatus::APPROVED.id)
+    
+    # 2. Use update_columns to bypass model validations (like time slot overlaps/past dates)
+    # which makes admin approvals intermittent if a booking triggered a model constraint
+    sub_space_booking.update_columns(
       approved_at: DateTime.now,
       approved_by_id: current_user.id
     )
 
+    # 3. Pass the integer ID to align with expected enqueued job arguments
+    BookingMailer.send_booking_approved(sub_space_booking.id).deliver_later
+
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                notice:
-                  "Booking for #{SubSpaceBooking.find(params[:sub_space_booking_id]).sub_space.name} approved successfully."
-    BookingMailer.send_booking_approved(
-      params[:sub_space_booking_id]
-    ).deliver_now
+                notice: "Booking for #{sub_space_booking.sub_space.name} approved successfully."
   end
 
   def decline
-    booking =
-      SubSpaceBookingStatus.find(
-        SubSpaceBooking.find(
-          params[:sub_space_booking_id]
-        ).sub_space_booking_status_id
-      )
-    booking.booking_status_id = BookingStatus::DECLINED.id
-    booking.save
+    sub_space_booking = SubSpaceBooking.find(params[:sub_space_booking_id])
+    
+    status = SubSpaceBookingStatus.find(sub_space_booking.sub_space_booking_status_id)
+    status.update!(booking_status_id: BookingStatus::DECLINED.id)
+    
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                notice:
-                  "Booking for #{SubSpaceBooking.find(params[:sub_space_booking_id]).sub_space.name} declined successfully."
+                notice: "Booking for #{sub_space_booking.sub_space.name} declined successfully."
   end
 
   def bulk_approve_decline
+    if params[:sub_space_booking_ids].blank?
+      redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"), alert: "No bookings selected."
+      return
+    end
+
     bulk_status = params[:bulk_status]
-    booking_statuses =
-      SubSpaceBookingStatus.joins(:sub_space_booking).where(
-        sub_space_booking: {
-          id: params[:sub_space_booking_ids]
-        }
-      )
+    booking_ids = params[:sub_space_booking_ids]
+
+    # Use .pluck instead of buggy SQL joins for update_all
+    status_ids = SubSpaceBooking.where(id: booking_ids).pluck(:sub_space_booking_status_id)
+
     if bulk_status == "approve"
-      booking_statuses.update_all(booking_status_id: BookingStatus::APPROVED.id)
-      SubSpaceBooking.where(id: params[:sub_space_booking_ids]).update_all(
+      SubSpaceBookingStatus.where(id: status_ids).update_all(booking_status_id: BookingStatus::APPROVED.id)
+      
+      # update_all bypasses validations identically to update_columns
+      SubSpaceBooking.where(id: booking_ids).update_all(
         approved_at: DateTime.now,
         approved_by_id: current_user.id
       )
-      flash[:notice] = "Bookings approved"
+      
+      # Send approval emails for each booking
+      SubSpaceBooking.where(id: booking_ids).find_each do |booking|
+        BookingMailer.send_booking_approved(booking.id).deliver_later
+      end
+      
+      flash[:notice] = "Bookings approved successfully."
     elsif bulk_status == "decline"
-      booking_statuses.update_all(booking_status_id: BookingStatus::DECLINED.id)
-      flash[:notice] = "Bookings declined"
+      SubSpaceBookingStatus.where(id: status_ids).update_all(booking_status_id: BookingStatus::DECLINED.id)
+      flash[:notice] = "Bookings declined successfully."
     else
-      flash[:alert] = "Failed to bulk update booking status"
+      flash[:alert] = "Failed to bulk update booking status."
     end
+    
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab")
   end
 

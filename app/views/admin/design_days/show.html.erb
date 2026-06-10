@@ -65,7 +65,11 @@
                             <div class="d-flex align-items-center gap-2 mb-3">
                                 <%= image_tag image, style: 'height: 60px;' %>
                                 <%= text_field_tag "design_day[floorplan_title][]", image.blob.metadata['floorplan_title'], class: 'form-control' %>
-                                <%= f.hidden_field :floorplans, multiple: true, value: image.signed_id %>
+                                <% if image.persisted? %>
+                                    <%= f.hidden_field :floorplans, multiple: true, value: image.signed_id %>
+                                <% elsif image.blob&.persisted? %>
+                                    <%= f.hidden_field :floorplans, multiple: true, value: image.blob.signed_id %>
+                                <% end %>
                                 <%= link_to image.filename, image, class: 'btn btn-outline-secondary' %>
                                 <%= button_tag fa_icon(:trash), class: 'btn btn-outline-danger', data: { floorplan_delete: '' }, type: 'button' %>
                             </div>

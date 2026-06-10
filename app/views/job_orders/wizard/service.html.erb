@@ -50,9 +50,11 @@
           <div class="text-start">
             <ul class="list-group">
               <% @job_task.user_files.each do |file| %>
+                <% next unless file.persisted? || file.blob&.persisted? %>
+                <% id_to_sign = file.persisted? ? file.signed_id : file.blob.signed_id %>
                 <li class="list-group-item me-1 d-flex justify-content-between" style="min-width: 0;">
                   <div class="form-check d-flex flex-grow-1" style="min-width: 0; align-items: center;">
-                    <%= check_box_tag 'job_task[user_files][]', file.signed_id, true, { multiple: true, class: 'form-check-input me-2' } %>
+                    <%= check_box_tag 'job_task[user_files][]', id_to_sign, true, { multiple: true, class: 'form-check-input me-2' } %>
                     <%= label_tag nil, file.filename, class: 'form-check-label text-truncate flex-grow-1 m-0', style: 'min-width: 0;' %>
                   </div>
                   <div class="flex-shrink-0 ps-2">

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 source "https://rubygems.org"
-ruby "4.0.2"
+ruby "4.0.5"
 gem "rails", "~> 8.1"
 
 # no longer standard since 3.4
@@ -68,7 +68,7 @@ gem "solid_queue", "~> 1.2"
 gem "solid_cable"
 gem "mission_control-jobs"
 
-gem "puma", '~> 7.1'
+gem 'puma', '~> 7.2.1'
 gem 'redcarpet'
 
 group :development, :test do
