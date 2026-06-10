@@ -101,6 +101,38 @@ RSpec.describe SubSpaceBookingController, type: :controller do
     end
   end
 
+  describe "PUT/bulk_approve_access" do
+    context "admin bulk approves selected access requests" do
+      it "completes approval even if the request identity is missing or invalid" do
+        @user = create(:user, :admin)
+        session[:user_id] = @user.id
+        request_user = create(:user)
+        uba = UserBookingApproval.new(
+          user: request_user,
+          date: Time.now,
+          comments: "Need access",
+          approved: false,
+          identity: nil
+        )
+        uba.save(validate: false)
+
+        put :bulk_approve_access,
+            params: { user_booking_approval_ids: [uba.id] }
+
+        expect(response).to redirect_to(
+          sub_space_booking_index_path(anchor: "booking-admin-tab")
+        )
+        expect(flash[:notice]).to eq(
+          "All selected access requests approved successfully."
+        )
+        uba.reload
+        expect(uba.approved).to be(true)
+        expect(uba.staff_id).to eq(@user.id)
+        expect(uba.identity).to eq("Other")
+      end
+    end
+  end
+
   describe "PUT/bulk_approve_decline" do
     context "create some bookings" do
       it "should create some bookings" do

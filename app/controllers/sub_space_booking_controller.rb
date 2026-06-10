@@ -153,27 +153,29 @@ class SubSpaceBookingController < SessionsController
   end
 
   def bulk_approve_access
-    # set identity to 'Regular' if it's null
-    identity = params[:identity].presence || "Regular"
-
     if params[:user_booking_approval_ids].blank?
       redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                   alert: "No approvals selected."
       return
     end
 
+    valid_identities = %w[JMTS Staff GNG Other]
+
     UserBookingApproval
       .where(id: params[:user_booking_approval_ids])
       .each do |uba|
-        # Use update! (with the bang !) so if validation fails, it triggers the rescue block below
-        # We also do NOT overwrite the 'identity' field here, as it was already set during the request.
+        unless valid_identities.include?(uba.identity)
+          uba.identity = "Other"
+        end
+
         uba.update!(
+          identity: uba.identity,
           approved: true,
           staff_id: current_user.id
         )
-        
+
         uba.user.update!(booking_approval: true)
-        
+
         BookingMailer.send_booking_approval_request_approved(uba.id).deliver_later
       end
 
