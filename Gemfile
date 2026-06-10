@@ -68,7 +68,7 @@ gem "solid_queue", "~> 1.2"
 gem "solid_cable"
 gem "mission_control-jobs"
 
-gem "puma", '~> 7.1'
+gem 'puma', '~> 7.2.1'
 gem 'redcarpet'
 
 group :development, :test do

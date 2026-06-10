@@ -452,7 +452,7 @@ GEM
       date
       stringio
     public_suffix (7.0.5)
-    puma (7.2.0)
+    puma (7.2.1)
       nio4r (~> 2.0)
     quick_random_records (0.3.2)
       activerecord (>= 3)
@@ -879,7 +879,7 @@ DEPENDENCIES
   pry (~> 0.15)
   pry-rails (~> 0.3)
   psych (~> 5.0)
-  puma (~> 7.1)
+  puma (~> 7.2.1)
   quick_random_records (~> 0.3.2)
   rack-cors
   railroady
