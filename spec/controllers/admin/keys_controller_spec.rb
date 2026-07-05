@@ -638,7 +638,8 @@ RSpec.describe Admin::KeysController, type: :controller do
               external_contact: {
                 first_name: "Jane",
                 last_name: "Doe",
-                email: "not-an-email"
+                email: "jane.doe@example.com",
+                phone: 'INVALID-PHONE-!#$' # Contains ! and $ to trigger regex failure
               },
               deposit_amount: 10
             }

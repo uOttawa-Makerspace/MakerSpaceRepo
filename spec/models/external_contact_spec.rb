@@ -62,7 +62,8 @@ RSpec.describe ExternalContact, type: :model do
       key.update!(holder: contact, status: :held, supervisor_id: create(:user, :admin).id)
 
       expect { contact.destroy }.not_to change(ExternalContact, :count)
-      expect(contact.errors[:base]).to include("Cannot delete a contact who currently holds a key")
+      # Match the standard ActiveRecord restrict_with_error message:
+      expect(contact.errors[:base]).to include("Cannot delete record because dependent keys exist")
     end
 
     it "allows hard-destroying a contact with no current keys" do
