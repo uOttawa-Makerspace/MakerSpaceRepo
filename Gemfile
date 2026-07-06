@@ -16,7 +16,7 @@ gem "bcrypt", "~> 3.1"
 gem "caxlsx", "~> 4.0"
 gem "chartkick"
 gem "clipboard-rails"
-gem "concurrent-ruby", "~> 1.1", ">= 1.1.6"
+gem "concurrent-ruby", "~> 1.3", ">= 1.3.7"
 gem "excon"
 gem 'fastimage', '~> 2.4'
 gem "file_validators"
