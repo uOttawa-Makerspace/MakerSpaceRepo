@@ -1,13 +1,13 @@
-# v2026.06.10-010336 (2026-06-10)
+# v2026.07.06-032743 (2026-07-06)
 
 #changelog
 
 ## 📦 Other Changes
 
-- Fix/category page UI (#1939) by @UnknownCrafts
-- Fix/Learning Module Image Upload and Sub Space Bookings Approval (#1940) by @UnknownCrafts
-- Staging (#1941) by @UnknownCrafts
+- Update/Contact Us Details (#1943) by @UnknownCrafts
+- Chore/bump gems (#1945) by @UnknownCrafts
+- Staging (#1944) by @UnknownCrafts
 
 
 
-**Full Changelog**: https://github.com/uOttawa-Makerspace/MakerSpaceRepo/compare/v2026.05.20-012516...v2026.06.10-010336
+**Full Changelog**: https://github.com/uOttawa-Makerspace/MakerSpaceRepo/compare/v2026.06.10-010336...v2026.07.06-032743
