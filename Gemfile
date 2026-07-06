@@ -21,7 +21,8 @@ gem "excon"
 gem 'fastimage', '~> 2.4'
 gem "file_validators"
 gem "font-awesome-rails", "~> 4.7.0.9"
-gem "google-api-client", "~> 0.53.0", require: ["google/apis/calendar_v3"]
+gem "google-apis-calendar_v3"
+gem "multi_json"
 gem "googleauth"
 gem "graphlient"
 gem "groupdate"
