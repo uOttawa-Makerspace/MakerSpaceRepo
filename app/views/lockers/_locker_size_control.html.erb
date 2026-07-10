@@ -39,8 +39,13 @@
         </div>
     </div>
 
-    <h3>Product variants</h3>
-    <p>Product variants fetched from makerstore. The prices and display names are fetched from Makerstore.</p>
+    <h3 id="productVariants"><%= link_to '#', '#productVariants' %> Product variants</h3>
+
+    <p>Locker sizes are product variants defined at Makerstore to indicate the price of the locker and display name
+        Locker sizes defined on makerepo are used to track inventory and availability.
+        Each are linked by the product variant's GID.
+        <a href="#">Click here to go to the locker sync tool.</a></p>
+
     <% @locker_product_info[:variants].each do |gid, variant| %>
         <div class="card mb-3">
             <div class="row g-0">
@@ -48,28 +53,73 @@
                     <% if variant[:image] %>
                         <%= image_tag variant[:image], class: 'rounded-start object-fit-cover w-100 h-100' %>
                     <% else %>
-                        <div class="bg-secondary-subtle w-100 h-100 rounded-start">
-                        </div>
+                        <div class="bg-secondary-subtle w-100 h-100 rounded-start"></div>
                     <% end %>
                 </div>
                 <div class="col-md-9">
                     <div class="card-body">
                         <p class="card-text">
+                            <b>Makerstore product variant</b> <br />
                             <b>Title</b> <%= variant[:title] %> <br />
                             <b>SKU</b> <code><%= variant[:sku] %></code> <br />
                             <b>Variant ID</b> <code><%= variant[:id] %></code> <br />
                             <b>Received pricing</b> <code><%= variant[:price] %> CAD</code>
                         </p>
+
+                        <hr />
+
+                        <% local = @local_lookup[gid] %>
+                        <% if local %>
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <span>
+                                    <b>Linked to:</b> <%= local.size %>
+                                </span>
+                                <%= button_to 'Delete variant', locker_size_path(local), method: :delete, class: 'btn btn-sm btn-outline-danger',
+                                              data: {confirm: "Are you sure you want to delete locker size #{local.size}?"} %>
+                                <%= link_to 'Edit', locker_size_path(local), class: 'btn btn-sm btn-outline-secondary' %>
+                            </div>
+                        <% else %>
+                            <%= button_to 'Create local size', locker_sizes_path,
+                            params: { locker_size: { size: variant[:title], shopify_gid: gid } },
+                                          class: 'btn btn-sm btn-outline-primary' %>
+                        <% end %>
                     </div>
                 </div>
             </div>
         </div>
     <% end %>
 
-    <h3>Locker Sizes</h3>
+    <% unlinked = @locker_sizes.reject { |s| @makerstore_lookup.key?(s.shopify_gid) } %>
+    <% if unlinked.any? %>
+        <h4 class="mt-4">Unlinked Local Sizes</h4>
+        <div class="list-group">
+            <% unlinked.each do |size| %>
+                <div class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span><b><%= size.size %></b></span>
+                        <button class="btn btn-sm btn-outline-secondary">Edit</button>
+                    </div>
+                    <%= form_with model: size, method: :patch do |f| %>
+                        <div class="input-group">
+                            <%= f.select :shopify_gid,
+                                @locker_product_info[:variants].map { |_gid, v| [v[:displayName], v[:id], { 'data-data' => v.to_json }] },
+                             { include_blank: 'Select variant...' },
+                             { class: 'form-select form-select-sm' } %>
+                            <%= f.submit 'Link', class: 'btn btn-sm btn-outline-primary' %>
+                        </div>
+                    <% end %>
+                </div>
+            <% end %>
+        </div>
+    <% end %>
+
+
+    <%#= button_to 'Sync locker sizes', sync_sizes_preview_locker_sizes_url, class: 'btn btn-primary mb-3' %>
+
+    <h3 id="lockerSizesSection"><%= link_to '#', '#lockerSizesSection' %> Locker Sizes</h3>
     <p>List of locker sizes available on Makerepo. This is what users request when filling out a locker rental request.
         Each locker size has a Makerstore product variant associated with it.</p>
-    
+
     <table class="table table-hover">
         <thead class="table-primary">
             <tr>
@@ -93,7 +143,7 @@
             <% end %>
         </tbody>
     </table>
-    
+
     <%= form_with model: LockerSize.new do |f| %>
         <h4>Create a new locker size</h4>
         <p>Create a new locker size and link it to a store product variant.</p>
