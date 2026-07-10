@@ -8,6 +8,7 @@ class LearningAreaController < DevelopmentProgramsController
                   update
                   scorm_launch
                   serve_scorm_asset
+                  scorm_commit
                 ]
 
   before_action :form_training_data, only: %i[new edit create update]
@@ -105,6 +106,15 @@ class LearningAreaController < DevelopmentProgramsController
               disposition: :inline
   end
 
+  def scorm_commit
+    current_user
+      .learning_module_tracks
+      .find_or_create_by!(learning_module_id: params[:id])
+      .update(scorm_state: scorm_state_params)
+
+    head :ok
+  end
+
   def reorder
     if params[:data].present?
       lm_order =
@@ -169,35 +179,35 @@ class LearningAreaController < DevelopmentProgramsController
   end
 
   def scorm_state_params
-    params.require(:scorm_cmi).permit(
-      # SCORM 1.2 state data
-      'cmi.core.lesson_status',
-      'cmi.core.lesson_location',
-      'cmi.core.score.raw',
-      'cmi.core.score.min',
-      'cmi.core.score.max',
-      'cmi.core.session_time',
-      'cmi.core.total_time',
-      'cmi.suspend_data',
-      'cmi.core.entry',
-      'cmi.core.exit',
-      'cmi.core.credit',
-      'cmi.core.lesson_mode',
-      # SCORM 2004 state data
-      'cmi.completion_status',
-      'cmi.success_status',
-      'cmi.location',
-      'cmi.score.raw',
-      'cmi.score.min',
-      'cmi.score.max',
-      'cmi.score.scaled',
-      'cmi.session_time',
-      'cmi.total_time',
-      'cmi.entry',
-      'cmi.exit',
-      'cmi.credit',
-      'cmi.mode',
-      'cmi.progress_measure'
-    )
+    # Keys lifted from flattened scorm-again format
+    params
+      .permit(
+        :'cmi.completion_status',
+        :'cmi.exit',
+        :'cmi.location',
+        :'cmi.progress_measure',
+        :'cmi.score.scaled',
+        :'cmi.score.raw',
+        :'cmi.score.min',
+        :'cmi.score.max',
+        :'cmi.session_time',
+        :'cmi.success_status',
+        :'cmi.suspend_data',
+        :'cmi.comments_from_learner',
+        learner_preference: %i[
+          audio_level
+          language
+          delivery_speed
+          audio_captioning
+        ]
+      )
+      .tap do |whitelisted|
+        # Limit suspend data to 64kb, per the standard
+        if (suspend_data = whitelisted[:'cmi.suspend_data']).is_a?(String) &&
+             suspend_data.length > 64_000
+          raise ActionController::BadRequest,
+                'suspend_data exceeds 64k character limit'
+        end
+      end
   end
 end
