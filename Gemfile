@@ -22,6 +22,7 @@ gem 'fastimage', '~> 2.4'
 gem "file_validators"
 gem "font-awesome-rails", "~> 4.7.0.9"
 gem "google-apis-calendar_v3"
+gem "mini_magick", "~> 5.0" 
 gem "multi_json"
 gem "googleauth"
 gem "graphlient"
