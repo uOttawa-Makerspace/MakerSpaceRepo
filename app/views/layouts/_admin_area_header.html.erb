@@ -22,6 +22,15 @@
         <li class="nav-item"><%= link_to t('admin.announcements'), admin_announcements_path, class: 'nav-link' %></li>
         <li class="nav-item"><%= link_to t('admin.reports'), admin_report_generator_index_path, class: 'nav-link' %></li>
         <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownPowerBI" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            PowerBI
+          </a>
+          <div class="dropdown-menu" aria-labelledby="navbarDropdownPowerBI">
+            <%= link_to 'Visitors', 'https://app.powerbi.com/groups/3df040eb-6bde-4bfa-ab91-91b27146e4b0/reports/0eed48b8-26d6-4b34-856e-6c7780a056d1/07d82f58c8990431a498?experience=power-bi&clientSideAuth=0', class: 'dropdown-item', target: :_blank, rel: 'noopener' %>
+            <%= link_to 'Certifications', 'https://app.powerbi.com/groups/3df040eb-6bde-4bfa-ab91-91b27146e4b0/reports/55c3f373-a6c4-4be2-bb85-ae5b0fd4e523/07d82f58c8990431a498?experience=power-bi&clientSideAuth=0', class: 'dropdown-item', target: :_blank, rel: 'noopener' %>
+          </div>
+        </li>
+        <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#", id="navbarDropdown1" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             <%= t('admin.trainings') %>
           </a>
