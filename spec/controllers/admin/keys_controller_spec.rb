@@ -118,6 +118,29 @@ RSpec.describe Admin::KeysController, type: :controller do
     end
   end
 
+  describe "assign" do
+    before(:each) do
+      @admin = create(:user, :admin)
+      session[:user_id] = @admin.id
+      session[:expires_at] = Time.zone.now + 10_000
+      @space = create(:space)
+      @key = create(:key, :inventory_status, :regular_key_type, space_id: @space.id)
+      @staff = create(:user, :staff)
+      @team_user = create(:user)
+      create(:program, :teams_program, user: @team_user)
+    end
+
+    it "should include staff and Teams Program users in the assignment list" do
+      get :assign, params: { key_id: @key.id }
+
+      staff_options = @controller.instance_variable_get(:@staff_options)
+      option_ids = staff_options.map { |_, id| id }
+
+      expect(option_ids).to include(@staff.id)
+      expect(option_ids).to include(@team_user.id)
+    end
+  end
+
   describe "show" do
     context "admin" do
       it "should get the key" do
@@ -226,6 +249,8 @@ RSpec.describe Admin::KeysController, type: :controller do
       session[:expires_at] = Time.zone.now + 10_000
       @space = create(:space)
       @staff = create(:user, :staff)
+      @team_user = create(:user)
+      create(:program, :teams_program, user: @team_user)
       @key_request =
         create(
           :key_request,
@@ -276,7 +301,7 @@ RSpec.describe Admin::KeysController, type: :controller do
               params: {
                 key_id: key.id,
                 key: {
-                  user_id: @staff.id,
+                  user_id: @team_user.id,
                   supervisor_id: @admin.id
                 },
                 deposit_amount: 20
@@ -284,7 +309,7 @@ RSpec.describe Admin::KeysController, type: :controller do
 
         expect(flash[:notice]).to eq("Successfully assigned key")
         expect(KeyTransaction.last.deposit_amount).to eq(20)
-        expect(KeyTransaction.last.user_id).to eq(@staff.id)
+        expect(KeyTransaction.last.user_id).to eq(@team_user.id)
         expect(KeyTransaction.last.key_id).to eq(key.id)
         expect(Key.last.status).to eq("held")
       end
@@ -381,7 +406,6 @@ RSpec.describe Admin::KeysController, type: :controller do
         patch :revoke_key,
               params: {
                 key_id: key.id
-                #deposit_return_date: Time.zone.now
               }
 
         expect(flash[:notice]).to eq("Successfully revoked key")
@@ -528,6 +552,128 @@ RSpec.describe Admin::KeysController, type: :controller do
         )
         expect(KeyRequest.last.status).to eq("approved")
       end
+    end
+  end
+
+  describe "assign_key with external contacts" do
+    before(:each) do
+      @admin = create(:user, :admin)
+      session[:user_id] = @admin.id
+      session[:expires_at] = Time.zone.now + 10_000
+      @space = create(:space)
+      @key = create(:key, :inventory_status, :regular_key_type, space_id: @space.id)
+    end
+
+    it "creates an ExternalContact and assigns the key to them" do
+      expect {
+        patch :assign_key,
+              params: {
+                key_id: @key.id,
+                assignment_type: "external",
+                key: { supervisor_id: @admin.id },
+                external_contact: {
+                  first_name: "Jane",
+                  last_name: "Doe",
+                  email: "jane.doe@example.com",
+                  phone: "6135551234"
+                },
+                deposit_amount: 25
+              }
+      }.to change(ExternalContact, :count).by(1)
+
+      contact = ExternalContact.last
+      @key.reload
+
+      expect(flash[:notice]).to eq("Successfully assigned key")
+      expect(@key.holder).to eq(contact)
+      expect(@key.status).to eq("held")
+      expect(KeyTransaction.last.holder).to eq(contact)
+      expect(KeyTransaction.last.deposit_amount).to eq(25)
+    end
+
+    it "reuses an existing ExternalContact instead of creating a duplicate" do
+      existing = create(:external_contact, email: "jane.doe@example.com")
+
+      expect {
+        patch :assign_key,
+              params: {
+                key_id: @key.id,
+                assignment_type: "external",
+                key: { supervisor_id: @admin.id },
+                external_contact: {
+                  first_name: "Jane",
+                  last_name: "Doe",
+                  email: "JANE.DOE@example.com"
+                },
+                deposit_amount: 0
+              }
+      }.not_to change(ExternalContact, :count)
+
+      @key.reload
+      expect(@key.holder).to eq(existing)
+    end
+
+    it "rejects the assignment when required external contact fields are missing" do
+      patch :assign_key,
+            params: {
+              key_id: @key.id,
+              assignment_type: "external",
+              key: { supervisor_id: @admin.id },
+              external_contact: { first_name: "Jane" },
+              deposit_amount: 10
+            }
+
+      @key.reload
+      expect(flash[:alert]).to be_present
+      expect(@key.status).to eq("inventory")
+      expect(KeyTransaction.count).to eq(0)
+    end
+
+    it "rejects the assignment when the external contact fails validation and does not leave the key held" do
+      patch :assign_key,
+            params: {
+              key_id: @key.id,
+              assignment_type: "external",
+              key: { supervisor_id: @admin.id },
+              external_contact: {
+                first_name: "Jane",
+                last_name: "Doe",
+                email: "jane.doe@example.com",
+                phone: 'INVALID-PHONE-!#$' # Contains ! and $ to trigger regex failure
+              },
+              deposit_amount: 10
+            }
+
+      @key.reload
+      expect(flash[:alert]).to be_present
+      expect(@key.status).to eq("inventory")
+      expect(@key.holder).to be_nil
+      expect(KeyTransaction.count).to eq(0)
+    end
+  end
+
+  describe "assign_key transactional integrity" do
+    it "rolls back the key status if the KeyTransaction fails to save" do
+      admin = create(:user, :admin)
+      session[:user_id] = admin.id
+      session[:expires_at] = Time.zone.now + 10_000
+      space = create(:space)
+      key = create(:key, :inventory_status, :regular_key_type, space_id: space.id)
+
+      allow_any_instance_of(KeyTransaction).to receive(:save!).and_raise(ActiveRecord::RecordInvalid.new(KeyTransaction.new))
+
+      patch :assign_key,
+            params: {
+              key_id: key.id,
+              assignment_type: "external",
+              key: { supervisor_id: admin.id },
+              external_contact: { first_name: "Jane", last_name: "Doe", email: "jane@example.com" },
+              deposit_amount: 20
+            }
+
+      key.reload
+      expect(key.status).to eq("inventory")
+      expect(key.holder).to be_nil
     end
   end
 end

@@ -122,8 +122,8 @@ class User < ApplicationRecord
   has_many :job_orders, dependent: :destroy
   has_many :job_order_statuses
   has_many :coupon_codes, dependent: :destroy
-  has_many :key_transactions, dependent: :destroy
-  has_many :keys, class_name: 'Key'
+  has_many :key_transactions, as: :holder, dependent: :destroy
+  has_many :keys, as: :holder
   has_many :team_memberships, dependent: :destroy
   has_many :teams, through: :team_memberships
   has_many :space_manager_joins, dependent: :destroy
@@ -272,6 +272,13 @@ class User < ApplicationRecord
   }
   
   scope :staff, -> { where(role: %w[admin staff]) }
+
+  scope :staff_or_teams_program, -> {
+    left_outer_joins(:programs)
+      .where(role: %w[admin staff])
+      .or(where(programs: { program_type: Program::TEAMS }))
+      .distinct
+  }
   
   scope :students, -> { where(identity: STUDENT_IDENTITIES) }
   

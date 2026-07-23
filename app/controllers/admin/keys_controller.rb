@@ -1,21 +1,10 @@
 class Admin::KeysController < AdminAreaController
   before_action :set_key,
-                only: %i[
-                  show
-                  edit
-                  destroy
-                  update
-                  assign
-                  revoke
-                  assign_key
-                  revoke_key
-                  history
-                ]
+                only: %i[show edit destroy update assign revoke assign_key revoke_key history]
   before_action :set_key_request, only: %i[approve_key_request deny_key_request]
 
   def index
-    @keys = Key.includes(:space, :user, :supervisor).order(updated_at: :desc)
-
+    @keys = Key.includes(:space, :holder, :supervisor).order(updated_at: :desc)
     @spaces = Space.order(name: :asc)
   end
 
@@ -36,21 +25,11 @@ class Admin::KeysController < AdminAreaController
 
   def new
     @key = Key.new
-    @space_select = []
-    Space
-      .order(name: :asc)
-      .each do |space|
-        @space_select << [space.name + " (" + space.keycode + ")", space.id]
-      end
+    @space_select = Space.order(name: :asc).map { |s| ["#{s.name} (#{s.keycode})", s.id] }
   end
 
   def edit
-    @space_select = []
-    Space
-      .order(name: :asc)
-      .each do |space|
-        @space_select << [space.name + " (" + space.keycode + ")", space.id]
-      end
+    @space_select = Space.order(name: :asc).map { |s| ["#{s.name} (#{s.keycode})", s.id] }
   end
 
   def update
@@ -77,10 +56,13 @@ class Admin::KeysController < AdminAreaController
   def assign
     @admin_options =
       User.where(role: "admin").order("LOWER(name) ASC").pluck(:name, :id)
+
     @staff_options =
       User
-        .staff
-        .order("LOWER(name) ASC")
+        .staff_or_teams_program
+        .includes(:key_request)
+        .select("users.*, LOWER(users.name) AS lower_name")
+        .order("lower_name ASC")
         .map do |user|
           label = ""
           if user.key_request.blank?
@@ -93,41 +75,39 @@ class Admin::KeysController < AdminAreaController
   end
 
   def assign_key
-    user = User.find(params[:key][:user_id])
-
-    key_transaction =
-      KeyTransaction.new(
-        user_id: user.id,
-        key_id: @key.id,
-        deposit_amount: params[:deposit_amount]
-      )
-    if @key.status_inventory? &&
-         @key.update(key_params.merge(user_id: user.id, status: :held)) &&
-         key_transaction.save
-      redirect_to admin_keys_path, notice: "Successfully assigned key"
-    else
-      redirect_to admin_keys_path,
-                  alert: "Something went wrong while trying to assign the key"
+    unless @key.status_inventory?
+      return redirect_to admin_keys_path, alert: "Something went wrong while trying to assign the key"
     end
+
+    holder = resolve_holder
+    if holder.nil?
+      message = @holder_errors&.any? ? @holder_errors.join(', ') : "Please select a user or provide complete external contact details."
+      return redirect_to admin_keys_path, alert: message
+    end
+
+    ActiveRecord::Base.transaction do
+      @key.update!(key_params.merge(holder: holder, status: :held))
+      KeyTransaction.create!(holder: holder, key_id: @key.id, deposit_amount: params[:deposit_amount])
+    end
+
+    redirect_to admin_keys_path, notice: "Successfully assigned key"
+  rescue ActiveRecord::RecordInvalid => e
+    redirect_to admin_keys_path, alert: "Something went wrong: #{e.record.errors.full_messages.join(', ')}"
   end
 
   def revoke_key
-    if @key.status_held? && @key.update(user_id: nil, status: :inventory) &&
+    if @key.status_held? && @key.get_latest_key_transaction.present? &&
+         @key.update(holder: nil, status: :inventory) &&
          @key.get_latest_key_transaction.update(
            return_date: Date.today,
            # Set deposit return date to today if deposit is zero
            deposit_return_date:
              params[:deposit_return_date]&.to_date ||
-               (
-                 if @key.get_latest_key_transaction.deposit_amount.zero?
-                   Time.zone.today
-                 end
-               )
+               (Date.today if @key.get_latest_key_transaction.deposit_amount.zero?)
          )
       redirect_to admin_keys_path, notice: "Successfully revoked key"
     else
-      redirect_to admin_keys_path,
-                  alert: "Something went wrong while trying to revoke the key"
+      redirect_to admin_keys_path, alert: "Something went wrong while trying to revoke the key"
     end
   end
 
@@ -136,34 +116,42 @@ class Admin::KeysController < AdminAreaController
   end
 
   def approve_key_request
-    if @key_request.status_waiting_for_approval? &&
-         @key_request.update(status: :approved)
-      redirect_to requests_admin_keys_path,
-                  notice: "Successfully approved key request."
+    if @key_request.status_waiting_for_approval? && @key_request.update(status: :approved)
+      redirect_to requests_admin_keys_path, notice: "Successfully approved key request."
     else
-      redirect_to requests_admin_keys_path,
-                  alert: "Something went wrong while approving the key request."
+      redirect_to requests_admin_keys_path, alert: "Something went wrong while approving the key request."
     end
   end
 
   def deny_key_request
-    if @key_request.status_waiting_for_approval? &&
-         @key_request.update(status: :in_progress)
-      redirect_to requests_admin_keys_path,
-                  notice: "Successfully denied key request."
+    if @key_request.status_waiting_for_approval? && @key_request.update(status: :in_progress)
+      redirect_to requests_admin_keys_path, notice: "Successfully denied key request."
     else
-      redirect_to requests_admin_keys_path,
-                  alert: "Something went wrong while denying the key request."
+      redirect_to requests_admin_keys_path, alert: "Something went wrong while denying the key request."
     end
   end
 
   private
 
+  def resolve_holder
+    if params[:assignment_type] == 'external'
+      ext = params.fetch(:external_contact, {}).permit(:first_name, :last_name, :email, :phone)
+      return nil if ext[:email].blank? || ext[:first_name].blank? || ext[:last_name].blank?
+
+      contact = ExternalContact.find_or_create_by_details(**ext.to_h.symbolize_keys)
+      return contact if contact.persisted?
+
+      @holder_errors = contact.errors.full_messages
+      nil
+    else
+      User.find_by(id: params.dig(:key, :user_id))
+    end
+  end
+
   def key_params
     params.require(:key).permit(
       :number,
       :space_id,
-      :user_id,
       :supervisor_id,
       :status,
       :key_type,

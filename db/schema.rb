@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_10_025738) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_05_234020) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -296,6 +296,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_10_025738) do
     t.integer "training_session_id"
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
+  end
+
+  create_table "external_contacts", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.boolean "deleted", default: false, null: false
+    t.string "email", null: false
+    t.string "first_name", null: false
+    t.string "last_name", null: false
+    t.string "phone"
+    t.datetime "updated_at", null: false
+    t.index ["deleted"], name: "index_external_contacts_on_deleted"
+    t.index ["email"], name: "index_external_contacts_on_email", unique: true
   end
 
   create_table "faqs", force: :cascade do |t|
@@ -603,10 +615,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_10_025738) do
     t.datetime "created_at", null: false
     t.decimal "deposit_amount", precision: 5, scale: 2
     t.date "deposit_return_date"
+    t.bigint "holder_id"
+    t.string "holder_type"
     t.bigint "key_id"
     t.date "return_date"
     t.datetime "updated_at", null: false
     t.bigint "user_id"
+    t.index ["holder_type", "holder_id"], name: "index_key_transactions_on_holder"
     t.index ["key_id"], name: "index_key_transactions_on_key_id"
     t.index ["user_id"], name: "index_key_transactions_on_user_id"
   end
@@ -615,6 +630,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_10_025738) do
     t.string "additional_info", default: ""
     t.datetime "created_at", null: false
     t.string "custom_keycode"
+    t.bigint "holder_id"
+    t.string "holder_type"
     t.integer "key_type", default: 0
     t.string "number"
     t.bigint "space_id"
@@ -622,6 +639,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_10_025738) do
     t.bigint "supervisor_id"
     t.datetime "updated_at", null: false
     t.bigint "user_id"
+    t.index ["holder_type", "holder_id"], name: "index_keys_on_holder"
     t.index ["space_id"], name: "index_keys_on_space_id"
     t.index ["supervisor_id"], name: "index_keys_on_supervisor_id"
     t.index ["user_id"], name: "index_keys_on_user_id"
@@ -1017,18 +1035,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_10_025738) do
     t.integer "project_cost"
     t.string "project_type"
     t.integer "prototype_cost"
-    t.integer "season"
     t.string "slug"
     t.string "supervisor_background"
     t.string "title"
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
     t.string "username"
-    t.integer "year"
     t.string "youtube_link"
     t.index ["linked_project_proposal_id"], name: "index_project_proposals_on_linked_project_proposal_id"
-    t.index ["title"], name: "index_project_proposals_on_title", opclass: :gin_trgm_ops, using: :gin
-    t.index ["year", "season"], name: "index_project_proposals_on_year_and_season"
   end
 
   create_table "project_requirements", id: :serial, force: :cascade do |t|
