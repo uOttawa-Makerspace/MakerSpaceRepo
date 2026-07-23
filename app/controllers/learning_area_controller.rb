@@ -1,35 +1,30 @@
 class LearningAreaController < DevelopmentProgramsController
   before_action :only_admin_access, only: %i[new create edit update destroy]
-  before_action :set_learning_module, only: %i[show destroy edit update]
-  before_action :set_training_categories, only: %i[new edit]
-  before_action :set_training_levels, only: %i[new edit]
-  before_action :set_files_photos_videos, only: %i[show edit]
+  before_action :set_learning_module,
+                only: %i[
+                  show
+                  destroy
+                  edit
+                  update
+                  scorm_launch
+                  serve_scorm_asset
+                ]
+
+  before_action :form_training_data, only: %i[new edit create update]
 
   def index
-    @skills = Skill.all
-    @learning_module_track =
-      proc do |learning_module|
-        learning_module.learning_module_tracks.where(user: current_user)
-      end
-    @all_learning_modules =
-      proc { |training| training.learning_modules.order(:order) }
-    @learning_modules_completed =
-      proc do |training, level|
-        training
-          .learning_modules
-          .joins(:learning_module_tracks)
-          .where(
-            learning_module_tracks: {
-              user: current_user,
-              status: "Completed"
-            }
-          )
-          .where(learning_modules: { level: level })
-      end
-    @total_learning_modules_per_level =
-      proc do |training, level|
-        training.learning_modules.where(level: level)
-      end
+    # Get all modules, group by training and separate into subskills. Modules
+    # with no subskill get put in a separate subskill page.
+    @learning_modules =
+      LearningModule
+        .includes(photos_attachments: :blob)
+        .includes(:training)
+        .group_by(&:training)
+        .sort_by { |training, _| training.name }
+        .to_h
+        .transform_values do |modules|
+          modules.sort_by { |m| LearningModule.levels.keys.index(m.level) }
+        end
   end
 
   def new
@@ -37,33 +32,21 @@ class LearningAreaController < DevelopmentProgramsController
   end
 
   def show
-    @valid_urls = @learning_module.extract_valid_urls
-    @learning_module_track =
-      @learning_module.learning_module_tracks.where(user: current_user)
+  end
+
+  def subskill
+    @subskill = params[:subskill]
+    @learning_modules = LearningModule.where(subskill: params[:subskill])
   end
 
   def create
-    @learning_module = LearningModule.new(learning_modules_params)
+    @learning_module = LearningModule.new(learning_module_params)
     if @learning_module.save
-      begin
-        create_photos
-      rescue FastImage::ImageFetchFailure,
-             FastImage::UnknownImageType,
-             FastImage::SizeNotFound => e
-        @learning_module.destroy
-        redirect_to request.path,
-                    alert:
-                      "Something went wrong while uploading photos, try again later."
-      else
-        create_files
-        redirect_to learning_area_path(@learning_module.id),
-                    notice: "Learning Module has been successfully created."
-      end
+      redirect_to learning_area_path(@learning_module.id),
+                  notice: 'Learning Module has been successfully created.'
     else
-      flash[:alert] = "Something went wrong"
-      @training_levels ||= TrainingSession.return_levels
-      @training_categories = Training.all.order(:name).pluck(:name, :id)
-      render "new", status: :unprocessable_content
+      flash[:alert] = 'Something went wrong'
+      render 'new', status: :unprocessable_content
     end
   end
 
@@ -72,7 +55,7 @@ class LearningAreaController < DevelopmentProgramsController
     respond_to do |format|
       format.html do
         redirect_to learning_area_index_path,
-                    notice: "Learning Module has been successfully deleted."
+                    notice: 'Learning Module has been successfully deleted.'
       end
       format.json { head :no_content }
     end
@@ -82,21 +65,9 @@ class LearningAreaController < DevelopmentProgramsController
   end
 
   def update
-    if @learning_module.update(learning_modules_params)
-      update_files
-      update_videos
-      begin
-        update_photos
-      rescue FastImage::ImageFetchFailure,
-             FastImage::UnknownImageType,
-             FastImage::SizeNotFound => e
-        redirect_to learning_area_path(@learning_module.id),
-                    alert_yellow:
-                      "Something went wrong while uploading photos, try again later. Other changes have been saved."
-      else
-        redirect_to learning_area_path(@learning_module.id),
-                    notice: "Learning module successfully updated."
-      end
+    if @learning_module.update(learning_module_params)
+      redirect_to learning_area_path(@learning_module.id),
+                  notice: 'Learning module successfully updated.'
     else
       flash[:alert] = "Unable to apply the changes."
       @training_categories = Training.all.order(:name).pluck(:name, :id)
@@ -106,6 +77,37 @@ class LearningAreaController < DevelopmentProgramsController
       @videos = @learning_module.videos.processed.order(created_at: :asc)
       render "edit", status: :unprocessable_content
     end
+  end
+
+  def scorm_launch
+    unless @learning_module.scorm_ready?
+      return(
+        render json: {
+                 error: 'SCORM package not ready'
+               },
+               status: :unprocessable_entity
+      )
+    end
+
+    redirect_to scorm_asset_learning_area_url(
+                  @learning_module,
+                  path: @learning_module.scorm_entry_point
+                ),
+                allow_other_host: true
+  end
+
+  def serve_scorm_asset
+    return head :not_found unless @learning_module.scorm_ready?
+
+    # Reconstruct blob key from request path and stored prefix
+    key = "#{@learning_module.scorm_prefix}/#{params[:path]}"
+
+    blob = @learning_module.scorm_package_files.blobs.find_by(key: key)
+    return head :not_found unless blob
+
+    send_data blob.download,
+              content_type: blob.content_type,
+              disposition: :inline
   end
 
   def reorder
@@ -119,14 +121,14 @@ class LearningAreaController < DevelopmentProgramsController
       respond_to do |format|
         format.html do
           redirect_to learning_area_index_path,
-                      notice: "Successfully reordered the learning modules!"
+                      notice: 'Successfully reordered the learning modules!'
         end
         format.json { render json: { status: :ok } }
       end
     else
       flash[
         :alert
-      ] = "Unable to re-order the learning modules. Please try again later..."
+      ] = 'Unable to re-order the learning modules. Please try again later...'
     end
   end
 
@@ -134,123 +136,73 @@ class LearningAreaController < DevelopmentProgramsController
 
   def only_admin_access
     return if current_user.admin?
-      redirect_to development_programs_path,
-                  alert: "Only admin members can access this area."
-    
+    redirect_to learning_area_index_path
   end
-  
-  def learning_modules_params
+
+  # Can get module by numeric ID or by a custom shortcut
+  def set_learning_module
+    @learning_module =
+      if params[:shortcut]
+        LearningModule.find_by!(shortcut_name: params[:shortcut])
+      else
+        LearningModule.find(params[:id])
+      end
+  end
+
+  def form_training_data
+    @training_categories ||= Training.all.order(:name).pluck(:name, :id)
+    @training_levels ||= LearningModule.levels.values
+    @subskills ||= LearningModule.unscope(:order).distinct.pluck(:subskill)
+  end
+
+  def learning_module_params
     params.require(:learning_module).permit(
       :title,
       :description,
+      :shortcut_name,
       :training_id,
       :level,
       :cc,
-      :badge_template_id
+      :subskill,
+      :badge_template_id,
+      :scorm_package,
+      :scorm_enabled,
+      photos: [],
+      project_files: [],
+      videos: []
     )
   end
 
-  def create_photos
-    return unless params["images"].present?
-      params["images"].each do |img|
-        dimension = FastImage.size(img.tempfile, raise_on_failure: true)
-        Photo.create(
-          image: img,
-          learning_module_id: @learning_module.id,
-          width: dimension.first,
-          height: dimension.last
-        )
-      end
-    
-  end
-
-  def create_files
-    return unless params["files"].present?
-      params["files"].each do |f|
-        @repo = RepoFile.new(file: f, learning_module_id: @learning_module.id)
-        flash[:alert] = "Make sure you only upload PDFs for the project files" unless @repo.save
-      end
-    
-  end
-
-  def set_learning_module
-    @learning_module = LearningModule.find(params[:id])
-  end
-
-  def set_training_categories
-    @training_categories = Training.all.order(:name).pluck(:name, :id)
-  end
-
-  def set_training_levels
-    @training_levels ||= TrainingSession.return_levels
-  end
-
-  def set_files_photos_videos
-    @photos = @learning_module.photos || []
-    @files = @learning_module.repo_files.order(created_at: :asc)
-    @videos = @learning_module.videos.processed.order(created_at: :asc)
-  end
-
-  def update_photos
-    if params["deleteimages"].present?
-      @learning_module.photos.each do |img|
-        next unless params["deleteimages"].include?(img.image.filename.to_s)
-        # checks if the file should be deleted
-        img.image.purge
-        img.destroy
-      end
-    end
-
-    return unless params["images"].present?
-      params["images"].each do |img|
-        dimension = FastImage.size(img.tempfile, raise_on_failure: true)
-        Photo.create(
-          image: img,
-          learning_module_id: @learning_module.id,
-          width: dimension.first,
-          height: dimension.last
-        )
-      end
-    
-  end
-
-  def update_files
-    if params["deletefiles"].present?
-      @learning_module.repo_files.each do |f|
-        next unless params["deletefiles"].include?(f.file.filename.to_s)
-        # checks if the file should be deleted
-        f.file.purge
-        f.destroy
-      end
-    end
-
-    return unless params["files"].present?
-      params["files"].each do |f|
-        repo = RepoFile.new(file: f, learning_module_id: @learning_module.id)
-        next if repo.save
-        flash[
-          :alert
-        ] = "Make sure you only upload PDFs for the project files, the PDFs were uploaded"
-      end
-    
-  end
-
-  def update_videos
-    videos_id = params["deletevideos"]
-    return unless videos_id.present?
-      videos_id = videos_id.split(",").uniq.map { |id| id.to_i }
-      @learning_module.videos.each do |f|
-        next unless (f.video.pluck(:id) & videos_id).any?
-        videos_id.each do |video_id|
-          video = f.video.find(video_id)
-          video.purge
-        end
-        f.destroy unless f.video.attached?
-      end
-    
-  end
-
-  def get_filter_params
-    params.permit(:search, :level, :category, :my_projects)
+  def scorm_state_params
+    params.require(:scorm_cmi).permit(
+      # SCORM 1.2 state data
+      'cmi.core.lesson_status',
+      'cmi.core.lesson_location',
+      'cmi.core.score.raw',
+      'cmi.core.score.min',
+      'cmi.core.score.max',
+      'cmi.core.session_time',
+      'cmi.core.total_time',
+      'cmi.suspend_data',
+      'cmi.core.entry',
+      'cmi.core.exit',
+      'cmi.core.credit',
+      'cmi.core.lesson_mode',
+      # SCORM 2004 state data
+      'cmi.completion_status',
+      'cmi.success_status',
+      'cmi.location',
+      'cmi.score.raw',
+      'cmi.score.min',
+      'cmi.score.max',
+      'cmi.score.scaled',
+      'cmi.session_time',
+      'cmi.total_time',
+      'cmi.entry',
+      'cmi.exit',
+      'cmi.credit',
+      'cmi.mode',
+      'cmi.progress_measure'
+    )
   end
 end

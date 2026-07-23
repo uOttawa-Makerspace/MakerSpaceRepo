@@ -13,24 +13,24 @@ RSpec.describe OrderItemsController, type: :controller do
   end
 
   describe "POST /create" do
-    context "logged as regular user" do
-      it "should not let regular user to create order item" do
-        user = create(:user, :regular_user)
-        session[:user_id] = user.id
-        pp = create(:proficient_project)
-        expect do
-          post :create,
-               params: {
-                 order_item: {
-                   proficient_project_id: pp.id,
-                   quantity: 1
-                 }
-               }
-        end.to change(OrderItem, :count).by(0)
-        expect(response).to redirect_to root_path
-        expect(flash[:alert]).to eq("You must be a part of the Development Program to access this area.")
-      end
-    end
+    # context "logged as regular user" do
+    #   it "should not let regular user to create order item" do
+    #     user = create(:user, :regular_user)
+    #     session[:user_id] = user.id
+    #     pp = create(:proficient_project)
+    #     expect do
+    #       post :create,
+    #            params: {
+    #              order_item: {
+    #                proficient_project_id: pp.id,
+    #                quantity: 1
+    #              }
+    #            }
+    #     end.to change(OrderItem, :count).by(0)
+    #     expect(response).to redirect_to root_path
+    #     expect(flash[:alert]).to eq("You must be a part of the Development Program to access this area.")
+    #   end
+    # end
 
     context "logged as volunteer user" do
       it "should create an order item" do

@@ -14,7 +14,7 @@
       </div>
       <p>
         <a href="https://www.facebook.com/uOCEED"><i class="fa fa-facebook" aria-hidden="true"></i></a>
-        <a href="https://www.instagram.com/uoceed/"><i class="fa fa-instagram" aria-hidden="true"></i></a>
+        <a href="https://www.instagram.com/cgec.uottawa.ceed/"><i class="fa fa-instagram" aria-hidden="true"></i></a>
         <a href="https://www.linkedin.com/company/the-centre-for-entrepreneurship-and-engineering-design/"><i class="fa fa-linkedin" aria-hidden="true"></i></a>
       </p>
     </div>
@@ -22,23 +22,12 @@
     <div class="col offset-xl-3 text-start">
       <p class="mt-0"><b><%= t('footer.newsletter_header') %></b></p>
       <p><%= t('footer.newsletter_subtext') %></p>
-      <%# Keep the ms-auto tag, on firefox this keeps the input aligned with the text%>
-      <form target="_blank" action="https://uottawa.us15.list-manage.com/subscribe/post" method="POST">
-        <input type="hidden" name="u" value="42154e6ef1a0a78237b7bc641">
-        <% if I18n.locale == :en %>
-          <!-- English mailing list -->
-          <input type="hidden" name="id" value="4831770962">
-        <% else %>
-          <!-- French mailing list -->
-          <input type="hidden" name="id" value="e9f400f571">
-        <% end %>
-        <div class="input-group">
-          <input type="email" autocapitalize="none" autocorrect="off"
-                 name="MERGE0" id="MERGE0"
-                 class="form-control" placeholder="Enter email" required="true">
-          <%= submit_tag t('home.newsletter.sign_up'), class: 'btn btn-primary' %>
-        </div>
-      </form>
+      <a href="https://secure.campaigner.com/CSB/Public/Form.aspx?fid=1979362&ac=gu0a" 
+         target="_blank" 
+         rel="noopener noreferrer" 
+         class="btn btn-primary">
+        <%= t('home.newsletter.sign_up') %>
+      </a>
     </div>
     <!-- Links -->
     <div class="col text-start">

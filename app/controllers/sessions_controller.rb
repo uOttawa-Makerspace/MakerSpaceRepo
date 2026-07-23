@@ -7,22 +7,12 @@ class SessionsController < ApplicationController
   before_action :update_activity_time
   before_action :current_user, only: [:login]
   before_action :authorized_repo_ids
-  before_action :rate_limit, only: [:login_authentication]
+  rate_limit to: 10, within: 3.minutes, only: :login_authentication, with: -> {
+    render status: :too_many_requests, json: { error: "Too many requests" }
+  }
 
   SUPPORT_EMAIL = "uottawa.makerepo@gmail.com"
-
-  def rate_limit
-    ip = request.env["REMOTE_ADDR"]
-    key = "login_#{ip}"
-    count = Rails.cache.fetch(key)
-    unless count
-      Rails.cache.write(key, 1, expires_in: 1.minute)
-      count = 1
-    end
-    Rails.cache.write(key, count.to_i + 1, expires_in: 1.minute)
-    render status: 429, json: { error: "Too many requests" } if count.to_i > 10
-  end
-
+  
   def login_authentication
     if User.username_or_email(params[:username_email])
       user = User.username_or_email(params[:username_email])

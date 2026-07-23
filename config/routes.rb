@@ -136,6 +136,10 @@ Rails.application.routes.draw do
   resources :locker_sizes, only: [:create, :update, :destroy]
 
   resources :locker_rentals do
+    member do
+      patch :renew
+    end
+
     collection do
       get :admin
       get :assign_locker
@@ -500,6 +504,7 @@ Rails.application.routes.draw do
         delete :delete_with_scope
       end
     end
+    resource :tap_box_console, only: [:show], controller: "tap_box_console"
   end
 
   namespace :staff_dashboard do
@@ -569,10 +574,19 @@ Rails.application.routes.draw do
     end
   end
 
+  # Define standalone route before resources to take priority
+  get '/learning_area/s/:shortcut', to: 'learning_area#show', as: :shortcut_learning_area
   resources :learning_area do
     collection do
       get :open_modal
       put :reorder
+      get 'subskill/:subskill', to: 'learning_area#subskill', as: :subskill
+    end
+
+    member do
+      get :scorm_launch
+      # format: false to preserve dot at URL end, else we lose file extension
+      get "scorm_assets/*path", to: "learning_area#serve_scorm_asset", as: :scorm_asset, format: false
     end
   end
 
@@ -659,7 +673,7 @@ Rails.application.routes.draw do
   end
 
   # :show and :update would take a space ID and use the logged in session user ID
-  resources :walk_in_safety_sheets, except: :delete
+  resources :walk_in_safety_sheets, except: :destroy
 
   # namespace :help do
   #   get 'main', path: '/'

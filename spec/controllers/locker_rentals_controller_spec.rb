@@ -266,6 +266,42 @@ RSpec.describe LockerRentalsController, type: :controller do
         # expect(last_mail.subject).to include('checkout')
       end
 
+      it 'should renew expired active rentals' do
+        owner = create(:user)
+        rental = create(:locker_rental, :active, rented_by: owner, owned_until: 1.week.ago)
+        session[:user_id] = owner.id
+
+        expect do
+          patch :renew, params: { id: rental.id }
+        end.to change { rental.reload.state }.from('active').to('await_payment')
+
+        expect(rental.owned_until.to_date).to eq end_of_this_semester.to_date
+        expect(response).to redirect_to(rental)
+      end
+
+      it 'does not renew active rentals that are not expired' do
+        owner = create(:user)
+        rental = create(:locker_rental, :active, rented_by: owner, owned_until: 1.week.from_now)
+        session[:user_id] = owner.id
+
+        patch :renew, params: { id: rental.id }
+
+        expect(response).to redirect_to(rental)
+        expect(flash[:alert]).to eq 'This locker rental is not renewable.'
+        expect(rental.reload.state).to eq('active')
+      end
+
+      it 'does not allow other users to renew a rental' do
+        owner = create(:user)
+        rental = create(:locker_rental, :active, rented_by: owner, owned_until: 1.week.ago)
+        session[:user_id] = create(:user).id
+
+        patch :renew, params: { id: rental.id }
+
+        expect(response).not_to have_http_status(:success)
+        expect(rental.reload.state).to eq('active')
+      end
+
       it 'should cancel rentals' do
         rental = create :locker_rental, :active
         expect do

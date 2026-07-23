@@ -1,52 +1,87 @@
 <% provide(:title, params[:slug].slug_to_title(params[:slug])) %>
 
-<section id="repositories-index">
-  <div class="like-title"><%= yield(:title) %></div>
-  <h2 class="subtitle">
-    <% if params['featured'] %>
-      <div class="not-focused"><%= link_to 'All projects ', category_path(slug: params[:slug]) %></div> |
-      <div class="focused"><%= link_to 'Featured projects ', category_path(slug: params[:slug], featured: 'yes') %> <%= fa_icon 'star' %></div>
-    <% else %>
-      <div class="focused"><%= link_to 'All projects ', category_path(slug: params[:slug]) %></div> |
-      <div class= "not-focused"><%= link_to 'Featured projects ', category_path(slug: params[:slug], featured: 'yes') %> <%= fa_icon 'star' %></div>
-    <% end %>
-  </h2><br></br>
-  <% unless params['featured'] %>
-    <section class="repository-filter">
-      <div class="sort">sort by/trier par</div>
-      <nav>
-        <% sort_type = params[:sort].present? ? params[:sort].gsub('_', ' ').titleize : 'Newest/Plus récent' %>
-        <div id="filter-header" class="filter-header"><%= fa_icon 'caret-down', text: sort_type, right: true %> </div>
-        <ul id="sort-filter" class="filter">
-          <li><%= link_to 'Newest/Plus récent', category_path(sort: :newest, slug: params[:slug]) %></li>
-          <li><%= link_to 'Most Likes/Plus d\'Aimes', category_path(sort: :most_likes, slug: params[:slug]) %></li>
-          <li><%= link_to 'Most Makes/Plus de fabrications', category_path(sort: :most_makes, slug: params[:slug]) %></li>
-          <li><%= link_to 'Recently Updated/Récemment mis à jour', category_path(sort: :recently_updated, slug: params[:slug]) %></li>
-        </ul>
-      </nav>
-    </section>
-  <% end %>  
-  <section id="repositories-container">
-  <div class="pagination"><%= will_paginate @repositories, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %></div><br>
-  <% @repositories.each_with_index do |repository, i| %>
-    <div class="repository-container">
-      <div class="repo-display-wrapper" <%= "style=background-image:url('#{url_for(repository.photos.first.image) if repository.photos.first.present?}')" %> >
-        <%= link_to '', repository_path(repository.user_username, repository.slug), class: 'link' %>
-      </div>
-      <div class="repo-info">
-        <div class="start">
-          <div class="likes"><%= fa_icon 'heart' %><br><%= repository.like %></div>
-          <div class="title"><%= link_to repository.title, repository_path(repository.user_username, repository.slug) %>
-            <% if repository.featured %> &nbsp;
-              <%= fa_icon 'star' %><br>
-            <% end %>
-          </div>
-          <div>by <%= link_to repository.user_username, user_path(repository.user_username) %></div>
-          <div><%= time_ago_in_words(repository.created_at) %> ago</div>
-        </div>
-      </div>
-    </div>
-  <% end %>
+<section id="repositories-index" class="container py-4">
+  <!-- Title -->
+  <div class="text-center mb-5 border-bottom pb-3">
+    <h1 class="display-4 text-primary fw-bold"><%= yield(:title) %></h1>
+  </div>
 
+  <!-- Filters & Controls -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 mb-4">
+    
+    <!-- Projects Toggle (All vs Featured) -->
+    <div class="btn-group shadow-sm" role="group" aria-label="Project filter">
+      <%= link_to category_path(slug: params[:slug]), class: "btn #{params['featured'] ? 'btn-outline-primary' : 'btn-primary'}" do %>
+        All projects
+      <% end %>
+      <%= link_to category_path(slug: params[:slug], featured: 'yes'), class: "btn #{params['featured'] ? 'btn-primary' : 'btn-outline-primary'}" do %>
+        Featured projects <span class="ms-1"><%= fa_icon 'star' %></span>
+      <% end %>
+    </div>
+
+    <!-- Sort Dropdown -->
+    <% unless params['featured'] %>
+      <div class="dropdown">
+        <% sort_type = params[:sort].present? ? params[:sort].gsub('_', ' ').titleize : 'Newest / Plus récent' %>
+        <button class="btn btn-outline-secondary dropdown-toggle shadow-sm" type="button" id="sortDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+          <%= sort_type %>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="sortDropdown">
+          <li><%= link_to 'Newest / Plus récent', category_path(sort: :newest, slug: params[:slug]), class: 'dropdown-item' %></li>
+          <li><%= link_to 'Most Likes / Plus d\'Aimes', category_path(sort: :most_likes, slug: params[:slug]), class: 'dropdown-item' %></li>
+          <li><%= link_to 'Most Makes / Plus de fabrications', category_path(sort: :most_makes, slug: params[:slug]), class: 'dropdown-item' %></li>
+          <li><%= link_to 'Recently Updated / Récemment mis à jour', category_path(sort: :recently_updated, slug: params[:slug]), class: 'dropdown-item' %></li>
+        </ul>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Repositories Grid -->
+  <section id="repositories-container">
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4 mb-5">
+      <% @repositories.each_with_index do |repository, i| %>
+        <div class="col">
+          <div class="card h-100 shadow-sm repository-card border-0 bg-body-tertiary">
+            
+            <!-- Image Wrapper -->
+            <div class="card-img-top repo-display-wrapper position-relative overflow-hidden" 
+                 style="background-image: url('<%= url_for(repository.photos.first.image) if repository.photos.first.present? %>'); background-color: var(--bs-secondary-bg);">
+              <%= link_to '', repository_path(repository.user_username, repository.slug), class: 'stretched-link' %>
+            </div>
+            
+            <!-- Card Content -->
+            <div class="card-body d-flex flex-column">
+              <div class="d-flex justify-content-between align-items-start mb-2 gap-2">
+                <h5 class="card-title text-truncate mb-0 fw-bold">
+                  <%= link_to repository.title, repository_path(repository.user_username, repository.slug), class: 'text-decoration-none text-body' %>
+                  <% if repository.featured %>
+                    <span class="text-warning ms-1" title="Featured"><%= fa_icon 'star' %></span>
+                  <% end %>
+                </h5>
+                <div class="text-danger text-center ms-auto" style="min-width: 30px;">
+                  <%= fa_icon 'heart' %><br>
+                  <small class="text-body-secondary fw-bold"><%= repository.like %></small>
+                </div>
+              </div>
+              
+              <div class="mt-auto pt-3 border-top border-secondary-subtle">
+                <p class="card-text small mb-1 text-body-secondary">
+                  by <%= link_to repository.user_username, user_path(repository.user_username), class: 'text-decoration-none fw-semibold' %>
+                </p>
+                <p class="card-text small text-body-tertiary mb-0">
+                  <%= fa_icon 'clock-o' %> <%= time_ago_in_words(repository.created_at) %> ago
+                </p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Pagination -->
+    <div class="d-flex justify-content-center">
+      <%= will_paginate @repositories, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
+    </div>
   </section>
 </section>
