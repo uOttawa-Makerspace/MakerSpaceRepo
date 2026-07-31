@@ -203,7 +203,11 @@
             <% if @user.admin? %>
                 <hr />
                 <b>Project review</b>
-                <p><%= t('project_proposal.reviewed_by') %> <%= link_to @project_proposal.admin.username, user_path(@project_proposal.admin.username) %></p>
+                <% if @project_proposal.admin.present? %>
+                  <p><%= t('project_proposal.reviewed_by') %> <%= link_to @project_proposal.admin.username, user_path(@project_proposal.admin.username) %></p>
+                <% else %>
+                  <p>This project has not been reviewed yet.</p>
+                <% end %>
                 <div>
                     <div class="clearfix mb-3">
                         <%= button_to fa_icon('thumbs-up', text: t('project_proposal.admin.approve')), approve_project_proposals_path(id: @project_proposal.id), method: :post,
