@@ -43,11 +43,6 @@ a.edit-repo-link {
   }
 }
 
-a#view-repo-link {
-  max-width: fit-content;
-  transform: translateX(-100%);
-}
-
 div#repo-title {
   //color: #366;
   color: $secondary;

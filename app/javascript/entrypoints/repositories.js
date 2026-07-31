@@ -111,12 +111,22 @@ document.addEventListener("turbo:load", () => {
   if (document.getElementById("search_project_proposals")) {
     if (!document.getElementById("search_project_proposals").tomselect) {
       new TomSelect("#search_project_proposals", {
-        searchField: ["name"],
-        valueField: "id",
-        labelField: "name",
-        maxOptions: null,
-        searchOnKeyUp: true,
-        openOnFocus: false,
+        render: {
+          option: function (data, escape) {
+            return `<div>
+            <span>${escape(data.text)}</span>
+            <br />
+            <small class="text-muted">${escape(data.semester || "")}</small>
+            </div>`;
+          },
+          item: function (data, escape) {
+            return `<span>
+            ${escape(data.text)}
+            <br />
+            <small class="text-muted">${escape(data.semester || "")}</small>
+            </span>`;
+          },
+        },
       });
     }
   }

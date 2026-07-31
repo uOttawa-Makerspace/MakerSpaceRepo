@@ -32,7 +32,13 @@ class RepositoriesController < SessionsController
         .where(comment_id: @comments.map(&:id))
         .pluck(:comment_id, :downvote)
     @project_proposals =
-      ProjectProposal.approved.order(title: :asc).pluck(:title, :id)
+      ProjectProposal.approved.by_semester.map do |p|
+        [
+          p.title,
+          p.id,
+          { data: { semester: p.active_semester_label } }
+        ]
+      end
 
     @liked = @repository.likes.find_by(user_id: @user.id).nil? ? false : true
 
