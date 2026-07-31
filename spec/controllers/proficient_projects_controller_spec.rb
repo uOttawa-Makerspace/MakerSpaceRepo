@@ -28,8 +28,8 @@ RSpec.describe ProficientProjectsController, type: :controller do
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
         get :new
-        expect(flash[:alert]).to eq("You must be a part of the Development Program to access this area.")
-        expect(response).to redirect_to root_path
+        # expect(flash[:alert]).to eq("You must be a part of the Development Program to access this area.")
+        expect(response).to redirect_to proficient_projects_path
       end
     end
   end

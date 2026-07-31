@@ -6,11 +6,11 @@ module ScormZipHelper
   extend self
   extend ActionDispatch::TestProcess
 
-  def create_scorm_zip(entry_point = 'index.html')
+  def create_scorm_zip(entry_point = 'index.html', nested_dir: nil)
     path = Rails.root.join('tmp', 'test_scorm.zip')
 
     Zip::OutputStream.open(path) do |zip|
-      zip.put_next_entry('imsmanifest.xml')
+      zip.put_next_entry([nested_dir, 'imsmanifest.xml'].compact.join('/'))
       zip.write(<<~XML)
         <?xml version="1.0" encoding="UTF-8"?>
         <manifest>
@@ -20,7 +20,7 @@ module ScormZipHelper
         </manifest>
       XML
 
-      zip.put_next_entry(entry_point)
+      zip.put_next_entry([nested_dir, entry_point].compact.join('/'))
       zip.write('<html><body>SCORM Content</body></html>')
     end
 

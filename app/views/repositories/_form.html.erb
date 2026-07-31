@@ -121,8 +121,8 @@
     <div class="mb-3">
         <%= f.label :equipments, t('repository.equip') , class: 'form-label' %>
         <%= f.select :equipments, options_for_select(
-            EquipmentOption.show_options.collect(&:name),
-            selected: @repository.equipments.collect(&:name)),
+            (EquipmentOption.show_options.collect(&:name) + @repository.equipments.pluck(:name)).uniq,
+            selected: @repository.equipments.pluck(:name)),
          { multiple: true, class: 'form-control form-select', include_blank: t('repository.sel_cat') }
          %>
         <span class="form-text"><%= t('repository.equip_msg') %></span>

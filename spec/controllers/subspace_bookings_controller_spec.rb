@@ -86,6 +86,50 @@ RSpec.describe SubSpaceBookingController, type: :controller do
         get :bookings, params: { room: @subspace.id }
         expect(JSON.parse(response.body).length).to eq(1)
       end
+
+      it "should send confirmation email when approving a booking" do
+        @user = create(:user, :admin)
+        session[:user_id] = @user.id
+        booking = create(:sub_space_booking, sub_space: @subspace, user: @user)
+        
+        expect {
+          put :approve, params: { sub_space_booking_id: booking.id }
+        }.to have_enqueued_job(ActionMailer::MailDeliveryJob)
+            .with("BookingMailer", "send_booking_approved", "deliver_now",  # <-- Changed here
+                  { args: [booking.id] })
+      end
+    end
+  end
+
+  describe "PUT/bulk_approve_access" do
+    context "admin bulk approves selected access requests" do
+      it "completes approval even if the request identity is missing or invalid" do
+        @user = create(:user, :admin)
+        session[:user_id] = @user.id
+        request_user = create(:user)
+        uba = UserBookingApproval.new(
+          user: request_user,
+          date: Time.now,
+          comments: "Need access",
+          approved: false,
+          identity: nil
+        )
+        uba.save(validate: false)
+
+        put :bulk_approve_access,
+            params: { user_booking_approval_ids: [uba.id] }
+
+        expect(response).to redirect_to(
+          sub_space_booking_index_path(anchor: "booking-admin-tab")
+        )
+        expect(flash[:notice]).to eq(
+          "All selected access requests approved successfully."
+        )
+        uba.reload
+        expect(uba.approved).to be(true)
+        expect(uba.staff_id).to eq(@user.id)
+        expect(uba.identity).to eq("Other")
+      end
     end
   end
 
@@ -142,6 +186,22 @@ RSpec.describe SubSpaceBookingController, type: :controller do
               .booking_status_id
           ).to eq(BookingStatus::DECLINED.id)
         end
+      end
+    end
+
+    context "bulk approve with emails" do
+      it "should send confirmation emails for each bulk approved booking" do
+        @user = create(:user, :admin)
+        session[:user_id] = @user.id
+        booking1 = create(:sub_space_booking, sub_space: @subspace, user: @user)
+        booking2 = create(:sub_space_booking, sub_space: @subspace, user: @user)
+        
+        expect {
+          put :bulk_approve_decline, params: { 
+            bulk_status: 'approve', 
+            sub_space_booking_ids: [booking1.id, booking2.id] 
+          }
+        }.to have_enqueued_job(ActionMailer::MailDeliveryJob).twice
       end
     end
   end

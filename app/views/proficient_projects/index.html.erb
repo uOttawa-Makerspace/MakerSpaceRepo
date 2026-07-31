@@ -30,7 +30,7 @@
 
                       <% @all_proficient_projects.call(training).order(:level).rotate(@advanced_pp_count.call(training)).each do |pp| %>
                         <% opacity = pp_bought.include?(pp) ? '' : 'w3-opacity-max' %>
-                        <div class="col-md-4 mb-5 mt-3 w3-hover-opacity <%= return_hover_and_text_colors(pp.level) %> <%= return_border_color(pp.level) %>" style="border-width:2px !important;">
+                        <div class="col-md-4 mb-5 mt-3 w3-hover-opacity <%= return_hover_and_text_colors(pp.level) %>" style="border-width:2px !important;">
                           <div class="<%= opacity %>">
                             <div class="py-3">
                               <div class="row">

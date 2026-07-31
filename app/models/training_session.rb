@@ -85,7 +85,7 @@ class TrainingSession < ApplicationRecord
   end
 
   def self.return_levels
-    %w[Beginner Intermediate Advanced]
+    %w[General Beginner Intermediate Advanced]
   end
 
   def self.filter_by_attribute(value)

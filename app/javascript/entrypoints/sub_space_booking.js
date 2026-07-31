@@ -5,574 +5,550 @@ import listPlugin from "@fullcalendar/list";
 import TomSelect from "tom-select";
 import "flatpickr";
 
+// ─── Small helpers ────────────────────────────────────────────────────────────
+
+function updateSelectedCount(checkboxClass, displayId) {
+  const count = document.querySelectorAll(`${checkboxClass}:checked`).length;
+  const el = document.getElementById(displayId);
+  if (!el) return;
+  el.textContent = count > 0 ? `${count} selected` : "";
+}
+
+// ─── turbo:load — runs every soft navigation ──────────────────────────────────
+
 document.addEventListener("turbo:load", function () {
-  // For the recurring booking approval modal
-  let approveRecurringModal = document.getElementById("approveRecurringModal");
+  // ── Recurring-approval modal ──────────────────────────────────────────────
+  const approveRecurringModal = document.getElementById(
+    "approveRecurringModal",
+  );
   if (approveRecurringModal) {
-    approveRecurringModal.addEventListener("shown.bs.modal", (e) => {
-      // Get Ids represented by modal button
-      let dates = JSON.parse(e.relatedTarget.dataset.dates);
-      let modalBody = approveRecurringModal.querySelector(".modal-body");
-      let checkbox_template = modalBody.querySelector("label").cloneNode(true); // grab first checkbox
-      // Convert them into checkboxes
-      let newOptions = dates.map((date) => {
-        let o = checkbox_template.cloneNode(true);
-        o.querySelector("input").value = date[0];
-        o.querySelector("span").innerText = date[1];
-        return o;
+    // Populate checkboxes when the modal opens
+    approveRecurringModal.addEventListener("show.bs.modal", (e) => {
+      const dates = JSON.parse(e.relatedTarget.dataset.dates);
+      const container = document.getElementById("recurring-checkboxes");
+      container.innerHTML = "";
+      dates.forEach(([id, label]) => {
+        const div = document.createElement("div");
+        div.className = "form-check p-2 border rounded";
+        div.innerHTML = `
+          <input class="form-check-input" type="checkbox"
+                 name="sub_space_booking_ids[]"
+                 value="${id}"
+                 id="rc_${id}"
+                 checked />
+          <label class="form-check-label w-100" for="rc_${id}">${label}</label>
+        `;
+        container.appendChild(div);
       });
-      // Replace them into the form body
-      modalBody.replaceChildren(...newOptions);
+    });
+
+    document
+      .getElementById("recurringSelectAll")
+      ?.addEventListener("click", () => {
+        approveRecurringModal
+          .querySelectorAll('input[type="checkbox"]')
+          .forEach((c) => (c.checked = true));
+      });
+    document
+      .getElementById("recurringSelectNone")
+      ?.addEventListener("click", () => {
+        approveRecurringModal
+          .querySelectorAll('input[type="checkbox"]')
+          .forEach((c) => (c.checked = false));
+      });
+  }
+
+  // ── Pending bookings select-all ───────────────────────────────────────────
+  const pendingSelectAll = document.getElementById(
+    "pending_bookings_select_all",
+  );
+  if (pendingSelectAll) {
+    // Attach per-checkbox change listeners for the live count
+    document.querySelectorAll(".pending-booking-select").forEach((c) => {
+      c.addEventListener("change", () =>
+        updateSelectedCount(
+          ".pending-booking-select",
+          "pending-selected-count",
+        ),
+      );
+    });
+    pendingSelectAll.addEventListener("change", (e) => {
+      document.querySelectorAll(".pending-booking-select").forEach((c) => {
+        c.checked = e.currentTarget.checked;
+      });
+      updateSelectedCount(".pending-booking-select", "pending-selected-count");
     });
   }
-  // SET UP POPUP MODAL ON CALENDAR
-  let bookedCalendarEl = document.getElementById("booked-calendar");
-  if (bookedCalendarEl) {
-    function createEvent(arg) {
-      let modal = document.getElementById("bookModal");
-      // Show the create event buttons if new event is being created (and hide edit buttons)
-      document.getElementById("bookSave").style.display = "block";
-      document.getElementById("bookUpdate").style.display = "none";
-      document.getElementById("subspace").style.display = "none";
-      document.getElementById("subspace_header").style.display = "none";
-      document.getElementById("bookDelete").style.display = "none";
-      document.getElementById("bookingModalLabel").innerText = "New Booking";
-      document.getElementById("book-recurring").style.display = "inline-block";
-      document.getElementById("book-recurring-label").style.display =
-        "inline-block";
 
-      toggleRecurring();
-      if (modal) {
-        modal.style.display = "block";
-        modal.classList.add("show");
-        if (arg !== undefined && arg !== null) {
-          start_picker.setDate(Date.parse(arg.startStr));
-          end_picker.setDate(Date.parse(arg.endStr));
-        }
-        modal.querySelector("#book-name").focus();
-      }
-    }
-    function editEvent(arg) {
-      let modal = document.getElementById("bookModal");
-      // Show the edit event buttons in an event is being edited (and hide create buttons)
-      document.getElementById("bookSave").style.display = "none";
-      document.getElementById("bookUpdate").style.display = "block";
-      document.getElementById("subspace").style.display = "block";
-      document.getElementById("subspace_header").style.display = "block";
-      document.getElementById("bookingModalLabel").innerText = "Update Booking";
-      document.getElementById("sub_space_booking_id").value =
-        arg.event.id.split("_")[1];
-      document.getElementById("book-recurring").style.display = "none";
-      document.getElementById("book-recurring-label").style.display = "none";
-
-      if (modal) {
-        fetch(
-          "/sub_space_booking/get_sub_space_booking?id=" +
-            arg.event.id.split("_")[1],
-          {
-            method: "GET",
-            headers: {
-              Accept: "application/json",
-              "Content-Type": "application/json",
-            },
-          },
-        )
-          .then((response) => response.json())
-          .then((data) => {
-            document.getElementById("book-name").value = data.name;
-            document.getElementById("book-description").value =
-              data.description;
-            start_picker.setDate(Date.parse(data.start_time.slice(0, -6)));
-            end_picker.setDate(Date.parse(data.end_time.slice(0, -6)));
-
-            document.getElementById("book-recurring").checked = false;
-            const blockingElement = document.getElementById("book-blocking");
-            if (blockingElement) {
-              blockingElement.checked = data.blocking;
-            }
-
-            document.getElementById("bookDelete").style.display =
-              data.recurring_booking_id == null ? "block" : "none";
-            bookDeleteRecurringDropdown.style.display =
-              data.recurring_booking_id == null ? "none" : "block";
-
-            modal.style.display = "block";
-            modal.classList.add("show");
-
-            document.getElementById("subspace").value = data.sub_space_id;
-
-            toggleRecurring();
-          });
-      }
-    }
-    let start_picker = document.getElementById("book-start").flatpickr({
-      enableTime: true,
-      time_24hr: true,
-      altInput: true,
-      altFormat: "F j, Y at H:i",
+  // ── User-request select-all ───────────────────────────────────────────────
+  const userSelectAll = document.getElementById("userRequestSelectAll");
+  if (userSelectAll) {
+    document.querySelectorAll(".user-request-select").forEach((c) => {
+      c.addEventListener("change", () =>
+        updateSelectedCount(".user-request-select", "user-selected-count"),
+      );
     });
-    let end_picker = document.getElementById("book-end").flatpickr({
-      enableTime: true,
-      time_24hr: true,
-      altInput: true,
-      altFormat: "F j, Y at H:i",
-    });
-    let recurring_picker = document
-      .getElementById("book-recurring-end")
-      .flatpickr({
-        enableTime: false,
-        altInput: true,
-        altFormat: "F j, Y",
+    userSelectAll.addEventListener("change", () => {
+      document.querySelectorAll(".user-request-select").forEach((c) => {
+        c.checked = userSelectAll.checked;
       });
+      updateSelectedCount(".user-request-select", "user-selected-count");
+    });
+  }
 
-    document.getElementById("bookCancel").addEventListener("click", closeModal);
-    document.getElementById("bookClose").addEventListener("click", closeModal);
-    document.getElementById("bookSave").addEventListener("click", bookEvent);
-    document
-      .getElementById("bookUpdate")
-      .addEventListener("click", updateEvent);
-    document
-      .getElementById("bookDelete")
-      .addEventListener("click", deleteEvent);
-    // Same functionality, just a different label
-    document
-      .getElementById("bookRecurringDeleteOne")
-      .addEventListener("click", deleteEvent);
-    // This calls a different REST endpoint
-    document
-      .getElementById("bookRecurringDeleteRest")
-      .addEventListener("click", deleteRecurringEvent);
-    document
-      .getElementById("book-recurring")
-      .addEventListener("change", toggleRecurring);
-    function toggleRecurring() {
-      let recurring = document.getElementById("book-recurring");
-      let recurringElems = [
-        document.getElementById("book-recurring-end"),
-        document.getElementById("book-recurring-end-label"),
-        document.getElementById("book-recurring-type"),
-        document.getElementById("book-recurring-type-label"),
-        document.getElementsByClassName("flatpickr")[0],
-      ];
-      if (recurring.checked) {
-        recurringElems.forEach((elem) => {
-          elem.style.display = "block";
-        });
-      } else {
-        recurringElems.forEach((elem) => {
-          elem.style.display = "none";
-        });
-      }
+  // ── Collapse chevron animation ────────────────────────────────────────────
+  document
+    .querySelectorAll('[data-bs-toggle="collapse"]')
+    .forEach((trigger) => {
+      const targetSel = trigger.dataset.bsTarget;
+      const chevron = trigger.querySelector(".admin-chevron");
+      if (!chevron || !targetSel) return;
+      const target = document.querySelector(targetSel);
+      if (!target) return;
+      // Set initial rotation
+      chevron.style.transition = "transform .2s ease";
+      chevron.style.transform = target.classList.contains("show")
+        ? "rotate(0deg)"
+        : "rotate(-90deg)";
+      target.addEventListener("show.bs.collapse", () => {
+        chevron.style.transform = "rotate(0deg)";
+      });
+      target.addEventListener("hide.bs.collapse", () => {
+        chevron.style.transform = "rotate(-90deg)";
+      });
+    });
+
+  // ── Identity / supervisor toggle (access-request form) ───────────────────
+  const supervisorsContainer = document.getElementById("supervisor-select");
+  document.querySelectorAll(".identity-button").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      if (supervisorsContainer)
+        supervisorsContainer.style.display =
+          e.target.value === "Staff" ? "block" : "none";
+    });
+  });
+
+  // ── TomSelect for admin "grant access" user search ────────────────────────
+  const userSelect = document.getElementById("user_booking_select");
+  if (userSelect && !userSelect.tomSelect) {
+    userSelect.tomSelect = new TomSelect(userSelect, {
+      plugins: { remove_button: { title: "Remove" } },
+      valueField: "id",
+      labelField: "name",
+      searchField: ["name"],
+      options: [],
+      load(query, callback) {
+        if (!query.length) return callback();
+        fetch(`/sub_space_booking/users?query=${encodeURIComponent(query)}`)
+          .then((r) => r.json())
+          .then(callback)
+          .catch(() => callback());
+      },
+    });
+  }
+
+  // ── Edit-page flatpickr ───────────────────────────────────────────────────
+  document.getElementById("sub_space_booking_start_time")?.flatpickr({
+    enableTime: true,
+    time_24hr: true,
+    altInput: true,
+    altFormat: "F j, Y at H:i",
+  });
+  document.getElementById("sub_space_booking_end_time")?.flatpickr({
+    enableTime: true,
+    time_24hr: true,
+    altInput: true,
+    altFormat: "F j, Y at H:i",
+  });
+
+  // ── Calendar setup ────────────────────────────────────────────────────────
+  const bookedCalendarEl = document.getElementById("booked-calendar");
+  if (!bookedCalendarEl) return; // not on calendar tab, bail early
+
+  let start_picker, end_picker, recurring_picker;
+
+  // ---- Modal helpers -------------------------------------------------------
+  function openModal() {
+    const m = document.getElementById("bookModal");
+    if (!m) return;
+    m.style.display = "block";
+    m.classList.add("show");
+    // Backdrop
+    if (!document.getElementById("book-modal-backdrop")) {
+      const bd = document.createElement("div");
+      bd.id = "book-modal-backdrop";
+      bd.className = "modal-backdrop fade show";
+      document.body.appendChild(bd);
     }
-    function closeModal() {
-      let modal = document.getElementById("bookModal");
-      if (modal) {
-        modal.style.display = "none";
-        modal.classList.remove("show");
-        document.getElementById("book-name").value = "";
-        document.getElementById("book-description").value = "";
-        recurring_picker.setDate(null);
+  }
 
-        document.getElementById("bookSave").removeAttribute("disabled");
-        document.getElementById("bookUpdate").removeAttribute("disabled");
+  function closeModal() {
+    const modal = document.getElementById("bookModal");
+    if (!modal) return;
+    modal.style.display = "none";
+    modal.classList.remove("show");
+    document.getElementById("book-modal-backdrop")?.remove();
 
-        const invalidInputs = modal.querySelectorAll(".is-invalid");
-        invalidInputs.forEach((input) => {
-          input.classList.remove("is-invalid");
-        });
+    document.getElementById("book-name").value = "";
+    document.getElementById("book-description").value = "";
+    recurring_picker?.setDate(null);
 
-        const feedbacks = modal.querySelectorAll(
-          ".invalid-feedback:not(#end-date-validation)",
-        );
-        feedbacks.forEach((feedback) => {
-          feedback.remove();
-        });
+    document.getElementById("bookSave").removeAttribute("disabled");
+    document.getElementById("bookUpdate").removeAttribute("disabled");
 
-        document.getElementById("end-date-validation").classList.add("d-none");
-      }
+    modal
+      .querySelectorAll(".is-invalid")
+      .forEach((el) => el.classList.remove("is-invalid"));
+    modal
+      .querySelectorAll(".invalid-feedback:not(#end-date-validation)")
+      .forEach((el) => el.remove());
+    document.getElementById("end-date-validation")?.classList.add("d-none");
+  }
+
+  function toggleRecurring() {
+    const isRecurring = document.getElementById("book-recurring")?.checked;
+    const ids = [
+      "book-recurring-end",
+      "book-recurring-end-label",
+      "book-recurring-type",
+      "book-recurring-type-label",
+    ];
+    ids.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = isRecurring ? "block" : "none";
+    });
+    const fp = document.getElementsByClassName("flatpickr")[0];
+    if (fp) fp.style.display = isRecurring ? "block" : "none";
+  }
+
+  // ---- Create (new booking) ------------------------------------------------
+  function createEvent(arg) {
+    document.getElementById("bookSave").style.display = "block";
+    document.getElementById("bookUpdate").style.display = "none";
+    document.getElementById("subspace").style.display = "none";
+    document.getElementById("subspace_header").style.display = "none";
+    document.getElementById("bookDelete").style.display = "none";
+    document.getElementById("bookDeleteRecurringDropdown").style.display =
+      "none";
+    document.getElementById("bookingModalLabel").innerText = "New Booking";
+    document.getElementById("book-recurring").style.display = "inline-block";
+    document.getElementById("book-recurring-label").style.display =
+      "inline-block";
+
+    toggleRecurring();
+    openModal();
+
+    if (arg) {
+      start_picker.setDate(Date.parse(arg.startStr));
+      end_picker.setDate(Date.parse(arg.endStr));
     }
-    function bookEvent(e) {
-      e.target.setAttribute("disabled", "");
-      if (start_picker.selectedDates[0] >= end_picker.selectedDates[0]) {
-        document
-          .getElementById("end-date-validation")
-          .classList.remove("d-none");
-        document.getElementById("book-end").classList.add("is-invalid");
-        end_picker.altInput.classList.add("is-invalid");
-        e.target.removeAttribute("disabled");
-        return;
-      } else {
-        document.getElementById("end-date-validation").classList.add("d-none");
-        document.getElementById("book-end").classList.remove("is-invalid");
-        end_picker.altInput.classList.remove("is-invalid");
-      }
+    document.getElementById("book-name")?.focus();
+  }
 
-      let data = {
-        sub_space_booking: {
-          name: document.getElementById("book-name").value,
-          description: document.getElementById("book-description").value,
-          start_time: start_picker.input.value,
-          end_time: end_picker.input.value,
-          sub_space_id: new URLSearchParams(window.location.search).get("room"),
-          recurring: document.getElementById("book-recurring").checked,
-          recurring_end: recurring_picker.selectedDates[0],
-          recurring_frequency: document.getElementById("book-recurring-type")
-            .value,
-          blocking: document.getElementById("book-blocking")
-            ? document.getElementById("book-blocking").checked
-            : false,
+  // ---- Edit (existing booking) ---------------------------------------------
+  function editEvent(arg) {
+    document.getElementById("bookSave").style.display = "none";
+    document.getElementById("bookUpdate").style.display = "block";
+    document.getElementById("subspace").style.display = "block";
+    document.getElementById("subspace_header").style.display = "block";
+    document.getElementById("bookingModalLabel").innerText = "Update Booking";
+    document.getElementById("sub_space_booking_id").value =
+      arg.event.id.split("_")[1];
+    document.getElementById("book-recurring").style.display = "none";
+    document.getElementById("book-recurring-label").style.display = "none";
+
+    fetch(
+      `/sub_space_booking/get_sub_space_booking?id=${arg.event.id.split("_")[1]}`,
+      {
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
         },
-      };
-      let url = "/sub_space_booking";
-      let request = new Request(url, {
+      },
+    )
+      .then((r) => r.json())
+      .then((data) => {
+        document.getElementById("book-name").value = data.name;
+        document.getElementById("book-description").value = data.description;
+        start_picker.setDate(Date.parse(data.start_time.slice(0, -6)));
+        end_picker.setDate(Date.parse(data.end_time.slice(0, -6)));
+        document.getElementById("book-recurring").checked = false;
+
+        const blockingEl = document.getElementById("book-blocking");
+        if (blockingEl) blockingEl.checked = data.blocking;
+
+        const isRecurring = data.recurring_booking_id != null;
+        document.getElementById("bookDelete").style.display = isRecurring
+          ? "none"
+          : "block";
+        document.getElementById("bookDeleteRecurringDropdown").style.display =
+          isRecurring ? "block" : "none";
+
+        document.getElementById("subspace").value = data.sub_space_id;
+        toggleRecurring();
+        openModal();
+      });
+  }
+
+  // ---- Flatpickr instances -------------------------------------------------
+  start_picker = document.getElementById("book-start").flatpickr({
+    enableTime: true,
+    time_24hr: true,
+    altInput: true,
+    altFormat: "F j, Y at H:i",
+  });
+  end_picker = document.getElementById("book-end").flatpickr({
+    enableTime: true,
+    time_24hr: true,
+    altInput: true,
+    altFormat: "F j, Y at H:i",
+  });
+  recurring_picker = document.getElementById("book-recurring-end").flatpickr({
+    enableTime: false,
+    altInput: true,
+    altFormat: "F j, Y",
+  });
+
+  // ---- Modal button wiring ------------------------------------------------
+  document.getElementById("bookCancel").addEventListener("click", closeModal);
+  document.getElementById("bookClose").addEventListener("click", closeModal);
+  document.getElementById("bookSave").addEventListener("click", bookEvent);
+  document.getElementById("bookUpdate").addEventListener("click", updateEvent);
+  document.getElementById("bookDelete").addEventListener("click", deleteEvent);
+  document
+    .getElementById("bookRecurringDeleteOne")
+    .addEventListener("click", deleteEvent);
+  document
+    .getElementById("bookRecurringDeleteRest")
+    .addEventListener("click", deleteRecurringEvent);
+  document
+    .getElementById("book-recurring")
+    .addEventListener("change", toggleRecurring);
+
+  // ---- Date validation helper ---------------------------------------------
+  function validateDates() {
+    if (
+      start_picker.selectedDates.length > 0 &&
+      end_picker.selectedDates.length > 0 &&
+      start_picker.selectedDates[0] >= end_picker.selectedDates[0]
+    ) {
+      document.getElementById("end-date-validation").classList.remove("d-none");
+      end_picker.altInput.classList.add("is-invalid");
+      return false;
+    }
+    document.getElementById("end-date-validation").classList.add("d-none");
+    end_picker.altInput.classList.remove("is-invalid");
+    return true;
+  }
+
+  // ---- Book (POST) --------------------------------------------------------
+  function bookEvent(e) {
+    if (!validateDates()) return;
+    e.target.setAttribute("disabled", "");
+
+    const data = {
+      sub_space_booking: {
+        name: document.getElementById("book-name").value,
+        description: document.getElementById("book-description").value,
+        start_time: start_picker.input.value,
+        end_time: end_picker.input.value,
+        sub_space_id: new URLSearchParams(window.location.search).get("room"),
+        recurring: document.getElementById("book-recurring").checked,
+        recurring_end: recurring_picker.selectedDates[0],
+        recurring_frequency: document.getElementById("book-recurring-type")
+          .value,
+        blocking: document.getElementById("book-blocking")?.checked ?? false,
+      },
+    };
+
+    makeRequest(
+      new Request("/sub_space_booking", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
         },
         body: JSON.stringify(data),
-      });
+      }),
+      e.target,
+    );
+  }
 
-      makeRequest(request);
-    }
-    function updateEvent() {
-      const updateBtn = document.getElementById("bookUpdate");
-      updateBtn.setAttribute("disabled", "");
-      if (start_picker.selectedDates[0] >= end_picker.selectedDates[0]) {
-        document
-          .getElementById("end-date-validation")
-          .classList.remove("d-none");
-        document.getElementById("book-end").classList.add("is-invalid");
-        end_picker.altInput.classList.add("is-invalid");
-        updateBtn.removeAttribute("disabled");
-        return;
-      } else {
-        document.getElementById("end-date-validation").classList.add("d-none");
-        document.getElementById("book-end").classList.remove("is-invalid");
-        end_picker.altInput.classList.remove("is-invalid");
-      }
+  // ---- Update (PATCH) -----------------------------------------------------
+  function updateEvent() {
+    if (!validateDates()) return;
+    const btn = document.getElementById("bookUpdate");
+    btn.setAttribute("disabled", "");
 
-      let data = {
-        sub_space_booking: {
-          name: document.getElementById("book-name").value,
-          description: document.getElementById("book-description").value,
-          start_time: start_picker.input.value,
-          end_time: end_picker.input.value,
-          sub_space_id: document.getElementById("subspace").value,
-          blocking: document.getElementById("book-blocking")
-            ? document.getElementById("book-blocking").checked
-            : false,
-        },
-      };
+    const id = document.getElementById("sub_space_booking_id").value;
+    const data = {
+      sub_space_booking: {
+        name: document.getElementById("book-name").value,
+        description: document.getElementById("book-description").value,
+        start_time: start_picker.input.value,
+        end_time: end_picker.input.value,
+        sub_space_id: document.getElementById("subspace").value,
+        blocking: document.getElementById("book-blocking")?.checked ?? false,
+      },
+    };
 
-      let sub_space_booking_id = document.getElementById(
-        "sub_space_booking_id",
-      ).value;
-      let url = `/sub_space_booking/${sub_space_booking_id}/update`;
-
-      let request = new Request(url, {
+    makeRequest(
+      new Request(`/sub_space_booking/${id}/update`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
         },
         body: JSON.stringify(data),
-      });
+      }),
+      btn,
+    );
+  }
 
-      makeRequest(request);
-    }
-    function deleteEvent() {
-      let sub_space_booking_id = document.getElementById(
-        "sub_space_booking_id",
-      ).value;
-      let url = `/sub_space_booking/${sub_space_booking_id}/delete/${sub_space_booking_id}`;
-      let request = new Request(url, {
+  // ---- Delete (DELETE) ----------------------------------------------------
+  function deleteEvent() {
+    if (!confirm("Delete this booking?")) return;
+    const id = document.getElementById("sub_space_booking_id").value;
+    makeRequest(
+      new Request(`/sub_space_booking/${id}/delete/${id}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
         },
-        // No body needed
-      });
+      }),
+      document.getElementById("bookDelete"),
+    );
+  }
 
-      makeRequest(request);
-    }
-    function deleteRecurringEvent() {
-      //let recurring_booking_id = document.getElementById("recurring_booking_id").value
-      let sub_space_booking_id = document.getElementById(
-        "sub_space_booking_id",
-      ).value;
-      let url = `/sub_space_booking/${sub_space_booking_id}/delete_remaining_recurring`;
-      let request = new Request(url, {
+  function deleteRecurringEvent() {
+    if (!confirm("Delete this and all remaining occurrences?")) return;
+    const id = document.getElementById("sub_space_booking_id").value;
+    makeRequest(
+      new Request(`/sub_space_booking/${id}/delete_remaining_recurring`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
         },
-        // Server doesn't allow body for HTTP DELETE
-      });
+      }),
+      document.getElementById("bookRecurringDeleteRest"),
+    );
+  }
 
-      makeRequest(request);
-    }
-    function makeRequest(request) {
-      fetch(request)
-        .then((response) => response.text())
-        .then((data) => {
-          try {
-            let errors = JSON.parse(data)["errors"];
-            console.log(errors);
-            for (let error of errors) {
-              let errorInput = error.split(" ")[0];
-              if (
-                errorInput === "DurationHour" ||
-                errorInput === "DurationWeek" ||
-                errorInput == "TimeSlot"
-              ) {
-                let toastEl = document.getElementById("booking_toast");
-                if (toastEl) {
-                  document.getElementById("toast_text").innerText = error
-                    .split(" ")
-                    .slice(1)
-                    .join(" ");
-                  document.getElementById("toast_title").innerText =
-                    "Your booking failed";
-                  bootstrap.Toast.getOrCreateInstance(toastEl).show();
-                  closeModal();
-                  window.scrollTo(0, 0);
-                }
-              } else {
-                let errorText = error.split(" ").slice(1).join(" ");
-                let feedback = document.createElement("div");
-                feedback.classList.add("invalid-feedback");
-                feedback.innerText = errorText;
-                let errorEl = document.getElementById(
-                  "book-" + errorInput.toLowerCase(),
-                );
-                if (errorEl && !errorEl.classList.contains("is-invalid")) {
-                  errorEl.classList.add("is-invalid");
-                  errorEl.after(feedback);
-                }
+  // ---- Shared fetch handler -----------------------------------------------
+  function makeRequest(request, triggerBtn) {
+    fetch(request)
+      .then((r) => r.text())
+      .then((text) => {
+        let parsed;
+        try {
+          parsed = JSON.parse(text);
+        } catch {
+          parsed = null;
+        }
+
+        if (parsed?.errors) {
+          // Re-enable the button
+          triggerBtn?.removeAttribute("disabled");
+
+          for (const error of parsed.errors) {
+            const [type, ...rest] = error.split(" ");
+            const message = rest.join(" ");
+
+            if (["DurationHour", "DurationWeek", "TimeSlot"].includes(type)) {
+              const toastEl = document.getElementById("booking_toast");
+              if (toastEl) {
+                document.getElementById("toast_text").innerText = message;
+                document.getElementById("toast_title").innerText =
+                  "Booking failed";
+                bootstrap.Toast.getOrCreateInstance(toastEl).show();
+              }
+              closeModal();
+              window.scrollTo(0, 0);
+            } else {
+              const feedback = document.createElement("div");
+              feedback.className = "invalid-feedback";
+              feedback.innerText = message || error;
+              const field = document.getElementById(
+                "book-" + type.toLowerCase(),
+              );
+              if (field && !field.classList.contains("is-invalid")) {
+                field.classList.add("is-invalid");
+                field.after(feedback);
               }
             }
-            document.getElementById("bookSave").removeAttribute("disabled");
-            document.getElementById("bookUpdate").removeAttribute("disabled");
-          } catch (e) {
-            console.log(e);
-            closeModal();
-            window.location.reload();
           }
-        })
-        .catch((error) => {
-          console.log(error);
-          document.getElementById("bookSave").removeAttribute("disabled");
-          document.getElementById("bookUpdate").removeAttribute("disabled");
-        });
-    }
-    let bookedCalendar = new Calendar(bookedCalendarEl, {
-      initialDate: window.location.href.includes("start")
-        ? new Date(new URLSearchParams(window.location.search).get("start"))
-        : new Date(),
-      plugins: [interactionPlugin, timeGridPlugin, listPlugin],
-      height: "auto",
-      headerToolbar: {
-        left: "prev,today,next",
-        center: "",
-        right: "book,timeGridWeek",
-      },
-      customButtons: {
-        book: {
-          text: "Book",
-          click: () => {
-            createEvent();
-          },
-        },
-      },
-      views: {
-        timeGridWeek: {
-          dayHeaderFormat: {
-            weekday: "short",
-            day: "numeric",
-            month: "short",
-          },
-        },
-      },
-      allDaySlot: false,
-      timeZone: "America/New_York",
-      initialView: "timeGridWeek",
-      navLinks: true,
-      slotEventOverlap: false,
-      scrollTime: "07:00:00",
-      slotMinTime: "06:00:00",
-      slotMaxTime: "22:00:00",
-      selectable: true,
-      eventTimeFormat: {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      },
-      dayMaxEvents: true,
-      eventSources: [
-        {
-          id: "booked",
-          url: `/sub_space_booking/bookings?room=${new URLSearchParams(
-            window.location.search,
-          ).get("room")}`,
-        },
-      ],
-      select: function (arg) {
-        createEvent(arg);
-      },
-      eventClick: (arg) => {
-        editEvent(arg);
-      },
-    });
-    bookedCalendar.render();
-  }
-  let userSelect = document.getElementById("user_booking_select");
-  if (userSelect) {
-    if (!userSelect.tomSelect) {
-      userSelect.tomSelect = new TomSelect(userSelect, {
-        plugins: {
-          remove_button: {
-            title: "Remove this item",
-          },
-        },
-        valueField: "id",
-        labelField: "name",
-        searchField: ["name"],
-        options: [],
-        load: function (query, callback) {
-          if (!query.length) return callback();
-          fetch(`/sub_space_booking/users?query=${encodeURIComponent(query)}`)
-            .then((res) => res.json())
-            .then((res) => {
-              callback(res);
-            })
-            .catch((err) => {
-              callback();
-            });
-        },
-      });
-    }
-  }
-  let editStart = document.getElementById("sub_space_booking_start_time");
-  if (editStart) {
-    editStart.flatpickr({
-      enableTime: true,
-      time_24hr: true,
-      altInput: true,
-      altFormat: "F j, Y at H:i",
-    });
-  }
-  let editEnd = document.getElementById("sub_space_booking_end_time");
-  if (editEnd) {
-    editEnd.flatpickr({
-      enableTime: true,
-      time_24hr: true,
-      altInput: true,
-      altFormat: "F j, Y at H:i",
-    });
-  }
-
-  const commentsContainer = document.getElementById("comments-container");
-  const identitySelects = document.querySelectorAll(".identity-button");
-  const supervisorsContainer = document.getElementById("supervisor-select");
-  if (commentsContainer && identitySelects && supervisorsContainer) {
-    identitySelects.forEach((button) => {
-      button.addEventListener("click", (e) => {
-        if (e.target.value === "Other") {
-          commentsContainer.style.display = "block";
         } else {
-          commentsContainer.style.display = "none";
+          // Success — close modal and reload calendar data
+          closeModal();
+          bookedCalendar.refetchEvents();
+          // If a hard redirect is needed (delete etc.), reload
+          if (parsed === null) window.location.reload();
         }
-
-        if (e.target.value === "Staff") {
-          supervisorsContainer.style.display = "block";
-        } else {
-          supervisorsContainer.style.display = "none";
-        }
+      })
+      .catch(() => {
+        triggerBtn?.removeAttribute("disabled");
       });
-    });
   }
 
-  const selectAllUsersCheckbox = document.getElementById(
-    "userRequestSelectAll",
-  );
-  selectAllUsersCheckbox.addEventListener("change", function () {
-    const checkboxes = document.querySelectorAll(".user-request-select");
-    checkboxes.forEach(function (checkbox) {
-      checkbox.checked = selectAllUsersCheckbox.checked;
-    });
+  // ---- FullCalendar -------------------------------------------------------
+  const bookedCalendar = new Calendar(bookedCalendarEl, {
+    initialDate: window.location.href.includes("start")
+      ? new Date(new URLSearchParams(window.location.search).get("start"))
+      : new Date(),
+    plugins: [interactionPlugin, timeGridPlugin, listPlugin],
+    height: "auto",
+    headerToolbar: {
+      left: "prev,today,next",
+      center: "",
+      right: "book,timeGridWeek",
+    },
+    customButtons: {
+      book: { text: "Book", click: () => createEvent() },
+    },
+    views: {
+      timeGridWeek: {
+        dayHeaderFormat: { weekday: "short", day: "numeric", month: "short" },
+      },
+    },
+    allDaySlot: false,
+    timeZone: "America/New_York",
+    initialView: "timeGridWeek",
+    navLinks: true,
+    slotEventOverlap: false,
+    scrollTime: "07:00:00",
+    slotMinTime: "06:00:00",
+    slotMaxTime: "22:00:00",
+    selectable: true,
+    eventTimeFormat: { hour: "2-digit", minute: "2-digit", hour12: false },
+    dayMaxEvents: true,
+    eventSources: [
+      {
+        id: "booked",
+        url: `/sub_space_booking/bookings?room=${new URLSearchParams(
+          window.location.search,
+        ).get("room")}`,
+        // Attach CSRF token so Rails doesn't reject the JSON request
+        extraParams: () => ({
+          authenticity_token:
+            document.querySelector('meta[name="csrf-token"]')?.content ?? "",
+        }),
+        // Surface fetch errors in the console rather than silently failing
+        failure: () => {
+          console.error("FullCalendar failed to fetch bookings.");
+        },
+      },
+    ],
+    select: (arg) => createEvent(arg),
+    eventClick: (arg) => editEvent(arg),
   });
 
-  document
-    .getElementById("pending_bookings_select_all")
-    .addEventListener("change", (e) => {
-      document.querySelectorAll(".pending-booking-select").forEach((c) => {
-        c.checked = e.currentTarget.checked;
-      });
-    });
-});
-document.addEventListener("turbo:render", ready);
-function ready() {
-  const anchor = window.location.hash.substring(1);
-  const pending_table = new URLSearchParams(window.location.search).get(
-    "pending_page",
-  );
-  const approved_table = new URLSearchParams(window.location.search).get(
-    "approved_page",
-  );
-  const denied_table = new URLSearchParams(window.location.search).get(
-    "denied_page",
-  );
-  const old_pending_table = new URLSearchParams(window.location.search).get(
-    "old_pending_page",
-  );
-  const old_approved_table = new URLSearchParams(window.location.search).get(
-    "old_approved_page",
-  );
-  const old_denied_table = new URLSearchParams(window.location.search).get(
-    "old_denied_page",
-  );
-  const urls = [
-    pending_table,
-    approved_table,
-    denied_table,
-    old_pending_table,
-    old_approved_table,
-    old_denied_table,
-  ];
-  const param = pending_table
-    ? "pending-accordion"
-    : approved_table
-      ? "approved-accordion"
-      : denied_table
-        ? "declined-accordion"
-        : old_pending_table
-          ? "past-pending-accordion"
-          : old_approved_table
-            ? "past-approved-accordion"
-            : old_denied_table
-              ? "past-declined-accordion"
-              : null;
-  if (anchor === "") {
-    if (param) {
-      makeActive("booking-admin-tab", param);
-      // Remove urls from url bar
-      let url = new URL(window.location.href);
-      for (let u of urls) {
-        if (u) {
-          url.searchParams.delete(u);
-        }
-      }
-      window.history.replaceState({}, document.title, url.href);
-    } else {
-      makeActive("booking-calendar-tab", null);
-    }
-  } else {
-    makeActive(anchor, null);
-  }
-}
+  bookedCalendar.render();
+}); // end turbo:load
+
+// ─── Tab routing (turbo:render + initial load) ────────────────────────────────
+
 function makeActive(tab, param) {
   let tabContent = document.getElementById(tab);
   let tabButton = document.getElementById(tab + "-btn");
@@ -591,28 +567,66 @@ function makeActive(tab, param) {
   });
   tabContent.classList.add("active");
   tabContent.classList.add("show");
+
   if (param && tab === "booking-admin-tab") {
     let table = document.getElementById(param);
-    table.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-      inline: "nearest",
-    });
-    window.scrollBy(
-      0,
-      -7 * parseFloat(getComputedStyle(document.documentElement).fontSize),
-    );
+    // SAFETY CHECK: Prevents JS from crashing if the ID isn't found
+    if (table) {
+      table.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+        inline: "nearest",
+      });
+      window.scrollBy(
+        0,
+        -7 * parseFloat(getComputedStyle(document.documentElement).fontSize),
+      );
+    }
   }
 }
-let tabButtons = document.getElementsByClassName("tab-link");
-[...tabButtons].forEach((button) => {
-  button.addEventListener("click", (event) => {
-    event.stopPropagation();
-    event.preventDefault();
-    let tab = button.id.split("-")[0];
-    makeActive(tab, null);
+
+function ready() {
+  const anchor = window.location.hash.replace("#", "");
+  const params = new URLSearchParams(window.location.search);
+
+  const paramToSection = {
+    pending_page: "pendingBody",
+    approved_page: "approvedBody",
+    denied_page: "declinedBody",
+    old_pending_page: "pastPendingBody",
+    old_approved_page: "pastApprovedBody",
+    old_denied_page: "pastDeclinedBody",
+  };
+
+  let scrollTarget = null;
+  for (const [key, sectionId] of Object.entries(paramToSection)) {
+    if (params.has(key)) {
+      scrollTarget = sectionId;
+      break;
+    }
+  }
+
+  if (anchor) {
+    makeActive(anchor, null);
+  } else if (scrollTarget) {
+    makeActive("booking-admin-tab", scrollTarget);
+  } else {
+    makeActive("booking-calendar-tab", null);
+  }
+}
+
+// Wire up tab buttons (outside turbo:load so they survive re-renders)
+document.querySelectorAll(".tab-link").forEach((btn) => {
+  btn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // id is e.g. "booking-calendar-tab-btn" → target is "booking-calendar-tab"
+    const target =
+      btn.getAttribute("data-bs-target")?.replace("#", "") ??
+      btn.id.replace("-btn", "");
+    makeActive(target, null);
   });
 });
-ready();
 
-document.addEventListener("DOMContentLoaded", function () {});
+document.addEventListener("turbo:render", ready);
+ready();

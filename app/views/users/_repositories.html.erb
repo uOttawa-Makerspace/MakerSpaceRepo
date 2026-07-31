@@ -18,7 +18,7 @@
 <% if repos !=@joined_projects %>
     <div class="row">
         <% repos.each do |repository| %>
-            <div class="col-md-4 col-lg-4">
+            <div class="col-md-4 col-lg-4 g-2">
                 <%= render 'repositories/repository_card', repository: %>
             </div>
         <% end %>

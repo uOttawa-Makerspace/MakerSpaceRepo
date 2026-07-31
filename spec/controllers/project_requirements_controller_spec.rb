@@ -11,7 +11,7 @@ RSpec.describe ProjectRequirementsController, type: :controller do
 
   describe "POST /create" do
     context "logged as regular user" do
-      it "should go to root page" do
+      it "should prevent users from creating a project" do
         user = create(:user, :regular_user)
         session[:user_id] = user.id
         pp = create(:proficient_project)
@@ -19,7 +19,7 @@ RSpec.describe ProjectRequirementsController, type: :controller do
         expect {
           post :create, params: { id: pp, required_project_id: required_pp }
         }.to change(ProjectRequirement, :count).by(0)
-        expect(response).to redirect_to root_path
+        expect(response).to redirect_to proficient_projects_path
       end
     end
 

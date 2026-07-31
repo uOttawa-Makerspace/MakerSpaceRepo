@@ -202,11 +202,29 @@ end
                                     <%= @locker_rental.notified_of_cancellation_at.to_fs :long %>
                                 </span>
                             <% end %>
-                        <% else %>
-                            <span class="text-success fw-medium">
-                                <%= t('lockers.time_remaining', time: time_ago_in_words(@locker_rental.owned_until.to_date)) %>
+                        <% end %>
+                    </div>
+                    <% if @locker_rental.renewable? %>
+                        <div class="mt-3">
+                            <%= button_to 'Renew Locker', renew_locker_rental_path(@locker_rental), method: :patch, class: 'btn btn-primary w-100' %>
+                        </div>
+                    <% end %>
+                    <% if @locker_rental.expired? %>
+                        <span class="text-danger fw-medium">
+                            <%= t('lockers.expired_ago', when: time_ago_in_words(@locker_rental.owned_until.to_date)) %>
+                        </span>
+                        <% if @locker_rental.notified_of_cancellation_at %>
+                            <br>
+                            <span class="text-muted mt-1 d-block"><%= fa_icon :envelope %>
+                                <%= t('lockers.cancellation_notice_sent_on') %>
+                                <%= @locker_rental.notified_of_cancellation_at.to_fs :long %>
                             </span>
                         <% end %>
+                    <% else %>
+                        <span class="text-success fw-medium">
+                            <%= t('lockers.time_remaining', time: time_ago_in_words(@locker_rental.owned_until.to_date)) %>
+                        </span>
+                    <% end %>
                     </div>
                 </div>
             </div>

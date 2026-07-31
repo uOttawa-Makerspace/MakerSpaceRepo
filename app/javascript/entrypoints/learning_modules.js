@@ -1,4 +1,5 @@
 import Sortable from "sortablejs";
+import TomSelect from "tom-select";
 
 document.addEventListener("turbo:load", () => {
   document.querySelectorAll("[data-order]").forEach((reorderSwitch) => {
@@ -32,6 +33,15 @@ document.addEventListener("turbo:load", () => {
         .forEach((el) => (el.hidden = !ev.currentTarget.checked));
     });
   });
+
+  let subskill = document.querySelector("#learning_module_subskill");
+  if (subskill) {
+    new TomSelect(subskill, {
+      maxItems: 1,
+      plugins: ["remove_button"],
+      create: true,
+    });
+  }
 });
 
 // Only validate photo presence on new records, not edit
