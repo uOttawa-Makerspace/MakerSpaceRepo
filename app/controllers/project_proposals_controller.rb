@@ -447,7 +447,7 @@ class ProjectProposalsController < SessionsController
 
   # Use callbacks to share common setup or constraints between actions.
   def set_project_proposal
-    @project_proposal = ProjectProposal.find(params[:id])
+    @project_proposal = ProjectProposal.find_by(slug: params[:id])
     return if @project_proposal
       redirect_to root_path, alert: "Project proposal not found"
     
