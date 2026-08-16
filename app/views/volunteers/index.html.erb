@@ -1,104 +1,256 @@
 <section id="volunteersIndex" class="mt-n3">
-    <div class="jumbotron volunteerJumbotron">
-        <h1 class="display-1"><%= t('volunteers.header_html') %></h1>
-        <p><%= t('volunteers.subtitle_html') %></p>
-        <%= link_to t('volunteers.join_button'), join_volunteer_program_volunteers_path, class: 'btn btn-primary' %>
+  
+  <!-- 1. Hero Banner -->
+  <div class="jumbotron volunteerJumbotron d-flex align-items-center text-white py-5 px-3 px-md-5">
+    <div class="container py-4">
+      <div class="col-lg-8">
+        <h1 class="display-3 fw-bold mb-2 text-white">
+          Volunteer With <span class="text-ceed-orange">C</span>EED
+        </h1>
+        <p class="fs-3 text-white-50 mb-4 fw-medium">Build, Collaborate & Learn</p>
+        
+        <!-- Double-Action Join Button: Rails POST + Opens Form in New Tab -->
+        <%= link_to "Join the Volunteer Program", 
+                    join_volunteer_program_volunteers_path, 
+                    method: :post,
+                    remote: true,
+                    class: 'btn btn-ceed btn-lg px-4 py-3 rounded-pill fs-6 join-volunteer-btn',
+                    data: { form_url: "https://5oe8xl.share-na3.hsforms.com/20slW0brbQJCsdeEck-8vuQ" } %>
+      </div>
     </div>
-    <div class="shadow">
-        <%= render partial: 'layouts/volunteer_header' %>
-    </div>
-    <div class="container p-4">
-        <h2 class="my-5 display-5"><%= t('volunteers.why_volunteer.header_html') %></h2>
-        <div class="row row-cols-5 mb-5">
-            <div>
-                <i class="fa fa-floppy-o" aria-hidden="true"></i>
-                <p><%= t('volunteers.why_volunteer.floppy') %></p>
-            </div>
-            <div>
-                <i class="fa fa-users" aria-hidden="true"></i>
-                <p><%= t('volunteers.why_volunteer.users') %></p>
-            </div>
-            <div>
-                <i class="fa fa-comments-o" aria-hidden="true"></i>
-                <p><%= t('volunteers.why_volunteer.comments') %></p>
-            </div>
-            <div>
-                <i class="fa fa-cloud" aria-hidden="true"></i>
-                <p><%= t('volunteers.why_volunteer.cloud') %></p>
-            </div>
-            <div>
-                <i class="fa fa-gift" aria-hidden="true"></i>
-                <p><%= t('volunteers.why_volunteer.gift') %></p>
-            </div>
+  </div>
+
+  <div class="shadow-sm">
+    <%= render partial: 'layouts/volunteer_header' %>
+  </div>
+
+  <!-- 2. Why Volunteer Section -->
+  <div class="bg-ceed-dark py-5 text-white">
+    <div class="container text-center py-3">
+      <h2 class="display-5 fw-bold mb-5 text-white">
+        Why Volunteer with <span class="text-ceed-orange">C</span>EED
+      </h2>
+      
+      <div class="row row-cols-1 row-cols-md-5 g-4 justify-content-center">
+        <div class="col">
+          <div class="icon-circle mb-3">
+            <i class="fa fa-wrench fa-2x"></i>
+          </div>
+          <h3 class="h5 fw-bold mb-2 text-white">Gain Hands-On Experience</h3>
+          <p class="small text-white-50 mb-0">Apply your knowledge through real projects and cutting-edge technology.</p>
         </div>
-        <div class="gx-5 mb-5">
-            <h2><%= t('volunteers.volunteer_opportunities.header') %></h2>
-            <h3 class="subtext-primary"><%= t('volunteers.volunteer_opportunities.subheader') %></h3>
-            <div class="row ps-3">
-                <ul class="col-lg-3">
-                    <% t('volunteers.volunteer_opportunities.points')[0..3].each do |point| %>
-                        <li><%= sanitize(point) %></li>
-                    <% end %>
-                    <% t('volunteers') %>
-                </ul>
-                <ul class="col-lg-3">
-                    <% t('volunteers.volunteer_opportunities.points')[4..8].each do |point| %>
-                        <li><%= sanitize(point) %></li>
-                    <% end %>
-                </ul>
-                <div class="align-content-center col-lg-6">
-                    <%= image_tag 'volunteer/opportunities.png', class: 'img-fluid' %>
+        <div class="col">
+          <div class="icon-circle mb-3">
+            <i class="fa fa-graduation-cap fa-2x"></i>
+          </div>
+          <h3 class="h5 fw-bold mb-2 text-white">Build New Skills</h3>
+          <p class="small text-white-50 mb-0">Learn through workshops, mentorship, and practical experience.</p>
+        </div>
+        <div class="col">
+          <div class="icon-circle mb-3">
+            <i class="fa fa-users fa-2x"></i>
+          </div>
+          <h3 class="h5 fw-bold mb-2 text-white">Join a Community</h3>
+          <p class="small text-white-50 mb-0">Connect with passionate students, mentors, and innovators across campus.</p>
+        </div>
+        <div class="col">
+          <div class="icon-circle mb-3">
+            <i class="fa fa-briefcase fa-2x"></i>
+          </div>
+          <h3 class="h5 fw-bold mb-2 text-white">Grow Your Career</h3>
+          <p class="small text-white-50 mb-0">Strengthen your resume with meaningful experience and transferable skills.</p>
+        </div>
+        <div class="col">
+          <div class="icon-circle mb-3">
+            <i class="fa fa-heart fa-2x"></i>
+          </div>
+          <h3 class="h5 fw-bold mb-2 text-white">Make an Impact</h3>
+          <p class="small text-white-50 mb-0">Support events, students, and help grow the maker community.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Get Involved Accordion Cards Section -->
+  <div class="bg-ceed-gray py-5 text-white">
+    <div class="container py-3 text-center">
+      <h2 class="display-5 fw-bold mb-2 text-white">Choose How You'd Like To Get Involved</h2>
+      <p class="lead text-white-50 mb-5 mx-auto" style="max-width: 720px;">
+        Whether you have a few hours to spare or want a longer-term commitment, there's a place for you at CEED!!
+      </p>
+
+      <div class="row g-4 text-start">
+        
+        <!-- Card 1: Weekly Space Volunteer -->
+        <div class="col-lg-4 d-flex flex-column justify-content-between">
+          <div class="ceed-card shadow-sm mb-4">
+            <button class="ceed-card-header d-flex justify-content-between align-items-center" 
+                    type="button" data-bs-toggle="collapse" data-toggle="collapse" 
+                    data-bs-target="#spaceCardBody" data-target="#spaceCardBody" 
+                    aria-expanded="true">
+              <span>Weekly Space Volunteer</span>
+              <i class="fa fa-chevron-down"></i>
+            </button>
+            <div id="spaceCardBody" class="collapse show">
+              <!-- Sub item 1: Involvement -->
+              <div class="accordion-item">
+                <button class="accordion-button-custom" type="button" 
+                        data-bs-toggle="collapse" data-toggle="collapse" 
+                        data-bs-target="#spaceInvolvement" data-target="#spaceInvolvement" 
+                        aria-expanded="true">
+                  <span><i class="fa fa-handshake-o text-danger me-2"></i> Involvement</span>
+                  <i class="fa fa-chevron-down chevron-icon"></i>
+                </button>
+                <div id="spaceInvolvement" class="collapse show accordion-content">
+                  <ul>
+                    <li>Assist students using the space</li>
+                    <li>Support workshops and training</li>
+                    <li>Help maintain equipment and workspaces</li>
+                  </ul>
                 </div>
-            </div>
-        </div>
-    </div>
-    <!-- FIXME make this the secondary color(?) -->
-    <div class="bg-body-tertiary">
-        <div class="container pb-3">
-            <div class="row p-3">
-                <div class="col-lg-6">
-                    <% t('volunteers.skills.steps')[0, 2].each.with_index(1) do |step, index| %>
-                        <div class="numberedCard row row-cols-2">
-                            <p><%= index %></p>
-                            <div class="numberedBody">
-                                <p><%= step[:header] %></p>
-                                <p><i class="fa fa-square-o"></i><%= step[:points][0] %></p>
-                                <p><i class="fa fa-square-o"></i><%= step[:points][1] %></p>
-                            </div>
-                        </div>
-                    <% end %>
-                    <% t('volunteers.skills.steps')[2].tap do |step| %>
-                        <div class="numberedCard row row-cols-2">
-                            <p>3</p>
-                            <div class="numberedBody">
-                                <p><%= step[:header] %></p>
-                                <ul>
-                                    <li><%= step[:points][0] %></li>
-                                    <li><%= step[:points][1] %></li>
-                                </ul>
-                            </div>
-                        </div>
-                    <% end %>
+              </div>
+              <!-- Sub item 2: Requirements -->
+              <div class="accordion-item">
+                <button class="accordion-button-custom collapsed" type="button" 
+                        data-bs-toggle="collapse" data-toggle="collapse" 
+                        data-bs-target="#spaceReqs" data-target="#spaceReqs" 
+                        aria-expanded="false">
+                  <span><i class="fa fa-file-text-o text-primary me-2"></i> Requirements</span>
+                  <i class="fa fa-chevron-down chevron-icon"></i>
+                </button>
+                <div id="spaceReqs" class="collapse accordion-content">
+                  <ul>
+                    <li>Volunteer Orientation</li>
+                    <li>Three-hour shadowing session in your chosen space</li>
+                  </ul>
                 </div>
-                <div class="offset-lg-1 col-lg-5">
-                    <h3 class="display-6 fw-bold lh-base">Build skills in either the Makerspace or Brunsfield by completing tasks generated by the space managers.</h3>
-                    <%= image_tag 'volunteer/skills.png', class: 'img-fluid' %>
+              </div>
+            </div>
+          </div>
+          <div class="text-center px-3 mb-4">
+            <p class="text-white-50 small mb-1">Support daily operations in our spaces while helping students bring their ideas to life.</p>
+            <p class="fw-bold fst-italic text-white">Weekly Commitment</p>
+          </div>
+        </div>
+
+        <!-- Card 2: Project Volunteer -->
+        <div class="col-lg-4 d-flex flex-column justify-content-between">
+          <div class="ceed-card shadow-sm mb-4">
+            <button class="ceed-card-header d-flex justify-content-between align-items-center" 
+                    type="button" data-bs-toggle="collapse" data-toggle="collapse" 
+                    data-bs-target="#projectCardBody" data-target="#projectCardBody" 
+                    aria-expanded="true">
+              <span>Project Volunteer</span>
+              <i class="fa fa-chevron-down"></i>
+            </button>
+            <div id="projectCardBody" class="collapse show">
+              <!-- Sub item 1: Involvement -->
+              <div class="accordion-item">
+                <button class="accordion-button-custom" type="button" 
+                        data-bs-toggle="collapse" data-toggle="collapse" 
+                        data-bs-target="#projectInvolvement" data-target="#projectInvolvement" 
+                        aria-expanded="true">
+                  <span><i class="fa fa-handshake-o text-danger me-2"></i> Involvement</span>
+                  <i class="fa fa-chevron-down chevron-icon"></i>
+                </button>
+                <div id="projectInvolvement" class="collapse show accordion-content">
+                  <ul>
+                    <li>Design, build, and prototype solutions</li>
+                    <li>Use advanced tools and equipment</li>
+                    <li>Apply your skills to real challenges</li>
+                  </ul>
                 </div>
+              </div>
+              <!-- Sub item 2: Requirements -->
+              <div class="accordion-item">
+                <button class="accordion-button-custom collapsed" type="button" 
+                        data-bs-toggle="collapse" data-toggle="collapse" 
+                        data-bs-target="#projectReqs" data-target="#projectReqs" 
+                        aria-expanded="false">
+                  <span><i class="fa fa-file-text-o text-primary me-2"></i> Requirements</span>
+                  <i class="fa fa-chevron-down chevron-icon"></i>
+                </button>
+                <div id="projectReqs" class="collapse accordion-content">
+                  <ul>
+                    <li>Volunteer Orientation</li>
+                    <li>Project onboarding</li>
+                    <li>Complete required training/workshops for assigned project</li>
+                  </ul>
+                </div>
+              </div>
             </div>
-            <div class="box-subtext mt-5">
-                <h3><%= t('volunteers.proficiency_projects.header') %></h3>
-                <p><%= t('volunteers.proficiency_projects.line_1') %></p>
-                <p><%= t('volunteers.proficiency_projects.line_2') %></p>
-                <p><%= t('volunteers.proficiency_projects.line_3') %></p>
+          </div>
+          <div class="text-center px-3 mb-4">
+            <p class="text-white-50 small mb-1">Contribute to engineering projects from concept to prototype while developing practical skills.</p>
+            <p class="fw-bold fst-italic text-white">Semester-Based</p>
+          </div>
+        </div>
+
+        <!-- Card 3: Event Volunteer -->
+        <div class="col-lg-4 d-flex flex-column justify-content-between">
+          <div class="ceed-card shadow-sm mb-4">
+            <button class="ceed-card-header d-flex justify-content-between align-items-center" 
+                    type="button" data-bs-toggle="collapse" data-toggle="collapse" 
+                    data-bs-target="#eventCardBody" data-target="#eventCardBody" 
+                    aria-expanded="true">
+              <span>Event Volunteer</span>
+              <i class="fa fa-chevron-down"></i>
+            </button>
+            <div id="eventCardBody" class="collapse show">
+              <!-- Sub item 1: Involvement -->
+              <div class="accordion-item">
+                <button class="accordion-button-custom" type="button" 
+                        data-bs-toggle="collapse" data-toggle="collapse" 
+                        data-bs-target="#eventInvolvement" data-target="#eventInvolvement" 
+                        aria-expanded="true">
+                  <span><i class="fa fa-handshake-o text-danger me-2"></i> Involvement</span>
+                  <i class="fa fa-chevron-down chevron-icon"></i>
+                </button>
+                <div id="eventInvolvement" class="collapse show accordion-content">
+                  <ul>
+                    <li>Assist with flagship events and outreach initiatives</li>
+                    <li>Help deliver engaging experiences</li>
+                    <li>Represent CEED at events across campus</li>
+                  </ul>
+                </div>
+              </div>
+              <!-- Sub item 2: Requirements -->
+              <div class="accordion-item">
+                <button class="accordion-button-custom collapsed" type="button" 
+                        data-bs-toggle="collapse" data-toggle="collapse" 
+                        data-bs-target="#eventReqs" data-target="#eventReqs" 
+                        aria-expanded="false">
+                  <span><i class="fa fa-file-text-o text-primary me-2"></i> Requirements</span>
+                  <i class="fa fa-chevron-down chevron-icon"></i>
+                </button>
+                <div id="eventReqs" class="collapse accordion-content">
+                  <ul>
+                    <li>Volunteer Orientation</li>
+                  </ul>
+                </div>
+              </div>
             </div>
-            <p class="fw-bold ms-5"><%= t('volunteers.proficiency_projects.prelink') %> <a href="#"><%= t('volunteers.proficiency_projects.link') %></a></p>
+          </div>
+          <div class="text-center px-3 mb-4">
+            <p class="text-white-50 small mb-1">Support CEED events and outreach initiatives while engaging with the campus community.</p>
+            <p class="fw-bold fst-italic text-white">Occasional Commitment</p>
+          </div>
         </div>
+
+      </div>
     </div>
-    <div class="container">
-        <div class="box-subtext mt-5">
-            <h2><%= t('volunteers.how_volunteering.header') %></h2>
-            <p><%= t('volunteers.how_volunteering.line_1') %></p>
-            <p><%= t('volunteers.how_volunteering.line_2') %> <a href="mailto:volunteer@makerepo.com">volunteer@makerepo.com</a></p>
-        </div>
+  </div>
+
+  <!-- 4. Contact Footer Section -->
+  <div class="bg-ceed-dark py-5 text-white">
+    <div class="container text-center py-4">
+      <div class="bg-ceed-gray p-5 rounded-4 border border-secondary border-opacity-25 shadow-sm mx-auto" style="max-width: 700px;">
+        <h2 class="fw-bold mb-3 text-white">Have Questions About Volunteering?</h2>
+        <p class="text-white-50 mb-4">Reach out to us directly via email.</p>
+        <a href="mailto:volunteer@makerepo.com" class="btn btn-outline-light rounded-pill px-4 py-2">
+          <i class="fa fa-envelope-o me-2"></i> volunteer@makerepo.com
+        </a>
+      </div>
     </div>
+  </div>
 </section>
