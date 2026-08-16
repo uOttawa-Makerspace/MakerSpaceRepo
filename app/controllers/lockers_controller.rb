@@ -25,11 +25,11 @@ class LockersController < AdminAreaController
     # Locker sizes stored in DB
     @locker_sizes = LockerSize.all
     # Locker sizes received from makerstore
-    @locker_product_info = LockerOption.locker_product_info
+    @locker_product_info = LockerOption.locker_product_info || {}
 
     @local_lookup = @locker_sizes.index_by(&:shopify_gid)
     @makerstore_lookup =
-      @locker_product_info[:variants].transform_keys { |gid| gid }
+      (@locker_product_info[:variants] || {}).transform_keys { |gid| gid }
   end
 
   def show
@@ -130,7 +130,7 @@ class LockersController < AdminAreaController
   def locker_queries
     @locker_sizes = LockerSize.all
     @locker_product_link = LockerOption.locker_product_link
-    @locker_product_info = LockerOption.locker_product_info
+    @locker_product_info = LockerOption.locker_product_info || {}
   end
 
   def locker_range_create_params
