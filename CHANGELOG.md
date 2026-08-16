@@ -1,13 +1,13 @@
-# v2026.07.06-032743 (2026-07-06)
+# v2026.08.02-231044 (2026-08-02)
 
 #changelog
 
 ## 📦 Other Changes
 
-- Update/Contact Us Details (#1943) by @UnknownCrafts
-- Chore/bump gems (#1945) by @UnknownCrafts
-- Staging (#1944) by @UnknownCrafts
+- bump gems (#1946) by @UnknownCrafts
+- Add/Powerbi_Admin_Area (#1948) by @UnknownCrafts
+- Staging (#1947) by @UnknownCrafts
 
 
 
-**Full Changelog**: https://github.com/uOttawa-Makerspace/MakerSpaceRepo/compare/v2026.06.10-010336...v2026.07.06-032743
+**Full Changelog**: https://github.com/uOttawa-Makerspace/MakerSpaceRepo/compare/v2026.07.06-032743...v2026.08.02-231044

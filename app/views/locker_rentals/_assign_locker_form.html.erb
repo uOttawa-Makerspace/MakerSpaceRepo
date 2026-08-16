@@ -1,58 +1,26 @@
-<%= form_with model: LockerRental.new do |f| %>
-    <div class="row mb-1">
-        <div class="col-md-2">
-            <%= f.label :locker_id, "Select a locker" %>
-        </div>
-        <div class="col-md">
-            <%= f.select :locker_id, Locker.available.order_by_specifier.map { |locker|
-                [locker.specifier, locker.id, { data: { size: locker.locker_size.size, staff_only: !locker.available } }]
-            }, { include_blank: 'Search for a locker...' }, { class: 'form-select', required: true } %>
-        </div>
-    </div>
-    <div class="row mb-1">
-        <div class="col-md-2">
-            <%= f.label :rented_by_username, class: 'form-label' %>
-        </div>
-        <div class="col-md">
-            <%= f.select :rented_by_username, options_for_select([]), { prompt: 'Select user...' }, { autocomplete: 'new-password', class: 'form-select', data: {user_search_bar: ''}, required: true } %>
-        </div>
-    </div>
-    <div class="row mb-1">
-        <div class="col-md-2">
-            <%= f.label :owned_until, class: 'form-label' %>
-        </div>
-        <div class="col-md">
-            <%= f.date_field :owned_until, { value: end_of_this_semester.to_date, class: 'form-control' } %>
-        </div>
+<%= form_with model: LockerRental.new, url: locker_rentals_path, method: :post, local: true do |f| %>
+  <%= f.hidden_field :state, value: 'active' %>
+  
+  <div class="row g-3 align-items-end">
+    <div class="col-md-5">
+      <%= f.label :rented_by_id, 'User', class: 'form-label fw-bold text-body' %>
+      <%= f.collection_select :rented_by_id, User.order(:username), :id, :username,
+            { include_blank: 'Select a user...' },
+            { class: 'form-select', required: true } %>
     </div>
 
-    <%= f.text_area :staff_notes, class: 'form-control mb-2', placeholder: 'Staff notes are visible to staff only' %>
-
-    <div class="form-check mb-3">
-        <%= f.check_box :requested_as, {checked: false, class: 'form-check-input', include_hidden: false}, :student %>
-        <%= f.label :requested_as, 'Is this a locker assigned for a design class?', class: 'form-check-label' %>
+    <div class="col-md-5">
+      <%= f.label :locker_id, 'Locker', class: 'form-label fw-bold text-body' %>
+      <%= f.select :locker_id, Locker.available.order_by_specifier.map { |locker|
+            size_label = locker.locker_size&.size ? " (#{locker.locker_size.size})" : ""
+            ["##{locker.specifier}#{size_label}", locker.id, { data: { size: locker.locker_size&.size, staff_only: !locker.available } }]
+          },
+          { include_blank: 'Search for a locker...' },
+          { class: 'form-select', required: true } %>
     </div>
 
-    <fieldset id="repo-select" class="mb-3" hidden disabled>
-        <div class="row">
-            <div class="col">
-                <%= f.label :course_name_id, 'Course name', class: 'form-label' %>
-                <%= f.collection_select :course_name_id, CourseName.all, :id, :name, {}, {class: 'form-select'} %>
-            </div>
-            <div class="col">
-                <%= f.label :section_name, 'Class section', class: 'form-label' %>
-                <%= f.text_field :section_name, class: 'form-control', required: true %>
-            </div>
-            <div class="col">
-                <%= f.label :team_name, 'Group number?', class: 'form-label' %>
-                <%= f.text_field :team_name, class: 'form-control', required: true %>
-            </div>
-        </div>
-    </fieldset>
-
-    <%= f.hidden_field :state, value: LockerRental.states[:active] %>
-    <%= f.submit 'Assign locker', class: 'btn btn-success' %>
+    <div class="col-md-2">
+      <%= f.submit 'Assign Locker', class: 'btn btn-primary w-100' %>
+    </div>
+  </div>
 <% end %>
-
-<%= vite_javascript_tag 'staff_dashboard_search', 'data-turbo-track': 'reload' %>
-<%= vite_javascript_tag 'locker_rental_form', 'data-turbo-track': 'reload' %>
