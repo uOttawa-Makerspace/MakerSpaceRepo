@@ -1,1 +1,72 @@
-<%# Show locker size, how many lockers are linked, and a form to rename and delete. %>
+<% provide :title, "Locker ##{@locker.specifier}" %>
+
+<div class="container">
+  <h1 class="mb-4">Locker #<%= @locker.specifier %></h1>
+
+  <div class="card mb-4">
+    <div class="card-header">
+      Details
+    </div>
+    <div class="card-body">
+      <p class="card-text">
+        <strong>Locker Size:</strong> 
+        <%= @locker.locker_size.size %>
+      </p>
+      
+      <p class="card-text">
+        <strong>Lockers linked to this size:</strong> 
+        <%= @locker.locker_size.lockers.count %>
+      </p>
+
+      <p class="card-text">
+        <strong>Status:</strong>
+        <% if @active_locker_rental %>
+          <span class="badge text-bg-danger">Currently Rented</span>
+        <% elsif @locker.available %>
+          <span class="badge text-bg-success">Available</span>
+        <% else %>
+          <span class="badge text-bg-secondary">Unavailable</span>
+        <% end %>
+      </p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          Rename Locker
+        </div>
+        <div class="card-body">
+          <%= form_with model: @locker, local: true do |form| %>
+            <div class="mb-3">
+              <%= form.label :specifier, "Locker Specifier (Name/Number)", class: 'form-label' %>
+              <%= form.text_field :specifier, class: 'form-control' %>
+            </div>
+            <%= form.submit "Save Changes", class: 'btn btn-primary' %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card border-danger">
+        <div class="card-header bg-danger text-white">
+          Danger Zone
+        </div>
+        <div class="card-body">
+          <h5 class="card-title">Delete this locker</h5>
+          <p class="card-text">Once you delete a locker, it cannot be recovered. Please ensure any active rentals are cancelled before deleting.</p>
+          <%= button_to "Delete Locker", locker_path(@locker), 
+                method: :delete, 
+                data: { turbo_confirm: "Are you sure you want to delete locker ##{@locker.specifier}?" }, 
+                class: 'btn btn-danger' %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4">
+    <%= link_to 'Back to Locker Dashboard', lockers_path, class: 'btn btn-outline-secondary' %>
+  </div>
+</div>

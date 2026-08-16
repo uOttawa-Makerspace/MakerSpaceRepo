@@ -25,11 +25,12 @@ class LockersController < AdminAreaController
     # Locker sizes stored in DB
     @locker_sizes = LockerSize.all
     # Locker sizes received from makerstore
-    @locker_product_info = LockerOption.locker_product_info || {}
+    @locker_product_info = LockerOption.locker_product_info
 
     @local_lookup = @locker_sizes.index_by(&:shopify_gid)
-    @makerstore_lookup =
-      (@locker_product_info[:variants] || {}).transform_keys { |gid| gid }
+
+    variants = (@locker_product_info.is_a?(Hash) && @locker_product_info[:variants]) || {}
+    @makerstore_lookup = variants.transform_keys { |gid| gid }
   end
 
   def show
@@ -102,11 +103,21 @@ class LockersController < AdminAreaController
   end
 
   def bulk_edit
-    Locker
-      .where(id: params[:id])
-      .find_each { |locker| locker.update(locker_params) }
+    # The Javascript on the frontend populates params[:id] with the selected locker IDs
+    if params[:bulk_delete]
+      # Delete button was clicked
+      Locker.where(id: params[:id]).destroy_all
+      flash[:notice] = 'Selected lockers deleted'
+    else
+      # Update button was clicked
+      Locker
+        .where(id: params[:id])
+        .find_each { |locker| locker.update(locker_params) }
 
-    redirect_to lockers_path
+      flash[:notice] = 'Lockers updated'
+    end
+
+    redirect_to lockers_path(anchor: 'lockerInventory')
   end
 
   def price

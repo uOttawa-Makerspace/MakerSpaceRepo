@@ -16,12 +16,13 @@
     </div>
 <% end %>
 
-<%#= debug @locker_product_info %>
-<% if @locker_product_info %>
+<% if @locker_product_info.present? && @locker_product_info[:variants].present? %>
     <div class="card mb-3">
         <div class="row g-0">
             <div class="col-md-4">
-                <%= image_tag @locker_product_info[:image], class: 'rounded-start object-fit-cover w-100 h-100', style: "max-height: 15em" %>
+                <% if @locker_product_info[:image].present? %>
+                    <%= image_tag @locker_product_info[:image], class: 'rounded-start object-fit-cover w-100 h-100', style: "max-height: 15em" %>
+                <% end %>
             </div>
             <div class="col-md-8">
                 <div class="card-body">
@@ -50,7 +51,7 @@
         <div class="card mb-3">
             <div class="row g-0">
                 <div class="col-md-3" style="max-height: 15em">
-                    <% if variant[:image] %>
+                    <% if variant[:image].present? %>
                         <%= image_tag variant[:image], class: 'rounded-start object-fit-cover w-100 h-100' %>
                     <% else %>
                         <div class="bg-secondary-subtle w-100 h-100 rounded-start"></div>
@@ -89,7 +90,7 @@
         </div>
     <% end %>
 
-    <% unlinked = @locker_sizes.reject { |s| @makerstore_lookup.key?(s.shopify_gid) } %>
+    <% unlinked = @locker_sizes.reject { |s| @makerstore_lookup&.key?(s.shopify_gid) } %>
     <% if unlinked.any? %>
         <h4 class="mt-4">Unlinked Local Sizes</h4>
         <div class="list-group">
@@ -113,9 +114,6 @@
         </div>
     <% end %>
 
-
-    <%#= button_to 'Sync locker sizes', sync_sizes_preview_locker_sizes_url, class: 'btn btn-primary mb-3' %>
-
     <h3 id="lockerSizesSection"><%= link_to '#', '#lockerSizesSection' %> Locker Sizes</h3>
     <p>List of locker sizes available on Makerepo. This is what users request when filling out a locker rental request.
         Each locker size has a Makerstore product variant associated with it.</p>
@@ -131,11 +129,11 @@
             </tr>
         </thead>
         <tbody>
-            <%= LockerSize.find_each do |locker_size| %>
+            <% LockerSize.find_each do |locker_size| %>
                 <tr>
                     <td><%= locker_size.size %></td>
                     <td><%= locker_size.lockers.count %></td>
-                    <td><%= %></td>
+                    <td></td>
                     <td><code><%= locker_size.shopify_gid %></code></td>
                     <td><%= button_to fa_icon('trash'), locker_size_path(locker_size), method: :delete, 'aria-label' => 'Delete',
                                       data: {confirm: "Are you sure you want to delete this locker size?"}, class: 'btn btn-danger' %></td>

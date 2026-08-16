@@ -6,39 +6,35 @@ class CustomWebhooksController < ApplicationController
   include ShopifyConcern
 
   def orders_paid
-    # We now handle whitelisting in the webhook_params method below.
-
-    # This is a locker marked as paid. We use the tags to determine which model
-    # reads the webhook.
-    # Note: webhook_params is now a safe Hash thanks to Strong Parameters.
     order_hook = webhook_params.to_h
 
     # handle lockers
-    if LockerRental.draft_order_processable? order_hook["tags"]
+    if LockerRental.draft_order_processable?(order_hook["tags"])
       process_locker_hook(order_hook)
     end
     
     # handle memberships
-    if Membership.draft_order_processable? order_hook["tags"]
+    if Membership.draft_order_processable?(order_hook["tags"])
       process_membership_hook(order_hook)
     end
     
     # handle job orders
-    if JobOrder.draft_order_processable? order_hook["tags"]
+    if JobOrder.draft_order_processable?(order_hook["tags"])
       process_job_orders_hook(order_hook)
     end
 
-    # REVIEW: Old code. No clue if this works still
-    discount_code_params = webhook_params.to_h
-    if discount_code_params["discount_codes"].present?
-      shopify_discount_code = discount_code_params["discount_codes"][0]["code"]
+    # Discount codes handling
+    if order_hook["discount_codes"].present?
+      shopify_discount_code = order_hook["discount_codes"][0]["code"]
       discount_code = DiscountCode.find_by(code: shopify_discount_code)
-      discount_code&.update(usage_count: 1)
+      discount_code&.update(usage_count: (discount_code.usage_count.to_i + 1))
     end
 
-    if discount_code_params["line_items"].present?
-      discount_code_params["line_items"].each do |item|
-        increment_cc_money(item, discount_code_params["customer"]["email"])
+    # CC Money credit handling
+    customer_email = order_hook.dig("customer", "email")
+    if order_hook["line_items"].present? && customer_email.present?
+      order_hook["line_items"].each do |item|
+        increment_cc_money(item, customer_email)
       end
     end
 
@@ -47,76 +43,69 @@ class CustomWebhooksController < ApplicationController
 
   private
 
-  # Explicitly define the keys we expect from Shopify
   def webhook_params
     params.permit!
-    # NOTE: This doesn't let tags through.
-    # params.permit(
-    #   :id,
-    #   :tags,
-    #   :admin_graphql_api_id,
-    #   :email,
-    #   # Allow tags to be an array (common in tests) or scalar
-    #   tags: [],
-    #   # Allow array of hashes for metafields with common keys
-    #   metafields: [:namespace, :key, :value, :value_type, :description, :id],
-    #   # Allow array of hashes for discount codes
-    #   discount_codes: [:code, :amount, :type],
-    #   # Allow array of hashes for line items with standard fields
-    #   line_items: [:product_id, :quantity, :title, :variant_id, :sku, :price, :name],
-    #   # Allow specific keys for customer
-    #   customer: [:id, :email, :first_name, :last_name]
-    # )
+  end
+
+  def draft_order_gid_from_hook(order_hook)
+    if order_hook["draft_order_id"].present?
+      "gid://shopify/DraftOrder/#{order_hook['draft_order_id']}"
+    else
+      order_hook["admin_graphql_api_id"]
+    end
   end
 
   def process_locker_hook(order_hook)
-    # get order ID from metafields
+    gid = draft_order_gid_from_hook(order_hook)
+
     locker_id_metafield = order_hook['metafields']&.find do |m|
       m['namespace'] == 'makerepo' && m['key'] == 'locker_db_reference'
     end
 
-    # Because the webhook doesn't return the metafield (last I checked, at
-    # least), we fetch it with a second call to get ID of the DB record
-    locker_id_metafield ||=
-      draft_order_metafields(order_hook["admin_graphql_api_id"])&.find do |field|
-        field["key"] == "locker_db_reference"
-      end
+    locker_id_metafield ||= draft_order_metafields(gid)&.find do |field|
+      field["key"] == "locker_db_reference"
+    end
+
+    return unless locker_id_metafield&.[]("value").present?
     
-    locker_rental = LockerRental.find(locker_id_metafield["value"])
-    # state change, auto assign, and sends mail
-    locker_rental.auto_assign if locker_rental.present?
+    locker_rental = LockerRental.find_by(id: locker_id_metafield["value"])
+    locker_rental&.auto_assign
   end
 
-  # membership handler
   def process_membership_hook(order_hook)
-    return unless order_hook["line_items"].present? && order_hook["customer"].present?
+    return unless order_hook["line_items"].present?
 
-    # find membership in db
+    gid = draft_order_gid_from_hook(order_hook)
+
     membership_id_metafield = order_hook['metafields']&.find do |m|
       m['namespace'] == 'makerepo' && m['key'] == 'membership_db_reference'
     end
 
-    membership_id_metafield ||=
-      draft_order_metafields(order_hook["admin_graphql_api_id"])&.find do |field|
-        field["key"] == "membership_db_reference"
-      end
+    membership_id_metafield ||= draft_order_metafields(gid)&.find do |field|
+      field["key"] == "membership_db_reference"
+    end
 
-    if membership_id_metafield
+    if membership_id_metafield&.[]("value").present?
       membership = Membership.find_by(id: membership_id_metafield["value"])
       membership&.update(status: :paid)
       return
     end
 
     # fallback if not found
-    Rails.logger.info "Membership metafield ID not found in DB, fallback to email"
-    user = User.find_by(email: order_hook["customer"]["email"])
+    customer_email = order_hook.dig("customer", "email")
+    return unless customer_email.present?
+
+    Rails.logger.info "Membership metafield ID not found in DB, fallback to email: #{customer_email}"
+    user = User.find_by(email: customer_email)
     return unless user
 
     order_hook["line_items"].each do |item|
       title = item["title"].to_s.strip
 
-      membership_tier =
-        MembershipTier.where("LOWER(title_en) = ? OR LOWER(title_fr) = ?", title.downcase, title.downcase).first
+      membership_tier = MembershipTier.where(
+        "LOWER(title_en) = ? OR LOWER(title_fr) = ?",
+        title.downcase, title.downcase
+      ).first
 
       next unless membership_tier
 
@@ -128,31 +117,34 @@ class CustomWebhooksController < ApplicationController
     end
   end
   
-  # job order handler
   def process_job_orders_hook(order_hook)
-    return unless order_hook["line_items"].present? && order_hook["customer"].present?
+    return unless order_hook["line_items"].present?
 
-    # find jo in db
+    gid = draft_order_gid_from_hook(order_hook)
+
     job_order_id_metafield = order_hook['metafields']&.find do |m|
       m['namespace'] == 'makerepo' && m['key'] == 'job_order_db_reference'
     end
 
-    job_order_id_metafield ||=
-      draft_order_metafields(order_hook["admin_graphql_api_id"])&.find do |field|
-        field["key"] == "job_order_db_reference"
-      end
+    job_order_id_metafield ||= draft_order_metafields(gid)&.find do |field|
+      field["key"] == "job_order_db_reference"
+    end
 
-    return unless job_order_id_metafield
+    return unless job_order_id_metafield&.[]("value").present?
       
     job_order = JobOrder.find_by(id: job_order_id_metafield["value"])
-    job_order.update_status(true, JobStatus::COMPLETED, JobStatus::PAID, false)
+    job_order&.update_status(true, JobStatus::COMPLETED, JobStatus::PAID, false)
   end
 
   def increment_cc_money(product_params, email)
+    return unless email.present?
     return unless product_params["product_id"].to_i == 4_359_597_129_784
+
     cc = 10 * product_params["quantity"].to_i
-    if User.find_by_email(email).present?
-      CcMoney.create(user_id: User.find_by_email(email).id, cc: cc)
+    user = User.find_by(email: email)
+
+    if user.present?
+      CcMoney.create(user_id: user.id, cc: cc)
     else
       new_cc = CcMoney.create(cc: cc, linked: false)
       hash = Rails.application.message_verifier(:cc).generate(new_cc.id)
