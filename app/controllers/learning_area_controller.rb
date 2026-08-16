@@ -17,7 +17,7 @@ class LearningAreaController < DevelopmentProgramsController
     # with no subskill get put in a separate subskill page.
     @learning_modules =
       LearningModule
-        .with_attached_photos
+        .includes(photos_attachments: :blob)
         .includes(:training)
         .group_by(&:training)
         .sort_by { |training, _| training.name }

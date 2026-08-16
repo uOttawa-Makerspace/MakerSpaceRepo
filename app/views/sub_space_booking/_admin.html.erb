@@ -1,438 +1,448 @@
 <section>
-  <h3 class="text-center my-3">Booking Admin Panel</h3>
-  <div class="mx-auto">
-    <div class="card mb-3">
-      <div class="card-header" type="button" data-bs-toggle="collapse" data-bs-target="#booking-body" aria-expanded="true" aria-controls="booking-body">
-        <h5 class="card-title">Manage Bookings</h5>
+  <h3 class="text-center my-4 fw-bold text-primary">Booking Admin Panel</h3>
+  
+  <div class="container-fluid px-0">
+    <!-- PENDING BOOKINGS -->
+    <div class="card shadow-sm mb-4 border-0 bg-body" id="pending-accordion">
+      <div class="card-header text-bg-warning d-flex justify-content-between align-items-center" role="button" data-bs-toggle="collapse" data-bs-target="#pendingBody">
+        <h5 class="mb-0 fw-bold text-dark"><%= fa_icon 'clock-o' %> Pending Bookings</h5>
+        <span class="text-dark"><%= fa_icon 'chevron-down' %></span>
       </div>
-      <div class="card-body collapse show" id="booking-body">
-        <div class="accordion" id="pending-accordion">
-          <div class="accordion-item">
-            <div class="accordion-header accordion-button" id="pendingHeader" type="button" data-bs-toggle="collapse" data-bs-target="#pendingBody" aria-expanded="true" aria-controls="pendingBody">
-              <h5 class="mb-0 text-center w-100">
-                Pending Bookings
-              </h5>
+      
+      <div id="pendingBody" class="collapse show">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <div class="p-3 bg-body-tertiary border-bottom border-secondary-subtle d-flex justify-content-between align-items-center">
+              <span class="text-body-secondary small"><%= page_entries_info @pending_bookings, model: 'subspace_booking' %></span>
+              <div class="apple_pagination m-0">
+                <%= will_paginate @pending_bookings, container: false, param_name: 'pending_page' %>
+              </div>
             </div>
-            <div id="pendingBody" class="collapse show accordion-body" aria-labelledby="pendingHeader " data-bs-parent="#pending-accordion">
 
-              <div class="table-responsive">
-                <div class="apple_pagination">
-                  <%= page_entries_info @pending_bookings, model: 'subspace_booking' %>
-                  <%= will_paginate @pending_bookings, container: false, param_name: 'pending_page' %>
-                </div>
-                <table class="table table-striped table-sub-space-booking-pending">
-                  <thead class="text-center  table-primary">
+            <!-- Bulk Approve Form Handle -->
+            <%= form_with id: 'bulkApproveDeclineForm', url: bulk_approve_decline_sub_space_booking_index_path, method: :put do |f| %><% end %>
+
+            <table class="table table-hover align-middle mb-0 table-sub-space-booking-pending">
+              <thead class="table-secondary">
+                <tr>
+                  <th class="ps-3">
+                    <div class="form-check">
+                      <%= check_box_tag :pending_bookings_select_all, '1', false, class: 'form-check-input' %>
+                    </div>
+                  </th>
+                  <th>Room</th>
+                  <th>Event Details</th>
+                  <th>User</th>
+                  <th>Schedule</th>
+                  <th class="text-end pe-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% processed_recurring_ids = Set.new %>
+                <% @pending_bookings.each do |booking| %>
+                  <% if booking.recurring_booking_id.present? %>
+                    <% next if processed_recurring_ids.include?(booking.recurring_booking_id) %>
+                    <% processed_recurring_ids.add(booking.recurring_booking_id) %>
+                    <% bookings = @recurring_bookings_map[booking.recurring_booking_id] || [booking] %>
+                  <% else %>
+                    <% bookings = [booking] %>
+                  <% end %>
+                  
                   <tr>
-                    <th><%= check_box_tag :pending_bookings_select_all %> <%= label_tag :pending_bookings_select_all, 'Select' %></th>
-                    <th>Room <span onclick="sortTable('table-sub-space-booking-pending', 1)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Name <span onclick="sortTable('table-sub-space-booking-pending', 2)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Description <span onclick="sortTable('table-sub-space-booking-pending', 3)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>User <span onclick="sortTable('table-sub-space-booking-pending', 4)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Email <span onclick="sortTable('table-sub-space-booking-pending', 5)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Booking Time <span onclick="sortTable('table-sub-space-booking-pending', 6, true)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Actions <span onclick="sortTable('table-sub-space-booking-pending', 7)"><%= fa_icon('arrow-down') %></span></th>
-                  </tr>
-                  </thead>
-                  <tbody>
-                    <% processed_recurring_ids = Set.new %>
-                    <% @pending_bookings.each do |booking| %>
-                      <%# Skip if this recurring booking group was already displayed %>
-                      <% if booking.recurring_booking_id.present? %>
-                        <% next if processed_recurring_ids.include?(booking.recurring_booking_id) %>
-                        <% processed_recurring_ids.add(booking.recurring_booking_id) %>
-                        <% bookings = @recurring_bookings_map[booking.recurring_booking_id] || [booking] %>
+                    <td class="ps-3">
+                      <div class="form-check">
+                        <%= check_box_tag "sub_space_booking_ids[]", booking.id, false, id: "booking_#{booking.id}", class: 'form-check-input pending-booking-select', form: 'bulkApproveDeclineForm' %>
+                      </div>
+                    </td>
+                    <td>
+                      <span class="badge text-bg-secondary">
+                        <%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : "#{booking.sub_space.space.name} - #{booking.sub_space.name}" %>
+                      </span>
+                    </td>
+                    <td>
+                      <strong class="text-body-emphasis"><%= booking.name %></strong><br>
+                      <small class="text-body-secondary"><%= truncate(booking.description, length: 50) %></small>
+                    </td>
+                    <td>
+                      <%= link_to(booking.user.name, user_path(booking.user.username), class: 'text-decoration-none fw-bold text-primary') %><br>
+                      <small class="text-body-secondary"><%= booking.user.email %></small>
+                    </td>
+                    <td>
+                      <% if bookings.length > 1 %>
+                        <span class="badge text-bg-info mb-1">Recurring (<%= bookings.length %>)</span><br>
+                        <small class="text-body-secondary">From: <%= bookings.first.start_time.strftime("%b %e, %Y") %></small>
                       <% else %>
-                        <% bookings = [booking] %>
+                        <strong class="text-body-emphasis"><%= booking.start_time.strftime("%b %e, %Y") %></strong><br>
+                        <small class="text-body-secondary"><%= booking.start_time.strftime("%l:%M %p") %> - <%= booking.end_time.strftime("%l:%M %p") %></small>
                       <% end %>
-                      
-                      <tr>
-                        <td class="w-auto">
-                          <%= check_box_tag booking.id, booking.id, false, { class: 'pending-booking-select', name: 'sub_space_booking_ids[]', value: booking.id, form: 'bulkApproveDeclineForm' } %>
-                        </td>
-                        <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : "#{booking.sub_space.space.name} - #{booking.sub_space.name}" %></td>
-                        <td><%= booking.name %></td>
-                        <td><%= booking.description %></td>
-                        <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
-                        <td><%= booking.user.email %></td>
-                        <td data-sort-as="<%= booking.start_time %>">
-                          <% if bookings.length > 1 %>
-                            <%# Recurring booking - show all dates %>
-                            <% bookings.each do |b| %>
-                              <%= b.start_time.to_formatted_s(:long) %> to <%= b.end_time.to_fs(:time) %><br />
-                            <% end %>
-                          <% else %>
-                            <%# Single booking %>
-                            <%= booking.start_time.to_formatted_s(:long) %> to <%= booking.end_time.to_fs(:time) %>
-                          <% end %>
-                        </td>
-                        <td>
-                          <% if bookings.length > 1 %>
-                            <div class="btn-group" role="group">
-                              <%= button_to 'Approve All', bulk_approve_decline_sub_space_booking_index_path, method: :put, params: { bulk_status: 'approve', sub_space_booking_ids: bookings.map(&:id) }, class: 'btn btn-success' %>
-                              <%= button_tag 'Select..', class: 'btn btn-primary', data: { bs_toggle: 'modal', bs_target: '#approveRecurringModal', dates: bookings.map { |b| [b.id, "#{b.start_time.to_formatted_s(:long)} to #{b.end_time.to_fs(:time)}"] } } %>
-                              <%= button_to 'Reject All', bulk_approve_decline_sub_space_booking_index_path, method: :put, params: { bulk_status: 'decline', sub_space_booking_ids: bookings.map(&:id) }, class: 'btn btn-danger' %>
-                            </div>
-                          <% else %>
-                            <div class="btn-group" role="group">
-                              <%= button_to 'Approve', sub_space_booking_approve_path(booking), method: :put, class: 'btn btn-success' %>
-                              <%= button_to 'Reject', sub_space_booking_decline_path(booking), method: :put, class: 'btn btn-danger' %>
-                            </div>
-                          <% end %>
-                        </td>
-                      </tr>
-                    <% end %>
-                    <tr>
-                      <td>
-                        <%= form_with id: 'bulkApproveDeclineForm', url: bulk_approve_decline_sub_space_booking_index_path, method: :put do |f| %>
-                          <div class="btn-group">
-                            <%= f.button 'Approve All', name: 'bulk_status', value: 'approve', class: 'btn btn-success' %>
-                            <%= f.button 'Decline All', name: 'bulk_status', value: 'decline', class: 'btn btn-danger' %>
-                          </div>
-                        <% end %>
-                      </td>
-                      <td colspan="7"></td>
-                    </tr>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="accordion mb-3 mt-3" id="approved-accordion">
-          <div class="accordion-item">
-            <div class="accordion-header accordion-button" id="approvedHeading" type="button" data-bs-toggle="collapse" data-bs-target="#approvedBody" aria-expanded="true" aria-controls="approvedBody">
-              <h5 class="mb-0 text-center w-100">
-                Accepted Bookings
-              </h5>
-            </div>
-            <div id="approvedBody" class="collapse show accordion-body" aria-labelledby="approvedHeading" data-bs-parent="#approved-accordion">
-              <div class="table-responsive">
-                <div class="apple_pagination">
-                  <%= page_entries_info @approved_bookings, model: 'subspace_booking' %>
-                  <%= will_paginate @approved_bookings, container: false, param_name: 'approved_page' %>
-                </div>
-                <table class="table table-striped table-sub-space-booking-accepted">
-                  <thead class="text-center  table-primary">
-                  <tr>
-                    <th>Room <span onclick="sortTable('table-sub-space-booking-accepted', 0)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Name <span onclick="sortTable('table-sub-space-booking-accepted', 1)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Description <span onclick="sortTable('table-sub-space-booking-accepted', 2)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>User <span onclick="sortTable('table-sub-space-booking-accepted', 3)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Email <span onclick="sortTable('table-sub-space-booking-accepted', 4)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Booking Time <span onclick="sortTable('table-sub-space-booking-accepted', 5, true)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Booking Privacy <span onclick="sortTable('table-sub-space-booking-accepted', 6)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Approved By <span onclick="sortTable('table-sub-space-booking-accepted', 7)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Approved At <span onclick="sortTable('table-sub-space-booking-accepted', 8, true)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Actions</th>
-                  </tr>
-                  </thead>
-                  <tbody>
-                  <% @approved_bookings.each do |booking| %>
-                    <tr>
-                      <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : "#{booking.sub_space.space.name} - #{booking.sub_space.name}" %></td>
-                      <td><%= booking.name %></td>
-                      <td><%= booking.description %></td>
-                      <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
-                      <td><%= booking.user.email %></td>
-                      <td data-sort-as="<%= booking.start_time %>"><%= booking.start_time.to_formatted_s(:long) %> to <%= booking.end_time.to_fs(:time) %></td>
-                      <td><%= booking.public ? 'Public' : 'Private' %></td>
-                      <td><%= booking.approved_by.nil? ? 'N/A' : link_to(booking.approved_by.name, user_path(booking.approved_by.username)) %></td>
-                      <td><%= booking.approved_at.nil? ? 'N/A' : booking.approved_at.to_formatted_s(:long) %></td>
-                      <td>
-                        <div class="btn-group" role="group">
-                          <%= button_to booking.public ? 'Make Private' : 'Make Public', sub_space_booking_publish_path(booking), method: :put, class: "btn text-nowrap#{booking.public ? ' btn-secondary' : ' btn-primary'}" %>
-                          <%= button_to 'Reject', sub_space_booking_decline_path(booking), method: :put, class: 'btn btn-danger' %>
+                    </td>
+                    <td class="text-end pe-3">
+                      <% if bookings.length > 1 %>
+                        <div class="btn-group btn-group-sm">
+                          <%= button_to bulk_approve_decline_sub_space_booking_index_path, method: :put, params: { bulk_status: 'approve', sub_space_booking_ids: bookings.map(&:id) }, class: 'btn btn-outline-success', title: 'Approve All' do %><%= fa_icon 'check-double' %><% end %>
+                          <%= button_tag type: 'button', class: 'btn btn-outline-primary', title: 'Select Specific', data: { bs_toggle: 'modal', bs_target: '#approveRecurringModal', dates: bookings.map { |b| [b.id, "#{b.start_time.strftime("%b %e")} (#{b.start_time.strftime("%l:%M%P")}-#{b.end_time.strftime("%l:%M%P")})"] } } do %><%= fa_icon 'list' %><% end %>
+                          <%= button_to bulk_approve_decline_sub_space_booking_index_path, method: :put, params: { bulk_status: 'decline', sub_space_booking_ids: bookings.map(&:id) }, class: 'btn btn-outline-danger', title: 'Reject All' do %><%= fa_icon 'times' %><% end %>
                         </div>
-                      </td>
-                    </tr>
-                  <% end %>
-                  </table>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="accordion mb-3" id="declined-accordion">
-          <div class="accordion-item">
-            <div class="accordion-header accordion-button" id="declinedHeading" type="button" data-bs-toggle="collapse" data-bs-target="#declinedBody" aria-expanded="true" aria-controls="declinedBody">
-              <h5 class="mb-0 text-center w-100">
-                Declined Bookings
-              </h5>
-            </div>
-            <div id="declinedBody" class="collapse show accordion-body" aria-labelledby="declinedHeading" data-bs-parent="#declined-accordion">
-              <div class="table-responsive">
-                <div class="apple_pagination">
-                  <%= page_entries_info @declined_bookings, model: 'subspace_booking' %>
-                  <%= will_paginate @declined_bookings, container: false, param_name: 'denied_page' %>
-                </div>
-                <table class="table table-striped table-sub-space-booking-declined">
-                  <thead class="text-center table-primary">
-                  <tr>
-                    <th>Room <span onclick="sortTable('table-sub-space-booking-declined', 0)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Name <span onclick="sortTable('table-sub-space-booking-declined', 1)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Description <span onclick="sortTable('table-sub-space-booking-declined', 2)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>User <span onclick="sortTable('table-sub-space-booking-declined', 3)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Email <span onclick="sortTable('table-sub-space-booking-declined', 4)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Booking Time <span onclick="sortTable('table-sub-space-booking-declined', 5, true)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Actions</th>
-                  </tr>
-                  </thead>
-                  <tbody>
-                  <% @declined_bookings.each do |booking| %>
-                    <tr>
-                      <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : "#{booking.sub_space.space.name} - #{booking.sub_space.name}" %></td>
-                      <td><%= booking.name %></td>
-                      <td><%= booking.description %></td>
-                      <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
-                      <td><%= booking.user.email %></td>
-                      <td data-sort-as="<%= booking.start_time %>"><%= booking.start_time.to_formatted_s(:long) %> to <%= booking.end_time.to_fs(:time) %></td>
-                      <td>
-                        <div class="btn-group" role="group">
-                          <%= button_to 'Approve', sub_space_booking_approve_path(booking), method: :put, class: 'btn btn-success' %>
+                      <% else %>
+                        <div class="d-flex gap-2 justify-content-end">
+                          <%= button_to sub_space_booking_approve_path(sub_space_booking_id: booking.id), method: :put, class: 'btn btn-sm btn-success' do %><%= fa_icon 'check' %> Approve<% end %>
+                          <%= button_to sub_space_booking_decline_path(sub_space_booking_id: booking.id), method: :put, class: 'btn btn-sm btn-danger' do %><%= fa_icon 'times' %> Reject<% end %>
                         </div>
-                      </td>
-                    </tr>
-                  <% end %>
-                  </table>
-              </div>
+                      <% end %>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+            
+            <div class="p-3 bg-body-tertiary border-top border-secondary-subtle d-flex gap-2">
+              <button type="submit" form="bulkApproveDeclineForm" name="bulk_status" value="approve" class="btn btn-success"><%= fa_icon 'check' %> Bulk Approve Selected</button>
+              <button type="submit" form="bulkApproveDeclineForm" name="bulk_status" value="decline" class="btn btn-danger"><%= fa_icon 'times' %> Bulk Reject Selected</button>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="card mb-3" id="user-card">
-      <div class="card-header" id="user-header" type="button" data-bs-toggle="collapse" data-bs-target="#user-body" aria-expanded="true" aria-controls="user-body">
-        <h5 class="card-title">Manage User Booking Permissions</h5>
+    <!-- ACCEPTED BOOKINGS -->
+    <div class="card shadow-sm mb-4 border-0 bg-body" id="approved-accordion">
+      <div class="card-header text-bg-success d-flex justify-content-between align-items-center" role="button" data-bs-toggle="collapse" data-bs-target="#approvedBody">
+        <h5 class="mb-0 fw-bold"><%= fa_icon 'calendar-check-o' %> Accepted Bookings</h5>
+        <%= fa_icon 'chevron-down' %>
       </div>
-      <div class="card-body collapse show" id="user-body"  aria-labelledby="user-heading" data-bs-parent="#user-card">
-        <%= form_with url: approve_access_sub_space_booking_index_path, method: :put do |f| %>
-          <div class="input-group mb-3">
-            <%= f.select :user_id, [], {}, { class: 'form-select form-control', id: 'user_booking_select' } %>
-            <%= f.submit 'Permit Access ', class: 'btn btn-primary' %>
-          </div>
-        <% end %>
-
-        <div class="accordion mb-3" id="user-approval-accordion">
-          <div class="accordion-item">
-            <div class="accordion-header accordion-button" id="user-approval-header" type="button" data-bs-toggle="collapse" data-bs-target="#userApprovalBody" aria-expanded="true" aria-controls="userApprovalBody">
-              <h5 class="mb-0 text-center w-100">
-                Users Pending Booking Approval
-              </h5>
+      <div id="approvedBody" class="collapse show">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <div class="p-3 bg-body-tertiary border-bottom border-secondary-subtle d-flex justify-content-between align-items-center">
+              <span class="text-body-secondary small"><%= page_entries_info @approved_bookings, model: 'subspace_booking' %></span>
+              <div class="apple_pagination m-0">
+                <%= will_paginate @approved_bookings, container: false, param_name: 'approved_page' %>
+              </div>
             </div>
-            <div class="accordion-body collapse show" aria-labelledby="user-approval-header" data-bs-parent="#user-approval-accordion" id="userApprovalBody">
-              <%= form_with url: bulk_approve_access_sub_space_booking_index_path, method: :put, id: 'bulk-approve-form', class: 'table-responsive' do |f| %>
-                <table class="table table-striped table-sub-space-booking-pending-approved">
-                  <thead class="text-center table-primary">
-                  <tr>
-                    <th>
-                      <label>
-                        <input type="checkbox" id="userRequestSelectAll" /> Select
-                      </label>
-                    </th>
-                    <th>Name <span onclick="sortTable('table-sub-space-booking-pending-approved', 1)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Email <span onclick="sortTable('table-sub-space-booking-pending-approved', 2)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Reason <span onclick="sortTable('table-sub-space-booking-pending-approved', 3)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Date of Request <span onclick="sortTable('table-sub-space-booking-pending-approved', 4, true)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Actions</th>
-                  </tr>
-                  </thead>
-                  <tbody>
-                  <% UserBookingApproval.includes(:user).where(approved: false).each_with_index do |user_booking_approval, index| %>
-                    <tr>
-                      <td><%= check_box_tag 'user_booking_approval_ids[]', user_booking_approval.id, false, class: 'user-request-select', style: 'transform: scale(1.5); margin: 10px;' %></td>
-                      <td><%= user_booking_approval.user.name %></td>
-                      <td><%= user_booking_approval.user.email %></td>
-                      <td><%= user_booking_approval.comments %></td>
-                      <td><%= user_booking_approval.created_at.to_formatted_s(:long) %></td>
-                      <td>
-                        <div class="btn-group" role="group">
-                          <%= button_to 'Approve', approve_access_sub_space_booking_index_path(id: user_booking_approval), method: :put, class: 'btn btn-success' %>
-                          <%= button_to 'Reject', deny_access_sub_space_booking_index_path(id: user_booking_approval), method: :put, class: 'btn btn-danger' %>
-                        </div>
-                      </td>
-                    </tr>
-                  <% end %>
-                  </tbody>
-                </table>
-                <div class="text-center">
-                  <%= f.submit 'Bulk Approve', class: 'btn btn-success' %>
-                </div>
-              <% end %>
-            </div>
-          </div>
-        </div>
-
-        <div class="accordion mb-3" id="user-approved-accordion">
-          <div class="accordion-item">
-            <div class="accordion-header accordion-button" id="user-approved-header" type="button" data-bs-toggle="collapse" data-bs-target="#userApprovedBody" aria-expanded="true" aria-controls="userApprovedBody">
-              <h5 class="mb-0 text-center w-100">
-                Users with Booking Approval
-              </h5>
-            </div>
-            <div class="accordion-body collapse show table-responsive" aria-labelledby="user-approved-header" data-bs-parent="#user-approved-accordion" id="userApprovedBody">
-              <table class="table table-striped table-sub-space-booking-users-approved">
-                <thead class="text-center  table-primary">
+            
+            <table class="table table-hover align-middle mb-0 table-sub-space-booking-accepted">
+              <thead class="table-secondary">
                 <tr>
-                  <th>Name <span onclick="sortTable('table-sub-space-booking-users-approved', 0)"><%= fa_icon('arrow-down') %></span></th>
-                  <th>Email <span onclick="sortTable('table-sub-space-booking-users-approved', 1)"><%= fa_icon('arrow-down') %></span></th>
-                  <th>Reason <span onclick="sortTable('table-sub-space-booking-users-approved', 2)"><%= fa_icon('arrow-down') %></span></th>
-                  <th>Date of Request <span onclick="sortTable('table-sub-space-booking-users-approved', 3)"><%= fa_icon('arrow-down') %></span></th>
-                  <th>Approved by <span onclick="sortTable('table-sub-space-booking-users-approved', 4, true)"><%= fa_icon('arrow-down') %></span></th>
-                  <th>Actions</th>
+                  <th class="ps-3">Room</th>
+                  <th>Event Details</th>
+                  <th>User</th>
+                  <th>Schedule</th>
+                  <th>Status</th>
+                  <th class="text-end pe-3">Actions</th>
                 </tr>
-                </thead>
-                <tbody>
-                <% UserBookingApproval.includes(:user, :staff).where(approved: true).find_each do |user_booking_approval| %>
+              </thead>
+              <tbody>
+                <% @approved_bookings.each do |booking| %>
                   <tr>
-                    <td><%= user_booking_approval.user.name %></td>
-                    <td><%= user_booking_approval.user.email %></td>
-                    <td><%= user_booking_approval.comments %></td>
-                    <td><%= user_booking_approval.created_at.to_formatted_s(:long) %></td>
-                    <td><%= user_booking_approval.staff.name %></td>
+                    <td class="ps-3">
+                      <span class="badge text-bg-secondary"><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : "#{booking.sub_space.space.name} - #{booking.sub_space.name}" %></span>
+                    </td>
+                    <td><strong class="text-body-emphasis"><%= booking.name %></strong></td>
+                    <td><%= link_to(booking.user.name, user_path(booking.user.username), class: 'text-decoration-none text-primary') %></td>
                     <td>
-                      <div class="btn-group" role="group">
-                        <%= button_to 'Revoke', deny_access_sub_space_booking_index_path(id: user_booking_approval), method: :put, class: 'btn btn-danger' %>
+                      <strong class="text-body-emphasis"><%= booking.start_time.strftime("%b %e, %Y") %></strong><br>
+                      <small class="text-body-secondary"><%= booking.start_time.strftime("%l:%M %p") %> - <%= booking.end_time.strftime("%l:%M %p") %></small>
+                    </td>
+                    <td>
+                      <span class="badge <%= booking.public ? 'text-bg-info text-dark' : 'text-bg-dark' %>"><%= booking.public ? 'Public' : 'Private' %></span>
+                    </td>
+                    <td class="text-end pe-3">
+                      <div class="btn-group btn-group-sm">
+                        <%= button_to sub_space_booking_publish_path(sub_space_booking_id: booking.id), method: :put, class: "btn #{booking.public ? 'btn-outline-secondary' : 'btn-outline-primary'}" do %>
+                          <%= booking.public ? 'Make Private' : 'Make Public' %>
+                        <% end %>
+                        <%= button_to sub_space_booking_decline_path(sub_space_booking_id: booking.id), method: :put, class: 'btn btn-outline-danger' do %><%= fa_icon 'times' %><% end %>
                       </div>
                     </td>
                   </tr>
                 <% end %>
-                </tbody>
-              </table>
-            </div>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="card mb-3">
-      <div class="card-header" type="button" data-bs-toggle="collapse" data-bs-target="#past-booking-body" aria-expanded="true" aria-controls="past-booking-body">
-        <h5 class="card-title">Past Bookings</h5>
+    <!-- DECLINED BOOKINGS -->
+    <div class="card shadow-sm mb-4 border-0 bg-body" id="declined-accordion">
+      <div class="card-header text-bg-danger d-flex justify-content-between align-items-center" role="button" data-bs-toggle="collapse" data-bs-target="#declinedBody">
+        <h5 class="mb-0 fw-bold"><%= fa_icon 'ban' %> Declined Bookings</h5>
+        <%= fa_icon 'chevron-down' %>
       </div>
-      <div class="card-body collapse show" id="past-booking-body">
-        <div class="accordion" id="past-pending-accordion">
-          <div class="accordion-item">
-            <div class="accordion-header accordion-button" id="pastPendingHeader" type="button" data-bs-toggle="collapse" data-bs-target="#pastPendingBody" aria-expanded="true" aria-controls="pastPendingBody">
-              <h5 class="mb-0 text-center w-100">
-                Expired Pending Bookings
-              </h5>
-            </div>
-            <div id="pastPendingBody" class="collapse show accordion-body" aria-labelledby="pastPendingHeader " data-bs-parent="#past-pending-accordion">
-              <div class="table-responsive">
-                <div class="apple_pagination">
-                  <%= page_entries_info @old_pending_bookings, model: 'subspace_booking' %>
-                  <%= will_paginate @old_pending_bookings, container: false, param_name: 'old_pending_page' %>
-                </div>
-                <table class="table table-striped table-sub-space-booking-old-pending">
-                  <thead class="text-center table-primary">
-                  <tr>
-                    <th>Room <span onclick="sortTable('table-sub-space-booking-old-pending', 0)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Name <span onclick="sortTable('table-sub-space-booking-old-pending', 1)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Description <span onclick="sortTable('table-sub-space-booking-old-pending', 2)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>User <span onclick="sortTable('table-sub-space-booking-old-pending', 3)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Email <span onclick="sortTable('table-sub-space-booking-old-pending', 4)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Booking Time <span onclick="sortTable('table-sub-space-booking-old-pending', 5, true)"><%= fa_icon('arrow-down') %></span></th>
-                  </tr>
-                  </thead>
-                  <tbody>
-                  <% @old_pending_bookings.each do |booking| %>
-                    <tr>
-                      <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : "#{booking.sub_space.space.name} - #{booking.sub_space.name}" %></td>
-                      <td><%= booking.name %></td>
-                      <td><%= booking.description %></td>
-                      <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
-                      <td><%= booking.user.email %></td>
-                      <td data-sort-as="<%= booking.start_time %>"><%= booking.start_time.to_formatted_s(:long) %> to <%= booking.end_time.to_fs(:time) %></td>
-                    </tr>
-                  <% end %>
-                  </table>
+      <div id="declinedBody" class="collapse show">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <div class="p-3 bg-body-tertiary border-bottom border-secondary-subtle d-flex justify-content-between align-items-center">
+              <span class="text-body-secondary small"><%= page_entries_info @declined_bookings, model: 'subspace_booking' %></span>
+              <div class="apple_pagination m-0">
+                <%= will_paginate @declined_bookings, container: false, param_name: 'denied_page' %>
               </div>
             </div>
-          </div>
-        </div>
-        <div class="accordion mb-3 mt-3" id="past-approved-accordion">
-          <div class="accordion-item">
-            <div class="accordion-header accordion-button" id="pastApprovedHeading" type="button" data-bs-toggle="collapse" data-bs-target="#pastApprovedBody" aria-expanded="true" aria-controls="pastApprovedBody">
-              <h5 class="mb-0 text-center w-100">
-                Expired Accepted Bookings
-              </h5>
-            </div>
-            <div id="pastApprovedBody" class="collapse show accordion-body" aria-labelledby="pastApprovedHeading" data-bs-parent="#past-approved-accordion">
-              <div class="table-responsive">
-                <div class="apple_pagination">
-                  <%= page_entries_info @old_approved_bookings, model: 'subspace_booking' %>
-                  <%= will_paginate @old_approved_bookings, container: false, param_name: 'old_approved_page' %>
-                </div>
-                <table class="table table-striped table-sub-space-booking-expired-accepted">
-                  <thead class="text-center table-primary">
+            
+            <table class="table table-hover align-middle mb-0 table-sub-space-booking-declined">
+              <thead class="table-secondary">
+                <tr>
+                  <th class="ps-3">Room</th>
+                  <th>Event Details</th>
+                  <th>User</th>
+                  <th>Schedule</th>
+                  <th class="text-end pe-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @declined_bookings.each do |booking| %>
                   <tr>
-                    <th>Room <span onclick="sortTable('table-sub-space-booking-expired-accepted', 0)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Name <span onclick="sortTable('table-sub-space-booking-expired-accepted', 1)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Description <span onclick="sortTable('table-sub-space-booking-expired-accepted', 2)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>User <span onclick="sortTable('table-sub-space-booking-expired-accepted', 3)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Email <span onclick="sortTable('table-sub-space-booking-expired-accepted', 4)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Booking Time <span onclick="sortTable('table-sub-space-booking-expired-accepted', 5, true)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Approved by <span onclick="sortTable('table-sub-space-booking-expired-accepted', 6)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Approved at <span onclick="sortTable('table-sub-space-booking-expired-accepted', 7, true)"><%= fa_icon('arrow-down') %></span></th>
+                    <td class="ps-3">
+                      <span class="badge text-bg-secondary"><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : "#{booking.sub_space.space.name} - #{booking.sub_space.name}" %></span>
+                    </td>
+                    <td>
+                      <strong class="text-body-emphasis"><%= booking.name %></strong><br>
+                      <small class="text-body-secondary"><%= truncate(booking.description, length: 50) %></small>
+                    </td>
+                    <td><%= link_to(booking.user.name, user_path(booking.user.username), class: 'text-decoration-none text-primary') %></td>
+                    <td>
+                      <strong class="text-body-emphasis"><%= booking.start_time.strftime("%b %e, %Y") %></strong><br>
+                      <small class="text-body-secondary"><%= booking.start_time.strftime("%l:%M %p") %> - <%= booking.end_time.strftime("%l:%M %p") %></small>
+                    </td>
+                    <td class="text-end pe-3">
+                      <%= button_to sub_space_booking_approve_path(sub_space_booking_id: booking.id), method: :put, class: 'btn btn-sm btn-success' do %><%= fa_icon 'check' %> Approve<% end %>
+                    </td>
                   </tr>
-                  </thead>
-                  <tbody>
-                  <% @old_approved_bookings.each do |booking| %>
-                    <tr>
-                      <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : "#{booking.sub_space.space.name} - #{booking.sub_space.name}" %></td>
-                      <td><%= booking.name %></td>
-                      <td><%= booking.description %></td>
-                      <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
-                      <td><%= booking.user.email %></td>
-                      <td data-sort-as="<%= booking.start_time %>"><%= booking.start_time.to_formatted_s(:long) %> to <%= booking.end_time.to_fs(:time) %></td>
-                      <td><%= booking.approved_by.nil? ? 'N/A' : link_to(booking.approved_by.name, user_path(booking.approved_by.username)) %></td>
-                      <td><%= booking.approved_at.nil? ? 'N/A' : booking.approved_at.to_formatted_s(:long) %></td>
-                    </tr>
-                  <% end %>
-                  </table>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="accordion mb-3" id="past-declined-accordion">
-          <div class="accordion-item">
-            <div class="accordion-header accordion-button" id="pastDeclinedHeading" type="button" data-bs-toggle="collapse" data-bs-target="#pastDeclinedBody" aria-expanded="true" aria-controls="pastDeclinedBody">
-              <h5 class="mb-0 text-center w-100">
-                Declined Bookings
-              </h5>
-            </div>
-            <div id="pastDeclinedBody" class="collapse show accordion-body" aria-labelledby="pastDeclinedHeading" data-bs-parent="#past-declined-accordion">
-              <div class="table-responsive">
-                <div class="apple_pagination">
-                  <%= page_entries_info @old_declined_bookings, model: 'subspace_booking' %>
-                  <%= will_paginate @old_declined_bookings, container: false, param_name: 'old_denied_page' %>
-                </div>
-                <table class="table table-striped table-sub-space-booking-old-declined">
-                  <thead class="text-center table-primary">
-                  <tr>
-                    <th>Room <span onclick="sortTable('table-sub-space-booking-old-declined', 0)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Name <span onclick="sortTable('table-sub-space-booking-old-declined', 1)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Description <span onclick="sortTable('table-sub-space-booking-old-declined', 2)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>User <span onclick="sortTable('table-sub-space-booking-old-declined', 3)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Email <span onclick="sortTable('table-sub-space-booking-old-declined', 4)"><%= fa_icon('arrow-down') %></span></th>
-                    <th>Booking Time <span onclick="sortTable('table-sub-space-booking-old-declined', 5, true)"><%= fa_icon('arrow-down') %></span></th>
-                  </tr>
-                  </thead>
-                  <tbody>
-                  <% @old_declined_bookings.each do |booking| %>
-                    <tr>
-                      <td><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : "#{booking.sub_space.space.name} - #{booking.sub_space.name}" %></td>
-                      <td><%= booking.name %></td>
-                      <td><%= booking.description %></td>
-                      <td><%= link_to(booking.user.name, user_path(booking.user.username)) %></td>
-                      <td><%= booking.user.email %></td>
-                      <td data-sort-as="<%= booking.start_time %>"><%= booking.start_time.to_formatted_s(:long) %> to <%= booking.end_time.to_fs(:time) %></td>
-                    </tr>
-                  <% end %>
-                  </table>
-              </div>
-            </div>
+                <% end %>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- USER PERMISSIONS -->
+    <div class="card shadow-sm mb-4 border-0 bg-body" id="user-card">
+      <div class="card-header text-bg-primary d-flex justify-content-between align-items-center" role="button" data-bs-toggle="collapse" data-bs-target="#userPermsBody">
+        <h5 class="mb-0 fw-bold"><%= fa_icon 'users' %> Manage User Permissions</h5>
+        <%= fa_icon 'chevron-down' %>
+      </div>
+      <div id="userPermsBody" class="collapse show">
+        <div class="card-body p-4 bg-body">
+          <%= form_with url: approve_access_sub_space_booking_index_path, method: :put, class: 'mb-4' do |f| %>
+            <div class="input-group">
+              <%= f.select :user_id, [], {}, { class: 'form-select', id: 'user_booking_select' } %>
+              <%= f.submit 'Permit Access', class: 'btn btn-primary fw-bold' %>
+            </div>
+          <% end %>
+
+          <h5 class="mt-4 text-warning border-bottom border-warning-subtle pb-2">Pending Requests</h5>
+          <%= form_with url: bulk_approve_access_sub_space_booking_index_path, method: :put do |f| %>
+            <div class="table-responsive">
+              <table class="table table-hover align-middle border border-secondary-subtle">
+                <thead class="table-secondary">
+                  <tr>
+                    <th class="ps-3"><input type="checkbox" id="userRequestSelectAll" class="form-check-input" /></th>
+                    <th>Name</th>
+                    <th>Reason</th>
+                    <th>Date</th>
+                    <th class="text-end pe-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% UserBookingApproval.includes(:user).where(approved: false).find_each do |req| %>
+                    <tr>
+                      <td class="ps-3"><%= check_box_tag 'user_booking_approval_ids[]', req.id, false, class: 'form-check-input user-request-select' %></td>
+                      <td>
+                        <strong class="text-body-emphasis"><%= req.user.name %></strong><br>
+                        <small class="text-body-secondary"><%= req.user.email %></small>
+                      </td>
+                      <td class="text-body-emphasis"><%= req.comments %></td>
+                      <td class="text-body-secondary"><%= req.created_at.strftime("%b %e, %Y") %></td>
+                      <td class="text-end pe-3">
+                        <div class="btn-group btn-group-sm">
+                          <%= button_to approve_access_sub_space_booking_index_path(id: req.id), method: :put, class: 'btn btn-outline-success' do %><%= fa_icon 'check' %><% end %>
+                          <%= button_to deny_access_sub_space_booking_index_path(id: req.id), method: :put, class: 'btn btn-outline-danger' do %><%= fa_icon 'times' %><% end %>
+                        </div>
+                      </td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+            <%= f.submit 'Bulk Approve Selected', class: 'btn btn-success btn-sm mt-2' %>
+          <% end %>
+
+          <h5 class="mt-5 text-success border-bottom border-success-subtle pb-2">Approved Users</h5>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle border border-secondary-subtle">
+              <thead class="table-secondary">
+                <tr>
+                  <th class="ps-3">Name</th>
+                  <th>Reason</th>
+                  <th>Approved By</th>
+                  <th class="text-end pe-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% UserBookingApproval.includes(:user, :staff).where(approved: true).find_each do |req| %>
+                  <tr>
+                    <td class="ps-3">
+                      <strong class="text-body-emphasis"><%= req.user.name %></strong><br>
+                      <small class="text-body-secondary"><%= req.user.email %></small>
+                    </td>
+                    <td class="text-body-emphasis"><%= truncate(req.comments, length: 40) %></td>
+                    <td class="text-body-secondary"><%= req.staff.name %></td>
+                    <td class="text-end pe-3">
+                      <%= button_to deny_access_sub_space_booking_index_path(id: req.id), method: :put, class: 'btn btn-sm btn-outline-danger' do %>Revoke<% end %>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EXPIRED PENDING -->
+    <div class="card shadow-sm border-0 bg-body mb-4" id="past-pending-accordion">
+      <div class="card-header text-bg-secondary d-flex justify-content-between align-items-center" role="button" data-bs-toggle="collapse" data-bs-target="#pastPendingBody">
+        <h5 class="mb-0 fw-bold"><%= fa_icon 'history' %> Expired Pending Bookings</h5>
+        <%= fa_icon 'chevron-down' %>
+      </div>
+      <div id="pastPendingBody" class="collapse show">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <div class="p-3 bg-body-tertiary border-bottom border-secondary-subtle d-flex justify-content-between align-items-center">
+              <span class="text-body-secondary small"><%= page_entries_info @old_pending_bookings, model: 'subspace_booking' %></span>
+              <div class="apple_pagination m-0">
+                <%= will_paginate @old_pending_bookings, container: false, param_name: 'old_pending_page' %>
+              </div>
+            </div>
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-secondary">
+                <tr>
+                  <th class="ps-3">Room</th>
+                  <th>Event Details</th>
+                  <th>User</th>
+                  <th>Schedule</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @old_pending_bookings.each do |booking| %>
+                  <tr>
+                    <td class="ps-3">
+                      <span class="badge text-bg-secondary"><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : "#{booking.sub_space.space.name} - #{booking.sub_space.name}" %></span>
+                    </td>
+                    <td>
+                      <strong class="text-body-emphasis"><%= booking.name %></strong><br>
+                      <small class="text-body-secondary"><%= truncate(booking.description, length: 50) %></small>
+                    </td>
+                    <td><%= link_to(booking.user.name, user_path(booking.user.username), class: 'text-decoration-none text-primary') %></td>
+                    <td>
+                      <strong class="text-body-emphasis"><%= booking.start_time.strftime("%b %e, %Y") %></strong><br>
+                      <small class="text-body-secondary"><%= booking.start_time.strftime("%l:%M %p") %> - <%= booking.end_time.strftime("%l:%M %p") %></small>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- EXPIRED APPROVED -->
+    <div class="card shadow-sm border-0 bg-body mb-4" id="past-approved-accordion">
+      <div class="card-header text-bg-secondary d-flex justify-content-between align-items-center" role="button" data-bs-toggle="collapse" data-bs-target="#pastApprovedBody">
+        <h5 class="mb-0 fw-bold"><%= fa_icon 'history' %> Expired Accepted Bookings</h5>
+        <%= fa_icon 'chevron-down' %>
+      </div>
+      <div id="pastApprovedBody" class="collapse show">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <div class="p-3 bg-body-tertiary border-bottom border-secondary-subtle d-flex justify-content-between align-items-center">
+              <span class="text-body-secondary small"><%= page_entries_info @old_approved_bookings, model: 'subspace_booking' %></span>
+              <div class="apple_pagination m-0">
+                <%= will_paginate @old_approved_bookings, container: false, param_name: 'old_approved_page' %>
+              </div>
+            </div>
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-secondary">
+                <tr>
+                  <th class="ps-3">Room</th>
+                  <th>Event Details</th>
+                  <th>User</th>
+                  <th>Schedule</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @old_approved_bookings.each do |booking| %>
+                  <tr>
+                    <td class="ps-3">
+                      <span class="badge text-bg-secondary"><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : "#{booking.sub_space.space.name} - #{booking.sub_space.name}" %></span>
+                    </td>
+                    <td>
+                      <strong class="text-body-emphasis"><%= booking.name %></strong><br>
+                      <small class="text-body-secondary"><%= truncate(booking.description, length: 50) %></small>
+                    </td>
+                    <td><%= link_to(booking.user.name, user_path(booking.user.username), class: 'text-decoration-none text-primary') %></td>
+                    <td>
+                      <strong class="text-body-emphasis"><%= booking.start_time.strftime("%b %e, %Y") %></strong><br>
+                      <small class="text-body-secondary"><%= booking.start_time.strftime("%l:%M %p") %> - <%= booking.end_time.strftime("%l:%M %p") %></small>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- EXPIRED DECLINED -->
+    <div class="card shadow-sm border-0 bg-body" id="past-declined-accordion">
+      <div class="card-header text-bg-secondary d-flex justify-content-between align-items-center" role="button" data-bs-toggle="collapse" data-bs-target="#pastDeclinedBody">
+        <h5 class="mb-0 fw-bold"><%= fa_icon 'history' %> Expired Declined Bookings</h5>
+        <%= fa_icon 'chevron-down' %>
+      </div>
+      <div id="pastDeclinedBody" class="collapse show">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <div class="p-3 bg-body-tertiary border-bottom border-secondary-subtle d-flex justify-content-between align-items-center">
+              <span class="text-body-secondary small"><%= page_entries_info @old_declined_bookings, model: 'subspace_booking' %></span>
+              <div class="apple_pagination m-0">
+                <%= will_paginate @old_declined_bookings, container: false, param_name: 'old_denied_page' %>
+              </div>
+            </div>
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-secondary">
+                <tr>
+                  <th class="ps-3">Room</th>
+                  <th>Event Details</th>
+                  <th>User</th>
+                  <th>Schedule</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @old_declined_bookings.each do |booking| %>
+                  <tr>
+                    <td class="ps-3">
+                      <span class="badge text-bg-secondary"><%= booking.sub_space.name == booking.sub_space.space.name ? booking.sub_space.space.name : "#{booking.sub_space.space.name} - #{booking.sub_space.name}" %></span>
+                    </td>
+                    <td>
+                      <strong class="text-body-emphasis"><%= booking.name %></strong><br>
+                      <small class="text-body-secondary"><%= truncate(booking.description, length: 50) %></small>
+                    </td>
+                    <td><%= link_to(booking.user.name, user_path(booking.user.username), class: 'text-decoration-none text-primary') %></td>
+                    <td>
+                      <strong class="text-body-emphasis"><%= booking.start_time.strftime("%b %e, %Y") %></strong><br>
+                      <small class="text-body-secondary"><%= booking.start_time.strftime("%l:%M %p") %> - <%= booking.end_time.strftime("%l:%M %p") %></small>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </section>

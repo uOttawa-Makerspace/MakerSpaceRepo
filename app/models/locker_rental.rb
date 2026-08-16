@@ -110,6 +110,10 @@ class LockerRental < ApplicationRecord
     active? && owned_until && owned_until <= DateTime.current
   end
 
+  def renewable?
+    active? && expired?
+  end
+
   # How long was this expired for
   def expired_since
     # If there's a cancellation date, give that

@@ -1,87 +1,117 @@
-<section>
-  <% if current_user.booking_approval || current_user.admin? %>
-    <div id="booking_toast" role="alert" aria-live="assertive" aria-atomic="true" class="toast bg-warning text-black" data-bs-autohide="false">
-      <div class="toast-header">
-        <strong id="toast_title" class="me-auto"></strong>
-        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+<section class="container-fluid mt-4">
+  <!-- Toast Container -->
+  <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1060">
+    <div id="booking_toast" role="alert" aria-live="assertive" aria-atomic="true" class="toast text-bg-danger border-0 shadow" data-bs-autohide="true" data-bs-delay="5000">
+      <div class="toast-header text-bg-danger border-bottom border-danger-subtle">
+        <strong id="toast_title" class="me-auto fw-bold"><i class="fa fa-exclamation-triangle"></i> Error</strong>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
       </div>
-      <div id="toast_text" class="toast-body">
-      </div>
+      <div id="toast_text" class="toast-body fs-6"></div>
     </div>
-    <div class="col-md-10 mx-auto">
-      <ul class="nav nav-tabs nav-fill" id="booking-tab-list" role="tablist">
-        <button class="nav-link tab-link active" id="booking-calendar-tab-btn" data-bs-toggle="tab" data-bs-target="#booking-calendar-tab" type="button" role="tab" aria-controls="booking-calendar-tab" aria-selected="true">Book</button>
-        <button class="nav-link tab-link" id="booking-tab-btn" data-bs-toggle="tab" data-bs-target="#booking-tab" type="button" role="tab" aria-controls="booking-tab" aria-selected="false">My Bookings</button>
-        <% if current_user.admin? %><button class="nav-link tab-link" id="booking-admin-tab-btn" data-bs-toggle="tab" data-bs-target="#booking-admin-tab" type="button" role="tab" aria-controls="booking-admin-tab" aria-selected="false">Admin Panel</button><% end %>
+  </div>
+
+  <% if current_user.booking_approval || current_user.admin? %>
+    <div class="col-xl-11 mx-auto">
+      <ul class="nav nav-tabs nav-fill mb-4 border-bottom-0 shadow-sm rounded bg-body" id="booking-tab-list" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link fw-bold text-uppercase tab-link active" id="booking-calendar-tab-btn" data-bs-toggle="tab" data-bs-target="#booking-calendar-tab" type="button" role="tab"><i class="fa fa-calendar me-2"></i> Book Room</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link fw-bold text-uppercase tab-link" id="booking-tab-btn" data-bs-toggle="tab" data-bs-target="#booking-tab" type="button" role="tab"><i class="fa fa-list me-2"></i> My Bookings</button>
+        </li>
+        <% if current_user.admin? %>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold text-uppercase tab-link" id="booking-admin-tab-btn" data-bs-toggle="tab" data-bs-target="#booking-admin-tab" type="button" role="tab"><i class="fa fa-cog me-2"></i> Admin Panel</button>
+          </li>
+        <% end %>
       </ul>
-      <div class="tab-content" id="tabContent">
-        <div class="tab-pane active show" id="booking-calendar-tab" role="tabpanel" aria-labelledby="tab-calendar">
-          <% if params[:room].present? %>
-            <h3 class="text-center my-3"> <%= @subspace.name %> Availability Calendar</h3>
-            <div>
-              <% unless @rules.empty? %>
-                <p class="text-center alert alert-info">
-                  <%= @subspace.name %>
-                  <%= @rules.to_sentence %>
-                </p>
-              <% end %>
-            </div>
-            <div class="row">
-              <div class="col-md-2 border border-2 rounded-2 p-3" style="height: fit-content">
-                <h2 class="fw-bolder fs-5">Event Legend</h2>
-                <% SubSpaceBooking.color_legend.each do |color| %>
-                  <div class="d-flex mb-2">
-                    <div style="width: 1.2em; height: 1.2em; margin-right: 0.5em; border-radius: 0.25em; background-color: <%= color[:color] %>"></div>
-                    <span><%= color[:name] %></span>
-                  </div>
+
+      <div class="tab-content bg-body p-4 shadow-sm rounded" id="tabContent">
+        <div class="tab-pane active show" id="booking-calendar-tab" role="tabpanel">
+           <% if params[:room].present? %>
+              <h3 class="text-center mb-4 fw-bold text-body-emphasis"><%= @subspace.name %> Calendar</h3>
+              <div>
+                <% unless @rules.empty? %>
+                  <p class="text-center alert alert-info shadow-sm">
+                    <strong><%= @subspace.name %></strong>
+                    <%= @rules.to_sentence %>
+                  </p>
                 <% end %>
               </div>
-              <div class="col-md-10">
-                <div id="booked-calendar"></div>
+              <div class="row">
+                <div class="col-md-2 border rounded-2 p-3 bg-body-tertiary shadow-sm mb-3 mb-md-0" style="height: fit-content">
+                  <h2 class="fw-bolder fs-5 text-body-emphasis">Event Legend</h2>
+                  <% SubSpaceBooking.color_legend.each do |color| %>
+                    <div class="d-flex align-items-center mb-2">
+                      <div class="shadow-sm border border-secondary-subtle" style="width: 1.2em; height: 1.2em; margin-right: 0.5em; border-radius: 0.25em; background-color: <%= color[:color] %>"></div>
+                      <span class="text-body"><%= color[:name] %></span>
+                    </div>
+                  <% end %>
+                </div>
+                <div class="col-md-10">
+                  <div id="booked-calendar" class="bg-body p-2 rounded"></div>
+                </div>
               </div>
-            </div>
-            <%= render partial: 'book_modal' %>
-          <% else %>
-            <div class="alert mt-3 alert-warning text-center" role="alert">
-              Please select a room to view the calendar
-            </div>
-          <% end %>
+              <%= render partial: 'book_modal' %>
+           <% else %>
+             <div class="alert alert-warning text-center rounded-3 shadow-sm py-4">
+               <i class="fa fa-hand-pointer-o fa-2x mb-2"></i>
+               <h5>Please select a room to view the availability calendar.</h5>
+             </div>
+           <% end %>
         </div>
-        <div class="tab-pane fade" id="booking-tab" role="tabpanel" aria-labelledby="tab-booking">
+        
+        <!-- RESTORED MY BOOKINGS TAB -->
+        <div class="tab-pane fade" id="booking-tab" role="tabpanel">
           <div id="my-booking-table" class="mt-3 table-responsive">
-            <table class="table table-striped">
+            <table class="table table-hover align-middle shadow-sm rounded overflow-hidden">
               <thead class="table-primary text-center">
-              <tr>
-                <th>Space</th>
-                <th>Name</th>
-                <th>Description</th>
-                <th>Start</th>
-                <th>End</th>
-                <th>Approved?</th>
-                <th>Actions</th>
-              </tr>
+                <tr>
+                  <th>Space</th>
+                  <th>Name</th>
+                  <th>Description</th>
+                  <th>Start Time</th>
+                  <th>End Time</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
               </thead>
               <tbody>
-              <% @bookings.each do |booking| %>
-                <tr>
-                  <td><%= booking.sub_space.name %></td>
-                  <td><%= booking.name %></td>
-                  <td><%= booking.description %></td>
-                  <td><%= booking.start_time.to_formatted_s(:long) %></td>
-                  <td><%= booking.end_time.to_formatted_s(:long) %></td>
-                  <td><%= booking.sub_space_booking_status.booking_status_id == BookingStatus::APPROVED.id ? 'Approved' : 'Not Approved' %></td>
-                  <td class="input-group">
-                    <%= button_to 'Edit', sub_space_booking_edit_path(booking.id), method: :get, class: 'btn btn-secondary', form_style: 'border: none;background: none;', form_class: '' if @user.admin? || booking.sub_space_booking_status.booking_status_id != BookingStatus::APPROVED.id %>
-                    <%= button_to 'Delete', sub_space_booking_delete_path(booking.id), method: :delete, data: { confirm: 'Are you sure?' }, class: 'btn btn-danger' %>
-                  </td>
-                </tr>
-              <% end %>
+                <% if @bookings.empty? %>
+                  <tr><td colspan="7" class="text-center text-body-secondary py-4">No bookings found.</td></tr>
+                <% else %>
+                  <% @bookings.each do |booking| %>
+                    <tr>
+                      <td class="text-center"><span class="badge text-bg-secondary"><%= booking.sub_space.name %></span></td>
+                      <td><strong><%= booking.name %></strong></td>
+                      <td><small class="text-body-secondary"><%= truncate(booking.description, length: 50) %></small></td>
+                      <td><%= booking.start_time.strftime("%b %e, %Y %l:%M %p") %></td>
+                      <td><%= booking.end_time.strftime("%b %e, %Y %l:%M %p") %></td>
+                      <td class="text-center">
+                        <% if booking.sub_space_booking_status.booking_status_id == BookingStatus::APPROVED.id %>
+                          <span class="badge text-bg-success">Approved</span>
+                        <% else %>
+                          <span class="badge text-bg-warning">Pending</span>
+                        <% end %>
+                      </td>
+                      <td>
+                        <div class="btn-group btn-group-sm d-flex justify-content-center">
+                          <% if @user.admin? || booking.sub_space_booking_status.booking_status_id != BookingStatus::APPROVED.id %>
+                            <%= button_to sub_space_booking_edit_path(sub_space_booking_id: booking.id), method: :get, class: 'btn btn-outline-primary' do %><%= fa_icon 'pencil' %><% end %>
+                          <% end %>
+                          <%= button_to sub_space_booking_delete_path(sub_space_booking_id: booking.id), method: :delete, data: { confirm: 'Are you sure you want to delete this booking?' }, class: 'btn btn-outline-danger' do %><%= fa_icon 'trash' %><% end %>
+                        </div>
+                      </td>
+                    </tr>
+                  <% end %>
+                <% end %>
               </tbody>
             </table>
           </div>
         </div>
+
         <% if current_user.admin? %>
-          <div class="tab-pane fade" id="booking-admin-tab" role="tabpanel" aria-labelledby="tab-admin">
+          <div class="tab-pane fade" id="booking-admin-tab" role="tabpanel">
             <%= render 'admin' %>
             <%= render 'approve_recurring_modal' %>
           </div>
@@ -89,57 +119,62 @@
       </div>
     </div>
   <% else %>
-    <% if UserBookingApproval.where(user:current_user).exists? && !UserBookingApproval.where(user:current_user).first.approved %>
-      <div class="alert mt-3 alert-warning text-center" role="alert">
-        Your request to access MakerRoom is now pending approval.
-      </div>
-    <% else %>
-      <div class="alert alert-info text-center">
-        <p class="fw-bold">
-          <i class="fa fa-info-circle"></i>
-          You do not have permission to book any rooms yet, please request access below.
-        </p>
-      </div>
-      <div class="mx-auto form col-4">
-        <%= form_with url: request_access_sub_space_booking_index_path, method: :put do |f| %>
-
-          <div class="mb-4">
-            <%= f.label :identity, 'Please select which best describes you:', class: 'form-label' %>
-
-            <div class="form-check">
-              <%= f.radio_button :identity, 'JMTS', class: 'form-check-input identity-button', required: true %>
-              <%= f.label :identity, 'JMTS team member', class: 'form-check-label' %>
-            </div>
-            <div class="form-check">
-              <%= f.radio_button :identity, 'Staff', class: 'form-check-input identity-button', required: true %>
-              <%= f.label :identity, 'Staff member', class: 'form-check-label' %>
-            </div>
-            <div class="form-check">
-              <%= f.radio_button :identity, 'GNG', class: 'form-check-input identity-button', required: true %>
-              <%= f.label :identity, 'Student involved with GNG courses', class: 'form-check-label' %>
-            </div>
-            <div class="form-check">
-              <%= f.radio_button :identity, 'Other', class: 'form-check-input identity-button', required: true %>
-              <%= f.label :identity, 'Other', class: 'form-check-label' %>
-            </div>
+    <!-- Access Request Form UX Improvement -->
+    <div class="row justify-content-center mt-5">
+      <div class="col-md-6 col-lg-5">
+        <% if UserBookingApproval.where(user:current_user).exists? && !UserBookingApproval.where(user:current_user).first.approved %>
+          <div class="alert alert-warning text-center shadow-sm p-4 rounded-3">
+            <i class="fa fa-hourglass-half fa-3x mb-3 text-warning"></i>
+            <h4 class="text-body-emphasis">Access Pending</h4>
+            <p class="mb-0 text-body">Your request to access MakerRoom is currently pending approval.</p>
           </div>
+        <% else %>
+          <div class="card shadow border-0 rounded-3 text-bg-body">
+            <div class="card-header text-bg-primary text-center py-3">
+              <h4 class="mb-0 fw-bold"><i class="fa fa-lock me-2"></i> Request Booking Access</h4>
+            </div>
+            <div class="card-body p-4 bg-body">
+              <p class="text-body-secondary text-center mb-4">You do not have permission to book rooms yet. Please request access below.</p>
+              
+              <%= form_with url: request_access_sub_space_booking_index_path, method: :put do |f| %>
+                <div class="mb-4">
+                  <%= f.label :identity, 'Please select which best describes you:', class: 'form-label fw-bold' %>
+                  <div class="form-check">
+                    <%= f.radio_button :identity, 'JMTS', class: 'form-check-input identity-button', required: true %>
+                    <%= f.label :identity_jmts, 'JMTS team member', class: 'form-check-label' %>
+                  </div>
+                  <div class="form-check">
+                    <%= f.radio_button :identity, 'Staff', class: 'form-check-input identity-button', required: true %>
+                    <%= f.label :identity_staff, 'Staff member', class: 'form-check-label' %>
+                  </div>
+                  <div class="form-check">
+                    <%= f.radio_button :identity, 'GNG', class: 'form-check-input identity-button', required: true %>
+                    <%= f.label :identity_gng, 'Student involved with GNG courses', class: 'form-check-label' %>
+                  </div>
+                  <div class="form-check">
+                    <%= f.radio_button :identity, 'Other', class: 'form-check-input identity-button', required: true %>
+                    <%= f.label :identity_other, 'Other', class: 'form-check-label' %>
+                  </div>
+                </div>
 
-          <div class="mb-4" id="supervisor-select" style="display: none;">
-            <%= label_tag :supervisor, 'Supervisor', class: 'form-label' %>
-            <%= select_tag :supervisor, options_for_select(@supervisors), class: 'form-select form-control' %>
-          </div>
+                <div class="mb-4" id="supervisor-select" style="display: none;">
+                  <%= label_tag :supervisor, 'Supervisor', class: 'form-label fw-bold' %>
+                  <%= select_tag :supervisor, options_for_select(@supervisors), class: 'form-select form-control' %>
+                </div>
 
-          <div class="mb-4">
-            <%= f.label :comments, 'Reason for Booking Access *', class: 'form-label' %>
-            <%= f.text_area :comments, class: 'form-control', placeholder: 'Please explain why you need access to book rooms', required: true, rows: 4 %>
-          </div>
+                <div class="mb-4" id="comments-container" style="display: none;">
+                  <%= f.label :comments, 'Reason for Booking Access *', class: 'form-label fw-bold' %>
+                  <%= f.text_area :comments, class: 'form-control', placeholder: 'Please explain why you need access to book rooms', rows: 4 %>
+                </div>
 
-          <div class="text-center">
-            <%= f.submit 'Request Access', class: 'btn btn-primary' %>
+                <div class="d-grid mt-4">
+                  <%= f.submit 'Submit Request', class: 'btn btn-primary btn-lg fw-bold' %>
+                </div>
+              <% end %>
+            </div>
           </div>
         <% end %>
       </div>
-    <% end %>
+    </div>
   <% end %>
-
 </section>

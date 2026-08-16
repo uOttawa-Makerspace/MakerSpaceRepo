@@ -12,6 +12,7 @@ permissions:
 env:
   RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
   RAILS_ENV: test
+  RUBYOPT: "-W0" # Silences the Gem::Platform constant redefinition logs globally
 
 jobs:
   test:
@@ -49,13 +50,14 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup ImageMagick
-        uses: mfinelli/setup-imagemagick@v7
+        uses: mfinelli/setup-imagemagick@v8
         with:
           cache: true
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
+          ruby-version: .ruby-version
           bundler-cache: true
 
       - name: Setup Node
@@ -101,6 +103,7 @@ jobs:
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
+          ruby-version: .ruby-version
           bundler-cache: true
 
       - name: Brakeman (Static Analysis)
@@ -129,6 +132,7 @@ jobs:
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
+          ruby-version: .ruby-version
           bundler-cache: true
 
       - name: Deploy to Staging
