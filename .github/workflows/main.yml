@@ -7,7 +7,9 @@ on:
     branches: [master, staging]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref_name }}
+  # Prevents push and pull_request from cancelling each other,
+  # but WILL cancel older runs if you push multiple commits quickly.
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -20,7 +22,9 @@ env:
 
 jobs:
   test:
-    if: github.event_name != 'schedule'
+    # Skip pull_request jobs if the branch being pushed is 'staging' or 'master'
+    # (because the 'push' event below is already running the test suite for it)
+    if: github.event_name != 'schedule' && (github.event_name != 'pull_request' || (github.head_ref != 'staging' && github.head_ref != 'master'))
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
@@ -97,6 +101,7 @@ jobs:
         run: bundle exec rspec
 
   security:
+    if: github.event_name != 'pull_request' || (github.head_ref != 'staging' && github.head_ref != 'master')
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
