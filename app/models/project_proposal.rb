@@ -14,9 +14,8 @@ class ProjectProposal < ApplicationRecord
              foreign_key: 'linked_project_proposal_id',
              optional: true
 
-  has_many :photos, dependent: :destroy
-  has_many :repo_files, dependent: :destroy
-  has_many :project_files, class_name: 'RepoFile', dependent: :destroy
+  has_many_attached :photos
+  has_many_attached :project_files
 
   attribute :season, :integer
 
