@@ -180,7 +180,7 @@ class LockerRentalsController < SessionsController
     }.compact.invert
     # Don't allow new request if user already has an active or pending request
     @pending_locker_request = current_user.locker_rentals.pending.first
-    @locker_product_info = LockerOption.locker_product_info
+    @locker_product_info = LockerOption.locker_product_info || { variants: {} }
   end
 
   def locker_rental_params

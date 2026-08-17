@@ -109,6 +109,7 @@ class ProficientProjectsController < DevelopmentProgramsController
       @training_levels ||= TrainingSession.return_levels
       @training_categories = Training.all.order(:name_en).pluck(:name_en, :id)
       @drop_off_location = DropOffLocation.all.order(name: :asc)
+      @trainings = Training.all
       flash[:alert] = "Something went wrong"
       render "new", status: :unprocessable_content
     end
@@ -135,8 +136,8 @@ class ProficientProjectsController < DevelopmentProgramsController
     @proficient_project.training_requirements.destroy
     if params[:training_requirements_id].present?
       params[:training_requirements_id].each_with_index do |t, i|
-            @proficient_project.create_training_requirements(t, params[:training_requirements_level][i])
-        end
+        @proficient_project.create_training_requirements(t, params[:training_requirements_level][i])
+      end
     end
     if @proficient_project.update(proficient_project_params)
       begin
@@ -154,6 +155,13 @@ class ProficientProjectsController < DevelopmentProgramsController
       end
     else
       flash[:alert] = "Unable to apply the changes."
+      @training_categories = Training.all.order(:name_en).pluck(:name_en, :id)
+      @training_levels = TrainingSession.return_levels
+      @trainings = Training.all
+      @drop_off_location = DropOffLocation.all.order(name: :asc)
+      @photos = @proficient_project.photos || []
+      @files = @proficient_project.repo_files.order(created_at: :asc)
+      @videos = @proficient_project.videos.processed.order(created_at: :asc)
       render "edit", status: :unprocessable_content
     end
   end

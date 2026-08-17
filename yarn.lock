@@ -826,6 +826,11 @@ sass@^1.97.1:
   optionalDependencies:
     "@parcel/watcher" "^2.4.1"
 
+scorm-again@^3.0.3:
+  version "3.0.3"
+  resolved "https://registry.yarnpkg.com/scorm-again/-/scorm-again-3.0.3.tgz#db41958d5f4658bc511ccbb61877d4812b09d2cd"
+  integrity sha512-5iNBKMauD+X1vczT//d90C7krrTqnvMT6yMCQHteZmQgdghWN+vNS0Rv6QWwm02xZpClLJhXcTAdzovABoxFoA==
+
 select@^1.1.2:
   version "1.1.2"
   resolved "https://registry.npmjs.org/select/-/select-1.1.2.tgz"
