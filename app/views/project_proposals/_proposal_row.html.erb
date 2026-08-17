@@ -3,6 +3,12 @@
         <div class="card-header bg-body-tertiary d-flex align-items-center justify-content-between flex-wrap gap-2 py-2">
             <span class="fw-semibold text-body-secondary">Proposal #<%= project_proposal.id %></span>
 
+            <% if project_proposal.linked_project_proposal.present? %>
+                <span class="badge text-bg-secondary">
+                    <%= fa_icon 'code-fork' %> Revision of <%= link_to "##{project_proposal.linked_project_proposal_id}", project_proposal_path(project_proposal.linked_project_proposal.slug), class: 'text-white text-decoration-underline' %>
+                </span>
+            <% end %>
+
             <% if project_proposal.approved? %>
                 <span class="badge text-bg-success">Approved</span>
             <% elsif project_proposal.not_approved? %>

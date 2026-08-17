@@ -172,21 +172,21 @@ class ProjectProposalsController < SessionsController
   def create_revision
     if params[:old_project_proposal_id] &&
          ProjectProposal.where(id: params[:old_project_proposal_id]).present?
-      @old_project_proposal =
-        ProjectProposal.find(params[:old_project_proposal_id])
-      values =
-        @old_project_proposal.attributes.except(
-          'id',
-          'user_id',
-          'admin_id',
-          'approved',
-          'slug'
-        )
-      values['title'] = "Revision of #{values['title']}"
+      @old_project_proposal = ProjectProposal.find(params[:old_project_proposal_id])
+      values = @old_project_proposal.attributes.except(
+        'id',
+        'user_id',
+        'admin_id',
+        'approved',
+        'slug',
+        'season',
+        'year'
+      )
+      values['title'] = "Revision of #{@old_project_proposal.title}"
       values['linked_project_proposal_id'] = params[:old_project_proposal_id]
 
       @project_proposal = ProjectProposal.new(values)
-      @project_proposal.user_id = @user.try(:id)
+      @project_proposal.user_id = current_user&.id
       @project_proposal.save!
 
       if @old_project_proposal.photos.present? &&
