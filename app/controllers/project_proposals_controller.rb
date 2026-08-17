@@ -5,10 +5,8 @@ class ProjectProposalsController < SessionsController
 
   before_action :set_project_proposal, only: %i[show edit update destroy]
   before_action :current_user
-  # before_action :show_only_project_approved, only: [:show]
 
   # GET /project_proposals
-  # GET /project_proposals.json
   def index
     @project_proposals =
       ProjectProposal
@@ -18,10 +16,8 @@ class ProjectProposalsController < SessionsController
         .where(approved: search_params[:approved])
         .paginate(per_page: 15, page: params[:page])
 
-    # break down semester and year if given
     season, year = params[:semester]&.split('_')
 
-    # Check if season and year are valid before filtering
     if ProjectProposal.seasons.keys.include?(season) && year.to_i.positive?
       @project_proposals =
         @project_proposals.where(season: season, year: year.to_i)
@@ -56,7 +52,6 @@ class ProjectProposalsController < SessionsController
   end
 
   # GET /project_proposals/1
-  # GET /project_proposals/1.json
   def show
     unless @project_proposal.approved?
       unless current_user&.admin? || (@project_proposal.user_id.present? && @project_proposal.user_id == current_user&.id)
@@ -73,7 +68,7 @@ class ProjectProposalsController < SessionsController
         .order([sort_order].to_h)
         .paginate(per_page: 9, page: params[:page])
     @project_photos = @project_proposal.photos.take(5)
-    @project_files = @project_proposal.repo_files
+    @project_files = @project_proposal.project_files
     @linked_pp = @project_proposal.linked_project_proposal
     @revisions =
       ProjectProposal.where(linked_project_proposal_id: @project_proposal.id)
@@ -89,7 +84,7 @@ class ProjectProposalsController < SessionsController
     @categories = @project_proposal.categories
     @category_options = CategoryOption.show_options
     @photos = @project_proposal.photos
-    @files = @project_proposal.repo_files
+    @files = @project_proposal.project_files
   end
 
   def projects_assigned
@@ -117,14 +112,12 @@ class ProjectProposalsController < SessionsController
   end
 
   # POST /project_proposals
-  # POST /project_proposals.json
   def create
     @project_proposal =
       ProjectProposal.new(project_proposal_params.except(:categories))
     @project_proposal.user_id = @user.try(:id)
 
     respond_to do |format|
-      # If not logged in and captcha fails
       if current_user.id.nil? && !verify_turnstile
         flash[:alert] = 'Captcha error, please try again'
         format.html { render :new, status: :unprocessable_content }
@@ -135,16 +128,14 @@ class ProjectProposalsController < SessionsController
                FastImage::UnknownImageType,
                FastImage::SizeNotFound => e
           Airbrake.notify(e)
-          flash[
-            :alert
-          ] = 'Something went wrong while uploading photos, try again later.'
+          flash[:alert] = 'Something went wrong while uploading photos, try again later.'
           @project_proposal.destroy
           format.json { render json: { redirect_uri: request.path } }
           format.html { redirect_back fallback_location: request.path }
         else
           create_files
           create_categories
-          @project_proposal.save # This creates the slug with ID since the ID is not created before create
+          @project_proposal.save
           format.html do
             redirect_to project_proposal_path(@project_proposal.slug),
                         notice: 'Project proposal was successfully created.'
@@ -158,9 +149,7 @@ class ProjectProposalsController < SessionsController
           MsrMailer.send_new_project_proposals.deliver_now
         end
       else
-        flash[
-          :alert
-        ] = 'An error occurred while creating the project proposal, try again later.'
+        flash[:alert] = 'An error occurred while creating the project proposal, try again later.'
         format.html { render :new, status: :unprocessable_content }
         format.json do
           render json: @project_proposal.errors, status: :unprocessable_content
@@ -189,39 +178,15 @@ class ProjectProposalsController < SessionsController
       @project_proposal.user_id = current_user&.id
       @project_proposal.save!
 
-      if @old_project_proposal.photos.present? &&
-           @old_project_proposal.photos.first.image.attached?
+      if @old_project_proposal.photos.attached?
         @old_project_proposal.photos.each do |photo|
-          Photo.create(
-            project_proposal_id: @project_proposal.id,
-            width: photo.width,
-            height: photo.height
-          )
-          photo.image.blob.open do |temp_photo|
-            Photo.last.image.attach(
-              {
-                io: temp_photo,
-                filename: photo.image.blob.filename,
-                content_type: photo.image.blob.content_type
-              }
-            )
-          end
+          @project_proposal.photos.attach(photo.blob)
         end
       end
 
-      if @old_project_proposal.repo_files.present? &&
-           @old_project_proposal.repo_files.first.file.attached?
-        @old_project_proposal.repo_files.each do |file|
-          RepoFile.create(project_proposal_id: @project_proposal.id)
-          file.file.blob.open do |temp_file|
-            RepoFile.last.file.attach(
-              {
-                io: temp_file,
-                filename: file.file.blob.filename,
-                content_type: file.file.blob.content_type
-              }
-            )
-          end
+      if @old_project_proposal.project_files.attached?
+        @old_project_proposal.project_files.each do |file|
+          @project_proposal.project_files.attach(file.blob)
         end
       end
 
@@ -234,7 +199,6 @@ class ProjectProposalsController < SessionsController
 
       respond_to do |format|
         if @project_proposal.save!
-          # This creates the slug with ID since the ID is not created before create
           format.html do
             redirect_to project_proposal_path(@project_proposal.slug),
                         notice:
@@ -264,17 +228,17 @@ class ProjectProposalsController < SessionsController
   end
 
   # PATCH/PUT /project_proposals/1
-  # PATCH/PUT /project_proposals/1.json
   def update
     @project_proposal.categories.destroy_all
     respond_to do |format|
       if @project_proposal.update(project_proposal_params.except(:categories))
+        update_photos
         update_files
         create_categories
 
         format.html do
-            redirect_to project_proposal_path(@project_proposal.slug),
-                        notice: 'Project proposal was successfully updated.'
+          redirect_to project_proposal_path(@project_proposal.slug),
+                      notice: 'Project proposal was successfully updated.'
         end
         format.json do
           render json: {
@@ -283,9 +247,7 @@ class ProjectProposalsController < SessionsController
                  }
         end
       else
-        flash[
-          :alert
-        ] = 'An error occurred while updating the project proposal, try again later.'
+        flash[:alert] = 'An error occurred while updating the project proposal, try again later.'
         format.html { render :edit, status: :unprocessable_content }
         format.json do
           render json: @project_proposal.errors, status: :unprocessable_content
@@ -295,7 +257,6 @@ class ProjectProposalsController < SessionsController
   end
 
   # DELETE /project_proposals/1
-  # DELETE /project_proposals/1.json
   def destroy
     return unless current_user.admin?
     @project_proposal.destroy
@@ -356,67 +317,61 @@ class ProjectProposalsController < SessionsController
   end
 
   def create_photos
-    return unless params[:images].present?
-    params[:images]
-      .first(5)
-      .each do |img|
-        dimension = FastImage.size(img.tempfile, raise_on_failure: true)
-        Photo.create(
-          image: img,
-          project_proposal_id: @project_proposal.id,
-          width: dimension.first,
-          height: dimension.last
-        )
-      end
+    images = params[:images] || params.dig(:project_proposal, :images)
+    return unless images.present?
+
+    images.first(5).each do |img|
+      FastImage.size(img.tempfile, raise_on_failure: true) if img.respond_to?(:tempfile)
+      @project_proposal.photos.attach(img)
+    end
   end
 
   def create_files
-    return unless params[:files].present?
-    params[:files].each do |f|
-      RepoFile.create(file: f, project_proposal_id: @project_proposal.id)
+    files = params[:files] || params.dig(:project_proposal, :files)
+    return unless files.present?
+
+    files.each do |f|
+      @project_proposal.project_files.attach(f)
     end
   end
 
   def update_photos
-    if params[:deleteimages].present?
-      @project_proposal.photos.each do |img|
-        next unless params[:deleteimages].include?(img.image.filename.to_s)
-        # checks if the file should be deleted
-        img.image.purge
-        img.destroy
+    delete_images = params[:deleteimages] || params.dig(:project_proposal, :deleteimages)
+    if delete_images.present?
+      @project_proposal.photos.attachments.each do |attachment|
+        if delete_images.include?(attachment.filename.to_s) || delete_images.include?(attachment.id.to_s)
+          attachment.purge
+        end
       end
     end
 
-    return unless params['images'].present?
-    params['images'].each do |img|
-      dimension = FastImage.size(img.tempfile, raise_on_failure: true)
-      Photo.create(
-        image: img,
-        project_proposal_id: @project_proposal.id,
-        width: dimension.first,
-        height: dimension.last
-      )
+    images = params[:images] || params.dig(:project_proposal, :images)
+    return unless images.present?
+
+    images.each do |img|
+      FastImage.size(img.tempfile, raise_on_failure: true) if img.respond_to?(:tempfile)
+      @project_proposal.photos.attach(img)
     end
   end
 
-  # FIXME: This doesn't work anymore after moving to activestorage
   def update_files
-    if params['deletefiles'].present?
-      @project_proposal.repo_files.each do |f|
-        next unless params['deletefiles'].include?(f.file.id.to_s)
-        # checks if the file should be deleted
-        f.file.purge
-        f.destroy
+    delete_files = params[:deletefiles] || params.dig(:project_proposal, :deletefiles)
+    if delete_files.present?
+      @project_proposal.project_files.attachments.each do |attachment|
+        if delete_files.include?(attachment.filename.to_s) || delete_files.include?(attachment.id.to_s)
+          attachment.purge
+        end
       end
     end
 
-    return unless params['files'].present?
-    params['files'].each do |f|
-      RepoFile.create(file: f, project_proposal_id: @project_proposal.id)
+    files = params[:files] || params.dig(:project_proposal, :files)
+    return unless files.present?
+
+    files.each do |f|
+      @project_proposal.project_files.attach(f)
     end
   end
 
-  # Use callbacks to share common setup or constraints between actions.
   def set_project_proposal
     @project_proposal = ProjectProposal.find_by(slug: params[:id]) || ProjectProposal.find_by(id: params[:id])
     return if @project_proposal
@@ -424,7 +379,6 @@ class ProjectProposalsController < SessionsController
     redirect_to project_proposals_path, alert: 'Project proposal not found'
   end
 
-  # Never trust parameters from the scary internet, only allow the white list through.
   def project_proposal_params
     permitted = [
       :user_id,
@@ -446,28 +400,26 @@ class ProjectProposalsController < SessionsController
       :prototype_cost,
       :past_experiences,
       :linked_project_proposal_id,
-      { area: [], categories: [], photos: [] }
+      { area: [], categories: [], photos: [], project_files: [] }
     ]
 
-    permitted += %i[season year] if current_user.admin?
+    permitted += %i[season year] if current_user&.admin?
 
     params.require(:project_proposal).permit(permitted)
   end
 
   def create_categories
-    return unless params[:project_proposal]['categories'].present?
-    params[:project_proposal]['categories']
-      .first(5)
-      .each do |c|
-        Category.create(name: c, project_proposal_id: @project_proposal.id)
-      end
+    return unless params.dig(:project_proposal, 'categories').present?
+
+    params[:project_proposal]['categories'].first(5).each do |c|
+      Category.create(name: c, project_proposal_id: @project_proposal.id)
+    end
   end
 
   def project_join_params
     params.permit(:project_proposal_id)
   end
 
-  # TODO: sort_order and photo_hash for everyone
   def sort_order
     case params[:sort]
     when 'newest'

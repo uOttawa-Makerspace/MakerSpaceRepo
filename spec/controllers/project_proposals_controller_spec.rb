@@ -172,8 +172,8 @@ RSpec.describe ProjectProposalsController, type: :controller do
                  ]
                }
         }.to change(ProjectProposal, :count).by(1)
-        expect(RepoFile.count).to eq(1)
-        expect(Photo.count).to eq(1 + 2)
+        expect(ProjectProposal.last.project_files.count).to eq(1)
+        expect(ProjectProposal.last.photos.count).to eq(1)
         expect(flash[:notice]).to eq(
           "Project proposal was successfully created."
         )
@@ -235,9 +235,11 @@ RSpec.describe ProjectProposalsController, type: :controller do
 
       it "should update the project proposal with photos and files" do
         pp = create(:project_proposal, :with_repo_files)
+        pp.reload
+
         patch :update,
               params: {
-                id: ProjectProposal.last.id,
+                id: pp.id,
                 project_proposal: {
                   files: [
                     Rack::Test::UploadedFile.new(
@@ -251,18 +253,18 @@ RSpec.describe ProjectProposalsController, type: :controller do
                       "image/png"
                     )
                   ],
-                  deleteimages: [pp.photos.take.image.filename.to_s],
-                  deletefiles: [pp.repo_files.take.file.id.to_s]
-                },
+                  deleteimages: [pp.photos.first.filename.to_s],
+                  deletefiles: [pp.project_files.first.filename.to_s]
+                }
               }
-        expect(pp.photos.count).to eq(1)
-        expect(pp.repo_files.count).to eq(1)
+
+        pp.reload
+        expect(pp.photos.attachments.count).to eq(1)
+        expect(pp.project_files.attachments.count).to eq(1)
         expect(flash[:notice]).to eq(
           "Project proposal was successfully updated."
         )
-        expect(response).to redirect_to project_proposal_path(
-                      ProjectProposal.last.slug
-                    )
+        expect(response).to redirect_to project_proposal_path(pp.slug)
       end
     end
   end
