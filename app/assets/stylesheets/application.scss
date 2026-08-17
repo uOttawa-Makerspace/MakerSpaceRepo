@@ -59,7 +59,6 @@ $utilities: (
 @import "font-awesome";
 
 html {
-  font-size: 90%;
   min-height: 100%;
 }
 
@@ -177,6 +176,14 @@ div.ts-dropdown,
 div.ts-control,
 div.ts-control input {
   color: unset;
+}
+
+// Tomselect applies display flex to the selected items. Remove it from span
+// items as we'd assume those are to stack vertically instead. Added for the
+// project proposal link dropdown in repositories. This doesn't seem to interfer
+// with the remove_button plugin
+div.ts-control span.item {
+  display: unset;
 }
 
 // Add the triangle between the menu and the dropdown button
