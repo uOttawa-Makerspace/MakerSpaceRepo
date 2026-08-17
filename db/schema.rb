@@ -1036,6 +1036,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_17_023620) do
     t.integer "project_cost"
     t.string "project_type"
     t.integer "prototype_cost"
+    t.integer "season"
+    t.integer "year"
     t.string "slug"
     t.string "supervisor_background"
     t.string "title"
