@@ -210,9 +210,6 @@ class User < ApplicationRecord
             presence: true,
             inclusion: { in: IDENTITIES }
 
-  # SECURITY FIX: Proper regex anchoring for student_id
-  # Old: /[0-9]/ - only checked for presence of ANY digit
-  # New: /\A[0-9]{9}\z/ - ensures EXACTLY 9 digits, nothing else
   validates :student_id,
             format: {
               with: /\A[0-9]{7,12}\z/,
@@ -275,8 +272,7 @@ class User < ApplicationRecord
 
   scope :staff_or_teams_program, -> {
     left_outer_joins(:programs)
-      .where(role: %w[admin staff])
-      .or(where(programs: { program_type: Program::TEAMS }))
+      .where("users.role IN (?) OR programs.program_type = ?", %w[admin staff], Program::TEAMS)
       .distinct
   }
   

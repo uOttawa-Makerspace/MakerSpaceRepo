@@ -1,29 +1,28 @@
 <div class="table-responsive">
-  <table class="table m-0 sessions-table" data-datatable>
-    <thead class="table-primary">
+  <table class="table table-striped table-hover align-middle">
+    <thead>
       <tr>
-        <th>Key Number</th>
-        <th>Key Type</th>
+        <th>Key #</th>
+        <th>Type</th>
         <th>Keycode</th>
         <th>Space</th>
-        <th>User</th>
+        <th>Assigned To</th>
         <th>Supervisor</th>
         <th>Email</th>
         <% if show_status %>
           <th>Status</th>
         <% end %>
-        <th>Certifications</th>
+        <th>Certifications / Request</th>
         <th>Actions</th>
       </tr>
     </thead>
-
     <tbody>
-      <% keys.each do |key| %>
+      <% @keys.each do |key| %>
         <tr>
           <td><%= key.number %></td>
           <td><%= key.key_type.humanize.capitalize %></td>
           <td><%= key.get_keycode %></td>
-          <td><%= key.key_type_regular? ? key.space.name : 'N/A' %></td>
+          <td><%= key.key_type_regular? ? key.space&.name : 'N/A' %></td>
           <td>
             <% if key.holder.is_a?(User) %>
               <%= link_to key.holder.name, user_path(key.holder.username), target: '_blank', rel: 'noopener' %>
@@ -38,29 +37,19 @@
           </td>
           <td><%= key.assignee_email %></td>
           <% if show_status %>
-            <td>
-              <%= key.status.humanize.capitalize %>
-              <% unless key.additional_info.blank? %>
-                - <%= sanitize(key.additional_info.truncate(30)) %>
-              <% end %>
-            </td>
+            <td><%= key.status.humanize.capitalize %></td>
           <% end %>
           <td>
             <% if key.holder.is_a?(User) %>
-              <% if !key.key_request.nil? && !key.key_request.user.key_certification.nil? %>
+              <% if key.key_request.present? && key.key_request.user.key_certification.present? %>
                 <%= key.key_request.user.key_certification.get_key_certs_attached %>/<%= KeyCertification::NUMBER_OF_STAFF_FILES %> (staff)<br>
-                <%= key.key_request.user.key_certification.get_supervisor_certs_attached %>/<%= KeyCertification::NUMBER_OF_SUPERVISOR_FILES %> (supervisor)
+                <%= key.key_request.user.key_certification.get_supervisor_certs_attached %>/<%= KeyCertification::NUMBER_OF_SUPERVISOR_FILES %> (supervisor)<br>
               <% else %>
                 0/<%= KeyCertification::NUMBER_OF_STAFF_FILES %> (staff)<br>
-                0/<%= KeyCertification::NUMBER_OF_SUPERVISOR_FILES %> (supervisor)
+                0/<%= KeyCertification::NUMBER_OF_SUPERVISOR_FILES %> (supervisor)<br>
               <% end %>
-              <% if key.key_request.present? %>
-                <% if key.key_request.status_approved? %>
-                  1/1 (form)
-                <% else %>
-                  <span class="fw-bold text-danger">0/1 (form)</span>
-                  <%= link_to 'pending', key_request_path(key.key_request) %>
-                <% end %>
+              <% if key.key_request.present? && key.key_request.status_approved? %>
+                1/1 (form)
               <% else %>
                 0/1 (form)
               <% end %>
@@ -71,8 +60,8 @@
           <td>
             <%= link_to 'Show', admin_key_path(key.id), class: 'w-100 py-1 mb-1 btn btn-secondary' %>
             <%= link_to 'Edit', edit_admin_key_path(key.id), class: 'w-100 py-1 mb-1 btn btn-primary' %>
-            <%= link_to 'Revoke', admin_key_revoke_key_path(key.id), class: 'w-100 py-1 mb-1 btn btn-warning', method: :patch if key.status_held? %>
-            <%= link_to 'Assign', admin_key_assign_path(key.id), class: 'w-100 py-1 mb-1 btn btn-success' if key.status_inventory? %>
+            <%= link_to 'Revoke', revoke_key_admin_key_path(key.id), class: 'w-100 py-1 mb-1 btn btn-warning', method: :patch if key.status_held? %>
+            <%= link_to 'Assign', assign_admin_key_path(key.id), class: 'w-100 py-1 mb-1 btn btn-success' if key.status_inventory? %>
             <%= button_to 'Delete', admin_key_path(key.id), method: :delete, class: 'w-100 py-1 btn btn-danger', data: { confirm: 'Are you sure you want to delete this key?' } %>
           </td>
         </tr>

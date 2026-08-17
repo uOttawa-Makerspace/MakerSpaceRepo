@@ -131,7 +131,7 @@ RSpec.describe Admin::KeysController, type: :controller do
     end
 
     it "should include staff and Teams Program users in the assignment list" do
-      get :assign, params: { key_id: @key.id }
+      get :assign, params: { id: @key.id }
 
       staff_options = @controller.instance_variable_get(:@staff_options)
       option_ids = staff_options.map { |_, id| id }
@@ -242,7 +242,7 @@ RSpec.describe Admin::KeysController, type: :controller do
     end
   end
 
-  describe "assign_key" do
+  describe "assign_key with internal users" do
     before(:each) do
       @admin = create(:user, :admin)
       session[:user_id] = @admin.id
@@ -275,8 +275,9 @@ RSpec.describe Admin::KeysController, type: :controller do
         patch :assign_key,
               params: {
                 key_id: key.id,
+                assignment_type: "internal",
                 key: {
-                  user_id: @key_request.user.id,
+                  user_id: @staff.id,
                   supervisor_id: @admin.id
                 },
                 deposit_amount: 20
@@ -284,12 +285,12 @@ RSpec.describe Admin::KeysController, type: :controller do
 
         expect(flash[:notice]).to eq("Successfully assigned key")
         expect(KeyTransaction.last.deposit_amount).to eq(20)
-        expect(KeyTransaction.last.user_id).to eq(@staff.id)
+        expect(KeyTransaction.last.holder).to eq(@staff)
         expect(KeyTransaction.last.key_id).to eq(key.id)
-        expect(Key.last.status).to eq("held")
+        expect(key.reload.status).to eq("held")
       end
 
-      it "should assign a key to staff even with no form completed" do
+      it "should assign a key to team program member" do
         key =
           create(
             :key,
@@ -300,6 +301,7 @@ RSpec.describe Admin::KeysController, type: :controller do
         patch :assign_key,
               params: {
                 key_id: key.id,
+                assignment_type: "internal",
                 key: {
                   user_id: @team_user.id,
                   supervisor_id: @admin.id
@@ -309,9 +311,9 @@ RSpec.describe Admin::KeysController, type: :controller do
 
         expect(flash[:notice]).to eq("Successfully assigned key")
         expect(KeyTransaction.last.deposit_amount).to eq(20)
-        expect(KeyTransaction.last.user_id).to eq(@team_user.id)
+        expect(KeyTransaction.last.holder).to eq(@team_user)
         expect(KeyTransaction.last.key_id).to eq(key.id)
-        expect(Key.last.status).to eq("held")
+        expect(key.reload.status).to eq("held")
       end
 
       it "should not assign a key not in inventory" do
@@ -321,6 +323,7 @@ RSpec.describe Admin::KeysController, type: :controller do
         patch :assign_key,
               params: {
                 key_id: key.id,
+                assignment_type: "internal",
                 key: {
                   user_id: @key_request.user.id,
                   supervisor_id: @admin.id
@@ -367,6 +370,7 @@ RSpec.describe Admin::KeysController, type: :controller do
         patch :assign_key,
               params: {
                 key_id: key.id,
+                assignment_type: "internal",
                 key: {
                   user_id: @key_request.user.id,
                   supervisor_id: @admin.id
@@ -377,11 +381,11 @@ RSpec.describe Admin::KeysController, type: :controller do
         patch :revoke_key,
               params: {
                 key_id: key.id,
-                deposit_return_date: Time.zone.now
+                deposit_return_date: Time.zone.today
               }
 
         expect(flash[:notice]).to eq("Successfully revoked key")
-        expect(Key.last.status).to eq("inventory")
+        expect(key.reload.status).to eq("inventory")
         expect(KeyTransaction.last.deposit_return_date).not_to eq(nil)
       end
 
@@ -396,6 +400,7 @@ RSpec.describe Admin::KeysController, type: :controller do
         patch :assign_key,
               params: {
                 key_id: key.id,
+                assignment_type: "internal",
                 key: {
                   user_id: @key_request.user.id,
                   supervisor_id: @admin.id
@@ -409,7 +414,7 @@ RSpec.describe Admin::KeysController, type: :controller do
               }
 
         expect(flash[:notice]).to eq("Successfully revoked key")
-        expect(Key.last.status).to eq("inventory")
+        expect(key.reload.status).to eq("inventory")
         expect(KeyTransaction.last.deposit_return_date).not_to eq(nil)
       end
 
@@ -424,7 +429,7 @@ RSpec.describe Admin::KeysController, type: :controller do
         patch :revoke_key,
               params: {
                 key_id: key.id,
-                deposit_return_date: Time.zone.now
+                deposit_return_date: Time.zone.today
               }
 
         expect(flash[:alert]).to eq(
@@ -639,7 +644,7 @@ RSpec.describe Admin::KeysController, type: :controller do
                 first_name: "Jane",
                 last_name: "Doe",
                 email: "jane.doe@example.com",
-                phone: 'INVALID-PHONE-!#$' # Contains ! and $ to trigger regex failure
+                phone: 'INVALID-PHONE-!#$'
               },
               deposit_amount: 10
             }

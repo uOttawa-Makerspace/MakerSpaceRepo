@@ -54,23 +54,26 @@ class Admin::KeysController < AdminAreaController
   end
 
   def assign
-    @admin_options =
-      User.where(role: "admin").order("LOWER(name) ASC").pluck(:name, :id)
+    @admin_options = User.where(role: "admin").order("LOWER(name) ASC").pluck(:name, :id)
 
     @staff_options =
       User
         .staff_or_teams_program
         .includes(:key_request)
-        .select("users.*, LOWER(users.name) AS lower_name")
-        .order("lower_name ASC")
+        .order("LOWER(users.name) ASC")
         .map do |user|
-          label = ""
-          if user.key_request.blank?
-            label = " (No request form)"
-          elsif user.key_request.status_waiting_for_approval?
-            label = " (Request form awaiting approval)"
-          end
-          ["#{user.name} #{label}", user.id]
+          label = if user.key_request.blank?
+                    " (No request form)"
+                  elsif user.key_request.status_approved?
+                    " (Approved)"
+                  elsif user.key_request.status_waiting_for_approval?
+                    " (Request form awaiting approval)"
+                  elsif user.key_request.status_in_progress?
+                    " (In progress)"
+                  else
+                    " (#{user.key_request.status.humanize})"
+                  end
+          ["#{user.name}#{label}", user.id]
         end
   end
 
@@ -86,7 +89,7 @@ class Admin::KeysController < AdminAreaController
     end
 
     ActiveRecord::Base.transaction do
-      @key.update!(key_params.merge(holder: holder, status: :held))
+      @key.update!(key_params.except(:user_id).merge(holder: holder, status: :held))
       KeyTransaction.create!(holder: holder, key_id: @key.id, deposit_amount: params[:deposit_amount])
     end
 
@@ -96,14 +99,14 @@ class Admin::KeysController < AdminAreaController
   end
 
   def revoke_key
-    if @key.status_held? && @key.get_latest_key_transaction.present? &&
+    latest_transaction = @key.get_latest_key_transaction
+    if @key.status_held? && latest_transaction.present? &&
          @key.update(holder: nil, status: :inventory) &&
-         @key.get_latest_key_transaction.update(
-           return_date: Date.today,
-           # Set deposit return date to today if deposit is zero
+         latest_transaction.update(
+           return_date: Time.zone.today,
            deposit_return_date:
-             params[:deposit_return_date]&.to_date ||
-               (Date.today if @key.get_latest_key_transaction.deposit_amount.zero?)
+             params[:deposit_return_date].presence&.to_date ||
+               (Time.zone.today if latest_transaction.deposit_amount.to_f.zero?)
          )
       redirect_to admin_keys_path, notice: "Successfully revoked key"
     else
@@ -131,20 +134,26 @@ class Admin::KeysController < AdminAreaController
     end
   end
 
+  def history
+  end
+
   private
 
   def resolve_holder
     if params[:assignment_type] == 'external'
-      ext = params.fetch(:external_contact, {}).permit(:first_name, :last_name, :email, :phone)
+      ext_params = params[:external_contact]
+      return nil unless ext_params.respond_to?(:permit) || ext_params.is_a?(Hash)
+
+      ext = ext_params.is_a?(ActionController::Parameters) ? ext_params.permit(:first_name, :last_name, :email, :phone) : ActionController::Parameters.new(ext_params).permit(:first_name, :last_name, :email, :phone)
       return nil if ext[:email].blank? || ext[:first_name].blank? || ext[:last_name].blank?
 
       contact = ExternalContact.find_or_create_by_details(**ext.to_h.symbolize_keys)
-      return contact if contact.persisted?
+      return contact if contact&.persisted?
 
-      @holder_errors = contact.errors.full_messages
+      @holder_errors = contact&.errors&.full_messages
       nil
     else
-      User.find_by(id: params.dig(:key, :user_id))
+      User.find_by(id: params.dig(:key, :user_id).presence || params[:user_id].presence)
     end
   end
 
@@ -152,6 +161,7 @@ class Admin::KeysController < AdminAreaController
     params.require(:key).permit(
       :number,
       :space_id,
+      :user_id,
       :supervisor_id,
       :status,
       :key_type,
@@ -161,14 +171,14 @@ class Admin::KeysController < AdminAreaController
   end
 
   def set_key
-    key_id = params[:id].present? ? params[:id] : params[:key_id]
+    key_id = params[:id].presence || params[:key_id].presence
     @key = Key.find_by(id: key_id)
 
     redirect_to admin_keys_path, alert: "The key id was not found." if @key.nil?
   end
 
   def set_key_request
-    @key_request = KeyRequest.find_by(id: params[:id])
+    @key_request = KeyRequest.find_by(id: params[:id].presence || params[:key_request_id].presence)
 
     if @key_request.nil?
       redirect_to admin_keys_path, alert: "The key request id was not found."

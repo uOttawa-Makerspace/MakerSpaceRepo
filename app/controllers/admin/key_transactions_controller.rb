@@ -5,8 +5,14 @@ class Admin::KeyTransactionsController < AdminAreaController
     @key_transactions = KeyTransaction.includes(:holder, key: :supervisor).order(created_at: :desc)
   end
 
+  def show
+  end
+
+  def edit
+  end
+
   def update
-    if !params[:key_transaction][:deposit_return_date].empty? &&
+    if params[:key_transaction][:deposit_return_date].present? &&
          @key_transaction.update(key_transaction_params)
       redirect_to admin_key_transactions_path, notice: "Successfully updated deposit information"
     else

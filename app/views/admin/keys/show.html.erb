@@ -3,7 +3,7 @@
 
   <div class="mb-5 d-flex flex-row align-items-center justify-content-center gap-3 d-print-none">
     <%= link_to 'View Certifications', key_certification_path(@key.key_request.user.key_certification.id), class: 'btn btn-primary' unless @key.key_request.nil? || @key.key_request.user.key_certification.nil? %>
-    <%= link_to 'View Key Transactions', admin_key_history_path(key_id: @key.id), class: 'btn btn-primary' %>
+    <%= link_to 'View Key Transactions', history_admin_key_path(@key.id), class: 'btn btn-primary' %>
     <%= button_tag 'Print Page', id: 'print-button', class: 'btn btn-primary' %>
   </div>
 
@@ -12,7 +12,7 @@
     <h6><span class="fw-bold">Key Type:</span> <%= @key.key_type.humanize.capitalize %></h6>
     <h6><span class="fw-bold">Key Number:</span> <%= @key.number %></h6>
     <h6><span class="fw-bold">Keycode:</span> <%= @key.get_keycode %></h6>
-    <h6><span class="fw-bold">Space:</span> <%= @key.key_type_regular? ? @key.space.name : 'N/A' %></h6>
+    <h6><span class="fw-bold">Space:</span> <%= @key.key_type_regular? ? @key.space&.name : 'N/A' %></h6>
     <h6>
       <span class="fw-bold">User:</span>
       <% if @key.holder.is_a?(User) %>

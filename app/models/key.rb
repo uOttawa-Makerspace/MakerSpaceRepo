@@ -1,32 +1,33 @@
 class Key < ApplicationRecord
+  belongs_to :user, class_name: "User", optional: true
   belongs_to :holder, polymorphic: true, optional: true
   belongs_to :supervisor, class_name: "User", optional: true
   belongs_to :space, optional: true
   has_many :key_transactions, dependent: :destroy
 
+  enum :status,
+       %i[unknown inventory held lost broken unrecoverable],
+       prefix: true
+  enum :key_type, %i[regular sub_master keycard], prefix: true
+
   def user
-    holder if holder_type == 'User'
+    holder if holder_type == "User"
   end
 
   def user_id
-    holder_id if holder_type == 'User'
+    holder_id if holder_type == "User"
   end
 
   def user_id=(id)
     self.holder = id.present? ? User.find_by(id: id) : nil
   end
 
-  enum :status, %i[unknown inventory held lost broken unrecoverable], prefix: true
-  enum :key_type, %i[regular sub_master keycard], prefix: true
-
   validates :holder,
             presence: { message: "A holder is required if the key is held" },
             if: :status_held?
-
   validates :supervisor,
             presence: { message: "A supervisor is required if the key is held" },
             if: :status_held?
-
   validates :space,
             presence: { message: "A space is required" },
             if: :key_type_regular?
@@ -58,11 +59,11 @@ class Key < ApplicationRecord
   end
 
   def get_keycode
-    key_type_regular? ? space.keycode : custom_keycode
+    key_type_regular? ? space&.keycode : custom_keycode
   end
 
   def assignee_name
-    holder&.name || 'Unassigned'
+    holder&.name || "Unassigned"
   end
 
   def assignee_email

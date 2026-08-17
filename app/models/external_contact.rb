@@ -4,11 +4,11 @@ class ExternalContact < ApplicationRecord
 
   scope :active, -> { where(deleted: false) }
 
-  normalizes :email, with: ->(email) { email.strip.downcase }
-  normalizes :first_name, :last_name, with: ->(name) { name.strip }
+  normalizes :email, with: ->(email) { email&.strip&.downcase }
+  normalizes :first_name, :last_name, with: ->(name) { name&.strip }
 
   validates :first_name, :last_name, presence: true
-  validates :email, presence: true, uniqueness: true
+  validates :email, presence: true, uniqueness: { case_sensitive: false }
   validates :phone, format: { with: /\A[\d\-\+\(\)\s]*\z/ }, allow_blank: true
 
   def name
@@ -27,20 +27,19 @@ class ExternalContact < ApplicationRecord
   def self.find_or_create_by_details(first_name:, last_name:, email:, phone: nil)
     normalized = email.to_s.strip.downcase
     attempts = 0
-
     begin
       # Use unscoped so we can find and restore soft-deleted contacts if they return
       contact = unscoped.find_or_initialize_by(email: normalized)
-      contact.first_name = first_name
-      contact.last_name  = last_name
-      contact.phone      = phone if phone.present?
-      contact.deleted    = false # Restore if they were soft-deleted
-      contact.save!
+      contact.first_name = first_name.to_s.strip
+      contact.last_name  = last_name.to_s.strip
+      contact.phone      = phone.presence
+      contact.deleted    = false
+      contact.save
       contact
     rescue ActiveRecord::RecordNotUnique
       attempts += 1
       retry if attempts <= 2
-      unscoped.find_by!(email: normalized)
+      unscoped.find_by(email: normalized)
     end
   end
 end

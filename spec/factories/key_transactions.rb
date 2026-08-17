@@ -1,13 +1,15 @@
 FactoryBot.define do
   factory :key_transaction do
+    association :holder, factory: :user
+    association :key
     deposit_amount { Faker::Number.number(digits: 2) }
 
     trait :returned do
-      return_date { Date.today }
+      return_date { Time.zone.today }
     end
 
     trait :deposit_returned do
-      deposit_return_date { Date.today }
+      deposit_return_date { Time.zone.today }
     end
   end
 end

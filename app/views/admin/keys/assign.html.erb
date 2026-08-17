@@ -1,15 +1,14 @@
 <div data-controller="holder-toggle">
   <h2 class="mb-3 fw-bold py-3 text-center">Assign Key #<%= @key.number %></h2>
+  <p class="fs-4 text-center"><%= @key.get_keycode %> - <%= @key.key_type.humanize %></p>
 
-  <%= form_with(url: admin_key_assign_key_path(@key.id), method: :patch, local: true) do |f| %>
+  <%= form_with(url: assign_key_admin_key_path(@key.id), method: :patch, local: true) do |f| %>
     <div class="row">
       <div class="col-xl-6 offset-xl-3 col-lg-8 offset-lg-2 col-md-10 offset-md-1 col-12">
-
         <div class="mb-4 text-center">
           <div class="btn-group" role="group" aria-label="Assignment Type">
             <input type="radio" class="btn-check" name="assignment_type" id="type_internal" value="internal" checked data-action="change->holder-toggle#toggle">
             <label class="btn btn-outline-primary" for="type_internal">Registered User</label>
-
             <input type="radio" class="btn-check" name="assignment_type" id="type_external" value="external" data-action="change->holder-toggle#toggle">
             <label class="btn btn-outline-primary" for="type_external">External Person</label>
           </div>
@@ -17,7 +16,7 @@
 
         <div data-holder-toggle-target="internal" class="mb-3">
           <%= f.label "key[user_id]", "Select Staff or Team Member", class: 'form-label' %>
-          <%= f.select "key[user_id]", @staff_options, { include_blank: 'Choose user...' }, { class: 'form-control form-select', required: true } %>
+          <%= f.select "key[user_id]", options_for_select(@staff_options), { include_blank: 'Choose user...' }, { class: 'form-control form-select', required: true } %>
         </div>
 
         <div data-holder-toggle-target="external" class="mb-3 d-none">
@@ -43,18 +42,17 @@
 
         <div class="mb-3">
           <%= f.label "key[supervisor_id]", "Supervisor", class: 'form-label' %>
-          <%= f.select "key[supervisor_id]", @admin_options, { prompt: 'Choose Supervisor...' }, { class: 'form-control form-select', required: true } %>
+          <%= f.select "key[supervisor_id]", options_for_select(@admin_options, selected: @user&.id), { prompt: 'Choose Supervisor...' }, { class: 'form-control form-select', required: true } %>
         </div>
 
         <div class="mb-4">
           <label class="form-label">Deposit Amount ($)</label>
-          <%= number_field_tag :deposit_amount, 0, class: 'form-control', min: 0, required: true %>
+          <%= number_field_tag :deposit_amount, 0, class: 'form-control', min: 0, max: 999.99, step: 0.01, required: true %>
         </div>
 
         <div class="text-center">
           <%= f.submit 'Assign Key', class: 'btn btn-success px-4' %>
         </div>
-
       </div>
     </div>
   <% end %>
