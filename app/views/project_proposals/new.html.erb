@@ -196,7 +196,7 @@
                 <div class="mb-3">
                     <%= f.label :categories, t('project_proposal.new.categories'), class: 'form-label mb-0' %>
                     <div class="form-text"><%= t('project_proposal.new.categories_sub') %></div>
-                    <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :name, :name), { include_blank: t('project_proposal.new.category_placeholder'), include_hidden: false }, { class: 'profile-text form-control form-select', multiple: true } %>
+                    <%= f.select :categories, options_from_collection_for_select(CategoryOption.show_options, :name, :name), { include_blank: t('project_proposal.new.categories_placeholder'), include_hidden: false }, { class: 'profile-text form-control form-select', multiple: true } %>
 
                 </div>
 

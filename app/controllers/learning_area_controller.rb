@@ -69,8 +69,13 @@ class LearningAreaController < DevelopmentProgramsController
       redirect_to learning_area_path(@learning_module.id),
                   notice: 'Learning module successfully updated.'
     else
-      flash.now[:alert] = 'Unable to apply the changes.'
-      render :edit, status: :unprocessable_entity
+      flash[:alert] = "Unable to apply the changes."
+      @training_categories = Training.all.order(:name).pluck(:name, :id)
+      @training_levels ||= TrainingSession.return_levels
+      @files = @learning_module.project_files_attachments.order(created_at: :asc)
+      @photos = @learning_module.photos || []
+      @videos = @learning_module.videos_attachments.order(created_at: :asc)
+      render "edit", status: :unprocessable_content
     end
   end
 

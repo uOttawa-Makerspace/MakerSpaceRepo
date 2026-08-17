@@ -1,5 +1,7 @@
 FactoryBot.define do
   factory :printer_session do
+    association :user, factory: [:user, :regular_user]
+    
     trait :um2p_session do
       association :user, :regular_user
       association :printer, :UM2P_02
