@@ -1,7 +1,7 @@
 class LockerSizesController < AdminAreaController
   def create
     LockerSize.create(locker_size_params)
-    redirect_to lockers_path
+    redirect_to lockers_path(anchor: 'productVariants')
   end
 
   def update

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 source "https://rubygems.org"
-ruby "4.0.2"
+ruby "4.0.5"
 gem "rails", "~> 8.1"
 
 # no longer standard since 3.4
@@ -16,12 +16,14 @@ gem "bcrypt", "~> 3.1"
 gem "caxlsx", "~> 4.0"
 gem "chartkick"
 gem "clipboard-rails"
-gem "concurrent-ruby", "~> 1.1", ">= 1.1.6"
+gem "concurrent-ruby", "~> 1.3", ">= 1.3.7"
 gem "excon"
 gem 'fastimage', '~> 2.4'
 gem "file_validators"
 gem "font-awesome-rails", "~> 4.7.0.9"
-gem "google-api-client", "~> 0.53.0", require: ["google/apis/calendar_v3"]
+gem "google-apis-calendar_v3"
+gem "mini_magick", "~> 5.0" 
+gem "multi_json"
 gem "googleauth"
 gem "graphlient"
 gem "groupdate"
@@ -68,7 +70,7 @@ gem "solid_queue", "~> 1.2"
 gem "solid_cable"
 gem "mission_control-jobs"
 
-gem "puma", '~> 7.1'
+gem 'puma', '~> 7.2.1'
 gem 'redcarpet'
 
 group :development, :test do

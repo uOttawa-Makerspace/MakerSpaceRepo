@@ -1,12 +1,13 @@
-# v2026.05.20-012516 (2026-05-20)
+# v2026.08.02-231044 (2026-08-02)
 
 #changelog
 
 ## 📦 Other Changes
 
-- added renew button for lockers (#1936) by @UnknownCrafts
-- Staging (#1937) by @UnknownCrafts
+- bump gems (#1946) by @UnknownCrafts
+- Add/Powerbi_Admin_Area (#1948) by @UnknownCrafts
+- Staging (#1947) by @UnknownCrafts
 
 
 
-**Full Changelog**: https://github.com/uOttawa-Makerspace/MakerSpaceRepo/compare/v2026.05.17-194835...v2026.05.20-012516
+**Full Changelog**: https://github.com/uOttawa-Makerspace/MakerSpaceRepo/compare/v2026.07.06-032743...v2026.08.02-231044
