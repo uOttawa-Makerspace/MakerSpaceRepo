@@ -1,23 +1,14 @@
-/* Makerepo file upload utility.
- *
- * Features:
- *   - Preview pane with editable file list
- *   - Drag-and-drop file upload via drop zones
- *   - Drag-and-drop reordering of gallery images (SortableJS)
- *   - Position tracking for server-side ordering
- */
-
 import Sortable from "sortablejs";
 
-// ── Unique index counter ───────────────────────────────────────────────
+//  Unique index counter
 let counter = Date.now();
 function getNextCounter() {
   return counter++;
 }
 
-// ────────────────────────────────────────────────────────────────────────
+//
 // POSITION TRACKING
-// ────────────────────────────────────────────────────────────────────────
+//
 function updatePositions(container) {
   container
     .querySelectorAll(".file-upload-item-preview:not([hidden])")
@@ -27,9 +18,9 @@ function updatePositions(container) {
     });
 }
 
-// ────────────────────────────────────────────────────────────────────────
+//
 // FILE TYPE CHECK
-// ────────────────────────────────────────────────────────────────────────
+//
 function isFileAccepted(file, accept) {
   if (!accept) return true;
   return accept
@@ -43,16 +34,16 @@ function isFileAccepted(file, accept) {
     });
 }
 
-// ────────────────────────────────────────────────────────────────────────
+//
 // BUILD A SINGLE PREVIEW ITEM
-// ────────────────────────────────────────────────────────────────────────
+//
 function appendFileToPreview(file, previewContainer, fieldPrefix, fieldSuffix) {
   const isSortable = previewContainer.hasAttribute("data-file-upload-sortable");
 
   const preview = document.createElement("div");
   preview.classList.add("file-upload-item-preview");
 
-  // ── Drag handle (sortable containers only) ──
+  //  Drag handle (sortable containers only)
   if (isSortable) {
     const handle = document.createElement("span");
     handle.classList.add("file-upload-drag-handle");
@@ -61,7 +52,7 @@ function appendFileToPreview(file, previewContainer, fieldPrefix, fieldSuffix) {
     preview.appendChild(handle);
   }
 
-  // ── Thumbnail ──
+  //  Thumbnail
   const img = document.createElement("img");
   const objectURL = URL.createObjectURL(file);
   img.addEventListener("error", (e) => {
@@ -74,13 +65,13 @@ function appendFileToPreview(file, previewContainer, fieldPrefix, fieldSuffix) {
   img.src = objectURL;
   preview.appendChild(img);
 
-  // ── Filename ──
+  //  Filename
   const nameSpan = document.createElement("span");
   nameSpan.textContent = file.name;
   nameSpan.title = file.name;
   preview.appendChild(nameSpan);
 
-  // ── Hidden <input type="file"> carrying the actual blob ──
+  //  Hidden <input type="file"> carrying the actual blob
   const itemIndex = getNextCounter();
   const fileInput = document.createElement("input");
   fileInput.type = "file";
@@ -88,12 +79,18 @@ function appendFileToPreview(file, previewContainer, fieldPrefix, fieldSuffix) {
   const dt = new DataTransfer();
   dt.items.add(file);
   fileInput.files = dt.files;
-  fileInput.name = `${fieldPrefix}[${itemIndex}]`;
-  if (fieldSuffix) fileInput.name += `[${fieldSuffix}]`;
+  // Sometimes uploads are sent to a separate model (old paperclip), sometimes
+  // they're attached via has_many_attached (activestore). This allows us to
+  // have both.
+  if (fieldSuffix) {
+    fileInput.name = `${fieldPrefix}[${itemIndex}][${fieldSuffix}]`;
+  } else {
+    fileInput.name = `${fieldPrefix}[]`;
+  }
   preview.appendChild(fileInput);
 
-  // ── Position hidden input (sortable containers only) ──
-  if (isSortable) {
+  //  Position hidden input (sortable containers only)
+  if (isSortable && fieldSuffix) {
     const posInput = document.createElement("input");
     posInput.type = "hidden";
     posInput.name = `${fieldPrefix}[${itemIndex}][position]`;
@@ -102,7 +99,7 @@ function appendFileToPreview(file, previewContainer, fieldPrefix, fieldSuffix) {
     preview.appendChild(posInput);
   }
 
-  // ── Delete button ──
+  //  Delete button
   const deleteBtn = document.createElement("button");
   deleteBtn.textContent = "Delete";
   deleteBtn.type = "button";
@@ -118,9 +115,9 @@ function appendFileToPreview(file, previewContainer, fieldPrefix, fieldSuffix) {
   if (isSortable) updatePositions(previewContainer);
 }
 
-// ────────────────────────────────────────────────────────────────────────
+//
 // FILE INPUT change HANDLER
-// ────────────────────────────────────────────────────────────────────────
+//
 function onFileUpload(evt) {
   const input = evt.currentTarget;
   const previewContainer = document.querySelector(
@@ -145,9 +142,9 @@ function onFileUpload(evt) {
   input.value = null;
 }
 
-// ────────────────────────────────────────────────────────────────────────
+//
 // SORTABLE (SortableJS)
-// ────────────────────────────────────────────────────────────────────────
+//
 function setupSortable(container) {
   // Add drag handles to any pre-existing server-rendered items
   container.querySelectorAll(".file-upload-item-preview").forEach((item) => {
@@ -172,9 +169,9 @@ function setupSortable(container) {
   });
 }
 
-// ────────────────────────────────────────────────────────────────────────
+//
 // DROP ZONE
-// ────────────────────────────────────────────────────────────────────────
+//
 function setupDropZone(dropZone, fileInput) {
   const previewContainer = document.querySelector(
     fileInput.dataset.fileUploadPreviewSelector,
@@ -230,14 +227,18 @@ function setupDropZone(dropZone, fileInput) {
   });
 }
 
-// ────────────────────────────────────────────────────────────────────────
+//
 // BOOTSTRAP
-// ────────────────────────────────────────────────────────────────────────
+//
 function createFileInput(target) {
   if (target.dataset.fileUploadInitialized) return;
   target.dataset.fileUploadInitialized = "true";
 
-  target.dataset.fileUploadPrefix = target.name;
+  if (!target.dataset.fileUploadPrefix) {
+    throw new Error(
+      "file_upload: data-file-upload-prefix is required on " + target.name,
+    );
+  }
   target.removeAttribute("name");
   target.addEventListener("change", onFileUpload);
 
@@ -251,7 +252,7 @@ function createFileInput(target) {
     );
   }
 
-  // ── Pre-existing items: hook up delete buttons ──
+  //  Pre-existing items: hook up delete buttons
   preview.querySelectorAll(".file-upload-item-preview").forEach((box) => {
     const deleteBtn = box.querySelector("[data-file-upload-item-delete]");
     const destroyInput = box.querySelector("[data-file-upload-hidden-destroy]");
@@ -266,22 +267,22 @@ function createFileInput(target) {
     }
   });
 
-  // ── Sortable reordering (gallery images) ──
+  //  Sortable reordering (gallery images)
   if (preview.hasAttribute("data-file-upload-sortable")) {
     setupSortable(preview);
     updatePositions(preview);
   }
 
-  // ── Drop zone ──
+  //  Drop zone
   const dropZone = target.closest(".file-upload-drop-zone");
   if (dropZone) {
     setupDropZone(dropZone, target);
   }
 }
 
-// ────────────────────────────────────────────────────────────────────────
+//
 // ENTRY POINT
-// ────────────────────────────────────────────────────────────────────────
+//
 function init() {
   document
     .querySelectorAll("input[type=file][data-file-upload-helper]")
