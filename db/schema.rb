@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_05_234020) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_17_023620) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -1044,6 +1044,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_05_234020) do
     t.string "username"
     t.string "youtube_link"
     t.index ["linked_project_proposal_id"], name: "index_project_proposals_on_linked_project_proposal_id"
+    t.index ["year", "season"], name: "index_project_proposals_on_year_and_season"
   end
 
   create_table "project_requirements", id: :serial, force: :cascade do |t|
