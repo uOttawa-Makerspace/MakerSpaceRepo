@@ -13,9 +13,10 @@ class ProjectProposal < ApplicationRecord
              class_name: 'ProjectProposal',
              foreign_key: 'linked_project_proposal_id',
              optional: true
-  
-  has_many_attached :photos
-  has_many_attached :project_files
+
+  has_many :photos, dependent: :destroy
+  has_many :repo_files, dependent: :destroy
+  has_many :project_files, class_name: 'RepoFile', dependent: :destroy
 
   enum :approved, { not_approved: 0, approved: 1 }
   enum :season, { fall: 0, summer: 1, winter: 2 }
@@ -110,14 +111,12 @@ class ProjectProposal < ApplicationRecord
     !self.user_id.nil?
   end
 
-  # FIXME make this an enum
   def approval_status
-    case self.approved
-    when 0
-      'No'
-    when 1
+    if approved?
       'Yes'
-    when nil
+    elsif not_approved?
+      'No'
+    else
       'Not validated'
     end
   end

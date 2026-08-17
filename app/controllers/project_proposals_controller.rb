@@ -73,7 +73,7 @@ class ProjectProposalsController < SessionsController
         .paginate(per_page: 9, page: params[:page])
     @project_photos =
       @project_proposal.photos.take(5)
-    @project_files = @project_proposal.project_files
+    @project_files = @project_proposal.repo_files
     @linked_pp = @project_proposal.linked_project_proposal
     @revisions =
       ProjectProposal.where(linked_project_proposal_id: @project_proposal.id)
@@ -89,7 +89,7 @@ class ProjectProposalsController < SessionsController
     @categories = @project_proposal.categories
     @category_options = CategoryOption.show_options
     @photos = @project_proposal.photos
-    @files = @project_proposal.project_files
+    @files = @project_proposal.repo_files
   end
 
   def projects_assigned
@@ -402,7 +402,7 @@ class ProjectProposalsController < SessionsController
   # FIXME: This doesn't work anymore after moving to activestorage
   def update_files
     if params['deletefiles'].present?
-      @project_proposal.project_files.each do |f|
+      @project_proposal.repo_files.each do |f|
         next unless params['deletefiles'].include?(f.file.id.to_s)
         # checks if the file should be deleted
         f.file.purge
