@@ -41,14 +41,12 @@ RSpec.describe LearningAreaController, type: :controller do
         session[:expires_at] = Time.zone.now + 10_000
         learning_module = create(:learning_module)
 
-        # Create a photo with an attached image
-        photo = learning_module.photos.new(width: 100, height: 100)
-        photo.image.attach(
+        # Attach image directly to ActiveStorage photos association
+        learning_module.photos.attach(
           io: File.open(Rails.root.join("spec/support/assets/avatar.png")),
           filename: "avatar.png",
           content_type: "image/png"
         )
-        photo.save!
 
         get :show, params: { id: learning_module.id }
         expect(response).to have_http_status(:success)
@@ -60,13 +58,11 @@ RSpec.describe LearningAreaController, type: :controller do
         session[:expires_at] = Time.zone.now + 10_000
         learning_module = create(:learning_module)
 
-        photo = learning_module.photos.new(width: 100, height: 100)
-        photo.image.attach(
+        learning_module.photos.attach(
           io: File.open(Rails.root.join("spec/support/assets/avatar.png")),
           filename: "avatar.png",
           content_type: "image/png"
         )
-        photo.save!
 
         get :show, params: { id: learning_module.id }
         expect(response).to have_http_status(:success)
@@ -163,7 +159,7 @@ RSpec.describe LearningAreaController, type: :controller do
   describe '#update' do
     context 'update' do
       before(:each) do
-        @admin ||= create(:user, :admin)
+        @admin = create(:user, :admin)
         session[:user_id] = @admin.id
         session[:expires_at] = Time.zone.now + 10_000
       end

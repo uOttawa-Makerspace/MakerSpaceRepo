@@ -22,7 +22,7 @@
                     <% end %>
                 </td>
                 <td><%= size.size %></td>
-                <td>$<%= @locker_product_info[:variants][size.shopify_gid][:price] %> per semester</td>
+                <td>$<%= @locker_product_info&.dig(:variants, size.shopify_gid, :price) %> per semester</td>
             </tr>
         <% end %>
     </tbody>
