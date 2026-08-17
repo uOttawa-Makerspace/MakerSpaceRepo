@@ -52,23 +52,18 @@ FactoryBot.define do
     end
 
     trait :with_repo_files do
-      after(:create) do |repo|
-        RepoFile.create(
-          project_proposal_id: repo.id,
-          file:
-            Rack::Test::UploadedFile.new(
-              Rails.root.join("spec/support/assets", "RepoFile1.pdf"),
-              "application/pdf"
-            )
+      after(:create) do |pp|
+        pp.project_files.attach(
+          io: File.open(Rails.root.join("spec/support/assets", "RepoFile1.pdf")),
+          filename: "RepoFile1.pdf",
+          content_type: "application/pdf"
         )
-        Photo.create(
-          project_proposal_id: repo.id,
-          image:
-            Rack::Test::UploadedFile.new(
-              Rails.root.join("spec/support/assets", "avatar.png"),
-              "image/png"
-            )
+        pp.photos.attach(
+          io: File.open(Rails.root.join("spec/support/assets", "avatar.png")),
+          filename: "avatar.png",
+          content_type: "image/png"
         )
+        pp.reload
       end
     end
 
