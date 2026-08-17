@@ -1,92 +1,105 @@
-<li>
-    <article class="card mb-3">
-        <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-3">
-            <span>Proposal ID #<%= project_proposal.id %></span>
+<li class="mb-3">
+    <article class="card shadow-sm border">
+        <div class="card-header bg-body-tertiary d-flex align-items-center justify-content-between flex-wrap gap-2 py-2">
+            <span class="fw-semibold text-body-secondary">Proposal #<%= project_proposal.id %></span>
+
             <% if project_proposal.approved? %>
-                <span class="badge text-bg-success" role="status">
-                    Approved
-                </span>
+                <span class="badge text-bg-success">Approved</span>
             <% elsif project_proposal.not_approved? %>
-                <span class="badge text-bg-danger" role="status">
-                    Not approved
-                </span>
+                <span class="badge text-bg-danger">Not Approved</span>
             <% else %>
-                <span class="badge text-bg-warning" role="status">Pending decision</span>
+                <span class="badge text-bg-warning">Pending Decision</span>
             <% end %>
 
             <% if project_proposal.active_semester_label %>
-                <span>
-                    Active for <%= project_proposal.active_semester_label %>
+                <span class="badge text-bg-info">
+                    <%= project_proposal.active_semester_label %>
                 </span>
             <% end %>
 
-            <time class="text-muted ms-auto" datetime="<%= project_proposal.created_at %>">
-                Proposed on <%= project_proposal.created_at.to_fs :long %>
+            <time class="text-body-secondary small ms-auto" datetime="<%= project_proposal.created_at %>">
+                Proposed on <%= project_proposal.created_at.strftime('%b %e, %Y') %>
             </time>
         </div>
 
-        <div class="card-body py-2">
-            <h1 class="fs-4 mb-1"><%= project_proposal.title %></h1>
-            <div class="row mb-n3">
-                <dl class="col-md">
-                    <dt>Submitted by</dt>
-                    <dd>
-                        <% if project_proposal.user.present? %>
-                            <%= link_to(project_proposal.user.username, user_path(project_proposal.user.username)) %>
-                        <% else %>
-                            <td><%= project_proposal.username %></td>
-                        <% end %>
-                    </dd>
-                </dl>
-                <dl class="col-md">
-                    <dt>Admin</dt>
-                    <dd>
-                        <% if project_proposal.admin.present? %>
-                            <%= link_to project_proposal.admin.username, user_path(project_proposal.admin.username) %>
-                        <% else %>
-                            -
-                        <% end %>
-                    </dd>
-                </dl>
-                <dl class="col-md">
-                    <dt>Client</dt>
-                    <dd>
-                        <%= project_proposal.client %>
-                    </dd>
-                </dl>
-                <dl class="col-md">
-                    <dt>Client type</dt>
-                    <dd><%= project_proposal.client_type %></dd>
-                </dl>
+        <div class="card-body py-3">
+            <h2 class="fs-4 fw-bold mb-2">
+                <%= link_to project_proposal.title, project_proposal_path(project_proposal.slug), class: 'text-decoration-none link-body-emphasis' %>
+            </h2>
 
-                <dl class="col-md">
-                    <dt>Client interest</dt>
-                    <dd>
+            <div class="row g-2 mb-2 text-body-secondary small">
+                <div class="col-sm-6 col-md">
+                    <strong class="d-block text-body">Submitted by:</strong>
+                    <% if project_proposal.user.present? %>
+                        <%= link_to(project_proposal.user.username, user_path(project_proposal.user.username)) %>
+                    <% else %>
+                        <span><%= project_proposal.username %></span>
+                    <% end %>
+                </div>
+
+                <div class="col-sm-6 col-md">
+                    <strong class="d-block text-body">Reviewed by:</strong>
+                    <%= project_proposal.admin.present? ? link_to(project_proposal.admin.username, user_path(project_proposal.admin.username)) : '-' %>
+                </div>
+
+                <div class="col-sm-6 col-md">
+                    <strong class="d-block text-body">Client:</strong>
+                    <%= project_proposal.client %>
+                </div>
+
+                <div class="col-sm-6 col-md">
+                    <strong class="d-block text-body">Client Type:</strong>
+                    <%= project_proposal.client_type %>
+                </div>
+
+                <% if project_proposal.client_interest.present? %>
+                    <div class="col-sm-6 col-md">
+                        <strong class="d-block text-body">Client Interest:</strong>
                         <%= project_proposal.client_interest.split('/').first %>
-                    </dd>
-                </dl>
+                    </div>
+                <% end %>
             </div>
 
-            <div>
-                <ul class="list-unstyled d-flex flex-wrap gap-1">
-                    <% project_proposal.categories.find_each do |c| %>
-                        <span class="badge border p-2 bg-primary">
+            <% if project_proposal.categories.any? %>
+                <div class="d-flex flex-wrap gap-1 mt-2">
+                    <% project_proposal.categories.each do |c| %>
+                        <span class="badge text-bg-secondary">
                             <%= c.name.split('/').first %>
                         </span>
                     <% end %>
-                </ul>
-            </div>
+                </div>
+            <% end %>
         </div>
 
-        <div class="card-footer d-flex flex-wrap justify-content-end gap-2 px-3 py-1">
-            <%= link_to fa_icon(:eye, text: 'Show'), project_proposal_path(project_proposal),
-                        class: 'btn btn-sm btn-primary me-md-3', title: 'Show project proposal' %>
-            <button class="btn btn-sm btn-success"><%= fa_icon :check, text: 'Approve' %></button>
-            <button class="btn btn-sm btn-danger me-md-3"><%= fa_icon :times, text: 'Decline' %></button>
-            <%= link_to fa_icon(:pencil, text: 'Edit'), edit_project_proposal_path(project_proposal),
-                        class: 'btn btn-sm btn-outline-secondary', title: 'Edit project proposal' %>
-            <%= button_to 'Delete', project_proposal, method: :delete,
-                          class: 'btn btn-outline-danger btn-sm', data: { confirm: 'Are you sure?' } %>
+        <div class="card-footer bg-body-tertiary border-top d-flex flex-wrap justify-content-end align-items-center gap-2 px-3 py-2">
+            <%= link_to fa_icon(:eye, text: 'View'), project_proposal_path(project_proposal.slug),
+                        class: 'btn btn-sm btn-primary me-auto', title: 'View project proposal' %>
+
+            <% if signed_in? && current_user.admin? %>
+                <% unless project_proposal.approved? %>
+                    <%= button_to approve_project_proposals_path(id: project_proposal.id), method: :post, class: 'btn btn-sm btn-success', data: { confirm: 'Are you sure you want to approve this proposal?' } do %>
+                        <%= fa_icon :check, text: 'Approve' %>
+                    <% end %>
+                <% end %>
+
+                <% unless project_proposal.not_approved? %>
+                    <%= button_to decline_project_proposals_path(id: project_proposal.id), method: :post, class: 'btn btn-sm btn-danger me-md-2', data: { confirm: 'Are you sure you want to decline this proposal?' } do %>
+                        <%= fa_icon :times, text: 'Decline' %>
+                    <% end %>
+                <% end %>
+            <% end %>
+
+            <% if signed_in? && (current_user.admin? || project_proposal.user_id == current_user.id) %>
+                <%= link_to fa_icon(:pencil, text: 'Edit'), edit_project_proposal_path(project_proposal),
+                            class: 'btn btn-sm btn-outline-secondary', title: 'Edit project proposal' %>
+            <% end %>
+
+            <% if signed_in? && current_user.admin? %>
+                <%= button_to project_proposal_path(project_proposal), method: :delete,
+                              class: 'btn btn-sm btn-outline-danger', data: { confirm: 'Are you sure you want to delete this proposal?' } do %>
+                    <%= fa_icon :trash, text: 'Delete' %>
+                <% end %>
+            <% end %>
         </div>
     </article>
 </li>

@@ -59,9 +59,10 @@ class ProjectProposalsController < SessionsController
   # GET /project_proposals/1.json
   def show
     unless @project_proposal.approved?
-      unless @user.admin? || @project_proposal.user.eql?(@user)
+      unless current_user&.admin? || (@project_proposal.user_id.present? && @project_proposal.user_id == current_user&.id)
         redirect_to project_proposals_path,
-                  alert: 'You are not allowed to access this project.'
+                    alert: 'You are not allowed to access this pending project proposal.'
+        return
       end
     end
 
@@ -71,8 +72,7 @@ class ProjectProposalsController < SessionsController
         .repositories
         .order([sort_order].to_h)
         .paginate(per_page: 9, page: params[:page])
-    @project_photos =
-      @project_proposal.photos.take(5)
+    @project_photos = @project_proposal.photos.take(5)
     @project_files = @project_proposal.repo_files
     @linked_pp = @project_proposal.linked_project_proposal
     @revisions =
@@ -418,9 +418,10 @@ class ProjectProposalsController < SessionsController
 
   # Use callbacks to share common setup or constraints between actions.
   def set_project_proposal
-    @project_proposal = ProjectProposal.find(params[:id])
+    @project_proposal = ProjectProposal.find_by(slug: params[:id]) || ProjectProposal.find_by(id: params[:id])
     return if @project_proposal
-    redirect_to root_path, alert: 'Project proposal not found'
+
+    redirect_to project_proposals_path, alert: 'Project proposal not found'
   end
 
   # Never trust parameters from the scary internet, only allow the white list through.
@@ -465,14 +466,6 @@ class ProjectProposalsController < SessionsController
   def project_join_params
     params.permit(:project_proposal_id)
   end
-
-  # No longer used
-  # def show_only_project_approved
-  #   if !@user.admin? && @project_proposal.approved != 1
-  #     redirect_to root_path,
-  #                 alert: "You are not allowed to access this project."
-  #   end
-  # end
 
   # TODO: sort_order and photo_hash for everyone
   def sort_order
