@@ -26,12 +26,52 @@ RSpec.describe ProjectProposalsController, type: :controller do
   end
 
   describe "GET #show" do
-    context "show" do
-      it "should show the project proposal" do
+    context "show approved project proposal" do
+      it "should show the approved project proposal to admins" do
         session[:user_id] = @admin.id
         pp = ProjectProposal.where(approved: 1).first
-        get :show, params: { id: pp.id }
+        get :show, params: { id: pp.slug }
         expect(response).to have_http_status(:success)
+      end
+
+      it "should show approved project proposals to guest users" do
+        session[:user_id] = nil
+        pp = ProjectProposal.where(approved: 1).first
+        get :show, params: { id: pp.slug }
+        expect(response).to have_http_status(:success)
+      end
+    end
+
+    context "show pending project proposal" do
+      let(:creator) { create(:user, :regular_user) }
+      let(:other_user) { create(:user, :regular_user) }
+      let(:admin_user) { create(:user, :admin) }
+      let(:pending_pp) { create(:project_proposal, approved: nil, user: creator) }
+
+      it "should allow the proposal creator to view their pending proposal" do
+        session[:user_id] = creator.id
+        get :show, params: { id: pending_pp.slug }
+        expect(response).to have_http_status(:success)
+      end
+
+      it "should allow an admin to view a pending proposal" do
+        session[:user_id] = admin_user.id
+        get :show, params: { id: pending_pp.slug }
+        expect(response).to have_http_status(:success)
+      end
+
+      it "should redirect another user attempting to view a pending proposal" do
+        session[:user_id] = other_user.id
+        get :show, params: { id: pending_pp.slug }
+        expect(response).to redirect_to(project_proposals_path)
+        expect(flash[:alert]).to eq('You are not allowed to access this pending project proposal.')
+      end
+
+      it "should redirect guest users attempting to view pending proposals without crashing (500)" do
+        session[:user_id] = nil
+        get :show, params: { id: pending_pp.slug }
+        expect(response).to redirect_to(project_proposals_path)
+        expect(flash[:alert]).to eq('You are not allowed to access this pending project proposal.')
       end
     end
   end
