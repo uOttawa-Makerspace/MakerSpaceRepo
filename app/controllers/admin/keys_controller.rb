@@ -60,7 +60,8 @@ class Admin::KeysController < AdminAreaController
       User
         .staff_or_teams_program
         .includes(:key_request)
-        .order("LOWER(users.name) ASC")
+        .to_a
+        .sort_by { |user| user.name.to_s.downcase }
         .map do |user|
           label = if user.key_request.blank?
                     " (No request form)"

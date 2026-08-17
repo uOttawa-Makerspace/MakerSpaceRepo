@@ -1,7 +1,5 @@
 FactoryBot.define do
   factory :key_transaction do
-    association :holder, factory: :user
-    association :key
     deposit_amount { Faker::Number.number(digits: 2) }
 
     trait :returned do

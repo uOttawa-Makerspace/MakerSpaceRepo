@@ -18,6 +18,8 @@ class ProjectProposal < ApplicationRecord
   has_many :repo_files, dependent: :destroy
   has_many :project_files, class_name: 'RepoFile', dependent: :destroy
 
+  attribute :season, :integer
+
   enum :approved, { not_approved: 0, approved: 1 }
   enum :season, { fall: 0, summer: 1, winter: 2 }
 

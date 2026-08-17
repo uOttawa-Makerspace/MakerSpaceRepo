@@ -3,7 +3,7 @@
 
   <div class="mb-5 d-flex flex-row align-items-center justify-content-center gap-3 d-print-none">
     <%= link_to 'View Certifications', key_certification_path(@key.key_request.user.key_certification.id), class: 'btn btn-primary' unless @key.key_request.nil? || @key.key_request.user.key_certification.nil? %>
-    <%= link_to 'View Key Transactions', history_admin_key_path(@key.id), class: 'btn btn-primary' %>
+    <%= link_to 'View Key Transactions', admin_key_history_path(key_id: @key.id), class: 'btn btn-primary' %>
     <%= button_tag 'Print Page', id: 'print-button', class: 'btn btn-primary' %>
   </div>
 

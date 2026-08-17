@@ -131,7 +131,7 @@ RSpec.describe Admin::KeysController, type: :controller do
     end
 
     it "should include staff and Teams Program users in the assignment list" do
-      get :assign, params: { id: @key.id }
+      get :assign, params: { key_id: @key.id }
 
       staff_options = @controller.instance_variable_get(:@staff_options)
       option_ids = staff_options.map { |_, id| id }
