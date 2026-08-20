@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_15_174156) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_20_015920) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -296,6 +296,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_15_174156) do
     t.integer "training_session_id"
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
+  end
+
+  create_table "external_contacts", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.boolean "deleted", default: false, null: false
+    t.string "email", null: false
+    t.string "first_name", null: false
+    t.string "last_name", null: false
+    t.string "phone"
+    t.datetime "updated_at", null: false
+    t.index ["deleted"], name: "index_external_contacts_on_deleted"
+    t.index ["email"], name: "index_external_contacts_on_email", unique: true
   end
 
   create_table "faqs", force: :cascade do |t|
@@ -603,10 +615,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_15_174156) do
     t.datetime "created_at", null: false
     t.decimal "deposit_amount", precision: 5, scale: 2
     t.date "deposit_return_date"
+    t.bigint "holder_id"
+    t.string "holder_type"
     t.bigint "key_id"
     t.date "return_date"
     t.datetime "updated_at", null: false
     t.bigint "user_id"
+    t.index ["holder_type", "holder_id"], name: "index_key_transactions_on_holder"
     t.index ["key_id"], name: "index_key_transactions_on_key_id"
     t.index ["user_id"], name: "index_key_transactions_on_user_id"
   end
@@ -615,6 +630,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_15_174156) do
     t.string "additional_info", default: ""
     t.datetime "created_at", null: false
     t.string "custom_keycode"
+    t.bigint "holder_id"
+    t.string "holder_type"
     t.integer "key_type", default: 0
     t.string "number"
     t.bigint "space_id"
@@ -622,6 +639,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_15_174156) do
     t.bigint "supervisor_id"
     t.datetime "updated_at", null: false
     t.bigint "user_id"
+    t.index ["holder_type", "holder_id"], name: "index_keys_on_holder"
     t.index ["space_id"], name: "index_keys_on_space_id"
     t.index ["supervisor_id"], name: "index_keys_on_supervisor_id"
     t.index ["user_id"], name: "index_keys_on_user_id"
@@ -684,6 +702,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_15_174156) do
 
   create_table "locker_rentals", force: :cascade do |t|
     t.datetime "cancelled_at"
+    t.boolean "contacted", default: false, null: false
+    t.boolean "contacted_for_clearance", default: false, null: false
     t.bigint "course_name_id"
     t.datetime "created_at", null: false
     t.bigint "decided_by_id"
@@ -718,12 +738,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_15_174156) do
   end
 
   create_table "lockers", force: :cascade do |t|
+    t.string "audience", default: "general"
     t.boolean "available", default: true, null: false
+    t.string "category", default: "general", null: false
     t.datetime "created_at", null: false
     t.bigint "locker_size_id"
+    t.text "notes"
     t.string "specifier"
     t.boolean "staff_only"
     t.datetime "updated_at", null: false
+    t.index ["category"], name: "index_lockers_on_category"
     t.index ["locker_size_id"], name: "index_lockers_on_locker_size_id"
     t.index ["specifier"], name: "index_lockers_on_specifier"
   end

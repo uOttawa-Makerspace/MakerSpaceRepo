@@ -38,6 +38,20 @@ RSpec.describe LockerRentalsController, type: :controller do
         get :show, params: { id: locker_rental.id }
         expect(response).to have_http_status :success
       end
+
+      # Regression test for audience filtering on show page
+      it 'shows all available lockers to staff regardless of audience' do
+        general_locker = create(:locker, audience: 'general')
+        gng_locker = create(:locker, audience: 'gng')
+        staff_locker = create(:locker, audience: 'staff')
+        
+        locker_rental = create :locker_rental, :reviewing
+        
+        get :show, params: { id: locker_rental.id }
+        
+        available_ids = assigns(:locker_select_options).map { |opt| opt[1] }
+        expect(available_ids).to include(general_locker.id, gng_locker.id, staff_locker.id)
+      end
     end
 
     context 'as non admin' do
@@ -45,8 +59,9 @@ RSpec.describe LockerRentalsController, type: :controller do
         @current_user = create(:user)
         session[:user_id] = @current_user.id
       end
+
       it 'shows owned locker rental' do
-        locker_rental = create(:locker_rental, rented_by: @current_user)
+        locker_rental = create :locker_rental, rented_by: @current_user
         get :show, params: { id: locker_rental.id }
         expect(response).to have_http_status :success
       end
@@ -55,6 +70,20 @@ RSpec.describe LockerRentalsController, type: :controller do
         locker_rental = create :locker_rental
         get :show, params: { id: locker_rental.id }
         expect(response).not_to have_http_status :success
+      end
+
+      # Regression test for audience filtering on show page
+      it 'only shows general lockers to regular users' do
+        general_locker = create(:locker, audience: 'general')
+        gng_locker = create(:locker, audience: 'gng')
+        staff_locker = create(:locker, audience: 'staff')
+        
+        locker_rental = create :locker_rental, rented_by: @current_user
+        get :show, params: { id: locker_rental.id }
+        
+        available_ids = assigns(:locker_select_options).map { |opt| opt[1] }
+        expect(available_ids).to include(general_locker.id)
+        expect(available_ids).not_to include(gng_locker.id, staff_locker.id)
       end
     end
   end
@@ -74,12 +103,6 @@ RSpec.describe LockerRentalsController, type: :controller do
     end
   end
 
-  # Users can:
-  # Create one request at a time
-  # choose the locker type only
-  # cancel a request
-  # They can't change notes after editin
-  # They can't update anything other than cancelling
   describe 'Submitting locker rentals as administration' do
     before(:each) { @locker = create(:locker) }
 
@@ -103,7 +126,23 @@ RSpec.describe LockerRentalsController, type: :controller do
           have_enqueued_mail(LockerMailer, :locker_assigned)
         )
         expect(response).to redirect_to :new_locker_rental
-        # expect(ActionMailer::Base.deliveries.last.to).to eq [target_user.email]
+      end
+
+      # Regression test for indefinite locker assignment
+      it 'should allow manual assignment with indefinite end date' do
+        target_user = create :user
+        post :create, params: {
+          locker_rental: {
+            locker_id: @locker.id,
+            rented_by_id: target_user.id,
+            state: :active,
+            indefinite: '1'
+          }
+        }
+        
+        rental = LockerRental.last
+        expect(rental.state).to eq 'active'
+        expect(rental.owned_until).to be_nil
       end
 
       it 'should ensure lockers assigned are unique' do
@@ -204,8 +243,6 @@ RSpec.describe LockerRentalsController, type: :controller do
         end.to change { locker_rental.reload.state }.from('reviewing').to(
           'active'
         ).and have_enqueued_mail LockerMailer, :locker_assigned
-        # last_email = ActionMailer::Base.deliveries.last
-        # expect(last_email.to).to eq [locker_rental.rented_by.email]
       end
 
       it 'should reject assignments with missing info' do
@@ -247,6 +284,25 @@ RSpec.describe LockerRentalsController, type: :controller do
         expect(rental.locker).not_to eq nil
       end
 
+      # Regression test for moving an active rental to indefinite
+      it 'should allow moving an active rental to indefinite' do
+        rental = create(:locker_rental, :active, owned_until: 1.month.from_now)
+        new_locker = create(:locker)
+        
+        patch :update, params: {
+          id: rental.id,
+          locker_rental: {
+            state: :active,
+            locker_id: new_locker.id,
+            indefinite: '1'
+          }
+        }
+        
+        rental.reload
+        expect(rental.locker_id).to eq new_locker.id
+        expect(rental.owned_until).to be_nil
+      end
+
       it 'should send users to checkout' do
         rental = create :locker_rental
         expect do
@@ -261,9 +317,6 @@ RSpec.describe LockerRentalsController, type: :controller do
         end.to change { rental.reload.state }.from('reviewing').to(
           'await_payment'
         ).and have_enqueued_mail LockerMailer, :locker_checkout
-        # last_mail = ActionMailer::Base.deliveries.last
-        # expect(last_mail.to).to eq [rental.rented_by.email]
-        # expect(last_mail.subject).to include('checkout')
       end
 
       it 'should renew expired active rentals' do
@@ -317,9 +370,23 @@ RSpec.describe LockerRentalsController, type: :controller do
               }.from('active').to(
                 'cancelled'
               ).and have_enqueued_mail LockerMailer, :locker_cancelled
-        # last_mail = ActionMailer::Base.deliveries.last
-        # expect(last_mail.to).to eq [rental.rented_by.email]
-        # expect(last_mail.subject).to include('cancelled')
+      end
+    end
+
+    # Regression tests for Contacted toggle
+    describe 'PATCH #toggle_contacted' do
+      it 'toggles contacted_for_clearance from false to true' do
+        locker_rental = create(:locker_rental, :active, contacted_for_clearance: false)
+        patch :toggle_contacted, params: { id: locker_rental.id }
+        expect(response).to have_http_status :success
+        expect(locker_rental.reload.contacted_for_clearance).to eq(true)
+      end
+
+      it 'toggles contacted_for_clearance from true to false' do
+        locker_rental = create(:locker_rental, :active, contacted_for_clearance: true)
+        patch :toggle_contacted, params: { id: locker_rental.id }
+        expect(response).to have_http_status :success
+        expect(locker_rental.reload.contacted_for_clearance).to eq(false)
       end
     end
   end
@@ -510,23 +577,6 @@ RSpec.describe LockerRentalsController, type: :controller do
       end
     end
 
-    # Rather hard to test stripe in here really
-
-    # context "locker request checkout" do
-    #   it "should send emails reminding of checkout" do
-    #     locker_rental = create(:locker_rental, :reviewing)
-    #     patch :update, params: {
-    #             id: locker_rental.id
-    #           }
-    #   end
-
-    #   it "should auto assign after checkout" do
-    #   end
-
-    #   it "should not auto assign after failed checkout" do
-    #   end
-    # end
-
     context 'locker request cancellation' do
       before(:each) do
         @locker_rental =
@@ -544,9 +594,6 @@ RSpec.describe LockerRentalsController, type: :controller do
                 }
         }.to have_enqueued_mail LockerMailer, :locker_cancelled
         expect(@locker_rental.reload.state).to eq 'cancelled'
-        # last_mail = ActionMailer::Base.deliveries.last
-        # expect(last_mail.to).to eq [@current_user.email]
-        # expect(last_mail.subject).to include('cancel')
       end
 
       it 'should send a cancellation email to approved rentals' do
@@ -570,9 +617,6 @@ RSpec.describe LockerRentalsController, type: :controller do
                 }
               }
         expect(@locker_rental.reload.state).to eq 'cancelled'
-        # last_mail = ActionMailer::Base.deliveries.last
-        # expect(last_mail.to).to eq [@locker_rental.rented_by.email]
-        # expect(last_mail.subject).to include('cancel')
       end
 
       it 'should prevent cancelling requests not owned' do
@@ -585,8 +629,6 @@ RSpec.describe LockerRentalsController, type: :controller do
                 }
               }
         expect(@locker_rental.reload.state).to eq 'reviewing'
-        # last_mail = ActionMailer::Base.deliveries.last
-        # expect(last_mail).to eq nil
       end
 
       it 'should prevent reopening requests' do

@@ -12,14 +12,17 @@
         </tr>
     </thead>
     <tbody>
+        <!-- Requirement: Filter split between staff, gng, and general based on the user -->
+        <% audience = if current_user.staff?
+'staff'
+else
+(current_user.student? ? 'gng' : 'general')
+end %>
         <% LockerSize.find_each do |size| %>
             <tr>
                 <td>
-                    <% if current_user.staff? %>
-                        <%= size.lockers.available.count %>
-                    <% else %>
-                        <%= size.lockers.available.public_shown.count %>
-                    <% end %>
+                    <!-- Show available count based on the determined audience -->
+                    <%= size.lockers.available(audience).count %>
                 </td>
                 <td><%= size.size %></td>
                 <td>$<%= @locker_product_info&.dig(:variants, size.shopify_gid, :price) %> per semester</td>
@@ -47,9 +50,8 @@
             </div>
             <div>
                 <%= f.label :preferred_locker_id, 'You can request for a specific locker, if it is available (optional)', class: 'form-label' %>
-                <%# This could be moved to a helper %>
-                <% preferrable_lockers = Locker.available %>
-                <% preferrable_lockers = preferrable_lockers.public_shown unless current_user.staff? %>
+                <!-- Requirement: Depending on the user they can only request a certain set of lockers -->
+                <% preferrable_lockers = Locker.available(audience) %>
                 <%= f.select :preferred_locker_id, preferrable_lockers.order_by_specifier.map { |locker|
                     [locker.specifier, locker.id, {data: {size: locker.locker_size.size, staff_only: !locker.available }}]
                 }, { include_blank: '' }, { class: 'form-select' } %>

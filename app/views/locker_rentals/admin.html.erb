@@ -1,17 +1,21 @@
 <% provide :title, "Locker manager" %>
 
 <h1 class="text-center">Locker Rentals</h1>
-<p class="text-center">Historic log of rentals and current relevant rentals</p>
+<p class="text-center">Review pending requests and manage active rentals</p>
 
-<h2>Active locker requests</h2>
-<p>Lockers that are pending review, awaiting payment, or are currently occupied.</p>
-<div class="p-3 filter-rental-state" id="filter-locker-states">
-    <span class="fw-bold me-3">Rental states</span>
-    <% LockerRental.states.keys.excluding('cancelled').each do |state| %>
-        <div class="form-check form-check-inline">
-            <%= check_box_tag :rental_state, state, {}, { id: "rental_state_#{state}", class: 'form-check-input', data: { type: state } } %>
-            <%= label :rental_state, state, state.humanize, class: 'form-check-label' %>
-        </div>
-    <% end %>
-</div>
-<%= render partial: 'rental_data_table', locals: { locker_rentals: @locker_rentals } %>
+<!-- Requirement: Split between requests that have been dealt with vs requests that have not been looked at -->
+<h2 class="mt-4">Requests</h2>
+<p>Lockers that are pending review and have not been looked at yet.</p>
+<% if @pending_requests.any? %>
+  <%= render partial: 'rental_data_table', locals: { locker_rentals: @pending_requests } %>
+<% else %>
+  <div class="alert alert-info">No pending requests.</div>
+<% end %>
+
+<h2 class="mt-5">Active Rentals</h2>
+<p>Lockers that have been dealt with (awaiting payment or currently occupied).</p>
+<% if @active_rentals.any? %>
+  <%= render partial: 'rental_data_table', locals: { locker_rentals: @active_rentals } %>
+<% else %>
+  <div class="alert alert-info">No active rentals.</div>
+<% end %>

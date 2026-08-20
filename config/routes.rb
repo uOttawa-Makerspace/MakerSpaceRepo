@@ -138,6 +138,7 @@ Rails.application.routes.draw do
   resources :locker_rentals do
     member do
       patch :renew
+      patch :toggle_contacted
     end
 
     collection do

@@ -19,6 +19,12 @@
       </p>
 
       <p class="card-text">
+        <!-- Display the audience filter type -->
+        <strong>Type:</strong>
+        <span class="badge text-bg-secondary"><%= @locker.audience.humanize %></span>
+      </p>
+
+      <p class="card-text">
         <strong>Status:</strong>
         <% if @active_locker_rental %>
           <span class="badge text-bg-danger">Currently Rented</span>
@@ -35,7 +41,7 @@
     <div class="col-md-6">
       <div class="card">
         <div class="card-header">
-          Rename Locker
+          Edit Locker Details
         </div>
         <div class="card-body">
           <%= form_with model: @locker, local: true do |form| %>
@@ -43,6 +49,20 @@
               <%= form.label :specifier, "Locker Specifier (Name/Number)", class: 'form-label' %>
               <%= form.text_field :specifier, class: 'form-control' %>
             </div>
+
+            <!-- Requirement: Filter split between staff, design class student and other -->
+            <div class="mb-3">
+              <%= form.label :audience, "Type / Audience", class: 'form-label' %>
+              <%= form.select :audience, options_for_select([['General', 'general'], ['Staff', 'staff'], ['GNG Design', 'gng']], @locker.audience), {}, { class: 'form-select' } %>
+              <div class="form-text">Controls who can request this locker.</div>
+            </div>
+
+            <!-- Requirement: Ability to add notes to a locker which is not assigned to anyone -->
+            <div class="mb-3">
+              <%= form.label :notes, "Locker Notes (unassigned)", class: 'form-label' %>
+              <%= form.text_area :notes, class: 'form-control', rows: 3, placeholder: 'Add notes for when this locker is not assigned to anyone' %>
+            </div>
+
             <%= form.submit "Save Changes", class: 'btn btn-primary' %>
           <% end %>
         </div>
