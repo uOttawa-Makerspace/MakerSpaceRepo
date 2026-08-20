@@ -52,23 +52,21 @@ class LockersController < AdminAreaController
     end
   end
 
-  # Custom route to create a range
+  # Custom route to create a range of lockers at once
   def create_multiple
-    if locker_range_create_params[:range_start] >=
-         locker_range_create_params[:range_end]
+    if locker_range_create_params[:range_start] >= locker_range_create_params[:range_end]
       flash[:alert] = 'Range end must be larger than range start'
+      redirect_to lockers_path(anchor: 'lockerInventory')
       return
     end
 
     @lockers =
       Locker.create(
         (
-          locker_range_create_params[
-            :range_start
-          ].to_i..locker_range_create_params[:range_end].to_i
-        ).map do |specifier| # Map params to a create hash
+          locker_range_create_params[:range_start].to_i..locker_range_create_params[:range_end].to_i
+        ).map do |specifier|
           {
-            specifier:,
+            specifier: specifier,
             locker_size_id: locker_range_create_params[:locker_size_id]
           }
         end
@@ -149,7 +147,8 @@ class LockersController < AdminAreaController
   end
 
   def locker_params
-    params.require(:locker).permit(:locker_size_id, :specifier, :available)
+    # Permit the new notes and audience fields for unassigned lockers
+    params.require(:locker).permit(:locker_size_id, :specifier, :available, :notes, :audience)
   end
 
   def rental_state_icon(state)

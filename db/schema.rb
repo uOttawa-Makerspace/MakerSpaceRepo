@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_17_023620) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_20_015920) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -702,6 +702,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_17_023620) do
 
   create_table "locker_rentals", force: :cascade do |t|
     t.datetime "cancelled_at"
+    t.boolean "contacted", default: false, null: false
+    t.boolean "contacted_for_clearance", default: false, null: false
     t.bigint "course_name_id"
     t.datetime "created_at", null: false
     t.bigint "decided_by_id"
@@ -736,12 +738,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_17_023620) do
   end
 
   create_table "lockers", force: :cascade do |t|
+    t.string "audience", default: "general"
     t.boolean "available", default: true, null: false
+    t.string "category", default: "general", null: false
     t.datetime "created_at", null: false
     t.bigint "locker_size_id"
+    t.text "notes"
     t.string "specifier"
     t.boolean "staff_only"
     t.datetime "updated_at", null: false
+    t.index ["category"], name: "index_lockers_on_category"
     t.index ["locker_size_id"], name: "index_lockers_on_locker_size_id"
     t.index ["specifier"], name: "index_lockers_on_specifier"
   end

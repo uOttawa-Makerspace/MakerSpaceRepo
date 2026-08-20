@@ -1,15 +1,18 @@
 <%= form_with model: LockerRental.new, url: locker_rentals_path, method: :post, local: true do |f| %>
   <%= f.hidden_field :state, value: 'active' %>
+  <%= f.hidden_field :requested_as, value: 'staff' %>
   
-  <div class="row g-3 align-items-end">
-    <div class="col-md-5">
-      <%= f.label :rented_by_id, 'User', class: 'form-label fw-bold text-body' %>
+  <div class="row g-3">
+    <!-- User Dropdown (TomSelect will enhance this) -->
+    <div class="col-12 col-md-6">
+      <%= f.label :rented_by_id, 'Assign to User', class: 'form-label fw-bold text-body' %>
       <%= f.collection_select :rented_by_id, User.order(:username), :id, :username,
-            { include_blank: 'Select a user...' },
+            { include_blank: 'Search for a user...' },
             { class: 'form-select', required: true } %>
     </div>
 
-    <div class="col-md-5">
+    <!-- Locker Dropdown (TomSelect already handles this) -->
+    <div class="col-12 col-md-6">
       <%= f.label :locker_id, 'Locker', class: 'form-label fw-bold text-body' %>
       <%= f.select :locker_id, Locker.available.order_by_specifier.map { |locker|
             size_label = locker.locker_size&.size ? " (#{locker.locker_size.size})" : ""
@@ -19,8 +22,28 @@
           { class: 'form-select', required: true } %>
     </div>
 
-    <div class="col-md-2">
-      <%= f.submit 'Assign Locker', class: 'btn btn-primary w-100' %>
+    <!-- Dates and Indefinite -->
+    <div class="col-12 col-md-6">
+      <%= f.label :owned_until, 'End Date', class: 'form-label fw-bold text-body' %>
+      <%= f.date_field :owned_until, value: end_of_this_semester, class: 'form-control', id: 'assign_owned_until' %>
+      <div class="form-check mt-2">
+        <%= check_box_tag 'locker_rental[indefinite]', '1', false, class: 'form-check-input', id: 'assign_indefinite', data: { indefinite_target: 'assign_owned_until' } %>
+        <%= label_tag 'assign_indefinite', 'Indefinite (No expiry)', class: 'form-check-label small' %>
+      </div>
+    </div>
+
+    <!-- Notes (Removed d-flex and h-100 so it doesn't overlap) -->
+    <div class="col-12 col-md-6">
+      <%= f.label :notes, 'Notes', class: 'form-label fw-bold text-body' %>
+      <%= f.text_area :notes, class: 'form-control', rows: 2, placeholder: 'Optional notes for this assignment' %>
+    </div>
+
+    <div class="col-12 d-grid d-md-flex justify-content-md-end mt-2">
+      <%= f.submit 'Assign Locker', class: 'btn btn-primary px-4' %>
     </div>
   </div>
 <% end %>
+
+<!-- Ensure both TomSelect and our UI scripts load on this page -->
+<%= vite_javascript_tag 'locker_rental_form', 'data-turbo-track': 'reload' %>
+<%= vite_javascript_tag 'locker_admin', 'data-turbo-track': 'reload' %>

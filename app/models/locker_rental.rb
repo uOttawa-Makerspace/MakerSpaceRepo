@@ -23,6 +23,9 @@ class LockerRental < ApplicationRecord
   after_save :send_move_notification
   after_save :sync_shopify_draft_order
 
+  # Virtual attribute to handle the 'Indefinite' checkbox from the forms
+  attr_accessor :indefinite
+
   enum :state,
        {
          # Users submitted, not approved by admin
@@ -64,12 +67,13 @@ class LockerRental < ApplicationRecord
             uniqueness: {
               conditions: -> { reserves_locker }
             },
-            allow_nil: true, # Skip validation if nil, caught below anyways
+            allow_nil: true,
             if: :reserves_locker?
   validates :locker, presence: true, if: :reserves_locker?
 
-  # If set to active, make sure end date is there
-  validates :owned_until, presence: true, if: :active?
+  # Active rentals require an owned_until date unless explicitly marked as indefinite.
+  # This restores safety while allowing the virtual attribute to bypass it when necessary.
+  validates :owned_until, presence: true, if: -> { active? && indefinite != '1' }
 
   # If state ever changes from request, record who did it
   # Which staff member approved the request, or if owner cancelled the request
@@ -91,9 +95,10 @@ class LockerRental < ApplicationRecord
   scope :pending, -> { where(state: %i[reviewing await_payment]) }
   scope :reserves_locker, -> { where(state: %i[await_payment active]) }
   scope :assigned, -> { where(state: :active) }
+  
+  # Added this missing scope so the admin controller can exclude cancelled rentals
+  scope :not_cancelled, -> { where.not(state: :cancelled) }
 
-  # Used by the automated payment system, picks the first available
-  # specifier and owned until end of this semester
   def auto_assign
     Rails.logger.debug "Auto assigning locker rental #{id}"
     update!(
@@ -107,6 +112,7 @@ class LockerRental < ApplicationRecord
 
   # Expired if a locker is active (not cancelled or unpaid) and time has passed owned_until
   def expired?
+    # Only expired if active, has an owned_until date, and it has passed
     active? && owned_until && owned_until <= DateTime.current
   end
 
@@ -186,8 +192,7 @@ class LockerRental < ApplicationRecord
   # Fetch checkout link from shopify .Returns nil if API call fails or checkout
   # is not possible now.
   def checkout_link
-    return nil unless await_payment? # checkout only if await payment
-
+    return nil unless await_payment?
     shopify_draft_order['invoiceUrl']
   end
 
