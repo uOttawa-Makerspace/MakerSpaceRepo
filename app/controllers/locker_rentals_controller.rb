@@ -3,7 +3,7 @@ class LockerRentalsController < SessionsController
   before_action :signed_in
   # Also sets @locker_rental
   before_action :check_permission, except: %i[index new create]
-  layout 'staff_area', only: [:admin] # as in admin tools but staff can access it
+  layout 'staff_area', only: [:admin]
   layout 'admin_area', only: [:assign_locker]
 
   def index
@@ -16,16 +16,14 @@ class LockerRentalsController < SessionsController
   end
 
   def admin
-    @current_rental_state = params[:rental_state] || 'reviewing'
-
-    @locker_rentals =
-      LockerRental
-        .includes(:locker, :rented_by)
-        .order(created_at: :desc)
-        .not_cancelled
+    base_rentals = LockerRental.includes(:locker, :rented_by).order(created_at: :desc).not_cancelled
+    
+    # Requirement: Split between requests that have been dealt with vs requests that have not been looked at
+    @pending_requests = base_rentals.reviewing
+    @active_rentals = base_rentals.where(state: %i[await_payment active])
 
     respond_to do |format|
-      format.json { render json: @locker_rentals }
+      format.json { render json: { pending: @pending_requests, active: @active_rentals } }
       format.all { render layout: 'staff_area' }
     end
   end
@@ -35,8 +33,16 @@ class LockerRentalsController < SessionsController
   end
 
   def show
+    # Staff can assign any locker, so they get nil (no audience filter). 
+    # Regular users are filtered so they only see their allowed lockers.
+    audience = if current_user.staff? then nil
+               elsif current_user.student? then 'gng'
+               else 'general'
+               end
+
+    # Only show available lockers matching the user's audience
     @locker_select_options =
-      Locker.available.order_by_specifier.map do |locker|
+      Locker.available(audience).order_by_specifier.map do |locker|
         [
           locker.specifier,
           locker.id,
@@ -81,7 +87,12 @@ class LockerRentalsController < SessionsController
     # If locker rental needs a decision
     unless @locker_rental.reviewing?
       @locker_rental.decided_by = current_user
-      @locker_rental.owned_until ||= end_of_this_semester
+      # Explicitly handle indefinite state so it overrides any submitted dates
+      if @locker_rental.indefinite == '1'
+        @locker_rental.owned_until = nil
+      else
+        @locker_rental.owned_until ||= end_of_this_semester
+      end
     end
 
     if @locker_rental.save
@@ -97,6 +108,7 @@ class LockerRentalsController < SessionsController
     @locker_rental = LockerRental.find(params[:id])
     unless current_user.staff? || current_user == @locker_rental.rented_by
       redirect_to locker_rentals_path
+      return
     end
 
     # Assign new parameters but don't commit yet
@@ -104,10 +116,12 @@ class LockerRentalsController < SessionsController
 
     @locker_rental.decided_by = current_user
 
-    # FIXME: move this to model
-    if @locker_rental.state_changed?(to: :active)
-      # default to end of semester
-      @locker_rental.owned_until ||= end_of_this_semester
+    # Requirement: Ideally I would like to have an 'indefinite' option for the date
+    # We check this if the state is changing to active OR if it's already active (Move Locker)
+    if @locker_rental.indefinite == '1'
+      @locker_rental.owned_until = nil
+    elsif (@locker_rental.state_changed?(to: :active) || @locker_rental.active?) && @locker_rental.owned_until.blank?
+      @locker_rental.owned_until = end_of_this_semester
     end
 
     # Only staff can cancel a paid locker
@@ -156,6 +170,19 @@ class LockerRentalsController < SessionsController
     end
   end
 
+  # Requirement: Have a column like 'contacted' with a checkbox so I can keep track if I email people
+  def toggle_contacted
+    # @locker_rental is already set by check_permission before_action.
+    # Using update_column skips validations and callbacks, which is ideal here 
+    # to avoid triggering state change emails/shopify syncs or failing validations 
+    # on legacy indefinite rentals.
+    @locker_rental.update_column(:contacted_for_clearance, !@locker_rental.contacted_for_clearance)
+    
+    # Turbo form submissions expect a Turbo Stream, HTML, or a 204 No Content
+    # to gracefully handle the response without a full page reload or error.
+    head :no_content
+  end
+
   private
 
   def check_permission
@@ -192,6 +219,8 @@ class LockerRentalsController < SessionsController
       course_name_id
       section_name
       team_name
+      contacted_for_clearance
+      indefinite # Permit the indefinite virtual attribute
     ]
 
     staff_additional_permitted = %i[
@@ -203,6 +232,7 @@ class LockerRentalsController < SessionsController
       owned_until
       notes
       staff_notes
+      contacted_for_clearance
     ]
 
     if current_user.staff?
