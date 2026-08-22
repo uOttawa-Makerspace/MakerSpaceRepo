@@ -1,0 +1,49 @@
+services:
+  db:
+    image: postgres:17-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - staging_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+
+  web:
+    image: ${DOCKER_IMAGE}:staging
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env.staging
+    environment:
+      DB_HOST: db
+      DB_USERNAME: postgres
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      RAILS_ENV: staging
+      RAILS_SERVE_STATIC_FILES: "true"
+      RAILS_LOG_TO_STDOUT: "true"
+    ports:
+      - "127.0.0.1:3005:3000"
+
+  worker:
+    image: ${DOCKER_IMAGE}:staging
+    restart: always
+    command: ["bundle", "exec", "rake", "solid_queue:start"]
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env.staging
+    environment:
+      DB_HOST: db
+      DB_USERNAME: postgres
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      RAILS_ENV: staging
+      RAILS_LOG_TO_STDOUT: "true"
+
+volumes:
+  staging_pgdata:

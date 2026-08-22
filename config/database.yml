@@ -1,47 +1,47 @@
 default: &default
-  adapter: "<%= ENV['DB_ADAPTER'] || Rails.application.credentials.dig(Rails.env.to_sym, :database, :adapter) || 'postgresql' %>"
-  host: "<%= ENV['DB_HOST'] || Rails.application.credentials.dig(Rails.env.to_sym, :database, :host) || 'localhost' %>"
-  port: "<%= ENV['DB_PORT'] || Rails.application.credentials.dig(Rails.env.to_sym, :database, :port) || 5432 %>"
-  username: "<%= ENV['DB_USERNAME'] || Rails.application.credentials.dig(Rails.env.to_sym, :database, :username) || 'postgres' %>"
-  password: "<%= ENV['DB_PASSWORD'] || Rails.application.credentials.dig(Rails.env.to_sym, :database, :password) || 'postgres' %>"
+  adapter: <%= ENV.fetch("DB_ADAPTER") { Rails.application.credentials.dig(Rails.env.to_sym, :database, :adapter) || 'postgresql' } %>
+  host: <%= ENV.fetch("DB_HOST") { Rails.application.credentials.dig(Rails.env.to_sym, :database, :host) || 'localhost' } %>
+  port: <%= ENV.fetch("DB_PORT") { Rails.application.credentials.dig(Rails.env.to_sym, :database, :port) || 5432 } %>
+  username: <%= ENV.fetch("DB_USERNAME") { Rails.application.credentials.dig(Rails.env.to_sym, :database, :username) || 'postgres' } %>
+  password: <%= ENV.fetch("DB_PASSWORD") { Rails.application.credentials.dig(Rails.env.to_sym, :database, :password) || 'postgres' } %>
 
 development:
   primary:
     <<: *default
-    database: "<%= Rails.application.credentials[Rails.env.to_sym][:database][:name] || 'makerspacerepo' %>"
+    database: <%= ENV.fetch("DB_NAME") { Rails.application.credentials.dig(:development, :database, :name) || 'makerspacerepo_development' } %>
   queue:
     <<: *default
-    database: makerspacerepo_queue
+    database: makerspacerepo_queue_development
     migrations_paths: db/queue_migrate
   cable:
     <<: *default
-    database: makerspacerepo_cable
+    database: makerspacerepo_cable_development
     migrations_paths: db/cable_migrate
 
 test:
   <<: *default
   database: makerspacerepo_test
 
-production:
-  primary:
-    <<: *default
-    database: "<%= Rails.application.credentials[Rails.env.to_sym][:database][:name] %>"
-  queue:
-    <<: *default
-    database: makerspacerepo_queue
-    migrations_paths: db/queue_migrate
-  cable:
-    <<: *default
-    database: makerspacerepo_cable
-    migrations_paths: db/cable_migrate
-
 staging:
   primary:
     <<: *default
-    database: "<%= Rails.application.credentials[Rails.env.to_sym][:database][:name] %>"
+    database: <%= ENV.fetch("DB_NAME") { Rails.application.credentials.dig(:staging, :database, :name) || 'makerspacerepo_staging' } %>
   queue:
     <<: *default
     database: makerspacerepo_queue_staging
+    migrations_paths: db/queue_migrate
+  cable:
+    <<: *default
+    database: makerspacerepo_cable_staging
+    migrations_paths: db/cable_migrate
+
+production:
+  primary:
+    <<: *default
+    database: "<%= Rails.application.credentials.dig(:production, :database, :name) %>"
+  queue:
+    <<: *default
+    database: makerspacerepo_queue
     migrations_paths: db/queue_migrate
   cable:
     <<: *default
