@@ -1,0 +1,29 @@
+name: Cleanup Old Docker Images
+
+on:
+  schedule:
+    # Runs every Sunday at midnight UTC
+    - cron: "0 0 * * 0"
+  workflow_dispatch: # Allows running manually from GitHub UI
+
+permissions:
+  packages: write
+
+jobs:
+  clean-ghcr:
+    name: Delete Old Container Images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cleanup Untagged & Old Commit Images
+        uses: snok/container-retention-policy@v3
+        with:
+          image-names: makerspacerepo
+          cut-off: 14d # Delete commit images older than 14 days
+          keep-at-least: 5 # Always keep at least the 5 most recent images for rollbacks
+          account-type: org
+          org-name: uottawa-makerspace
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # Protect important tags so they are NEVER deleted:
+          skip-tags: staging, production, latest, v*
+          # Delete untagged dangling manifests automatically
+          untagged-only: false
