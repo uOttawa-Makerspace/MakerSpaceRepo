@@ -142,6 +142,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set lowercase image name
+        run: |
+          echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -158,8 +162,8 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:staging
-            ghcr.io/${{ github.repository }}:staging-${{ github.sha }}
+            ${{ env.IMAGE_NAME }}:staging
+            ${{ env.IMAGE_NAME }}:staging-${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -173,14 +177,14 @@ jobs:
           eval "$(ssh-agent -s)"
           ssh-add /tmp/deploy_key
 
-          # Copy the latest docker-compose.staging.yml from the repo to the server
+          # Copy the latest docker-compose.staging.yml from repo to server
           scp -o StrictHostKeyChecking=no docker-compose.staging.yml deploy@staging-server.makerepo.com:/var/www/makerrepo-staging/docker-compose.staging.yml
 
-          # Trigger deployment on the server
-          ssh -o StrictHostKeyChecking=no deploy@staging-server.makerepo.com << 'EOF'
+          # Pull latest image and restart containers on server
+          ssh -o StrictHostKeyChecking=no deploy@staging-server.makerepo.com << EOF
             cd /var/www/makerrepo-staging
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            export DOCKER_IMAGE="ghcr.io/${{ github.repository }}"
+            export DOCKER_IMAGE="${{ env.IMAGE_NAME }}"
             docker compose -f docker-compose.staging.yml pull
             docker compose -f docker-compose.staging.yml up -d --remove-orphans
             docker image prune -f
