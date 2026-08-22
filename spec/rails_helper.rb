@@ -12,7 +12,7 @@ require "test_prof/recipes/rspec/let_it_be"
 
 SimpleCov.start
 
-ENV["RAILS_ENV"] ||= "test"
+ENV["RAILS_ENV"] = "test"
 require File.expand_path("../config/environment", __dir__)
 # Prevent database truncation if the environment is production
 if Rails.env.production?
