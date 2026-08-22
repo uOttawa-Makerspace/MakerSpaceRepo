@@ -136,7 +136,7 @@ jobs:
   deploy-staging:
     needs: [test, security]
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
 
     steps:
       - name: Checkout code
@@ -162,12 +162,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Build and Push for both AMD64 and ARM64
-      - name: Build and Push Multi-Arch Docker Image
+      - name: Build and Push ARM64 Docker Image
         uses: docker/build-push-action@v5
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/arm64
           push: true
           tags: |
             ${{ env.IMAGE_NAME }}:staging
@@ -175,7 +174,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # 5. Deploy to Staging Server
+      # Deploy to Staging Server
       - name: Deploy to Staging Server via SSH
         env:
           DEPLOY_ENC_KEY: ${{ secrets.DEPLOY_ENC_KEY }}
