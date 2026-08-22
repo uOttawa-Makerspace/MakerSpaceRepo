@@ -25,10 +25,14 @@ ENV RAILS_ENV="staging" \
 # ----------------- BUILD STAGE -----------------
 FROM base AS build
 
-# Copy Node.js and Yarn directly from official images (skips slow apt repo config & download)
-COPY --from=node:22-bookworm-slim /usr/local/bin/node /usr/local/bin/node
-COPY --from=node:22-bookworm-slim /usr/local/lib/node_modules /usr/local/lib/node_modules
-RUN ln -s /usr/local/lib/node_modules/yarn/bin/yarn.js /usr/local/bin/yarn
+# Copy Node.js and NPM from official Node 24 image (skips slow apt repo config & download)
+COPY --from=node:24-bookworm-slim /usr/local/bin/node /usr/local/bin/node
+COPY --from=node:24-bookworm-slim /usr/local/lib/node_modules /usr/local/lib/node_modules
+
+# Recreate npm/npx symlinks and install Yarn globally
+RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm && \
+    ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx && \
+    npm install -g yarn
 
 # Install build tools + BuildKit apt cache
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
@@ -43,7 +47,7 @@ COPY Gemfile Gemfile.lock ./
 RUN --mount=type=cache,target=/usr/local/bundle/cache \
     --mount=type=cache,target=/root/.bundle \
     bundle install && \
-    rm -rf ~/.bundle/ "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git
+    rm -rf "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git
 
 # Install JS packages + BuildKit yarn cache
 COPY package.json yarn.lock ./
