@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+set -e
+
+ENV="${1:-staging}"
+TAG="$2"
+
+if [ "$ENV" != "staging" ] && [ "$ENV" != "production" ]; then
+  echo "Usage: bin/rollback [staging|production] [optional_commit_sha]"
+  exit 1
+fi
+
+SERVER="staging-server.makerepo.com"
+APP_DIR="/var/www/makerrepo-${ENV}"
+
+if [ "$ENV" = "production" ]; then
+  SERVER="makerrepo.com" # update with your prod server host
+fi
+
+echo "🔄 Rolling back $ENV on $SERVER..."
+
+ssh -A deploy@$SERVER bash -s << EOF
+  cd $APP_DIR
+
+  # If a specific tag wasn't provided, find the second most recent image
+  if [ -z "$TAG" ]; then
+    echo "🔍 Looking up previous Docker image..."
+    PREVIOUS_IMAGE=\$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "makerrepo" | grep -v ":latest" | grep -v ":${ENV}" | sed -n '1p')
+    
+    if [ -z "\$PREVIOUS_IMAGE" ]; then
+      # Fallback: check all images sorted by creation
+      PREVIOUS_IMAGE=\$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "makerrepo" | sed -n '2p')
+    fi
+  else
+    PREVIOUS_IMAGE="ghcr.io/uottawa-makerspace/makerspacerepo:$TAG"
+  fi
+
+  if [ -z "\$PREVIOUS_IMAGE" ]; then
+    echo "❌ No previous image found on server to rollback to!"
+    exit 1
+  fi
+
+  echo "🚀 Rolling back to: \$PREVIOUS_IMAGE"
+  export DOCKER_IMAGE="\$PREVIOUS_IMAGE"
+  docker compose -f docker-compose.${ENV}.yml up -d --remove-orphans
+
+  echo "✅ Rollback complete!"
+EOF

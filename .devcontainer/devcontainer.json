@@ -1,0 +1,21 @@
+{
+  "name": "MakerRepo Dev Container",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/rails",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "Shopify.ruby-lsp",
+        "misogi.ruby-rubocop",
+        "castwide.solargraph"
+      ],
+      "settings": {
+        "rubyLsp.rubyVersionManager": "none"
+      }
+    }
+  },
+  "postCreateCommand": "cd /rails && mkdir -p certs && ( [ -f certs/saml.key ] || openssl req -x509 -newkey rsa:4096 -keyout certs/saml.key -out certs/saml.crt -days 365 -nodes -subj '/CN=makerrepo' ) && bundle install && yarn install && bin/rails db:prepare",
+  "forwardPorts": [3000, 3036],
+  "remoteUser": "root"
+}
