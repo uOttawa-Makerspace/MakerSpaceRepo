@@ -32,3 +32,22 @@ node_modules
 public/packs*
 public/assets
 public/vite*
+
+# Test & Development files (Not needed in staging/prod Docker image)
+# This prevents test code changes from busting the `COPY . .` Docker cache!
+spec
+test
+features
+.rspec
+.rubocop*.yml
+coverage*
+
+# Local bundle configs and installed gems
+.bundle
+vendor/bundle
+
+# Documentation and CI/Docker meta files
+*.md
+Dockerfile*
+docker-compose*.yml
+.dockerignore
