@@ -101,7 +101,7 @@ group :development do
   gem "capistrano-rails", require: false
   gem "capistrano-rbenv", require: false
   gem "erb_lint", require: false
-  gem "letter_opener"
+  gem "letter_opener_web"
   gem "rubocop-rails"
   gem "web-console"
   gem "ruby-prof"

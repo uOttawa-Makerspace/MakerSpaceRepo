@@ -9,11 +9,13 @@ if [ "$ENV" != "staging" ] && [ "$ENV" != "production" ]; then
   exit 1
 fi
 
-SERVER="staging-server.makerepo.com"
-APP_DIR="/var/www/makerrepo-${ENV}"
-
+# Set host and directory based on environment
 if [ "$ENV" = "production" ]; then
-  SERVER="makerrepo.com" # update with your prod server host
+  SERVER="makerepo.com"
+  APP_DIR="/var/www/makerrepo"
+else
+  SERVER="staging-server.makerepo.com"
+  APP_DIR="/var/www/makerrepo-staging"
 fi
 
 echo "🔄 Rolling back $ENV on $SERVER..."
@@ -21,17 +23,23 @@ echo "🔄 Rolling back $ENV on $SERVER..."
 ssh -A deploy@$SERVER bash -s << EOF
   cd $APP_DIR
 
-  # If a specific tag wasn't provided, find the second most recent image
+  # If a specific tag/SHA was not provided, find the most recent commit-tagged image
   if [ -z "$TAG" ]; then
-    echo "🔍 Looking up previous Docker image..."
-    PREVIOUS_IMAGE=\$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "makerrepo" | grep -v ":latest" | grep -v ":${ENV}" | sed -n '1p')
+    echo "🔍 Looking up previous Docker image on $SERVER..."
+    # Finds the latest commit-tagged image (excluding generic :staging, :production, :latest)
+    PREVIOUS_IMAGE=\$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "makerspacerepo|makerrepo" | grep "${ENV}-" | head -n 2 | tail -n 1)
     
     if [ -z "\$PREVIOUS_IMAGE" ]; then
-      # Fallback: check all images sorted by creation
-      PREVIOUS_IMAGE=\$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "makerrepo" | sed -n '2p')
+      # Fallback: find second newest image
+      PREVIOUS_IMAGE=\$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "makerspacerepo|makerrepo" | sed -n '2p')
     fi
   else
-    PREVIOUS_IMAGE="ghcr.io/uottawa-makerspace/makerspacerepo:$TAG"
+    # Support both raw SHA (e.g. 3ccc56b) or full tag (e.g. staging-3ccc56b)
+    if [[ "$TAG" == "${ENV}-"* ]]; then
+      PREVIOUS_IMAGE="ghcr.io/uottawa-makerspace/makerspacerepo:$TAG"
+    else
+      PREVIOUS_IMAGE="ghcr.io/uottawa-makerspace/makerspacerepo:${ENV}-$TAG"
+    fi
   fi
 
   if [ -z "\$PREVIOUS_IMAGE" ]; then
@@ -41,7 +49,10 @@ ssh -A deploy@$SERVER bash -s << EOF
 
   echo "🚀 Rolling back to: \$PREVIOUS_IMAGE"
   export DOCKER_IMAGE="\$PREVIOUS_IMAGE"
-  docker compose -f docker-compose.${ENV}.yml up -d --remove-orphans
+  
+  # Restart containers using the rolled-back image
+  docker compose --env-file .env.${ENV} -f docker-compose.${ENV}.yml pull || true
+  docker compose --env-file .env.${ENV} -f docker-compose.${ENV}.yml up -d --remove-orphans
 
-  echo "✅ Rollback complete!"
+  echo "✅ Rollback to \$PREVIOUS_IMAGE complete!"
 EOF

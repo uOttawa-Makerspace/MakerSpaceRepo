@@ -173,8 +173,9 @@ jobs:
           context: .
           platforms: ${{ matrix.platform }}
           outputs: type=image,"name=${{ env.IMAGE_NAME }}",push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # Scoped caches prevent ARM and AMD overwriting each other
+          cache-from: type=gha,scope=build-${{ matrix.digest_tag }}
+          cache-to: type=gha,mode=max,scope=build-${{ matrix.digest_tag }}
 
       # Save unique digest file
       - name: Export digest
@@ -195,7 +196,7 @@ jobs:
   # STAGE 3: MERGE MANIFEST & DEPLOY TO STAGING
   # ==========================================
   deploy-staging:
-    needs: build-staging-images
+    needs: [test, security, build-staging-images]
     runs-on: ubuntu-latest
 
     steps:
