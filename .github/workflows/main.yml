@@ -146,9 +146,15 @@ jobs:
         run: |
           echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
 
+      # Setup QEMU for multi-platform (ARM64 + AMD64) builds
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      # Setup Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # Log in to GitHub Container Registry
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -156,10 +162,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and Push Docker Image
+      # Build and Push for both AMD64 and ARM64
+      - name: Build and Push Multi-Arch Docker Image
         uses: docker/build-push-action@v5
         with:
           context: .
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: |
             ${{ env.IMAGE_NAME }}:staging
@@ -167,6 +175,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # 5. Deploy to Staging Server
       - name: Deploy to Staging Server via SSH
         env:
           DEPLOY_ENC_KEY: ${{ secrets.DEPLOY_ENC_KEY }}
@@ -185,8 +194,8 @@ jobs:
             cd /var/www/makerrepo-staging
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             export DOCKER_IMAGE="${{ env.IMAGE_NAME }}"
-            docker compose -f docker-compose.staging.yml pull
-            docker compose -f docker-compose.staging.yml up -d --remove-orphans
+            docker compose --env-file .env.staging -f docker-compose.staging.yml pull
+            docker compose --env-file .env.staging -f docker-compose.staging.yml up -d --remove-orphans
             docker image prune -f
           EOF
 
