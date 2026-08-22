@@ -15,7 +15,7 @@
       }
     }
   },
-  "postCreateCommand": "mkdir -p certs && ( [ -f certs/saml.key ] || openssl req -x509 -newkey rsa:4096 -keyout certs/saml.key -out certs/saml.crt -days 365 -nodes -subj '/CN=makerrepo' ) && bundle install && yarn install && bin/rails db:prepare",
-  "forwardPorts": [3000, 3036, 5432],
+  "postCreateCommand": "cd /rails && mkdir -p certs && ( [ -f certs/saml.key ] || openssl req -x509 -newkey rsa:4096 -keyout certs/saml.key -out certs/saml.crt -days 365 -nodes -subj '/CN=makerrepo' ) && bundle install && yarn install && bin/rails db:prepare",
+  "forwardPorts": [3000, 3036],
   "remoteUser": "root"
 }

@@ -12,7 +12,9 @@ RUN apt-get update -qq && \
     imagemagick \
     libpq-dev \
     libvips-dev \
+    libyaml-dev \
     openssl \
+    pkg-config \
     postgresql-client \
     tzdata && \
     mkdir -p /etc/apt/keyrings && \
