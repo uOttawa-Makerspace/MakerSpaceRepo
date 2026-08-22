@@ -29,7 +29,7 @@ ENV RAILS_ENV="staging" \
 # ----------------- BUILD STAGE -----------------
 FROM base AS build
 
-# Build dependencies + Node.js 22 LTS & Yarn
+# Install build tools + Node.js 22 LTS & Yarn
 RUN apt-get update -qq && \
     apt-get install --no-install-recommends -y \
     build-essential \
@@ -39,6 +39,7 @@ RUN apt-get update -qq && \
     libpq-dev \
     libvips-dev \
     libyaml-dev \
+    openssl \
     pkg-config && \
     mkdir -p /etc/apt/keyrings && \
     curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
@@ -63,6 +64,10 @@ COPY . .
 # Precompile Bootsnap
 RUN bundle exec bootsnap precompile app/ lib/
 
+# Generate temporary dummy SAML certs for asset precompilation
+RUN mkdir -p certs && \
+    openssl req -x509 -newkey rsa:2048 -keyout certs/saml.key -out certs/saml.crt -days 1 -nodes -subj "/CN=build"
+
 # Precompile Assets (Sprockets + Vite)
 RUN SECRET_KEY_BASE_DUMMY=1 RAILS_ENV=staging bundle exec rails assets:precompile
 
@@ -72,8 +77,9 @@ FROM base
 COPY --from=build "${BUNDLE_PATH}" "${BUNDLE_PATH}"
 COPY --from=build /rails /rails
 
-# Setup non-root user
-RUN mkdir -p certs && \
+# Clean build-time dummy certs, ensure all runtime directories exist, and configure non-root user
+RUN rm -rf certs/* && \
+    mkdir -p certs db log storage tmp && \
     groupadd --system --gid 1000 rails && \
     useradd rails --uid 1000 --gid 1000 --create-home --shell /bin/bash && \
     chown -R rails:rails db log storage tmp certs

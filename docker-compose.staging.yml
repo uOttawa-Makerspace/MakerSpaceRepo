@@ -29,6 +29,9 @@ services:
       RAILS_LOG_TO_STDOUT: "true"
     ports:
       - "127.0.0.1:3005:3000"
+    volumes:
+      - ./certs:/rails/certs:ro
+      - ./secrets.yml:/rails/config/secrets.yml:ro
 
   worker:
     image: ${DOCKER_IMAGE}:staging
@@ -44,6 +47,9 @@ services:
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       RAILS_ENV: staging
       RAILS_LOG_TO_STDOUT: "true"
+    volumes:
+      - ./certs:/rails/certs:ro
+      - ./secrets.yml:/rails/config/secrets.yml:ro
 
 volumes:
   staging_pgdata:
