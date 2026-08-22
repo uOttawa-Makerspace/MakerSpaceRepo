@@ -1,9 +1,9 @@
 default: &default
-  adapter: "<%= Rails.application.credentials[Rails.env.to_sym][:database][:adapter] || 'postgresql' %>"
-  host: "<%= Rails.application.credentials[Rails.env.to_sym][:database][:host] || 'localhost' %>"
-  port: "<%= Rails.application.credentials[Rails.env.to_sym][:database][:port] || 5432 %>"
-  username: "<%= Rails.application.credentials[Rails.env.to_sym][:database][:username] || 'postgres' %>"
-  password: "<%= Rails.application.credentials[Rails.env.to_sym][:database][:password] || 'postgres' %>"
+  adapter: "<%= ENV['DB_ADAPTER'] || Rails.application.credentials.dig(Rails.env.to_sym, :database, :adapter) || 'postgresql' %>"
+  host: "<%= ENV['DB_HOST'] || Rails.application.credentials.dig(Rails.env.to_sym, :database, :host) || 'localhost' %>"
+  port: "<%= ENV['DB_PORT'] || Rails.application.credentials.dig(Rails.env.to_sym, :database, :port) || 5432 %>"
+  username: "<%= ENV['DB_USERNAME'] || Rails.application.credentials.dig(Rails.env.to_sym, :database, :username) || 'postgres' %>"
+  password: "<%= ENV['DB_PASSWORD'] || Rails.application.credentials.dig(Rails.env.to_sym, :database, :password) || 'postgres' %>"
 
 development:
   primary:
