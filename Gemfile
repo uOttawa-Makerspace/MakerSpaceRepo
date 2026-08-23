@@ -50,7 +50,6 @@ gem "solid_queue", "~> 1.2"
 gem "stimulus-rails"
 gem "stripe"
 gem "stripe_event", "~> 2.3", ">= 2.3.1"
-gem "terser", "~> 1.2"
 gem "trix-rails", "~> 2.4", require: "trix"
 gem "vite_rails"
 gem "whenever", require: false

@@ -202,7 +202,6 @@ GEM
       tzinfo
     excon (1.6.0)
       logger
-    execjs (2.10.1)
     factory_bot (6.6.0)
       activesupport (>= 6.1.0)
     factory_bot_rails (6.5.1)
@@ -749,8 +748,6 @@ GEM
       rbs
       syntax_tree (>= 2.0.1)
     temple (0.10.4)
-    terser (1.2.8)
-      execjs (>= 0.3.0, < 3)
     test-prof (1.6.3)
       logger
     thor (1.5.0)
@@ -912,7 +909,6 @@ DEPENDENCIES
   syntax_tree
   syntax_tree-haml
   syntax_tree-rbs
-  terser (~> 1.2)
   test-prof
   trix-rails (~> 2.4)
   vite_rails
