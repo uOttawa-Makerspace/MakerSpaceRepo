@@ -2,23 +2,29 @@
   <button class="d-xl-none" id="ShortcutButton" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas-shortcuts" aria-controls="offcanvas-shortcuts">
     Shortcuts
   </button>
+  
   <div class="container-fluid">
     <%= render 'partials/announcements' %>
+    
     <div class="row g-0">
-      <!--Left column -->
+      
+      <!-- ========================================== -->
+      <!-- LEFT COLUMN: SHORTCUTS & RESOURCES         -->
+      <!-- ========================================== -->
       <div class="col-xl-3 order-xl-0 order-1 offcanvas-xl offcanvas-start" id="offcanvas-shortcuts" aria-labelledby="shortcutsOffcanvasLabel">
         <div class="offcanvas-header pb-0">
           <h2 class="offcanvas-title" id="shortcutsOffcanvasLabel">Shortcuts</h2>
           <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#offcanvas-shortcuts" aria-label="Close"></button>
         </div>
         <div class="offcanvas-body p-xl-0 d-flex flex-column">
-          <!-- Staff Resources -->
-          <% if @user.staff? %>
+          
+          <!-- Staff Resources (Logged-in Staff only) -->
+          <% if signed_in? && current_user.staff? %>
             <div class="card home-card">
               <div class="card-body">
                 <h2><%= t('home.staff_resources.header') %></h2>
                 <ul class="list-unstyled">
-                  <% if @user.admin? %>
+                  <% if current_user.admin? %>
                     <li><%= link_to t('home.staff_resources.admin_area'), admin_settings_path %></li>
                   <% end %>
                   <li><%= link_to t('home.staff_resources.staff_area'), staff_dashboard_index_path %></li>
@@ -28,6 +34,7 @@
               </div>
             </div>
           <% end %>
+
           <!-- General Resources -->
           <div class="card home-card">
             <div class="card-body">
@@ -37,41 +44,50 @@
                 <li><%= link_to t('navbar.makerstore'), "https://makerstore.ca/" %></li>
                 <li><%= link_to t('home.general_resources.job_orders'), job_orders_path %></li>
                 <% if LockerOption.lockers_enabled %>
-                    <li><%= link_to t('home.general_resources.locker_rentals'), locker_rentals_path %></li>
+                  <li><%= link_to t('home.general_resources.locker_rentals'), locker_rentals_path %></li>
                 <% end %>
               </ul>
             </div>
           </div>
+
           <%= render 'static_pages/home_shortcuts' %>
           <%= render 'static_pages/home_volunteer' if signed_in? && current_user.volunteer? %>
           <%= render 'static_pages/home_development' if signed_in? && current_user.dev_program? %>
         </div>
       </div>
-      <!--Middle column -->
+
+      <!-- ========================================== -->
+      <!-- MIDDLE COLUMN: HOURS, EXPLORE, MAKERSTORE  -->
+      <!-- ========================================== -->
       <div class="col-xl-6 order-xl-1 order-0">
-        <%= begin
-              render 'static_pages/home_hours'
-            rescue StandardError
-              nil
-            end %>
-        <!-- Explore Section -->
-        <%= begin
-              render 'static_pages/home_explore'
-            rescue StandardError
-              nil
-            end %>
-        <!-- Makerstore Section -->
-        <%= render 'static_pages/home_makerstore' %>
+        <!-- Cached Hours Section -->
+        <% cache ['home_hours', I18n.locale, @contact_info.hash], expires_in: 30.minutes do %>
+          <%= render 'static_pages/home_hours' %>
+        <% end %>
+
+        <!-- Cached Explore Section -->
+        <% cache ['home_explore', I18n.locale, @recent_projects.hash], expires_in: 10.minutes do %>
+          <%= render 'static_pages/home_explore' %>
+        <% end %>
+
+        <!-- Cached Makerstore Section -->
+        <% cache ['home_makerstore', I18n.locale, @makerstore_links.hash], expires_in: 1.hour do %>
+          <%= render 'static_pages/home_makerstore' %>
+        <% end %>
       </div>
 
-      <!--Right column -->
-      <!-- Set a fixed column size to prevent Badges from expanding more -->
+      <!-- ========================================== -->
+      <!-- RIGHT COLUMN: USER INFO & WORKSHOPS        -->
+      <!-- ========================================== -->
       <div class="col-xl-3 order-xl-2 order-1">
-        <%= render partial: 'home_userinfo' %>
-        <%= render partial: 'home_badges' if signed_in? %>
-        <%= render partial: 'home_skills' if signed_in? %>
-        
-        <!-- Newsletter Card -->
+        <!-- User Info / Badges / Skills (Signed-in only) -->
+        <% if signed_in? %>
+          <%= render partial: 'home_userinfo' %>
+          <%= render partial: 'home_badges' %>
+          <%= render partial: 'home_skills' %>
+        <% end %>
+
+        <!-- Newsletter Card (Static) -->
         <div class="card home-card" id="home-big-newsletter">
           <div class="card-body">
             <h2><%= t('home.newsletter.header') %></h2>
@@ -85,28 +101,40 @@
             </a>
           </div>
         </div>
-        
-        <!-- Hidden for now :^) -->
-        <div class="card home-card">
-          <div class="card-body">
-            <h2><%= t('home.workshops.header') %></h2>
-            <a href="https://simpli.events/u/uottawaceed"><%= t('home.workshops.link') %></a>
-            <% @workshops.each do |w| %>
-              <% start = Time.zone.at(w['startTime'].to_i / 1000) %>
-              <a class="d-flex workshop-card" href="<%= w['link'] %>">
-                <div class="text-center workshop-date" style="background-image: url('<%= w['picture'] %>')">
-                  <p style="font-size: 2rem;"><%= start.day %><br /> <span style="font-size: 1.5rem"><%= start.strftime '%b' %></span></p>
-                </div>
-                <div class="workshop-desc">
-                  <p class="workshop-title"><%= w['name'] %></p>
-                  <p class="workshop-date-side"><%= start.strftime '%a, %b %d, %l:%M %p' %></p>
-                  <!-- <p class="workshop-cost">Free</p> -->
-                </div>
-              </a>
-            <% end %>
+
+        <!-- Cached Workshops Section -->
+        <% cache ['home_workshops', I18n.locale, @workshops.hash], expires_in: 15.minutes do %>
+          <div class="card home-card">
+            <div class="card-body">
+              <h2><%= t('home.workshops.header') %></h2>
+              <a href="https://simpli.events/u/uottawaceed" target="_blank" rel="noopener noreferrer"><%= t('home.workshops.link') %></a>
+              
+              <% if @workshops.empty? %>
+                <p class="text-body-secondary small mt-3">No upcoming workshops scheduled.</p>
+              <% else %>
+                <% @workshops.each do |w| %>
+                  <% start = begin
+                               Time.zone.at(w['startTime'].to_i / 1000)
+                             rescue StandardError
+                               Time.zone.now
+                             end %>
+                  <a class="d-flex workshop-card" href="<%= w['link'] %>" target="_blank" rel="noopener noreferrer">
+                    <div class="text-center workshop-date" style="background-image: url('<%= w['picture'] %>')">
+                      <p style="font-size: 2rem;"><%= start.day %><br /> <span style="font-size: 1.5rem"><%= start.strftime '%b' %></span></p>
+                    </div>
+                    <div class="workshop-desc">
+                      <p class="workshop-title"><%= w['name'] %></p>
+                      <p class="workshop-date-side"><%= start.strftime '%a, %b %d, %l:%M %p' %></p>
+                    </div>
+                  </a>
+                <% end %>
+              <% end %>
+            </div>
           </div>
-        </div>
+        <% end %>
+
       </div>
+
     </div>
   </div>
 </section>
