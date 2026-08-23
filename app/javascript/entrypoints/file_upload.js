@@ -234,11 +234,26 @@ function createFileInput(target) {
   if (target.dataset.fileUploadInitialized) return;
   target.dataset.fileUploadInitialized = "true";
 
-  if (!target.dataset.fileUploadPrefix) {
-    throw new Error(
-      "file_upload: data-file-upload-prefix is required on " + target.name,
-    );
+  // Fallback to name if data-file-upload-prefix is missing
+  const prefix =
+    target.dataset.fileUploadPrefix ||
+    (target.name ? target.name.replace(/\[\]$/, "") : null);
+
+  if (!prefix) {
+    console.warn("file_upload: data-file-upload-prefix is required on", target);
+    return;
   }
+  target.dataset.fileUploadPrefix = prefix;
+
+  // Infer default suffix for nested attributes if not specified
+  if (!target.dataset.fileUploadSuffix) {
+    if (prefix.includes("photos_attributes")) {
+      target.dataset.fileUploadSuffix = "image";
+    } else if (prefix.includes("repo_files_attributes")) {
+      target.dataset.fileUploadSuffix = "file";
+    }
+  }
+
   target.removeAttribute("name");
   target.addEventListener("change", onFileUpload);
 
@@ -246,13 +261,14 @@ function createFileInput(target) {
     target.dataset.fileUploadPreviewSelector,
   );
   if (!preview) {
-    throw new Error(
+    console.warn(
       "file_upload: preview pane not found for selector " +
         target.dataset.fileUploadPreviewSelector,
     );
+    return;
   }
 
-  //  Pre-existing items: hook up delete buttons
+  // Pre-existing items: hook up delete buttons
   preview.querySelectorAll(".file-upload-item-preview").forEach((box) => {
     const deleteBtn = box.querySelector("[data-file-upload-item-delete]");
     const destroyInput = box.querySelector("[data-file-upload-hidden-destroy]");
@@ -267,13 +283,13 @@ function createFileInput(target) {
     }
   });
 
-  //  Sortable reordering (gallery images)
+  // Sortable reordering (gallery images)
   if (preview.hasAttribute("data-file-upload-sortable")) {
     setupSortable(preview);
     updatePositions(preview);
   }
 
-  //  Drop zone
+  // Drop zone
   const dropZone = target.closest(".file-upload-drop-zone");
   if (dropZone) {
     setupDropZone(dropZone, target);
