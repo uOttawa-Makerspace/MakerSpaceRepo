@@ -13,9 +13,13 @@
         <div class="card-body p-0">
           <div class="table-responsive">
             <div class="p-3 bg-body-tertiary border-bottom border-secondary-subtle d-flex justify-content-between align-items-center">
-              <span class="text-body-secondary small"><%= page_entries_info @pending_bookings, model: 'subspace_booking' %></span>
-              <div class="apple_pagination m-0">
-                <%= will_paginate @pending_bookings, container: false, param_name: 'pending_page' %>
+              <% if @pagy_pending && @pagy_pending.count > 0 %>
+                <span class="text-body-secondary small">Displaying <b><%= @pagy_pending.from %></b> - <b><%= @pagy_pending.to %></b> of <b><%= @pagy_pending.count %></b> bookings</span>
+              <% else %>
+                <span class="text-body-secondary small">0 bookings found</span>
+              <% end %>
+              <div class="m-0">
+                <%== @pagy_pending.series_nav if @pagy_pending && @pagy_pending.pages > 1 %>
               </div>
             </div>
 
@@ -114,9 +118,13 @@
         <div class="card-body p-0">
           <div class="table-responsive">
             <div class="p-3 bg-body-tertiary border-bottom border-secondary-subtle d-flex justify-content-between align-items-center">
-              <span class="text-body-secondary small"><%= page_entries_info @approved_bookings, model: 'subspace_booking' %></span>
-              <div class="apple_pagination m-0">
-                <%= will_paginate @approved_bookings, container: false, param_name: 'approved_page' %>
+              <% if @pagy_approved && @pagy_approved.count > 0 %>
+                <span class="text-body-secondary small">Displaying <b><%= @pagy_approved.from %></b> - <b><%= @pagy_approved.to %></b> of <b><%= @pagy_approved.count %></b> bookings</span>
+              <% else %>
+                <span class="text-body-secondary small">0 bookings found</span>
+              <% end %>
+              <div class="m-0">
+                <%== @pagy_approved.series_nav if @pagy_approved && @pagy_approved.pages > 1 %>
               </div>
             </div>
             
@@ -173,9 +181,13 @@
         <div class="card-body p-0">
           <div class="table-responsive">
             <div class="p-3 bg-body-tertiary border-bottom border-secondary-subtle d-flex justify-content-between align-items-center">
-              <span class="text-body-secondary small"><%= page_entries_info @declined_bookings, model: 'subspace_booking' %></span>
-              <div class="apple_pagination m-0">
-                <%= will_paginate @declined_bookings, container: false, param_name: 'denied_page' %>
+              <% if @pagy_declined && @pagy_declined.count > 0 %>
+                <span class="text-body-secondary small">Displaying <b><%= @pagy_declined.from %></b> - <b><%= @pagy_declined.to %></b> of <b><%= @pagy_declined.count %></b> bookings</span>
+              <% else %>
+                <span class="text-body-secondary small">0 bookings found</span>
+              <% end %>
+              <div class="m-0">
+                <%== @pagy_declined.series_nav if @pagy_declined && @pagy_declined.pages > 1 %>
               </div>
             </div>
             
@@ -310,9 +322,13 @@
         <div class="card-body p-0">
           <div class="table-responsive">
             <div class="p-3 bg-body-tertiary border-bottom border-secondary-subtle d-flex justify-content-between align-items-center">
-              <span class="text-body-secondary small"><%= page_entries_info @old_pending_bookings, model: 'subspace_booking' %></span>
-              <div class="apple_pagination m-0">
-                <%= will_paginate @old_pending_bookings, container: false, param_name: 'old_pending_page' %>
+              <% if @pagy_old_pending && @pagy_old_pending.count > 0 %>
+                <span class="text-body-secondary small">Displaying <b><%= @pagy_old_pending.from %></b> - <b><%= @pagy_old_pending.to %></b> of <b><%= @pagy_old_pending.count %></b> bookings</span>
+              <% else %>
+                <span class="text-body-secondary small">0 bookings found</span>
+              <% end %>
+              <div class="m-0">
+                <%== @pagy_old_pending.series_nav if @pagy_old_pending && @pagy_old_pending.pages > 1 %>
               </div>
             </div>
             <table class="table table-hover align-middle mb-0">
@@ -358,9 +374,13 @@
         <div class="card-body p-0">
           <div class="table-responsive">
             <div class="p-3 bg-body-tertiary border-bottom border-secondary-subtle d-flex justify-content-between align-items-center">
-              <span class="text-body-secondary small"><%= page_entries_info @old_approved_bookings, model: 'subspace_booking' %></span>
-              <div class="apple_pagination m-0">
-                <%= will_paginate @old_approved_bookings, container: false, param_name: 'old_approved_page' %>
+              <% if @pagy_old_approved && @pagy_old_approved.count > 0 %>
+                <span class="text-body-secondary small">Displaying <b><%= @pagy_old_approved.from %></b> - <b><%= @pagy_old_approved.to %></b> of <b><%= @pagy_old_approved.count %></b> bookings</span>
+              <% else %>
+                <span class="text-body-secondary small">0 bookings found</span>
+              <% end %>
+              <div class="m-0">
+                <%== @pagy_old_approved.series_nav if @pagy_old_approved && @pagy_old_approved.pages > 1 %>
               </div>
             </div>
             <table class="table table-hover align-middle mb-0">
@@ -406,9 +426,13 @@
         <div class="card-body p-0">
           <div class="table-responsive">
             <div class="p-3 bg-body-tertiary border-bottom border-secondary-subtle d-flex justify-content-between align-items-center">
-              <span class="text-body-secondary small"><%= page_entries_info @old_declined_bookings, model: 'subspace_booking' %></span>
-              <div class="apple_pagination m-0">
-                <%= will_paginate @old_declined_bookings, container: false, param_name: 'old_denied_page' %>
+              <% if @pagy_old_declined && @pagy_old_declined.count > 0 %>
+                <span class="text-body-secondary small">Displaying <b><%= @pagy_old_declined.from %></b> - <b><%= @pagy_old_declined.to %></b> of <b><%= @pagy_old_declined.count %></b> bookings</span>
+              <% else %>
+                <span class="text-body-secondary small">0 bookings found</span>
+              <% end %>
+              <div class="m-0">
+                <%== @pagy_old_declined.series_nav if @pagy_old_declined && @pagy_old_declined.pages > 1 %>
               </div>
             </div>
             <table class="table table-hover align-middle mb-0">

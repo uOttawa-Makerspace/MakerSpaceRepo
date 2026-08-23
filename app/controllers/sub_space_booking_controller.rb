@@ -43,23 +43,18 @@ class SubSpaceBookingController < SessionsController
         .joins(:user)
         .includes(:sub_space, :sub_space_booking_status)
         .order(start_time: :desc)
+
     if current_user.admin?
-      # Use a consistent timestamp for all queries
-      # NOTE: this gives system time, set in config.time_zone
-      # Keep it because we're using Time.zone elsewhere in this controller
-      # https://thoughtbot.com/blog/its-about-time-zones
       @current_time = Time.now
       
-      # Need to get the booking status from the sub space booking status table for the booking
-      @pending_bookings = current_bookings(BookingStatus::PENDING.id)
-      
+      @pagy_pending, @pending_bookings = current_bookings(BookingStatus::PENDING.id, page_key: "pending_page")
       load_recurring_bookings_for_page(@pending_bookings)
       
-      @approved_bookings = current_bookings(BookingStatus::APPROVED.id)
-      @declined_bookings = current_bookings(BookingStatus::DECLINED.id)
-      @old_pending_bookings = old_bookings(BookingStatus::PENDING.id)
-      @old_approved_bookings = old_bookings(BookingStatus::APPROVED.id)
-      @old_declined_bookings = old_bookings(BookingStatus::DECLINED.id)
+      @pagy_approved, @approved_bookings = current_bookings(BookingStatus::APPROVED.id, page_key: "approved_page")
+      @pagy_declined, @declined_bookings = current_bookings(BookingStatus::DECLINED.id, page_key: "declined_page")
+      @pagy_old_pending, @old_pending_bookings = old_bookings(BookingStatus::PENDING.id, page_key: "old_pending_page")
+      @pagy_old_approved, @old_approved_bookings = old_bookings(BookingStatus::APPROVED.id, page_key: "old_approved_page")
+      @pagy_old_declined, @old_declined_bookings = old_bookings(BookingStatus::DECLINED.id, page_key: "old_declined_page")
     end
 
     @supervisors = []
@@ -742,25 +737,26 @@ class SubSpaceBookingController < SessionsController
     booking.destroy!
   end
 
-  def current_bookings(booking_status_id)
-    SubSpaceBookingStatus
-      .includes(sub_space_booking: [:approved_by, :user, :recurring_booking, {sub_space: :space}])
-      .where(booking_status_id: booking_status_id)
-      .order("sub_space_bookings.start_time": :asc)
-      .map { |booking_status| booking_status.sub_space_booking }
-      .select { |booking| booking.end_time > @current_time }  # Use consistent timestamp
-      .paginate(page: params[:pending_page], per_page: 15)
+  def current_bookings(booking_status_id, page_key: "pending_page")
+    scope = SubSpaceBooking
+              .joins(:sub_space_booking_status)
+              .where(sub_space_booking_statuses: { booking_status_id: booking_status_id })
+              .where("sub_space_bookings.end_time > ?", @current_time)
+              .includes(:approved_by, :user, :recurring_booking, sub_space: :space)
+              .order(start_time: :asc)
+
+    pagy(scope, page_key: page_key, limit: 15)
   end
 
-  def old_bookings(booking_status_id)
-    SubSpaceBookingStatus
-      .includes(sub_space_booking: [:approved_by, :user, :recurring_booking, {sub_space: :space}])
-      .where(booking_status_id: booking_status_id)
-      .order("sub_space_bookings.start_time": :asc)
-      .map { |booking_status| booking_status.sub_space_booking }
-      .select { |booking| booking.end_time < @current_time }  # Use consistent timestamp
-      .reverse
-      .paginate(page: params[:old_approved_page], per_page: 15)
+  def old_bookings(booking_status_id, page_key: "old_approved_page")
+    scope = SubSpaceBooking
+              .joins(:sub_space_booking_status)
+              .where(sub_space_booking_statuses: { booking_status_id: booking_status_id })
+              .where("sub_space_bookings.end_time < ?", @current_time)
+              .includes(:approved_by, :user, :recurring_booking, sub_space: :space)
+              .order(start_time: :desc)
+
+    pagy(scope, page_key: page_key, limit: 15)
   end
 
   def user_account

@@ -48,7 +48,7 @@ class Admin::UsersController < AdminAreaController
     end
 
     @query = params[:q]
-    @users = search_users(@query, params[:filter])
+    @pagy, @users = search_users(@query, params[:filter])
   end
 
   def show
@@ -210,7 +210,6 @@ class Admin::UsersController < AdminAreaController
   end
 
   def load_signed_in_users
-    # Set default sort for signed in users
     if params[:sort].blank? && params[:direction].blank?
       params[:sort] = "sign_in_time"
       params[:direction] = "desc"
@@ -218,7 +217,6 @@ class Admin::UsersController < AdminAreaController
 
     @users_temp = LabSession.joins(:user).where("sign_out_time > ?", Time.zone.now)
     
-    # SECURITY FIX: Use parameterized query instead of string interpolation
     if params[:location].present?
       @users_temp = @users_temp.joins(sanitized_pi_readers_join)
                                .where("LOWER(pi_readers.pi_location) = LOWER(?)", params[:location])
@@ -230,14 +228,12 @@ class Admin::UsersController < AdminAreaController
     else
       @users_temp = @users_temp.order(lab_sessions: { sign_in_time: :desc })
     end
-    @users_temp = @users_temp.paginate(page: params[:page], per_page: 20)
-    
-    @users = @users_temp.includes(:user).map(&:user)
-    @total_pages = @users_temp.total_pages
+
+    @pagy, @users_temp = pagy(@users_temp.includes(:user), limit: 20)
+    @users = @users_temp.map(&:user)
   end
 
   def load_new_users
-    # Set default sort for new users
     if params[:sort].blank? && params[:direction].blank?
       params[:sort] = "created_at"
       params[:direction] = "desc"
@@ -252,8 +248,7 @@ class Admin::UsersController < AdminAreaController
       base_scope = base_scope.order(created_at: :desc)
     end
 
-    @users = base_scope.paginate(page: params[:page], per_page: 20)
-    @total_pages = @users.total_pages
+    @pagy, @users = pagy(base_scope, limit: 20)
   end
 
   # SECURITY FIX: Safe join without user input in SQL string
@@ -291,7 +286,7 @@ class Admin::UsersController < AdminAreaController
       scope = scope.order(created_at: :desc)
     end
 
-    scope.paginate(page: params[:page], per_page: 20)
+    pagy(scope, limit: 20)
   end
 
   # ============================================

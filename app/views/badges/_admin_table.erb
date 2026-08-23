@@ -4,10 +4,16 @@
     </div>
   </div>
   <h2 class="text-center">Awarded and Revoked Badges</h2>
-  <div class="apple_pagination">
-    <%= page_entries_info @order_items_done, model: 'badge' %>
-    <%= will_paginate @order_items_done, container: false %>
+  
+  <div class="apple_pagination text-center mb-3">
+    <% if @pagy_order_items_done && @pagy_order_items_done.count > 0 %>
+      <small class="text-muted d-block mb-2">
+        Displaying badges <b><%= @pagy_order_items_done.from %></b> - <b><%= @pagy_order_items_done.to %></b> of <b><%= @pagy_order_items_done.count %></b> in total
+      </small>
+    <% end %>
+    <%== @pagy_order_items_done.series_nav if @pagy_order_items_done && @pagy_order_items_done.pages > 1 %>
   </div>
+
   <% if @order_items_done.present? %>
     <div class="text-center">
       <table class="table table-striped" id="awarded-badge-table">

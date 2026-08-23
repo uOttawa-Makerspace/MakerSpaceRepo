@@ -30,24 +30,18 @@ class VolunteerTaskRequestsController < SessionsController
       @volunteer_task_requests = VolunteerTaskRequest.all :
       @volunteer_task_requests = current_user.volunteer_task_requests
     @total_volunteers = User.volunteers.count
+
+    scope = @volunteer_task_requests
+              .not_processed
+              .includes(%i[volunteer_task user])
+              .joins(:volunteer_task, :user)
+              .order(created_at: :desc)
+
     if params[:search_pending].present?
-      @pending_volunteer_task_requests =
-        @volunteer_task_requests
-          .not_processed
-          .includes(%i[volunteer_task user])
-          .joins(:volunteer_task, :user)
-          .filter_by_attribute(params[:search_pending])
-          .order(created_at: :desc)
-          .paginate(page: params[:page], per_page: 15)
-    else
-      @pending_volunteer_task_requests =
-        @volunteer_task_requests
-          .not_processed
-          .includes(%i[volunteer_task user])
-          .joins(:volunteer_task, :user)
-          .order(created_at: :desc)
-          .paginate(page: params[:page], per_page: 15)
+      scope = scope.filter_by_attribute(params[:search_pending])
     end
+
+    @pagy_pending, @pending_volunteer_task_requests = pagy(scope, page_key: "page_pending", limit: 15)
     respond_to { |format| format.js }
   end
 
@@ -56,24 +50,18 @@ class VolunteerTaskRequestsController < SessionsController
       @volunteer_task_requests = VolunteerTaskRequest.all :
       @volunteer_task_requests = current_user.volunteer_task_requests
     @total_volunteers = User.volunteers.count
+
+    scope = @volunteer_task_requests
+              .processed
+              .includes(%i[volunteer_task user])
+              .joins(:volunteer_task, :user)
+              .order(created_at: :desc)
+
     if params[:search_processed].present?
-      @processed_volunteer_task_requests =
-        @volunteer_task_requests
-          .processed
-          .includes(%i[volunteer_task user])
-          .joins(:volunteer_task, :user)
-          .filter_by_attribute(params[:search_processed])
-          .order(created_at: :desc)
-          .paginate(page: params[:page], per_page: 15)
-    else
-      @processed_volunteer_task_requests =
-        @volunteer_task_requests
-          .processed
-          .includes(%i[volunteer_task user])
-          .joins(:volunteer_task, :user)
-          .order(created_at: :desc)
-          .paginate(page: params[:page], per_page: 15)
+      scope = scope.filter_by_attribute(params[:search_processed])
     end
+
+    @pagy_processed, @processed_volunteer_task_requests = pagy(scope, page_key: "page_processed", limit: 15)
     respond_to { |format| format.js }
   end
 
