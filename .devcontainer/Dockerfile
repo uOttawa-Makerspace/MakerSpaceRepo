@@ -1,32 +1,44 @@
-ARG RUBY_VERSION=4.0.5
-FROM ruby:$RUBY_VERSION-slim
+# syntax = docker/dockerfile:1
+ARG RUBY_VERSION=4.0.6
+FROM ruby:${RUBY_VERSION}-alpine3.24 AS base
 
-# Install system dependencies + Node.js 24 + PostgreSQL client + Foreman
-RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y \
-    build-essential \
+WORKDIR /rails
+
+# Install all development tools, compilers, and libraries
+RUN apk add --no-cache \
+    bash \
+    build-base \
     ca-certificates \
     curl \
     git \
-    gnupg \
-    libpq-dev \
-    libvips-dev \
-    libyaml-dev \
+    jemalloc \
+    libpq \
+    openssh-client \
     openssl \
-    pkg-config \
+    openssl-dev \
+    pkgconfig \
     postgresql-client \
-    tzdata && \
-    mkdir -p /etc/apt/keyrings && \
-    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
-    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_24.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list && \
-    apt-get update && \
-    apt-get install -y nodejs && \
-    npm install -g yarn && \
-    gem install foreman && \
-    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+    postgresql-dev \
+    tzdata \
+    vips \
+    vips-dev \
+    yaml \
+    yaml-dev
 
-WORKDIR /rails
-ENV BUNDLE_PATH="/usr/local/bundle"
-ENV PATH="/rails/bin:${PATH}"
+# Copy Node.js 24 and NPM from official Node Alpine image
+COPY --from=node:24-alpine /usr/local/bin/node /usr/local/bin/node
+COPY --from=node:24-alpine /usr/local/lib/node_modules /usr/local/lib/node_modules
+RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm && \
+    ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx && \
+    npm install -g yarn
+
+# Install Foreman for local process management (Procfile.dev)
+RUN gem install foreman
+
+# Configure environment
+ENV BUNDLE_PATH="/usr/local/bundle" \
+    LD_PRELOAD="/usr/lib/libjemalloc.so.2" \
+    PATH="/rails/bin:${PATH}" \
+    HISTFILE="/rails/tmp/.bash_history"
 
 CMD ["sleep", "infinity"]

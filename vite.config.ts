@@ -2,6 +2,9 @@ import { defineConfig } from "vite";
 import RubyPlugin from "vite-plugin-ruby";
 
 export default defineConfig({
+  build: {
+    sourcemap: false, // Ensures we don't ship multi-megabyte .map files
+  },
   plugins: [RubyPlugin()],
   server: {
     host: "0.0.0.0",

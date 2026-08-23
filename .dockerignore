@@ -32,6 +32,8 @@ node_modules
 public/packs*
 public/assets
 public/vite*
+public/vite-dev
+public/vite-test
 
 # Test & Development files (Not needed in staging/prod Docker image)
 # This prevents test code changes from busting the `COPY . .` Docker cache!

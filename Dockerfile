@@ -1,93 +1,106 @@
 # syntax = docker/dockerfile:1
-
-ARG RUBY_VERSION=4.0.5
-FROM ruby:$RUBY_VERSION-slim AS base
+ARG RUBY_VERSION=4.0.6
+FROM ruby:${RUBY_VERSION}-alpine3.24 AS base
 
 WORKDIR /rails
 
-# Runtime system dependencies ONLY
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    apt-get update -qq && \
-    apt-get install --no-install-recommends -y \
-    curl libjemalloc2 libpq5 libvips42 openssl tzdata && \
-    rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
+# RUNTIME DEPENDENCIES ONLY
+RUN apk add --no-cache \
+    bash \
+    curl \
+    jemalloc \
+    libpq \
+    tzdata \
+    vips \
+    yaml
 
-# Configure non-root user in base
-RUN groupadd --system --gid 1000 rails && \
-    useradd rails --uid 1000 --gid 1000 --create-home --shell /bin/bash
+# Alpine non-root user setup
+RUN addgroup -g 1000 -S rails && \
+    adduser -u 1000 -S -G rails -h /rails -s /bin/sh rails
 
-# Performance & environment flags
+# Runtime environment flags
 ENV RAILS_ENV="staging" \
     BUNDLE_DEPLOYMENT="1" \
     BUNDLE_PATH="/usr/local/bundle" \
-    BUNDLE_WITHOUT="development:test" \
-    LD_PRELOAD="libjemalloc.so.2" \
+    BUNDLE_WITHOUT="development:test:deploy" \
+    LD_PRELOAD="/usr/lib/libjemalloc.so.2" \
     RUBYOPT="--yjit" \
-    HUSKY="0"
+    HUSKY="0" \
+    PATH="/rails/bin:${PATH}"
 
 # ----------------- BUILD STAGE -----------------
 FROM base AS build
 
-# Copy Node.js and NPM from official Node 24 image
-COPY --from=node:24-bookworm-slim /usr/local/bin/node /usr/local/bin/node
-COPY --from=node:24-bookworm-slim /usr/local/lib/node_modules /usr/local/lib/node_modules
+# BUILD TOOLS (Using BuildKit APK cache for fast rebuilds)
+RUN --mount=type=cache,target=/var/cache/apk \
+    apk add \
+    build-base \
+    ca-certificates \
+    git \
+    libpq-dev \
+    nodejs \
+    openssl \
+    openssl-dev \
+    pkgconfig \
+    vips-dev \
+    yaml-dev \
+    yarn
 
-# Recreate npm/npx symlinks and install Yarn globally
-RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm && \
-    ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx && \
-    npm install -g yarn
-
-# Install build tools + BuildKit apt cache
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    apt-get update -qq && \
-    apt-get install --no-install-recommends -y \
-    build-essential ca-certificates git libpq-dev libvips-dev libyaml-dev pkg-config && \
-    rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
-
-# Install gems + BuildKit bundle cache + native C-extension artifact cleanup
+# Install Gems & Safe Stripping
 COPY Gemfile Gemfile.lock ./
 RUN --mount=type=cache,target=/usr/local/bundle/cache \
     --mount=type=cache,target=/root/.bundle \
+    bundle config set clean true && \
     bundle install && \
     rm -rf "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
-    find "${BUNDLE_PATH}"/ruby/*/gems/ -name "*.c" -delete && \
-    find "${BUNDLE_PATH}"/ruby/*/gems/ -name "*.o" -delete && \
-    find "${BUNDLE_PATH}"/ruby/*/gems/ -name "*.h" -delete
+    rm -rf "${BUNDLE_PATH}"/ruby/*/cache/*.gem && \
+    find "${BUNDLE_PATH}"/ruby/*/gems/ -name "*.so" -exec strip -s {} + 2>/dev/null || true && \
+    find "${BUNDLE_PATH}"/ruby/*/gems/ -mindepth 2 -maxdepth 2 -type d \( -name "spec" -o -name "test" -o -name "tests" -o -name "doc" -o -name "examples" -o -name "benchmark" -o -name "fixtures" \) -exec rm -rf {} + && \
+    find "${BUNDLE_PATH}"/ruby/*/gems/ \( -name "*.c" -o -name "*.o" -o -name "*.h" -o -name "*.rdoc" -o -name "*.md" -o -name "CHANGELOG*" -o -name "README*" \) -delete
 
-# Install JS packages + BuildKit yarn cache
+# Install JS Packages
 COPY package.json yarn.lock ./
-RUN --mount=type=cache,target=/usr/local/share/.cache/yarn \
-    HUSKY=0 yarn install --frozen-lockfile --ignore-scripts
+RUN --mount=type=cache,target=/root/.cache/yarn \
+    yarn install --frozen-lockfile --ignore-scripts
 
-# Copy app code
+# Copy Application Code
 COPY . .
 
-# Generate temporary dummy SAML certs for asset precompilation
+# Generate dummy SAML certs for asset precompilation
 RUN mkdir -p certs && \
-    openssl req -x509 -newkey rsa:2048 -keyout certs/saml.key -out certs/saml.crt -days 1 -nodes -subj "/CN=build"
+    openssl req -x509 -newkey rsa:2048 -keyout certs/saml.key -out certs/saml.crt \
+      -days 1 -nodes -subj "/CN=build"
 
-# Precompile Bootsnap
+# Precompile Bootsnap cache
 RUN bundle exec bootsnap precompile app/ lib/
 
-# Precompile Assets (Sprockets + Vite) + BuildKit assets cache
+# Precompile Assets (Sprockets + Vite)
 RUN --mount=type=cache,target=/rails/tmp/cache/assets \
     SECRET_KEY_BASE_DUMMY=1 RAILS_ENV=staging bundle exec rails assets:precompile
 
-# Strip node_modules and temporary build caches before final copy
-RUN rm -rf node_modules tmp/cache
+# Ensure runtime directories exist in the build stage with clean state
+RUN mkdir -p certs db log storage tmp
+
+# Delete build artifacts, duplicate raw assets, frontend sources, sourcemaps, and compiler caches
+RUN rm -rf node_modules \
+           package.json \
+           yarn.lock \
+           .yarn \
+           vite.config.* \
+           app/javascript \
+           app/assets \
+           certs/* \
+           public/vite-dev \
+           public/vite-test && \
+    find tmp/cache/ -mindepth 1 -maxdepth 1 ! -name 'bootsnap*' -exec rm -rf {} + && \
+    find public/ -name "*.map" -type f -delete
 
 # ----------------- FINAL RUNTIME STAGE -----------------
 FROM base
 
-# Copy app and bundle with pre-set ownership
+# Copy gems and application (ownership already set to rails:rails)
 COPY --from=build --chown=rails:rails "${BUNDLE_PATH}" "${BUNDLE_PATH}"
 COPY --from=build --chown=rails:rails /rails /rails
-
-# Ensure runtime directories exist with appropriate permissions
-RUN mkdir -p certs db log storage tmp && \
-    chown -R rails:rails db log storage tmp certs
 
 USER rails:rails
 
