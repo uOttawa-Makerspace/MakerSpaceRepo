@@ -27,6 +27,11 @@ services:
       RAILS_ENV: staging
       RAILS_SERVE_STATIC_FILES: "true"
       RAILS_LOG_TO_STDOUT: "true"
+      # Concurrency & Memory Tuning (Utilizes 6GB RAM on 1 vCPU)
+      WEB_CONCURRENCY: "2" # 2 Puma worker processes
+      RAILS_MAX_THREADS: "10" # 10 threads per worker = 20 simultaneous request slots
+      DB_POOL: "25" # Allows 20 web threads + safety headroom to connect to DB
+      SOLID_QUEUE_IN_PUMA: "false"
     ports:
       - "127.0.0.1:3005:3000"
     volumes:
@@ -47,6 +52,7 @@ services:
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       RAILS_ENV: staging
       RAILS_LOG_TO_STDOUT: "true"
+      DB_POOL: "10"
     volumes:
       - ./certs:/rails/certs:ro
       - ./secrets.yml:/rails/config/secrets.yml:ro
