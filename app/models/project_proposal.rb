@@ -17,6 +17,8 @@ class ProjectProposal < ApplicationRecord
   has_many_attached :photos
   has_many_attached :project_files
 
+  attribute :season, :integer
+
   enum :approved, { not_approved: 0, approved: 1 }
   enum :season, { fall: 0, summer: 1, winter: 2 }
 

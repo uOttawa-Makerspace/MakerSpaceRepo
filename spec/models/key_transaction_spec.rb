@@ -3,7 +3,7 @@ require "rails_helper"
 RSpec.describe KeyTransaction, type: :model do
   describe "Associations" do
     context "belongs_to" do
-      it { should belong_to(:user).without_validating_presence }
+      it { should belong_to(:holder).without_validating_presence }
       it { should belong_to(:key).without_validating_presence }
     end
   end
@@ -16,8 +16,8 @@ RSpec.describe KeyTransaction, type: :model do
         create(:key, :regular_key_type, :inventory_status, space_id: @space.id)
     end
 
-    context "user validation" do
-      it "should be valid since user is present" do
+    context "holder validation" do
+      it "should be valid since a User holder is present" do
         kt =
           build(
             :key_transaction,
@@ -28,7 +28,19 @@ RSpec.describe KeyTransaction, type: :model do
         expect(kt.valid?).to be_truthy
       end
 
-      it "should be invalid since user is not present" do
+      it "should be valid since an ExternalContact holder is present" do
+        contact = create(:external_contact)
+        kt =
+          build(
+            :key_transaction,
+            key_id: @key.id,
+            deposit_amount: 20,
+            holder: contact
+          )
+        expect(kt.valid?).to be_truthy
+      end
+
+      it "should be invalid since holder is not present" do
         kt = build(:key_transaction, key_id: @key.id, deposit_amount: 20)
         expect(kt.valid?).to be_falsey
       end
@@ -112,6 +124,50 @@ RSpec.describe KeyTransaction, type: :model do
       it "should return 1" do
         expect(KeyTransaction.awaiting_deposit_return.count).to eq(1)
       end
+    end
+  end
+
+  describe "Backward-compatibility shim" do
+    before :all do
+      @user = create(:user, :regular_user)
+      @space = create(:space)
+      @key =
+        create(:key, :regular_key_type, :inventory_status, space_id: @space.id)
+    end
+
+    it "exposes #user and #user_id only when the holder is a User" do
+      kt = create(:key_transaction, key_id: @key.id, user_id: @user.id, deposit_amount: 10)
+      expect(kt.user).to eq(@user)
+      expect(kt.user_id).to eq(@user.id)
+    end
+
+    it "returns nil from #user and #user_id when the holder is an ExternalContact" do
+      contact = create(:external_contact)
+      kt = create(:key_transaction, key_id: @key.id, holder: contact, deposit_amount: 10)
+      expect(kt.user).to be_nil
+      expect(kt.user_id).to be_nil
+    end
+  end
+
+  describe "#assignee_name and #assignee_email" do
+    it "returns the User's name and email when held internally" do
+      user = create(:user, :regular_user)
+      space = create(:space)
+      key = create(:key, :regular_key_type, :inventory_status, space_id: space.id)
+      kt = create(:key_transaction, key_id: key.id, user_id: user.id, deposit_amount: 10)
+
+      expect(kt.assignee_name).to eq(user.name)
+      expect(kt.assignee_email).to eq(user.email)
+    end
+
+    it "returns the ExternalContact's name and email when held externally" do
+      contact = create(:external_contact, first_name: "Jane", last_name: "Doe")
+      space = create(:space)
+      key = create(:key, :regular_key_type, :inventory_status, space_id: space.id)
+      kt = create(:key_transaction, key_id: key.id, holder: contact, deposit_amount: 10)
+
+      expect(kt.assignee_name).to eq("Jane Doe")
+      expect(kt.assignee_email).to eq(contact.email)
     end
   end
 end

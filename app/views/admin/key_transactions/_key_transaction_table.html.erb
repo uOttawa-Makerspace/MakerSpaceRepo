@@ -1,34 +1,57 @@
 <div class="table-responsive">
-  <table class="<%= "table text-center m-0 #{table_name}" %>">
-    <thead class="table-primary">
-    <tr>
-      <th>Key<span onclick="sortTable('<%= table_name %>', 0)"><%= fa_icon('arrow-down') %></span></th>
-      <th>User<span onclick="sortTable('<%= table_name %>', 1)"><%= fa_icon('arrow-down') %></span></th>
-      <th>Supervisor<span onclick="sortTable('<%= table_name %>', 2)"><%= fa_icon('arrow-down') %></span></th>
-      <th>Key given on<span onclick="sortTable('<%= table_name %>', 3)"><%= fa_icon('arrow-down') %></span></th>
-      <th>Deposit Amount<span onclick="sortTable('<%= table_name %>', 4)"><%= fa_icon('arrow-down') %></span></th>
-      <th>Return Date<span onclick="sortTable('<%= table_name %>', 5)"><%= fa_icon('arrow-down') %></span></th>
-      <th>Deposit Return Date<span onclick="sortTable('<%= table_name %>', 6)"><%= fa_icon('arrow-down') %></span></th>
-      <th>Actions</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    <% key_transactions.each do |kt| %>
+  <table class="table table-striped table-hover align-middle" id="<%= table_name %>">
+    <thead>
       <tr>
-        <td><%= link_to kt.key.get_keycode, admin_key_path(kt.key.id) %></td>
-        <td><%= link_to kt.user.name, user_path(kt.user.username) %></td>
-        <td><%= link_to kt.key.supervisor.name, user_path(kt.key.supervisor.username) %></td>
-        <td><%= kt.created_at.strftime('%Y-%m-%d') %></td>
-        <td>$<%= kt.deposit_amount %></td>
-        <td><%= kt.return_date.nil? ? 'Not Returned' : kt.return_date %></td>
-        <td><%= kt.deposit_return_date.nil? ? 'Not Returned' : kt.deposit_return_date %></td>
-        <td>
-          <%= link_to 'Show', admin_key_transaction_path(id: kt.id), class: 'w-100 py-1 btn btn-primary' %>
-          <%= link_to 'Return Deposit', edit_admin_key_transaction_path(id: kt.id), class: 'w-100 py-1 btn btn-primary' if show_edit %>
-        </td>
+        <th>Key</th>
+        <th>Holder</th>
+        <th>Supervisor</th>
+        <th>Assigned Date</th>
+        <th>Deposit Amount</th>
+        <th>Return Date</th>
+        <th>Deposit Return Date</th>
+        <th>Actions</th>
       </tr>
-    <% end %>
+    </thead>
+    <tbody>
+      <% key_transactions.each do |kt| %>
+        <tr>
+          <td>
+            <% if kt.key.present? %>
+              <%= link_to kt.key.get_keycode, admin_key_path(kt.key.id), target: '_blank', rel: 'noopener' %>
+            <% else %>
+              N/A
+            <% end %>
+          </td>
+          <td>
+            <% if kt.holder.is_a?(User) %>
+              <%= link_to kt.holder.name, user_path(kt.holder.username), target: '_blank', rel: 'noopener' %>
+            <% elsif kt.holder.is_a?(ExternalContact) %>
+              <%= kt.holder.name %> <span class="badge bg-warning text-dark">External</span>
+            <% else %>
+              Unassigned
+            <% end %>
+          </td>
+          <td>
+            <% if kt.key&.supervisor.present? %>
+              <%= link_to kt.key.supervisor.name, user_path(kt.key.supervisor.username), target: '_blank', rel: 'noopener' %>
+            <% else %>
+              N/A
+            <% end %>
+          </td>
+          <td><%= kt.created_at.strftime('%Y-%m-%d') %></td>
+          <td><%= number_to_currency(kt.deposit_amount) %></td>
+          <td><%= kt.return_date.presence || 'Not Returned' %></td>
+          <td><%= kt.deposit_return_date.presence || 'Pending Refund' %></td>
+          <td>
+            <div class="d-flex flex-column gap-1">
+              <%= link_to 'Show', admin_key_transaction_path(kt.id), class: 'btn btn-sm btn-secondary' %>
+              <% if show_edit && kt.deposit_return_date.blank? %>
+                <%= link_to 'Return Deposit', edit_admin_key_transaction_path(kt.id), class: 'btn btn-sm btn-primary' %>
+              <% end %>
+            </div>
+          </td>
+        </tr>
+      <% end %>
     </tbody>
   </table>
 </div>
