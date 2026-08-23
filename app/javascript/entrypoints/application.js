@@ -14,22 +14,28 @@
 // const images = require.context('../images', true)
 // const imagePath = (name) => images(name, true)
 import "trix";
-import "photoswipe";
 import "clipboard";
-import "./validation";
-import "./direct_uploads";
-import "./effects";
-import "./forms";
-import "./header";
-import "./photo_gallery";
-import "./requests";
-import "./settings";
-import "./sorting";
-import "./tabledata";
-import "./accordion-load";
-import "./clipboard";
+
+// Imported from ../src/
+import "../src/validation";
+import "../src/direct_uploads";
+import "../src/effects";
+import "../src/forms";
+import "../src/header";
+import "../src/photo_gallery";
+import "../src/requests";
+import "../src/settings";
+import "../src/sorting";
+import "../src/tabledata";
+import "../src/accordion-load";
+import "../src/clipboard";
+import "../src/theme";
+
+// Stimulus controllers
 import "../controllers";
-import "./theme";
+
+// Eager load images
+import.meta.glob("../images/**", { eager: true });
 
 import { Tooltip, Popover } from "bootstrap";
 import "toastr/toastr";

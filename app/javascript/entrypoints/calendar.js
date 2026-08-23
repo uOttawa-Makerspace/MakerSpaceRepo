@@ -1,6 +1,6 @@
-import { addEventClick } from "./calendar_helper";
-import "./fullcalendar_setup_admin";
-import "./manage_calendar_events";
+import { addEventClick } from "../src/calendar_helper";
+import "../src/fullcalendar_setup_admin";
+import "../src/manage_calendar_events";
 import "flatpickr";
 
 document.addEventListener("turbo:load", () => {

@@ -22,7 +22,7 @@ section#faq {
         content: "\f047 ";
       }
       cursor: grab;
-      &::active {
+      &:active {
         cursor: grabbing;
       }
     }

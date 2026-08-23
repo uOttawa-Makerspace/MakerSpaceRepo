@@ -46,20 +46,20 @@ document.addEventListener("turbo:load", function (event) {
           fadeIn(wrapper.children[1], 100);
         }
       });
-    }
+    },
   );
 
-  [...document.getElementsByClassName("repository_report")].forEach(function (
-    element
-  ) {
-    element.addEventListener("click", function (event) {
-      [...document.getElementsByClassName("spinner")].forEach(function (
-        element
-      ) {
-        element.style.display = "inline-block";
+  [...document.getElementsByClassName("repository_report")].forEach(
+    function (element) {
+      element.addEventListener("click", function (event) {
+        [...document.getElementsByClassName("spinner")].forEach(
+          function (element) {
+            element.style.display = "inline-block";
+          },
+        );
       });
-    });
-  });
+    },
+  );
 
   let filterHeader = document.getElementById("filter-header");
   if (filterHeader) {

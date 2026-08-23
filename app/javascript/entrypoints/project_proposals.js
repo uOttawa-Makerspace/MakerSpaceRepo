@@ -1,5 +1,5 @@
 import TomSelect from "tom-select";
-import "./file_upload.js";
+import "../src/file_upload.js";
 
 if (document.getElementById("project_proposal_categories")) {
   if (!document.getElementById("project_proposal_categories").tomselect) {

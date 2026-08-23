@@ -1,5 +1,5 @@
 import TomSelect from "tom-select";
-import "./file_upload.js";
+import "../src/file_upload.js";
 
 window.showPass = function () {
   document.getElementById("pass").style.display = "block";
