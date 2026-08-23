@@ -4,11 +4,11 @@
   <% if @order_item_waiting_for_approval.present? %>
     <table class="text-center table-striped staff-newly-signed-up-users-table mb-5 table" id="prof-proj-requests">
     <thead class="table-primary">
-      <th>User <span onclick="sortTable('staff-newly-signed-up-users-table', 0)"><%= fa_icon('arrow-down') %></span></th>
-      <th>Title <span onclick="sortTable('staff-newly-signed-up-users-table', 1)"><%= fa_icon('arrow-down') %></span></th>
-      <th>Submission Date <span onclick="sortTable('staff-newly-signed-up-users-table', 2)"><%= fa_icon('arrow-down') %></span></th>
-      <th>User Comments <span onclick="sortTable('staff-newly-signed-up-users-table', 3)"><%= fa_icon('arrow-down') %></span></th>
-      <th>Attached Files <span onclick="sortTable('staff-newly-signed-up-users-table', 4)"><%= fa_icon('arrow-down') %></span></th>
+      <th>User <span onclick="sortTable('staff-newly-signed-up-users-table', 0)"><i class="fa-solid fa-arrow-down"></i></span></th>
+      <th>Title <span onclick="sortTable('staff-newly-signed-up-users-table', 1)"><i class="fa-solid fa-arrow-down"></i></span></th>
+      <th>Submission Date <span onclick="sortTable('staff-newly-signed-up-users-table', 2)"><i class="fa-solid fa-arrow-down"></i></span></th>
+      <th>User Comments <span onclick="sortTable('staff-newly-signed-up-users-table', 3)"><i class="fa-solid fa-arrow-down"></i></span></th>
+      <th>Attached Files <span onclick="sortTable('staff-newly-signed-up-users-table', 4)"><i class="fa-solid fa-arrow-down"></i></span></th>
       <th>Actions</th>
     </thead>
       <% @order_item_waiting_for_approval.each do |oi| %>

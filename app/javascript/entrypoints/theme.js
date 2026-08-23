@@ -1,31 +1,55 @@
 import Cookies from "js-cookie";
 
-// Apply theme BEFORE Turbo renders (prevents flicker during navigation)
+function getStoredTheme() {
+  return (
+    Cookies.get("theme") ||
+    (window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light")
+  );
+}
+
+function applyTheme(theme) {
+  document.documentElement.dataset.bsTheme = theme;
+  // CRITICAL: path: "/" ensures the cookie is valid across all routes (/admin, /staff, etc.)
+  Cookies.set("theme", theme, { expires: 365, sameSite: "lax", path: "/" });
+}
+
+export function toggleTheme() {
+  const currentTheme =
+    document.documentElement.dataset.bsTheme || getStoredTheme();
+  const newTheme = currentTheme === "dark" ? "light" : "dark";
+  applyTheme(newTheme);
+}
+
+// 1. Apply theme BEFORE Turbo renders to prevent dark/light flash during transitions
 document.addEventListener("turbo:before-render", (event) => {
   const savedTheme = Cookies.get("theme") || "dark";
-  event.detail.newBody.parentElement.dataset.bsTheme = savedTheme;
+  if (event.detail.newBody?.parentElement) {
+    event.detail.newBody.parentElement.dataset.bsTheme = savedTheme;
+  }
 });
 
-// Initialize theme on page load
+// 2. Initialize and bind toggler on Turbo load
 document.addEventListener("turbo:load", () => {
-  const themeToggler = document.querySelector("#themeToggler");
-
-  // Apply saved theme or default to dark
   const savedTheme = Cookies.get("theme") || "dark";
   document.documentElement.dataset.bsTheme = savedTheme;
 
-  // Toggle theme on click
-  themeToggler.addEventListener("click", () => {
-    const currentTheme = document.documentElement.dataset.bsTheme;
-    const newTheme = currentTheme === "dark" ? "light" : "dark";
-
-    document.documentElement.dataset.bsTheme = newTheme;
-    Cookies.set("theme", newTheme, { expires: 365, sameSite: "lax" });
-  });
+  const themeToggler = document.querySelector("#themeToggler");
+  if (themeToggler) {
+    // Using .onclick prevents event listener stacking across Turbo visits
+    themeToggler.onclick = (e) => {
+      e.preventDefault();
+      toggleTheme();
+    };
+  }
 });
 
-// Apply theme immediately on first page load
+// 3. Apply theme immediately on initial script evaluation
 (function () {
   const savedTheme = Cookies.get("theme") || "dark";
   document.documentElement.dataset.bsTheme = savedTheme;
 })();
+
+// Expose globally for any legacy HTML onclick triggers
+window.toggleTheme = toggleTheme;

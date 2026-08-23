@@ -36,15 +36,15 @@ end
     <div class="mt-3 mt-md-0 text-md-end">
         <span class="badge rounded-pill bg-<%= status_color %> fs-6 px-3 py-2">
             <% if @locker_rental.expired? %>
-                <%= fa_icon 'exclamation-triangle', text: t('lockers.state.expired') %>
+                <i class="fa-solid fa-triangle-exclamation"></i> <%= t('lockers.state.expired') %>
             <% elsif @locker_rental.cancelled? %>
-                <%= fa_icon 'times-circle', text: t('lockers.state.cancelled') %>
+                <i class="fa-solid fa-circle-xmark"></i> <%= t('lockers.state.cancelled') %>
             <% elsif @locker_rental.active? %>
-                <%= fa_icon 'check-circle', text: t('lockers.state.active') %>
+                <i class="fa-solid fa-circle-check"></i> <%= t('lockers.state.active') %>
             <% elsif @locker_rental.await_payment? %>
-                <%= fa_icon 'credit-card', text: t('lockers.state.await_payment') %>
+                <i class="fa-solid fa-credit-card"></i> <%= t('lockers.state.await_payment') %>
             <% else %>
-                <%= fa_icon 'hourglass-half', text: t("lockers.state.#{@locker_rental.state}") %>
+                <i class="fa-solid fa-hourglass-half"></i> <%= t("lockers.state.#{@locker_rental.state}") %>
             <% end %>
         </span>
         <div class="text-muted mt-1">
@@ -58,7 +58,7 @@ end
         <div class="card shadow-sm mb-4">
             <!-- Dark Mode: Changed bg-white to bg-body-tertiary -->
             <div class="card-header bg-body-tertiary">
-                <h5 class="card-title mb-0"><%= fa_icon :user, class: 'text-muted me-2' %><%= t('lockers.requested_by') %></h5>
+                <h5 class="card-title mb-0"><i class="fa-solid fa-user text-muted me-2"></i><%= t('lockers.requested_by') %></h5>
             </div>
             <ul class="list-group list-group-flush">
                 <li class="list-group-item d-flex justify-content-between align-items-center">
@@ -103,7 +103,7 @@ end
         <div class="card shadow-sm mb-4">
             <!-- Dark Mode: Changed bg-white to bg-body-tertiary -->
             <div class="card-header bg-body-tertiary">
-                <h5 class="card-title mb-0"><%= fa_icon :lock, class: 'text-muted me-2' %><%= t('lockers.locker_details') %></h5>
+                <h5 class="card-title mb-0"><i class="fa-solid fa-lock text-muted me-2"></i><%= t('lockers.locker_details') %></h5>
             </div>
             <ul class="list-group list-group-flush">
                 <li class="list-group-item d-flex justify-content-between align-items-center">
@@ -160,7 +160,7 @@ end
             <div class="card shadow-sm mb-4">
                 <!-- Dark Mode: Changed bg-white to bg-body-tertiary -->
                 <div class="card-header bg-body-tertiary">
-                    <h5 class="card-title mb-0"><%= fa_icon 'sticky-note', class: 'text-muted me-2' %><%= t('lockers.notes') %></h5>
+                    <h5 class="card-title mb-0"><i class="fa-solid fa-sticky-note text-muted me-2"></i><%= t('lockers.notes') %></h5>
                 </div>
                 <div class="card-body">
                     <%= simple_format(@locker_rental.notes) %>
@@ -207,7 +207,7 @@ end
                                 </span>
                                 <% if @locker_rental.notified_of_cancellation_at %>
                                     <br>
-                                    <span class="text-muted mt-1 d-block"><%= fa_icon :envelope %>
+                                    <span class="text-muted mt-1 d-block"><i class="fa-solid fa-envelope"></i>
                                         <%= t('lockers.cancellation_notice_sent_on') %>
                                         <%= @locker_rental.notified_of_cancellation_at.to_fs :long %>
                                     </span>
@@ -233,7 +233,7 @@ end
         <% if @locker_rental.expired? && !@locker_rental.active? %>
             <div class="alert alert-warning shadow-sm" role="alert">
                 <div class="d-flex align-items-start gap-2">
-                    <%= fa_icon 'exclamation-triangle', class: 'mt-1' %>
+                    <i class="fa-solid fa-triangle-exclamation mt-1"></i>
                     <div>
                         <strong>Expired</strong> <%= time_ago_in_words(@locker_rental.expired_since) %> ago
                         <% if @locker_rental.notified_of_cancellation_at %>
@@ -249,7 +249,7 @@ end
         <% if @locker_rental.cancelled? && @locker_rental.cancelled_at %>
             <div class="alert alert-danger shadow-sm" role="alert">
                 <div class="d-flex align-items-start gap-2">
-                    <%= fa_icon 'times-circle', class: 'mt-1' %>
+                    <i class="fa-solid fa-circle-xmark mt-1"></i>
                     <div><%= t('lockers.cancelled_on') %> <strong><%= @locker_rental.cancelled_at.to_fs(:long) %></strong></div>
                 </div>
             </div>
@@ -287,7 +287,7 @@ end
                             <%= t('lockers.payment_description') %>
                         </p>
                         <%= link_to @locker_rental.checkout_link, class: 'btn btn-info w-100' do %>
-                            <%= fa_icon 'external-link', text: 'Proceed to Checkout' %>
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i> Proceed to Checkout
                         <% end %>
                     </div>
                 </div>
@@ -295,14 +295,14 @@ end
 
             <div class="card shadow-sm mb-4">
                 <div class="card-body">
-                    <h6 class="text-danger mb-2"><%= fa_icon 'exclamation-circle', text: 'Cancel Request' %></h6>
+                    <h6 class="text-danger mb-2"><i class="fa-solid fa-circle-exclamation"></i> Cancel Request</h6>
                     <p>You may cancel your rental request at any time, up until it is paid. To cancel a paid locker rental, contact us.
                     </p>
                     <%= form_with model: @locker_rental do |f| %>
                         <%= f.hidden_field :state, value: 'cancelled' %>
                         <%= f.button class: 'btn btn-outline-danger w-100',
                           data: { confirm: 'Are you sure you want to cancel this locker request?' } do %>
-                            <%= fa_icon 'times', text: 'Cancel Request' %>
+                            <i class="fa-solid fa-xmark"></i> Cancel Request
                         <% end %>
                     <% end %>
                 </div>
@@ -313,7 +313,7 @@ end
             <div class="card shadow-sm mb-4">
                 <!-- Dark Mode: Changed bg-white to bg-body-tertiary -->
                 <div class="card-header bg-body-tertiary">
-                    <h5 class="card-title mb-0"><%= fa_icon 'clipboard', class: 'text-muted me-2' %><%= t('lockers.staff_notes') %></h5>
+                    <h5 class="card-title mb-0"><i class="fa-solid fa-clipboard text-muted me-2"></i><%= t('lockers.staff_notes') %></h5>
                 </div>
                 <%= form_with model: @locker_rental, class: 'card-body' do |f| %>
                     <%= f.text_area :staff_notes, class: 'form-control mb-2', placeholder: 'Staff notes are visible to staff only' %>

@@ -2,6 +2,7 @@ services:
   db:
     image: postgres:17-alpine
     restart: always
+    command: postgres -c max_connections=200
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -27,10 +28,10 @@ services:
       RAILS_ENV: staging
       RAILS_SERVE_STATIC_FILES: "true"
       RAILS_LOG_TO_STDOUT: "true"
-      # Concurrency & Memory Tuning (Utilizes 6GB RAM on 1 vCPU)
-      WEB_CONCURRENCY: "2" # 2 Puma worker processes
-      RAILS_MAX_THREADS: "10" # 10 threads per worker = 20 simultaneous request slots
-      DB_POOL: "25" # Allows 20 web threads + safety headroom to connect to DB
+      # Concurrency & Memory Tuning
+      WEB_CONCURRENCY: "2"
+      RAILS_MAX_THREADS: "10"
+      DB_POOL: "25"
       SOLID_QUEUE_IN_PUMA: "false"
     ports:
       - "127.0.0.1:3005:3000"

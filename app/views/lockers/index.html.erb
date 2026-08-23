@@ -18,11 +18,11 @@
 
     <div class="text-center border rounded bg-body-tertiary p-4 mb-4 shadow-sm">
         <% if LockerOption.lockers_enabled %>
-            <div class="fs-4 mb-2"><%= fa_icon :check, class: 'text-success me-2' %> New locker rentals are enabled.</div>
+            <div class="fs-4 mb-2"><i class="fa-solid fa-check text-success me-2"></i> New locker rentals are enabled.</div>
             <%= button_to 'Click here to disable locker rentals', enabled_lockers_path,
                           method: :put, params: {value: 'f'}, class: 'btn btn-danger my-2' %>
         <% else %>
-            <div class="fs-4 mb-2"><%= fa_icon :times, class: 'text-danger me-2' %> New locker rentals are disabled.</div>
+            <div class="fs-4 mb-2"><i class="fa-solid fa-xmark text-danger me-2"></i> New locker rentals are disabled.</div>
             <%= button_to 'Click here to enable locker rentals', enabled_lockers_path,
                           method: :put, params: {value: 't'}, class: 'btn btn-success my-2' %>
         <% end %>
@@ -43,11 +43,11 @@
 
     <div class="d-flex gap-2 mb-3">
         <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#newRangeLockerModal">
-            <%= fa_icon 'plus-circle' %> Make a range of lockers
+            <i class="fa-solid fa-plus-circle"></i> Make a range of lockers
         </button>
 
         <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#newLockerModal">
-            <%= fa_icon 'plus' %> Make a single locker
+            <i class="fa-solid fa-plus"></i> Make a single locker
         </button>
     </div>
 

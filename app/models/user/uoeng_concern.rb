@@ -1,55 +1,42 @@
 # frozen_string_literal: true
 
-# Queries uOEng via student ID or student email to figure out if a student is
-# paying CEED fees or not on their tuition. User-specific module
 module User::UoengConcern
-  include ApplicationHelper
   extend ActiveSupport::Concern
 
   included do
     # Verify if user qualifies for a faculty membership.
-    #
-    # NOTE: The uOEng call is expensive and we don't want them to think we're
-    # batch-calling. Don't call this anywhere popular (such as in views, GET
-    # actions, etc.)
-    #
-    # Optional keyword args for tap box console logging context:
-    #   card_number: the RFID card number that triggered this check
-    #   space: the Space where the tap occurred
     def validate_uoeng_membership(card_number: nil, space: nil)
       faculty_tier = MembershipTier.find_by!(title_en: "Faculty membership")
 
       if engineering?(card_number: card_number, space: space)
-        # Student is an engineer, make a membership
         memberships.active.find_or_create_by(
           membership_tier: faculty_tier,
           status: :paid,
           end_date: end_of_this_semester
         )
       else
-        # NOT an engineer, revoke any faculty memberships. Students can
-        # drop/change courses mid-semester.
-        revoked = memberships.active.where(membership_tier_id: faculty_tier.id)
-        if revoked.any?
+        # Load once into memory to eliminate redundant COUNT and PLUCK queries
+        revoked_records = memberships.active.where(membership_tier_id: faculty_tier.id).to_a
+
+        if revoked_records.present?
           TapBoxLog.log_membership_revocation(
             user: self,
-            revoked_count: revoked.count,
-            revoked_ids: revoked.pluck(:id),
+            revoked_count: revoked_records.size,
+            revoked_ids: revoked_records.map(&:id),
             card_number: card_number,
             space: space
           )
+
+          memberships.where(id: revoked_records.map(&:id)).update_all(status: :revoked)
+          Rails.logger.info "Revoked #{revoked_records.size} faculty membership(s) for user id #{id}"
         end
-        revoked.update_all(status: :revoked)
-        Rails.logger.info "Revoked faculty membership for user id #{id}"
         nil
       end
     end
 
     private
 
-    # Is user paying the CEED fee?
     def engineering?(card_number: nil, space: nil)
-      # HACK: Cheat for CI tests
       return faculty == "Engineering" if Rails.env.test?
 
       details = uoeng_details(card_number: card_number, space: space)
@@ -60,7 +47,7 @@ module User::UoengConcern
       end
 
       is_fulltime_eng = details["student_this_semester"] && details["faculty"] == "GENIE"
-      enrolled_gng = details["courses_enrolled"]&.any? { |course| course.include? "GNG" }
+      enrolled_gng = details["courses_enrolled"]&.any? { |course| course.include?("GNG") }
       result = is_fulltime_eng || enrolled_gng
 
       unless result
@@ -68,26 +55,21 @@ module User::UoengConcern
       end
 
       detect_name_mismatch(details, card_number, space)
-
       result
     rescue StandardError => e
       TapBoxLog.log_engineering_check_error(user: self, exception: e, card_number: card_number, space: space)
       false
     end
 
-    # Query and parse user details
     def uoeng_details(card_number: nil, space: nil)
-      # Check if we have valid data. Either query by student ID, or uOttawa
-      # email
-      creds = Rails.application.credentials[Rails.env.to_sym][:uoeng]
+      creds = Rails.application.credentials.dig(Rails.env.to_sym, :uoeng) || {}
 
       url =
         if student_id.present?
           "#{creds[:query_by_id]}#{student_id}"
-        elsif email.ends_with? "@uottawa.ca"
+        elsif email.to_s.ends_with?("@uottawa.ca")
           "#{creds[:query_by_email]}#{email}"
         else
-          # No valid query params, early out.
           return false
         end
 
@@ -127,12 +109,10 @@ module User::UoengConcern
       raise
     end
 
-    # Detection helpers
-
     def detect_name_mismatch(details, card_number, space)
       uoeng_name = [details["first_name"], details["last_name"]].compact.join(" ").strip
       return if uoeng_name.blank?
-      return if name.downcase.include?(uoeng_name.split(" ").first&.downcase.to_s)
+      return if name.to_s.downcase.include?(uoeng_name.split(" ").first&.downcase.to_s)
 
       TapBoxLog.log_name_mismatch(user: self, uoeng_name: uoeng_name, card_number: card_number, space: space)
     end

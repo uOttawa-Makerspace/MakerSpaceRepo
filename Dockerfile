@@ -32,7 +32,7 @@ ENV RAILS_ENV="staging" \
 # ----------------- BUILD STAGE -----------------
 FROM base AS build
 
-# BUILD TOOLS (Using BuildKit APK cache for fast rebuilds)
+# BUILD TOOLS
 RUN --mount=type=cache,target=/var/cache/apk \
     apk add \
     build-base \
@@ -75,22 +75,18 @@ RUN mkdir -p certs && \
 # Precompile Bootsnap cache
 RUN bundle exec bootsnap precompile app/ lib/
 
-# Precompile Assets (Sprockets + Vite)
+# Precompile Assets (Propshaft + Vite)
 RUN --mount=type=cache,target=/rails/tmp/cache/assets \
-    SECRET_KEY_BASE_DUMMY=1 RAILS_ENV=staging bundle exec rails assets:precompile
+    SECRET_KEY_BASE_DUMMY=1 bundle exec rails assets:precompile
 
-# Ensure runtime directories exist in the build stage with clean state
+# Ensure runtime directories exist in build stage
 RUN mkdir -p certs db log storage tmp
 
-# Delete build artifacts, duplicate raw assets, frontend sources, sourcemaps, and compiler caches
+# Delete build artifacts, node_modules, and dummy certs
 RUN rm -rf node_modules \
            package.json \
            yarn.lock \
            .yarn \
-           vite.config.* \
-           app/javascript \
-           app/assets/images \
-           app/assets/stylesheets \
            certs/* \
            public/vite-dev \
            public/vite-test && \
@@ -100,7 +96,7 @@ RUN rm -rf node_modules \
 # ----------------- FINAL RUNTIME STAGE -----------------
 FROM base
 
-# Copy gems and application (ownership already set to rails:rails)
+# Copy gems and application
 COPY --from=build --chown=rails:rails "${BUNDLE_PATH}" "${BUNDLE_PATH}"
 COPY --from=build --chown=rails:rails /rails /rails
 

@@ -16,9 +16,9 @@
           </h5>
           <p class="card-text">
           <ul class="fa-ul">
-            <li><%= fa_icon('envelope-o li', text: space.email) %></li>
-            <li><%= fa_icon('map-marker li', text: space.address) if space.address.present? %></li>
-            <li><%= fa_icon('phone li', text: space.phone_number) if space.phone_number.present? %></li>
+            <li><i class="fa-regular fa-envelope li"></i> <%= space.email %></li>
+            <li><i class="fa-solid fa-location-dot li"></i> <%= space.address.presence %></li>
+            <li><i class="fa-solid fa-phone li"></i> <%= space.phone_number.presence %></li>
           </ul>
           </p>
         </div>

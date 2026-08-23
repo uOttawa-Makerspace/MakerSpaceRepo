@@ -1,0 +1,152 @@
+@import "./shared/variables";
+
+section#developmentIndex {
+  .jumbotron.developmentJumbotron {
+    background-image:
+      linear-gradient(rgba(black, 0.3) 20%, black),
+      url("../images/development_program/jumbotron.png");
+  }
+
+  .header1 {
+    background-image: url("../images/development_program/header1.png");
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+  }
+
+  .header2 {
+    display: block;
+    background-image:
+      linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
+      url("../images/development_program/header2.png");
+    background-size: cover;
+    background-position: center;
+    text-align: center;
+    color: white;
+    &:hover {
+      color: $primary;
+      outline: 2px solid $primary;
+    }
+    font-size: 2rem;
+    padding: 5%;
+    margin: 5%;
+    font-weight: 700;
+  }
+
+  .header3 {
+    background-image:
+      linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
+      url("../images/development_program/header3.png");
+    background-size: cover;
+    background-position: center;
+  }
+
+  .sequence {
+    img {
+      max-width: 30%;
+    }
+    p {
+      color: $primary;
+      padding: 1rem;
+      max-height: 100vh;
+      font-size: 1.3rem;
+      font-weight: 700;
+      border: 5px solid $primary;
+      border-radius: 32px;
+    }
+    i {
+      font-weight: unset;
+      font-size: 0.5rem;
+    }
+  }
+
+  // Arrow box container
+  .row:has(.arrow-box) {
+    overflow: visible;
+  }
+
+  // Wrapper for arrow boxes - needed for proper spacing
+  [class*="col"]:has(.arrow-box) {
+    overflow: visible;
+    padding-left: 1.5rem; // Space for the notch
+    padding-right: 1.5rem; // Space for the arrow
+  }
+
+  .arrow-box {
+    $arrow-size: 1.5rem; // Controls the arrow/notch size
+    $box-height: 3.5rem; // Fixed height for consistent arrows
+
+    position: relative;
+    background-color: var(--bs-primary);
+    color: white;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    height: $box-height;
+    padding: 0 calc(#{$arrow-size} + 1rem); // Padding accounts for arrow space
+
+    font-size: 1.25rem;
+    font-weight: bold;
+
+    // Left notch (cut into the box)
+    &::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 0;
+      height: 0;
+
+      border-top: calc(#{$box-height} / 2) solid transparent;
+      border-bottom: calc(#{$box-height} / 2) solid transparent;
+      border-left: $arrow-size solid var(--bs-tertiary-bg);
+    }
+
+    // Right arrow (extends outside the box)
+    &::after {
+      content: "";
+      position: absolute;
+      right: calc(-#{$arrow-size});
+      top: 0;
+      width: 0;
+      height: 0;
+      z-index: 2;
+
+      border-top: calc(#{$box-height} / 2) solid transparent;
+      border-bottom: calc(#{$box-height} / 2) solid transparent;
+      border-left: $arrow-size solid var(--bs-primary);
+    }
+
+    // First arrow - no left notch
+    &:first-of-type,
+    &.arrow-first {
+      padding-left: 1.5rem;
+
+      &::before {
+        display: none;
+      }
+    }
+
+    // Last arrow - no right arrow
+    &:last-of-type,
+    &.arrow-last {
+      padding-right: 1.5rem;
+
+      &::after {
+        display: none;
+      }
+    }
+
+    // Mobile: Stack vertically without arrows
+    @media (max-width: 575px) {
+      &::before,
+      &::after {
+        display: none;
+      }
+      padding: 1rem 1.5rem;
+      height: auto;
+    }
+  }
+}

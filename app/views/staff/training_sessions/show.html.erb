@@ -65,18 +65,18 @@
         <thead class="table-primary">
         <tr class="text-center">
            <th class="action-header">Remove From This Session</th>
-           <th>Name <span onclick="sortTable('training-session-users-table', 1)"><%= fa_icon('arrow-down') %></span></th>
-           <th>Email <span onclick="sortTable('training-session-users-table', 2)"><%= fa_icon('arrow-down') %></span></th>
-           <th>Certifications <span onclick="sortTable('training-session-users-table', 3)"><%= fa_icon('arrow-down') %></span></th>
-           <th>Exam Status <span onclick="sortTable('training-session-users-table', 4)"><%= fa_icon('arrow-down') %></span></th>
-           <th>Training's Cert.<span onclick="sortTable('training-session-users-table', 5)"><%= fa_icon('arrow-down') %></span></th>
+           <th>Name <span onclick="sortTable('training-session-users-table', 1)"><i class="fa-solid fa-arrow-down"></i></span></th>
+           <th>Email <span onclick="sortTable('training-session-users-table', 2)"><i class="fa-solid fa-arrow-down"></i></span></th>
+           <th>Certifications <span onclick="sortTable('training-session-users-table', 3)"><i class="fa-solid fa-arrow-down"></i></span></th>
+           <th>Exam Status <span onclick="sortTable('training-session-users-table', 4)"><i class="fa-solid fa-arrow-down"></i></span></th>
+           <th>Training's Cert.<span onclick="sortTable('training-session-users-table', 5)"><i class="fa-solid fa-arrow-down"></i></span></th>
          </tr>
          </thead>
 
       <% @current_training_session.users.each do |user| %>
         <tr id="<%= return_no_waiver_id(user) %>">
           <td class="action-cell">
-            <%= link_to(fa_icon('times-circle'), { controller: :training_sessions, action: :update, id: @current_training_session.id,
+            <%= link_to('<i class="fa-solid fa-circle-xmark"></i>'.html_safe, { controller: :training_sessions, action: :update, id: @current_training_session.id,
                                                    dropped_user: user.username, changed_params: { course: '' } },
                         method: :patch, class: 'x-button') %>
           </td>
@@ -149,16 +149,16 @@
       <thead class="table-primary">
         <tr class="text-center">
            <th class="action-header">Add To This Session</th>
-           <th>Name <span onclick="sortTable('space-users-table', 1)"><%= fa_icon('arrow-down') %></span></th>
-           <th>Email <span onclick="sortTable('space-users-table', 2)"><%= fa_icon('arrow-down') %></span></th>
-           <th>Certifications <span onclick="sortTable('space-users-table', 3)"><%= fa_icon('arrow-down') %></span></th>
+           <th>Name <span onclick="sortTable('space-users-table', 1)"><i class="fa-solid fa-arrow-down"></i></span></th>
+           <th>Email <span onclick="sortTable('space-users-table', 2)"><i class="fa-solid fa-arrow-down"></i></span></th>
+           <th>Certifications <span onclick="sortTable('space-users-table', 3)"><i class="fa-solid fa-arrow-down"></i></span></th>
          </tr>
       </thead>
       <% @current_training_session.space.signed_in_users.each do |user| %>
         <% unless @current_training_session.users.include? user %>
           <tr>
             <td class="action-cell">
-              <%= link_to(fa_icon('check-circle'),
+              <%= link_to('<i class="fa-solid fa-circle-check"></i>'.html_safe,
                           { controller: :training_sessions,
                             action: :update,
                             id: @current_training_session.id,

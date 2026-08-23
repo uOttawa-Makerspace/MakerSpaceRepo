@@ -15,12 +15,12 @@
         <table class="table sessions-table">
 
           <tr>
-            <th>User<span onclick="sortTable('sessions-table', 0)"><%= fa_icon('arrow-down') %></span></th>
-            <th>Date Submitted <span onclick="sortTable('sessions-table', 1)"><%= fa_icon('arrow-down') %></span></th>
-            <th>Task <span onclick="sortTable('sessions-table', 2)"><%= fa_icon('arrow-down') %></span></th>
-            <th>Date of Task<span onclick="sortTable('sessions-table', 3)"><%= fa_icon('arrow-down') %></span></th>
-            <th>Hours Worked <span onclick="sortTable('sessions-table', 4)"><%= fa_icon('arrow-down') %></span></th>
-            <th>Approve?<span onclick="sortTable('sessions-table', 5)"><%= fa_icon('arrow-down') %></span></th>
+            <th>User<span onclick="sortTable('sessions-table', 0)"><i class="fa-solid fa-arrow-down"></i></span></th>
+            <th>Date Submitted <span onclick="sortTable('sessions-table', 1)"><i class="fa-solid fa-arrow-down"></i></span></th>
+            <th>Task <span onclick="sortTable('sessions-table', 2)"><i class="fa-solid fa-arrow-down"></i></span></th>
+            <th>Date of Task<span onclick="sortTable('sessions-table', 3)"><i class="fa-solid fa-arrow-down"></i></span></th>
+            <th>Hours Worked <span onclick="sortTable('sessions-table', 4)"><i class="fa-solid fa-arrow-down"></i></span></th>
+            <th>Approve?<span onclick="sortTable('sessions-table', 5)"><i class="fa-solid fa-arrow-down"></i></span></th>
             <th class="action-header">Action</th>
           </tr>
 
@@ -51,8 +51,8 @@
               </td>
 
               <td class="action-cell">
-                <%= button_to fa_icon('times'), { controller: :volunteer_hours, action: :update_approval, id: vh.id, approval: false }, method: :put, class: 'btn btn-default x-button' %>
-                <%= button_to fa_icon('check'), { controller: :volunteer_hours, action: :update_approval, id: vh.id, approval: true }, method: :put, class: 'btn btn-default check-button' %>
+                <%= button_to '<i class="fa-solid fa-xmark"></i>'.html_safe, { controller: :volunteer_hours, action: :update_approval, id: vh.id, approval: false }, method: :put, class: 'btn btn-default x-button' %>
+                <%= button_to '<i class="fa-solid fa-check"></i>'.html_safe, { controller: :volunteer_hours, action: :update_approval, id: vh.id, approval: true }, method: :put, class: 'btn btn-default check-button' %>
               </td>
 
               <td class="action-cell">
@@ -84,12 +84,12 @@
         <table class="table table-primary table-striped sessions-table-2">
 
           <tr>
-            <th>User<span onclick="sortTable('sessions-table-2', 0)"><%= fa_icon('arrow-down') %></span></th>
-            <th>Date Submitted <span onclick="sortTable('sessions-table-2', 1)"><%= fa_icon('arrow-down') %></span></th>
-            <th>Task <span onclick="sortTable('sessions-table-2', 2)"><%= fa_icon('arrow-down') %></span></th>
-            <th>Date of Task<span onclick="sortTable('sessions-table-2', 3)"><%= fa_icon('arrow-down') %></span></th>
-            <th>Hours Worked <span onclick="sortTable('sessions-table-2', 4)"><%= fa_icon('arrow-down') %></span></th>
-            <th>Approved?<span onclick="sortTable('sessions-table-2', 5)"><%= fa_icon('arrow-down') %></span></th>
+            <th>User<span onclick="sortTable('sessions-table-2', 0)"><i class="fa-solid fa-arrow-down"></i></span></th>
+            <th>Date Submitted <span onclick="sortTable('sessions-table-2', 1)"><i class="fa-solid fa-arrow-down"></i></span></th>
+            <th>Task <span onclick="sortTable('sessions-table-2', 2)"><i class="fa-solid fa-arrow-down"></i></span></th>
+            <th>Date of Task<span onclick="sortTable('sessions-table-2', 3)"><i class="fa-solid fa-arrow-down"></i></span></th>
+            <th>Hours Worked <span onclick="sortTable('sessions-table-2', 4)"><i class="fa-solid fa-arrow-down"></i></span></th>
+            <th>Approved?<span onclick="sortTable('sessions-table-2', 5)"><i class="fa-solid fa-arrow-down"></i></span></th>
             <th class="action-header">Action</th>
           </tr>
 

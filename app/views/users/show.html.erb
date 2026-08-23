@@ -7,14 +7,14 @@
         <!--      MORE INFO Section-->
         <div class="profile-work">
             <p><%= t('.more_info') %></p>
-            <%= fa_icon 'location-arrow', text: @repo_user.location if @repo_user.location.present? %><br />
-            <%= fa_icon 'clock-o' %> <%= t('.joined_on') %> <%= @repo_user.created_at.to_date.to_fs :long %><br />
+            <i class="fa-solid fa-location-arrow"></i> <%= @repo_user.location.presence %><br />
+            <i class="fa-regular fa-clock"></i> <%= t('.joined_on') %> <%= @repo_user.created_at.to_date.to_fs :long %><br />
             <% if @github_username.present? %>
-                <%= fa_icon 'github-alt' %>
+                <i class="fa-brands fa-github-alt"></i>
                 <%= link_to @github_username, "https://github.com/#{@github_username}" %><br />
             <% end %>
             <% if @repo_user.url.present? %>
-                <%= fa_icon('link') %>
+                <i class="fa-solid fa-link"></i>
                 <%= link_to @repo_user.url.gsub(%r{\Ahttps?://}, '').to_s, @repo_user.url %> <br />
             <% end %>
             <p><%= t('.skills') %></p>
@@ -54,7 +54,7 @@
                         <p class="text-secondary fw-bold" >Makerepo <%= @repo_user.role.humanize %></p>
                     <% end %>
                     <span>
-                        <b><%= @repo_user.get_total_cc %> <%= image_tag('cc.png', alt: 'CC', class: 'ccs') %></b>
+                        <b><%= @repo_user.get_total_cc %> <%= vite_image_tag 'images/cc.png', alt: 'CC', class: 'ccs' %></b>
                     </span>
                     <div class="vr">
                     </div>
@@ -72,13 +72,13 @@
                             <%= button_to toggle_lock_user_admin_users_path(id: @repo_user),
                                           method: :put, class: 'btn p-0', form_class: "btn #{@repo_user.locked? ? 'btn-success' : 'btn-danger'}" do %>
                                 <% if @repo_user.locked? %>
-                                    <%= fa_icon('unlock', text: t('.unlock_user')) %>
+                                    <i class="fa-solid fa-unlock"></i> <%= t('.unlock_user') %>
                                 <% else %>
-                                    <%= fa_icon('lock', text: t('.lock_user')) %>
+                                    <i class="fa-solid fa-lock"></i> <%= t('.lock_user') %>
                                 <% end %>
                             <% end %>
                         <% end %>
-                        <%= link_to fa_icon('cog', text: t('.edit_profile')), settings_profile_path, class: 'btn btn-secondary' if @repo_user.eql?(@user) %>
+                        <%= link_to "<i class=\"fa-solid fa-gear\"></i> #{t('.edit_profile')}".html_safe, settings_profile_path, class: 'btn btn-secondary' if @repo_user.eql?(@user) %>
 
                         <% if @user.staff? %>
                             <%= render 'users/flag' %>
@@ -98,7 +98,7 @@
                                     <button class="btn btn-success dropdown-toggle" type="button"
                                             id="rfidUnregisterMenu" data-bs-toggle="dropdown" aria-haspopup="true"
                                             aria-expanded="false">
-                                        <%= fa_icon 'check', text: t('.rfid_card_set') %>
+                                        <i class="fa-solid fa-check"></i> <%= t('.rfid_card_set') %>
                                     </button>
                                     <div class="dropdown-menu" aria-labelledby="rfidUnregisterMenu">
                                         <%= button_to t('.unregister_rfid_card'), staff_dashboard_unlink_rfid_path(card_number: @repo_user.rfid.card_number),
@@ -110,7 +110,7 @@
                                     <button class="btn btn-outline-danger dropdown-toggle" type="button"
                                             id="rfidUnregisterMenu" data-bs-toggle="dropdown" aria-haspopup="true"
                                             aria-expanded="false">
-                                        <%= fa_icon 'ban', text: t('.rfid_card_not_set') %>
+                                        <i class="fa-solid fa-ban"></i> <%= t('.rfid_card_not_set') %>
                                     </button>
                                     <div class="dropdown-menu" aria-labelledby="rfidUnregisterMenu">
                                         <h5 class="dropdown-header text-center"><%= t('.unregistered_cards') %></h5>

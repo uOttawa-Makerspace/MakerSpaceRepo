@@ -102,13 +102,13 @@
         <h1><%= @repository.title %></h1>
         <hr />
         <div class="d-flex justify-content-around text-primary fs-4">
-            <div><%= fa_icon 'heart', text: @repository.like %></div>
-            <div><%= fa_icon 'code-fork', text: @repository.makes.count %></div>
-            <div><%= link_to fa_icon('comments', text:  @repository.comments.count), '#repo-comments' %></div>
+            <div><i class="fa-solid fa-heart"></i> <%= @repository.like %></div>
+            <div><i class="fa-solid fa-code-branch"></i> <%= @repository.makes.count %></div>
+            <div><%= link_to "<i class=\"fa-solid fa-comments\"></i> #{@repository.comments.count}".html_safe, '#repo-comments' %></div>
         </div>
         <% if @repository.featured? %>
             <p class="text-center text-primary">
-                <%= fa_icon :trophy, text: 'This is a featured project!' %>
+                <i class="fa-solid fa-trophy"></i> This is a featured project!
             </p>
         <% end %>
         <hr />
@@ -117,16 +117,16 @@
             <% @repository.users.find_each do |u| %>
                 <div>
                     <% if u.id == @repository.user_id %>
-                        <%= fa_icon :star %>
+                        <i class="fa-solid fa-star"></i>
                     <% end %>
                     <%= link_to u.username, user_path(u.username) %>
                 </div>
             <% end %>
         </div>
         <% if @repository.users.include?(@user) || @user.role.eql?("admin") %>
-            <%= link_to fa_icon('pencil', text: t('repository.edit_proj')),
-                        edit_repository_path(@repository.user_username, @repository.id),
-                        class: 'btn btn-sm btn-secondary align-top float-end' %>
+            <%= link_to "<i class=\"fa-solid fa-pencil\"></i> #{t('repository.edit_proj')}".html_safe,
+                    edit_repository_path(@repository.user_username, @repository.id),
+                    class: 'btn btn-sm btn-secondary align-top float-end' %>
         <% end %>
         <p><b><%= t('repository.published') %></b> <%= @repository.created_at.strftime('%b %e %Y') %></p>
         <% if @repository.repo_files.any? %>
@@ -136,16 +136,16 @@
                     <% @repository.repo_files.find_each do |f| %>
                         <ul class="file-item-show">
                             <li>
-                                <%= fa_icon 'file-text-o' %>
+                                <i class="fa-regular fa-file-lines"></i>
                                 <%= link_to f.file.filename, rails_blob_path(f.file), target: '_blank', rel: 'noopener' %>
                                 <span><%= f.file.byte_size / 1000 %> KB</span>
                             </li>
                         </ul>
                     <% end %>
                 </div>
-                <%= link_to fa_icon('download', text: t('repository.download')),
-                            download_files_repositories_path(@repository.user_username, @repository.id),
-                            class: 'btn btn-primary btn-sm float-end' %>
+                <%= link_to "<i class=\"fa-solid fa-download\"></i> #{t('repository.download')}".html_safe,
+                        download_files_repositories_path(@repository.user_username, @repository.id),
+                        class: 'btn btn-primary btn-sm float-end' %>
             </div>
         <% end %>
 
@@ -179,15 +179,15 @@
         <div class="repo-info-item mb-3">
             <span class="like<%= @liked ? ' liked' : '' %>" style="color: white;">
                 <% like_text = @liked ? t('repository.unlike_button') : t('repository.like_button') %>
-                <%= button_to(fa_icon('heart', text: like_text),
+                <%= button_to("<i class=\"fa-solid fa-heart\"></i> #{like_text}".html_safe,
                               add_like_repository_path, class: 'like border-0 bg-transparent', method: :post, style: 'color: inherit !important; padding: inherit !important;') %>
             </span>
             <span class="make" style="color: white;">
-                <%= link_to fa_icon('code-fork', text: t('repository.make_button')), makes_new_path(@repository.user_username, @repository.id), class: 'make' %>
+                <%= link_to "<i class=\"fa-solid fa-code-branch\"></i> #{t('repository.make_button')}".html_safe, makes_new_path(@repository.user_username, @repository.id), class: 'make' %>
             </span>
         </div>
         <div class="report mb-3">
-            <%= link_to fa_icon('flag', text: t('repository.report_in')), report_repository_path(@repository.id), class: 'repository_report', rel: 'nofollow' %>
+            <%= link_to "<i class=\"fa-solid fa-flag\"></i> #{t('repository.report_in')}".html_safe, report_repository_path(@repository.id), class: 'repository_report', rel: 'nofollow' %>
             <div class="spinner">
                 <div class="rect1"></div>
                 <div class="rect2"></div>
@@ -280,12 +280,12 @@
                 <div class="comment">
                     <div class="comment-upvote">
                         <% color = @vote.include?([comment.id, false]) ? '#19c1a5' : '#999' %>
-                        <%= button_to fa_icon('angle-up'), comments_vote_path(comment_id: comment.id, downvote: 'f'),
+                        <%= button_to '<i class="fa-solid fa-angle-up"></i>'.html_safe, comments_vote_path(comment_id: comment.id, downvote: 'f'),
                                       class: 'vote upvote border-0 bg-transparent', method: :post, style: "color: #{color}"
                         %>
                         <div class="upvote upvote-<%= comment.id %>"><%= comment.upvote %></div>
                         <% color = @vote.include?([comment.id, true]) ? '#19c1a5' : '#999' %>
-                        <%= button_to fa_icon('angle-down'), comments_vote_path(comment_id: comment.id, downvote: 't'),
+                        <%= button_to '<i class="fa-solid fa-angle-down"></i>'.html_safe, comments_vote_path(comment_id: comment.id, downvote: 't'),
                                       class: 'vote upvote border-0 bg-transparent', method: :post, style: "color: #{color}"
                         %>
                     </div>
@@ -295,7 +295,7 @@
                         <% end %>
                         <%= content_tag :div, "#{time_ago_in_words(comment.created_at)} ago", class: 'time' %><br>
                         <% if ((@user.admin?) || (@user.id.equal? comment.user_id)) %>
-                            <%= button_to fa_icon('times'), { controller: :comments, action: :destroy, id: comment.id }, method: :delete, data: { confirm: 'Are you sure you want to delete this comment?' }, class: 'text-danger float-end' %>
+                            <%= button_to '<i class="fa-solid fa-xmark"></i>'.html_safe, { controller: :comments, action: :destroy, id: comment.id }, method: :delete, data: { confirm: 'Are you sure you want to delete this comment?' }, class: 'text-danger float-end' %>
                         <% end %>
                     </div>
                     <div class="comment-content">

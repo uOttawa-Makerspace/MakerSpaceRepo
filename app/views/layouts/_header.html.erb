@@ -1,22 +1,25 @@
 <div class="mb-3" id="sticky-header">
     <nav class="navbar navbar-expand-xl <%= controller_name %> <%= action_name %> shadow-lg">
-        <div class="container-fluid px-xl-3 px-xxl-4">
-            <a class="ms-xl-2 me-xl-3 me-xxl-4 navbar-brand text-nowrap" href="/"><strong>Maker</strong>Repo</a>
+        <div class="container-fluid px-2 px-sm-3 px-xl-2 px-xxl-4">
+            <a class="navbar-brand text-nowrap me-2 me-xxl-3" href="/"><strong>Maker</strong>Repo</a>
+            
             <% unless signed_in? %>
-                <%# This is to show the register button outside the menu on mobile %>
-                <a class="nav-link d-xl-none order-xl-3" data-bs-toggle="modal" data-bs-target="#loginModal" href=""><%= t('navbar.sign_in') %></a>
+                <%# Sign in button on mobile navbar line %>
+                <a class="nav-link d-xl-none ms-auto me-2 text-white fw-bold" data-bs-toggle="modal" data-bs-target="#loginModal" href=""><%= t('navbar.sign_in') %></a>
             <% end %>
-            <button class="navbar-toggler" id="navbar-toggle-button" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+
+            <button class="navbar-toggler <%= 'ms-auto' if signed_in? %>" id="navbar-toggle-button" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
+
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
                 <ul class="navbar-nav me-auto align-items-xl-center">
                     <li class="nav-item">
-                        <a class="nav-link px-xl-2 px-xxl-3 text-nowrap" href="/"><%= t('navbar.home') %></a>
+                        <a class="nav-link px-xl-1 px-xxl-2 text-nowrap" href="/"><%= t('navbar.home') %></a>
                     </li>
 
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle px-xl-2 px-xxl-3 text-nowrap" href="/explore" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <a class="nav-link dropdown-toggle px-xl-1 px-xxl-2 text-nowrap" href="/explore" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                             <%= t('navbar.projects') %>
                         </a>
                         <div class="dropdown-menu">
@@ -32,7 +35,7 @@
                     </li>
 
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle px-xl-2 px-xxl-3 text-nowrap" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a class="nav-link dropdown-toggle px-xl-1 px-xxl-2 text-nowrap" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <%= t('navbar.get_involved') %>
                         </a>
                         <div class="dropdown-menu">
@@ -47,7 +50,7 @@
                     </li>
 
                     <li class="nav-item dropdown">                        
-                        <a class="nav-link dropdown-toggle px-xl-2 px-xxl-3 text-nowrap" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a class="nav-link dropdown-toggle px-xl-1 px-xxl-2 text-nowrap" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <%= t('navbar.resources') %>
                         </a>
                         <div class="dropdown-menu">
@@ -62,33 +65,33 @@
                     </li>
 
                     <li class="nav-item">
-                        <a class="nav-link px-xl-2 px-xxl-3 text-nowrap" href="<%= landing_job_orders_path %>"><%= t('navbar.user.joborder') %></a>
+                        <a class="nav-link px-xl-1 px-xxl-2 text-nowrap" href="<%= landing_job_orders_path %>"><%= t('navbar.user.joborder') %></a>
                     </li>
 
                     <li class="nav-item">
-                        <%= link_to 'FAQ', faqs_path, class: 'nav-link px-xl-2 px-xxl-3 text-nowrap' %>
+                        <%= link_to 'FAQ', faqs_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %>
                     </li>
                 </ul>
 
                 <ul class="navbar-nav ms-auto align-items-xl-center">
                     <li class="nav-item">
-                        <%= link_to(t('memberships.navbar'), memberships_path, class: "nav-link px-xl-2 px-xxl-3 text-nowrap") %>
+                        <%= link_to(t('memberships.navbar'), memberships_path, class: "nav-link px-xl-1 px-xxl-2 text-nowrap") %>
                     </li>
                     <li class="nav-item">
-                        <button class="nav-link px-xl-2 px-xxl-3 text-nowrap d-flex align-items-center gap-1" id="themeToggler"
+                        <button class="nav-link px-xl-1 px-xxl-2 text-nowrap d-flex align-items-center gap-1 bg-transparent border-0" id="themeToggler"
                                 data-bs-toggle="tooltip" data-bs-title="Checkout dark mode!" data-bs-placement="bottom" data-bs-trigger="manual">
-                            <%= fa_icon 'sun-o', id: 'lightModeIcon' %>
-                            <%= fa_icon 'moon-o', id: 'darkModeIcon' %>
-                            <span><%= t('navbar.theme') %></span>
+                            <i class="fa-regular fa-sun" id="lightModeIcon"></i>
+                            <i class="fa-regular fa-moon" id="darkModeIcon"></i>
+                            <span class="d-none d-xxl-inline"><%= t('navbar.theme') %></span>
                         </button>
                     </li>
                     <% unless signed_in? %>
                         <li class="nav-item d-none d-xl-block">
-                            <a class="nav-link px-xl-2 px-xxl-3 text-nowrap" data-bs-toggle="modal" data-bs-target="#loginModal" href=""><%= t('navbar.sign_in') %></a>
+                            <a class="nav-link px-xl-1 px-xxl-2 text-nowrap" data-bs-toggle="modal" data-bs-target="#loginModal" href=""><%= t('navbar.sign_in') %></a>
                         </li>
                     <% else %>
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle px-xl-2 px-xxl-3 text-nowrap d-flex align-items-center gap-1" href="<%= user_path(@user.username) %>" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="text-transform: none;">
+                            <a class="nav-link dropdown-toggle px-xl-1 px-xxl-2 text-nowrap d-flex align-items-center gap-1" href="<%= user_path(@user.username) %>" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="text-transform: none;">
                                 <%= image_tag @user.display_avatar, class: 'avatar', alt: 'Avatar', loading: 'lazy', decoding: 'async' %>
                                 <span><%= @user.username %></span>
                             </a>
@@ -101,10 +104,10 @@
                         </li>
 
                         <li class="nav-item cc-container">
-                            <a class="ccLink nav-link px-xl-2 px-xxl-3 d-inline-flex align-items-center" href="<%= discount_codes_path %>">
+                            <a class="ccLink nav-link px-xl-1 px-xxl-2 d-inline-flex align-items-center" href="<%= discount_codes_path %>">
                                 <span class="me-1">
-                                    <%= image_tag('cc_white.png', alt: 'CC', class: 'ccs', id: 'myCcWhite') %>
-                                    <%= image_tag('cc.png', alt: 'CC', class: 'ccs', id: 'myCcBlack') %>
+                                    <%= vite_image_tag 'images/cc_white.png', alt: 'CC', class: 'ccs', id: 'myCcWhite' %>
+                                    <%= vite_image_tag 'images/cc.png', alt: 'CC', class: 'ccs', id: 'myCcBlack' %>
                                 </span>
                                 <b><%= current_user.get_total_cc %></b>
                             </a>
@@ -113,7 +116,7 @@
 
                     <% locales_change.each do |locale| %>
                         <li class="nav-item">
-                            <%= link_to t('name', locale:), url_for(request.query_parameters.merge(locale:)), class: 'nav-link px-xl-2 px-xxl-3 text-nowrap' %>
+                            <%= link_to t('name', locale:), url_for(request.query_parameters.merge(locale:)), class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %>
                         </li>
                     <% end %>
                 </ul>

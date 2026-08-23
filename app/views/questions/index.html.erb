@@ -11,7 +11,7 @@
 
       <div class="input-group w-50 mx-auto">
       <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder="Find by: category, description, ..." class="form-control mx-auto">
-      <%= fa_icon 'search', class: 'input-group-text fa-2x pe-2' %>
+      <i class="fa-solid fa-magnifying-glass input-group-text fa-2x pe-2"></i>
       </div>
       <br />
 
@@ -28,11 +28,11 @@
         <table class="table sessions-table table-striped">
         <thead class="table-primary">
            <tr>
-             <th>Date Submitted <span onclick="sortTable('sessions-table', 0, true)"><%= fa_icon('arrow-down') %></span></th>
-             <th>Category <span onclick="sortTable('sessions-table', 1)"><%= fa_icon('arrow-down') %></span></th>
-             <th>Level <span onclick="sortTable('sessions-table', 2)"><%= fa_icon('arrow-down') %></span></th>
-             <th>Description <span onclick="sortTable('sessions-table', 3)"><%= fa_icon('arrow-down') %></span></th>
-             <th>Created by<span onclick="sortTable('sessions-table', 4)"><%= fa_icon('arrow-down') %></span></th>
+             <th>Date Submitted <span onclick="sortTable('sessions-table', 0, true)"><i class="fa-solid fa-arrow-down"></i></span></th>
+             <th>Category <span onclick="sortTable('sessions-table', 1)"><i class="fa-solid fa-arrow-down"></i></span></th>
+             <th>Level <span onclick="sortTable('sessions-table', 2)"><i class="fa-solid fa-arrow-down"></i></span></th>
+             <th>Description <span onclick="sortTable('sessions-table', 3)"><i class="fa-solid fa-arrow-down"></i></span></th>
+             <th>Created by<span onclick="sortTable('sessions-table', 4)"><i class="fa-solid fa-arrow-down"></i></span></th>
              <th class="action-header">Action</th>
            </tr>
         </thead>

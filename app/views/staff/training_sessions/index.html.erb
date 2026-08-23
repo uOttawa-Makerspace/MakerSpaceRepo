@@ -3,7 +3,7 @@
     <h2 class="text-center pt-2 mb-5">Viewing <strong><%= "#{@user.name.titleize}'s" %></strong> Training Sessions</h2>
     <div class="input-group w-50 mx-auto">
     <input type="text" class="form-control " id="query" onkeyup="findSession('sessions-table')" placeholder=" Find by: date, training, course, username  ">
-    <%= fa_icon 'search', class: 'input-group-text fa-2x pe-2' %>
+    <i class="fa-solid fa-magnifying-glass input-group-text fa-2x pe-2"></i>
     </div>
     <br />
 
@@ -19,13 +19,13 @@
     <table class="sessions-table table table-striped text-center mx-auto mb-3">
     <thead class="table-primary">
       <tr>
-        <th>Date <span onclick="sortTable('sessions-table', 0, true)"><%= fa_icon('arrow-down') %></span></th>
-        <th>Training <span onclick="sortTable('sessions-table', 1)"><%= fa_icon('arrow-down') %></span></th>
-        <th>Trainer <span onclick="sortTable('sessions-table', 2)"><%= fa_icon('arrow-down') %></span></th>
-        <th>Space <span onclick="sortTable('sessions-table', 3)"><%= fa_icon('arrow-down') %></span></th>
-        <th>Course <span onclick="sortTable('sessions-table', 4)"><%= fa_icon('arrow-down') %></span></th>
-        <th>Status <span onclick="sortTable('sessions-table', 5)"><%= fa_icon('arrow-down') %></span></th>
-        <th>Users <span onclick="sortTable('sessions-table', 6)"><%= fa_icon('arrow-down') %></span></th>
+        <th>Date <span onclick="sortTable('sessions-table', 0, true)"><i class="fa-solid fa-arrow-down"></i></span></th>
+        <th>Training <span onclick="sortTable('sessions-table', 1)"><i class="fa-solid fa-arrow-down"></i></span></th>
+        <th>Trainer <span onclick="sortTable('sessions-table', 2)"><i class="fa-solid fa-arrow-down"></i></span></th>
+        <th>Space <span onclick="sortTable('sessions-table', 3)"><i class="fa-solid fa-arrow-down"></i></span></th>
+        <th>Course <span onclick="sortTable('sessions-table', 4)"><i class="fa-solid fa-arrow-down"></i></span></th>
+        <th>Status <span onclick="sortTable('sessions-table', 5)"><i class="fa-solid fa-arrow-down"></i></span></th>
+        <th>Users <span onclick="sortTable('sessions-table', 6)"><i class="fa-solid fa-arrow-down"></i></span></th>
         <th class="action-header">Action</th>
       </tr>
     </thead>

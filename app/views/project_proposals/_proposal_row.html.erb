@@ -5,7 +5,7 @@
 
             <% if project_proposal.linked_project_proposal.present? %>
                 <span class="badge text-bg-secondary">
-                    <%= fa_icon 'code-fork' %> Revision of <%= link_to "##{project_proposal.linked_project_proposal_id}", project_proposal_path(project_proposal.linked_project_proposal.slug), class: 'text-white text-decoration-underline' %>
+                    <i class="fa-solid fa-code-branch"></i> Revision of <%= link_to "##{project_proposal.linked_project_proposal_id}", project_proposal_path(project_proposal.linked_project_proposal.slug), class: 'text-white text-decoration-underline' %>
                 </span>
             <% end %>
 
@@ -78,32 +78,32 @@
         </div>
 
         <div class="card-footer bg-body-tertiary border-top d-flex flex-wrap justify-content-end align-items-center gap-2 px-3 py-2">
-            <%= link_to fa_icon(:eye, text: 'View'), project_proposal_path(project_proposal.slug),
+            <%= link_to '<i class="fa-solid fa-eye"></i> View'.html_safe, project_proposal_path(project_proposal.slug),
                         class: 'btn btn-sm btn-primary me-auto', title: 'View project proposal' %>
 
             <% if signed_in? && current_user.admin? %>
                 <% unless project_proposal.approved? %>
                     <%= button_to approve_project_proposals_path(id: project_proposal.id), method: :post, class: 'btn btn-sm btn-success', data: { confirm: 'Are you sure you want to approve this proposal?' } do %>
-                        <%= fa_icon :check, text: 'Approve' %>
+                        <i class="fa-solid fa-check"></i> Approve
                     <% end %>
                 <% end %>
 
                 <% unless project_proposal.not_approved? %>
                     <%= button_to decline_project_proposals_path(id: project_proposal.id), method: :post, class: 'btn btn-sm btn-danger me-md-2', data: { confirm: 'Are you sure you want to decline this proposal?' } do %>
-                        <%= fa_icon :times, text: 'Decline' %>
+                        <i class="fa-solid fa-xmark"></i> Decline
                     <% end %>
                 <% end %>
             <% end %>
 
             <% if signed_in? && (current_user.admin? || project_proposal.user_id == current_user.id) %>
-                <%= link_to fa_icon(:pencil, text: 'Edit'), edit_project_proposal_path(project_proposal),
+                <%= link_to '<i class="fa-solid fa-pencil"></i> Edit'.html_safe, edit_project_proposal_path(project_proposal),
                             class: 'btn btn-sm btn-outline-secondary', title: 'Edit project proposal' %>
             <% end %>
 
             <% if signed_in? && current_user.admin? %>
                 <%= button_to project_proposal_path(project_proposal), method: :delete,
                               class: 'btn btn-sm btn-outline-danger', data: { confirm: 'Are you sure you want to delete this proposal?' } do %>
-                    <%= fa_icon :trash, text: 'Delete' %>
+                    <i class="fa-solid fa-trash"></i> Delete
                 <% end %>
             <% end %>
         </div>

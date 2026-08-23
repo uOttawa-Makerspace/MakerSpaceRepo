@@ -135,7 +135,7 @@
                     <td><%= locker_size.lockers.count %></td>
                     <td></td>
                     <td><code><%= locker_size.shopify_gid %></code></td>
-                    <td><%= button_to fa_icon('trash'), locker_size_path(locker_size), method: :delete, 'aria-label' => 'Delete',
+                    <td><%= button_to '<i class="fa-solid fa-trash"></i>'.html_safe, locker_size_path(locker_size), method: :delete, 'aria-label' => 'Delete',
                                       data: {confirm: "Are you sure you want to delete this locker size?"}, class: 'btn btn-danger' %></td>
                 </tr>
             <% end %>

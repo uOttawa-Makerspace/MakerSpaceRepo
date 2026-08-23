@@ -34,9 +34,9 @@
                         <% end %>
                     </span>
 
-                    <%= link_to fa_icon(:pencil, text: 'Edit'), edit_proficient_project_path(@proficient_project.id), class: 'btn btn-secondary' %>
+                    <%= link_to '<i class="fa-solid fa-pencil"></i> Edit'.html_safe, edit_proficient_project_path(@proficient_project.id), class: 'btn btn-secondary' %>
 
-                    <%= button_to fa_icon(:trash, text: 'Delete'), @proficient_project, method: :delete, class: 'btn btn-danger',
+                    <%= button_to '<i class="fa-solid fa-trash"></i> Delete'.html_safe, @proficient_project, method: :delete, class: 'btn btn-danger',
                                   data: { confirm: 'Are you sure? This will delete all the purchases and give all the users the CC points used to purchase this project.' } %>
                 </div>
         </div>

@@ -439,7 +439,7 @@ class User < ApplicationRecord
   # ============================================
 
   def display_avatar
-    avatar.attached? ? avatar : 'default-avatar.png'
+    avatar.attached? ? avatar : '/default-avatar.png'
   end
 
   def has_avatar?

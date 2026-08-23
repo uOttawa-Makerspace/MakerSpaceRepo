@@ -1,6 +1,6 @@
 <section>
     <h1 class="text-center py-4 fw-bold">
-        New Projects <%= link_to fa_icon('download'),
+        New Projects <%= link_to '<i class="fa-solid fa-download"></i>'.html_safe,
                                  admin_report_generator_generate_spreadsheet_path(start_date: params[:start_date], end_date: params[:end_date], type: 'new_projects'),
                                  class: 'border-0 bg-transparent text-primary d-print-none' %>
     </h1>

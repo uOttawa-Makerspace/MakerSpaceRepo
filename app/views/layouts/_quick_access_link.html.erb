@@ -1,24 +1,24 @@
-<div class="navbar navbar-expand-sm" id="quick-access-bar">
-    <div class="container-fluid flex-row align-self-end" id="quick-access-container">
-        <ul class="navbar-nav mr-auto d-flex flex-row">
-            <% QuickAccessLink.where(user: current_user).find_each do |link| %>
-                <li class="nav-item mx-2">
-                    <a class="nav-link d-inline" href="<%= link.path %>"><%= link.name %></a>
-                </li>
-            <% end %>
-        </ul>
-        <ul class="navbar-nav ml-auto d-flex flex-row">
-          <% if QuickAccessLink.where(user: current_user).where(path: request.path_info).present? %>
-            <li class="nav-item mx-auto">
-              <%= button_to quick_access_links_delete_path(QuickAccessLink.where(user: current_user).where(path: request.path_info).first.id), class: 'btn btn-link p-0', method: :delete do %>
-                <%= fa_icon('thumb-tack') %> Unpin Page
-              <% end %>
-            </li>
-          <% else %>
-            <li class="nav-item mx-auto" id="add-new-quick-access">
-              <a class="btn btn-link p-0"><%= fa_icon('thumb-tack') %> Pin Page</a>
-            </li>
+<div class="navbar navbar-expand-sm py-1 border-top" id="quick-access-bar" style="background-color: var(--bs-tertiary-bg);">
+  <div class="container-fluid px-2 px-sm-3 d-flex flex-wrap justify-content-between align-items-center" id="quick-access-container">
+    <ul class="navbar-nav me-auto d-flex flex-row flex-wrap align-items-center gap-2 mb-0">
+      <% QuickAccessLink.where(user: current_user).find_each do |link| %>
+        <li class="nav-item">
+          <a class="nav-link py-0 px-2 text-nowrap text-secondary fs-6" href="<%= link.path %>"><%= link.name %></a>
+        </li>
+      <% end %>
+    </ul>
+    <ul class="navbar-nav ms-auto d-flex flex-row align-items-center mb-0">
+      <% if QuickAccessLink.where(user: current_user).where(path: request.path_info).present? %>
+        <li class="nav-item">
+          <%= button_to quick_access_links_delete_path(QuickAccessLink.where(user: current_user).where(path: request.path_info).first.id), class: 'btn btn-link p-0 text-secondary fs-6 text-decoration-none', method: :delete do %>
+            <i class="fa-solid fa-thumbtack"></i> Unpin Page
           <% end %>
-        </ul>
-    </div>
+        </li>
+      <% else %>
+        <li class="nav-item" id="add-new-quick-access">
+          <a class="btn btn-link p-0 text-secondary fs-6 text-decoration-none"><i class="fa-solid fa-thumbtack"></i> Pin Page</a>
+        </li>
+      <% end %>
+    </ul>
+  </div>
 </div>

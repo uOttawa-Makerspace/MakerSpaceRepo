@@ -1,11 +1,11 @@
 <section id="dropbox-folders">
   <ul>
-    <%= tag.li(fa_icon('folder-open', text: @root)) %>
+    <%= tag.li("<i class=\"fa-solid fa-folder-open\"></i> #{@root}".html_safe) %>
     <% @folder.each do |f| %>
       <% if f.values.first == "directory" %>
-        <%= tag.li(fa_icon('folder', text: f.keys.first)) %>
+        <%= tag.li("<i class=\"fa-solid fa-folder\"></i> #{f.keys.first}".html_safe) %>
       <% else %>
-        <%= tag.li(fa_icon('file-text-o', text: f.keys.first)) %>
+        <%= tag.li("<i class=\"fa-regular fa-file-lines\"></i> #{f.keys.first}".html_safe) %>
       <% end %>
     <% end %>
   </ul>

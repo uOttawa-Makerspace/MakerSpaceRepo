@@ -3,13 +3,22 @@ import RubyPlugin from "vite-plugin-ruby";
 
 export default defineConfig({
   build: {
-    sourcemap: false, // Ensures we don't ship multi-megabyte .map files
+    sourcemap: false,
   },
   plugins: [RubyPlugin()],
+  css: {
+    preprocessorOptions: {
+      scss: {
+        quietDeps: true,
+      },
+    },
+  },
   server: {
     host: "0.0.0.0",
     port: 3036,
     strictPort: true,
+    cors: true,
+    allowedHosts: true,
     hmr: {
       host: "localhost",
       clientPort: 3036,
@@ -17,6 +26,8 @@ export default defineConfig({
   },
   optimizeDeps: {
     include: [
+      "bootstrap",
+      "@popperjs/core",
       "@fullcalendar/core",
       "@fullcalendar/daygrid",
       "@fullcalendar/timegrid",

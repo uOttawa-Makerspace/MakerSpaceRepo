@@ -24,12 +24,12 @@
         <span id="SpaceUserCount"><%= pluralize @space.signed_in_users.count, 'user' %> inside <%= @space.name %></span>
         <div class="d-flex justify-content-around">
             <%= link_to staff_dashboard_sign_out_all_users_path, class: 'btn btn-danger', data: {confirm: 'Are you sure you want to sign out all users?'} do %>
-                <%= fa_icon('sign-out') %> Sign Out All Users
+                <i class="fa-solid fa-right-from-bracket"></i> Sign Out All Users
             <% end %>
             <% if @space.jmts? %>
                 <%= button_to staff_dashboard_add_signed_in_users_to_teams_path, method: :patch, form_class: 'btn btn-primary', class: 'btn p-0',
                               data: { confirm: 'Are you sure you want to add all signed in users to the teams program?' } do %>
-                    <%= fa_icon('group') %> Add Signed In Users to Teams Program
+                    <i class="fa-solid fa-users"></i> Add Signed In Users to Teams Program
                 <% end %>
             <% end %>
         </div>
@@ -65,7 +65,7 @@
         <th class="name-header">Name</th>
         <th class="email-header">Email</th>
         <th class="last-seen-header">Last Seen</th>
-        <th class="action-header disable-sort"><%= fa_icon('check') %>&nbsp; TO SIGN IN <br> <%= fa_icon('times') %>&nbsp; TO SIGN OUT</th>
+        <th class="action-header disable-sort"><i class="fa-solid fa-check"></i>&nbsp; TO SIGN IN <br> <i class="fa-solid fa-xmark"></i>&nbsp; TO SIGN OUT</th>
       </tr>
     </thead>
     <tbody id="staffDashboardSignedOutTable">

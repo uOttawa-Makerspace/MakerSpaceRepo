@@ -4,7 +4,7 @@
     <div class="container">
       <div class="row my-5">
         <div class="mx-auto col-md-4 text-center">
-          <b>Total CCs:</b> <%= image_tag('cc.png', alt: 'CC', class: 'ccs') %>: <b><%= current_user.get_total_cc %></b>
+          <b>Total CCs:</b> <%= vite_image_tag 'images/cc.png', alt: 'CC', class: 'ccs' %>: <b><%= current_user.get_total_cc %></b>
           <br />
         </div>
         <div class="mx-auto col-md-4 text-center">
@@ -24,11 +24,11 @@
             <table class="table sessions-table-2">
 
               <tr>
-                <th>Date Submitted <span onclick="sortTable('sessions-table-2', 0, true)"><%= fa_icon('arrow-down') %></span></th>
-                <th>Date Updated <span onclick="sortTable('sessions-table-2', 1, true)"><%= fa_icon('arrow-down') %></span></th>
-                <th>CC/Hours<span onclick="sortTable('sessions-table-2', 2)"><%= fa_icon('arrow-down') %></span></th>
-                <th>Task<span onclick="sortTable('sessions-table-2', 3)"><%= fa_icon('arrow-down') %></span></th>
-                <th>Status<span onclick="sortTable('sessions-table', 4)"><%= fa_icon('arrow-down') %></span></th>
+                <th>Date Submitted <span onclick="sortTable('sessions-table-2', 0, true)"><i class="fa-solid fa-arrow-down"></i></span></th>
+                <th>Date Updated <span onclick="sortTable('sessions-table-2', 1, true)"><i class="fa-solid fa-arrow-down"></i></span></th>
+                <th>CC/Hours<span onclick="sortTable('sessions-table-2', 2)"><i class="fa-solid fa-arrow-down"></i></span></th>
+                <th>Task<span onclick="sortTable('sessions-table-2', 3)"><i class="fa-solid fa-arrow-down"></i></span></th>
+                <th>Status<span onclick="sortTable('sessions-table', 4)"><i class="fa-solid fa-arrow-down"></i></span></th>
               </tr>
 
               <tbody>
@@ -48,7 +48,7 @@
                   </td>
 
                   <td>
-                    <%= image_tag('cc.png', alt: 'CC', class: 'ccs hidden', id: 'myCcBlack') %>
+                    <%= vite_image_tag 'images/cc.png', alt: 'CC', class: 'ccs hidden', id: 'myCcBlack' %>
                     <%= vtr.volunteer_task.cc %>
                     <br />
                     <%= vtr.volunteer_task.hours %> hours

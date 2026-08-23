@@ -6,12 +6,12 @@
         <%= image_tag @edit_admin_user.display_avatar, class: 'edit-avatar', alt: 'Avatar' %>
         <% if @all_sessions.where("sign_out_time > ?", Time.zone.now).present? %>
           <div class="status-online">
-            <%= fa_icon 'check-circle-o' %>
+            <i class="fa-regular fa-circle-check"></i>
             <%= 'Currently signed in' %>
           </div>
         <% else %>
           <div class="status-offline">
-            <%= fa_icon 'times-circle-o' %>
+            <i class="fa-regular fa-circle-xmark"></i>
             <%= 'Currently signed out' %>
           </div>
         <% end %>
@@ -24,43 +24,43 @@
       </div>
       <% if @edit_admin_user.gender.present? %>
         <div class="user-info">
-          <%= fa_icon 'transgender', text: @edit_admin_user.gender %>
+          <i class="fa-solid fa-transgender"></i> <%= @edit_admin_user.gender %>
         </div>
       <% end %>
       <% if @edit_admin_user.faculty.present? %>
         <div class="user-info">
-          <%= fa_icon 'book', text: "Faculty of #{@edit_admin_user.faculty}" %>
+          <i class="fa-solid fa-book"></i> Faculty of <%= @edit_admin_user.faculty %>
         </div>
       <% end %>
       <% if @edit_admin_user.use.present? %>
         <div class="user-info">
-          <%= fa_icon 'sticky-note-o', text: "Use: #{@edit_admin_user.use}" %>
+          <i class="fa-regular fa-sticky-note"></i> Use: <%= @edit_admin_user.use %>
         </div>
       <% end %>
       <div class="user-info">
-        <%= fa_icon 'envelope' %>
+        <i class="fa-solid fa-envelope"></i>
         <%= mail_to @edit_admin_user.email %>
       </div>
       <% if @edit_admin_user.url.present? %>
         <div class="user-info">
-          <%= fa_icon('link') %>
+          <i class="fa-solid fa-link"></i>
           <%= link_to @edit_admin_user.url.gsub(%r{\Ahttps?://}, '').to_s, @edit_admin_user.url %>
         </div>
       <% end %>
       <% if @github_username.present? %>
         <div class="user-info">
-          <%= fa_icon 'github-alt' %>
+          <i class="fa-brands fa-github-alt"></i>
           <%= link_to @github_username, "https://github.com/#{@github_username}" %>
         </div>
       <% end %>
       <% if @edit_admin_user.location.present? %>
       <div class="user-info">
-        <%= fa_icon 'location-arrow' %>
+        <i class="fa-solid fa-location-arrow"></i>
         <%= link_to @edit_admin_user.location, "http://maps.google.com/?q=#{@edit_admin_user.location}" %>
       </div>
       <% end %>
       <div class="user-info">
-        <%= fa_icon 'calendar', text: "Joined on #{@edit_admin_user.created_at.strftime('%B %d, %Y')}" %>
+        <i class="fa-solid fa-calendar"></i> Joined on <%= @edit_admin_user.created_at.strftime('%B %d, %Y') %>
       </div>
   </div>
   <div id="user-show-admin" class="certifications">
@@ -84,18 +84,18 @@
       <% if @all_sessions.present? %>
         <div class="user-info">
           <% if @all_sessions.first.sign_out_time > Time.zone.now %>
-            <%= fa_icon 'calendar-check-o', text: 'Currently in lab' %>
+            <i class="fa-regular fa-calendar-check"></i> Currently in lab
           <% elsif (@all_sessions.first.sign_out_time < (Time.zone.now - 7.days)) %>
-            <%= fa_icon 'calendar-check-o', text: "Last seen in lab on #{@all_sessions.first.sign_out_time.strftime('%B %d, %Y')}" %>
+            <i class="fa-regular fa-calendar-check"></i> Last seen in lab on <%= @all_sessions.first.sign_out_time.strftime('%B %d, %Y') %>
           <% else %>
-            <%= fa_icon 'calendar-check-o', text: "Last seen in lab #{time_ago_in_words(@all_sessions.first.sign_out_time)} ago" %>
+            <i class="fa-regular fa-calendar-check"></i> Last seen in lab <%= time_ago_in_words(@all_sessions.first.sign_out_time) %> ago
           <% end %>
         </div>
         <div class="user-info">
-            <%= fa_icon 'calendar-plus-o', text: "Been in lab #{@all_sessions.count} times" %>
+            <i class="fa-regular fa-calendar-plus"></i> Been in lab <%= @all_sessions.count %> times
         </div>
         <div class="user-info">
-            <%= fa_icon 'clock-o', text: "Average time spent in lab: #{@average_time} minutes" %>
+            <i class="fa-regular fa-clock"></i> Average time spent in lab: <%= @average_time %> minutes
         </div>
         <div class="subtitle">Most recent sessions:</div>
         <table class="admin-table table table-striped">
@@ -125,7 +125,7 @@
         </table>
       <% else %>
         <div class="user-info">
-          <%= fa_icon 'calendar-times-o', text: 'Never seen in lab' %>
+          <i class="fa-regular fa-calendar-times"></i> Never seen in lab
         </div>
       <% end %>
     </div>

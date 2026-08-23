@@ -1,33 +1,34 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <%= render 'shared/theme_init' %>
-  <title>License | MakerRepo</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <%= favicon_link_tag 'C_square.png' %>
-    <%= stylesheet_link_tag 'vendor', media: 'all', debug: false %>
-    <%= javascript_include_tag 'vendor', debug: false %>
-  <%= vite_javascript_tag 'application', 'data-turbo-track': 'reload' %>
-  <%= stylesheet_link_tag 'application', media: 'all', 'data-turbo-track': 'reload' %>
-  <%= vite_stylesheet_tag 'application.scss', media: 'all', 'data-turbo-track': 'reload' %>
-  <%= csrf_meta_tags %>
-</head>
-<body>
-  <%= render 'layouts/header' %>
-  <div class="help-grid">
-    <%= yield %>
-    <div class="help-side-panel">
-      <div class="title">Licenses</div>
-      <ul>
-        <%= tag.li(link_to('Common Create - Attribution', licenses_cca_path)) %>
-        <%= tag.li(link_to('Common Create - Attribution - Share Alike', licenses_ccasa_path)) %>
-        <%= tag.li(link_to('Common Create - Attribution - No Derivatives', licenses_ccand_path)) %>
-        <%= tag.li(link_to('Common Create - Attribution - Non-Commerical', licenses_ccanc_path)) %>
-        <%= tag.li(link_to('Attribution - Non-Commerical - Share Alike', licenses_ancsa_path)) %>
-        <%= tag.li(link_to('Attribution - Non-Commerical - No Derivatives', licenses_ancnd_path)) %>
-      </ul>
+  <head>
+    <%= render 'shared/theme_init' %>
+    <title>License | MakerRepo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <%= favicon_link_tag '/C_square.png' %>
+
+    <%# Vite Core %>
+    <%= vite_client_tag %>
+    <%= vite_javascript_tag 'application', 'data-turbo-track': 'reload' %>
+    <%= vite_stylesheet_tag 'application.scss', 'data-turbo-track': 'reload' %>
+
+    <%= csrf_meta_tags %>
+  </head>
+  <body>
+    <%= render 'layouts/header' %>
+    <div class="help-grid">
+      <%= yield %>
+      <div class="help-side-panel">
+        <div class="title">Licenses</div>
+        <ul>
+          <%= tag.li(link_to('Common Create - Attribution', licenses_cca_path)) %>
+          <%= tag.li(link_to('Common Create - Attribution - Share Alike', licenses_ccasa_path)) %>
+          <%= tag.li(link_to('Common Create - Attribution - No Derivatives', licenses_ccand_path)) %>
+          <%= tag.li(link_to('Common Create - Attribution - Non-Commerical', licenses_ccanc_path)) %>
+          <%= tag.li(link_to('Attribution - Non-Commerical - Share Alike', licenses_ancsa_path)) %>
+          <%= tag.li(link_to('Attribution - Non-Commerical - No Derivatives', licenses_ancnd_path)) %>
+        </ul>
+      </div>
     </div>
-  </div>
-  <%= render 'layouts/footer' %>
-</body>
+    <%= render 'layouts/footer' %>
+  </body>
 </html>

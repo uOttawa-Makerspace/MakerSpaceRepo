@@ -3,7 +3,7 @@
         <% if repository.photos.any? %>
             <%= image_tag(url_for(repository.thumbnail_variant(:repo_display_wrapper)), class: 'w-100 h-100 object-fit-cover') %>
         <% else %>
-            <%= image_tag 'C_square.svg', class: 'w-100 h-100 object-fit-fit' %>
+            <%= vite_image_tag 'images/C_square.svg', class: 'w-100 h-100 object-fit-fit' %>
         <% end %>
     <% end %>
 
@@ -13,7 +13,7 @@
     <% end %>
     <div class="card-footer d-flex">
         <span class="fw-bolder me-auto">by <%= link_to repository.user_username, user_path(repository.user_username) %></span>
-        <span class="text-primary me-2"><%= fa_icon 'heart' %> <%= repository.like %></span>
+        <span class="text-primary me-2"><i class="fa-solid fa-heart"></i> <%= repository.like %></span>
         <span title="<%= repository.created_at.to_date.to_fs :long %>"><%= repository.created_at.to_date.to_fs :rfc822 %></span>
     </div>
 </div>

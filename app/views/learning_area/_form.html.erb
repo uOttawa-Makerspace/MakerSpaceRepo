@@ -94,7 +94,7 @@
             <div class="input-group">
                 <%= f.file_field :photos, multiple: true, class: 'form-control image-upload', aria_label: 'Select Pictures' %>
                 <button class="btn btn-success" type="button" id="new-photo-input" aria-label="Add image input">
-                    <%= fa_icon 'plus' %>
+                    <i class="fa-solid fa-plus"></i>
                 </button>
             </div>
         </div>
@@ -118,7 +118,7 @@
                         </div>
                         <button type="button"
                                 class="btn btn-danger image-remove w-100"
-                                aria-label="Remove photo"><%= fa_icon :trash %></button>
+                                aria-label="Remove photo"><i class="fa-solid fa-trash"></i></button>
                     </div>
                 <% end %>
             <% end %>
@@ -128,7 +128,7 @@
              class="border rounded-3 text-center py-4 mb-3"
              ondrop="dragndrop(event);"
              ondragover="dragover(event);">
-            <%= fa_icon 'cloud-upload', class: 'fs-3' %>
+            <i class="fa-solid fa-cloud-arrow-up fs-3"></i>
             <p class="mb-0 mt-1 small">Drag & Drop files here</p>
         </div>
     </fieldset>

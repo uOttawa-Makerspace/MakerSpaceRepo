@@ -1,0 +1,161 @@
+@import "./shared/variables";
+
+.home ~ #quick-access-bar {
+  width: 100%;
+  z-index: 50;
+}
+
+#add-new-quick-access {
+  cursor: pointer;
+}
+
+section#home-header {
+  overflow: hidden;
+  position: relative;
+  background-image: url("../images/face_optimized.jpg");
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-top: -$body-top-padding;
+  min-height: 100vh;
+
+  .title {
+    font-size: 4.5rem;
+    font-weight: 300;
+    line-height: 1.2;
+
+    //@include media-breakpoint-down(md) {
+    //  font-size: 4.5rem;
+    //}
+
+    //@include media-breakpoint-down(sm) {
+    //  font-size: 3.5rem;
+    //}
+
+    //@include media-breakpoint-down(xs) {
+    //  font-size: 3rem;
+    //}
+
+    @media (min-width: 768px) and (max-width: 991.98px) {
+      font-size: 4.5rem;
+    }
+
+    @media (min-width: 576px) and (max-width: 767.98px) {
+      font-size: 3.5rem;
+    }
+
+    @media (max-width: 575.98px) {
+      font-size: 3rem;
+    }
+  }
+
+  .container {
+    margin: $body-top-padding auto;
+    height: 100%;
+
+    .row {
+      height: 100%;
+
+      .jumbotron {
+        margin: 3rem 0;
+        background: rgba(255, 255, 255, 0.8) !important;
+      }
+    }
+  }
+
+  .down-indicator {
+    display: block;
+    height: 8rem;
+    position: absolute;
+    text-align: center;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    transition: opacity ease-in-out 500ms;
+
+    .chevron {
+      animation: down-indicator ease-in-out infinite 2s;
+    }
+  }
+}
+
+#under-top {
+  visibility: hidden;
+  position: relative;
+  top: -$body-top-padding;
+}
+
+@keyframes down-indicator {
+  0% {
+    margin-top: 0;
+    color: transparent;
+  }
+  50% {
+    margin-top: 3rem;
+    color: rgba(255, 255, 255, 0.5);
+  }
+  100% {
+    margin-top: 3rem;
+    color: transparent;
+  }
+}
+
+section#home-categories {
+  .items {
+    margin: 0;
+    padding: 0.25rem;
+  }
+
+  .platform-item {
+    padding: 0.25rem;
+    display: block;
+    position: relative;
+
+    .background {
+      width: 100%;
+    }
+
+    .overlay {
+      position: absolute;
+      top: 0.25rem;
+      left: 0.25rem;
+      bottom: 0.25rem;
+      right: 0.25rem;
+
+      background: rgba(0, 0, 0, 0.5);
+
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+
+      color: white;
+      text-shadow: 0 0 10px black;
+      font-weight: lighter;
+      font-size: 1.75rem;
+
+      //@include media-breakpoint-down(sm) {
+      //  font-size: 1.25rem;
+      //}
+
+      @media (max-width: 575.98px) {
+        font-size: 1.25rem;
+      }
+
+      &:hover,
+      &:focus,
+      &:active {
+        color: white;
+        text-decoration: none;
+        outline: none;
+
+        background: rgba(19, 104, 107, 0.6);
+        transition: background-color 200ms ease-in-out;
+      }
+    }
+  }
+}

@@ -1,22 +1,22 @@
 <nav class="navbar navbar-expand-xl navbar-staff shadow-sm">
-  <div class="container-fluid px-xl-3 px-xxl-4">
-    <a class="navbar-brand text-nowrap me-xl-3 me-xxl-4" href="<%= staff_dashboard_index_path %>">Staff <strong>Area</strong></a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent2" aria-controls="navbarSupportedContent2" aria-expanded="false" aria-label="Toggle navigation">
+  <div class="container-fluid px-2 px-sm-3 px-xl-2 px-xxl-4">
+    <a class="navbar-brand text-nowrap me-2 me-xxl-3" href="<%= staff_dashboard_index_path %>">Staff <strong>Area</strong></a>
+    <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#staffNavbarContent" aria-controls="staffNavbarContent" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
-    <div class="collapse navbar-collapse" id="navbarSupportedContent2">
+    <div class="collapse navbar-collapse" id="staffNavbarContent">
       <ul class="navbar-nav ms-auto align-items-xl-center">
         <li class="nav-item">
-          <%= link_to 'Staff dashboard', staff_dashboard_index_path, class: 'nav-link px-xl-2 px-xxl-3 text-nowrap' %>
+          <%= link_to 'Staff dashboard', staff_dashboard_index_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %>
         </li>
         <li class="nav-item">
-          <%= link_to 'New Training Session', new_staff_training_session_path, class: 'nav-link px-xl-2 px-xxl-3 text-nowrap' %>
+          <%= link_to 'New Training Session', new_staff_training_session_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %>
         </li>
         <li class="nav-item">
-          <%= link_to 'My Training Sessions', staff_training_sessions_path, class: 'nav-link px-xl-2 px-xxl-3 text-nowrap' %>
+          <%= link_to 'My Training Sessions', staff_training_sessions_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %>
         </li>
         <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle px-xl-2 px-xxl-3 text-nowrap" href="#" id="navbarDropdownWorkCalendar" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <a class="nav-link dropdown-toggle px-xl-1 px-xxl-2 text-nowrap" href="#" id="navbarDropdownWorkCalendar" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             Work Calendar
           </a>
           <div class="dropdown-menu" aria-labelledby="navbarDropdownWorkCalendar">
@@ -25,13 +25,13 @@
           </div>
         </li>
         <li class="nav-item">
-          <%= link_to 'Sign in kiosk', kiosk_index_path, class: 'nav-link px-xl-2 px-xxl-3 text-nowrap' %>
+          <%= link_to 'Sign in kiosk', kiosk_index_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %>
         </li>
         <li class="nav-item">
-          <%= link_to 'Locker rentals', admin_locker_rentals_path, class: 'nav-link px-xl-2 px-xxl-3 text-nowrap' %>
+          <%= link_to 'Locker rentals', admin_locker_rentals_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %>
         </li>
         <li class="nav-item">
-          <%= link_to 'Tap Box Console', staff_tap_box_console_path, class: 'nav-link px-xl-2 px-xxl-3 text-nowrap' %>
+          <%= link_to 'Tap Box Console', staff_tap_box_console_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %>
         </li>
       </ul>
     </div>

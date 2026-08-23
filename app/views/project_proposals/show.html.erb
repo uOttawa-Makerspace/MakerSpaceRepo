@@ -132,7 +132,7 @@
             <h1 class="fs-3 fw-bold border-bottom pb-2 mb-3"><%= @project_proposal.title %></h1>
 
             <% if signed_in? && (@project_proposal.user_id == current_user.id || current_user.admin?) %>
-                <%= link_to fa_icon('pencil', text: t('project_proposal.edit_proposal')),
+                <%= link_to "<i class=\"fa-solid fa-pencil\"></i> #{t('project_proposal.edit_proposal')}".html_safe,
                             edit_project_proposal_path(@project_proposal), class: 'btn btn-secondary btn-sm w-100 mb-3' %>
             <% end %>
 
@@ -177,7 +177,7 @@
                         <% @project_files.each do |f| %>
                             <li class="small mb-1">
                                 <% if f.respond_to?(:file) && f.file.attached? %>
-                                    <%= fa_icon 'file-text-o' %>
+                                    <i class="fa-regular fa-file-lines"></i>
                                     <%= link_to f.file.filename.to_s, rails_blob_path(f.file, disposition: 'attachment') %>
                                     <span class="text-body-secondary">(<%= (f.file.byte_size / 1024.0).round(1) %> KB)</span>
                                 <% end %>
@@ -223,16 +223,16 @@
                 <h2 class="fs-5 fw-bold mb-3">Admin Review & Tools</h2>
 
                 <div class="d-flex gap-2 mb-3">
-                    <%= button_to fa_icon('thumbs-up', text: t('project_proposal.admin.approve')), approve_project_proposals_path(id: @project_proposal.id),
+                    <%= button_to "<i class=\"fa-solid fa-thumbs-up\"></i> #{t('project_proposal.admin.approve')}".html_safe, approve_project_proposals_path(id: @project_proposal.id),
                                   method: :post, class: 'btn btn-success btn-sm flex-fill', data: { confirm: 'Approve this project proposal?' } %>
-                    <%= button_to fa_icon('thumbs-down', text: t('project_proposal.admin.decline')), decline_project_proposals_path(id: @project_proposal.id),
+                    <%= button_to "<i class=\"fa-solid fa-thumbs-down\"></i> #{t('project_proposal.admin.decline')}".html_safe, decline_project_proposals_path(id: @project_proposal.id),
                                   method: :post, class: 'btn btn-danger btn-sm flex-fill', data: { confirm: 'Decline this project proposal?' } %>
                 </div>
 
                 <div class="d-flex gap-2 mb-3">
                     <%= button_to t('project_proposal.create_revision'), create_revision_project_proposals_path(old_project_proposal_id: @project_proposal.id),
                                   method: :post, class: 'btn btn-outline-success btn-sm flex-fill' %>
-                    <%= button_to fa_icon('trash', text: t('project_proposal.admin.delete')), project_proposal_path(@project_proposal),
+                    <%= button_to "<i class=\"fa-solid fa-trash\"></i> #{t('project_proposal.admin.delete')}".html_safe, project_proposal_path(@project_proposal),
                                   method: :delete, class: 'btn btn-outline-danger btn-sm flex-fill', data: { confirm: 'Delete this project proposal?' } %>
                 </div>
 

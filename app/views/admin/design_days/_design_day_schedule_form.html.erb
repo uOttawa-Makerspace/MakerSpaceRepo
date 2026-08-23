@@ -6,7 +6,7 @@
 > <%# Mind the bracket here! %>
     <div class="row align-items-center mb-3 gx-2">
         <div class="col-auto sort-handle">
-            <%= fa_icon 'bars', class: 'm-2' %>
+            <i class="fa-solid fa-bars m-2"></i>
         </div>
         <div class="col border-end">
             <div class="input-group">
@@ -27,7 +27,7 @@
         <div class="col-auto">
             <%= fs.check_box :_destroy, class: 'btn-check', checked: false, autocomplete: 'off', include_hidden: false, data: { delete_template: '' } %>
             <%= fs.label :_destroy, class: 'btn btn-danger' do %>
-                <%= fa_icon 'trash' %>
+                <i class="fa-solid fa-trash"></i>
             <% end %>
         </div>
     </div>

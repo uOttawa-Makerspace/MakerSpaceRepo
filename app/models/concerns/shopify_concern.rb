@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-# Concern to allow creating an invoice with arbitrary line items and costs.
-# Associates a record with a draft order. Ensures the proper columns
-# are present to track state, then provides helper methods to create or find a
-# draft order's invoice url and paid status.
 module ShopifyConcern
   extend ActiveSupport::Concern
 
@@ -15,13 +11,9 @@ module ShopifyConcern
     def start_shopify_session
       shopify_config = Rails.application.credentials.dig(Rails.env.to_sym, :shopify) || {}
 
-      shopify_password  = shopify_config[:password]
-      shopify_shop_name = shopify_config[:shop_name]
-      shop_domain       = "#{shopify_shop_name}.myshopify.com"
-
       session = ShopifyAPI::Auth::Session.new(
-        shop: shop_domain,
-        access_token: shopify_password
+        shop: "#{shopify_config[:shop_name]}.myshopify.com",
+        access_token: shopify_config[:password]
       )
 
       ShopifyAPI::Context.activate_session(session)
@@ -45,7 +37,7 @@ module ShopifyConcern
     end
 
     def shopify_draft_order_key_name
-      raise "Did not define shopify_draft_order_key_name on model implementing concern"
+      raise NotImplementedError, "Must define shopify_draft_order_key_name on model including ShopifyConcern"
     end
   end
 
@@ -102,9 +94,7 @@ module ShopifyConcern
         .new(session: ShopifyAPI::Context.active_session)
         .query(query: query, variables: { ownerId: gid })
 
-      resp.body
-        &.dig("data", "node", "metafields", "edges")
-        &.map { |n| n["node"] } || []
+      resp.body&.dig("data", "node", "metafields", "edges")&.map { |n| n["node"] } || []
     end
 
     def start_shopify_session
@@ -113,14 +103,13 @@ module ShopifyConcern
 
     def ensure_can_use_draft_order
       unless has_attribute?("shopify_draft_order_id")
-        raise "Model does not define a shopify_draft_order_id column"
+        raise "Model #{self.class.name} does not define a shopify_draft_order_id column"
       end
 
       raise "Key name must not be blank" if shopify_draft_order_key_name.blank?
 
-      # Pass true so respond_to? checks private/protected methods as well
       unless respond_to?(:shopify_draft_order_line_items, true)
-        raise "Line items method must be defined"
+        raise "Line items method shopify_draft_order_line_items must be defined"
       end
     end
 
@@ -155,14 +144,10 @@ module ShopifyConcern
         }
       QUERY
 
-      input = { input: { id: shopify_draft_order_id } }
-      resp = admin_client.query(query: delete_draft_order, variables: input)
+      resp = admin_client.query(query: delete_draft_order, variables: { input: { id: shopify_draft_order_id } })
+      return false unless resp.code == 200
 
-      unless resp.code == 200
-        raise "Received HTTP #{resp.code} when deleting shopify draft order: #{resp.body}"
-      end
-
-      update(shopify_draft_order_id: nil)
+      update_column(:shopify_draft_order_id, nil)
       resp.body&.dig("data", "draftOrderDelete", "deletedId").present?
     end
 
@@ -173,8 +158,8 @@ module ShopifyConcern
       )
 
       query_draft_order = <<~QUERY
-        query {
-          draftOrder(id: "#{shopify_draft_order_id}") {
+        query getDraftOrder($id: ID!) {
+          draftOrder(id: $id) {
             id
             name
             invoiceUrl
@@ -195,10 +180,8 @@ module ShopifyConcern
         }
       QUERY
 
-      resp = admin_client.query(query: query_draft_order)
-      unless resp.code == 200
-        raise "Network Error: HTTP #{resp.code} while fetching shopify draft order"
-      end
+      resp = admin_client.query(query: query_draft_order, variables: { id: shopify_draft_order_id })
+      return nil unless resp.code == 200
 
       resp.body&.dig("data", "draftOrder")
     end
@@ -244,7 +227,7 @@ module ShopifyConcern
       end
 
       new_id = draft_order_data["id"]
-      update(shopify_draft_order_id: new_id)
+      update_column(:shopify_draft_order_id, new_id)
       fetch_shopify_draft_order
     end
 

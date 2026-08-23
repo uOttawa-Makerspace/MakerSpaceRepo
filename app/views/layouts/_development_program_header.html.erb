@@ -1,137 +1,137 @@
-<nav class="navbar navbar-expand-xl navbar-light navbar-staff">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="<%= development_programs_path %>">
-            Development<strong>Program</strong>
-        </a>
+<nav class="navbar navbar-expand-xl navbar-staff shadow-sm">
+  <div class="container-fluid px-2 px-sm-3 px-xl-2 px-xxl-4">
+    <a class="navbar-brand text-nowrap me-2 me-xxl-3" href="<%= development_programs_path %>">
+      Development<strong>Program</strong>
+    </a>
 
-        <button class="navbar-toggler" type="button"
-                data-bs-toggle="collapse" data-bs-target="#devprog-nav"
-                aria-controls="devprog-nav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+    <button class="navbar-toggler ms-auto" type="button"
+            data-bs-toggle="collapse" data-bs-target="#devprog-nav"
+            aria-controls="devprog-nav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
 
-        <div class="collapse navbar-collapse" id="devprog-nav">
-            <ul class="navbar-nav mx-auto">
+    <div class="collapse navbar-collapse" id="devprog-nav">
+      <ul class="navbar-nav me-auto align-items-xl-center">
 
-                <%# Learning %>
-                <% if current_user.admin? %>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="dropdown-learning"
-                           role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <%= t('.learning_area') %>
-                        </a>
-                        <div class="dropdown-menu" aria-labelledby="dropdown-learning">
-                            <%= link_to t('.new_learning_module'), new_learning_area_path, class: 'dropdown-item' %>
-                            <div class="dropdown-divider"></div>
-                            <%= link_to t('.all_learning_modules'), learning_area_index_path, class: 'dropdown-item' %>
-                        </div>
-                    </li>
-                <% else %>
-                    <li class="nav-item">
-                        <%= link_to t('.learning_area'), learning_area_index_path, class: 'nav-link' %>
-                    </li>
-                <% end %>
+        <%# Learning %>
+        <% if current_user.admin? %>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle px-xl-1 px-xxl-2 text-nowrap" href="#" id="dropdown-learning"
+               role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              <%= t('.learning_area') %>
+            </a>
+            <div class="dropdown-menu" aria-labelledby="dropdown-learning">
+              <%= link_to t('.new_learning_module'), new_learning_area_path, class: 'dropdown-item' %>
+              <div class="dropdown-divider"></div>
+              <%= link_to t('.all_learning_modules'), learning_area_index_path, class: 'dropdown-item' %>
+            </div>
+          </li>
+        <% else %>
+          <li class="nav-item">
+            <%= link_to t('.learning_area'), learning_area_index_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %>
+          </li>
+        <% end %>
 
-                <%# Proficient Projects %>
-                <% if current_user.staff? %>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="dropdown-projects"
-                           role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <%= t('.proficient_projects') %>
-                        </a>
-                        <div class="dropdown-menu" aria-labelledby="dropdown-projects">
-                            <%= link_to t('.all_proficient_projects'), proficient_projects_path, class: 'dropdown-item' %>
-                            <div class="dropdown-divider"></div>
-                            <%= link_to t('.requests'), requests_proficient_projects_path, class: 'dropdown-item' %>
-                            <%= link_to t('.new_proficient_project'), new_proficient_project_path, class: 'dropdown-item' %>
-                            <%= link_to t('admin.drop_off_locations'), admin_drop_off_locations_path, class: 'dropdown-item' %>
-                        </div>
-                    </li>
-                <% else %>
-                    <li class="nav-item">
-                        <%= link_to t('.proficient_projects'), proficient_projects_path, class: 'nav-link' %>
-                    </li>
-                <% end %>
+        <%# Proficient Projects %>
+        <% if current_user.staff? %>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle px-xl-1 px-xxl-2 text-nowrap" href="#" id="dropdown-projects"
+               role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              <%= t('.proficient_projects') %>
+            </a>
+            <div class="dropdown-menu" aria-labelledby="dropdown-projects">
+              <%= link_to t('.all_proficient_projects'), proficient_projects_path, class: 'dropdown-item' %>
+              <div class="dropdown-divider"></div>
+              <%= link_to t('.requests'), requests_proficient_projects_path, class: 'dropdown-item' %>
+              <%= link_to t('.new_proficient_project'), new_proficient_project_path, class: 'dropdown-item' %>
+              <%= link_to t('admin.drop_off_locations'), admin_drop_off_locations_path, class: 'dropdown-item' %>
+            </div>
+          </li>
+        <% else %>
+          <li class="nav-item">
+            <%= link_to t('.proficient_projects'), proficient_projects_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %>
+          </li>
+        <% end %>
 
-                <%# Badges %>
-                <% if current_user.role == "regular_user" %>
-                    <li class="nav-item">
-                        <%= link_to t('devprog.nav.badges_view'), all_badges_development_programs_path, class: 'nav-link' %>
-                    </li>
-                <% else %>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="dropdown-badges"
-                           role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <%= t('.badges') %>
-                        </a>
-                        <div class="dropdown-menu" aria-labelledby="dropdown-badges">
-                            <%= link_to t('devprog.nav.badges_view'), all_badges_development_programs_path, class: 'dropdown-item' %>
-                            <div class="dropdown-divider"></div>
-                            <%= link_to t('devprog.nav.badges_search'), badges_path, class: 'dropdown-item' %>
-                        </div>
-                    </li>
-                <% end %>
+        <%# Badges %>
+        <% if current_user.role == "regular_user" %>
+          <li class="nav-item">
+            <%= link_to t('devprog.nav.badges_view'), all_badges_development_programs_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %>
+          </li>
+        <% else %>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle px-xl-1 px-xxl-2 text-nowrap" href="#" id="dropdown-badges"
+               role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              <%= t('.badges') %>
+            </a>
+            <div class="dropdown-menu" aria-labelledby="dropdown-badges">
+              <%= link_to t('devprog.nav.badges_view'), all_badges_development_programs_path, class: 'dropdown-item' %>
+              <div class="dropdown-divider"></div>
+              <%= link_to t('devprog.nav.badges_search'), badges_path, class: 'dropdown-item' %>
+            </div>
+          </li>
+        <% end %>
 
-                <%# Orders %>
-                <li class="nav-item">
-                    <%= link_to t('.orders'), orders_path, class: 'nav-link' %>
-                </li>
+        <%# Orders %>
+        <li class="nav-item">
+          <%= link_to t('.orders'), orders_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %>
+        </li>
 
-                <%# Kits %>
-                <% if current_user.admin? %>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="dropdown-kits"
-                           role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <%= t('.kits') %>
-                        </a>
-                        <div class="dropdown-menu" aria-labelledby="dropdown-kits">
-                            <%= link_to t('.kits'), project_kits_path, class: 'dropdown-item' %>
-                            <%= link_to t('.new_kit'), new_project_kit_path, class: 'dropdown-item' %>
-                        </div>
-                    </li>
-                <% else %>
-                    <li class="nav-item">
-                        <%= link_to t('.kits'), project_kits_path, class: 'nav-link' %>
-                    </li>
-                <% end %>
+        <%# Kits %>
+        <% if current_user.admin? %>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle px-xl-1 px-xxl-2 text-nowrap" href="#" id="dropdown-kits"
+               role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              <%= t('.kits') %>
+            </a>
+            <div class="dropdown-menu" aria-labelledby="dropdown-kits">
+              <%= link_to t('.kits'), project_kits_path, class: 'dropdown-item' %>
+              <%= link_to t('.new_kit'), new_project_kit_path, class: 'dropdown-item' %>
+            </div>
+          </li>
+        <% else %>
+          <li class="nav-item">
+            <%= link_to t('.kits'), project_kits_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %>
+          </li>
+        <% end %>
 
-                <%# Coupons %>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="dropdown-coupons"
-                       role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        <%= t('.coupons') %>
-                    </a>
-                    <div class="dropdown-menu" aria-labelledby="dropdown-coupons">
-                        <%= link_to t('.redeem'), new_discount_code_path, class: 'dropdown-item' %>
-                        <%= link_to t('.my_coupons'), discount_codes_path, class: 'dropdown-item' %>
-                        <% if current_user.admin? %>
-                            <div class="dropdown-divider"></div>
-                            <%= link_to t('.manage_coupons'), coupon_codes_path, class: 'dropdown-item' %>
-                        <% end %>
-                    </div>
-                </li>
+        <%# Coupons %>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle px-xl-1 px-xxl-2 text-nowrap" href="#" id="dropdown-coupons"
+             role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <%= t('.coupons') %>
+          </a>
+          <div class="dropdown-menu" aria-labelledby="dropdown-coupons">
+            <%= link_to t('.redeem'), new_discount_code_path, class: 'dropdown-item' %>
+            <%= link_to t('.my_coupons'), discount_codes_path, class: 'dropdown-item' %>
+            <% if current_user.admin? %>
+              <div class="dropdown-divider"></div>
+              <%= link_to t('.manage_coupons'), coupon_codes_path, class: 'dropdown-item' %>
+            <% end %>
+          </div>
+        </li>
 
-                <%# Videos - admin only %>
-                <% if current_user.admin? %>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="dropdown-videos"
-                           role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <%= t('.videos') %>
-                        </a>
-                        <div class="dropdown-menu" aria-labelledby="dropdown-videos">
-                            <%= link_to t('.new_video'), new_video_path, class: 'dropdown-item' %>
-                            <%= link_to t('.all_videos'), videos_path, class: 'dropdown-item' %>
-                        </div>
-                    </li>
-                <% end %>
+        <%# Videos - admin only %>
+        <% if current_user.admin? %>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle px-xl-1 px-xxl-2 text-nowrap" href="#" id="dropdown-videos"
+               role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              <%= t('.videos') %>
+            </a>
+            <div class="dropdown-menu" aria-labelledby="dropdown-videos">
+              <%= link_to t('.new_video'), new_video_path, class: 'dropdown-item' %>
+              <%= link_to t('.all_videos'), videos_path, class: 'dropdown-item' %>
+            </div>
+          </li>
+        <% end %>
 
-            </ul>
+      </ul>
 
-            <ul class="navbar-nav ms-auto me-1">
-                <li class="nav-link" aria-label="cart">
-                    <%= render 'layouts/cart_text' %>
-                </li>
-            </ul>
-        </div>
+      <ul class="navbar-nav ms-auto me-1">
+        <li class="nav-link" aria-label="cart">
+          <%= render 'layouts/cart_text' %>
+        </li>
+      </ul>
     </div>
+  </div>
 </nav>

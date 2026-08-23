@@ -2,7 +2,7 @@
 
 <section class="mt-n3">
   <div class="position-relative text-white text-center d-flex flex-column justify-content-center" style="min-height: 90vh;">
-    <div style="background: url(<%= asset_path('memberships/jumbotron.jpg') %>) center center / cover no-repeat; filter: brightness(40%); position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;"></div>
+    <div style="background: url(<%= vite_asset_path('images/memberships/jumbotron.jpg') %>) center center / cover no-repeat; filter: brightness(40%); position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;"></div>
 
     <div class="container position-relative z-1">
       <p class="lead text-white fs-2"><%= t('memberships.index.sub_header') %></p>
@@ -24,7 +24,7 @@
       </div>
 
       <div class="col-lg-5 text-center">
-        <%= image_tag 'memberships/text1.jpg', class: 'img-fluid rounded shadow' %>
+        <%= vite_image_tag 'images/memberships/text1.jpg', class: 'img-fluid rounded shadow' %>
       </div>
     </div>
   </div>
@@ -49,13 +49,13 @@
         <div class="row align-items-stretch">
           <div class="col-md-4 mb-4 mb-md-0 d-flex align-items-center">
             <div class="w-100 h-100 d-flex align-items-center" style="overflow: hidden;">
-              <%= image_tag 'memberships/text3.jpg', class: 'img-fluid w-100 h-100 rounded', style: 'object-fit: cover;' %>
+              <%= vite_image_tag 'images/memberships/text3.jpg', class: 'img-fluid w-100 h-100 rounded', style: 'object-fit: cover;' %>
             </div>
           </div>
 
           <div class="col-md-8 d-flex flex-column">
             <div class="d-flex align-items-center mb-3">
-              <h2 class="mb-0 text-primary"><%= fa_icon "star-half-o" %><%= t('memberships.index.subtitle_4') %></h2>
+              <h2 class="mb-0 text-primary"><i class="fa-regular fa-star-half"></i><%= t('memberships.index.subtitle_4') %></h2>
             </div>
 
             <p class="lead fs-3"><%= t('memberships.index.text_4') %></p>

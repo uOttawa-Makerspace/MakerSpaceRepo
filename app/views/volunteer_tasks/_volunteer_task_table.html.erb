@@ -4,7 +4,7 @@
   <div class="input-group w-50 mx-auto mb-4">
     <input type="text" id="query-<%= type %>" onkeyup="findSession('<%= type %>-table', id='query-<%= type %>')"
            placeholder="Find by: date, title, description, ..." class="form-control mx-auto">
-    <%= fa_icon 'search', class: 'input-group-text fa-2x pe-2' %>
+    <i class="fa-solid fa-magnifying-glass input-group-text fa-2x pe-2"></i>
   </div>
 
   <div class="table-responsive">
@@ -12,17 +12,17 @@
       <thead class="table-primary">
         <tr>
           <th class="action-header">Action</th>
-          <th>CC/Hours<span onclick="sortTable('<%= type %>-table', 1)"><%= fa_icon('arrow-down') %></span></th>
-          <th>Category<span onclick="sortTable('<%= type %>-table', 2)"><%= fa_icon('arrow-down') %></span></th>
-          <th>Title <span onclick="sortTable('<%= type %>-table', 3)"><%= fa_icon('arrow-down') %></span></th>
-          <th>Status<span onclick="sortTable('<%= type %>-table', 4)"><%= fa_icon('arrow-down') %></span></th>
-          <th>Certifications Needed<span onclick="sortTable('<%= type %>-table', 5)"><%= fa_icon('arrow-down') %></span></th>
-          <th>Space<span onclick="sortTable('<%= type %>-table', 6)"><%= fa_icon('arrow-down') %></span></th>
-          <th>Responsable Staff<span onclick="sortTable('<%= type %>-table', 7)"><%= fa_icon('arrow-down') %></span></th>
-          <th>Users<span onclick="sortTable('<%= type %>-table', 8)"><%= fa_icon('arrow-down') %></span></th>
-          <th>Date Submitted <span onclick="sortTable('<%= type %>-table', 9)"><%= fa_icon('arrow-down') %></span></th>
+          <th>CC/Hours<span onclick="sortTable('<%= type %>-table', 1)"><i class="fa-solid fa-arrow-down"></i></span></th>
+          <th>Category<span onclick="sortTable('<%= type %>-table', 2)"><i class="fa-solid fa-arrow-down"></i></span></th>
+          <th>Title <span onclick="sortTable('<%= type %>-table', 3)"><i class="fa-solid fa-arrow-down"></i></span></th>
+          <th>Status<span onclick="sortTable('<%= type %>-table', 4)"><i class="fa-solid fa-arrow-down"></i></span></th>
+          <th>Certifications Needed<span onclick="sortTable('<%= type %>-table', 5)"><i class="fa-solid fa-arrow-down"></i></span></th>
+          <th>Space<span onclick="sortTable('<%= type %>-table', 6)"><i class="fa-solid fa-arrow-down"></i></span></th>
+          <th>Responsable Staff<span onclick="sortTable('<%= type %>-table', 7)"><i class="fa-solid fa-arrow-down"></i></span></th>
+          <th>Users<span onclick="sortTable('<%= type %>-table', 8)"><i class="fa-solid fa-arrow-down"></i></span></th>
+          <th>Date Submitted <span onclick="sortTable('<%= type %>-table', 9)"><i class="fa-solid fa-arrow-down"></i></span></th>
           <% if current_user.staff? %>
-            <th>Created by <span onclick="sortTable('<%= type %>-table', 10)"><%= fa_icon('arrow-down') %></span></th>
+            <th>Created by <span onclick="sortTable('<%= type %>-table', 10)"><i class="fa-solid fa-arrow-down"></i></span></th>
           <% end %>
         </tr>
       </thead>
@@ -42,7 +42,7 @@
             </td>
 
             <td>
-              <%= image_tag('cc.png', alt: 'CC', class: 'ccs hidden', id: 'myCcBlack') %>
+              <%= vite_image_tag 'images/cc.png', alt: 'CC', class: 'ccs hidden', id: 'myCcBlack' %>
               <%= vt.cc %>
               <br />
               <%= vt.hours %> hours

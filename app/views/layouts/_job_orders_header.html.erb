@@ -1,30 +1,30 @@
-<nav class="navbar navbar-expand-xl navbar-light navbar-staff pb-2">
-  <div class="container-fluid">
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarJobOrders" aria-controls="navbarJobOrders" aria-expanded="false" aria-label="Toggle navigation">
+<nav class="navbar navbar-expand-xl navbar-staff shadow-sm pb-2">
+  <div class="container-fluid px-2 px-sm-3 px-xl-2 px-xxl-4">
+    <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#navbarJobOrders" aria-controls="navbarJobOrders" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
 
     <div class="collapse navbar-collapse" id="navbarJobOrders">
-      <ul class="navbar-nav mx-auto">
+      <ul class="navbar-nav mx-auto align-items-xl-center">
         <li class="nav-item">
-          <%= link_to "#{t('navbar.user.joborder', default: 'Job Orders')} #{t('navbar.home', default: 'Home')}", landing_job_orders_path, class: 'nav-link' %>
+          <%= link_to "#{t('navbar.user.joborder', default: 'Job Orders')} #{t('navbar.home', default: 'Home')}", landing_job_orders_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %>
         </li>
         <li class="nav-item">
-          <%= link_to t('job_orders.public_page.my_job_orders', default: 'My Job Orders'), job_orders_path, class: 'nav-link' %>
+          <%= link_to t('job_orders.public_page.my_job_orders', default: 'My Job Orders'), job_orders_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %>
         </li>
         <li class="nav-item">
-          <%= link_to t('job_orders.public_page.create_a_new_job_order', default: 'Create a new Job Order'), new_job_order_path, class: 'nav-link' %>
+          <%= link_to t('job_orders.public_page.create_a_new_job_order', default: 'Create a new Job Order'), new_job_order_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %>
         </li>
 
         <% if current_user.staff? || current_user.admin? %>
           <li class="nav-item">
-            <%= link_to 'All Job Orders (Staff Only)', admin_job_orders_path, class: 'nav-link' %>
+            <%= link_to 'All Job Orders (Staff Only)', admin_job_orders_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %>
           </li>
         <% end %>
 
         <% if current_user.admin? %>
           <li class="nav-item">
-            <%= link_to 'Settings (Admin Only)', settings_job_orders_path, class: 'nav-link' %>
+            <%= link_to 'Settings (Admin Only)', settings_job_orders_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %>
           </li>
         <% end %>
       </ul>

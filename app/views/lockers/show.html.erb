@@ -2,7 +2,7 @@
 
 <div class="mb-4">
     <%= link_to lockers_path, class: 'text-muted text-decoration-none' do %>
-        <%= fa_icon 'arrow-left', text: 'Back to Lockers' %>
+        <i class="fa-solid fa-arrow-left"></i> Back to Lockers
     <% end %>
 </div>
 
@@ -39,7 +39,7 @@
                 <div>
                     <% if @active_locker_rental.expired? %>
                         <span class="badge bg-danger">
-                            <%= fa_icon :times %> Expired
+                            <i class="fa-solid fa-xmark"></i> Expired
                         </span>
                     <% else %>
                         <%= locker_rental_state_display @active_locker_rental %>
@@ -49,7 +49,7 @@
                     </span>
                 </div>
                 <%= link_to @active_locker_rental, class: 'btn btn-outline-secondary btn-sm' do %>
-                    View rental details <%= fa_icon 'arrow-right' %>
+                    View rental details <i class="fa-solid fa-arrow-right"></i>
                 <% end %>
             </div>
         <% else %>

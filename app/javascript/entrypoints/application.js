@@ -31,9 +31,8 @@ import "./clipboard";
 import "../controllers";
 import "./theme";
 
-import { Tooltip } from "bootstrap";
+import { Tooltip, Popover } from "bootstrap";
 import "toastr/toastr";
-
 import "@hotwired/turbo-rails";
 
 document.addEventListener("turbo:before-render", (event) => {
@@ -45,114 +44,132 @@ document.addEventListener("turbo:before-render", (event) => {
 });
 
 document.addEventListener("turbo:load", () => {
-  let tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-  tooltips.forEach((tooltip) => {
-    return new Tooltip(tooltip);
-  });
-  let popovers = document.querySelectorAll('[data-bs-toggle="popover"]');
-  popovers.forEach((popover) => {
-    return new bootstrap.Popover(popover);
+  // Initialize Bootstrap Tooltips
+  document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((el) => {
+    new Tooltip(el);
   });
 
-  const links = document.getElementsByTagName("a");
+  // Initialize Bootstrap Popovers
+  document.querySelectorAll('[data-bs-toggle="popover"]').forEach((el) => {
+    new Popover(el);
+  });
 
-  for (let i = 0; i < links.length; i++) {
-    const link = links[i];
+  // External link target handler
+  document.querySelectorAll("a[href]").forEach((link) => {
     const href = link.getAttribute("href");
-    if (href !== null && href.match(/^((https?:\/\/)|(www\.))/)) {
+    if (href && href.match(/^((https?:)?\/\/)/)) {
       link.setAttribute("target", "_blank");
       link.setAttribute("rel", "noopener noreferrer");
     }
-  }
+  });
+
+  // Disable Turbo on forms/links not explicitly opted in
+  document.querySelectorAll("form:not(.useTurbo)").forEach((el) => {
+    el.dataset.turbo = "false";
+  });
+  document.querySelectorAll("a:not(.useTurbo)").forEach((el) => {
+    el.dataset.turbo = "false";
+  });
+});
+
+// Confirmation handler for button_to data-confirm
+document.addEventListener("turbo:load", () => {
+  document.querySelectorAll("button[data-confirm]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      if (!confirm(button.dataset.confirm)) {
+        event.preventDefault();
+      }
+    });
+  });
 });
 
 window.clearEndDate = function () {
-  document.getElementById("end_date").value = null;
+  const endDate = document.getElementById("end_date");
+  if (endDate) endDate.value = "";
 };
 
-window.setSpace = function () {
-  let space_id = document.getElementById("set_space_id").value;
-  let url = "/staff_dashboard/change_space";
-  fetch(url, {
-    method: "PUT",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify({
-      space_id: space_id,
-      training: document.URL.includes("training_sessions"),
-      questions: document.URL.includes("questions"),
-      shifts: document.URL.includes("shifts"),
-    }),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      window.location.reload();
-    })
-    .catch((error) => {
-      console.log(error);
+window.setSpace = async function () {
+  const spaceIdInput = document.getElementById("set_space_id");
+  if (!spaceIdInput) return;
+
+  const space_id = spaceIdInput.value;
+  const url = "/staff_dashboard/change_space";
+  const csrfToken = document
+    .querySelector('meta[name="csrf-token"]')
+    ?.getAttribute("content");
+
+  try {
+    const response = await fetch(url, {
+      method: "PUT",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        "X-CSRF-Token": csrfToken || "",
+      },
+      body: JSON.stringify({
+        space_id: space_id,
+        training: window.location.href.includes("training_sessions"),
+        questions: window.location.href.includes("questions"),
+        shifts: window.location.href.includes("shifts"),
+      }),
     });
+
+    if (response.ok) {
+      window.location.reload();
+    }
+  } catch (error) {
+    console.error("Failed to update space:", error);
+  }
 };
 
 window.debounce = function (func, wait, immediate) {
   let timeout;
-  return function () {
-    let context = this,
-      args = arguments;
-    let later = function () {
+  return function (...args) {
+    const context = this;
+    const later = function () {
       timeout = null;
       if (!immediate) func.apply(context, args);
     };
-    let callNow = immediate && !timeout;
+    const callNow = immediate && !timeout;
     clearTimeout(timeout);
     timeout = setTimeout(later, wait);
     if (callNow) func.apply(context, args);
   };
 };
-window.examResponse = function (exam_id, answer_id) {
-  fetch("/exam_responses#create", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      exam_id: exam_id,
-      answer_id: answer_id,
-    }),
-  });
+
+window.examResponse = async function (exam_id, answer_id) {
+  const csrfToken = document
+    .querySelector('meta[name="csrf-token"]')
+    ?.getAttribute("content");
+  try {
+    await fetch("/exam_responses#create", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": csrfToken || "",
+      },
+      body: JSON.stringify({
+        exam_id: exam_id,
+        answer_id: answer_id,
+      }),
+    });
+  } catch (error) {
+    console.error("Exam response error:", error);
+  }
 };
+
 window.dragndrop = function (event) {
   event.preventDefault();
-  let images = [...document.getElementsByClassName("image-upload")];
+  const images = [...document.getElementsByClassName("image-upload")];
   for (let i = 0; i < images.length; i++) {
-    if (images[i].files.length == 0) {
+    if (images[i].files.length === 0) {
       images[i].files = event.dataTransfer.files;
       break;
     }
   }
 };
+
 window.dragover = function (event) {
   event.preventDefault();
 };
-// Replaces the jQuery confirm on button_to data=>confirm
-document.addEventListener("turbo:load", () => {
-  [...document.getElementsByTagName("button")].forEach((button) => {
-    button.addEventListener("click", (event) => {
-      if (button.dataset.confirm) {
-        if (!confirm(button.dataset.confirm)) {
-          event.preventDefault();
-        }
-      }
-    });
-  });
-});
-document.addEventListener("turbo:load", () => {
-  document.querySelectorAll("form:not(.useTurbo)").forEach(function (el) {
-    el.dataset.turbo = false;
-  });
-  document.querySelectorAll("a").forEach(function (el) {
-    el.dataset.turbo = false;
-  });
-});

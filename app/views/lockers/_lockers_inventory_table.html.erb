@@ -6,7 +6,7 @@
         <caption class="caption-top mb-2">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <button type="button" data-bs-toggle="modal" data-bs-target="#lockerBulkEditModal" class="btn btn-outline-primary btn-sm">
-                    <%= fa_icon :pencil %> Bulk edit
+                    <i class="fa-solid fa-pencil"></i> Bulk edit
                 </button>
                 <div class="form-check form-switch fs-6 mb-0">
                     <input class="form-check-input" type="checkbox" role="switch" id="lockerEditToggle"/>
@@ -50,7 +50,7 @@
                             <div class="spinner-border spinner-border-sm position-absolute top-0 end-0 m-2" style="z-index: 999" hidden>
                                 <span class="visually-hidden">Changing size...</span>
                             </div>
-                            <%= fa_icon :check, class: 'position-absolute top-0 end-0 m-2 text-success', style: "z-index: 999" , hidden: true %>
+                            <i class="fa-solid fa-check position-absolute top-0 end-0 m-2 text-success" style="z-index: 999" hidden></i>
                         </div>
                     </td>
                     <td>
@@ -67,7 +67,7 @@
                     <td>
                         <% if current_rental&.notes.present? %>
                             <span data-bs-toggle="tooltip" data-bs-placement="top" title="<%= current_rental.notes %>">
-                                <%= fa_icon 'sticky-note', text: truncate(current_rental.notes, length: 10) %>
+                                <i class="fa-solid fa-note-sticky"></i> <%= truncate(current_rental.notes, length: 10) %>
                             </span>
                         <% elsif current_rental.blank? %>
                              <%= text_field_tag "locker[notes]", locker.notes, class: 'form-control form-control-sm locker-inline-edit', disabled: true, data: { locker_id: locker.id }, placeholder: 'Add note' %>
@@ -94,11 +94,11 @@
                         <% if current_rental.present? %>
                             <% if current_rental.expired? %>
                                 <%= link_to current_rental, class: "btn btn-sm btn-outline-danger" do %>
-                                    <%= fa_icon :times %> <span class="d-none d-sm-inline">Expired</span>
+                                    <i class="fa-solid fa-xmark"></i> <span class="d-none d-sm-inline">Expired</span>
                                 <% end %>
                             <% else %>
                                 <%= link_to current_rental, class: "btn btn-sm btn-outline-success" do %>
-                                    <%= fa_icon :check %> <span class="d-none d-sm-inline">Valid</span>
+                                    <i class="fa-solid fa-check"></i> <span class="d-none d-sm-inline">Valid</span>
                                 <% end %>
                             <% end %>
                         <% else %>

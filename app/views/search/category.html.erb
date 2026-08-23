@@ -15,7 +15,7 @@
         All projects
       <% end %>
       <%= link_to category_path(slug: params[:slug], featured: 'yes'), class: "btn #{params['featured'] ? 'btn-primary' : 'btn-outline-primary'}" do %>
-        Featured projects <span class="ms-1"><%= fa_icon 'star' %></span>
+        Featured projects <span class="ms-1"><i class="fa-solid fa-star"></i></span>
       <% end %>
     </div>
 
@@ -55,11 +55,11 @@
                 <h5 class="card-title text-truncate mb-0 fw-bold">
                   <%= link_to repository.title, repository_path(repository.user_username, repository.slug), class: 'text-decoration-none text-body' %>
                   <% if repository.featured %>
-                    <span class="text-warning ms-1" title="Featured"><%= fa_icon 'star' %></span>
+                    <span class="text-warning ms-1" title="Featured"><i class="fa-solid fa-star"></i></span>
                   <% end %>
                 </h5>
                 <div class="text-danger text-center ms-auto" style="min-width: 30px;">
-                  <%= fa_icon 'heart' %><br>
+                  <i class="fa-solid fa-heart"></i><br>
                   <small class="text-body-secondary fw-bold"><%= repository.like %></small>
                 </div>
               </div>
@@ -69,7 +69,7 @@
                   by <%= link_to repository.user_username, user_path(repository.user_username), class: 'text-decoration-none fw-semibold' %>
                 </p>
                 <p class="card-text small text-body-tertiary mb-0">
-                  <%= fa_icon 'clock-o' %> <%= time_ago_in_words(repository.created_at) %> ago
+                  <i class="fa-regular fa-clock"></i> <%= time_ago_in_words(repository.created_at) %> ago
                 </p>
               </div>
             </div>

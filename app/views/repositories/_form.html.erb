@@ -32,7 +32,7 @@
         </div>
 
         <p class="file-upload-drop-message">
-            <span class="text-muted"><%= fa_icon('cloud-upload') %> or drag & drop files here</span>
+            <span class="text-muted"><i class="fa-solid fa-cloud-arrow-up"></i> or drag & drop files here</span>
         </p>
 
         <div data-file-upload-file-preview class="file-upload-preview-pane">
@@ -79,7 +79,7 @@
             </div>
 
             <p class="file-upload-drop-message">
-                <span class="text-muted"><%= fa_icon('cloud-upload') %> or drag & drop images here</span>
+                <span class="text-muted"><i class="fa-solid fa-cloud-arrow-up"></i> or drag & drop images here</span>
             </p>
 
             <%# data-file-upload-sortable enables drag reordering %>
@@ -157,13 +157,13 @@
         <div class="form-check">
             <%= f.radio_button(:share_type, 'public', class: 'form-check-input', onclick: 'hidePass();', required: true) %>
             <%= f.label('share_type_public', class: 'form-check-label') do %>
-                <%= fa_icon('globe') %> Public <br /> <%= t('repository.pub_msg') %>
+                <i class="fa-solid fa-globe"></i> Public <br /> <%= t('repository.pub_msg') %>
         </div>
             <% end %>
             <div class="form-check">
                 <%= f.radio_button(:share_type, 'private' , class: 'form-check-input', onclick: 'showPass();', required: true) %>
                 <%= f.label('share_type_private', class: 'form-check-label') do %>
-                    <%= fa_icon('lock') %> <%= t('repository.private') %> <br /> <%= t('repository.priv_msg') %>
+                    <i class="fa-solid fa-lock"></i> <%= t('repository.private') %> <br /> <%= t('repository.priv_msg') %>
                 <% end %>
             </div>
 

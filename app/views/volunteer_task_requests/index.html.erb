@@ -16,7 +16,7 @@
         <%= form_tag(volunteer_task_requests_path, method: :get) do %>
           <div class="w-50 input-group mx-auto">
             <%= text_field_tag(:search_pending, '', placeholder: 'Search by Name, Task ...', class: 'form-control col-md-4 search_bar_pending') %>
-            <%= fa_icon 'search', class: 'input-group-text fa-2x pe-2' %>
+            <i class="fa-solid fa-magnifying-glass input-group-text fa-2x pe-2"></i>
           </div>
         <% end %>
       </div>
@@ -42,7 +42,7 @@
         <%= form_tag(volunteer_task_requests_path, method: :get) do %>
           <div class="w-50 input-group mx-auto">
             <%= text_field_tag(:search_processed, '', placeholder: 'Search by Name, Task ...', class: 'form-control col-md-4 search_bar_processed') %>
-            <%= fa_icon 'search', class: 'input-group-text fa-2x pe-2' %>
+            <i class="fa-solid fa-magnifying-glass input-group-text fa-2x pe-2"></i>
           </div>
         <% end %>
       </div>

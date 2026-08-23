@@ -33,7 +33,7 @@
                             <%= link_to rental, class: "w-100 btn btn-sm #{btn_class[rental.state]}" do %>
                                 <%= tag.i class: "fa #{rental.state_icon}" %> <%= t("lockers.state.#{rental.state}") %>
                                 <% if rental.expired? %>
-                                    <span class="text-danger"><%= fa_icon :times %> Expired</span>
+                                    <span class="text-danger"><i class="fa-solid fa-xmark"></i> Expired</span>
                                 <% end %>
                             <% end %>
                         </td>

@@ -3,47 +3,42 @@ import rrulePlugin from "@fullcalendar/rrule";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 
-document.addEventListener("DOMContentLoaded", async function () {
-  const calendarEl = document.getElementById("calendar");
+let activeCalendar = null;
 
+async function initHomepageCalendar() {
+  const calendarEl = document.getElementById("calendar");
   if (!calendarEl) return;
 
+  if (activeCalendar) {
+    activeCalendar.destroy();
+    activeCalendar = null;
+  }
+
   try {
-    const response = await fetch("/open_hours").catch((error) => {
-      console.error("Failed to fetch open hours:", error);
-      return null;
+    const response = await fetch("/open_hours", {
+      headers: { Accept: "application/json" },
     });
 
-    if (!response || !response.ok) {
-      console.error("Failed to load open hours");
-      return;
-    }
+    if (!response.ok) return;
 
     const eventSources = await response.json();
-
     if (!eventSources || eventSources.length === 0) {
-      console.log("No open hours found");
       calendarEl.innerHTML =
         "<p class='text-muted text-center py-4'>No open hours available // Aucune heure d'ouverture disponible</p>";
       return;
     }
 
-    // Check if on hours page
     const isHoursPage = window.location.pathname === "/hours";
-    const isMobile = window.innerWidth < 1000;
-
-    // Determine initial view based on page and screen size
     const getView = (mobile) => {
       if (isHoursPage) {
         return mobile ? "timeGridThreeDay" : "timeGridSevenDay";
-      } else {
-        return mobile ? "timeGridTwoDay" : "timeGridFiveDay";
       }
+      return mobile ? "timeGridTwoDay" : "timeGridFiveDay";
     };
 
-    const initialView = getView(isMobile);
+    const initialView = getView(window.innerWidth < 1000);
 
-    const calendar = new Calendar(calendarEl, {
+    activeCalendar = new Calendar(calendarEl, {
       plugins: [timeGridPlugin, dayGridPlugin, rrulePlugin],
       initialView: initialView,
       views: {
@@ -62,10 +57,7 @@ document.addEventListener("DOMContentLoaded", async function () {
           duration: { days: 5 },
           buttonText: "5 day",
         },
-        timeGridSevenDay: {
-          type: "timeGridWeek",
-          buttonText: "7 day",
-        },
+        timeGridSevenDay: { type: "timeGridWeek", buttonText: "7 day" },
       },
       firstDay: 0,
       headerToolbar: {
@@ -85,74 +77,71 @@ document.addEventListener("DOMContentLoaded", async function () {
       slotMaxTime: "22:00:00",
       slotDuration: "01:00:00",
       slotLabelInterval: "01:00:00",
-      slotMinHeight: 40,
       eventTimeFormat: {
         hour: "2-digit",
         minute: "2-digit",
         meridiem: "short",
       },
-      windowResize: (view) => {
-        const isMobileView = window.innerWidth < 1000;
-        const targetView = getView(isMobileView);
-        const currentView = calendar.view.type;
-
-        if (currentView !== targetView) {
-          calendar.changeView(targetView);
+      windowResize: () => {
+        const targetView = getView(window.innerWidth < 1000);
+        if (activeCalendar && activeCalendar.view.type !== targetView) {
+          activeCalendar.changeView(targetView);
         }
       },
     });
 
-    calendar.render();
+    activeCalendar.render();
 
-    // Create checkboxes for event sources
     const checkboxContainer = document.getElementById("filters");
+    if (checkboxContainer) {
+      checkboxContainer.innerHTML = "";
+      eventSources.forEach((source, index) => {
+        const sourceId = source.id;
+        const sourceName = source.events?.[0]?.extendedProps?.name;
+        const sourceColor = source.color || source.backgroundColor || "#3788d8";
 
-    eventSources.forEach((source, index) => {
-      const sourceId = source.id;
-      const sourceName = source.events?.[0].extendedProps.name;
-      const sourceColor = source.color || source.backgroundColor || "#3788d8";
+        if (!sourceId || !sourceName) return;
 
-      if (!sourceId || !sourceName) return;
+        const checkboxWrapper = document.createElement("div");
+        checkboxWrapper.className = "d-flex align-items-center gap-2";
 
-      const checkboxWrapper = document.createElement("div");
-      checkboxWrapper.className = "d-flex align-items-center gap-2";
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.className = "form-check-input";
+        checkbox.id = `filter-${sourceId}`;
+        checkbox.style.backgroundColor = sourceColor;
+        checkbox.style.borderColor = sourceColor;
+        checkbox.style.width = "20px";
+        checkbox.style.height = "20px";
+        checkbox.checked = true;
 
-      const checkbox = document.createElement("input");
-      checkbox.type = "checkbox";
-      checkbox.className = "form-check-input";
-      checkbox.id = `filter-${sourceId}`;
-      checkbox.style.backgroundColor = sourceColor;
-      checkbox.style.borderColor = sourceColor;
-      checkbox.style.width = "20px";
-      checkbox.style.height = "20px";
-      checkbox.checked = true;
-      checkbox.dataset.sourceId = sourceId;
+        const label = document.createElement("label");
+        label.className = "form-check-label mt-1";
+        label.htmlFor = `filter-${sourceId}`;
+        label.innerHTML = sourceName;
 
-      const label = document.createElement("label");
-      label.className = "form-check-label mt-1";
-      label.htmlFor = `filter-${sourceId}`;
-      label.innerHTML = sourceName;
+        checkboxWrapper.appendChild(checkbox);
+        checkboxWrapper.appendChild(label);
+        checkboxContainer.appendChild(checkboxWrapper);
 
-      checkboxWrapper.appendChild(checkbox);
-      checkboxWrapper.appendChild(label);
-      checkboxContainer.appendChild(checkboxWrapper);
-
-      // Add event listener to toggle event source
-      checkbox.addEventListener("change", (e) => {
-        const sourceToToggle = calendar.getEventSourceById(sourceId);
-
-        if (sourceToToggle) {
-          sourceToToggle.remove();
-        }
-
-        if (e.target.checked) {
-          calendar.addEventSource(eventSources[index]);
-        }
+        checkbox.addEventListener("change", (e) => {
+          if (!activeCalendar) return;
+          const sourceToToggle = activeCalendar.getEventSourceById(sourceId);
+          if (sourceToToggle) sourceToToggle.remove();
+          if (e.target.checked)
+            activeCalendar.addEventSource(eventSources[index]);
+        });
       });
-    });
-
-    console.log(`Loaded ${eventSources.length} open hours events`);
+    }
   } catch (error) {
     console.error("Error initializing calendar:", error);
+  }
+}
+
+document.addEventListener("turbo:load", initHomepageCalendar);
+document.addEventListener("turbo:before-cache", () => {
+  if (activeCalendar) {
+    activeCalendar.destroy();
+    activeCalendar = null;
   }
 });

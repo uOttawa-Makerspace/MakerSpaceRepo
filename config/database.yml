@@ -4,6 +4,7 @@ default: &default
   port: <%= ENV.fetch("DB_PORT") { Rails.application.credentials.dig(Rails.env.to_sym, :database, :port) || 5432 } %>
   username: <%= ENV.fetch("DB_USERNAME") { Rails.application.credentials.dig(Rails.env.to_sym, :database, :username) || 'postgres' } %>
   password: <%= ENV.fetch("DB_PASSWORD") { Rails.application.credentials.dig(Rails.env.to_sym, :database, :password) || 'postgres' } %>
+  pool: <%= ENV.fetch("DB_POOL") { ENV.fetch("RAILS_MAX_THREADS") { 10 } } %>
 
 development:
   primary:

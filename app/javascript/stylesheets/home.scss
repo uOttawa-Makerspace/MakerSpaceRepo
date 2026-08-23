@@ -1,0 +1,215 @@
+@import "./shared/variables";
+
+section#home {
+  .carouselCardPack {
+    scroll-snap-type: x mandatory;
+    overflow-y: clip;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+
+    .card {
+      width: 16rem;
+      max-width: 85vw;
+      .card-img-top {
+        height: 16rem;
+      }
+      scroll-snap-align: start;
+      flex: 0 0 15rem;
+      .card-body {
+        text-align: center;
+      }
+    }
+  }
+
+  .carouselCard {
+    height: 18rem;
+    width: 18rem;
+    max-width: 85vw;
+    img,
+    video {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+    }
+
+    &:hover {
+      @media screen and (prefers-reduced-motion: no-preference) {
+        transition: 100ms;
+      }
+      border: 10px solid white;
+    }
+  }
+
+  #ShortcutButton {
+    width: 100%;
+    border: none;
+    background-color: $secondary;
+    color: white;
+    font-weight: 700;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .home-card {
+    box-shadow: 0px 4px 19px 0px rgba(0, 0, 0, 0.25);
+    border: none;
+    border-radius: 15px;
+    padding: 0rem 1rem;
+    margin: 0.5rem 0;
+  }
+
+  h2 {
+    font-weight: 700;
+  }
+
+  h3 {
+    font-size: 1.25rem;
+  }
+
+  .list-box {
+    border-radius: 16px;
+    border: 1px solid var(--bs-border-color, $secondary);
+    padding: 1rem;
+  }
+
+  .list-header {
+    font-size: 1.2rem;
+  }
+
+  .shadowing-list li {
+    border-left: 3px solid orange;
+    padding-left: 1rem;
+    + li {
+      margin-top: 0.5rem;
+    }
+  }
+
+  .volunteer-task-list {
+    .fa {
+      color: $secondary;
+    }
+  }
+
+  #home-hours {
+    img {
+      border-radius: 0.5rem;
+      object-fit: cover;
+      height: auto;
+      max-height: 25rem;
+      width: 100%;
+    }
+  }
+
+  #home-userinfo {
+    img {
+      border-radius: 50%;
+      object-fit: cover;
+      width: 10rem;
+      height: 10rem;
+      @media (min-width: 768px) {
+        width: 13rem;
+        height: 13rem;
+      }
+    }
+
+    .full-name {
+      font-size: 1.5rem;
+      @media (min-width: 768px) {
+        font-size: 1.75rem;
+      }
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .subtext {
+      color: $secondary;
+    }
+  }
+
+  .home-badge {
+    background-color: $secondary;
+  }
+
+  #home-skills {
+    .skill-name p {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .skill-pill {
+      font-size: 0.8rem;
+      background-color: var(--bs-secondary-bg);
+      border-radius: 15px;
+      padding: 5px;
+    }
+  }
+
+  #home-big-newsletter {
+    h2 {
+      font-size: 1.4em;
+    }
+    .email-input {
+      outline: 0;
+      border-width: 0 0 2px;
+      border-radius: 0;
+      box-shadow: none;
+
+      &:focus {
+        border-color: $primary;
+        outline: 1px dotted $primary;
+      }
+    }
+  }
+
+  .workshop-card {
+    padding: 5px;
+    margin-bottom: 0.5rem;
+    border: 1px solid var(--bs-border-color, $secondary);
+    border-radius: 15px;
+    color: inherit;
+    &:hover {
+      color: $primary;
+      border-color: $primary;
+    }
+    p {
+      margin-bottom: 0;
+      margin-top: 0;
+    }
+    .workshop-date {
+      border: 1px solid var(--bs-border-color, lightgrey);
+      border-radius: 15px;
+      background-color: $secondary;
+      color: white;
+      margin-right: 1rem;
+      padding: 0.5rem 1rem;
+      line-height: 1.2;
+      text-align: center;
+      background-size: cover;
+    }
+
+    .workshop-title {
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+
+    .workshop-cost {
+      font-weight: 700;
+    }
+  }
+
+  .home-shortcuts {
+    .guest-shortcuts {
+      font-size: 1.3rem;
+      color: $secondary;
+    }
+
+    .explanation-list {
+      padding-left: 1.5rem;
+      outline: 1px solid var(--bs-border-color, $secondary);
+      border-radius: 5px;
+    }
+  }
+}
