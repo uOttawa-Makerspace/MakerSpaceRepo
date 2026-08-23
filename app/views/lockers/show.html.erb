@@ -48,7 +48,7 @@
                         since <%= @active_locker_rental.created_at.to_date.to_formatted_s(:long) %>
                     </span>
                 </div>
-                <%= link_to @active_locker_rental, class: 'btn btn-outline-secondary btn-sm' do %>
+                <%= link_to locker_rental_path(@active_locker_rental), class: 'btn btn-outline-secondary btn-sm' do %>
                     View rental details <i class="fa-solid fa-arrow-right"></i>
                 <% end %>
             </div>
@@ -86,4 +86,4 @@
     <p class="text-center text-muted">No rental history for this locker.</p>
 <% end %>
 
-<%= button_to 'Delete locker', @locker, method: :delete, class: 'btn btn-danger', data: {confirm: 'Are you sure you want to delete this locker?'} %>
+<%= button_to 'Delete locker', locker_path(@locker), method: :delete, class: 'btn btn-danger', data: {confirm: 'Are you sure you want to delete this locker?'} %>

@@ -13,9 +13,9 @@
                 <i class="fa-brands fa-github-alt"></i>
                 <%= link_to @github_username, "https://github.com/#{@github_username}" %><br />
             <% end %>
-            <% if @repo_user.url.present? %>
+            <% if @repo_user.url.present? && @repo_user.url.match?(%r{\Ahttps?://}i) %>
                 <i class="fa-solid fa-link"></i>
-                <%= link_to @repo_user.url.gsub(%r{\Ahttps?://}, '').to_s, @repo_user.url %> <br />
+                <%= link_to @repo_user.url.sub(%r{\Ahttps?://}i, ''), sanitize_url(@repo_user.url), target: '_blank', rel: 'noopener noreferrer' %><br />
             <% end %>
             <p><%= t('.skills') %></p>
             <% @certifications.each do |certification| %>
