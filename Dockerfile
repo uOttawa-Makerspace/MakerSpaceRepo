@@ -88,7 +88,8 @@ RUN rm -rf node_modules \
            .yarn \
            vite.config.* \
            app/javascript \
-           app/assets \
+           app/assets/images \
+           app/assets/stylesheets \
            certs/* \
            public/vite-dev \
            public/vite-test && \

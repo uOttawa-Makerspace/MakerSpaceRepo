@@ -14,7 +14,7 @@ services:
       retries: 10
 
   web:
-    image: ${DOCKER_IMAGE}:staging
+    image: ${DOCKER_IMAGE:-ghcr.io/uottawa-makerspace/makerspacerepo}:${IMAGE_TAG:-staging}
     restart: always
     depends_on:
       db:
@@ -34,7 +34,7 @@ services:
       - ./secrets.yml:/rails/config/secrets.yml:ro
 
   worker:
-    image: ${DOCKER_IMAGE}:staging
+    image: ${DOCKER_IMAGE:-ghcr.io/uottawa-makerspace/makerspacerepo}:${IMAGE_TAG:-staging}
     restart: always
     command: ["bundle", "exec", "rake", "solid_queue:start"]
     depends_on:

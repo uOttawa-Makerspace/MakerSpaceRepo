@@ -18,41 +18,53 @@ else
   APP_DIR="/var/www/makerrepo-staging"
 fi
 
-echo "🔄 Rolling back $ENV on $SERVER..."
+# Locate the SSH key
+SSH_KEY="$HOME/.ssh/makerepo_key"
+SSH_OPTS=""
+if [ -f "$SSH_KEY" ]; then
+  SSH_OPTS="-i $SSH_KEY"
+fi
 
-ssh -A deploy@$SERVER bash -s << EOF
+# If no tag was provided, find the previous commit SHA from git
+if [ -z "$TAG" ]; then
+  echo "🔍 No tag specified. Finding previous commit SHA from git..."
+  # Gets the full 40-character commit hash of the previous commit (HEAD~1)
+  TARGET_SHA=$(git rev-parse HEAD~1 2>/dev/null || true)
+  
+  if [ -z "$TARGET_SHA" ]; then
+    echo "❌ Could not determine previous git commit. Please specify a commit SHA:"
+    echo "   bin/rollback $ENV <commit_sha>"
+    exit 1
+  fi
+  TARGET_TAG="${ENV}-${TARGET_SHA}"
+else
+  # Normalize user input (handles short SHAs, full SHAs, or pre-prefixed tags)
+  if [[ "$TAG" == "${ENV}-"* ]]; then
+    TARGET_TAG="$TAG"
+  else
+    # If the user passed a short SHA (e.g. 5b7f5d4), expand to full SHA if possible
+    FULL_SHA=$(git rev-parse "$TAG" 2>/dev/null || echo "$TAG")
+    TARGET_TAG="${ENV}-${FULL_SHA}"
+  fi
+fi
+
+echo "🔄 Rolling back $ENV on $SERVER to tag: $TARGET_TAG..."
+
+ssh $SSH_OPTS -A deploy@$SERVER bash -s << EOF
+  set -e
   cd $APP_DIR
 
-  # If a specific tag/SHA was not provided, find the most recent commit-tagged image
-  if [ -z "$TAG" ]; then
-    echo "🔍 Looking up previous Docker image on $SERVER..."
-    # Finds the latest commit-tagged image (excluding generic :staging, :production, :latest)
-    PREVIOUS_IMAGE=\$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "makerspacerepo|makerrepo" | grep "${ENV}-" | head -n 2 | tail -n 1)
-    
-    if [ -z "\$PREVIOUS_IMAGE" ]; then
-      # Fallback: find second newest image
-      PREVIOUS_IMAGE=\$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "makerspacerepo|makerrepo" | sed -n '2p')
-    fi
-  else
-    # Support both raw SHA (e.g. 3ccc56b) or full tag (e.g. staging-3ccc56b)
-    if [[ "$TAG" == "${ENV}-"* ]]; then
-      PREVIOUS_IMAGE="ghcr.io/uottawa-makerspace/makerspacerepo:$TAG"
-    else
-      PREVIOUS_IMAGE="ghcr.io/uottawa-makerspace/makerspacerepo:${ENV}-$TAG"
-    fi
-  fi
+  export DOCKER_IMAGE="ghcr.io/uottawa-makerspace/makerspacerepo"
+  export IMAGE_TAG="$TARGET_TAG"
 
-  if [ -z "\$PREVIOUS_IMAGE" ]; then
-    echo "❌ No previous image found on server to rollback to!"
+  echo "⬇️  Pulling image \${DOCKER_IMAGE}:\${IMAGE_TAG} from GHCR..."
+  if ! docker compose --env-file .env.${ENV} -f docker-compose.${ENV}.yml pull web worker; then
+    echo "❌ Failed to pull tag \${IMAGE_TAG} from GHCR. Does this build exist?"
     exit 1
   fi
 
-  echo "🚀 Rolling back to: \$PREVIOUS_IMAGE"
-  export DOCKER_IMAGE="\$PREVIOUS_IMAGE"
-  
-  # Restart containers using the rolled-back image
-  docker compose --env-file .env.${ENV} -f docker-compose.${ENV}.yml pull || true
+  echo "🚀 Restarting containers with rolled back image..."
   docker compose --env-file .env.${ENV} -f docker-compose.${ENV}.yml up -d --remove-orphans
 
-  echo "✅ Rollback to \$PREVIOUS_IMAGE complete!"
+  echo "✅ Successfully rolled back to \$IMAGE_TAG!"
 EOF
