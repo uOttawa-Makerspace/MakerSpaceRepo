@@ -8,20 +8,20 @@ class ProjectProposalsController < SessionsController
 
   # GET /project_proposals
   def index
-    @project_proposals =
+    scope =
       ProjectProposal
         .includes(:user, :admin, :categories)
         .order(created_at: :desc)
         .search(search_params[:query])
         .where(approved: search_params[:approved])
-        .paginate(per_page: 15, page: params[:page])
 
     season, year = params[:semester]&.split('_')
 
     if ProjectProposal.seasons.keys.include?(season) && year.to_i.positive?
-      @project_proposals =
-        @project_proposals.where(season: season, year: year.to_i)
+      scope = scope.where(season: season, year: year.to_i)
     end
+
+    @pagy, @project_proposals = pagy(scope, limit: 15)
 
     respond_to do |format|
       format.js
@@ -30,25 +30,28 @@ class ProjectProposalsController < SessionsController
   end
 
   def user_projects
-    @project_proposals_joined =
+    joined_scope =
       ProjectProposal
         .all
         .joins(:project_joins)
         .where(project_joins: { user: current_user })
         .order(created_at: :desc)
-        .paginate(per_page: 15, page: params[:page])
-    @user_pending_project_proposals =
+
+    pending_scope =
       current_user
         .project_proposals
         .where(approved: nil)
         .order(created_at: :desc)
-        .paginate(per_page: 15, page: params[:page])
-    @approved_project_proposals =
+
+    approved_scope =
       current_user
         .project_proposals
         .order(created_at: :desc)
         .where(approved: 1)
-        .paginate(per_page: 15, page: params[:page_approved])
+
+    @pagy_joined, @project_proposals_joined = pagy(joined_scope, page_key: 'page_joined', limit: 15)
+    @pagy_pending, @user_pending_project_proposals = pagy(pending_scope, page_key: 'page_pending', limit: 15)
+    @pagy_approved, @approved_project_proposals = pagy(approved_scope, page_key: 'page_approved', limit: 15)
   end
 
   # GET /project_proposals/1
@@ -62,11 +65,9 @@ class ProjectProposalsController < SessionsController
     end
 
     @categories = @project_proposal.categories
-    @repositories =
-      @project_proposal
-        .repositories
-        .order([sort_order].to_h)
-        .paginate(per_page: 9, page: params[:page])
+    @pagy, @repositories =
+      pagy(@project_proposal.repositories.order([sort_order].to_h), limit: 9)
+
     @project_photos = @project_proposal.photos.take(5)
     @project_files = @project_proposal.project_files
     @linked_pp = @project_proposal.linked_project_proposal
@@ -88,7 +89,7 @@ class ProjectProposalsController < SessionsController
   end
 
   def projects_assigned
-    @assigned_project_proposals =
+    scope =
       ProjectProposal
         .joins(:project_joins)
         .joins(
@@ -98,17 +99,19 @@ class ProjectProposalsController < SessionsController
         .where(approved: 1)
         .distinct
         .order(created_at: :desc)
-        .paginate(per_page: 15, page: params[:page])
+
+    @pagy, @assigned_project_proposals = pagy(scope, limit: 15)
   end
 
   def projects_completed
-    @completed_project_proposals =
+    scope =
       ProjectProposal
         .where(approved: 1)
         .joins(:repositories)
         .distinct
         .order(created_at: :desc)
-        .paginate(per_page: 15, page: params[:page])
+
+    @pagy, @completed_project_proposals = pagy(scope, limit: 15)
   end
 
   # POST /project_proposals

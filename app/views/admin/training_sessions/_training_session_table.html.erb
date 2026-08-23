@@ -121,7 +121,9 @@
   </table>
 
   <div class="mt-4 text-center">
-    <%= page_entries_info @sessions %>
-    <%= will_paginate @sessions, container: false %>
+    <% if @pagy.count > 0 %>
+      <small class="text-muted">Displaying <b><%= @pagy.from %></b> - <b><%= @pagy.to %></b> of <b><%= @pagy.count %></b></small>
+    <% end %>
+    <%== @pagy.series_nav(:bootstrap) if @pagy.pages > 1 %>
   </div>
 </div>

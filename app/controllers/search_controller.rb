@@ -12,58 +12,39 @@ class SearchController < SessionsController
   ].freeze
 
   def explore
-    if params[:category].blank?
-      @repositories =
-        Repository
-          .paginate(per_page: 12, page: params[:page])
-          .public_repos
-          .order([sort_order].to_h).page params[:page]
-    else
-      @repositories =
-        Repository
-          .paginate(per_page: 12, page: params[:page])
-          .public_repos
-          .includes(:categories)
-          .where(
-            { categories: { name: SLUG_TO_CATEGORY_MODEL[params[:category]] } }
-          )
-          .order([sort_order].to_h).page params[:page]
+    scope = Repository.public_repos.order([sort_order].to_h)
+
+    if params[:category].present?
+      category_name = SLUG_TO_CATEGORY_MODEL[params[:category]]
+      scope = scope.includes(:categories).where(categories: { name: category_name })
     end
+
+    @pagy, @repositories = pagy(scope, limit: 12)
   end
 
   def search
-    # This depends on lazy evaluation of queries. Queries are only executed when
-    # actually evaluated (in a view, for example)
-    @repositories = Repository.public_repos
+    scope = Repository.public_repos
                       .includes(:users, :owner)
-                      .includes(photos: {image_attachment: :blob})
-                      .includes(repo_files: {file_attachment: :blob})
-    
+                      .includes(photos: { image_attachment: :blob })
+                      .includes(repo_files: { file_attachment: :blob })
+
     if params[:q].present?
-      @repositories = @repositories.fuzzy_search(params[:q])
+      scope = scope.fuzzy_search(params[:q])
     end
 
-    @repositories =
-      @repositories
-        .paginate(per_page: 12, page: params[:page])
-    .order([sort_order].to_h) # sort
+    scope = scope.order([sort_order].to_h)
 
     if signed_in? && params[:liked].present?
-      @repositories =
-        @repositories.includes(:likes).where(likes: { user_id: @user.id })
+      scope = scope.includes(:likes).where(likes: { user_id: @user.id })
     end
 
     if params[:category].present?
-      @repositories =
-        @repositories.includes(:categories).where(
-          {
-            categories: {
-              name: SLUG_TO_CATEGORY_MODEL.values_at(*params[:category])
-            }
-          }
-        )
+      category_names = SLUG_TO_CATEGORY_MODEL.values_at(*params[:category])
+      scope = scope.includes(:categories).where(categories: { name: category_names })
     end
-    
+
+    @pagy, @repositories = pagy(scope, limit: 12)
+
     # Shim the explore page
     render :explore
   end
@@ -71,26 +52,26 @@ class SearchController < SessionsController
   def category
     sort_arr = sort_order
 
-    @repositories1 =
-      if category = SLUG_TO_OLD_CATEGORY[params[:slug]]
+    repos1 =
+      if (category = SLUG_TO_OLD_CATEGORY[params[:slug]])
         Repository.where(category: category).distinct
       else
         []
       end
 
-    if name = SLUG_TO_CATEGORY_MODEL[params[:slug]]
-      @repositories2 =
+    repos2 =
+      if (name = SLUG_TO_CATEGORY_MODEL[params[:slug]])
         Category
           .where(name: name)
           .where.not(repository_id: nil)
           .distinct
           .includes(:repository)
           .map(&:repository)
-    else
-      @repositories2 = []
-    end
+      else
+        []
+      end
 
-    @repositories3 =
+    repos3 =
       if (category_option = CategoryOption.find_by(name: name))
         Category
           .where(category_option_id: category_option.id)
@@ -101,40 +82,32 @@ class SearchController < SessionsController
         []
       end
 
-    @repositories =
-      (@repositories1 + @repositories2 + @repositories3)
-        .uniq
-        .sort_by { |s| -s[sort_arr.first].to_i }
-        .paginate(per_page: 12, page: params[:page])
+    all_repos = (repos1 + repos2 + repos3).compact.uniq
 
-    if params['featured']
-      @repositories =
-        (@repositories1 + @repositories2 + @repositories3)
-          .uniq
-          .select(&:featured?)
-          .uniq
-          .sort_by(&:updated_at)
-          .reverse
-          .paginate(per_page: 12, page: params[:page])
-    end
+    all_repos = if params["featured"]
+                  all_repos.select(&:featured?).sort_by(&:updated_at).reverse
+                else
+                  all_repos.sort_by { |s| -s[sort_arr.first].to_i }
+                end
 
+    @pagy, @repositories = pagy(all_repos, limit: 12)
     @photos = photo_hash
   end
 
   def equipment
     sort_arr = sort_order
+    name = params[:slug].to_s.tr("-", " ")
 
-    name = params[:slug].gsub('-', ' ')
-    @repositories =
-      Equipment
-        .where(name: name)
-        .distinct
-        .includes(:repository)
-        .map(&:repository)
-        .paginate(per_page: 12, page: params[:page]) do
-          order_by sort_arr.first, sort_arr.last
-        end
+    repos = Equipment
+              .where(name: name)
+              .distinct
+              .includes(:repository)
+              .map(&:repository)
+              .compact
+              .uniq
+              .sort_by { |s| -s[sort_arr.first].to_i }
 
+    @pagy, @repositories = pagy(repos, limit: 12)
     @photos = photo_hash
   end
 
@@ -142,13 +115,13 @@ class SearchController < SessionsController
 
   def sort_order
     case params[:sort]
-    when 'newest'
+    when "newest"
       %i[created_at desc]
-    when 'most_likes'
+    when "most_likes"
       %i[like desc]
-    when 'most_makes'
+    when "most_makes"
       %i[make desc]
-    when 'recently_updated'
+    when "recently_updated"
       %i[updated_at desc]
     else
       %i[created_at desc]
@@ -162,29 +135,30 @@ class SearchController < SessionsController
         .where(repository_id: repository_ids)
         .group(:repository_id)
         .minimum(:id)
-    photos = Photo.find(photo_ids.values)
-    photos.inject({}) { |h, e| h.merge!(e.repository_id => e) }
+
+    photos = photo_ids.present? ? Photo.find(photo_ids.values) : []
+    photos.each_with_object({}) { |e, h| h[e.repository_id] = e }
   end
 
   SLUG_TO_OLD_CATEGORY = {
-    'internet-of-things' => 'Internet of Things',
-    'virtual-reality' => 'Virtual Reality',
-    'health-sciences' => 'Bio-Medical',
-    'mobile-development' => 'Mobile',
-    'other-projects' => '3D-Model',
-    'wearable' => 'Wearables'
+    "internet-of-things" => "Internet of Things",
+    "virtual-reality" => "Virtual Reality",
+    "health-sciences" => "Bio-Medical",
+    "mobile-development" => "Mobile",
+    "other-projects" => "3D-Model",
+    "wearable" => "Wearables"
   }.freeze
 
   SLUG_TO_CATEGORY_MODEL = {
-    'internet-of-things' => 'Internet of Things',
-    'course-related-projects' => 'Course-related Projects',
-    'gng2101/gng2501' => 'GNG2101/GNG2501',
-    'gng1103/gng1503' => 'GNG1103/GNG1503',
-    'health-sciences' => 'Health Sciences',
-    'wearable' => 'Wearable',
-    'mobile-development' => 'Mobile Development',
-    'virtual-reality' => 'Virtual Reality',
-    'other-projects' => 'Other Projects',
-    'uottawa-team-projects' => 'uOttawa Team Projects'
+    "internet-of-things" => "Internet of Things",
+    "course-related-projects" => "Course-related Projects",
+    "gng2101/gng2501" => "GNG2101/GNG2501",
+    "gng1103/gng1503" => "GNG1103/GNG1503",
+    "health-sciences" => "Health Sciences",
+    "wearable" => "Wearable",
+    "mobile-development" => "Mobile Development",
+    "virtual-reality" => "Virtual Reality",
+    "other-projects" => "Other Projects",
+    "uottawa-team-projects" => "uOttawa Team Projects"
   }.freeze
 end

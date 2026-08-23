@@ -7,18 +7,18 @@ class VolunteerTasksController < SessionsController
   before_action :volunteer_access, only: %i[show index]
 
   def index
-    @open_volunteer_tasks =
+    open_scope =
       VolunteerTask
-        .all
         .where(status: "open")
         .order(created_at: :desc)
-        .paginate(page: params[:page], per_page: 50)
-    @completed_volunteer_tasks =
+
+    completed_scope =
       VolunteerTask
-        .all
         .where(status: "completed")
         .order(created_at: :desc)
-        .paginate(page: params[:page], per_page: 50)
+
+    @pagy_open, @open_volunteer_tasks = pagy(open_scope, limit: 50)
+    @pagy_completed, @completed_volunteer_tasks = pagy(completed_scope, page_key: "page_completed", limit: 50)
   end
 
   def new

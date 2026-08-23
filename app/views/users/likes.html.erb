@@ -61,5 +61,7 @@
     </div>
   <% end %>
   </section>
-  <%= paginate @repositories unless @repositories.empty? %>
+  <div class="text-center my-3">
+    <%== @pagy.series_nav(:bootstrap) if @pagy && @pagy.pages > 1 %>
+  </div>
 </section>

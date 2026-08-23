@@ -12,7 +12,7 @@
     </tr>
 </thead >
     <tbody>
-    <%= will_paginate @processed_volunteer_task_requests, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
+    <%== @pagy_processed.series_nav(:bootstrap) if @pagy_processed && @pagy_processed.pages > 1 %>
     <% @processed_volunteer_task_requests.each do |vtr| %>
       <tr>
         <td>

@@ -54,12 +54,8 @@ class VolunteersController < SessionsController
 
   def my_stats
     volunteer_task_requests = current_user.volunteer_task_requests
-    @processed_volunteer_task_requests =
-      volunteer_task_requests
-        .processed
-        .approved
-        .order(created_at: :desc)
-        .paginate(page: params[:page], per_page: 15)
+    scope = volunteer_task_requests.processed.approved.order(created_at: :desc)
+    @pagy, @processed_volunteer_task_requests = pagy(scope, limit: 15)
     @certifications = current_user.certifications.highest_level
     @remaining_trainings = current_user.remaining_trainings
     @skills = Skill.all

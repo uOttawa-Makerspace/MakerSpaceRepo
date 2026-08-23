@@ -13,9 +13,13 @@
           You have no orders. Please check our <%= link_to 'projects', proficient_projects_path, class: 'text-info' %> and add some items to your cart.
         </p>
       <% else %>
-        <div class="apple_pagination">
-          <%= page_entries_info @orders, model: 'order' %>
-          <%= will_paginate @orders, container: false %>
+        <div class="apple_pagination text-center mb-3">
+          <% if @pagy.count > 0 %>
+            <small class="text-muted d-block mb-2">
+              Displaying orders <b><%= @pagy.from %></b> - <b><%= @pagy.to %></b> of <b><%= @pagy.count %></b> in total
+            </small>
+          <% end %>
+          <%== @pagy.series_nav(:bootstrap) if @pagy.pages > 1 %>
         </div>
         <div class="table-responsive">
           <table class="table table-striped">
@@ -60,9 +64,13 @@
             No orders were made.
           </p>
         <% else %>
-          <div class="apple_pagination">
-            <%= page_entries_info @all_orders, model: 'order' %>
-            <%= will_paginate @all_orders, container: false %>
+          <div class="apple_pagination text-center mb-3">
+            <% if @pagy_all && @pagy_all.count > 0 %>
+              <small class="text-muted d-block mb-2">
+                Displaying orders <b><%= @pagy_all.from %></b> - <b><%= @pagy_all.to %></b> of <b><%= @pagy_all.count %></b> in total
+              </small>
+            <% end %>
+            <%== @pagy_all.series_nav(:bootstrap) if @pagy_all && @pagy_all.pages > 1 %>
           </div>
 
           <div class="table-responsive">
@@ -81,7 +89,7 @@
               <tbody>
               <% @all_orders.each do |order| %>
                 <tr>
-                  <td class="username"><p> <%= link_to order.user&.username, order.user&.username %></p></td>
+                  <td class="username"><p> <%= link_to order.user&.username, user_path(order.user&.username) if order.user&.username %></p></td>
                   <td>
                     <% order.order_items.each do |order_item| %>
                       <p><b><%= link_to order_item.proficient_project.title, proficient_project_path(order_item.proficient_project.id) %></b> / <%= order_item.quantity %></p>

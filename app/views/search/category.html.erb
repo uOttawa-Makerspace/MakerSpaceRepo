@@ -81,7 +81,7 @@
 
     <!-- Pagination -->
     <div class="d-flex justify-content-center">
-      <%= will_paginate @repositories, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
+      <%== @pagy.series_nav(:bootstrap) if @pagy.pages > 1 %>
     </div>
   </section>
 </section>

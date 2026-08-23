@@ -1,5 +1,11 @@
 <% if project_proposals.present? %>
-    <div><%= will_paginate project_proposals, renderer: WillPaginate::ActionView::BootstrapLinkRenderer, param_name: (local_variables.include?(:param_name) ? param_name : 'page') %></div>
+    <% pagy_obj = local_assigns[:pagy] || @pagy %>
+    <% if pagy_obj && pagy_obj.pages > 1 %>
+    <div class="d-flex justify-content-center mb-2">
+        <%== pagy_obj.series_nav(:bootstrap) %>
+    </div>
+    <% end %>
+
     <table class="text-center table table-striped table-hover">
         <thead class="table-primary">
             <tr>

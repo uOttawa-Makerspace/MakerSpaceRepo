@@ -9,7 +9,6 @@ RUN apt-get update -qq && \
     curl \
     git \
     gnupg \
-    imagemagick \
     libpq-dev \
     libvips-dev \
     libyaml-dev \

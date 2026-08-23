@@ -8,6 +8,9 @@ class Staff::TrainingSessionsController < StaffDashboardController
   before_action :set_courses_and_levels, only: %i[new show]
 
   def index
+    scope = TrainingSession.where(user_id: @user.id).order(created_at: :desc)
+    @pagy, @sessions = pagy(scope, limit: 50)
+
     respond_to do |format|
       format.html
       format.json do
@@ -71,9 +74,9 @@ class Staff::TrainingSessionsController < StaffDashboardController
 
   def update
     if changed_params["user_id"].present? && !@user.admin?
-        flash[:alert] = "You're not an admin."
-        redirect_back(fallback_location: root_path) and return
-      end
+      flash[:alert] = "You're not an admin."
+      redirect_back(fallback_location: root_path) and return
+    end
 
     @current_training_session.update(changed_params)
 
@@ -243,9 +246,8 @@ class Staff::TrainingSessionsController < StaffDashboardController
 
   def verify_ownership
     return if @user.admin? || @current_training_session.user == @user
-      flash[:alert] = "Can't access training session"
-      redirect_to new_staff_training_session_path
-    
+    flash[:alert] = "Can't access training session"
+    redirect_to new_staff_training_session_path
   end
 
   def set_courses_and_levels

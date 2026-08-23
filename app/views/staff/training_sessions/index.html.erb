@@ -6,6 +6,16 @@
     <%= fa_icon 'search', class: 'input-group-text fa-2x pe-2' %>
     </div>
     <br />
+
+    <div class="text-center my-3">
+      <% if @pagy && @pagy.count > 0 %>
+        <small class="text-muted d-block mb-2">
+          Displaying <b><%= @pagy.from %></b> - <b><%= @pagy.to %></b> of <b><%= @pagy.count %></b> training sessions
+        </small>
+      <% end %>
+      <%== @pagy.series_nav(:bootstrap) if @pagy && @pagy.pages > 1 %>
+    </div>
+
     <table class="sessions-table table table-striped text-center mx-auto mb-3">
     <thead class="table-primary">
       <tr>
@@ -20,8 +30,6 @@
       </tr>
     </thead>
       <tbody>
-        <% @sessions = TrainingSession.where(user_id: @user.id).paginate(page: params[:page], per_page: 50) %>
-        <%= will_paginate @sessions, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
         <% @sessions.each do |sesh| %>
           <tr>
             <td class="date-cell">
@@ -39,7 +47,7 @@
             </td>
 
             <td class="space-cell">
-              <%= sesh.space.name if sesh.space.present? %>
+              <%= sesh.space.presence&.name %>
             </td>
 
             <td class="course-cell">
@@ -83,5 +91,9 @@
         <% end %>
       </tbody>
     </table>
+
+    <div class="text-center my-3">
+      <%== @pagy.series_nav(:bootstrap) if @pagy && @pagy.pages > 1 %>
+    </div>
   </div>
 </section>

@@ -9,9 +9,9 @@ class BadgesController < DevelopmentProgramsController
       @user.order_items.completed_order.in_progress.joins(
         proficient_project: :badge_template
       )
-    
-    @badge_data = fetch_badge_data(params[:search])
-    
+
+    @pagy, @badge_data = pagy(badge_scope(params[:search]), limit: 20)
+
     respond_to do |format|
       format.js
       format.html
@@ -19,9 +19,9 @@ class BadgesController < DevelopmentProgramsController
   end
 
   def search
-    @badge_data = fetch_badge_data(params[:search])
     @search_term = params[:search] # Store search term for pagination
-    render partial: 'badges/badge_list', layout: false
+    @pagy, @badge_data = pagy(badge_scope(params[:search]), limit: 20)
+    render partial: "badges/badge_list", layout: false
   end
 
   def show
@@ -29,7 +29,7 @@ class BadgesController < DevelopmentProgramsController
     @earner = User.find(@certification.user_id)
     @los_en = @certification.training.tokenize_info_en
     @los_fr = @certification.training.tokenize_info_fr
-    @skill_colour = 
+    @skill_colour =
       if @certification.training.skill_id == 1
         "#488b2c"
       elsif @certification.training.skill_id == 2
@@ -41,7 +41,7 @@ class BadgesController < DevelopmentProgramsController
 
   private
 
-  def fetch_badge_data(search_term = nil)
+  def badge_scope(search_term = nil)
     certifications = Certification
       .includes(:training, :user, :training_session)
       .joins(:training, :training_session)
@@ -64,9 +64,7 @@ class BadgesController < DevelopmentProgramsController
         )
     end
 
-    certifications
-      .order(user_id: :asc)
-      .paginate(page: params[:page], per_page: 20)
+    certifications.order(user_id: :asc)
   end
 
   def only_admin_access
@@ -83,14 +81,8 @@ class BadgesController < DevelopmentProgramsController
         .order(updated_at: :desc)
         .includes(order: :user)
         .joins(proficient_project: :badge_template)
-    @order_items =
-      order_items.where(status: statuses).paginate(
-        page: params[:page],
-        per_page: 20
-      )
-    @order_items_done =
-      order_items
-        .where.not(status: statuses)
-        .paginate(page: params[:page], per_page: 20)
+
+    @pagy_order_items, @order_items = pagy(order_items.where(status: statuses), limit: 20)
+    @pagy_order_items_done, @order_items_done = pagy(order_items.where.not(status: statuses), limit: 20)
   end
 end

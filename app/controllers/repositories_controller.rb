@@ -25,7 +25,9 @@ class RepositoriesController < SessionsController
                   ) and return
     end
 
-    @comments = @repository.comments.order(comment_filter).page params[:page]
+    # Replace `.page params[:page]` with `pagy(...)`:
+    @pagy, @comments = pagy(@repository.comments.order(comment_filter), limit: 5)
+
     @vote =
       @user
         .upvotes
@@ -43,30 +45,25 @@ class RepositoriesController < SessionsController
     @liked = @repository.likes.find_by(user_id: @user.id).nil? ? false : true
 
     # Add this repo to recently viewed cookie
-    # Don't trust user cookies, they might crash the parser
     begin
       this_link =
         repository_path id: @repository.id,
                         user_username: @repository.user_username
       this_proj_name = @repository.title[..35]
-      # make sure we parse an array, not something else
-      # hash of link => project name
       recently_viewed =
         begin
           JSON.parse(cookies[:recently_viewed])
         rescue StandardError
           {}
         end
-      recently_viewed = {} unless recently_viewed.kind_of? Hash
-      # if this is a new link
-      unless recently_viewed.has_key? this_link
+      recently_viewed = {} unless recently_viewed.is_a?(Hash)
+      unless recently_viewed.key?(this_link)
         recently_viewed[this_link] = this_proj_name
         recently_viewed = recently_viewed.take(5).to_h
       end
     rescue StandardError
-      # nuke cookies
       cookies[:recently_viewed] = nil
-    else # success running
+    else
       cookies[:recently_viewed] = JSON.generate(recently_viewed)
     end
   end

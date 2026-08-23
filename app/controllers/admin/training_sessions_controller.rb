@@ -42,7 +42,7 @@ class Admin::TrainingSessionsController < AdminAreaController
     end
 
     #pagination
-    @sessions = @sessions.paginate(page: params[:page], per_page: 20)
+    @pagy, @sessions = pagy(@sessions, limit: 20)
 
     respond_to do |format|
       format.js

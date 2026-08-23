@@ -59,7 +59,7 @@
             </div>
 
             <div class="text-body-secondary small border-top pt-2 mt-2">
-                <strong><%= @project_proposals.total_entries if @project_proposals.respond_to?(:total_entries) %></strong> proposals found
+                <strong><%= @pagy.count %></strong> proposals found
             </div>
         </fieldset>
     </aside>
@@ -70,7 +70,7 @@
                 <%= render partial: 'proposal_row', collection: @project_proposals, as: :project_proposal %>
             </ul>
             <div class="d-flex justify-content-center mt-3">
-                <%= will_paginate @project_proposals, inner_window: 1, outer_window: 1, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
+                <%== @pagy.series_nav(:bootstrap) if @pagy.pages > 1 %>
             </div>
         <% else %>
             <div class="alert alert-info text-center py-4">

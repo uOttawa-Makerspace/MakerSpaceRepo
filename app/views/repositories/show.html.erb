@@ -276,7 +276,7 @@
             <%= link_to t('repository.newest'), "#{repository_path(comment_filter: :newest)}#repo-comments", style: bold.first %>
         </div>
         <div id="comment-container">
-            <% @comments.find_each do |comment| %>
+            <% @comments.each do |comment| %>
                 <div class="comment">
                     <div class="comment-upvote">
                         <% color = @vote.include?([comment.id, false]) ? '#19c1a5' : '#999' %>
@@ -303,7 +303,7 @@
                     </div>
                 </div>
             <% end %>
-            <%= paginate @comments %>
+            <%== @pagy.series_nav(:bootstrap) if @pagy && @pagy.pages > 1 %>
         </div>
     </section>
 </section>

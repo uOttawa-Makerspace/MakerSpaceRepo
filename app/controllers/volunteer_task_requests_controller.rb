@@ -8,22 +8,21 @@ class VolunteerTaskRequestsController < SessionsController
       @volunteer_task_requests = VolunteerTaskRequest.all :
       @volunteer_task_requests = current_user.volunteer_task_requests
     @total_volunteers = User.volunteers.count
-    @pending_volunteer_task_requests =
-      @volunteer_task_requests
-        .not_processed
-        .includes(%i[volunteer_task user])
-        .joins(:volunteer_task, :user)
-        .filter_by_attribute(params[:search_pending])
-        .order(created_at: :desc)
-        .paginate(page: params[:page], per_page: 15)
-    @processed_volunteer_task_requests =
-      @volunteer_task_requests
-        .processed
-        .includes(%i[volunteer_task user])
-        .joins(:volunteer_task, :user)
-        .filter_by_attribute(params[:search_processed])
-        .order(created_at: :desc)
-        .paginate(page: params[:page], per_page: 15)
+    pending_scope = @volunteer_task_requests
+                      .not_processed
+                      .includes(%i[volunteer_task user])
+                      .joins(:volunteer_task, :user)
+                      .filter_by_attribute(params[:search_pending])
+                      .order(created_at: :desc)
+
+    processed_scope = @volunteer_task_requests
+                        .processed
+                        .includes(%i[volunteer_task user])
+                        .joins(:volunteer_task, :user)
+                        .order(created_at: :desc)
+
+    @pagy_pending, @pending_volunteer_task_requests = pagy(pending_scope, page_key: "page_pending", limit: 15)
+    @pagy_processed, @processed_volunteer_task_requests = pagy(processed_scope, page_key: "page_processed", limit: 15)
   end
 
   def search_pending

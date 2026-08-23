@@ -5,11 +5,7 @@ class ExamsController < SessionsController
   before_action :check_exam_status, only: [:show]
 
   def index
-    @exams =
-      current_user
-        .exams
-        .order(category: :desc)
-        .paginate(page: params[:page], per_page: 50)
+    @pagy, @exams = pagy(current_user.exams.order(category: :desc), limit: 50)
   end
 
   def create_from_training

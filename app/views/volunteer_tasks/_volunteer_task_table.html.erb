@@ -28,7 +28,7 @@
       </thead>
 
       <tbody>
-        <%= will_paginate volunteer_tasks, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
+        <%== @pagy.series_nav(:bootstrap) if @pagy && @pagy.pages > 1 %>
         <% volunteer_tasks.each do |vt| %>
           <tr>
             <td class="action-cell">

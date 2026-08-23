@@ -2,19 +2,18 @@
   <br>
   <h2 style="text-align: center"><b>Badges</b></h2>
 
-  <div class="apple_pagination">
-    <%= page_entries_info @badge_data, model: 'badges' %>
-    <% if @search_term.present? %>
-      <%= will_paginate @badge_data, container: false, params: { search: @search_term } %>
-    <% else %>
-      <%= will_paginate @badge_data, container: false %>
+  <div class="apple_pagination text-center">
+    <% if @pagy.count > 0 %>
+      <small class="text-muted">
+        Displaying badges <b><%= @pagy.from %></b> - <b><%= @pagy.to %></b> of <b><%= @pagy.count %></b> in total
+      </small>
     <% end %>
+    <%== @pagy.series_nav(:bootstrap) if @pagy.pages > 1 %>
   </div>
   <br>
+
   <div style="width: 100%;" class="row">
-
     <% @badge_data.each do |badges| %>
-
       <div class="col-md-3">
         <p style="text-align: center">
           <% if badges.training_session.training.has_badge %>
@@ -23,24 +22,24 @@
             <% else %>
               <%= badges.user.name %>
             <% end %>
-            </p>
+        </p>
 
             <a style="width: 150px;" class="mx-auto w-100!important d-block" target="_blank" href="./badges/<%= badges.id %>">
               <%= render "badge_icon", width: 150, height: 150, level: badges.level, name: badges.training.localized_name, skill: badges.training.skill_id %>
             </a>
           <% end %>
       </div>
-
     <% end %>
   </div>
   <br>
-  <div class="apple_pagination">
-    <%= page_entries_info @badge_data, model: 'badges' %>
-    <% if @search_term.present? %>
-      <%= will_paginate @badge_data, container: false, params: { search: @search_term } %>
-    <% else %>
-      <%= will_paginate @badge_data, container: false %>
+
+  <div class="apple_pagination text-center">
+    <% if @pagy.count > 0 %>
+      <small class="text-muted">
+        Displaying badges <b><%= @pagy.from %></b> - <b><%= @pagy.to %></b> of <b><%= @pagy.count %></b> in total
+      </small>
     <% end %>
+    <%== @pagy.series_nav(:bootstrap) if @pagy.pages > 1 %>
   </div>
 
 <% rescue => e %>

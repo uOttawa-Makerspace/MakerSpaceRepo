@@ -15,9 +15,13 @@
           Please check our <%= link_to 'projects', proficient_projects_path %> and add some items to your cart.
         </p>
       <% else %>
-        <div class="apple_pagination">
-          <%= page_entries_info @kits, model: 'project_kits' %>
-          <%= will_paginate @kits, container: false %>
+        <div class="apple_pagination text-center mb-3">
+          <% if @pagy.count > 0 %>
+            <small class="text-muted d-block mb-2">
+              Displaying project kits <b><%= @pagy.from %></b> - <b><%= @pagy.to %></b> of <b><%= @pagy.count %></b> in total
+            </small>
+          <% end %>
+          <%== @pagy.series_nav(:bootstrap) if @pagy.pages > 1 %>
         </div>
         <div class="">
           <table class="table table-responsive table-striped">
@@ -50,9 +54,13 @@
             No kits were bought.
           </p>
         <% else %>
-          <div class="apple_pagination">
-            <%= page_entries_info @all_kits, model: 'project_kits' %>
-            <%= will_paginate @all_kits, container: false %>
+          <div class="apple_pagination text-center mb-3">
+            <% if @pagy_all && @pagy_all.count > 0 %>
+              <small class="text-muted d-block mb-2">
+                Displaying project kits <b><%= @pagy_all.from %></b> - <b><%= @pagy_all.to %></b> of <b><%= @pagy_all.count %></b> in total
+              </small>
+            <% end %>
+            <%== @pagy_all.series_nav(:bootstrap) if @pagy_all && @pagy_all.pages > 1 %>
           </div>
 
           <div class="table-responsive">
@@ -70,7 +78,7 @@
               <tbody>
               <% @all_kits.each do |kit| %>
                 <tr>
-                  <td><p> <%= link_to kit.user.name, kit.user.username %></p></td>
+                  <td><p> <%= link_to kit.user.name, user_path(kit.user.username) if kit.user %></p></td>
                   <td><p><%= kit.proficient_project.title %></p></td>
                   <td><p><%= kit.created_at.strftime('%Y/%m/%d') %></p></td>
                   <td><p><%= kit.delivered? ? 'Delivered' : 'Not yet delivered' %></p></td>
