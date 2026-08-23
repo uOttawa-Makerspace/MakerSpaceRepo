@@ -23,6 +23,10 @@ export default defineConfig({
       host: "localhost",
       clientPort: 3036,
     },
+    watch: {
+      usePolling: true,
+      interval: 100,
+    },
   },
   optimizeDeps: {
     include: [
