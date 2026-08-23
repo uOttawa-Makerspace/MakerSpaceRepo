@@ -23,7 +23,8 @@ RUN apk add --no-cache \
     vips \
     vips-dev \
     yaml \
-    yaml-dev
+    yaml-dev && \
+    ln -s /bin/grep /usr/bin/grep
 
 # Copy Node.js 24 and NPM from official Node Alpine image
 COPY --from=node:24-alpine /usr/local/bin/node /usr/local/bin/node

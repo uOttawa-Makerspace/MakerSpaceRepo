@@ -12,7 +12,8 @@ RUN apk add --no-cache \
     libpq \
     tzdata \
     vips \
-    yaml
+    yaml && \
+    ln -s /bin/grep /usr/bin/grep
 
 # Alpine non-root user setup
 RUN addgroup -g 1000 -S rails && \
