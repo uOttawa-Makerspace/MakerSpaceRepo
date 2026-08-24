@@ -36,9 +36,9 @@
             <td><%= order_item.proficient_project.title %></td>
             <td><%= order_item.status %></td>
             <% if order_item.status == "Destroyed" %>
-              <td><%= link_to 'Award', certify_badges_path(order_item_id: order_item.id), data: { confirm: 'Are you sure? This will give the badge to the user' }, remote: true, class: 'btn btn-primary' %></td>
+              <td><%= button_to 'Award', certify_badges_path(order_item_id: order_item.id), method: :post, data: { turbo_confirm: 'Are you sure? This will give the badge to the user' }, class: 'btn btn-primary' %></td>
             <% else %>
-              <td><%= button_to 'Destroy', badge_path(order_item), method: :delete, data: { confirm: 'Are you sure? This will revoke the badge that the user received.' }, class: 'btn btn-danger' %></td>
+              <td><%= button_to 'Destroy', badge_path(order_item), method: :delete, data: { turbo_confirm: 'Are you sure? This will revoke the badge that the user received.' }, class: 'btn btn-danger' %></td>
             <% end %>
           </tr>
         <% end %>
@@ -48,5 +48,4 @@
   <% else %>
     <p class="text-center">No badges awarded/revoked.</p>
   <% end %>
-
 </div>

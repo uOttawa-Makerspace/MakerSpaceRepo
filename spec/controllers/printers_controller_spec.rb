@@ -134,7 +134,7 @@ RSpec.describe PrintersController, type: :controller do
   end
 
   describe "Link printer to user" do
-    before(:all) do
+    before(:each) do
       build :printer, :UM2P_01
       build :printer, :UM2P_02
       build :printer, :UM3_01
@@ -224,7 +224,7 @@ RSpec.describe PrintersController, type: :controller do
   end
 
   describe "Send print failed emails to print owners" do
-    before(:all) { @printer = create :printer, :UM2P_01 }
+    before(:each) { @printer = create :printer, :UM2P_01 }
     before(:each) do
       @print_owner = create :user, :regular_user
       staff = create :user, :staff

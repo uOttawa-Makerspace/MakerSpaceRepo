@@ -10,10 +10,9 @@
         <p class="fs-3 text-white-50 mb-4 fw-medium">Build, Collaborate & Learn</p>
         
         <!-- Double-Action Join Button: Rails POST + Opens Form in New Tab -->
-        <%= link_to "Join the Volunteer Program", 
+        <%= button_to "Join the Volunteer Program", 
                     join_volunteer_program_volunteers_path, 
                     method: :post,
-                    remote: true,
                     class: 'btn btn-ceed btn-lg px-4 py-3 rounded-pill fs-6 join-volunteer-btn',
                     data: { form_url: "https://5oe8xl.share-na3.hsforms.com/20slW0brbQJCsdeEck-8vuQ" } %>
       </div>
@@ -85,18 +84,17 @@
         <div class="col-lg-4 d-flex flex-column justify-content-between">
           <div class="ceed-card shadow-sm mb-4">
             <button class="ceed-card-header d-flex justify-content-between align-items-center" 
-                    type="button" data-bs-toggle="collapse" data-toggle="collapse" 
-                    data-bs-target="#spaceCardBody" data-target="#spaceCardBody" 
+                    type="button" data-bs-toggle="collapse" 
+                    data-bs-target="#spaceCardBody" 
                     aria-expanded="true">
               <span>Weekly Space Volunteer</span>
               <i class="fa fa-chevron-down"></i>
             </button>
             <div id="spaceCardBody" class="collapse show">
-              <!-- Sub item 1: Involvement -->
               <div class="accordion-item">
                 <button class="accordion-button-custom" type="button" 
-                        data-bs-toggle="collapse" data-toggle="collapse" 
-                        data-bs-target="#spaceInvolvement" data-target="#spaceInvolvement" 
+                        data-bs-toggle="collapse" 
+                        data-bs-target="#spaceInvolvement" 
                         aria-expanded="true">
                   <span><i class="fa fa-handshake-o text-danger me-2"></i> Involvement</span>
                   <i class="fa fa-chevron-down chevron-icon"></i>
@@ -109,11 +107,10 @@
                   </ul>
                 </div>
               </div>
-              <!-- Sub item 2: Requirements -->
               <div class="accordion-item">
                 <button class="accordion-button-custom collapsed" type="button" 
-                        data-bs-toggle="collapse" data-toggle="collapse" 
-                        data-bs-target="#spaceReqs" data-target="#spaceReqs" 
+                        data-bs-toggle="collapse" 
+                        data-bs-target="#spaceReqs" 
                         aria-expanded="false">
                   <span><i class="fa fa-file-text-o text-primary me-2"></i> Requirements</span>
                   <i class="fa fa-chevron-down chevron-icon"></i>
@@ -137,18 +134,17 @@
         <div class="col-lg-4 d-flex flex-column justify-content-between">
           <div class="ceed-card shadow-sm mb-4">
             <button class="ceed-card-header d-flex justify-content-between align-items-center" 
-                    type="button" data-bs-toggle="collapse" data-toggle="collapse" 
-                    data-bs-target="#projectCardBody" data-target="#projectCardBody" 
+                    type="button" data-bs-toggle="collapse" 
+                    data-bs-target="#projectCardBody" 
                     aria-expanded="true">
               <span>Project Volunteer</span>
               <i class="fa fa-chevron-down"></i>
             </button>
             <div id="projectCardBody" class="collapse show">
-              <!-- Sub item 1: Involvement -->
               <div class="accordion-item">
                 <button class="accordion-button-custom" type="button" 
-                        data-bs-toggle="collapse" data-toggle="collapse" 
-                        data-bs-target="#projectInvolvement" data-target="#projectInvolvement" 
+                        data-bs-toggle="collapse" 
+                        data-bs-target="#projectInvolvement" 
                         aria-expanded="true">
                   <span><i class="fa fa-handshake-o text-danger me-2"></i> Involvement</span>
                   <i class="fa fa-chevron-down chevron-icon"></i>
@@ -161,11 +157,10 @@
                   </ul>
                 </div>
               </div>
-              <!-- Sub item 2: Requirements -->
               <div class="accordion-item">
                 <button class="accordion-button-custom collapsed" type="button" 
-                        data-bs-toggle="collapse" data-toggle="collapse" 
-                        data-bs-target="#projectReqs" data-target="#projectReqs" 
+                        data-bs-toggle="collapse" 
+                        data-bs-target="#projectReqs" 
                         aria-expanded="false">
                   <span><i class="fa fa-file-text-o text-primary me-2"></i> Requirements</span>
                   <i class="fa fa-chevron-down chevron-icon"></i>
@@ -190,18 +185,17 @@
         <div class="col-lg-4 d-flex flex-column justify-content-between">
           <div class="ceed-card shadow-sm mb-4">
             <button class="ceed-card-header d-flex justify-content-between align-items-center" 
-                    type="button" data-bs-toggle="collapse" data-toggle="collapse" 
-                    data-bs-target="#eventCardBody" data-target="#eventCardBody" 
+                    type="button" data-bs-toggle="collapse" 
+                    data-bs-target="#eventCardBody" 
                     aria-expanded="true">
               <span>Event Volunteer</span>
               <i class="fa fa-chevron-down"></i>
             </button>
             <div id="eventCardBody" class="collapse show">
-              <!-- Sub item 1: Involvement -->
               <div class="accordion-item">
                 <button class="accordion-button-custom" type="button" 
-                        data-bs-toggle="collapse" data-toggle="collapse" 
-                        data-bs-target="#eventInvolvement" data-target="#eventInvolvement" 
+                        data-bs-toggle="collapse" 
+                        data-bs-target="#eventInvolvement" 
                         aria-expanded="true">
                   <span><i class="fa fa-handshake-o text-danger me-2"></i> Involvement</span>
                   <i class="fa fa-chevron-down chevron-icon"></i>
@@ -214,11 +208,10 @@
                   </ul>
                 </div>
               </div>
-              <!-- Sub item 2: Requirements -->
               <div class="accordion-item">
                 <button class="accordion-button-custom collapsed" type="button" 
-                        data-bs-toggle="collapse" data-toggle="collapse" 
-                        data-bs-target="#eventReqs" data-target="#eventReqs" 
+                        data-bs-toggle="collapse" 
+                        data-bs-target="#eventReqs" 
                         aria-expanded="false">
                   <span><i class="fa fa-file-text-o text-primary me-2"></i> Requirements</span>
                   <i class="fa fa-chevron-down chevron-icon"></i>

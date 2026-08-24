@@ -2,7 +2,7 @@ require "rails_helper"
 
 RSpec.describe PriceRulesController, type: :controller do
   pending("Reimplement again, PriceRule was removed from API")
-  # before(:all) do
+  # before(:each) do
   #   @admin = create(:user, :admin)
   #   @user = create(:user, :regular_user)
   #   @shopify_price_rule_id = PriceRule.create_price_rule("2$ Coupon", 2)

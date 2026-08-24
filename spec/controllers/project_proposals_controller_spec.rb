@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "rails_helper"
 
 RSpec.describe ProjectProposalsController, type: :controller do
@@ -8,7 +10,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
     session[:expires_at] = Time.zone.now + 10_000
   end
 
-  before(:all) do
+  before(:each) do
     3.times { create(:project_proposal, :normal) }
     create(:project_proposal, :approved)
     create(:project_proposal, :joined)
@@ -25,14 +27,14 @@ RSpec.describe ProjectProposalsController, type: :controller do
       it "should return all proposals when no status filter is selected" do
         get :index
         expect(response).to have_http_status(:success)
-        assigned = assigns(:project_proposals)
+        assigned = controller.instance_variable_get(:@project_proposals)
         expect(assigned).to include(approved_pp, pending_pp, declined_pp, revision_pp)
       end
 
       it "should filter by pending status ('nil') correctly" do
         get :index, params: { status: ['nil'] }
         expect(response).to have_http_status(:success)
-        assigned = assigns(:project_proposals)
+        assigned = controller.instance_variable_get(:@project_proposals)
         expect(assigned).to include(pending_pp, revision_pp)
         expect(assigned).not_to include(approved_pp, declined_pp)
       end
@@ -40,7 +42,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
       it "should filter by approved status ('1') correctly" do
         get :index, params: { status: ['1'] }
         expect(response).to have_http_status(:success)
-        assigned = assigns(:project_proposals)
+        assigned = controller.instance_variable_get(:@project_proposals)
         expect(assigned).to include(approved_pp)
         expect(assigned).not_to include(pending_pp, declined_pp, revision_pp)
       end
@@ -49,7 +51,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
         seasonal_pp = create(:project_proposal, :approved, season: 'winter', year: 2025)
         get :index, params: { semester: 'winter_2025' }
         expect(response).to have_http_status(:success)
-        assigned = assigns(:project_proposals)
+        assigned = controller.instance_variable_get(:@project_proposals)
         expect(assigned).to include(seasonal_pp)
         expect(assigned).not_to include(approved_pp)
       end
@@ -116,7 +118,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
         get :projects_assigned
         expect(response).to have_http_status(:success)
         expect(
-          @controller.instance_variable_get(:@assigned_project_proposals).count
+          controller.instance_variable_get(:@assigned_project_proposals).count
         ).to eq(1)
       end
     end
@@ -128,7 +130,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
         get :projects_completed
         expect(response).to have_http_status(:success)
         expect(
-          @controller.instance_variable_get(:@completed_project_proposals).count
+          controller.instance_variable_get(:@completed_project_proposals).count
         ).to eq(2)
       end
     end
@@ -195,10 +197,8 @@ RSpec.describe ProjectProposalsController, type: :controller do
         revision = ProjectProposal.last
         expect(revision.title).to eq("Revision of #{old_proposal.title}")
         expect(revision.linked_project_proposal_id).to eq(old_proposal.id)
-        # Verify season and year are cleared so it isn't filed under an old semester
         expect(revision.season).to be_nil
         expect(revision.year).to be_nil
-        # Verify status is reset to pending
         expect(revision.approved).to be_nil
         expect(flash[:notice]).to eq("The project proposal revision has been successfully created.")
       end
@@ -272,7 +272,6 @@ RSpec.describe ProjectProposalsController, type: :controller do
   describe "DELETE #update" do
     context "Delete project proposal" do
       it "should delete the project proposal" do
-        # Post as admin
         admin = create(:user, :admin)
         session[:user_id] = admin.id
 
@@ -374,7 +373,4 @@ RSpec.describe ProjectProposalsController, type: :controller do
     end
   end
 
-  after :all do
-    ProjectProposal.destroy_all
-  end
 end

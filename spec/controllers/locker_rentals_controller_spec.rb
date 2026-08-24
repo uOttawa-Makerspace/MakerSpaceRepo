@@ -1,11 +1,13 @@
+# frozen_string_literal: true
+
 require 'rails_helper'
 
 include ApplicationHelper
 
 RSpec.describe LockerRentalsController, type: :controller do
-  before(:all) do
+  before(:each) do
     LockerOption.lockers_enabled = true
-    CourseName.create(name: 'GNG1103')
+    CourseName.find_or_create_by(name: 'GNG1103')
   end
 
   before(:each) do
@@ -39,7 +41,6 @@ RSpec.describe LockerRentalsController, type: :controller do
         expect(response).to have_http_status :success
       end
 
-      # Regression test for audience filtering on show page
       it 'shows all available lockers to staff regardless of audience' do
         general_locker = create(:locker, audience: 'general')
         gng_locker = create(:locker, audience: 'gng')
@@ -49,7 +50,8 @@ RSpec.describe LockerRentalsController, type: :controller do
         
         get :show, params: { id: locker_rental.id }
         
-        available_ids = assigns(:locker_select_options).map { |opt| opt[1] }
+        select_options = controller.instance_variable_get(:@locker_select_options) || []
+        available_ids = select_options.map { |opt| opt[1] }
         expect(available_ids).to include(general_locker.id, gng_locker.id, staff_locker.id)
       end
     end
@@ -72,7 +74,6 @@ RSpec.describe LockerRentalsController, type: :controller do
         expect(response).not_to have_http_status :success
       end
 
-      # Regression test for audience filtering on show page
       it 'only shows general lockers to regular users' do
         general_locker = create(:locker, audience: 'general')
         gng_locker = create(:locker, audience: 'gng')
@@ -81,7 +82,8 @@ RSpec.describe LockerRentalsController, type: :controller do
         locker_rental = create :locker_rental, rented_by: @current_user
         get :show, params: { id: locker_rental.id }
         
-        available_ids = assigns(:locker_select_options).map { |opt| opt[1] }
+        select_options = controller.instance_variable_get(:@locker_select_options) || []
+        available_ids = select_options.map { |opt| opt[1] }
         expect(available_ids).to include(general_locker.id)
         expect(available_ids).not_to include(gng_locker.id, staff_locker.id)
       end
@@ -91,11 +93,9 @@ RSpec.describe LockerRentalsController, type: :controller do
   describe 'GET /new' do
     context 'as anyone' do
       it 'shows the new rental page' do
-        # as admin
         get :new
         expect(response).to have_http_status :success
 
-        # as a regular user
         session[:user_id] = create(:user).id
         get :new
         expect(response).to have_http_status :success
@@ -128,7 +128,6 @@ RSpec.describe LockerRentalsController, type: :controller do
         expect(response).to redirect_to :new_locker_rental
       end
 
-      # Regression test for indefinite locker assignment
       it 'should allow manual assignment with indefinite end date' do
         target_user = create :user
         post :create, params: {
@@ -158,19 +157,16 @@ RSpec.describe LockerRentalsController, type: :controller do
               owned_until: end_of_this_semester
             )
         }
-        # Make a rental
         expect { post :create, params: post_body }.to change(
           LockerRental,
           :count
         ).by(1)
 
-        # Make a rental with same locker
         expect { post :create, params: post_body }.to change(
           LockerRental,
           :count
         ).by(0)
 
-        # Change rental locker instead
         post_body[:locker_rental][:locker_id] = create(:locker).id
         expect { post :create, params: post_body }.to change(
           LockerRental,
@@ -179,14 +175,11 @@ RSpec.describe LockerRentalsController, type: :controller do
       end
 
       it 'should free up lockers when cancelled' do
-        # make a request in DB
         active_request = create :locker_rental, :active
-        # Test model in controller tests, because this whole test suite is a parody
         expect do
           create(:locker_rental, :active, locker: active_request.locker)
         end.to raise_error(ActiveRecord::RecordInvalid)
 
-        # Assign a reserved specifier
         expect do
           post :create,
                params: {
@@ -198,7 +191,6 @@ RSpec.describe LockerRentalsController, type: :controller do
                }
         end.to change { LockerRental.count }.by(0)
 
-        # Cancel active rental
         expect do
           patch :update,
                 params: {
@@ -212,7 +204,6 @@ RSpec.describe LockerRentalsController, type: :controller do
           'cancelled'
         )
 
-        # Re-assign locker
         expect {
           post :create,
                params:
@@ -220,12 +211,10 @@ RSpec.describe LockerRentalsController, type: :controller do
                    :locker_rental,
                    rented_by_id: active_request.rented_by.id,
                    locker_id: active_request.locker.id,
-                   # owned until is auto filled by controller
                    state: :active
                  )
         }.to change { LockerRental.count }.by(1)
 
-        # specifier should be reused
         expect(LockerRental.last.locker).to eq(active_request.locker)
       end
 
@@ -251,11 +240,9 @@ RSpec.describe LockerRentalsController, type: :controller do
           patch :create,
                 params: {
                   locker_rental: {
-                    # no locker type
                     locker_specifier: '9',
                     rented_by: target_user.id,
                     state: 'active'
-                    # no owned_until
                   }
                 }
         end.to change(LockerRental, :count).by(0)
@@ -276,15 +263,11 @@ RSpec.describe LockerRentalsController, type: :controller do
               }
         rental.reload
         expect(flash[:alert]).to eq nil
-        # state is now active
         expect(rental.state).to eq 'active'
-        # owned until is some time in the future
         expect(rental.owned_until.to_date).to be >= Date.today
-        # locker is not null
         expect(rental.locker).not_to eq nil
       end
 
-      # Regression test for moving an active rental to indefinite
       it 'should allow moving an active rental to indefinite' do
         rental = create(:locker_rental, :active, owned_until: 1.month.from_now)
         new_locker = create(:locker)
@@ -373,7 +356,6 @@ RSpec.describe LockerRentalsController, type: :controller do
       end
     end
 
-    # Regression tests for Contacted toggle
     describe 'PATCH #toggle_contacted' do
       it 'toggles contacted_for_clearance from false to true' do
         locker_rental = create(:locker_rental, :active, contacted_for_clearance: false)
@@ -398,7 +380,7 @@ RSpec.describe LockerRentalsController, type: :controller do
     end
 
     context 'creating requests' do
-      before(:all) { @locker = create(:locker) }
+      before(:each) { @locker = create(:locker) }
 
       it 'should create a request' do
         request_note = 'Testing request notes'
@@ -418,7 +400,6 @@ RSpec.describe LockerRentalsController, type: :controller do
       end
 
       it 'should require GNG project information' do
-        # Missing course information
         expect do
           post :create,
                params: {
@@ -501,10 +482,8 @@ RSpec.describe LockerRentalsController, type: :controller do
       end
 
       it 'should only allow one request per user' do
-        # Give current user a rental
         prev_rental =
           create :locker_rental, :reviewing, rented_by: @current_user
-        # Ask for another one
         expect {
           post :create,
                params: {
@@ -512,7 +491,7 @@ RSpec.describe LockerRentalsController, type: :controller do
                    attributes_for(:locker_rental, locker_id: create(:locker).id)
                }
         }.to change { LockerRental.count }.by(0)
-        # Approve last request. Log in as staff
+
         session[:user_id] = create(:user, :staff).id
         post :update,
              params: {
@@ -523,7 +502,6 @@ RSpec.describe LockerRentalsController, type: :controller do
                }
              }
 
-        # Ask for another one. Log back in as user
         session[:user_id] = @current_user.id
         expect {
           post :create,
@@ -572,7 +550,6 @@ RSpec.describe LockerRentalsController, type: :controller do
                   state: :cancelled
                 }
               }
-        # stays the same
         expect(locker_rental.reload.state).to eq('await_payment')
       end
     end
@@ -597,7 +574,6 @@ RSpec.describe LockerRentalsController, type: :controller do
       end
 
       it 'should send a cancellation email to approved rentals' do
-        # approve a rental first
         session[:user_id] = create(:user, :staff).id
         patch :update,
               params: {
@@ -608,7 +584,7 @@ RSpec.describe LockerRentalsController, type: :controller do
                 }
               }
         expect(@locker_rental.reload.state).to eq 'active'
-        # Then cancel it later
+
         patch :update,
               params: {
                 id: @locker_rental.id,
@@ -645,7 +621,6 @@ RSpec.describe LockerRentalsController, type: :controller do
       end
 
       it 'should not allow users to cancel active rentals' do
-        # make sure we're not admin
         expect(@current_user.admin?).to eq false
         @locker_rental =
           create(:locker_rental, :active, rented_by: @current_user)
@@ -659,19 +634,6 @@ RSpec.describe LockerRentalsController, type: :controller do
               }
         expect(@locker_rental.reload.state).to eq 'active'
       end
-    end
-
-    context 'state keeps going one way' do
-      it "can't move from active to await_payment" do
-      end
-
-      it "can't move from active to reviewing" do
-      end
-
-      it "can't move from await_payment to reviewing" do
-      end
-
-      it "can't move from cancelled to reviewing"
     end
   end
 end

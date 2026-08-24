@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe PrinterTypesController, type: :controller do
-  before (:all) do
+  before :each do
     @admin = create(:user, :admin)
     @staff = create(:user, :staff)
     @regular_user = create(:user, :regular_user)

@@ -1,28 +1,29 @@
+# frozen_string_literal: true
+
 include ActionDispatch::TestProcess
 
 FactoryBot.define do
   factory :repository do
     association :owner, factory: :user
-    title { Faker::Lorem.unique.word }
-    # Use non-Latin text to avoid trigram collisions
+    sequence(:title) { |n| "Project Repository #{n}" }
     description { Faker::Movies::StarWars.quote }  
     share_type { "public" }
     youtube_link { "" }
 
-    # Need to have min one photo
     after(:build) do |repo|
       repo.photos.build(
-          image:
-            Rack::Test::UploadedFile.new(
-              Rails.root.join('spec/support/assets/avatar.png'),
-              'image/png')
+        image:
+          Rack::Test::UploadedFile.new(
+            Rails.root.join('spec/support/assets/avatar.png'),
+            'image/png'
+          )
       )
     end
 
     trait :private do
       password do
         "$2a$12$fJ1zqqOdQVXHt6GZVFWyQu2o4ZUU3KxzLkl1JJSDT0KbhfnoGUvg2"
-      end # Password : abc
+      end
       share_type { "private" }
     end
 

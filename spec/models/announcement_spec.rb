@@ -8,7 +8,7 @@ RSpec.describe Announcement, type: :model do
   end
 
   describe "Scopes" do
-    before :all do
+    before :each do
       create(:announcement, :all)
       create(:announcement, :all)
       create(:announcement, :all, active: false)

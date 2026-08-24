@@ -54,5 +54,4 @@ RSpec.describe Admin::JobTypesController, type: :controller do
     end
   end
 
-  after(:all) { JobType.destroy_all }
 end

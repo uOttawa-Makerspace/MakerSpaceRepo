@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'rails_helper'
 
 RSpec.describe MembershipsController, type: :controller do
@@ -7,8 +9,7 @@ RSpec.describe MembershipsController, type: :controller do
     session[:user_id] = @regular_user.id
     session[:expires_at] = Time.zone.now + 10_000
 
-    @tier = create(:membership_tier, title_en: "1 Month Membership", duration: 1.month.to_i, internal_price: 30, 
-external_price: 30)
+    @tier = create(:membership_tier, title_en: "1 Month Membership", duration: 1.month.to_i, internal_price: 30, external_price: 30)
   end
 
   describe "GET #index" do
@@ -24,9 +25,13 @@ external_price: 30)
     it "assigns memberships and a new membership" do
       membership = create(:membership, user: @regular_user, membership_tier: @tier, status: 'paid')
       get :your_memberships
-      expect(assigns(:memberships)).to include(membership)
-      expect(assigns(:membership)).to be_a_new(Membership)
-      expect(response).to render_template(:your_memberships)
+      memberships = controller.instance_variable_get(:@memberships)
+      new_membership = controller.instance_variable_get(:@membership)
+
+      expect(memberships).to include(membership)
+      expect(new_membership).to be_a_new(Membership)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(@tier.title_en)
     end
   end
 

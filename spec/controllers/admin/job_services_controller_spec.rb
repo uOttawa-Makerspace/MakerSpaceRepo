@@ -62,7 +62,4 @@ RSpec.describe Admin::JobServicesController, type: :controller do
     end
   end
 
-  after(:all) do
-    JobService.destroy_all
-  end
 end

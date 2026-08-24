@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 FactoryBot.define do
   factory :learning_module do
     association :training
@@ -5,7 +7,7 @@ FactoryBot.define do
     title { Faker::Lorem.word }
     description { Faker::Lorem.paragraph }
     level { "Beginner" }
-    shortcut_name { Faker::Alphanumeric.unique.alphanumeric(number: 8) }
+    sequence(:shortcut_name) { |n| "lm_%05d" % n }
 
     trait :with_files do
       after(:create) do |pp|

@@ -1,5 +1,7 @@
+# frozen_string_literal: true
+
 FactoryBot.define do
   factory :course_name do
-    name { Faker::Name.unique.name }
+    sequence(:name) { |n| "Course #{n}" }
   end
 end

@@ -1,10 +1,12 @@
+# frozen_string_literal: true
+
 FactoryBot.define do
   factory :user do
     read_and_accepted_waiver_form { true }
     active { true }
-    email { Faker::Internet.unique.username + "@uottawa.ca" }
+    sequence(:email) { |n| "user#{n}#{SecureRandom.hex(3)}@uottawa.ca" }
     name { Faker::Name.name }
-    username { Faker::Name.unique.first_name }
+    sequence(:username) { |n| "user#{n}#{SecureRandom.hex(3)}" }
     wallet { 1000 }
     confirmed { true }
     password { "$2a$12$t3MkhdxmndlLDLHiJiVqBOdBAjFZWidydW/vd53.pS5ej7DcIZ1LC" }
@@ -18,6 +20,7 @@ FactoryBot.define do
     trait :regular_user_not_confirmed do
       confirmed { false }
     end
+
     trait :regular_user_with_certifications do
       after(:create) do |user|
         create(:certification, :"3d_printing", user_id: user.id)
@@ -96,7 +99,7 @@ FactoryBot.define do
       faculty { "Engineering" }
       year_of_study { 2020 }
       gender { "Female" }
-      student_id { Faker::Number.number(digits: 9) }
+      sequence(:student_id) { |n| "%09d" % n }
     end
 
     trait :non_engineering do
@@ -105,9 +108,6 @@ FactoryBot.define do
     end
 
     trait :with_staff_spaces do
-      # https://thoughtbot.github.io/factory_bot/cookbook/has_many-associations.html
-      # Make two spaces
-      #create_list(:staff_spaces, 2, user: instance)
       after(:create) do |user|
         2.times { StaffSpace.new(user:, space: create(:space)).save! }
       end

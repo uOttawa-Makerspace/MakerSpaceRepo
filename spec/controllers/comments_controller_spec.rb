@@ -2,7 +2,7 @@ require "rails_helper"
 
 RSpec.describe CommentsController, type: :controller do
   describe "POST /create" do
-    before(:all) { @user = create(:user, :regular_user) }
+    before(:each) { @user = create(:user, :regular_user) }
 
     before(:each) do
       session[:expires_at] = DateTime.tomorrow.end_of_day

@@ -12,7 +12,7 @@
   </div>
 
   <div class="card-footer">
-    <%= form_with url: chat_messages_path, method: :post, remote: true, scope: :chat_message, html: { class: 'useTurbo', id: "new-message-form" } do |f| %>
+    <%= form_with url: chat_messages_path, method: :post, scope: :chat_message, html: { class: 'useTurbo', id: "new-message-form" } do |f| %>
       <%= f.hidden_field :job_order_id, value: jo.id %>
       <div class="input-group">
         <%= f.text_field :message, class: "form-control", placeholder: t("job_orders.order.type") %>
@@ -28,10 +28,11 @@
     if (!chatBox) return;
 
     const jobOrderId = chatBox.dataset.jobOrderId;
-    fetch(`/chat_messages?job_order_id=${jobOrderId}`, { headers: { Accept: "text/javascript" } })
+    fetch(`/chat_messages?job_order_id=${jobOrderId}`, { headers: { Accept: "text/html" } })
       .then(response => response.text())
       .then(html => {
         const container = document.getElementById('chat-messages');
+        if (!container) return;
         const shouldScroll = container.scrollTop + container.clientHeight === container.scrollHeight;
 
         if (html && html.trim() !== "") {
@@ -44,15 +45,16 @@
       });
   }
 
-  // Reload messages every minute
   setInterval(loadMessages, 60000);
 
-  document.getElementById("new-message-form").addEventListener("turbo:submit-start", (e) => {
-    document.getElementById("send").disabled = true;
+  document.getElementById("new-message-form")?.addEventListener("turbo:submit-start", () => {
+    const sendBtn = document.getElementById("send");
+    if (sendBtn) sendBtn.disabled = true;
   });
 
-  document.getElementById("new-message-form").addEventListener("turbo:submit-end", (e) => {
-    document.getElementById("send").disabled = false;
+  document.getElementById("new-message-form")?.addEventListener("turbo:submit-end", () => {
+    const sendBtn = document.getElementById("send");
+    if (sendBtn) sendBtn.disabled = false;
 
     const form = document.getElementById('new-message-form');
     if (form) form.reset();

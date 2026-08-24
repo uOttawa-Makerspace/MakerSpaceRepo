@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe Admin::AnnouncementsController, type: :controller do
-  before(:all) do
+  before(:each) do
     @admin = create(:user, :admin)
     @announcement_admin = create(:announcement, :admin)
     @announcement_all = create(:announcement, :all)
@@ -108,6 +108,4 @@ RSpec.describe Admin::AnnouncementsController, type: :controller do
       end
     end
   end
-
-  after(:all) { Announcement.destroy_all }
 end

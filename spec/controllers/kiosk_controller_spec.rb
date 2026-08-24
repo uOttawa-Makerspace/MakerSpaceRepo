@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe KioskController, type: :controller do
-  before(:all) do
+  before(:each) do
     @admin = create(:user, :admin)
     @staff = create(:user, :staff)
     @user = create(:user, :regular_user)

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "rails_helper"
 
 RSpec.describe VolunteerTaskJoin, type: :model do
@@ -9,7 +11,7 @@ RSpec.describe VolunteerTaskJoin, type: :model do
   end
 
   describe "#scopes" do
-    before(:all) do
+    before(:each) do
       create(:volunteer_task_join, :active)
       create(:volunteer_task_join, :active)
       create(:volunteer_task_join, :not_active)

@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe Admin::TrainingsController, type: :controller do
-  before(:all) do
+  before(:each) do
     4.times { create(:training) }
     @admin = create(:user, :admin)
     @training = Training.last

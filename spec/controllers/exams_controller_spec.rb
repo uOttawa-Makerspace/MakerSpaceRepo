@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe ExamsController, type: :controller do
-  before(:all) do
+  before(:each) do
     @admin = create(:user, :admin)
     5.times { create(:exam, user: @admin) }
     @exam = create(:exam)

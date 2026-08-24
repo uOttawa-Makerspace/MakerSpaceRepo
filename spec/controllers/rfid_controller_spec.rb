@@ -6,7 +6,7 @@ RSpec.describe RfidController, type: :controller do
   # Essential for testing sidekiq/active_job logic with queue_adapter = :test
   include ActiveJob::TestHelper 
 
-  before :all do
+  before :each do
     @user = create(:user, :regular_user)
     # Reuse this tier to prevent creating it multiple times
     @tier = create(
@@ -181,7 +181,7 @@ RSpec.describe RfidController, type: :controller do
     end
 
     context 'creates memberships' do
-      before :all do
+      before :each do
         @pi_reader = create(:pi_reader) 
       end
 

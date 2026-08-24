@@ -1,7 +1,9 @@
+# frozen_string_literal: true
+
 FactoryBot.define do
   factory :training do
-    name_en { Faker::Name.unique.name }
-    name_fr { Faker::Name.unique.name }
+    sequence(:name_en) { |n| "Training #{n} EN" }
+    sequence(:name_fr) { |n| "Training #{n} FR" }
     description_en { Faker::Lorem.paragraph }
     description_fr { Faker::Lorem.paragraph }
     association :skill

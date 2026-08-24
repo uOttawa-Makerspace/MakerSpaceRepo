@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe Admin::TrainingSessionsController, type: :controller do
-  before(:all) do
+  before(:each) do
     @admin = create(:user, :admin)
     @training_session = create(:training_session)
   end

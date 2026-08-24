@@ -1,10 +1,9 @@
+# frozen_string_literal: true
+
 FactoryBot.define do
   factory :pi_reader do
     association :space
-    pi_mac_address { Faker::Alphanumeric.unique.alphanumeric(number: 17) }
-
-    after(:create) do |pi_reader|
-      pi_reader.update(pi_location: pi_reader.space.name)
-    end
+    sequence(:pi_mac_address) { |n| "00:11:22:33:%02X:%02X" % [(n / 256) % 256, n % 256] }
+    pi_location { "Room Location" }
   end
 end

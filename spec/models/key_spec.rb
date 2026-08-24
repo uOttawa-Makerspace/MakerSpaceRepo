@@ -14,7 +14,7 @@ RSpec.describe Key, type: :model do
   end
 
   describe "Validations" do
-    before :all do
+    before :each do
       @space = create(:space)
       @user = create(:user, :regular_user)
       @kr =
@@ -72,7 +72,7 @@ RSpec.describe Key, type: :model do
   end
 
   describe "Methods" do
-    before :all do
+    before :each do
       @space = create(:space)
       @user = create(:user, :admin)
       @key =

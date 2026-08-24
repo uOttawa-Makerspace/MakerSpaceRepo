@@ -1,7 +1,9 @@
+# frozen_string_literal: true
+
 FactoryBot.define do
   factory :sub_space_booking do
     user { create(:user, :regular_user) }
-    name { Faker::Name.unique.name }
+    sequence(:name) { |n| "Subspace Booking #{n}" }
     description { Faker::Lorem.sentence }
     sub_space { create(:sub_space) }
     start_time { Time.zone.now }

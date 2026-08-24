@@ -157,8 +157,7 @@ RSpec.describe RepositoriesController, type: :controller do
         expect(response.body).to redirect_to(
           repository_path(
             Repository.last.user_username,
-            Repository.last.id,
-            Repository.last.title
+            Repository.last.slug
           )
         )
       end
@@ -193,8 +192,7 @@ RSpec.describe RepositoriesController, type: :controller do
         expect(response.body).to redirect_to(
           repository_path(
             Repository.last.user_username,
-            Repository.last.id,
-            Repository.last.title
+            Repository.last.slug
           )
         )
       end
@@ -226,8 +224,7 @@ RSpec.describe RepositoriesController, type: :controller do
         expect(response.body).to redirect_to(
           repository_path(
             Repository.last.user_username,
-            Repository.last.id,
-            Repository.last.title
+            Repository.last.slug
           )
         )
       end

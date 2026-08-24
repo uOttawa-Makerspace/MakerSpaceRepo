@@ -2,7 +2,7 @@ require "rails_helper"
 include FilesTestHelper
 
 RSpec.describe ProjectRequirementsController, type: :controller do
-  before(:all) { @admin = create(:user, :admin) }
+  before(:each) { @admin = create(:user, :admin) }
 
   before(:each) do
     session[:expires_at] = DateTime.tomorrow.end_of_day

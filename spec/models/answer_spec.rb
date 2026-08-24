@@ -26,7 +26,7 @@ RSpec.describe Answer, type: :model do
   end
 
   describe "Scopes" do
-    before :all do
+    before :each do
       30.times { create(:answer) }
     end
 

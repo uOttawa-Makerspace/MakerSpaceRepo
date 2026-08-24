@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe OrderItemsController, type: :controller do
-  before(:all) do
+  before(:each) do
     @volunteer = create(:user, :volunteer_with_dev_program)
     OrderStatus.find_by!(name: "In progress")
     OrderStatus.find_by!(name: "Completed")

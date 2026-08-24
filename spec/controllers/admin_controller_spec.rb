@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe AdminController, type: :controller do
-  before(:all) { @admin = create(:user, :admin) }
+  before(:each) { @admin = create(:user, :admin) }
 
   before(:each) { session[:user_id] = @admin.id }
 

@@ -1,10 +1,12 @@
+# frozen_string_literal: true
+
 FactoryBot.define do
   factory :project_proposal do
     association :user, :regular_user
 
     description { Faker::Lorem.paragraph }
-    title { Faker::Lorem.word }
-    username { Faker::Name.unique.first_name }
+    sequence(:title) { |n| "Project Proposal #{n}" }
+    sequence(:username) { |n| "user#{n}" }
     email { Faker::Internet.email }
     client { Faker::Name.name }
     area { "{}" }

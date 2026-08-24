@@ -14,7 +14,6 @@
 #
 # See http://rubydoc.info/gems/rspec-core/RSpec/Core/Configuration
 #
-require "rspec/retry"
 require "ruby-prof" if ENV['PROFILING']
 
 RSpec.configure do |config|
@@ -47,11 +46,6 @@ RSpec.configure do |config|
   # inherited by the metadata hash of host groups and examples, rather than
   # triggering implicit auto-inclusion in groups with matching metadata.
   config.shared_context_metadata_behavior = :apply_to_host_groups
-
-  # rspec-retry config
-  config.default_retry_count = 3
-  config.verbose_retry = true
-  config.display_try_failure_messages = true
 
   # Profiling the test suite. Note this makes tests much slower
   # The attempt here is to profile only the actual test code and not rspec

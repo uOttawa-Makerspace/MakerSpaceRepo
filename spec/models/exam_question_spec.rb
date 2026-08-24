@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "rails_helper"
 
 RSpec.describe ExamQuestion, type: :model do
@@ -14,24 +16,20 @@ RSpec.describe ExamQuestion, type: :model do
   end
 
   describe "Methods" do
-    before(:all) do
-      @training = create(:training_with_questions)
-      @exam = create(:exam, training: @training)
-    end
+    let(:training) { create(:training_with_questions) }
+    let(:exam)     { create(:exam, training: training) }
 
     context "#create_exam_questions" do
       it "should create exams questions for a training that has questions" do
         expect {
           ExamQuestion.create_exam_questions(
-            @exam.id,
-            @training.id,
+            exam.id,
+            training.id,
             3,
             "Beginner"
           )
         }.to change { ExamQuestion.count }.by(3)
       end
     end
-
-    after(:all) { Training.destroy_all }
   end
 end

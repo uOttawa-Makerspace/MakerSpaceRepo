@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe Printer, type: :model do
-  before(:all) do
+  before(:each) do
     @pt_1 = create(:printer_type, :Random)
     @pt_2 = create(:printer_type, :Random)
     @pt_3 = create(:printer_type, :Random)

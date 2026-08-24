@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe Admin::CertificationsController, type: :controller do
-  before(:all) do
+  before(:each) do
     @admin = create(:user, :admin)
     @certification = create(:certification)
   end
@@ -81,5 +81,4 @@ RSpec.describe Admin::CertificationsController, type: :controller do
     end
   end
 
-  after(:all) { Certification.destroy_all }
 end

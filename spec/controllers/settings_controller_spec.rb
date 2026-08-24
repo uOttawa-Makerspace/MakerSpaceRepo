@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe SettingsController, type: :controller do
-  before(:all) { @user = create(:user, :regular_user) }
+  before(:each) { @user = create(:user, :regular_user) }
 
   before(:each) do
     session[:expires_at] = DateTime.tomorrow.end_of_day

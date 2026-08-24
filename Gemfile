@@ -47,12 +47,10 @@ gem "shopify_app", "~> 23.0"
 gem "sitemap_generator", "~> 6.3"
 gem "solid_cable"
 gem "solid_queue", "~> 1.2"
-gem "stimulus-rails"
 gem "stripe"
 gem "stripe_event", "~> 2.3", ">= 2.3.1"
 gem "trix-rails", "~> 2.4", require: "trix"
 gem "vite_rails"
-gem "whenever", require: false
 gem "youtube_id"
 gem "ruby-vips", "~> 2.3.x"
 gem 'pagy', '>= 43.6.1'
@@ -62,7 +60,6 @@ group :development, :test do
   gem "brakeman", require: false
   gem "bullet"
   gem "bundler-audit", require: false
-  gem "byebug", platform: :mri
   gem "factory_bot_rails"
   gem "faker", "~> 3.1"
   gem "faraday-retry", "~> 2.4"
@@ -78,11 +75,10 @@ group :development, :test do
   gem "rspec_junit_formatter"
   gem "ruby_audit", require: false
   gem "simplecov", "~> 0.22"
-  gem "spring", "~> 4.4"
-  gem "spring-watcher-listen", "~> 2.1.0"
   gem "syntax_tree"
   gem "syntax_tree-haml"
   gem "syntax_tree-rbs"
+  gem "debug"
 end
 
 group :development do
@@ -108,11 +104,7 @@ end
 
 group :test do
   gem "capybara"
-  gem "database_cleaner-active_record"
   gem "launchy", "~> 3.0"
-  gem "rails-controller-testing"
-  gem "rspec-retry"
   gem "selenium-webdriver", "~> 4.0"
   gem "shoulda-matchers", "~> 7.0"
-  gem "test-prof"
 end

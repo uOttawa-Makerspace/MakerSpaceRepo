@@ -16,9 +16,9 @@
     <tbody>
     <% key_transactions.each do |kt| %>
       <tr>
-        <td><%= link_to kt.key.get_keycode, admin_key_path(kt.key.id) %></td>
-        <td><%= link_to kt.user.name, user_path(kt.user.username) %></td>
-        <td><%= link_to kt.key.supervisor.name, user_path(kt.key.supervisor.username) %></td>
+        <td><%= link_to kt.key.get_keycode, admin_key_path(kt.key.id) if kt.key %></td>
+        <td><%= link_to kt.user.name, user_path(kt.user.username) if kt.user %></td>
+        <td><%= link_to kt.key.supervisor.name, user_path(kt.key.supervisor.username) if kt.key&.supervisor %></td>
         <td><%= kt.created_at.strftime('%Y-%m-%d') %></td>
         <td>$<%= kt.deposit_amount %></td>
         <td><%= kt.return_date.nil? ? 'Not Returned' : kt.return_date %></td>

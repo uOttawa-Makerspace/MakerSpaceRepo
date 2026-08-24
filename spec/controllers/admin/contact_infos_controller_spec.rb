@@ -95,5 +95,4 @@ RSpec.describe Admin::ContactInfosController, type: :controller do
     end
   end
 
-  after(:all) { ContactInfo.destroy_all }
 end

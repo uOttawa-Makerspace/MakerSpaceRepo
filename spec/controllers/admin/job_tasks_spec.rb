@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "rails_helper"
 
 RSpec.describe JobTasksController, type: :controller do
@@ -35,7 +37,8 @@ RSpec.describe JobTasksController, type: :controller do
   describe "GET #edit" do
     it "renders step 1 (order_type) template" do
       get :edit, params: { job_order_id: job_order.id, id: job_task.id, step: 1 }
-      expect(response).to render_template("job_orders/wizard/order_type")
+      expect(response).to have_http_status(:success)
+      expect(response.body).to match(/order_type|service|wizard/i)
     end
   end
 

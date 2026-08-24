@@ -54,7 +54,7 @@ RSpec.describe ProjectProposal, type: :model do
     end
   end
 
-  before :all do
+  before :each do
     3.times { create(:project_proposal, :normal) }
     2.times { create(:project_proposal, :approved) }
     create(:project_proposal, :not_approved)
