@@ -44,10 +44,14 @@ class ScormExtractor
           normalized_name =
             root_dir ? entry.name.delete_prefix("#{root_dir}/") : entry.name
 
-          # Attach all files with directory as a custom key
+          ext = File.extname(normalized_name)
+          content_type = Rack::Mime.mime_type(ext, 'application/octet-stream')
+
+          # Attach with explicit content_type
           learning_module.scorm_package_files.attach(
             io: entry.get_input_stream,
             filename: normalized_name,
+            content_type: content_type,
             key: "#{prefix}/#{normalized_name}"
           )
         end

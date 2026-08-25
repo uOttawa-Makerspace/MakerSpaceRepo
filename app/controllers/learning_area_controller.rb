@@ -106,8 +106,12 @@ class LearningAreaController < DevelopmentProgramsController
     blob = @learning_module.scorm_package_files.blobs.find_by(key: key)
     return head :not_found unless blob
 
+    # Look up MIME type by extension (e.g., .html -> text/html, .js -> application/javascript, .css -> text/css)
+    ext = File.extname(params[:path] || blob.filename.to_s)
+    content_type = Rack::Mime.mime_type(ext, blob.content_type || 'application/octet-stream')
+
     send_data blob.download,
-              content_type: blob.content_type,
+              content_type: content_type,
               disposition: :inline
   end
 
