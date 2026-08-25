@@ -368,21 +368,10 @@ class RepositoriesController < SessionsController
   def set_repository
     id = params[:id].split(".", 2)[0]
     @repository = Repository
-                    .includes(photos: {image_attachment: :blob})
-                    .includes(repo_files: {file_attachment: :blob})
-                    .includes(:categories,
-                              :equipments,
-                              :project_proposal,
-                              :makes,
-                              :comments,
-                              :likes,
-                              :users)
                     .where(id: id)
                     .or(Repository.where(slug: id))
                     .or(Repository.where(title: id))
                     .first!
-    # Too scared to keep this in prod
-    # @repository.strict_loading!
   end
 
   def repository_params

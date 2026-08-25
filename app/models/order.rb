@@ -27,7 +27,7 @@ class Order < ApplicationRecord
   private
 
   def set_order_status
-    self.order_status = OrderStatus.find_by(name: "In progress")
+    self.order_status ||= OrderStatus.find_by(name: "In progress")
   end
 
   def update_subtotal

@@ -17,39 +17,39 @@ FactoryBot.define do
     equipments { "Not informed." }
     project_cost { Faker::Number.number(digits: 2) }
 
-    trait "normal" do
+    trait :normal do
       youtube_link { "" }
     end
 
-    trait "broken" do
+    trait :broken do
       title { "A$CD!!!" }
     end
 
-    trait "approved" do
+    trait :approved do
       approved { 1 }
-      admin { association(:user, :admin) }
+      association :admin, factory: %i[user admin]
       youtube_link { "" }
     end
 
-    trait "not_approved" do
+    trait :not_approved do
       approved { 0 }
       youtube_link { "" }
     end
 
-    trait "joined" do
+    trait :joined do
       approved { 1 }
       youtube_link { "" }
       after(:create) do |pp|
-        ProjectJoin.create(project_proposal_id: pp.id, user_id: User.last.id)
+        ProjectJoin.create!(project_proposal_id: pp.id, user_id: pp.user_id)
       end
     end
 
-    trait "completed" do
+    trait :completed do
       approved { 1 }
       youtube_link { "" }
       after(:create) do |pp|
-        ProjectJoin.create(project_proposal_id: pp.id, user_id: User.last.id)
-        create(:repository, project_proposal_id: pp.id)
+        ProjectJoin.create!(project_proposal_id: pp.id, user_id: pp.user_id)
+        create(:repository, project_proposal_id: pp.id, owner: pp.user)
       end
     end
 
@@ -69,11 +69,11 @@ FactoryBot.define do
       end
     end
 
-    trait "bad_link" do
+    trait :bad_link do
       youtube_link { "https://youtube.com" }
     end
 
-    trait "good_link" do
+    trait :good_link do
       youtube_link { "https://www.youtube.com/watch?v=AbcdeFGHIJLK" }
     end
   end

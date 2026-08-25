@@ -2,18 +2,22 @@ require "rails_helper"
 
 RSpec.describe SearchController, type: :controller do
   describe "GET /explore" do
-    context "explore" do
-      before(:each) { @repos = (0..15).map { create(:repository) } }
-
+    context "pagination" do
       it "should get a 200" do
+        create_list(:repository, 2)
         get :explore
         expect(response).to have_http_status(:success)
       end
 
       it "should get a 200 on the second page" do
+        create_list(:repository, 13)
         get :explore, params: { page: 2 }
         expect(response).to have_http_status(:success)
       end
+    end
+
+    context "sorting" do
+      before(:each) { create_list(:repository, 2) }
 
       it "should sort by newest" do
         get :explore, params: { sort: "newest" }
@@ -34,9 +38,11 @@ RSpec.describe SearchController, type: :controller do
         get :explore, params: { sort: "recently_updated" }
         expect(response).to have_http_status(:success)
       end
+    end
 
+    context "category filters" do
       it "should show only repositories from the Internet of Things category" do
-        CategoryOption.create(name: "Internet of Things")
+        CategoryOption.find_or_create_by(name: "Internet of Things")
         repo = create(:repository)
         Category.create(repository_id: repo.id, name: "Internet of Things")
         get :explore, params: { category: "internet-of-things" }
@@ -45,7 +51,7 @@ RSpec.describe SearchController, type: :controller do
       end
 
       it "should show only repositories from the Course-related Projects category" do
-        CategoryOption.create(name: "Course-related Projects")
+        CategoryOption.find_or_create_by(name: "Course-related Projects")
         repo = create(:repository)
         Category.create(repository_id: repo.id, name: "Course-related Projects")
         get :explore, params: { category: "course-related-projects" }
@@ -54,7 +60,7 @@ RSpec.describe SearchController, type: :controller do
       end
 
       it "should show only repositories from the GNG2101/GNG2501 category" do
-        CategoryOption.create(name: "GNG2101/GNG2501")
+        CategoryOption.find_or_create_by(name: "GNG2101/GNG2501")
         repo = create(:repository)
         Category.create(repository_id: repo.id, name: "GNG2101/GNG2501")
         get :explore, params: { category: "gng2101/gng2501" }
@@ -63,7 +69,7 @@ RSpec.describe SearchController, type: :controller do
       end
 
       it "should show only repositories from the GNG1103/GNG1503 category" do
-        CategoryOption.create(name: "GNG1103/GNG1503")
+        CategoryOption.find_or_create_by(name: "GNG1103/GNG1503")
         repo = create(:repository)
         Category.create(repository_id: repo.id, name: "GNG1103/GNG1503")
         get :explore, params: { category: "gng1103/gng1503" }
@@ -72,7 +78,7 @@ RSpec.describe SearchController, type: :controller do
       end
 
       it "should show only repositories from the Health Sciences category" do
-        CategoryOption.create(name: "Health Sciences")
+        CategoryOption.find_or_create_by(name: "Health Sciences")
         repo = create(:repository)
         Category.create(repository_id: repo.id, name: "Health Sciences")
         get :explore, params: { category: "health-sciences" }
@@ -81,7 +87,7 @@ RSpec.describe SearchController, type: :controller do
       end
 
       it "should show only repositories from the Wearable category" do
-        CategoryOption.create(name: "Wearable")
+        CategoryOption.find_or_create_by(name: "Wearable")
         repo = create(:repository)
         Category.create(repository_id: repo.id, name: "Wearable")
         get :explore, params: { category: "wearable" }
@@ -90,7 +96,7 @@ RSpec.describe SearchController, type: :controller do
       end
 
       it "should show only repositories from the Mobile Development category" do
-        CategoryOption.create(name: "Mobile Development")
+        CategoryOption.find_or_create_by(name: "Mobile Development")
         repo = create(:repository)
         Category.create(repository_id: repo.id, name: "Mobile Development")
         get :explore, params: { category: "mobile-development" }
@@ -99,7 +105,7 @@ RSpec.describe SearchController, type: :controller do
       end
 
       it "should show only repositories from the Virtual Reality category" do
-        CategoryOption.create(name: "Virtual Reality")
+        CategoryOption.find_or_create_by(name: "Virtual Reality")
         repo = create(:repository)
         Category.create(repository_id: repo.id, name: "Virtual Reality")
         get :explore, params: { category: "virtual-reality" }
@@ -108,7 +114,7 @@ RSpec.describe SearchController, type: :controller do
       end
 
       it "should show only repositories from the Other Projects category" do
-        CategoryOption.create(name: "Other Projects")
+        CategoryOption.find_or_create_by(name: "Other Projects")
         repo = create(:repository)
         Category.create(repository_id: repo.id, name: "Other Projects")
         get :explore, params: { category: "other-projects" }
@@ -117,7 +123,7 @@ RSpec.describe SearchController, type: :controller do
       end
 
       it "should show only repositories from the uOttawa Team Projects category" do
-        CategoryOption.create(name: "uOttawa Team Projects")
+        CategoryOption.find_or_create_by(name: "uOttawa Team Projects")
         repo = create(:repository)
         Category.create(repository_id: repo.id, name: "uOttawa Team Projects")
         get :explore, params: { category: "uottawa-team-projects" }
@@ -126,7 +132,7 @@ RSpec.describe SearchController, type: :controller do
       end
 
       it "should show only repositories from the Internet of Things category and sort by most likes" do
-        CategoryOption.create(name: "Internet of Things")
+        CategoryOption.find_or_create_by(name: "Internet of Things")
         repo = create(:repository)
         Category.create(repository_id: repo.id, name: "Internet of Things")
         get :explore,
@@ -158,9 +164,7 @@ RSpec.describe SearchController, type: :controller do
       end
 
       it "should get no results" do
-        create(:repository)
-        create(:repository)
-        create(:repository)
+        create_list(:repository, 2)
         get :search,
             params: {
               q: "Donec malesuada lacus lorem, ac finibus nibh ultrices quis."
@@ -174,9 +178,8 @@ RSpec.describe SearchController, type: :controller do
   describe "GET /category" do
     context "category" do
       before(:each) do
-        CategoryOption.create(name: "Internet of Things")
-        create(:repository)
-        create(:repository)
+        CategoryOption.find_or_create_by(name: "Internet of Things")
+        create_list(:repository, 2)
       end
 
       it "should get all the repo with the right category" do
@@ -210,9 +213,8 @@ RSpec.describe SearchController, type: :controller do
   describe "GET /equipment" do
     context "equipment" do
       before(:each) do
-        EquipmentOption.create(name: "3D Printer")
-        create(:repository)
-        create(:repository)
+        EquipmentOption.find_or_create_by(name: "3D Printer")
+        create_list(:repository, 2)
       end
 
       it "should get all the repo with the right category" do

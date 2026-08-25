@@ -368,7 +368,6 @@ RSpec.describe ProficientProjectsController, type: :controller do
                 admin_comments: ""
               }
             }
-        sleep 3
         expect(response).to redirect_to requests_proficient_projects_path
         expect(OrderItem.last.status).to eq("Awarded")
         expect(ActionMailer::Base.deliveries.count).to eq(3)

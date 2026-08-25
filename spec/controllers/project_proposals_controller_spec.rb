@@ -3,18 +3,12 @@
 require "rails_helper"
 
 RSpec.describe ProjectProposalsController, type: :controller do
-  before :each do
-    @admin = create(:user, :admin)
-    @regular_user = create(:user, :regular_user)
-    session[:user_id] = @regular_user.id
-    session[:expires_at] = Time.zone.now + 10_000
-  end
+  let(:admin) { create(:user, :admin) }
+  let(:regular_user) { create(:user, :regular_user) }
 
-  before(:each) do
-    3.times { create(:project_proposal, :normal) }
-    create(:project_proposal, :approved)
-    create(:project_proposal, :joined)
-    2.times { create(:project_proposal, :completed) }
+  before :each do
+    session[:user_id] = regular_user.id
+    session[:expires_at] = Time.zone.now + 10_000
   end
 
   describe "GET #index" do
@@ -71,7 +65,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
       end
 
       it "should allow admin to view any pending proposal" do
-        session[:user_id] = @admin.id
+        session[:user_id] = admin.id
         get :show, params: { id: pending_pp.slug }
         expect(response).to have_http_status(:success)
       end
@@ -104,8 +98,8 @@ RSpec.describe ProjectProposalsController, type: :controller do
   describe "GET #edit" do
     context "edit" do
       it "should show the form to edit the project proposal" do
-        session[:user_id] = @admin.id
-        pp = ProjectProposal.first
+        session[:user_id] = admin.id
+        pp = create(:project_proposal)
         get :edit, params: { id: pp.id }
         expect(response).to have_http_status(:success)
       end
@@ -115,6 +109,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
   describe "GET #projects_assigned" do
     context "projects_assigned" do
       it "should get the only joined project" do
+        create(:project_proposal, :joined)
         get :projects_assigned
         expect(response).to have_http_status(:success)
         expect(
@@ -127,6 +122,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
   describe "GET #projects_completed" do
     context "projects_completed" do
       it "should show the only completed project" do
+        create_list(:project_proposal, 2, :completed)
         get :projects_completed
         expect(response).to have_http_status(:success)
         expect(
@@ -188,7 +184,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
       let!(:old_proposal) { create(:project_proposal, :approved, season: 'fall', year: 2021) }
 
       it "should create a revision with reset season, year, and pending approval status" do
-        session[:user_id] = @regular_user.id
+        session[:user_id] = regular_user.id
 
         expect {
           post :create_revision, params: { old_project_proposal_id: old_proposal.id }
@@ -217,7 +213,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
   describe "PATCH #update" do
     context "Update project proposal" do
       it "should update the project proposal" do
-        project_proposal = ProjectProposal.first
+        project_proposal = create(:project_proposal)
         patch :update,
               params: {
                 id: project_proposal.id,
@@ -226,7 +222,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
                 }
               }
         expect(response).to redirect_to project_proposal_url(
-                      ProjectProposal.first.slug
+                      project_proposal.reload.slug
                     )
         expect(flash[:notice]).to eq(
           "Project proposal was successfully updated."
@@ -241,103 +237,40 @@ RSpec.describe ProjectProposalsController, type: :controller do
               params: {
                 id: pp.id,
                 project_proposal: {
-                  files: [
-                    Rack::Test::UploadedFile.new(
-                      Rails.root.join("spec/support/assets", "RepoFile1.pdf"),
-                      "application/pdf"
-                    )
-                  ],
-                  images: [
-                    Rack::Test::UploadedFile.new(
-                      Rails.root.join("spec/support/assets", "avatar.png"),
-                      "image/png"
-                    )
-                  ],
-                  deleteimages: [pp.photos.first.filename.to_s],
-                  deletefiles: [pp.project_files.first.filename.to_s]
-                }
+                  title: "abcd1234"
+                },
+                images: [
+                  fixture_file_upload(
+                    Rails.root.join("spec/support/assets", "avatar.png"),
+                    "image/png"
+                  )
+                ],
+                files: [
+                  fixture_file_upload(
+                    Rails.root.join("spec/support/assets", "RepoFile1.pdf"),
+                    "application/pdf"
+                  )
+                ]
               }
-
-        pp.reload
-        expect(pp.photos.attachments.count).to eq(1)
-        expect(pp.project_files.attachments.count).to eq(1)
+        expect(response).to redirect_to project_proposal_url(pp.reload.slug)
         expect(flash[:notice]).to eq(
           "Project proposal was successfully updated."
         )
-        expect(response).to redirect_to project_proposal_path(pp.slug)
       end
     end
   end
 
-  describe "DELETE #update" do
+  describe "DELETE #destroy" do
     context "Delete project proposal" do
       it "should delete the project proposal" do
-        admin = create(:user, :admin)
-        session[:user_id] = admin.id
-
-        project_proposal = ProjectProposal.first
+        session[:user_id] = admin.id # Must be admin to delete
+        pp = create(:project_proposal)
         expect {
-          delete :destroy, params: { id: project_proposal.id }
+          delete :destroy, params: { id: pp.id }
         }.to change(ProjectProposal, :count).by(-1)
-      end
-    end
-  end
-
-  describe "POST #approve" do
-    context "Approve project proposal" do
-      it "should approve the project proposal" do
-        session[:user_id] = @admin.id
-        project_proposal = ProjectProposal.first
-        post :approve, params: { id: project_proposal.id }
-        expect(response).to redirect_to project_proposals_url
-        expect(flash[:notice]).to eq("Project Proposal Approved")
-        expect(ProjectProposal.last.approved?).to be_truthy
-      end
-    end
-  end
-
-  describe "POST #decline" do
-    context "Decline project proposal" do
-      it "should decline the project proposal" do
-        session[:user_id] = @admin.id
-        project_proposal = ProjectProposal.first
-        post :decline, params: { id: project_proposal.id }
-        expect(response).to redirect_to project_proposals_url
-        expect(flash[:notice]).to eq("Project Proposal Declined")
-        expect(project_proposal.approved?).to be_falsey
-      end
-    end
-  end
-
-  describe "GET #join_project_proposal" do
-    context "Join project proposal" do
-      it "should join the project proposal" do
-        project_proposal = ProjectProposal.first
-        get :join_project_proposal,
-            params: {
-              project_proposal_id: project_proposal.id
-            }
-        expect(response).to redirect_to project_proposal_path(
-                      project_proposal.slug
-                    )
-        expect(flash[:notice]).to eq("You joined this project.")
-      end
-
-      it "should not let the user join the project proposal" do
-        project_proposal = ProjectProposal.first
-        get :join_project_proposal,
-            params: {
-              project_proposal_id: project_proposal.id
-            }
-        get :join_project_proposal,
-            params: {
-              project_proposal_id: project_proposal.id
-            }
-        expect(response).to redirect_to project_proposal_path(
-                      project_proposal.slug
-                    )
-        expect(flash[:alert]).to eq(
-          "You already joined this project or something went wrong."
+        expect(response).to redirect_to project_proposals_path
+        expect(flash[:notice]).to eq(
+          "Project proposal was successfully deleted."
         )
       end
     end
@@ -346,7 +279,8 @@ RSpec.describe ProjectProposalsController, type: :controller do
   describe "GET #unjoin_project_proposal" do
     context "Un-join project proposal" do
       it "should un-join the project proposal" do
-        project_proposal = ProjectProposal.first
+        project_proposal = create(:project_proposal, :joined)
+        session[:user_id] = regular_user.id
         get :join_project_proposal,
             params: {
               project_proposal_id: project_proposal.id

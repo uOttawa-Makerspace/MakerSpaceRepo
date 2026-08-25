@@ -24,8 +24,10 @@ class BadgesController < DevelopmentProgramsController
     render partial: "badges/badge_list", layout: false
   end
 
+  # app/controllers/badges_controller.rb
+
   def show
-    @certification = Certification.includes(:training).find(params[:id])
+    @certification = Certification.find(params[:id])
     @earner = User.find(@certification.user_id)
     @los_en = @certification.training.tokenize_info_en
     @los_fr = @certification.training.tokenize_info_fr

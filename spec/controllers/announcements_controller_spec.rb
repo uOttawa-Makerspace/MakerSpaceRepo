@@ -1,39 +1,39 @@
 require "rails_helper"
 
 RSpec.describe AnnouncementsController, type: :controller do
-  before(:each) do
-    @admin = create(:user, :admin)
-    @staff = create(:user, :staff)
-    @regular_user = create(:user, :regular_user)
-    @announcement_admin = create(:announcement, :admin)
-    @announcement_all = create(:announcement, :all)
-    @announcement_volunteer = create(:announcement, :volunteer)
-  end
+  let(:admin) { create(:user, :admin) }
+  let(:staff) { create(:user, :staff) }
+  let(:regular_user) { create(:user, :regular_user) }
+  let!(:announcement_admin) { create(:announcement, :admin, user: admin) }
+  let!(:announcement_all) { create(:announcement, :all, user: admin) }
+  let!(:announcement_volunteer) { create(:announcement, :volunteer, user: admin) }
 
   before(:each) do
+    @admin = admin
+    @staff = staff
+    @regular_user = regular_user
+    @announcement_admin = announcement_admin
+    @announcement_all = announcement_all
+    @announcement_volunteer = announcement_volunteer
     session[:expires_at] = Time.zone.now + 10_000
   end
 
   describe "GET /index" do
     context "logged as admin" do
       it "should return 200 response" do
-        session[:user_id] = @admin.id
+        session[:user_id] = admin.id
         get :index
         expect(response).to have_http_status(:success)
-        expect(@controller.instance_variable_get(:@announcements).count).to eq(
-          1
-        )
+        expect(@controller.instance_variable_get(:@announcements).count).to eq(1)
       end
     end
 
     context "logged as staff" do
       it "should return 200 response" do
-        session[:user_id] = @staff.id
+        session[:user_id] = staff.id
         get :index
         expect(response).to have_http_status(:success)
-        expect(@controller.instance_variable_get(:@announcements).count).to eq(
-          1
-        )
+        expect(@controller.instance_variable_get(:@announcements).count).to eq(1)
       end
     end
 

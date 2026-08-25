@@ -2,15 +2,22 @@
 
 FactoryBot.define do
   factory :sub_space_booking do
-    user { create(:user, :regular_user) }
+    association :user, factory: %i[user regular_user]
+    association :sub_space
     sequence(:name) { |n| "Subspace Booking #{n}" }
     description { Faker::Lorem.sentence }
-    sub_space { create(:sub_space) }
     start_time { Time.zone.now }
     end_time { Time.zone.now + 1.hour }
-    after :create do |booking|
-      status = create(:sub_space_booking_status, sub_space_booking: booking)
-      booking.update(sub_space_booking_status_id: status.id)
+
+    after(:create) do |booking|
+      unless booking.sub_space_booking_status_id.present?
+        pending_status = BookingStatus.find_by(name: "Pending") || create(:booking_status, :pending)
+        status = SubSpaceBookingStatus.create!(
+          sub_space_booking: booking,
+          booking_status: pending_status
+        )
+        booking.update_column(:sub_space_booking_status_id, status.id)
+      end
     end
   end
 end

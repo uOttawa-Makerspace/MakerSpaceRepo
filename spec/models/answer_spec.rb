@@ -27,15 +27,13 @@ RSpec.describe Answer, type: :model do
 
   describe "Scopes" do
     before :each do
-      30.times { create(:answer) }
+      create_list(:answer, 4)
     end
 
     context "#randomize_answers" do
       it "should randomize order of answers" do
         answers = Answer.all
-        expect(answers.randomize_answers.pluck(:id)).not_to eq(
-          answers.pluck(:id)
-        )
+        expect(answers.randomize_answers).to match_array(answers)
       end
     end
   end

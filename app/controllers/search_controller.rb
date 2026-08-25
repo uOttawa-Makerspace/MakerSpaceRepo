@@ -24,9 +24,8 @@ class SearchController < SessionsController
 
   def search
     scope = Repository.public_repos
-                      .includes(:users, :owner)
+                      .includes(:owner)
                       .includes(photos: { image_attachment: :blob })
-                      .includes(repo_files: { file_attachment: :blob })
 
     if params[:q].present?
       scope = scope.fuzzy_search(params[:q])

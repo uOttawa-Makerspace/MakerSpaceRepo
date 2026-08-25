@@ -8,26 +8,28 @@ RSpec.describe Announcement, type: :model do
   end
 
   describe "Scopes" do
+    let(:admin) { create(:user, :admin) }
+
     before :each do
-      create(:announcement, :all)
-      create(:announcement, :all)
-      create(:announcement, :all, active: false)
-      create(:announcement, :volunteer)
-      create(:announcement, :volunteer)
-      create(:announcement, :volunteer)
-      create(:announcement, :volunteer, active: false)
-      create(:announcement, :volunteer, active: false)
-      create(:announcement, :regular_user)
-      create(:announcement, :regular_user)
-      create(:announcement, :regular_user, active: false)
-      create(:announcement, :regular_user, active: false)
-      create(:announcement, :regular_user, active: false)
-      create(:announcement, :admin)
-      create(:announcement, :admin)
-      create(:announcement, :admin, active: false)
-      create(:announcement, :admin, active: false)
-      create(:announcement, :staff)
-      create(:announcement, :staff, active: false)
+      create(:announcement, :all, user: admin)
+      create(:announcement, :all, user: admin)
+      create(:announcement, :all, active: false, user: admin)
+      create(:announcement, :volunteer, user: admin)
+      create(:announcement, :volunteer, user: admin)
+      create(:announcement, :volunteer, user: admin)
+      create(:announcement, :volunteer, active: false, user: admin)
+      create(:announcement, :volunteer, active: false, user: admin)
+      create(:announcement, :regular_user, user: admin)
+      create(:announcement, :regular_user, user: admin)
+      create(:announcement, :regular_user, active: false, user: admin)
+      create(:announcement, :regular_user, active: false, user: admin)
+      create(:announcement, :regular_user, active: false, user: admin)
+      create(:announcement, :admin, user: admin)
+      create(:announcement, :admin, user: admin)
+      create(:announcement, :admin, active: false, user: admin)
+      create(:announcement, :admin, active: false, user: admin)
+      create(:announcement, :staff, user: admin)
+      create(:announcement, :staff, active: false, user: admin)
     end
 
     context "#active" do

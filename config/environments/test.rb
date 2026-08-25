@@ -72,4 +72,21 @@ Rails.application.configure do
 
   config.active_support.test_parallelization_threshold = 1000
   config.active_support.parallelization(workers: :number_of_processors)
+
+  # Configure Bullet for test suite
+  config.after_initialize do
+    # Enabled via ENV flag or in CI so your regular unit test runs stay blisteringly fast
+    Bullet.enable = ENV["BULLET"].present? || ENV["CI"].present?
+
+    if Bullet.enable?
+      Bullet.bullet_logger = true
+      Bullet.rails_logger  = true
+      Bullet.raise         = true # Fails the spec when an N+1 or unused eager loading is detected
+      Bullet.n_plus_one_query_enable     = true
+      Bullet.unused_eager_loading_enable = true
+
+      # Safelist common polymorphic or ActiveStorage false-positives if needed:
+      # Bullet.add_safelist type: :n_plus_one_query, class_name: "ActiveStorage::Attachment", association: :blob
+    end
+  end
 end

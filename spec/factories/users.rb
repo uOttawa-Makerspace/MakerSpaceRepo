@@ -93,7 +93,6 @@ FactoryBot.define do
     end
 
     trait :student do
-      password { "dQxjW4#6fcUF7m!rX" }
       identity { "undergrad" }
       program { "BASc in Software Engineering" }
       faculty { "Engineering" }

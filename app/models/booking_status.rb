@@ -1,5 +1,5 @@
 class BookingStatus < ApplicationRecord
-  has_many :booking_statuses, dependent: :destroy
+  has_many :sub_space_booking_statuses, dependent: :destroy
   validates :name, presence: true, uniqueness: true
 
   PENDING = BookingStatus.find_by(name: "Pending")

@@ -1,6 +1,8 @@
+# frozen_string_literal: true
+
 FactoryBot.define do
   factory :sub_space do
     name { Faker::Lorem.word }
-    space { create(:space) }
+    association :space
   end
 end
