@@ -14,7 +14,14 @@ class ProjectProposal < ApplicationRecord
              foreign_key: 'linked_project_proposal_id',
              optional: true
 
-  has_many_attached :photos
+  # Attachments with carousel thumbnail variants
+  has_many_attached :photos do |attachable|
+    attachable.variant :explore, resize_to_limit: [210 * 2, 230 * 2]
+    attachable.variant :photo_slide, resize_to_limit: [65 * 3, 65]
+    attachable.variant :photo_slide_first, resize_to_limit: [500 * 2, 500]
+    attachable.variant :repo_display_wrapper, resize_to_fill: [225 * 2, 225 * 2]
+  end
+
   has_many_attached :project_files
 
   enum :approved, { not_approved: 0, approved: 1 }
@@ -27,7 +34,7 @@ class ProjectProposal < ApplicationRecord
   # Sort project proposals by semester
   scope :by_semester,
         -> do
-          t = ProjectProposal.arel_table # hack to put nulls last on postgres
+          t = ProjectProposal.arel_table
           order(t[:year].desc.nulls_last, t[:season].asc.nulls_last)
         end
 

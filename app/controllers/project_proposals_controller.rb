@@ -10,18 +10,31 @@ class ProjectProposalsController < SessionsController
   def index
     scope =
       ProjectProposal
-        .includes(:user, :admin, :categories)
+        .includes(:user, :admin, :categories, :linked_project_proposal)
         .order(created_at: :desc)
-        .search(search_params[:query])
-        .where(approved: search_params[:approved])
+        .search(params[:query])
+
+    # Status filtering (handles approved: 1, 0, and nil for pending/revisions)
+    if params[:status].present?
+      statuses = Array(params[:status])
+      include_pending = statuses.include?('nil')
+      numeric_statuses = statuses.reject { |s| s == 'nil' }.map(&:to_i)
+
+      if include_pending && numeric_statuses.any?
+        scope = scope.where(approved: numeric_statuses).or(scope.where(approved: nil))
+      elsif include_pending
+        scope = scope.where(approved: nil)
+      elsif numeric_statuses.any?
+        scope = scope.where(approved: numeric_statuses)
+      end
+    end
 
     season, year = params[:semester]&.split('_')
-
     if ProjectProposal.seasons.keys.include?(season) && year.to_i.positive?
       scope = scope.where(season: season, year: year.to_i)
     end
 
-    @pagy, @project_proposals = pagy(scope, limit: 15)
+    @pagy, @project_proposals = pagy(scope, limit: 20)
 
     respond_to do |format|
       format.js
@@ -68,7 +81,6 @@ class ProjectProposalsController < SessionsController
     @pagy, @repositories =
       pagy(@project_proposal.repositories.order([sort_order].to_h), limit: 9)
 
-    @project_photos = @project_proposal.photos.take(5)
     @project_files = @project_proposal.project_files
     @linked_pp = @project_proposal.linked_project_proposal
     @revisions =
@@ -118,10 +130,10 @@ class ProjectProposalsController < SessionsController
   def create
     @project_proposal =
       ProjectProposal.new(project_proposal_params.except(:categories))
-    @project_proposal.user_id = @user.try(:id)
+    @project_proposal.user_id = current_user&.id
 
     respond_to do |format|
-      if current_user.id.nil? && !verify_turnstile
+      if current_user.nil? && !verify_turnstile
         flash[:alert] = 'Captcha error, please try again'
         format.html { render :new, status: :unprocessable_content }
       elsif @project_proposal.save
@@ -287,7 +299,7 @@ class ProjectProposalsController < SessionsController
   def join_project_proposal
     @project_proposal = ProjectProposal.find(params[:project_proposal_id])
     @project_join = ProjectJoin.new(project_join_params)
-    @project_join.user_id = @user.id
+    @project_join.user_id = current_user.id
     if @project_join.save
       redirect_to project_proposal_path(@project_proposal.slug),
                   notice: 'You joined this project.'
@@ -311,13 +323,6 @@ class ProjectProposalsController < SessionsController
   end
 
   private
-
-  def search_params
-    @search_params ||= {
-      query: params[:query],
-      approved: params[:status]&.map { |s| s == 'nil' ? nil : s } || [0, 1, nil]
-    }
-  end
 
   def create_photos
     images = params[:images] || params.dig(:project_proposal, :images)
@@ -436,16 +441,5 @@ class ProjectProposalsController < SessionsController
     else
       %i[created_at desc]
     end
-  end
-
-  def photo_hash
-    repository_ids = @repositories.map(&:id)
-    photo_ids =
-      Photo
-        .where(repository_id: repository_ids)
-        .group(:repository_id)
-        .minimum(:id)
-    photos = Photo.find(photo_ids.values)
-    photos.inject({}) { |h, e| h.merge!(e.repository_id => e) }
   end
 end

@@ -2,27 +2,82 @@
 
 <section class="row">
     <section class="col-lg-8 order-lg-first order-last">
-        <% if @project_proposal.youtube_link.present? %>
-            <div class="mb-3">
-                <%= youtube_video(@project_proposal.youtube_link) %>
-            </div>
-        <% end %>
+        <% photos = @project_proposal.photos.to_a %>
+        <% has_youtube = @project_proposal.youtube_link.present? %>
+        <% has_media = has_youtube || photos.any? %>
+        <% total_slides = photos.size + (has_youtube ? 1 : 0) %>
 
-        <% if @project_photos.present? %>
-            <div id="show-photo" class="mb-2">
-                <% first_photo = @project_photos.first %>
-                <% if first_photo.respond_to?(:image) && first_photo.image.attached? %>
-                    <%= image_tag first_photo.image, alt: 'Project Proposal Picture', class: 'img-fluid rounded border shadow-sm mb-2' %>
-                <% end %>
-            </div>
-
-            <div id="photo-slide" class="d-flex gap-2 flex-wrap mb-3">
-                <% @project_photos.each do |p| %>
-                    <% if p.respond_to?(:image) && p.image.attached? %>
-                        <%= image_tag p.image, alt: 'Related Image', class: 'img-thumbnail bg-body-tertiary', style: 'height: 80px; object-fit: cover;' %>
+        <% if has_media %>
+            <div id="proposalCarousel" class="carousel slide mb-3" data-bs-ride="false">
+                <div class="carousel-inner rounded">
+                    <% if has_youtube %>
+                        <div class="carousel-item active">
+                            <div class="carousel-slide-wrapper">
+                                <div class="ratio ratio-16x9 w-100">
+                                    <%= youtube_video(@project_proposal.youtube_link) %>
+                                </div>
+                            </div>
+                        </div>
                     <% end %>
+
+                    <% photos.each_with_index do |p, i| %>
+                        <div class="carousel-item <%= 'active' if i == 0 && !has_youtube %>">
+                            <div class="carousel-slide-wrapper">
+                                <% if p.variable? %>
+                                    <%= image_tag url_for(p.variant(:photo_slide_first)),
+                                                class: 'carousel-main-image',
+                                                alt: "#{@project_proposal.title} — image #{i + 1}" %>
+                                <% else %>
+                                    <%= image_tag url_for(p),
+                                                class: 'carousel-main-image',
+                                                alt: "#{@project_proposal.title} — image #{i + 1}" %>
+                                <% end %>
+                            </div>
+                        </div>
+                    <% end %>
+                </div>
+
+                <% if total_slides > 1 %>
+                    <button class="carousel-control-prev" type="button"
+                            data-bs-target="#proposalCarousel" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Previous</span>
+                    </button>
+                    <button class="carousel-control-next" type="button"
+                            data-bs-target="#proposalCarousel" data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Next</span>
+                    </button>
                 <% end %>
             </div>
+
+            <% if total_slides > 1 %>
+                <div class="d-flex gap-1 flex-wrap mb-3" id="carousel-thumbnails">
+                    <% slide_offset = 0 %>
+                    <% if has_youtube %>
+                        <button type="button"
+                                class="carousel-thumbnail active"
+                                data-bs-target="#proposalCarousel"
+                                data-bs-slide-to="0"
+                                aria-label="Video">
+                            <img src="https://img.youtube.com/vi/<%= YoutubeID.from(@project_proposal.youtube_link) %>/default.jpg"
+                                alt="Video thumbnail">
+                        </button>
+                        <% slide_offset = 1 %>
+                    <% end %>
+
+                    <% photos.each_with_index do |p, i| %>
+                        <button type="button"
+                                class="carousel-thumbnail <%= 'active' if i == 0 && !has_youtube %>"
+                                data-bs-target="#proposalCarousel"
+                                data-bs-slide-to="<%= i + slide_offset %>"
+                                aria-label="Image <%= i + 1 %>">
+                            <%= image_tag url_for(p.variable? ? p.variant(:photo_slide) : p),
+                                        alt: "Thumbnail #{i + 1}" %>
+                        </button>
+                    <% end %>
+                </div>
+            <% end %>
         <% end %>
 
         <div class="card mb-3 shadow-sm border">
@@ -170,17 +225,15 @@
                 <% end %>
             </ul>
 
-            <% if @project_files.present? %>
+            <% if @project_files.attached? %>
                 <div class="mb-3 border-top pt-2">
                     <div class="fw-bold mb-1"><%= t('project_proposal.project_files') %></div>
                     <ul class="list-unstyled mb-0">
                         <% @project_files.each do |f| %>
                             <li class="small mb-1">
-                                <% if f.respond_to?(:file) && f.file.attached? %>
-                                    <i class="fa-regular fa-file-lines"></i>
-                                    <%= link_to f.file.filename.to_s, rails_blob_path(f.file, disposition: 'attachment') %>
-                                    <span class="text-body-secondary">(<%= (f.file.byte_size / 1024.0).round(1) %> KB)</span>
-                                <% end %>
+                                <i class="fa-regular fa-file-lines"></i>
+                                <%= link_to f.filename.to_s, rails_blob_path(f, disposition: 'attachment') %>
+                                <span class="text-body-secondary">(<%= (f.byte_size / 1024.0).round(1) %> KB)</span>
                             </li>
                         <% end %>
                     </ul>
@@ -251,3 +304,5 @@
         <% end %>
     </section>
 </section>
+
+<%= vite_javascript_tag 'carousel_thumbnails', 'data-turbo-track': 'reload' %>

@@ -1,21 +1,20 @@
 <% if current_user.admin? %>
-    <div class="d-flex justify-content-between">
+    <div class="d-flex justify-content-between mb-3">
         <%= link_to 'Edit', edit_learning_area_path(learning_module.id), class: 'btn btn-sm btn-primary' %>
     </div>
 <% end %>
 
-<%#%= debug current_user.learning_module_tracks.find_by(learning_module: learning_module).scorm_state %>
-
 <% if learning_module.scorm_ready? %>
     <div class="mb-3">
-        <%# This has to load before the iframe. If this causes trouble,
-        remove the src attribute and have the scorm script put it back in %>
+        <%# This has to load before the iframe. %>
         <%= vite_javascript_tag 'learning_modules_scorm', 'data-turbo-track': 'reload' %>
 
-        <div class="input-group">
-            <span id="permalink" class="form-control"><%= shortcut_learning_area_url(learning_module.shortcut_name) %></span>
-            <button onclick="copyField('#permalink', this)" class="btn btn-primary">Copy permalink</button>
-        </div>
+        <% if learning_module.shortcut_name.present? %>
+            <div class="input-group mb-3">
+                <span id="permalink" class="form-control"><%= shortcut_learning_area_url(learning_module.shortcut_name) %></span>
+                <button onclick="copyField('#permalink', this)" class="btn btn-primary">Copy permalink</button>
+            </div>
+        <% end %>
 
         <button type="button" class="btn btn-outline-secondary mb-3 d-block mx-auto"
                 onclick="this.parentElement.querySelector('iframe').requestFullscreen()">
@@ -33,7 +32,7 @@
                 data-launch-url="<%= scorm_launch_learning_area_path(learning_module) %>"
                 data-completed-url="<%= completed_learning_module_track_index_path %>"
                 data-learning-module-id="<%= learning_module.id %>"
-                data-cmi="<%= current_user.learning_module_tracks.find_by(learning_module: learning_module).scorm_state.to_json %>"
+                data-cmi="<%= (learning_module.tracks_for_user(current_user)&.scorm_state || {}).to_json %>"
         >
         </iframe>
 
@@ -42,14 +41,14 @@
         </div>
     </div>
 
-<% elsif learning_module.scorm_processing? %>
-    <p class="mb-3">SCORM package is being processed, check back shortly.</p>
+<% elsif learning_module.scorm_processing? || learning_module.scorm_pending? %>
+    <p class="mb-3 alert alert-info">SCORM package is being processed, check back shortly.</p>
 <% elsif learning_module.scorm_failed? %>
-    <p class="mb-3">SCORM package failed to process. Please contact an administrator.</p>
+    <p class="mb-3 alert alert-danger">SCORM package failed to process. Please contact an administrator.</p>
 <% end %>
 
 <% if learning_module.extract_valid_urls.present? %>
-    <div class="border-top">
+    <div class="border-top mt-3 pt-3">
         <% learning_module.extract_valid_urls.each do |url| %>
             <iframe width="100%" height="600px" src="<%= url %>" class="d-block border-0"></iframe>
         <% end %>

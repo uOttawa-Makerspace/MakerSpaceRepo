@@ -144,15 +144,29 @@
 /* ================================================================
    BOOTSTRAP CAROUSEL — GALLERY
    ================================================================ */
-#repositoryCarousel .carousel-inner {
-  background: #1a1a1a;
-  aspect-ratio: 16 / 9;
-  overflow: hidden;
-}
+#repositoryCarousel,
+#proposalCarousel {
+  .carousel-inner {
+    background: #1a1a1a;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+  }
 
-#repositoryCarousel .carousel-item {
-  text-align: center;
-  height: 100%;
+  .carousel-item {
+    text-align: center;
+    height: 100%;
+  }
+
+  /* Arrow visibility */
+  .carousel-control-prev,
+  .carousel-control-next {
+    width: 3rem;
+    opacity: 0.7;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
 }
 
 .carousel-main-image {
@@ -168,17 +182,6 @@
   justify-content: center;
   height: 100%;
   width: 100%;
-}
-
-/* Arrow visibility */
-#repositoryCarousel .carousel-control-prev,
-#repositoryCarousel .carousel-control-next {
-  width: 3rem;
-  opacity: 0.7;
-}
-#repositoryCarousel .carousel-control-prev:hover,
-#repositoryCarousel .carousel-control-next:hover {
-  opacity: 1;
 }
 
 /* ── Thumbnail strip ── */
