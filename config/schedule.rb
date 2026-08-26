@@ -132,3 +132,7 @@ end
 # end
 
 # Learn more: http://github.com/javan/whenever
+
+every :day, at: "8:30am" do
+  rake "lockers:notify_expired_rentals"
+end

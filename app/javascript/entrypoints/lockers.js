@@ -219,16 +219,23 @@ document.addEventListener("turbo:load", function () {
     });
   });
 
-  // 2. AJAX handler for Type (Audience) dropdown and Notes text field
+  // 2. AJAX handler for Type (Audience) dropdown and Notes text field (handles both lockers and locker_rentals)
   inlineEditInputs.forEach((input) => {
     input.addEventListener("change", function () {
       const lockerId = this.dataset.lockerId;
+      const rentalId = this.dataset.rentalId;
+
+      // Direct to locker_rentals if editing an assigned rental's staff notes, else to lockers
+      const url = rentalId
+        ? `/locker_rentals/${rentalId}`
+        : `/lockers/${lockerId}`;
+
       const formData = new FormData();
       formData.append(this.name, this.value);
 
       const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
 
-      fetch(`/lockers/${lockerId}`, {
+      fetch(url, {
         method: "PATCH",
         headers: {
           "X-CSRF-Token": csrfToken,
@@ -237,8 +244,29 @@ document.addEventListener("turbo:load", function () {
         body: formData,
       })
         .then((response) => {
-          if (!response.ok) throw new Error("Failed to update locker details");
+          if (!response.ok) throw new Error("Failed to update note/details");
           this.classList.add("is-valid");
+
+          // 1. Update the cell's data-search attribute so table searching works with the new text immediately
+          const td = this.closest("td");
+          if (td) {
+            td.setAttribute("data-search", this.value);
+            const table = document.querySelector("#locker_inventory_table");
+            if (table && DataTable.isDataTable(table)) {
+              new DataTable(table).cell(td).invalidate();
+            }
+          }
+
+          // 2. Update tooltip
+          const tooltipWrapper = this.closest('[data-bs-toggle="tooltip"]');
+          if (tooltipWrapper) {
+            tooltipWrapper.setAttribute("title", this.value || "No note");
+            const existingTooltip =
+              bootstrap.Tooltip.getInstance(tooltipWrapper);
+            if (existingTooltip) existingTooltip.dispose();
+            new bootstrap.Tooltip(tooltipWrapper);
+          }
+
           setTimeout(() => this.classList.remove("is-valid"), 1500);
         })
         .catch((error) => {
@@ -291,6 +319,10 @@ document.addEventListener("turbo:load", function () {
     !DataTable.isDataTable(locker_inventory_table)
   ) {
     new DataTable(locker_inventory_table, {
+      language: {
+        search: "_INPUT_",
+        searchPlaceholder: "Search lockers, users, notes, status...",
+      },
       columnDefs: [
         {
           orderable: false,

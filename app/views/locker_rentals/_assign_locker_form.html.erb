@@ -1,17 +1,21 @@
 <%= form_with model: LockerRental.new, url: locker_rentals_path, method: :post, local: true do |f| %>
   <%= f.hidden_field :state, value: 'active' %>
   <%= f.hidden_field :requested_as, value: 'staff' %>
-  
+
   <div class="row g-3">
-    <!-- User Dropdown (TomSelect will enhance this) -->
+    <!-- User Dropdown (Searchable by Name and Username) -->
     <div class="col-12 col-md-6">
       <%= f.label :rented_by_id, 'Assign to User', class: 'form-label fw-bold text-body' %>
-      <%= f.collection_select :rented_by_id, User.order(:username), :id, :username,
-            { include_blank: 'Search for a user...' },
-            { class: 'form-select', required: true } %>
+      <%= f.select :rented_by_id,
+            User.active.order(:name, :username).map { |u|
+              label = u.name.present? ? "#{u.name} (#{u.username})" : u.username
+              [label, u.id, { data: { role: (u.role.humanize if u.staff?) } }]
+            },
+            { include_blank: 'Search for a user by name or username...' },
+            { class: 'form-select', id: 'locker_rental_rented_by_id', required: true } %>
     </div>
 
-    <!-- Locker Dropdown (TomSelect already handles this) -->
+    <!-- Locker Dropdown -->
     <div class="col-12 col-md-6">
       <%= f.label :locker_id, 'Locker', class: 'form-label fw-bold text-body' %>
       <%= f.select :locker_id, Locker.available.order_by_specifier.map { |locker|
@@ -19,7 +23,7 @@
             ["##{locker.specifier}#{size_label}", locker.id, { data: { size: locker.locker_size&.size, staff_only: !locker.available } }]
           },
           { include_blank: 'Search for a locker...' },
-          { class: 'form-select', required: true } %>
+          { class: 'form-select', id: 'locker_rental_locker_id', required: true } %>
     </div>
 
     <!-- Dates and Indefinite -->
@@ -32,10 +36,10 @@
       </div>
     </div>
 
-    <!-- Notes (Removed d-flex and h-100 so it doesn't overlap) -->
+    <!-- Staff Rental Notes -->
     <div class="col-12 col-md-6">
-      <%= f.label :notes, 'Notes', class: 'form-label fw-bold text-body' %>
-      <%= f.text_area :notes, class: 'form-control', rows: 2, placeholder: 'Optional notes for this assignment' %>
+      <%= f.label :staff_notes, 'Staff Notes (Internal)', class: 'form-label fw-bold text-body' %>
+      <%= f.text_area :staff_notes, class: 'form-control', rows: 2, placeholder: 'Internal staff notes for this rental assignment...' %>
     </div>
 
     <div class="col-12 d-grid d-md-flex justify-content-md-end mt-2">
@@ -44,6 +48,5 @@
   </div>
 <% end %>
 
-<!-- Ensure both TomSelect and our UI scripts load on this page -->
 <%= vite_javascript_tag 'locker_rental_form', 'data-turbo-track': 'reload' %>
 <%= vite_javascript_tag 'locker_admin', 'data-turbo-track': 'reload' %>

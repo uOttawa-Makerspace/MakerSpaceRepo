@@ -12,7 +12,9 @@
                 <th class="d-none d-lg-table-cell">Requested on</th>
                 <th class="d-none d-lg-table-cell"><%= t('lockers.assigned_on') %></th>
                 <th><%= t('lockers.owned_until') %></th>
-                <th>Contacted</th>
+                <% if current_user.staff? %>
+                    <th>Contacted</th>
+                <% end %>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -22,7 +24,7 @@
                     <tr>
                         <td class="dt-center">
                             <% if rental.locker.present? %>
-                                <%= link_to"##{rental.locker.specifier}", rental.locker, class: 'btn btn-sm btn-outline-primary' %>
+                                <%= link_to "##{rental.locker.specifier}", rental.locker, class: 'btn btn-sm btn-outline-primary' %>
                             <% end %>
                         </td>
                         <td data-search="<%= rental.state %>" class="pe-1">
@@ -37,24 +39,27 @@
                                 <% end %>
                             <% end %>
                         </td>
-                        <td><%= link_to rental.rented_by.username, user_path(rental.rented_by.username) %>
-                            <%= tag.span(rental.rented_by.role.humanize, class: 'badge text-bg-primary d-none d-md-inline-block') if rental.rented_by.staff? %></td>
+                        <td>
+                            <%= link_to rental.rented_by.username, user_path(rental.rented_by.username) %>
+                            <%= tag.span(rental.rented_by.role.humanize, class: 'badge text-bg-primary d-none d-md-inline-block') if rental.rented_by.staff? %>
+                        </td>
                         <td class="d-none d-md-table-cell">
                             <%= rental.requested_as.to_s.humanize %>
                         </td>
                         <td class="d-none d-lg-table-cell"><%= rental.created_at.to_date.to_formatted_s :long %></td>
                         <td class="d-none d-lg-table-cell"><%= rental.updated_at&.to_date&.to_formatted_s :long %></td>
                         <td><%= rental.owned_until&.to_date&.to_formatted_s(:long) || 'Indefinite' %></td>
-                        <td>
-                            <!-- Standard Turbo form replaces custom AJAX JS entirely -->
-                            <%= form_with url: toggle_contacted_locker_rental_path(rental), method: :patch do %>
-                                <div class="form-check form-switch m-0">
-                                    <%= check_box_tag :contacted, '1', rental.contacted_for_clearance, 
-                                          class: 'form-check-input', 
-                                          onchange: 'this.form.requestSubmit()' %>
-                                </div>
-                            <% end %>
-                        </td>
+                        <% if current_user.staff? %>
+                            <td>
+                                <%= form_with url: toggle_contacted_locker_rental_path(rental), method: :patch do %>
+                                    <div class="form-check form-switch m-0">
+                                        <%= check_box_tag :contacted, '1', rental.contacted_for_clearance,
+                                              class: 'form-check-input',
+                                              onchange: 'this.form.requestSubmit()' %>
+                                    </div>
+                                <% end %>
+                            </td>
+                        <% end %>
                         <td>
                             <%= link_to 'View', rental, class: 'btn btn-sm btn-primary' %>
                         </td>

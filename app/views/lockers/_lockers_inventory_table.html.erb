@@ -4,7 +4,7 @@
     <table class="table table-hover align-middle border" id="locker_inventory_table"
            data-page-length="-1" data-select-style="multi" data-select-selector="tr">
         <caption class="caption-top mb-2">
-            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
                 <button type="button" data-bs-toggle="modal" data-bs-target="#lockerBulkEditModal" class="btn btn-outline-primary btn-sm">
                     <i class="fa-solid fa-pencil"></i> Bulk edit
                 </button>
@@ -12,6 +12,12 @@
                     <input class="form-check-input" type="checkbox" role="switch" id="lockerEditToggle"/>
                     <label class="form-check-label text-body-secondary" for="lockerEditToggle">Inline editing</label>
                 </div>
+            </div>
+
+            <!-- Search Hint Banner -->
+            <div class="small text-body-secondary bg-body-tertiary p-2 rounded border">
+                <i class="fa-solid fa-circle-info text-primary me-1"></i>
+                <strong>Search hint:</strong> You can search by locker #, tenant name, username, student ID, email, notes, or status (<code class="text-body-secondary">expired</code>, <code class="text-body-secondary">free</code>, <code class="text-body-secondary">staff</code>, <code class="text-body-secondary">gng</code>).
             </div>
         </caption>
         <thead class="table-secondary">
@@ -21,7 +27,7 @@
                 <th scope="col" class="d-none d-md-table-cell">Size & SKU</th>
                 <th scope="col">Type</th>
                 <th scope="col">Owned by</th>
-                <th scope="col">Notes</th>
+                <th scope="col" style="min-width: 170px;">Notes</th>
                 <th scope="col" class="d-none d-sm-table-cell">Expires</th>
                 <th scope="col">Contacted</th>
                 <th scope="col" class="d-none d-lg-table-cell">Approved</th>
@@ -33,55 +39,71 @@
                 <% current_rental = locker.locker_rentals.find(&:active?) %>
                 <% locker_gid = locker.locker_size&.shopify_gid %>
                 <% locker_variant = locker_gid ? (variants[locker_gid] || {}) : {} %>
-                
+                <% tenant = current_rental&.rented_by %>
+
                 <tr data-locker-id="<%= locker.id %>" data-locker-specifier="<%= locker.specifier %>">
                     <td></td>
                     <td scope="row" data-sort="<%= locker.specifier %>">
                         <%= link_to "##{locker.specifier}", locker, class: 'btn btn-sm btn-outline-primary fw-bold' %>
                     </td>
-                    <td class="d-none d-md-table-cell">
+                    <td class="d-none d-md-table-cell" data-search="<%= locker.locker_size&.size %> <%= locker_variant[:sku] %> <%= locker_variant[:title] %>">
                         <div class="position-relative">
                             <%= select_tag 'locker[locker_size_id]', options_for_select((@locker_sizes || []).map { |size|
                                 variant_data = variants[size.shopify_gid] || {}
                                 display_name = size.size.presence || variant_data[:title] || "Size ##{size.id}"
                                 [ display_name, size.id, { 'data-data' => variant_data.to_json } ]
                             }, locker.locker_size&.id), class: 'form-select form-select-sm locker-variant-select', disabled: true, data: { locker_size_for: locker.id } %>
-                            
+
                             <div class="spinner-border spinner-border-sm position-absolute top-0 end-0 m-2" style="z-index: 999" hidden>
                                 <span class="visually-hidden">Changing size...</span>
                             </div>
                             <i class="fa-solid fa-check position-absolute top-0 end-0 m-2 text-success" style="z-index: 999" hidden></i>
                         </div>
                     </td>
-                    <td>
-                        <%= select_tag 'locker[audience]', options_for_select([['General', 'general'], ['Staff', 'staff'], ['GNG', 'gng']], locker.audience), 
+                    <td data-search="<%= locker.audience %> <%= locker.audience.humanize %>">
+                        <%= select_tag 'locker[audience]', options_for_select([['General', 'general'], ['Staff', 'staff'], ['GNG', 'gng']], locker.audience),
                               class: 'form-select form-select-sm locker-inline-edit', disabled: true, data: { locker_id: locker.id } %>
                     </td>
-                    <td>
-                        <% if current_rental&.rented_by %>
-                            <%= link_to current_rental.rented_by.username, user_path(current_rental.rented_by.username), class: 'link-primary fw-semibold text-decoration-none' %>
+                    <!-- Searchable by Name, Username, Student ID, and Email -->
+                    <td data-search="<%= tenant ? "#{tenant.name} #{tenant.username} #{tenant.email} #{tenant.student_id}" : 'free unoccupied unassigned' %>">
+                        <% if tenant %>
+                            <%= link_to tenant.username, user_path(tenant.username), class: 'link-primary fw-semibold text-decoration-none' %>
+                            <% if tenant.name.present? %>
+                                <small class="text-body-secondary d-block"><%= tenant.name %></small>
+                            <% end %>
                         <% else %>
                             <span class="text-body-secondary">&mdash;</span>
                         <% end %>
                     </td>
-                    <td>
-                        <% if current_rental&.notes.present? %>
-                            <span data-bs-toggle="tooltip" data-bs-placement="top" title="<%= current_rental.notes %>">
-                                <i class="fa-solid fa-note-sticky"></i> <%= truncate(current_rental.notes, length: 10) %>
-                            </span>
-                        <% elsif current_rental.blank? %>
-                             <%= text_field_tag "locker[notes]", locker.notes, class: 'form-control form-control-sm locker-inline-edit', disabled: true, data: { locker_id: locker.id }, placeholder: 'Add note' %>
+                    <!-- Searchable by Staff Notes, Request Notes, and Locker Maintenance Notes -->
+                    <td data-search="<%= "#{current_rental&.staff_notes} #{current_rental&.notes} #{locker.notes}" %>">
+                        <% if current_rental.present? %>
+                            <div class="position-relative" data-bs-toggle="tooltip" data-bs-placement="top" title="<%= current_rental.staff_notes.presence || 'Staff Note (click inline editing to edit)' %>">
+                                <%= text_field_tag "locker_rental[staff_notes]", current_rental.staff_notes,
+                                      class: 'form-control form-control-sm locker-inline-edit border-primary-subtle',
+                                      disabled: true,
+                                      data: { rental_id: current_rental.id },
+                                      placeholder: 'Add staff note...' %>
+                            </div>
                         <% else %>
-                             <span class="text-body-secondary">&mdash;</span>
+                            <div class="position-relative" data-bs-toggle="tooltip" data-bs-placement="top" title="<%= locker.notes.presence || 'Locker Note (click inline editing to edit)' %>">
+                                <%= text_field_tag "locker[notes]", locker.notes,
+                                      class: 'form-control form-control-sm locker-inline-edit',
+                                      disabled: true,
+                                      data: { locker_id: locker.id },
+                                      placeholder: 'Add note...' %>
+                            </div>
                         <% end %>
                     </td>
-                    <td class="d-none d-sm-table-cell"><%= current_rental&.owned_until ? current_rental.owned_until.to_date.to_fs(:short) : 'Indefinite' %></td>
+                    <td class="d-none d-sm-table-cell" data-sort="<%= current_rental&.owned_until.to_i %>">
+                        <%= current_rental&.owned_until ? current_rental.owned_until.to_date.to_fs(:short) : 'Indefinite' %>
+                    </td>
                     <td>
                         <% if current_rental %>
                             <%= form_with url: toggle_contacted_locker_rental_path(current_rental), method: :patch do %>
                                 <div class="form-check form-switch m-0">
-                                    <%= check_box_tag "contacted_#{current_rental.id}", '1', current_rental.contacted_for_clearance, 
-                                          class: 'form-check-input', 
+                                    <%= check_box_tag "contacted_#{current_rental.id}", '1', current_rental.contacted_for_clearance,
+                                          class: 'form-check-input',
                                           onchange: 'this.form.requestSubmit()' %>
                                 </div>
                             <% end %>
@@ -90,7 +112,12 @@
                         <% end %>
                     </td>
                     <td class="d-none d-lg-table-cell"><%= current_rental&.updated_at ? current_rental.updated_at.to_fs(:short) : '&mdash;'.html_safe %></td>
-                    <td>
+                    <!-- Searchable by Status -->
+                    <td data-search="<%= if current_rental
+current_rental.expired? ? 'expired overdue' : 'valid active rented occupied'
+else
+'free unoccupied available'
+end %>">
                         <% if current_rental.present? %>
                             <% if current_rental.expired? %>
                                 <%= link_to current_rental, class: "btn btn-sm btn-outline-danger" do %>

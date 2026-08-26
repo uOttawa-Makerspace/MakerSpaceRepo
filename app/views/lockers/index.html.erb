@@ -3,7 +3,7 @@
 <div class="container my-4">
     <h1 class="text-center mb-3">Locker Management</h1>
     <div class="text-center mb-4">
-        <%= link_to 'Show pending locker requests', admin_locker_rentals_path, class: 'fw-bold link-primary text-decoration-none' %>
+        <%= link_to 'Show pending locker requests & active rentals', admin_locker_rentals_path, class: 'fw-bold link-primary text-decoration-none' %>
     </div>
 
     <div class="card mb-4 border shadow-sm">
@@ -30,12 +30,24 @@
             and will display links to it on the homepage and resources header dropdown.</p>
     </div>
 
+    <!-- Collapsible Configure Locker Options Box -->
     <div class="card mb-4 border shadow-sm">
-        <div class="card-header bg-body-tertiary">
-            <h2 class="h5 mb-0">Configure locker options</h2>
+        <div class="card-header bg-body-tertiary d-flex justify-content-between align-items-center"
+             role="button"
+             data-bs-toggle="collapse"
+             data-bs-target="#collapseLockerOptions"
+             aria-expanded="false"
+             aria-controls="collapseLockerOptions"
+             style="cursor: pointer;">
+            <h2 class="h5 mb-0">
+                <i class="fa-solid fa-sliders me-2"></i> Configure locker options
+            </h2>
+            <span class="btn btn-sm btn-outline-secondary">Toggle settings <i class="fa-solid fa-chevron-down ms-1"></i></span>
         </div>
-        <div class="card-body">
-            <%= render 'locker_size_control' %>
+        <div class="collapse" id="collapseLockerOptions">
+            <div class="card-body">
+                <%= render 'locker_size_control' %>
+            </div>
         </div>
     </div>
 

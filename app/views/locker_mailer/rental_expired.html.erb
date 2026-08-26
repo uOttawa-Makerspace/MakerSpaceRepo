@@ -1,0 +1,38 @@
+<% content_for :preheader do %>
+  MakerRepo - Your Locker Rental Has Ended
+<% end %>
+
+<% content_for :why_received do %>
+  You have received this email because your locker rental period has ended.
+<% end %>
+
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
+  Hello <%= @user.name.presence || @user.username %>,
+</p>
+
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
+  Your rental period for <strong>Locker #<%= @locker_rental.locker&.specifier %></strong> ended on 
+  <strong><%= @locker_rental.owned_until&.to_date&.to_formatted_s(:long) %></strong>.
+</p>
+
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
+  Please remove all personal belongings and clear the locker promptly. If you need an extension or have questions, please contact the makerspace staff.
+</p>
+
+<table role="presentation" class="btn btn-primary" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; box-sizing: border-box; width: 100%;" width="100%">
+  <tbody>
+    <tr>
+      <td align="left" style="font-family: sans-serif; font-size: 14px; vertical-align: top; padding-bottom: 15px;" valign="top">
+        <table role="presentation" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: auto;">
+          <tbody>
+            <tr>
+              <td style="font-family: sans-serif; font-size: 14px; vertical-align: top; border-radius: 5px; text-align: center; background-color: #e55426ff;" valign="top" align="center" bgcolor="#e55426ff">
+                <a href="<%= locker_rental_url(@locker_rental) %>" target="_blank" style="border: solid 1px #e55426ff; border-radius: 5px; box-sizing: border-box; cursor: pointer; display: inline-block; font-size: 14px; font-weight: bold; margin: 0; padding: 12px 25px; text-decoration: none; background-color: #e55426ff; border-color: #e55426ff; color: #ffffff;">View Locker Rental</a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </td>
+    </tr>
+  </tbody>
+</table>

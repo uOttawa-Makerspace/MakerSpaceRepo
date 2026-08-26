@@ -107,7 +107,10 @@ class LockerRentalsController < SessionsController
   def update
     @locker_rental = LockerRental.find(params[:id])
     unless current_user.staff? || current_user == @locker_rental.rented_by
-      redirect_to locker_rentals_path
+      respond_to do |format|
+        format.html { redirect_to locker_rentals_path }
+        format.json { head :forbidden }
+      end
       return
     end
 
@@ -128,18 +131,31 @@ class LockerRentalsController < SessionsController
     if @locker_rental.state_changed?(from: :active, to: :cancelled) &&
          !current_user.staff?
       flash[:alert] = 'Please contact administration for cancelling a locker'
-      render :show, status: :unprocessable_content
+      respond_to do |format|
+        format.html { render :show, status: :unprocessable_content }
+        format.json { render json: { error: 'Unauthorized' }, status: :unprocessable_entity }
+      end
       return
     end
 
     if @locker_rental.save
-      flash[:notice] = 'Locker rental updated'
+      respond_to do |format|
+        format.html do
+          flash[:notice] = 'Locker rental updated'
+          redirect_back fallback_location: :locker_rentals
+        end
+        format.json { head :no_content }
+      end
     else
-      flash[:alert] = 'Failed to update locker rental' + helpers.tag.br +
-        @locker_rental.errors.full_messages.join(helpers.tag.br)
+      respond_to do |format|
+        format.html do
+          flash[:alert] = 'Failed to update locker rental' + helpers.tag.br +
+            @locker_rental.errors.full_messages.join(helpers.tag.br)
+          redirect_back fallback_location: :locker_rentals
+        end
+        format.json { render json: @locker_rental.errors, status: :unprocessable_entity }
+      end
     end
-
-    redirect_back fallback_location: :locker_rentals
   end
 
   def renew
@@ -172,14 +188,13 @@ class LockerRentalsController < SessionsController
 
   # Requirement: Have a column like 'contacted' with a checkbox so I can keep track if I email people
   def toggle_contacted
-    # @locker_rental is already set by check_permission before_action.
-    # Using update_column skips validations and callbacks, which is ideal here 
-    # to avoid triggering state change emails/shopify syncs or failing validations 
-    # on legacy indefinite rentals.
+    # Security check: only staff can modify clearance contacted status
+    unless current_user.staff?
+      head :forbidden
+      return
+    end
+
     @locker_rental.update_column(:contacted_for_clearance, !@locker_rental.contacted_for_clearance)
-    
-    # Turbo form submissions expect a Turbo Stream, HTML, or a 204 No Content
-    # to gracefully handle the response without a full page reload or error.
     head :no_content
   end
 

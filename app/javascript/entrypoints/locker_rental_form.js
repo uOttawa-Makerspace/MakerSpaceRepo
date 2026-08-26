@@ -14,15 +14,15 @@ document.addEventListener("turbo:load", function () {
           invalid_cls: "is-invalid",
           render: {
             option: function (data, escape) {
-              let size = escape(data.size);
-              let text = escape(data.text);
-              let staffOnly = data.staffOnly == "true" ? " - Staff only" : "";
+              let size = escape(data.size || "");
+              let text = escape(data.text || "");
+              let staffOnly = data.staffOnly === "true" ? " - Staff only" : "";
               return `<div>Locker ${text} - Size ${size}${staffOnly}</div>`;
             },
             item: function (data, escape) {
-              let size = escape(data.size);
-              let text = escape(data.text);
-              let staffOnly = data.staffOnly == "true" ? " - Staff only" : "";
+              let size = escape(data.size || "");
+              let text = escape(data.text || "");
+              let staffOnly = data.staffOnly === "true" ? " - Staff only" : "";
               return `<div>Locker ${text} - Size ${size}${staffOnly}</div>`;
             },
           },
@@ -30,15 +30,14 @@ document.addEventListener("turbo:load", function () {
       }
     });
 
-  // Search bar to pick a user to assign the locker to
+  // Search bar to pick a user to assign the locker to (search by Name or Username)
   const userSelect = document.querySelector("#locker_rental_rented_by_id");
   if (userSelect && !userSelect.tomselect) {
     new TomSelect(userSelect, {
       maxItems: 1,
       valueField: "value",
       labelField: "text",
-      searchField: ["text", "role"],
-      // Tell TomSelect to use Bootstrap's classes
+      searchField: ["text"],
       input_class: "form-select",
       invalid_cls: "is-invalid",
       render: {
