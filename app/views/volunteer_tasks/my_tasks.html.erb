@@ -1,128 +1,122 @@
-<section class="page-contents">
-  <div class="text-center">
+<section class="page-contents py-4">
+  <div class="container-xl">
 
-    <h2 class="fw-bold">My Tasks</h2>
+    <!-- Header -->
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4">
+      <div>
+        <h2 class="page-title fw-bold mb-1">My Assigned Tasks</h2>
+        <p class="text-body-secondary mb-0 small">Manage your current tasks and submit them for review once completed.</p>
+      </div>
+      <div>
+        <%= link_to volunteer_tasks_path, class: 'btn btn-outline-secondary rounded-pill px-3 py-2 btn-sm fw-semibold shadow-sm' do %>
+          <i class="fa fa-arrow-left me-1"></i> Explore Available Tasks
+        <% end %>
+      </div>
+    </div>
 
-    <% if !@your_volunteer_tasks.blank? %>
-      <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder="Find by: date, title, description, ..." class="form-control mx-auto">
-      <div class="mx-auto mt-3">
-        <button id="task-hider" class="btn btn-primary" type="button">Hide Completed Task</button>
-        </div>
-      <br />
+    <% if @your_volunteer_tasks.present? %>
+      <div class="card bg-body border shadow-sm rounded-4 overflow-hidden">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0 custom-requests-table">
+            <thead class="table-light">
+              <tr>
+                <th class="ps-3">Task Details</th>
+                <th>Space</th>
+                <th>CC & Hours</th>
+                <th>Prerequisites</th>
+                <th>Status</th>
+                <th>Assigned Date</th>
+                <th class="text-end pe-3">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @your_volunteer_tasks.each do |vt| %>
+                <% req = vt.volunteer_task_requests.where(user_id: current_user.id).not_processed.last %>
+                <tr>
+                  <!-- Title -->
+                  <td class="ps-3">
+                    <span class="badge bg-body-secondary text-body-secondary border text-uppercase mb-1"><%= vt.category.capitalize %></span>
+                    <div class="fw-semibold">
+                      <%= link_to vt.title.capitalize, volunteer_task_path(vt.id), class: 'text-decoration-none text-body hover-orange' %>
+                    </div>
+                  </td>
 
-      <div class="table-responsive">
-        <table class="table sessions-table">
+                  <!-- Space -->
+                  <td>
+                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">
+                      <i class="fa fa-map-marker me-1"></i><%= vt.space&.name&.capitalize || 'General' %>
+                    </span>
+                  </td>
 
-          <tr>
-            <th class="action-header">Action</th>
-            <th>CC/Hours<span onclick="sortTable('sessions-table', 1)"><i class="fa-solid fa-arrow-down"></i></span></th>
-            <th>Title <span onclick="sortTable('sessions-table', 2)"><i class="fa-solid fa-arrow-down"></i></span></th>
-            <th>Status<span onclick="sortTable('sessions-table', 3)"><i class="fa-solid fa-arrow-down"></i></span></th>
-<!--            <th>Responsable Staff<span onclick="sortTable('sessions-table', 4)"><%#=<i class="fa-solid fa-arrow-down"></i>%></span></th>-->
-<!--            <th>Users<span onclick="sortTable('sessions-table', 5)"><%#=<i class="fa-solid fa-arrow-down"></i>%></span></th>-->
-            <th>Certifications Needed<span onclick="sortTable('sessions-table', 4)"><i class="fa-solid fa-arrow-down"></i></span></th>
-            <th>Space<span onclick="sortTable('sessions-table', 5)"><i class="fa-solid fa-arrow-down"></i></span></th>
-            <th>Date Submitted <span onclick="sortTable('sessions-table', 6, true)"><i class="fa-solid fa-arrow-down"></i></span></th>
-            <% if current_user.staff? %>
-              <th>Created by <span onclick="sortTable('sessions-table', 7)"><i class="fa-solid fa-arrow-down"></i></span></th>
-            <% end %>
-          </tr>
+                  <!-- CC & Hours -->
+                  <td>
+                    <div class="d-inline-flex align-items-center bg-body-tertiary border rounded-pill px-2 py-1">
+                      <%= vite_image_tag 'images/cc.png', alt: 'CC', class: 'ccs me-1', id: 'myCcBlack', style: 'width: 14px; height: 14px;' %>
+                      <span class="fw-bold me-1 text-primary"><%= vt.cc %> CC</span>
+                      <span class="text-body-secondary small">(<%= vt.hours %> hrs)</span>
+                    </div>
+                  </td>
 
-          <tbody>
-          <% @your_volunteer_tasks.each do |vt| %>
-            <tr completed=<%= vt.status %>>
-              <td class="action-cell">
-                <%= link_to 'Edit', edit_volunteer_task_path(vt.id), class: 'd-block w-100 btn btn-primary btn-sm' if current_user.staff? %>
-                <%= link_to 'Show', volunteer_task_path(vt.id), class: 'd-block w-100 btn btn-info btn-sm' %>
-                <%= if current_user.staff?
-                      button_to 'Delete', { controller: :volunteer_tasks, action: :destroy, id: vt.id }, method: :delete,
-                                                                                                         data: { confirm: 'Are you sure that you want to delete this volunteer task? If you delete it, it will also delete all the volunteers hours related to it.' },
-                                                                                                         class: 'd-block w-100 btn btn-danger btn-sm mt-2'
-                    end %>
-              </td>
+                  <!-- Prerequisites -->
+                  <td>
+                    <% if vt.require_trainings.present? %>
+                      <% vt.require_trainings.each do |rt| %>
+                        <span class="badge bg-body-secondary text-body border me-1 mb-1"><%= rt.training.localized_name.capitalize %></span>
+                      <% end %>
+                    <% else %>
+                      <span class="text-body-secondary small">None</span>
+                    <% end %>
+                  </td>
 
-              <td>
-                <%= vite_image_tag 'images/cc.png', alt: 'CC', class: 'ccs hidden', id: 'myCcBlack' %>
-                <%= vt.cc %>
-                <br />
-                <%= vt.hours %> hours
-              </td>
+                  <!-- Status -->
+                  <td>
+                    <% if vt.status == "completed" %>
+                      <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle px-2 py-1">Completed</span>
+                    <% elsif req.present? %>
+                      <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1">Under Review</span>
+                    <% else %>
+                      <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">In Progress</span>
+                    <% end %>
+                  </td>
 
-              <td>
-                <%= vt.title %>
-              </td>
+                  <!-- Date -->
+                  <td class="small text-nowrap">
+                    <div><%= vt.created_at.strftime('%b %d, %Y') %></div>
+                    <div class="text-body-secondary font-monospace"><%= vt.created_at.strftime('%I:%M %p') %></div>
+                  </td>
 
-              <td>
-                <%= vt.status.capitalize %>
-              </td>
+                  <!-- Actions -->
+                  <td class="text-end pe-3 text-nowrap">
+                    <div class="d-inline-flex gap-1">
+                      <%= link_to 'View Details', volunteer_task_path(vt.id), class: 'btn btn-outline-ceed btn-sm rounded-pill px-3 py-1 fw-semibold' %>
 
-<!--              <td class = "username">-->
-                <%# vt.volunteer_task_joins.where("volunteer_task_joins.user_type = ? OR volunteer_task_joins.user_type = ?","Staff", "Admin").find_each do |staff_joins| %>
-                  <%#= link_to staff_joins.user.name.titleize, user_path(staff_joins.user.username) %>
-<!--                  <br />-->
-                <%# end %>
-<!--              </td>-->
-
-<!--              <td class = "username">-->
-                <%# if !vt.volunteer_task_joins.blank? %>
-                  <%# vt.volunteer_task_joins.where(user_type: "Volunteer").find_each do |volunteer_joins| %>
-                    <%#= link_to volunteer_joins.user.name.titleize, user_path(volunteer_joins.user.username) %>
-<!--                    <br />-->
-                  <%# end %>
-                <%# else %>
-<!--                  --->
-                <%# end %>
-<!--              </td>-->
-
-              <td>
-                <% if !vt.require_trainings.blank? %>
-                  <% vt.require_trainings.find_each do |rt| %>
-                    <%= rt.training.localized_name.capitalize %>
-                    <br />
-                  <% end %>
-                <% else %>
-                  None
-                <% end %>
-              </td>
-
-              <td>
-                <%= vt.space.name.capitalize %>
-              </td>
-
-              <td>
-                <%= vt.created_at.strftime('%m/%e/%Y') %>
-                <br>
-                <%= vt.created_at.strftime('%I:%M %p').downcase %>
-              </td>
-
-              <% if current_user.staff? %>
-                <td class = "username">
-                  <%= link_to vt.user.name.titleize, user_path(vt.user.username) %>
-                </td>
+                      <% if vt.status != "completed" && req.blank? %>
+                        <%= link_to create_request_volunteer_task_requests_path(id: vt.id),
+                                    class: 'btn btn-success btn-sm rounded-pill px-3 py-1 fw-bold shadow-sm',
+                                    data: { confirm: 'Submit this task as completed for approval?' } do %>
+                          <i class="fa fa-check me-1"></i> Submit Complete
+                        <% end %>
+                      <% end %>
+                    </div>
+                  </td>
+                </tr>
               <% end %>
-
-            </tr>
-          <% end %>
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+        </div>
       </div>
     <% else %>
-      <div class="m-5">
-        No Tasks were created yet.
+      <div class="text-center py-5 card bg-body border shadow-sm rounded-4 p-4">
+        <div class="mb-3 text-body-secondary">
+          <i class="fa fa-folder-open-o fa-3x"></i>
+        </div>
+        <h5 class="fw-bold mb-1 text-body">No Assigned Tasks</h5>
+        <p class="text-body-secondary small mb-3">You do not currently have any active tasks assigned to you.</p>
+        <div>
+          <%= link_to 'Explore Available Tasks', volunteer_tasks_path, class: 'btn btn-ceed rounded-pill px-4 py-2 fw-semibold shadow-sm' %>
+        </div>
       </div>
     <% end %>
+
   </div>
 </section>
-<script>
-let hider = document.getElementById('task-hider');
-// Select table rows with the completed attribute
-var completedRows = document.querySelectorAll('tr[completed="completed"]');
-hider.addEventListener("click", ()=>{
-  // Hide the completed rows
-  completedRows.forEach((row)=>{
-    row.style.display == "none" ? row.style.display = "table-row" : row.style.display = "none";
-  });
-  // Change the button text
-  hider.innerHTML = hider.innerHTML == "Hide Completed Task" ? "Show Completed Task" : "Hide Completed Task";
-});
-</script>

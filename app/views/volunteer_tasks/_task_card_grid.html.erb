@@ -72,19 +72,23 @@
                 <% end %>
               </div>
               <div class="flex-shrink-0">
-                <% if assigned_volunteers.present? %>
+                <% if vt.status == "completed" %>
+                  <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle px-2 py-1">
+                    <i class="fa fa-check me-1"></i> Completed
+                  </span>
+                <% elsif assigned_volunteers.present? %>
                   <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1">
-                    <i class="fa fa-user me-1"></i><%= assigned_volunteers.first.user.name.titleize %>
+                    <i class="fa fa-user me-1"></i> Assigned (<%= assigned_volunteers.count %>)
                   </span>
                 <% else %>
                   <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
-                    <i class="fa fa-unlock me-1"></i>Available
+                    <i class="fa fa-unlock me-1"></i> Available
                   </span>
                 <% end %>
               </div>
             </div>
 
-            <!-- Actions -->
+            <!-- Actions (Students can ONLY view details) -->
             <div class="d-flex gap-2">
               <%= link_to 'View Details', volunteer_task_path(vt.id), class: 'btn btn-outline-ceed btn-sm w-100 rounded-pill fw-bold' %>
 

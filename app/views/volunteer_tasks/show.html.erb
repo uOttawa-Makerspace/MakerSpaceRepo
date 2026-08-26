@@ -1,113 +1,159 @@
-<section class="page-contents">
-  <div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+<section class="page-contents py-4">
+  <div class="container-xl">
+
+    <!-- Header & Navigation -->
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4">
       <div>
-        <h2 class="fw-bold mb-1"><%= @volunteer_task.title.capitalize %></h2>
-        <span class="badge bg-primary me-2"><%= @volunteer_task.category.capitalize %></span>
-        <span class="badge bg-secondary"><%= @volunteer_task.space.name.capitalize %></span>
-      </div>
-      <% if current_user.staff? %>
-        <%= link_to edit_volunteer_task_path(@volunteer_task), class: 'btn btn-outline-primary' do %>
-          <i class="fa fa-pencil me-1"></i> Edit / Assign Volunteers
-        <% end %>
-      <% end %>
-    </div>
-
-    <!-- Description & Media Card (Dark-Mode Adaptive) -->
-    <div class="card task-details-card shadow-sm p-4 mb-4">
-      <div class="d-flex align-items-center mb-3">
-        <h5 class="fw-bold mb-0 me-3">Task Details</h5>
-        <div class="d-inline-flex align-items-center px-2 py-1 bg-dark bg-opacity-25 rounded border border-secondary border-opacity-25">
-          <%= vite_image_tag 'images/cc.png', alt: 'CC', class: 'ccs me-1', id: 'myCcBlack', style: 'width: 18px; height: 18px;' %>
-          <strong class="me-2"><%= @volunteer_task.cc %> CC</strong>
-          <span class="text-muted small">(<%= @volunteer_task.hours %> hours)</span>
-        </div>
-      </div>
-
-      <p class="lead fs-6 mb-3" style="white-space: pre-line;"><%= @volunteer_task.description %></p>
-
-      <% if @photos.present? && @photos.first.image.attached? %>
-        <hr class="opacity-25 my-3">
-        <div id="show-photo" class="mb-3">
-          <%= image_tag @photos.first.image, alt: 'Volunteer Task Main image', class: 'img-fluid rounded border border-secondary border-opacity-25', data: { width: @photos.first.try(:width), height: @photos.first.try(:height) } %>
-        </div>
-        <div id="photo-slide" class="d-flex gap-2">
-          <% @photos.each do |p| %>
-            <%= image_tag p.image, alt: 'Volunteer Task Thumbnail', class: 'img-thumbnail rounded', style: 'width: 80px; height: 80px; object-fit: cover;', data: { width: p.width, height: p.height } %>
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <span class="badge bg-body-secondary text-body-secondary border text-uppercase"><%= @volunteer_task.category.capitalize %></span>
+          <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">
+            <i class="fa fa-map-marker me-1"></i><%= @volunteer_task.space&.name&.capitalize || 'General' %>
+          </span>
+          <% if @volunteer_task.status == 'completed' %>
+            <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle">
+              <i class="fa fa-check me-1"></i> Completed
+            </span>
+          <% elsif @volunteer_task.volunteer_task_joins.active.where(user_type: 'Volunteer').exists? %>
+            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">
+              <i class="fa fa-user me-1"></i> In Progress (Assigned)
+            </span>
+          <% else %>
+            <span class="badge bg-success-subtle text-success border border-success-subtle">
+              <i class="fa fa-unlock me-1"></i> Available for Assignment
+            </span>
           <% end %>
         </div>
-      <% end %>
+        <h2 class="page-title fw-bold mb-1"><%= @volunteer_task.title.capitalize %></h2>
+      </div>
+
+      <div class="d-flex gap-2 align-items-center">
+        <%= link_to volunteer_tasks_path, class: 'btn btn-outline-secondary rounded-pill px-3 py-2 btn-sm fw-semibold shadow-sm' do %>
+          <i class="fa fa-arrow-left me-1"></i> Back to Tasks
+        <% end %>
+
+        <% if current_user.staff? %>
+          <%= link_to edit_volunteer_task_path(@volunteer_task), class: 'btn btn-ceed rounded-pill px-3 py-2 btn-sm fw-semibold shadow-sm' do %>
+            <i class="fa fa-pencil me-1"></i> Edit / Assign Volunteers
+          <% end %>
+        <% end %>
+      </div>
     </div>
 
-    <!-- Assignment Banner & Actions -->
+    <!-- Assignment Status / Action Banner -->
     <% if @volunteer_task.volunteer_task_joins.active.pluck(:user_id).include?(current_user.id) %>
-      <div class="alert alert-success d-flex justify-content-between align-items-center mb-4">
+      <div class="alert alert-success d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 rounded-4 shadow-sm mb-4">
         <div>
-          <i class="fa fa-check-circle me-2"></i><strong>You are assigned to this volunteer task.</strong>
+          <i class="fa fa-check-circle fs-5 me-2 align-middle"></i>
+          <strong>You are assigned to this volunteer task.</strong>
+          <span class="d-block small text-muted">Complete the work as described below and submit your request for approval.</span>
         </div>
         <div>
           <% if @volunteer_task_request.blank? %>
             <%= link_to create_request_volunteer_task_requests_path(id: @volunteer_task.id),
-                        class: 'btn btn-success btn-sm fw-bold',
-                        data: { confirm: 'This will submit this task for completion review. Are you sure it is finished?' } do %>
-              <i class="fa fa-send me-1"></i> Submit Task as Complete
+                        class: 'btn btn-success rounded-pill px-3 py-2 fw-bold shadow-sm',
+                        data: { confirm: 'This will submit this task for completion review. Are you sure you have completed the requirements?' } do %>
+              <i class="fa fa-paper-plane me-1"></i> Submit Task as Complete
             <% end %>
           <% else %>
-            <span class="badge bg-warning text-dark"><i class="fa fa-clock-o me-1"></i> Completion Under Review</span>
+            <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-semibold">
+              <i class="fa fa-clock-o me-1"></i> Completion Under Review
+            </span>
           <% end %>
         </div>
       </div>
     <% elsif @volunteer_task.status == "completed" %>
-      <div class="alert alert-secondary mb-4">
-        <i class="fa fa-flag-checkered me-2"></i> This task has been marked as completed.
+      <div class="alert alert-secondary rounded-4 shadow-sm mb-4">
+        <i class="fa fa-flag-checkered me-2"></i> This task has been marked as <strong>Completed</strong>.
       </div>
     <% else %>
       <% unless current_user.staff? %>
-        <div class="alert alert-info mb-4">
-          <i class="fa fa-info-circle me-2"></i> Volunteers are assigned to tasks by space managers based on skills, certifications, and availability.
+        <div class="alert alert-info rounded-4 shadow-sm mb-4">
+          <i class="fa fa-info-circle me-2"></i>
+          <strong>Admin-Assigned Task:</strong> Volunteers are assigned to tasks by space managers based on skills, certifications, and availability. Contact the responsible staff member if you are interested in this project.
         </div>
       <% end %>
     <% end %>
 
-    <!-- Meta Information Cards -->
+    <!-- Task Details & Media Card -->
+    <div class="card bg-body border shadow-sm rounded-4 p-4 mb-4">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h5 class="fw-bold mb-0 text-body">Task Overview</h5>
+        <div class="d-inline-flex align-items-center bg-body-tertiary border rounded-pill px-3 py-1">
+          <%= vite_image_tag 'images/cc.png', alt: 'CC', class: 'ccs me-2', id: 'myCcBlack', style: 'width: 16px; height: 16px;' %>
+          <span class="fw-bold me-2 text-primary"><%= @volunteer_task.cc %> CC</span>
+          <span class="text-body-secondary small">(<%= @volunteer_task.hours %> hours logged)</span>
+        </div>
+      </div>
+
+      <p class="fs-6 text-body mb-4" style="white-space: pre-line;"><%= @volunteer_task.description %></p>
+
+      <% if @photos.present? && @photos.first.image.attached? %>
+        <hr class="my-3 opacity-25">
+        <h6 class="fw-bold text-body-secondary text-uppercase small mb-3">Attachments & Reference Photos</h6>
+        <div id="show-photo" class="mb-3">
+          <%= image_tag @photos.first.image, alt: 'Volunteer Task Main image', class: 'img-fluid rounded-4 border', data: { width: @photos.first.try(:width), height: @photos.first.try(:height) } %>
+        </div>
+        <div id="photo-slide" class="d-flex gap-2">
+          <% @photos.each do |p| %>
+            <%= image_tag p.image, alt: 'Volunteer Task Thumbnail', class: 'img-thumbnail rounded-3', style: 'width: 80px; height: 80px; object-fit: cover;', data: { width: p.width, height: p.height } %>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Metadata Cards -->
     <div class="row g-4">
-      <div class="col-md-6">
-        <div class="card task-details-card shadow-sm p-3 h-100">
-          <h6 class="fw-bold text-muted mb-3 text-uppercase">Team Assignment</h6>
+      <!-- Team Assignment -->
+      <div class="col-12 col-md-6">
+        <div class="card bg-body border shadow-sm rounded-4 p-4 h-100">
+          <h6 class="fw-bold text-body-secondary mb-3 text-uppercase small">Team Assignment</h6>
+          
           <div class="mb-3">
-            <strong>Responsible Staff:</strong>
-            <div class="mt-1">
-              <% @volunteer_task.volunteer_task_joins.active.where('volunteer_task_joins.user_type = ? OR volunteer_task_joins.user_type = ?', 'Staff', 'Admin').find_each do |staff_join| %>
-                <%= link_to staff_join.user.name.titleize, user_path(staff_join.user.username), class: 'badge bg-primary text-decoration-none me-1' %>
+            <span class="small text-body-secondary d-block mb-1">Responsible Staff:</span>
+            <div class="d-flex flex-wrap gap-1">
+              <% staff_joins = @volunteer_task.volunteer_task_joins.active.where('volunteer_task_joins.user_type = ? OR volunteer_task_joins.user_type = ?', 'Staff', 'Admin') %>
+              <% if staff_joins.present? %>
+                <% staff_joins.each do |staff_join| %>
+                  <%= link_to staff_join.user.name.titleize, user_path(staff_join.user.username), class: 'badge bg-primary-subtle text-primary border border-primary-subtle text-decoration-none py-2 px-3 rounded-pill fw-semibold' %>
+                <% end %>
+              <% else %>
+                <span class="text-body-secondary small fst-italic">None assigned</span>
               <% end %>
             </div>
           </div>
+
           <div>
-            <strong>Assigned Volunteers:</strong>
-            <div class="mt-1">
-              <% if @volunteer_task.volunteer_task_joins.active.where(user_type: 'Volunteer').exists? %>
-                <% @volunteer_task.volunteer_task_joins.active.where(user_type: 'Volunteer').find_each do |volunteer_join| %>
-                  <%= link_to volunteer_join.user.name.titleize, user_path(volunteer_join.user.username), class: 'badge bg-secondary text-decoration-none me-1' %>
+            <span class="small text-body-secondary d-block mb-1">Assigned Volunteers:</span>
+            <div class="d-flex flex-wrap gap-1">
+              <% volunteer_joins = @volunteer_task.volunteer_task_joins.active.where(user_type: 'Volunteer') %>
+              <% if volunteer_joins.present? %>
+                <% volunteer_joins.each do |volunteer_join| %>
+                  <%= link_to volunteer_join.user.name.titleize, user_path(volunteer_join.user.username), class: 'badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle text-decoration-none py-2 px-3 rounded-pill fw-semibold' %>
                 <% end %>
               <% else %>
-                <span class="text-muted small">No volunteers assigned yet</span>
+                <span class="text-body-secondary small fst-italic">No volunteers assigned yet (Open for admin assignment)</span>
               <% end %>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="col-md-6">
-        <div class="card task-details-card shadow-sm p-3 h-100">
-          <h6 class="fw-bold text-muted mb-3 text-uppercase">Certifications & Requirements</h6>
+      <!-- Prerequisites -->
+      <div class="col-12 col-md-6">
+        <div class="card bg-body border shadow-sm rounded-4 p-4 h-100">
+          <h6 class="fw-bold text-body-secondary mb-3 text-uppercase small">Prerequisites & Certifications</h6>
           <% if @required_trainings.present? %>
-            <ul class="mb-0 ps-3">
-              <% @required_trainings.find_each do |rt| %>
-                <li class="mb-1"><strong><%= rt.training.localized_name.capitalize %></strong></li>
+            <div class="d-flex flex-wrap gap-1">
+              <% @required_trainings.each do |rt| %>
+                <span class="badge bg-body-secondary text-body border py-2 px-3 rounded-pill fw-semibold">
+                  <i class="fa fa-certificate me-1 text-ceed-orange"></i><%= rt.training.localized_name.capitalize %>
+                </span>
               <% end %>
-            </ul>
+            </div>
           <% else %>
-            <p class="text-muted mb-0 small">No prerequisite certifications needed for this task.</p>
+            <span class="badge bg-success-subtle text-success border border-success-subtle py-2 px-3 rounded-pill fw-semibold">
+              <i class="fa fa-check me-1"></i> No Prerequisites Required
+            </span>
           <% end %>
         </div>
       </div>

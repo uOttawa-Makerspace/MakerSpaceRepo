@@ -4,20 +4,19 @@ class VolunteerTaskRequestsController < SessionsController
   before_action -> { @with_volunteer_header = true }
 
   def index
-    base_scope = if current_user.staff?
-                   VolunteerTaskRequest.all
-                 else
-                   current_user.volunteer_task_requests
-                 end
-
+    @volunteer_task_requests = if current_user.staff?
+                                 VolunteerTaskRequest.all
+                               else
+                                 current_user.volunteer_task_requests
+                               end
     @total_volunteers = User.volunteers.count
 
     # Exact total counts for KPI cards & tab badges
-    @total_count     = base_scope.count
-    @pending_count   = base_scope.not_processed.count
-    @processed_count = base_scope.processed.count
+    @total_count     = @volunteer_task_requests.count
+    @pending_count   = @volunteer_task_requests.not_processed.count
+    @processed_count = @volunteer_task_requests.processed.count
 
-    # Determine active tab (keeps processed tab open during pagination)
+    # Determine active tab (persists active tab on pagination)
     @active_tab = if params[:tab].present?
                     params[:tab]
                   elsif params[:page_processed].present?
@@ -26,13 +25,13 @@ class VolunteerTaskRequestsController < SessionsController
                     "pending"
                   end
 
-    pending_scope = base_scope
+    pending_scope = @volunteer_task_requests
                       .not_processed
                       .includes(:user, volunteer_task: :space)
                       .filter_by_attribute(params[:search_pending])
                       .order(created_at: :desc)
 
-    processed_scope = base_scope
+    processed_scope = @volunteer_task_requests
                         .processed
                         .includes(:user, volunteer_task: :space)
                         .filter_by_attribute(params[:search_processed])
@@ -43,13 +42,13 @@ class VolunteerTaskRequestsController < SessionsController
   end
 
   def search_pending
-    base_scope = if current_user.staff?
-                   VolunteerTaskRequest.all
-                 else
-                   current_user.volunteer_task_requests
-                 end
+    @volunteer_task_requests = if current_user.staff?
+                                 VolunteerTaskRequest.all
+                               else
+                                 current_user.volunteer_task_requests
+                               end
 
-    scope = base_scope
+    scope = @volunteer_task_requests
               .not_processed
               .includes(:user, volunteer_task: :space)
               .filter_by_attribute(params[:search_pending])
@@ -61,13 +60,13 @@ class VolunteerTaskRequestsController < SessionsController
   end
 
   def search_processed
-    base_scope = if current_user.staff?
-                   VolunteerTaskRequest.all
-                 else
-                   current_user.volunteer_task_requests
-                 end
+    @volunteer_task_requests = if current_user.staff?
+                                 VolunteerTaskRequest.all
+                               else
+                                 current_user.volunteer_task_requests
+                               end
 
-    scope = base_scope
+    scope = @volunteer_task_requests
               .processed
               .includes(:user, volunteer_task: :space)
               .filter_by_attribute(params[:search_processed])
@@ -89,7 +88,7 @@ class VolunteerTaskRequestsController < SessionsController
       MsrMailer.send_notification_for_task_request(
         volunteer_task.id,
         volunteer_task_request.user_id
-      ).deliver_later
+      ).deliver
       flash[:notice] = "You've sent a request. No further action is needed."
     else
       flash[:alert] = "Something went wrong. Please try it again."
@@ -124,11 +123,11 @@ class VolunteerTaskRequestsController < SessionsController
 
       MsrMailer.send_notification_for_task_request_update(
         volunteer_task_request.id
-      ).deliver_later
-      flash[:notice] = "Task request updated."
+      ).deliver
+      flash[:notice] = "Task request updated"
     else
-      flash[:alert] = "Something went wrong."
+      flash[:alert] = "Something went wrong"
     end
-    redirect_to volunteer_task_requests_path(tab: "pending")
+    redirect_to volunteer_task_requests_path
   end
 end
