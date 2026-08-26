@@ -6,7 +6,6 @@
 
 <% if learning_module.scorm_ready? %>
     <div class="mb-3">
-        <%# This has to load before the iframe. %>
         <%= vite_javascript_tag 'learning_modules_scorm', 'data-turbo-track': 'reload' %>
 
         <% if learning_module.shortcut_name.present? %>
@@ -27,7 +26,8 @@
                 width="100%"
                 height="680px"
                 class="d-block border rounded"
-                sandbox="allow-scripts allow-same-origin allow-forms"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads"
+                allow="autoplay; fullscreen"
                 allowfullscreen="true"
                 data-launch-url="<%= scorm_launch_learning_area_path(learning_module) %>"
                 data-completed-url="<%= completed_learning_module_track_index_path %>"
@@ -42,9 +42,34 @@
     </div>
 
 <% elsif learning_module.scorm_processing? || learning_module.scorm_pending? %>
-    <p class="mb-3 alert alert-info">SCORM package is being processed, check back shortly.</p>
+    <div class="mb-3 alert alert-info d-flex align-items-center justify-content-between p-4 border rounded" role="alert" id="scorm-processing-container">
+        <div class="d-flex align-items-center">
+            <div class="spinner-border text-primary me-3" role="status" style="width: 2rem; height: 2rem;">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <div>
+                <h5 class="alert-heading mb-1">SCORM package is processing</h5>
+                <p class="mb-0 text-muted">We are extracting the course files and preparing the media player. This page will automatically update once it's ready.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+      // Automatically poll and refresh the page every 3 seconds
+      setTimeout(() => {
+        if (window.Turbo) {
+          Turbo.visit(window.location.href, { action: 'replace' });
+        } else {
+          window.location.reload();
+        }
+      }, 3000);
+    </script>
+
 <% elsif learning_module.scorm_failed? %>
-    <p class="mb-3 alert alert-danger">SCORM package failed to process. Please contact an administrator.</p>
+    <div class="mb-3 alert alert-danger p-3 border rounded">
+        <h5 class="alert-heading">SCORM Extraction Failed</h5>
+        <p class="mb-0">The uploaded package could not be processed. Please make sure it is a valid SCORM 1.2 or 2004 <code>.zip</code> file containing an <code>imsmanifest.xml</code>.</p>
+    </div>
 <% end %>
 
 <% if learning_module.extract_valid_urls.present? %>

@@ -152,6 +152,7 @@
         <%= f.file_field :scorm_package,
            class: 'form-control',
            accept: '.zip',
+           direct_upload: true,
            aria_label: 'SCORM zip file', required: !@learning_module.scorm_package.attached? %>
         <p class="form-text">Upload a valid SCORM <code>.zip</code> package.</p>
     </fieldset>
@@ -160,10 +161,9 @@
         <%= f.submit @learning_module.persisted? ? 'Save Changes' : 'Create Learning Module',
                  class: 'btn btn-primary px-4',
                  id: 'waiting-save-button' %>
-        <p class="small mt-2 mb-0">
-            This could take several minutes — do not refresh this page.
+        <p class="small text-muted mt-2 mb-0">
+            Uploading large SCORM zip files may take a minute. Please do not close or refresh this page.
         </p>
-        <span id="status-save"></span>
     </div>
 
 <% end %>
