@@ -15,18 +15,18 @@ class VolunteerTasksController < SessionsController
     # 1. Available Tasks (Open tasks with NO active volunteer assigned)
     available_scope = VolunteerTask.where(status: "open")
                                    .where.not(id: active_assigned_task_ids)
-                                   .includes(:space, :require_trainings, volunteer_task_joins: :user)
+                                   .includes(:space, { require_trainings: :training }, volunteer_task_joins: :user)
                                    .order(created_at: :desc)
 
     # 2. Assigned Tasks (Open tasks WITH an active volunteer assigned)
     assigned_scope = VolunteerTask.where(status: "open")
                                   .where(id: active_assigned_task_ids)
-                                  .includes(:space, :require_trainings, volunteer_task_joins: :user)
+                                  .includes(:space, { require_trainings: :training }, volunteer_task_joins: :user)
                                   .order(created_at: :desc)
 
     # 3. Completed Tasks
     completed_scope = VolunteerTask.where(status: "completed")
-                                   .includes(:space, :require_trainings, volunteer_task_joins: :user)
+                                   .includes(:space, { require_trainings: :training }, volunteer_task_joins: :user)
                                    .order(updated_at: :desc)
 
     @pagy_available, @available_volunteer_tasks = pagy(available_scope, page_key: "page_available", limit: 50)
