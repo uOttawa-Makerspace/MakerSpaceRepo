@@ -43,13 +43,8 @@ class LearningAreaController < DevelopmentProgramsController
   def create
     @learning_module = LearningModule.new(learning_module_params)
     if @learning_module.save
-      notice = if @learning_module.scorm_processing? || @learning_module.scorm_pending?
-                 'Learning Module has been successfully created. The SCORM package is processing in the background and will be available shortly.'
-               else
-                 'Learning Module has been successfully created.'
-               end
-
-      redirect_to learning_area_path(@learning_module.id), notice: notice
+      redirect_to learning_area_path(@learning_module.id),
+                  notice: 'Learning Module has been successfully created.'
     else
       flash[:alert] = 'Something went wrong'
       render 'new', status: :unprocessable_content
@@ -72,12 +67,8 @@ class LearningAreaController < DevelopmentProgramsController
 
   def update
     if @learning_module.update(learning_module_params)
-      notice = if @learning_module.scorm_processing? || @learning_module.scorm_pending?
-                 'Learning module saved. The SCORM package is processing in the background and will be available shortly.'
-               else
-                 'Learning module successfully updated.'
-               end
-      redirect_to learning_area_path(@learning_module.id), notice: notice
+      redirect_to learning_area_path(@learning_module.id),
+                  notice: 'Learning module successfully updated.'
     else
       flash[:alert] = "Unable to apply the changes."
       @training_categories = Training.all.order(:name).pluck(:name, :id)

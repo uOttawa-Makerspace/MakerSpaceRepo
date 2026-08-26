@@ -1,6 +1,6 @@
 FactoryBot.define do
   factory :job_type do
-    name { Faker::Lorem.word }
+    sequence(:name) { |n| "#{Faker::Lorem.word}_#{n}" }
     multiple_files { false }
     file_label { Faker::Lorem.word }
     file_description { Faker::Lorem.sentence }
