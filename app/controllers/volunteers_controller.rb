@@ -42,14 +42,19 @@ class VolunteersController < SessionsController
     if current_user.staff?
       flash[:notice] = 'You already have access to the Volunteer Program.'
     else
-      Program.create(
-        user_id: current_user.id,
-        program_type: Program::VOLUNTEER,
-        active: true
-      )
+      # Check if user is already enrolled to prevent duplicates
+      unless current_user.programs.where(program_type: Program::VOLUNTEER).exists?
+        Program.create!(
+          user_id: current_user.id,
+          program_type: Program::VOLUNTEER,
+          active: true
+        )
+      end
       flash[:notice] = "You've joined the Volunteer Program"
     end
-    redirect_to volunteers_path
+
+    # Redirect to external HubSpot intake form
+    redirect_to 'https://5oe8xl.share-na3.hsforms.com/20slW0brbQJCsdeEck-8vuQ', allow_other_host: true
   end
 
   def my_stats

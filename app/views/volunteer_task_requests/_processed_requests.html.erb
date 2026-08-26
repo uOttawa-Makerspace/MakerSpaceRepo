@@ -1,53 +1,102 @@
-<div class="table-responsive">
-  <table class="table table-striped sessions-table-2">
-  <thead class="table-primary">
-    <tr>
-      <th>Date Submitted <span onclick="sortTable('sessions-table-2', 0, true)"><i class="fa-solid fa-arrow-down"></i></span></th>
-      <th>Date Updated <span onclick="sortTable('sessions-table-2', 1, true)"><i class="fa-solid fa-arrow-down"></i></span></th>
-      <th>CC/Hours<span onclick="sortTable('sessions-table-2', 2)"><i class="fa-solid fa-arrow-down"></i></span></th>
-      <th>Task<span onclick="sortTable('sessions-table-2', 3)"><i class="fa-solid fa-arrow-down"></i></span></th>
-      <th>User<span onclick="sortTable('sessions-table-2', 4)"><i class="fa-solid fa-arrow-down"></i></span></th>
-      <th>Status<span onclick="sortTable('sessions-table-2', 5)"><i class="fa-solid fa-arrow-down"></i></span></th>
-      <!--            <th class="action-header">Action</th>-->
-    </tr>
-</thead >
-    <tbody>
-    <%== @pagy_processed.series_nav(:bootstrap) if @pagy_processed && @pagy_processed.pages > 1 %>
-    <% @processed_volunteer_task_requests.each do |vtr| %>
-      <tr>
-        <td>
-          <%= vtr.created_at.strftime('%Y-%m-%d') %>
-          <br>
-          <%= vtr.created_at.strftime('%I:%M %p').downcase %>
-        </td>
+<% if @processed_volunteer_task_requests.blank? %>
+  <div class="text-center py-5 card bg-body border shadow-sm rounded-4 p-4">
+    <div class="mb-3">
+      <i class="fa fa-history fa-3x text-body-secondary"></i>
+    </div>
+    <h5 class="fw-bold mb-1 text-body">No Processed History</h5>
+    <p class="text-body-secondary small mb-0">No completed task requests have been reviewed yet.</p>
+  </div>
+<% else %>
+  <div class="card bg-body border shadow-sm rounded-4 overflow-hidden">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0 custom-requests-table">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3">Volunteer</th>
+            <th>Task Details</th>
+            <th>Space</th>
+            <th>Reward Awarded</th>
+            <th>Reviewed Date</th>
+            <th class="text-end pe-3">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @processed_volunteer_task_requests.each do |req| %>
+            <% task = req.volunteer_task %>
+            <% volunteer = req.user %>
+            <tr>
+              <!-- Volunteer -->
+              <td class="ps-3">
+                <div class="d-flex align-items-center">
+                  <div class="avatar-circle me-2">
+                    <%= volunteer.name.first.upcase %>
+                  </div>
+                  <div>
+                    <span class="fw-bold d-block text-body">
+                      <%= link_to volunteer.name.titleize, user_path(volunteer.username), class: 'text-decoration-none text-body hover-orange' %>
+                    </span>
+                    <span class="text-body-secondary small">@<%= volunteer.username %></span>
+                  </div>
+                </div>
+              </td>
 
-        <td>
-          <%= vtr.updated_at.strftime('%Y-%m-%d') %>
-          <br>
-          <%= vtr.updated_at.strftime('%I:%M %p').downcase %>
-        </td>
+              <!-- Task Title -->
+              <td>
+                <span class="badge bg-body-secondary text-body-secondary border text-uppercase mb-1"><%= task.category.capitalize %></span>
+                <div class="fw-semibold">
+                  <%= link_to task.title.capitalize, volunteer_task_path(task.id), class: 'text-decoration-none text-body hover-orange' %>
+                </div>
+              </td>
 
-        <td>
-          <%= vite_image_tag 'images/cc.png', alt: 'CC', class: 'ccs hidden', id: 'myCcBlack' %>
-          <%= vtr.volunteer_task.cc %>
-          <br/>
-          <%= vtr.volunteer_task.hours %> hours
-        </td>
+              <!-- Space -->
+              <td>
+                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">
+                  <i class="fa fa-map-marker me-1"></i><%= task.space.try(:name)&.capitalize || 'General' %>
+                </span>
+              </td>
 
-        <td>
-          <%= link_to vtr.volunteer_task.title, volunteer_task_path(vtr.volunteer_task.id) %>
-        </td>
+              <!-- Reward Credited -->
+              <td>
+                <% if req.approval %>
+                  <div class="d-inline-flex align-items-center bg-body-tertiary border rounded-pill px-2 py-1">
+                    <%= vite_image_tag 'images/cc.png', alt: 'CC', class: 'ccs me-1', id: 'myCcBlack', style: 'width: 14px; height: 14px;' %>
+                    <span class="fw-bold me-1 text-success">+<%= task.cc %> CC</span>
+                    <span class="text-body-secondary small">(<%= task.hours %> hrs)</span>
+                  </div>
+                <% else %>
+                  <span class="text-body-secondary small fst-italic">None (Denied)</span>
+                <% end %>
+              </td>
 
-        <td>
-          <%= link_to vtr.user.name, user_path(vtr.user.username) %>
-        </td>
+              <!-- Date -->
+              <td class="small text-nowrap">
+                <div class="fw-medium text-body"><%= req.updated_at.strftime('%b %d, %Y') %></div>
+                <div class="text-body-secondary font-monospace"><%= req.updated_at.strftime('%I:%M %p') %></div>
+              </td>
 
-        <td>
-          <%= vtr.status %>
-        </td>
+              <!-- Status Outcome (Native BS 5.3 Color Subtles) -->
+              <td class="text-end pe-3 text-nowrap">
+                <% if req.approval %>
+                  <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill fw-semibold">
+                    <i class="fa fa-check-circle me-1"></i> Approved
+                  </span>
+                <% else %>
+                  <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 rounded-pill fw-semibold">
+                    <i class="fa fa-times-circle me-1"></i> Denied
+                  </span>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-      </tr>
-    <% end %>
-    </tbody>
-  </table>
-</div>
+  <!-- Pagination -->
+  <% if @pagy_processed && @pagy_processed.pages > 1 %>
+    <div class="d-flex justify-content-center mt-4">
+      <%== @pagy_processed.series_nav(:bootstrap) %>
+    </div>
+  <% end %>
+<% end %>

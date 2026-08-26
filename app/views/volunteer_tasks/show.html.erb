@@ -1,168 +1,118 @@
 <section class="page-contents">
-  <div class="text-center">
+  <div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h2 class="fw-bold mb-1"><%= @volunteer_task.title.capitalize %></h2>
+        <span class="badge bg-primary me-2"><%= @volunteer_task.category.capitalize %></span>
+        <span class="badge bg-secondary"><%= @volunteer_task.space.name.capitalize %></span>
+      </div>
+      <% if current_user.staff? %>
+        <%= link_to edit_volunteer_task_path(@volunteer_task), class: 'btn btn-outline-primary' do %>
+          <i class="fa fa-pencil me-1"></i> Edit / Assign Volunteers
+        <% end %>
+      <% end %>
+    </div>
 
-    <h2>Volunteer Task: <%= @volunteer_task.title.capitalize %></h2>
-    <%= link_to 'Edit', edit_volunteer_task_path(@volunteer_task), class: 'btn btn-primary' if current_user.staff? %>
-    <br><br>
+    <!-- Description & Media Card (Dark-Mode Adaptive) -->
+    <div class="card task-details-card shadow-sm p-4 mb-4">
+      <div class="d-flex align-items-center mb-3">
+        <h5 class="fw-bold mb-0 me-3">Task Details</h5>
+        <div class="d-inline-flex align-items-center px-2 py-1 bg-dark bg-opacity-25 rounded border border-secondary border-opacity-25">
+          <%= vite_image_tag 'images/cc.png', alt: 'CC', class: 'ccs me-1', id: 'myCcBlack', style: 'width: 18px; height: 18px;' %>
+          <strong class="me-2"><%= @volunteer_task.cc %> CC</strong>
+          <span class="text-muted small">(<%= @volunteer_task.hours %> hours)</span>
+        </div>
+      </div>
 
-    <h6><b>Category:</b> <%= @volunteer_task.category.capitalize %></h6>
-    <br />
-
-    <h6><%= vite_image_tag 'images/cc.png', alt: 'CC', class: 'ccs' %>: <%= @volunteer_task.cc %></h6>
-    <br />
-
-    <div class="jumbotron card bg-light text-center text-wrap">
-      <b>Description:</b>
-      <%= @volunteer_task.description %>
+      <p class="lead fs-6 mb-3" style="white-space: pre-line;"><%= @volunteer_task.description %></p>
 
       <% if @photos.present? && @photos.first.image.attached? %>
-        <div id="show-photo">
-            <%= image_tag @photos.first.image, alt: 'Volunteer Task Main image', data: { width: @photos.first.try(:width), height: @photos.first.try(:height) } %>
+        <hr class="opacity-25 my-3">
+        <div id="show-photo" class="mb-3">
+          <%= image_tag @photos.first.image, alt: 'Volunteer Task Main image', class: 'img-fluid rounded border border-secondary border-opacity-25', data: { width: @photos.first.try(:width), height: @photos.first.try(:height) } %>
         </div>
-        <div id="photo-slide">
+        <div id="photo-slide" class="d-flex gap-2">
           <% @photos.each do |p| %>
-            <%= image_tag p.image, alt: 'Volunteer Task Image', data: { width: p.width, height: p.height } %>
+            <%= image_tag p.image, alt: 'Volunteer Task Thumbnail', class: 'img-thumbnail rounded', style: 'width: 80px; height: 80px; object-fit: cover;', data: { width: p.width, height: p.height } %>
           <% end %>
         </div>
       <% end %>
     </div>
 
+    <!-- Assignment Banner & Actions -->
     <% if @volunteer_task.volunteer_task_joins.active.pluck(:user_id).include?(current_user.id) %>
-      <p class="text-success"><b>You've joined this volunteer task.</b></p>
-      <br />
-      <% if @volunteer_task_request.blank? %>
-        <%= link_to "Send 'Task Complete'", create_request_volunteer_task_requests_path(id: @volunteer_task.id),
-                    class: 'btn btn-primary', data: { confirm: 'This will complete this task. Are you sure it is finished?' } %>
-        <br />
-        <br />
-      <% else %>
-        You already completed this task. Your request status is under review. You can check it in the 'Requests' tab.
-        <br />
-        <br />
-      <% end %>
-    <% elsif @volunteer_task.status != "open" %>
-      <p class="text-danger"><b>You can't join this task because it is completed.</b></p>
-      <br />
-    <% elsif !@volunteer_task.require_trainings.blank? %>
-      <% if @user_trainings >= @volunteer_task_trainings %>
+      <div class="alert alert-success d-flex justify-content-between align-items-center mb-4">
         <div>
-          <p>You have all the requirement to join this task.</p>
-          <p>Join this task:</p>
-
-          <% if @volunteer_task.volunteer_task_joins.active.user_type_volunteer.count < @volunteer_task.joins || current_user.staff? %>
-            <%= form_for @new_volunteer_join, url: { controller: 'volunteer_task_joins', action: 'create' } do |f| %>
-              <div>
-                <%= f.hidden_field :volunteer_task_id, value: @volunteer_task.id %>
-                <%= f.submit 'Join', class: 'btn btn-primary' %>
-              </div>
-              <br />
+          <i class="fa fa-check-circle me-2"></i><strong>You are assigned to this volunteer task.</strong>
+        </div>
+        <div>
+          <% if @volunteer_task_request.blank? %>
+            <%= link_to create_request_volunteer_task_requests_path(id: @volunteer_task.id),
+                        class: 'btn btn-success btn-sm fw-bold',
+                        data: { confirm: 'This will submit this task for completion review. Are you sure it is finished?' } do %>
+              <i class="fa fa-send me-1"></i> Submit Task as Complete
             <% end %>
           <% else %>
-            <button class="bth btn-primary">Task is Already Full</button>
-            <br />
-            <br />
+            <span class="badge bg-warning text-dark"><i class="fa fa-clock-o me-1"></i> Completion Under Review</span>
           <% end %>
         </div>
-      <% else %>
-        <p>You don't meet the requirements to join this task. Please complete the proper trainings.</p>
-      <% end %>
-      <br />
-      <br />
-
+      </div>
+    <% elsif @volunteer_task.status == "completed" %>
+      <div class="alert alert-secondary mb-4">
+        <i class="fa fa-flag-checkered me-2"></i> This task has been marked as completed.
+      </div>
     <% else %>
-      <% if @volunteer_task.volunteer_task_joins.active.user_type_volunteer.count < @volunteer_task.joins || current_user.staff? %>
-        <%= form_for @new_volunteer_join, url: { controller: 'volunteer_task_joins', action: 'create' } do |f| %>
-          <div>
-            <%= f.hidden_field :volunteer_task_id, value: @volunteer_task.id %>
-            <%= f.submit 'Join', class: 'btn btn-primary' %>
-          </div>
-          <br />
-        <% end %>
-      <% else %>
-        <button class="bth btn-primary">Task is Already Full</button>
-        <br />
-        <br />
+      <% unless current_user.staff? %>
+        <div class="alert alert-info mb-4">
+          <i class="fa fa-info-circle me-2"></i> Volunteers are assigned to tasks by space managers based on skills, certifications, and availability.
+        </div>
       <% end %>
     <% end %>
 
-    <div class="row">
-
-      <div class="col-6">
-        <b>Status:</b> <%= @volunteer_task.status.capitalize %>
-        <br />
-        <br />
+    <!-- Meta Information Cards -->
+    <div class="row g-4">
+      <div class="col-md-6">
+        <div class="card task-details-card shadow-sm p-3 h-100">
+          <h6 class="fw-bold text-muted mb-3 text-uppercase">Team Assignment</h6>
+          <div class="mb-3">
+            <strong>Responsible Staff:</strong>
+            <div class="mt-1">
+              <% @volunteer_task.volunteer_task_joins.active.where('volunteer_task_joins.user_type = ? OR volunteer_task_joins.user_type = ?', 'Staff', 'Admin').find_each do |staff_join| %>
+                <%= link_to staff_join.user.name.titleize, user_path(staff_join.user.username), class: 'badge bg-primary text-decoration-none me-1' %>
+              <% end %>
+            </div>
+          </div>
+          <div>
+            <strong>Assigned Volunteers:</strong>
+            <div class="mt-1">
+              <% if @volunteer_task.volunteer_task_joins.active.where(user_type: 'Volunteer').exists? %>
+                <% @volunteer_task.volunteer_task_joins.active.where(user_type: 'Volunteer').find_each do |volunteer_join| %>
+                  <%= link_to volunteer_join.user.name.titleize, user_path(volunteer_join.user.username), class: 'badge bg-secondary text-decoration-none me-1' %>
+                <% end %>
+              <% else %>
+                <span class="text-muted small">No volunteers assigned yet</span>
+              <% end %>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div class="col-6">
-        <b>Space:</b> <%= @volunteer_task.space.name.capitalize %>
-        <br />
-        <br />
-      </div>
-
-      <div class="col-6">
-        <h5>Responsible Staff:</h5>
-        <% @volunteer_task.volunteer_task_joins.active.where('volunteer_task_joins.user_type = ? OR volunteer_task_joins.user_type = ?', 'Staff', 'Admin').find_each do |staff_join| %>
-          <%= link_to staff_join.user.name.titleize, user_path(staff_join.user.username), class: 'username' %>
-          <br />
-        <% end %>
-      </div>
-
-      <div class="col-6">
-        <h5>Responsible Volunteers:</h5>
-        <% @volunteer_task.volunteer_task_joins.active.where(user_type: 'Volunteer').find_each do |volunteer_join| %>
-          <%= link_to volunteer_join.user.name.titleize, user_path(volunteer_join.user.username), class: 'username' %>
-          <br />
-        <% end %>
-      </div>
-    </div>
-
-    <hr>
-
-    <div class="row">
-      <div class="col-12 mb-5">
-        <% if !@required_trainings.blank? %>
-          <p><b>Certifications needed:</b></p>
-          <% @required_trainings.find_each do |rt| %>
-            <%= rt.training.localized_name.capitalize %>
-            <br />
+      <div class="col-md-6">
+        <div class="card task-details-card shadow-sm p-3 h-100">
+          <h6 class="fw-bold text-muted mb-3 text-uppercase">Certifications & Requirements</h6>
+          <% if @required_trainings.present? %>
+            <ul class="mb-0 ps-3">
+              <% @required_trainings.find_each do |rt| %>
+                <li class="mb-1"><strong><%= rt.training.localized_name.capitalize %></strong></li>
+              <% end %>
+            </ul>
+          <% else %>
+            <p class="text-muted mb-0 small">No prerequisite certifications needed for this task.</p>
           <% end %>
-        <% else %>
-          <p>No certification needed.</p>
-        <% end %>
+        </div>
       </div>
-
-      <%# if current_user.staff? %>
-
-<!--        <div class="col-12">-->
-<!--          <p>Add Required Certifications for this Task:</p>-->
-          <%#= form_for @new_required_training, url: {controller: "require_trainings", action: "create"} do |f| %>
-            <%#= f.hidden_field :volunteer_task_id, value: @volunteer_task.id %>
-            <%#= f.select :training_id, @trainings, {prompt: "Choose Training"}, {class: 'form-control form-select', 'data-live-search': 'true'} %>
-<!--            <br />-->
-<!--            <br />-->
-            <%#= f.submit "Add Required Certification", class: "btn btn-primary mb-5" %>
-          <%# end %>
-<!--        </div>-->
-
-<!--        <div class="col-12">-->
-<!--          <p>Remove Required Certifications for this Task:</p>-->
-          <%#= form_for @new_required_training, url: {controller: "require_trainings", action: "remove_trainings"} do |f| %>
-            <%#= f.hidden_field :volunteer_task_id, value: @volunteer_task.id %>
-            <%#= f.select :training_id, @trainings_already_added, {prompt: "Choose Training"}, {class: 'form-control form-select', 'data-live-search': 'true'} %>
-<!--            <br />-->
-<!--            <br />-->
-            <%#= f.submit "Remove Required Certification", class: "btn btn-danger mb-5" %>
-          <%# end %>
-<!--        </div>-->
-
-        <%#= render "volunteer_task_joins/new" %>
-
-        <%#= render "volunteer_task_joins/remove" %>
-
-      <%# end %>
-      </div>
-
     </div>
+
   </div>
 </section>
 

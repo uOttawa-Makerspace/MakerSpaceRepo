@@ -7,17 +7,24 @@ class VolunteerTasksController < SessionsController
   before_action :volunteer_access, only: %i[show index]
 
   def index
-    open_scope =
-      VolunteerTask
-        .where(status: "open")
-        .order(created_at: :desc)
+    assigned_task_ids = VolunteerTaskJoin.where(user_type: "Volunteer").select(:volunteer_task_id)
 
-    completed_scope =
-      VolunteerTask
-        .where(status: "completed")
-        .order(created_at: :desc)
+    # Available Tasks (Open tasks with no volunteers assigned)
+    available_scope = VolunteerTask.where(status: "open")
+                                   .where.not(id: assigned_task_ids)
+                                   .order(created_at: :desc)
 
-    @pagy_open, @open_volunteer_tasks = pagy(open_scope, limit: 50)
+    # Assigned Tasks (Open tasks that already have a volunteer assigned)
+    assigned_scope = VolunteerTask.where(status: "open")
+                                  .where(id: assigned_task_ids)
+                                  .order(created_at: :desc)
+
+    # Completed Tasks
+    completed_scope = VolunteerTask.where(status: "completed")
+                                   .order(created_at: :desc)
+
+    @pagy_available, @available_volunteer_tasks = pagy(available_scope, page_key: "page_available", limit: 50)
+    @pagy_assigned, @assigned_volunteer_tasks   = pagy(assigned_scope, page_key: "page_assigned", limit: 50)
     @pagy_completed, @completed_volunteer_tasks = pagy(completed_scope, page_key: "page_completed", limit: 50)
   end
 

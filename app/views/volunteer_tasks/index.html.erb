@@ -1,39 +1,104 @@
-<section class="page-contents">
-  <div class="text-center">
-    <h2 class="mb-3 fw-bold">Volunteer Tasks</h2>
+<section id="volunteerTasksIndex" class="page-contents py-4">
+  <div class="container-xl">
 
-    <div class="accordion" id="volunteerTasksAccordion">
-      <!-- Open Tasks -->
-      <div class="accordion-item">
-        <h2 class="accordion-header" id="openTasks">
-          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
-            Open Volunteer Tasks
+    <!-- 1. Top Header -->
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4">
+      <div>
+        <h2 class="page-title fw-bold mb-1">Volunteer Tasks</h2>
+        <p class="text-body-secondary mb-0 small">Explore available tasks, requirements, and earn CC rewards.</p>
+      </div>
+      <% if current_user.staff? %>
+        <div>
+          <%= link_to new_volunteer_task_path, class: 'btn btn-ceed-primary rounded-pill px-4 py-2 fw-bold d-inline-flex align-items-center gap-2 shadow-sm' do %>
+            <i class="fa fa-plus"></i>
+            <span>Create New Task</span>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- 2. Scrollable Status Tabs (Mobile Touch-Friendly) -->
+    <div class="status-tabs-wrapper mb-4">
+      <ul class="nav nav-pills bg-body-tertiary border p-1 rounded-pill d-inline-flex flex-nowrap task-status-pills" id="taskStatusTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active rounded-pill text-nowrap fw-semibold" id="available-tab" data-bs-toggle="pill" data-bs-target="#available-pane" type="button" role="tab">
+            <i class="fa fa-folder-open-o me-1"></i> Available Tasks
+            <span class="badge rounded-pill ms-1 bg-white text-dark"><%= @available_volunteer_tasks.count %></span>
           </button>
-        </h2>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link rounded-pill text-nowrap fw-semibold" id="assigned-tab" data-bs-toggle="pill" data-bs-target="#assigned-pane" type="button" role="tab">
+            <i class="fa fa-hourglass-half me-1"></i> Assigned Tasks
+            <span class="badge rounded-pill ms-1 bg-warning-subtle text-warning-emphasis"><%= @assigned_volunteer_tasks.count %></span>
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link rounded-pill text-nowrap fw-semibold" id="completed-tab" data-bs-toggle="pill" data-bs-target="#completed-pane" type="button" role="tab">
+            <i class="fa fa-check-circle-o me-1"></i> Completed Tasks
+            <span class="badge rounded-pill ms-1 bg-secondary-subtle text-secondary-emphasis"><%= @completed_volunteer_tasks.count %></span>
+          </button>
+        </li>
+      </ul>
+    </div>
 
-        <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="openTasks" data-bs-parent="#volunteerTasksAccordion">
-          <div class="accordion-body">
-            <%= render partial: 'volunteer_tasks/volunteer_task_table',
-                       locals: { volunteer_tasks: @open_volunteer_tasks, title: 'Open Volunteer Tasks', type: 'open' } %>
+    <!-- 3. Responsive Search & TomSelect Filters Toolbar -->
+    <div class="card bg-body border shadow-sm rounded-4 p-3 mb-4">
+      <div class="row g-2 align-items-center">
+        <!-- Search Keyword -->
+        <div class="col-12 col-md-5 col-lg-4">
+          <div class="input-group">
+            <span class="input-group-text border-end-0 bg-transparent text-body-secondary"><i class="fa fa-search"></i></span>
+            <input type="text" id="taskSearchInput" class="form-control border-start-0 ps-0 shadow-none bg-transparent text-body" placeholder="Search tasks, space, skills..." autocomplete="off">
           </div>
         </div>
-      </div>
 
-      <!-- Completed Tasks -->
-      <div class="accordion-item">
-        <h2 class="accordion-header" id="completedTasks">
-          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-            Completed Volunteer Tasks
-          </button>
-        </h2>
+        <!-- Space Filter -->
+        <div class="col-6 col-md-3 col-lg-2">
+          <select id="spaceFilter" class="tom-select-filter" placeholder="Filter Space">
+            <option value="">All Spaces</option>
+            <% Space.all.order(name: :asc).each do |s| %>
+              <option value="<%= s.name.downcase %>"><%= s.name.capitalize %></option>
+            <% end %>
+          </select>
+        </div>
 
-        <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="completedTasks" data-bs-parent="#volunteerTasksAccordion">
-          <div class="accordion-body">
-            <%= render partial: 'volunteer_tasks/volunteer_task_table',
-                       locals: { volunteer_tasks: @completed_volunteer_tasks, title: 'Completed Volunteer Tasks', type: 'completed' } %>
-          </div>
+        <!-- Category Filter -->
+        <div class="col-6 col-md-4 col-lg-2">
+          <select id="categoryFilter" class="tom-select-filter" placeholder="Filter Category">
+            <option value="">All Categories</option>
+            <option value="events">Events</option>
+            <option value="projects">Projects</option>
+            <option value="supervising">Supervising</option>
+            <option value="workshops">Workshops</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <!-- Multi-Select Certifications Filter -->
+        <div class="col-12 col-lg-4">
+          <select id="certFilter" class="tom-select-filter" multiple placeholder="Filter by Certifications...">
+            <% Training.all.order(name: :asc).each do |t| %>
+              <option value="<%= t.localized_name.downcase %>"><%= t.localized_name.capitalize %></option>
+            <% end %>
+          </select>
         </div>
       </div>
     </div>
+
+    <!-- 4. Tab Panes -->
+    <div class="tab-content" id="taskStatusTabsContent">
+      <div class="tab-pane fade show active" id="available-pane" role="tabpanel" tabindex="0">
+        <%= render partial: 'volunteer_tasks/task_card_grid', locals: { volunteer_tasks: @available_volunteer_tasks, pagy: @pagy_available, empty_message: "No available tasks right now. Check back soon!" } %>
+      </div>
+
+      <div class="tab-pane fade" id="assigned-pane" role="tabpanel" tabindex="0">
+        <%= render partial: 'volunteer_tasks/task_card_grid', locals: { volunteer_tasks: @assigned_volunteer_tasks, pagy: @pagy_assigned, empty_message: "No tasks currently in progress." } %>
+      </div>
+
+      <div class="tab-pane fade" id="completed-pane" role="tabpanel" tabindex="0">
+        <%= render partial: 'volunteer_tasks/task_card_grid', locals: { volunteer_tasks: @completed_volunteer_tasks, pagy: @pagy_completed, empty_message: "No completed tasks yet." } %>
+      </div>
+    </div>
+
   </div>
 </section>

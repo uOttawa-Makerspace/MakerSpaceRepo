@@ -1,73 +1,76 @@
 <div>
-  <h2 class="fw-bold"><%= title %></h2>
+  <h3 class="fw-bold mb-3"><%= title %></h3>
 
   <div class="input-group w-50 mx-auto mb-4">
     <input type="text" id="query-<%= type %>" onkeyup="findSession('<%= type %>-table', id='query-<%= type %>')"
-           placeholder="Find by: date, title, description, ..." class="form-control mx-auto">
-    <i class="fa-solid fa-magnifying-glass input-group-text fa-2x pe-2"></i>
+           placeholder="Find by: date, title, description, ..." class="form-control search-task-input mx-auto">
+    <span class="input-group-text"><i class="fa-solid fa-magnifying-glass"></i></span>
   </div>
 
   <div class="table-responsive">
-    <table class="table <%= type %>-table table-striped">
-      <thead class="table-primary">
+    <table class="table <%= type %>-table table-striped table-hover align-middle">
+      <thead>
         <tr>
-          <th class="action-header">Action</th>
-          <th>CC/Hours<span onclick="sortTable('<%= type %>-table', 1)"><i class="fa-solid fa-arrow-down"></i></span></th>
-          <th>Category<span onclick="sortTable('<%= type %>-table', 2)"><i class="fa-solid fa-arrow-down"></i></span></th>
-          <th>Title <span onclick="sortTable('<%= type %>-table', 3)"><i class="fa-solid fa-arrow-down"></i></span></th>
-          <th>Status<span onclick="sortTable('<%= type %>-table', 4)"><i class="fa-solid fa-arrow-down"></i></span></th>
-          <th>Certifications Needed<span onclick="sortTable('<%= type %>-table', 5)"><i class="fa-solid fa-arrow-down"></i></span></th>
-          <th>Space<span onclick="sortTable('<%= type %>-table', 6)"><i class="fa-solid fa-arrow-down"></i></span></th>
-          <th>Responsable Staff<span onclick="sortTable('<%= type %>-table', 7)"><i class="fa-solid fa-arrow-down"></i></span></th>
-          <th>Users<span onclick="sortTable('<%= type %>-table', 8)"><i class="fa-solid fa-arrow-down"></i></span></th>
-          <th>Date Submitted <span onclick="sortTable('<%= type %>-table', 9)"><i class="fa-solid fa-arrow-down"></i></span></th>
+          <th class="action-header text-center">Action</th>
+          <th>CC/Hours <span onclick="sortTable('<%= type %>-table', 1)" role="button"><i class="fa-solid fa-arrow-down small text-muted"></i></span></th>
+          <th>Category <span onclick="sortTable('<%= type %>-table', 2)" role="button"><i class="fa-solid fa-arrow-down small text-muted"></i></span></th>
+          <th>Title <span onclick="sortTable('<%= type %>-table', 3)" role="button"><i class="fa-solid fa-arrow-down small text-muted"></i></span></th>
+          <th>Status <span onclick="sortTable('<%= type %>-table', 4)" role="button"><i class="fa-solid fa-arrow-down small text-muted"></i></span></th>
+          <th>Certifications Needed <span onclick="sortTable('<%= type %>-table', 5)" role="button"><i class="fa-solid fa-arrow-down small text-muted"></i></span></th>
+          <th>Space <span onclick="sortTable('<%= type %>-table', 6)" role="button"><i class="fa-solid fa-arrow-down small text-muted"></i></span></th>
+          <th>Responsible Staff <span onclick="sortTable('<%= type %>-table', 7)" role="button"><i class="fa-solid fa-arrow-down small text-muted"></i></span></th>
+          <th>Assigned Volunteers <span onclick="sortTable('<%= type %>-table', 8)" role="button"><i class="fa-solid fa-arrow-down small text-muted"></i></span></th>
+          <th>Date Submitted <span onclick="sortTable('<%= type %>-table', 9)" role="button"><i class="fa-solid fa-arrow-down small text-muted"></i></span></th>
           <% if current_user.staff? %>
-            <th>Created by <span onclick="sortTable('<%= type %>-table', 10)"><i class="fa-solid fa-arrow-down"></i></span></th>
+            <th>Created by <span onclick="sortTable('<%= type %>-table', 10)" role="button"><i class="fa-solid fa-arrow-down small text-muted"></i></span></th>
           <% end %>
         </tr>
       </thead>
 
       <tbody>
-        <%== @pagy.series_nav(:bootstrap) if @pagy && @pagy.pages > 1 %>
+        <% local_pagy = local_assigns[:pagy] || @pagy %>
+        <%== local_pagy.series_nav(:bootstrap) if local_pagy && local_pagy.pages > 1 %>
         <% volunteer_tasks.each do |vt| %>
           <tr>
-            <td class="action-cell">
-              <%= link_to 'Edit', edit_volunteer_task_path(vt.id), class: 'd-block w-100 btn btn-primary btn-sm' if current_user.staff? %>
-              <%= link_to 'Show', volunteer_task_path(vt.id), class: 'd-block w-100 btn btn-info btn-sm' %>
-              <%= if current_user.staff?
-                    button_to 'Delete', { controller: :volunteer_tasks, action: :destroy, id: vt.id }, method: :delete,
-                                                                                                       data: { confirm: 'Are you sure that you want to delete this volunteer task? If you delete it, it will also delete all the volunteers hours related to it.' },
-                                                                                                       class: 'd-block w-100 btn btn-danger btn-sm mt-2'
-                  end %>
+            <td class="action-cell text-center" style="min-width: 110px;">
+              <%= link_to 'Show', volunteer_task_path(vt.id), class: 'btn btn-info btn-sm w-100 mb-1' %>
+              <% if current_user.staff? %>
+                <%= link_to 'Edit', edit_volunteer_task_path(vt.id), class: 'btn btn-outline-primary btn-sm w-100 mb-1' %>
+                <%= button_to 'Delete', { controller: :volunteer_tasks, action: :destroy, id: vt.id }, method: :delete,
+                              data: { confirm: 'Are you sure that you want to delete this volunteer task? If you delete it, it will also delete all the volunteer hours related to it.' },
+                              class: 'btn btn-outline-danger btn-sm w-100' %>
+              <% end %>
             </td>
 
             <td>
-              <%= vite_image_tag 'images/cc.png', alt: 'CC', class: 'ccs hidden', id: 'myCcBlack' %>
-              <%= vt.cc %>
-              <br />
-              <%= vt.hours %> hours
+              <%= vite_image_tag 'images/cc.png', alt: 'CC', class: 'ccs me-1', id: 'myCcBlack', style: 'width: 16px; height: 16px;' %>
+              <strong><%= vt.cc %></strong>
+              <div class="small text-muted"><%= vt.hours %> hrs</div>
             </td>
 
             <td>
-              <%= vt.category.capitalize %>
+              <span class="badge bg-secondary"><%= vt.category.capitalize %></span>
             </td>
 
-            <td>
+            <td class="fw-semibold">
               <%= vt.title %>
             </td>
 
             <td>
-              <%= vt.status.capitalize %>
+              <% if vt.status == "open" %>
+                <span class="badge bg-success">Open</span>
+              <% else %>
+                <span class="badge bg-secondary"><%= vt.status.capitalize %></span>
+              <% end %>
             </td>
 
             <td>
-              <% if !vt.require_trainings.blank? %>
+              <% if vt.require_trainings.present? %>
                 <% vt.require_trainings.find_each do |rt| %>
-                  <%= rt.training.localized_name.capitalize %>
-                  <br />
+                  <span class="badge bg-dark border border-secondary mb-1"><%= rt.training.localized_name.capitalize %></span><br/>
                 <% end %>
               <% else %>
-                None
+                <span class="text-muted small">None</span>
               <% end %>
             </td>
 
@@ -75,34 +78,33 @@
               <%= vt.space.name.capitalize %>
             </td>
 
-            <td class = "username">
+            <td class="username">
               <% vt.volunteer_task_joins.active.where('volunteer_task_joins.user_type = ? OR volunteer_task_joins.user_type = ?',
                                                       'Staff', 'Admin').find_each do |staff_joins| %>
-                <%= link_to staff_joins.user.name.titleize, user_path(staff_joins.user.username) %>
+                <%= link_to staff_joins.user.name.titleize, user_path(staff_joins.user.username), class: 'text-decoration-none' %>
                 <br />
               <% end %>
             </td>
 
-            <td class = "username">
-              <% if !vt.volunteer_task_joins.blank? %>
+            <td class="username">
+              <% if vt.volunteer_task_joins.active.where(user_type: 'Volunteer').exists? %>
                 <% vt.volunteer_task_joins.active.where(user_type: 'Volunteer').find_each do |volunteer_joins| %>
-                  <%= link_to volunteer_joins.user.name.titleize, user_path(volunteer_joins.user.username) %>
+                  <%= link_to volunteer_joins.user.name.titleize, user_path(volunteer_joins.user.username), class: 'text-decoration-none' %>
                   <br />
                 <% end %>
               <% else %>
-                -
+                <span class="text-muted small">Unassigned</span>
               <% end %>
             </td>
 
-            <td>
-              <%= vt.created_at.strftime('%m/%e/%Y (%b)') %>
-              <br>
-              <%= vt.created_at.strftime('%I:%M %p').downcase %>
+            <td class="small">
+              <%= vt.created_at.strftime('%m/%d/%Y') %>
+              <div class="text-muted"><%= vt.created_at.strftime('%I:%M %p').downcase %></div>
             </td>
 
             <% if current_user.staff? %>
-              <td class = "username">
-                <%= link_to vt.user.name.titleize, user_path(vt.user.username) %>
+              <td class="username small">
+                <%= link_to vt.user.name.titleize, user_path(vt.user.username), class: 'text-decoration-none' %>
               </td>
             <% end %>
 

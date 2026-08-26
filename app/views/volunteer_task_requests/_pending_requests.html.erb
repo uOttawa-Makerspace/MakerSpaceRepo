@@ -1,62 +1,110 @@
-
-<div class="table-responsive">
-    <table class="table table-striped sessions-table">
-    <thead class="table-primary">
-        <tr>
-            <th>Date Submitted <span onclick="sortTable('sessions-table', 0, true)"><i class="fa-solid fa-arrow-down"></i></span></th>
-            <th>Date Updated <span onclick="sortTable('sessions-table', 1, true)"><i class="fa-solid fa-arrow-down"></i></span></th>
-            <th>CC/Hours<span onclick="sortTable('sessions-table', 2)"><i class="fa-solid fa-arrow-down"></i></span></th>
-            <th>Task<span onclick="sortTable('sessions-table', 3)"><i class="fa-solid fa-arrow-down"></i></span></th>
-            <th>User<span onclick="sortTable('sessions-table', 4)"><i class="fa-solid fa-arrow-down"></i></span></th>
-            <th>Status<span onclick="sortTable('sessions-table', 5)"><i class="fa-solid fa-arrow-down"></i></span></th>
-            <% if current_user.staff? %>
-            <th class="action-header">Action</th>
-            <% end %>
-        </tr>
-    </thead>
+<% if @pending_volunteer_task_requests.blank? %>
+  <div class="text-center py-5 card bg-body border shadow-sm rounded-4 p-4">
+    <div class="mb-3">
+      <i class="fa fa-check-circle-o fa-3x text-success"></i>
+    </div>
+    <h5 class="fw-bold mb-1 text-body">All Caught Up!</h5>
+    <p class="text-body-secondary small mb-0">There are no pending completion requests waiting for review.</p>
+  </div>
+<% else %>
+  <div class="card bg-body border shadow-sm rounded-4 overflow-hidden">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0 custom-requests-table">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3">Volunteer</th>
+            <th>Task Details</th>
+            <th>Space</th>
+            <th>Reward & Hours</th>
+            <th>Submitted</th>
+            <th class="text-end pe-3">Actions</th>
+          </tr>
+        </thead>
         <tbody>
-        <%== @pagy_pending.series_nav(:bootstrap) if @pagy_pending && @pagy_pending.pages > 1 %>
-        <% @pending_volunteer_task_requests.each do |vtr| %>
-        <tr>
-            <td>
-                <%= vtr.created_at.strftime('%Y-%m-%d') %>
-                <br>
-                <%= vtr.created_at.strftime('%I:%M %p').downcase %>
-            </td>
+          <% @pending_volunteer_task_requests.each do |req| %>
+            <% task = req.volunteer_task %>
+            <% volunteer = req.user %>
+            <tr>
+              <!-- Volunteer Info -->
+              <td class="ps-3">
+                <div class="d-flex align-items-center">
+                  <div class="avatar-circle me-2">
+                    <%= volunteer.name.first.upcase %>
+                  </div>
+                  <div>
+                    <span class="fw-bold d-block text-body">
+                      <%= link_to volunteer.name.titleize, user_path(volunteer.username), class: 'text-decoration-none text-body hover-orange' %>
+                    </span>
+                    <span class="text-body-secondary small">@<%= volunteer.username %></span>
+                  </div>
+                </div>
+              </td>
 
-            <td>
-                <%= vtr.updated_at.strftime('%Y-%m-%d') %>
-                <br>
-                <%= vtr.updated_at.strftime('%I:%M %p').downcase %>
-            </td>
+              <!-- Task Title -->
+              <td>
+                <span class="badge bg-body-secondary text-body-secondary border text-uppercase mb-1"><%= task.category.capitalize %></span>
+                <div class="fw-semibold">
+                  <%= link_to task.title.capitalize, volunteer_task_path(task.id), class: 'text-decoration-none text-body hover-orange' %>
+                </div>
+              </td>
 
-            <td>
-                <%= vite_image_tag 'images/cc.png', alt: 'CC', class: 'ccs hidden', id: 'myCcBlack' %>
-                <%= vtr.volunteer_task.cc %>
-                <br/>
-                <%= vtr.volunteer_task.hours %> hours
-            </td>
+              <!-- Space -->
+              <td>
+                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">
+                  <i class="fa fa-map-marker me-1"></i><%= task.space.try(:name)&.capitalize || 'General' %>
+                </span>
+              </td>
 
-            <td>
-                <%= link_to vtr.volunteer_task.title, volunteer_task_path(vtr.volunteer_task.id) %>
-            </td>
+              <!-- Rewards & Hours -->
+              <td>
+                <div class="d-inline-flex align-items-center bg-body-tertiary border rounded-pill px-2 py-1">
+                  <%= vite_image_tag 'images/cc.png', alt: 'CC', class: 'ccs me-1', id: 'myCcBlack', style: 'width: 14px; height: 14px;' %>
+                  <span class="fw-bold me-1 text-primary"><%= task.cc %> CC</span>
+                  <span class="text-body-secondary small">(<%= task.hours %> hrs)</span>
+                </div>
+              </td>
 
-            <td>
-                <%= link_to vtr.user.name, user_path(vtr.user.username) %>
-            </td>
+              <!-- Date Submitted -->
+              <td class="small text-nowrap">
+                <div class="fw-medium text-body"><%= req.created_at.strftime('%b %d, %Y') %></div>
+                <div class="text-body-secondary font-monospace"><%= req.created_at.strftime('%I:%M %p') %></div>
+              </td>
 
-            <td>
-                Waiting for approval
-            </td>
-            <% if current_user.staff? %>
-            <td class="action-cell">
-                <%= button_to '<i class="fa-solid fa-xmark"></i>'.html_safe, { controller: :volunteer_task_requests, action: :update_approval, id: vtr.id, approval: false }, method: :put, class: 'btn btn-default x-button' %>
-                <%= button_to '<i class="fa-solid fa-check"></i>'.html_safe, { controller: :volunteer_task_requests, action: :update_approval, id: vtr.id, approval: true }, method: :put, class: 'btn btn-default check-button' %>
-            </td>
-            <% end %>
+              <!-- Actions (Staff vs Student) -->
+              <td class="text-end pe-3 text-nowrap">
+                <% if current_user.staff? %>
+                  <div class="d-inline-flex gap-2 align-items-center">
+                    <%= button_to update_approval_volunteer_task_requests_path(id: req.id, approval: true),
+                                  method: :put,
+                                  data: { confirm: "Approve this task? This will credit #{task.cc} CC and log #{task.hours} hours for #{volunteer.name.titleize}." },
+                                  class: 'btn btn-success btn-sm rounded-pill px-3 py-1 fw-bold shadow-sm' do %>
+                      <i class="fa fa-check me-1"></i> Approve
+                    <% end %>
 
-        </tr>
-        <% end %>
+                    <%= button_to update_approval_volunteer_task_requests_path(id: req.id, approval: false),
+                                  method: :put,
+                                  data: { confirm: "Deny this completion request for #{volunteer.name.titleize}?" },
+                                  class: 'btn btn-outline-danger btn-sm rounded-pill px-3 py-1 fw-bold' do %>
+                      <i class="fa fa-times me-1"></i> Deny
+                    <% end %>
+                  </div>
+                <% else %>
+                  <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-2 rounded-pill fw-semibold">
+                    <i class="fa fa-clock-o me-1"></i> Under Review
+                  </span>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
         </tbody>
-    </table>
-</div>
+      </table>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <% if @pagy_pending && @pagy_pending.pages > 1 %>
+    <div class="d-flex justify-content-center mt-4">
+      <%== @pagy_pending.series_nav(:bootstrap) %>
+    </div>
+  <% end %>
+<% end %>

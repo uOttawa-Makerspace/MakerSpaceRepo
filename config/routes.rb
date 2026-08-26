@@ -609,7 +609,7 @@ Rails.application.routes.draw do
     collection do
       get :emails
       get :volunteer_list
-      get :join_volunteer_program
+      match :join_volunteer_program, via: %i[get post]
       get :my_stats
       get :calendar
       get :shadowing_shifts
