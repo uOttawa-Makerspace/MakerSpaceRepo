@@ -1,148 +1,369 @@
-<section class="page-contents">
-  <div class="text-center">
+<% user = current_user %>
 
-    <div class="container">
-      <div class="row my-5">
-        <div class="mx-auto col-md-4 text-center">
-          <b>Total CCs:</b> <%= vite_image_tag 'images/cc.png', alt: 'CC', class: 'ccs' %>: <b><%= current_user.get_total_cc %></b>
-          <br />
-        </div>
-        <div class="mx-auto col-md-4 text-center">
-          <b>Total Hours Worked: <%= current_user.get_total_hours %></b>
+<section class="page-contents py-3 py-md-4">
+  <div class="container-xl">
+
+    <!-- Page Title Header -->
+    <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2 mb-3 mb-md-4 pb-2 border-bottom border-secondary-subtle">
+      <div>
+        <h1 class="h3 fw-bold text-body-emphasis mb-1">My Volunteer Stats</h1>
+        <p class="text-body-secondary small mb-0">Overview of earned credits, volunteer hours, and skill certifications.</p>
+      </div>
+      <div>
+        <span class="badge bg-body-tertiary text-body-emphasis border border-secondary-subtle px-3 py-2 rounded-pill small">
+          <i class="fa-solid fa-user-check text-ceed-orange me-1"></i> <%= begin
+                                                                             user.name
+                                                                           rescue StandardError
+                                                                             'Volunteer'
+                                                                           end %>
+        </span>
+      </div>
+    </div>
+
+    <!-- 1. KPI Metric Summary Cards (2x2 on Mobile, 4-col on Desktop) -->
+    <div class="row g-2 g-md-3 mb-3 mb-md-4">
+      
+      <!-- Total CCs -->
+      <div class="col-6 col-lg-3">
+        <div class="card h-100 border border-warning-subtle bg-warning-subtle text-warning-emphasis rounded-3 shadow-sm">
+          <div class="card-body p-2 p-md-3">
+            <span class="small fw-semibold text-uppercase text-body-secondary d-block mb-1 text-truncate" style="font-size: 0.72rem;">Total CC</span>
+            <div class="d-flex align-items-center justify-content-between">
+              <span class="fs-4 fs-md-3 fw-bold text-body-emphasis"><%= user.get_total_cc %></span>
+              <span class="fs-5">
+                <%= begin
+                      vite_image_tag 'images/cc.png', alt: 'CC', class: 'ccs', style: 'width: 24px; height: 24px; object-fit: contain;'
+                    rescue StandardError
+                      fa_icon("coins", class: "text-warning")
+                    end %>
+              </span>
+            </div>
+          </div>
         </div>
       </div>
-      <hr class="my-5"/>
 
-      <h2 class="fw-bold">CC and Hours</h2>
-
-      <div class="row">
-        <% if !@processed_volunteer_task_requests.blank? %>
-
-          <input type="text" id="query-2" onkeyup="findSession('sessions-table-2', 'query-2')" placeholder="Find by: date, title, description, ..." class="form-control mx-auto">
-
-          <div class="table-responsive">
-            <table class="table sessions-table-2">
-
-              <tr>
-                <th>Date Submitted <span onclick="sortTable('sessions-table-2', 0, true)"><i class="fa-solid fa-arrow-down"></i></span></th>
-                <th>Date Updated <span onclick="sortTable('sessions-table-2', 1, true)"><i class="fa-solid fa-arrow-down"></i></span></th>
-                <th>CC/Hours<span onclick="sortTable('sessions-table-2', 2)"><i class="fa-solid fa-arrow-down"></i></span></th>
-                <th>Task<span onclick="sortTable('sessions-table-2', 3)"><i class="fa-solid fa-arrow-down"></i></span></th>
-                <th>Status<span onclick="sortTable('sessions-table', 4)"><i class="fa-solid fa-arrow-down"></i></span></th>
-              </tr>
-
-              <tbody>
-              <%== @pagy.series_nav(:bootstrap) if @pagy && @pagy.pages > 1 %>
-              <% @processed_volunteer_task_requests.each do |vtr| %>
-                <tr>
-                  <td>
-                    <%= vtr.created_at.strftime('%Y-%m-%d') %>
-                    <br>
-                    <%= vtr.created_at.strftime('%I:%M %p').downcase %>
-                  </td>
-
-                  <td>
-                    <%= vtr.updated_at.strftime('%Y-%m-%d') %>
-                    <br>
-                    <%= vtr.updated_at.strftime('%I:%M %p').downcase %>
-                  </td>
-
-                  <td>
-                    <%= vite_image_tag 'images/cc.png', alt: 'CC', class: 'ccs hidden', id: 'myCcBlack' %>
-                    <%= vtr.volunteer_task.cc %>
-                    <br />
-                    <%= vtr.volunteer_task.hours %> hours
-                  </td>
-
-                  <td class = "username">
-                    <%= link_to vtr.volunteer_task.title.capitalize, volunteer_task_path(vtr.volunteer_task.id) %>
-                  </td>
-
-                  <td>
-                    <%= vtr.status %>
-                  </td>
-
-                </tr>
-              <% end %>
-              </tbody>
-            </table>
+      <!-- Total Hours Worked -->
+      <div class="col-6 col-lg-3">
+        <div class="card h-100 border border-secondary-subtle bg-body-tertiary rounded-3 shadow-sm">
+          <div class="card-body p-2 p-md-3">
+            <span class="small fw-semibold text-uppercase text-body-secondary d-block mb-1 text-truncate" style="font-size: 0.72rem;">Hours Worked</span>
+            <div class="d-flex align-items-center justify-content-between">
+              <span class="fs-4 fs-md-3 fw-bold text-body-emphasis"><%= user.get_total_hours %></span>
+              <i class="fa-solid fa-clock-rotate-left fs-5 text-ceed-orange"></i>
+            </div>
           </div>
-        <% else %>
-          <div class="m-5 mx-auto">
-            No CC points and no hours worked.
-          </div>
-        <% end %>
-
+        </div>
       </div>
 
-      <hr class="my-5"/>
+      <!-- Approved Tasks -->
+      <div class="col-6 col-lg-3">
+        <div class="card h-100 border border-success-subtle bg-success-subtle text-success-emphasis rounded-3 shadow-sm">
+          <div class="card-body p-2 p-md-3">
+            <span class="small fw-semibold text-uppercase text-body-secondary d-block mb-1 text-truncate" style="font-size: 0.72rem;">Approved Tasks</span>
+            <div class="d-flex align-items-center justify-content-between">
+              <span class="fs-4 fs-md-3 fw-bold text-body-emphasis"><%= @processed_volunteer_task_requests&.count || 0 %></span>
+              <i class="fa-solid fa-circle-check fs-5 text-success"></i>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      <h2 class="fw-bold">Skills</h2>
+      <!-- Certifications -->
+      <div class="col-6 col-lg-3">
+        <div class="card h-100 border border-info-subtle bg-info-subtle text-info-emphasis rounded-3 shadow-sm">
+          <div class="card-body p-2 p-md-3">
+            <span class="small fw-semibold text-uppercase text-body-secondary d-block mb-1 text-truncate" style="font-size: 0.72rem;">Certifications</span>
+            <div class="d-flex align-items-center justify-content-between">
+              <span class="fs-4 fs-md-3 fw-bold text-body-emphasis"><%= @certifications&.count || 0 %></span>
+              <i class="fa-solid fa-award fs-5 text-info"></i>
+            </div>
+          </div>
+        </div>
+      </div>
 
+    </div>
 
+    <!-- 2. Responsive Segmented Switcher -->
+    <ul class="nav nav-pills nav-fill w-100 bg-body-tertiary border border-secondary-subtle rounded-3 p-1 mb-3 mb-md-4 shadow-sm task-status-pills" id="statsTab" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active rounded-2 py-2 px-2 small fw-semibold text-center" id="skills-tab" data-bs-toggle="pill" data-bs-target="#skills-pane" type="button" role="tab" aria-controls="skills-pane" aria-selected="true">
+          <i class="fa-solid fa-graduation-cap me-1"></i> Skills & Progression
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link rounded-2 py-2 px-2 small fw-semibold text-center" id="history-tab" data-bs-toggle="pill" data-bs-target="#history-pane" type="button" role="tab" aria-controls="history-pane" aria-selected="false">
+          <i class="fa-solid fa-clock-rotate-left me-1"></i> CC & Hours History
+        </button>
+      </li>
+    </ul>
 
-      <div class="row my-5">
-        <div class="col-md-12">
-          <div class="accordion">
+    <!-- 3. Tab Contents -->
+    <div class="tab-content" id="statsTabContent">
+
+      <!-- ========================================== -->
+      <!-- TAB 1: SKILLS & CERTIFICATIONS             -->
+      <!-- ========================================== -->
+      <div class="tab-pane fade show active" id="skills-pane" role="tabpanel" aria-labelledby="skills-tab" tabindex="0">
+        
+        <!-- TomSelect Quick Jump Search -->
+        <div class="card bg-body border border-secondary-subtle rounded-3 p-3 mb-3 mb-md-4 shadow-sm">
+          <label for="training-search-select" class="form-label small fw-semibold text-body-emphasis mb-2">
+            <i class="fa-solid fa-magnifying-glass text-ceed-orange me-1"></i> Quick Jump to Tool / Certification:
+          </label>
+          <select id="training-search-select" class="form-select" placeholder="Search a tool or certification (e.g. Mill, 3D Printer, Laser)...">
+            <option value="">Search a tool or certification...</option>
             <% @skills.each do |skill| %>
-              <div class="accordion-item" id="accordion-<%= skill.name %>">
-                <div class="accordion-header accordion-button" id="header-<%= skill.name %>" type="button" data-bs-toggle="collapse" data-bs-target="#trainings-<%= skill.id %>" aria-expanded="false" aria-controls="trainings-<%= skill.id %>">
-                  <h6 class="my-auto py-2  "><%= skill.name %></h6>
-                </div>
-                <div id="trainings-<%= skill.id %>" class="accordion-collapse collapse" aria-labelledby="header-<%= skill.name %>" data-bs-parent="#accordion-<%= skill.name %>">
-                  <% skill.trainings.each do |training| %>
-                    <div class="accordion" id="accordion-<%= training.localized_name %>">
-                      <div class="accordion-item">
-                        <div class="accordion-header accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#training-<%= training.id %>" aria-expanded="false" aria-controls="training-<%= training.id %>">
-                            <div class="col-4"></div>
-                            <div class="col-4 text-center">
-                              <button class="btn btn-link" type="button"><%= training.localized_name %></button>
-                            </div>
-                            <div class="col-4">
-                              <%= sanitize(training_status(training.id, @user.id)) %>
-                            </div>
-                        </div>
+              <optgroup label="<%= skill.name %>">
+                <% skill.trainings.each do |training| %>
+                  <option value="training-card-<%= training.id %>">
+                    <%= training.localized_name %> (<%= skill.name %>)
+                  </option>
+                <% end %>
+              </optgroup>
+            <% end %>
+          </select>
+        </div>
 
-                        <div id="training-<%= training.id %>" class="accordion-collapse collapse">
-                          <div class="accordion-body">
-                            <% if training.description.present? %>
-                              <div class="jumbotron card bg-body-tertiary text-center text-wrap">
+        <div class="d-flex flex-column gap-3 gap-md-4">
+          <% @skills.each do |skill| %>
+            <div class="card bg-body border border-secondary-subtle rounded-3 shadow-sm overflow-hidden">
+              
+              <!-- Skill Category Bar -->
+              <div class="card-header bg-body-tertiary border-bottom border-secondary-subtle py-2 py-md-3 px-3 px-md-4 d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                  <i class="fa-solid fa-bolt text-ceed-orange"></i>
+                  <h2 class="h6 fw-bold mb-0 text-body-emphasis"><%= skill.name %></h2>
+                </div>
+                <span class="badge bg-body-secondary text-body-secondary border border-secondary-subtle rounded-pill small">
+                  <%= skill.trainings.count %> <%= "track".pluralize(skill.trainings.count) %>
+                </span>
+              </div>
+
+              <!-- Trainings Grid -->
+              <div class="card-body p-2 p-md-3">
+                <div class="row g-2 g-md-3">
+                  <% skill.trainings.each do |training| %>
+                    <% 
+                      badge            = user.highest_badge(training)
+                      current_level    = badge&.level
+                      raw_status       = training_status(training.id, user.id)
+                      clean_status     = raw_status.to_s.gsub(/color:\s*black/i, 'color: currentColor')
+                      skills_list      = (training.list_of_skills || "").split(',').map(&:strip).reject(&:blank?)
+                      
+                      # Next level calculation
+                      next_level = case current_level
+                                   when nil then "Beginner"
+                                   when "Beginner" then "Intermediate"
+                                   when "Intermediate" then "Advanced"
+                                   when "Advanced" then nil
+                                   else "Beginner"
+                                   end
+
+                      # Next level requirements
+                      if next_level.present?
+                        next_projects_total = training.proficient_projects.where(level: next_level).count
+                        next_projects_done  = @proficient_projects_awarded.call(training).where(level: next_level).count
+                        next_projects_pct   = next_projects_total.positive? ? (next_projects_done.to_f / next_projects_total * 100).round : 0
+
+                        next_modules_total  = training.learning_modules.where(level: next_level).count
+                        next_modules_done   = @learning_modules_completed.call(training).where(level: next_level).count
+                        next_modules_pct    = next_modules_total.positive? ? (next_modules_done.to_f / next_modules_total * 100).round : 0
+
+                        next_target_hours   = @recommended_hours.call(training, [next_level])
+                      end
+
+                      has_distinct_desc = training.description.present? && 
+                                          training.description.strip.casecmp(training.localized_name.strip) != 0
+                    %>
+
+                    <div class="col-12 col-md-6 col-xl-4" id="training-card-<%= training.id %>">
+                      <div class="card h-100 bg-body-tertiary border border-secondary-subtle rounded-3">
+                        <div class="card-body p-3 d-flex flex-column justify-content-between">
+                          
+                          <div>
+                            <!-- Header: Title + Current Status -->
+                            <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
+                              <h3 class="h6 fw-bold text-body-emphasis mb-0 text-break"><%= training.localized_name %></h3>
+                              <div class="flex-shrink-0 small text-body-emphasis">
+                                <%= sanitize(clean_status) %>
+                              </div>
+                            </div>
+
+                            <% if has_distinct_desc %>
+                              <p class="text-body-secondary small mb-3">
                                 <%= training.description %>
+                              </p>
+                            <% end %>
+
+                            <!-- Current Awarded Badge (If Earned) -->
+                            <% if badge.present? %>
+                              <div class="p-2 mb-3 bg-success-subtle text-success-emphasis border border-success-subtle rounded-3">
+                                <div class="d-flex align-items-center gap-2">
+                                  <div class="flex-shrink-0">
+                                    <%= begin
+                                          render "badges/badge_icon", width: 44, height: 44, margin: "0", display: "block", level: badge.level, name: badge.training.localized_name, skill: badge.get_skill_id
+                                        rescue StandardError
+                                          nil
+                                        end %>
+                                  </div>
+                                  <div class="small w-100 min-w-0">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                      <span class="fw-bold"><%= badge.level %> Certified</span>
+                                      <i class="fa-solid fa-circle-check text-success"></i>
+                                    </div>
+                                    <% if skills_list.any? %>
+                                      <div class="d-flex flex-wrap gap-1 mt-1">
+                                        <% skills_list.each do |skill_tag| %>
+                                          <span class="badge bg-body text-body-secondary border border-secondary-subtle" style="font-size: 0.65rem;">
+                                            <%= skill_tag %>
+                                          </span>
+                                        <% end %>
+                                      </div>
+                                    <% end %>
+                                  </div>
+                                </div>
                               </div>
                             <% end %>
 
-                            <div class="row">
-                              <% badge = @user.highest_badge(training) %>
-                              <% unless badge.nil? %>
-                                  <div class="col-lg-4 text-center">
-                                      <%= render "badges/badge_icon", width: 140, height: 140, margin: "auto", display: "block", level: badge.level, name: badge.training.localized_name, skill: badge.get_skill_id %>
+                            <!-- Requirements for NEXT Level -->
+                            <% if next_level.present? %>
+                              <div class="p-2 bg-body rounded-3 border border-secondary-subtle mb-3">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                  <span class="small fw-semibold text-body-emphasis">
+                                    <i class="fa-solid fa-arrow-trend-up text-ceed-orange me-1"></i> Next: <%= next_level %>
+                                  </span>
+                                  <span class="badge bg-body-secondary text-body-secondary border border-secondary-subtle" style="font-size: 0.7rem;">
+                                    Milestone
+                                  </span>
+                                </div>
+
+                                <!-- Next Level Projects -->
+                                <% if next_projects_total.positive? %>
+                                  <div class="mb-2">
+                                    <div class="d-flex justify-content-between small mb-1" style="font-size: 0.78rem;">
+                                      <span class="text-body-secondary">Proficient Projects</span>
+                                      <span class="fw-semibold text-body-emphasis"><%= next_projects_done %> / <%= next_projects_total %></span>
+                                    </div>
+                                    <div class="progress bg-body-secondary" role="progressbar" aria-valuenow="<%= next_projects_pct %>" aria-valuemin="0" aria-valuemax="100" style="height: 5px;">
+                                      <div class="progress-bar bg-success" style="width: <%= next_projects_pct %>%"></div>
+                                    </div>
                                   </div>
-                                <div class="col-lg-8 my-auto">
-                                  <b><%= badge.training.localized_name %>
-                                    :</b> <%= badge.training.description %>
-                                </div>
-                                <div class="col-12 pt-2">
-                                  <p>Skills Acquired: <b><%= badge.training.list_of_skills %></b></p>
-                                </div>
-                              <% end %>
-                            </div>
-                            <p>Proficient Projects finished : <%= @proficient_projects_awarded.call(training).count %>
-                              / <%= training.proficient_projects.count %></p>
-                            <p>Learning Modules finished : <%= @learning_modules_completed.call(training).count %>
-                              / <%= training.learning_modules.count %></p>
-                            <p>Recomended hours before moving
-                              on: <%= @recommended_hours.call(training, return_levels(training.id, @user.id)) %></p>
+                                <% end %>
+
+                                <!-- Next Level Modules -->
+                                <% if next_modules_total.positive? %>
+                                  <div class="mb-1">
+                                    <div class="d-flex justify-content-between small mb-1" style="font-size: 0.78rem;">
+                                      <span class="text-body-secondary">Learning Modules</span>
+                                      <span class="fw-semibold text-body-emphasis"><%= next_modules_done %> / <%= next_modules_total %></span>
+                                    </div>
+                                    <div class="progress bg-body-secondary" role="progressbar" aria-valuenow="<%= next_modules_pct %>" aria-valuemin="0" aria-valuemax="100" style="height: 5px;">
+                                      <div class="progress-bar bg-info" style="width: <%= next_modules_pct %>%"></div>
+                                    </div>
+                                  </div>
+                                <% end %>
+
+                                <% if next_projects_total.zero? && next_modules_total.zero? %>
+                                  <div class="text-body-secondary small fst-italic" style="font-size: 0.78rem;">
+                                    <i class="fa-solid fa-chalkboard-user me-1 text-ceed-orange"></i> Workshop session required for <%= next_level %>
+                                  </div>
+                                <% end %>
+                              </div>
+                            <% else %>
+                              <!-- Max Level Achieved (Advanced) -->
+                              <div class="p-2 bg-warning-subtle text-warning-emphasis rounded-3 border border-warning-subtle mb-3 text-center small">
+                                <i class="fa-solid fa-trophy text-warning me-1"></i> <strong>Mastered</strong> · Highest level reached!
+                              </div>
+                            <% end %>
                           </div>
+
+                          <!-- Target Practice Footer for Next Level -->
+                          <% if next_level.present? && next_target_hours.to_i > 0 %>
+                            <div class="pt-2 border-top border-secondary-subtle d-flex align-items-center justify-content-between small text-body-secondary">
+                              <span>Practice for <%= next_level %>:</span>
+                              <span class="badge bg-body-secondary text-body-emphasis border border-secondary-subtle">
+                                <%= next_target_hours %> <%= "hr".pluralize(next_target_hours) %>
+                              </span>
+                            </div>
+                          <% end %>
+
                         </div>
                       </div>
                     </div>
                   <% end %>
                 </div>
               </div>
+
+            </div>
           <% end %>
-          </div>
         </div>
       </div>
+
+      <!-- ========================================== -->
+      <!-- TAB 2: CC & HOURS ACTIVITY HISTORY         -->
+      <!-- ========================================== -->
+      <div class="tab-pane fade" id="history-pane" role="tabpanel" aria-labelledby="history-tab" tabindex="0">
+        <div class="card bg-body border border-secondary-subtle rounded-3 shadow-sm">
+          
+          <div class="card-header bg-body-tertiary border-bottom border-secondary-subtle py-2 py-md-3 px-3 px-md-4">
+            <h2 class="h6 fw-bold mb-0 text-body-emphasis">Approved Activity Log</h2>
+          </div>
+
+          <div class="card-body p-2 p-md-3">
+            <% if @processed_volunteer_task_requests.present? %>
+              
+              <div class="list-group list-group-flush gap-2">
+                <% @processed_volunteer_task_requests.each do |vtr| %>
+                  <div class="list-group-item bg-body-tertiary border border-secondary-subtle rounded-3 p-2 p-md-3">
+                    <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-2">
+                      
+                      <!-- Task Info & Timestamps -->
+                      <div class="min-w-0 w-100">
+                        <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                          <%= link_to vtr.volunteer_task.title.capitalize, volunteer_task_path(vtr.volunteer_task.id), class: "fw-bold text-body-emphasis link-primary text-decoration-none" %>
+                          <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle rounded-pill small">
+                            <%= vtr.status %>
+                          </span>
+                        </div>
+                        <div class="text-body-secondary small">
+                          <i class="fa-regular fa-calendar me-1"></i><%= vtr.created_at.strftime('%Y-%m-%d · %I:%M %p').downcase %>
+                        </div>
+                      </div>
+
+                      <!-- Badges (CC + Hours) -->
+                      <div class="d-flex flex-row flex-sm-column gap-1 flex-shrink-0 align-self-start align-self-sm-end">
+                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2 py-1">
+                          <i class="fa-solid fa-coins text-warning me-1"></i> <%= vtr.volunteer_task.cc %> CC
+                        </span>
+                        <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle rounded-pill px-2 py-1">
+                          <i class="fa-regular fa-clock text-primary me-1"></i> <%= vtr.volunteer_task.hours %> hrs
+                        </span>
+                      </div>
+
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+
+              <!-- Pagination -->
+              <% if @pagy && @pagy.pages > 1 %>
+                <div class="d-flex justify-content-center pt-3 mt-2 border-top border-secondary-subtle overflow-x-auto w-100">
+                  <%== @pagy.series_nav(:bootstrap) %>
+                </div>
+              <% end %>
+
+            <% else %>
+              <div class="text-center py-5 text-body-secondary">
+                <i class="fa-solid fa-folder-open fa-2x opacity-50 mb-2"></i>
+                <p class="small mb-0">No CC points or hours worked recorded yet.</p>
+              </div>
+            <% end %>
+          </div>
+
+        </div>
+      </div>
+
     </div>
+
   </div>
 </section>

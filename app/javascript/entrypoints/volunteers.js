@@ -34,6 +34,8 @@ document.addEventListener("turbo:load", function () {
       });
     }
   }
+
+  // 2. Datepickers
   flatpickr("#datepicker_start", {
     enableTime: true,
     time_24hr: true,
@@ -42,4 +44,34 @@ document.addEventListener("turbo:load", function () {
     enableTime: true,
     time_24hr: true,
   });
+
+  // 3. My Stats Certification Quick Jump Search
+  const trainingSelectEl = document.getElementById("training-search-select");
+  if (trainingSelectEl && !trainingSelectEl.tomselect) {
+    new TomSelect(trainingSelectEl, {
+      create: false,
+      maxItems: 1,
+      allowEmptyOption: true,
+      placeholder: "Search certification (e.g. Mill, 3D Printer, Laser)...",
+      onChange: function (value) {
+        if (!value) return;
+        const target = document.getElementById(value);
+        if (target) {
+          // Switch to skills tab if not already active
+          const skillsTabBtn = document.getElementById("skills-tab");
+          if (skillsTabBtn && typeof bootstrap !== "undefined") {
+            bootstrap.Tab.getOrCreateInstance(skillsTabBtn).show();
+          }
+
+          // Smooth scroll & temporary highlight
+          target.scrollIntoView({ behavior: "smooth", block: "center" });
+          const card = target.querySelector(".card") || target;
+          card.classList.add("border-primary", "shadow");
+          setTimeout(() => {
+            card.classList.remove("border-primary", "shadow");
+          }, 2000);
+        }
+      },
+    });
+  }
 });
