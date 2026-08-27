@@ -1,114 +1,149 @@
 <% user = current_user %>
 
-<section class="page-contents py-3 py-md-4">
-  <div class="container-xl">
+<div class="py-3 py-md-4">
+  <!-- Top Navigation & Header -->
+  <div class="row align-items-center justify-content-between mb-4 g-3">
+    <div class="col-12 col-md-auto">
+      <nav aria-label="breadcrumb" class="mb-1">
+        <ol class="breadcrumb mb-0 small">
+          <li class="breadcrumb-item">
+            <%= link_to volunteers_path, class: "text-decoration-none text-body-secondary" do %>
+              <i class="fa-solid fa-hand-holding-heart me-1"></i>Volunteers
+            <% end %>
+          </li>
+          <li class="breadcrumb-item active text-primary fw-medium" aria-current="page">My Stats</li>
+        </ol>
+      </nav>
+      <h1 class="h3 fw-bold text-body-emphasis mb-0 d-flex align-items-center gap-2">
+        <i class="fa-solid fa-chart-line text-primary"></i>
+        <span>My Volunteer Stats</span>
+      </h1>
+      <p class="text-body-secondary small mb-0 mt-1">Track your earned credits, volunteer hours, and skill certifications.</p>
+    </div>
+    <div class="col-12 col-md-auto d-flex flex-wrap gap-2">
+      <span class="badge bg-body-tertiary text-body-emphasis border border-secondary-subtle px-3 py-2 rounded-pill d-inline-flex align-items-center gap-2 small">
+        <i class="fa-solid fa-user-check text-success"></i>
+        <span><%= user.name.presence || 'Volunteer' %></span>
+      </span>
+      <%= link_to volunteer_tasks_path, class: "btn btn-primary d-inline-flex align-items-center gap-2 flex-grow-1 flex-md-grow-0 justify-content-center shadow-sm" do %>
+        <i class="fa-solid fa-list-check"></i>
+        <span>Find Tasks</span>
+      <% end %>
+    </div>
+  </div>
 
-    <!-- Page Title Header -->
-    <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2 mb-3 mb-md-4 pb-2 border-bottom border-secondary-subtle">
-      <div>
-        <h1 class="h3 fw-bold text-body-emphasis mb-1">My Volunteer Stats</h1>
-        <p class="text-body-secondary small mb-0">Overview of earned credits, volunteer hours, and skill certifications.</p>
-      </div>
-      <div>
-        <span class="badge bg-body-tertiary text-body-emphasis border border-secondary-subtle px-3 py-2 rounded-pill small">
-          <i class="fa-solid fa-user-check text-ceed-orange me-1"></i> <%= begin
-                                                                             user.name
-                                                                           rescue StandardError
-                                                                             'Volunteer'
-                                                                           end %>
-        </span>
+  <!-- 1. KPI Metric Summary Cards (2x2 on Mobile, 4-col on Desktop) -->
+  <div class="row g-3 mb-4">
+    <!-- Total CCs -->
+    <div class="col-6 col-lg-3">
+      <div class="card border rounded-3 shadow-sm bg-body h-100">
+        <div class="card-body p-3 p-md-4 d-flex align-items-center justify-content-between gap-2">
+          <div>
+            <h6 class="text-body-secondary text-uppercase fw-semibold small mb-1">Total CCs</h6>
+            <h2 class="fw-bold text-body-emphasis mb-0"><%= user.get_total_cc %></h2>
+          </div>
+          <div class="rounded-circle bg-warning-subtle text-warning d-flex align-items-center justify-content-center p-3 fs-4 flex-shrink-0">
+            <i class="fa-solid fa-coins"></i>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- 1. KPI Metric Summary Cards (2x2 on Mobile, 4-col on Desktop) -->
-    <div class="row g-2 g-md-3 mb-3 mb-md-4">
-      
-      <!-- Total CCs -->
-      <div class="col-6 col-lg-3">
-        <div class="card h-100 border border-warning-subtle bg-warning-subtle text-warning-emphasis rounded-3 shadow-sm">
-          <div class="card-body p-2 p-md-3">
-            <span class="small fw-semibold text-uppercase text-body-secondary d-block mb-1 text-truncate" style="font-size: 0.72rem;">Total CC</span>
-            <div class="d-flex align-items-center justify-content-between">
-              <span class="fs-4 fs-md-3 fw-bold text-body-emphasis"><%= user.get_total_cc %></span>
-              <span class="fs-5">
-                <%= begin
-                      vite_image_tag 'images/cc.png', alt: 'CC', class: 'ccs', style: 'width: 24px; height: 24px; object-fit: contain;'
-                    rescue StandardError
-                      fa_icon("coins", class: "text-warning")
-                    end %>
-              </span>
-            </div>
+    <!-- Total Hours Worked -->
+    <div class="col-6 col-lg-3">
+      <div class="card border rounded-3 shadow-sm bg-body h-100">
+        <div class="card-body p-3 p-md-4 d-flex align-items-center justify-content-between gap-2">
+          <div>
+            <h6 class="text-body-secondary text-uppercase fw-semibold small mb-1">Hours Logged</h6>
+            <h2 class="fw-bold text-body-emphasis mb-0"><%= user.get_total_hours %></h2>
+          </div>
+          <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center p-3 fs-4 flex-shrink-0">
+            <i class="fa-solid fa-clock-rotate-left"></i>
           </div>
         </div>
       </div>
-
-      <!-- Total Hours Worked -->
-      <div class="col-6 col-lg-3">
-        <div class="card h-100 border border-secondary-subtle bg-body-tertiary rounded-3 shadow-sm">
-          <div class="card-body p-2 p-md-3">
-            <span class="small fw-semibold text-uppercase text-body-secondary d-block mb-1 text-truncate" style="font-size: 0.72rem;">Hours Worked</span>
-            <div class="d-flex align-items-center justify-content-between">
-              <span class="fs-4 fs-md-3 fw-bold text-body-emphasis"><%= user.get_total_hours %></span>
-              <i class="fa-solid fa-clock-rotate-left fs-5 text-ceed-orange"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Approved Tasks -->
-      <div class="col-6 col-lg-3">
-        <div class="card h-100 border border-success-subtle bg-success-subtle text-success-emphasis rounded-3 shadow-sm">
-          <div class="card-body p-2 p-md-3">
-            <span class="small fw-semibold text-uppercase text-body-secondary d-block mb-1 text-truncate" style="font-size: 0.72rem;">Approved Tasks</span>
-            <div class="d-flex align-items-center justify-content-between">
-              <span class="fs-4 fs-md-3 fw-bold text-body-emphasis"><%= @processed_volunteer_task_requests&.size || 0 %></span>
-              <i class="fa-solid fa-circle-check fs-5 text-success"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Certifications -->
-      <div class="col-6 col-lg-3">
-        <div class="card h-100 border border-info-subtle bg-info-subtle text-info-emphasis rounded-3 shadow-sm">
-          <div class="card-body p-2 p-md-3">
-            <span class="small fw-semibold text-uppercase text-body-secondary d-block mb-1 text-truncate" style="font-size: 0.72rem;">Certifications</span>
-            <div class="d-flex align-items-center justify-content-between">
-              <span class="fs-4 fs-md-3 fw-bold text-body-emphasis"><%= @certifications&.size || 0 %></span>
-              <i class="fa-solid fa-award fs-5 text-info"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-
     </div>
 
-    <!-- 2. Responsive Segmented Switcher -->
-    <ul class="nav nav-pills nav-fill w-100 bg-body-tertiary border border-secondary-subtle rounded-3 p-1 mb-3 mb-md-4 shadow-sm task-status-pills" id="statsTab" role="tablist">
-      <li class="nav-item" role="presentation">
-        <button class="nav-link active rounded-2 py-2 px-2 small fw-semibold text-center" id="skills-tab" data-bs-toggle="pill" data-bs-target="#skills-pane" type="button" role="tab" aria-controls="skills-pane" aria-selected="true">
-          <i class="fa-solid fa-graduation-cap me-1"></i> Skills & Progression
-        </button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link rounded-2 py-2 px-2 small fw-semibold text-center" id="history-tab" data-bs-toggle="pill" data-bs-target="#history-pane" type="button" role="tab" aria-controls="history-pane" aria-selected="false">
-          <i class="fa-solid fa-clock-rotate-left me-1"></i> CC & Hours History
-        </button>
-      </li>
-    </ul>
+    <!-- Approved Tasks -->
+    <div class="col-6 col-lg-3">
+      <div class="card border rounded-3 shadow-sm bg-body h-100">
+        <div class="card-body p-3 p-md-4 d-flex align-items-center justify-content-between gap-2">
+          <div>
+            <h6 class="text-body-secondary text-uppercase fw-semibold small mb-1">Approved Tasks</h6>
+            <h2 class="fw-bold text-body-emphasis mb-0"><%= @processed_volunteer_task_requests&.size || 0 %></h2>
+          </div>
+          <div class="rounded-circle bg-success-subtle text-success d-flex align-items-center justify-content-center p-3 fs-4 flex-shrink-0">
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Certifications -->
+    <div class="col-6 col-lg-3">
+      <div class="card border rounded-3 shadow-sm bg-body h-100">
+        <div class="card-body p-3 p-md-4 d-flex align-items-center justify-content-between gap-2">
+          <div>
+            <h6 class="text-body-secondary text-uppercase fw-semibold small mb-1">Certifications</h6>
+            <h2 class="fw-bold text-body-emphasis mb-0"><%= @certifications&.size || 0 %></h2>
+          </div>
+          <div class="rounded-circle bg-info-subtle text-info-emphasis d-flex align-items-center justify-content-center p-3 fs-4 flex-shrink-0">
+            <i class="fa-solid fa-award"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Segmented Workspace Switcher Tabs -->
+  <div class="card border rounded-3 shadow-sm bg-body mb-4">
+    <div class="card-header bg-body-tertiary border-bottom p-3 p-md-4">
+      <ul class="nav nav-pills gap-2" id="statsTab" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active fw-semibold d-inline-flex align-items-center gap-2"
+                  id="skills-tab"
+                  data-bs-toggle="pill"
+                  data-bs-target="#skills-pane"
+                  type="button"
+                  role="tab"
+                  aria-controls="skills-pane"
+                  aria-selected="true">
+            <i class="fa-solid fa-graduation-cap text-primary"></i>
+            <span>Skills & Progression</span>
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link fw-semibold d-inline-flex align-items-center gap-2"
+                  id="history-tab"
+                  data-bs-toggle="pill"
+                  data-bs-target="#history-pane"
+                  type="button"
+                  role="tab"
+                  aria-controls="history-pane"
+                  aria-selected="false">
+            <i class="fa-solid fa-clock-rotate-left text-secondary"></i>
+            <span>Activity & Credit History</span>
+            <span class="badge bg-secondary-subtle text-body-secondary border border-secondary-subtle rounded-pill ms-1">
+              <%= @processed_volunteer_task_requests&.size || 0 %>
+            </span>
+          </button>
+        </li>
+      </ul>
+    </div>
 
     <!-- 3. Tab Contents -->
     <div class="tab-content" id="statsTabContent">
 
       <!-- ========================================== -->
-      <!-- TAB 1: SKILLS & CERTIFICATIONS             -->
+      <!-- TAB 1: SKILLS & PROGRESSION                -->
       <!-- ========================================== -->
-      <div class="tab-pane fade show active" id="skills-pane" role="tabpanel" aria-labelledby="skills-tab" tabindex="0">
+      <div class="tab-pane fade show active p-3 p-md-4" id="skills-pane" role="tabpanel" aria-labelledby="skills-tab" tabindex="0">
         
         <!-- TomSelect Quick Jump Search -->
-        <div class="card bg-body border border-secondary-subtle rounded-3 p-3 mb-3 mb-md-4 shadow-sm">
-          <label for="training-search-select" class="form-label small fw-semibold text-body-emphasis mb-2">
-            <i class="fa-solid fa-magnifying-glass text-ceed-orange me-1"></i> Quick Jump to Tool / Certification:
+        <div class="card bg-body-tertiary border border-secondary-subtle rounded-3 p-3 p-md-4 mb-4 shadow-sm">
+          <label for="training-search-select" class="form-label fw-semibold text-body-emphasis d-flex align-items-center gap-2 mb-2">
+            <i class="fa-solid fa-magnifying-glass text-primary"></i>
+            <span>Quick Jump to Tool / Certification:</span>
           </label>
           <select id="training-search-select" class="form-select" placeholder="Search a tool or certification (e.g. Mill, 3D Printer, Laser)...">
             <option value="">Search a tool or certification...</option>
@@ -124,14 +159,15 @@
           </select>
         </div>
 
-        <div class="d-flex flex-column gap-3 gap-md-4">
+        <!-- Skills Categories & Tracks -->
+        <div class="d-flex flex-column gap-4">
           <% @skills.each do |skill| %>
             <div class="card bg-body border border-secondary-subtle rounded-3 shadow-sm overflow-hidden">
-              
+
               <!-- Skill Category Bar -->
-              <div class="card-header bg-body-tertiary border-bottom border-secondary-subtle py-2 py-md-3 px-3 px-md-4 d-flex align-items-center justify-content-between">
+              <div class="card-header bg-body-tertiary border-bottom border-secondary-subtle py-3 px-3 px-md-4 d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center gap-2">
-                  <i class="fa-solid fa-bolt text-ceed-orange"></i>
+                  <i class="fa-solid fa-bolt text-warning"></i>
                   <h2 class="h6 fw-bold mb-0 text-body-emphasis"><%= skill.name %></h2>
                 </div>
                 <span class="badge bg-body-secondary text-body-secondary border border-secondary-subtle rounded-pill small">
@@ -140,16 +176,16 @@
               </div>
 
               <!-- Trainings Grid -->
-              <div class="card-body p-2 p-md-3">
-                <div class="row g-2 g-md-3">
+              <div class="card-body p-3 p-md-4">
+                <div class="row g-3">
                   <% skill.trainings.each do |training| %>
-                    <% 
+                    <%
                       badge            = user.highest_badge(training)
                       current_level    = badge&.level
                       raw_status       = training_status(training.id, user.id)
                       clean_status     = raw_status.to_s.gsub(/color:\s*black/i, 'color: currentColor')
                       skills_list      = (training.list_of_skills || "").split(',').map(&:strip).reject(&:blank?)
-                      
+
                       # Next level calculation
                       next_level = case current_level
                                    when nil then "Beginner"
@@ -172,14 +208,14 @@
                         next_target_hours   = @recommended_hours.call(training, [next_level])
                       end
 
-                      has_distinct_desc = training.description.present? && 
+                      has_distinct_desc = training.description.present? &&
                                           training.description.strip.casecmp(training.localized_name.strip) != 0
                     %>
 
                     <div class="col-12 col-md-6 col-xl-4" id="training-card-<%= training.id %>">
-                      <div class="card h-100 bg-body-tertiary border border-secondary-subtle rounded-3">
+                      <div class="card h-100 bg-body-tertiary border border-secondary-subtle rounded-3 shadow-none">
                         <div class="card-body p-3 d-flex flex-column justify-content-between">
-                          
+
                           <div>
                             <!-- Header: Title + Current Status -->
                             <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
@@ -214,7 +250,7 @@
                                     <% if skills_list.any? %>
                                       <div class="d-flex flex-wrap gap-1 mt-1">
                                         <% skills_list.each do |skill_tag| %>
-                                          <span class="badge bg-body text-body-secondary border border-secondary-subtle" style="font-size: 0.65rem;">
+                                          <span class="badge bg-body text-body-secondary border border-secondary-subtle small">
                                             <%= skill_tag %>
                                           </span>
                                         <% end %>
@@ -227,12 +263,13 @@
 
                             <!-- Requirements for NEXT Level -->
                             <% if next_level.present? %>
-                              <div class="p-2 bg-body rounded-3 border border-secondary-subtle mb-3">
+                              <div class="p-2 p-md-3 bg-body rounded-3 border border-secondary-subtle mb-3">
                                 <div class="d-flex align-items-center justify-content-between mb-2">
-                                  <span class="small fw-semibold text-body-emphasis">
-                                    <i class="fa-solid fa-arrow-trend-up text-ceed-orange me-1"></i> Next: <%= next_level %>
+                                  <span class="small fw-semibold text-body-emphasis d-flex align-items-center gap-1">
+                                    <i class="fa-solid fa-arrow-trend-up text-primary"></i>
+                                    <span>Next: <%= next_level %></span>
                                   </span>
-                                  <span class="badge bg-body-secondary text-body-secondary border border-secondary-subtle" style="font-size: 0.7rem;">
+                                  <span class="badge bg-body-secondary text-body-secondary border border-secondary-subtle small">
                                     Milestone
                                   </span>
                                 </div>
@@ -240,11 +277,11 @@
                                 <!-- Next Level Projects -->
                                 <% if next_projects_total.positive? %>
                                   <div class="mb-2">
-                                    <div class="d-flex justify-content-between small mb-1" style="font-size: 0.78rem;">
+                                    <div class="d-flex justify-content-between small mb-1">
                                       <span class="text-body-secondary">Proficient Projects</span>
                                       <span class="fw-semibold text-body-emphasis"><%= next_projects_done %> / <%= next_projects_total %></span>
                                     </div>
-                                    <div class="progress bg-body-secondary" role="progressbar" aria-valuenow="<%= next_projects_pct %>" aria-valuemin="0" aria-valuemax="100" style="height: 5px;">
+                                    <div class="progress bg-body-secondary" role="progressbar" aria-valuenow="<%= next_projects_pct %>" aria-valuemin="0" aria-valuemax="100">
                                       <div class="progress-bar bg-success" style="width: <%= next_projects_pct %>%"></div>
                                     </div>
                                   </div>
@@ -253,19 +290,19 @@
                                 <!-- Next Level Modules -->
                                 <% if next_modules_total.positive? %>
                                   <div class="mb-1">
-                                    <div class="d-flex justify-content-between small mb-1" style="font-size: 0.78rem;">
+                                    <div class="d-flex justify-content-between small mb-1">
                                       <span class="text-body-secondary">Learning Modules</span>
                                       <span class="fw-semibold text-body-emphasis"><%= next_modules_done %> / <%= next_modules_total %></span>
                                     </div>
-                                    <div class="progress bg-body-secondary" role="progressbar" aria-valuenow="<%= next_modules_pct %>" aria-valuemin="0" aria-valuemax="100" style="height: 5px;">
+                                    <div class="progress bg-body-secondary" role="progressbar" aria-valuenow="<%= next_modules_pct %>" aria-valuemin="0" aria-valuemax="100">
                                       <div class="progress-bar bg-info" style="width: <%= next_modules_pct %>%"></div>
                                     </div>
                                   </div>
                                 <% end %>
 
                                 <% if next_projects_total.zero? && next_modules_total.zero? %>
-                                  <div class="text-body-secondary small fst-italic" style="font-size: 0.78rem;">
-                                    <i class="fa-solid fa-chalkboard-user me-1 text-ceed-orange"></i> Workshop session required for <%= next_level %>
+                                  <div class="text-body-secondary small fst-italic">
+                                    <i class="fa-solid fa-chalkboard-user me-1 text-primary"></i> Workshop session required for <%= next_level %>
                                   </div>
                                 <% end %>
                               </div>
@@ -302,68 +339,88 @@
       <!-- ========================================== -->
       <!-- TAB 2: CC & HOURS ACTIVITY HISTORY         -->
       <!-- ========================================== -->
-      <div class="tab-pane fade" id="history-pane" role="tabpanel" aria-labelledby="history-tab" tabindex="0">
-        <div class="card bg-body border border-secondary-subtle rounded-3 shadow-sm">
-          
-          <div class="card-header bg-body-tertiary border-bottom border-secondary-subtle py-2 py-md-3 px-3 px-md-4">
-            <h2 class="h6 fw-bold mb-0 text-body-emphasis">Approved Activity Log</h2>
+      <div class="tab-pane fade p-3 p-md-4" id="history-pane" role="tabpanel" aria-labelledby="history-tab" tabindex="0">
+        <% if @processed_volunteer_task_requests.present? %>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="bg-body-secondary border-bottom">
+                <tr class="text-body-secondary small text-uppercase">
+                  <th class="ps-3 ps-md-4 py-3" scope="col">Completed Task</th>
+                  <th class="py-3" scope="col">Date Logged</th>
+                  <th class="py-3" scope="col">Status</th>
+                  <th class="pe-3 pe-md-4 py-3 text-end" scope="col">Credits & Hours</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y">
+                <% @processed_volunteer_task_requests.each do |vtr| %>
+                  <tr>
+                    <!-- Task Title -->
+                    <td class="ps-3 ps-md-4 py-3">
+                      <div class="d-flex align-items-center gap-2">
+                        <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0" style="width: 34px; height: 34px;">
+                          <i class="fa-solid fa-list-check small"></i>
+                        </div>
+                        <div>
+                          <%= link_to vtr.volunteer_task.title.capitalize, volunteer_task_path(vtr.volunteer_task.id), class: "fw-bold text-body-emphasis text-decoration-none d-block lh-sm" %>
+                          <span class="text-body-secondary small"><%= vtr.volunteer_task.category %></span>
+                        </div>
+                      </div>
+                    </td>
+
+                    <!-- Date -->
+                    <td class="py-3">
+                      <span class="text-body-secondary small d-inline-flex align-items-center gap-1">
+                        <i class="fa-regular fa-calendar"></i>
+                        <span><%= vtr.created_at.strftime('%Y-%m-%d · %I:%M %p') %></span>
+                      </span>
+                    </td>
+
+                    <!-- Status -->
+                    <td class="py-3">
+                      <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill small">
+                        <i class="fa-solid fa-circle-check me-1"></i><%= vtr.status.capitalize %>
+                      </span>
+                    </td>
+
+                    <!-- Credits & Hours Earned -->
+                    <td class="pe-3 pe-md-4 py-3 text-end">
+                      <div class="d-inline-flex flex-column flex-sm-row gap-1 align-items-end">
+                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2 py-1 small">
+                          <i class="fa-solid fa-coins text-warning me-1"></i><%= vtr.volunteer_task.cc %> CC
+                        </span>
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-1 small">
+                          <i class="fa-regular fa-clock text-primary me-1"></i><%= vtr.volunteer_task.hours %> hrs
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
           </div>
 
-          <div class="card-body p-2 p-md-3">
-            <% if @processed_volunteer_task_requests.present? %>
-              
-              <div class="list-group list-group-flush gap-2">
-                <% @processed_volunteer_task_requests.each do |vtr| %>
-                  <div class="list-group-item bg-body-tertiary border border-secondary-subtle rounded-3 p-2 p-md-3">
-                    <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-2">
-                      
-                      <!-- Task Info & Timestamps -->
-                      <div class="min-w-0 w-100">
-                        <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
-                          <%= link_to vtr.volunteer_task.title.capitalize, volunteer_task_path(vtr.volunteer_task.id), class: "fw-bold text-body-emphasis link-primary text-decoration-none" %>
-                          <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle rounded-pill small">
-                            <%= vtr.status %>
-                          </span>
-                        </div>
-                        <div class="text-body-secondary small">
-                          <i class="fa-regular fa-calendar me-1"></i><%= vtr.created_at.strftime('%Y-%m-%d · %I:%M %p').downcase %>
-                        </div>
-                      </div>
+          <!-- Pagination -->
+          <% if @pagy && @pagy.pages > 1 %>
+            <div class="d-flex justify-content-center pt-4 border-top border-secondary-subtle overflow-x-auto">
+              <%== @pagy.series_nav(:bootstrap) %>
+            </div>
+          <% end %>
 
-                      <!-- Badges (CC + Hours) -->
-                      <div class="d-flex flex-row flex-sm-column gap-1 flex-shrink-0 align-self-start align-self-sm-end">
-                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2 py-1">
-                          <i class="fa-solid fa-coins text-warning me-1"></i> <%= vtr.volunteer_task.cc %> CC
-                        </span>
-                        <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle rounded-pill px-2 py-1">
-                          <i class="fa-regular fa-clock text-primary me-1"></i> <%= vtr.volunteer_task.hours %> hrs
-                        </span>
-                      </div>
-
-                    </div>
-                  </div>
-                <% end %>
-              </div>
-
-              <!-- Pagination -->
-              <% if @pagy && @pagy.pages > 1 %>
-                <div class="d-flex justify-content-center pt-3 mt-2 border-top border-secondary-subtle overflow-x-auto w-100">
-                  <%== @pagy.series_nav(:bootstrap) %>
-                </div>
-              <% end %>
-
-            <% else %>
-              <div class="text-center py-5 text-body-secondary">
-                <i class="fa-solid fa-folder-open fa-2x opacity-50 mb-2"></i>
-                <p class="small mb-0">No CC points or hours worked recorded yet.</p>
-              </div>
+        <% else %>
+          <div class="text-center py-5 px-3">
+            <div class="rounded-circle bg-body-secondary text-body-secondary d-inline-flex align-items-center justify-content-center p-4 fs-1 mb-3">
+              <i class="fa-solid fa-folder-open"></i>
+            </div>
+            <h5 class="fw-bold text-body-emphasis">No Activity Recorded</h5>
+            <p class="text-body-secondary small mb-3">You have not completed any volunteer tasks or earned credits yet.</p>
+            <%= link_to volunteer_tasks_path, class: "btn btn-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm" do %>
+              <i class="fa-solid fa-list-check"></i>
+              <span>Browse Volunteer Tasks</span>
             <% end %>
           </div>
-
-        </div>
+        <% end %>
       </div>
 
     </div>
-
   </div>
-</section>
+</div>

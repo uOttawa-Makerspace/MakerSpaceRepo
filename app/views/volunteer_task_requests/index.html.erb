@@ -1,134 +1,174 @@
-<section id="volunteerTaskRequestsIndex" class="page-contents py-4">
-  <div class="container-xl">
-
-    <!-- 1. Header & Navigation -->
-    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4">
-      <div>
-        <h2 class="page-title fw-bold mb-1">
-          <%= current_user.staff? ? 'Volunteer Task Requests' : 'Your Task Requests' %>
-        </h2>
-        <p class="text-body-secondary mb-0 small">
-          <%= current_user.staff? ? 'Review and manage completion submissions from volunteers.' : 'Track the review status and CC rewards of your completed tasks.' %>
-        </p>
-      </div>
-      <div>
-        <%= link_to volunteer_tasks_path, class: 'btn btn-outline-secondary rounded-pill px-3 py-2 btn-sm fw-semibold shadow-sm' do %>
-          <i class="fa fa-arrow-left me-1"></i> Back to Tasks
-        <% end %>
-      </div>
+<div class="py-3 py-md-4" id="volunteerTaskRequestsIndex">
+  <!-- Top Navigation & Header -->
+  <div class="row align-items-center justify-content-between mb-4 g-3">
+    <div class="col-12 col-md-auto">
+      <nav aria-label="breadcrumb" class="mb-1">
+        <ol class="breadcrumb mb-0 small">
+          <li class="breadcrumb-item">
+            <%= link_to volunteer_tasks_path, class: "text-decoration-none text-body-secondary" do %>
+              <i class="fa-solid fa-hand-holding-heart me-1"></i>Volunteer Tasks
+            <% end %>
+          </li>
+          <li class="breadcrumb-item active text-primary fw-medium" aria-current="page">Task Requests</li>
+        </ol>
+      </nav>
+      <h1 class="h3 fw-bold text-body-emphasis mb-0 d-flex align-items-center gap-2">
+        <i class="fa-solid fa-envelope-circle-check text-primary"></i>
+        <span><%= current_user.staff? ? 'Volunteer Task Requests' : 'Your Task Requests' %></span>
+      </h1>
+      <p class="text-body-secondary small mb-0 mt-1">
+        <%= current_user.staff? ? 'Review, approve, and award CC credits for completed task submissions.' : 'Track the review status and credit rewards of your completed volunteer tasks.' %>
+      </p>
     </div>
+    <div class="col-12 col-md-auto d-flex flex-wrap gap-2">
+      <%= link_to my_tasks_volunteer_tasks_path, class: "btn btn-outline-secondary d-inline-flex align-items-center gap-2 flex-grow-1 flex-md-grow-0 justify-content-center" do %>
+        <i class="fa-solid fa-clipboard-user"></i>
+        <span>My Assigned Tasks</span>
+      <% end %>
+      <%= link_to volunteer_tasks_path, class: "btn btn-outline-secondary d-inline-flex align-items-center gap-2 flex-grow-1 flex-md-grow-0 justify-content-center" do %>
+        <i class="fa-solid fa-arrow-left"></i>
+        <span>Back to Tasks</span>
+      <% end %>
+    </div>
+  </div>
 
-    <!-- 2. KPI Summary Cards (BS 5.3 Native Dark Mode Cards) -->
-    <div class="row g-3 mb-4">
-      <div class="col-12 col-md-4">
-        <div class="card bg-body border shadow-sm rounded-4 h-100 p-3">
-          <div class="d-flex align-items-center justify-content-between">
-            <div>
-              <span class="text-body-secondary small text-uppercase fw-semibold">Total Requests</span>
-              <h3 class="fw-bold mb-0 mt-1 text-body"><%= @total_count %></h3>
-            </div>
-            <div class="d-flex align-items-center justify-content-center rounded-circle bg-primary-subtle text-primary" style="width: 46px; height: 46px;">
-              <i class="fa fa-list-alt fa-lg"></i>
-            </div>
+  <!-- Metric Overview Cards -->
+  <div class="row g-3 mb-4">
+    <!-- Total Requests -->
+    <div class="col-12 col-sm-4">
+      <div class="card border rounded-3 shadow-sm bg-body h-100">
+        <div class="card-body p-3 p-md-4 d-flex align-items-center justify-content-between gap-2">
+          <div>
+            <h6 class="text-body-secondary text-uppercase fw-semibold small mb-1">Total Requests</h6>
+            <h2 class="fw-bold text-body-emphasis mb-0"><%= @total_count %></h2>
           </div>
-        </div>
-      </div>
-
-      <div class="col-12 col-md-4">
-        <div class="card bg-body border shadow-sm rounded-4 h-100 p-3">
-          <div class="d-flex align-items-center justify-content-between">
-            <div>
-              <span class="text-body-secondary small text-uppercase fw-semibold">Pending Review</span>
-              <h3 class="fw-bold mb-0 mt-1 text-warning"><%= @pending_count %></h3>
-            </div>
-            <div class="d-flex align-items-center justify-content-center rounded-circle bg-warning-subtle text-warning" style="width: 46px; height: 46px;">
-              <i class="fa fa-clock-o fa-lg"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-12 col-md-4">
-        <div class="card bg-body border shadow-sm rounded-4 h-100 p-3">
-          <div class="d-flex align-items-center justify-content-between">
-            <div>
-              <span class="text-body-secondary small text-uppercase fw-semibold">Processed History</span>
-              <h3 class="fw-bold mb-0 mt-1 text-success"><%= @processed_count %></h3>
-            </div>
-            <div class="d-flex align-items-center justify-content-center rounded-circle bg-success-subtle text-success" style="width: 46px; height: 46px;">
-              <i class="fa fa-check-circle-o fa-lg"></i>
-            </div>
+          <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center p-3 fs-4 flex-shrink-0">
+            <i class="fa-solid fa-list-check"></i>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 3. Navigation Status Tabs -->
-    <div class="status-tabs-wrapper mb-4">
-      <ul class="nav nav-pills bg-body-tertiary border p-1 rounded-pill d-inline-flex flex-nowrap task-status-pills" id="requestStatusTabs" role="tablist">
+    <!-- Pending Review -->
+    <div class="col-12 col-sm-4">
+      <div class="card border rounded-3 shadow-sm bg-body h-100">
+        <div class="card-body p-3 p-md-4 d-flex align-items-center justify-content-between gap-2">
+          <div>
+            <h6 class="text-body-secondary text-uppercase fw-semibold small mb-1">Pending Review</h6>
+            <h2 class="fw-bold text-warning mb-0"><%= @pending_count %></h2>
+          </div>
+          <div class="rounded-circle bg-warning-subtle text-warning d-flex align-items-center justify-content-center p-3 fs-4 flex-shrink-0">
+            <i class="fa-solid fa-hourglass-half"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Processed History -->
+    <div class="col-12 col-sm-4">
+      <div class="card border rounded-3 shadow-sm bg-body h-100">
+        <div class="card-body p-3 p-md-4 d-flex align-items-center justify-content-between gap-2">
+          <div>
+            <h6 class="text-body-secondary text-uppercase fw-semibold small mb-1">Processed History</h6>
+            <h2 class="fw-bold text-success mb-0"><%= @processed_count %></h2>
+          </div>
+          <div class="rounded-circle bg-success-subtle text-success d-flex align-items-center justify-content-center p-3 fs-4 flex-shrink-0">
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Workspace Card with Tabs & Panes -->
+  <div class="card border rounded-3 shadow-sm bg-body">
+    <!-- Header with Segmented Navigation Tabs -->
+    <div class="card-header bg-body-tertiary border-bottom p-3 p-md-4">
+      <ul class="nav nav-pills gap-2" id="requestStatusTabs" role="tablist">
         <li class="nav-item" role="presentation">
-          <button class="nav-link rounded-pill text-nowrap fw-semibold <%= 'active' if @active_tab == 'pending' %>" 
-                  id="pending-tab" 
-                  data-bs-toggle="pill" 
-                  data-bs-target="#pending-pane" 
+          <button class="nav-link fw-semibold d-inline-flex align-items-center gap-2 <%= 'active' if @active_tab == 'pending' %>"
+                  id="pending-tab"
+                  data-bs-toggle="pill"
+                  data-bs-target="#pending-pane"
                   data-tab-name="pending"
-                  type="button" 
-                  role="tab" 
-                  aria-controls="pending-pane" 
+                  type="button"
+                  role="tab"
+                  aria-controls="pending-pane"
                   aria-selected="<%= @active_tab == 'pending' %>">
-            <i class="fa fa-hourglass-half me-1"></i> Pending Requests
-            <span class="badge rounded-pill ms-1 <%= @active_tab == 'pending' ? 'bg-white text-dark' : 'bg-warning-subtle text-warning-emphasis' %>"><%= @pending_count %></span>
+            <i class="fa-solid fa-hourglass-half text-warning"></i>
+            <span>Pending Review</span>
+            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill ms-1">
+              <%= @pending_count %>
+            </span>
           </button>
         </li>
         <li class="nav-item" role="presentation">
-          <button class="nav-link rounded-pill text-nowrap fw-semibold <%= 'active' if @active_tab == 'processed' %>" 
-                  id="processed-tab" 
-                  data-bs-toggle="pill" 
-                  data-bs-target="#processed-pane" 
+          <button class="nav-link fw-semibold d-inline-flex align-items-center gap-2 <%= 'active' if @active_tab == 'processed' %>"
+                  id="processed-tab"
+                  data-bs-toggle="pill"
+                  data-bs-target="#processed-pane"
                   data-tab-name="processed"
-                  type="button" 
-                  role="tab" 
-                  aria-controls="processed-pane" 
+                  type="button"
+                  role="tab"
+                  aria-controls="processed-pane"
                   aria-selected="<%= @active_tab == 'processed' %>">
-            <i class="fa fa-history me-1"></i> Processed History
-            <span class="badge rounded-pill ms-1 <%= @active_tab == 'processed' ? 'bg-white text-dark' : 'bg-secondary-subtle text-secondary-emphasis' %>"><%= @processed_count %></span>
+            <i class="fa-solid fa-clock-rotate-left text-secondary"></i>
+            <span>Processed History</span>
+            <span class="badge bg-secondary-subtle text-body-secondary border border-secondary-subtle rounded-pill ms-1">
+              <%= @processed_count %>
+            </span>
           </button>
         </li>
       </ul>
     </div>
 
-    <!-- 4. Tab Panes -->
-    <div class="tab-content" id="requestStatusTabsContent">
+    <!-- Tab Contents -->
+    <div class="card-body p-3 p-md-4">
+      <div class="tab-content" id="requestStatusTabsContent">
 
-      <!-- 1. Pending Requests Pane -->
-      <div class="tab-pane fade <%= 'show active' if @active_tab == 'pending' %>" id="pending-pane" role="tabpanel" aria-labelledby="pending-tab" tabindex="0">
-        <div class="card bg-body border shadow-sm rounded-4 p-3 mb-3">
-          <div class="input-group">
-            <span class="input-group-text border-end-0 bg-transparent text-body-secondary"><i class="fa fa-search"></i></span>
-            <input type="text" id="search_pending" class="form-control border-start-0 ps-0 shadow-none bg-transparent text-body" placeholder="Search pending requests by volunteer, task title, or space..." autocomplete="off">
+        <!-- 1. Pending Requests Pane -->
+        <div class="tab-pane fade <%= 'show active' if @active_tab == 'pending' %>" id="pending-pane" role="tabpanel" aria-labelledby="pending-tab" tabindex="0">
+          <div class="card bg-body-tertiary border border-secondary-subtle rounded-3 p-3 mb-4 shadow-sm">
+            <div class="input-group">
+              <span class="input-group-text bg-body-secondary text-body-secondary border-secondary-subtle">
+                <i class="fa-solid fa-magnifying-glass"></i>
+              </span>
+              <input type="text"
+                     id="search_pending"
+                     class="form-control"
+                     placeholder="Search pending requests by volunteer, task title, or space..."
+                     autocomplete="off"
+                     aria-label="Search pending requests">
+            </div>
+          </div>
+
+          <div class="pending-requests">
+            <%= render 'volunteer_task_requests/pending_requests' %>
           </div>
         </div>
 
-        <div class="pending-requests">
-          <%= render 'volunteer_task_requests/pending_requests' %>
-        </div>
-      </div>
+        <!-- 2. Processed Requests Pane -->
+        <div class="tab-pane fade <%= 'show active' if @active_tab == 'processed' %>" id="processed-pane" role="tabpanel" aria-labelledby="processed-tab" tabindex="0">
+          <div class="card bg-body-tertiary border border-secondary-subtle rounded-3 p-3 mb-4 shadow-sm">
+            <div class="input-group">
+              <span class="input-group-text bg-body-secondary text-body-secondary border-secondary-subtle">
+                <i class="fa-solid fa-magnifying-glass"></i>
+              </span>
+              <input type="text"
+                     id="search_processed"
+                     class="form-control"
+                     placeholder="Search processed history by volunteer, task title, or space..."
+                     autocomplete="off"
+                     aria-label="Search processed history">
+            </div>
+          </div>
 
-      <!-- 2. Processed Requests Pane -->
-      <div class="tab-pane fade <%= 'show active' if @active_tab == 'processed' %>" id="processed-pane" role="tabpanel" aria-labelledby="processed-tab" tabindex="0">
-        <div class="card bg-body border shadow-sm rounded-4 p-3 mb-3">
-          <div class="input-group">
-            <span class="input-group-text border-end-0 bg-transparent text-body-secondary"><i class="fa fa-search"></i></span>
-            <input type="text" id="search_processed" class="form-control border-start-0 ps-0 shadow-none bg-transparent text-body" placeholder="Search processed history by volunteer, task title, or space..." autocomplete="off">
+          <div class="processed-requests">
+            <%= render 'volunteer_task_requests/processed_requests' %>
           </div>
         </div>
 
-        <div class="processed-requests">
-          <%= render 'volunteer_task_requests/processed_requests' %>
-        </div>
       </div>
-
     </div>
-
   </div>
-</section>
+</div>

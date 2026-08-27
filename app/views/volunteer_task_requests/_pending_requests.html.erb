@@ -1,109 +1,135 @@
 <% if @pending_volunteer_task_requests.blank? %>
-  <div class="text-center py-5 card bg-body border shadow-sm rounded-4 p-4">
-    <div class="mb-3">
-      <i class="fa fa-check-circle-o fa-3x text-success"></i>
+  <div class="text-center py-5 px-3">
+    <div class="rounded-circle bg-success-subtle text-success d-inline-flex align-items-center justify-content-center p-4 fs-1 mb-3">
+      <i class="fa-solid fa-circle-check"></i>
     </div>
-    <h5 class="fw-bold mb-1 text-body">All Caught Up!</h5>
+    <h5 class="fw-bold text-body-emphasis">All Caught Up!</h5>
     <p class="text-body-secondary small mb-0">There are no pending completion requests waiting for review.</p>
   </div>
 <% else %>
-  <div class="card bg-body border shadow-sm rounded-4 overflow-hidden">
-    <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0 custom-requests-table">
-        <thead class="table-light">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="bg-body-secondary border-bottom">
+        <tr class="text-body-secondary small text-uppercase">
+          <th class="ps-3 ps-md-4 py-3" scope="col">Volunteer</th>
+          <th class="py-3" scope="col">Task Details</th>
+          <th class="py-3" scope="col">Space</th>
+          <th class="py-3" scope="col">Reward & Hours</th>
+          <th class="py-3" scope="col">Submitted</th>
+          <th class="pe-3 pe-md-4 py-3 text-end" scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y">
+        <% @pending_volunteer_task_requests.each do |req| %>
+          <% task = req.volunteer_task %>
+          <% volunteer = req.user %>
+          <% next if task.blank? || volunteer.blank? %>
           <tr>
-            <th class="ps-3">Volunteer</th>
-            <th>Task Details</th>
-            <th>Space</th>
-            <th>Reward & Hours</th>
-            <th>Submitted</th>
-            <th class="text-end pe-3">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% @pending_volunteer_task_requests.each do |req| %>
-            <% task = req.volunteer_task %>
-            <% volunteer = req.user %>
-            <tr>
-              <!-- Volunteer Info -->
-              <td class="ps-3">
-                <div class="d-flex align-items-center">
-                  <div class="avatar-circle me-2">
-                    <%= volunteer.name.first.upcase %>
-                  </div>
-                  <div>
-                    <span class="fw-bold d-block text-body">
-                      <%= link_to volunteer.name.titleize, user_path(volunteer.username), class: 'text-decoration-none text-body hover-orange' %>
-                    </span>
-                    <span class="text-body-secondary small">@<%= volunteer.username %></span>
-                  </div>
+            <!-- Volunteer Info -->
+            <td class="ps-3 ps-md-4 py-3">
+              <div class="d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-primary-subtle text-primary fw-bold d-flex align-items-center justify-content-center fs-6 flex-shrink-0" style="width: 40px; height: 40px;">
+                  <%= volunteer.name.to_s.first&.upcase || "V" %>
                 </div>
-              </td>
-
-              <!-- Task Title -->
-              <td>
-                <span class="badge bg-body-secondary text-body-secondary border text-uppercase mb-1"><%= task.category.capitalize %></span>
-                <div class="fw-semibold">
-                  <%= link_to task.title.capitalize, volunteer_task_path(task.id), class: 'text-decoration-none text-body hover-orange' %>
+                <div>
+                  <%= link_to user_path(volunteer.username), class: "fw-bold text-body-emphasis text-decoration-none d-block lh-sm" do %>
+                    <%= volunteer.name.to_s.titleize %>
+                  <% end %>
+                  <span class="text-body-secondary small">@<%= volunteer.username %></span>
                 </div>
-              </td>
+              </div>
+            </td>
 
-              <!-- Space -->
-              <td>
-                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">
-                  <i class="fa fa-map-marker me-1"></i><%= task.space.try(:name)&.capitalize || 'General' %>
-                </span>
-              </td>
-
-              <!-- Rewards & Hours -->
-              <td>
-                <div class="d-inline-flex align-items-center bg-body-tertiary border rounded-pill px-2 py-1">
-                  <%= vite_image_tag 'images/cc.png', alt: 'CC', class: 'ccs me-1', id: 'myCcBlack', style: 'width: 14px; height: 14px;' %>
-                  <span class="fw-bold me-1 text-primary"><%= task.cc %> CC</span>
-                  <span class="text-body-secondary small">(<%= task.hours %> hrs)</span>
-                </div>
-              </td>
-
-              <!-- Date Submitted -->
-              <td class="small text-nowrap">
-                <div class="fw-medium text-body"><%= req.created_at.strftime('%b %d, %Y') %></div>
-                <div class="text-body-secondary font-monospace"><%= req.created_at.strftime('%I:%M %p') %></div>
-              </td>
-
-              <!-- Actions (Staff vs Student) -->
-              <td class="text-end pe-3 text-nowrap">
-                <% if current_user.staff? %>
-                  <div class="d-inline-flex gap-2 align-items-center">
-                    <%= button_to update_approval_volunteer_task_requests_path(id: req.id, approval: true),
-                                  method: :put,
-                                  data: { confirm: "Approve this task? This will credit #{task.cc} CC and log #{task.hours} hours for #{volunteer.name.titleize}." },
-                                  class: 'btn btn-success btn-sm rounded-pill px-3 py-1 fw-bold shadow-sm' do %>
-                      <i class="fa fa-check me-1"></i> Approve
-                    <% end %>
-
-                    <%= button_to update_approval_volunteer_task_requests_path(id: req.id, approval: false),
-                                  method: :put,
-                                  data: { confirm: "Deny this completion request for #{volunteer.name.titleize}?" },
-                                  class: 'btn btn-outline-danger btn-sm rounded-pill px-3 py-1 fw-bold' do %>
-                      <i class="fa fa-times me-1"></i> Deny
-                    <% end %>
-                  </div>
-                <% else %>
-                  <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-2 rounded-pill fw-semibold">
-                    <i class="fa fa-clock-o me-1"></i> Under Review
+            <!-- Task Title & Category -->
+            <td class="py-3">
+              <div class="d-flex flex-column gap-1">
+                <div>
+                  <span class="badge bg-body-secondary text-body-secondary border border-secondary-subtle text-uppercase small">
+                    <%= task.category.to_s.capitalize %>
                   </span>
-                <% end %>
-              </td>
-            </tr>
-          <% end %>
-        </tbody>
-      </table>
-    </div>
+                </div>
+                <%= link_to task.title.to_s.capitalize, volunteer_task_path(task.id), class: "fw-semibold text-body-emphasis text-decoration-none d-block lh-sm hover-primary" %>
+              </div>
+            </td>
+
+            <!-- Space Badge -->
+            <td class="py-3">
+              <% if task.space&.name&.downcase&.include?("makerspace") %>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle d-inline-flex align-items-center gap-1 py-1 px-2 small">
+                  <i class="fa-solid fa-cube"></i>
+                  <span><%= task.space.name.capitalize %></span>
+                </span>
+              <% else %>
+                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle d-inline-flex align-items-center gap-1 py-1 px-2 small">
+                  <i class="fa-solid fa-industry"></i>
+                  <span><%= task.space&.name&.capitalize || "General" %></span>
+                </span>
+              <% end %>
+            </td>
+
+            <!-- Rewards & Hours -->
+            <td class="py-3">
+              <div class="d-inline-flex flex-column gap-1">
+                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2 py-1 small d-inline-flex align-items-center gap-1">
+                  <i class="fa-solid fa-coins text-warning"></i>
+                  <span><%= task.cc %> CC</span>
+                </span>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-1 small d-inline-flex align-items-center gap-1">
+                  <i class="fa-regular fa-clock text-primary"></i>
+                  <span><%= task.hours %> hrs</span>
+                </span>
+              </div>
+            </td>
+
+            <!-- Date Submitted -->
+            <td class="py-3">
+              <div class="text-body-emphasis small fw-medium">
+                <i class="fa-regular fa-calendar text-secondary me-1"></i>
+                <%= req.created_at.strftime('%b %d, %Y') %>
+              </div>
+              <div class="text-body-secondary small font-monospace">
+                <%= req.created_at.strftime('%I:%M %p') %>
+              </div>
+            </td>
+
+            <!-- Actions (Staff vs Volunteer View) -->
+            <td class="pe-3 pe-md-4 py-3 text-end text-nowrap">
+              <% if current_user.staff? %>
+                <div class="d-inline-flex flex-column flex-sm-row gap-1 justify-content-end align-items-end">
+                  <%= button_to update_approval_volunteer_task_requests_path(id: req.id, approval: true),
+                                method: :put,
+                                data: { turbo_confirm: "Approve this task? This will credit #{task.cc} CC and log #{task.hours} hours for #{volunteer.name.titleize}.",
+                                        confirm: "Approve this task? This will credit #{task.cc} CC and log #{task.hours} hours for #{volunteer.name.titleize}." },
+                                class: "btn btn-sm btn-success fw-semibold d-inline-flex align-items-center justify-content-center gap-1 shadow-sm text-white" do %>
+                    <i class="fa-solid fa-check"></i>
+                    <span>Approve</span>
+                  <% end %>
+
+                  <%= button_to update_approval_volunteer_task_requests_path(id: req.id, approval: false),
+                                method: :put,
+                                data: { turbo_confirm: "Deny this completion request for #{volunteer.name.titleize}?",
+                                        confirm: "Deny this completion request for #{volunteer.name.titleize}?" },
+                                class: "btn btn-sm btn-outline-danger fw-semibold d-inline-flex align-items-center justify-content-center gap-1" do %>
+                    <i class="fa-solid fa-xmark"></i>
+                    <span>Deny</span>
+                  <% end %>
+                </div>
+              <% else %>
+                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-3 py-2 small d-inline-flex align-items-center gap-1">
+                  <i class="fa-solid fa-hourglass-half text-warning"></i>
+                  <span>Under Review</span>
+                </span>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
   </div>
 
   <!-- Pagination -->
   <% if @pagy_pending && @pagy_pending.pages > 1 %>
-    <div class="d-flex justify-content-center mt-4">
+    <div class="d-flex justify-content-center pt-4 border-top border-secondary-subtle overflow-x-auto mt-3">
       <%== @pagy_pending.series_nav(:bootstrap) %>
     </div>
   <% end %>
