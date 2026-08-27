@@ -34,8 +34,22 @@ class VolunteersController < SessionsController
   end
 
   def volunteer_list
-    @active_volunteers = User.volunteers.where(programs: { active: true })
-    @unactive_volunteers = User.volunteers.where(programs: { active: false })
+    base_scope = User.volunteers
+                     .distinct
+                     .includes(
+                       :programs,
+                       { volunteer_task_joins: :volunteer_task },
+                       { certifications: [
+                           { training_session: :training },
+                           { proficient_project_session: { proficient_project: :training } }
+                         ]
+                       }
+                     )
+                     .order(name: :asc)
+
+    # Load into memory arrays to avoid duplicate COUNT(*) and SELECT queries
+    @active_volunteers = base_scope.where(programs: { active: true }).to_a
+    @unactive_volunteers = base_scope.where(programs: { active: false }).to_a
   end
 
   def join_volunteer_program
