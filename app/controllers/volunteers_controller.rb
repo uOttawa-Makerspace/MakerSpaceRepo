@@ -59,11 +59,11 @@ class VolunteersController < SessionsController
 
   def my_stats
     volunteer_task_requests = current_user.volunteer_task_requests
-    scope = volunteer_task_requests.processed.approved.order(created_at: :desc)
+    scope = volunteer_task_requests.processed.approved.includes(:volunteer_task).order(created_at: :desc)
     @pagy, @processed_volunteer_task_requests = pagy(scope, limit: 15)
     @certifications = current_user.certifications.highest_level
     @remaining_trainings = current_user.remaining_trainings
-    @skills = Skill.all
+    @skills = Skill.includes(trainings: [:proficient_projects, :learning_modules])
     @proficient_projects_awarded =
       Proc.new do |training|
         training.proficient_projects.where(

@@ -61,7 +61,7 @@
           <div class="card-body p-2 p-md-3">
             <span class="small fw-semibold text-uppercase text-body-secondary d-block mb-1 text-truncate" style="font-size: 0.72rem;">Approved Tasks</span>
             <div class="d-flex align-items-center justify-content-between">
-              <span class="fs-4 fs-md-3 fw-bold text-body-emphasis"><%= @processed_volunteer_task_requests&.count || 0 %></span>
+              <span class="fs-4 fs-md-3 fw-bold text-body-emphasis"><%= @processed_volunteer_task_requests&.size || 0 %></span>
               <i class="fa-solid fa-circle-check fs-5 text-success"></i>
             </div>
           </div>
@@ -74,7 +74,7 @@
           <div class="card-body p-2 p-md-3">
             <span class="small fw-semibold text-uppercase text-body-secondary d-block mb-1 text-truncate" style="font-size: 0.72rem;">Certifications</span>
             <div class="d-flex align-items-center justify-content-between">
-              <span class="fs-4 fs-md-3 fw-bold text-body-emphasis"><%= @certifications&.count || 0 %></span>
+              <span class="fs-4 fs-md-3 fw-bold text-body-emphasis"><%= @certifications&.size || 0 %></span>
               <i class="fa-solid fa-award fs-5 text-info"></i>
             </div>
           </div>
@@ -135,7 +135,7 @@
                   <h2 class="h6 fw-bold mb-0 text-body-emphasis"><%= skill.name %></h2>
                 </div>
                 <span class="badge bg-body-secondary text-body-secondary border border-secondary-subtle rounded-pill small">
-                  <%= skill.trainings.count %> <%= "track".pluralize(skill.trainings.count) %>
+                  <%= skill.trainings.size %> <%= "track".pluralize(skill.trainings.size) %>
                 </span>
               </div>
 
@@ -161,12 +161,12 @@
 
                       # Next level requirements
                       if next_level.present?
-                        next_projects_total = training.proficient_projects.where(level: next_level).count
-                        next_projects_done  = @proficient_projects_awarded.call(training).where(level: next_level).count
+                        next_projects_total = training.proficient_projects.select { |p| p.level == next_level }.size
+                        next_projects_done  = @proficient_projects_awarded.call(training).where(level: next_level).size
                         next_projects_pct   = next_projects_total.positive? ? (next_projects_done.to_f / next_projects_total * 100).round : 0
 
-                        next_modules_total  = training.learning_modules.where(level: next_level).count
-                        next_modules_done   = @learning_modules_completed.call(training).where(level: next_level).count
+                        next_modules_total  = training.learning_modules.select { |m| m.level == next_level }.size
+                        next_modules_done   = @learning_modules_completed.call(training).where(level: next_level).size
                         next_modules_pct    = next_modules_total.positive? ? (next_modules_done.to_f / next_modules_total * 100).round : 0
 
                         next_target_hours   = @recommended_hours.call(training, [next_level])
