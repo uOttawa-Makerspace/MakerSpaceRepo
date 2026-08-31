@@ -15,6 +15,4 @@
 - Staging (#1951) by @UnknownCrafts
 - quick prod fix [no ci] (#1956) by @UnknownCrafts
 
-
-
 **Full Changelog**: https://github.com/uOttawa-Makerspace/MakerSpaceRepo/compare/v2026.08.02-231044...v2026.08.31-012803
