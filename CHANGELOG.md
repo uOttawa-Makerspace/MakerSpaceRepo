@@ -1,11 +1,11 @@
-# v2026.08.31-013438 (2026-08-31)
+# v2026.08.31-020026 (2026-08-31)
 
 #changelog
 
 ## 📦 Other Changes
 
-- Staging (#1957) by @UnknownCrafts
+- Staging (#1958) by @UnknownCrafts
 
 
 
-**Full Changelog**: https://github.com/uOttawa-Makerspace/MakerSpaceRepo/compare/v2026.08.31-012803...v2026.08.31-013438
+**Full Changelog**: https://github.com/uOttawa-Makerspace/MakerSpaceRepo/compare/v2026.08.31-013438...v2026.08.31-020026
