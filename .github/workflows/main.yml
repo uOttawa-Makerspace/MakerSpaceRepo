@@ -319,7 +319,7 @@ jobs:
   # PRODUCTION DEPLOY
   # ==========================================
   deploy-production:
-    needs: [test, security]
+    needs: [test, security, build-production-images]
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
 
