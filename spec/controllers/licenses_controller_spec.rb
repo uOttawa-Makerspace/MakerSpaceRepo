@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe LicensesController, type: :controller do
-  before(:all) { @user = create(:user, :regular_user) }
+  before(:each) { @user = create(:user, :regular_user) }
 
   before(:each) { session[:user_id] = @user.id }
 

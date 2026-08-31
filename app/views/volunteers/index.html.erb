@@ -1,104 +1,335 @@
 <section id="volunteersIndex" class="mt-n3">
-    <div class="jumbotron volunteerJumbotron">
-        <h1 class="display-1"><%= t('volunteers.header_html') %></h1>
-        <p><%= t('volunteers.subtitle_html') %></p>
-        <%= link_to t('volunteers.join_button'), join_volunteer_program_volunteers_path, class: 'btn btn-primary' %>
+
+  <!-- 1. Hero Banner -->
+  <div class="volunteerJumbotron d-flex align-items-center text-white py-5 px-3 px-md-5">
+    <div class="container py-4">
+      <div class="col-lg-8">
+        <h1 class="display-3 fw-bold mb-2 text-white">
+          <%= t('volunteers.hero.title_html') %>
+        </h1>
+        <p class="fs-3 text-white-50 mb-4 fw-medium"><%= t('volunteers.hero.subtitle') %></p>
+
+        <%= button_to t('volunteers.hero.join_button'),
+                    join_volunteer_program_volunteers_path,
+                    method: :post,
+                    class: 'btn btn-ceed btn-lg px-4 py-3 rounded-pill fs-6 fw-bold shadow' %>
+      </div>
     </div>
-    <div class="shadow">
-        <%= render partial: 'layouts/volunteer_header' %>
-    </div>
-    <div class="container p-4">
-        <h2 class="my-5 display-5"><%= t('volunteers.why_volunteer.header_html') %></h2>
-        <div class="row row-cols-5 mb-5">
-            <div>
-                <i class="fa fa-floppy-o" aria-hidden="true"></i>
-                <p><%= t('volunteers.why_volunteer.floppy') %></p>
-            </div>
-            <div>
-                <i class="fa fa-users" aria-hidden="true"></i>
-                <p><%= t('volunteers.why_volunteer.users') %></p>
-            </div>
-            <div>
-                <i class="fa fa-comments-o" aria-hidden="true"></i>
-                <p><%= t('volunteers.why_volunteer.comments') %></p>
-            </div>
-            <div>
-                <i class="fa fa-cloud" aria-hidden="true"></i>
-                <p><%= t('volunteers.why_volunteer.cloud') %></p>
-            </div>
-            <div>
-                <i class="fa fa-gift" aria-hidden="true"></i>
-                <p><%= t('volunteers.why_volunteer.gift') %></p>
-            </div>
+  </div>
+
+  <div class="shadow-sm">
+    <%= render partial: 'layouts/volunteer_header' %>
+  </div>
+
+  <!-- 2. Why Volunteer Section -->
+  <div class="bg-body-tertiary py-5 border-bottom">
+    <div class="container text-center py-3">
+      <h2 class="display-5 fw-bold mb-5 text-body">
+        <%= t('volunteers.why_volunteer.title_html') %>
+      </h2>
+
+      <div class="row row-cols-1 row-cols-md-5 g-4 justify-content-center">
+        <div class="col">
+          <div class="icon-circle mb-3">
+            <i class="fa fa-wrench fa-2x"></i>
+          </div>
+          <h3 class="h5 fw-bold mb-2 text-body"><%= t('volunteers.why_volunteer.cards.experience.title') %></h3>
+          <p class="small text-body-secondary mb-0"><%= t('volunteers.why_volunteer.cards.experience.desc') %></p>
         </div>
-        <div class="gx-5 mb-5">
-            <h2><%= t('volunteers.volunteer_opportunities.header') %></h2>
-            <h3 class="subtext-primary"><%= t('volunteers.volunteer_opportunities.subheader') %></h3>
-            <div class="row ps-3">
-                <ul class="col-lg-3">
-                    <% t('volunteers.volunteer_opportunities.points')[0..3].each do |point| %>
-                        <li><%= sanitize(point) %></li>
-                    <% end %>
-                    <% t('volunteers') %>
-                </ul>
-                <ul class="col-lg-3">
-                    <% t('volunteers.volunteer_opportunities.points')[4..8].each do |point| %>
-                        <li><%= sanitize(point) %></li>
-                    <% end %>
-                </ul>
-                <div class="align-content-center col-lg-6">
-                    <%= image_tag 'volunteer/opportunities.png', class: 'img-fluid' %>
+        <div class="col">
+          <div class="icon-circle mb-3">
+            <i class="fa fa-graduation-cap fa-2x"></i>
+          </div>
+          <h3 class="h5 fw-bold mb-2 text-body"><%= t('volunteers.why_volunteer.cards.skills.title') %></h3>
+          <p class="small text-body-secondary mb-0"><%= t('volunteers.why_volunteer.cards.skills.desc') %></p>
+        </div>
+        <div class="col">
+          <div class="icon-circle mb-3">
+            <i class="fa fa-users fa-2x"></i>
+          </div>
+          <h3 class="h5 fw-bold mb-2 text-body"><%= t('volunteers.why_volunteer.cards.community.title') %></h3>
+          <p class="small text-body-secondary mb-0"><%= t('volunteers.why_volunteer.cards.community.desc') %></p>
+        </div>
+        <div class="col">
+          <div class="icon-circle mb-3">
+            <i class="fa fa-briefcase fa-2x"></i>
+          </div>
+          <h3 class="h5 fw-bold mb-2 text-body"><%= t('volunteers.why_volunteer.cards.career.title') %></h3>
+          <p class="small text-body-secondary mb-0"><%= t('volunteers.why_volunteer.cards.career.desc') %></p>
+        </div>
+        <div class="col">
+          <div class="icon-circle mb-3">
+            <i class="fa fa-heart fa-2x"></i>
+          </div>
+          <h3 class="h5 fw-bold mb-2 text-body"><%= t('volunteers.why_volunteer.cards.impact.title') %></h3>
+          <p class="small text-body-secondary mb-0"><%= t('volunteers.why_volunteer.cards.impact.desc') %></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Choose How You'd Like To Get Involved (3-Column Dropdowns) -->
+  <div class="bg-body py-5">
+    <div class="container py-3 text-center">
+      <h2 class="display-5 fw-bold mb-2 text-body"><%= t('volunteers.involvement.title') %></h2>
+      <p class="lead text-body-secondary mb-5 mx-auto" style="max-width: 760px;">
+        <%= t('volunteers.involvement.subtitle') %>
+      </p>
+
+      <div class="row g-4 text-start align-items-start">
+
+        <!-- Column 1: Event Volunteer -->
+        <div class="col-12 col-lg-4">
+          <div class="card bg-body border shadow-sm rounded-4 overflow-hidden mb-3">
+            <button class="ceed-card-header text-white"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#eventCardBody"
+                    aria-expanded="true"
+                    aria-controls="eventCardBody">
+              <span><%= t('volunteers.involvement.types.event.title') %></span>
+              <i class="fa fa-chevron-down chevron-icon"></i>
+            </button>
+
+            <div id="eventCardBody" class="collapse show">
+              <div class="card-inner-wrapper">
+                <!-- Sub-Dropdown 1: Involvement -->
+                <div class="accordion-item">
+                  <button class="accordion-button-custom"
+                          type="button"
+                          data-bs-toggle="collapse"
+                          data-bs-target="#eventInvolvement"
+                          aria-expanded="true"
+                          aria-controls="eventInvolvement">
+                    <span><i class="fa fa-handshake-o text-danger me-2"></i> <%= t('volunteers.involvement.labels.involvement') %></span>
+                    <i class="fa fa-chevron-down chevron-icon"></i>
+                  </button>
+                  <div id="eventInvolvement" class="collapse show">
+                    <div class="accordion-content">
+                      <ul class="mb-0">
+                        <% t('volunteers.involvement.types.event.involvement').each do |item| %>
+                          <li><%= item %></li>
+                        <% end %>
+                      </ul>
+                    </div>
+                  </div>
                 </div>
-            </div>
-        </div>
-    </div>
-    <!-- FIXME make this the secondary color(?) -->
-    <div class="bg-body-tertiary">
-        <div class="container pb-3">
-            <div class="row p-3">
-                <div class="col-lg-6">
-                    <% t('volunteers.skills.steps')[0, 2].each.with_index(1) do |step, index| %>
-                        <div class="numberedCard row row-cols-2">
-                            <p><%= index %></p>
-                            <div class="numberedBody">
-                                <p><%= step[:header] %></p>
-                                <p><i class="fa fa-square-o"></i><%= step[:points][0] %></p>
-                                <p><i class="fa fa-square-o"></i><%= step[:points][1] %></p>
-                            </div>
-                        </div>
-                    <% end %>
-                    <% t('volunteers.skills.steps')[2].tap do |step| %>
-                        <div class="numberedCard row row-cols-2">
-                            <p>3</p>
-                            <div class="numberedBody">
-                                <p><%= step[:header] %></p>
-                                <ul>
-                                    <li><%= step[:points][0] %></li>
-                                    <li><%= step[:points][1] %></li>
-                                </ul>
-                            </div>
-                        </div>
-                    <% end %>
+
+                <!-- Sub-Dropdown 2: Requirements -->
+                <div class="accordion-item">
+                  <button class="accordion-button-custom collapsed"
+                          type="button"
+                          data-bs-toggle="collapse"
+                          data-bs-target="#eventReqs"
+                          aria-expanded="false"
+                          aria-controls="eventReqs">
+                    <span><i class="fa fa-file-text-o text-primary me-2"></i> <%= t('volunteers.involvement.labels.requirements') %></span>
+                    <i class="fa fa-chevron-down chevron-icon"></i>
+                  </button>
+                  <div id="eventReqs" class="collapse">
+                    <div class="accordion-content">
+                      <ul class="mb-0">
+                        <% t('volunteers.involvement.types.event.requirements').each do |item| %>
+                          <li><%= item %></li>
+                        <% end %>
+                      </ul>
+                    </div>
+                  </div>
                 </div>
-                <div class="offset-lg-1 col-lg-5">
-                    <h3 class="display-6 fw-bold lh-base">Build skills in either the Makerspace or Brunsfield by completing tasks generated by the space managers.</h3>
-                    <%= image_tag 'volunteer/skills.png', class: 'img-fluid' %>
+              </div>
+            </div>
+          </div>
+
+          <div class="text-center px-3 mb-4">
+            <p class="text-body-secondary small mb-1"><%= t('volunteers.involvement.types.event.desc') %></p>
+            <p class="fw-bold fst-italic text-body mb-0"><%= t('volunteers.involvement.types.event.badge') %></p>
+          </div>
+        </div>
+
+        <!-- Column 2: Weekly Space Volunteer -->
+        <div class="col-12 col-lg-4">
+          <div class="card bg-body border shadow-sm rounded-4 overflow-hidden mb-3">
+            <button class="ceed-card-header text-white"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#spaceCardBody"
+                    aria-expanded="true"
+                    aria-controls="spaceCardBody">
+              <span><%= t('volunteers.involvement.types.space.title') %></span>
+              <i class="fa fa-chevron-down chevron-icon"></i>
+            </button>
+
+            <div id="spaceCardBody" class="collapse show">
+              <div class="card-inner-wrapper">
+                <!-- Sub-Dropdown 1: Involvement -->
+                <div class="accordion-item">
+                  <button class="accordion-button-custom"
+                          type="button"
+                          data-bs-toggle="collapse"
+                          data-bs-target="#spaceInvolvement"
+                          aria-expanded="true"
+                          aria-controls="spaceInvolvement">
+                    <span><i class="fa fa-handshake-o text-danger me-2"></i> <%= t('volunteers.involvement.labels.involvement') %></span>
+                    <i class="fa fa-chevron-down chevron-icon"></i>
+                  </button>
+                  <div id="spaceInvolvement" class="collapse show">
+                    <div class="accordion-content">
+                      <ul class="mb-0">
+                        <% t('volunteers.involvement.types.space.involvement').each do |item| %>
+                          <li><%= item %></li>
+                        <% end %>
+                      </ul>
+                    </div>
+                  </div>
                 </div>
+
+                <!-- Sub-Dropdown 2: Requirements -->
+                <div class="accordion-item">
+                  <button class="accordion-button-custom collapsed"
+                          type="button"
+                          data-bs-toggle="collapse"
+                          data-bs-target="#spaceReqs"
+                          aria-expanded="false"
+                          aria-controls="spaceReqs">
+                    <span><i class="fa fa-file-text-o text-primary me-2"></i> <%= t('volunteers.involvement.labels.requirements') %></span>
+                    <i class="fa fa-chevron-down chevron-icon"></i>
+                  </button>
+                  <div id="spaceReqs" class="collapse">
+                    <div class="accordion-content">
+                      <ul class="mb-0">
+                        <% t('volunteers.involvement.types.space.requirements').each do |item| %>
+                          <li><%= item %></li>
+                        <% end %>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="box-subtext mt-5">
-                <h3><%= t('volunteers.proficiency_projects.header') %></h3>
-                <p><%= t('volunteers.proficiency_projects.line_1') %></p>
-                <p><%= t('volunteers.proficiency_projects.line_2') %></p>
-                <p><%= t('volunteers.proficiency_projects.line_3') %></p>
+          </div>
+
+          <div class="text-center px-3 mb-4">
+            <p class="text-body-secondary small mb-1"><%= t('volunteers.involvement.types.space.desc') %></p>
+            <p class="fw-bold fst-italic text-body mb-0"><%= t('volunteers.involvement.types.space.badge') %></p>
+          </div>
+        </div>
+
+        <!-- Column 3: Project Based-Volunteer -->
+        <div class="col-12 col-lg-4">
+          <div class="card bg-body border shadow-sm rounded-4 overflow-hidden mb-3">
+            <button class="ceed-card-header text-white"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#projectCardBody"
+                    aria-expanded="true"
+                    aria-controls="projectCardBody">
+              <span><%= t('volunteers.involvement.types.project.title') %></span>
+              <i class="fa fa-chevron-down chevron-icon"></i>
+            </button>
+
+            <div id="projectCardBody" class="collapse show">
+              <div class="card-inner-wrapper">
+                <!-- Sub-Dropdown 1: Involvement -->
+                <div class="accordion-item">
+                  <button class="accordion-button-custom"
+                          type="button"
+                          data-bs-toggle="collapse"
+                          data-bs-target="#projectInvolvement"
+                          aria-expanded="true"
+                          aria-controls="projectInvolvement">
+                    <span><i class="fa fa-handshake-o text-danger me-2"></i> <%= t('volunteers.involvement.labels.involvement') %></span>
+                    <i class="fa fa-chevron-down chevron-icon"></i>
+                  </button>
+                  <div id="projectInvolvement" class="collapse show">
+                    <div class="accordion-content">
+                      <ul class="mb-0">
+                        <% t('volunteers.involvement.types.project.involvement').each do |item| %>
+                          <li><%= item %></li>
+                        <% end %>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Sub-Dropdown 2: Requirements -->
+                <div class="accordion-item">
+                  <button class="accordion-button-custom collapsed"
+                          type="button"
+                          data-bs-toggle="collapse"
+                          data-bs-target="#projectReqs"
+                          aria-expanded="false"
+                          aria-controls="projectReqs">
+                    <span><i class="fa fa-file-text-o text-primary me-2"></i> <%= t('volunteers.involvement.labels.requirements') %></span>
+                    <i class="fa fa-chevron-down chevron-icon"></i>
+                  </button>
+                  <div id="projectReqs" class="collapse">
+                    <div class="accordion-content">
+                      <ul class="mb-0">
+                        <% t('volunteers.involvement.types.project.requirements').each do |item| %>
+                          <li><%= item %></li>
+                        <% end %>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <p class="fw-bold ms-5"><%= t('volunteers.proficiency_projects.prelink') %> <a href="#"><%= t('volunteers.proficiency_projects.link') %></a></p>
+          </div>
+
+          <div class="text-center px-3 mb-4">
+            <p class="text-body-secondary small mb-1"><%= t('volunteers.involvement.types.project.desc') %></p>
+            <p class="fw-bold fst-italic text-body mb-0"><%= t('volunteers.involvement.types.project.badge') %></p>
+          </div>
         </div>
+
+      </div>
     </div>
-    <div class="container">
-        <div class="box-subtext mt-5">
-            <h2><%= t('volunteers.how_volunteering.header') %></h2>
-            <p><%= t('volunteers.how_volunteering.line_1') %></p>
-            <p><%= t('volunteers.how_volunteering.line_2') %> <a href="mailto:volunteer@makerepo.com">volunteer@makerepo.com</a></p>
-        </div>
+  </div>
+
+  <!-- 4. Ready To Get Involved Banner (Full Exact Canva Spec) -->
+  <div class="ceed-bottom-banner text-white py-5 px-3 position-relative overflow-hidden">
+
+    <!-- Exact Canva Watermark Gear SVG -->
+    <svg class="gear-watermark" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1032.0 805.3" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+      <defs>
+        <clipPath id="gear_clip_1"><path d="M 524 462 L 872 462 L 872 805.328125 L 524 805.328125 Z M 524 462"/></clipPath>
+        <clipPath id="gear_clip_2"><path d="M 836 416 L 1032.019531 416 L 1032.019531 611 L 836 611 Z M 836 416"/></clipPath>
+      </defs>
+      <g fill="#fafcfa">
+        <g id="gear_part_1">
+          <path d="M 562.492188 396.382812 C 481.140625 396.382812 415.195312 330.4375 415.195312 249.089844 C 415.195312 167.738281 481.140625 101.792969 562.492188 101.792969 C 643.839844 101.792969 709.785156 167.738281 709.785156 249.089844 C 709.785156 330.4375 643.839844 396.382812 562.492188 396.382812 Z M 750.886719 267.632812 L 811.222656 235.714844 C 810.3125 218.539062 807.660156 201.820312 803.445312 185.738281 L 737.40625 176.601562 C 731.996094 163.5625 725.175781 151.257812 717.128906 139.878906 L 742.652344 77.085938 C 731.425781 65.328125 719.054688 54.671875 705.726562 45.285156 L 649.195312 80.773438 C 635.996094 73.960938 621.890625 68.664062 607.113281 65.089844 L 586.484375 1.148438 C 578.589844 0.394531 570.585938 0.00390625 562.492188 0.00390625 C 554.394531 0.00390625 546.394531 0.394531 538.496094 1.148438 L 517.871094 65.089844 C 503.089844 68.664062 488.984375 73.960938 475.785156 80.773438 L 419.257812 45.285156 C 405.925781 54.671875 393.554688 65.328125 382.328125 77.085938 L 407.855469 139.878906 C 399.804688 151.257812 392.984375 163.5625 387.578125 176.601562 L 321.535156 185.738281 C 317.320312 201.820312 314.667969 218.539062 313.761719 235.714844 L 374.09375 267.632812 C 375.324219 280.277344 377.800781 292.554688 381.394531 304.34375 L 336.503906 353.984375 C 343.964844 370.027344 353.085938 385.140625 363.640625 399.109375 L 430.488281 384.753906 C 438.476562 392.527344 447.144531 399.613281 456.40625 405.890625 L 453.90625 473.320312 C 469.96875 481.113281 486.992188 487.226562 504.753906 491.445312 L 546.550781 437.714844 C 551.804688 438.152344 557.121094 438.390625 562.492188 438.390625 C 567.859375 438.390625 573.175781 438.152344 578.433594 437.714844 L 620.226562 491.445312 C 637.988281 487.226562 655.011719 481.113281 671.074219 473.320312 L 668.574219 405.890625 C 677.835938 399.613281 686.503906 392.527344 694.492188 384.753906 L 761.34375 399.109375 C 771.898438 385.140625 781.015625 370.027344 788.476562 353.984375 L 743.589844 304.34375 C 747.183594 292.554688 749.65625 280.277344 750.886719 267.632812"/>
+        </g>
+        <g clip-path="url(#gear_clip_1)" id="gear_part_2">
+          <path d="M 697.628906 738.992188 C 640.859375 738.992188 594.835938 692.96875 594.835938 636.199219 C 594.835938 579.429688 640.859375 533.40625 697.628906 533.40625 C 754.398438 533.40625 800.421875 579.429688 800.421875 636.199219 C 800.421875 692.96875 754.398438 738.992188 697.628906 738.992188 Z M 829.101562 649.140625 L 871.207031 626.867188 C 870.574219 614.878906 868.722656 603.214844 865.78125 591.988281 L 819.695312 585.613281 C 815.917969 576.515625 811.160156 567.925781 805.542969 559.988281 L 823.355469 516.164062 C 815.519531 507.960938 806.890625 500.519531 797.585938 493.972656 L 758.136719 518.738281 C 748.925781 513.984375 739.082031 510.285156 728.769531 507.792969 L 714.371094 463.171875 C 708.863281 462.644531 703.277344 462.371094 697.628906 462.371094 C 691.980469 462.371094 686.394531 462.644531 680.882812 463.171875 L 666.488281 507.792969 C 656.175781 510.285156 646.328125 513.984375 637.117188 518.738281 L 597.671875 493.972656 C 588.367188 500.519531 579.734375 507.960938 571.898438 516.164062 L 589.714844 559.988281 C 584.097656 567.925781 579.335938 576.515625 575.5625 585.613281 L 529.472656 591.988281 C 526.53125 603.214844 524.683594 614.878906 524.046875 626.867188 L 566.152344 649.140625 C 567.011719 657.964844 568.738281 666.53125 571.246094 674.761719 L 539.921875 709.402344 C 545.125 720.597656 551.488281 731.144531 558.855469 740.894531 L 605.507812 730.875 C 611.085938 736.300781 617.132812 741.242188 623.59375 745.625 L 621.851562 792.683594 C 633.058594 798.121094 644.941406 802.390625 657.335938 805.328125 L 686.503906 767.835938 C 690.171875 768.140625 693.878906 768.304688 697.628906 768.304688 C 701.375 768.304688 705.085938 768.140625 708.753906 767.835938 L 737.921875 805.328125 C 750.316406 802.390625 762.195312 798.121094 773.402344 792.683594 L 771.660156 745.625 C 778.121094 741.242188 784.171875 736.300781 789.75 730.875 L 836.398438 740.894531 C 843.765625 731.144531 850.128906 720.597656 855.335938 709.402344 L 824.011719 674.761719 C 826.519531 666.53125 828.246094 657.964844 829.101562 649.140625"/>
+        </g>
+        <g clip-path="url(#gear_clip_2)" id="gear_part_3">
+          <path d="M 934.042969 572.675781 C 902 572.675781 876.023438 546.699219 876.023438 514.65625 C 876.023438 482.613281 902 456.636719 934.042969 456.636719 C 966.085938 456.636719 992.0625 482.613281 992.0625 514.65625 C 992.0625 546.699219 966.085938 572.675781 934.042969 572.675781 Z M 1008.25 521.960938 L 1032.019531 509.386719 C 1031.660156 502.621094 1030.621094 496.035156 1028.960938 489.703125 L 1002.941406 486.101562 C 1000.808594 480.96875 998.125 476.117188 994.957031 471.636719 L 1005.011719 446.902344 C 1000.589844 442.273438 995.714844 438.074219 990.464844 434.378906 L 968.199219 448.355469 C 963 445.671875 957.441406 443.585938 951.621094 442.179688 L 943.496094 416.992188 C 940.386719 416.695312 937.234375 416.539062 934.042969 416.539062 C 930.855469 416.539062 927.703125 416.695312 924.59375 416.992188 L 916.46875 442.179688 C 910.644531 443.585938 905.089844 445.671875 899.890625 448.355469 L 877.625 434.378906 C 872.371094 438.074219 867.5 442.273438 863.078125 446.902344 L 873.132812 471.636719 C 869.960938 476.117188 867.277344 480.96875 865.144531 486.101562 L 839.132812 489.703125 C 837.472656 496.035156 836.425781 502.621094 836.070312 509.386719 L 859.835938 521.960938 C 860.320312 526.941406 861.292969 531.777344 862.710938 536.421875 L 845.027344 555.972656 C 847.96875 562.292969 851.558594 568.246094 855.714844 573.75 L 882.046875 568.09375 C 885.195312 571.15625 888.609375 573.945312 892.257812 576.417969 L 891.273438 602.980469 C 897.601562 606.050781 904.304688 608.460938 911.300781 610.117188 L 927.765625 588.953125 C 929.835938 589.128906 931.929688 589.222656 934.042969 589.222656 C 936.160156 589.222656 938.253906 589.128906 940.324219 588.953125 L 956.785156 610.117188 C 963.78125 608.460938 970.488281 606.050781 976.816406 602.980469 L 975.832031 576.417969 C 979.480469 573.945312 982.894531 571.15625 986.039062 568.09375 L 1012.371094 573.75 C 1016.53125 568.246094 1020.121094 562.292969 1023.058594 555.972656 L 1005.378906 536.421875 C 1006.789062 531.777344 1007.769531 526.941406 1008.25 521.960938"/>
+        </g>
+        <g id="gear_part_4">
+          <path d="M 152.503906 271.855469 C 102.628906 271.855469 62.195312 231.421875 62.195312 181.542969 C 62.195312 131.664062 102.628906 91.234375 152.503906 91.234375 C 202.382812 91.234375 242.816406 131.664062 242.816406 181.542969 C 242.816406 231.421875 202.382812 271.855469 152.503906 271.855469 Z M 268.015625 192.914062 L 305.011719 173.34375 C 304.453125 162.8125 302.828125 152.5625 300.242188 142.703125 L 259.75 137.101562 C 256.433594 129.105469 252.253906 121.558594 247.316406 114.585938 L 262.96875 76.085938 C 256.085938 68.875 248.5 62.339844 240.328125 56.585938 L 205.667969 78.34375 C 197.574219 74.167969 188.925781 70.917969 179.863281 68.730469 L 167.21875 29.523438 C 162.375 29.058594 157.46875 28.820312 152.503906 28.820312 C 147.542969 28.820312 142.636719 29.058594 137.792969 29.523438 L 125.144531 68.730469 C 116.085938 70.917969 107.433594 74.167969 99.34375 78.34375 L 64.683594 56.585938 C 56.511719 62.339844 48.925781 68.875 42.039062 76.085938 L 57.691406 114.585938 C 52.757812 121.558594 48.578125 129.105469 45.257812 137.101562 L 4.769531 142.703125 C 2.183594 152.5625 0.558594 162.8125 0 173.34375 L 36.992188 192.914062 C 37.746094 200.664062 39.265625 208.195312 41.46875 215.425781 L 13.945312 245.859375 C 18.519531 255.695312 24.109375 264.964844 30.582031 273.527344 L 71.570312 264.722656 C 76.46875 269.492188 81.78125 273.835938 87.460938 277.683594 L 85.929688 319.027344 C 95.777344 323.804688 106.214844 327.554688 117.105469 330.140625 L 142.730469 297.195312 C 145.953125 297.464844 149.210938 297.609375 152.503906 297.609375 C 155.796875 297.609375 159.054688 297.464844 162.28125 297.195312 L 187.90625 330.140625 C 198.796875 327.554688 209.234375 323.804688 219.082031 319.027344 L 217.550781 277.683594 C 223.226562 273.835938 228.542969 269.492188 233.441406 264.722656 L 274.429688 273.527344 C 280.898438 264.964844 286.492188 255.695312 291.0625 245.859375 L 263.542969 215.425781 C 265.746094 208.195312 267.261719 200.664062 268.015625 192.914062"/>
+        </g>
+      </g>
+    </svg>
+
+    <!-- Content -->
+    <div class="container position-relative text-center py-2" style="z-index: 2;">
+      <h2 class="banner-title mb-2">
+        <%= t('volunteers.bottom_banner.title') %>
+      </h2>
+      <p class="banner-subtitle mb-4">
+        <%= t('volunteers.bottom_banner.subtitle') %>
+      </p>
+
+      <div class="d-flex justify-content-center mb-4">
+        <%= button_to t('volunteers.bottom_banner.button'),
+                    join_volunteer_program_volunteers_path,
+                    method: :post,
+                    class: 'btn btn-banner-pill shadow-sm' %>
+      </div>
+
+      <p class="banner-footer mb-0">
+        <%= t('volunteers.bottom_banner.questions_html') %>
+      </p>
     </div>
+  </div>
 </section>

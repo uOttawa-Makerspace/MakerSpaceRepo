@@ -34,35 +34,50 @@ class VolunteersController < SessionsController
   end
 
   def volunteer_list
-    @active_volunteers = User.volunteers.where(programs: { active: true })
-    @unactive_volunteers = User.volunteers.where(programs: { active: false })
+    base_scope = User.volunteers
+                     .distinct
+                     .includes(
+                       :programs,
+                       { volunteer_task_joins: :volunteer_task },
+                       { certifications: [
+                           { training_session: :training },
+                           { proficient_project_session: { proficient_project: :training } }
+                         ]
+                       }
+                     )
+                     .order(name: :asc)
+
+    # Load into memory arrays to avoid duplicate COUNT(*) and SELECT queries
+    @active_volunteers = base_scope.where(programs: { active: true }).to_a
+    @unactive_volunteers = base_scope.where(programs: { active: false }).to_a
   end
 
   def join_volunteer_program
     if current_user.staff?
       flash[:notice] = 'You already have access to the Volunteer Program.'
     else
-      Program.create(
-        user_id: current_user.id,
-        program_type: Program::VOLUNTEER,
-        active: true
-      )
+      # Check if user is already enrolled to prevent duplicates
+      unless current_user.programs.where(program_type: Program::VOLUNTEER).exists?
+        Program.create!(
+          user_id: current_user.id,
+          program_type: Program::VOLUNTEER,
+          active: true
+        )
+      end
       flash[:notice] = "You've joined the Volunteer Program"
     end
-    redirect_to volunteers_path
+
+    # Redirect to external HubSpot intake form
+    redirect_to 'https://5oe8xl.share-na3.hsforms.com/20slW0brbQJCsdeEck-8vuQ', allow_other_host: true
   end
 
   def my_stats
     volunteer_task_requests = current_user.volunteer_task_requests
-    @processed_volunteer_task_requests =
-      volunteer_task_requests
-        .processed
-        .approved
-        .order(created_at: :desc)
-        .paginate(page: params[:page], per_page: 15)
+    scope = volunteer_task_requests.processed.approved.includes(:volunteer_task).order(created_at: :desc)
+    @pagy, @processed_volunteer_task_requests = pagy(scope, limit: 15)
     @certifications = current_user.certifications.highest_level
     @remaining_trainings = current_user.remaining_trainings
-    @skills = Skill.all
+    @skills = Skill.includes(trainings: [:proficient_projects, :learning_modules])
     @proficient_projects_awarded =
       Proc.new do |training|
         training.proficient_projects.where(

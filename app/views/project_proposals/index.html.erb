@@ -1,20 +1,82 @@
 <% provide(:title, 'Project Proposals') %>
-<div id="projectProposals">
-  <h1 class="text-center mt-3">Project Proposals</h1>
-  <div class="my-3">
-    <%= form_tag(project_proposals_path, method: :get) do %>
-      <div class="d-flex justify-content-center">
-        <%= fa_icon 'search', class: 'fa-2x pe-2' %>
-        <div class="col-md-4 search_bar" >
-          <%= text_field_tag(:search, '', placeholder: 'Search', class: 'form-control') %>
-        </div>
-        <%# If search exists in the params, display back button %>
-        <% if params[:search] && !params[:search].empty? %>
-          <%= link_to 'Back', project_proposals_path, class: 'btn btn-secondary' %>
-        <% end %>
-      </div>
-    <% end %>
-  </div>
 
-  <%= render 'project_proposal_listing' %>
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+        <h1 class="display-5 fw-bold mb-1">Project Proposals</h1>
+        <p class="lead text-body-secondary mb-0">Search, view, and manage project proposals</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <%= link_to '<i class="fa-solid fa-plus"></i> Propose a Project'.html_safe, new_project_proposal_path, class: 'btn btn-success' %>
+        <% if signed_in? %>
+            <%= link_to '<i class="fa-solid fa-user"></i> My Projects'.html_safe, user_projects_project_proposals_path, class: 'btn btn-outline-primary' %>
+            <% if current_user.staff? %>
+                <%= link_to '<i class="fa-solid fa-list-check"></i> Assigned Projects'.html_safe, projects_assigned_project_proposals_path, class: 'btn btn-outline-info' %>
+                <%= link_to '<i class="fa-solid fa-circle-check"></i> Completed Projects'.html_safe, projects_completed_project_proposals_path, class: 'btn btn-outline-secondary' %>
+            <% end %>
+        <% end %>
+    </div>
+</div>
+
+<div>
+    <%= form_with url: project_proposals_path, method: :get, class: 'input-group mb-3', id: 'SearchForm' do |f| %>
+        <span class="input-group-text bg-body-tertiary border-end-0">
+            <i class="fa fa-search text-body-secondary" aria-hidden="true"></i>
+        </span>
+        <%= f.text_field :query, value: params[:query], placeholder: "Search proposals by title, client, or description...", class: "form-control border-start-0", aria: { label: "Search" } %>
+        <%= f.submit "Search", name: nil, class: "btn btn-primary" %>
+
+        <%# If search or filter parameters exist, display clear button %>
+        <% if params[:query].present? || params[:status].present? || params[:semester].present? %>
+            <%= link_to 'Clear Filters', project_proposals_path, class: 'btn btn-outline-secondary' %>
+        <% end %>
+    <% end %>
+</div>
+
+<div class="row gx-3">
+    <aside class="col-lg-3 col-md-4 mb-3">
+        <fieldset class="border rounded p-3 bg-body-tertiary shadow-sm">
+            <legend class="float-none w-auto fs-6 fw-bold px-2"><%= t('explore.filter_by') %></legend>
+
+            <div class="mb-3">
+                <label class="fw-semibold mb-2">Status</label>
+                <% { 'Approved' => '1', 'Not Approved' => '0', 'Pending Decision' => 'nil' }.each do |label, value| %>
+                    <div class="form-check">
+                        <%= check_box_tag 'status[]', value, params[:status]&.include?(value), id: "status_#{value}", class: 'form-check-input', form: 'SearchForm', onchange: 'this.form.submit()' %>
+                        <%= label_tag "status_#{value}", label, class: 'form-check-label' %>
+                    </div>
+                <% end %>
+            </div>
+
+            <div class="mb-3">
+                <%= label_tag :semester, "Semester", class: 'form-label fw-semibold' %>
+                <%= select_tag :semester, options_for_select(
+                    (2015..Time.zone.today.year + 1).to_a.reverse.flat_map do |year|
+                        ["Winter", "Summer", "Fall"].map do |season|
+                            ["#{season} #{year}", "#{season.downcase}_#{year}"]
+                        end
+                    end, params[:semester]
+                ), include_blank: "All Semesters", class: "form-select", form: "SearchForm", onchange: 'this.form.submit()' %>
+            </div>
+
+            <div class="text-body-secondary small border-top pt-2 mt-2">
+                <strong><%= @pagy.count %></strong> proposals found
+            </div>
+        </fieldset>
+    </aside>
+
+    <div class="col-lg-9 col-md-8">
+        <% if @project_proposals.any? %>
+            <ul class="list-unstyled">
+                <%= render partial: 'proposal_row', collection: @project_proposals, as: :project_proposal %>
+            </ul>
+            <div class="d-flex justify-content-center mt-3">
+                <%== @pagy.series_nav(:bootstrap) if @pagy.pages > 1 %>
+            </div>
+        <% else %>
+            <div class="alert alert-info text-center py-4">
+                <i class="fa fa-info-circle fa-2x mb-2 d-block"></i>
+                <p class="mb-0">No project proposals match your search or filter criteria.</p>
+            </div>
+        <% end %>
+    </div>
 </div>

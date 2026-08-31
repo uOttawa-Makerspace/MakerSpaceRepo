@@ -1,10 +1,12 @@
+# frozen_string_literal: true
+
 require 'rails_helper'
 
 RSpec.describe RfidController, type: :controller do
   # Essential for testing sidekiq/active_job logic with queue_adapter = :test
   include ActiveJob::TestHelper 
 
-  before :all do
+  before :each do
     @user = create(:user, :regular_user)
     # Reuse this tier to prevent creating it multiple times
     @tier = create(
@@ -23,11 +25,17 @@ RSpec.describe RfidController, type: :controller do
 
   describe 'POST /card_number' do
     context 'creates rfid' do
-      # PERFORMANCE FIX: 
-      # Previously, every test created a new pi_reader, which created a new Space (0.6s).
-      # Now we create it once per example using 'let', saving ~5 seconds in this block.
       let(:pi_reader) { create(:pi_reader) }
       let(:rfid_attributes) { FactoryBot.attributes_for(:rfid) }
+      
+      # Base response payload for a user without membership, certs, or consent forms
+      let(:default_user_status) do
+        {
+          has_membership: false,
+          has_shop_fundamentals: false,
+          signed_consent_form: false
+        }
+      end
 
       it 'should create an rfid and render json ok' do
         rfid_params = {
@@ -52,7 +60,7 @@ RSpec.describe RfidController, type: :controller do
           post :card_number, params: rfid_params, format: :json
         }.to change(Rfid, :count).by(0)
         actual = JSON.parse(response.body, symbolize_names: true)
-        expected = { success: 'RFID sign in' }
+        expected = default_user_status.merge(success: 'RFID sign in')
         expect(actual).to eq(expected)
       end
 
@@ -66,7 +74,7 @@ RSpec.describe RfidController, type: :controller do
           post :card_number, params: rfid_params, format: :json
         }.to change(Rfid, :count).by(0)
         actual = JSON.parse(response.body, symbolize_names: true)
-        expected = { success: 'RFID sign in' }
+        expected = default_user_status.merge(success: 'RFID sign in')
         expect(actual).to eq(expected)
       end
 
@@ -105,17 +113,20 @@ RSpec.describe RfidController, type: :controller do
         
         # Sign In
         post :card_number, params: rfid_params, format: :json
-        expect(JSON.parse(response.body, symbolize_names: true)).to eq({ success: 'RFID sign in' })
+        expect(JSON.parse(response.body, symbolize_names: true)).to eq(
+          default_user_status.merge(success: 'RFID sign in')
+        )
         
         # Sign Out
         post :card_number, params: rfid_params, format: :json
-        expect(JSON.parse(response.body, symbolize_names: true)).to eq({ success: 'RFID sign out' })
+        expect(JSON.parse(response.body, symbolize_names: true)).to eq(
+          default_user_status.merge(success: 'RFID sign out')
+        )
       end
 
       it 'should not create rfid and should sign in RFID at one pi and sign out at other pi' do
-        # Note: Use the 'pi_reader' let for the first one, create a second one on same space
         sign_in_pi = pi_reader 
-        sign_out_pi = create(:pi_reader, space: sign_in_pi.space) # Reuse Space!
+        sign_out_pi = create(:pi_reader, space: sign_in_pi.space)
         
         existing_rfid = create(:rfid, mac_address: sign_in_pi.pi_mac_address)
         
@@ -125,7 +136,9 @@ RSpec.describe RfidController, type: :controller do
         }
         
         post :card_number, params: sign_in_rfid_params, format: :json
-        expect(JSON.parse(response.body, symbolize_names: true)).to eq({ success: 'RFID sign in' })
+        expect(JSON.parse(response.body, symbolize_names: true)).to eq(
+          default_user_status.merge(success: 'RFID sign in')
+        )
         
         sign_out_rfid_params = {
           rfid: existing_rfid.card_number,
@@ -133,13 +146,15 @@ RSpec.describe RfidController, type: :controller do
         }
         
         post :card_number, params: sign_out_rfid_params, format: :json
-        expect(JSON.parse(response.body, symbolize_names: true)).to eq({ success: 'RFID sign out' })
+        expect(JSON.parse(response.body, symbolize_names: true)).to eq(
+          default_user_status.merge(success: 'RFID sign out')
+        )
       end
 
       # Temporary RFID Multi-box
       it 'should create an rfid and should sign in rfid ' do
         sign_in_pi = pi_reader
-        sign_out_pi = create(:pi_reader, space: sign_in_pi.space) # Reuse Space!
+        sign_out_pi = create(:pi_reader, space: sign_in_pi.space)
         
         sign_in_rfid_params = {
           rfid: rfid_attributes[:card_number],
@@ -166,8 +181,7 @@ RSpec.describe RfidController, type: :controller do
     end
 
     context 'creates memberships' do
-      before :all do
-        # Be careful with before:all, ensure cleanup if not using transactional fixtures
+      before :each do
         @pi_reader = create(:pi_reader) 
       end
 
@@ -179,7 +193,6 @@ RSpec.describe RfidController, type: :controller do
         }
         user = @rfid.user
         
-        # "Grant Membership" job runs immediately.
         expect {
           perform_enqueued_jobs { post :card_number, params: @rfid_params }
         }.to change { user.reload.active_membership }.to be_present
@@ -193,7 +206,6 @@ RSpec.describe RfidController, type: :controller do
         }
         user = @rfid.user
         
-        # Even though we expect nothing, we should run jobs to be sure
         perform_enqueued_jobs { post :card_number, params: @rfid_params }
         
         expect(user.reload.active_membership).to be_blank
@@ -208,7 +220,6 @@ RSpec.describe RfidController, type: :controller do
         user = @rfid.user
 
         # 1. Sign In (Grant Membership)
-        # Must perform jobs to actually create the membership
         perform_enqueued_jobs do
           post :card_number, params: @rfid_params
         end
@@ -218,13 +229,10 @@ RSpec.describe RfidController, type: :controller do
         user.update(faculty: 'Social Sciences')
 
         # 3. Sign Out
-        # Usually doesn't trigger complex logic, but good to be consistent
         post :card_number, params: @rfid_params
         expect(response).to have_http_status :success
 
         # 4. Sign In Again (Revoke Membership)
-        # This triggers the "Check Eligibility" job which should now FAIL
-        # and consequently revoke the membership.
         perform_enqueued_jobs do
           post :card_number, params: @rfid_params
         end

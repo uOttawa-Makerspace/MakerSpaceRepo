@@ -1,8 +1,8 @@
 <tr>
   <td class="border-0 align-middle"><span style="font-size: 18px">Proficient Project: <strong><%= link_to proficient_project.title, proficient_project %></strong></span></td>
   <td class="border-0 align-middle"><strong><%= order_item.quantity.to_i %></strong></td>
-  <td class="border-0 align-middle"><strong><%= image_tag('cc.png', alt: 'CC', class: 'ccs hidden', id: 'myCcBlack') %><%= order_item.unit_price %></strong></td>
-  <td class="border-0 align-middle"><strong><%= image_tag('cc.png', alt: 'CC', class: 'ccs hidden', id: 'myCcBlack') %><%= order_item.total_price %></strong></td>
+  <td class="border-0 align-middle"><strong><%= vite_image_tag 'images/cc.png', alt: 'CC', class: 'ccs hidden', id: 'myCcBlack' %><%= order_item.unit_price %></strong></td>
+  <td class="border-0 align-middle"><strong><%= vite_image_tag 'images/cc.png', alt: 'CC', class: 'ccs hidden', id: 'myCcBlack' %><%= order_item.total_price %></strong></td>
   <td class="border-0 align-middle">
     <%= form_for order_item, url: order_item_path(order_item.id), method: :delete do |f| %>
         <%= f.hidden_field :quantity, value: order_item.quantity.to_i %>

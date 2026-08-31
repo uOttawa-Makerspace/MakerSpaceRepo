@@ -1,0 +1,61 @@
+services:
+  db:
+    image: postgres:17-alpine
+    restart: always
+    command: postgres -c max_connections=200
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - production_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+
+  web:
+    image: ${DOCKER_IMAGE:-ghcr.io/uottawa-makerspace/makerspacerepo}:${IMAGE_TAG:-production}
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env.production
+    environment:
+      DB_HOST: db
+      DB_USERNAME: postgres
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      RAILS_ENV: production
+      RAILS_SERVE_STATIC_FILES: "true"
+      RAILS_LOG_TO_STDOUT: "true"
+      WEB_CONCURRENCY: "2"
+      RAILS_MAX_THREADS: "10"
+      DB_POOL: "25"
+      SOLID_QUEUE_IN_PUMA: "false"
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - ./certs:/rails/certs:ro
+      - ./secrets.yml:/rails/config/secrets.yml:ro
+
+  worker:
+    image: ${DOCKER_IMAGE:-ghcr.io/uottawa-makerspace/makerspacerepo}:${IMAGE_TAG:-production}
+    restart: always
+    command: ["bundle", "exec", "rake", "solid_queue:start"]
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env.production
+    environment:
+      DB_HOST: db
+      DB_USERNAME: postgres
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      RAILS_ENV: production
+      RAILS_LOG_TO_STDOUT: "true"
+      DB_POOL: "10"
+    volumes:
+      - ./certs:/rails/certs:ro
+      - ./secrets.yml:/rails/config/secrets.yml:ro
+
+volumes:
+  production_pgdata:

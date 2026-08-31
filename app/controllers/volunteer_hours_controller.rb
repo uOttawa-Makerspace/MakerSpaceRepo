@@ -8,11 +8,8 @@ class VolunteerHoursController < VolunteersController
 
   def index
     @user = current_user
-    @user_volunteer_hours =
-      VolunteerHour
-        .where(user_id: @user.id)
-        .order(created_at: :desc)
-        .paginate(page: params[:page], per_page: 50)
+    scope = VolunteerHour.where(user_id: @user.id).order(created_at: :desc)
+    @pagy, @user_volunteer_hours = pagy(scope, limit: 50)
     @total_hours =
       calculate_hours(@user_volunteer_hours.approved.pluck(:total_time))
 
@@ -66,16 +63,11 @@ class VolunteerHoursController < VolunteersController
   end
 
   def volunteer_hour_requests
-    @new_volunteer_hour_requests =
-      VolunteerHour
-        .not_processed
-        .order(created_at: :desc)
-        .paginate(page: params[:page], per_page: 15)
-    @old_volunteer_hour_requests =
-      VolunteerHour
-        .processed
-        .order(created_at: :desc)
-        .paginate(page: params[:page], per_page: 15)
+    new_scope = VolunteerHour.not_processed.order(created_at: :desc)
+    old_scope = VolunteerHour.processed.order(created_at: :desc)
+
+    @pagy_new, @new_volunteer_hour_requests = pagy(new_scope, page_key: "new_page", limit: 15)
+    @pagy_old, @old_volunteer_hour_requests = pagy(old_scope, page_key: "old_page", limit: 15)
     @total_volunteer_hour_requests = @new_volunteer_hour_requests.count
   end
 
@@ -94,12 +86,8 @@ class VolunteerHoursController < VolunteersController
     @total_volunteer_hours_requested = VolunteerHour.sum(:total_time)
     @total_volunteer_hour_approved = total_hours_by_approval[true]
     @total_volunteer_hour_rejected = total_hours_by_approval[false]
-    @users_with_volunteer_hours =
-      User
-        .volunteers
-        .joins(:volunteer_hours)
-        .distinct
-        .paginate(page: params[:page], per_page: 15)
+    scope = User.volunteers.joins(:volunteer_hours).distinct
+    @pagy, @users_with_volunteer_hours = pagy(scope, limit: 15)
     @total_volunteers = User.volunteers.count
   end
 

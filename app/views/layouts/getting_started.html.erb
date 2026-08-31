@@ -1,32 +1,33 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <%= render 'shared/theme_init' %>
-  <title>Getting Started | MakerRepo</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <%= favicon_link_tag 'C_square.png' %>
-  <%= stylesheet_link_tag 'vendor', media: 'all', debug: false %>
-  <%= javascript_include_tag 'vendor', debug: false %>
-  <%= vite_javascript_tag 'application', 'data-turbo-track': 'reload' %>
-  <%= stylesheet_link_tag 'application', media: 'all', 'data-turbo-track': 'reload' %>
-  <%= vite_stylesheet_tag 'application.scss', media: 'all', 'data-turbo-track': 'reload' %>
-  <%= csrf_meta_tags %>
-</head>
-<body>
-  <%= render 'layouts/header' %>
-  <div class="help-grid">
-    <%= yield %>
-    <div class="help-side-panel">
-      <div class="title"><%= link_to 'Help Center', help_path %> / Getting Started </div>
-      <ul>
-        <%= tag.li(link_to('Setting up an account', getting_started_sua_path)) %>
-        <%= tag.li(link_to('Creating a repository', getting_started_cr_path)) %>
-      </ul>
+  <head>
+    <%= render 'shared/theme_init' %>
+    <title>Getting Started | MakerRepo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <%= favicon_link_tag '/favicon.ico' %>
+
+    <%# Vite Core %>
+    <%= vite_client_tag %>
+    <%= vite_javascript_tag 'application', 'data-turbo-track': 'reload' %>
+    <%= vite_stylesheet_tag 'application.scss', 'data-turbo-track': 'reload' %>
+
+    <%= csrf_meta_tags %>
+  </head>
+  <body>
+    <%= render 'layouts/header' %>
+    <div class="help-grid">
+      <%= yield %>
+      <div class="help-side-panel">
+        <div class="title"><%= link_to 'Help Center', help_path %> / Getting Started </div>
+        <ul>
+          <%= tag.li(link_to('Setting up an account', getting_started_sua_path)) %>
+          <%= tag.li(link_to('Creating a repository', getting_started_cr_path)) %>
+        </ul>
+      </div>
+      <div class="contact">
+        If any error occurs, or if you would like to make a suggestion, do not hesitate to <%= link_to 'contact us', '#' %>.
+      </div>
     </div>
-    <div class="contact">
-      If any error occurs, or if you would like to make a suggestion, do not hesitate to <%= link_to 'contact us', '#' %>.
-    </div>
-  </div>
-  <%= render 'layouts/footer' %>
-</body>
+    <%= render 'layouts/footer' %>
+  </body>
 </html>

@@ -14,19 +14,22 @@
                     </div>
 
                     <%= f.label :locker_size_id, 'Change locker size', class: 'form-label' %>
+                    <%# Added nil-safety to prevent crashes if API data is missing %>
                     <%= f.select :locker_size_id, @locker_sizes.map { |size|
-                        [ size.size, size.id, { 'data-data' => @locker_product_info[:variants][size.shopify_gid].to_json } ]},
+                        [ size.size, size.id, { 'data-data' => @locker_product_info&.dig(:variants, size.shopify_gid)&.to_json || '{}' } ]},
                      {include_blank: 'Select variant...'}, {class: 'form-select locker-variant-select'} %>
-                    <%= f.submit class: 'btn btn-success float-end' %>
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <%# Delete button sends 'bulk_delete' param to controller %>
+                        <%= f.submit 'Delete Selected', class: 'btn btn-danger', name: 'bulk_delete', data: { confirm: 'Are you sure you want to delete the selected lockers?' } %>
+                        <%= f.submit 'Update Lockers', class: 'btn btn-success' %>
+                    </div>
                 <% end %>
             </div>
 
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     Close
-                </button>
-                <button type="button" class="btn btn-primary">
-                    Update
                 </button>
             </div>
         </div>

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "rails_helper"
 
 RSpec.describe PrinterIssuesController, type: :controller do
@@ -50,7 +52,6 @@ RSpec.describe PrinterIssuesController, type: :controller do
 
     context "As staff" do
       it "should create new issue" do
-        # Get new page, post new issue, and show issue
         get :new
         expect(response).to have_http_status(:success)
 
@@ -63,7 +64,6 @@ RSpec.describe PrinterIssuesController, type: :controller do
                    description: ""
                  }
                }
-          print flash[:alert]
         }.to change(PrinterIssue, :count).by 1
 
         issue = PrinterIssue.last
@@ -84,24 +84,21 @@ RSpec.describe PrinterIssuesController, type: :controller do
       end
 
       it "should group issues correctly" do
-        # Very fragile test, I don't like it
         create :printer_issue
         create :printer_issue
         create :printer_issue
-        # for each premade summary
+
         PrinterIssue.summaries.values.each do |summary|
-          # create two issues
           create :printer_issue, summary: summary
           create :printer_issue, summary: summary
         end
-        # get issue summary
+
         get :index
-        issues_summary = assigns(:issues_summary)
-        # test we have two in each category
+        issues_summary = controller.instance_variable_get(:@issues_summary)
+        
         PrinterIssue.summaries.values.each do |summary|
           expect(issues_summary[summary].count).to be 2
         end
-        # Other category
         expect(issues_summary["Other"].count).to be 3
       end
 

@@ -94,7 +94,7 @@
             <div class="input-group">
                 <%= f.file_field :photos, multiple: true, class: 'form-control image-upload', aria_label: 'Select Pictures' %>
                 <button class="btn btn-success" type="button" id="new-photo-input" aria-label="Add image input">
-                    <%= fa_icon 'plus' %>
+                    <i class="fa-solid fa-plus"></i>
                 </button>
             </div>
         </div>
@@ -118,7 +118,7 @@
                         </div>
                         <button type="button"
                                 class="btn btn-danger image-remove w-100"
-                                aria-label="Remove photo"><%= fa_icon :trash %></button>
+                                aria-label="Remove photo"><i class="fa-solid fa-trash"></i></button>
                     </div>
                 <% end %>
             <% end %>
@@ -128,7 +128,7 @@
              class="border rounded-3 text-center py-4 mb-3"
              ondrop="dragndrop(event);"
              ondragover="dragover(event);">
-            <%= fa_icon 'cloud-upload', class: 'fs-3' %>
+            <i class="fa-solid fa-cloud-arrow-up fs-3"></i>
             <p class="mb-0 mt-1 small">Drag & Drop files here</p>
         </div>
     </fieldset>
@@ -152,6 +152,7 @@
         <%= f.file_field :scorm_package,
            class: 'form-control',
            accept: '.zip',
+           direct_upload: true,
            aria_label: 'SCORM zip file', required: !@learning_module.scorm_package.attached? %>
         <p class="form-text">Upload a valid SCORM <code>.zip</code> package.</p>
     </fieldset>
@@ -160,10 +161,9 @@
         <%= f.submit @learning_module.persisted? ? 'Save Changes' : 'Create Learning Module',
                  class: 'btn btn-primary px-4',
                  id: 'waiting-save-button' %>
-        <p class="small mt-2 mb-0">
-            This could take several minutes — do not refresh this page.
+        <p class="small text-muted mt-2 mb-0">
+            Uploading large SCORM zip files may take a minute. Please do not close or refresh this page.
         </p>
-        <span id="status-save"></span>
     </div>
 
 <% end %>

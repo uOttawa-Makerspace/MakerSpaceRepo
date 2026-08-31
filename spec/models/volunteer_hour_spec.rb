@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "rails_helper"
 
 RSpec.describe VolunteerHour, type: :model do
@@ -9,7 +11,7 @@ RSpec.describe VolunteerHour, type: :model do
   end
 
   describe "#scopes" do
-    before(:all) do
+    before(:each) do
       create(:volunteer_hour, :approved1)
       create(:volunteer_hour, :approved1)
       create(:volunteer_hour, :not_approved1)

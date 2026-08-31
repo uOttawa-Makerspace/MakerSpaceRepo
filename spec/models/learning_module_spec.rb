@@ -132,7 +132,7 @@ RSpec.describe LearningModule, type: :model do
   end
 
   describe 'URLS in description' do
-    before :all do
+    before :each do
       @lm_with_link =
         create(
           :learning_module,

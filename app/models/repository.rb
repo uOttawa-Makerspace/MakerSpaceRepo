@@ -35,7 +35,6 @@ class Repository < ApplicationRecord
              class_name: 'Repository',
              foreign_key: 'make_id',
              optional: true
-  paginates_per 12
 
   scope :public_repos, -> { where(share_type: 'public') }
 

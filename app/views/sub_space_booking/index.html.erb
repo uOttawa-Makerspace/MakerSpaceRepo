@@ -1,3 +1,4 @@
+<%= vite_javascript_tag 'sub_space_booking' %>
 <section class="container-fluid mt-4">
   <!-- Toast Container -->
   <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1060">
@@ -97,9 +98,9 @@
                       <td>
                         <div class="btn-group btn-group-sm d-flex justify-content-center">
                           <% if @user.admin? || booking.sub_space_booking_status.booking_status_id != BookingStatus::APPROVED.id %>
-                            <%= button_to sub_space_booking_edit_path(sub_space_booking_id: booking.id), method: :get, class: 'btn btn-outline-primary' do %><%= fa_icon 'pencil' %><% end %>
+                            <%= button_to sub_space_booking_edit_path(sub_space_booking_id: booking.id), method: :get, class: 'btn btn-outline-primary' do %><i class="fa-solid fa-pencil"></i><% end %>
                           <% end %>
-                          <%= button_to sub_space_booking_delete_path(sub_space_booking_id: booking.id), method: :delete, data: { confirm: 'Are you sure you want to delete this booking?' }, class: 'btn btn-outline-danger' do %><%= fa_icon 'trash' %><% end %>
+                          <%= button_to sub_space_booking_delete_path(sub_space_booking_id: booking.id), method: :delete, data: { confirm: 'Are you sure you want to delete this booking?' }, class: 'btn btn-outline-danger' do %><i class="fa-solid fa-trash"></i><% end %>
                         </div>
                       </td>
                     </tr>

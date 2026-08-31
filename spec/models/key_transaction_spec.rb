@@ -9,7 +9,7 @@ RSpec.describe KeyTransaction, type: :model do
   end
 
   describe "Validations" do
-    before :all do
+    before :each do
       @user = create(:user, :regular_user)
       @space = create(:space)
       @key =
@@ -78,7 +78,7 @@ RSpec.describe KeyTransaction, type: :model do
   end
 
   describe "Scopes" do
-    before :all do
+    before :each do
       @user = create(:user, :regular_user)
       @space = create(:space)
       @key =

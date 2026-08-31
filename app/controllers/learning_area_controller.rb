@@ -8,6 +8,7 @@ class LearningAreaController < DevelopmentProgramsController
                   update
                   scorm_launch
                   serve_scorm_asset
+                  scorm_commit
                 ]
 
   before_action :form_training_data, only: %i[new edit create update]
@@ -69,8 +70,13 @@ class LearningAreaController < DevelopmentProgramsController
       redirect_to learning_area_path(@learning_module.id),
                   notice: 'Learning module successfully updated.'
     else
-      flash.now[:alert] = 'Unable to apply the changes.'
-      render :edit, status: :unprocessable_entity
+      flash[:alert] = "Unable to apply the changes."
+      @training_categories = Training.all.order(:name).pluck(:name, :id)
+      @training_levels ||= TrainingSession.return_levels
+      @files = @learning_module.project_files_attachments.order(created_at: :asc)
+      @photos = @learning_module.photos || []
+      @videos = @learning_module.videos_attachments.order(created_at: :asc)
+      render "edit", status: :unprocessable_content
     end
   end
 
@@ -96,13 +102,33 @@ class LearningAreaController < DevelopmentProgramsController
 
     # Reconstruct blob key from request path and stored prefix
     key = "#{@learning_module.scorm_prefix}/#{params[:path]}"
-
     blob = @learning_module.scorm_package_files.blobs.find_by(key: key)
     return head :not_found unless blob
 
-    send_data blob.download,
-              content_type: blob.content_type,
-              disposition: :inline
+    # ActiveStorage's send_blob_stream / proxying automatically handles HTTP Byte-Range (206) requests for video/audio
+    ext = File.extname(params[:path] || blob.filename.to_s)
+    content_type = Rack::Mime.mime_type(ext, blob.content_type || 'application/octet-stream')
+
+    if ActiveStorage.respond_to?(:track_variants) && blob.service.respond_to?(:path_for)
+      # If using local disk storage:
+      send_file blob.service.path_for(blob.key),
+                type: content_type,
+                disposition: :inline
+    else
+      # If using S3 / Cloud / Proxy:
+      send_data blob.download,
+                type: content_type,
+                disposition: :inline
+    end
+  end
+
+  def scorm_commit
+    current_user
+      .learning_module_tracks
+      .find_or_create_by!(learning_module_id: params[:id])
+      .update(scorm_state: scorm_state_params)
+
+    head :ok
   end
 
   def reorder
@@ -169,35 +195,35 @@ class LearningAreaController < DevelopmentProgramsController
   end
 
   def scorm_state_params
-    params.require(:scorm_cmi).permit(
-      # SCORM 1.2 state data
-      'cmi.core.lesson_status',
-      'cmi.core.lesson_location',
-      'cmi.core.score.raw',
-      'cmi.core.score.min',
-      'cmi.core.score.max',
-      'cmi.core.session_time',
-      'cmi.core.total_time',
-      'cmi.suspend_data',
-      'cmi.core.entry',
-      'cmi.core.exit',
-      'cmi.core.credit',
-      'cmi.core.lesson_mode',
-      # SCORM 2004 state data
-      'cmi.completion_status',
-      'cmi.success_status',
-      'cmi.location',
-      'cmi.score.raw',
-      'cmi.score.min',
-      'cmi.score.max',
-      'cmi.score.scaled',
-      'cmi.session_time',
-      'cmi.total_time',
-      'cmi.entry',
-      'cmi.exit',
-      'cmi.credit',
-      'cmi.mode',
-      'cmi.progress_measure'
-    )
+    # Keys lifted from flattened scorm-again format
+    params
+      .permit(
+        :'cmi.completion_status',
+        :'cmi.exit',
+        :'cmi.location',
+        :'cmi.progress_measure',
+        :'cmi.score.scaled',
+        :'cmi.score.raw',
+        :'cmi.score.min',
+        :'cmi.score.max',
+        :'cmi.session_time',
+        :'cmi.success_status',
+        :'cmi.suspend_data',
+        :'cmi.comments_from_learner',
+        learner_preference: %i[
+          audio_level
+          language
+          delivery_speed
+          audio_captioning
+        ]
+      )
+      .tap do |whitelisted|
+        # Limit suspend data to 64kb, per the standard
+        if (suspend_data = whitelisted[:'cmi.suspend_data']).is_a?(String) &&
+             suspend_data.length > 64_000
+          raise ActionController::BadRequest,
+                'suspend_data exceeds 64k character limit'
+        end
+      end
   end
 end

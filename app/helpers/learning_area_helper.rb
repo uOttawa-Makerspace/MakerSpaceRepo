@@ -21,16 +21,14 @@ module LearningAreaHelper
   end
 
   def get_next_lm(training_id)
-    level = TrainingSession.where(training_id: training_id).pluck(:level)
-    if level.include?("Advanced")
-      "<span style='color: blue'>Master</span>"
-    elsif level.include?("Intermediate")
-      "<span style='color: red'>Adv</span>"
-    elsif level.include?("Beginner")
-      "<span style='color: #969600'>Int</span>"
-    else
-      "<span style='color: green'>Beg</span>"
-    end
+    completed_ids = current_user.learning_module_tracks
+                      .completed
+                      .pluck(:learning_module_id)
+
+    LearningModule
+      .where(training_id: training_id)
+      .where.not(id: completed_ids)
+      .order(:order)
   end
 
   def return_text_color(level)

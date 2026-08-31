@@ -1,10 +1,12 @@
+# frozen_string_literal: true
+
 FactoryBot.define do
   factory :project_proposal do
     association :user, :regular_user
 
     description { Faker::Lorem.paragraph }
-    title { Faker::Lorem.word }
-    username { Faker::Name.unique.first_name }
+    sequence(:title) { |n| "Project Proposal #{n}" }
+    sequence(:username) { |n| "user#{n}" }
     email { Faker::Internet.email }
     client { Faker::Name.name }
     area { "{}" }
@@ -15,67 +17,63 @@ FactoryBot.define do
     equipments { "Not informed." }
     project_cost { Faker::Number.number(digits: 2) }
 
-    trait "normal" do
+    trait :normal do
       youtube_link { "" }
     end
 
-    trait "broken" do
+    trait :broken do
       title { "A$CD!!!" }
     end
 
-    trait "approved" do
+    trait :approved do
       approved { 1 }
+      association :admin, factory: %i[user admin]
       youtube_link { "" }
     end
 
-    trait "not_approved" do
+    trait :not_approved do
       approved { 0 }
       youtube_link { "" }
     end
 
-    trait "joined" do
+    trait :joined do
       approved { 1 }
       youtube_link { "" }
       after(:create) do |pp|
-        ProjectJoin.create(project_proposal_id: pp.id, user_id: User.last.id)
+        ProjectJoin.create!(project_proposal_id: pp.id, user_id: pp.user_id)
       end
     end
 
-    trait "completed" do
+    trait :completed do
       approved { 1 }
       youtube_link { "" }
       after(:create) do |pp|
-        ProjectJoin.create(project_proposal_id: pp.id, user_id: User.last.id)
-        create(:repository, project_proposal_id: pp.id)
+        ProjectJoin.create!(project_proposal_id: pp.id, user_id: pp.user_id)
+        create(:repository, project_proposal_id: pp.id, owner: pp.user)
       end
     end
 
     trait :with_repo_files do
-      after(:create) do |repo|
-        RepoFile.create(
-          project_proposal_id: repo.id,
-          file:
-            Rack::Test::UploadedFile.new(
-              Rails.root.join("spec/support/assets", "RepoFile1.pdf"),
-              "application/pdf"
-            )
+      after(:create) do |pp|
+        pp.project_files.attach(
+          io: File.open(Rails.root.join("spec/support/assets", "RepoFile1.pdf")),
+          filename: "RepoFile1.pdf",
+          content_type: "application/pdf"
         )
-        Photo.create(
-          project_proposal_id: repo.id,
-          image:
-            Rack::Test::UploadedFile.new(
-              Rails.root.join("spec/support/assets", "avatar.png"),
-              "image/png"
-            )
+        pp.photos.attach(
+          io: File.open(Rails.root.join("spec/support/assets", "avatar.png")),
+          filename: "avatar.png",
+          content_type: "image/png"
         )
+        pp.reload
       end
     end
 
-    trait "bad_link" do
+    trait :bad_link do
       youtube_link { "https://youtube.com" }
     end
 
-    trait "good_link" do
+    trait :good_link do
       youtube_link { "https://www.youtube.com/watch?v=AbcdeFGHIJLK" }
     end
   end

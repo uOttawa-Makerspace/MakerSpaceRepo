@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-#
+
 class LockerMailer < ApplicationMailer
   before_action do
     @locker_rental = params[:locker_rental]
@@ -33,7 +33,7 @@ class LockerMailer < ApplicationMailer
     )
   end
 
-  # Sent when a locker is finished
+  # Sent when a locker is cancelled or manually finished by staff
   def locker_cancelled
     # Sometimes requests are cancelled before they're assigned
     mail(
@@ -46,6 +46,14 @@ class LockerMailer < ApplicationMailer
             'Your locker rental request has been cancelled'
           end
         )
+    )
+  end
+
+  # Sent automatically when the rental end date passes
+  def rental_expired
+    mail(
+      to: @user.email,
+      subject: "Your locker rental for Locker #{@locker_rental.locker&.specifier} has expired - Please clear your locker"
     )
   end
 

@@ -66,4 +66,4 @@ end %>
     </div>
 </div>
 
-<%= will_paginate @repositories, inner_window: 2, outer_window: 1, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
+<%== @pagy.series_nav(:bootstrap) if @pagy && @pagy.pages > 1 %>

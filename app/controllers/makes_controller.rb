@@ -28,12 +28,14 @@ class MakesController < SessionsController
       @user.increment!(:reputation, 15)
     else
       flash[:alert] = 'Something went wrong'
+      @repo = @repository
       render :new
     end
   end
 
   def new
     @make = @repository
+    @repo = @repository
   end
 
   private

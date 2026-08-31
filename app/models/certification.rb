@@ -52,15 +52,16 @@ class Certification < ApplicationRecord
   end
 
   def get_badge_path
-    case training_session.level
+    case training_session&.level
     when "Beginner"
-      path = "badges/bronze.png"
+      "images/badges/bronze.png"
     when "Intermediate"
-      path = "badges/silver.png"
+      "images/badges/silver.png"
     when "Advanced"
-      path = "badges/golden.png"
+      "images/badges/golden.png"
+    else
+      "images/badges/none.png"
     end
-    path
   end
 
   def self.highest_certifications(user_id)

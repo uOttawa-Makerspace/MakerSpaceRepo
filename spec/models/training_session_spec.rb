@@ -127,6 +127,5 @@ RSpec.describe TrainingSession, type: :model do
       end
     end
 
-    after(:all) { Training.destroy_all }
   end
 end

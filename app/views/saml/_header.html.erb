@@ -6,29 +6,33 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-  <%= favicon_link_tag 'C_square.png' %>
+  <%= favicon_link_tag '/favicon.ico' %>
+
+  <%# Vite Client & Entrypoints %>
+  <%= vite_client_tag %>
   <%= vite_javascript_tag 'saml' %>
-  <%= stylesheet_link_tag 'application' %>
+  <%= vite_stylesheet_tag 'application' %>
+
   <%= csrf_meta_tags %>
 </head>
 <body class="h-100 d-flex flex-column">
   <nav class="navbar navbar-expand-xl navbar-light bg-primary mb-3">
-  <div class="container-fluid">
-    <a class="navbar-brand" href="/">Maker<strong>Repo</strong></a>
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/">Maker<strong>Repo</strong></a>
 
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
 
-    <div class="collapse navbar-collapse" id="navbarSupportedContent">
-      <ul class="navbar-nav ms-auto align-items-xl-baseline">
-        <% locales_change.each do |locale| %>
-          <li class="nav-item">
-            <%= link_to t('name', locale:), url_for(request.query_parameters.merge(locale:)), class: 'nav-link' %>
-          </li>
-        <% end %>
-      </ul>
-    </div>
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav ms-auto align-items-xl-baseline">
+          <% locales_change.each do |locale| %>
+            <li class="nav-item">
+              <%= link_to t('name', locale:), url_for(request.query_parameters.merge(locale:)), class: 'nav-link' %>
+            </li>
+          <% end %>
+        </ul>
+      </div>
     </div>
   </nav>
 

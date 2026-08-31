@@ -7,13 +7,13 @@
         <% if user.has_active_membership? %>
             <p class="text-success">
                 <% if user.active_membership.faculty? %>
-                    <%= fa_icon "cogs" %>
+                    <i class="fa-solid fa-gears"></i>
                     Has an Engineering Membership
                 <% elsif user.student? %>
-                    <%= fa_icon "university" %>
+                    <i class="fa-solid fa-building-columns"></i>
                     Has a Community Membership
                 <% else %>
-                    <%= fa_icon "check-circle" %>
+                    <i class="fa-solid fa-circle-check"></i>
                     Has an External Membership
                 <% end %>
             </p>
@@ -30,7 +30,7 @@
                 None
             <% end %>
             <% if space.needs_walk_in_safety_sheet? && !user.walk_in_safety_sheets.any? %>
-                <p class="text-danger"><%= fa_icon :warning %> Did not sign sheet</p>
+                <p class="text-danger"><i class="fa-solid fa-triangle-exclamation"></i> Did not sign sheet</p>
             <% end %>
         </td>
 
@@ -66,13 +66,13 @@
     </td>
     <td class="align-middle dt-center">
         <% if local_assigns[:signed_out] %>
-            <%= button_to fa_icon('check'), {
+            <%= button_to '<i class="fa-solid fa-check"></i>'.html_safe, {
                 controller: :staff_dashboard,
                 action: :sign_in_users,
                 added_users: [user.username]
             }, method: :put, class: 'btn btn-default check-button' %>
         <% else %>
-            <%= button_to fa_icon('times'), {
+            <%= button_to '<i class="fa-solid fa-xmark"></i>'.html_safe, {
                 controller: :staff_dashboard,
                 action: :sign_out_users,
                 dropped_users: [user.username]

@@ -10,7 +10,7 @@
                     <% @recent_projects.take(8).each do |project| %>
                         <%= link_to repository_path(project.user_username, project.slug), class: 'card link-dark', target: '_blank', rel: 'noopener' do %>
                             <% if project.photos.empty? %>
-                                <%= image_tag 'C_square.png', alt: project.title, class: 'card-img-top', loading: 'lazy' %>
+                                <%= vite_image_tag 'images/C_square.png', alt: project.title, class: 'card-img-top', loading: 'lazy' %>
                             <% else %>
                                 <%= image_tag project.photos.first.image.variant(:explore), alt: project.title, class: 'card-img-top object-fit-cover', loading: 'lazy' %>
                             <% end %>

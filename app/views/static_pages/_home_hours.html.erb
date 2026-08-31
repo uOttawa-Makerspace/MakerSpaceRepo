@@ -7,10 +7,7 @@
             <% end %>
         </h2>
 
-        <%= image_tag('redesign/site.jpg',
-            alt: 'People watching a project demonstration in SITE',
-            loading: 'lazy',
-            class: 'w-100 rounded-top') %>
+        <%= vite_image_tag 'images/redesign/site.jpg', class: 'w-100 rounded-top', fetchpriority: 'high', alt: 'SITE' %>
 
         <h3 class="text-center mt-4"><%= t('home.welcome.hour_header') %></h3>
 

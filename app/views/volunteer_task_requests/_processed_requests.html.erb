@@ -1,53 +1,128 @@
-<div class="table-responsive">
-  <table class="table table-striped sessions-table-2">
-  <thead class="table-primary">
-    <tr>
-      <th>Date Submitted <span onclick="sortTable('sessions-table-2', 0, true)"><%= fa_icon('arrow-down') %></span></th>
-      <th>Date Updated <span onclick="sortTable('sessions-table-2', 1, true)"><%= fa_icon('arrow-down') %></span></th>
-      <th>CC/Hours<span onclick="sortTable('sessions-table-2', 2)"><%= fa_icon('arrow-down') %></span></th>
-      <th>Task<span onclick="sortTable('sessions-table-2', 3)"><%= fa_icon('arrow-down') %></span></th>
-      <th>User<span onclick="sortTable('sessions-table-2', 4)"><%= fa_icon('arrow-down') %></span></th>
-      <th>Status<span onclick="sortTable('sessions-table-2', 5)"><%= fa_icon('arrow-down') %></span></th>
-      <!--            <th class="action-header">Action</th>-->
-    </tr>
-</thead >
-    <tbody>
-    <%= will_paginate @processed_volunteer_task_requests, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
-    <% @processed_volunteer_task_requests.each do |vtr| %>
-      <tr>
-        <td>
-          <%= vtr.created_at.strftime('%Y-%m-%d') %>
-          <br>
-          <%= vtr.created_at.strftime('%I:%M %p').downcase %>
-        </td>
+<% if @processed_volunteer_task_requests.blank? %>
+  <div class="text-center py-5 px-3">
+    <div class="rounded-circle bg-body-secondary text-body-secondary d-inline-flex align-items-center justify-content-center p-4 fs-1 mb-3">
+      <i class="fa-solid fa-clock-rotate-left"></i>
+    </div>
+    <h5 class="fw-bold text-body-emphasis">No Processed History</h5>
+    <p class="text-body-secondary small mb-0">No completed task requests have been reviewed yet.</p>
+  </div>
+<% else %>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="bg-body-secondary border-bottom">
+        <tr class="text-body-secondary small text-uppercase">
+          <th class="ps-3 ps-md-4 py-3" scope="col">Volunteer</th>
+          <th class="py-3" scope="col">Task Details</th>
+          <th class="py-3" scope="col">Space</th>
+          <th class="py-3" scope="col">Reward Awarded</th>
+          <th class="py-3" scope="col">Reviewed Date</th>
+          <th class="pe-3 pe-md-4 py-3 text-end" scope="col">Status</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y">
+        <% @processed_volunteer_task_requests.each do |req| %>
+          <% task = req.volunteer_task %>
+          <% volunteer = req.user %>
+          <% next if task.blank? || volunteer.blank? %>
+          <tr>
+            <!-- Volunteer Info -->
+            <td class="ps-3 ps-md-4 py-3">
+              <div class="d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-secondary-subtle text-body-secondary fw-bold d-flex align-items-center justify-content-center fs-6 flex-shrink-0" style="width: 40px; height: 40px;">
+                  <%= volunteer.name.to_s.first&.upcase || "V" %>
+                </div>
+                <div>
+                  <%= link_to user_path(volunteer.username), class: "fw-bold text-body-emphasis text-decoration-none d-block lh-sm" do %>
+                    <%= volunteer.name.to_s.titleize %>
+                  <% end %>
+                  <span class="text-body-secondary small">@<%= volunteer.username %></span>
+                </div>
+              </div>
+            </td>
 
-        <td>
-          <%= vtr.updated_at.strftime('%Y-%m-%d') %>
-          <br>
-          <%= vtr.updated_at.strftime('%I:%M %p').downcase %>
-        </td>
+            <!-- Task Title & Category -->
+            <td class="py-3">
+              <div class="d-flex flex-column gap-1">
+                <div>
+                  <span class="badge bg-body-secondary text-body-secondary border border-secondary-subtle text-uppercase small">
+                    <%= task.category.to_s.capitalize %>
+                  </span>
+                </div>
+                <%= link_to task.title.to_s.capitalize, volunteer_task_path(task.id), class: "fw-semibold text-body-emphasis text-decoration-none d-block lh-sm hover-primary" %>
+              </div>
+            </td>
 
-        <td>
-          <%= image_tag('cc.png', alt: 'CC', class: 'ccs hidden', id: 'myCcBlack') %>
-          <%= vtr.volunteer_task.cc %>
-          <br/>
-          <%= vtr.volunteer_task.hours %> hours
-        </td>
+            <!-- Space Badge -->
+            <td class="py-3">
+              <% if task.space&.name&.downcase&.include?("makerspace") %>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle d-inline-flex align-items-center gap-1 py-1 px-2 small">
+                  <i class="fa-solid fa-cube"></i>
+                  <span><%= task.space.name.capitalize %></span>
+                </span>
+              <% else %>
+                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle d-inline-flex align-items-center gap-1 py-1 px-2 small">
+                  <i class="fa-solid fa-industry"></i>
+                  <span><%= task.space&.name&.capitalize || "General" %></span>
+                </span>
+              <% end %>
+            </td>
 
-        <td>
-          <%= link_to vtr.volunteer_task.title, volunteer_task_path(vtr.volunteer_task.id) %>
-        </td>
+            <!-- Reward Credited -->
+            <td class="py-3">
+              <% if req.approval %>
+                <div class="d-inline-flex flex-column gap-1">
+                  <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1 small d-inline-flex align-items-center gap-1">
+                    <i class="fa-solid fa-coins text-success"></i>
+                    <span>+<%= task.cc %> CC</span>
+                  </span>
+                  <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-1 small d-inline-flex align-items-center gap-1">
+                    <i class="fa-regular fa-clock text-primary"></i>
+                    <span><%= task.hours %> hrs</span>
+                  </span>
+                </div>
+              <% else %>
+                <span class="badge bg-secondary-subtle text-body-secondary border border-secondary-subtle rounded-pill px-2 py-1 small d-inline-flex align-items-center gap-1">
+                  <i class="fa-solid fa-ban text-secondary"></i>
+                  <span>No Credits (Denied)</span>
+                </span>
+              <% end %>
+            </td>
 
-        <td>
-          <%= link_to vtr.user.name, user_path(vtr.user.username) %>
-        </td>
+            <!-- Reviewed Date -->
+            <td class="py-3">
+              <div class="text-body-emphasis small fw-medium">
+                <i class="fa-regular fa-calendar text-secondary me-1"></i>
+                <%= req.updated_at.strftime('%b %d, %Y') %>
+              </div>
+              <div class="text-body-secondary small font-monospace">
+                <%= req.updated_at.strftime('%I:%M %p') %>
+              </div>
+            </td>
 
-        <td>
-          <%= vtr.status %>
-        </td>
+            <!-- Status Outcome Badge -->
+            <td class="pe-3 pe-md-4 py-3 text-end text-nowrap">
+              <% if req.approval %>
+                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-2 small d-inline-flex align-items-center gap-1">
+                  <i class="fa-solid fa-circle-check text-success"></i>
+                  <span>Approved</span>
+                </span>
+              <% else %>
+                <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3 py-2 small d-inline-flex align-items-center gap-1">
+                  <i class="fa-solid fa-circle-xmark text-danger"></i>
+                  <span>Denied</span>
+                </span>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
 
-      </tr>
-    <% end %>
-    </tbody>
-  </table>
-</div>
+  <!-- Pagination -->
+  <% if @pagy_processed && @pagy_processed.pages > 1 %>
+    <div class="d-flex justify-content-center pt-4 border-top border-secondary-subtle overflow-x-auto mt-3">
+      <%== @pagy_processed.series_nav(:bootstrap) %>
+    </div>
+  <% end %>
+<% end %>

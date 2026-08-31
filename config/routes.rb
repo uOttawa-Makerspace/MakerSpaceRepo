@@ -3,6 +3,10 @@
 Rails.application.routes.draw do
   mount MissionControl::Jobs::Engine, at: "/solid_queue"
 
+  if Rails.env.development?
+    mount LetterOpenerWeb::Engine, at: "/letter_opener"
+  end
+
   resources :price_rules, only: %i[index new create destroy edit update]
   resources :discount_codes, only: %i[new index create]
   resources :coupon_codes, only: %i[index new create destroy edit update]
@@ -133,11 +137,12 @@ Rails.application.routes.draw do
     end
   end
   
-  resources :locker_sizes, only: [:create, :update, :destroy]
+  resources :locker_sizes, only: [:create, :show, :update, :destroy]
 
   resources :locker_rentals do
     member do
       patch :renew
+      patch :toggle_contacted
     end
 
     collection do
@@ -585,6 +590,7 @@ Rails.application.routes.draw do
 
     member do
       get :scorm_launch
+      post :scorm_commit, defaults: { format: :json }
       # format: false to preserve dot at URL end, else we lose file extension
       get "scorm_assets/*path", to: "learning_area#serve_scorm_asset", as: :scorm_asset, format: false
     end
@@ -603,7 +609,7 @@ Rails.application.routes.draw do
     collection do
       get :emails
       get :volunteer_list
-      get :join_volunteer_program
+      match :join_volunteer_program, via: %i[get post]
       get :my_stats
       get :calendar
       get :shadowing_shifts

@@ -1,125 +1,265 @@
-<section class="page-contents">
-  <div>
-
-    <h2 class="text-center fw-bold">New Volunteer Task</h2>
-
-    <div class="container my-5">
-      <div class="row">
-        <div class="col-lg-12">
-          <%= form_for @new_volunteer_task, url: { controller: 'volunteer_tasks', action: 'create' }, html: { id: 'volunteerForm', class: 'needs-validation', novalidate: 'novalidate', multipart: true } do |f| %>
-            <div class="row">
-              <div class="col-md-12">
-                <div class="mb-3 text-center">
-                  <%= f.label :title, 'Title', class: 'form-label' %>
-                  <%= f.text_field :title, placeholder: 'Volunteer Task title', class: 'form-control', required: true %>
-                  <div class="invalid-feedback">
-                    Please provide a title.
-                  </div>
-                </div>
-              </div>
-              <div class="col-md-12">
-                <div class="mb-3 text-center">
-                  <%= f.label :description, 'Task Description', class: 'form-label' %>
-                  <%= f.text_area :description, placeholder: 'Volunteer Task description', class: 'form-control', required: true %>
-                  <div class="invalid-feedback">
-                    Please provide a description.
-                  </div>
-                </div>
-              </div>
-
-              <div class="col-md-12">
-                <div class="mb-3 text-center">
-                  <%= label_tag :photo, 'Images', class: 'form-label' %>
-                  <%= file_field_tag 'images[]', type: :files, multiple: true, class: 'form-control image-upload', aria_label: 'Select Pictures / Selectionner des images' %>
-                  <div class="text-muted mb-2">Allowed file types: JPEG, PNG, GIF, SVG, ICO</div>
-                </div>
-              </div>
-
-              <div class="mx-auto col-md-4 text-center">
-                <b>Status:</b> <br />
-                <div class="d-inline-block text-start form-check">
-                  <%= f.radio_button :status, 'open', style: 'display:inline', class: 'form-check-input' %>
-                  <%= f.label :status, 'Open', style: 'display:inline', class: 'form-label' %>
-                  <br />
-                  <%= f.radio_button :status, 'completed', style: 'display:inline', class: 'form-check-input' %>
-                  <%= f.label :status, 'Completed', style: 'display:inline', class: 'form-label' %>
-                  <br />
-                  <br />
-                </div>
-              </div>
-
-              <div class="mx-auto col-md-4 text-center">
-                <b>Space:</b> <br />
-                <div class="d-inline-block text-start form-check">
-                  <% @spaces.each do |s| %>
-                    <%= f.radio_button :space_id, s.id, checked: true, style: 'display:inline', class: 'form-check-input' %>
-                    <%= f.label :space_id, s.name.capitalize, style: 'display:inline', class: 'form-label' %>
-                    <br />
-                  <% end %>
-                  <br />
-                  <br />
-                </div>
-              </div>
-
-              <div class="mx-auto col-md-4 text-center">
-                <b>How many can join this task?</b> <br />
-                <div class="d-inline-block text-center">
-                  <%= f.number_field :joins, class: 'form-control' %>
-                  <br />
-                  <br />
-                </div>
-              </div>
-
-              <div class="mx-auto col-md-4 text-center">
-                <b>Choose a category:</b> <br />
-                <div class="d-inline-block text-center">
-                  <%= f.select(:category, @tasks_categories, { prompt: 'Category...' }, { class: 'form-control form-select', selected: @tasks_categories[2] }) %>
-                  <br />
-                  <br />
-                </div>
-              </div>
-
-              <div class="mx-auto col-md-4 text-center">
-                <b>CCs:</b> <br />
-                <div class="d-inline-block text-center">
-                  <%= f.number_field :cc, class: 'form-control' %>
-                  <br />
-                  <br />
-                </div>
-              </div>
-
-              <div class="mx-auto col-md-4 text-center">
-                <b>Hours:</b> <br />
-                <div class="d-inline-block text-center">
-                  <%= f.number_field :hours, step: 0.01, class: 'form-control' %>
-                  <br />
-                  <br />
-                </div>
-              </div>
-              <div class="col-md-12 text-center">
-                <%= label :certifications_id, 'Certifications Required for this Task', class: 'form-label fw-bold' %>
-                <%= select_tag :certifications_id, options_from_collection_for_select(@certifications, 'id', 'name'), { multiple: true, id: 'task_certifications', class: 'form-control task_certifications form-select' } %>
-                <br><br>
-              </div>
-              <div class="col-md-6">
-                <%= label_tag :staff_id, 'Add Staff Responsible for the Task:', class: 'form-label fw-bold' %>
-                <%= select_tag :staff_id, options_from_collection_for_select(User.all.staff, 'id', 'name'), { prompt: 'Choose Staff', class: 'form-control form-select', 'data-live-search': 'true' } %>
-              </div>
-
-              <div class="col-md-6">
-                  <%= label_tag :volunteer_id, 'Add Volunteer to this Task:', class: 'form-label fw-bold' %>
-                  <%= select_tag :volunteer_id, options_from_collection_for_select(User.all.volunteers, 'id', 'name'), { prompt: 'Choose Volunteer', class: 'form-control form-select', 'data-live-search': 'true' } %>
-              </div>
-
-
-              <div class="col-lg-12 text-center">
-                <br>
-                <%= f.submit 'Create task', class: 'btn btn-secondary btn-xl text-uppercase' %>
-              </div>
-            </div>
-          <% end %>
-        </div>
-      </div>
+<div class="py-3 py-md-4">
+  <!-- Top Navigation & Header -->
+  <div class="row align-items-center justify-content-between mb-4 g-3">
+    <div class="col-12 col-md-auto">
+      <nav aria-label="breadcrumb" class="mb-1">
+        <ol class="breadcrumb mb-0 small">
+          <li class="breadcrumb-item">
+            <%= link_to volunteer_tasks_path, class: "text-decoration-none text-body-secondary" do %>
+              <i class="fa-solid fa-hand-holding-heart me-1"></i>Volunteer Tasks
+            <% end %>
+          </li>
+          <li class="breadcrumb-item active text-primary fw-medium" aria-current="page">New Task</li>
+        </ol>
+      </nav>
+      <h1 class="h3 fw-bold text-body-emphasis mb-0 d-flex align-items-center gap-2">
+        <i class="fa-solid fa-circle-plus text-primary"></i>
+        <span>Create Volunteer Task</span>
+      </h1>
+      <p class="text-body-secondary small mb-0 mt-1">Configure task details, capacity, and assign staff leads.</p>
+    </div>
+    <div class="col-12 col-md-auto">
+      <%= link_to volunteer_tasks_path, class: "btn btn-outline-secondary w-100 w-md-auto d-inline-flex align-items-center justify-content-center gap-2" do %>
+        <i class="fa-solid fa-arrow-left"></i>
+        <span>Back to Tasks</span>
+      <% end %>
     </div>
   </div>
-</section>
+
+  <%= form_for @new_volunteer_task, url: volunteer_tasks_path, html: { id: 'volunteerForm', class: 'needs-validation', multipart: true } do |f| %>
+    <div class="row g-3 g-md-4">
+
+      <!-- LEFT COLUMN: Primary Details & Media (Desktop: 8 cols, Mobile: 12 cols) -->
+      <div class="col-12 col-lg-8">
+        <div class="d-flex flex-column gap-3 gap-md-4">
+
+          <!-- Section 1: Overview -->
+          <div class="card border rounded-3 shadow-sm bg-body">
+            <div class="card-header bg-body-tertiary border-bottom py-3 px-3 px-md-4">
+              <h5 class="card-title fw-bold mb-0 text-body-emphasis d-flex align-items-center gap-2">
+                <i class="fa-solid fa-clipboard-list text-primary"></i>
+                <span>Task Overview</span>
+              </h5>
+            </div>
+            <div class="card-body p-3 p-md-4">
+              <div class="row g-3">
+                <!-- Task Title -->
+                <div class="col-12">
+                  <%= f.label :title, class: 'form-label fw-semibold text-body' do %>
+                    Task Title <span class="text-danger">*</span>
+                  <% end %>
+                  <div class="input-group">
+                    <span class="input-group-text bg-body-secondary text-body-secondary border-secondary-subtle">
+                      <i class="fa-solid fa-heading"></i>
+                    </span>
+                    <%= f.text_field :title, placeholder: 'e.g., Workshop Tool Inventory & Calibration', class: 'form-control form-control-lg', required: true %>
+                    <div class="invalid-feedback">Please enter a task title.</div>
+                  </div>
+                </div>
+
+                <!-- Category -->
+                <div class="col-12 col-sm-6">
+                  <%= f.label :category, class: 'form-label fw-semibold text-body' do %>
+                    Category <span class="text-danger">*</span>
+                  <% end %>
+                  <div class="input-group">
+                    <span class="input-group-text bg-body-secondary text-body-secondary border-secondary-subtle">
+                      <i class="fa-solid fa-tags"></i>
+                    </span>
+                    <%= f.select :category, options_for_select(@tasks_categories, @tasks_categories[2]), { prompt: 'Select category...' }, { class: 'form-select', required: true } %>
+                  </div>
+                </div>
+
+                <!-- Space -->
+                <div class="col-12 col-sm-6">
+                  <%= f.label :space_id, class: 'form-label fw-semibold text-body' do %>
+                    Space Location <span class="text-danger">*</span>
+                  <% end %>
+                  <div class="input-group">
+                    <span class="input-group-text bg-body-secondary text-body-secondary border-secondary-subtle">
+                      <i class="fa-solid fa-location-dot"></i>
+                    </span>
+                    <%= f.collection_select :space_id, @spaces, :id, ->(s) { s.name.capitalize }, { prompt: 'Select Space...' }, { class: 'form-select', required: true } %>
+                  </div>
+                </div>
+
+                <!-- Description -->
+                <div class="col-12">
+                  <%= f.label :description, class: 'form-label fw-semibold text-body' do %>
+                    Description <span class="text-danger">*</span>
+                  <% end %>
+                  <%= f.text_area :description, rows: 5, placeholder: 'Provide clear instructions, prerequisites, and expected outcomes for volunteers...', class: 'form-control', required: true %>
+                  <div class="invalid-feedback">Please provide a description.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 2: Certifications & Photos -->
+          <div class="card border rounded-3 shadow-sm bg-body">
+            <div class="card-header bg-body-tertiary border-bottom py-3 px-3 px-md-4">
+              <h5 class="card-title fw-bold mb-0 text-body-emphasis d-flex align-items-center gap-2">
+                <i class="fa-solid fa-paperclip text-primary"></i>
+                <span>Requirements & Attachments</span>
+              </h5>
+            </div>
+            <div class="card-body p-3 p-md-4">
+              <div class="row g-3">
+                <!-- Certifications -->
+                <div class="col-12">
+                  <%= label_tag :certifications_id, class: 'form-label fw-semibold text-body d-flex align-items-center gap-2' do %>
+                    <i class="fa-solid fa-award text-warning"></i>
+                    <span>Required Certifications</span>
+                  <% end %>
+                  <p class="text-body-secondary small mb-2">Select all required qualifications (hold <kbd class="bg-body-secondary text-body">Ctrl</kbd>/<kbd class="bg-body-secondary text-body">Cmd</kbd> on desktop or tap to select):</p>
+                  <%= select_tag :certifications_id, options_from_collection_for_select(@certifications, 'id', 'name'), multiple: true, id: 'task_certifications', class: 'form-select', size: 4 %>
+                </div>
+
+                <!-- Photos -->
+                <div class="col-12">
+                  <%= label_tag 'images[]', class: 'form-label fw-semibold text-body d-flex align-items-center gap-2' do %>
+                    <i class="fa-solid fa-images text-info"></i>
+                    <span>Reference Images</span>
+                  <% end %>
+                  <div class="input-group">
+                    <span class="input-group-text bg-body-secondary text-body-secondary border-secondary-subtle">
+                      <i class="fa-solid fa-upload"></i>
+                    </span>
+                    <%= file_field_tag 'images[]', multiple: true, accept: 'image/png,image/jpeg,image/gif,image/svg+xml,image/x-icon', class: 'form-control', id: 'task_images' %>
+                  </div>
+                  <div class="form-text text-body-secondary mt-1">
+                    Accepts JPEG, PNG, GIF, SVG, ICO (up to 5 images).
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: Metrics, Status, Assignments & Actions (Desktop: 4 cols, Mobile: 12 cols) -->
+      <div class="col-12 col-lg-4">
+        <div class="d-flex flex-column gap-3 gap-md-4">
+
+          <!-- Section 3: Task Settings & Parameters -->
+          <div class="card border rounded-3 shadow-sm bg-body">
+            <div class="card-header bg-body-tertiary border-bottom py-3 px-3 px-md-4">
+              <h5 class="card-title fw-bold mb-0 text-body-emphasis d-flex align-items-center gap-2">
+                <i class="fa-solid fa-sliders text-primary"></i>
+                <span>Task Settings</span>
+              </h5>
+            </div>
+            <div class="card-body p-3 p-md-4">
+              <div class="row g-3">
+                <!-- Status Switcher -->
+                <div class="col-12">
+                  <label class="form-label fw-semibold text-body mb-2">Initial Status</label>
+                  <div class="btn-group w-100" role="group" aria-label="Task Status">
+                    <%= f.radio_button :status, 'open', class: 'btn-check', id: 'status_open', checked: true %>
+                    <label class="btn btn-outline-success d-flex align-items-center justify-content-center gap-2 py-2" for="status_open">
+                      <i class="fa-solid fa-lock-open"></i> Open
+                    </label>
+
+                    <%= f.radio_button :status, 'completed', class: 'btn-check', id: 'status_completed' %>
+                    <label class="btn btn-outline-secondary d-flex align-items-center justify-content-center gap-2 py-2" for="status_completed">
+                      <i class="fa-solid fa-check"></i> Completed
+                    </label>
+                  </div>
+                </div>
+
+                <div class="col-12"><hr class="my-1 border-secondary-subtle"></div>
+
+                <!-- Joins Capacity -->
+                <div class="col-12">
+                  <%= f.label :joins, 'Volunteer Capacity (Joins)', class: 'form-label fw-semibold text-body' %>
+                  <div class="input-group">
+                    <span class="input-group-text bg-body-secondary text-body-secondary border-secondary-subtle">
+                      <i class="fa-solid fa-users"></i>
+                    </span>
+                    <%= f.number_field :joins, min: 1, value: 1, class: 'form-control', required: true %>
+                    <span class="input-group-text bg-body-secondary text-body-secondary border-secondary-subtle">person(s)</span>
+                  </div>
+                </div>
+
+                <!-- Hours -->
+                <div class="col-12 col-sm-6 col-lg-12">
+                  <%= f.label :hours, 'Estimated Hours', class: 'form-label fw-semibold text-body' %>
+                  <div class="input-group">
+                    <span class="input-group-text bg-body-secondary text-body-secondary border-secondary-subtle">
+                      <i class="fa-regular fa-clock"></i>
+                    </span>
+                    <%= f.number_field :hours, step: '0.01', min: '0', placeholder: '0.00', class: 'form-control' %>
+                    <span class="input-group-text bg-body-secondary text-body-secondary border-secondary-subtle">hrs</span>
+                  </div>
+                </div>
+
+                <!-- CCs -->
+                <div class="col-12 col-sm-6 col-lg-12">
+                  <%= f.label :cc, 'Community Credits (CCs)', class: 'form-label fw-semibold text-body' %>
+                  <div class="input-group">
+                    <span class="input-group-text bg-body-secondary text-body-secondary border-secondary-subtle">
+                      <i class="fa-solid fa-coins"></i>
+                    </span>
+                    <%= f.number_field :cc, min: '0', placeholder: '0', class: 'form-control' %>
+                    <span class="input-group-text bg-body-secondary text-body-secondary border-secondary-subtle">CCs</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 4: Assignments -->
+          <div class="card border rounded-3 shadow-sm bg-body">
+            <div class="card-header bg-body-tertiary border-bottom py-3 px-3 px-md-4">
+              <h5 class="card-title fw-bold mb-0 text-body-emphasis d-flex align-items-center gap-2">
+                <i class="fa-solid fa-user-group text-primary"></i>
+                <span>Initial Team</span>
+              </h5>
+            </div>
+            <div class="card-body p-3 p-md-4">
+              <div class="row g-3">
+                <!-- Staff Responsible -->
+                <div class="col-12">
+                  <%= label_tag :staff_id, class: 'form-label fw-semibold text-body d-flex align-items-center gap-2' do %>
+                    <i class="fa-solid fa-user-tie text-body-secondary"></i>
+                    <span>Staff Lead</span>
+                  <% end %>
+                  <%= select_tag :staff_id, options_from_collection_for_select(User.all.staff, 'id', 'name'), prompt: 'Choose staff lead...', class: 'form-select' %>
+                  <div class="form-text text-body-secondary small">Responsible for task oversight.</div>
+                </div>
+
+                <!-- Volunteer Assignee -->
+                <div class="col-12">
+                  <%= label_tag :volunteer_id, class: 'form-label fw-semibold text-body d-flex align-items-center gap-2' do %>
+                    <i class="fa-solid fa-hand-holding-heart text-body-secondary"></i>
+                    <span>Assign Volunteer</span>
+                  <% end %>
+                  <%= select_tag :volunteer_id, options_from_collection_for_select(User.all.volunteers, 'id', 'name'), prompt: 'Choose volunteer (optional)...', class: 'form-select' %>
+                  <div class="form-text text-body-secondary small">Pre-assign an active volunteer directly.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 5: Action Card -->
+          <div class="card border rounded-3 shadow-sm bg-body-tertiary">
+            <div class="card-body p-3 p-md-4">
+              <div class="d-grid gap-2">
+                <%= f.button type: :submit, class: 'btn btn-primary btn-lg fw-semibold d-flex align-items-center justify-content-center gap-2 shadow-sm' do %>
+                  <i class="fa-solid fa-circle-check"></i>
+                  <span>Create Task</span>
+                <% end %>
+                <%= link_to volunteer_tasks_path, class: 'btn btn-outline-secondary d-flex align-items-center justify-content-center' do %>
+                  Cancel
+                <% end %>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  <% end %>
+</div>

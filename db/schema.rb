@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_10_025738) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_20_015920) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -296,6 +296,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_10_025738) do
     t.integer "training_session_id"
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
+  end
+
+  create_table "external_contacts", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.boolean "deleted", default: false, null: false
+    t.string "email", null: false
+    t.string "first_name", null: false
+    t.string "last_name", null: false
+    t.string "phone"
+    t.datetime "updated_at", null: false
+    t.index ["deleted"], name: "index_external_contacts_on_deleted"
+    t.index ["email"], name: "index_external_contacts_on_email", unique: true
   end
 
   create_table "faqs", force: :cascade do |t|
@@ -642,6 +654,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_10_025738) do
   create_table "learning_module_tracks", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.bigint "learning_module_id"
+    t.jsonb "scorm_state"
     t.string "status", default: "In progress"
     t.datetime "updated_at", null: false
     t.bigint "user_id"
@@ -683,6 +696,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_10_025738) do
 
   create_table "locker_rentals", force: :cascade do |t|
     t.datetime "cancelled_at"
+    t.boolean "contacted_for_clearance", default: false, null: false
     t.bigint "course_name_id"
     t.datetime "created_at", null: false
     t.bigint "decided_by_id"
@@ -717,9 +731,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_10_025738) do
   end
 
   create_table "lockers", force: :cascade do |t|
+    t.string "audience", default: "general"
     t.boolean "available", default: true, null: false
     t.datetime "created_at", null: false
     t.bigint "locker_size_id"
+    t.text "notes"
     t.string "specifier"
     t.boolean "staff_only"
     t.datetime "updated_at", null: false

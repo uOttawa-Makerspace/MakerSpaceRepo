@@ -1,4 +1,4 @@
-name: CI
+name: CI & Deploy
 
 on:
   push:
@@ -6,17 +6,29 @@ on:
   pull_request:
     branches: [master, staging]
 
+concurrency:
+  # Prevents push and pull_request from cancelling each other,
+  # but WILL cancel older runs if you push multiple commits quickly.
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
+  packages: write
 
 env:
   RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
   RAILS_ENV: test
-  RUBYOPT: "-W0" # Silences the Gem::Platform constant redefinition logs globally
+  RUBYOPT: "-W0"
 
 jobs:
+  # ==========================================
+  # STAGE 1: TESTS & SECURITY
+  # ==========================================
   test:
-    if: github.event_name != 'schedule'
+    # Skip pull_request jobs if the branch being pushed is 'staging' or 'master'
+    # (because the 'push' event below is already running the test suite for it)
+    if: github.event_name != 'schedule' && (github.event_name != 'pull_request' || (github.head_ref != 'staging' && github.head_ref != 'master'))
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
@@ -49,10 +61,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup ImageMagick
-        uses: mfinelli/setup-imagemagick@v8
-        with:
-          cache: true
+      - name: Install libvips
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libvips-dev
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -93,6 +105,7 @@ jobs:
         run: bundle exec rspec
 
   security:
+    if: github.event_name != 'pull_request' || (github.head_ref != 'staging' && github.head_ref != 'master')
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -115,14 +128,199 @@ jobs:
       - name: Ruby Audit
         run: bundle exec ruby-audit check
 
-      - name: Outdated Gems (Informational)
-        run: |
-          bundle config unset deployment
-          bundle outdated --strict || true
+  # ==========================================
+  # STAGE 2: PARALLEL NATIVE DOCKER BUILDS
+  # ==========================================
+  build-staging-images:
+    needs: [test, security]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    name: Build (${{ matrix.platform }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            platform: linux/amd64
+            digest_tag: amd64
+          - runner: ubuntu-24.04-arm
+            platform: linux/arm64
+            digest_tag: arm64
 
-  deploy:
-    needs: test
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/staging')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set lowercase image name
+        run: echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
+      # Setup Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Builds natively and pushes raw binary layers by digest
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          outputs: type=image,"name=${{ env.IMAGE_NAME }}",push-by-digest=true,name-canonical=true,push=true
+          # Scoped caches prevent ARM and AMD overwriting each other
+          cache-from: type=gha,scope=build-${{ matrix.digest_tag }}
+          cache-to: type=gha,mode=max,scope=build-${{ matrix.digest_tag }}
+
+      # Save unique digest file
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+
+      - name: Upload digest artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ matrix.digest_tag }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  build-production-images:
+    needs: [test, security]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    name: Build Production (${{ matrix.platform }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            platform: linux/amd64
+            digest_tag: amd64
+          - runner: ubuntu-24.04-arm
+            platform: linux/arm64
+            digest_tag: arm64
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set lowercase image name
+        run: echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          outputs: type=image,"name=${{ env.IMAGE_NAME }}",push-by-digest=true,name-canonical=true,push=true
+          # Separate cache scope from staging builds to prevent overwriting
+          cache-from: type=gha,scope=build-prod-${{ matrix.digest_tag }}
+          cache-to: type=gha,mode=max,scope=build-prod-${{ matrix.digest_tag }}
+
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+
+      - name: Upload digest artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-prod-${{ matrix.digest_tag }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  # ==========================================
+  # STAGE 3: MERGE MANIFEST & DEPLOY TO STAGING
+  # ==========================================
+  deploy-staging:
+    needs: [test, security, build-staging-images]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set lowercase image name
+        run: echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
+      - name: Download all digests
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Merge AMD64 and ARM64 digests into unified tags
+      - name: Create and push manifest list
+        run: |
+          cd /tmp/digests
+          images=$(printf "${{ env.IMAGE_NAME }}@sha256:%s " *)
+
+          # Create both :staging and :staging-<sha> tags
+          docker buildx imagetools create -t ${{ env.IMAGE_NAME }}:staging $images
+          docker buildx imagetools create -t ${{ env.IMAGE_NAME }}:staging-${{ github.sha }} $images
+
+      # Trigger deployment on staging server
+      - name: Deploy to Staging Server via SSH
+        env:
+          DEPLOY_ENC_KEY: ${{ secrets.DEPLOY_ENC_KEY }}
+        run: |
+          # Decrypt SSH key
+          openssl enc -d -aes-256-cbc -md sha512 -salt -in config/deploy_id_ed25519_staging_enc -out /tmp/deploy_key -k $DEPLOY_ENC_KEY -a -pbkdf2
+          chmod 600 /tmp/deploy_key
+          eval "$(ssh-agent -s)"
+          ssh-add /tmp/deploy_key
+
+          # Copy the latest docker-compose.staging.yml from repo to server
+          scp -o StrictHostKeyChecking=no docker-compose.staging.yml deploy@staging-server.makerepo.com:/var/www/makerrepo-staging/docker-compose.staging.yml
+
+          # Pull latest image and restart containers on server
+          ssh -o StrictHostKeyChecking=no deploy@staging-server.makerepo.com << EOF
+            cd /var/www/makerrepo-staging
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            export DOCKER_IMAGE="${{ env.IMAGE_NAME }}"
+            docker compose --env-file .env.staging -f docker-compose.staging.yml pull
+            docker compose --env-file .env.staging -f docker-compose.staging.yml up -d --remove-orphans
+            docker image prune -f
+          EOF
+
+  # ==========================================
+  # PRODUCTION DEPLOY
+  # ==========================================
+  deploy-production:
+    needs: [test, security]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
 
     steps:
@@ -135,17 +333,6 @@ jobs:
           ruby-version: .ruby-version
           bundler-cache: true
 
-      - name: Deploy to Staging
-        if: github.ref == 'refs/heads/staging'
-        env:
-          DEPLOY_ENC_KEY: ${{ secrets.DEPLOY_ENC_KEY }}
-        run: |
-          openssl enc -d -aes-256-cbc -md sha512 -salt -in config/deploy_id_ed25519_staging_enc -out /tmp/deploy_key -k $DEPLOY_ENC_KEY -a -pbkdf2
-          chmod 600 /tmp/deploy_key
-          eval "$(ssh-agent -s)"
-          ssh-add /tmp/deploy_key
-          bundle exec cap staging deploy
-
       - name: Deploy to Production
         if: github.ref == 'refs/heads/master'
         env:
@@ -155,4 +342,14 @@ jobs:
           chmod 600 /tmp/deploy_key
           eval "$(ssh-agent -s)"
           ssh-add /tmp/deploy_key
-          bundle exec cap production deploy
+
+          scp -o StrictHostKeyChecking=no docker-compose.production.yml deploy@prod-server.makerepo.com:/var/www/makerrepo/docker-compose.production.yml
+
+          ssh -o StrictHostKeyChecking=no deploy@prod-server.makerepo.com << EOF
+            cd /var/www/makerrepo
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            export DOCKER_IMAGE="${{ env.IMAGE_NAME }}"
+            docker compose --env-file .env.production -f docker-compose.production.yml pull
+            docker compose --env-file .env.production -f docker-compose.production.yml up -d --remove-orphans
+            docker image prune -f
+          EOF

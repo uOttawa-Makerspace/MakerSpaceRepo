@@ -4,17 +4,11 @@ class ProjectKitsController < DevelopmentProgramsController
   before_action :staff_admin_access, only: %i[new create destroy mark_delivered]
 
   def index
-    @kits =
-      current_user
-        .project_kits
-        .order("delivered ASC")
-        .paginate(page: params[:page], per_page: 20)
-    @all_kits =
-      ProjectKit
-        .all
-        .order("created_at DESC")
-        .paginate(page: params[:page], per_page: 20) if current_user.admin? ||
-      current_user.staff?
+    @pagy, @kits = pagy(current_user.project_kits.order("delivered ASC"), limit: 20)
+
+    if current_user.admin?
+      @pagy_all, @all_kits = pagy(ProjectKit.order("delivered ASC"), page_key: "page_all", limit: 20)
+    end
   end
 
   def new

@@ -1,0 +1,126 @@
+<% if volunteer_tasks.empty? %>
+  <div class="text-center py-5 card bg-body border shadow-sm rounded-4 p-4">
+    <div class="mb-3 text-body-secondary">
+      <i class="fa fa-folder-open-o fa-3x"></i>
+    </div>
+    <p class="fs-6 text-body-secondary mb-0"><%= empty_message %></p>
+  </div>
+<% else %>
+  <div class="row g-3 g-md-4 task-cards-container">
+    <% volunteer_tasks.each do |vt| %>
+      <%
+        active_joins = vt.volunteer_task_joins.select(&:active)
+        assigned_volunteers = active_joins.select { |j| j.user_type == "Volunteer" }
+        responsible_staff = active_joins.select { |j| %w[Staff Admin].include?(j.user_type) }
+        cert_names = vt.require_trainings.map { |r| r.training&.localized_name }.compact.join(', ')
+        searchable_text = "#{vt.title} #{vt.category} #{vt.space.try(:name)} #{vt.description} #{cert_names}".downcase
+      %>
+      <div class="col-12 col-md-6 col-lg-4 task-item-card-col"
+           data-searchable-text="<%= searchable_text %>"
+           data-space="<%= vt.space.try(:name).to_s.downcase %>"
+           data-category="<%= vt.category.to_s.downcase %>"
+           data-certifications="<%= cert_names %>">
+
+        <div class="card bg-body border shadow-sm rounded-4 h-100 task-grid-card">
+          <!-- Card Body -->
+          <div class="card-body p-4 pb-2">
+            <!-- Header Badges -->
+            <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+              <span class="badge bg-body-secondary text-body-secondary border text-uppercase"><%= vt.category.capitalize %></span>
+              <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">
+                <i class="fa fa-map-marker me-1"></i><%= vt.space.try(:name)&.capitalize || 'General' %>
+              </span>
+            </div>
+
+            <!-- Title -->
+            <h5 class="fw-bold mb-2">
+              <%= link_to vt.title.capitalize, volunteer_task_path(vt.id), class: 'text-decoration-none text-body hover-orange' %>
+            </h5>
+
+            <!-- CC & Hours Badge -->
+            <div class="d-inline-flex align-items-center bg-body-tertiary border rounded-pill px-2 py-1 mb-3">
+              <%= vite_image_tag 'images/cc.png', alt: 'CC', class: 'ccs me-1', id: 'myCcBlack', style: 'width: 14px; height: 14px;' %>
+              <span class="fw-bold me-2 text-primary"><%= vt.cc %> CC</span>
+              <span class="text-body-secondary small">• <%= vt.hours %> hrs</span>
+            </div>
+
+            <!-- Prerequisites / Certifications -->
+            <div class="mb-3">
+              <span class="small text-body-secondary d-block mb-1">
+                <i class="fa fa-certificate me-1 text-ceed-orange"></i>Prerequisites:
+              </span>
+              <% if vt.require_trainings.present? %>
+                <div class="d-flex flex-wrap gap-1">
+                  <% vt.require_trainings.each do |rt| %>
+                    <span class="badge bg-body-secondary text-body border"><%= rt.training.localized_name.capitalize %></span>
+                  <% end %>
+                </div>
+              <% else %>
+                <span class="badge bg-success-subtle text-success border border-success-subtle">No Certifications Required</span>
+              <% end %>
+            </div>
+          </div>
+
+          <!-- Card Footer -->
+          <div class="card-footer bg-transparent border-top p-4 pt-3 mt-auto">
+            <div class="d-flex justify-content-between align-items-center mb-3 small">
+              <div class="text-truncate me-2">
+                <span class="text-body-secondary">Staff:</span>
+                <% if responsible_staff.present? %>
+                  <strong class="text-body"><%= responsible_staff.first.user.name.titleize %></strong>
+                <% else %>
+                  <span class="text-body-secondary">-</span>
+                <% end %>
+              </div>
+              <div class="flex-shrink-0">
+                <% if vt.status == "completed" %>
+                  <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle px-2 py-1">
+                    <i class="fa fa-check me-1"></i> Completed
+                  </span>
+                <% elsif assigned_volunteers.present? %>
+                  <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1">
+                    <i class="fa fa-user me-1"></i> Assigned (<%= assigned_volunteers.count %>)
+                  </span>
+                <% else %>
+                  <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                    <i class="fa fa-unlock me-1"></i> Available
+                  </span>
+                <% end %>
+              </div>
+            </div>
+
+            <!-- Actions (Students can ONLY view details) -->
+            <div class="d-flex gap-2">
+              <%= link_to 'View Details', volunteer_task_path(vt.id), class: 'btn btn-outline-ceed btn-sm w-100 rounded-pill fw-bold' %>
+
+              <% if current_user.staff? %>
+                <div class="dropdown">
+                  <button class="btn btn-outline-secondary btn-sm rounded-pill px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Staff options">
+                    <i class="fa fa-ellipsis-v"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end shadow border">
+                    <li><%= link_to 'Edit / Assign', edit_volunteer_task_path(vt.id), class: 'dropdown-item small' %></li>
+                    <li><hr class="dropdown-divider my-1"></li>
+                    <li>
+                      <%= button_to 'Delete', volunteer_task_path(vt.id), method: :delete,
+                                    data: { confirm: 'Are you sure you want to delete this task?' },
+                                    class: 'dropdown-item text-danger small' %>
+                    </li>
+                  </ul>
+                </div>
+              <% end %>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Pagination -->
+  <% if pagy && pagy.pages > 1 %>
+    <div class="d-flex justify-content-center mt-5">
+      <%== pagy.series_nav(:bootstrap) %>
+    </div>
+  <% end %>
+<% end %>

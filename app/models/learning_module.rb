@@ -34,21 +34,25 @@ class LearningModule < ApplicationRecord
   # Check if we need to reprocess package. We need the is_a? check because
   # sometimes no file is uploaded.
   before_save -> do
-                new_blob = attachment_changes['scorm_package']
-                @scorm_package_changed =
-                  new_blob.is_a?(ActiveStorage::Attached::Changes::CreateOne) &&
-                    !new_blob.blob.persisted? # Is this really a new package
-                @scorm_package_cleared =
-                  new_blob.is_a?(ActiveStorage::Attached::Changes::DeleteOne)
-              end
+    new_blob = attachment_changes['scorm_package']
+    @scorm_package_changed =
+      new_blob.is_a?(ActiveStorage::Attached::Changes::CreateOne) &&
+        !new_blob.blob.persisted?
+    @scorm_package_cleared =
+      new_blob.is_a?(ActiveStorage::Attached::Changes::DeleteOne)
+
+    # Reset status to pending immediately when a new zip is uploaded
+    self.scorm_status = :pending if @scorm_package_changed
+  end
 
   # If scorm package changes, update extraction or purge File is available only
   # after commit, but change key is cleared after save. This would queue the
   # job, and the job is configured to run after commit succeeds
   # https://guides.rubyonrails.org/active_storage_overview.html#downloading-files
   # https://codewithrails.com/blog/rails-enqueue-after-transaction-commit/
-  after_save :process_scorm_package,
-             if: -> { @scorm_package_changed || @scorm_package_cleared }
+  after_commit :process_scorm_package,
+               on: %i[create update],
+               if: -> { @scorm_package_changed || @scorm_package_cleared }
   # The unzipped files are attached to this model here. Need to clear if the
   # scorm package changes
   has_many_attached :scorm_package_files

@@ -1,11 +1,11 @@
 FactoryBot.define do
   factory :job_service do
-    name { Faker::Lorem.word }
+    sequence(:name) { |n| "#{Faker::Lorem.word}_#{n}" }
     description { Faker::Lorem.sentence }
     unit { Faker::Lorem.word }
     required { false }
-    internal_price { Faker::Number.decimal() }
-    external_price { Faker::Number.decimal() }
+    internal_price { Faker::Number.decimal }
+    external_price { Faker::Number.decimal }
     association :job_service_group
 
     trait :with_files do

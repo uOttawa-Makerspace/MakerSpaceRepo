@@ -2,7 +2,7 @@ require "rails_helper"
 include FilesTestHelper
 
 RSpec.describe StaffDashboardController, type: :controller do
-  before(:all) do
+  before(:each) do
     @admin = create(:user, :admin)
     @space = create(:space)
   end

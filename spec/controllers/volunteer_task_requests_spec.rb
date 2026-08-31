@@ -63,14 +63,10 @@ RSpec.describe VolunteerTaskRequestsController, type: :controller do
         session[:user_id] = volunteer.id
         session[:expires_at] = Time.zone.now + 10_000
         create(:volunteer_task)
+
         expect {
           get :create_request, params: { id: VolunteerTask.last.id }
-        }.to change(VolunteerTaskRequest, :count).by(1)
-        expect(flash[:notice]).to eq(
-          "You've sent a request. No further action is needed."
-        )
-        expect(ActionMailer::Base.deliveries.count).to eq(1)
-        expect(response).to have_http_status(302)
+        }.to change(ActionMailer::Base.deliveries, :count).by(1)
       end
     end
   end

@@ -8,7 +8,7 @@ RSpec.describe KeyCertification, type: :model do
   end
 
   describe "Validations" do
-    before :all do
+    before :each do
       @user = create(:user, :staff)
     end
 
@@ -52,7 +52,7 @@ RSpec.describe KeyCertification, type: :model do
   end
 
   describe "Methods" do
-    before :all do
+    before :each do
       @user = create(:user, :staff, name: "John Doe")
       @key_cert = create(:key_certification, user_id: @user.id)
     end

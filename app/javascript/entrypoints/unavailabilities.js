@@ -1,6 +1,6 @@
-import "./fullcalendar_setup_staff_unavailabilities";
-import { addUnavailabilityClick } from "./unavailabilities_helpers.js";
-import "./manage_unavailabilities";
+import "../src/fullcalendar_setup_staff_unavailabilities";
+import { addUnavailabilityClick } from "../src/unavailabilities_helpers";
+import "../src/manage_unavailabilities";
 
 document.addEventListener("turbo:load", () => {
   document

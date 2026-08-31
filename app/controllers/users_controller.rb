@@ -369,19 +369,15 @@ class UsersController < SessionsController
     end
 
     # Get repositories owned by user
-    @repositories =
-        @repo_user
-          .repositories
-          .where(make_id: nil)
-          .paginate(page: params[:page], per_page: 18)
-
-    # Staff and current user can see private repos
-    unless @user.staff? || @repo_user == @user
-      @repositories = @repositories.public_repos
-    end
+    repo_scope = @repo_user.repositories.where(make_id: nil).order(created_at: :desc)
+    repo_scope = repo_scope.public_repos unless @user == @repo_user || (@user && @user.admin?)
+    @pagy, @repositories = pagy(repo_scope, limit: 18)
 
     @acclaim_data = @repo_user.certifications
-    @makes = @repo_user.repositories.where.not(make_id: nil).page params[:page]
+    
+    makes_scope = @repo_user.repositories.where.not(make_id: nil).order(created_at: :desc)
+    @pagy_makes, @makes = pagy(makes_scope, page_key: 'page_makes', limit: 18)
+
     @joined_projects = @repo_user.project_joins
     @photos = photo_hash
     @certifications = @repo_user.certifications.highest_level
@@ -443,31 +439,14 @@ class UsersController < SessionsController
   def likes
     sort_arr = sort_order
     repo_ids = Like.where(user_id: @user.id).pluck(:repository_id)
+    like_scope = Repository.where(id: repo_ids).order([sort_arr].to_h)
+
     if params[:category].present?
-      @repositories = []
-      @repositories =
-        Repository.includes(:categories).where(
-          categories: {
-            name: SLUG_TO_CATEGORY_MODEL[params[:category]],
-            repository_id: repo_ids
-          }
-        )
-      @repositories =
-        if !@repositories.empty?
-          @repositories.order([sort_arr].to_h).paginate(
-            per_page: 12,
-            page: params[:page]
-          )
-        else
-          []
-        end
-    else
-      @repositories =
-        Repository
-          .where(id: repo_ids)
-          .order([sort_arr].to_h)
-          .paginate(per_page: 12, page: params[:page])
+      category_name = SLUG_TO_CATEGORY_MODEL[params[:category]]
+      like_scope = like_scope.includes(:categories).where(categories: { name: category_name })
     end
+
+    @pagy, @repositories = pagy(like_scope, limit: 12)
     @photos = photo_hash
   end
 
@@ -476,7 +455,6 @@ class UsersController < SessionsController
     @user.repositories.each { |repo| repo.destroy }
     LabSession.where(user_id: @user.id).destroy_all
     @user.destroy
-    #disconnect_user
     redirect_to root_path
   end
 
@@ -519,6 +497,7 @@ class UsersController < SessionsController
       %i[created_at desc]
     end
   end
+
   SLUG_TO_CATEGORY_MODEL = {
     'internet-of-things' => 'Internet of Things',
     'course-related-projects' => 'Course-related Projects',
@@ -530,10 +509,12 @@ class UsersController < SessionsController
     'virtual-reality' => 'Virtual Reality',
     'other-projects' => 'Other Projects',
     'uottawa-team-projects' => 'uOttawa Team Projects'
-  }
+  }.freeze
 
   def photo_hash
     repo = params[:show].eql?('makes') ? @makes : @repositories
+    return {} if repo.blank?
+
     repository_ids = repo.map(&:id)
     photo_ids =
       Photo

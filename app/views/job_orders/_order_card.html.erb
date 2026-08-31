@@ -39,11 +39,11 @@
           <div class="d-flex justify-content-between align-items-start">
             <div class="d-flex align-items-center">
               <% if is_completed %>
-                <%= fa_icon :check, class: 'me-2 text-success' %>
+                <i class="fa-solid fa-check me-2 text-success"></i>
               <% elsif is_current %>
-                <%= fa_icon :dot_circle, class: 'me-2 text-primary' %>
+                <i class="fa-solid fa-dot_circle me-2 text-primary"></i>
               <% else %>
-                <%= fa_icon :circle, class: 'me-2 text-muted' %>
+                <i class="fa-solid fa-circle me-2 text-muted"></i>
               <% end %>
 
               <div>

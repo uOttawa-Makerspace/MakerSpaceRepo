@@ -1,27 +1,130 @@
-<section class="page-contents">
-  <div class="text-center">
-
-    <h1 class="fw-bold">Volunteer Calendar</h1>
-
-    <h2>Makerspace</h2>
-
-    <div class="googleCalendar">
-      <iframe src="https://calendar.google.com/calendar/embed?height=600&amp;wkst=1&amp;bgcolor=%23ffffff&amp;ctz=America%2FToronto&amp;showTitle=1&amp;src=bWFrZXJlcG8uY29tX3UyamVxanJrZzh0ZGhvYjJ2ZDMyYTVhZDQ0QGdyb3VwLmNhbGVuZGFyLmdvb2dsZS5jb20&amp;color=%23D81B60&amp;showPrint=0&amp;title=Makerspace%20Shadowing" style="border:solid 1px #777" width="800" height="600" frameborder="0" scrolling="no"></iframe>
+<div class="py-3 py-md-4">
+  <!-- Top Navigation & Header -->
+  <div class="row align-items-center justify-content-between mb-4 g-3">
+    <div class="col-12 col-md-auto">
+      <nav aria-label="breadcrumb" class="mb-1">
+        <ol class="breadcrumb mb-0 small">
+          <li class="breadcrumb-item">
+            <%= link_to volunteers_path, class: "text-decoration-none text-body-secondary" do %>
+              <i class="fa-solid fa-hand-holding-heart me-1"></i>Volunteers
+            <% end %>
+          </li>
+          <li class="breadcrumb-item active text-primary fw-medium" aria-current="page">Calendar</li>
+        </ol>
+      </nav>
+      <h1 class="h3 fw-bold text-body-emphasis mb-0 d-flex align-items-center gap-2">
+        <i class="fa-solid fa-calendar-days text-primary"></i>
+        <span>Shadowing Calendar</span>
+      </h1>
+      <p class="text-body-secondary small mb-0 mt-1">View scheduled volunteer shadowing shifts across Makerspace and Brunsfield Centre.</p>
     </div>
-
-    <br>
-
-    <h2>Brunsfield</h2>
-
-    <div class="googleCalendar">
-      <iframe src="https://calendar.google.com/calendar/embed?height=600&amp;wkst=1&amp;bgcolor=%23ffffff&amp;ctz=America%2FToronto&amp;showTitle=1&amp;showPrint=0&amp;title=Brunsfield%20Shadowing&amp;src=bWFrZXJlcG8uY29tX29qYTllZGF1bW80Mmw5YzlrdHFuajUybjZjQGdyb3VwLmNhbGVuZGFyLmdvb2dsZS5jb20&amp;color=%23795548" style="border:solid 1px #777" width="800" height="600" frameborder="0" scrolling="no"></iframe>
+    <div class="col-12 col-md-auto d-flex flex-wrap gap-2">
+      <%= link_to shadowing_shifts_volunteers_path, class: "btn btn-outline-secondary d-inline-flex align-items-center gap-2 flex-grow-1 flex-md-grow-0 justify-content-center" do %>
+        <i class="fa-solid fa-user-clock"></i>
+        <span>My Shifts</span>
+      <% end %>
+      <%= link_to new_event_volunteers_path, class: "btn btn-primary d-inline-flex align-items-center gap-2 flex-grow-1 flex-md-grow-0 justify-content-center shadow-sm" do %>
+        <i class="fa-solid fa-calendar-plus"></i>
+        <span>Add Shadowing Shift</span>
+      <% end %>
     </div>
-
-    <br>
-
-    <div>
-      <%= link_to 'Add Shadowing Shift', new_event_volunteers_path, class: 'btn btn-primary d-inline' %>
-    </div>
-
   </div>
-</section>
+
+  <!-- Calendar Container Card with Space Switcher Tabs -->
+  <div class="card border rounded-3 shadow-sm bg-body">
+    
+    <!-- Tab Controls Header -->
+    <div class="card-header bg-body-tertiary border-bottom p-3 p-md-4">
+      <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3">
+        <ul class="nav nav-pills gap-2" id="calendarTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-semibold d-inline-flex align-items-center gap-2"
+                    id="makerspace-tab"
+                    data-bs-toggle="pill"
+                    data-bs-target="#makerspace-pane"
+                    type="button"
+                    role="tab"
+                    aria-controls="makerspace-pane"
+                    aria-selected="true">
+              <i class="fa-solid fa-cube text-primary"></i>
+              <span>Makerspace</span>
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link fw-semibold d-inline-flex align-items-center gap-2"
+                    id="brunsfield-tab"
+                    data-bs-toggle="pill"
+                    data-bs-target="#brunsfield-pane"
+                    type="button"
+                    role="tab"
+                    aria-controls="brunsfield-pane"
+                    aria-selected="false">
+              <i class="fa-solid fa-industry text-warning"></i>
+              <span>Brunsfield Centre</span>
+            </button>
+          </li>
+        </ul>
+
+        <div class="text-body-secondary small d-flex align-items-center gap-2">
+          <i class="fa-solid fa-earth-americas text-secondary"></i>
+          <span>Timezone: America/Toronto (EST/EDT)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab Contents (Responsive Calendars) -->
+    <div class="tab-content" id="calendarTabsContent">
+      
+      <!-- Makerspace Calendar Pane -->
+      <div class="tab-pane fade show active p-0" id="makerspace-pane" role="tabpanel" aria-labelledby="makerspace-tab">
+        <div class="d-flex align-items-center justify-content-between p-3 border-bottom bg-body-secondary">
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill">
+              <i class="fa-solid fa-circle fa-2xs me-1"></i>Live Sync
+            </span>
+            <span class="fw-semibold text-body-emphasis small">Makerspace Shadowing Schedule</span>
+          </div>
+          <%= link_to "https://calendar.google.com/calendar/u/0/embed?src=makerepo.com_u2jeqjrkg8tdhob2vd32a5ad44@group.calendar.google.com&ctz=America/Toronto", target: "_blank", rel: "noopener noreferrer", class: "btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1" do %>
+            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+            <span class="d-none d-sm-inline">Open in Google</span>
+          <% end %>
+        </div>
+
+        <div class="w-100 bg-white rounded-bottom overflow-hidden">
+          <iframe src="https://calendar.google.com/calendar/embed?height=650&amp;wkst=1&amp;bgcolor=%23ffffff&amp;ctz=America%2FToronto&amp;showTitle=0&amp;src=bWFrZXJlcG8uY29tX3UyamVxanJrZzh0ZGhvYjJ2ZDMyYTVhZDQ0QGdyb3VwLmNhbGVuZGFyLmdvb2dsZS5jb20&amp;color=%23D81B60&amp;showPrint=0"
+                  class="w-100 border-0 d-block"
+                  height="650"
+                  loading="lazy"
+                  title="Makerspace Shadowing Calendar">
+          </iframe>
+        </div>
+      </div>
+
+      <!-- Brunsfield Calendar Pane -->
+      <div class="tab-pane fade p-0" id="brunsfield-pane" role="tabpanel" aria-labelledby="brunsfield-tab">
+        <div class="d-flex align-items-center justify-content-between p-3 border-bottom bg-body-secondary">
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill">
+              <i class="fa-solid fa-circle fa-2xs me-1"></i>Live Sync
+            </span>
+            <span class="fw-semibold text-body-emphasis small">Brunsfield Centre Shadowing Schedule</span>
+          </div>
+          <%= link_to "https://calendar.google.com/calendar/u/0/embed?src=makerepo.com_oja9edaumo42l9c9ktqnj52n6c@group.calendar.google.com&ctz=America/Toronto", target: "_blank", rel: "noopener noreferrer", class: "btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1" do %>
+            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+            <span class="d-none d-sm-inline">Open in Google</span>
+          <% end %>
+        </div>
+
+        <div class="w-100 bg-white rounded-bottom overflow-hidden">
+          <iframe src="https://calendar.google.com/calendar/embed?height=650&amp;wkst=1&amp;bgcolor=%23ffffff&amp;ctz=America%2FToronto&amp;showTitle=0&amp;src=bWFrZXJlcG8uY29tX29qYTllZGF1bW80Mmw5YzlrdHFuajUybjZjQGdyb3VwLmNhbGVuZGFyLmdvb2dsZS5jb20&amp;color=%23795548&amp;showPrint=0"
+                  class="w-100 border-0 d-block"
+                  height="650"
+                  loading="lazy"
+                  title="Brunsfield Shadowing Calendar">
+          </iframe>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

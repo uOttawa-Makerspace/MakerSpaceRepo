@@ -5,17 +5,14 @@ class OrdersController < DevelopmentProgramsController
   before_action :check_permission, only: :destroy
 
   def index
-    @orders =
-      current_user
-        .orders
-        .where(order_status: OrderStatus.find_by(name: "Completed"))
-        .order("created_at DESC")
-        .paginate(page: params[:page], per_page: 20)
-    @all_orders =
-      Order
-        .all
-        .order("created_at DESC")
-        .paginate(page: params[:page], per_page: 20) if current_user.admin?
+    completed_status = OrderStatus.find_by(name: "Completed")
+    user_orders_scope = current_user.orders.where(order_status: completed_status).order(created_at: :desc)
+    
+    @pagy, @orders = pagy(user_orders_scope, limit: 20)
+
+    if current_user.admin?
+      @pagy_all, @all_orders = pagy(Order.order(created_at: :desc), page_key: "page_all", limit: 20)
+    end
   end
 
   def create
@@ -68,15 +65,13 @@ class OrdersController < DevelopmentProgramsController
   def check_wallet
     current_user.update_wallet
     return if current_user.wallet >= current_order.subtotal.to_i
-      flash[:alert] = "Not enough Cc Points."
-      redirect_back(fallback_location: root_path)
-    
+    flash[:alert] = "Not enough Cc Points."
+    redirect_back(fallback_location: root_path)
   end
 
   def check_permission
     return if current_user.admin?
-      flash[:alert] = "You can't perform this action"
-      redirect_back(fallback_location: root_path)
-    
+    flash[:alert] = "You can't perform this action"
+    redirect_back(fallback_location: root_path)
   end
 end

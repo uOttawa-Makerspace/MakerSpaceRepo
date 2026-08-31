@@ -1,0 +1,55 @@
+# Sensitive Secrets
+config/master.key
+config/credentials/*.key
+config/deploy_*
+config/makerepo-*.json
+*.key
+*.pem
+*.crt
+.env*
+certs/*
+
+# Database Dumps
+*.dump
+*.bak
+*.sql
+
+# Git & Dev Container Meta
+.git
+.gitignore
+.devcontainer
+.github
+
+# Logs, Temp files, and Storage
+log/*
+tmp/*
+storage/*
+coverage/*
+.byebug_history
+
+# Local Asset & Package caches (Rebuilt fresh during Docker build)
+node_modules
+public/packs*
+public/assets
+public/vite*
+public/vite-dev
+public/vite-test
+
+# Test & Development files (Not needed in staging/prod Docker image)
+# This prevents test code changes from busting the `COPY . .` Docker cache!
+spec
+test
+features
+.rspec
+.rubocop*.yml
+coverage*
+
+# Local bundle configs and installed gems
+.bundle
+vendor/bundle
+
+# Documentation and CI/Docker meta files
+*.md
+Dockerfile*
+docker-compose*.yml
+.dockerignore

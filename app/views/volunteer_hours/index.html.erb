@@ -16,16 +16,16 @@
         <table class="table sessions-table">
 
           <tr>
-            <th>Date Submitted <span onclick="sortTable('sessions-table', 0, true)"><%= fa_icon('arrow-down') %></span></th>
-            <th>Task <span onclick="sortTable('sessions-table', 1)"><%= fa_icon('arrow-down') %></span></th>
-            <th>Date of Task<span onclick="sortTable('sessions-table', 2, true)"><%= fa_icon('arrow-down') %></span></th>
-            <th>Hours Worked <span onclick="sortTable('sessions-table', 3)"><%= fa_icon('arrow-down') %></span></th>
-            <th>Approved?<span onclick="sortTable('sessions-table', 4)"><%= fa_icon('arrow-down') %></span></th>
+            <th>Date Submitted <span onclick="sortTable('sessions-table', 0, true)"><i class="fa-solid fa-arrow-down"></i></span></th>
+            <th>Task <span onclick="sortTable('sessions-table', 1)"><i class="fa-solid fa-arrow-down"></i></span></th>
+            <th>Date of Task<span onclick="sortTable('sessions-table', 2, true)"><i class="fa-solid fa-arrow-down"></i></span></th>
+            <th>Hours Worked <span onclick="sortTable('sessions-table', 3)"><i class="fa-solid fa-arrow-down"></i></span></th>
+            <th>Approved?<span onclick="sortTable('sessions-table', 4)"><i class="fa-solid fa-arrow-down"></i></span></th>
             <th class="action-header">Action</th>
           </tr>
 
           <tbody>
-          <%= will_paginate @user_volunteer_hours, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
+          <%== @pagy.series_nav(:bootstrap) if @pagy && @pagy.pages > 1 %>
           <% @user_volunteer_hours.each do |vh| %>
             <tr>
               <td>

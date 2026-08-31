@@ -233,6 +233,8 @@ RSpec.describe VolunteersController, type: :controller do
 
   describe "#join_volunteer_program" do
     context "join_volunteer_program" do
+      let(:hubspot_form_url) { "https://5oe8xl.share-na3.hsforms.com/20slW0brbQJCsdeEck-8vuQ" }
+
       it "should get tell the staff that they already have access" do
         staff = create(:user, :staff)
         session[:user_id] = staff.id
@@ -241,7 +243,7 @@ RSpec.describe VolunteersController, type: :controller do
         expect(flash[:notice]).to eq(
           "You already have access to the Volunteer Program."
         )
-        expect(response).to redirect_to volunteers_path
+        expect(response).to redirect_to(hubspot_form_url)
       end
 
       it "should set the user as a volunteer" do
@@ -251,7 +253,7 @@ RSpec.describe VolunteersController, type: :controller do
         get :join_volunteer_program
         expect(flash[:notice]).to eq("You've joined the Volunteer Program")
         expect(Program.last.user_id).to eq(user.id)
-        expect(response).to redirect_to volunteers_path
+        expect(response).to redirect_to(hubspot_form_url)
       end
     end
   end

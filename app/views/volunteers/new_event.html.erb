@@ -1,34 +1,139 @@
-<section class="text-center">
-  <h1>Add a shadowing shift</h1>
-  <%= form_with url: create_event_volunteers_path, method: :get do %>
+<div class="py-3 py-md-4">
+  <!-- Top Navigation & Header -->
+  <div class="row align-items-center justify-content-between mb-4 g-3">
+    <div class="col-12 col-md-auto">
+      <nav aria-label="breadcrumb" class="mb-1">
+        <ol class="breadcrumb mb-0 small">
+          <li class="breadcrumb-item">
+            <%= link_to volunteers_path, class: "text-decoration-none text-body-secondary" do %>
+              <i class="fa-solid fa-hand-holding-heart me-1"></i>Volunteers
+            <% end %>
+          </li>
+          <li class="breadcrumb-item">
+            <%= link_to calendar_volunteers_path, class: "text-decoration-none text-body-secondary" do %>
+              Calendar
+            <% end %>
+          </li>
+          <li class="breadcrumb-item active text-primary fw-medium" aria-current="page">New Shadowing Shift</li>
+        </ol>
+      </nav>
+      <h1 class="h3 fw-bold text-body-emphasis mb-0 d-flex align-items-center gap-2">
+        <i class="fa-solid fa-calendar-plus text-primary"></i>
+        <span>Add Shadowing Shift</span>
+      </h1>
+      <p class="text-body-secondary small mb-0 mt-1">Schedule a volunteer shadowing shift and automatically synchronize with Google Calendar.</p>
+    </div>
+    <div class="col-12 col-md-auto">
+      <%= link_to calendar_volunteers_path, class: "btn btn-outline-secondary w-100 w-md-auto d-inline-flex align-items-center justify-content-center gap-2" do %>
+        <i class="fa-solid fa-arrow-left"></i>
+        <span>Back to Calendar</span>
+      <% end %>
+    </div>
+  </div>
 
-    <div class="row">
-      <div class="col">
-        <label for="space_input">Space</label>
-        <br>
-        <select name="space" id="space_input" class="form-select" required>
-          <option value="makerspace">Makerspace</option>
-          <option value="brunsfield centre">Brunsfield Centre</option>
-        </select>
-      </div>
-      <div class="col">
-        <%= label_tag :user_id, 'User' %>
-        <%= select_tag(:user_id, { prompt: 'Choose User...' }, { class: 'user_select form-control', id: 'user_select' }) %>
-        <br>
+  <!-- Centered Form Card -->
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-10 col-lg-8 col-xl-7">
+      <div class="card border rounded-3 shadow-sm bg-body">
+        
+        <!-- Card Header -->
+        <div class="card-header bg-body-tertiary border-bottom py-3 px-3 px-md-4">
+          <h5 class="card-title fw-bold mb-0 text-body-emphasis d-flex align-items-center gap-2">
+            <i class="fa-solid fa-clock text-primary"></i>
+            <span>Shift Details</span>
+          </h5>
+        </div>
+
+        <!-- Form Body -->
+        <%= form_with url: create_event_volunteers_path, method: :get, local: true, html: { class: "needs-validation" } do %>
+          <div class="card-body p-3 p-md-4">
+            <div class="row g-3 g-md-4">
+
+              <!-- Space Selection -->
+              <div class="col-12 col-sm-6">
+                <label for="space_input" class="form-label fw-semibold text-body">
+                  Space Location <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text bg-body-secondary text-body-secondary border-secondary-subtle">
+                    <i class="fa-solid fa-location-dot"></i>
+                  </span>
+                  <select name="space" id="space_input" class="form-select" required>
+                    <option value="makerspace">Makerspace</option>
+                    <option value="brunsfield centre">Brunsfield Centre</option>
+                  </select>
+                </div>
+                <div class="form-text text-body-secondary small">Select where the shift takes place.</div>
+              </div>
+
+              <!-- Volunteer / User Select (TomSelect Remote Search) -->
+              <div class="col-12 col-sm-6">
+                <%= label_tag :user_id, class: "form-label fw-semibold text-body" do %>
+                  Volunteer <span class="text-danger">*</span>
+                <% end %>
+                <%= select_tag :user_id, nil, prompt: "Type to search volunteer...", class: "form-select", id: "user_select", required: true %>
+                <div class="form-text text-body-secondary small">Search volunteer by name.</div>
+              </div>
+
+              <!-- Divider -->
+              <div class="col-12">
+                <hr class="my-1 border-secondary-subtle">
+              </div>
+
+              <!-- Start Date & Time (Flatpickr) -->
+              <div class="col-12 col-sm-6">
+                <label for="datepicker_start" class="form-label fw-semibold text-body">
+                  Start Time <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text bg-body-secondary text-body-secondary border-secondary-subtle">
+                    <i class="fa-regular fa-calendar-check"></i>
+                  </span>
+                  <%= text_field_tag 'datepicker_start', nil, placeholder: 'Select start date & time', autocomplete: 'off', class: 'form-control', required: true, id: 'datepicker_start' %>
+                </div>
+              </div>
+
+              <!-- End Date & Time (Flatpickr) -->
+              <div class="col-12 col-sm-6">
+                <label for="datepicker_end" class="form-label fw-semibold text-body">
+                  End Time <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text bg-body-secondary text-body-secondary border-secondary-subtle">
+                    <i class="fa-regular fa-clock"></i>
+                  </span>
+                  <%= text_field_tag 'datepicker_end', nil, placeholder: 'Select end date & time', autocomplete: 'off', class: 'form-control', required: true, id: 'datepicker_end' %>
+                </div>
+              </div>
+
+              <!-- Information Alert Note -->
+              <div class="col-12">
+                <div class="alert alert-info border-info-subtle bg-info-subtle text-info-emphasis d-flex align-items-start gap-2 mb-0 py-2 px-3 small rounded-3" role="alert">
+                  <i class="fa-solid fa-circle-info fs-5 flex-shrink-0 mt-1"></i>
+                  <div>
+                    Creating this shift will automatically create a Google Calendar event and dispatch an email calendar invite to the volunteer.
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Card Footer with Action Buttons -->
+          <div class="card-footer bg-body-tertiary border-top p-3 p-md-4">
+            <div class="d-flex flex-column flex-sm-row justify-content-end gap-2">
+              <%= link_to calendar_volunteers_path, class: "btn btn-outline-secondary d-inline-flex align-items-center justify-content-center" do %>
+                Cancel
+              <% end %>
+              <%= button_tag type: :submit, class: "btn btn-primary fw-semibold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm" do %>
+                <i class="fa-solid fa-check"></i>
+                <span>Add Shadowing Shift</span>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+
       </div>
     </div>
-
-      <br><br>
-
-    <div class="input-group">
-        <%= text_field_tag 'datepicker_start', nil, autocomplete: 'off', class: 'form-control w-25 d-inline-block' %>
-        <span>&emsp;TO&emsp;</span>
-        <%= text_field_tag 'datepicker_end', nil, autocomplete: 'off', class: 'form-control w-25 d-inline-block' %>
-    </div>
-
-    <br>
-
-    <%= submit_tag 'Add Event', class: 'btn btn-primary' %>
-
-  <% end %>
-</section>
+  </div>
+</div>

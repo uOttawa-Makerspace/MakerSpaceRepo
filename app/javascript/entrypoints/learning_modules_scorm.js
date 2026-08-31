@@ -1,168 +1,57 @@
-document.addEventListener("turbo:load", function () {
-  const scormContainer = document.querySelector("iframe#scorm-container");
-  if (!scormContainer) {
-    console.error("Did not find a scorm container. Exiting");
-    return;
-  }
+import { Scorm12API, Scorm2004API } from "scorm-again";
 
-  const learningModuleId = scormContainer.dataset.learningModuleId;
+function initScorm() {
+  const iframes = document.querySelectorAll("iframe[data-learning-module-id]");
+  if (!iframes.length) return;
 
-  // These are defaults
-  const cmiData = {
-    // SCORM 1.2 state data
-    "cmi.core.lesson_status": "not attempted",
-    "cmi.core.lesson_location": "",
-    "cmi.core.score.raw": "",
-    "cmi.core.score.min": "0",
-    "cmi.core.score.max": "100",
-    "cmi.core.session_time": "00:00:00",
-    "cmi.core.total_time": "00:00:00",
-    "cmi.suspend_data": "",
-    "cmi.core.entry": "ab-initio",
-    "cmi.core.exit": "",
-    "cmi.core.credit": "credit",
-    "cmi.core.lesson_mode": "normal",
+  iframes.forEach((iframe) => {
+    const learningModuleId = iframe.dataset.learningModuleId;
+    let cmiData = {};
 
-    // SCORM 2004 state data
-    "cmi.completion_status": "not attempted",
-    "cmi.success_status": "unknown",
-    "cmi.location": "",
-    "cmi.score.raw": "",
-    "cmi.score.min": "0",
-    "cmi.score.max": "100",
-    "cmi.score.scaled": "",
-    "cmi.session_time": "PT0H0M0S",
-    "cmi.total_time": "PT0H0M0S",
-    "cmi.entry": "ab-initio",
-    "cmi.exit": "",
-    "cmi.credit": "credit",
-    "cmi.mode": "normal",
-    "cmi.progress_measure": "",
-  };
-
-  let lastError = "0";
-  let initialized = false;
-
-  /* SCORM 1.2 */
-  window.API = {
-    LMSInitialize: function () {
-      initialized = true;
-      lastError = "0";
-      return "true";
-    },
-
-    LMSFinish: function () {
-      // TODO: Save cmiData to your backend
-      initialized = false;
-      return "true";
-    },
-
-    LMSGetValue: function (key) {
-      if (!initialized) {
-        lastError = "301";
-        return "";
+    try {
+      if (iframe.dataset.cmi) {
+        cmiData = JSON.parse(iframe.dataset.cmi);
       }
-      lastError = "0";
-      return cmiData[key] !== undefined ? cmiData[key] : "";
-    },
+    } catch (e) {
+      console.error("Failed to parse CMI JSON data:", e);
+    }
 
-    LMSSetValue: function (key, value) {
-      if (!initialized) {
-        lastError = "301";
-        return "false";
+    const settings = {
+      dataCommitFormat: "flattened",
+      autocommit: true,
+      autocommitSeconds: 15,
+      lmsCommitUrl: `/learning_area/${learningModuleId}/scorm_commit`,
+      logLevel: "WARN", // Change to "DEBUG" if you need verbose LMS logs in console
+    };
+
+    // Initialize both SCORM 1.2 and 2004 so any package works
+    const scorm2004 = new Scorm2004API(settings);
+    const scorm12 = new Scorm12API(settings);
+
+    if (Object.keys(cmiData).length > 0) {
+      try {
+        scorm2004.loadFromFlattenedJSON(cmiData);
+        scorm12.loadFromFlattenedJSON(cmiData);
+      } catch (err) {
+        console.warn("Could not load previous CMI state:", err);
       }
-      cmiData[key] = value;
-      lastError = "0";
+    }
 
-      if (
-        key === "cmi.core.lesson_status" &&
-        (value === "completed" || value === "passed")
-      ) {
-        // TODO: Handle completion
-      }
+    // Expose both APIs to the current window
+    window.API_1484_11 = scorm2004; // SCORM 2004
+    window.API = scorm12; // SCORM 1.2
 
-      return "true";
-    },
+    // If iframe src was delayed, set it now to prevent race conditions
+    if (iframe.dataset.src && !iframe.src) {
+      iframe.src = iframe.dataset.src;
+    }
+  });
+}
 
-    LMSCommit: function () {
-      // TODO: Persist cmiData if needed
-      return "true";
-    },
-
-    LMSGetLastError: function () {
-      return lastError;
-    },
-    LMSGetErrorString: function (code) {
-      return (
-        {
-          0: "No Error",
-          101: "General Exception",
-          301: "Not Initialized",
-        }[code] || "Unknown Error"
-      );
-    },
-    LMSGetDiagnostic: function (code) {
-      return this.LMSGetErrorString(code);
-    },
-  };
-
-  /* SCORM 2004 */
-  window.API_1484_11 = {
-    Initialize: function () {
-      initialized = true;
-      lastError = "0";
-      return "true";
-    },
-
-    Terminate: function () {
-      // TODO: Save cmiData to your backend
-      initialized = false;
-      return "true";
-    },
-
-    GetValue: function (key) {
-      if (!initialized) {
-        lastError = "122";
-        return "";
-      }
-      lastError = "0";
-      return cmiData[key] !== undefined ? cmiData[key] : "";
-    },
-
-    SetValue: function (key, value) {
-      if (!initialized) {
-        lastError = "122";
-        return "false";
-      }
-      cmiData[key] = value;
-      lastError = "0";
-
-      if (key === "cmi.completion_status" && value === "completed") {
-        // TODO: Handle completion
-      }
-
-      return "true";
-    },
-
-    Commit: function () {
-      // TODO: Persist cmiData if needed
-      return "true";
-    },
-
-    GetLastError: function () {
-      return lastError;
-    },
-    GetErrorString: function (code) {
-      return (
-        {
-          0: "No Error",
-          101: "General Exception",
-          122: "Not Initialized",
-        }[code] || "Unknown Error"
-      );
-    },
-    GetDiagnostic: function (code) {
-      return this.GetErrorString(code);
-    },
-  };
-});
+// Support both standard DOM loads and Turbo page transitions
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initScorm);
+} else {
+  initScorm();
+}
+document.addEventListener("turbo:load", initScorm);

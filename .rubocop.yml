@@ -1,16 +1,34 @@
 plugins: rubocop-rails
+
 Rails:
   Enabled: true
+
 AllCops:
   TargetRubyVersion: 3.4.7
   TargetRailsVersion: 7.2
+
 Metrics/BlockLength:
   Enabled: false
-Metrics/MethodLength:
-  Enabled: false
-Metrics/ClassLength:
-  Enabled: false
+
 Style/FrozenStringLiteralComment:
   Enabled: false
+
 inherit_from:
   - node_modules/@prettier/plugin-ruby/rubocop.yml
+
+Metrics/MethodLength:
+  Enabled: false
+  Exclude: []
+  Include:
+    - "app/services/**/*"
+    - "app/queries/**/*"
+    - "app/presenters/**/*"
+  Max: 15
+
+Metrics/ClassLength:
+  Enabled: false
+  Include:
+    - "app/services/**/*"
+    - "app/queries/**/*"
+    - "app/presenters/**/*"
+  Max: 150

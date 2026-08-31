@@ -71,12 +71,12 @@
   <table class="table table-striped text-center mt-3">
     <thead class="table-primary">
     <tr>
-      <th>Date <span onclick="sortTable('sessions-table', 0, true)"><%= fa_icon('arrow-down') %></span></th>
-      <th>Training <span onclick="sortTable('sessions-table', 1)"><%= fa_icon('arrow-down') %></span></th>
-      <th>Trainer <span onclick="sortTable('sessions-table', 2)"><%= fa_icon('arrow-down') %></span></th>
-      <th>Course <span onclick="sortTable('sessions-table', 3)"><%= fa_icon('arrow-down') %></span></th>
-      <th>Status <span onclick="sortTable('sessions-table', 4)"><%= fa_icon('arrow-down') %></span></th>
-      <th>Users <span onclick="sortTable('sessions-table', 5)"><%= fa_icon('arrow-down') %></span></th>
+      <th>Date <span onclick="sortTable('sessions-table', 0, true)"><i class="fa-solid fa-arrow-down"></i></span></th>
+      <th>Training <span onclick="sortTable('sessions-table', 1)"><i class="fa-solid fa-arrow-down"></i></span></th>
+      <th>Trainer <span onclick="sortTable('sessions-table', 2)"><i class="fa-solid fa-arrow-down"></i></span></th>
+      <th>Course <span onclick="sortTable('sessions-table', 3)"><i class="fa-solid fa-arrow-down"></i></span></th>
+      <th>Status <span onclick="sortTable('sessions-table', 4)"><i class="fa-solid fa-arrow-down"></i></span></th>
+      <th>Users <span onclick="sortTable('sessions-table', 5)"><i class="fa-solid fa-arrow-down"></i></span></th>
       <th class="action-header">Action</th>
     </tr>
     </thead>
@@ -121,7 +121,9 @@
   </table>
 
   <div class="mt-4 text-center">
-    <%= page_entries_info @sessions %>
-    <%= will_paginate @sessions, container: false %>
+    <% if @pagy.count > 0 %>
+      <small class="text-muted">Displaying <b><%= @pagy.from %></b> - <b><%= @pagy.to %></b> of <b><%= @pagy.count %></b></small>
+    <% end %>
+    <%== @pagy.series_nav(:bootstrap) if @pagy.pages > 1 %>
   </div>
 </div>

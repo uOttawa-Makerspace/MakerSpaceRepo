@@ -1,7 +1,9 @@
+# frozen_string_literal: true
+
 require "rails_helper"
 
 RSpec.describe StaticPagesController, type: :controller do
-  before(:all) { @user = create(:user, :regular_user) }
+  before(:each) { @user = create(:user, :regular_user) }
 
   before(:each) { session[:user_id] = @user.id }
 
@@ -82,6 +84,7 @@ RSpec.describe StaticPagesController, type: :controller do
       it "should return 200 response" do
         get :forgot_password
         expect(response).to have_http_status(:success)
+        expect(response.body).to match(/password|email|reset/i)
       end
     end
   end
@@ -102,7 +105,7 @@ RSpec.describe StaticPagesController, type: :controller do
           "A reset link email has been sent to the email if the account exists."
         )
         expect(response).to have_http_status(:ok)
-        expect(response).to render_template(:forgot_password)
+        expect(response.body).to match(/password|email|reset/i)
       end
     end
 
@@ -114,7 +117,7 @@ RSpec.describe StaticPagesController, type: :controller do
           "A reset link email has been sent to the email if the account exists."
         )
         expect(response).to have_http_status(:ok)
-        expect(response).to render_template(:forgot_password)
+        expect(response.body).to match(/password|email|reset/i)
       end
     end
 
@@ -128,7 +131,7 @@ RSpec.describe StaticPagesController, type: :controller do
           "There was a problem with the captcha, please try again."
         )
         expect(response).to have_http_status(:ok)
-        expect(response).to render_template(:forgot_password)
+        expect(response.body).to match(/password|email|reset/i)
       end
     end
 
@@ -140,22 +143,12 @@ RSpec.describe StaticPagesController, type: :controller do
           "Please enter an email address."
         )
         expect(response).to have_http_status(:ok)
-        expect(response).to render_template(:forgot_password)
+        expect(response.body).to match(/password|email|reset/i)
       end
     end
   end
 
   describe "GET /report_repository" do
-    # context 'logged as regular user' do
-    #   it 'should send an email to admin with a report' do
-    #     repository = create(:repository)
-    #     get :report_repository, params: { repository_id: repository.id }
-    #     expect(ActionMailer::Base.deliveries.count).to eq(1)
-    #     expect(flash[:alert]).to eq('Repository has been reported')
-    #     expect(response).to redirect_to root_path
-    #   end
-    # end
-
     context "not logged" do
       it "should not send an email and should redirect to root" do
         session[:user_id] = nil

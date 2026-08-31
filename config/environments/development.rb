@@ -56,12 +56,6 @@ Rails.application.configure do
   # Highlight code that triggered database queries in logs.
   config.active_record.verbose_query_logs = true
 
-  # Suppress logger output for asset requests.
-  config.assets.quiet = true
-
-  # Disable asset cache
-  config.assets.debug = true
-
   config.console = Pry
 
   Octokit.configure do |c|
@@ -72,7 +66,7 @@ Rails.application.configure do
   end
 
   # Use letter opener to open emails in development mode
-  config.action_mailer.delivery_method = :letter_opener
+  config.action_mailer.delivery_method = :letter_opener_web
   config.action_mailer.default_url_options = { host: "staging.makerepo.com" }
   config.action_mailer.asset_host = "http://localhost:3000"
   config.action_mailer.perform_deliveries = true
@@ -91,5 +85,5 @@ Rails.application.configure do
   # config.action_cable.disable_request_forgery_protection = true
 
   config.hosts.clear  # Disables host checking for ngrok to work
-  config.active_job.queue_adapter = :inline
+  config.active_job.queue_adapter = :async
 end

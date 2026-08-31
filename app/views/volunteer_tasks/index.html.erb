@@ -1,39 +1,209 @@
-<section class="page-contents">
-  <div class="text-center">
-    <h2 class="mb-3 fw-bold">Volunteer Tasks</h2>
+<div class="py-3 py-md-4" id="volunteerTasksIndex">
+  <!-- Top Navigation & Header -->
+  <div class="row align-items-center justify-content-between mb-4 g-3">
+    <div class="col-12 col-md-auto">
+      <nav aria-label="breadcrumb" class="mb-1">
+        <ol class="breadcrumb mb-0 small">
+          <li class="breadcrumb-item">
+            <%= link_to volunteers_path, class: "text-decoration-none text-body-secondary" do %>
+              <i class="fa-solid fa-hand-holding-heart me-1"></i>Volunteers
+            <% end %>
+          </li>
+          <li class="breadcrumb-item active text-primary fw-medium" aria-current="page">Volunteer Tasks</li>
+        </ol>
+      </nav>
+      <h1 class="h3 fw-bold text-body-emphasis mb-0 d-flex align-items-center gap-2">
+        <i class="fa-solid fa-list-check text-primary"></i>
+        <span>Volunteer Tasks</span>
+      </h1>
+      <p class="text-body-secondary small mb-0 mt-1">Explore available tasks, prerequisites, and earn Community Credits (CCs).</p>
+    </div>
+    <div class="col-12 col-md-auto d-flex flex-wrap gap-2">
+      <%= link_to my_tasks_volunteer_tasks_path, class: "btn btn-outline-secondary d-inline-flex align-items-center gap-2 flex-grow-1 flex-md-grow-0 justify-content-center" do %>
+        <i class="fa-solid fa-clipboard-user"></i>
+        <span>My Assigned Tasks</span>
+      <% end %>
+      <% if current_user.staff? %>
+        <%= link_to new_volunteer_task_path, class: "btn btn-primary d-inline-flex align-items-center gap-2 flex-grow-1 flex-md-grow-0 justify-content-center shadow-sm" do %>
+          <i class="fa-solid fa-circle-plus"></i>
+          <span>Create Task</span>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
 
-    <div class="accordion" id="volunteerTasksAccordion">
-      <!-- Open Tasks -->
-      <div class="accordion-item">
-        <h2 class="accordion-header" id="openTasks">
-          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
-            Open Volunteer Tasks
-          </button>
-        </h2>
-
-        <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="openTasks" data-bs-parent="#volunteerTasksAccordion">
-          <div class="accordion-body">
-            <%= render partial: 'volunteer_tasks/volunteer_task_table',
-                       locals: { volunteer_tasks: @open_volunteer_tasks, title: 'Open Volunteer Tasks', type: 'open' } %>
+  <!-- Metric Overview Cards -->
+  <div class="row g-3 mb-4">
+    <!-- Available Tasks -->
+    <div class="col-12 col-sm-4">
+      <div class="card border rounded-3 shadow-sm bg-body h-100">
+        <div class="card-body p-3 p-md-4 d-flex align-items-center justify-content-between gap-2">
+          <div>
+            <h6 class="text-body-secondary text-uppercase fw-semibold small mb-1">Available Tasks</h6>
+            <h2 class="fw-bold text-body-emphasis mb-0"><%= @available_volunteer_tasks.count %></h2>
+          </div>
+          <div class="rounded-circle bg-success-subtle text-success d-flex align-items-center justify-content-center p-3 fs-4 flex-shrink-0">
+            <i class="fa-solid fa-door-open"></i>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Completed Tasks -->
-      <div class="accordion-item">
-        <h2 class="accordion-header" id="completedTasks">
-          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-            Completed Volunteer Tasks
-          </button>
-        </h2>
+    <!-- Assigned Tasks -->
+    <div class="col-12 col-sm-4">
+      <div class="card border rounded-3 shadow-sm bg-body h-100">
+        <div class="card-body p-3 p-md-4 d-flex align-items-center justify-content-between gap-2">
+          <div>
+            <h6 class="text-body-secondary text-uppercase fw-semibold small mb-1">In Progress</h6>
+            <h2 class="fw-bold text-body-emphasis mb-0"><%= @assigned_volunteer_tasks.count %></h2>
+          </div>
+          <div class="rounded-circle bg-warning-subtle text-warning d-flex align-items-center justify-content-center p-3 fs-4 flex-shrink-0">
+            <i class="fa-solid fa-hourglass-half"></i>
+          </div>
+        </div>
+      </div>
+    </div>
 
-        <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="completedTasks" data-bs-parent="#volunteerTasksAccordion">
-          <div class="accordion-body">
-            <%= render partial: 'volunteer_tasks/volunteer_task_table',
-                       locals: { volunteer_tasks: @completed_volunteer_tasks, title: 'Completed Volunteer Tasks', type: 'completed' } %>
+    <!-- Completed Tasks -->
+    <div class="col-12 col-sm-4">
+      <div class="card border rounded-3 shadow-sm bg-body h-100">
+        <div class="card-body p-3 p-md-4 d-flex align-items-center justify-content-between gap-2">
+          <div>
+            <h6 class="text-body-secondary text-uppercase fw-semibold small mb-1">Completed</h6>
+            <h2 class="fw-bold text-body-emphasis mb-0"><%= @completed_volunteer_tasks.count %></h2>
+          </div>
+          <div class="rounded-circle bg-secondary-subtle text-body-secondary d-flex align-items-center justify-content-center p-3 fs-4 flex-shrink-0">
+            <i class="fa-solid fa-circle-check"></i>
           </div>
         </div>
       </div>
     </div>
   </div>
-</section>
+
+  <!-- Search & TomSelect Filters Card -->
+  <div class="card border rounded-3 shadow-sm bg-body mb-4">
+    <div class="card-body p-3 p-md-4">
+      <div class="row g-2 g-md-3 align-items-center">
+        <!-- Keyword Search Input -->
+        <div class="col-12 col-md-6 col-lg-4">
+          <div class="input-group">
+            <span class="input-group-text bg-body-secondary text-body-secondary border-secondary-subtle">
+              <i class="fa-solid fa-magnifying-glass"></i>
+            </span>
+            <input type="text"
+                   id="taskSearchInput"
+                   class="form-control"
+                   placeholder="Search tasks, descriptions, space..."
+                   autocomplete="off"
+                   aria-label="Search volunteer tasks">
+          </div>
+        </div>
+
+        <!-- Space Filter -->
+        <div class="col-6 col-md-3 col-lg-2">
+          <select id="spaceFilter" class="form-select tom-select-filter" placeholder="Filter Space">
+            <option value="">All Spaces</option>
+            <% Space.all.order(name: :asc).each do |s| %>
+              <option value="<%= s.name.downcase %>"><%= s.name.capitalize %></option>
+            <% end %>
+          </select>
+        </div>
+
+        <!-- Category Filter -->
+        <div class="col-6 col-md-3 col-lg-2">
+          <select id="categoryFilter" class="form-select tom-select-filter" placeholder="Filter Category">
+            <option value="">All Categories</option>
+            <option value="events">Events</option>
+            <option value="projects">Projects</option>
+            <option value="supervising">Supervising</option>
+            <option value="workshops">Workshops</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <!-- Certifications Filter -->
+        <div class="col-12 col-lg-4">
+          <select id="certFilter" class="form-select tom-select-filter" multiple placeholder="Filter by Certifications...">
+            <% Training.all.order(name: :asc).each do |t| %>
+              <option value="<%= t.localized_name.downcase %>"><%= t.localized_name.capitalize %></option>
+            <% end %>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tasks Workspace Tabs Card -->
+  <div class="card border rounded-3 shadow-sm bg-body">
+    <!-- Header with Segmented Navigation Tabs -->
+    <div class="card-header bg-body-tertiary border-bottom p-3 p-md-4">
+      <ul class="nav nav-pills gap-2" id="taskStatusTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active fw-semibold d-inline-flex align-items-center gap-2"
+                  id="available-tab"
+                  data-bs-toggle="pill"
+                  data-bs-target="#available-pane"
+                  type="button"
+                  role="tab"
+                  aria-controls="available-pane"
+                  aria-selected="true">
+            <i class="fa-solid fa-door-open text-success"></i>
+            <span>Available</span>
+            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill ms-1">
+              <%= @available_volunteer_tasks.count %>
+            </span>
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link fw-semibold d-inline-flex align-items-center gap-2"
+                  id="assigned-tab"
+                  data-bs-toggle="pill"
+                  data-bs-target="#assigned-pane"
+                  type="button"
+                  role="tab"
+                  aria-controls="assigned-pane"
+                  aria-selected="false">
+            <i class="fa-solid fa-hourglass-half text-warning"></i>
+            <span>In Progress</span>
+            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill ms-1">
+              <%= @assigned_volunteer_tasks.count %>
+            </span>
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link fw-semibold d-inline-flex align-items-center gap-2"
+                  id="completed-tab"
+                  data-bs-toggle="pill"
+                  data-bs-target="#completed-pane"
+                  type="button"
+                  role="tab"
+                  aria-controls="completed-pane"
+                  aria-selected="false">
+            <i class="fa-solid fa-circle-check text-secondary"></i>
+            <span>Completed</span>
+            <span class="badge bg-secondary-subtle text-body-secondary border border-secondary-subtle rounded-pill ms-1">
+              <%= @completed_volunteer_tasks.count %>
+            </span>
+          </button>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Tab Panes -->
+    <div class="card-body p-3 p-md-4">
+      <div class="tab-content" id="taskStatusTabsContent">
+        <div class="tab-pane fade show active" id="available-pane" role="tabpanel" aria-labelledby="available-tab" tabindex="0">
+          <%= render partial: 'volunteer_tasks/task_card_grid', locals: { volunteer_tasks: @available_volunteer_tasks, pagy: @pagy_available, empty_message: "No available tasks right now. Check back soon!" } %>
+        </div>
+
+        <div class="tab-pane fade" id="assigned-pane" role="tabpanel" aria-labelledby="assigned-tab" tabindex="0">
+          <%= render partial: 'volunteer_tasks/task_card_grid', locals: { volunteer_tasks: @assigned_volunteer_tasks, pagy: @pagy_assigned, empty_message: "No tasks currently in progress." } %>
+        </div>
+
+        <div class="tab-pane fade" id="completed-pane" role="tabpanel" aria-labelledby="completed-tab" tabindex="0">
+          <%= render partial: 'volunteer_tasks/task_card_grid', locals: { volunteer_tasks: @completed_volunteer_tasks, pagy: @pagy_completed, empty_message: "No completed tasks yet." } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

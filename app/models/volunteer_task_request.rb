@@ -10,40 +10,33 @@ class VolunteerTaskRequest < ApplicationRecord
   scope :processed, -> { where(approval: [false, true]) }
 
   def status
-    status =
-      if approval == true
-        "Approved"
-      elsif approval == false
-        "Not Approved"
-      else
-        "Not accessed"
-      end
-    status
+    if approval == true
+      "Approved"
+    elsif approval == false
+      "Not Approved"
+    else
+      "Not accessed"
+    end
   end
 
   def volunteer_task_join
-    user_id = self.user_id
     volunteer_task
-      .volunteer_task_joins
-      .where(user_id: user_id, active: true)
-      .last
+      &.volunteer_task_joins
+      &.where(user_id: user_id, active: true)
+      &.last
   end
 
   def self.filter_by_attribute(value)
-    if value
-      if value == "search_pending=" || value == "search_processed="
-        all
-      else
-        value = value.split("=").last.gsub("+", " ").gsub("%20", " ")
-        where(
-          "LOWER(users.name) like LOWER(?) OR
-                 LOWER(volunteer_tasks.title) like LOWER(?)",
-          "%#{value}%",
-          "%#{value}%"
-        )
-      end
-    else
-      all
-    end
+    return all if value.blank?
+
+    # Strip out any search param prefixes if passed as raw query string
+    cleaned = value.to_s.sub(/^search_(pending|processed)=/, "").gsub("+", " ").strip
+    return all if cleaned.blank?
+
+    term = "%#{cleaned.downcase}%"
+    left_outer_joins(:user, volunteer_task: :space).where(
+      "LOWER(users.name) LIKE :term OR LOWER(users.username) LIKE :term OR LOWER(volunteer_tasks.title) LIKE :term OR LOWER(spaces.name) LIKE :term",
+      term: term
+    )
   end
 end

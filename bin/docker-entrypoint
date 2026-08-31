@@ -1,0 +1,15 @@
+#!/bin/bash
+set -e
+
+# Generate fallback SAML certs if not present
+if [ ! -f certs/saml.key ] || [ ! -f certs/saml.crt ]; then
+  mkdir -p certs
+  openssl req -x509 -newkey rsa:4096 -keyout certs/saml.key -out certs/saml.crt -days 365 -nodes -subj "/CN=makerrepo" 2>/dev/null || true
+fi
+
+# Run migrations for all 3 databases (primary, queue, cable) on web boot
+if [ "${1}" = "./bin/rails" ] && [ "${2}" = "server" ]; then
+  ./bin/rails db:prepare
+fi
+
+exec "${@}"

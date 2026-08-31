@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe Admin::PiReadersController, type: :controller do
-  before :all do
+  before :each do
     @admin = create(:user, :admin)
     @pi_reader = create(:pi_reader)
   end

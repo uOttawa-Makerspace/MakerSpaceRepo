@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe ExamResponsesController, type: :controller do
-  before(:all) do
+  before(:each) do
     @admin = create(:user, :admin)
     @user = create(:user, :regular_user)
     @exam = create(:exam_with_exam_questions, user: @user)
@@ -61,5 +61,4 @@ RSpec.describe ExamResponsesController, type: :controller do
     end
   end
 
-  after(:all) { Question.destroy_all }
 end

@@ -26,7 +26,7 @@
 
           <tbody>
           <% i = 0 %>
-          <%= will_paginate @users_with_volunteer_hours, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
+          <%== @pagy.series_nav(:bootstrap) if @pagy && @pagy.pages > 1 %>
           <% @users_with_volunteer_hours.each do |user| %>
             <tr data-bs-toggle="collapse" id="row<%= i %>" data-bs-target=".row<%= i %>">
               <td class = "username">

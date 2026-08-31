@@ -5,17 +5,21 @@
     <!-- PENDING BOOKINGS -->
     <div class="card shadow-sm mb-4 border-0 bg-body" id="pending-accordion">
       <div class="card-header text-bg-warning d-flex justify-content-between align-items-center" role="button" data-bs-toggle="collapse" data-bs-target="#pendingBody">
-        <h5 class="mb-0 fw-bold text-dark"><%= fa_icon 'clock-o' %> Pending Bookings</h5>
-        <span class="text-dark"><%= fa_icon 'chevron-down' %></span>
+        <h5 class="mb-0 fw-bold text-dark"><i class="fa-regular fa-clock"></i> Pending Bookings</h5>
+        <span class="text-dark"><i class="fa-solid fa-chevron-down"></i></span>
       </div>
       
       <div id="pendingBody" class="collapse show">
         <div class="card-body p-0">
           <div class="table-responsive">
             <div class="p-3 bg-body-tertiary border-bottom border-secondary-subtle d-flex justify-content-between align-items-center">
-              <span class="text-body-secondary small"><%= page_entries_info @pending_bookings, model: 'subspace_booking' %></span>
-              <div class="apple_pagination m-0">
-                <%= will_paginate @pending_bookings, container: false, param_name: 'pending_page' %>
+              <% if @pagy_pending && @pagy_pending.count > 0 %>
+                <span class="text-body-secondary small">Displaying <b><%= @pagy_pending.from %></b> - <b><%= @pagy_pending.to %></b> of <b><%= @pagy_pending.count %></b> bookings</span>
+              <% else %>
+                <span class="text-body-secondary small">0 bookings found</span>
+              <% end %>
+              <div class="m-0">
+                <%== @pagy_pending.series_nav if @pagy_pending && @pagy_pending.pages > 1 %>
               </div>
             </div>
 
@@ -79,14 +83,14 @@
                     <td class="text-end pe-3">
                       <% if bookings.length > 1 %>
                         <div class="btn-group btn-group-sm">
-                          <%= button_to bulk_approve_decline_sub_space_booking_index_path, method: :put, params: { bulk_status: 'approve', sub_space_booking_ids: bookings.map(&:id) }, class: 'btn btn-outline-success', title: 'Approve All' do %><%= fa_icon 'check-double' %><% end %>
-                          <%= button_tag type: 'button', class: 'btn btn-outline-primary', title: 'Select Specific', data: { bs_toggle: 'modal', bs_target: '#approveRecurringModal', dates: bookings.map { |b| [b.id, "#{b.start_time.strftime("%b %e")} (#{b.start_time.strftime("%l:%M%P")}-#{b.end_time.strftime("%l:%M%P")})"] } } do %><%= fa_icon 'list' %><% end %>
-                          <%= button_to bulk_approve_decline_sub_space_booking_index_path, method: :put, params: { bulk_status: 'decline', sub_space_booking_ids: bookings.map(&:id) }, class: 'btn btn-outline-danger', title: 'Reject All' do %><%= fa_icon 'times' %><% end %>
+                          <%= button_to bulk_approve_decline_sub_space_booking_index_path, method: :put, params: { bulk_status: 'approve', sub_space_booking_ids: bookings.map(&:id) }, class: 'btn btn-outline-success', title: 'Approve All' do %><i class="fa-solid fa-check-double"></i><% end %>
+                          <%= button_tag type: 'button', class: 'btn btn-outline-primary', title: 'Select Specific', data: { bs_toggle: 'modal', bs_target: '#approveRecurringModal', dates: bookings.map { |b| [b.id, "#{b.start_time.strftime("%b %e")} (#{b.start_time.strftime("%l:%M%P")}-#{b.end_time.strftime("%l:%M%P")})"] } } do %><i class="fa-solid fa-list"></i><% end %>
+                          <%= button_to bulk_approve_decline_sub_space_booking_index_path, method: :put, params: { bulk_status: 'decline', sub_space_booking_ids: bookings.map(&:id) }, class: 'btn btn-outline-danger', title: 'Reject All' do %><i class="fa-solid fa-xmark"></i><% end %>
                         </div>
                       <% else %>
                         <div class="d-flex gap-2 justify-content-end">
-                          <%= button_to sub_space_booking_approve_path(sub_space_booking_id: booking.id), method: :put, class: 'btn btn-sm btn-success' do %><%= fa_icon 'check' %> Approve<% end %>
-                          <%= button_to sub_space_booking_decline_path(sub_space_booking_id: booking.id), method: :put, class: 'btn btn-sm btn-danger' do %><%= fa_icon 'times' %> Reject<% end %>
+                          <%= button_to sub_space_booking_approve_path(sub_space_booking_id: booking.id), method: :put, class: 'btn btn-sm btn-success' do %><i class="fa-solid fa-check"></i> Approve<% end %>
+                          <%= button_to sub_space_booking_decline_path(sub_space_booking_id: booking.id), method: :put, class: 'btn btn-sm btn-danger' do %><i class="fa-solid fa-xmark"></i> Reject<% end %>
                         </div>
                       <% end %>
                     </td>
@@ -96,8 +100,8 @@
             </table>
             
             <div class="p-3 bg-body-tertiary border-top border-secondary-subtle d-flex gap-2">
-              <button type="submit" form="bulkApproveDeclineForm" name="bulk_status" value="approve" class="btn btn-success"><%= fa_icon 'check' %> Bulk Approve Selected</button>
-              <button type="submit" form="bulkApproveDeclineForm" name="bulk_status" value="decline" class="btn btn-danger"><%= fa_icon 'times' %> Bulk Reject Selected</button>
+              <button type="submit" form="bulkApproveDeclineForm" name="bulk_status" value="approve" class="btn btn-success"><i class="fa-solid fa-check"></i> Bulk Approve Selected</button>
+              <button type="submit" form="bulkApproveDeclineForm" name="bulk_status" value="decline" class="btn btn-danger"><i class="fa-solid fa-xmark"></i> Bulk Reject Selected</button>
             </div>
           </div>
         </div>
@@ -107,16 +111,20 @@
     <!-- ACCEPTED BOOKINGS -->
     <div class="card shadow-sm mb-4 border-0 bg-body" id="approved-accordion">
       <div class="card-header text-bg-success d-flex justify-content-between align-items-center" role="button" data-bs-toggle="collapse" data-bs-target="#approvedBody">
-        <h5 class="mb-0 fw-bold"><%= fa_icon 'calendar-check-o' %> Accepted Bookings</h5>
-        <%= fa_icon 'chevron-down' %>
+        <h5 class="mb-0 fw-bold"><i class="fa-regular fa-calendar-check"></i> Accepted Bookings</h5>
+        <i class="fa-solid fa-chevron-down"></i>
       </div>
       <div id="approvedBody" class="collapse show">
         <div class="card-body p-0">
           <div class="table-responsive">
             <div class="p-3 bg-body-tertiary border-bottom border-secondary-subtle d-flex justify-content-between align-items-center">
-              <span class="text-body-secondary small"><%= page_entries_info @approved_bookings, model: 'subspace_booking' %></span>
-              <div class="apple_pagination m-0">
-                <%= will_paginate @approved_bookings, container: false, param_name: 'approved_page' %>
+              <% if @pagy_approved && @pagy_approved.count > 0 %>
+                <span class="text-body-secondary small">Displaying <b><%= @pagy_approved.from %></b> - <b><%= @pagy_approved.to %></b> of <b><%= @pagy_approved.count %></b> bookings</span>
+              <% else %>
+                <span class="text-body-secondary small">0 bookings found</span>
+              <% end %>
+              <div class="m-0">
+                <%== @pagy_approved.series_nav if @pagy_approved && @pagy_approved.pages > 1 %>
               </div>
             </div>
             
@@ -151,7 +159,7 @@
                         <%= button_to sub_space_booking_publish_path(sub_space_booking_id: booking.id), method: :put, class: "btn #{booking.public ? 'btn-outline-secondary' : 'btn-outline-primary'}" do %>
                           <%= booking.public ? 'Make Private' : 'Make Public' %>
                         <% end %>
-                        <%= button_to sub_space_booking_decline_path(sub_space_booking_id: booking.id), method: :put, class: 'btn btn-outline-danger' do %><%= fa_icon 'times' %><% end %>
+                        <%= button_to sub_space_booking_decline_path(sub_space_booking_id: booking.id), method: :put, class: 'btn btn-outline-danger' do %><i class="fa-solid fa-xmark"></i><% end %>
                       </div>
                     </td>
                   </tr>
@@ -166,16 +174,20 @@
     <!-- DECLINED BOOKINGS -->
     <div class="card shadow-sm mb-4 border-0 bg-body" id="declined-accordion">
       <div class="card-header text-bg-danger d-flex justify-content-between align-items-center" role="button" data-bs-toggle="collapse" data-bs-target="#declinedBody">
-        <h5 class="mb-0 fw-bold"><%= fa_icon 'ban' %> Declined Bookings</h5>
-        <%= fa_icon 'chevron-down' %>
+        <h5 class="mb-0 fw-bold"><i class="fa-solid fa-ban"></i> Declined Bookings</h5>
+        <i class="fa-solid fa-chevron-down"></i>
       </div>
       <div id="declinedBody" class="collapse show">
         <div class="card-body p-0">
           <div class="table-responsive">
             <div class="p-3 bg-body-tertiary border-bottom border-secondary-subtle d-flex justify-content-between align-items-center">
-              <span class="text-body-secondary small"><%= page_entries_info @declined_bookings, model: 'subspace_booking' %></span>
-              <div class="apple_pagination m-0">
-                <%= will_paginate @declined_bookings, container: false, param_name: 'denied_page' %>
+              <% if @pagy_declined && @pagy_declined.count > 0 %>
+                <span class="text-body-secondary small">Displaying <b><%= @pagy_declined.from %></b> - <b><%= @pagy_declined.to %></b> of <b><%= @pagy_declined.count %></b> bookings</span>
+              <% else %>
+                <span class="text-body-secondary small">0 bookings found</span>
+              <% end %>
+              <div class="m-0">
+                <%== @pagy_declined.series_nav if @pagy_declined && @pagy_declined.pages > 1 %>
               </div>
             </div>
             
@@ -205,7 +217,7 @@
                       <small class="text-body-secondary"><%= booking.start_time.strftime("%l:%M %p") %> - <%= booking.end_time.strftime("%l:%M %p") %></small>
                     </td>
                     <td class="text-end pe-3">
-                      <%= button_to sub_space_booking_approve_path(sub_space_booking_id: booking.id), method: :put, class: 'btn btn-sm btn-success' do %><%= fa_icon 'check' %> Approve<% end %>
+                      <%= button_to sub_space_booking_approve_path(sub_space_booking_id: booking.id), method: :put, class: 'btn btn-sm btn-success' do %><i class="fa-solid fa-check"></i> Approve<% end %>
                     </td>
                   </tr>
                 <% end %>
@@ -219,8 +231,8 @@
     <!-- USER PERMISSIONS -->
     <div class="card shadow-sm mb-4 border-0 bg-body" id="user-card">
       <div class="card-header text-bg-primary d-flex justify-content-between align-items-center" role="button" data-bs-toggle="collapse" data-bs-target="#userPermsBody">
-        <h5 class="mb-0 fw-bold"><%= fa_icon 'users' %> Manage User Permissions</h5>
-        <%= fa_icon 'chevron-down' %>
+        <h5 class="mb-0 fw-bold"><i class="fa-solid fa-users"></i> Manage User Permissions</h5>
+        <i class="fa-solid fa-chevron-down"></i>
       </div>
       <div id="userPermsBody" class="collapse show">
         <div class="card-body p-4 bg-body">
@@ -256,8 +268,8 @@
                       <td class="text-body-secondary"><%= req.created_at.strftime("%b %e, %Y") %></td>
                       <td class="text-end pe-3">
                         <div class="btn-group btn-group-sm">
-                          <%= button_to approve_access_sub_space_booking_index_path(id: req.id), method: :put, class: 'btn btn-outline-success' do %><%= fa_icon 'check' %><% end %>
-                          <%= button_to deny_access_sub_space_booking_index_path(id: req.id), method: :put, class: 'btn btn-outline-danger' do %><%= fa_icon 'times' %><% end %>
+                          <%= button_to approve_access_sub_space_booking_index_path(id: req.id), method: :put, class: 'btn btn-outline-success' do %><i class="fa-solid fa-check"></i><% end %>
+                          <%= button_to deny_access_sub_space_booking_index_path(id: req.id), method: :put, class: 'btn btn-outline-danger' do %><i class="fa-solid fa-xmark"></i><% end %>
                         </div>
                       </td>
                     </tr>
@@ -303,16 +315,20 @@
     <!-- EXPIRED PENDING -->
     <div class="card shadow-sm border-0 bg-body mb-4" id="past-pending-accordion">
       <div class="card-header text-bg-secondary d-flex justify-content-between align-items-center" role="button" data-bs-toggle="collapse" data-bs-target="#pastPendingBody">
-        <h5 class="mb-0 fw-bold"><%= fa_icon 'history' %> Expired Pending Bookings</h5>
-        <%= fa_icon 'chevron-down' %>
+        <h5 class="mb-0 fw-bold"><i class="fa-solid fa-clock-rotate-left"></i> Expired Pending Bookings</h5>
+        <i class="fa-solid fa-chevron-down"></i>
       </div>
       <div id="pastPendingBody" class="collapse show">
         <div class="card-body p-0">
           <div class="table-responsive">
             <div class="p-3 bg-body-tertiary border-bottom border-secondary-subtle d-flex justify-content-between align-items-center">
-              <span class="text-body-secondary small"><%= page_entries_info @old_pending_bookings, model: 'subspace_booking' %></span>
-              <div class="apple_pagination m-0">
-                <%= will_paginate @old_pending_bookings, container: false, param_name: 'old_pending_page' %>
+              <% if @pagy_old_pending && @pagy_old_pending.count > 0 %>
+                <span class="text-body-secondary small">Displaying <b><%= @pagy_old_pending.from %></b> - <b><%= @pagy_old_pending.to %></b> of <b><%= @pagy_old_pending.count %></b> bookings</span>
+              <% else %>
+                <span class="text-body-secondary small">0 bookings found</span>
+              <% end %>
+              <div class="m-0">
+                <%== @pagy_old_pending.series_nav if @pagy_old_pending && @pagy_old_pending.pages > 1 %>
               </div>
             </div>
             <table class="table table-hover align-middle mb-0">
@@ -351,16 +367,20 @@
     <!-- EXPIRED APPROVED -->
     <div class="card shadow-sm border-0 bg-body mb-4" id="past-approved-accordion">
       <div class="card-header text-bg-secondary d-flex justify-content-between align-items-center" role="button" data-bs-toggle="collapse" data-bs-target="#pastApprovedBody">
-        <h5 class="mb-0 fw-bold"><%= fa_icon 'history' %> Expired Accepted Bookings</h5>
-        <%= fa_icon 'chevron-down' %>
+        <h5 class="mb-0 fw-bold"><i class="fa-solid fa-clock-rotate-left"></i> Expired Accepted Bookings</h5>
+        <i class="fa-solid fa-chevron-down"></i>
       </div>
       <div id="pastApprovedBody" class="collapse show">
         <div class="card-body p-0">
           <div class="table-responsive">
             <div class="p-3 bg-body-tertiary border-bottom border-secondary-subtle d-flex justify-content-between align-items-center">
-              <span class="text-body-secondary small"><%= page_entries_info @old_approved_bookings, model: 'subspace_booking' %></span>
-              <div class="apple_pagination m-0">
-                <%= will_paginate @old_approved_bookings, container: false, param_name: 'old_approved_page' %>
+              <% if @pagy_old_approved && @pagy_old_approved.count > 0 %>
+                <span class="text-body-secondary small">Displaying <b><%= @pagy_old_approved.from %></b> - <b><%= @pagy_old_approved.to %></b> of <b><%= @pagy_old_approved.count %></b> bookings</span>
+              <% else %>
+                <span class="text-body-secondary small">0 bookings found</span>
+              <% end %>
+              <div class="m-0">
+                <%== @pagy_old_approved.series_nav if @pagy_old_approved && @pagy_old_approved.pages > 1 %>
               </div>
             </div>
             <table class="table table-hover align-middle mb-0">
@@ -399,16 +419,20 @@
     <!-- EXPIRED DECLINED -->
     <div class="card shadow-sm border-0 bg-body" id="past-declined-accordion">
       <div class="card-header text-bg-secondary d-flex justify-content-between align-items-center" role="button" data-bs-toggle="collapse" data-bs-target="#pastDeclinedBody">
-        <h5 class="mb-0 fw-bold"><%= fa_icon 'history' %> Expired Declined Bookings</h5>
-        <%= fa_icon 'chevron-down' %>
+        <h5 class="mb-0 fw-bold"><i class="fa-solid fa-clock-rotate-left"></i> Expired Declined Bookings</h5>
+        <i class="fa-solid fa-chevron-down"></i>
       </div>
       <div id="pastDeclinedBody" class="collapse show">
         <div class="card-body p-0">
           <div class="table-responsive">
             <div class="p-3 bg-body-tertiary border-bottom border-secondary-subtle d-flex justify-content-between align-items-center">
-              <span class="text-body-secondary small"><%= page_entries_info @old_declined_bookings, model: 'subspace_booking' %></span>
-              <div class="apple_pagination m-0">
-                <%= will_paginate @old_declined_bookings, container: false, param_name: 'old_denied_page' %>
+              <% if @pagy_old_declined && @pagy_old_declined.count > 0 %>
+                <span class="text-body-secondary small">Displaying <b><%= @pagy_old_declined.from %></b> - <b><%= @pagy_old_declined.to %></b> of <b><%= @pagy_old_declined.count %></b> bookings</span>
+              <% else %>
+                <span class="text-body-secondary small">0 bookings found</span>
+              <% end %>
+              <div class="m-0">
+                <%== @pagy_old_declined.series_nav if @pagy_old_declined && @pagy_old_declined.pages > 1 %>
               </div>
             </div>
             <table class="table table-hover align-middle mb-0">

@@ -1,6 +1,6 @@
 <section>
   <h1 class="text-center py-4 fw-bold">
-    Kits Purchased <%= link_to fa_icon('download'),
+    Kits Purchased <%= link_to '<i class="fa-solid fa-download"></i>'.html_safe,
                                admin_report_generator_generate_spreadsheet_path(start_date: params[:start_date], end_date: params[:end_date], type: 'kit_purchased'),
                                class: 'border-0 bg-transparent text-primary d-print-none' %>
   </h1>

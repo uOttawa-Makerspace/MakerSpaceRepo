@@ -1,7 +1,9 @@
+# frozen_string_literal: true
+
 FactoryBot.define do
   factory :space do
-    name { Faker::Name.unique.name }
-    keycode { Faker::Alphanumeric.alphanumeric(number: 10) }
+    sequence(:name) { |n| "Space#{n}#{SecureRandom.hex(3)}" }
+    sequence(:keycode) { |n| "KEY#{n}#{SecureRandom.hex(3)}" }
 
     trait :with_space_managers do
       after :create do |space|

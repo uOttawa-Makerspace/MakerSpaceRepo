@@ -3,10 +3,10 @@
 <section>
   <div class="setting-title">Manage Users</div>
   <br>
-  <div >
-    <%= form_tag search_admin_users_path, method: :get, class: 'input-group' do %>
-      <%= select_tag 'filter', options_for_select(%w[Name Email Username]), prompt: 'Search by...', class: 'form-select form-control ' %>
-      <%= text_field_tag 'q', nil, placeholder: 'Search users...', class: 'form-control' %>
+  <div>
+    <%= form_with url: search_admin_users_path, method: :get, class: 'input-group' do |f| %>
+      <%= select_tag 'filter', options_for_select(%w[Name Email Username]), prompt: 'Search by...', class: 'form-select form-control' %>
+      <%= text_field_tag 'q', params[:q], placeholder: 'Search users...', class: 'form-control' %>
       <div class="input-group-append">
         <%= submit_tag 'Search', class: 'btn btn-primary form-control' %>
       </div>
@@ -28,15 +28,13 @@
             <td>
           <% end %>
           <%= link_to 'All locations', sort: params[:sort], direction: params[:direction], p: params[:p] %></td>
-          <% PiReader.all.uniq.pluck(:pi_location).sort_by! { |m| m }.each do |pi_location| %>
-            <% if !pi_location.nil? %>
-              <% if params[:location] == pi_location %>
-                <td class="current">
-              <% else %>
-                <td>
-              <% end %>
-              <%= link_to pi_location, sort: params[:sort], direction: params[:direction], p: params[:p], location: pi_location %></td>
+          <% PiReader.distinct.pluck(:pi_location).compact.sort.each do |pi_location| %>
+            <% if params[:location] == pi_location %>
+              <td class="current">
+            <% else %>
+              <td>
             <% end %>
+            <%= link_to pi_location, sort: params[:sort], direction: params[:direction], p: params[:p], location: pi_location %></td>
           <% end %>
         </table>
       </div>
@@ -46,7 +44,7 @@
         <td class="end"><%= link_to 'Show users currently signed in', p: 'signed_in_users' %></td>
       </table>
     <% end %>
-    <%= form_tag admin_users_path, method: :post do %>
+    <%= form_with url: admin_users_path, method: :post do %>
       <% if !@users.any? %>
         <p style="color:gray;text-align:center;padding-top:15px;">There are no users to show.</p>
       <% else %>
@@ -57,25 +55,25 @@
           <th>
             <%= link_to 'Username', sort: 'username', direction: direction, p: params[:p], location: params[:location] %>
             <% if params[:sort] == "username" %>
-              <%= fa_icon "sort-#{direction}" %>
+              <i class="fa-solid fa-sort-<%= direction %>"></i>
             <% end %>
           </th>
           <th>
             <%= link_to 'Name', sort: 'name', direction: direction, p: params[:p], location: params[:location] %>
             <% if params[:sort] == "name" %>
-              <%= fa_icon "sort-#{direction}" %>
+              <i class="fa-solid fa-sort-<%= direction %>"></i>
             <% end %>
           </th>
           <th>
             <%= link_to 'Signed in', sort: 'lab_sessions.sign_in_time', direction: direction, p: params[:p], location: params[:location] %>
             <% if params[:sort] == "lab_sessions.sign_in_time" %>
-              <%= fa_icon "sort-#{direction}" %>
+              <i class="fa-solid fa-sort-<%= direction %>"></i>
             <% end %>
           </th>
           <th>
             <%= link_to 'Joined', sort: 'users.created_at', direction: direction, p: params[:p], location: params[:location] %>
             <% if params[:sort] == "users.created_at" %>
-              <%= fa_icon "sort-#{direction}" %>
+              <i class="fa-solid fa-sort-<%= direction %>"></i>
             <% end %>
           </th>
           <th>View</th>
@@ -94,37 +92,28 @@
                 <% end %>
               </td>
               <td><%= time_ago_in_words(user.created_at) %> ago</td>
-              <td class="link-table"><%= link_to fa_icon('search'), admin_user_path(user) %></td>
+              <td class="link-table"><%= link_to '<i class="fa-solid fa-magnifying-glass"></i>'.html_safe, admin_user_path(user) %></td>
             </tr>
           <% end %>
         </table>
       <% end %>
 
       <!-- pagination code starts -->
-      <% if params[:page].nil? %>
-        <% page_number = 1 %>
-      <% else %>
-        <% page_number = Integer(params[:page]) %>
-      <% end %>
+      <% page_number = params[:page].present? ? Integer(params[:page]) : 1 %>
       <table class="pagination">
         <tr>
           <td>
-            <% if page_number>1 %>
+            <% if page_number > 1 %>
               <%= link_to '< Previous page', page: page_number - 1, p: params[:p], sort: params[:sort], direction: params[:direction] %>
             <% end %>
           </td>
           <td>
-            <% if page_number<@total_pages %>
+            <% if page_number < @total_pages.to_i %>
               <%= link_to 'Next page >', page: page_number + 1, p: params[:p], sort: params[:sort], direction: params[:direction] %>
             <% end %>
           </td>
         </tr>
       </table>
-      <!-- pagination code ends -->
-
-      <br><br>
-      <!--      <center><%#= select_tag 'bulk_certifications', options_from_collection_for_select(EquipmentOption.show_options, :name, :name), prompt:'Add a certification to selected users...' %>-->
-      <!--      <%#= submit_tag "Add", class: 'save-button' %></center>-->
     <% end %>
   </div>
 </section>

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "rails_helper"
 include BCrypt
 
@@ -45,7 +47,7 @@ RSpec.describe Repository, type: :model do
       end
       it do
         should validate_uniqueness_of(:title).scoped_to(
-                 :user_id # :owner
+                 :user_id
                ).with_message("Project title is already in use.")
       end
     end
@@ -121,7 +123,7 @@ RSpec.describe Repository, type: :model do
         ).to eq(1)
       end
 
-      it "should return one" do
+      it "should return zero" do
         create(:repository, created_at: "2020-07-07 19:15:39.406247")
         start_date = DateTime.new(2019, 2, 3, 4, 5, 6)
         end_date = DateTime.new(2020, 2, 3, 4, 5, 6)
@@ -146,17 +148,16 @@ RSpec.describe Repository, type: :model do
     end
 
     context "#authenticate" do
-      before(:all) { create(:repository, :private) }
+      let!(:private_repo) { create(:repository, :private) }
 
       it "should return nothing" do
         expect(
-          Repository.authenticate(Repository.last.id, "somethingelse")
+          Repository.authenticate(private_repo.id, "somethingelse")
         ).to be_falsey
       end
 
       it "should return the user" do
-        create(:repository, :private)
-        expect(Repository.authenticate(Repository.last.id, "abc")).to be_truthy
+        expect(Repository.authenticate(private_repo.id, "abc")).to be_truthy
       end
     end
 

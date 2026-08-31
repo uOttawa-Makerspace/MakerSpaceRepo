@@ -4,7 +4,7 @@ RSpec.describe PopularHour, type: :model do
   it { should belong_to(:space).without_validating_presence }
 
   describe "Scopes and Methods" do
-    before(:all) do
+    before(:each) do
       # Note: Since we disabled the callback in config/environments/test.rb,
       # these spaces are created WITHOUT the default 168 popular hours.
       @space1 = create(:space)

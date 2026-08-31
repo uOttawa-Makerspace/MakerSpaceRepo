@@ -1,0 +1,30 @@
+@import "./shared/variables";
+
+section#faq {
+  #faqJumbotron {
+    background-image:
+      linear-gradient(rgba(black, 0.4), rgba(black, 0.4)),
+      url("../images/faq/jumbotron.jpg");
+    padding-top: 8%;
+  }
+
+  // This used to be a fake accordion
+  .faqBody {
+    font-size: 1.1rem;
+  }
+
+  .sortEnable {
+    .accordion-button {
+      &::before {
+        // Fontawesome really sucks dude
+        color: $primary;
+        font-family: FontAwesome;
+        content: "\f047 ";
+      }
+      cursor: grab;
+      &:active {
+        cursor: grabbing;
+      }
+    }
+  }
+}

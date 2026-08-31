@@ -100,11 +100,22 @@ class RfidController < SessionsController
 
   private
 
-  # FIXME: These should be moved to LabSession model
+  # Helper method to build the response payload with additional user status info
+  def user_response_payload(user, success_message)
+    # Check if user has "Shop Fundamentals" training certification
+    has_fundamentals = user.certifications.any? do |cert|
+      name = cert.training_session&.training&.name_en || ""
+      name.downcase.include?("shop fundamentals")
+    end
 
-  # Check if a user has an active session for the space they tapped in, sign out
-  # of all active sessions and create a new session in space unless user just
-  # signed out of it.
+    {
+      success: success_message,
+      has_membership: user.has_active_membership?,
+      has_shop_fundamentals: has_fundamentals,
+      signed_consent_form: user.walk_in_safety_sheets.any?
+    }
+  end
+
   def check_session(rfid, space_id)
     active_sessions = rfid.user.lab_sessions.active
     space = Space.find_by(id: space_id)
@@ -123,7 +134,7 @@ class RfidController < SessionsController
       else
         TapBoxLog.log_sign_out(user: rfid.user, card_number: rfid.card_number, space: space, mac_address: params[:mac_address])
         StaffDashboardChannel.send_tap_out rfid.user, space_id
-        render json: { success: "RFID sign out" }, status: :ok
+        render json: user_response_payload(rfid.user, "RFID sign out"), status: :ok
       end
     else
       new_session(rfid, space_id)
@@ -144,7 +155,7 @@ class RfidController < SessionsController
     )
 
     TapBoxLog.log_sign_in(user: rfid.user, card_number: rfid.card_number, space: space, mac_address: params[:mac_address])
-    render json: { success: "RFID sign in" }, status: :ok
+    render json: user_response_payload(rfid.user, "RFID sign in"), status: :ok
   end
 
   def grant_access

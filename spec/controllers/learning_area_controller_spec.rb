@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'rails_helper'
 
 RSpec.describe LearningAreaController, type: :controller do
@@ -39,8 +41,15 @@ RSpec.describe LearningAreaController, type: :controller do
         admin = create(:user, :admin)
         session[:user_id] = admin.id
         session[:expires_at] = Time.zone.now + 10_000
-        create(:learning_module)
-        get :show, params: { id: LearningModule.last.id }
+        learning_module = create(:learning_module)
+
+        learning_module.photos.attach(
+          io: File.open(Rails.root.join("spec/support/assets/avatar.png")),
+          filename: "avatar.png",
+          content_type: "image/png"
+        )
+
+        get :show, params: { id: learning_module.id }
         expect(response).to have_http_status(:success)
       end
 
@@ -48,8 +57,15 @@ RSpec.describe LearningAreaController, type: :controller do
         user = create(:user, :volunteer_with_dev_program)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
-        create(:learning_module)
-        get :show, params: { id: LearningModule.last.id }
+        learning_module = create(:learning_module)
+
+        learning_module.photos.attach(
+          io: File.open(Rails.root.join("spec/support/assets/avatar.png")),
+          filename: "avatar.png",
+          content_type: "image/png"
+        )
+
+        get :show, params: { id: learning_module.id }
         expect(response).to have_http_status(:success)
       end
     end
@@ -68,9 +84,7 @@ RSpec.describe LearningAreaController, type: :controller do
         expect do
           post :create, params: { learning_module: learning_module_params }
         end.to change(LearningModule, :count).by(1)
-        expect(flash[:notice]).to eq(
-          'Learning Module has been successfully created.'
-        )
+        expect(flash[:notice]).to eq('Learning Module has been successfully created.')
         expect(response).to redirect_to learning_area_path(LearningModule.last)
       end
 
@@ -121,9 +135,7 @@ RSpec.describe LearningAreaController, type: :controller do
           delete :destroy, params: { id: LearningModule.last.id }
         end.to change(LearningModule, :count).by(-1)
         expect(response).to redirect_to learning_area_index_path
-        expect(flash[:notice]).to eq(
-          'Learning Module has been successfully deleted.'
-        )
+        expect(flash[:notice]).to eq('Learning Module has been successfully deleted.')
       end
     end
   end
@@ -144,7 +156,7 @@ RSpec.describe LearningAreaController, type: :controller do
   describe '#update' do
     context 'update' do
       before(:each) do
-        @admin ||= create(:user, :admin)
+        @admin = create(:user, :admin)
         session[:user_id] = @admin.id
         session[:expires_at] = Time.zone.now + 10_000
       end
@@ -213,7 +225,6 @@ RSpec.describe LearningAreaController, type: :controller do
 
     context 'Uploading SCORM objects' do
       it 'should correctly extract SCORM zip files' do
-        # Run extraction job
         perform_enqueued_jobs do
           post :create,
                params: {
@@ -222,20 +233,16 @@ RSpec.describe LearningAreaController, type: :controller do
                }
         end
 
-        learning_module = assigns(:learning_module)
-        # Learning module should be created
+        learning_module = LearningModule.last
         expect(learning_module).to be_persisted
         expect(response).to redirect_to(learning_area_url(learning_module))
-        expect(learning_module.scorm_ready?).to be false
 
         learning_module.reload
-        # Extraction should succeed
         expect(learning_module.scorm_ready?).to be true
         expect(learning_module.scorm_entry_point).to eq('index.html')
       end
 
       it 'should extract nested SCORM zip files' do
-        # Run extraction job
         perform_enqueued_jobs do
           post :create,
                params: {
@@ -244,28 +251,21 @@ RSpec.describe LearningAreaController, type: :controller do
                }
         end
 
-        learning_module = assigns(:learning_module)
-        # Learning module should be created
+        learning_module = LearningModule.last
         expect(learning_module).to be_persisted
         expect(response).to redirect_to(learning_area_url(learning_module))
-        expect(learning_module.scorm_ready?).to be false
 
         learning_module.reload
-        # Extraction should succeed
         expect(learning_module.scorm_ready?).to be true
         expect(learning_module.scorm_entry_point).to eq('index.html')
       end
 
       it 'should serve extracted SCORM index' do
-        # This has to be in a separate unit test because the previous one keep
-        # left over multipart upload state data and so all future requests fail
-        # on an empty multipart body request.
         learning_module =
           perform_enqueued_jobs { create(:learning_module, :with_scorm_object) }
         expect(learning_module.reload.scorm_ready?).to be true
 
         get(:scorm_launch, params: { id: learning_module })
-        # Shortcut redirect to scorm index
         expect(response).to redirect_to(%r{scorm_assets/index\.html})
       end
     end

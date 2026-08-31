@@ -4,7 +4,7 @@ include FilesTestHelper
 RSpec.describe SessionsController, type: :controller do
   describe "POST /login_authentication" do
     context "login_authentication" do
-      before(:all) { @user = create(:user, :regular_user) }
+      before(:each) { @user = create(:user, :regular_user) }
 
       it "should login the user" do
         post :login_authentication,
@@ -42,7 +42,7 @@ RSpec.describe SessionsController, type: :controller do
 
   describe "GET /login" do
     context "login" do
-      before(:all) { @user = create(:user, :regular_user) }
+      before(:each) { @user = create(:user, :regular_user) }
 
       it "should login the user" do
         get :login

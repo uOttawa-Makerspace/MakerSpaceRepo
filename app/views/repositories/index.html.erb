@@ -2,7 +2,7 @@
   <section class="repository-filter">
     <div class="sort">sort by</div>
     <nav>
-      <div id="filter-header" class="filter-header">Newest <%= fa_icon 'caret-down' %> </div>
+      <div id="filter-header" class="filter-header">Newest <i class="fa-solid fa-caret-down"></i> </div>
       <ul id="sort-filter" class="filter">
         <li>Newest</li>
         <li>Featured</li>
@@ -24,7 +24,7 @@
 
       <div class="repo-info">
         <div class="start">
-          <div class="likes"><%= fa_icon 'heart' %><br><%= repository.like %></div>
+          <div class="likes"><i class="fa-solid fa-heart"></i><br><%= repository.like %></div>
           <div class="title"><%= link_to repository.title, repository_path(repository.user_username, repository.title) %></div> 
           <div>by <%= link_to repository.user_username, user_path(repository.user_username) %></div> 
           <div><%= time_ago_in_words(repository.created_at) %> ago</div>

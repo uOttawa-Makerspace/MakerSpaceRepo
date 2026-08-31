@@ -36,7 +36,7 @@ module MakerSpaceRepo
     # Run "rake -D time" for a list of tasks for finding time zone names. Default is UTC.
     config.time_zone = "Eastern Time (US & Canada)"
 
-    config.active_storage.variant_processor = :mini_magick
+    config.active_storage.variant_processor = :vips
     # Proxy active storage downloads through the server (and so through the CDN)
     config.active_storage.resolve_model_to_route = :rails_storage_proxy
 

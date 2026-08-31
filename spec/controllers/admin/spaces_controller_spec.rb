@@ -2,8 +2,8 @@ require "rails_helper"
 
 RSpec.describe Admin::SpacesController, type: :controller do
   # This saves creating ~15 Users and ~15 Spaces.
-  let_it_be(:admin) { create(:user, :admin) }
-  let_it_be(:space) { create(:space) }
+  let!(:admin) { create(:user, :admin) }
+  let!(:space) { create(:space) }
   
   before(:each) do
     session[:expires_at] = DateTime.tomorrow.end_of_day
@@ -90,7 +90,7 @@ RSpec.describe Admin::SpacesController, type: :controller do
   describe "DELETE /destroy" do
     context "destroy space" do
       # OPTIMIZATION: Create a disposable space here because we are actually deleting it.
-      # If we used 'let_it_be(:space)', deleting it might break other tests.
+      # If we used 'let!(:space)', deleting it might break other tests.
       let(:disposable_space) { create(:space) }
 
       it "should delete the space" do

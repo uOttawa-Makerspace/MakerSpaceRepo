@@ -1,9 +1,14 @@
+# frozen_string_literal: true
+
 FactoryBot.define do
   factory :shift do
     association :space
-    start_datetime { DateTime.now }
-    end_datetime { DateTime.now + 1.hour }
+    start_datetime { Time.zone.now }
+    end_datetime { Time.zone.now + 1.hour }
     reason { Faker::Lorem.word }
-    users { [create(:user, :staff)] }
+
+    after(:build) do |shift|
+      shift.users << build(:user, :staff) if shift.users.empty?
+    end
   end
 end

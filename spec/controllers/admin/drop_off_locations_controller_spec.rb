@@ -80,5 +80,4 @@ RSpec.describe Admin::DropOffLocationsController, type: :controller do
     end
   end
 
-  after(:all) { DropOffLocation.destroy_all }
 end

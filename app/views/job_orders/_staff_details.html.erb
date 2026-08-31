@@ -37,12 +37,12 @@
         </button>
       <% elsif [JobStatus::USER_APPROVAL, JobStatus::SENT_REMINDER].include?(jo.job_order_statuses.last.job_status) %>
         <div class="d-flex flex-row gap-2 justify-content-center">
-          <%= button_to 'Approve', job_order_user_approval_path(jo, approved: true), method: :patch, remote: true, format: :js, class: 'btn btn-primary', data: { confirm: 'Are you sure you want to approve the Job Order on behalf of the user?' } %>
-          <%= button_to 'Reject', job_order_user_approval_path(jo, approved: false), method: :patch, remote: true, format: :js, class: 'btn btn-danger', data: { confirm: 'Are you sure you want to decline the Job Order on behalf of the user?' } %>
-          <%= button_to 'Reminder', job_order_resend_quote_email_path(jo), method: :patch, remote: true, format: :js, class: 'btn btn-info', data: { confirm: 'Are you sure you want to resend a quote reminder email?' } %>
+          <%= button_to 'Approve', job_order_user_approval_path(jo, approved: true), method: :patch, class: 'btn btn-primary', data: { turbo_confirm: 'Are you sure you want to approve the Job Order on behalf of the user?' } %>
+          <%= button_to 'Reject', job_order_user_approval_path(jo, approved: false), method: :patch, class: 'btn btn-danger', data: { turbo_confirm: 'Are you sure you want to decline the Job Order on behalf of the user?' } %>
+          <%= button_to 'Reminder', job_order_resend_quote_email_path(jo), method: :patch, class: 'btn btn-info', data: { turbo_confirm: 'Are you sure you want to resend a quote reminder email?' } %>
         </div>
       <% elsif jo.job_order_statuses.last.job_status == JobStatus::WAITING_PROCESSED %>
-        <%= button_to 'Start Processing', job_order_start_processing_path(jo, start_processing: true), method: :patch, remote: true, format: :js, class: 'btn btn-primary my-2', data: { confirm: 'Are you sure you want to start the processing off the part?' } %>
+        <%= button_to 'Start Processing', job_order_start_processing_path(jo, start_processing: true), method: :patch, class: 'btn btn-primary my-2', data: { turbo_confirm: 'Are you sure you want to start the processing off the part?' } %>
       <% elsif jo.job_order_statuses.last.job_status == JobStatus::BEING_PROCESSED %>
         <button 
             class="btn btn-primary" 
@@ -52,10 +52,10 @@
       <% elsif jo.job_order_statuses.last.job_status == JobStatus::COMPLETED %>
         <div class="d-flex justify-content-between align-items-center">
           <span><strong>Price: </strong><%= number_to_currency(jo.total_price) %></span>
-          <%= button_to 'Mark as Paid', job_order_paid_path(jo, paid: true), method: :patch, remote: true, format: :js, class: 'btn btn-primary my-2', data: { confirm: 'Are you sure you want to mark the job order as paid?' } %>
+          <%= button_to 'Mark as Paid', job_order_paid_path(jo, paid: true), method: :patch, class: 'btn btn-primary my-2', data: { turbo_confirm: 'Are you sure you want to mark the job order as paid?' } %>
         </div>
       <% elsif jo.job_order_statuses.last.job_status == JobStatus::PAID %>
-        <%= button_to 'Mark as Picked Up', job_order_picked_up_path(jo, picked_up: true), method: :patch, remote: true, format: :js, class: 'btn btn-primary my-2', data: { confirm: 'Are you sure you want to mark the job order as picked up?' } %>
+        <%= button_to 'Mark as Picked Up', job_order_picked_up_path(jo, picked_up: true), method: :patch, class: 'btn btn-primary my-2', data: { turbo_confirm: 'Are you sure you want to mark the job order as picked up?' } %>
       <% end %>
 
       <% if ![JobStatus::DECLINED, JobStatus::PAID, JobStatus::PICKED_UP].include?(jo.job_order_statuses.last.job_status) %>
@@ -86,7 +86,7 @@
       </div>
 
       <div class="modal-body">
-        <%= form_for @job_order, url: job_order_comments_path(@job_order), method: :patch do |f| %>
+        <%= form_with model: @job_order, url: job_order_comments_path(@job_order), method: :patch do |f| %>
           <%= f.label :staff_comments, 'Comments for the staff' %>
           <%= f.text_field :staff_comments, placeholder: "Low on filament...", class: 'form-control mb-2' %>
           <%= f.submit 'Save', class: 'btn btn-primary' %>
@@ -110,7 +110,7 @@
       </div>
 
       <div class="modal-body">
-        <%= form_for @job_order, url: job_order_quote_path(@job_order), method: :patch do |f| %>
+        <%= form_with model: @job_order, url: job_order_quote_path(@job_order), method: :patch do |f| %>
           <%= hidden_field_tag :approved, false %>
           <%= f.label :user_comments, 'Comments (Why is it not approved?)' %>
           <%= text_field_tag :user_comments, nil, placeholder: "The size won't fit", class: 'form-control mb-2' %>
@@ -124,7 +124,6 @@
     </div>
   </div>
 </div>
-
 
 <!-- Quote Modal -->
 <div class="modal fade" id="quote-modal" tabindex="-1" aria-labelledby="quoteModalLabel" aria-hidden="true">

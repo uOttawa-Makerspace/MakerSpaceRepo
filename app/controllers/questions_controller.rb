@@ -15,18 +15,15 @@ class QuestionsController < AdminAreaController
       @space = Space.first
     end
 
-    @questions =
+    question_ids =
       Question
-        .where(
-          id:
-            Question
-              .joins(trainings: :spaces)
-              .merge(Space.where(id: @space.id))
-              .uniq
-              .pluck(:id)
-        )
-        .order(created_at: :desc)
-        .paginate(page: params[:page], per_page: 50)
+        .joins(trainings: :spaces)
+        .merge(Space.where(id: @space.id))
+        .distinct
+        .pluck(:id)
+
+    scope = Question.where(id: question_ids).order(created_at: :desc)
+    @pagy, @questions = pagy(scope, limit: 50)
   end
 
   def new

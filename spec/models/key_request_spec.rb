@@ -10,7 +10,7 @@ RSpec.describe KeyRequest, type: :model do
   end
 
   describe "Validations" do
-    before :all do
+    before :each do
       @user = create(:user, :regular_user)
       @space = create(:space)
     end

@@ -1,23 +1,29 @@
 module LockerRentalsHelper
   def locker_rental_state_display(locker_rental)
+    return '' unless locker_rental
+
     locker_rental_state_color = {
-      'reviewing' => 'text-secondary',
-      'await_payment' => 'text-info',
-      'active' => 'text-success',
-      'cancelled' => 'text-danger'
+      'reviewing' => 'badge text-bg-secondary',
+      'await_payment' => 'badge text-bg-info',
+      'active' => 'badge text-bg-success',
+      'cancelled' => 'badge text-bg-danger'
     }
 
     locker_rental_state_icon = {
-      'active' => 'check',
-      'cancelled' => 'clock-o'
+      'reviewing' => 'fa-solid fa-hourglass-half',
+      'await_payment' => 'fa-solid fa-credit-card',
+      'active' => 'fa-solid fa-circle-check',
+      'cancelled' => 'fa-solid fa-circle-xmark'
     }
 
-    tag.span class: locker_rental_state_color[locker_rental.state] do
-      if locker_rental_state_icon[locker_rental.state]
-        fa_icon locker_rental_state_icon[locker_rental.state], text: locker_rental.state.humanize
-      else
-        locker_rental.state.humanize
+    color_class = locker_rental_state_color[locker_rental.state] || 'badge text-bg-secondary'
+    icon_class = locker_rental_state_icon[locker_rental.state]
+
+    tag.span class: color_class do
+      if icon_class
+        concat tag.i(class: "#{icon_class} me-1")
       end
+      concat locker_rental.state.humanize
     end
   end
 end

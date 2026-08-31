@@ -29,11 +29,11 @@
         <h3>Users Inside <%= @space.name %></h3>
         <thead class="table-primary">
         <tr>
-          <th class="action-header" href="#" onclick="selectAll('staff-users-table')">Select All <%= fa_icon('arrow-down') %></th>
-          <th>Name <span onclick="sortTable('staff-table', 1)"><%= fa_icon('arrow-down') %></span></th>
-          <th>Email <span onclick="sortTable('staff-table', 2)"><%= fa_icon('arrow-down') %></span></th>
-          <th>Signed In <span onclick="sortTable('staff-table', 3)"><%= fa_icon('arrow-down') %></span></th>
-          <th>Certifications <span onclick="sortTable('staff-table', 4)"><%= fa_icon('arrow-down') %></span></th>
+          <th class="action-header" href="#" onclick="selectAll('staff-users-table')">Select All <i class="fa-solid fa-arrow-down"></i></th>
+          <th>Name <span onclick="sortTable('staff-table', 1)"><i class="fa-solid fa-arrow-down"></i></span></th>
+          <th>Email <span onclick="sortTable('staff-table', 2)"><i class="fa-solid fa-arrow-down"></i></span></th>
+          <th>Signed In <span onclick="sortTable('staff-table', 3)"><i class="fa-solid fa-arrow-down"></i></span></th>
+          <th>Certifications <span onclick="sortTable('staff-table', 4)"><i class="fa-solid fa-arrow-down"></i></span></th>
         </tr>
         </thead>
         <% @space.signed_in_users.each do |user| %>

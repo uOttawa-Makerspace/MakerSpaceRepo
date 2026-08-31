@@ -1,7 +1,7 @@
 FactoryBot.define do
   factory :walk_in_safety_sheet do
     #association :user
-    space {Space.first || create(:space)}
+    association :space
 
     emergency_contact_name { Faker::Name.name }
     emergency_contact_telephone { Faker::PhoneNumber.phone_number }

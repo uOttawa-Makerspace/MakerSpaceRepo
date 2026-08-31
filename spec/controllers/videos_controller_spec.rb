@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe VideosController, type: :controller do
-  before(:all) do
+  before(:each) do
     @admin = create(:user, :admin)
     create(:program, :development_program, user: @admin)
   end

@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe CartsController, type: :controller do
-  before(:all) do
+  before(:each) do
     @admin = create(:user, :admin)
     @order = create(:order, user: @admin)
     4.times { create(:order_item, order: @order) }
@@ -37,5 +37,4 @@ RSpec.describe CartsController, type: :controller do
     end
   end
 
-  after(:all) { Order.destroy_all }
 end

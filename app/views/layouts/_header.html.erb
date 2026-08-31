@@ -1,22 +1,25 @@
 <div class="mb-3" id="sticky-header">
     <nav class="navbar navbar-expand-xl <%= controller_name %> <%= action_name %> shadow-lg">
-        <div class="container-fluid">
-            <a class="ms-xl-5 me-xl-5 navbar-brand" href="/"><strong>Maker</strong>Repo</a>
+        <div class="container-fluid px-2 px-sm-3 px-xl-2 px-xxl-4">
+            <a class="navbar-brand text-nowrap me-2 me-xxl-3" href="/"><strong>Maker</strong>Repo</a>
+            
             <% unless signed_in? %>
-                <%# This is to show the register button outside the menu on mobile %>
-                <a class="nav-link d-xl-none order-xl-3" data-bs-toggle="modal" data-bs-target="#loginModal" href=""><%= t('navbar.sign_in') %></a>
+                <%# Sign in button on mobile navbar line %>
+                <a class="nav-link d-xl-none ms-auto me-2 text-white fw-bold" data-bs-toggle="modal" data-bs-target="#loginModal" href=""><%= t('navbar.sign_in') %></a>
             <% end %>
-            <button class="navbar-toggler" id="navbar-toggle-button" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+
+            <button class="navbar-toggler <%= 'ms-auto' if signed_in? %>" id="navbar-toggle-button" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
+
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                <ul class="navbar-nav me-auto align-items-xl-baseline">
+                <ul class="navbar-nav me-auto align-items-xl-center">
                     <li class="nav-item">
-                        <a class="nav-link" href="/"><%= t('navbar.home') %></a>
+                        <a class="nav-link px-xl-1 px-xxl-2 text-nowrap" href="/"><%= t('navbar.home') %></a>
                     </li>
 
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="/explore" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <a class="nav-link dropdown-toggle px-xl-1 px-xxl-2 text-nowrap" href="/explore" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                             <%= t('navbar.projects') %>
                         </a>
                         <div class="dropdown-menu">
@@ -32,7 +35,7 @@
                     </li>
 
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a class="nav-link dropdown-toggle px-xl-1 px-xxl-2 text-nowrap" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <%= t('navbar.get_involved') %>
                         </a>
                         <div class="dropdown-menu">
@@ -47,7 +50,7 @@
                     </li>
 
                     <li class="nav-item dropdown">                        
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a class="nav-link dropdown-toggle px-xl-1 px-xxl-2 text-nowrap" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <%= t('navbar.resources') %>
                         </a>
                         <div class="dropdown-menu">
@@ -62,73 +65,71 @@
                     </li>
 
                     <li class="nav-item">
-                        <a class="nav-link" href="<%= landing_job_orders_path %>"><%= t('navbar.user.joborder') %></a>
+                        <a class="nav-link px-xl-1 px-xxl-2 text-nowrap" href="<%= landing_job_orders_path %>"><%= t('navbar.user.joborder') %></a>
                     </li>
 
                     <li class="nav-item">
-                        <%= link_to 'FAQ', faqs_path, class: 'nav-link' %>
+                        <%= link_to 'FAQ', faqs_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %>
                     </li>
                 </ul>
 
-                <ul class="navbar-nav ms-auto align-items-xl-baseline">
+                <ul class="navbar-nav ms-auto align-items-xl-center">
                     <li class="nav-item">
-                        <%= link_to(t('memberships.navbar'), memberships_path, class: "nav-link ms-auto d-inline") %>
+                        <%= link_to(t('memberships.navbar'), memberships_path, class: "nav-link px-xl-1 px-xxl-2 text-nowrap") %>
                     </li>
                     <li class="nav-item">
-                        <button class="nav-link ms-auto d-inline" id="themeToggler"
+                        <button class="nav-link px-xl-1 px-xxl-2 text-nowrap d-flex align-items-center gap-1 bg-transparent border-0" id="themeToggler"
                                 data-bs-toggle="tooltip" data-bs-title="Checkout dark mode!" data-bs-placement="bottom" data-bs-trigger="manual">
-                            <%= fa_icon 'sun-o', id: 'lightModeIcon' %>
-                            <%= fa_icon 'moon-o', id: 'darkModeIcon' %>
-                            <%= t('navbar.theme') %>
+                            <i class="fa-regular fa-sun" id="lightModeIcon"></i>
+                            <i class="fa-regular fa-moon" id="darkModeIcon"></i>
+                            <span class="d-none d-xxl-inline"><%= t('navbar.theme') %></span>
                         </button>
                     </li>
                     <% unless signed_in? %>
-                        <li class="nav-item d-none d-xl-block"><a class="nav-link" data-bs-toggle="modal" data-bs-target="#loginModal" href=""><%= t('navbar.sign_in') %></a></li>
+                        <li class="nav-item d-none d-xl-block">
+                            <a class="nav-link px-xl-1 px-xxl-2 text-nowrap" data-bs-toggle="modal" data-bs-target="#loginModal" href=""><%= t('navbar.sign_in') %></a>
+                        </li>
                     <% else %>
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href=" <%= user_path(@user.username) %>" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="text-transform: none;">
+                            <a class="nav-link dropdown-toggle px-xl-1 px-xxl-2 text-nowrap d-flex align-items-center gap-1" href="<%= user_path(@user.username) %>" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="text-transform: none;">
                                 <%= image_tag @user.display_avatar, class: 'avatar', alt: 'Avatar', loading: 'lazy', decoding: 'async' %>
-                                <%= @user.username %>
+                                <span><%= @user.username %></span>
                             </a>
-                            <div class="dropdown-menu dropdown-menu-right">
+                            <div class="dropdown-menu dropdown-menu-end">
                                 <a class="dropdown-item" href="<%= user_path(@user.username) %>"><%= t('navbar.user.profile') %></a>
                                 <%= link_to(t('navbar.user.admin_area'), admin_settings_path, class: 'dropdown-item') if @user.admin? %>
                                 <%= link_to(t('navbar.user.staff_area'), staff_dashboard_index_path, class: 'dropdown-item') if @user.staff? %>
                                 <a class="dropdown-item" href="<%= logout_path %>"><%= t('navbar.user.sign_out') %></a>
                             </div>
+                        </li>
 
-                            <li class="nav-item cc-container">
-                                <a class="ccLink d-inline-flex align-items-center" href="<%= discount_codes_path %>">
-                                    <span class="me-2">
-                                        <%= image_tag('cc_white.png', alt: 'CC', class: 'ccs', id: 'myCcWhite') %>
-                                        <%= image_tag('cc.png', alt: 'CC', class: 'ccs', id: 'myCcBlack') %>
-                                    </span>
-                                    <b class="nav-link d-inline p-0"><%= current_user.get_total_cc %></b>
-                                </a>
-                            </li>
+                        <li class="nav-item cc-container">
+                            <a class="ccLink nav-link px-xl-1 px-xxl-2 d-inline-flex align-items-center" href="<%= discount_codes_path %>">
+                                <span class="me-1">
+                                    <%= vite_image_tag 'images/cc_white.png', alt: 'CC', class: 'ccs', id: 'myCcWhite' %>
+                                    <%= vite_image_tag 'images/cc.png', alt: 'CC', class: 'ccs', id: 'myCcBlack' %>
+                                </span>
+                                <b><%= current_user.get_total_cc %></b>
+                            </a>
                         </li>
                     <% end %>
 
-                    <!-- <li class="navbar-divider mx-5"></li> -->
-
                     <% locales_change.each do |locale| %>
                         <li class="nav-item">
-                            <%= link_to t('name', locale:), url_for(request.query_parameters.merge(locale:)), class: 'nav-link' %>
+                            <%= link_to t('name', locale:), url_for(request.query_parameters.merge(locale:)), class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %>
                         </li>
                     <% end %>
                 </ul>
             </div>
         </div>
     </nav>
-    <%# Set by layouts/volunteer.html.erb, sometimes not even set?%>
+
     <%= render 'layouts/volunteer_header' if (defined? with_volunteer) && with_volunteer %>
     <%= render 'layouts/development_program_header' if (defined? with_development) && with_development %>
     <%= render 'layouts/job_orders_header' if (defined? with_job_orders) && with_job_orders %>
     <%= render 'layouts/admin_area_header' if (defined? with_admin) && with_admin %>
     <%= render 'layouts/staff_area_header' if (defined? with_staff) && with_staff %>
     <%= render 'layouts/sub_space_header' if @with_sub_space %>
-
-
     <%= render 'layouts/quick_access_link' if current_user.admin? %>
 </div>
 <%= render 'static_pages/login_modal' unless signed_in? %>

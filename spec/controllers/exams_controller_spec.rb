@@ -1,17 +1,15 @@
 require "rails_helper"
 
 RSpec.describe ExamsController, type: :controller do
-  before(:all) do
-    @admin = create(:user, :admin)
-    5.times { create(:exam, user: @admin) }
-    @exam = create(:exam)
-  end
+  let(:admin) { create(:user, :admin) }
+  let(:exam) { create(:exam) }
 
-  before(:each) { session[:user_id] = @admin.id }
+  before(:each) { session[:user_id] = admin.id }
 
   describe "GET /index" do
     context "logged as admin" do
       it "should return 200 response" do
+        create_list(:exam, 5, user: admin)
         get :index
         expect(response).to have_http_status(:success)
         expect(@controller.instance_variable_get(:@exams).count).to eq(5)
@@ -56,16 +54,16 @@ RSpec.describe ExamsController, type: :controller do
   describe "GET /show" do
     context "logged as admin" do
       it "should return 200 response" do
-        get :show, params: { id: @exam.id }
+        get :show, params: { id: exam.id }
         expect(response).to have_http_status(:success)
       end
     end
 
     context "logged as exam's user /grant_access" do
       it "should return 200 response" do
-        user = @exam.user
+        user = exam.user
         session[:user_id] = user.id
-        get :show, params: { id: @exam.id }
+        get :show, params: { id: exam.id }
         expect(response).to have_http_status(:success)
       end
     end
@@ -74,7 +72,7 @@ RSpec.describe ExamsController, type: :controller do
       it "should redirect user to root" do
         user = create(:user, :regular_user)
         session[:user_id] = user.id
-        get :show, params: { id: @exam.id }
+        get :show, params: { id: exam.id }
         expect(response).to redirect_to root_path
         expect(flash[:alert]).to eq("You cannot access this area.")
       end
@@ -82,10 +80,10 @@ RSpec.describe ExamsController, type: :controller do
 
     context "if exam is completed, the user cannot access the exam anymore /check_exam_status" do
       it "should redirect user to exams path because exam is done" do
-        exam = create(:exam, status: Exam::STATUS[:passed])
-        user = exam.user
+        completed_exam = create(:exam, status: Exam::STATUS[:passed])
+        user = completed_exam.user
         session[:user_id] = user.id
-        get :show, params: { id: exam.id }
+        get :show, params: { id: completed_exam.id }
         expect(response).to redirect_to exams_path
         expect(flash[:alert]).to eq(
           "You cannot access an exam after being finished."
@@ -93,10 +91,10 @@ RSpec.describe ExamsController, type: :controller do
       end
 
       it "should redirect user to exams path because exam is done" do
-        exam = create(:exam, status: Exam::STATUS[:failed])
-        user = exam.user
+        completed_exam = create(:exam, status: Exam::STATUS[:failed])
+        user = completed_exam.user
         session[:user_id] = user.id
-        get :show, params: { id: exam.id }
+        get :show, params: { id: completed_exam.id }
         expect(response).to redirect_to exams_path
         expect(flash[:alert]).to eq(
           "You cannot access an exam after being finished."
@@ -104,18 +102,6 @@ RSpec.describe ExamsController, type: :controller do
       end
     end
   end
-
-  # describe 'POST /create' do
-  #   context 'logged as admin' do
-  #     it 'should create an exam and redirect' do
-  #       training = create(:training)
-  #       expect { post :create, params: { exam: { training_id: training.id } } }.to change(Exam, :count).by(1)
-  #                                                                                  .and change(ExamQuestion, :count).by($n_exams_question)
-  #       expect(flash[:notice]).to eq("You've successfully created a new exam!")
-  #       expect(response).to redirect_to exams_path
-  #     end
-  #   end
-  # end
 
   describe "GET /create_from_training" do
     context "logged as admin" do
@@ -173,12 +159,12 @@ RSpec.describe ExamsController, type: :controller do
   describe "GET /finish_exam" do
     context "logged as admin" do
       it "should updated exam, create certification, send email and redirect to exams path" do
-        exam = create(:exam_with_exam_questions_and_exam_responses)
-        expect { get :finish_exam, params: { exam_id: exam.id } }.to change(
+        exam_instance = create(:exam_with_exam_questions_and_exam_responses)
+        expect { get :finish_exam, params: { exam_id: exam_instance.id } }.to change(
           Certification,
           :count
         ).by(1)
-        updated_exam = Exam.find(exam.id)
+        updated_exam = Exam.find(exam_instance.id)
         expect(updated_exam.status).to eq(Exam::STATUS[:passed])
         expect(ActionMailer::Base.deliveries.count).to eq(1)
         expect(flash[:notice]).to eq("Score: 100. You passed the exam.")
@@ -189,19 +175,19 @@ RSpec.describe ExamsController, type: :controller do
         training = create(:training_with_questions)
         training_session =
           create(:training_session_with_users, training: training)
-        exam =
+        exam_instance =
           create(
             :exam_with_exam_questions_and_exam_responses_wrong,
             training_session: training_session
           )
-        expect { get :finish_exam, params: { exam_id: exam.id } }.to change(
+        expect { get :finish_exam, params: { exam_id: exam_instance.id } }.to change(
           Certification,
           :count
         ).by(0).and change(Exam, :count).by(1).and change(
                       ExamQuestion,
                       :count
                     ).by($n_exams_question)
-        updated_exam = Exam.find(exam.id)
+        updated_exam = Exam.find(exam_instance.id)
         expect(updated_exam.status).to eq(Exam::STATUS[:failed])
         expect(ActionMailer::Base.deliveries.count).to eq(1)
         expect(flash[:notice]).to eq("Score: 0. You failed the exam.")
@@ -213,7 +199,8 @@ RSpec.describe ExamsController, type: :controller do
   describe "DELETE /destroy" do
     context "logged as admin" do
       it "should destroy the question" do
-        expect { delete :destroy, params: { id: @exam.id } }.to change(
+        exam_to_delete = create(:exam)
+        expect { delete :destroy, params: { id: exam_to_delete.id } }.to change(
           Exam,
           :count
         ).by(-1)

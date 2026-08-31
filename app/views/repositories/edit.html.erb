@@ -5,7 +5,7 @@
     <div class="col-lg-7 mx-auto mt-3">
         <div class="text-center">
             <h1 class="text-center"><%= t('repository.edit_proj') %></h1>
-            <%= link_to fa_icon('search', text: 'View project'),
+            <%= link_to '<i class="fa-solid fa-magnifying-glass"></i> View project'.html_safe,
                         repository_path(@repository.user_username, @repository.id),
                         class: 'btn btn-secondary mx-auto' %>
         </div>

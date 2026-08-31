@@ -1,28 +1,41 @@
-<nav class="navbar navbar-expand-xl navbar-light navbar-staff">
-  <div class="container-fluid">
-    <a class="navbar-brand" href="<%= admin_settings_path %>">Admin <strong>Area</strong></a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent2" aria-controls="navbarSupportedContent2" aria-expanded="false" aria-label="Toggle navigation">
+<nav class="navbar navbar-expand-xl navbar-staff shadow-sm">
+  <div class="container-fluid px-2 px-sm-3 px-xl-2 px-xxl-4">
+    <a class="navbar-brand text-nowrap me-2 me-xxl-3" href="<%= admin_settings_path %>">Admin <strong>Area</strong></a>
+    <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#adminNavbarContent" aria-controls="adminNavbarContent" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
-    <div class="collapse navbar-collapse" id="navbarSupportedContent2">
+    <div class="collapse navbar-collapse" id="adminNavbarContent">
 
-      <ul class="navbar-nav mx-auto">
+      <ul class="navbar-nav ms-auto align-items-xl-center">
         <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownGeneral" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <a class="nav-link dropdown-toggle px-xl-1 px-xxl-2 text-nowrap" href="#" id="navbarDropdownGeneral" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             <%= t('admin.general') %>
           </a>
           <div class="dropdown-menu" aria-labelledby="navbarDropdownGeneral">
-            <%= link_to t('admin.settings'), admin_settings_path, id: 'navbarDropdownGeneral', class: 'dropdown-item' %>
+            <%= link_to t('admin.settings'), admin_settings_path, class: 'dropdown-item' %>
             <%= link_to t('admin.uni_programs'), admin_uni_programs_index_path, class: 'dropdown-item' %>
             <%= link_to t('admin.membership_tiers'), admin_memberships_path, class: 'dropdown-item' %>
           </div>
         </li>
-        <li class="nav-item dropdown"><%= link_to t('admin.lockers'), lockers_path, class: 'nav-link' %></li>
-        <li class="nav-item"><%= link_to t('navbar.design_day'), admin_design_day_path, class: 'nav-link' %></li>
-        <li class="nav-item"><%= link_to t('admin.announcements'), admin_announcements_path, class: 'nav-link' %></li>
-        <li class="nav-item"><%= link_to t('admin.reports'), admin_report_generator_index_path, class: 'nav-link' %></li>
+
+        <li class="nav-item">
+          <%= link_to t('admin.lockers'), lockers_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %>
+        </li>
+
+        <li class="nav-item">
+          <%= link_to t('navbar.design_day'), admin_design_day_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %>
+        </li>
+
+        <li class="nav-item">
+          <%= link_to t('admin.announcements'), admin_announcements_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %>
+        </li>
+
+        <li class="nav-item">
+          <%= link_to t('admin.reports'), admin_report_generator_index_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %>
+        </li>
+
         <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownPowerBI" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <a class="nav-link dropdown-toggle px-xl-1 px-xxl-2 text-nowrap" href="#" id="navbarDropdownPowerBI" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             PowerBI
           </a>
           <div class="dropdown-menu" aria-labelledby="navbarDropdownPowerBI">
@@ -30,11 +43,12 @@
             <%= link_to 'Certifications', 'https://app.powerbi.com/groups/3df040eb-6bde-4bfa-ab91-91b27146e4b0/reports/55c3f373-a6c4-4be2-bb85-ae5b0fd4e523/07d82f58c8990431a498?experience=power-bi&clientSideAuth=0', class: 'dropdown-item', target: :_blank, rel: 'noopener' %>
           </div>
         </li>
+
         <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#", id="navbarDropdown1" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <a class="nav-link dropdown-toggle px-xl-1 px-xxl-2 text-nowrap" href="#" id="navbarDropdownTrainings" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             <%= t('admin.trainings') %>
           </a>
-          <div class="dropdown-menu" aria-labelledby="navbarDropdown1">
+          <div class="dropdown-menu" aria-labelledby="navbarDropdownTrainings">
             <%= link_to t('admin.trainings'), admin_trainings_path, class: 'dropdown-item' %>
             <%= link_to t('admin.training_sessions'), admin_training_sessions_path, class: 'dropdown-item' %>
             <div class="dropdown-divider"></div>
@@ -43,21 +57,23 @@
             <%= link_to t('admin.questions'), questions_path, class: 'dropdown-item' %>
           </div>
         </li>
+
         <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#", id="navbarDropdown4" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <a class="nav-link dropdown-toggle px-xl-1 px-xxl-2 text-nowrap" href="#" id="navbarDropdownSpaces" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             <%= t('admin.spaces') %>
           </a>
-          <div class="dropdown-menu" aria-labelledby="navbarDropdown4">
+          <div class="dropdown-menu" aria-labelledby="navbarDropdownSpaces">
             <%= link_to t('admin.spaces'), admin_spaces_path, class: 'dropdown-item' %>
             <%= link_to t('admin.teams'), admin_teams_path, class: 'dropdown-item' %>
             <%= link_to t('admin.contact'), admin_contact_infos_path, class: 'dropdown-item' %>
           </div>
         </li>
+
         <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown3" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <a class="nav-link dropdown-toggle px-xl-1 px-xxl-2 text-nowrap" href="#" id="navbarDropdownStaff" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             <%= t('admin.staff_management') %>
           </a>
-          <div class="dropdown-menu" aria-labelledby="navbarDropdown3">
+          <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownStaff">
             <%= link_to t('admin.roles'), manage_roles_admin_users_path, class: 'dropdown-item' %>
             <%= link_to t('admin.add_new_staff'), admin_add_new_staff_index_path, class: 'dropdown-item' %>
             <div class="dropdown-divider"></div>
@@ -68,10 +84,12 @@
             <%= link_to t('admin.key_transactions'), admin_key_transactions_path, class: 'dropdown-item' %>
           </div>
         </li>
+
         <li class="nav-item">
-          <a class="nav-link" href="https://wikijs.makerepo.com/">Wikijs</a>
+          <a class="nav-link px-xl-1 px-xxl-2 text-nowrap" href="https://wikijs.makerepo.com/" target="_blank" rel="noopener">Wikijs</a>
         </li>
       </ul>
+
     </div>
   </div>
 </nav>

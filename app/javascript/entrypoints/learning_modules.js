@@ -99,8 +99,8 @@ const toggle = document.querySelector("#learning_module_scorm_enabled");
 const scormSection = document.querySelector("fieldset#scorm-section");
 const regularSection = document.querySelector("fieldset#regular-files-section");
 
-if (toggle) {
-  const applyScormToggle = () => {
+if (toggle && scormSection && regularSection) {
+  const updateSections = () => {
     const isScorm = toggle.checked;
     scormSection.style.display = isScorm ? "" : "none";
     scormSection.disabled = !isScorm;
@@ -109,6 +109,26 @@ if (toggle) {
     regularSection.disabled = isScorm;
   };
 
-  toggle.addEventListener("change", applyScormToggle);
-  applyScormToggle();
+  toggle.addEventListener("change", updateSections);
+  updateSections();
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.querySelector("form");
+  if (form) {
+    form.addEventListener("submit", (e) => {
+      // Check if form is valid before disabling button
+      if (form.checkValidity()) {
+        const btn = document.getElementById("waiting-save-button");
+        if (btn) {
+          // Allow small timeout so form submit event fires cleanly
+          setTimeout(() => {
+            btn.disabled = true;
+            btn.innerHTML =
+              '<i class="fa fa-spinner fa-spin me-1"></i> Saving (Please wait)...';
+          }, 0);
+        }
+      }
+    });
+  }
+});

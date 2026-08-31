@@ -45,37 +45,43 @@ function pauseAllYTPlayersIn(slide) {
 
 // ── Carousel + thumbnail init ─────────────────────────────────────
 function initCarouselThumbnails() {
-  const carousel = document.getElementById("repositoryCarousel");
-  if (!carousel) return;
+  const carousels = document.querySelectorAll(".carousel.slide");
+  if (!carousels.length) return;
 
-  // Load / re-wrap after Turbo navigations
   loadYouTubeAPI();
   if (ytAPIReady) wrapExistingIframes();
 
-  const thumbnails = document.querySelectorAll(".carousel-thumbnail");
+  carousels.forEach((carousel) => {
+    if (carousel.dataset.thumbnailsInitialized) return;
+    carousel.dataset.thumbnailsInitialized = "true";
 
-  carousel.addEventListener("slide.bs.carousel", (e) => {
-    // Pause the YouTube video on the slide we're leaving
-    pauseAllYTPlayersIn(
-      e.relatedTarget?.parentElement
-        ? carousel.querySelectorAll(".carousel-item")[e.from]
-        : null,
-    );
-    // More reliable: grab the "from" slide directly
-    const slides = carousel.querySelectorAll(".carousel-item");
-    if (slides[e.from]) pauseAllYTPlayersIn(slides[e.from]);
+    // Strictly select .carousel-thumbnail buttons so prev/next controls aren't included
+    const targetSelector = carousel.id
+      ? `.carousel-thumbnail[data-bs-target="#${carousel.id}"]`
+      : ".carousel-thumbnail";
 
-    // Sync thumbnails
-    if (!thumbnails.length) return;
-    thumbnails.forEach((t) => t.classList.remove("active"));
-    if (thumbnails[e.to]) {
-      thumbnails[e.to].classList.add("active");
-      thumbnails[e.to].scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-        inline: "center",
-      });
+    let thumbnails = document.querySelectorAll(targetSelector);
+    if (!thumbnails.length) {
+      thumbnails = document.querySelectorAll(".carousel-thumbnail");
     }
+
+    carousel.addEventListener("slide.bs.carousel", (e) => {
+      // Pause YouTube on leaving slide
+      const slides = carousel.querySelectorAll(".carousel-item");
+      if (slides[e.from]) pauseAllYTPlayersIn(slides[e.from]);
+
+      // Sync active thumbnail and blue highlight
+      if (!thumbnails.length) return;
+      thumbnails.forEach((t) => t.classList.remove("active"));
+      if (thumbnails[e.to]) {
+        thumbnails[e.to].classList.add("active");
+        thumbnails[e.to].scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+          inline: "center",
+        });
+      }
+    });
   });
 }
 

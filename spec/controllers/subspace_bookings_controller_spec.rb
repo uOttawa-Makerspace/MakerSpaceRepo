@@ -1,7 +1,7 @@
 require "rails_helper"
 require "rspec/mocks/standalone"
 RSpec.describe SubSpaceBookingController, type: :controller do
-  before(:all) do
+  before(:each) do
     stub_const("BookingStatus::PENDING", create(:booking_status, :pending))
     stub_const("BookingStatus::APPROVED", create(:booking_status, :approved))
     stub_const("BookingStatus::DECLINED", create(:booking_status, :rejected))

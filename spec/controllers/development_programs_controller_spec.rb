@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe DevelopmentProgramsController, type: :controller do
-  before(:all) do
+  before(:each) do
     program = create(:program, :development_program)
     @user = program.user
   end

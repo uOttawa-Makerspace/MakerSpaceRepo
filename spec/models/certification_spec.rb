@@ -124,21 +124,21 @@ RSpec.describe Certification, type: :model do
         training_session = create(:training_session, level: "Beginner")
         certification =
           create(:certification, training_session: training_session)
-        expect(certification.get_badge_path).to eq("badges/bronze.png")
+        expect(certification.get_badge_path).to eq("images/badges/bronze.png")
       end
 
       it "should return silver path for Intermediate" do
         training_session = create(:training_session, level: "Intermediate")
         certification =
           create(:certification, training_session: training_session)
-        expect(certification.get_badge_path).to eq("badges/silver.png")
+        expect(certification.get_badge_path).to eq("images/badges/silver.png")
       end
 
       it "should return gold path for Advanced" do
         training_session = create(:training_session, level: "Advanced")
         certification =
           create(:certification, training_session: training_session)
-        expect(certification.get_badge_path).to eq("badges/golden.png")
+        expect(certification.get_badge_path).to eq("images/badges/golden.png")
       end
     end
 

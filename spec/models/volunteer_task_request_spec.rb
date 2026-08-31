@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "rails_helper"
 
 RSpec.describe VolunteerTaskRequest, type: :model do
@@ -9,7 +11,7 @@ RSpec.describe VolunteerTaskRequest, type: :model do
   end
 
   describe "#scopes" do
-    before(:all) do
+    before(:each) do
       create(:volunteer_task_request, :approved)
       create(:volunteer_task_request, :approved)
       create(:volunteer_task_request, :rejected)
@@ -63,19 +65,15 @@ RSpec.describe VolunteerTaskRequest, type: :model do
 
     context "#volunteer_task_join" do
       it "should create volunteer hour" do
-        create(:volunteer_task_request)
+        task_request = create(:volunteer_task_request)
         create(
           :volunteer_task_join,
           :active,
-          volunteer_task_id: VolunteerTaskRequest.last.volunteer_task.id,
-          user_id: VolunteerTaskRequest.last.user_id
+          volunteer_task_id: task_request.volunteer_task.id,
+          user_id: task_request.user_id
         )
-        expect(VolunteerTaskRequest.last.volunteer_task_join.user_id).to eq(
-          User.last.id
-        )
-        expect(
-          VolunteerTaskRequest.last.volunteer_task_join.volunteer_task_id
-        ).to eq(VolunteerTaskRequest.last.volunteer_task.id)
+        expect(task_request.reload.volunteer_task_join.user_id).to eq(task_request.user_id)
+        expect(task_request.volunteer_task_join.volunteer_task_id).to eq(task_request.volunteer_task_id)
       end
     end
   end

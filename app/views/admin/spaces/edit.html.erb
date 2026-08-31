@@ -109,7 +109,7 @@
         <tr>
           <td><%= raspi.pi_mac_address %></td>
           <td><%= raspi.space.name %></td>
-          <td><%= button_to fa_icon('times'), admin_pi_reader_url(id: raspi.id, pi_reader_params: { space_id: nil }), method: :patch, action: :update, path: '/', class: 'btn btn-default' %></td>
+          <td><%= button_to '<i class="fa-solid fa-xmark"></i>'.html_safe, admin_pi_reader_url(id: raspi.id, pi_reader_params: { space_id: nil }), method: :patch, action: :update, path: '/', class: 'btn btn-default' %></td>
         </tr>
       <% end %>
     </table>
@@ -129,7 +129,7 @@
         <tr>
           <td><%= raspi.pi_mac_address %></td>
           <td>unknown</td>
-          <td><%= button_to fa_icon('check'), admin_pi_reader_url(id: raspi.id, pi_reader_params: { space_id: @space.id }), method: :patch, action: :update, path: '/', class: 'btn btn-default' %></td>
+          <td><%= button_to '<i class="fa-solid fa-check"></i>'.html_safe, admin_pi_reader_url(id: raspi.id, pi_reader_params: { space_id: @space.id }), method: :patch, action: :update, path: '/', class: 'btn btn-default' %></td>
         </tr>
       <% end %>
     </table>
@@ -163,7 +163,7 @@
           <td><%= training.localized_name %></td>
           <td><%= training.training_sessions.length %></td>
           <td><%= training.certifications.length %></td>
-          <td><%= button_to fa_icon('times'), admin_training_url(id: training.id), method: :delete, action: :destroy, class: 'btn btn-default',
+          <td><%= button_to '<i class="fa-solid fa-xmark"></i>'.html_safe, admin_training_url(id: training.id), method: :delete, action: :destroy, class: 'btn btn-default',
                                                                                    data: { confirm: 'Deleting a training will delete ALL its Sessions and Certifications! Ok to confirm' } %></td>
         </tr>
       <% end %>

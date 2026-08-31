@@ -1,0 +1,356 @@
+// ==========================================================================
+// 1. CEED Brand Color Palette
+// ==========================================================================
+$ceed-orange: #e24929;
+$ceed-orange-hover: #c4381b;
+
+.text-ceed-orange {
+  color: $ceed-orange !important;
+}
+.bg-ceed-orange {
+  background-color: $ceed-orange !important;
+  color: #ffffff !important;
+}
+
+.btn-ceed,
+.btn-ceed-primary {
+  background-color: $ceed-orange;
+  border-color: $ceed-orange;
+  color: #ffffff;
+  font-weight: 700;
+  transition: all 0.2s ease-in-out;
+
+  &:hover,
+  &:focus,
+  &:active {
+    background-color: $ceed-orange-hover;
+    border-color: $ceed-orange-hover;
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(226, 73, 41, 0.4);
+  }
+}
+
+.btn-outline-ceed {
+  color: $ceed-orange;
+  border: 1px solid $ceed-orange;
+  background-color: transparent;
+  transition: all 0.2s ease;
+
+  &:hover,
+  &:focus,
+  &:active {
+    background-color: $ceed-orange;
+    border-color: $ceed-orange;
+    color: #ffffff;
+  }
+}
+
+.hover-orange:hover {
+  color: $ceed-orange !important;
+}
+
+// ==========================================================================
+// 2. Volunteer Landing Page (#volunteersIndex)
+// ==========================================================================
+section#volunteersIndex {
+  .volunteerJumbotron {
+    background:
+      linear-gradient(
+        90deg,
+        rgba(0, 0, 0, 0.92) 0%,
+        rgba(0, 0, 0, 0.65) 50%,
+        rgba(0, 0, 0, 0.35) 100%
+      ),
+      url("../images/volunteer/volunteer_page_hero.png") center/cover no-repeat;
+    min-height: 440px;
+  }
+
+  .icon-circle {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background-color: rgba(226, 73, 41, 0.12);
+    border: 1px solid rgba(226, 73, 41, 0.25);
+    color: $ceed-orange;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s ease;
+
+    &:hover {
+      transform: scale(1.08);
+      background-color: rgba(226, 73, 41, 0.22);
+    }
+  }
+
+  .ceed-card-header {
+    background-color: $ceed-orange;
+    color: #ffffff;
+    padding: 1rem 1.3rem;
+    font-weight: 700;
+    font-size: 1.1rem;
+    border: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: $ceed-orange-hover;
+    }
+    &:focus {
+      outline: none;
+    }
+  }
+
+  .accordion-item {
+    background-color: transparent;
+    border: none;
+    border-top: 1px solid var(--bs-border-color);
+    &:first-child {
+      border-top: none;
+    }
+  }
+
+  .accordion-button-custom {
+    width: 100%;
+    background-color: var(--bs-body-tertiary);
+    color: var(--bs-body-color);
+    border: none;
+    padding: 0.95rem 1.3rem;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: var(--bs-secondary-bg);
+    }
+    &:focus {
+      outline: none;
+    }
+  }
+
+  .chevron-icon {
+    transition: transform 0.25s ease;
+    flex-shrink: 0;
+  }
+  button:not(.collapsed) .chevron-icon {
+    transform: rotate(180deg);
+  }
+  button.collapsed .chevron-icon {
+    transform: rotate(0deg);
+  }
+
+  .accordion-content {
+    background-color: var(--bs-tertiary-bg);
+    padding: 1rem 1.4rem;
+    color: var(--bs-body-color);
+    font-size: 0.92rem;
+
+    ul {
+      padding-left: 1.2rem;
+      margin-bottom: 0;
+      li {
+        margin-bottom: 0.45rem;
+        line-height: 1.4;
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+    }
+  }
+
+  // Canva Watermark Banner
+  .ceed-bottom-banner {
+    background-color: $ceed-orange;
+    color: #fafcfa;
+    position: relative;
+    overflow: hidden;
+    min-height: 250px;
+
+    .gear-watermark {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      transform: translateY(-50%);
+      width: 360px;
+      opacity: 0.2;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .banner-title {
+      font-size: clamp(1.65rem, 2.7vw, 2.25rem);
+      font-weight: 700;
+      color: #fafcfa;
+    }
+
+    .banner-subtitle {
+      font-size: clamp(1.05rem, 1.8vw, 1.3rem);
+      font-weight: 400;
+      color: #fafcfa;
+    }
+
+    .btn-banner-pill {
+      background-color: #000000;
+      color: #fafcfa;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 50rem;
+      padding: 0.65rem 2.4rem;
+      font-size: clamp(0.95rem, 1.3vw, 1.15rem);
+      font-weight: 700;
+      transition: all 0.2s ease-in-out;
+
+      &:hover,
+      &:focus {
+        background-color: #1a1a1a;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+      }
+    }
+
+    .banner-footer {
+      font-size: clamp(0.95rem, 1.4vw, 1.2rem);
+      a {
+        color: #fafcfa;
+        font-weight: 700;
+        text-decoration: underline;
+        &:hover {
+          opacity: 0.85;
+        }
+      }
+    }
+
+    @media (max-width: 768px) {
+      .gear-watermark {
+        width: 220px;
+        left: -30px;
+        opacity: 0.15;
+      }
+    }
+  }
+}
+
+// ==========================================================================
+// 3. Shared Components (Tasks & Requests)
+// ==========================================================================
+.page-title {
+  color: $ceed-orange;
+}
+
+.status-tabs-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 2px;
+}
+
+.task-status-pills .nav-link.active {
+  background-color: $ceed-orange !important;
+  color: #ffffff !important;
+}
+
+.avatar-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: rgba(226, 73, 41, 0.15);
+  color: $ceed-orange;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.custom-requests-table {
+  min-width: 680px;
+}
+
+.task-grid-card {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+  &:hover {
+    transform: translateY(-3px);
+  }
+}
+
+// ==========================================================================
+// 4. TomSelect Filter Controls
+// ==========================================================================
+.ts-wrapper {
+  .ts-control {
+    border-radius: var(--bs-border-radius, 8px);
+    border-color: var(--bs-border-color);
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
+    min-height: 38px;
+
+    input {
+      color: inherit;
+    }
+
+    &:focus,
+    &.focus {
+      border-color: $ceed-orange;
+      box-shadow: 0 0 0 0.25rem rgba(226, 73, 41, 0.25);
+    }
+  }
+
+  &.multi .ts-control > div {
+    background: rgba(226, 73, 41, 0.15);
+    color: $ceed-orange;
+    border: 1px solid rgba(226, 73, 41, 0.3);
+    border-radius: 50rem;
+    padding: 2px 8px;
+    font-weight: 600;
+
+    .remove {
+      border-left-color: rgba(226, 73, 41, 0.3);
+      color: $ceed-orange;
+    }
+  }
+}
+
+.ts-dropdown {
+  background-color: var(--bs-body-bg);
+  border-color: var(--bs-border-color);
+  color: var(--bs-body-color);
+  border-radius: var(--bs-border-radius, 8px);
+  box-shadow: var(--bs-box-shadow);
+
+  .option {
+    color: var(--bs-body-color);
+    &.active,
+    &:hover {
+      background-color: rgba(226, 73, 41, 0.12);
+      color: $ceed-orange;
+    }
+  }
+}
+
+// ==========================================================================
+// 5. Dark Mode Adjustments
+// ==========================================================================
+[data-bs-theme="dark"],
+body.dark-mode {
+  .page-title {
+    color: #ff6e4a;
+  }
+
+  .avatar-circle {
+    background-color: rgba(226, 73, 41, 0.25);
+    color: #ff8566;
+  }
+
+  #myCcBlack {
+    filter: invert(1) brightness(1.8);
+  }
+}

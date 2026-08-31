@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "rails_helper"
 include ShopifyConcern
 
@@ -23,56 +25,17 @@ RSpec.describe PriceRule, type: :model do
     end
   end
 
-  describe "Methods Shopify" do
-    before :context do
-      # FIXME: ShopifyAPI::PriceRule is deprecated. Who knows what this is
-      # @shopify_price_rule_id = PriceRule.create_price_rule("2$ Coupon", 2)
-    end
-
-    context "#create_price_rule from shopify" do
-      it "should be an integer" do
-        # FIXME: ShopifyAPI::PriceRule is deprecated. Who knows what this is
-        # actually doing now
-        # expect(@shopify_price_rule_id).to be_a_kind_of(Integer)
-      end
-    end
-
-    context "#update_price_rule from shopify" do
-      it "should update the price rule" do
-        # FIXME: ShopifyAPI::PriceRule is deprecated.
-        # PriceRule.update_price_rule(@shopify_price_rule_id, "6$ Coupon", 6)
-        # shopify_price_rule = ShopifyAPI::PriceRule.find(id: @shopify_price_rule_id)
-        # expect(shopify_price_rule.value).to eq("-6.0")
-        # expect(shopify_price_rule.title).to eq("6$ Coupon")
-      end
-    end
-
-    context "#delete_price_rule_from_shopify" do
-      it "should be deleting the price rule" do
-        # FIXME: ShopifyAPI::PriceRule is deprecated. Who knows what this is
-        # shopify_price_rule_id = PriceRule.create_price_rule("7$ Coupon", 7)
-        # PriceRule.delete_price_rule_from_shopify(shopify_price_rule_id)
-        # expect (
-        #   ShopifyAPI::PriceRule.find(id: shopify_price_rule_id)
-        # ).to be_nil
-      end
-    end
-
-    after :context do
-      # FIXME: ShopifyAPI::PriceRule is deprecated. Who knows what this is
-      # PriceRule.delete_price_rule_from_shopify(@shopify_price_rule_id)
-    end
-  end
-
   describe "Methods" do
     context "#has_discount_codes?" do
-      before(:all) { @price_rule = create(:price_rule_with_discount_codes) }
+      let(:price_rule) { create(:price_rule_with_discount_codes) }
+
       it "should return true" do
-        expect(@price_rule.has_discount_codes?).to eq(true)
+        expect(price_rule.has_discount_codes?).to eq(true)
       end
+
       it "should return false" do
-        @price_rule.discount_codes.destroy_all
-        expect(@price_rule.has_discount_codes?).to eq(false)
+        price_rule.discount_codes.destroy_all
+        expect(price_rule.has_discount_codes?).to eq(false)
       end
     end
   end

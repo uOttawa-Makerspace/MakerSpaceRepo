@@ -1,0 +1,38 @@
+version: "3.8"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ..:/rails:cached
+      - bundle_cache:/usr/local/bundle
+      - node_modules_cache:/rails/node_modules
+    environment:
+      DB_HOST: db
+      DB_USERNAME: postgres
+      DB_PASSWORD: password
+      RAILS_ENV: development
+      SOLID_QUEUE_IN_PUMA: "true"
+    ports:
+      - "3000:3000"
+      - "3036:3036" # Vite Dev Server HMR
+    depends_on:
+      - db
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  bundle_cache:
+  node_modules_cache:
+  pg_data:
