@@ -68,7 +68,7 @@ RSpec.describe RepositoriesController, type: :controller do
         session[:expires_at] = Time.zone.now + 10_000
         create(:repository, :with_repo_files)
 
-        expect(@controller).to receive(:send_data) {
+        expect(@controller).to receive(:send_file) {
           @controller.render plain: "OK" # to prevent a 'missing template' error
         }
 

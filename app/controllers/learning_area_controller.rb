@@ -1,4 +1,5 @@
 class LearningAreaController < DevelopmentProgramsController
+  include ActiveStorage::Streaming
   before_action :only_admin_access, only: %i[new create edit update destroy]
   before_action :set_learning_module,
                 only: %i[
@@ -109,17 +110,11 @@ class LearningAreaController < DevelopmentProgramsController
     ext = File.extname(params[:path] || blob.filename.to_s)
     content_type = Rack::Mime.mime_type(ext, blob.content_type || 'application/octet-stream')
 
-    if ActiveStorage.respond_to?(:track_variants) && blob.service.respond_to?(:path_for)
-      # If using local disk storage:
-      send_file blob.service.path_for(blob.key),
-                type: content_type,
-                disposition: :inline
-    else
-      # If using S3 / Cloud / Proxy:
-      send_data blob.download,
-                type: content_type,
-                disposition: :inline
-    end
+    # Instruct Cloudflare and the browser to cache this asset at the edge for 1 year
+    expires_in 1.year, public: true
+
+    # Use send_blob_stream for both local and cloud storage (handles HTTP 206 range requests automatically)
+    send_blob_stream blob, type: content_type, disposition: :inline
   end
 
   def scorm_commit

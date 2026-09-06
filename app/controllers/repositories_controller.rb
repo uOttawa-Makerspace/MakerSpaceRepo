@@ -14,7 +14,7 @@ class RepositoriesController < SessionsController
                   pass_authenticate
                   password_entry
                 ]
-  before_action :check_auth, only: [:show]
+  before_action :check_auth, only: %i[show download_files]
   before_action :check_ownership, only: %i[edit update destroy]
 
   def show
@@ -69,51 +69,64 @@ class RepositoriesController < SessionsController
   end
 
   def download_files
+    # Verify authorization for private repositories
+    if @repository.private? && !@check_passed
+      redirect_to password_entry_repository_path(@repository.user_username, @repository.id), alert: "Password required" and return
+    end
+
     @files = @repository.repo_files
+    if @files.empty?
+      flash[:alert] = "This repository has no files to download."
+      redirect_to repository_path(@repository.user_username, @repository.slug) and return
+    end
 
-    file_location =
-      "#{Rails.root}/public/tmp/makerepo_file_#{@repository.id.to_s}.zip"
-    directory = File.dirname(file_location)
+    zip_dir = Rails.root.join("tmp", "repository_zips")
+    FileUtils.mkdir_p(zip_dir) unless File.directory?(zip_dir)
 
-    FileUtils.mkdir_p(directory) unless File.directory?(directory)
-    File.delete(file_location) if File.file?(file_location)
+    zip_path = zip_dir.join("makerepo_#{@repository.id}.zip")
 
-    Zip::File.open(file_location, create: true) do |zip|
-      @files.each do |file|
-        downloaded_file_path = "#{Rails.root}/public/tmp/#{file.file.filename}"
-        if file.file.attached? &&
-             file.file.blob.service.exist?(file.file.blob.key)
-          File.open(downloaded_file_path, "wb") do |downloaded_file|
-            downloaded_file.write(file.file.download)
-          end
-          if zip.find_entry(file.file.filename)
-            filename =
-              file.file.filename.to_s.split(".")[0] + "_1." +
-                file.file.filename.to_s.split(".")[1]
-          else
-            filename = file.file.filename
-          end
-          zip.add(filename, downloaded_file_path)
+    # CACHE CHECK: If the zip already exists and is newer than the repository,
+    # send it immediately without touching S3
+    if File.exist?(zip_path) && File.mtime(zip_path) > @repository.updated_at
+      send_file zip_path,
+                type: "application/zip",
+                filename: "#{@repository.title.parameterize.presence || 'repository'}-#{@repository.id}.zip"
+      return
+    end
+
+    # If out of date, remove the old zip and build a new one
+    File.delete(zip_path) if File.exist?(zip_path)
+    temp_files = []
+    begin
+      Zip::File.open(zip_path, create: true) do |zip|
+        @files.each_with_index do |file, index|
+          next unless file.file.attached? && file.file.blob.service.exist?(file.file.blob.key)
+
+          temp_file = Tempfile.new(["repo_file", File.extname(file.file.filename.to_s)], binmode: true)
+          temp_files << temp_file
+
+          file.file.download { |chunk| temp_file.write(chunk) }
+          temp_file.flush
+          temp_file.rewind
+
+          entry_name = file.file.filename.to_s
+          entry_name = "#{index}_#{entry_name}" if zip.find_entry(entry_name)
+          zip.add(entry_name, temp_file.path)
         end
       end
-    end
-
-    @files.each do |file|
-      downloaded_file_path = "#{Rails.root}/public/tmp/#{file.file.filename}"
-      File.delete(downloaded_file_path) if File.exist?(downloaded_file_path)
-    end
-
-    if File.exist?(file_location)
-      File.open(file_location, "r") do |f|
-        send_data f.read,
-                  type: "application/zip",
-                  filename: "makerepo_file_#{@repository.id.to_s}.zip"
+    ensure
+      # Clean up all tempfiles after Zip::File has completely closed and flushed to disk
+      temp_files.each do |tf|
+        tf.close
+        tf.unlink
       end
-      File.delete(file_location)
-    else
-      flash[:error] = "Unable to download file: File not found."
-      redirect_to root_path
     end
+
+    # Use send_file (streams from disk, does not load entire zip into Ruby RAM)
+    # DO NOT delete the file here, keep it so subsequent downloads don't hit S3
+    send_file zip_path,
+              type: "application/zip",
+              filename: "#{@repository.title.parameterize.presence || 'repository'}-#{@repository.id}.zip"
   end
 
   def new
