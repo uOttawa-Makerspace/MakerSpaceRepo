@@ -93,6 +93,11 @@ class VolunteerTasksController < SessionsController
 
   def my_tasks
     @your_volunteer_tasks = current_user.get_volunteer_tasks_from_volunteer_joins
+    @completed_task_requests = current_user.volunteer_task_requests
+                                           .processed
+                                           .approved
+                                           .includes(volunteer_task: :space)
+                                           .order(updated_at: :desc)
   end
 
   def complete_task

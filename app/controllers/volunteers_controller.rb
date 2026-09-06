@@ -9,7 +9,7 @@ class VolunteersController < SessionsController
   before_action :current_user
   before_action :signed_in, only: :join_volunteer_program
   before_action :grant_access,
-                except: %i[join_volunteer_program],
+                except: %i[join_volunteer_program transcript],
                 unless:
                   lambda {
                     controller_name == VolunteersController.controller_name &&
@@ -175,6 +175,30 @@ class VolunteersController < SessionsController
       flash[:alert] = 'An error occurred, please make sure you choose a space.'
     end
     redirect_to calendar_volunteers_path
+  end
+  
+  def transcript
+    unless signed_in?
+      flash[:alert] = 'Please sign in to view your volunteer transcript.'
+      redirect_to login_path and return
+    end
+
+    @volunteer = if params[:user_id].present? && (current_user.staff? || current_user.admin?)
+                   User.find_by(id: params[:user_id]) || current_user
+                 else
+                   current_user
+                 end
+
+    @approved_task_requests = @volunteer.volunteer_task_requests
+                                         .processed
+                                         .approved
+                                         .includes(volunteer_task: :space)
+                                         .order(updated_at: :desc)
+    @total_hours = @volunteer.get_total_hours
+    @total_cc = @volunteer.get_total_cc
+    @certifications = @volunteer.certifications.highest_level
+
+    render layout: false
   end
 
   private

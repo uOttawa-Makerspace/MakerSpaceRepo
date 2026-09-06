@@ -25,6 +25,10 @@
         <i class="fa-solid fa-user-check text-success"></i>
         <span><%= user.name.presence || 'Volunteer' %></span>
       </span>
+      <%= link_to transcript_volunteers_path, class: "btn btn-outline-primary d-inline-flex align-items-center gap-2 flex-grow-1 flex-md-grow-0 justify-content-center", target: "_blank", rel: "noopener" do %>
+        <i class="fa-solid fa-file-lines"></i>
+        <span>Print Transcript</span>
+      <% end %>
       <%= link_to volunteer_tasks_path, class: "btn btn-primary d-inline-flex align-items-center gap-2 flex-grow-1 flex-md-grow-0 justify-content-center shadow-sm" do %>
         <i class="fa-solid fa-list-check"></i>
         <span>Find Tasks</span>
