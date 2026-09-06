@@ -611,6 +611,7 @@ Rails.application.routes.draw do
       get :volunteer_list
       match :join_volunteer_program, via: %i[get post]
       get :my_stats
+      get :transcript
       get :calendar
       get :shadowing_shifts
       get :delete_event
