@@ -305,4 +305,38 @@
     </section>
 </section>
 
+<% if @repositories.present? %>
+    <hr class="my-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+        <h3 class="mb-0"><%= t('project_proposal.repos_related') %></h3>
+        <div class="d-flex align-items-center gap-2">
+            <span class="text-body-secondary small"><%= t('project_proposal.sort_by') %>:</span>
+            <div class="btn-group btn-group-sm" role="group">
+                <%= link_to t('project_proposal.newest'), project_proposal_path(@project_proposal, sort: :newest),
+                            class: "btn btn-outline-secondary #{'active' if params[:sort].blank? || params[:sort] == 'newest'}" %>
+                <%= link_to t('project_proposal.most_likes'), project_proposal_path(@project_proposal, sort: :most_likes),
+                            class: "btn btn-outline-secondary #{'active' if params[:sort] == 'most_likes'}" %>
+                <%= link_to t('project_proposal.most_makes'), project_proposal_path(@project_proposal, sort: :most_makes),
+                            class: "btn btn-outline-secondary #{'active' if params[:sort] == 'most_makes'}" %>
+                <%= link_to t('project_proposal.recently_updated'), project_proposal_path(@project_proposal, sort: :recently_updated),
+                            class: "btn btn-outline-secondary #{'active' if params[:sort] == 'recently_updated'}" %>
+            </div>
+        </div>
+    </div>
+
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3 mb-4">
+        <% @repositories.each do |repository| %>
+            <div class="col">
+                <%= render 'repositories/repository_card', repository: repository %>
+            </div>
+        <% end %>
+    </div>
+
+    <% if @pagy && @pagy.pages > 1 %>
+        <div class="d-flex justify-content-center mb-4">
+            <%== @pagy.series_nav(:bootstrap) %>
+        </div>
+    <% end %>
+<% end %>
+
 <%= vite_javascript_tag 'carousel_thumbnails', 'data-turbo-track': 'reload' %>
