@@ -103,6 +103,8 @@ en:
       categories_placeholder: Select a category...
 
       create_proposal: Create Project Proposal
+    edit:
+      update_proposal: Update Project Proposal
 fr:
   project_proposal:
     project_proposals: "Propositions de projet"
@@ -208,3 +210,5 @@ fr:
       categories_placeholder: Sélectionner une catégorie...
 
       create_proposal: Créer une proposition de projet
+    edit:
+      update_proposal: Modifier la proposition de projet
