@@ -14,7 +14,7 @@ amazon:
   region: <%= Rails.application.credentials.dig(Rails.env.to_sym, :aws, :region) %>
   bucket: <%= Rails.application.credentials.dig(Rails.env.to_sym, :aws, :bucket_name) %>
   upload:
-    cache_control: "max-age=15552000, private"
+    cache_control: "public, max-age=31536000, immutable"
     multipart_threshold: <%= 90.megabytes %>
 # Remember not to checkin your GCS keyfile to a repository
 # google:

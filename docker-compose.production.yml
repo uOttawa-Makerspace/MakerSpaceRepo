@@ -37,6 +37,7 @@ services:
     volumes:
       - ./certs:/rails/certs:ro
       - ./secrets.yml:/rails/config/secrets.yml:ro
+      - repository_zips:/rails/tmp/repository_zips
 
   worker:
     image: ${DOCKER_IMAGE:-ghcr.io/uottawa-makerspace/makerspacerepo}:${IMAGE_TAG:-production}
@@ -59,3 +60,4 @@ services:
 
 volumes:
   production_pgdata:
+  repository_zips:

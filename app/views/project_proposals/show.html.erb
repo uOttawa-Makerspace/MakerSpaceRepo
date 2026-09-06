@@ -232,7 +232,7 @@
                         <% @project_files.each do |f| %>
                             <li class="small mb-1">
                                 <i class="fa-regular fa-file-lines"></i>
-                                <%= link_to f.filename.to_s, rails_blob_path(f, disposition: 'attachment') %>
+                                <%= link_to f.filename.to_s, rails_storage_proxy_path(f, disposition: 'attachment') %>
                                 <span class="text-body-secondary">(<%= (f.byte_size / 1024.0).round(1) %> KB)</span>
                             </li>
                         <% end %>

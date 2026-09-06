@@ -55,7 +55,7 @@
                       <li class="list-group-item me-1 d-flex justify-content-between align-items-center">
                         <p><%= existing_option.option_file.filename %></p>
                         <div class="text-end">
-                          <%= link_to sanitize("<i class='fa fa-download'></i>"), rails_blob_path(existing_option.option_file, disposition: 'attachment') %>
+                          <%= link_to sanitize("<i class='fa fa-download'></i>"), rails_storage_proxy_path(existing_option.option_file, disposition: 'attachment') %>
                         </div>
                       </li>
                     </ul>

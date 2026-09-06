@@ -21,7 +21,7 @@
             <td class="action-cell">
               <div class="d-flex flex-column gap-2">
                 <% oi.files.first(5).each do |file| %>
-                  <%= link_to rails_blob_path(file, disposition: 'attachment'), class: 'btn btn-primary btn-sm' do %>
+                  <%= link_to rails_storage_proxy_path(file, disposition: 'attachment'), class: 'btn btn-primary btn-sm' do %>
                       <i class="fa fa-download"></i> <%= file.filename %>
                   <% end %>
                 <% end %>
