@@ -96,34 +96,49 @@ class RepositoriesController < SessionsController
 
     # If out of date, remove the old zip and build a new one
     File.delete(zip_path) if File.exist?(zip_path)
+
     temp_files = []
+    files_added_count = 0
+
     begin
       Zip::File.open(zip_path, create: true) do |zip|
         @files.each_with_index do |file, index|
-          next unless file.file.attached? && file.file.blob.service.exist?(file.file.blob.key)
+          next unless file.file.attached?
 
           temp_file = Tempfile.new(["repo_file", File.extname(file.file.filename.to_s)], binmode: true)
           temp_files << temp_file
 
-          file.file.download { |chunk| temp_file.write(chunk) }
-          temp_file.flush
-          temp_file.rewind
+          begin
+            # Stream directly from S3 without the slow pre-check
+            file.file.download { |chunk| temp_file.write(chunk) }
+            temp_file.flush
+            temp_file.rewind
 
-          entry_name = file.file.filename.to_s
-          entry_name = "#{index}_#{entry_name}" if zip.find_entry(entry_name)
-          zip.add(entry_name, temp_file.path)
+            entry_name = file.file.filename.to_s
+            entry_name = "#{index}_#{entry_name}" if zip.find_entry(entry_name)
+            zip.add(entry_name, temp_file.path)
+            files_added_count += 1
+          rescue ActiveStorage::FileNotFoundError, Aws::S3::Errors::NoSuchKey
+            # Skip files that don't exist in the S3 bucket (e.g. in staging)
+            Rails.logger.warn("Attachment #{file.file.blob&.key} missing in S3, skipping.")
+          end
         end
       end
     ensure
-      # Clean up all tempfiles after Zip::File has completely closed and flushed to disk
+      # Clean up all tempfiles after Zip::File has completely closed
       temp_files.each do |tf|
         tf.close
         tf.unlink
       end
     end
 
-    # Use send_file (streams from disk, does not load entire zip into Ruby RAM)
-    # DO NOT delete the file here, keep it so subsequent downloads don't hit S3
+    # If no files actually existed in S3, don't send an empty/broken zip
+    if files_added_count.zero?
+      File.delete(zip_path) if File.exist?(zip_path)
+      flash[:alert] = "None of the files for this repository could be found in storage."
+      redirect_to repository_path(@repository.user_username, @repository.slug) and return
+    end
+
     send_file zip_path,
               type: "application/zip",
               filename: "#{@repository.title.parameterize.presence || 'repository'}-#{@repository.id}.zip"
