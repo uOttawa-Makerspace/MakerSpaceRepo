@@ -27,7 +27,7 @@ Rails.application.configure do
   config.active_storage.service = :amazon
 
   # Logging configuration
-  config.log_level = :debug
+  config.log_level = :info
   config.logger = ActiveSupport::Logger.new("#{Rails.root}/log/#{Rails.env}.log")
   config.log_tags = [:request_id]
 

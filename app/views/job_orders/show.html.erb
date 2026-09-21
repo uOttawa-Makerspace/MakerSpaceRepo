@@ -118,7 +118,7 @@
                                   <i class="fa fa-file me-2 flex-shrink-0"></i>
                                   <span class="text-truncate d-block overflow-hidden"><%= file.filename %></span>
                                 </div>
-                                <%= link_to rails_blob_path(file, disposition: "attachment"), 
+                                <%= link_to rails_storage_proxy_path(file, disposition: "attachment"), 
                                             class: "btn btn-sm btn-outline-primary flex-shrink-0 ms-2", 
                                             target: "_blank", 
                                             rel: "noopener",
@@ -160,7 +160,7 @@
                                   <i class="fa fa-file me-2 flex-shrink-0"></i>
                                   <span class="text-truncate d-block overflow-hidden"><%= file.filename %></span>
                                 </div>
-                                <%= link_to rails_blob_path(file, disposition: "attachment"), 
+                                <%= link_to rails_storage_proxy_path(file, disposition: "attachment"), 
                                             class: "btn btn-sm btn-outline-success flex-shrink-0 ms-2", 
                                             target: "_blank", 
                                             rel: "noopener",

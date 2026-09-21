@@ -35,6 +35,7 @@ class Repository < ApplicationRecord
              class_name: 'Repository',
              foreign_key: 'make_id',
              optional: true
+  after_commit :clear_zip_cache, on: %i[update destroy]
 
   scope :public_repos, -> { where(share_type: 'public') }
 
@@ -144,6 +145,16 @@ class Repository < ApplicationRecord
 
   def self.to_csv(attributes)
     CSV.generate { |csv| attributes.each { |row| csv << row } }
+  end
+
+  def zip_path
+    Rails.root.join("tmp", "repository_zips", "makerepo_#{id}.zip")
+  end
+
+  def clear_zip_cache
+    File.delete(zip_path) if File.exist?(zip_path)
+  rescue StandardError => e
+    Rails.logger.error("Failed to delete cached zip for Repository ##{id}: #{e.message}")
   end
 
   # validates :license,

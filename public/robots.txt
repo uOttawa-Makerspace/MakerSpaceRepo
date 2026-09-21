@@ -9,6 +9,7 @@ User-agent: *
 Disallow: /explore
 Disallow: /search
 Disallow: /rails/active_storage
+Disallow: */download_files*
 
 # Admin & Staff areas
 Disallow: /solid_queue/

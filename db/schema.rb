@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_20_015920) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_27_020611) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -268,6 +268,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_20_015920) do
     t.datetime "updated_at", null: false
     t.index ["course_name_id"], name: "index_events_on_course_name_id"
     t.index ["created_by_id"], name: "index_events_on_created_by_id"
+    t.index ["space_id", "draft"], name: "idx_events_on_space_and_draft"
+    t.index ["space_id", "start_time", "end_time"], name: "idx_events_on_space_and_times"
     t.index ["space_id"], name: "index_events_on_space_id"
     t.index ["training_id"], name: "index_events_on_training_id"
   end
@@ -1267,6 +1269,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_20_015920) do
     t.bigint "space_id"
     t.datetime "updated_at", null: false
     t.bigint "user_id"
+    t.index ["space_id", "user_id"], name: "idx_staff_spaces_space_user"
     t.index ["space_id"], name: "index_staff_spaces_on_space_id"
     t.index ["user_id"], name: "index_staff_spaces_on_user_id"
   end
@@ -1280,6 +1283,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_20_015920) do
     t.string "title"
     t.datetime "updated_at", null: false
     t.bigint "user_id"
+    t.index ["user_id", "start_time", "end_time"], name: "idx_staff_unavail_user_times"
     t.index ["user_id"], name: "index_staff_unavailabilities_on_user_id"
   end
 

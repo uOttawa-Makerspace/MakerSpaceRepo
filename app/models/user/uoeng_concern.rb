@@ -2,6 +2,7 @@
 
 module User::UoengConcern
   extend ActiveSupport::Concern
+  include ApplicationHelper
 
   included do
     # Verify if user qualifies for a faculty membership.

@@ -80,7 +80,7 @@ RUN --mount=type=cache,target=/rails/tmp/cache/assets \
     SECRET_KEY_BASE_DUMMY=1 bundle exec rails assets:precompile
 
 # Ensure runtime directories exist in build stage
-RUN mkdir -p certs db log storage tmp
+RUN mkdir -p certs db log storage tmp/repository_zips
 
 # Delete build artifacts, node_modules, and dummy certs
 RUN rm -rf node_modules \
