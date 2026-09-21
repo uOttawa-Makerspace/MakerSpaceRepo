@@ -2,6 +2,7 @@
 
 module User::UoengConcern
   extend ActiveSupport::Concern
+  include ApplicationHelper
 
   included do
     # Verify if user qualifies for a faculty membership.
@@ -12,7 +13,7 @@ module User::UoengConcern
         memberships.active.find_or_create_by(
           membership_tier: faculty_tier,
           status: :paid,
-          end_date: ApplicationController.helpers.end_of_this_semester
+          end_date: end_of_this_semester
         )
       else
         # Load once into memory to eliminate redundant COUNT and PLUCK queries

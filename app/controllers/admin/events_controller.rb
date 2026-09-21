@@ -269,7 +269,7 @@ class Admin::EventsController < AdminAreaController
 
     # Pre-load associations in ONE query
     event_sources = Event.where(space_id: params[:id])
-      .includes(:training, :course_name, event_assignments: :user)
+      .includes(:course_name, event_assignments: :user)
       .group_by(&:event_type)
       .map do |event_type, events|        
       {
