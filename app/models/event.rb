@@ -8,6 +8,9 @@ class Event < ApplicationRecord
   belongs_to :course_name, optional: true
 
   validates :start_time, :end_time, :created_by_id, :space_id, :event_type, presence: true
+  
+  # Only require a training if event_type is 'training' AND it's not a draft
+  validates :training_id, presence: true, if: -> { event_type == 'training' && !draft? }
 
   validate :start_time_must_be_before_end_time
   validate :weekly_frequency_must_contain_days
@@ -15,11 +18,30 @@ class Event < ApplicationRecord
   before_save :upsert_google_event
   before_destroy :delete_google_event
 
+  # Single source of truth for event title formatting across the entire app
+  def display_title(include_draft_indicator: true)
+    prefix = (draft && include_draft_indicator) ? '✎ ' : ''
+
+    return "#{prefix}#{title}" unless title == event_type.capitalize && event_assignments.any?
+
+    if event_type == 'training'
+      t_name = training&.name || 'Training'
+      details = [course_name&.name, language].compact_blank.join(' - ')
+      details_str = details.present? ? " (#{details})" : ''
+      assigned = event_assignments.map { |ea| ea.user&.name }.compact.join(', ')
+
+      "#{prefix}#{t_name}#{details_str} for #{assigned}"
+    else
+      assigned = event_assignments.map { |ea| ea.user&.name }.compact.join(', ')
+      "#{prefix}#{event_type.capitalize} for #{assigned}"
+    end
+  end
+
   private
 
   def start_time_must_be_before_end_time
     return unless start_time.present? && end_time.present? && start_time >= end_time
-      errors.add(:start_time, "must be before the end time")
+    errors.add(:start_time, "must be before the end time")
   end
   
   def weekly_frequency_must_contain_days
@@ -78,26 +100,22 @@ class Event < ApplicationRecord
       end
     end
 
-          title = if event.title == event.event_type.capitalize && !event.event_assignments.empty?
-            "#{event.event_type == 'training' ? "#{event.training.name} (#{event.course_name.name || ''} - #{event.language || ''})" : event.event_type.capitalize} for #{event.event_assignments.map do |ea|
- ea.user.name end.join(", ")}"
-          else 
-            event.title
-          end
+    # Uses centralized display_title without draft indicator for Google Calendar
+    title = event.display_title(include_draft_indicator: false)
 
     description = event.description.to_s
     if event.event_type == 'training' && event.training_id.present?
       language = case event.language
-                when 'en' then 'English'
-                when 'fr' then 'French'
-                else event.language.to_s
-                end
+                 when 'en' then 'English'
+                 when 'fr' then 'French'
+                 else event.language.to_s
+                 end
       
       training_details = [
-        "Training: #{event.training.name_en}",
+        "Training: #{event.training&.name_en || event.training&.name}",
         "Language: #{language}",
-        "Course: #{event&.course_name&.name}" # Assuming there's a course association
-      ].join("\n")
+        ("Course: #{event.course_name.name}" if event.course_name.present?)
+      ].compact.join("\n")
 
       description = [description, training_details].reject(&:blank?).join("\n\n")
     end
@@ -139,7 +157,7 @@ class Event < ApplicationRecord
     else
       begin
         response = service.insert_event(calendar_id, gcal_event)
-        event.update(google_event_id: response.id)
+        event.update_column(:google_event_id, response.id) # update_column prevents re-triggering callbacks
       rescue StandardError => e
         Rails.logger.error "Failed to create event #{event.id}: #{e.message}"
       end
@@ -155,7 +173,7 @@ class Event < ApplicationRecord
     begin
       response = service.delete_event(calendar_id, event.google_event_id)
     rescue Google::Apis::ClientError => e
-        Rails.logger.error "Failed to delete Google event #{event.id}: #{e.message}"
+      Rails.logger.error "Failed to delete Google event #{event.id}: #{e.message}"
     end
 
     response

@@ -264,20 +264,17 @@ class Admin::EventsController < AdminAreaController
   def json
     return render json: { error: "Space ID is required" }, status: :bad_request if params[:id].blank?
 
+    # Pre-load all staff space colors in ONE query
+    staff_colors = StaffSpace.where(space_id: params[:id]).pluck(:user_id, :color).to_h
+
+    # Pre-load associations in ONE query
     event_sources = Event.where(space_id: params[:id])
+      .includes(:training, :course_name, event_assignments: :user)
       .group_by(&:event_type)
       .map do |event_type, events|        
       {
         id: event_type,
         events: events.map do |event|
-          title = if event.title == event.event_type.capitalize && !event.event_assignments.empty?
-            "#{if event.draft
-                 '✎ '
-               end}#{event.event_type == 'training' ? "#{event.training.name} (#{event.course_name&.name || ''} - #{event.language || ''})" : event.event_type.capitalize} for #{event.event_assignments.map { |ea| ea.user.name }.join(", ")}"
-          else 
-            "#{'✎ ' if event.draft}#{event.title}"
-          end
-
           # seconds to milliseconds because javascript
           duration = (event.end_time.to_time - event.start_time.to_time) * 1000
 
@@ -286,17 +283,20 @@ class Admin::EventsController < AdminAreaController
           background = if event.event_assignments.empty?
             "linear-gradient(to right, #bbb 0.0%, #bbb 100.0%);#{' opacity: 0.8;' if event.draft}"
           else
-            "linear-gradient(to right, #{event.event_assignments.map.with_index do |ea, i|
-              c = StaffSpace.find_by(user_id: ea.user_id, space_id: params[:id])&.color
-              s = (100.0 / event.event_assignments.size) * i
-              e = (100.0 / event.event_assignments.size) * (i + 1)
+            total = event.event_assignments.size
+            stops = event.event_assignments.map.with_index do |ea, i|
+              c = staff_colors[ea.user_id] || '#bbb' # Fallback to '#bbb' if color is missing
+              s = (100.0 / total) * i
+              e = (100.0 / total) * (i + 1)
               "#{c} #{s}%, #{c} #{e}%"
-            end.join(', ')});#{' opacity: 0.8;' if event.draft}"
+            end.join(', ')
+
+            "linear-gradient(to right, #{stops});#{' opacity: 0.8;' if event.draft}"
           end
 
           {
             id: "event-#{event.id}",
-            title: title,
+            title: event.display_title(include_draft_indicator: true),
             start: event.start_time.iso8601,
             end: event.end_time.iso8601,
             **(event.recurrence_rule.present? ? { rrule: rrule_data, duration: duration } : {}),
@@ -312,7 +312,7 @@ class Admin::EventsController < AdminAreaController
               assignedUsers: if event.event_assignments.empty?
                 [{id: 0, name: 'Unassigned'}]
               else
-                event.event_assignments.map { |ea| { id: ea.user.id, name: ea.user.name } }
+                event.event_assignments.map { |ea| { id: ea.user&.id, name: ea.user&.name } }
               end,
               background: background
             },

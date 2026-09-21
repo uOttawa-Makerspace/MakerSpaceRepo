@@ -96,7 +96,7 @@ RSpec.describe Staff::MyCalendarController, type: :controller do
 
     context 'filtering' do
       before(:each) do
-        @training_event = create(:event, space: @space, event_type: 'training', draft: false, start_time: 1.hour.from_now, end_time: 3.hours.from_now)
+        @training_event = create(:event, :training, space: @space, draft: false, start_time: 1.hour.from_now, end_time: 3.hours.from_now)
         @meeting_event = create(:event, space: @space, event_type: 'meeting', draft: false, start_time: 1.hour.from_now, end_time: 2.hours.from_now)
         
         @assigned_user = create(:user, :staff)

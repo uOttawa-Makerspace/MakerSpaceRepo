@@ -12,7 +12,7 @@ module User::UoengConcern
         memberships.active.find_or_create_by(
           membership_tier: faculty_tier,
           status: :paid,
-          end_date: end_of_this_semester
+          end_date: ApplicationController.helpers.end_of_this_semester
         )
       else
         # Load once into memory to eliminate redundant COUNT and PLUCK queries
