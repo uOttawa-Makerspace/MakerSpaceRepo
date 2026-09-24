@@ -1,6 +1,11 @@
+# Ensure the Rails bin directory is in the PATH for Git GUI tools
+export PATH="/rails/bin:$PATH"
+
 bundle lock --add-platform aarch64-linux
-npx lint-staged
-printf "Changed Files:"
+
+yarn lint-staged
+
+printf "Changed Files:\n"
 # staged filenames, filter out deleted
 changed_files=$(git diff --name-only --staged HEAD --diff-filter=d | grep -E '\.(erb)$') && echo "$changed_files"
 if [ -n "$changed_files" ]; then
