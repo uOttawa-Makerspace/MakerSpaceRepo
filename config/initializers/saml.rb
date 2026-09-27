@@ -40,6 +40,13 @@ SamlIdp.configure do |config|
       response_hosts: %w[sedt-wikijs.makerepo.com],
       # sedt-wikijs callback URL
       acs_url: "https://sedt-wikijs.makerepo.com/login/f0ee7ebd-2077-4a5d-aff0-553705102005/callback"
+    },
+
+    "staff-wikijs.makerepo.com" => {
+      metadata_url: "https://staff-wikijs.makerepo.com/login/saml/metadata",
+      response_hosts: %w[staff-wikijs.makerepo.com],
+      # staff-wikijs callback URL
+      acs_url: "https://staff-wikijs.makerepo.com/login/c62ffc7e-7a59-4e3a-8f78-9d07bedafa30/callback"
     }
   }
 
@@ -51,9 +58,21 @@ SamlIdp.configure do |config|
 
   # extra attributes sent along with SAML response
   config.attributes = {
-    # Standard SAML/WS-Federation claim URIs
+    # 1:1 string match with Wiki.js Groups
+    groups: {
+      getter: ->(principal) {
+        if principal.admin?
+          ["Administrators"] # Wiki.js built-in admin group
+        elsif principal.staff?
+          ["Staff Readonly"]
+        else
+          [] # Empty array = No group access in Wiki.js
+        end
+      }
+    },
+
     "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress" => {
-      getter: ->(principal) { if principal.admin? then principal.email else nil end}
+      getter: ->(principal) { principal.admin? ? principal.email : nil }
     },
     "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name" => {
       getter: ->(principal) { principal.name }
