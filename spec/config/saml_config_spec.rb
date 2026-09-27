@@ -35,6 +35,11 @@ RSpec.describe "SamlConfig", type: :configuration do
         metadata_url: "https://sedt-wikijs.makerepo.com/login/saml/metadata",
         response_hosts: %w[sedt-wikijs.makerepo.com],
         acs_url: "https://sedt-wikijs.makerepo.com/login/f0ee7ebd-2077-4a5d-aff0-553705102005/callback"
+      },
+      "staff-wikijs.makerepo.com" => {
+        metadata_url: "https://staff-wikijs.makerepo.com/login/saml/metadata",
+        response_hosts: %w[staff-wikijs.makerepo.com],
+        acs_url: "https://staff-wikijs.makerepo.com/login/c62ffc7e-7a59-4e3a-8f78-9d07bedafa30/callback"
       }
     }
 
@@ -44,6 +49,7 @@ RSpec.describe "SamlConfig", type: :configuration do
       expect(service_provider).not_to be_nil
       expect(service_provider[:metadata_url]).to eq(params[:metadata_url])
       expect(service_provider[:response_hosts]).to eq(params[:response_hosts])
+      expect(service_provider[:acs_url]).to eq(params[:acs_url]) if params[:acs_url]
     end
   end
 
@@ -69,8 +75,16 @@ RSpec.describe "SamlConfig", type: :configuration do
   it "has expected attributes" do
     principal = FactoryBot.create(:user)
 
+    expected_groups = if principal.admin?
+                        ["Administrators"]
+                      elsif principal.staff?
+                        ["Staff Readonly"]
+                      else
+                        []
+                      end
+
     attributes = {
-      "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress" => if principal.admin? then principal.email else nil end,
+      "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress" => (principal.admin? ? principal.email : nil),
       "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name" => principal.name,
       "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname" => principal.name,
       email_address: principal.email,
@@ -83,7 +97,8 @@ RSpec.describe "SamlConfig", type: :configuration do
       is_volunteer: principal.volunteer?,
       role: principal.role,
       avatar_transient_url: principal.avatar.attachment&.service_url,
-      avatar_content_type: principal.avatar.attachment&.content_type
+      avatar_content_type: principal.avatar.attachment&.content_type,
+      groups: expected_groups
     }
 
     # Use match_array instead of sorting
@@ -92,16 +107,38 @@ RSpec.describe "SamlConfig", type: :configuration do
     SamlIdp.config.attributes.each do |key, attribute|
       value = attribute[:getter].call(principal)
       lookup_key = if attributes.key?(key)
-                    key
-                  elsif attributes.key?(key.to_sym)
-                    key.to_sym
-                  elsif attributes.key?(key.to_s)
-                    key.to_s
-                  end
-      
+                     key
+                   elsif attributes.key?(key.to_sym)
+                     key.to_sym
+                   elsif attributes.key?(key.to_s)
+                     key.to_s
+                   end
+
       expected_value = attributes[lookup_key]
 
       expect(value).to eq(expected_value)
+    end
+  end
+
+  describe "Wiki.js role mapping (:groups getter)" do
+    let(:getter) { SamlIdp.config.attributes[:groups][:getter] }
+    let(:principal) { FactoryBot.build(:user) }
+
+    it "maps admin users to Administrators (RW)" do
+      allow(principal).to receive(:admin?).and_return(true)
+      expect(getter.call(principal)).to eq(["Administrators"])
+    end
+
+    it "maps staff users to Staff Readonly" do
+      allow(principal).to receive(:admin?).and_return(false)
+      allow(principal).to receive(:staff?).and_return(true)
+      expect(getter.call(principal)).to eq(["Staff Readonly"])
+    end
+
+    it "maps anyone else to empty array (no access)" do
+      allow(principal).to receive(:admin?).and_return(false)
+      allow(principal).to receive(:staff?).and_return(false)
+      expect(getter.call(principal)).to eq([])
     end
   end
 end
