@@ -72,7 +72,7 @@ SamlIdp.configure do |config|
     },
 
     "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress" => {
-      getter: ->(principal) { principal.admin? ? principal.email : nil }
+      getter: ->(principal) { principal.email }
     },
     "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name" => {
       getter: ->(principal) { principal.name }

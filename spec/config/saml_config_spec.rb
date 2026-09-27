@@ -84,7 +84,7 @@ RSpec.describe "SamlConfig", type: :configuration do
                       end
 
     attributes = {
-      "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress" => (principal.admin? ? principal.email : nil),
+      "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress" => principal.email,
       "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name" => principal.name,
       "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname" => principal.name,
       email_address: principal.email,
