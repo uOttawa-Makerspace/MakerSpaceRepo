@@ -1,13 +1,13 @@
 <nav class="navbar navbar-expand-xl navbar-staff shadow-sm">
   <div class="container-fluid px-2 px-sm-3 px-xl-2 px-xxl-4">
     <a class="navbar-brand text-nowrap me-2 me-xxl-3" href="<%= volunteers_path %>"><%= t('volunteers.navbar.brand_html') %></a>
-    <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#volunteerNavbarContent" aria-controls="volunteerNavbarContent" aria-expanded="false" aria-label="Toggle navigation">
+    <button class="navbar-toggler me-auto" type="button" data-bs-toggle="collapse" data-bs-target="#volunteerNavbarContent" aria-controls="volunteerNavbarContent" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="volunteerNavbarContent">
 
       <% if current_user.volunteer? && !current_user.staff? %>
-        <ul class="navbar-nav ms-auto align-items-xl-center">
+        <ul class="navbar-nav me-auto align-items-xl-center">
           <li class="nav-item"><%= link_to t('volunteers.navbar.getting_started'), volunteers_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %></li>
           <li class="nav-item"><%= link_to t('volunteers.navbar.my_stats'), my_stats_volunteers_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %></li>
           <li class="nav-item"><%= link_to t('volunteers.navbar.volunteer_tasks'), volunteer_tasks_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %></li>
@@ -24,7 +24,7 @@
           </li>
         </ul>
       <% elsif current_user.staff? %>
-        <ul class="navbar-nav ms-auto align-items-xl-center">
+        <ul class="navbar-nav me-auto align-items-xl-center">
           <li class="nav-item"><%= link_to t('volunteers.navbar.getting_started'), volunteers_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %></li>
           <li class="nav-item"><%= link_to t('volunteers.navbar.my_stats'), my_stats_volunteers_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %></li>
           <li class="nav-item"><%= link_to t('volunteers.navbar.my_tasks'), my_tasks_volunteer_tasks_path, class: 'nav-link px-xl-1 px-xxl-2 text-nowrap' %></li>
