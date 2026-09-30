@@ -52,7 +52,33 @@
           </div>
         <% end %>
       </div>
+      <!-- ============================== -->
+      <!-- USERNAME UPDATE BLOCK          -->
+      <!-- ============================== -->
+        <div class="p-3 bg-body-tertiary rounded h-100 border mt-4" id="username-update">
+          
+          <div class="d-flex align-items-center mb-3">
+            <i class="bi bi-person-badge-fill text-warning me-2 fs-5"></i>
+            <h6 class="m-0 fw-bold">Change Username</h6>
+          </div>
+
+          <%= form_for @user, url: user_path(@user.username), method: :patch do |f| %>
+
+            <div class="mb-3">
+              <%= f.label :username, 'New Username', class: 'form-label small text-muted' %>
+              <%= f.text_field :username, class: 'form-control form-control-sm' %>
+              <% if @user.errors[:username].any? %>
+                <div class="text-danger small mt-1" style="font-size: 0.75rem;"><%= @user.errors[:username].first %></div>
+              <% end %>
+            </div>
+
+            <div class="pt-2">
+              <%= f.submit 'Update Username', class: 'btn btn-primary btn-sm w-100' %>
+            </div>
+          <% end %>
+        </div>
     </div>
+
 
     <!-- ============================================= -->
     <!-- RIGHT COLUMN: EMAIL & INTEGRATIONS            -->
