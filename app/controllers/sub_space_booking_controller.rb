@@ -117,11 +117,12 @@ class SubSpaceBookingController < SessionsController
       uba =
         UserBookingApproval.new(
           user: user,
+          identity: params[:identity],
           date: Time.now,
           approved: true,
           staff: current_user
         )
-      uba.save
+      uba.save!
       user.update(booking_approval: true)
       user.save!
       BookingMailer.send_booking_approval_request_approved(uba.id).deliver_now
