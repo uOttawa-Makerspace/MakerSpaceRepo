@@ -1,5 +1,6 @@
 class VideosController < DevelopmentProgramsController
   include VideosHelper
+  before_action :with_development_header
   before_action :grant_access_admin
   before_action :set_video, only: %i[download destroy]
 

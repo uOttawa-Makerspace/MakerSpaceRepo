@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class OrdersController < DevelopmentProgramsController
+  before_action :with_development_header
   before_action :check_wallet, only: :create
   before_action :check_permission, only: :destroy
 
