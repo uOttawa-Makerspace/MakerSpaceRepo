@@ -21,6 +21,7 @@ class ProficientProjectsController < DevelopmentProgramsController
                 :set_drop_off_location,
                 only: %i[new edit]
   before_action :set_files_photos_videos, only: %i[show edit]
+  before_action :with_development_header
 
   def index
     @skills = Skill.all

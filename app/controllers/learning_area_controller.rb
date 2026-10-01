@@ -13,6 +13,7 @@ class LearningAreaController < DevelopmentProgramsController
                 ]
 
   before_action :form_training_data, only: %i[new edit create update]
+  before_action :with_development_header
 
   def index
     # Get all modules, group by training and separate into subskills. Modules
