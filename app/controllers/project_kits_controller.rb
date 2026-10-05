@@ -1,6 +1,7 @@
 class ProjectKitsController < DevelopmentProgramsController
   before_action :current_user
   before_action :signed_in
+  before_action :with_development_header
   before_action :staff_admin_access, only: %i[new create destroy mark_delivered]
 
   def index

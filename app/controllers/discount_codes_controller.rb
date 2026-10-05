@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class DiscountCodesController < DevelopmentProgramsController
+  before_action :with_development_header
   before_action :check_and_set_price_rule_expiration, only: :create
   before_action :check_user_wallet, only: :create
 
