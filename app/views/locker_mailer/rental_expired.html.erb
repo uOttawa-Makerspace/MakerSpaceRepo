@@ -11,7 +11,7 @@
 </p>
 
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-  Your rental period for <strong>Locker #<%= @locker_rental.locker&.specifier %></strong> ended on 
+  Your rental period for locker <strong><%= @locker_rental.locker&.specifier %></strong> ended on 
   <strong><%= @locker_rental.owned_until&.to_date&.to_formatted_s(:long) %></strong>.
 </p>
 
