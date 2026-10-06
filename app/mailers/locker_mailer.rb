@@ -60,6 +60,9 @@ class LockerMailer < ApplicationMailer
   def locker_moved
     @moved_locker = params[:moved_locker]
     @moved_date = params[:moved_date]
-    mail(to: @user.email, subject: 'Your locker rental has been modified')
+    mail(
+      to: @user.email,
+      subject: "Your locker rental for Locker #{@locker_rental.locker&.specifier} has been modified"
+      )
   end
 end
