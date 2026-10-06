@@ -9,7 +9,7 @@
                 <%= vite_image_tag 'images/locker/STEM_lockers.jpg', class: 'card-img-top' %>
                 <div class="card-body">
                     <p class="fs-5"><span class="badge text-bg-success">Active</span> <%= "#{t('lockers.locker')} ##{rental.locker.specifier}" %> </p>
-                    <p>Until <%= rental.owned_until&.to_date&.to_fs:long %></p>
+                    <p>Until <%= rental.owned_until.to_date.to_fs :long %></p>
                     <%= link_to "View details", locker_rental_path(rental), class: 'btn btn-secondary' %>
                 </div>
             </div>
