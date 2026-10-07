@@ -133,6 +133,39 @@ RSpec.describe SubSpaceBookingController, type: :controller do
     end
   end
 
+  describe "PUT/approve_access" do
+    context "admin permits access for a selected user" do
+      before(:each) do
+        @user = create(:user, :admin)
+        session[:user_id] = @user.id
+        @request_user = create(:user)
+      end
+
+      it "doesn't complete the approval if the identity is missing" do
+        expect {
+          put :approve_access, params: { user_id: @request_user.id }
+        }.to raise_error(ActiveRecord::RecordInvalid)
+
+        expect(UserBookingApproval.where(user: @request_user)).to be_empty
+        expect(@request_user.reload.booking_approval).to be_falsey
+      end
+
+      it "creates the approval when an identity is provided" do
+        put :approve_access,
+            params: { user_id: @request_user.id, identity: "Staff" }
+
+        expect(response).to redirect_to(
+          sub_space_booking_index_path(anchor: "booking-admin-tab")
+        )
+        uba = UserBookingApproval.find_by(user: @request_user)
+        expect(uba.approved).to be(true)
+        expect(uba.staff_id).to eq(@user.id)
+        expect(uba.identity).to eq("Staff")
+        expect(@request_user.reload.booking_approval).to be(true)
+      end
+    end
+  end
+
   describe "PUT/bulk_approve_decline" do
     context "create some bookings" do
       it "should create some bookings" do
