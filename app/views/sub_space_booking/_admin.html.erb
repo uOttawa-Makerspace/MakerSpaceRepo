@@ -239,7 +239,6 @@
           <%= form_with url: approve_access_sub_space_booking_index_path, method: :put, class: 'mb-4' do |f| %>
             <div class="input-group">
               <%= f.select :user_id, [], {}, { class: 'form-select', id: 'user_booking_select' } %>
-              <%= f.select :identity, %w[JMTS Staff GNG Other], { prompt: 'Group' }, { class: 'form-select flex-grow-0 w-auto', required: true } %>
               <%= f.submit 'Permit Access', class: 'btn btn-primary fw-bold' %>
             </div>
           <% end %>
