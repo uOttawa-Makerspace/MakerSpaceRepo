@@ -114,22 +114,24 @@ class SubSpaceBookingController < SessionsController
   def approve_access
     if params[:id].nil?
       user = User.find(params[:user_id])
-      uba =
-        UserBookingApproval.new(
-          user: user,
-          date: Time.now,
-          approved: true,
-          staff: current_user
-        )
-      uba.save
+      uba = UserBookingApproval.find_or_initialize_by(user: user)
+      if uba.approved? && user.booking_approval?
+        redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
+                    notice: "#{user.name} already has booking access."
+        return
+      end
+      uba.identity ||= "Other"
+      uba.assign_attributes(date: Time.now, approved: true, staff: current_user)
+      uba.save!
       user.update(booking_approval: true)
       user.save!
       BookingMailer.send_booking_approval_request_approved(uba.id).deliver_now
-      redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab")
+      redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
+                  notice: "Access granted successfully."
     else
       user = UserBookingApproval.find(params[:id]).user
       uba = UserBookingApproval.find(params[:id])
-      uba.update(approved: true, staff_id: current_user.id)
+      uba.update!(approved: true, staff_id: current_user.id)
       user.update(booking_approval: true)
       user.save!
       BookingMailer.send_booking_approval_request_approved(uba.id).deliver_now
