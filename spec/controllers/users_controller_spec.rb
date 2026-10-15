@@ -410,7 +410,7 @@ RSpec.describe UsersController, type: :controller do
             }
         expect(response).to redirect_to settings_admin_path
         expect(flash[:alert]).to eq(
-          "This email is already in use."
+          "This email is already used by a MakerRepo Account."
         )
       end
 

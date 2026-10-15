@@ -9,7 +9,30 @@ RSpec.describe Admin::UsersController, type: :controller do
   end
 
   describe "GET /users/:id/change_email" do
-    let(:target_user) { create(:user, :regular_user) }
+    context "logged in as admin" do
+      it "should allow email change for another user" do
+        let(:target_user) {create(:user, :regular_user)}
+        old_email = target_user.email
+        session[:user_id] = @admin.id
+        session[:expires_at] = Time.zone.now + 10_000
+        @target_user_hash = Rails.application.message_verifier(:target_user).generate(target_user.id)
+        @new_email_hash = 
+          Rails.application.message_verifier(:new_email).generate("alice@alice.ca")
+        get :confirm_edited_email,
+          params: {
+            target_email_token: @target_email_hash,
+            target_user_token: @target_user_hash
+          }
+        expect(response).to redirect_to_edit_admin_user_path
+        expect(ActionMailer::Base.deliveries.count).to eq(1)
+        expect(ActionMailer::Base.deliveries.first.to.first).to eq("old_email")
+        expect(target_user.last.email).to eq(alice@alice.ca)
+        expect(flash[:notice]).to eq(
+          "The email has been updated to alice@alice.ca !"
+        )
+      end
+      
+
 
     it "sends a confirmation email for the user" do
       get :change_email,
@@ -36,7 +59,7 @@ RSpec.describe Admin::UsersController, type: :controller do
           }
 
       expect(response).to redirect_to(edit_admin_user_path(target_user))
-      expect(flash[:alert]).to eq("This email is already in use.")
+      expect(flash[:alert]).to eq("This email is already used by a MakerRepo Account.")
       expect(ActionMailer::Base.deliveries).to be_empty
     end
 

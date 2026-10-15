@@ -95,7 +95,7 @@ class Admin::UsersController < AdminAreaController
     elsif User.unscoped.where("LOWER(email) = ?", new_email)
               .where.not(id: @edit_admin_user.id).exists?
       redirect_to edit_admin_user_path(@edit_admin_user),
-                  alert: "This email is already in use."
+                  alert: "This email is already used by a MakerRepo Account."
     else
       user_hash = Rails.application.message_verifier(:user).generate(@edit_admin_user.id)
       email_hash = Rails.application.message_verifier(:email).generate(new_email)
