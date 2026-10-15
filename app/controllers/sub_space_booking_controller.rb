@@ -120,21 +120,11 @@ class SubSpaceBookingController < SessionsController
                     notice: "#{user.name} already has booking access."
         return
       end
-      uba.identity ||= "Other"
-      uba.assign_attributes(date: Time.now, approved: true, staff: current_user)
-      uba.save!
-      user.update(booking_approval: true)
-      user.save!
-      BookingMailer.send_booking_approval_request_approved(uba.id).deliver_now
+      grant_booking_access!(uba)
       redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                   notice: "Access granted successfully."
     else
-      user = UserBookingApproval.find(params[:id]).user
-      uba = UserBookingApproval.find(params[:id])
-      uba.update!(approved: true, staff_id: current_user.id)
-      user.update(booking_approval: true)
-      user.save!
-      BookingMailer.send_booking_approval_request_approved(uba.id).deliver_now
+      grant_booking_access!(UserBookingApproval.find(params[:id]))
       redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                   notice: "Access request approved successfully."
     end
@@ -156,25 +146,9 @@ class SubSpaceBookingController < SessionsController
       return
     end
 
-    valid_identities = %w[JMTS Staff GNG Other]
-
     UserBookingApproval
       .where(id: params[:user_booking_approval_ids])
-      .each do |uba|
-        unless valid_identities.include?(uba.identity)
-          uba.identity = "Other"
-        end
-
-        uba.update!(
-          identity: uba.identity,
-          approved: true,
-          staff_id: current_user.id
-        )
-
-        uba.user.update!(booking_approval: true)
-
-        BookingMailer.send_booking_approval_request_approved(uba.id).deliver_later
-      end
+      .each { |uba| grant_booking_access!(uba) }
 
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                 notice: "All selected access requests approved successfully."
@@ -703,6 +677,16 @@ class SubSpaceBookingController < SessionsController
   end
 
   private
+
+  def grant_booking_access!(uba)
+    uba.identity = "Other" unless %w[JMTS Staff GNG Other].include?(uba.identity)
+    uba.date ||= Time.now
+    UserBookingApproval.transaction do
+      uba.update!(approved: true, staff: current_user)
+      uba.user.update!(booking_approval: true)
+    end
+    BookingMailer.send_booking_approval_request_approved(uba.id).deliver_later
+  end
 
   def load_recurring_bookings_for_page(paginated_bookings)
     # Get unique recurring_booking_ids from current page
