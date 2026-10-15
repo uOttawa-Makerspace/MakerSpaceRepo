@@ -8,6 +8,75 @@ RSpec.describe Admin::UsersController, type: :controller do
     @space = create(:space)
   end
 
+  describe "GET /users/:id/change_email" do
+    context "logged in as admin" do
+      it "should allow email change for another user" do
+        let(:target_user) {create(:user, :regular_user)}
+        old_email = target_user.email
+        session[:user_id] = @admin.id
+        session[:expires_at] = Time.zone.now + 10_000
+        @target_user_hash = Rails.application.message_verifier(:target_user).generate(target_user.id)
+        @new_email_hash = 
+          Rails.application.message_verifier(:new_email).generate("alice@alice.ca")
+        get :confirm_edited_email,
+          params: {
+            target_email_token: @target_email_hash,
+            target_user_token: @target_user_hash
+          }
+        expect(response).to redirect_to_edit_admin_user_path
+        expect(ActionMailer::Base.deliveries.count).to eq(1)
+        expect(ActionMailer::Base.deliveries.first.to.first).to eq("old_email")
+        expect(target_user.last.email).to eq(alice@alice.ca)
+        expect(flash[:notice]).to eq(
+          "The email has been updated to alice@alice.ca !"
+        )
+      end
+      
+
+
+    it "sends a confirmation email for the user" do
+      get :change_email,
+          params: {
+            id: target_user.id,
+            new_email: "new-address@example.com",
+            confirm_new_email: "new-address@example.com"
+          }
+
+      expect(response).to redirect_to(edit_admin_user_path(target_user))
+      expect(flash[:notice]).to eq("A confirmation email has been sent to the new email")
+      expect(ActionMailer::Base.deliveries.last.to).to eq(["new-address@example.com"])
+      expect(target_user.reload.email).not_to eq("new-address@example.com")
+    end
+
+    it "rejects an email already used by another account" do
+      existing_user = create(:user, :regular_user)
+
+      get :change_email,
+          params: {
+            id: target_user.id,
+            new_email: existing_user.email,
+            confirm_new_email: existing_user.email
+          }
+
+      expect(response).to redirect_to(edit_admin_user_path(target_user))
+      expect(flash[:alert]).to eq("This email is already used by a MakerRepo Account.")
+      expect(ActionMailer::Base.deliveries).to be_empty
+    end
+
+    it "rejects confirmation emails that do not match" do
+      get :change_email,
+          params: {
+            id: target_user.id,
+            new_email: "new-address@example.com",
+            confirm_new_email: "different-address@example.com"
+          }
+
+      expect(response).to redirect_to(edit_admin_user_path(target_user))
+      expect(flash[:alert]).to eq("This confirmation email isn't matching the new email")
+      expect(ActionMailer::Base.deliveries).to be_empty
+    end
+  end
+
   describe "GET /index" do
     context "logged in as regular user" do
       it "should redirect to root" do
