@@ -128,6 +128,8 @@ class SubSpaceBookingController < SessionsController
       redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                   notice: "Access request approved successfully."
     end
+  rescue ActiveRecord::RecordInvalid => e
+    approval_failed(e)
   end
 
   def deny_access
@@ -153,9 +155,7 @@ class SubSpaceBookingController < SessionsController
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                 notice: "All selected access requests approved successfully."
   rescue ActiveRecord::RecordInvalid => e
-    # Because we used update! above, any failures will now properly jump here and show you the exact error
-    redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                alert: "Failed to approve: #{e.record.errors.full_messages.join(", ")}"
+    approval_failed(e)
   end
 
   def users
@@ -686,6 +686,11 @@ class SubSpaceBookingController < SessionsController
       uba.user.update!(booking_approval: true)
     end
     BookingMailer.send_booking_approval_request_approved(uba.id).deliver_later
+  end
+
+  def approval_failed(error)
+    redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
+                alert: "Failed to approve: #{error.record.errors.full_messages.join(", ")}"
   end
 
   def load_recurring_bookings_for_page(paginated_bookings)
