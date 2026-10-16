@@ -101,6 +101,44 @@ RSpec.describe SubSpaceBookingController, type: :controller do
     end
   end
 
+  describe "PUT/request_access" do
+    context "user requests booking access" do
+      it "creates a pending request when a reason is provided" do
+        expect {
+          put :request_access,
+              params: { identity: "Other", comments: "Need access" }
+        }.to change { ActionMailer::Base.deliveries.count }.by(1)
+
+        expect(response).to redirect_to(root_path)
+        expect(flash[:notice]).to eq("Access request submitted successfully.")
+        uba = UserBookingApproval.find_by(user: @user)
+        expect(uba.approved).to be(false)
+        expect(uba.identity).to eq("Other")
+        expect(uba.comments).to eq("Need access")
+      end
+
+      it "doesn't create a request when the reason is missing" do
+        put :request_access, params: { identity: "Other" }
+
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to eq(
+          "Please provide a reason for booking access."
+        )
+        expect(UserBookingApproval.where(user: @user)).to be_empty
+      end
+
+      it "doesn't create another request if one already exists" do
+        2.times do
+          put :request_access,
+              params: { identity: "Other", comments: "Need access" }
+        end
+
+        expect(flash[:alert]).to eq("You have already requested access.")
+        expect(UserBookingApproval.where(user: @user).count).to eq(1)
+      end
+    end
+  end
+
   describe "PUT/bulk_approve_access" do
     context "admin bulk approves selected access requests" do
       it "completes approval even if the request identity is missing or invalid" do
@@ -129,6 +167,78 @@ RSpec.describe SubSpaceBookingController, type: :controller do
         expect(uba.approved).to be(true)
         expect(uba.staff_id).to eq(@user.id)
         expect(uba.identity).to eq("Other")
+      end
+    end
+  end
+
+  describe "PUT/approve_access" do
+    context "admin permits access for a selected user" do
+      before(:each) do
+        @user = create(:user, :admin)
+        session[:user_id] = @user.id
+        @request_user = create(:user)
+      end
+
+      it "creates the approval when no identity is provided" do
+        put :approve_access, params: { user_id: @request_user.id }
+
+        expect(response).to redirect_to(
+          sub_space_booking_index_path(anchor: "booking-admin-tab")
+        )
+        expect(flash[:notice]).to eq("Access granted successfully.")
+        uba = UserBookingApproval.find_by(user: @request_user)
+        expect(uba.approved).to be(true)
+        expect(uba.staff_id).to eq(@user.id)
+        expect(uba.identity).to eq("Other")
+        expect(@request_user.reload.booking_approval).to be(true)
+      end
+
+      it "doesn't create a duplicate approval when permitted twice" do
+        2.times do
+          put :approve_access, params: { user_id: @request_user.id }
+        end
+
+        expect(UserBookingApproval.where(user: @request_user).count).to eq(1)
+        expect(@request_user.reload.booking_approval).to be(true)
+      end
+
+      it "does nothing when the user is already approved" do
+        put :approve_access, params: { user_id: @request_user.id }
+        uba = UserBookingApproval.find_by(user: @request_user)
+        approved_at = uba.updated_at
+
+        expect {
+          put :approve_access, params: { user_id: @request_user.id }
+        }.not_to change { ActionMailer::Base.deliveries.count }
+
+        expect(response).to redirect_to(
+          sub_space_booking_index_path(anchor: "booking-admin-tab")
+        )
+        expect(flash[:notice]).to eq(
+          "#{@request_user.name} already has booking access."
+        )
+        expect(uba.reload.updated_at).to eq(approved_at)
+        expect(UserBookingApproval.where(user: @request_user).count).to eq(1)
+      end
+
+      it "approves the user's existing pending request instead of creating a new one" do
+        pending_request =
+          UserBookingApproval.create!(
+            user: @request_user,
+            date: Time.now,
+            comments: "Need access",
+            approved: false,
+            identity: "Staff"
+          )
+
+        put :approve_access, params: { user_id: @request_user.id }
+
+        expect(UserBookingApproval.where(user: @request_user).count).to eq(1)
+        pending_request.reload
+        expect(pending_request.approved).to be(true)
+        expect(pending_request.staff_id).to eq(@user.id)
+        expect(pending_request.identity).to eq("Staff")
+        expect(@request_user.reload.booking_approval).to be(true)
       end
     end
   end
