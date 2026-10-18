@@ -114,28 +114,22 @@ class SubSpaceBookingController < SessionsController
   def approve_access
     if params[:id].nil?
       user = User.find(params[:user_id])
-      uba =
-        UserBookingApproval.new(
-          user: user,
-          date: Time.now,
-          approved: true,
-          staff: current_user
-        )
-      uba.save
-      user.update(booking_approval: true)
-      user.save!
-      BookingMailer.send_booking_approval_request_approved(uba.id).deliver_now
-      redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab")
+      uba = UserBookingApproval.find_or_initialize_by(user: user)
+      if uba.approved? && user.booking_approval?
+        redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
+                    notice: "#{user.name} already has booking access."
+        return
+      end
+      grant_booking_access!(uba)
+      redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
+                  notice: "Access granted successfully."
     else
-      user = UserBookingApproval.find(params[:id]).user
-      uba = UserBookingApproval.find(params[:id])
-      uba.update(approved: true, staff_id: current_user.id)
-      user.update(booking_approval: true)
-      user.save!
-      BookingMailer.send_booking_approval_request_approved(uba.id).deliver_now
+      grant_booking_access!(UserBookingApproval.find(params[:id]))
       redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                   notice: "Access request approved successfully."
     end
+  rescue ActiveRecord::RecordInvalid => e
+    approval_failed(e)
   end
 
   def deny_access
@@ -154,32 +148,14 @@ class SubSpaceBookingController < SessionsController
       return
     end
 
-    valid_identities = %w[JMTS Staff GNG Other]
-
     UserBookingApproval
       .where(id: params[:user_booking_approval_ids])
-      .each do |uba|
-        unless valid_identities.include?(uba.identity)
-          uba.identity = "Other"
-        end
-
-        uba.update!(
-          identity: uba.identity,
-          approved: true,
-          staff_id: current_user.id
-        )
-
-        uba.user.update!(booking_approval: true)
-
-        BookingMailer.send_booking_approval_request_approved(uba.id).deliver_later
-      end
+      .each { |uba| grant_booking_access!(uba) }
 
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                 notice: "All selected access requests approved successfully."
   rescue ActiveRecord::RecordInvalid => e
-    # Because we used update! above, any failures will now properly jump here and show you the exact error
-    redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                alert: "Failed to approve: #{e.record.errors.full_messages.join(", ")}"
+    approval_failed(e)
   end
 
   def users
@@ -701,6 +677,21 @@ class SubSpaceBookingController < SessionsController
   end
 
   private
+
+  def grant_booking_access!(uba)
+    uba.identity = "Other" unless %w[JMTS Staff GNG Other].include?(uba.identity)
+    uba.date ||= Time.now
+    UserBookingApproval.transaction do
+      uba.update!(approved: true, staff: current_user)
+      uba.user.update!(booking_approval: true)
+    end
+    BookingMailer.send_booking_approval_request_approved(uba.id).deliver_later
+  end
+
+  def approval_failed(error)
+    redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
+                alert: "Failed to approve: #{error.record.errors.full_messages.join(", ")}"
+  end
 
   def load_recurring_bookings_for_page(paginated_bookings)
     # Get unique recurring_booking_ids from current page
