@@ -22,6 +22,18 @@ class LockerMailerPreview < ActionMailer::Preview
     LockerMailer.with(locker_rental: locker_rental).locker_cancelled
   end
 
+  def rental_expired
+    locker_rental = find_or_create_locker_rental_with_locker
+    LockerMailer.with(locker_rental: locker_rental).rental_expired
+  end
+
+  def locker_moved
+    locker_rental = find_or_create_locker_rental_with_locker
+    moved_locker = Locker.first || Locker.create!(specifier: "TEST-202")
+    moved_date = Date.today + 7.days
+    LockerMailer.with(locker_rental: locker_rental, moved_locker: moved_locker, moved_date: moved_date).locker_moved
+  end 
+
   private
 
   def find_or_create_locker_rental_with_locker
