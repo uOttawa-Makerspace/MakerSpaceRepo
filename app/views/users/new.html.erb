@@ -72,6 +72,11 @@
             </div>
 
             <div class="form-check">
+              <%= form.radio_button :identity, 'staff_member', class: 'form-check-input', 'data-hide': '#students-only', required: true %>
+              <%= form.label :identity, t('users.new.form.staff_member'), class: 'form-check-label', value: 'staff_member' %>
+            </div>
+
+            <div class="form-check">
               <%= form.radio_button :identity, 'community_member', class: 'form-check-input', 'data-hide': '#students-only', required: true %>
               <%= form.label :identity, t('users.new.form.community_member'), class: 'form-check-label', value: 'community_member' %>
             </div>

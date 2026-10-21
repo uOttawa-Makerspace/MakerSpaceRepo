@@ -54,6 +54,7 @@ class User < ApplicationRecord
     international_grad
     international_undergrad
     faculty_member
+    staff_member
     community_member
     unknown
   ].freeze
@@ -67,6 +68,7 @@ class User < ApplicationRecord
 
   INTERNAL_IDENTITIES = %w[
     faculty_member
+    staff_member
     grad
     undergrad
     international_grad

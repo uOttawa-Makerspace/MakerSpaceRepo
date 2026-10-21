@@ -46,13 +46,14 @@
           ['grad', 'grad'],
           ['international_grad', 'international_grad'],
           ['faculty_member', 'faculty_member'],
+          ['staff_member', 'staff_member'],
           ['community_member', 'community_member']
         ] %>
 
         <% identities.each do |id_val, trans_key| %>
           <div class="form-check">
             <% 
-               data_attrs = ['faculty_member', 'community_member'].include?(id_val) ? { 'data-hide': '#students-only' } : { 'data-show': '#students-only' }
+               data_attrs = ['faculty_member', 'staff_member', 'community_member'].include?(id_val) ? { 'data-hide': '#students-only' } : { 'data-show': '#students-only' }
             %>
             <%= f.radio_button :identity, id_val, class: 'form-check-input', **data_attrs %>
             <%= f.label :identity, t("users.new.form.#{trans_key}"), class: 'form-check-label', value: id_val %>
