@@ -353,7 +353,7 @@ class Admin::UsersController < AdminAreaController
     return unless rfid
     
     #Do nothing if the RFID is already the users
-    return if @edit_admin_user.rfid&id == rfid.id
+    return if @edit_admin_user.rfid&.id == rfid.id
 
     @edit_admin_user.rfid&.destroy!
     rfid.update!(user: @edit_admin_user)
