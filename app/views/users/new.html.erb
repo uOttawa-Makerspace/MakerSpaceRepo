@@ -45,42 +45,12 @@
 
           <div class="mb-3">
             <%= form.label :identity, t('users.new.form.i_am'), class: 'required' %>
-
+            <% for account_type in User::ACCOUNT_IDENTITIES %>
             <div class="form-check">
-              <%= form.radio_button :identity, 'undergrad', class: 'form-check-input', 'data-show': '#students-only', required: true %>
-              <%= form.label :identity, t('users.new.form.undergrad'), class: 'form-check-label', value: 'undergrad' %>
+              <%= form.radio_button :identity, account_type, class: 'form-check-input', (User::STUDENT_IDENTITIES.include?(account_type) ? 'data-show' : 'data-hide') => '#students-only', required: true %>
+              <%= form.label :identity, t("users.new.form.#{account_type}"), class: 'form-check-label', value: account_type %>
             </div>
-
-            <div class="form-check">
-              <%= form.radio_button :identity, 'international_undergrad', class: 'form-check-input', 'data-show': '#students-only', required: true %>
-              <%= form.label :identity, t('users.new.form.international_undergrad'), class: 'form-check-label', value: 'international_undergrad' %>
-            </div>
-
-            <div class="form-check">
-              <%= form.radio_button :identity, 'grad', class: 'form-check-input', 'data-show': '#students-only', required: true %>
-              <%= form.label :identity, t('users.new.form.grad'), class: 'form-check-label', value: 'grad' %>
-            </div>
-
-            <div class="form-check">
-              <%= form.radio_button :identity, 'international_grad', class: 'form-check-input', 'data-show': '#students-only', required: true %>
-              <%= form.label :identity, t('users.new.form.international_grad'), class: 'form-check-label', value: 'international_grad' %>
-            </div>
-
-            <div class="form-check">
-              <%= form.radio_button :identity, 'faculty_member', class: 'form-check-input', 'data-hide': '#students-only', required: true %>
-              <%= form.label :identity, t('users.new.form.faculty_member'), class: 'form-check-label', value: 'faculty_member' %>
-            </div>
-
-            <div class="form-check">
-              <%= form.radio_button :identity, 'staff_member', class: 'form-check-input', 'data-hide': '#students-only', required: true %>
-              <%= form.label :identity, t('users.new.form.staff_member'), class: 'form-check-label', value: 'staff_member' %>
-            </div>
-
-            <div class="form-check">
-              <%= form.radio_button :identity, 'community_member', class: 'form-check-input', 'data-hide': '#students-only', required: true %>
-              <%= form.label :identity, t('users.new.form.community_member'), class: 'form-check-label', value: 'community_member' %>
-            </div>
-
+            <% end %>
           </div>
 
           <fieldset id="students-only">
