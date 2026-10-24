@@ -9,6 +9,7 @@ RUN apk add --no-cache \
     bash \
     build-base \
     ca-certificates \
+    chromium \
     curl \
     git \
     jemalloc \
