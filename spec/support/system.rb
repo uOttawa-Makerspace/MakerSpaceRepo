@@ -22,6 +22,11 @@ Capybara.register_driver :headless_chrome do |app|
   options.add_argument("--disable-gpu")
   options.add_argument("--disable-dev-shm-usage")
   options.add_argument("--window-size=1600,1000")
+  # Hermetic browser: WebMock only guards Ruby HTTP, Chrome would otherwise
+  # reach the real internet (Cloudflare Turnstile, CDNs, fonts). Everything
+  # except the local Capybara server fails DNS, so results do not depend on
+  # network access; the resulting console errors are allowlisted (D-JS04).
+  options.add_argument("--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1")
   # Capture console output so JsErrorCheck (below) can fail examples on SEVERE
   # entries. Selenium 4.48 + chromedriver: the legacy goog:loggingPrefs
   # capability works and `driver.logs.get(:browser)` returns the entries.

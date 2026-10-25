@@ -16,6 +16,19 @@ module JsErrorCheck
     # WART(D-JS01): job_orders/new "Start Production" inline onclick is broken
     # HTML (see D-J19); the browser logs a SyntaxError when the page loads.
     { id: "D-JS01", path: %r{/job_orders/new\b}, message: /Uncaught SyntaxError: missing \) after argument list/ },
+    # WART(D-JS02): locker_admin.js calls `bootstrap.Tooltip` but only the
+    # `Tooltip` named import is bundled (no global `bootstrap`), so on any staff
+    # page that has a data-bs-toggle="tooltip" (staff header) the turbo:load
+    # handler throws before the "Indefinite" checkbox wiring runs.
+    { id: "D-JS02", path: %r{/vite-test/assets/locker_admin-}, message: /locker_admin-[\w-]+\.js .*Uncaught ReferenceError: bootstrap is not defined/ },
+    # WART(D-JS03): the 500 from GET /locker_rentals for an indefinite active
+    # rental (D-E2E01) is logged by Chrome as a SEVERE resource error.
+    { id: "D-JS03", path: %r{/locker_rentals(\z|\s)}, message: /locker_rentals - Failed to load resource: the server responded with a status of 500/ },
+    # WART(D-JS04): pages load third-party scripts straight from the internet
+    # (Cloudflare Turnstile, UserWay widget). The system browser resolves no
+    # external host (see --host-resolver-rules in system.rb), so each logs a
+    # DNS failure. Extend the host list only with the same kind of resource.
+    { id: "D-JS04", path: %r{https://(challenges\.cloudflare\.com|cdn\.userway\.org)/}, message: /Failed to load resource: net::ERR_NAME_NOT_RESOLVED/ },
   ].freeze
 
   module_function
