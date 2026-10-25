@@ -167,22 +167,37 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(unread.reload.is_read).to be(true)
     end
 
-    it "does NOT mark messages read for non-owner viewers" do
+    it "does NOT mark messages read for non-owner viewers (staff)" do
       order = order_with_task!(owner: owner)
       ChatMessage.create!(job_order: order, sender: staff, message: "hi")
-      http_login!(other)
+      seed_job_types!
+      order.job_tasks.first.update!(job_type: JobType.find_by!(name: "3D Print"))
+      http_login!(staff)
       get job_order_path(order)
       expect(response).to have_http_status(:ok)
       expect(order.chat_messages.first.reload.is_read).to be(false)
     end
 
-    # WART(D-J06): show has no ownership gate
-    it "renders another user's order, with the owner's email, to any signed-in user" do
+    # FIXED(D-J06): show is limited to the owner, staff and admin
+    it "refuses another regular user (no_permission redirect, no owner email)" do
       order = order_with_task!(owner: owner)
       http_login!(other)
       get job_order_path(order)
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include(owner.email)
+      expect(response).to redirect_to(new_job_orders_path)
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.no_permission"))
+      expect(response.body).not_to include(owner.email)
+    end
+
+    it "renders the order, with the owner's email, to staff and admin" do
+      order = order_with_task!(owner: owner)
+      seed_job_types!
+      order.job_tasks.first.update!(job_type: JobType.find_by!(name: "3D Print"))
+      [staff, admin].each do |viewer|
+        http_login!(viewer)
+        get job_order_path(order)
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include(owner.email)
+      end
     end
 
     it "shows the action-required notice to an owner under USER_APPROVAL" do
@@ -198,7 +213,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
     it "alerts when tasks are missing required information" do
       order = make_job_order!(owner: owner, status_key: :staff_approval)
       order.job_tasks.create!(title: "Task #1")
-      http_login!(other)
+      http_login!(owner)
       get job_order_path(order)
       expect(response).to have_http_status(:ok)
       expect(flash[:alert])
@@ -749,17 +764,24 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(flash[:notice]).to eq("#{admin.name} has been assigned to this job order.")
     end
 
-    # WART(D-J07): assign_staff skips grant_access and set_job_order
-    it "lets any signed-in user self-assign (staff_id == own id) with no mail" do
+    # FIXED(D-J07): assign_staff goes through grant_access (staff/admin only)
+    it "refuses a regular user self-assigning (staff_id == own id)" do
       order = order_with_task!(owner: owner)
       http_login!(other)
       perform_enqueued_jobs do
         patch job_order_assign_staff_path(order), params: { staff_id: other.id }
       end
       expect(ActionMailer::Base.deliveries).to be_empty
-      expect(response).to redirect_to(job_orders_path)
-      expect(flash[:notice]).to eq("#{other.name} has been assigned to this job order.")
-      expect(order.reload.assigned_staff).to eq(other)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.cannot_access_area"))
+      expect(order.reload.assigned_staff).to be_nil
+    end
+
+    it "redirects a guest to login and assigns nobody" do
+      order = order_with_task!(owner: owner)
+      patch job_order_assign_staff_path(order), params: { staff_id: other.id }
+      expect(response).to have_http_status(:redirect)
+      expect(order.reload.assigned_staff).to be_nil
     end
 
     it "staff can claim a job themselves (Assign Me button path) with no mail" do
@@ -774,10 +796,10 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
 
     # WART(D-J08): the else-flash dereferences @job_order.assigned_staff.name
     # with no assigned staff → NoMethodError → 500 instead of a friendly flash.
-    it "renders 500 (NoMethodError) when a non-permitted user tries to assign someone else" do
+    it "renders 500 (NoMethodError) when a non-admin staff member tries to assign someone else" do
       order = order_with_task!(owner: owner)
-      http_login!(other)
-      patch job_order_assign_staff_path(order), params: { staff_id: staff.id }
+      http_login!(staff)
+      patch job_order_assign_staff_path(order), params: { staff_id: admin.id }
       expect(response).to have_http_status(:internal_server_error)
       expect(response.body).to include("NoMethodError")
       expect(order.reload.assigned_staff).to be_nil
