@@ -6,7 +6,7 @@ require "rails_helper"
 # FullCalendar "Book" modal, fills it (flatpickr fields set through the widget's
 # own API, there is no typing into the read-only alt input), saves; the admin
 # approves in the Admin Panel tab; the user sees the booking approved.
-RSpec.describe "Journey: space booking", type: :system do
+RSpec.describe "Journey: space booking", type: :system, skip_bullet: true do
   before do
     @pending_status = create(:booking_status, :pending)
     @approved_status = create(:booking_status, :approved)

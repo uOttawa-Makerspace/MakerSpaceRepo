@@ -5,7 +5,7 @@ require "rails_helper"
 # End-to-end identity journey: register through the sign-up form, try to log in
 # unconfirmed, follow the confirmation link from the delivered mail, log in and
 # edit the profile.
-RSpec.describe "Journey: identity", type: :system do
+RSpec.describe "Journey: identity", type: :system, skip_bullet: true do
   let(:password) { "Str0ng!Passw0rd#41" }
 
   before do

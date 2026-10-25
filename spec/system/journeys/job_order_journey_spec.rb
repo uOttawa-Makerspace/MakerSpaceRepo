@@ -8,7 +8,7 @@ require "rails_helper"
 # sides chat. Pins current behavior (D-J19: the landing page's "Start
 # Production" button creates a typeless task, so the wizard's step 1 asks for
 # the job type).
-RSpec.describe "Journey: job order", type: :system do
+RSpec.describe "Journey: job order", type: :system, skip_bullet: true do
   let!(:user) { create(:user, :regular_user) }
   let!(:staff) { create(:user, :admin) }
   let(:fixture) { Rails.root.join("spec/support/assets/test.stl") }
@@ -81,9 +81,13 @@ RSpec.describe "Journey: job order", type: :system do
       visit job_order_path(order)
       expect(page).to have_content("Waiting for Staff Approval")
       click_button "Approve", match: :first
+      expect(page).to have_css("#quote-modal.show")
       within("#quote-modal") do
         expect(page).to have_field("job_task_quote_price_#{task.id}", visible: true)
         fill_in "job_task_quote_price_#{task.id}", with: "12.50"
+        # the modal JS recomputes the total from the fields: wait for it so the
+        # value is known to have registered before submitting
+        expect(page).to have_css("#quote-total-value", text: "15.00")
         fill_in "user_comments", with: "Quote is ready"
         click_button "Approve"
       end

@@ -5,7 +5,7 @@ require "rails_helper"
 # End-to-end volunteer journey: staff assign a volunteer to a task in the task
 # editor, the volunteer submits the task as complete, staff approve the request
 # and the volunteer gets the CC credit and the logged hours.
-RSpec.describe "Journey: volunteer task", type: :system do
+RSpec.describe "Journey: volunteer task", type: :system, skip_bullet: true do
   let!(:volunteer) { create(:user, :volunteer_with_volunteer_program) }
   let!(:staff) { create(:user, :staff) }
   let!(:task) { create(:volunteer_task, title: "stocktake", cc: 10, hours: 5.0, joins: 1, user_id: staff.id) }

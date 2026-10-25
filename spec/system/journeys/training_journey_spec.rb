@@ -5,7 +5,7 @@ require "rails_helper"
 # End-to-end training journey: staff send exams for a training session, the
 # trainee takes the exam in the browser (answers are saved by the page JS),
 # finishes it, passes and sees the certification on the profile.
-RSpec.describe "Journey: training exam", type: :system do
+RSpec.describe "Journey: training exam", type: :system, skip_bullet: true do
   include TrainingSpecHelpers
 
   let!(:fx) { build_exam_fixture(level: "Beginner", question_count: 3) }

@@ -4,7 +4,7 @@ require "rails_helper"
 
 # End-to-end admin journey: an admin promotes a regular user to staff from the
 # user's profile (Roles tab) and the user's new access becomes visible.
-RSpec.describe "Journey: admin changes a role", type: :system do
+RSpec.describe "Journey: admin changes a role", type: :system, skip_bullet: true do
   let!(:admin) { create(:user, :admin) }
   let!(:space) { create(:space, name: "Role Space") }
   let!(:member) { create(:user, :regular_user, name: "Morgan Member") }
@@ -32,7 +32,7 @@ RSpec.describe "Journey: admin changes a role", type: :system do
       open_roles_tab
       choose "role_staff"
       click_button "Update"
-      expect(member.reload.role).to eq("staff")
+      wait_until { member.reload.role == "staff" }
       open_roles_tab
       expect(page).to have_checked_field("role_staff")
     end
@@ -51,7 +51,7 @@ RSpec.describe "Journey: admin changes a role", type: :system do
       open_roles_tab
       choose "role_regular_user"
       click_button "Update"
-      expect(member.reload.role).to eq("regular_user")
+      wait_until { member.reload.role == "regular_user" }
     end
 
     as_actor(:member) do

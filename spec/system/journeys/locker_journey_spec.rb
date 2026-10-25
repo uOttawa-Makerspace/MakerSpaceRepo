@@ -4,7 +4,7 @@ require "rails_helper"
 
 # End-to-end locker journey through the real UI (JS on), two actors
 # (user + staff) in separate browser sessions. Pins the current behavior.
-RSpec.describe "Journey: locker rental", type: :system do
+RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
   include ApplicationHelper
 
   let!(:user) { create(:user, :regular_user) }

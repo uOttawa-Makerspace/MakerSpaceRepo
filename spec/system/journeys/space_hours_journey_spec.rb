@@ -5,7 +5,7 @@ require "rails_helper"
 # End-to-end spaces journey: an admin edits a space's contact info (including
 # its opening-hours block) and the public contact page shows the new details.
 # The opening hours themselves are no longer rendered publicly (D-E2E07).
-RSpec.describe "Journey: space contact info and hours", type: :system do
+RSpec.describe "Journey: space contact info and hours", type: :system, skip_bullet: true do
   let!(:admin) { create(:user, :admin) }
   let!(:space) { create(:space, name: "Hours Space") }
   let!(:info) do

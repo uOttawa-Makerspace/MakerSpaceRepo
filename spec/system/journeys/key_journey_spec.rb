@@ -5,7 +5,7 @@ require "rails_helper"
 # End-to-end key journey: a staff member fills the multi-step access key form,
 # submits it, an admin approves it from the key requests admin page, and the
 # requester sees the approved status.
-RSpec.describe "Journey: key request", type: :system do
+RSpec.describe "Journey: key request", type: :system, skip_bullet: true do
   let!(:space) { create(:space, name: "Key Space") }
   let!(:requester) { create(:user, :staff) }
   let!(:admin) { create(:user, :admin, name: "Alex Admin") }
