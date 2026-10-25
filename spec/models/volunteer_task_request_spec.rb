@@ -78,3 +78,62 @@ RSpec.describe VolunteerTaskRequest, type: :model do
     end
   end
 end
+
+# Chunk 13 characterization.
+RSpec.describe VolunteerTaskRequest, "status, join lookup and search", type: :model do
+  it "#status maps approval to labels" do
+    expect(build(:volunteer_task_request, :approved).status).to eq("Approved")
+    expect(build(:volunteer_task_request, :rejected).status).to eq("Not Approved")
+    expect(build(:volunteer_task_request, :not_processed).status).to eq("Not accessed")
+  end
+
+  it "allows duplicates for the same user and task" do
+    req = create(:volunteer_task_request, :not_processed)
+    expect { create(:volunteer_task_request, user: req.user, volunteer_task: req.volunteer_task) }
+      .to change(VolunteerTaskRequest, :count).by(1)
+  end
+
+  describe "#volunteer_task_join" do
+    let(:req) { create(:volunteer_task_request) }
+
+    it "returns the LAST active join of the requester on the task" do
+      create(:volunteer_task_join, volunteer_task: req.volunteer_task, user: req.user, active: true)
+      newest = create(:volunteer_task_join, volunteer_task: req.volunteer_task, user: req.user, active: true)
+      create(:volunteer_task_join, volunteer_task: req.volunteer_task, user: req.user, active: false)
+      expect(req.volunteer_task_join).to eq(newest)
+    end
+
+    it "is nil without an active join, or without a task" do
+      expect(req.volunteer_task_join).to be_nil
+      expect(VolunteerTaskRequest.new.volunteer_task_join).to be_nil
+    end
+  end
+
+  describe ".filter_by_attribute" do
+    let!(:space) { create(:space, name: "Lab Alpha") }
+    let!(:user) { create(:user, :volunteer_with_volunteer_program, name: "Ada Lovelace", username: "adal") }
+    let!(:task) { create(:volunteer_task, title: "Laser Night", space: space) }
+    let!(:hit) { create(:volunteer_task_request, user: user, volunteer_task: task) }
+    let!(:miss) { create(:volunteer_task_request) }
+
+    it "returns everything for blank input" do
+      expect(described_class.filter_by_attribute(nil)).to include(hit, miss)
+      expect(described_class.filter_by_attribute("   ")).to include(hit, miss)
+    end
+
+    it "matches user name, username, task title and space name case-insensitively" do
+      %w[LOVELACE adal laser ALPHA].each do |term|
+        expect(described_class.filter_by_attribute(term)).to eq([hit])
+      end
+    end
+
+    it "strips a raw 'search_pending=' prefix and turns '+' into spaces" do
+      expect(described_class.filter_by_attribute("search_pending=ada+lovelace")).to eq([hit])
+      expect(described_class.filter_by_attribute("search_processed=laser night")).to eq([hit])
+    end
+
+    it "treats an input that is only a prefix as blank" do
+      expect(described_class.filter_by_attribute("search_pending=")).to include(hit, miss)
+    end
+  end
+end
