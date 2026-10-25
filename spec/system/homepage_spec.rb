@@ -26,7 +26,8 @@ RSpec.describe "Homepage", type: :system, skip_bullet: true do
       status: 200,
       body: { data: { collections: { nodes: [
         { "id" => "1", "handle" => "filament", "title" => "Filament", "description" => "",
-          "image" => { "url" => "https://cdn.example.test/filament.png" } }
+          # inline 1x1 PNG: the hermetic test browser resolves only localhost
+          "image" => { "url" => "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" } }
       ] } } }.to_json
     )
     create(:repository, title: "Featured Gizmo")
