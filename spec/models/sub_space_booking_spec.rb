@@ -33,6 +33,7 @@ RSpec.describe SubSpaceBooking, type: :model do
       )
     end
 
+    # WART(D-B21): the error lands on :expiration_date
     it "rejects start >= end under the Expiration date message" do
       b = described_class.new(
         sub_space: create(:sub_space),

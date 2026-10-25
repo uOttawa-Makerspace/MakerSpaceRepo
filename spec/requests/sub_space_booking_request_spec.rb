@@ -193,6 +193,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
       )
     end
 
+    # WART(D-B21): the time-order error is attached to :expiration_date
     it "rejects end_time <= start_time" do
       post sub_space_booking_index_path, as: :json,
            params: { sub_space_booking: {
@@ -411,6 +412,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
         .to eq(3)
     end
 
+    # WART(D-B08): each occurrence advances from the previous one, so the day drifts
     it "monthly series clamps day-of-month (Jan 31 → Feb 28 ...) and drifts" do
       post sub_space_booking_index_path, as: :json,
            params: { sub_space_booking: {

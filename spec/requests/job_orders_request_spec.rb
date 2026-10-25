@@ -568,6 +568,15 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       ok_param: "picked_up",
       from: :paid, final: :picked_up,
       chain: ["Paid (Waiting for Pick-Up)", "Picked-Up"]
+    },
+    # `processed` is not in the controller's own list of simple transitions (it
+    # also branches on price and mail), but it shares the guard rails. A priced
+    # order is prepared so the zero-price auto-pay branch stays out of the way.
+    processed: {
+      ok_param: "completed",
+      from: :being_processed, final: :completed,
+      chain: ["Currently being Processed", "Completed (Waiting for Payment)"],
+      prepare: ->(order) { order.job_tasks.first.build_job_task_quote(price: 10).save! }
     }
   }.freeze
 
@@ -595,6 +604,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
 
         it "advances when the current status allows it" do
           order = order_with_task!(owner: owner, status_key: flow.fetch(:from))
+          flow[:prepare]&.call(order)
           patch send("job_order_#{action}_path", order),
                 params: { flow.fetch(:ok_param) => "true" }
 
@@ -881,6 +891,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
 
   # ------------------------------------------------------- dead modal & steps
 
+  # WART(D-J17): dead action, no template
   describe "GET /job_orders/:id/quote_modal" do
     it "renders 500 for staff (the route has no shipped template)" do
       order = order_with_task!(owner: owner)
@@ -899,6 +910,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
     end
   end
 
+  # WART(D-J17): dead action, no template
   describe "GET /job_orders/:id/decline_modal" do
     it "renders 500 for staff (template removed, action remains)" do
       order = order_with_task!(owner: owner)
@@ -909,6 +921,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
     end
   end
 
+  # WART(D-J17): dead action, no template
   describe "GET /job_orders/:id/comments_modal" do
     it "renders 500 for staff (template removed, action remains)" do
       order = order_with_task!(owner: owner)
@@ -919,6 +932,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
     end
   end
 
+  # WART(D-J17): routed to an action the controller does not define
   describe "GET /job_orders/:id/completed_email_modal" do
     it "renders 404 for staff: the route points at an action the controller does not define" do
       order = order_with_task!(owner: owner)
@@ -928,6 +942,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
     end
   end
 
+  # WART(D-J17): routed to an action the controller does not define
   describe "GET/PATCH /job_orders/:job_order_id/steps" do
     it "renders 404 for both guests and staff (the action is not implemented; no auth gate runs first)" do
       order = order_with_task!(owner: owner)
@@ -946,6 +961,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
   end
 
   # No GET /job_orders/:id/edit route exists at all (only PATCH/PUT update).
+  # WART(D-J17): update/edit are unrouted
   describe "PATCH /job_orders/:id (update => 404; edit is unrouted)" do
     before { http_login!(staff) }
 

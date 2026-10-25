@@ -194,5 +194,129 @@ RSpec.describe JobOrder, type: :model do
       expect(order.reload.expedited?).to be(false)
     end
   end
-end
 
+  describe "#total_price with nil prices" do
+    before { seed_job_types! }
+
+    it "treats a nil service_price / service_quantity as zero" do
+      order = create(:job_order, user: create(:user, :regular_user))
+      task = order.job_tasks.create!(title: "Task #1")
+      task.build_job_task_quote(price: 10).save!
+
+      expect(order.reload.total_price).to eq(10)
+    end
+
+    it "cannot hold a nil option price (validated), so the nil-safe `|| 0` branch is unreachable" do
+      order = create(:job_order, user: create(:user, :regular_user))
+      quote = order.job_tasks.create!(title: "Task #1").build_job_task_quote(price: 10).tap(&:save!)
+      option = quote.job_task_quote_options.build(job_option: JobOption.create!(name: "Polish", fee: 1), price: nil)
+      expect(option).not_to be_valid
+      expect(option.errors[:price]).to eq(["is not a number"])
+    end
+  end
+
+  # WART(D-J36): `has_many :job_order_options, dependent: :destroy` points at a
+  # model that does not exist, so a real destroy (of an order, or of a user who
+  # owns one) raises NameError while the controller only ever soft-deletes.
+  describe "destroy" do
+    it "JobOrder#destroy raises NameError (missing JobOrderOption) and keeps the row" do
+      order = create(:job_order, user: create(:user, :regular_user))
+      expect { order.destroy }.to raise_error(NameError, /Missing model class JobOrderOption/)
+      expect(described_class.exists?(order.id)).to be(true)
+    end
+
+    it "User#destroy raises the same NameError for a user who owns an order, and keeps the user" do
+      user = create(:user, :regular_user)
+      create(:job_order, user: user)
+      expect { user.destroy }.to raise_error(NameError, /Missing model class JobOrderOption/)
+      expect(User.exists?(user.id)).to be(true)
+    end
+
+    it "User#destroy works for a user without job orders" do
+      user = create(:user, :regular_user)
+      expect { user.destroy }.not_to raise_error
+      expect(User.exists?(user.id)).to be(false)
+    end
+  end
+
+  describe "Shopify draft order helpers (GraphQL client stubbed at the boundary)" do
+    before { seed_job_types! }
+
+    let!(:shopify) { stub_shopify_admin!.tap { |fake| fake.invoice_url = "https://pay.example/inv-1" } }
+    let(:order) { create(:job_order, user: create(:user, :regular_user)) }
+
+    def quoted_task!(title, price:, service_price:, service_quantity:)
+      order.job_tasks.create!(title: title).tap do |task|
+        task.build_job_task_quote(price: price, service_price: service_price,
+                                  service_quantity: service_quantity).save!
+      end
+    end
+
+    describe "#shopify_draft_order_line_items" do
+      it "builds a fee line per task, a parts line only when price and quantity are positive, option lines and a line-item total" do
+        task = quoted_task!("Task #1", price: 20, service_price: 3, service_quantity: 2)
+        task.job_task_quote.job_task_quote_options.create!(job_option: JobOption.create!(name: "Polish", fee: 1), price: 4)
+        quoted_task!("Task #2", price: 5, service_price: 0, service_quantity: 0)
+        order.job_quote_line_items.create!(description: "Rush", price: 2.5)
+
+        lines = order.reload.send(:shopify_draft_order_line_items)
+        expect(lines.map { |l| [l[:title], l[:originalUnitPriceWithCurrency][:amount]] }).to eq([
+          ["Task #1 Service Fee", 20], ["Task #1 Parts Fee", 6], ["Task #1 Polish", 4],
+          ["Task #2 Service Fee", 5], ["Line Items Total", BigDecimal("2.5")]
+        ])
+        expect(lines.map { |l| l[:quantity] }.uniq).to eq([1])
+        expect(lines.map { |l| l[:originalUnitPriceWithCurrency][:currencyCode] }.uniq).to eq(["CAD"])
+      end
+
+      it "skips tasks without a quote" do
+        order.job_tasks.create!(title: "Unquoted")
+        expect(order.send(:shopify_draft_order_line_items).map { |l| l[:title] }).to eq(["Line Items Total"])
+      end
+
+      # WART(D-J49): the guards call .positive? on service_price / service_quantity
+      # without a nil check, so a quote that never got a service price crashes.
+      it "raises NoMethodError for a quote with a nil service_price" do
+        order.job_tasks.create!(title: "Task #1").build_job_task_quote(price: 10).save!
+        expect { order.reload.send(:shopify_draft_order_line_items) }
+          .to raise_error(NoMethodError, /positive\?/)
+      end
+    end
+
+    describe "#checkout_link" do
+      it "creates the draft order once, stores its id and returns the invoice url" do
+        quoted_task!("Task #1", price: 20, service_price: 0, service_quantity: 0)
+
+        expect(order.reload.checkout_link).to eq("https://pay.example/inv-1")
+        expect(order.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
+        expect(shopify.calls.map { |c| c[:query][/\b(draftOrderCreate|getDraftOrder)\b/] })
+          .to eq(%w[draftOrderCreate getDraftOrder])
+        created = shopify.calls.first[:variables][:input]
+        expect(created[:tags]).to eq(["makerepo_test_job_order"])
+        expect(created[:metafields]).to eq([{ namespace: "makerepo", key: "job_order_db_reference",
+                                              value: order.id.to_s, type: "number_integer" }])
+      end
+
+      # WART(D-J38): after the first visit the draft order is only fetched, never
+      # refreshed, so a later re-quote keeps the old Shopify line items.
+      it "only fetches the existing draft order on later calls (no refresh of the line items)" do
+        quoted_task!("Task #1", price: 20, service_price: 0, service_quantity: 0)
+        order.reload.checkout_link
+        shopify.calls.clear
+        order.reload.job_tasks.first.job_task_quote.update!(price: 99)
+
+        order.reload.checkout_link
+        expect(shopify.calls.map { |c| c[:query][/\b(draftOrderCreate|getDraftOrder)\b/] }).to eq(%w[getDraftOrder])
+      end
+
+      it "raises a network error when Shopify answers with a non-200 while creating" do
+        shopify.status = 502
+        expect { order.checkout_link }.to raise_error(RuntimeError, /Network error: Received HTTP 502/)
+      end
+
+      it "raises when Shopify returns user errors" do
+        shopify.user_errors = [{ "field" => "x", "message" => "Bad line item" }]
+        expect { order.checkout_link }.to raise_error(RuntimeError, /Shopify Draft Order Creation Failed: Bad line item/)
+      end
+    end
+  end
+end

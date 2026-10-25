@@ -45,6 +45,7 @@ RSpec.describe BookingStatus, type: :model do
     expect(blank).not_to be_valid
   end
 
+  # WART(D-B23): dependent: :destroy deletes every linked status row
   it "destroying a status nukes its linking rows (dependent: :destroy)" do
     booking = create(:sub_space_booking)
     link = SubSpaceBookingStatus.create!(
