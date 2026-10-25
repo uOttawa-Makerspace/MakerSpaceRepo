@@ -243,12 +243,13 @@ RSpec.describe "Questions (admin question bank)", type: :request do
       expect(question.reload.images).not_to be_attached
     end
 
-    # WART(D-T21): any ActiveStorage attachment id is purged (no check it is a question image); a non-question one is destroyed and then the action 404s
-    it "purges an attachment that belongs to another record (a user avatar) and then 404s" do
+    # FIXED(D-T21): the attachment is looked up among the question's own images, so a foreign attachment is a 404 and is kept
+    it "does not purge an attachment that belongs to another record (a user avatar): 404" do
       user = create(:user, :regular_user_with_avatar)
       attachment = user.avatar.attachment
       delete delete_individually_questions_path, params: { id: attachment.id, question_id: question.id }
-      expect(ActiveStorage::Attachment.exists?(attachment.id)).to be(false)
+      expect(response).to have_http_status(:not_found)
+      expect(ActiveStorage::Attachment.exists?(attachment.id)).to be(true)
     end
   end
 end
