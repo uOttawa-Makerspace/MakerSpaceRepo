@@ -30,7 +30,9 @@ jobs:
     # (because the 'push' event below is already running the test suite for it)
     if: github.event_name != 'schedule' && (github.event_name != 'pull_request' || (github.head_ref != 'staging' && github.head_ref != 'master'))
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # Parallel suite: ~2 min on 8 cores locally; GitHub runners have 2-4 cores,
+    # so allow for the slower runner plus ~3 min of setup (Ruby/Node caches, Vite build).
+    timeout-minutes: 15
 
     services:
       postgres:
@@ -98,11 +100,48 @@ jobs:
       - name: Create Credentials File
         run: echo '${{ secrets.CREDENTIALS_JSON }}' > config/makerepo-1632742c49cc.json
 
-      - name: Prepare Database
-        run: bin/rails db:test:prepare
+      # System specs drive headless Chrome. ubuntu-latest ships matched Google Chrome
+      # (on PATH) and chromedriver ($CHROMEWEBDRIVER); spec/support/system.rb reads
+      # CHROMEDRIVER_PATH (and falls back to Selenium Manager if unset).
+      - name: Expose preinstalled chromedriver to the specs
+        run: echo "CHROMEDRIVER_PATH=$CHROMEWEBDRIVER/chromedriver" >> "$GITHUB_ENV"
 
-      - name: Run RSpec
-        run: bundle exec rspec
+      # One database per parallel worker (makerspacerepo_test, makerspacerepo_test2, ...)
+      - name: Prepare Databases
+        run: bundle exec rake parallel:setup
+
+      # Per-file runtimes from the previous run balance the parallel groups
+      # (the first run, or a cache miss, falls back to balancing by file size).
+      - name: Restore parallel runtime log
+        uses: actions/cache@v4
+        with:
+          path: tmp/parallel_runtime_rspec.log
+          key: parallel-runtime-${{ github.run_id }}
+          restore-keys: parallel-runtime-
+
+      # bin/parallel_rspec prebuilds the Vite test assets once (rails vite:build),
+      # runs one rspec process per core, and merges the per-worker coverage.
+      # CI=1 -> eager_load + Bullet (raise); COVERAGE=1 -> SimpleCov.
+      - name: Run RSpec (parallel)
+        run: CI=1 COVERAGE=1 bin/parallel_rspec
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload failure screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: capybara-failures
+          path: tmp/capybara
+          if-no-files-found: ignore
+          retention-days: 7
 
   security:
     if: github.event_name != 'pull_request' || (github.head_ref != 'staging' && github.head_ref != 'master')
