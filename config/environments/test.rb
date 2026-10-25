@@ -23,6 +23,15 @@ Rails.application.configure do
     "Cache-Control" => "public, max-age=#{1.hour.to_i}"
   }
 
+  # Quiet logging (debug SQL/view logging is a measurable cost per request).
+  # Run with LOG=1 to get the full debug log in log/test.log.
+  config.log_level = ENV["LOG"].present? ? :debug : :warn
+
+  # Vite: assets are prebuilt once per run (spec/support/vite.rb, bin/parallel_rspec,
+  # CI step) instead of re-hashing app/javascript on every layout render.
+  # VITE_RUBY_AUTO_BUILD=true restores the per-request staleness check.
+  ENV["VITE_RUBY_AUTO_BUILD"] ||= "false"
+
   # Show full error reports and disable caching.
   config.consider_all_requests_local = true
   config.action_controller.perform_caching = false
@@ -72,6 +81,16 @@ Rails.application.configure do
 
   config.active_support.test_parallelization_threshold = 1000
   config.active_support.parallelization(workers: :number_of_processors)
+
+  # Airbrake is configured from credentials and its performance stats subscribe
+  # to every SQL query / request (Kernel.caller + backtrace cleaning per query).
+  # Error notices are already ignored in test; stats are pure overhead here.
+  config.after_initialize do
+    if defined?(Airbrake) && Airbrake.configured?
+      Airbrake::Config.instance.performance_stats = false
+      Airbrake::Config.instance.query_stats = false
+    end
+  end
 
   # Configure Bullet for test suite
   config.after_initialize do
