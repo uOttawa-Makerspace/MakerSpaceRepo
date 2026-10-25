@@ -217,9 +217,11 @@ class SubSpaceBookingController < SessionsController
              status: :unprocessable_content
       return
     end
-    if params[:sub_space_booking][:blocking] == true && !current_user.admin?
+    if ActiveModel::Type::Boolean.new.cast(params[:sub_space_booking][:blocking]) &&
+         !current_user.admin?
       flash[:alert] = "You do not have permission to block a space."
       redirect_to sub_space_booking_index_path
+      return
     end
 
     if params[:sub_space_booking][:recurring] == true

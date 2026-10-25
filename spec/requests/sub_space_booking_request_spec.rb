@@ -289,17 +289,34 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
     end
 
     context "blocking" do
-      it "redirects a non-admin JSON-boolean blocking request with an alert but still books it" do
-        # WART(D-B03) (controller:219): the permission check uses `== true`, matches
-        # JSON booleans, and has NO `return` after redirect_to — the flow
-        # continues into book() and the blocking row persists.
+      it "rejects a non-admin JSON-boolean blocking request with an alert and books nothing" do
+        # FIXED(D-B03): the permission check casts the param (boolean or
+        # string) and returns after the redirect, so no row is created.
         json_create(blocking: true)
         expect(response.status).to eq(302)
         expect(flash[:alert])
           .to eq("You do not have permission to block a space.")
-        booking = SubSpaceBooking.find_by!(name: "Fresh")
-        expect(booking.blocking).to be(true)
-        expect(status_name(booking)).to eq("Approved")
+        expect(SubSpaceBooking.where(name: "Fresh")).to be_empty
+      end
+
+      it "rejects a non-admin blocking request sent as the string 'true' (or '1') and books nothing" do
+        # FIXED(D-B27): same root as D-B03; HTML form strings used to skip
+        # the permission check entirely.
+        %w[true 1].each do |value|
+          json_create(blocking: value)
+          expect(response.status).to eq(302)
+          expect(flash[:alert])
+            .to eq("You do not have permission to block a space.")
+        end
+        expect(SubSpaceBooking.where(name: "Fresh")).to be_empty
+      end
+
+      it "still books a non-admin request whose blocking is false" do
+        [false, "false"].each do |value|
+          json_create(blocking: value, name: "Fresh#{value}")
+          expect(response.status).to eq(204)
+          expect(SubSpaceBooking.find_by!(name: "Fresh#{value}").blocking).to be(false)
+        end
       end
 
       it "admin JSON boolean blocking is created" do
@@ -317,13 +334,17 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
         expect(status_name(booking)).to eq("Approved")
       end
 
-      it "skips the overlap check when params[:blocking] is the string 'true'" do
-        # WART(D-B04/D-B27) (controller:335): `params[:...] != "true"` — an HTML form string
-        # bypasses the overlap query entirely, so a regular user can block.
+      it "lets an admin send blocking as the string 'true' over an existing block without a conflict" do
+        # INTENDED(D-B04): admin blocks skip the overlap check (user decision
+        # 2026-10-25, admins may block over existing bookings without warning).
+        create(:sub_space_booking, sub_space: subspace, user: user,
+                                   start_time: DateTime.parse("2027-03-03 09:00"),
+                                   end_time: DateTime.parse("2027-03-03 12:00"),
+                                   name: "Taker", blocking: true)
+        log_in!(create(:user, :admin, booking_approval: true))
         json_create(blocking: "true")
         expect(response.status).to eq(204)
-        booking = SubSpaceBooking.find_by!(name: "Fresh")
-        expect(booking.blocking).to be(true)
+        expect(SubSpaceBooking.find_by!(name: "Fresh").blocking).to be(true)
       end
 
       it "destroys the booking and reports TimeSlot when a literal-wall blocking row overlaps" do
