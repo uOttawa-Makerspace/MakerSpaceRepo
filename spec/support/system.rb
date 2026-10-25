@@ -9,6 +9,16 @@ Capybara.server = :puma, { Silent: true }
 Capybara.default_max_wait_time = 5
 Capybara.save_path = Rails.root.join("tmp", "capybara")
 
+# Chrome sometimes answers "Node with given id does not belong to the document"
+# (an UnknownError) when Turbo swaps the page between Capybara finding and
+# using an element under CPU load. Treat it like a stale element so Capybara
+# re-finds it within the normal wait instead of failing the example.
+class RetryingSeleniumDriver < Capybara::Selenium::Driver
+  def invalid_element_errors
+    super + [Selenium::WebDriver::Error::UnknownError]
+  end
+end
+
 Capybara.register_driver :headless_chrome do |app|
   # The devcontainer ships Alpine's /usr/bin/chromedriver; anywhere else (CI)
   # set CHROMEDRIVER_PATH, or let Selenium Manager find/download a matching one.
@@ -32,7 +42,7 @@ Capybara.register_driver :headless_chrome do |app|
   # capability works and `driver.logs.get(:browser)` returns the entries.
   options.add_option("goog:loggingPrefs", { browser: "ALL" })
 
-  Capybara::Selenium::Driver.new(app, browser: :chrome, options:)
+  RetryingSeleniumDriver.new(app, browser: :chrome, options:)
 end
 
 # Rails system specs bind the driver per example via driven_by; the

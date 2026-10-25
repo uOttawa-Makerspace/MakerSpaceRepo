@@ -28,7 +28,27 @@ module JsErrorCheck
     # (Cloudflare Turnstile, UserWay widget). The system browser resolves no
     # external host (see --host-resolver-rules in system.rb), so each logs a
     # DNS failure. Extend the host list only with the same kind of resource.
-    { id: "D-JS04", path: %r{https://(challenges\.cloudflare\.com|cdn\.userway\.org)/}, message: /Failed to load resource: net::ERR_NAME_NOT_RESOLVED/ },
+    { id: "D-JS04", path: %r{https://(challenges\.cloudflare\.com|cdn\.userway\.org|www\.youtube\.com)/}, message: /Failed to load resource: net::ERR_NAME_NOT_RESOLVED/ },
+    # Found by the browser crawl (spec/system/page_crawl_spec.rb).
+    # WART(D-JS05): the 500s of D-CRAWL05 (printers without sessions) break the
+    # printer pages' fetch + JSON parse.
+    { id: "D-JS05", path: %r{/printers/last_user_assigned_to_printer}, message: %r{last_user_assigned_to_printer - Failed to load resource: .* 500} },
+    { id: "D-JS05", path: %r{/printers/staff_printers\b|/printer_types\b}, message: /(staff_printers|printer_types) 0:0 Uncaught \(in promise\) SyntaxError: Unexpected token '<'/ },
+    # WART(D-JS06): printer_issues.js binds a listener on an element the page lacks.
+    { id: "D-JS06", path: %r{/assets/printer_issues-}, message: /printer_issues-[\w-]+\.js .*Cannot read properties of null \(reading 'addEventListener'\)/ },
+    # WART(D-JS07): the home/changelog hours widget calls /open_hours, which
+    # fetches external ICS feeds (unreachable in tests: 500).
+    { id: "D-JS07", path: %r{/open_hours}, message: %r{/open_hours - Failed to load resource: .* 500} },
+    # WART(D-JS08): announcements/new inline script uses a global flatpickr that is not loaded.
+    { id: "D-JS08", path: %r{/admin/announcements/new}, message: /announcements\/new \d+:\d+ Uncaught ReferenceError: flatpickr is not defined/ },
+    # WART(D-JS09): admin_training_sessions.js and badges.js bind listeners on missing elements.
+    { id: "D-JS09", path: %r{/assets/admin_training_sessions-}, message: /admin_training_sessions-[\w-]+\.js .*Cannot read properties of null \(reading 'addEventListener'\)/ },
+    { id: "D-JS09", path: %r{/assets/badges-}, message: /badges-[\w-]+\.js .*Cannot read properties of null \(reading 'addEventListener'\)/ },
+    # WART(D-JS10): the badge SVG is rendered with empty width/height attributes.
+    { id: "D-JS10", path: %r{/badges/\d+}, message: /Error: <svg> attribute (width|height): Unexpected end of attribute/ },
+    # WART(D-JS11): the admin calendar script requests its JSON endpoints with an
+    # empty id (404) and then fails to parse the HTML.
+    { id: "D-JS11", path: %r{/admin/(calendar|events)}, message: %r{/admin/(calendar/(utc_)?unavailabilities_json/|events/json/|calendar|calendar/imported_calendars_json/) .*(Failed to load resource: .* 404|Uncaught \(in promise\) SyntaxError)} },
   ].freeze
 
   module_function

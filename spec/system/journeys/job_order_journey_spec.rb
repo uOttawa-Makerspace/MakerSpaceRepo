@@ -67,8 +67,8 @@ RSpec.describe "Journey: job order", type: :system do
     expect(order.user).to eq(user)
     expect(order.job_order_statuses.last.job_status.name).to eq("Waiting for Staff Approval")
     expect(task.job_type.name).to eq("3D Print")
-    # JobTask#set_filename renames the blob to "<task id>_<original name>"
-    expect(task.user_files.map { |f| f.filename.to_s }).to eq(["#{task.id}_test.stl"])
+    # JobTask#set_filename renames the blob to "<job order id>_<original name>"
+    expect(task.user_files.map { |f| f.filename.to_s }).to eq(["#{order.id}_test.stl"])
     expect(task.job_options).to eq([@option])
     expect(deliver_mail.map(&:subject)).to include("A new Job Order has been submitted")
     expect(ActionMailer::Base.deliveries.find { |m| m.subject == "A new Job Order has been submitted" }.to).to eq(["makerspace@uottawa.ca"])
