@@ -331,7 +331,8 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(order.order_status.name).to eq("Completed")
       expect(order.subtotal).to eq(35)
       expect(order.total).to eq(35)
-      expect(order.cc_moneys.order(:id).pluck(:cc)).to eq([-20, -15])
+      # one debit per item; insertion order follows unordered order_items, so compare as a set
+      expect(order.cc_moneys.pluck(:cc).sort).to eq([-20, -15])
       expect(order.cc_moneys.pluck(:user_id).uniq).to eq([user.id])
       expect(order.cc_moneys.map(&:proficient_project_id).sort)
         .to eq(order.order_items.map(&:proficient_project_id).sort)
