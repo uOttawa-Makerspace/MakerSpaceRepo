@@ -72,6 +72,14 @@ class SubSpaceBookingController < SessionsController
       return
     end
 
+    # A missing supervisor still 404s further down (D-B15, other slice)
+    supervisor = User.find_by(id: params[:supervisor]) if params[:identity] == "Staff"
+    if supervisor && !supervisor.staff?
+      flash[:alert] = "Please choose a staff member as your supervisor."
+      redirect_to root_path
+      return
+    end
+
     if UserBookingApproval.where(user: current_user).first.nil?
       booking_approval =
         UserBookingApproval.new(

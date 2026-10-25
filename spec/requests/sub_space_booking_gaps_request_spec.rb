@@ -464,11 +464,21 @@ RSpec.describe "Sub space booking gaps", type: :request do
       expect(ActionMailer::Base.deliveries.last.to).to eq([supervisor.email])
     end
 
-    # WART(D-B51): the supervisor is not checked to be staff/admin
-    it "mails any user picked as supervisor, even a regular user" do
+    # FIXED(D-B51): the supervisor must be staff or admin; otherwise nothing is
+    # saved or mailed.
+    it "rejects a regular user picked as supervisor: no request saved, no mail" do
       random_user = create(:user, :regular_user)
       request_access(identity: "Staff", supervisor: random_user.id)
-      expect(ActionMailer::Base.deliveries.last.to).to eq([random_user.email])
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("Please choose a staff member as your supervisor.")
+      expect(UserBookingApproval.where(user: applicant)).to be_empty
+      expect(ActionMailer::Base.deliveries).to be_empty
+    end
+
+    it "accepts an admin as supervisor" do
+      admin_supervisor = create(:user, :admin)
+      request_access(identity: "Staff", supervisor: admin_supervisor.id)
+      expect(ActionMailer::Base.deliveries.last.to).to eq([admin_supervisor.email])
     end
   end
 
