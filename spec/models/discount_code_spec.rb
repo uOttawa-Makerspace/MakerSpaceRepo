@@ -95,3 +95,29 @@ RSpec.describe DiscountCode, type: :model do
     end
   end
 end
+
+# ---- Chunk 8 characterization (Shopify REST seam, no network) ----------------
+RSpec.describe DiscountCode, "Shopify REST seam" do
+  before { block_external_http! }
+
+  it "the Shopify REST calls raise RestResourceNotLoadedError (see D-S32 in price_rule_spec)" do
+    code = create(:discount_code)
+    expect { code.shopify_api_create_discount_code }
+      .to raise_error(ShopifyAPI::Errors::RestResourceNotLoadedError, /ShopifyAPI::DiscountCode/)
+    expect { code.delete_discount_code_from_shopify }
+      .to raise_error(ShopifyAPI::Errors::RestResourceNotLoadedError)
+  end
+
+  it "#status is derived from usage_count and a NULL count reads as 'Used'" do
+    expect(build(:discount_code, usage_count: 0).status).to eq("Not used")
+    expect(build(:discount_code, usage_count: nil).status).to eq("Used")
+    expect(build(:discount_code, usage_count: 3).status).to eq("Used")
+  end
+
+  it "generate_code gives a 30-char hex and never an existing code" do
+    existing = create(:discount_code, code: "a" * 30)
+    code = DiscountCode.generate_code
+    expect(code).to match(/\A\h{30}\z/)
+    expect(code).not_to eq(existing.code)
+  end
+end
