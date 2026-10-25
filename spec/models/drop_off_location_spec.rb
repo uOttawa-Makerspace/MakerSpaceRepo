@@ -6,4 +6,8 @@ RSpec.describe DropOffLocation, type: :model do
       it { should have_many(:proficient_projects) }
     end
   end
+
+  it "has no validations (a blank name is valid)" do
+    expect(DropOffLocation.new).to be_valid
+  end
 end
