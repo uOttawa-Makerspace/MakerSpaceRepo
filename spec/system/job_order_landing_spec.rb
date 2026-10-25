@@ -40,7 +40,8 @@ RSpec.describe "Job Orders browser flow", type: :system do
 
     click_button "Start Production"
 
-    expect(page.current_path).to match(%r{\A/job_orders/\d+/task/\d+/edit\z})
+    # have_current_path waits for the navigation (page.current_path does not)
+    expect(page).to have_current_path(%r{\A/job_orders/\d+/task/\d+/edit\z}, ignore_query: true)
     expect(page.current_url).to end_with("step=1")
     expect(page).to have_css("nav.navbar") # shell intact inside the wizard
     expect(page).to have_content("New Job Task (Step 1/4)")
@@ -68,6 +69,9 @@ RSpec.describe "Job Orders browser flow", type: :system do
 
     click_button "Get Design Help"
 
+    # Wait for the redirect to finish before reading the DB: the click returns
+    # before the server has created the order (flaky under parallel load).
+    expect(page).to have_current_path(%r{\A/job_orders/\d+/task/\d+/edit\z}, ignore_query: true)
     order = JobOrder.order(:id).last
     task = order.job_tasks.first
     expect(task.job_type.name).to eq("Design Services")

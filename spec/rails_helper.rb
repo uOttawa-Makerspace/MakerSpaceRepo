@@ -59,6 +59,19 @@ RSpec.configure do |config|
   end
 
   # [SPEED] Mock Google Calendar Sync for Events
+  # The :test queue adapter keeps enqueued/performed jobs for the whole process.
+  # Start every example with empty queues, otherwise `not_to have_been_enqueued`
+  # depends on which example ran before it (random order, parallel workers).
+  config.before(:each) do
+    ([ActiveJob::Base] + ActiveJob::Base.descendants).each do |job_class|
+      adapter = job_class.queue_adapter
+      next unless adapter.respond_to?(:enqueued_jobs)
+
+      adapter.enqueued_jobs.clear
+      adapter.performed_jobs.clear
+    end
+  end
+
   config.before(:each) do
     allow(Event).to receive(:upsert_event).and_return(true)
     allow(Event).to receive(:delete_event).and_return(true)

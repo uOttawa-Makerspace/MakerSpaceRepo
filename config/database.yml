@@ -21,7 +21,8 @@ development:
 
 test:
   <<: *default
-  database: makerspacerepo_test
+  # parallel_tests sets TEST_ENV_NUMBER ("", "2", "3", ...): one DB per worker
+  database: makerspacerepo_test<%= ENV['TEST_ENV_NUMBER'] %>
 
 staging:
   primary:
