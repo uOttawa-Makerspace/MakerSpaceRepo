@@ -74,20 +74,18 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
     end
 
     it "bounces guests on the admin-ish endpoints (users)" do
-      # WART(D-B24): current_user is ALWAYS a (blank) User instance for guests
-      # (ApplicationHelper#current_user falls back to User.new), so the
-      # user_account gate never fires; guests land on user_admin_or_staff.
+      # FIXED(D-B01): the user_account gate now tests signed_in? (guests are a
+      # blank User.new, never nil), so guests are sent to login before the
+      # staff gate is reached.
       get users_sub_space_booking_index_path
-      expect(response).to redirect_to(root_path)
-      expect(flash[:alert])
-        .to eq("You must be an admin or staff to view this page.")
+      expect(response).to redirect_to(login_path)
+      expect(flash[:alert]).to eq("You must be logged in to view this page.")
     end
 
-    it "bounces guests hitting create on user_approved" do
+    it "bounces guests hitting create to login" do
       post sub_space_booking_index_path, params: { sub_space_booking: { name: "x" } }
-      expect(response).to redirect_to(root_path)
-      expect(flash[:alert])
-        .to eq("You must be approved to book to view this page.")
+      expect(response).to redirect_to(login_path)
+      expect(flash[:alert]).to eq("You must be logged in to view this page.")
       expect(SubSpaceBooking.where(name: "x")).to be_empty
     end
 
@@ -862,32 +860,22 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
       expect(booking.reload.public).to be(false)
     end
 
-    # WART(D-B01) (controller:before_action list): bulk_approve_decline is NOT gated
-    # by user_admin_or_staff — any signed-in user can bulk-approve/decline.
-    it "any signed-in user can bulk_approve_decline" do
+    # FIXED(D-B01): bulk_approve_decline is staff/admin only (a regular
+    # approved user is bounced; guest/staff paths: roles_request_spec).
+    it "a regular signed-in user cannot bulk_approve_decline" do
       nobody = create(:user, :regular_user, booking_approval: true)
       log_in!(nobody)
       b1 = booking_by(create(:user, :regular_user, booking_approval: true))
-      b2 = booking_by(create(:user, :regular_user, booking_approval: true))
 
       put bulk_approve_decline_sub_space_booking_index_path,
-          params: { sub_space_booking_ids: [b1.id, b2.id],
-                    bulk_status: "approve" }
-      expect(response).to redirect_to(
-        sub_space_booking_index_path(anchor: "booking-admin-tab")
-      )
-      expect(flash[:notice]).to eq("Bookings approved successfully.")
-      expect(status_name(b1)).to eq("Approved")
-      expect(status_name(b2)).to eq("Approved")
-
-      put bulk_approve_decline_sub_space_booking_index_path,
-          params: { sub_space_booking_ids: [b1.id], bulk_status: "decline" }
-      expect(flash[:notice]).to eq("Bookings declined successfully.")
-      expect(status_name(b1)).to eq("Declined")
+          params: { sub_space_booking_ids: [b1.id], bulk_status: "approve" }
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You must be an admin or staff to view this page.")
+      expect(status_name(b1)).to eq("Pending")
     end
 
     it "bulk_approve_decline edge flashes" do
-      log_in!(create(:user, :regular_user, booking_approval: true))
+      log_in!(create(:user, :staff))
       put bulk_approve_decline_sub_space_booking_index_path
       expect(flash[:alert]).to eq("No bookings selected.")
 

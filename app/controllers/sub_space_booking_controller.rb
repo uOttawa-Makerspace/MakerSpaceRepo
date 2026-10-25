@@ -12,6 +12,7 @@ class SubSpaceBookingController < SessionsController
                   deny_access
                   users
                   get_sub_space_booking
+                  bulk_approve_decline
                 ]
   before_action :user_admin, only: [:publish]
   before_action :user_booking_belongs, only: %i[delete edit update]
@@ -751,7 +752,7 @@ class SubSpaceBookingController < SessionsController
   end
 
   def user_account
-    return unless current_user.nil?
+    return if signed_in?
       redirect_to login_path, alert: "You must be logged in to view this page."
     
   end
