@@ -80,19 +80,45 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
       expect(order.reload.job_tasks.last.title).to eq("Task #1")
     end
 
-    # WART(D-J01): create has no signed-in gate — an anonymous request can
-    # append tasks to any job order.
-    it "lets a GUEST append a task to any order and still redirects to the wizard" do
+    # FIXED(D-J01): create now requires sign-in and owner/staff/admin.
+    it "redirects a GUEST to login and creates no task" do
       order = order_with_task!
       expect do
         post job_order_job_tasks_path(order)
-      end.to change { order.reload.job_tasks.count }.by(1)
+      end.not_to(change { order.reload.job_tasks.count })
 
-      expect(order.job_tasks.last.title).to eq("Task #2")
-      expect(response).to redirect_to(wizard_path_for(order, order.job_tasks.last, 1))
+      expect(response).to redirect_to(login_path(back_to: job_order_job_tasks_path(order)))
+    end
+
+    it "refuses a signed-in stranger (no_permission redirect) and creates no task" do
+      order = order_with_task!
+      session_login!(other)
+      expect do
+        post job_order_job_tasks_path(order)
+      end.not_to(change { order.reload.job_tasks.count })
+
+      expect(response).to redirect_to(new_job_orders_path)
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.no_permission"))
+    end
+
+    it "lets staff and admin append a task" do
+      order = order_with_task!
+      [staff, admin].each do |user|
+        session_login!(user)
+        expect { post job_order_job_tasks_path(order) }.to change { order.reload.job_tasks.count }.by(1)
+      end
+    end
+
+    it "404s for a task route on a soft-deleted order" do
+      order = order_with_task!
+      order.update!(is_deleted: true)
+      session_login!(owner)
+      expect { post job_order_job_tasks_path(order) }.not_to(change { order.job_tasks.count })
+      expect(response).to have_http_status(:not_found)
     end
 
     it "404 (RecordNotFound) for an unknown job order" do
+      session_login!(owner)
       post "/job_orders/999_999_999/task"
       expect(response).to have_http_status(:not_found)
     end
@@ -172,18 +198,26 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
       expect(response).to have_http_status(:not_found)
     end
 
-    # WART(D-J03): no ownership/permission gate — any signed-in user (and even
-    # guests) can open the wizard steps of someone else's order.
-    it "renders the wizard for a non-owner regular user (no gate)" do
+    # FIXED(D-J03): edit requires sign-in and owner/staff/admin.
+    it "refuses a non-owner regular user (no_permission redirect)" do
       order = order_with_task!
       session_login!(other)
       get wizard_path_for(order, order.job_tasks.first, 1)
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include("New Job Task (Step 1/4)")
+      expect(response).to redirect_to(new_job_orders_path)
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.no_permission"))
+      expect(response.body).not_to include("New Job Task (Step 1/4)")
     end
 
-    it "renders the wizard for a GUEST (no gate)" do
+    it "redirects a GUEST to login" do
       order = order_with_task!
+      path = wizard_path_for(order, order.job_tasks.first, 1)
+      get path
+      expect(response).to redirect_to(login_path(back_to: path))
+    end
+
+    it "renders the wizard for staff" do
+      order = order_with_task!
+      session_login!(staff)
       get wizard_path_for(order, order.job_tasks.first, 1)
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("New Job Task (Step 1/4)")
@@ -235,18 +269,19 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
       patch job_order_job_task_path(order, task),
             params: { step: "1", job_task: { job_type_id: JobType.find_by!(name: "3D Print").id } }
 
-      expect(response).to redirect_to(job_orders_path)
+      # FIXED(D-J03): the shared gate now bounces strangers before the action
+      expect(response).to redirect_to(new_job_orders_path)
       expect(flash[:alert])
-        .to eq(I18n.t("job_orders.alerts.job_order_not_found"))
+        .to eq(I18n.t("job_orders.alerts.no_permission"))
       expect(task.reload.job_type).to be_nil
     end
 
-    it "bounces guests the same way (Unauthorized => User.new is neither owner nor admin)" do
+    it "redirects guests to login" do
       order = order_with_task!
       task = order.job_tasks.first
       patch job_order_job_task_path(order, task),
             params: { step: "1", job_task: { job_type_id: JobType.find_by!(name: "3D Print").id } }
-      expect(response).to redirect_to(job_orders_path)
+      expect(response).to redirect_to(login_path(back_to: job_order_job_task_path(order, task)))
       expect(task.reload.job_type).to be_nil
     end
 
@@ -480,7 +515,8 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
 
   # ------------------------------------------------------------- DELETE destroy
 
-  # WART(D-J02): destroy has no permission check of any kind.
+  # FIXED(D-J02): destroy requires sign-in and owner/staff/admin. (No Draft-only
+  # state guard: owner edits/deletes after submit are INTENDED, D-J35.)
   describe "DELETE /job_orders/:job_order_id/task/:id (destroy)" do
     it "lets the owner delete and redirects back to the order page with the flash" do
       order = order_with_task!
@@ -496,25 +532,26 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
       expect(JobTask.exists?(task.id)).to be(false)
     end
 
-    it "lets a stranger delete someone else's task" do
+    it "refuses a stranger and keeps the task" do
       order = order_with_task!
       task = order.job_tasks.first
       session_login!(other)
 
       expect do
         delete job_order_job_task_path(order, task)
-      end.to change(JobTask, :count).by(-1)
-      expect(response).to redirect_to(job_order_path(order))
+      end.not_to change(JobTask, :count)
+      expect(response).to redirect_to(new_job_orders_path)
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.no_permission"))
     end
 
-    it "even lets a GUEST delete a task" do
+    it "redirects a GUEST to login and keeps the task" do
       order = order_with_task!
       task = order.job_tasks.first
 
       expect do
         delete job_order_job_task_path(order, task)
-      end.to change(JobTask, :count).by(-1)
-      expect(response).to redirect_to(job_order_path(order))
+      end.not_to change(JobTask, :count)
+      expect(response).to redirect_to(login_path(back_to: job_order_job_task_path(order, task)))
     end
 
     it "answers 204 for the JSON API shape" do

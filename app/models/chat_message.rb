@@ -3,6 +3,7 @@ class ChatMessage < ApplicationRecord
   belongs_to :sender, class_name: 'User'
 
   validates :message, presence: true
+  validates :sender_id, presence: true
 
   after_save :schedule_notification_email
 
