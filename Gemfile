@@ -107,4 +107,7 @@ group :test do
   gem "launchy", "~> 3.0"
   gem "selenium-webdriver", "~> 4.0"
   gem "shoulda-matchers", "~> 7.0"
+  gem "parallel_tests"
+  gem "test-prof"
+  gem "webmock"
 end

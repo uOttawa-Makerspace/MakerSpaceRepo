@@ -256,7 +256,10 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
       expect(mail.to).to eq(["buyer@example.com"])
       expect(mail.subject).to eq("Your CC Money order")
       token = Rails.application.message_verifier(:cc).generate(row.id)
-      expect(mail.body.encoded).to include(token)
+      # The mail embeds the token as a URL query param: base64 padding ("==",
+      # present for some id lengths) is percent-escaped there, so compare the
+      # escaped form (identical to the raw token when there is no padding).
+      expect(mail.body.encoded).to include(CGI.escape(token))
     end
 
     it "email lookup is case-insensitive (the users.email column is case-insensitive)" do
