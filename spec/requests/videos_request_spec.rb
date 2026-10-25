@@ -1,0 +1,196 @@
+# frozen_string_literal: true
+
+require "rails_helper"
+
+# Chunk 16: VideosController + the ActiveStorage direct-upload endpoint that
+# videos/new, proficient_projects/show (order item files) and the learning
+# module form (SCORM zip) post to.
+#
+# VideosController gates: signed_in (DevelopmentProgramsController#grant_access)
+# then grant_access_admin (non-admin -> "/" with an alert). Server-side
+# validation: Video validates the attached blobs' declared content type
+# (video/mp4, avi, mov, quicktime), no size cap.
+RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
+  include ContentSpecHelpers
+
+  let!(:project) { create(:proficient_project, title: "Video project") }
+
+  # Mimics what the browser's DirectUpload does: creates the blob row via the
+  # app's endpoint contract, then the bytes land in the service without any
+  # server-side identification (identify: false).
+  def direct_blob(filename:, content_type:, content: "0123456789")
+    blob = ActiveStorage::Blob.create_before_direct_upload!(
+      filename: filename, byte_size: content.bytesize,
+      checksum: OpenSSL::Digest::MD5.base64digest(content), content_type: content_type
+    )
+    blob.upload(StringIO.new(content), identify: false)
+    blob
+  end
+
+  def video_params(blobs, **over)
+    { video: { proficient_project_id: project.id, video: blobs.map(&:signed_id) }.merge(over) }
+  end
+
+  describe "gates" do
+    it "sends a guest to login on every action" do
+      get videos_path
+      expect(response).to redirect_to(login_path(back_to: "/videos"))
+      get new_video_path
+      expect(response.location).to include("/login")
+      expect { post videos_path, params: video_params([direct_blob(filename: "a.mp4", content_type: "video/mp4")]) }
+        .not_to change(Video, :count)
+    end
+
+    %i[regular staff].each do |role|
+      it "#{role} is redirected to / with an alert and nothing is written" do
+        video = create(:video, :with_video, proficient_project: project)
+        content_sign_in_as(role)
+        get videos_path
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to eq("You cannot access this area.")
+        get new_video_path
+        expect(response).to redirect_to(root_path)
+        expect { post videos_path, params: video_params([direct_blob(filename: "a.mp4", content_type: "video/mp4")]) }
+          .not_to change(Video, :count)
+        expect { delete video_path(video), params: { video_id: video.video.first.id } }.not_to change(Video, :count)
+        expect(video.reload.video).to be_attached
+      end
+    end
+  end
+
+  describe "as admin" do
+    before { content_sign_in_as(:admin) }
+
+    it "renders index and new" do
+      create(:video, :with_video, proficient_project: project)
+      get videos_path
+      expect(response).to have_http_status(:ok)
+      get new_video_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("direct_upload") # file field wired for ActiveStorage direct upload (data-direct-upload-url)
+    end
+
+    it "creates a video from direct-upload signed ids and marks it processed" do
+      blob = direct_blob(filename: "clip.mp4", content_type: "video/mp4")
+      expect { post videos_path, params: video_params([blob]) }.to change(Video, :count).by(1)
+      v = Video.last
+      expect(v.processed).to be(true)
+      expect(v.proficient_project_id).to eq(project.id)
+      expect(v.video.map(&:blob)).to eq([blob])
+      expect(response).to redirect_to(videos_path)
+      expect(flash[:notice]).to eq("Video Uploaded")
+    end
+
+    it "also accepts a classic multipart upload" do
+      expect do
+        post videos_path, params: { video: { proficient_project_id: project.id, video: [FilesTestHelper.mp4] } }
+      end.to change(Video, :count).by(1)
+      expect(Video.last.video.first.filename.to_s).to eq("1sec.mp4")
+    end
+
+    it "rejects a declared non-video content type server-side (redirects to new with an alert)" do
+      blob = direct_blob(filename: "evil.exe", content_type: "application/x-msdownload")
+      expect { post videos_path, params: video_params([blob]) }.not_to change(Video, :count)
+      expect(response).to redirect_to(new_video_path)
+      expect(flash[:alert]).to eq("Something went wrong. Try again.")
+    end
+
+    it "trusts the declared content type when the bytes are not identifiable: any filename, no size cap (D-C45)" do
+      blob = direct_blob(filename: "malware.exe", content_type: "video/mp4", content: "plain text bytes" * 1000)
+      expect { post videos_path, params: video_params([blob]) }.to change(Video, :count).by(1)
+      # WART(D-C45): the validator falls back to the browser-declared type for unidentifiable content; size is never checked
+      expect(Video.last.video.first.filename.to_s).to eq("malware.exe")
+    end
+
+    it "does sniff identifiable content: an executable declared video/mp4 is refused" do
+      blob = direct_blob(filename: "malware.mp4", content_type: "video/mp4", content: "MZ" * 1000)
+      expect { post videos_path, params: video_params([blob]) }.not_to change(Video, :count)
+      expect(response).to redirect_to(new_video_path)
+    end
+
+    it "creates a video with no project and no learning module (no presence validation) (D-C49)" do
+      blob = direct_blob(filename: "clip.mp4", content_type: "video/mp4")
+      expect { post videos_path, params: { video: { video: [blob.signed_id] } } }.to change(Video, :count).by(1)
+      # WART(D-C49): orphan videos are valid; they never appear in index (inner joins)
+      expect(Video.last.proficient_project_id).to be_nil
+      get videos_path
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "redirects with the parameter_missing alert when the video root is absent" do
+      post videos_path, params: {}
+      expect(response).to redirect_to(root_path)
+    end
+
+    it "destroys one attachment and the Video row once it has none left" do
+      video = create(:video, :with_video, proficient_project: project)
+      att = video.video.first
+      expect { delete video_path(video), params: { video_id: att.id } }.to change(Video, :count).by(-1)
+      expect(response).to redirect_to(videos_path)
+      expect(flash[:notice]).to eq("Video Deleted.")
+      expect(ActiveStorage::Attachment.exists?(att.id)).to be(false)
+    end
+
+    it "keeps the Video row while other attachments remain" do
+      video = create(:video, proficient_project: project)
+      video.video.attach([direct_blob(filename: "a.mp4", content_type: "video/mp4"), direct_blob(filename: "b.mp4", content_type: "video/mp4")])
+      delete video_path(video), params: { video_id: video.video.first.id }
+      expect(Video.exists?(video.id)).to be(true)
+      expect(video.reload.video.count).to eq(1)
+    end
+
+    it "404s when the attachment id belongs to another video" do
+      video = create(:video, :with_video, proficient_project: project)
+      other = create(:video, :with_video, proficient_project: project)
+      delete video_path(video), params: { video_id: other.video.first.id }
+      expect(response).to have_http_status(:not_found)
+      expect(other.reload.video).to be_attached
+    end
+
+    it "the download route has no action: 404 (D-C50)" do
+      video = create(:video, :with_video, proficient_project: project)
+      get download_video_path(video, filename: "1sec.mp4")
+      # WART(D-C50): routes.rb maps videos#download but VideosController defines no #download
+      expect(response).to have_http_status(:not_found)
+    end
+  end
+
+  describe "ActiveStorage direct uploads endpoint (stock Rails)" do
+    let(:payload) do
+      { blob: { filename: "x.bin", content_type: "application/x-msdownload", byte_size: 4,
+                checksum: OpenSSL::Digest::MD5.base64digest("abcd") } }
+    end
+
+    it "issues a signed upload target to a GUEST for any file type and size (D-C46, severity 1)" do
+      expect { post rails_direct_uploads_path, params: payload, as: :json }.to change(ActiveStorage::Blob, :count).by(1)
+      # WART(D-C46): ActiveStorage::DirectUploadsController is not authenticated; anyone can store arbitrary blobs, which the signed id then lets a privileged form attach
+      expect(response).to have_http_status(:ok)
+      body = response.parsed_body
+      expect(body.keys).to include("signed_id", "direct_upload")
+      expect(body["direct_upload"]["url"]).to be_present
+      expect(body["content_type"]).to eq("application/x-msdownload")
+    end
+
+    it "rejects a payload without a checksum or byte_size (blob validations)" do
+      post rails_direct_uploads_path, params: { blob: { filename: "x.bin" } }, as: :json
+      expect(response.status).to be >= 400
+    end
+  end
+
+  describe "order item submission files (proficient_projects/show direct upload)" do
+    let(:buyer) { create(:user, :volunteer_with_dev_program) }
+
+    it "validates declared content type on the order item: an executable is refused, a pdf accepted" do
+      order = create(:order, :completed, user_id: buyer.id)
+      oi = create(:order_item, order: order, proficient_project: project)
+      content_login!(buyer)
+      bad = direct_blob(filename: "evil.exe", content_type: "application/x-msdownload")
+      put complete_project_proficient_projects_path, params: { id: project.id, order_item: { user_comments: "x", files: [bad.signed_id] } }
+      expect(flash[:alert]).to eq("Something went wrong with updating the proficient project. Please check the allowed file types.")
+      expect(oi.reload.status).to eq("In progress")
+      good = direct_blob(filename: "ok.pdf", content_type: "application/pdf")
+      put complete_project_proficient_projects_path, params: { id: project.id, order_item: { user_comments: "x", files: [good.signed_id] } }
+      expect(oi.reload.status).to eq("Waiting for approval")
+    end
+  end
+end
