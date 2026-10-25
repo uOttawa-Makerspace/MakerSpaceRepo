@@ -21,8 +21,10 @@ development:
 
 test:
   <<: *default
-  # parallel_tests sets TEST_ENV_NUMBER ("", "2", "3", ...): one DB per worker
-  database: makerspacerepo_test<%= ENV['TEST_ENV_NUMBER'] %>
+  # parallel_tests sets TEST_ENV_NUMBER ("", "2", "3", ...): one DB per worker.
+  # A git worktree can isolate its test DBs with a git-ignored config/test_db_suffix
+  # file (or TEST_DB_SUFFIX); the main checkout has neither, so names are unchanged.
+  database: makerspacerepo_test<%= ENV.fetch("TEST_DB_SUFFIX") { f = Rails.root.join("config/test_db_suffix"); (File.read(f).strip if File.exist?(f)) } %><%= ENV['TEST_ENV_NUMBER'] %>
 
 staging:
   primary:
