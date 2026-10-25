@@ -631,9 +631,9 @@ Rails.application.routes.draw do
 
   resources :exams, only: %i[index create show destroy] do
     collection do
-      get :finish_exam
+      post :finish_exam
       post :create_from_training
-      get :create_for_single_user
+      post :create_for_single_user
     end
   end
 
