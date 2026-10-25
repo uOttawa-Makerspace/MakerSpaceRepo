@@ -351,24 +351,56 @@ RSpec.describe "Sub space booking gaps", type: :request do
       expect(booking.reload.name).not_to eq("Moved")
     end
 
-    # WART(D-B28): update permits :sub_space_id and :blocking and re-runs none
-    # of create's rules (duration cap, weekly quota, approval).
-    it "lets the owner of a pending booking turn it into a block, move it to another room and stretch it past the room cap" do
+    # FIXED(D-B28): update ignores :blocking and :sub_space_id from non-admins
+    # and re-applies the room's maximum booking duration.
+    it "ignores blocking and sub_space_id from the owner of a pending booking" do
+      other = create(:sub_space, space: space)
+      patch update_path_for(booking), params: {
+        sub_space_booking: { start_time: "2027-04-03 10:00", end_time: "2027-04-03 11:00",
+                             name: "Renamed", description: "D", blocking: true,
+                             sub_space_id: other.id }
+      }
+      expect(response).to redirect_to(
+        sub_space_booking_index_path(anchor: "booking-calendar-tab", room: subspace.id)
+      )
+      booking.reload
+      expect(booking.name).to eq("Renamed")
+      expect(booking.blocking).to be(false)
+      expect(booking.sub_space_id).to eq(subspace.id)
+      expect(status_name(booking)).to eq("Pending")
+    end
+
+    it "rejects a non-admin stretching a booking past the room's maximum duration (JSON and HTML)" do
       capped = create(:sub_space, space: space, maximum_booking_duration: 1)
+      capped_booking = pending_booking(user, sub_space: capped)
+      patch update_path_for(capped_booking), as: :json, params: {
+        sub_space_booking: { start_time: "2027-04-03 10:00", end_time: "2027-04-04 10:00",
+                             name: "Stretched", description: "D" }
+      }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body["errors"].first).to start_with("DurationHour")
+
+      patch update_path_for(capped_booking), params: {
+        sub_space_booking: { start_time: "2027-04-03 10:00", end_time: "2027-04-04 10:00",
+                             name: "Stretched", description: "D" }
+      }
+      expect(response).to redirect_to(sub_space_booking_edit_path(sub_space_booking_id: capped_booking.id))
+      expect(flash[:alert]).to include("for more than 1 hours")
+      expect(capped_booking.reload.name).not_to eq("Stretched")
+    end
+
+    it "lets an admin set blocking, move rooms and exceed the duration cap" do
+      capped = create(:sub_space, space: space, maximum_booking_duration: 1)
+      log_in!(admin)
       patch update_path_for(booking), params: {
         sub_space_booking: { start_time: "2027-04-03 10:00", end_time: "2027-04-04 10:00",
-                             name: "Stretched", description: "D", blocking: true,
+                             name: "Admin", description: "D", blocking: true,
                              sub_space_id: capped.id }
       }
-      # the redirect uses the NEW sub_space_id (the update already applied)
-      expect(response).to redirect_to(
-        sub_space_booking_index_path(anchor: "booking-calendar-tab", room: capped.id)
-      )
       booking.reload
       expect(booking.blocking).to be(true)
       expect(booking.sub_space_id).to eq(capped.id)
       expect(booking.end_time - booking.start_time).to eq(24.hours)
-      expect(status_name(booking)).to eq("Pending")
     end
 
     it "raises (500) when start_time or end_time is missing" do

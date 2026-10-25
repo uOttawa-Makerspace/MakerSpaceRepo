@@ -531,7 +531,24 @@ class SubSpaceBookingController < SessionsController
       return
     end
 
-    if @sub_space_booking.update(sub_space_booking_params)
+    max_duration = @sub_space_booking.sub_space.maximum_booking_duration
+    if !max_duration.nil? && !@user.admin? &&
+         (end_datetime.to_time - start_datetime.to_time) / 1.hour > max_duration
+      message =
+        "You cannot book #{@sub_space_booking.sub_space.name} for more than #{max_duration} hours."
+      respond_to do |format|
+        format.json do
+          render json: { errors: ["DurationHour #{message}"] },
+                 status: :unprocessable_content
+        end
+        format.html do
+          redirect_to sub_space_booking_edit_path, alert: message
+        end
+      end
+      return
+    end
+
+    if @sub_space_booking.update(sub_space_booking_update_params)
       flash[:notice] = "Successfully updated booking"
       respond_to do |format|
         format.json { render json: { status: "ok" }, status: :ok }
@@ -799,5 +816,13 @@ class SubSpaceBookingController < SessionsController
       :sub_space_id,
       :blocking
     )
+  end
+
+  # blocking and sub_space_id are create-time/admin decisions: only admins may
+  # change them on an existing booking.
+  def sub_space_booking_update_params
+    permitted = %i[start_time end_time name description]
+    permitted += %i[sub_space_id blocking] if current_user.admin?
+    params.require(:sub_space_booking).permit(*permitted)
   end
 end
