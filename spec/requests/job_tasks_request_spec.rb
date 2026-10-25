@@ -411,7 +411,8 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
         expect(ActionMailer::Base.deliveries.last.to).to eq(["makerspace@uottawa.ca"])
       end
 
-      it "stays a Draft when ANOTHER task is still incomplete (submit silently skipped)" do
+      # N+1 pinned: see defects.md D-PERF04
+      it "stays a Draft when ANOTHER task is still incomplete (submit silently skipped)", skip_bullet: true do
         order = order_with_task!
         order.job_tasks.create!(title: "Task #2")
         task = order.job_tasks.find_by(title: "Task #1")

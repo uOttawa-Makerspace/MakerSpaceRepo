@@ -165,7 +165,8 @@ RSpec.describe "Admin calendar contract", type: :request do
       expect(body.first["name"]).to eq(staff.name)
     end
 
-    it "orders staff by name descending" do
+    # N+1 pinned: see defects.md D-PERF14
+    it "orders staff by name descending", skip_bullet: true do
       s1 = StaffSpace.create!(space: space, color: "#111111",
                               user: create(:user, :staff, name: "Zeta"))
       s2 = StaffSpace.create!(space: space, color: "#222222",

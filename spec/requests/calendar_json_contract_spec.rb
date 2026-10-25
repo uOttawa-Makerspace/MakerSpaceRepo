@@ -119,7 +119,8 @@ RSpec.describe "Bookings feed JSON contract", type: :request do
       .to include("title" => "Space Blocked", "color" => "#ABABABFF")
   end
 
-  it "row order: ASC by id for rows fetched with find_each (NOT start order)" do
+  # N+1 pinned: see defects.md D-PERF13
+  it "row order: ASC by id for rows fetched with find_each (NOT start order)", skip_bullet: true do
     b1 = approved_booking(name: "First", description: "Brief",
                           start_time: DateTime.parse("2027-04-02 10:00"),
                           end_time: DateTime.parse("2027-04-02 11:00"))

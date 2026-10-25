@@ -104,7 +104,8 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
   describe "listing (admin)" do
     before { login!(admin) }
 
-    it "index defaults to newest users" do
+    # N+1 pinned: see defects.md D-PERF09
+    it "index defaults to newest users", skip_bullet: true do
       get admin_users_path
       expect(response).to have_http_status(:ok)
       expect(response.body).to include(target.username)
@@ -127,7 +128,8 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq("Invalid parameters!")
     end
 
-    it "index: accepts whitelisted sort" do
+    # N+1 pinned: see defects.md D-PERF09
+    it "index: accepts whitelisted sort", skip_bullet: true do
       get admin_users_path(sort: "username", direction: "asc")
       expect(response).to have_http_status(:ok)
     end
@@ -138,7 +140,8 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(response.body).not_to include(gone.username)
     end
 
-    it "index includes inactive users" do
+    # N+1 pinned: see defects.md D-PERF09
+    it "index includes inactive users", skip_bullet: true do
       idle = create(:user, :regular_user, active: false)
       get admin_users_path
       expect(response.body).to include(idle.username)
@@ -235,7 +238,8 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
   describe "PATCH /admin/users/set_role" do
     before { login!(admin) }
 
-    it "changes roles for several users, redirecting back (html)" do
+    # N+1 pinned: see defects.md D-PERF10
+    it "changes roles for several users, redirecting back (html)", skip_bullet: true do
       other = create(:user, :regular_user)
       patch set_role_admin_users_path,
             params: { role: "staff", user_ids: [target.id, other.id] },

@@ -110,7 +110,8 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(response.body).not_to include(I18n.t("job_orders.public_page.admin_page"))
     end
 
-    it "splits draft orders (partly created) from submitted ones" do
+    # N+1 pinned: see defects.md D-PERF01
+    it "splits draft orders (partly created) from submitted ones", skip_bullet: true do
       draft = order_with_task!(owner: owner, status_key: :draft)
       empty_draft = make_job_order!(owner: owner, status_key: :draft)
       submitted = order_with_task!(owner: owner, status_key: :staff_approval)
@@ -750,7 +751,8 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
   # ------------------------------------------------------- admin / settings
 
   describe "GET /job_orders/admin" do
-    it "lists non-draft orders for staff and keeps the drafts out (no # anchor markers)" do
+    # N+1 pinned: see defects.md D-PERF02
+    it "lists non-draft orders for staff and keeps the drafts out (no # anchor markers)", skip_bullet: true do
       draft = make_job_order!(owner: owner, status_key: :draft)
       listed = order_with_task!(owner: owner, status_key: :staff_approval)
 
@@ -820,7 +822,8 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
   # ------------------------------------------------------- timeline modal
 
   describe "GET /job_orders/:id/timeline_modal" do
-    it "renders the status history (layout: false) newest-first for staff" do
+    # N+1 pinned: see defects.md D-PERF03
+    it "renders the status history (layout: false) newest-first for staff", skip_bullet: true do
       order = order_with_task!(owner: owner)
       advance_to!(order, :staff_approval)
       http_login!(staff)

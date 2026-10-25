@@ -5,7 +5,8 @@ FactoryBot.define do
     read_and_accepted_waiver_form { true }
     active { true }
     sequence(:email) { |n| "user#{n}#{SecureRandom.hex(3)}@uottawa.ca" }
-    name { Faker::Name.name }
+    # no apostrophes: HTML escaping (&#39;) breaks `include(user.name)` on rendered pages
+    name { Faker::Name.name.delete("'") }
     sequence(:username) { |n| "user#{n}#{SecureRandom.hex(3)}" }
     wallet { 1000 }
     confirmed { true }

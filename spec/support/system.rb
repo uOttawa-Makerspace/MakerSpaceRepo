@@ -10,9 +10,13 @@ Capybara.default_max_wait_time = 5
 Capybara.save_path = Rails.root.join("tmp", "capybara")
 
 Capybara.register_driver :headless_chrome do |app|
-  Selenium::WebDriver::Chrome::Service.driver_path = "/usr/bin/chromedriver"
+  # The devcontainer ships Alpine's /usr/bin/chromedriver; anywhere else (CI)
+  # set CHROMEDRIVER_PATH, or let Selenium Manager find/download a matching one.
+  chromedriver = ENV.fetch("CHROMEDRIVER_PATH", "/usr/bin/chromedriver")
+  Selenium::WebDriver::Chrome::Service.driver_path = chromedriver if File.exist?(chromedriver)
 
   options = Selenium::WebDriver::Chrome::Options.new
+  options.binary = ENV["CHROME_BIN"] if ENV["CHROME_BIN"].to_s != ""
   options.add_argument("--headless=new")
   options.add_argument("--no-sandbox")
   options.add_argument("--disable-gpu")

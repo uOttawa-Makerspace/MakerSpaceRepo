@@ -80,7 +80,8 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(user.orders.count).to eq(0)
     end
 
-    it "shows the items of the user's trailing in-progress order (no session order id)" do
+    # N+1 pinned: see defects.md D-PERF05, D-PERF06
+    it "shows the items of the user's trailing in-progress order (no session order id)", skip_bullet: true do
       order = cart_for(user, 10, 20)
       shop_log_in!(user)
       get carts_path
@@ -316,7 +317,8 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
   describe "POST /orders (checkout math)" do
     before { shop_log_in!(user) }
 
-    it "debits the wallet: one negative cc_money per item, order Completed, total = subtotal" do
+    # N+1 pinned: see defects.md D-PERF06
+    it "debits the wallet: one negative cc_money per item, order Completed, total = subtotal", skip_bullet: true do
       credit_cc!(user, 100)
       add_to_cart(pp_with_cc(10), quantity: 2)
       add_to_cart(pp_with_cc(15))

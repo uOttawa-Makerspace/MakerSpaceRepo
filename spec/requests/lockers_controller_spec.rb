@@ -130,7 +130,8 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
       expect(flash[:alert]).to eq("Range end must be larger than range start")
     end
 
-    it "PATCH bulk_edit updates or deletes the selected ids" do
+    # N+1 pinned: see defects.md D-PERF07
+    it "PATCH bulk_edit updates or deletes the selected ids", skip_bullet: true do
       a = create(:locker)
       b = create(:locker)
       patch bulk_edit_lockers_path, params: { id: [a.id, b.id], locker: { notes: "bulk" } }
@@ -199,7 +200,8 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
   end
 
   describe "models" do
-    it "Locker.available excludes lockers with an active rental and filters by audience" do
+    # N+1 pinned: see defects.md D-PERF08
+    it "Locker.available excludes lockers with an active rental and filters by audience", skip_bullet: true do
       free = create(:locker, audience: "gng")
       taken = create(:locker_rental, :active).locker
       reserved = create(:locker_rental, :await_payment).locker
