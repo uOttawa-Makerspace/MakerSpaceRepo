@@ -68,4 +68,50 @@ RSpec.describe Exam, type: :model do
       end
     end
   end
+
+  describe "Chunk 12: scoring and pass rule" do
+    let(:exam) { create(:exam) }
+
+    def add_questions(count, correct:)
+      count.times do |i|
+        eq = ExamQuestion.create!(exam: exam, question: create(:question))
+        ExamResponse.create!(exam_question: eq, correct: true) if i < correct
+      end
+    end
+
+    it "scores correct responses over ALL exam questions, rounded, unanswered counting as wrong" do
+      add_questions(3, correct: 2)
+      expect(exam.calculate_score).to eq(67)
+    end
+
+    it "passes exactly at SCORE_TO_PASS (17/25 = 68) and fails just under (16/25 = 64)" do
+      add_questions(25, correct: 17)
+      expect(exam.calculate_score).to eq(68)
+      expect(exam.calculate_score >= Exam::SCORE_TO_PASS).to be(true)
+      ExamResponse.joins(:exam_question).where(exam_questions: { exam_id: exam.id }).first.destroy
+      expect(exam.calculate_score).to eq(64)
+    end
+
+    it "ignores responses flagged correct: false" do
+      eq = ExamQuestion.create!(exam: exam, question: create(:question))
+      ExamResponse.create!(exam_question: eq, correct: false)
+      expect(exam.calculate_score).to eq(0)
+    end
+
+    # WART(D-T13): an exam without questions divides by zero (NaN.round)
+    it "raises FloatDomainError for an exam without questions" do
+      expect { exam.calculate_score }.to raise_error(FloatDomainError)
+    end
+
+    it "has the status vocabulary used by the controllers" do
+      expect(Exam::STATUS.values).to eq(["not started", "incomplete", "passed", "failed"])
+      expect(create(:exam).status).to eq("not started")
+    end
+
+    it "destroys its exam_questions but leaves exam_responses orphaned" do
+      eq = ExamQuestion.create!(exam: exam, question: create(:question))
+      ExamResponse.create!(exam_question: eq, correct: true)
+      expect { exam.destroy }.to change(ExamQuestion, :count).by(-1).and change(ExamResponse, :count).by(0)
+    end
+  end
 end

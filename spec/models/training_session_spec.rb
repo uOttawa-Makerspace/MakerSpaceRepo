@@ -128,4 +128,55 @@ RSpec.describe TrainingSession, type: :model do
     end
 
   end
+
+  describe "Chunk 12: validations and filters" do
+    it "requires a staff/admin trainer, training, level and space" do
+      ts = TrainingSession.new(user: create(:user, :regular_user), level: "")
+      expect(ts).not_to be_valid
+      expect(ts.errors[:string]).to include("user must be staff")
+      expect(ts.errors[:training]).to include("A training subject is required")
+      expect(ts.errors[:level]).to include("A level is required")
+      expect(ts.errors[:space]).to be_present
+    end
+
+    it "accepts staff and admin trainers" do
+      %i[staff admin].each do |role|
+        expect(build(:training_session, user: create(:user, role), level: "Beginner")).to be_valid
+      end
+    end
+
+    it "does not validate the level vocabulary" do
+      expect(build(:training_session, level: "Wizard")).to be_valid
+    end
+
+    it "by_status completed / not_completed follows the certifications" do
+      done = create(:training_session, level: "Beginner")
+      open_one = create(:training_session, level: "Beginner")
+      create(:certification, training_session: done, training: done.training)
+      expect(TrainingSession.by_status("completed")).to eq([done])
+      expect(TrainingSession.by_status("not_completed")).to eq([open_one])
+    end
+
+    it "filter_by_date_range 30_days excludes older sessions; unknown ranges mean all" do
+      old = create(:training_session, level: "Beginner")
+      old.update_columns(created_at: 40.days.ago)
+      fresh = create(:training_session, level: "Beginner")
+      expect(TrainingSession.filter_by_date_range("30_days")).to eq([fresh])
+      expect(TrainingSession.filter_by_date_range("all")).to match_array([old, fresh])
+    end
+
+    it "orders by updated_at desc by default and filters by trainer and training" do
+      a = create(:training_session, level: "Beginner")
+      b = create(:training_session, level: "Beginner")
+      expect(TrainingSession.all.first).to eq(b)
+      expect(TrainingSession.by_trainers(a.user_id)).to eq([a])
+      expect(TrainingSession.by_training(b.training_id)).to eq([b])
+    end
+
+    it "filter_by_attribute strips the search= prefix and matches the training name" do
+      a = create(:training_session, level: "Beginner")
+      create(:training_session, level: "Beginner")
+      expect(TrainingSession.joins(:training).filter_by_attribute("search=#{a.training.name_en.tr(' ', '+')}")).to eq([a])
+    end
+  end
 end

@@ -17,4 +17,17 @@ RSpec.describe RequireTraining, type: :model do
       end
     end
   end
+
+  describe "Chunk 12: validation message" do
+    it "requires a training with the user-facing message" do
+      rt = RequireTraining.new(volunteer_task: create(:volunteer_task))
+      expect(rt).not_to be_valid
+      expect(rt.errors[:training_id]).to eq(["A training must be selected"])
+    end
+
+    it "is destroyed with its training" do
+      rt = create(:require_training)
+      expect { rt.training.destroy }.to change(RequireTraining, :count).by(-1)
+    end
+  end
 end

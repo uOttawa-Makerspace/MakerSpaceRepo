@@ -160,4 +160,54 @@ RSpec.describe Certification, type: :model do
       end
     end
   end
+
+  describe "Chunk 12: awarding rules and levels" do
+    let(:training) { create(:training) }
+    let(:ts) { create(:training_session, training: training, level: "Beginner") }
+    let(:user) { create(:user, :regular_user) }
+
+    it "requires a level among Beginner/Intermediate/Advanced" do
+      cert = Certification.new(user: user, level: "Expert")
+      expect(cert).not_to be_valid
+      expect(cert.errors[:level]).to eq(["A level is required."])
+      expect(Certification.new(user: user, level: "Advanced")).to be_valid
+    end
+
+    it "certify_user creates an active certification without checking for duplicates or exam results" do
+      expect { 2.times { Certification.certify_user(ts.id, user.id, "Beginner") } }.to change(Certification, :count).by(2)
+    end
+
+    it "certify_user returns an unsaved record for an invalid level" do
+      cert = Certification.certify_user(ts.id, user.id, "Nope")
+      expect(cert).not_to be_persisted
+    end
+
+    it "resolves training and trainer through the training session" do
+      cert = create(:certification, user: user, training_session: ts, training: training)
+      expect(cert.training).to eq(training)
+      expect(cert.trainer).to eq(ts.user)
+      expect(cert.get_name_en).to eq(training.name_en)
+      expect(cert.get_skill_id).to eq(training.skill_id)
+    end
+
+    it "existent_certification finds a certification of the same training at the same session level, else false" do
+      create(:certification, user: user, training_session: ts, training: training, level: "Beginner")
+      expect(Certification.existent_certification(user, training, "Beginner")).to be_a(Certification)
+      expect(Certification.existent_certification(user, training, "Advanced")).to be(false)
+    end
+
+    it "highest_level keeps only the top-level certifications per training" do
+      adv = create(:training_session, training: training, level: "Advanced")
+      create(:certification, user: user, training_session: ts, training: training, level: "Beginner")
+      top = create(:certification, user: create(:user), training_session: adv, training: training, level: "Advanced")
+      expect(Certification.highest_level).to eq([top])
+    end
+
+    it "demoted (inactive) certifications disappear from the default scope but not from unscoped" do
+      cert = create(:certification, user: user, training_session: ts, training: training)
+      cert.update!(active: false)
+      expect(user.certifications.reload).to be_empty
+      expect(Certification.unscoped.where(id: cert.id)).to exist
+    end
+  end
 end
