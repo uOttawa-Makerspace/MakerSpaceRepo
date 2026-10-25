@@ -271,6 +271,15 @@ RSpec.describe SubSpaceBookingController, type: :controller do
         expect(JSON.parse(response.body).length).to eq(3)
 
         booking_ids = SubSpaceBooking.pluck(:id)
+        # FIXED(D-B01): a regular user cannot bulk approve; staff can
+        put :bulk_approve_decline,
+            params: { bulk_status: "approve", sub_space_booking_ids: booking_ids }
+        expect(response).to redirect_to(root_path)
+        SubSpaceBooking.where(id: booking_ids).each do |b|
+          expect(b.sub_space_booking_status.booking_status_id)
+            .not_to eq(BookingStatus::APPROVED.id)
+        end
+        @user.update_column(:role, "staff")
         # approve first two
         first_two_ids = booking_ids.first(2)
         put :bulk_approve_decline,
