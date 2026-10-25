@@ -986,10 +986,9 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
   describe "users / get_sub_space_booking / access requests" do
     let(:space) { create(:space) }
 
-    it "users leaks access_token-esque attributes (admin/staff only)" do
-      # WART(D-B02): `render json: User.all` — the raw record serializer; regular
-      # users can't reach it, but staff/admin expose every column incl.
-      # access_token.
+    it "users JSON is admin/staff only and omits password and access_token" do
+      # FIXED(D-B02): `render json: User.all` now goes through User#serializable_hash,
+      # which excludes password and access_token (D-I02).
       log_in!(create(:user, :regular_user, booking_approval: true))
       get users_sub_space_booking_index_path
       expect(response).to redirect_to(root_path)
@@ -1003,7 +1002,8 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
       json = response.parsed_body
       expect(json).to be_an(Array)
       keys = json.map(&:keys).flatten
-      expect(keys).to include("access_token", "email", "name", "password")
+      expect(keys).to include("email", "name")
+      expect(keys).not_to include("access_token", "password")
     end
 
     it "get_sub_space_booking admins/staff only: 404 on unknown id" do

@@ -353,6 +353,18 @@ class User < ApplicationRecord
     self.password_confirmation = @pword
   end
 
+  # Secrets never leave the server: every JSON rendering of a user
+  # (as_json/to_json/render json:) goes through serializable_hash.
+  SERIALIZATION_EXCLUDED_ATTRIBUTES = %w[password access_token].freeze
+
+  def serializable_hash(options = nil)
+    options = options ? options.dup : {}
+    # Rails ignores :except when :only is given, so filter both.
+    options[:only] = Array(options[:only]).map(&:to_s) - SERIALIZATION_EXCLUDED_ATTRIBUTES if options[:only]
+    options[:except] = Array(options[:except]).map(&:to_s) | SERIALIZATION_EXCLUDED_ATTRIBUTES
+    super
+  end
+
   def reset_auth_attempts!
     update(auth_attempts: 0)
   end

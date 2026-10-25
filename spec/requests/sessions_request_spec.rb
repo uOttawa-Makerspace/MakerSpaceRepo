@@ -88,12 +88,15 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
       expect(body["user"]["username"]).to eq(user.username)
     end
 
-    it "leaks the password hash in the json user payload" do
-      # WART(D-I02): login/check_signed_in JSON serialises the whole user incl. the bcrypt `password` column
+    it "never includes the password hash or access token in the json user payload" do
+      # FIXED(D-I02): User#serializable_hash excludes password and access_token
       post login_authentication_path,
            params: { username_email: user.username, password: password },
            as: :json
-      expect(JSON.parse(response.body)["user"]).to include("password")
+      payload = JSON.parse(response.body)["user"]
+      expect(payload).not_to have_key("password")
+      expect(payload).not_to have_key("access_token")
+      expect(payload["username"]).to eq(user.username)
     end
   end
 

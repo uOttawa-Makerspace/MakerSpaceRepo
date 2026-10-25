@@ -129,15 +129,17 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
       expect(body["users"].map { |u| u["id"] }).to eq([match.id])
     end
 
-    # WART(D-V25): the JSON is the raw User#as_json (email, student_id, flags, and the password column) for any volunteer
-    it "exposes the full user record, including the password hash, to a plain volunteer" do
+    # FIXED(D-V25, password part): User#serializable_hash excludes password/access_token (D-I02).
+    # Email/student_id exposure to any volunteer remains pinned until the volunteers authz slice.
+    it "exposes the user record without the password hash to a plain volunteer" do
       target = create(:user, :volunteer_with_volunteer_program, name: "Target Person")
       vol_login!(create(:user, :volunteer_with_volunteer_program))
       get populate_users_volunteers_path(search: "target")
       row = JSON.parse(response.body)["users"].first
       expect(row).to include("email" => target.email, "username" => target.username, "role" => "volunteer")
       expect(row).to have_key("student_id")
-      expect(row["password"]).to start_with("$2")
+      expect(row).not_to have_key("password")
+      expect(row).not_to have_key("access_token")
     end
 
     it "returns every volunteer when search is blank" do

@@ -133,8 +133,10 @@ RSpec.describe "Project kits (HTTP contract)", type: :request do
       expect(response).to have_http_status(:ok)
       users = response.parsed_body["users"]
       expect(users.map { |u| u["id"] }).to eq([target.id])
-      # WART(D-C47): no staff gate on the user search; User#as_json leaks `password` and email (see D-I02)
-      expect(users.first).to have_key("password")
+      # FIXED(D-C47, password part): User#serializable_hash excludes password/access_token (D-I02).
+      # The missing staff gate and the email exposure remain pinned until the content authz slice.
+      expect(users.first).not_to have_key("password")
+      expect(users.first).not_to have_key("access_token")
       expect(users.first["email"]).to eq(target.email)
     end
 

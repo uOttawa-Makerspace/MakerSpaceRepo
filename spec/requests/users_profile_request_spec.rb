@@ -98,11 +98,13 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
-    it "json exposes the bcrypt hash and flag fields of the profile owner/staff view" do
-      # WART(D-I02): serialised users include the `password` hash column (also in login/check_signed_in)
+    it "json never exposes the password hash or access token in the staff profile view" do
+      # FIXED(D-I02): User#serializable_hash excludes password and access_token
       login!(staff)
       get user_path(user.username), as: :json
-      expect(json["user"]["password"]).to start_with("$2")
+      expect(json["user"]).not_to have_key("password")
+      expect(json["user"]).not_to have_key("access_token")
+      expect(json["user"]["username"]).to eq(user.username)
     end
 
     it "inactive (active: false) users still have a visible profile" do

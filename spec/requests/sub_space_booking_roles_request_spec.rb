@@ -466,10 +466,9 @@ RSpec.describe "Sub space booking role matrix", type: :request do
   end
 
   describe "users JSON" do
-    # WART(D-B02): `render json: User.all` serializes EVERY column to any staff
-    # or admin user: the stored bcrypt `password` and the GitHub `access_token`
-    # included.
-    it "exposes every user column, password hash and access_token included, to staff" do
+    # FIXED(D-B02): `render json: User.all` goes through User#serializable_hash,
+    # so staff/admin get every column except password and access_token (D-I02).
+    it "exposes every user column except the password hash and access_token to staff" do
       subject_user = create(:user, :regular_user, access_token: "ghp_secret_token_value")
       sign_in_as(:staff)
 
@@ -477,12 +476,9 @@ RSpec.describe "Sub space booking role matrix", type: :request do
       expect(response).to have_http_status(:ok)
 
       entry = response.parsed_body.find { |u| u["id"] == subject_user.id }
-      expect(entry.keys).to match_array(User.column_names)
-      expect(entry).to have_key("password")
-      expect(entry["password"]).to eq(subject_user.password)
-      expect(entry["password"]).to start_with("$2a$")
-      expect(entry).to have_key("access_token")
-      expect(entry["access_token"]).to eq("ghp_secret_token_value")
+      expect(entry.keys).to match_array(User.column_names - User::SERIALIZATION_EXCLUDED_ATTRIBUTES)
+      expect(entry).not_to have_key("password")
+      expect(entry).not_to have_key("access_token")
       expect(entry["email"]).to eq(subject_user.email)
     end
 
