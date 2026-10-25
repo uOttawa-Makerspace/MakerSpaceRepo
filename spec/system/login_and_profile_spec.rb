@@ -52,7 +52,8 @@ RSpec.describe "Login and profile", type: :system do
     expect(page).to have_css("input#username_email")
   end
 
-  it "rejects a wrong password with the incorrect-password alert and stays on the form" do
+  # js_errors: :allow, the 422 response to the bad login is logged by Chrome as a SEVERE resource error
+  it "rejects a wrong password with the incorrect-password alert and stays on the form", js_errors: :allow do
     visit login_path
     fill_in "username_email", with: user.username
     fill_in "password", with: "wrong-password"
