@@ -45,9 +45,9 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
   # Raw wall clock stored in Postgres for `timestamp without time zone`.
   # DateTime.parse(...).change(offset: 0) → the literal wall hits the DB
   # unchanged (offset 0 == UTC), so factory-built rows store the literal.
-  def raw_utc_wall(booking)
+  def raw_utc_wall(booking, column = "start_time")
     ActiveRecord::Base.connection.select_value(
-      "SELECT start_time::text FROM sub_space_bookings WHERE id = #{booking.id}"
+      "SELECT #{column}::text FROM sub_space_bookings WHERE id = #{booking.id}"
     )
   end
 
@@ -74,7 +74,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
     end
 
     it "bounces guests on the admin-ish endpoints (users)" do
-      # WART: current_user is ALWAYS a (blank) User instance for guests
+      # WART(D-B24): current_user is ALWAYS a (blank) User instance for guests
       # (ApplicationHelper#current_user falls back to User.new), so the
       # user_account gate never fires; guests land on user_admin_or_staff.
       get users_sub_space_booking_index_path
@@ -92,7 +92,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
     end
 
     it "lets an unapproved user VIEW the index page but not create" do
-      # WART: user_approved only gates #create — an unapproved user sees the
+      # WART(D-B25): user_approved only gates #create — an unapproved user sees the
       # index with the "Request Booking Access" panel instead of the tabs.
       user = create(:user, :regular_user, booking_approval: false)
       log_in!(user)
@@ -147,15 +147,22 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
       json_create
       expect(response.status).to eq(204)
       expect(response.body).to eq("")
-      booking = SubSpaceBooking.find_by(name: "Fresh")
-      expect(booking).to be_present
+      booking = SubSpaceBooking.find_by!(name: "Fresh")
+      expect(booking.description).to eq("Desc")
+      expect(booking.sub_space_id).to eq(subspace.id)
+      expect(booking.blocking).to be(false)
+      expect(raw_utc_wall(booking)).to eq("2027-03-03 15:00:00")
+      expect(raw_utc_wall(booking, "end_time")).to eq("2027-03-03 16:00:00")
       expect(status_name(booking)).to eq("Approved")
       expect(booking.user_id).to eq(user.id)
       expect(booking.public).to be(false) # subspace default_public default
+      expect(booking.approved_at).to be_nil # only admin bookings are stamped
+      expect(booking.approved_by_id).to be_nil
     end
 
-    it "marks pending subspace bookings as Pending and emails staff" do
+    it "marks pending subspace bookings as Pending and emails the space managers" do
       staffed_space = create(:space, :with_space_managers)
+      ActionMailer::Base.deliveries.clear
       req = create(:sub_space, space: staffed_space, approval_required: true,
                                max_automatic_approval_hour: nil)
       post sub_space_booking_index_path, as: :json,
@@ -167,6 +174,9 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
       expect(SubSpaceBooking.find_by(name: "N").sub_space_booking_status
               .booking_status.name).to eq("Pending")
       expect(ActionMailer::Base.deliveries.size).to eq(1)
+      mail = ActionMailer::Base.deliveries.last
+      expect(mail.subject).to eq("Booking needs approval")
+      expect(mail.to).to match_array(staffed_space.space_managers.map(&:email))
     end
 
     it "requires name/description/start/end with the app's i18n full messages" do
@@ -206,7 +216,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
         .to eq("errors" => ["Sub space must exist"])
     end
 
-    it "honours maximum_booking_duration only for non-admins" do
+    it "rejects a non-admin booking longer than maximum_booking_duration" do
       capped = create(:sub_space, space: space, maximum_booking_duration: 4)
       post sub_space_booking_index_path, as: :json,
            params: { sub_space_booking: {
@@ -219,7 +229,10 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
           ["DurationHour You cannot book #{capped.name} for more than 4 hours."]
       )
       expect(SubSpaceBooking.where(name: "TooLong")).to be_empty
+    end
 
+    it "lets an admin book longer than maximum_booking_duration" do
+      capped = create(:sub_space, space: space, maximum_booking_duration: 4)
       admin = create(:user, :admin, booking_approval: true)
       log_in!(admin)
       post sub_space_booking_index_path, as: :json,
@@ -228,36 +241,46 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
              end_time: "2027-03-03 15:00", name: "AdminLong", description: "D"
            } }
       expect(response.status).to eq(204)
-      expect(SubSpaceBooking.find_by(name: "AdminLong")).to be_present
+      expect(SubSpaceBooking.find_by!(name: "AdminLong").sub_space_id)
+        .to eq(capped.id)
     end
 
-    # WART (sub_space_booking_controller.rb:391): the weekly quota computes
-    # `existing_total - new_duration` (total_duration starts at `- duration`
-    # and the new booking is included in the user_bookings window), so the cap
-    # only bites when existing > cap + new.
+    # WART(D-B05) (sub_space_booking_controller.rb:391): the weekly quota
+    # computes `existing_total - new_duration` (total_duration starts at
+    # `- duration` and the new booking is included in the user_bookings
+    # window), so the cap only bites when existing > cap + new.
+    # Pinned to a fixed Wednesday midday (Eastern) so the controller's
+    # server-zone `DateTime.now.beginning_of_week` window always contains both
+    # bookings, whatever time the suite runs. The login happens inside the
+    # travel block because the session expires 72h after sign-in.
     it "applies the backwards weekly-quota computation" do
-      capped = create(:sub_space, space: space,
-                                  maximum_booking_hours_per_week: 2)
-      existing = 4.hours.ago.to_datetime
-      create(:sub_space_booking, sub_space: capped, user: user,
-             name: "Earlier", start_time: existing, end_time: existing + 4.hours)
-      post sub_space_booking_index_path, as: :json,
-           params: { sub_space_booking: {
-             sub_space_id: capped.id,
-             start_time: (Time.zone.now + 1.hour).strftime("%Y-%m-%d %H:%M"),
-             end_time: (Time.zone.now + 2.hours).strftime("%Y-%m-%d %H:%M"),
-             name: "OverWeek", description: "D"
-           } }
-      expect(response.status).to eq(422)
-      expect(response.parsed_body).to eq(
-        "errors" =>
-          ["DurationWeek You cannot book #{capped.name} for more than 2 hours per week."]
-      )
-      expect(SubSpaceBooking.where(name: "OverWeek")).to be_empty
+      travel_to(Time.zone.local(2027, 3, 10, 12, 0)) do
+        log_in!(user)
+        capped = create(:sub_space, space: space,
+                                    maximum_booking_hours_per_week: 2)
+        existing = 4.hours.ago.to_datetime
+        create(:sub_space_booking, sub_space: capped, user: user,
+               name: "Earlier", start_time: existing, end_time: existing + 4.hours)
+        post sub_space_booking_index_path, as: :json,
+             params: { sub_space_booking: {
+               sub_space_id: capped.id,
+               start_time: "2027-03-10 13:00",
+               end_time: "2027-03-10 14:00",
+               name: "OverWeek", description: "D"
+             } }
+        expect(response.status).to eq(422)
+        expect(response.parsed_body).to eq(
+          "errors" =>
+            ["DurationWeek You cannot book #{capped.name} for more than 2 hours per week."]
+        )
+        expect(SubSpaceBooking.where(name: "OverWeek")).to be_empty
+        expect(SubSpaceBooking.where(user_id: user.id).pluck(:name))
+          .to eq(["Earlier"])
+      end
     end
 
     it "stores string params shifted to the Eastern DST offset in UTC" do
-      # WART: controller create parses the string by the app zone (March →
+      # WART(D-B06): controller create parses the string by the app zone (March →
       # EST = -05:00 → UTC wall 15:00) while the overlap binds use the
       # literal wall. Factory rows with offset-0 DateTimes store the
       # literal. Probe5/probe6 verified both directions (Mar: +5, Jul: +4).
@@ -267,8 +290,8 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
     end
 
     context "blocking" do
-      it "rejects a non-admin JSON boolean blocking request (but still books!)" do
-        # WART (controller:219): the permission check uses `== true`, matches
+      it "redirects a non-admin JSON-boolean blocking request with an alert but still books it" do
+        # WART(D-B03) (controller:219): the permission check uses `== true`, matches
         # JSON booleans, and has NO `return` after redirect_to — the flow
         # continues into book() and the blocking row persists.
         json_create(blocking: true)
@@ -296,7 +319,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
       end
 
       it "skips the overlap check when params[:blocking] is the string 'true'" do
-        # WART (controller:335): `params[:...] != "true"` — an HTML form string
+        # WART(D-B04/D-B27) (controller:335): `params[:...] != "true"` — an HTML form string
         # bypasses the overlap query entirely, so a regular user can block.
         json_create(blocking: "true")
         expect(response.status).to eq(204)
@@ -321,11 +344,11 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
           "errors" => ["TimeSlot This time slot is already booked."]
         )
         expect(SubSpaceBooking.where(name: "Fresh")).to be_empty
-        expect(SubSpaceBooking.find_by(name: "Taker")).to be_present
+        expect(SubSpaceBooking.exists?(name: "Taker")).to be(true)
       end
 
       it "misses overlaps between two controller-created bookings" do
-        # WART: controller-created rows store the EDT/EST-shifted wall while
+        # WART(D-B06): controller-created rows store the EDT/EST-shifted wall while
         # the overlap binds use the literal wall, so JSON booking 11:00-12:00
         # never collides with the 10:00-12:00 block stored at 15:00-17:00.
         admin = create(:user, :admin, booking_approval: true)
@@ -441,7 +464,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
     end
 
     it "two mid-series conflicts explode with 500 (DoubleRenderError) leaving the first booking" do
-      # WART: book()'s conflict branch calls booking.destroy + render for each
+      # WART(D-B07): book()'s conflict branch calls booking.destroy + render for each
       # conflicting occurrence; the second render raises
       # ActionView::DoubleRenderError → Rails 500 error page.
       set_booking_status!(
@@ -498,7 +521,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
     end
 
     it "renders the exact event shape with EDT millisecond+zone timestamps" do
-      # WART round-trip: factory rows with offset-0 DateTimes store the
+      # WART(D-B06) round-trip: factory rows with offset-0 DateTimes store the
       # literal wall (10:00/11:00); the readback evaluates that wall as UTC
       # and re-formats it in the app's Eastern zone, so the feed shows
       # 06:00/07:00-04:00, NOT the values a user entered into the form.
@@ -573,7 +596,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
       expect(events.first["title"]).to eq("Space Blocked")
       # blocking titles keep the blocking color even for the viewer
       expect(events.first["color"]).to eq("#ABABABFF")
-      # WART (controller:195): (!admin || owner!=viewer) is TRUE for admins
+      # WART(D-B10) (controller:195): (!admin || owner!=viewer) is TRUE for admins
       # viewing someone else's block, so they also only see "Space Blocked".
       expect(feed(user: admin_viewer).first["title"]).to eq("Space Blocked")
     end
@@ -621,7 +644,8 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
       expect(response.body).to include("bookingEdit")
     end
 
-    it "WART: owners can NOT edit their own APPROVED bookings (redirect)" do
+    # WART(D-B11): owners are bounced from editing their own APPROVED bookings
+    it "redirects owners away from editing their own APPROVED booking" do
       log_in!(owner)
       booking = owned_booking(status: @approved_status)
       get edit_path(booking)
@@ -630,7 +654,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
         .to eq("You can't access this subspace booking.")
     end
 
-    it "keeps non-owners out with the owner-or-admin alert (all roles)" do
+    it "keeps a non-owner regular user out with the owner-or-admin alert" do
       log_in!(other)
       booking = owned_booking
       get edit_path(booking)
@@ -694,7 +718,8 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
         .to eq("Pending") # stays pending when updated
     end
 
-    it "WART: owners updating their APPROVED bookings are bounced (no return on worry)" do
+    # WART(D-B11): the same bounce applies to PATCH update
+    it "bounces an owner updating their own APPROVED booking with a permission alert" do
       log_in!(owner)
       booking = owned_booking(status: @approved_status)
       patch update_path(booking), params: {
@@ -774,10 +799,14 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
       expect(status_name(booking)).to eq("Pending")
     end
 
-    it "staff approve sets status + approved_by" do
+    it "staff approve sets status + approved_by + approved_at" do
       staff = create(:user, :staff, booking_approval: true)
       log_in!(staff)
       booking = booking_by(create(:user, :regular_user, booking_approval: true))
+      # freeze the clock AFTER login (the session expires 72h from sign-in, so
+      # travelling to a distant fixed date would sign the staff user out)
+      frozen_now = Time.zone.now.change(usec: 0)
+      travel_to(frozen_now)
 
       put sub_space_booking_approve_path(
         sub_space_booking_id: booking.id
@@ -789,7 +818,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
         .to eq("Booking for #{subspace.name} approved successfully.")
       expect(status_name(booking)).to eq("Approved")
       expect(booking.reload.approved_by_id).to eq(staff.id)
-      expect(booking.reload.approved_at).to be_present
+      expect(booking.approved_at).to eq(frozen_now)
     end
 
     it "approve unknown id → 404" do
@@ -831,7 +860,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
       expect(booking.reload.public).to be(false)
     end
 
-    # WART (controller:before_action list): bulk_approve_decline is NOT gated
+    # WART(D-B01) (controller:before_action list): bulk_approve_decline is NOT gated
     # by user_admin_or_staff — any signed-in user can bulk-approve/decline.
     it "any signed-in user can bulk_approve_decline" do
       nobody = create(:user, :regular_user, booking_approval: true)
@@ -907,7 +936,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
       expect(response).to redirect_to(root_path)
       expect(flash[:alert])
         .to eq("You must be the owner of this booking or an admin to delete it.")
-      expect(SubSpaceBooking.find_by(id: booking.id)).to be_present
+      expect(SubSpaceBooking.exists?(booking.id)).to be(true)
     end
 
     it "admins delete anyone's bookings" do
@@ -946,7 +975,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
       delete delete_remaining_recurring_sub_space_booking_path(booking.id)
       expect(flash[:notice])
         .to eq("Booking is not attached to a recurring booking.")
-      expect(SubSpaceBooking.find_by(id: booking.id)).to be_present
+      expect(SubSpaceBooking.exists?(booking.id)).to be(true)
     end
   end
 
@@ -956,7 +985,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
     let(:space) { create(:space) }
 
     it "users leaks access_token-esque attributes (admin/staff only)" do
-      # WART: `render json: User.all` — the raw record serializer; regular
+      # WART(D-B02): `render json: User.all` — the raw record serializer; regular
       # users can't reach it, but staff/admin expose every column incl.
       # access_token.
       log_in!(create(:user, :regular_user, booking_approval: true))
@@ -972,9 +1001,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
       json = response.parsed_body
       expect(json).to be_an(Array)
       keys = json.map(&:keys).flatten
-      expect(keys.include?("access_token")).to be(true)
-      expect(keys.include?("email")).to be(true)
-      expect(keys.include?("name")).to be(true)
+      expect(keys).to include("access_token", "email", "name", "password")
     end
 
     it "get_sub_space_booking admins/staff only: 404 on unknown id" do
@@ -997,7 +1024,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
       )
     end
 
-    it "request_access gates + duplicates + identity email routing" do
+    it "request_access gates blank comments and duplicate requests" do
       user = create(:user, :regular_user, booking_approval: false)
       log_in!(user)
 
@@ -1021,7 +1048,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
     end
 
     it "request_access identity 'JMTS' without a JMTS Space 500s" do
-      # WART: `Space.find_by(name: "JMTS").space_managers` — nil receiver.
+      # WART(D-B16): `Space.find_by(name: "JMTS").space_managers` — nil receiver.
       user = create(:user, :regular_user, booking_approval: false)
       log_in!(user)
       put request_access_sub_space_booking_index_path,
@@ -1046,7 +1073,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
       put request_access_sub_space_booking_index_path,
           params: { comments: "hey", identity: "Staff" }
       expect(response.status).to eq(404)
-      # WART: the UBA row is saved BEFORE the supervisor lookup 404s, so the
+      # WART(D-B15): the UBA row is saved BEFORE the supervisor lookup 404s, so the
       # request exists (staff_id nil) but no notification email went out.
       uba = UserBookingApproval.find_by(user: user)
       expect(uba.identity).to eq("Staff")

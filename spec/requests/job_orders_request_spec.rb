@@ -21,10 +21,14 @@ require "rails_helper"
 # * Rails 8.1 maps `config.action_dispatch.show_exceptions = false` to
 #   "resilient": raised app errors are reported and turned into a 500 (with a
 #   debug page body, which we pin) instead of re-raising in the test.
-# * Stripe/Shopify are UNTOUCHED in this controller: `pay` renders a link from
-#   JobOrder#checkout_link (a Shopify draft-order invoice URL, network-backed);
-#   `stripe_success`/`stripe_cancelled` render static "thank you" pages. We
-#   stub only the instance method JobOrder#checkout_link at the pay boundary.
+# * Stripe is UNTOUCHED in this controller: `stripe_success`/`stripe_cancelled`
+#   render static "thank you" pages. `pay` renders a link from
+#   JobOrder#checkout_link (a Shopify draft-order invoice URL); the examples
+#   stub the Shopify GraphQL client boundary (`stub_shopify_admin!`, see
+#   spec/support/shop_spec_helpers.rb), never the model.
+# * Mail is pinned by DELIVERED outcome (`perform_enqueued_jobs` +
+#   `ActionMailer::Base.deliveries`: recipient + subject), never by enqueue
+#   mechanism.
 RSpec.describe "JobOrders (HTTP contract)", type: :request do
   let(:owner) { create(:user, :regular_user) }
   let(:staff) { create(:user, :staff) }
@@ -34,6 +38,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
   before do
     seed_job_statuses!
     seed_job_order_message!
+    ActionMailer::Base.deliveries.clear
   end
 
   # ------------------------------------------------------------- helpers
@@ -171,7 +176,8 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(order.chat_messages.first.reload.is_read).to be(false)
     end
 
-    it "renders for any signed-in user (no ownership gate — wart)" do
+    # WART(D-J06): show has no ownership gate
+    it "renders another user's order, with the owner's email, to any signed-in user" do
       order = order_with_task!(owner: owner)
       http_login!(other)
       get job_order_path(order)
@@ -199,28 +205,32 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
         .to eq("#{I18n.t('job_orders.alerts.missing_info')} Task #1")
     end
 
-    # WART: the Submit-for-Approval button_to resolves job_order_job_task_path
-    # with @job_order.job_tasks.first == nil → UrlGenerationError → 500.
-    it "renders 500 for a DRAFT order with no tasks (defective view)" do
+    # WART(D-J13): the Submit-for-Approval button_to resolves
+    # job_order_job_task_path with @job_order.job_tasks.first == nil →
+    # UrlGenerationError → 500.
+    it "renders 500 (UrlGenerationError) for a DRAFT order with no tasks" do
       order = make_job_order!(owner: owner, status_key: :draft)
       http_login!(owner)
       get job_order_path(order)
       expect(response).to have_http_status(:internal_server_error)
       expect(response.body).to include("Action Controller: Exception caught")
+      expect(response.body).to include("UrlGenerationError")
     end
 
-    # WART: @message is dereferenced BEFORE the nil check, so the
+    # WART(D-J14): @message is dereferenced BEFORE the nil check, so the
     # "job order not found" flash/redirect branch is dead code.
-    it "renders 500 for a missing or deleted order" do
+    it "renders 500 (NoMethodError) for a missing or deleted order" do
       order = order_with_task!(owner: owner)
       http_login!(owner)
 
       get job_order_path(id: 999_999_999)
       expect(response).to have_http_status(:internal_server_error)
+      expect(response.body).to include("NoMethodError")
 
       order.update!(is_deleted: true)
       get job_order_path(order)
       expect(response).to have_http_status(:internal_server_error)
+      expect(response.body).to include("NoMethodError")
     end
   end
 
@@ -267,7 +277,8 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
     it "redirects to root with the raw parameter_missing message when job_order param is absent" do
       post job_orders_path, params: { other: "x" }
       expect(response).to redirect_to(root_path)
-      expect(flash[:alert]).to include("param is missing or the value is empty")
+      expect(flash[:alert])
+        .to eq("param is missing or the value is empty or invalid: job_order")
     end
 
     it "POST /job_orders/new is wired to #new in the routes (renders the choice page, does not create)" do
@@ -353,6 +364,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
         .to eq(["Draft", "Waiting for User Approval", "Waiting to be Processed"])
       expect(ActionMailer::Base.deliveries.last.subject)
         .to eq("A user has approved a Job Order")
+      expect(ActionMailer::Base.deliveries.last.to).to eq(["makerspace@uottawa.ca"])
     end
 
     it "APPROVED=false records the DECLINED status without a mail" do
@@ -377,9 +389,10 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
     end
 
-    # WART: format.js renders admin_row but points at _assign_staff, which
-    # dereferences @staff (nil outside the admin page) → Template::Error → 500.
-    it "responds 500 (HTML debug page) to format.js on row actions" do
+    # WART(D-J15): format.js renders admin_row but points at _assign_staff,
+    # which dereferences @staff (nil outside the admin page) → Template::Error
+    # → 500.
+    it "responds 500 (ActionView::Template::Error, HTML debug page) to format.js on row actions" do
       order = order_with_task!(owner: owner)
       advance_to!(order, :user_approval)
       http_login!(owner)
@@ -390,6 +403,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(response).to have_http_status(:internal_server_error)
       expect(response.headers["Content-Type"]).to start_with("text/html")
       expect(response.body).to include("Action Controller: Exception caught")
+      expect(response.body).to include("ActionView::Template::Error")
     end
   end
 
@@ -444,6 +458,8 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
         expect(mail.subject)
           .to eq("Votre commande ##{order.id} a été approuvée // Your job order ##{order.id} has been approved")
         expect(mail.to).to eq([order.user.email])
+        expect(mail.bcc).to eq(["uottawa.makerepo@gmail.com"])
+        expect(mail.reply_to).to eq(["makerspace@uottawa.ca"])
         # The mailer embeds a signed magic-approval token for the order
         expect(mail.body.encoded).to include("user_magic_approval?token=")
       end
@@ -464,8 +480,9 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
           "task_#{task.id}_staff_files" => [FilesTestHelper.stl]
         )
         task.reload
-        expect(task.staff_files).to be_present
-        expect(task.staff_files.first.filename.to_s).to start_with("#{order.id}_")
+        expect(task.staff_files.count).to eq(1)
+        expect(task.staff_files.first.filename.to_s)
+          .to eq("#{order.id}_#{FilesTestHelper.stl_name}")
       end
 
       it "replaces job quote line items from submitted params" do
@@ -491,6 +508,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
         expect(status_names(order)).to end_with("Declined")
         expect(ActionMailer::Base.deliveries.last.subject)
           .to eq("Your job ##{order.id} has been declined")
+        expect(ActionMailer::Base.deliveries.last.to).to eq([order.user.email])
         expect(flash[:notice])
           .to eq(I18n.t("job_orders.alerts.updated_job_status_to_x", status: "Declined"))
       end
@@ -535,7 +553,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
 
   # Each PATCH transition seeds the order at `from` (single status row — the
   # row history starts there; no implicit "Draft" entry exists).
-  TRANSITIONS = {
+  transitions = {
     start_processing: {
       ok_param: "start_processing",
       from: :waiting_processed, final: :being_processed,
@@ -553,7 +571,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
     }
   }.freeze
 
-  TRANSITIONS.each do |action, flow|
+  transitions.each do |action, flow|
     describe "PATCH /job_orders/:id/#{action}" do
       it "rejects guests with the login?back_to redirect" do
         order = order_with_task!(owner: owner)
@@ -596,8 +614,8 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
           expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
         end
 
-        # WART: applying #{action} to a Draft flashes the generic update error;
-        # no guard rail explains WHY the transition was refused.
+        # WART(D-J16): applying #{action} to a Draft flashes the generic update
+        # error; no guard rail explains WHY the transition was refused.
         it "errors from an unexpected current status" do
           order = order_with_task!(owner: owner, status_key: :draft)
           expect do
@@ -624,8 +642,10 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
         ["Currently being Processed", "Completed (Waiting for Payment)",
          "Paid (Waiting for Pick-Up)"]
       )
-      expect(ActionMailer::Base.deliveries.last.subject)
-        .to eq("Your Job Order ##{order.id} is now ready for pickup")
+      expect(ActionMailer::Base.deliveries.size).to eq(1)
+      mail = ActionMailer::Base.deliveries.last
+      expect(mail.subject).to eq("Your Job Order ##{order.id} is now ready for pickup")
+      expect(mail.to).to eq([owner.email])
     end
 
     it "emails the completion message when send_email=true (a priced order skips the auto-pay branch)" do
@@ -636,8 +656,10 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
             params: { completed: "true", send_email: "true", message: "<p>Your part is done.</p>" }
       expect(response).to redirect_to(job_order_path(order))
       expect(status_names(order)).to end_with("Completed (Waiting for Payment)")
+      expect(ActionMailer::Base.deliveries.size).to eq(1)
       expect(ActionMailer::Base.deliveries.last.subject)
         .to eq("Your Job Order ##{order.id} has been completed")
+      expect(ActionMailer::Base.deliveries.last.to).to eq([owner.email])
       expect(ActionMailer::Base.deliveries.last.body.encoded).to include("Your part is done.")
     end
 
@@ -671,6 +693,9 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(ActionMailer::Base.deliveries.last.subject)
         .to eq("Votre commande ##{order.id} a été approuvée // Your job order ##{order.id} has been approved")
       expect(ActionMailer::Base.deliveries.last.to).to eq([order.user.email])
+      # the reminder flag adds the reminder paragraph (English + French)
+      expect(ActionMailer::Base.deliveries.last.body.encoded)
+        .to include("This is a reminder that admins have approved a Job Order.")
     end
 
     it "uses the re-approved wording once the order has multiple USER_APPROVAL rows" do
@@ -687,13 +712,17 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
   # ------------------------------------------------------- assign_staff
 
   describe "PATCH /job_orders/:id/assign_staff" do
-    it "lets an admin assign a staff member and enqueues the staff_assigned mail" do
+    it "lets an admin assign a staff member and delivers the staff_assigned mail to them" do
       order = order_with_task!(owner: owner)
       http_login!(admin)
-      expect do
+      perform_enqueued_jobs do
         patch job_order_assign_staff_path(order), params: { staff_id: staff.id }
-      end.to have_enqueued_mail(JobOrderMailer, :staff_assigned)
+      end
 
+      expect(ActionMailer::Base.deliveries.size).to eq(1)
+      mail = ActionMailer::Base.deliveries.last
+      expect(mail.to).to eq([staff.email])
+      expect(mail.subject).to eq("You've been assigned to Job Order ##{order.id}")
       expect(response).to redirect_to(job_orders_path) # redirect_back fallback
       expect(flash[:notice]).to eq("#{staff.name} has been assigned to this job order.")
       expect(order.reload.assigned_staff).to eq(staff)
@@ -702,17 +731,22 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
     it "does NOT email when the admin assigns themselves" do
       order = order_with_task!(owner: owner)
       http_login!(admin)
-      expect do
+      perform_enqueued_jobs do
         patch job_order_assign_staff_path(order), params: { staff_id: admin.id }
-      end.not_to have_enqueued_mail(JobOrderMailer, :staff_assigned)
+      end
+      expect(ActionMailer::Base.deliveries).to be_empty
       expect(order.reload.assigned_staff).to eq(admin)
       expect(flash[:notice]).to eq("#{admin.name} has been assigned to this job order.")
     end
 
-    it "lets any signed-in user self-assign (staff_id == own id) with no mail — wart" do
+    # WART(D-J07): assign_staff skips grant_access and set_job_order
+    it "lets any signed-in user self-assign (staff_id == own id) with no mail" do
       order = order_with_task!(owner: owner)
       http_login!(other)
-      patch job_order_assign_staff_path(order), params: { staff_id: other.id }
+      perform_enqueued_jobs do
+        patch job_order_assign_staff_path(order), params: { staff_id: other.id }
+      end
+      expect(ActionMailer::Base.deliveries).to be_empty
       expect(response).to redirect_to(job_orders_path)
       expect(flash[:notice]).to eq("#{other.name} has been assigned to this job order.")
       expect(order.reload.assigned_staff).to eq(other)
@@ -721,30 +755,32 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
     it "staff can claim a job themselves (Assign Me button path) with no mail" do
       order = order_with_task!(owner: owner)
       http_login!(staff)
-      expect do
+      perform_enqueued_jobs do
         patch job_order_assign_staff_path(order), params: { staff_id: staff.id }
-      end.not_to have_enqueued_mail(JobOrderMailer, :staff_assigned)
+      end
       expect(order.reload.assigned_staff).to eq(staff)
       expect(ActionMailer::Base.deliveries).to be_empty
     end
 
-    # WART: the else-flash dereferences @job_order.assigned_staff.name with no
-    # assigned staff → NoMethodError → 500 instead of a friendly flash.
-    it "renders 500 when a non-permitted user tries to assign someone else" do
+    # WART(D-J08): the else-flash dereferences @job_order.assigned_staff.name
+    # with no assigned staff → NoMethodError → 500 instead of a friendly flash.
+    it "renders 500 (NoMethodError) when a non-permitted user tries to assign someone else" do
       order = order_with_task!(owner: owner)
       http_login!(other)
       patch job_order_assign_staff_path(order), params: { staff_id: staff.id }
       expect(response).to have_http_status(:internal_server_error)
+      expect(response.body).to include("NoMethodError")
       expect(order.reload.assigned_staff).to be_nil
     end
 
-    # WART: an unknown job order takes the same else branch, @job_order is nil.
-    # (The route's key is job_order_id.)
-    it "renders 500 for an unknown job order id" do
+    # WART(D-J08): an unknown job order takes the same else branch,
+    # @job_order is nil. (The route's key is job_order_id.)
+    it "renders 500 (NoMethodError) for an unknown job order id" do
       http_login!(staff)
       patch job_order_assign_staff_path(job_order_id: 999_999_999),
             params: { staff_id: staff.id }
       expect(response).to have_http_status(:internal_server_error)
+      expect(response.body).to include("NoMethodError")
     end
   end
 
@@ -793,12 +829,13 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
   describe "GET /job_orders/:id/invoice" do
     it "renders a printable (layout-free) invoice for the owner" do
       order = order_with_task!(owner: owner, status_key: :completed)
-      order.job_tasks.first.build_job_task_quote(price: 42).save!
+      order.job_tasks.first.build_job_task_quote(price: 42, service_price: 0, service_quantity: 0).save!
       http_login!(owner)
       get job_order_invoice_path(order)
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Invoice ##{order.id}")
-      expect(response.body).to include("Total: CAD")
+      expect(response.body).to include("Task #1 - Base Fee")
+      expect(response.body).to match(/Total: CAD \$42\.00/)
       expect(response.body).not_to include("nav.navbar") # layout: false
     end
 
@@ -851,6 +888,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       get job_order_quote_modal_path(order)
       expect(response).to have_http_status(:internal_server_error)
       expect(response.body).to include("Action Controller: Exception caught")
+      expect(response.body).to include("ActionView::MissingTemplate")
     end
 
     it "redirects a regular owner to root first (grant_access)" do
@@ -867,6 +905,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       http_login!(staff)
       get job_order_decline_modal_path(order)
       expect(response).to have_http_status(:internal_server_error)
+      expect(response.body).to include("ActionView::MissingTemplate")
     end
   end
 
@@ -876,6 +915,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       http_login!(staff)
       get job_order_comments_modal_path(order)
       expect(response).to have_http_status(:internal_server_error)
+      expect(response.body).to include("ActionView::MissingTemplate")
     end
   end
 
@@ -1023,13 +1063,18 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
           .to eq(I18n.t("job_orders.alerts.approval_magic_link_expired"))
       end
 
-      # Tokens are generated WITHOUT expires_at (message_verifier default), so
-      # the "expired" state only exists through status/deletion changes.
-      it "still accepts a one-year-old token (no expiry — wart)" do
-        travel 1.year do
-          get user_magic_approval_job_orders_path, params: { token: token }
-          expect(response).to have_http_status(:ok)
-          expect(response.body).to include("Approve the Quote")
+      # WART(D-J11): tokens are generated WITHOUT expires_at (message_verifier
+      # default), so the "expired" state only exists through status/deletion
+      # changes. The order and the token are minted NOW, before any time
+      # travel, so the example really proves an old token keeps working.
+      it "still accepts a token minted today after one year and after five years (no expiry)" do
+        minted = token # evaluates magic_order and signs the token at real "now"
+        [1.year, 5.years].each do |age|
+          travel_to(age.from_now) do
+            get user_magic_approval_job_orders_path, params: { token: minted }
+            expect(response).to have_http_status(:ok)
+            expect(response.body).to include("Approve the Quote")
+          end
         end
       end
     end
@@ -1055,6 +1100,8 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
           expect(status_names(magic_order))
             .to eq(["Waiting for User Approval", "Waiting to be Processed"])
           expect(magic_order.job_order_statuses.last.user).to eq(owner)
+          # WART(D-J37): the magic-link path notifies nobody
+          expect(ActionMailer::Base.deliveries).to be_empty
         end
 
         it "denies: appends Declined" do
@@ -1067,18 +1114,22 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
 
         # The status check is the only "one-time" guard: the token itself stays
         # valid; replaying renders the guarded (non-updated) response.
-        it "replays a spent token but leaves the status untouched" do
+        it "replays a spent token: error page, status untouched" do
           patch user_magic_approval_confirmation_job_orders_path,
                 params: { token: token, approved: "true" }
+          expect(response.body).to include("Thank You for Approving/Denying the Job Order!")
           count = JobOrderStatus.count
           patch user_magic_approval_confirmation_job_orders_path,
                 params: { token: token, approved: "true" }
+          expect(response).to have_http_status(:ok)
+          expect(response.body)
+            .to include("An error occured while trying to Approve/Deny the Job Order...")
           expect(JobOrderStatus.count).to eq(count)
           expect(status_names(magic_order)).to end_with("Waiting to be Processed")
         end
       end
 
-      # WART: for an anonymous visitor @user is User.new, so the new status row
+      # WART(D-J09): for an anonymous visitor @user is User.new, so the new status row
       # fails its presence validation and the update fails silently — the
       # guest approval flow cannot persist unless the visitor is logged in.
       it "renders the error page and changes nothing for an anonymous visitor (no mail)" do
@@ -1092,12 +1143,13 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
         expect(status_names(magic_order)).to eq(["Waiting for User Approval"])
       end
 
-      # WART: a validly-signed token with no matching record crashes on nil.
-      it "renders 500 for a well-signed token pointing at a missing order" do
+      # WART(D-J10): a validly-signed token with no matching record crashes on nil.
+      it "renders 500 (NoMethodError) for a well-signed token pointing at a missing order" do
         broken = Rails.application.message_verifier(:job_order_id).generate(999_999_999)
         patch user_magic_approval_confirmation_job_orders_path,
               params: { token: broken, approved: "true" }
         expect(response).to have_http_status(:internal_server_error)
+        expect(response.body).to include("NoMethodError")
       end
     end
   end
@@ -1105,48 +1157,68 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
   # ------------------------------------------------------- pay (magic payment)
 
   describe "GET /job_orders/pay" do
-    # The controller loads its OWN record instance, so the Shopify boundary is
-    # stubbed class-wide; the token page pins @payment_link rendering only.
-    def stub_checkout_link!(url)
-      allow_any_instance_of(JobOrder).to receive(:checkout_link).and_return(url)
+    # The Shopify GraphQL client is the boundary (no sockets): the first visit
+    # creates the draft order, then fetches its invoice URL.
+    let!(:shopify) do
+      stub_shopify_admin!.tap { |fake| fake.invoice_url = "https://pay.example/inv" }
     end
 
     it "renders the payment-link page for a valid token on a COMPLETED order" do
       order = order_with_task!(owner: owner, status_key: :completed)
-      stub_checkout_link!("https://pay.example/inv-#{order.id}")
-      order.job_tasks.first.build_job_task_quote(price: 29.99).save!
+      # the quote action always writes service_price/quantity (0.0 when blank)
+      order.job_tasks.first.build_job_task_quote(
+        price: 29.99, service_price: 0, service_quantity: 0
+      ).save!
 
       get pay_job_orders_path, params: { token: magic_link_token_for(order) }
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Proceed to the payment page")
-      expect(response.body).to include("https://pay.example/inv-#{order.id}")
+      expect(response.body).to include("https://pay.example/inv")
       expect(response.body).to include("Total Quote:")
+      # WART(D-J38): the draft order is created on a GET and only fetched later
+      expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
+      # WART(D-J50): the controller assigns @payment_link, but pay.html.erb
+      # calls checkout_link AGAIN, so every visit does a redundant fetch
+      # (create, fetch inside create, then the view's own fetch).
+      expect(shopify.calls.map { |c| c[:query][/\b(draftOrderCreate|getDraftOrder)\b/] })
+        .to eq(%w[draftOrderCreate getDraftOrder getDraftOrder])
+      line_items = shopify.calls.first[:variables][:input][:lineItems]
+      expect(line_items.map { |li| li[:title] })
+        .to eq(["Task #1 Service Fee", "Line Items Total"])
+      expect(line_items.first[:originalUnitPriceWithCurrency])
+        .to eq(amount: BigDecimal("29.99"), currencyCode: "CAD")
     end
 
-    # WART: valid signature but wrong status lands in the else branch, which
-    # dereferences @job_order.id — with @job_order never assigned → 500.
-    it "renders 500 for a valid token on a non-COMPLETED order" do
+    # WART(D-J12): valid signature but wrong status lands in the else branch,
+    # which dereferences @job_order.id — with @job_order never assigned → 500.
+    it "renders 500 (NoMethodError) for a valid token on a non-COMPLETED order" do
       order = order_with_task!(owner: owner, status_key: :user_approval)
-      stub_checkout_link!("https://pay.example/na")
       get pay_job_orders_path, params: { token: magic_link_token_for(order) }
       expect(response).to have_http_status(:internal_server_error)
+      expect(response.body).to include("NoMethodError")
+      expect(shopify.calls).to be_empty
     end
 
-    it "renders 500 for an invalid token (same nil @job_order crash)" do
-      stub_checkout_link!("https://pay.example/na")
+    # WART(D-J12): same nil @job_order crash for an unparsable token.
+    it "renders 500 (NoMethodError) for an invalid token" do
       order_with_task!(owner: owner, status_key: :completed)
       get pay_job_orders_path, params: { token: "bogus-token" }
       expect(response).to have_http_status(:internal_server_error)
       expect(response.body).to include("Action Controller: Exception caught")
+      expect(response.body).to include("NoMethodError")
     end
 
-    it "does not expire: the same token works after a year (no expiry — wart)" do
+    # WART(D-J11): no expiry. Order and token are created BEFORE the clock
+    # moves, so this proves a token minted today still opens the pay page.
+    it "does not expire: a token minted today works after one and five years (no expiry)" do
       order = order_with_task!(owner: owner, status_key: :completed)
-      stub_checkout_link!("https://pay.example/later")
-      travel 1.year do
-        get pay_job_orders_path, params: { token: magic_link_token_for(order) }
-        expect(response).to have_http_status(:ok)
-        expect(response.body).to include("https://pay.example/later")
+      minted = magic_link_token_for(order)
+      [1.year, 5.years].each do |age|
+        travel_to(age.from_now) do
+          get pay_job_orders_path, params: { token: minted }
+          expect(response).to have_http_status(:ok)
+          expect(response.body).to include("https://pay.example/inv")
+        end
       end
     end
   end

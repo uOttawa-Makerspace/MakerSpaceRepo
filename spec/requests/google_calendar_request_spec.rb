@@ -36,7 +36,7 @@ RSpec.describe "Google calendar webhook", type: :request do
     expect(GoogleCalendarSyncJob).not_to have_been_enqueued
   end
 
-  it "enqueues GoogleCalendarSyncJob for a valid (unexpired) channel pair" do
+  it "enqueues GoogleCalendarSyncJob for a registered channel pair" do
     GoogleCalendarChannel.create!(
       channel_id: "chan-1", resource_id: "res-1",
       expires_at: 1.week.from_now
@@ -65,7 +65,7 @@ RSpec.describe "Google calendar webhook", type: :request do
     })
     expect(response.status).to eq(401)
 
-    # a simple GET (no headers at all) is equally 401 — no CSRF guard on POST
+    # a bare POST (no Google headers at all) is equally 401
     post webhook_path
     expect(response.status).to eq(401)
   end

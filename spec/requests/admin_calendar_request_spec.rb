@@ -55,9 +55,9 @@ RSpec.describe "Admin calendar contract", type: :request do
     expect(flash[:alert]).to eq("You are not assigned to any spaces.")
   end
 
-  # WART: index falls back with `@user.space_id || Space.first.id` — if the
-  # DB contains NO spaces at all, Space.first is nil and `.id` raises — 500.
-  it "WART: index 500s when no spaces exist at all" do
+  # WART(D-B14): index falls back with `@user.space_id || Space.first.id` — if
+  # the DB contains NO spaces at all, Space.first is nil and `.id` raises — 500.
+  it "index 500s when no spaces exist at all" do
     log_in!(admin) # nothing else creates a space in this example
     get admin_calendar_index_path
     expect(response.status).to eq(500) # NoMethodError on Space.first.id
@@ -66,7 +66,7 @@ RSpec.describe "Admin calendar contract", type: :request do
   # NOTE: the :id segment is REQUIRED by the route, so the controller's
   # `params[:id].blank? → 400` branch is unreachable under the route shim;
   # `/…_json/0` (unknown space) returns 200 with an empty list. Pinned that.
-  it "admin.?json for an unknown space id → 200 with empty payload" do
+  it "all three admin JSON feeds answer 200 with an empty payload for an unknown space id" do
     log_in!(admin)
     get unavailabilities_json_admin_calendar_index_path(id: 0)
     expect(response.status).to eq(200)
@@ -99,7 +99,7 @@ RSpec.describe "Admin calendar contract", type: :request do
       )
     end
 
-    # WART: StaffSpace#before_create :create_color OVERWRITES any color
+    # WART(D-B53): StaffSpace#before_create :create_color OVERWRITES any color
     # passed to create! — generate_color picks the first global palette
     # entry not yet taken in the space, so a brand-new StaffSpace always
     # gets "#e6194b" (palette x 22 colors) regardless of what we assign.
@@ -116,7 +116,7 @@ RSpec.describe "Admin calendar contract", type: :request do
       expect(staff_entry.keys)
         .to eq(%w[id name color unavailabilities])
       expect(staff_entry["id"]).to eq(staff.id)
-      # not the "#3788d8" the helper assigned — see WART note above
+      # not the "#3788d8" the helper assigned — see WART(D-B53) note above
       expect(staff_entry["color"]).to eq("#e6194b")
 
       event = staff_entry["unavailabilities"].first
@@ -143,7 +143,7 @@ RSpec.describe "Admin calendar contract", type: :request do
         .to be(true)
     end
 
-    it "UTC variant: keeps full iso8601 (require zone/millis) + conflict copy" do
+    it "UTC variant keeps the full iso8601 string with milliseconds and zone offset" do
       staff_space!
       entry = StaffUnavailability.create!(
         user: staff, title: "Conference",
@@ -153,8 +153,9 @@ RSpec.describe "Admin calendar contract", type: :request do
       get utc_unavailabilities_json_admin_calendar_index_path(id: space.id)
       event = response.parsed_body.first["unavailabilities"].first
       # raw active-record attribute time format (no custom strftime)
-      expect(event["start"]).to eq(entry.start_time.iso8601(3))
-      expect(event["end"]).to eq(entry.end_time.iso8601(3))
+      expect(entry.start_time).to eq(Time.utc(2027, 5, 5, 13, 0))
+      expect(event["start"]).to eq("2027-05-05T09:00:00.000-04:00")
+      expect(event["end"]).to eq("2027-05-05T11:00:00.000-04:00")
     end
 
     it "returns staff without unavailabilities with empty lists" do
@@ -186,7 +187,7 @@ RSpec.describe "Admin calendar contract", type: :request do
     end
   end
 
-  # WART: the route exists, the controller action does not — any request
+  # WART(D-B13): the route exists, the controller action does not — any request
   # raises AbstractController::ActionNotFound → 404.
   it "ics_to_json 404s (route without controller action)" do
     log_in!(admin)
@@ -194,7 +195,7 @@ RSpec.describe "Admin calendar contract", type: :request do
     expect(response.status).to eq(404)
   end
 
-  # WART: update_color only ever assigns flash — no render, no redirect,
+  # WART(D-B12): update_color only ever assigns flash — no render, no redirect,
   # and no template exists for the action — so both the success path (which
   # also mutated data) and the failure path fall through to an empty
   # render-less response that surfaces as 204 No Content. Verified live.

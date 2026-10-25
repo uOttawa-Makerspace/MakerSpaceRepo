@@ -5,9 +5,9 @@ require "rails_helper"
 # Characterization for UserBookingApproval - request-access records.
 # Identity vocabulary is closed: JMTS/Staff/GNG/Other (controller
 # grant_booking_access! rewrites any other value to "Other").
-# WART A: default_scope orders EVERY query by created_at DESC, including the
+# WART(D-B19) A: default_scope orders EVERY query by created_at DESC, including the
 # `where(user:...).first` duplicate-request lookup.
-# WART B: User#user_booking_approvals carries `inverse_of: :staff`, so the
+# WART(D-B19) B: User#user_booking_approvals carries `inverse_of: :staff`, so the
 # association's foreign key resolves to staff_id — the OWNER's association
 # list is empty and the rows surface for the STAFF who processed them; the
 # owner's list is only reachable via UserBookingApproval.where(user_id:).
@@ -42,7 +42,7 @@ RSpec.describe UserBookingApproval, type: :model do
     expect(described_class.where(user_id: user.id).map(&:identity).sort)
       .to eq(%w[GNG JMTS Other Staff])
 
-    # ...whereas the association (keyed on staff_id, see WART B above)
+    # ...whereas the association (keyed on staff_id, see WART(D-B19) B above)
     # returns nothing for the owner and everything for the acting staff
     expect(user.user_booking_approvals).to be_empty
     expect(approver.user_booking_approvals.map(&:identity))

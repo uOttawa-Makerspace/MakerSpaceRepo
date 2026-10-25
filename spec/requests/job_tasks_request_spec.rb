@@ -23,6 +23,7 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
   before do
     seed_job_statuses!
     seed_job_types!
+    ActionMailer::Base.deliveries.clear
   end
 
   def order_with_task!(status_key: :draft, owner_user: owner, title: "Task #1")
@@ -56,12 +57,12 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
       expect(response).to redirect_to(wizard_path_for(order, task, 1))
     end
 
-    # WART-PIN: the numbering SQL uses the Postgres regexp "Task ([0-9]+)"
+    # WART(D-J18): the numbering SQL uses the Postgres regexp "Task ([0-9]+)"
     # against titles that actually are "Task #N" — the "#" never matches, so
     # SUBSTRING returns NULL and the "highest existing number" is always 0.
     # Numbering is therefore purely count-based (max(count) + 1): with a gapped
     # "Task #1"/"Task #5" pair it happily produces "Task #3".
-    it "numbers from the row count — the 'highest Task #N' SQL never matches the # marker (wart)" do
+    it "numbers from the row count — the 'highest Task #N' SQL never matches the # marker" do
       order = order_with_task!
       order.job_tasks.create!(title: "Task #5")
       session_login!(owner)
@@ -79,8 +80,8 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
       expect(order.reload.job_tasks.last.title).to eq("Task #1")
     end
 
-    # WART: create has no signed-in gate — an anonymous request can append
-    # tasks to any job order.
+    # WART(D-J01): create has no signed-in gate — an anonymous request can
+    # append tasks to any job order.
     it "lets a GUEST append a task to any order and still redirects to the wizard" do
       order = order_with_task!
       expect do
@@ -91,7 +92,7 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
       expect(response).to redirect_to(wizard_path_for(order, order.job_tasks.last, 1))
     end
 
-    it "500 (RecordNotFound → not found) for an unknown job order" do
+    it "404 (RecordNotFound) for an unknown job order" do
       post "/job_orders/999_999_999/task"
       expect(response).to have_http_status(:not_found)
     end
@@ -162,7 +163,7 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
       expect(response).to redirect_to(job_order_path(order))
     end
 
-    it "500 (JobType find on nil → not found) for step 2 on a task without a job type" do
+    it "404 (JobType.find(nil) → RecordNotFound) for step 2 on a task without a job type" do
       order = order_with_task!
       task = order.job_tasks.first
       session_login!(owner)
@@ -171,9 +172,9 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
       expect(response).to have_http_status(:not_found)
     end
 
-    # WART: no ownership/permission gate — any signed-in user (and even guests)
-    # can open the wizard steps of someone else's order.
-    it "renders the wizard for a non-owner regular user (no gate — wart)" do
+    # WART(D-J03): no ownership/permission gate — any signed-in user (and even
+    # guests) can open the wizard steps of someone else's order.
+    it "renders the wizard for a non-owner regular user (no gate)" do
       order = order_with_task!
       session_login!(other)
       get wizard_path_for(order, order.job_tasks.first, 1)
@@ -181,7 +182,7 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
       expect(response.body).to include("New Job Task (Step 1/4)")
     end
 
-    it "renders the wizard for a GUEST (no gate — wart)" do
+    it "renders the wizard for a GUEST (no gate)" do
       order = order_with_task!
       get wizard_path_for(order, order.job_tasks.first, 1)
       expect(response).to have_http_status(:ok)
@@ -375,7 +376,9 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
               params: { step: "2", job_task: { user_files: [FilesTestHelper.stl] } }
 
         expect(response).to redirect_to(wizard_path_for(order, task, 3))
-        expect(task.reload.user_files).to be_present
+        # JobTask#set_filename prefixes the stored name with the order id
+        expect(task.reload.user_files.map { |f| f.filename.to_s })
+          .to eq(["#{order.id}_#{FilesTestHelper.stl_name}"])
       end
 
       it "bounces a disallowed file (MP4) back to the step with the validation copy" do
@@ -432,7 +435,9 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
         task = order.job_tasks.first
         task.update!(job_type: JobType.find_by!(name: "3D Print"))
 
-        patch job_order_job_task_path(order, task), params: { step: "4" }
+        expect do
+          patch job_order_job_task_path(order, task), params: { step: "4" }
+        end.not_to(change { ActionMailer::Base.deliveries.size })
         expect(status_names(order)).to eq(["Waiting for Staff Approval"])
         expect(ActionMailer::Base.deliveries).to be_empty
       end
@@ -475,7 +480,7 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
 
   # ------------------------------------------------------------- DELETE destroy
 
-  # WART: destroy has no permission check of any kind.
+  # WART(D-J02): destroy has no permission check of any kind.
   describe "DELETE /job_orders/:job_order_id/task/:id (destroy)" do
     it "lets the owner delete and redirects back to the order page with the flash" do
       order = order_with_task!
@@ -488,11 +493,10 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
 
       expect(response).to redirect_to(job_order_path(order))
       expect(flash[:notice]).to eq("Task was successfully deleted.")
-      task.destroyed?
       expect(JobTask.exists?(task.id)).to be(false)
     end
 
-    it "lets a stranger delete someone else's task (wart)" do
+    it "lets a stranger delete someone else's task" do
       order = order_with_task!
       task = order.job_tasks.first
       session_login!(other)
@@ -503,7 +507,7 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
       expect(response).to redirect_to(job_order_path(order))
     end
 
-    it "even lets a GUEST delete a task (wart)" do
+    it "even lets a GUEST delete a task" do
       order = order_with_task!
       task = order.job_tasks.first
 

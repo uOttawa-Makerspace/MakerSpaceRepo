@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "rails_helper"
+require "open3"
 
 # Characterization for BookingStatus: plain lookup table w/ a unique name.
 # NOTE BookingStatus::PENDING/APPROVED/DECLINED are constants resolved at
@@ -15,6 +16,24 @@ RSpec.describe BookingStatus, type: :model do
     stub_const("BookingStatus::PENDING", @pending)
     stub_const("BookingStatus::APPROVED", @approved)
     stub_const("BookingStatus::DECLINED", @declined)
+  end
+
+  # WART(D-B22): the constants are `BookingStatus.find_by(...)` evaluated in the
+  # class body. A process booted against a database without the reference rows
+  # (fresh deploy, assets:precompile) keeps nil for its whole lifetime. The
+  # other examples stub the constants, so this boots a REAL process: the rows
+  # created by `before` above are uncommitted (transactional example), exactly
+  # like an empty database from the subprocess's point of view.
+  it "resolves PENDING/APPROVED/DECLINED once at boot: nil in a process booted without the rows" do
+    out, status = Open3.capture2e(
+      { "RAILS_ENV" => "test" },
+      "bin/rails", "runner",
+      'puts "CONSTANTS=" + [BookingStatus::PENDING, BookingStatus::APPROVED, ' \
+      'BookingStatus::DECLINED].map(&:inspect).join(",")',
+      chdir: Rails.root.to_s
+    )
+    expect(status).to be_success
+    expect(out.lines.grep(/\ACONSTANTS=/).last.strip).to eq("CONSTANTS=nil,nil,nil")
   end
 
   it "requires + unique name" do

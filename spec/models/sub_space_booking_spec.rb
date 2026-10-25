@@ -45,7 +45,8 @@ RSpec.describe SubSpaceBooking, type: :model do
         .to eq(["Expiration date Start Time needs to be before end time"])
     end
 
-    it "WART: allows two overlapping bookings (no overlap validation)" do
+    # WART(D-B18): no overlap validation (and no past-date rule below)
+    it "allows two overlapping bookings (no overlap validation)" do
       subspace = create(:sub_space)
       existing = create(:sub_space_booking, sub_space: subspace,
              start_time: DateTime.parse("2027-03-03 10:00"),
@@ -58,10 +59,12 @@ RSpec.describe SubSpaceBooking, type: :model do
       )
       expect(overlapping).to be_valid
       expect(overlapping.save!).to be_truthy
-      expect(existing.reload).to be_present
+      expect(described_class.where(sub_space: subspace).order(:id).pluck(:name))
+        .to eq([existing.name, "Over"])
     end
 
-    it "WART: past-dated bookings are valid (no past-date rule)" do
+    # WART(D-B18): no past-date rule
+    it "past-dated bookings are valid (no past-date rule)" do
       b = described_class.new(
         sub_space: create(:sub_space),
         name: "Ancient", description: "D",
@@ -71,13 +74,13 @@ RSpec.describe SubSpaceBooking, type: :model do
       expect(b).to be_valid
     end
 
-    # WART: has_one :sub_space_booking_status (dependent: :destroy) deletes
+    # WART(D-B17): has_one :sub_space_booking_status (dependent: :destroy) deletes
     # the STATUS row first, while sub_space_bookings.
     # sub_space_booking_status_id still references it — PG 23503 raises and
     # the booking SURVIVES, destroy is effectively a no-op. This is why the
     # controller has a manual FK dance in destroy_booking (request-spec
     # pinned).
-    it "WART: destroy raises InvalidForeignKey and the row survives" do
+    it "destroy raises InvalidForeignKey and the row survives" do
       booking = create(:sub_space_booking, name: "N", description: "D",
                        start_time: DateTime.parse("2027-03-03 10:00"),
                        end_time: DateTime.parse("2027-03-03 11:00"))
@@ -86,8 +89,8 @@ RSpec.describe SubSpaceBooking, type: :model do
 
       expect { booking.destroy }
         .to raise_error(ActiveRecord::InvalidForeignKey)
-      expect(booking.reload).to be_present
-      expect(status_row.reload).to be_present
+      expect(described_class.exists?(booking.id)).to be(true)
+      expect(SubSpaceBookingStatus.exists?(status_row.id)).to be(true)
     end
 
     it "allows a nil user + nil recurring booking (optional belongs_to)" do

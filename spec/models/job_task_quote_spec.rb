@@ -18,12 +18,16 @@ RSpec.describe JobTaskQuote, type: :model do
       expect(build(:job_task_quote, job_task: task, price: 0)).to be_valid
     end
 
-    # WART: service_price and service_quantity validations are commented out
-    # (Design Services reuse); nothing stops non-numeric junk there.
-    it "accepts anything for service_price/service_quantity (unvalidated — wart)" do
+    # WART(D-J23): service_price and service_quantity validations are
+    # commented out (Design Services reuse); nothing stops negative values.
+    it "accepts negative service_price/service_quantity (unvalidated)" do
       task = create(:job_order).job_tasks.create!(title: "Task #1")
-      quote = build(:job_task_quote, job_task: task, price: 1, service_price: 3, service_quantity: 2)
+      quote = build(:job_task_quote, job_task: task, price: 1, service_price: -3, service_quantity: -2)
       expect(quote).to be_valid
+      quote.save!
+      expect(quote.reload.service_price).to eq(-3)
+      expect(quote.service_quantity).to eq(-2)
+      expect(quote.total_task_price).to eq(7) # 1 + (-3 * -2)
     end
   end
 
@@ -39,7 +43,7 @@ RSpec.describe JobTaskQuote, type: :model do
       expect(quote.total_task_price).to eq(17.5)
     end
 
-    # WART: with a nil service_quantity (Design Services quotes) the math
+    # WART(D-J24): with a nil service_quantity (Design Services quotes) the math
     # raises; the callers rescue nothing.
     it "crashes when service_quantity is nil (wart)" do
       task = create(:job_order).job_tasks.create!(title: "Task #1")

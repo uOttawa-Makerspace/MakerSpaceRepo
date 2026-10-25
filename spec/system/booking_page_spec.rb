@@ -82,7 +82,7 @@ RSpec.describe "Booking page look-and-feel", type: :system do
     expect(page).to have_css("#comments-container")
   end
 
-  it "users with a denied/pending access request see the pending alert" do
+  it "users with a pending access request see the pending alert" do
     unapproved = create(:user, :regular_user, booking_approval: false)
     UserBookingApproval.create!(user: unapproved, identity: "Other",
                                 approved: false, comments: "please",

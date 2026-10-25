@@ -92,11 +92,15 @@ RSpec.describe SubSpaceBookingController, type: :controller do
         session[:user_id] = @user.id
         booking = create(:sub_space_booking, sub_space: @subspace, user: @user)
         
-        expect {
+        ActionMailer::Base.deliveries.clear
+        perform_enqueued_jobs do
           put :approve, params: { sub_space_booking_id: booking.id }
-        }.to have_enqueued_job(ActionMailer::MailDeliveryJob)
-            .with("BookingMailer", "send_booking_approved", "deliver_now",  # <-- Changed here
-                  { args: [booking.id] })
+        end
+
+        expect(ActionMailer::Base.deliveries.size).to eq(1)
+        mail = ActionMailer::Base.deliveries.last
+        expect(mail.to).to eq([booking.user.email])
+        expect(mail.subject).to eq("Booking approved")
       end
     end
   end
@@ -306,12 +310,19 @@ RSpec.describe SubSpaceBookingController, type: :controller do
         booking1 = create(:sub_space_booking, sub_space: @subspace, user: @user)
         booking2 = create(:sub_space_booking, sub_space: @subspace, user: @user)
         
-        expect {
-          put :bulk_approve_decline, params: { 
-            bulk_status: 'approve', 
-            sub_space_booking_ids: [booking1.id, booking2.id] 
+        ActionMailer::Base.deliveries.clear
+        perform_enqueued_jobs do
+          put :bulk_approve_decline, params: {
+            bulk_status: 'approve',
+            sub_space_booking_ids: [booking1.id, booking2.id]
           }
-        }.to have_enqueued_job(ActionMailer::MailDeliveryJob).twice
+        end
+
+        expect(ActionMailer::Base.deliveries.size).to eq(2)
+        expect(ActionMailer::Base.deliveries.map(&:subject))
+          .to eq(["Booking approved", "Booking approved"])
+        expect(ActionMailer::Base.deliveries.map(&:to))
+          .to match_array([[booking1.user.email], [booking2.user.email]])
       end
     end
   end

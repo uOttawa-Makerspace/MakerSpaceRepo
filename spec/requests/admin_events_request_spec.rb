@@ -32,7 +32,9 @@ RSpec.describe "Admin events contract", type: :request do
 
   it "json groups events under event_type with ids event-<id>" do
     event = create(:event, space: space, title: "Board", event_type: "meeting",
-                           created_by: admin)
+                           created_by: admin,
+                           start_time: Time.utc(2027, 4, 1, 14, 0),
+                           end_time: Time.utc(2027, 4, 1, 15, 0))
     log_in!(admin)
     get json_admin_events_path(id: space.id)
     expect(response.status).to eq(200)
@@ -43,8 +45,8 @@ RSpec.describe "Admin events contract", type: :request do
       "events" => contain_exactly(
         "id" => "event-#{event.id}",
         "title" => "Board",
-        "start" => event.start_time.iso8601,
-        "end" => event.end_time.iso8601,
+        "start" => "2027-04-01T10:00:00-04:00",
+        "end" => "2027-04-01T11:00:00-04:00",
         "allDay" => false,
         "extendedProps" => hash_including(
           "draft" => false,
@@ -55,12 +57,13 @@ RSpec.describe "Admin events contract", type: :request do
     )
   end
 
-  it "json drafts surface their draft state + extendedProps skills" do
-    event = create(:event, :draft, :recurring, space: space, title: "Draft",
-                                               created_by: admin)
+  it "json drafts surface their draft state, rrule and the (Draft) title marker" do
+    create(:event, :draft, :recurring, space: space, title: "Draft",
+                                       created_by: admin)
     log_in!(admin)
     get json_admin_events_path(id: space.id)
     entry = response.parsed_body.first["events"].first
+    expect(entry["title"]).to eq("✎ Draft")
     expect(entry["extendedProps"]["draft"]).to be(true)
     expect(entry).to include("rrule")
     expect(entry["allDay"]).to be(false)
@@ -75,48 +78,54 @@ RSpec.describe "Admin events contract", type: :request do
     expect(event.reload.draft).to be(false)
   end
 
+  # The view range is built from literal dates and the clock is pinned to the
+  # Eastern evening (18:00 EDT = 22:00 UTC on 2027-04-01), the slot where the
+  # factory's `Time.zone.now` and the controller's UTC `Time.parse` of the
+  # range used to disagree about which calendar day the draft is on.
   it "batch publish over a view range + scoped count + space guard" do
-    drafts = 2.times.map { create(:event, :draft, space: space) }
-    create(:event, space: space) # published earlier, not counted
+    travel_to(Time.zone.local(2027, 4, 1, 18, 0)) do
+      drafts = 2.times.map { create(:event, :draft, space: space) }
+      create(:event, space: space) # published earlier, not counted
 
-    log_in!(admin)
+      log_in!(admin)
 
-    # WART: the no-:id publish branch parses view_start_date/view_end_date
-    # BEFORE the space guard — date params must be present or the request
-    # 500s before the "Space ID is required." flash can even fire.
-    patch publish_admin_events_path, params: {
-      view_start_date: Time.zone.yesterday.strftime("%Y-%m-%d"),
-      view_end_date: Time.zone.tomorrow.strftime("%Y-%m-%d")
-    }
-    expect(response).to redirect_to(admin_calendar_index_path)
-    expect(flash[:alert]).to eq("Space ID is required.")
+      # WART(D-B46): the no-:id publish branch parses view_start_date/
+      # view_end_date BEFORE the space guard — date params must be present or
+      # the request 500s before the "Space ID is required." flash can even
+      # fire (pinned in admin_events_gaps_request_spec.rb).
+      patch publish_admin_events_path, params: {
+        view_start_date: "2027-03-31", view_end_date: "2027-04-02"
+      }
+      expect(response).to redirect_to(admin_calendar_index_path)
+      expect(flash[:alert]).to eq("Space ID is required.")
 
-    patch publish_admin_events_path, params: {
-      space_id: space.id,
-      view_start_date: Time.zone.yesterday.strftime("%Y-%m-%d"),
-      view_end_date: Time.zone.tomorrow.strftime("%Y-%m-%d")
-    }
-    expect(flash[:notice]).to eq("2 event(s) published.")
-    expect(drafts.map { |e| e.reload.draft }).to all(be(false))
+      patch publish_admin_events_path, params: {
+        space_id: space.id,
+        view_start_date: "2027-03-31", view_end_date: "2027-04-02"
+      }
+      expect(flash[:notice]).to eq("2 event(s) published.")
+      expect(drafts.map { |e| e.reload.draft }).to all(be(false))
+    end
   end
 
   it "delete_drafts only removes non-recurring drafts" do
-    draft = create(:event, :draft, space: space)
-    recurring_draft = create(:event, :draft, :recurring, space: space,
-                                                         title: "DraftRec")
-    published = create(:event, space: space)
+    travel_to(Time.zone.local(2027, 4, 1, 18, 0)) do
+      draft = create(:event, :draft, space: space)
+      recurring_draft = create(:event, :draft, :recurring, space: space,
+                                                           title: "DraftRec")
+      published = create(:event, space: space)
 
-    log_in!(admin)
-    delete delete_drafts_admin_events_path, params: {
-      space_id: space.id,
-      view_start_date: Time.zone.yesterday.strftime("%Y-%m-%d"),
-      view_end_date: Time.zone.tomorrow.strftime("%Y-%m-%d")
-    }
-    expect(flash[:notice])
-      .to eq("1 draft event(s) deleted. Any recurring events were untouched and must be deleted separately.")
-    expect(Event.find_by(id: draft.id)).to be_nil
-    expect(Event.find_by(id: recurring_draft.id)).to be_present
-    expect(Event.find_by(id: published.id)).to be_present
+      log_in!(admin)
+      delete delete_drafts_admin_events_path, params: {
+        space_id: space.id,
+        view_start_date: "2027-03-31", view_end_date: "2027-04-02"
+      }
+      expect(flash[:notice])
+        .to eq("1 draft event(s) deleted. Any recurring events were untouched and must be deleted separately.")
+      expect(Event.find_by(id: draft.id)).to be_nil
+      expect(Event.exists?(recurring_draft.id)).to be(true)
+      expect(Event.exists?(published.id)).to be(true)
+    end
   end
 
   it "create POST: blank titles fall back to the capitalized event_type" do
@@ -134,6 +143,11 @@ RSpec.describe "Admin events contract", type: :request do
     expect(created.title).to eq("Meeting")
     expect(created.draft).to be(true) # kept as a draft on this path
     expect(created.event_type).to eq("meeting")
+    expect(created.created_by_id).to eq(admin.id)
+    expect(created.space_id).to eq(space.id)
+    expect(created.description).to eq("In-person")
+    expect(created.start_time).to eq(Time.utc(2027, 4, 1, 10, 0))
+    expect(created.end_time).to eq(Time.utc(2027, 4, 1, 11, 0))
   end
 
   it "update PATCH (non-recurring) with a title" do
@@ -150,8 +164,13 @@ RSpec.describe "Admin events contract", type: :request do
                utc_end_time: "2027-04-01 11:00" }
     }
     expect(flash[:notice]).to eq("Event updated successfully.")
-    expect(event.reload.title).to eq("Updated title")
-    expect(event.reload.description).to eq("New description")
+    event.reload
+    expect(event.title).to eq("Updated title")
+    expect(event.description).to eq("New description")
+    expect(event.start_time).to eq(Time.utc(2027, 4, 1, 10, 0))
+    expect(event.end_time).to eq(Time.utc(2027, 4, 1, 11, 0))
+    # WART(D-B43): a non-recurring update overwrites created_by_id with the editor
+    expect(event.created_by_id).to eq(admin.id)
   end
 
   it "delete_with_scope: non-recurring event simply destroyed" do
@@ -162,18 +181,18 @@ RSpec.describe "Admin events contract", type: :request do
     expect(Event.find_by(id: event.id)).to be_nil
   end
 
-  it "delete_with_scope: copies copy invalid (unfilled) fields flash error" do
+  it "copy: blank source range / target date flashes the fill-out-all-fields alert" do
     log_in!(admin)
     post copy_admin_events_path, params: { space_id: space.id }
     expect(flash[:alert]).to eq("Please fill out all fields before copying.")
   end
 
-  it "delete_with_scope: deletes recurring events who have no start" do
+  it "delete_with_scope single: a recurring event without a start_date is NOT deleted and flashes an alert" do
     recurring = create(:event, :recurring, space: space)
     log_in!(admin)
     delete delete_with_scope_admin_event_path(recurring), params: { scope: "single" }
     expect(flash[:alert]).to eq("Start date is required.")
-    expect(Event.find_by(id: recurring.id)).to be_present
+    expect(Event.exists?(recurring.id)).to be(true)
   end
 
   it "delete_with_scope: unknown scope flashes error" do

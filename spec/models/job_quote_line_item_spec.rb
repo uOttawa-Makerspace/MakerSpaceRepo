@@ -13,10 +13,16 @@ RSpec.describe JobQuoteLineItem, type: :model do
   end
 
   describe "behaviour" do
-    it "allows a 0 price (free add-ons) and stores exact decimals" do
+    it "allows a 0 price (free add-ons)" do
       order = create(:job_order)
       item = order.job_quote_line_items.create!(description: "Expedited SLA resin", price: 0)
       expect(item.reload.price).to eq(0)
+    end
+
+    it "stores exact decimals" do
+      order = create(:job_order)
+      item = order.job_quote_line_items.create!(description: "Resin", price: "12.35")
+      expect(item.reload.price).to eq(BigDecimal("12.35"))
     end
 
     it "rejects negative prices" do

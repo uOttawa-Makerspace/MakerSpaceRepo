@@ -67,9 +67,9 @@ RSpec.describe JobOrder, type: :model do
       expect(JobOrder.without_drafts).not_to include(draft_last)
     end
 
-    # WART: without_drafts does not filter deleted rows — callers must compose
+    # WART(D-J22): without_drafts does not filter deleted rows — callers must compose
     # `.not_deleted` themselves (as JobOrdersController#admin does).
-    it "keeps soft-deleted orders (deletion is a separate composition — wart)" do
+    it "keeps soft-deleted orders (deletion is a separate composition)" do
       submitted = create(:job_order, user: create(:user, :regular_user), is_deleted: true)
       travel(5.minutes) do
         submitted.job_order_statuses.create!(job_status: JobStatus::STAFF_APPROVAL, user: submitted.user)
@@ -97,7 +97,8 @@ RSpec.describe JobOrder, type: :model do
       expect(order.allow_edit?).to be(false)
     end
 
-    it "crashes on an order with no status rows (nil-safe-less last — wart)" do
+    # WART(D-J20): allow_edit? has no nil guard on the status history
+    it "crashes on an order with no status rows" do
       order = create(:job_order, user: create(:user, :regular_user))
       expect { order.allow_edit? }.to raise_error(NoMethodError)
     end
@@ -157,7 +158,7 @@ RSpec.describe JobOrder, type: :model do
   end
 
   describe "scope .order_by_expedited" do
-    # Two stacked warts (dead code):
+    # WART(D-J21): two stacked warts (dead code):
     #  1) the SQL interpolates `JobOption.find_by(name: "Expedited").id`
     #     without the reference row → nil dereference;
     #  2) even with the row, the scope joins the job_order_options association,
@@ -168,6 +169,7 @@ RSpec.describe JobOrder, type: :model do
         .to raise_error(NoMethodError, /undefined method 'id' for nil/)
     end
 
+    # WART(D-J36): the has_many :job_order_options association has no model
     it "would still break: the joined association has no backing model class" do
       expect { create(:job_order).job_order_options.to_a }
         .to raise_error(NameError, /Missing model class JobOrderOption/)

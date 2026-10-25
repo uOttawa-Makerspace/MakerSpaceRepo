@@ -37,7 +37,7 @@ RSpec.describe SubSpaceBookingStatus, type: :model do
     )
     booking.update_column(:sub_space_booking_status_id, added.id)
     expect(booking.reload.sub_space_booking_status_id).to eq(added.id)
-    # WART: has_one points at the FIRST matching status row — the extra
+    # WART(D-B20): has_one points at the FIRST matching status row — the extra
     # approved row would only surface through the id column.
     expect(booking.reload.sub_space_booking_status.booking_status.name)
       .to eq("Pending")

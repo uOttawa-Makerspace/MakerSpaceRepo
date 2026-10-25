@@ -20,7 +20,10 @@ RSpec.describe "ChatMessages (HTTP contract)", type: :request do
   let(:staff) { create(:user, :staff) }
   let(:other) { create(:user, :regular_user) }
 
-  before { seed_job_statuses! }
+  before do
+    seed_job_statuses!
+    ActionMailer::Base.deliveries.clear
+  end
 
   def active_order!(owner_user: owner, status_key: :user_approval)
     make_job_order!(owner: owner_user, status_key: status_key).tap do |order|
@@ -30,10 +33,10 @@ RSpec.describe "ChatMessages (HTTP contract)", type: :request do
 
   # ------------------------------------------------------------- GET index
 
-  # WART: no signed_in gate, no before_action at all, and the
+  # WART(D-J04): no signed_in gate, no before_action at all, and the
   # job_order_id lookup belongs to any caller.
   describe "GET /chat_messages (index)" do
-    it "renders a job order's chat thread with NO sign-in (leak — wart)" do
+    it "renders a job order's chat thread with NO sign-in" do
       order = active_order!
       ChatMessage.create!(job_order: order, sender: staff, message: "Quote attached!")
       ChatMessage.create!(job_order: order, sender: owner, message: "Thanks!")
@@ -70,12 +73,12 @@ RSpec.describe "ChatMessages (HTTP contract)", type: :request do
       expect(body).to match(/You\s*:/)
     end
 
-    it "500 (RecordNotFound → not found) for an unknown job_order_id" do
+    it "404 (RecordNotFound) for an unknown job_order_id" do
       get chat_messages_path(job_order_id: 999_999_999)
       expect(response).to have_http_status(:not_found)
     end
 
-    it "500 (RecordNotFound → not found) when job_order_id is missing entirely" do
+    it "404 (RecordNotFound) when job_order_id is missing entirely" do
       get chat_messages_path
       expect(response).to have_http_status(:not_found)
     end
@@ -102,11 +105,11 @@ RSpec.describe "ChatMessages (HTTP contract)", type: :request do
       expect(response.body).to be_blank
     end
 
-    # WART (discovered 2026-10): a guest's `sender = User.new` does NOT block the
-    # save — the belongs_to is not validated as required, so the message row is
-    # PERSISTED with sender_id NULL (no ghost user row is created). The action
-    # then early-returns on the successful save: empty 204, no flash.
-    it "persists GUEST messages with a NULL sender and answers an empty 204 (wart)" do
+    # WART(D-J05): a guest's `sender = User.new` does NOT block the save — the
+    # belongs_to is not validated as required, so the message row is PERSISTED
+    # with sender_id NULL (no ghost user row is created). The action then
+    # early-returns on the successful save: empty 204, no flash.
+    it "persists GUEST messages with a NULL sender and answers an empty 204" do
       order = active_order!
 
       users_before = User.count
@@ -143,10 +146,16 @@ RSpec.describe "ChatMessages (HTTP contract)", type: :request do
       session_login!(owner)
       post chat_messages_path, params: { other: "x" }
       expect(response).to redirect_to(root_path)
-      expect(flash[:alert]).to include("param is missing or the value is empty")
+      expect(flash[:alert])
+        .to eq("param is missing or the value is empty or invalid: chat_message")
     end
 
-    it "enqueues the notification mail when a participant posts on a past-draft order" do
+    def post_message(order, text)
+      post chat_messages_path,
+           params: { chat_message: { message: text, job_order_id: order.id } }
+    end
+
+    it "delivers the notification mail to the other participant when a participant posts on a past-draft order" do
       order = active_order!
       # The owner's existing message establishes a participant; the hardcoded
       # admin ids (25, 1607) have no rows in the test DB, so the mail goes only
@@ -154,48 +163,58 @@ RSpec.describe "ChatMessages (HTTP contract)", type: :request do
       ChatMessage.create!(job_order: order, sender: owner, message: "owner starts the thread")
       session_login!(staff)
 
-      expect do
-        post chat_messages_path, params: { chat_message: { message: "Quoting now!", job_order_id: order.id } }
-      end.to have_enqueued_mail(ChatMessageMailer, :new_message)
+      perform_enqueued_jobs { post_message(order, "Quoting now!") }
+
+      expect(ActionMailer::Base.deliveries.size).to eq(1)
+      mail = ActionMailer::Base.deliveries.last
+      expect(mail.to).to eq([owner.email])
+      expect(mail.subject).to eq("MakerRepo - Nouveau message // New message")
     end
 
-    it "does NOT enqueue any mail while the order is still a Draft" do
+    it "delivers no mail while the order is still a Draft" do
       order = active_order!(status_key: :draft)
       ChatMessage.create!(job_order: order, sender: owner, message: "draft chatter")
       session_login!(staff)
 
-      expect do
-        post chat_messages_path, params: { chat_message: { message: "too early", job_order_id: order.id } }
-      end.not_to have_enqueued_mail(ChatMessageMailer, :new_message)
+      perform_enqueued_jobs { post_message(order, "too early") }
+
+      expect(order.chat_messages.pluck(:message)).to include("too early")
+      expect(ActionMailer::Base.deliveries).to be_empty
     end
 
     # The "recent message by the same sender in the last hour" throttle:
-    # only the first notification of a burst is enqueued.
+    # only the first notification of a burst is delivered. The clock is frozen
+    # (after login) so the one-hour window cannot straddle a real tick.
     it "throttles repeated messages from the same sender within an hour to one mail" do
       order = active_order!
       ChatMessage.create!(job_order: order, sender: owner, message: "owner starts the thread")
       session_login!(staff)
+      travel_to(Time.zone.now.change(usec: 0))
 
-      expect do
-        post chat_messages_path, params: { chat_message: { message: "first", job_order_id: order.id } }
-      end.to have_enqueued_mail(ChatMessageMailer, :new_message)
+      perform_enqueued_jobs { post_message(order, "first") }
+      expect(ActionMailer::Base.deliveries.size).to eq(1)
+      expect(ActionMailer::Base.deliveries.last.to).to eq([owner.email])
 
-      expect do
-        post chat_messages_path, params: { chat_message: { message: "second", job_order_id: order.id } }
-      end.not_to have_enqueued_mail(ChatMessageMailer, :new_message)
+      perform_enqueued_jobs { post_message(order, "second") }
+      expect(ActionMailer::Base.deliveries.size).to eq(1)
+      expect(order.chat_messages.pluck(:message)).to include("first", "second")
     end
 
     it "stops throttling after the hour passes (time-bound, not one-time)" do
       order = active_order!
       ChatMessage.create!(job_order: order, sender: owner, message: "owner starts the thread")
       session_login!(staff)
+      frozen_now = Time.zone.now.change(usec: 0)
+      travel_to(frozen_now)
 
+      # (its own notification is only ENQUEUED here, outside perform_enqueued_jobs)
       ChatMessage.create!(job_order: order, sender: staff, message: "first burst message")
-      travel 2.hours do
-        expect do
-          post chat_messages_path, params: { chat_message: { message: "after the hour", job_order_id: order.id } }
-        end.to have_enqueued_mail(ChatMessageMailer, :new_message)
+      travel_to(frozen_now + 2.hours) do
+        perform_enqueued_jobs { post_message(order, "after the hour") }
       end
+
+      expect(ActionMailer::Base.deliveries.size).to eq(1)
+      expect(ActionMailer::Base.deliveries.last.to).to eq([owner.email])
     end
   end
 end

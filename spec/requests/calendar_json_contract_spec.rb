@@ -130,7 +130,7 @@ RSpec.describe "Bookings feed JSON contract", type: :request do
     body = JSON.parse(fetch)
     expect(body.map { |e| e["start"] })
       .to eq(["2027-04-02T06:00:00.000-04:00", "2027-04-01T05:00:00.000-04:00"])
-    # WART: no ORDER clause on find_each — the feed comes back in
+    # WART(D-B09): no ORDER clause on find_each — the feed comes back in
     # insertion (id) order, not sorted by start_time.
     expect(body.map { |e| e["id"] })
       .to eq(["booking_#{b1.id}_#{subspace.id}", "booking_#{b2.id}_#{subspace.id}"])

@@ -51,7 +51,7 @@ RSpec.describe "Job Orders browser flow", type: :system do
     order = JobOrder.order(:id).last
     expect(order.user).to eq(user)
     expect(order.is_deleted).to be(false)
-    # WART-PIN: the "Start Production" button's inline onclick JS is broken in
+    # WART(D-J19): the "Start Production" button's inline onclick JS is broken in
     # the shipped HTML — the ENB attribute quotes arrive un-escaped
     # (&#39; without the needed backslashes), so the handler raises
     # SyntaxError and the hidden job_type_id stays "" → the order is created
