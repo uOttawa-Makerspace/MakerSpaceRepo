@@ -22,6 +22,10 @@ Capybara.register_driver :headless_chrome do |app|
   options.add_argument("--disable-gpu")
   options.add_argument("--disable-dev-shm-usage")
   options.add_argument("--window-size=1600,1000")
+  # Capture console output so JsErrorCheck (below) can fail examples on SEVERE
+  # entries. Selenium 4.48 + chromedriver: the legacy goog:loggingPrefs
+  # capability works and `driver.logs.get(:browser)` returns the entries.
+  options.add_option("goog:loggingPrefs", { browser: "ALL" })
 
   Capybara::Selenium::Driver.new(app, browser: :chrome, options:)
 end
@@ -32,6 +36,21 @@ end
 RSpec.configure do |config|
   config.before(:each, type: :system) do
     driven_by :headless_chrome, screen_size: [1600, 1000]
+  end
+
+  # Fail on SEVERE browser console entries unless allowlisted
+  # (spec/support/js_error_allowlist.rb). Opt out with `js_errors: :allow` on an
+  # example that deliberately triggers an error.
+  config.after(:each, type: :system) do |example|
+    # Always drain: the Chrome session is reused across examples, so skipped
+    # entries would otherwise leak into the next example.
+    errors = JsErrorCheck.collect(page)
+    next if example.metadata[:js_errors] == :allow
+    next unless example.exception.nil?
+
+    unless errors.empty?
+      raise "Unallowlisted SEVERE browser console errors:\n" + errors.map { |e| "  [#{e[:path]}] #{e[:message]}" }.join("\n")
+    end
   end
 
   # Save screenshots + page HTML on failure as CI artifacts (doc 9.5).
