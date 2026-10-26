@@ -100,8 +100,8 @@ module SniffedUploadValidation
     else
       download_leading_bytes(blob) if blob.persisted?
     end
-  rescue Errno::ENOENT
-    nil
+  rescue Errno::ENOENT, IOError
+    nil # a missing file or closed stream: unreadable
   end
 
   def read_head(io)
@@ -111,11 +111,22 @@ module SniffedUploadValidation
     data
   end
 
-  # A missing or zero-byte object (S3 416 InvalidRange), or any service/network
-  # error, must surface as an "unreadable" validation error, not a 500.
+  # Errors from the storage service or the network while reading the stored object.
+  # Other exceptions are bugs and are left to raise.
+  SERVICE_ERRORS = [
+    ActiveStorage::Error, SystemCallError, IOError, Timeout::Error, SocketError, OpenSSL::SSL::SSLError,
+    (Aws::Errors::ServiceError if defined?(Aws::Errors::ServiceError)),
+    (Seahorse::Client::NetworkingError if defined?(Seahorse::Client::NetworkingError))
+  ].compact.freeze
+
+  # A missing or zero-byte object (S3 416 InvalidRange), or a service/network error,
+  # surfaces as an "unreadable" validation error, not a 500; it is reported to the error reporter.
   def download_leading_bytes(blob)
     blob.service.download_chunk(blob.key, 0...SNIFF_BYTES)
-  rescue StandardError
+  rescue ActiveStorage::FileNotFoundError
+    nil
+  rescue *SERVICE_ERRORS => e
+    Rails.error.report(e, handled: true, context: { blob_id: blob.id })
     nil
   end
 end

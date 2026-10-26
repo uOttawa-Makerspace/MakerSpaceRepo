@@ -41,10 +41,33 @@ RSpec.describe SniffedUploadValidation do
   end
 
   it "turns a storage-service error while sniffing into a validation error, not an exception" do
-    allow_any_instance_of(ActiveStorage::Service::DiskService).to receive(:download_chunk).and_raise(StandardError, "InvalidRange")
+    allow_any_instance_of(ActiveStorage::Service::DiskService).to receive(:download_chunk).and_raise(ActiveStorage::IntegrityError, "InvalidRange")
+    expect(Rails.error).to receive(:report).with(instance_of(ActiveStorage::IntegrityError), hash_including(handled: true))
     expect { proposal.project_files.attach(fine.signed_id) }.not_to raise_error
     expect(proposal.errors[:project_files].join).to include("unreadable")
     expect(proposal.reload.project_files).not_to be_attached
+  end
+
+  it "does not hide a programming error (NoMethodError) raised while reading the stored object" do
+    allow_any_instance_of(ActiveStorage::Service::DiskService).to receive(:download_chunk).and_raise(NoMethodError, "bug")
+    expect { proposal.project_files.attach(fine.signed_id) }.to raise_error(NoMethodError)
+  end
+
+  it "treats a missing stored object as unreadable without reporting" do
+    allow_any_instance_of(ActiveStorage::Service::DiskService).to receive(:download_chunk).and_raise(ActiveStorage::FileNotFoundError)
+    expect(Rails.error).not_to receive(:report)
+    proposal.project_files.attach(fine.signed_id)
+    expect(proposal.errors[:project_files].join).to include("unreadable")
+  end
+
+  it "treats a closed stream as unreadable" do
+    io = StringIO.new("hello")
+    io.close
+    pp = build(:project_proposal)
+    pp.project_files.attach(io: StringIO.new("x"), filename: "a.txt", content_type: "text/plain")
+    allow(pp).to receive(:read_head).and_raise(IOError, "closed stream")
+    expect(pp.valid?).to be(false)
+    expect(pp.errors[:project_files].join).to include("unreadable")
   end
 
   it "opens a Pathname attachable in block form so the descriptor is closed" do
