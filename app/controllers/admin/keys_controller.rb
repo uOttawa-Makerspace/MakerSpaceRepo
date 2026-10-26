@@ -11,6 +11,7 @@ class Admin::KeysController < AdminAreaController
                   revoke_key
                   history
                 ]
+  before_action :ensure_holder_has_approved_request, only: %i[create update]
   before_action :set_key_request, only: %i[approve_key_request deny_key_request]
 
   def index
@@ -175,6 +176,19 @@ class Admin::KeysController < AdminAreaController
       :custom_keycode,
       :additional_info
     )
+  end
+
+  # A key can only be given to a holder (user_id) whose key request is approved,
+  # on every path that sets it (assign_key checks the same rule).
+  def ensure_holder_has_approved_request
+    holder_id = params.dig(:key, :user_id).presence
+    return if holder_id.nil? || holder_id.to_s == @key&.user_id.to_s
+
+    holder = User.find_by(id: holder_id)
+    return if holder&.key_request&.status_approved?
+
+    redirect_to admin_keys_path,
+                alert: "The key holder must have an approved key request."
   end
 
   def set_key

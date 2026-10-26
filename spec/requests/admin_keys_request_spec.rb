@@ -121,6 +121,51 @@ RSpec.describe "Admin keys", type: :request do
       expect(key.reload).to have_attributes(status: "held", additional_info: "n")
     end
 
+    # FIXED(D-EQ26): create/update cannot set a holder without an approved key request.
+    describe "setting user_id directly" do
+      let(:holder_attrs) { { user_id: holder.id, supervisor_id: supervisor.id, status: "held" } }
+
+      it "update is refused without an approved request" do
+        patch admin_key_path(key), params: { key: holder_attrs }
+        expect(flash[:alert]).to eq("The key holder must have an approved key request.")
+        expect(key.reload).to have_attributes(user_id: nil, status: "inventory")
+      end
+
+      it "update is refused when the request is only waiting for approval" do
+        create(:key_request, :status_waiting_for_approval, :all_questions_answered, user: holder, supervisor: supervisor, space: space)
+        patch admin_key_path(key), params: { key: holder_attrs }
+        expect(key.reload.user_id).to be_nil
+      end
+
+      it "update is allowed with an approved request" do
+        create(:key_request, :status_approved, :all_questions_answered, user: holder, supervisor: supervisor, space: space)
+        patch admin_key_path(key), params: { key: holder_attrs }
+        expect(flash[:notice]).to eq("The key was successfully updated.")
+        expect(key.reload).to have_attributes(user_id: holder.id, status: "held")
+      end
+
+      it "create is refused without an approved request" do
+        expect {
+          post admin_keys_path, params: { key: key_attrs.merge(number: 77, **holder_attrs) }
+        }.not_to change(Key, :count)
+        expect(flash[:alert]).to eq("The key holder must have an approved key request.")
+      end
+
+      it "create is allowed with an approved request" do
+        create(:key_request, :status_approved, :all_questions_answered, user: holder, supervisor: supervisor, space: space)
+        expect {
+          post admin_keys_path, params: { key: key_attrs.merge(number: 77, **holder_attrs) }
+        }.to change(Key, :count).by(1)
+        expect(Key.last).to have_attributes(user_id: holder.id, status: "held")
+      end
+
+      it "leaves a held key's unchanged holder editable without re-checking" do
+        key.update_columns(status: Key.statuses[:held], user_id: holder.id, supervisor_id: supervisor.id)
+        patch admin_key_path(key), params: { key: { user_id: holder.id, additional_info: "n" } }
+        expect(key.reload.additional_info).to eq("n")
+      end
+    end
+
     it "destroys a key with its transactions" do
       KeyTransaction.create!(user: holder, key: key, deposit_amount: 10)
       expect { delete admin_key_path(key) }.to change(Key, :count).by(-1).and change(KeyTransaction, :count).by(-1)
