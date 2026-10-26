@@ -18,7 +18,10 @@ RSpec.describe "PUT /send_email (React Help form)", type: :request do
     }
   end
 
-  before { block_external_http! }
+  before do
+    block_external_http!
+    allow_any_instance_of(GithubIssuesService).to receive(:create_issue).and_return({ number: 42 })
+  end
 
   def deliveries
     ActionMailer::Base.deliveries
@@ -32,7 +35,7 @@ RSpec.describe "PUT /send_email (React Help form)", type: :request do
     expect(response).to have_http_status(:ok)
     expect(JSON.parse(response.body)).to eq("status" => "sent")
     mail = deliveries.last
-    expect(mail.to).to eq(["seeker@example.com"])
+    expect(mail.to).to eq(["original@example.com"])
     expect(mail.bcc).to include("uottawa.makerepo@gmail.com")
     expect(mail.subject).to eq("Issue Report | Printer will not start")
     expect(mail.body.encoded).to include("It beeps three times", "2.4.1")
@@ -42,13 +45,53 @@ RSpec.describe "PUT /send_email (React Help form)", type: :request do
     expect(user.email).to eq("original@example.com")
   end
 
+  # FIXED(D-API01/D-NEW-A13-3): the confirmation goes to the account email, never the posted one.
+  it "ignores the posted email and name for addressing (no mail relay)" do
+    expect do
+      perform_enqueued_jobs do
+        put "/send_email", params: payload.merge(email: "victim@example.com", name: "Someone Else").to_json,
+                           headers: headers.merge("Content-Type" => "application/json")
+      end
+    end.to change { deliveries.size }.by(1)
+
+    mail = deliveries.last
+    expect(mail.to).to eq(["original@example.com"])
+    expect(mail.body.encoded).to include("Original Name")
+    expect(mail.body.encoded).not_to include("Someone Else")
+    expect(mail.to + (mail.cc || [])).not_to include("victim@example.com")
+  end
+
+  # FIXED(D-API01/D-NEW-A13-3): same persistence path as HelpController#create.
+  it "creates the Help record and attempts the GitHub issue" do
+    expect_any_instance_of(GithubIssuesService).to receive(:create_issue)
+      .with(hash_including(reporter: "Original Name", title: "Printer will not start"))
+      .and_return({ number: 77 })
+
+    expect do
+      put "/send_email", params: payload.to_json, headers: headers.merge("Content-Type" => "application/json")
+    end.to change(Help, :count).by(1)
+    expect(response).to have_http_status(:ok)
+    expect(Help.last.gh_issue_number).to eq("77")
+  end
+
+  it "returns 422 JSON errors and sends no email when the GitHub issue cannot be created" do
+    allow_any_instance_of(GithubIssuesService).to receive(:create_issue).and_return({ number: nil })
+
+    expect do
+      perform_enqueued_jobs { put "/send_email", params: payload.to_json, headers: headers.merge("Content-Type" => "application/json") }
+    end.not_to(change { [deliveries.size, Help.count] })
+
+    expect(response).to have_http_status(:unprocessable_content)
+    expect(JSON.parse(response.body)["errors"].join).to include("Internal error")
+  end
+
   it "rejects invalid input with 422 JSON errors and sends nothing" do
     expect do
-      perform_enqueued_jobs { put "/send_email", params: payload.merge(subject: "short", email: "nope").to_json, headers: headers.merge("Content-Type" => "application/json") }
+      perform_enqueued_jobs { put "/send_email", params: payload.merge(subject: "short").to_json, headers: headers.merge("Content-Type" => "application/json") }
     end.not_to(change { deliveries.size })
 
     expect(response).to have_http_status(:unprocessable_content)
-    expect(JSON.parse(response.body)["errors"].join).to include("Subject", "Email")
+    expect(JSON.parse(response.body)["errors"].join).to include("Subject")
     expect(user.reload.name).to eq("Original Name")
   end
 

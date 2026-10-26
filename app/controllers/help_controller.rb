@@ -36,16 +36,18 @@ class HelpController < SessionsController
   end
   
   # PUT /send_email: JSON endpoint used by the MakerRepo React app's Help form.
-  # Never touches a user; same validations and support email as #create.
+  # Never touches a user; same validations, GitHub issue and support email as #create.
+  # The confirmation always goes to the signed-in account: the posted name/email are
+  # accepted (the React request shape) but ignored for addressing.
   def send_email
     unless signed_in?
       render json: { error: 'Authentication required' }, status: :unauthorized and return
     end
 
-    attrs = params.slice(:name, :email, :subject, :comments).permit(:name, :email, :subject, :comments)
-    @help = Help.new(attrs)
+    attrs = params.slice(:subject, :comments).permit(:subject, :comments)
+    @help = Help.new(attrs.merge(name: current_user.name, email: current_user.email))
 
-    if @help.valid?
+    if @help.save
       MsrMailer.issue_email(
         @help.name,
         @help.email,
