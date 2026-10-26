@@ -2,6 +2,7 @@
 
 class VolunteerTaskRequestsController < SessionsController
   before_action -> { @with_volunteer_header = true }
+  before_action :signed_in, :ensure_staff, only: :update_approval
 
   def index
     @volunteer_task_requests = if current_user.staff?
@@ -129,5 +130,14 @@ class VolunteerTaskRequestsController < SessionsController
       flash[:alert] = "Something went wrong"
     end
     redirect_to volunteer_task_requests_path
+  end
+
+  private
+
+  def ensure_staff
+    return if current_user.staff?
+
+    flash[:alert] = "You cannot access this area."
+    redirect_to root_path
   end
 end

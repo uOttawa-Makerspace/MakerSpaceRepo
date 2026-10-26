@@ -2,8 +2,8 @@
 
 require "rails_helper"
 
-# Chunk 13: VolunteerTaskRequestsController. No role gate on any action; only
-# the listing scope differs for staff. Approval creates CC money and an approved
+# Chunk 13: VolunteerTaskRequestsController. No role gate except update_approval
+# (sign-in + staff, D-V19); the listing scope differs for staff. Approval creates CC money and an approved
 # VolunteerHour and emails the requester.
 RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
   let(:task) { create(:volunteer_task, title: "tour guide", cc: 12, hours: 3.5) }
@@ -194,21 +194,36 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
       end
     end
 
-    # WART(D-V19): update_approval has no sign-in/role gate: the requester (and a guest) approves the request, minting CC money and hours
-    it "lets the requesting volunteer approve their own request" do
-      vol_login!(volunteer)
-      expect { approve!("true") }.to change(CcMoney, :count).by(1).and change(VolunteerHour, :count).by(1)
-      expect(req.reload.approval).to be(true)
-      expect(volunteer.reload.get_total_hours).to eq(3.5)
+    # FIXED(D-V19): update_approval requires sign-in and staff/admin
+    {
+      "the requesting volunteer" => ->(ex) { ex.volunteer },
+      "another volunteer" => ->(ex) { ex.other_volunteer },
+      "a regular user" => ->(_ex) { FactoryBot.create(:user, :regular_user) }
+    }.each do |who, user|
+      it "refuses #{who} and awards nothing" do
+        vol_login!(user.call(self))
+        expect { approve!("true") }.not_to change { [CcMoney.count, VolunteerHour.count] }
+        expect(req.reload.approval).to be_nil
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to eq("You cannot access this area.")
+        expect(vol_deliveries).to be_empty
+      end
     end
 
-    it "lets a GUEST approve a request" do
-      expect { approve!("true") }.to change(CcMoney, :count).by(1)
+    it "redirects a GUEST to login and awards nothing" do
+      expect { approve!("true") }.not_to change { [CcMoney.count, VolunteerHour.count] }
+      expect(req.reload.approval).to be_nil
+      expect(response).to redirect_to(login_path(back_to: update_approval_volunteer_task_requests_path))
+    end
+
+    it "lets an admin approve" do
+      vol_login!(create(:user, :admin))
+      expect { approve!("true") }.to change(CcMoney, :count).by(1).and change(VolunteerHour, :count).by(1)
       expect(req.reload.approval).to be(true)
-      expect(response).to redirect_to(volunteer_task_requests_path)
     end
 
     it "500s for an orphan request (no user)" do
+      vol_login!(create(:user, :staff))
       orphan = VolunteerTaskRequest.create!(volunteer_task: task)
       approve!("true", id: orphan.id)
       expect(response).to have_http_status(:internal_server_error)
