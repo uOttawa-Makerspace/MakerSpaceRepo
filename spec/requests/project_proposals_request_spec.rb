@@ -211,6 +211,12 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(ProjectProposal.find_by(title: "New Idea")).to have_attributes(approved: nil, admin_id: nil, user_id: owner.id)
     end
 
+    it "cannot link a new proposal to someone else's as its 'revision' (D-C42)" do
+      content_login!(other)
+      post project_proposals_path, params: proposal_params(linked_project_proposal_id: pending.id)
+      expect(ProjectProposal.find_by(title: "New Idea").linked_project_proposal_id).to be_nil
+    end
+
     it "an admin cannot set review fields through create either (D-C36)" do
       content_sign_in_as(:admin)
       post project_proposals_path, params: proposal_params(approved: "approved", admin_id: owner.id)
@@ -321,6 +327,12 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       patch project_proposal_path(pending.slug),
             params: { project_proposal: { user_id: other.id, approved: "approved", admin_id: owner.id } }
       expect(pending.reload).to have_attributes(user_id: owner.id, approved: nil, admin_id: nil)
+    end
+
+    it "the owner cannot re-link their proposal to someone else's (D-C42)" do
+      content_login!(owner)
+      patch project_proposal_path(pending.slug), params: { project_proposal: { linked_project_proposal_id: approved.id } }
+      expect(pending.reload.linked_project_proposal_id).to be_nil
     end
 
     it "an admin cannot mass-assign review fields on update either (D-C36)" do
