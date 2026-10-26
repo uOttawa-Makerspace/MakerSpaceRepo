@@ -49,7 +49,7 @@ namespace :exams do
             status = Exam::STATUS[:passed]
             Certification.certify_user(training_session.id, user.id, training_session.level)
           end
-          exam.update(status: status, score: score)
+          exam.update!(status: status, score: score)
         end
         next unless graded
 

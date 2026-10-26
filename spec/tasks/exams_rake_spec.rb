@@ -63,6 +63,19 @@ RSpec.describe "exams:check_expired_exams" do
     expect(ActionMailer::Base.deliveries).to be_empty
   end
 
+  # FIXED(retro round 3): update! rolls the grading back if the exam cannot be saved
+  it "rolls back the certification and sends no email when the exam cannot be saved" do
+    exam = expired_exam(correct_count: 3)
+    allow_any_instance_of(Exam).to receive(:update).and_return(false)
+    allow_any_instance_of(Exam).to receive(:update!).and_raise(ActiveRecord::RecordNotSaved, "boom")
+    task = Rake::Task["exams:check_expired_exams"]
+    task.reenable
+    expect { task.invoke }.to raise_error(ActiveRecord::RecordNotSaved, "boom")
+    expect(Certification.count).to eq(0)
+    expect(ActionMailer::Base.deliveries).to be_empty
+    expect(exam.reload.status).to eq("incomplete")
+  end
+
   # FIXED(retro round 2): an exam without questions used to abort the whole run
   it "skips an expired exam without questions and still grades the others" do
     empty = create(:exam, user: create(:user, :regular_user), training_session: training_session,
