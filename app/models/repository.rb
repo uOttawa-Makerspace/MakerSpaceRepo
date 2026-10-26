@@ -129,6 +129,13 @@ class Repository < ApplicationRecord
     share_type.eql?('private')
   end
 
+  # Owner (user_id) or member of the habtm `users`. A guest (User.new) is never an owner.
+  def owned_by?(user)
+    return false if user.nil? || user.id.blank?
+
+    user_id == user.id || users.include?(user)
+  end
+
   def self.authenticate(id, password)
     @repository = Repository.find(id)
     @repository.pword == password

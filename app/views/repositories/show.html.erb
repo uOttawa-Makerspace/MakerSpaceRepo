@@ -123,7 +123,7 @@
                 </div>
             <% end %>
         </div>
-        <% if @repository.users.include?(@user) || @user.role.eql?("admin") %>
+        <% if @repository.owned_by?(@user) || @user.role.eql?("admin") %>
             <%= link_to "<i class=\"fa-solid fa-pencil\"></i> #{t('repository.edit_proj')}".html_safe,
                     edit_repository_path(@repository.user_username, @repository.id),
                     class: 'btn btn-sm btn-secondary align-top float-end' %>
@@ -205,7 +205,7 @@
             </p>
         <% end %>
 
-        <% if @repository.users.include?(@user) || @user.staff? %>
+        <% if @repository.owned_by?(@user) || @user.staff? %>
             <%= form_for :repo, url: { controller: 'repositories', action: 'link_to_pp' }, method: :patch do |f| %>
                 <span class="text-muted"><%= t('repository.link_to_prop') %> </span>
                 <div class="mb-3 input-group">

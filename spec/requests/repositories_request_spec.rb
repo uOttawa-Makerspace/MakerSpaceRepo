@@ -357,11 +357,24 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(response).to redirect_to(repo_path)
     end
 
-    it "bounces the repository owner when the owner is not in repository.users (D-C07)" do
+    it "lets the repository owner edit when the owner is not in repository.users (D-C07)" do
       orphan = create(:repository, owner: owner, title: "Orphan") # factory: users empty
       content_login!(owner)
       get edit_repository_path(owner.username, orphan.slug)
-      # WART(D-C07): ownership is membership in the habtm `users`, not user_id
+      # FIXED(D-C07): owner is user_id OR a member of the habtm `users`
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "lets a collaborator (in users, not the owner) edit, and still bounces a stranger from an orphan repo (D-C07)" do
+      collaborator = create(:user, :regular_user)
+      repo.users << collaborator
+      content_login!(collaborator)
+      get edit_repository_path(owner.username, repo.slug)
+      expect(response).to have_http_status(:ok)
+
+      orphan = create(:repository, owner: owner, title: "Orphan")
+      content_login!(stranger)
+      get edit_repository_path(owner.username, orphan.slug)
       expect(response).to redirect_to(repository_path(owner.username, orphan.slug))
       expect(flash[:alert]).to eq("You are not allowed to perform this action!")
     end
@@ -489,6 +502,15 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       content_sign_in_as(:admin)
       expect { delete repository_path(owner.username, repo.slug) }
         .to change(Comment, :count).by(-1).and change(Like, :count).by(-1).and change(Photo, :count).by(-1)
+    end
+
+    it "lets the owner delete a repository whose users list does not include them (D-C07)" do
+      orphan = create(:repository, owner: owner, title: "Orphan")
+      content_login!(owner)
+      expect { delete repository_path(owner.username, orphan.slug) }.to change(Repository, :count).by(-1)
+      content_login!(stranger)
+      other = create(:repository, owner: owner, title: "Orphan Two")
+      expect { delete repository_path(owner.username, other.slug) }.not_to change(Repository, :count)
     end
 
     it "answers 204 for a JSON delete" do

@@ -153,7 +153,7 @@ class RepositoriesController < SessionsController
   end
 
   def edit
-    if @repository.users.include?(@user) || @user.admin?
+    if @repository.owned_by?(@user) || @user.admin?
       @project_proposals =
         ProjectProposal.approved.order(title: :asc).pluck(:title, :id) if params[
         :project_proposal_id
@@ -373,7 +373,7 @@ class RepositoriesController < SessionsController
   # Block if user is not authorized to modify repository
   def check_ownership
     # admins can modify repo
-    unless @user.admin? || @repository.users.include?(@user)
+    unless @user.admin? || @repository.owned_by?(@user)
       flash[:alert] = "You are not allowed to perform this action!"
       redirect_to repository_path(@repository.user_username, @repository.slug)
     end
