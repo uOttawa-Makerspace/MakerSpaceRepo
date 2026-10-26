@@ -140,8 +140,7 @@ class Repository < ApplicationRecord
   end
 
   def self.authenticate(id, password)
-    @repository = Repository.find(id)
-    @repository.pword == password
+    Repository.find(id).pword == password
   end
 
   def pword

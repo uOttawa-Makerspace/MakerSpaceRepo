@@ -268,8 +268,7 @@ class RepositoriesController < SessionsController
     end
 
     @auth =
-      @repository.password.present? &&
-        Repository.authenticate(@repository.id, params[:password])
+      @repository.password.present? && @repository.pword == params[:password]
     respond_to do |format|
       if @auth
         @authorized = true
