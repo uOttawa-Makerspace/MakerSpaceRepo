@@ -78,11 +78,16 @@ RSpec.describe "Makes (HTTP contract)", type: :request do
       expect(original.makes).to eq([made])
     end
 
-    it "does not add the maker to the make's members (users stays empty) (D-C22)" do
+    it "adds the maker to the make's members so they can edit and delete it (D-C22)" do
       content_login!(maker)
       post makes_create_path(owner.username, original.id), params: make_params
-      # WART(D-C22): maker is user_id but not in repository.users, so check_ownership denies them edit/delete of their own make (see D-C07)
-      expect(Repository.find_by(title: "My Make").users).to be_empty
+      # FIXED(D-C22): the maker is added to repository.users on create (consistent with D-C07)
+      made = Repository.find_by(title: "My Make")
+      expect(made.users).to eq([maker])
+      expect(made.users).not_to include(owner)
+      get edit_repository_path(maker.username, made.slug)
+      expect(response).to have_http_status(:ok)
+      expect { delete repository_path(maker.username, made.slug) }.to change(Repository, :count).by(-1)
     end
 
     it "copies categories and equipment from the original" do
