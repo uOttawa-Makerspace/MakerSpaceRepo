@@ -150,11 +150,12 @@ RSpec.describe "Printer issues", type: :request do
         expect(issue.reload.summary).to include("Nozzle clogged")
       end
 
-      # WART(D-EQ19): update permits printer_id, so staff can silently move an issue to another printer
-      it "can re-point the issue at a different printer" do
+      # FIXED(D-EQ19): update ignores printer_id (create still takes it)
+      it "cannot re-point the issue at a different printer" do
         other = create(:printer, :UM3_01)
-        patch printer_issue_path(issue), params: { printer_issue: { printer_id: other.id } }
-        expect(issue.reload.printer_id).to eq(other.id)
+        patch printer_issue_path(issue), params: { printer_issue: { printer_id: other.id, description: "still editable" } }
+        expect(issue.reload.printer_id).to eq(printer.id)
+        expect(issue.description).to eq("still editable")
       end
     end
 

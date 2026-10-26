@@ -80,7 +80,7 @@ class PrinterIssuesController < StaffAreaController
   def update
     # Ideally, all updates happen from /printer_issues
     issue = PrinterIssue.find_by(id: params[:id])
-    unless issue.update(printer_issue_params)
+    unless issue.update(printer_issue_params.except(:printer_id))
       flash[:alert] = "Failed to update printer issue #{params[:id]}, #{issue.errors.full_messages.join(";")}"
       redirect_to printer_issues_path
     end
