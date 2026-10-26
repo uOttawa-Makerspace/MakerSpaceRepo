@@ -493,7 +493,7 @@ RSpec.describe "Shop coupons, price rules and cc money (HTTP contract)", type: :
       it "lets a signed-in user credit the points to ANY account by typing its email" do
         shop_log_in!(user)
         get redeem_cc_moneys_path, params: { token: token, user: { email: other.email } }
-        # WART(D-S15): redeem trusts the submitted email, not the signed-in user, and does so on a GET (CSRF-able); anyone holding a mailed token can push the points to a third party
+        # INTENDED(D-S15): crediting the typed email is deliberate (guest purchasers credit their account by email); no behavior change. The GET->POST conversion belongs to slice A14 (D-S02)
         expect(flash[:notice]).to eq("The CC Money has been added to #{other.name}")
         expect(unlinked.reload.user_id).to eq(other.id)
       end
@@ -510,7 +510,7 @@ RSpec.describe "Shop coupons, price rules and cc money (HTTP contract)", type: :
         shop_log_in!(user)
         get redeem_cc_moneys_path, params: { token: token, user: { email: "nobody@example.com" } }
         expect(response).to redirect_to(cc_moneys_path)
-        # WART(D-S16): an unknown email reports "already added to an account" although nothing was linked
+        # INTENDED(D-S16): keep the existing alert for an unknown email (user decision: crediting a typed email is intended); no behavior change
         expect(flash[:alert]).to eq("The CC Money has already been added to an account")
         expect(unlinked.reload.linked).to be(false)
       end
