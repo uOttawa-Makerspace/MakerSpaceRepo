@@ -491,19 +491,11 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
   end
 
   describe "join / unjoin" do
-    it "lets a guest join: a ProjectJoin with user_id nil (D-C43)" do
+    it "sends a guest to login and stores no join (D-C43)" do
       expect { get join_project_proposal_project_proposals_path, params: { project_proposal_id: approved.id } }
-        .to change(ProjectJoin, :count).by(1)
-      # WART(D-C43): no signed_in; a guest join is stored with user_id nil
-      expect(ProjectJoin.last.user_id).to be_nil
-      expect(response).to redirect_to(project_proposal_path(approved.slug))
-      expect(flash[:notice]).to eq("You joined this project.")
-    end
-
-    it "only one guest join fits per proposal: the nil user_id collides on the uniqueness scope" do
-      2.times { get join_project_proposal_project_proposals_path, params: { project_proposal_id: approved.id } }
-      expect(ProjectJoin.where(project_proposal_id: approved.id, user_id: nil).count).to eq(1)
-      expect(flash[:alert]).to eq("You already joined this project or something went wrong.")
+        .not_to change(ProjectJoin, :count)
+      # FIXED(D-C43): join requires sign-in and an approved proposal
+      expect(response).to redirect_to(login_path(back_to: join_project_proposal_project_proposals_path(project_proposal_id: approved.id)))
     end
 
     it "joins as the signed-in user, once; the second time alerts" do
@@ -515,23 +507,59 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq("You already joined this project or something went wrong.")
     end
 
-    it "can join an unapproved proposal (no approved check)" do
+    it "cannot join a pending or declined proposal (D-C43)" do
       content_login!(other)
-      expect { get join_project_proposal_project_proposals_path, params: { project_proposal_id: pending.id } }
-        .to change(ProjectJoin, :count).by(1)
+      [pending, declined].each do |pp|
+        expect { get join_project_proposal_project_proposals_path, params: { project_proposal_id: pp.id } }
+          .not_to change(ProjectJoin, :count)
+        expect(response).to redirect_to(project_proposals_path)
+        expect(flash[:alert]).to eq("You can only join an approved project proposal.")
+      end
     end
 
-    it "lets anyone remove anyone else's join by id (D-C44, severity 1)" do
+    it "does not let a guest remove a join (D-C44)" do
       join = ProjectJoin.create!(project_proposal_id: approved.id, user_id: owner.id)
-      content_login!(other)
+      get unjoin_project_proposal_project_proposals_path, params: { project_proposal_id: approved.id, project_join_id: join.id }
+      expect(response.location).to start_with(login_url)
+      expect(ProjectJoin.exists?(join.id)).to be(true)
+    end
+
+    it "does not let a stranger or staff remove someone else's join (D-C44)" do
+      join = ProjectJoin.create!(project_proposal_id: approved.id, user_id: owner.id)
+      [other, create(:user, :staff)].each do |user|
+        content_login!(user)
+        get unjoin_project_proposal_project_proposals_path,
+            params: { project_proposal_id: approved.id, project_join_id: join.id }
+        # FIXED(D-C44): only the join's own user (or an admin) can remove it
+        expect(ProjectJoin.exists?(join.id)).to be(true)
+        expect(flash[:alert]).to eq("You can only leave a project you joined yourself.")
+      end
+    end
+
+    it "does not remove a join through a different proposal's URL (D-C44)" do
+      join = ProjectJoin.create!(project_proposal_id: approved.id, user_id: owner.id)
+      other_approved = create(:project_proposal, :approved)
+      content_login!(owner)
       get unjoin_project_proposal_project_proposals_path,
-          params: { project_proposal_id: approved.id, project_join_id: join.id }
-      # WART(D-C44): unjoin deletes by project_join_id with no ownership check (and not even scoped to the proposal)
+          params: { project_proposal_id: other_approved.id, project_join_id: join.id }
+      expect(response).to have_http_status(:not_found)
+      expect(ProjectJoin.exists?(join.id)).to be(true)
+    end
+
+    it "lets users remove their own join, and an admin remove any (D-C44)" do
+      join = ProjectJoin.create!(project_proposal_id: approved.id, user_id: owner.id)
+      content_login!(owner)
+      get unjoin_project_proposal_project_proposals_path, params: { project_proposal_id: approved.id, project_join_id: join.id }
       expect(ProjectJoin.exists?(join.id)).to be(false)
       expect(flash[:notice]).to eq("You unjoined this project.")
+      join = ProjectJoin.create!(project_proposal_id: approved.id, user_id: other.id)
+      content_sign_in_as(:admin)
+      get unjoin_project_proposal_project_proposals_path, params: { project_proposal_id: approved.id, project_join_id: join.id }
+      expect(ProjectJoin.exists?(join.id)).to be(false)
     end
 
     it "404s for an unknown join" do
+      content_login!(owner)
       get unjoin_project_proposal_project_proposals_path, params: { project_proposal_id: approved.id, project_join_id: 0 }
       expect(response).to have_http_status(:not_found)
     end

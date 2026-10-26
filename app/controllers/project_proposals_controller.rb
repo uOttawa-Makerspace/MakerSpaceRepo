@@ -5,7 +5,7 @@ class ProjectProposalsController < SessionsController
 
   before_action :set_project_proposal, only: %i[show edit update destroy]
   before_action :current_user
-  before_action :signed_in, only: %i[edit update approve decline create_revision]
+  before_action :signed_in, only: %i[edit update approve decline create_revision join_project_proposal unjoin_project_proposal]
   before_action :require_admin, only: %i[approve decline]
   before_action :require_owner_or_admin, only: %i[edit update]
 
@@ -306,6 +306,11 @@ class ProjectProposalsController < SessionsController
 
   def join_project_proposal
     @project_proposal = ProjectProposal.find(params[:project_proposal_id])
+    unless @project_proposal.approved?
+      redirect_to project_proposals_path,
+                  alert: 'You can only join an approved project proposal.'
+      return
+    end
     @project_join = ProjectJoin.new(project_join_params)
     @project_join.user_id = current_user.id
     if @project_join.save
@@ -320,7 +325,12 @@ class ProjectProposalsController < SessionsController
 
   def unjoin_project_proposal
     @project_proposal = ProjectProposal.find(params[:project_proposal_id])
-    @project_join = ProjectJoin.find(params[:project_join_id])
+    @project_join = @project_proposal.project_joins.find(params[:project_join_id])
+    unless current_user.admin? || @project_join.user_id == current_user.id
+      redirect_to project_proposal_path(@project_proposal.slug),
+                  alert: 'You can only leave a project you joined yourself.'
+      return
+    end
     if @project_join.delete
       redirect_to project_proposal_path(@project_proposal.slug),
                   notice: 'You unjoined this project.'
