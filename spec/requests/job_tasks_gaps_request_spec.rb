@@ -158,11 +158,12 @@ RSpec.describe "JobTasks gaps", type: :request do
       expect(task.reload.job_type).to eq(print_type)
     end
 
-    it "bounces a staff member who is neither owner nor admin" do
+    # FIXED(retro of A2): update uses the same owner-or-admin gate and denial as create/destroy
+    it "bounces a staff member who is neither owner nor admin with the shared no_permission redirect" do
       session_login!(staff)
       patch job_order_job_task_path(order, task), params: { step: "1", job_task: { job_type_id: print_type.id } }
-      expect(response).to redirect_to(job_orders_path)
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.job_order_not_found"))
+      expect(response).to redirect_to(new_job_orders_path)
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.no_permission"))
       expect(task.reload.job_type).to be_nil
     end
 
@@ -213,13 +214,35 @@ RSpec.describe "JobTasks gaps", type: :request do
   # ------------------------------------------------------------- create / destroy corners
 
   describe "create and destroy corners" do
-    it "lets staff and admin create tasks on someone else's order" do
+    # FIXED(retro of A2): no staff UI adds or deletes tasks (the order page shows those buttons
+    # to the owner and admins only), so create/destroy follow update: owner or admin.
+    it "lets an admin create a task on someone else's order but refuses staff" do
       order = order_with_task!
-      [staff, admin].each do |user|
-        session_login!(user)
-        expect { post job_order_job_tasks_path(order) }.to change { order.job_tasks.count }.by(1)
-        expect(response).to have_http_status(:redirect)
-      end
+      session_login!(admin)
+      expect { post job_order_job_tasks_path(order) }.to change { order.job_tasks.count }.by(1)
+      expect(response).to have_http_status(:redirect)
+
+      session_login!(staff)
+      expect { post job_order_job_tasks_path(order) }.not_to(change { order.job_tasks.count })
+      expect(response).to redirect_to(new_job_orders_path)
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.no_permission"))
+    end
+
+    it "does not offer Add Another Task, Edit or Delete to staff on someone else's order" do
+      seed_job_order_message!
+      order = order_with_task!
+      order.job_tasks.each { |t| t.update!(job_type: print_type) }
+      order.job_tasks.create!(title: "Task #2", job_type: print_type)
+      session_login!(staff)
+      get job_order_path(order)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include("Add Another Task")
+      expect(response.body).not_to include("Are you sure you want to delete this task?")
+
+      session_login!(owner)
+      get job_order_path(order)
+      expect(response.body).to include("Add Another Task")
+      expect(response.body).to include("Are you sure you want to delete this task?")
     end
 
     # WART(D-J18): numbering falls back to the row count, so deleting an early
@@ -234,9 +257,14 @@ RSpec.describe "JobTasks gaps", type: :request do
       expect(order.reload.job_tasks.order(:id).pluck(:title)).to eq(["Task #2", "Task #2"])
     end
 
-    it "lets staff delete a task" do
+    it "refuses staff deleting a task, lets an admin" do
       order = order_with_task!
       session_login!(staff)
+      expect { delete job_order_job_task_path(order, order.job_tasks.first) }.not_to change(JobTask, :count)
+      expect(response).to redirect_to(new_job_orders_path)
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.no_permission"))
+
+      session_login!(admin)
       expect { delete job_order_job_task_path(order, order.job_tasks.first) }.to change(JobTask, :count).by(-1)
     end
 
