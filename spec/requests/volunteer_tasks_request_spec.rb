@@ -5,7 +5,8 @@ require "rails_helper"
 # Chunk 13: VolunteerTasksController.
 #   index, show         staff or volunteer-program member (`volunteer_access`)
 #   new/create/edit/update/destroy   staff or admin only (`grant_access`)
-#   my_tasks, complete_task          NO gate (guests included)
+#   my_tasks                         NO gate (guests included)
+#   complete_task (POST)             sign-in + staff or the task's creator (D-V23)
 RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
   let(:space) { create(:space) }
   let(:staff) { create(:user, :staff) }
@@ -266,29 +267,65 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
     end
   end
 
-  describe "GET /volunteer_tasks/complete_task" do
-    # WART(D-V23): state-changing GET with no gate: a guest marks any task completed
-    it "completes the task for a guest and redirects to my_tasks, with no flash" do
-      get complete_task_volunteer_tasks_path(id: task.id)
+  describe "POST /volunteer_tasks/complete_task" do
+    # FIXED(D-V23): POST only, and only staff/admin or the task's creator may complete a task
+    it "is no longer reachable by GET" do
+      vol_login!(staff)
+      get "/volunteer_tasks/complete_task", params: { id: task.id }
+      expect(task.reload.status).to eq("open")
+      expect(response).not_to redirect_to(my_tasks_volunteer_tasks_path)
+    end
+
+    it "redirects a guest to login and leaves the task open" do
+      post complete_task_volunteer_tasks_path(id: task.id)
+      expect(response).to redirect_to(login_path(back_to: complete_task_volunteer_tasks_path(id: task.id)))
+      expect(task.reload.status).to eq("open")
+    end
+
+    [
+      ["a regular user", ->(_) { FactoryBot.create(:user, :regular_user) }],
+      ["a volunteer who is not the creator", ->(ex) { ex.volunteer }]
+    ].each do |label, user|
+      it "refuses #{label}" do
+        vol_login!(user.call(self))
+        post complete_task_volunteer_tasks_path(id: task.id)
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to eq("You cannot access this area.")
+        expect(task.reload.status).to eq("open")
+      end
+    end
+
+    it "lets staff complete the task and redirects to my_tasks, with no flash" do
+      vol_login!(staff)
+      post complete_task_volunteer_tasks_path(id: task.id)
       expect(response).to redirect_to(my_tasks_volunteer_tasks_path)
       expect(task.reload.status).to eq("completed")
       expect(flash.to_h).to be_empty
     end
 
-    it "completes it for a regular user who has nothing to do with the task" do
-      vol_login!(create(:user, :regular_user))
-      get complete_task_volunteer_tasks_path(id: task.id)
+    it "lets an admin complete the task" do
+      vol_login!(create(:user, :admin))
+      post complete_task_volunteer_tasks_path(id: task.id)
+      expect(task.reload.status).to eq("completed")
+    end
+
+    it "lets the task's creator (a volunteer) complete it" do
+      task.update!(user: volunteer)
+      vol_login!(volunteer)
+      post complete_task_volunteer_tasks_path(id: task.id)
       expect(task.reload.status).to eq("completed")
     end
 
     it "404s for a missing task" do
-      get complete_task_volunteer_tasks_path(id: 999_999)
+      vol_login!(staff)
+      post complete_task_volunteer_tasks_path(id: 999_999)
       expect(response).to have_http_status(:not_found)
     end
 
     it "does not touch joins, requests, hours or CC money" do
       create(:volunteer_task_join, :active, volunteer_task: task)
-      expect { get complete_task_volunteer_tasks_path(id: task.id) }
+      vol_login!(staff)
+      expect { post complete_task_volunteer_tasks_path(id: task.id) }
         .not_to change { [VolunteerTaskJoin.active.count, VolunteerHour.count, CcMoney.count] }
     end
   end

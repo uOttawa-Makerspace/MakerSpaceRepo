@@ -8,9 +8,9 @@ require "rails_helper"
 # Inherited gate: DevelopmentProgramsController#grant_access = signed_in (no
 # Development Program membership is required). Then per action:
 #   admin only      new create edit update destroy      (others -> proficient_projects_path, no flash)
-#   staff or admin  requests approve_project            (others -> development_programs_path + alert)
+#   staff or admin  requests approve_project revoke_project (others -> development_programs_path + alert)
 #   show            ordered/in-progress/awarded buyer, staff or admin
-#   revoke_project, complete_project, modals, badge text: signed in only
+#   complete_project, modals, badge text: signed in only
 RSpec.describe "Proficient projects (HTTP contract)", type: :request do
   include ContentSpecHelpers
 
@@ -319,12 +319,49 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
       expect(ActionMailer::Base.deliveries).to be_empty
     end
 
-    it "does not check the item's current status: a revoked or awarded item can be resubmitted (D-C28)" do
-      oi = order_item_for(buyer, status: "Awarded")
+    ["Awarded", "Revoked", "Waiting for approval"].each do |status|
+      it "does not resubmit a #{status} item: status, comments and emails stay as they were (D-C28)" do
+        oi = order_item_for(buyer, status: status)
+        content_login!(buyer)
+        ActionMailer::Base.deliveries.clear
+        put complete_project_proficient_projects_path, params: { id: project.id, order_item: { user_comments: "again" } }
+        # FIXED(D-C28): only an In progress item can be submitted
+        expect(oi.reload.status).to eq(status)
+        expect(oi.user_comments).not_to eq("again")
+        expect(flash[:alert]).to eq("This project can only be submitted while it is in progress.")
+        expect(response).to redirect_to(project_path_for(project))
+        expect(ActionMailer::Base.deliveries).to be_empty
+      end
+    end
+
+    it "does not submit an item whose order is not paid (unpaid cart) (D-C28)" do
+      cart = create(:order, user_id: buyer.id)
+      expect(cart.order_status.name).not_to eq("Completed")
+      oi = create(:order_item, order: cart, proficient_project: project, status: "In progress")
       content_login!(buyer)
-      put complete_project_proficient_projects_path, params: { id: project.id, order_item: { user_comments: "again" } }
-      # WART(D-C28): an Awarded item silently reverts to Waiting for approval
-      expect(oi.reload.status).to eq("Waiting for approval")
+      ActionMailer::Base.deliveries.clear
+      put complete_project_proficient_projects_path, params: { id: project.id, order_item: { user_comments: "free" } }
+      expect(oi.reload.status).to eq("In progress")
+      expect(flash[:alert]).to eq("This project hasn't been found")
+      expect(ActionMailer::Base.deliveries).to be_empty
+    end
+
+    it "submits the paid item, not an unpaid cart item for the same project (D-C28)" do
+      cart_item = create(:order_item, order: create(:order, user_id: buyer.id), proficient_project: project, status: "In progress")
+      paid = order_item_for(buyer)
+      content_login!(buyer)
+      put complete_project_proficient_projects_path, params: { id: project.id, order_item: { user_comments: "ok" } }
+      expect(paid.reload.status).to eq("Waiting for approval")
+      expect(cart_item.reload.status).to eq("In progress")
+    end
+
+    it "submits the In progress item when the user also holds an older Awarded one (D-C28)" do
+      awarded = order_item_for(buyer, status: "Awarded")
+      current = order_item_for(buyer, status: "In progress")
+      content_login!(buyer)
+      put complete_project_proficient_projects_path, params: { id: project.id, order_item: { user_comments: "second" } }
+      expect(current.reload.status).to eq("Waiting for approval")
+      expect(awarded.reload.status).to eq("Awarded")
     end
 
     it "stores attached submission files on the order item" do
@@ -380,29 +417,123 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
       expect(flash[:error]).to eq("An error has occurred, please try again later.")
     end
 
-    it "approving the same item twice creates a second ProficientProjectSession (no idempotency) (D-C29)" do
+    it "a missing or stale oi_id redirects staff to the queue with the error flash instead of 500ing (D-C29)" do
+      content_sign_in_as(:staff)
+      get approve_project_proficient_projects_path, params: { order_item: { admin_comments: "x" } }
+      expect(response).to redirect_to(requests_proficient_projects_path)
+      get approve_project_proficient_projects_path, params: { oi_id: 0, order_item: { admin_comments: "x" } }
+      expect(response).to redirect_to(requests_proficient_projects_path)
+      expect(flash[:error]).to eq("An error has occurred, please try again later.")
+    end
+
+    it "approving the same item twice creates one session and one certification (D-C29)" do
       content_sign_in_as(:admin)
+      ActionMailer::Base.deliveries.clear
       2.times { get approve_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "x" } } }
-      # WART(D-C29): no status guard; also re-awards an item that was never submitted
-      expect(ProficientProjectSession.where(proficient_project_id: project.id).count).to eq(2)
-      expect(Certification.where(user_id: buyer.id).count).to eq(2) # find_or_create_by under joins never finds the first one
+      # FIXED(D-C29): approval is guarded on 'Waiting for approval', so a replay is refused
+      expect(ProficientProjectSession.where(proficient_project_id: project.id).count).to eq(1)
+      expect(Certification.where(user_id: buyer.id).count).to eq(1)
+      expect(flash[:error]).to eq("An error has occurred, please try again later.")
+      expect(ActionMailer::Base.deliveries.size).to eq(1)
+    end
+
+    ["In progress", "Awarded", "Revoked"].each do |status|
+      it "does not approve a #{status} item (D-C29)" do
+        item = order_item_for(buyer, status: status)
+        content_sign_in_as(:staff)
+        ActionMailer::Base.deliveries.clear
+        expect do
+          get approve_project_proficient_projects_path, params: { oi_id: item.id, order_item: { admin_comments: "x" } }
+        end.to change(ProficientProjectSession, :count).by(0).and change(Certification, :count).by(0)
+        expect(item.reload.status).to eq(status)
+        expect(flash[:error]).to eq("An error has occurred, please try again later.")
+        expect(ActionMailer::Base.deliveries).to be_empty
+      end
+    end
+
+    it "does not award, certify or email when the session fails to save (D-C29)" do
+      content_sign_in_as(:admin)
+      ActionMailer::Base.deliveries.clear
+      allow(ProficientProjectSession).to receive(:create!).and_raise(ActiveRecord::RecordInvalid.new(ProficientProjectSession.new))
+      expect do
+        get approve_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "x" } }
+      end.to change(Certification, :count).by(0)
+      expect(oi.reload.status).to eq("Waiting for approval")
+      expect(flash[:error]).to eq("An error has occurred, please try again later.")
+      expect(flash[:notice]).to be_nil
+      expect(ActionMailer::Base.deliveries).to be_empty
+    end
+
+    it "gives each approval its own certification, so deleting one project never destroys another's (D-C29)" do
+      other_project = create(:proficient_project, training: training, level: project.level, title: "Second widget")
+      second = order_item_for(buyer, status: "Waiting for approval", pp: other_project)
+      content_sign_in_as(:admin)
+      get approve_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "x" } }
+      expect do
+        get approve_project_proficient_projects_path, params: { oi_id: second.id, order_item: { admin_comments: "x" } }
+      end.to change(Certification, :count).by(1)
+      certs = ProficientProjectSession.where(proficient_project: [project, other_project]).pluck(:certification_id)
+      expect(certs.uniq.size).to eq(2)
+      ProficientProjectSession.find_by(proficient_project: project).destroy
+      expect(Certification.where(id: certs.last)).to exist
     end
   end
 
   describe "GET revoke_project" do
-    let!(:oi) { order_item_for(buyer, status: "Awarded") }
+    let!(:oi) { order_item_for(buyer, status: "Waiting for approval") }
 
-    it "lets ANY signed-in user revoke anyone's order item and email them 'Failed' (D-C30, severity 1)" do
-      attacker = create(:user, :regular_user)
-      content_login!(attacker)
-      ActionMailer::Base.deliveries.clear
+    it "refuses a regular user and the item's own buyer, changing and emailing nothing (D-C30)" do
+      [create(:user, :regular_user), buyer].each do |user|
+        content_login!(user)
+        ActionMailer::Base.deliveries.clear
+        get revoke_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "gotcha" } }
+        # FIXED(D-C30): revoke_project is in only_staff_access
+        expect(response).to redirect_to(development_programs_path)
+        expect(flash[:alert]).to eq("Only staff members can access this area.")
+        expect(oi.reload.status).to eq("Waiting for approval")
+        expect(oi.admin_comments).to be_blank
+        expect(ActionMailer::Base.deliveries).to be_empty
+      end
+    end
+
+    it "sends a guest to login without revoking" do
       get revoke_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "gotcha" } }
-      # WART(D-C30): revoke_project has no only_staff_access (only approve_project/requests do); a GET with no CSRF token
+      expect(response.location).to include("/login")
+      expect(oi.reload.status).to eq("Waiting for approval")
+    end
+
+    %i[staff admin].each do |role|
+      it "#{role}: revokes the item and emails the buyer 'Failed'" do
+        content_sign_in_as(role)
+        ActionMailer::Base.deliveries.clear
+        get revoke_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "gotcha" } }
+        expect(oi.reload.status).to eq("Revoked")
+        expect(oi.admin_comments).to eq("gotcha")
+        expect(flash[:alert_yellow]).to eq("The project has been revoked.")
+        expect(response).to redirect_to(requests_proficient_projects_path)
+        expect(ActionMailer::Base.deliveries.last.to).to eq([buyer.email])
+      end
+    end
+
+    ["In progress", "Awarded", "Revoked"].each do |status|
+      it "does not revoke a #{status} item or re-send the email (D-C30)" do
+        item = order_item_for(buyer, status: status)
+        content_sign_in_as(:staff)
+        ActionMailer::Base.deliveries.clear
+        get revoke_project_proficient_projects_path, params: { oi_id: item.id, order_item: { admin_comments: "again" } }
+        expect(item.reload.status).to eq(status)
+        expect(item.admin_comments).to be_blank
+        expect(flash[:error]).to eq("An error has occurred, please try again later.")
+        expect(ActionMailer::Base.deliveries).to be_empty
+      end
+    end
+
+    it "revoking twice sends one email" do
+      content_sign_in_as(:admin)
+      ActionMailer::Base.deliveries.clear
+      2.times { get revoke_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "x" } } }
       expect(oi.reload.status).to eq("Revoked")
-      expect(oi.admin_comments).to eq("gotcha")
-      expect(flash[:alert_yellow]).to eq("The project has been revoked.")
-      expect(response).to redirect_to(requests_proficient_projects_path)
-      expect(ActionMailer::Base.deliveries.last.to).to eq([buyer.email])
+      expect(ActionMailer::Base.deliveries.size).to eq(1)
     end
 
     it "flashes an error for an unknown item" do
@@ -416,7 +547,7 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
     it "proficient_project_modal renders without a layout for any signed-in user, even without an order (D-C31)" do
       content_sign_in_as(:regular)
       get proficient_project_proficient_project_modal_path(project)
-      # WART(D-C31): show gates on ownership but the modal exposes the same project data to anyone signed in
+      # INTENDED(D-C31): storefront preview for unbought projects (user decision 2026-10-26)
       expect(response).to have_http_status(:ok)
       expect(response.body).not_to include("<html")
     end

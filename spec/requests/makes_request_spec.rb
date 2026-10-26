@@ -78,11 +78,35 @@ RSpec.describe "Makes (HTTP contract)", type: :request do
       expect(original.makes).to eq([made])
     end
 
-    it "does not add the maker to the make's members (users stays empty) (D-C22)" do
+    it "adds the maker to the make's members so they can edit and delete it (D-C22)" do
       content_login!(maker)
       post makes_create_path(owner.username, original.id), params: make_params
-      # WART(D-C22): maker is user_id but not in repository.users, so check_ownership denies them edit/delete of their own make (see D-C07)
-      expect(Repository.find_by(title: "My Make").users).to be_empty
+      # FIXED(D-C22): the maker is added to repository.users on create (consistent with D-C07)
+      made = Repository.find_by(title: "My Make")
+      expect(made.users).to eq([maker])
+      expect(made.users).not_to include(owner)
+      get edit_repository_path(maker.username, made.slug)
+      expect(response).to have_http_status(:ok)
+      expect { delete repository_path(maker.username, made.slug) }.to change(Repository, :count).by(-1)
+    end
+
+    it "deleting a make takes back only the 15 its creation awarded (review)" do
+      content_login!(maker)
+      post makes_create_path(owner.username, original.id), params: make_params
+      made = Repository.find_by(title: "My Make")
+      expect(maker.reload.reputation).to eq(15)
+      expect { delete repository_path(maker.username, made.slug) }.to change(Repository, :count).by(-1)
+      # FIXED(review): make_id rows decrement 15, not the 25 a normal repository awards
+      expect(maker.reload.reputation).to eq(0)
+      expect(owner.reload.reputation).to eq(0)
+    end
+
+    it "deleting a normal repository still costs each member 25" do
+      maker.update!(reputation: 100)
+      mine = create(:repository, owner: maker, title: "Mine", users: [maker])
+      content_login!(maker)
+      delete repository_path(maker.username, mine.slug)
+      expect(maker.reload.reputation).to eq(75)
     end
 
     it "copies categories and equipment from the original" do
@@ -127,13 +151,39 @@ RSpec.describe "Makes (HTTP contract)", type: :request do
       expect(flash[:alert]).to include("Original Thing")
     end
 
-    it "lets a maker make a private repository without its password (D-C23)" do
-      secret = create(:repository, :private, owner: owner, title: "Hush", users: [owner])
-      content_login!(maker)
-      # WART(D-C23): no check_auth on makes#new/create; the private original's data is copied to a public child
-      post makes_create_path(owner.username, secret.id),
-           params: { secret.title => { title: "Leak", description: "d", photos_attributes: { "0" => { image: content_png_upload } } } }
-      expect(Repository.find_by(title: "Leak").share_type).to eq("public")
+    context "on a private original (D-C23)" do
+      let!(:secret) { create(:repository, :private, owner: owner, title: "Hush", users: [owner]) }
+      let(:secret_params) do
+        { secret.title => { title: "Leak", description: "d", photos_attributes: { "0" => { image: content_png_upload } } } }
+      end
+
+      it "refuses new and create without the password" do
+        content_login!(maker)
+        get makes_new_path(owner.username, secret.id)
+        # FIXED(D-C23): makes run the shared private-repository gate
+        expect(response).to redirect_to(password_entry_repository_path(owner.username, secret.id))
+        expect { post makes_create_path(owner.username, secret.id), params: secret_params }
+          .not_to change(Repository, :count)
+        expect(response).to redirect_to(password_entry_repository_path(owner.username, secret.id))
+      end
+
+      it "lets the owner, a collaborator, admin and a user who entered the password make it" do
+        secret.update_columns(password: BCrypt::Password.create("open-sesame"))
+        collaborator = create(:user, :regular_user)
+        secret.users << collaborator
+        [owner, collaborator].each do |u|
+          content_login!(u)
+          get makes_new_path(owner.username, secret.id)
+          expect(response).to have_http_status(:ok)
+        end
+        content_login!(maker)
+        post pass_authenticate_repository_path(owner.username, secret.id), params: { password: "open-sesame" }
+        expect { post makes_create_path(owner.username, secret.id), params: secret_params }
+          .to change(Repository, :count).by(1)
+        content_sign_in_as(:admin)
+        get makes_new_path(owner.username, secret.id)
+        expect(response).to have_http_status(:ok)
+      end
     end
   end
 end

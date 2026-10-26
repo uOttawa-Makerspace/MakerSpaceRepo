@@ -617,7 +617,7 @@ Rails.application.routes.draw do
       get :calendar
       get :shadowing_shifts
       get :delete_event
-      get :create_event
+      post :create_event
       get :new_event
       get :populate_users
     end
@@ -644,7 +644,7 @@ Rails.application.routes.draw do
   resources :volunteer_tasks do
     collection do
       get :my_tasks
-      get :complete_task
+      post :complete_task
     end
   end
 
@@ -715,6 +715,9 @@ Rails.application.routes.draw do
     patch "change_password", on: :member
   end
 
+  # Must come before the /:user_username catch-all below (D-C15)
+  get "/repositories/populate_users", to: "repositories#populate_users"
+
   # REPOSITORY RESOURCES
   # /:user_username/:id.title-is-ignored
   # This is disabled because the username has no effect on finding repositories
@@ -751,8 +754,6 @@ Rails.application.routes.draw do
       post 'pass_authenticate'
     end
   end
-
-  get "/repositories/populate_users", to: "repositories#populate_users"
 
   namespace :makes, path: "makes/:user_username/:id" do
     post "create"

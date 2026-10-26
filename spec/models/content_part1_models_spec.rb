@@ -113,6 +113,12 @@ RSpec.describe "Content models (part 1 characterization)" do
       expect(Repository.authenticate(repo.id, "no")).to be(false)
     end
 
+    it "authenticate keeps no class-level state shared between threads (review)" do
+      repo.update_columns(password: BCrypt::Password.create("pw"))
+      Repository.authenticate(repo.id, "pw")
+      expect(Repository.instance_variable_get(:@repository)).to be_nil
+    end
+
     it "authenticate raises on a soft-deleted repository (default_scope) and on a blank stored password" do
       expect { Repository.authenticate(repo.id, "x") }.to raise_error(BCrypt::Errors::InvalidHash)
       repo.update_columns(deleted: true)

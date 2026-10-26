@@ -63,6 +63,7 @@ RSpec.describe VolunteerTaskRequestsController, type: :controller do
         session[:user_id] = volunteer.id
         session[:expires_at] = Time.zone.now + 10_000
         create(:volunteer_task)
+        create(:volunteer_task_join, :active, user: volunteer, volunteer_task: VolunteerTask.last)
 
         expect {
           get :create_request, params: { id: VolunteerTask.last.id }
@@ -74,8 +75,8 @@ RSpec.describe VolunteerTaskRequestsController, type: :controller do
   describe "#update_approval" do
     context "update_approval" do
       it "should update the task request to approval : true" do
-        volunteer = create(:user, :volunteer_with_volunteer_program)
-        session[:user_id] = volunteer.id
+        staff = create(:user, :staff)
+        session[:user_id] = staff.id
         session[:expires_at] = Time.zone.now + 10_000
         create(:volunteer_task_request, :not_processed)
         create(
