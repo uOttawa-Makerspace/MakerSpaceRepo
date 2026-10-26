@@ -516,9 +516,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
     end
 
     it "confirm_edited_email requires a signed-in session (guest -> login)" do
-      email_token = Rails.application.message_verifier(:email).generate(new_email)
-      get confirm_edited_email_users_path,
-          params: { user_token: verifier.generate(user.id), email_token: email_token }
+      get confirm_edited_email_users_path, params: { token: user.generate_email_change_token(new_email) }
       expect(response).to have_http_status(:found)
       expect(response.location).to start_with("http://www.example.com/login?back_to=")
       expect(user.reload.email).not_to eq(new_email)
@@ -527,9 +525,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
     it "confirm_edited_email updates the address and notifies the OLD address" do
       old = user.email
       login!(user)
-      email_token = Rails.application.message_verifier(:email).generate(new_email)
-      get confirm_edited_email_users_path,
-          params: { user_token: verifier.generate(user.id), email_token: email_token }
+      get confirm_edited_email_users_path, params: { token: user.generate_email_change_token(new_email) }
       expect(response).to redirect_to(root_path)
       expect(flash[:notice]).to eq("The email has been updated to #{new_email} !")
       expect(user.reload.email).to eq(new_email)
@@ -538,17 +534,68 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(deliveries.first.subject).to eq("Makerepo | Email has changed")
     end
 
-    it "confirm_edited_email never expires and applies to the token's user, not the signed-in one" do
-      # WART(D-I12): email-change tokens carry no expiry/purpose and are not bound to the signed-in session: any signed-in account can apply a link to the user inside the token, and it can be replayed forever
-      bystander = create(:user, :regular_user)
-      login!(bystander)
-      email_token = Rails.application.message_verifier(:email).generate(new_email)
-      ut = verifier.generate(user.id)
-      travel 60.hours do
-        get confirm_edited_email_users_path, params: { user_token: ut, email_token: email_token }
+    it "works end to end from the emailed link" do
+      login!(user)
+      get change_email_users_path, params: { new_email: new_email, confirm_new_email: new_email }
+      token = CGI.unescape(deliveries.first.body.to_s[/confirm_edited_email\?token=([^"'&\s<]+)/, 1])
+      get confirm_edited_email_users_path, params: { token: token }
+      expect(user.reload.email).to eq(new_email)
+    end
+
+    it "expires after 24 hours" do
+      # FIXED(D-I12): email-change tokens are purpose-scoped and expire
+      login!(user)
+      token = user.generate_email_change_token(new_email)
+      travel 25.hours do
+        get confirm_edited_email_users_path, params: { token: token }
+        expect(flash[:alert]).to eq(expired_alert)
+      end
+      expect(user.reload.email).not_to eq(new_email)
+    end
+
+    it "still works inside 24 hours" do
+      login!(user)
+      token = user.generate_email_change_token(new_email)
+      travel 23.hours do
+        get confirm_edited_email_users_path, params: { token: token }
       end
       expect(user.reload.email).to eq(new_email)
+    end
+
+    it "cannot be replayed once the address has changed" do
+      # FIXED(D-I12): the token is bound to the address it was issued for
+      login!(user)
+      token = user.generate_email_change_token(new_email)
+      get confirm_edited_email_users_path, params: { token: token }
+      user.update_columns(email: "changed.again@example.com")
+      get confirm_edited_email_users_path, params: { token: token }
+      expect(flash[:alert]).to eq(expired_alert)
+      expect(user.reload.email).to eq("changed.again@example.com")
+    end
+
+    it "is not applied when a different account follows the link" do
+      # FIXED(D-I12): a signed-in bystander can no longer apply a link to the user inside the token
+      bystander = create(:user, :regular_user)
+      login!(bystander)
+      get confirm_edited_email_users_path, params: { token: user.generate_email_change_token(new_email) }
+      expect(flash[:alert]).to eq(expired_alert)
+      expect(user.reload.email).not_to eq(new_email)
       expect(bystander.reload.email).not_to eq(new_email)
+    end
+
+    it "legacy two-token links (user_token + email_token) are refused with the expired message" do
+      login!(user)
+      get confirm_edited_email_users_path,
+          params: { user_token: verifier.generate(user.id),
+                    email_token: Rails.application.message_verifier(:email).generate(new_email) }
+      expect(flash[:alert]).to eq(expired_alert)
+      expect(user.reload.email).not_to eq(new_email)
+    end
+
+    it "a token for another purpose does not change the email" do
+      login!(user)
+      get confirm_edited_email_users_path, params: { token: user.generate_token_for(:password_reset) }
+      expect(flash[:alert]).to eq(expired_alert)
     end
 
     it "confirm_edited_email to a taken address 500s on the DB unique index" do
@@ -556,19 +603,15 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       other = create(:user, :regular_user)
       original = user.email
       login!(user)
-      email_token = Rails.application.message_verifier(:email).generate(other.email)
-      get confirm_edited_email_users_path,
-          params: { user_token: verifier.generate(user.id), email_token: email_token }
+      get confirm_edited_email_users_path, params: { token: user.generate_email_change_token(other.email) }
       expect(response).to have_http_status(:internal_server_error)
       expect(user.reload.email).to eq(original)
     end
 
-    it "tampered tokens: generic alert and no change" do
+    it "tampered token: generic alert and no change" do
       login!(user)
-      get confirm_edited_email_users_path,
-          params: { user_token: verifier.generate(user.id) + "x",
-                    email_token: Rails.application.message_verifier(:email).generate(new_email) }
-      expect(flash[:alert]).to start_with("Something went wrong.")
+      get confirm_edited_email_users_path, params: { token: user.generate_email_change_token(new_email) + "x" }
+      expect(flash[:alert]).to eq(expired_alert)
       expect(user.reload.email).not_to eq(new_email)
     end
   end

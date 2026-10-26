@@ -10,8 +10,7 @@ class MsrMailerPreview < ActionMailer::Preview
     MsrMailer.email_confirmation_email(
       "new_email@example.com",
       User.first,
-      "sample_user_hash",
-      "sample_email_hash"
+      "sample_email_change_token"
     )
   end
 

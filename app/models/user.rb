@@ -243,6 +243,8 @@ class User < ApplicationRecord
 
   default_scope { where(deleted: false) }
 
+  EMAIL_CHANGE_VERIFIER = -> { Rails.application.message_verifier(:email_change) }
+
   # D-I10/D-I11: purpose-scoped, expiring reset token that dies with the
   # password it was issued for (the digest changes on every reset).
   generates_token_for :password_reset, expires_in: 2.hours do
@@ -407,6 +409,19 @@ class User < ApplicationRecord
       Rails.application.credentials.secret_key_base,
       'HS256'
     )
+  end
+
+  # D-I12: bound to this user, the target address and the current address (so
+  # it dies once the address changes), purpose-scoped, valid for 24 hours.
+  def generate_email_change_token(new_email)
+    EMAIL_CHANGE_VERIFIER.call.generate([id, new_email, email], purpose: :email_change, expires_in: 24.hours)
+  end
+
+  # Returns [user, new_email] for a live token, nil otherwise.
+  def self.email_change_from_token(token)
+    id, new_email, old_email = EMAIL_CHANGE_VERIFIER.call.verified(token.to_s, purpose: :email_change)
+    user = find_by(id: id) if id
+    [user, new_email] if user && user.email == old_email
   end
 
   def send_password_reset

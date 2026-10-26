@@ -22,11 +22,11 @@ RSpec.describe MsrMailer, type: :mailer do
     expect(mail.subject).to eq("Welcome to MakerRepo")
   end
 
-  it "email_confirmation_email goes to the NEW address with both tokens" do
-    mail = MsrMailer.email_confirmation_email("new@example.com", user, "UT", "ET")
+  it "email_confirmation_email goes to the NEW address with the change token" do
+    mail = MsrMailer.email_confirmation_email("new@example.com", user, "ECT")
     expect(mail.to).to eq(["new@example.com"])
     expect(mail.subject).to eq("Makerepo | Please confirm your new email")
-    expect(mail.body.encoded).to include("email_token=ET").and include("user_token=UT")
+    expect(mail.body.encoded).to include("confirm_edited_email?token=ECT")
   end
 
   it "email_changed_email goes to the OLD address" do

@@ -94,29 +94,14 @@ class UsersController < SessionsController
   end
 
   def confirm_edited_email
-    @user_token = params[:user_token]
-    @user_verifier = Rails.application.message_verifier(:user)
-    @email_token = params[:email_token]
-    @email_verifier = Rails.application.message_verifier(:email)
-    if @user_verifier.valid_message?(@user_token) and
-         @email_verifier.valid_message?(@email_token)
-      user_id = @user_verifier.verify(@user_token)
-      new_email = @email_verifier.verify(@email_token)
-      if User.find(user_id).present?
-        user = User.find(user_id)
-        old_email = user.email
-        user.update(email: new_email)
-        MsrMailer.email_changed_email(user, old_email).deliver_now
-        flash[:notice] = "The email has been updated to #{user.email} !"
-      else
-        flash[
-          :alert
-        ] = 'Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com'
-      end
+    user, new_email = User.email_change_from_token(params[:token])
+    if user && user == @user
+      old_email = user.email
+      user.update(email: new_email)
+      MsrMailer.email_changed_email(user, old_email).deliver_now
+      flash[:notice] = "The email has been updated to #{user.email} !"
     else
-      flash[
-        :alert
-      ] = 'Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com'
+      flash[:alert] = LINK_EXPIRED_ALERT
     end
     redirect_to root_path
   end
@@ -236,18 +221,10 @@ class UsersController < SessionsController
     if params[:new_email].present? and params[:confirm_new_email].present?
       if params[:new_email] == params[:confirm_new_email]
         if !User.find_by_email(params[:new_email]).present?
-          user_hash =
-            Rails.application.message_verifier(:user).generate(@user.id)
-          email_hash =
-            Rails
-              .application
-              .message_verifier(:email)
-              .generate(params[:new_email])
           MsrMailer.email_confirmation_email(
             params[:new_email],
             @user,
-            user_hash,
-            email_hash
+            @user.generate_email_change_token(params[:new_email])
           ).deliver_now
           flash[:notice] = 'A confirmation email has been sent to the new email'
         else
