@@ -110,7 +110,13 @@ RSpec.describe SniffedUploadValidation, "general project-file denylist" do
     "elf.bin" => ["\x7FELF".b + ("\x00" * 60), "application/octet-stream"],
     "s.sh" => ["#!/bin/sh\necho hi\n", "text/plain"],
     "page.txt" => ["<!DOCTYPE html><html><script>alert(1)</script></html>", "text/plain"],
-    "x.js" => ["function f(){}\n", "text/plain"]
+    "x.js" => ["function f(){}\n", "text/plain"],
+    "mac.bin" => ["\xCF\xFA\xED\xFE".b + ("\x00" * 60), "application/octet-stream"],
+    "setup.msi" => ["x", "application/octet-stream"],
+    "a.vbs" => ["WScript.Echo 1", "text/plain"],
+    "a.jar" => ["PK\x03\x04".b + ("\x00" * 40), "application/octet-stream"],
+    "a.swf" => ["CWS\x09".b + ("\x00" * 40), "application/octet-stream"],
+    "a.class" => ["\xCA\xFE\xBA\xBE".b + ("\x00" * 60), "application/octet-stream"]
   }.each do |name, (body, type)|
     it "refuses #{name}" do
       expect(valid_with?(name, body, type)).to be(false)

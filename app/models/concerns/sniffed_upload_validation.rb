@@ -24,11 +24,12 @@ module SniffedUploadValidation
   DANGEROUS_FILE_TYPES = [
     # executables / installers / libraries
     %r{\Aapplication/(x-dosexec|x-msdownload|x-msdos-program|x-ms-dos-executable|x-executable|x-elf|x-sharedlib|
-      x-pie-executable|x-mach-binary|x-msi|vnd\.microsoft\.portable-executable|vnd\.android\.package-archive|
+      x-pie-executable|x-mach-binary|x-mach-o|x-mach-o-executable|x-msi|x-ms-installer|
+      java-archive|java-vm|x-java-archive|x-shockwave-flash|vnd\.adobe\.flash\.movie|vnd\.microsoft\.portable-executable|vnd\.android\.package-archive|
       x-apple-diskimage|x-ms-shortcut)\z}x,
     # shell / scripting languages
     %r{\A(application|text)/(x-)?(sh|shellscript|csh|bat|msdos-batch|javascript|ecmascript|php|httpd-php|python|perl|
-      ruby|powershell)\z}x,
+      ruby|powershell|vbscript)\z}x,
     # markup that browsers execute
     %r{\A(text/html|application/xhtml\+xml)\z}
   ].freeze
