@@ -48,7 +48,8 @@ class VolunteerTaskJoinsController < SessionsController
 
   def remove
     # TODO: Make this 'destroy' instead of 'remove'
-    join_params = params.require(:volunteer_task_join)
+    join_params =
+      params.expect(volunteer_task_join: %i[user_id volunteer_task_id])
     user_id = join_params[:user_id]
     volunteer_task_id = join_params[:volunteer_task_id]
     unless current_user.staff? || user_id.to_s == current_user.id.to_s

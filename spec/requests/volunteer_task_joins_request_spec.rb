@@ -225,6 +225,13 @@ RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
       expect(flash[:alert]).to include("volunteer_task_join")
     end
 
+    it "redirects with the missing-param alert when volunteer_task_join is a plain string" do
+      vol_login!(volunteer)
+      expect { post remove_volunteer_task_joins_path, params: { volunteer_task_join: "x" } }
+        .not_to change(VolunteerTaskJoin, :count)
+      expect(response).to redirect_to(root_path)
+    end
+
     it "404s when no such join exists" do
       vol_login!(other_volunteer)
       post remove_volunteer_task_joins_path,
