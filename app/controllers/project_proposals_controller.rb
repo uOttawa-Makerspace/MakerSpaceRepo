@@ -5,6 +5,9 @@ class ProjectProposalsController < SessionsController
 
   before_action :set_project_proposal, only: %i[show edit update destroy]
   before_action :current_user
+  before_action :signed_in, only: %i[edit update approve decline create_revision join_project_proposal unjoin_project_proposal]
+  before_action :require_admin, only: %i[approve decline]
+  before_action :require_owner_or_admin, only: %i[edit update]
 
   # GET /project_proposals
   def index
@@ -13,6 +16,8 @@ class ProjectProposalsController < SessionsController
         .includes(:user, :admin, :categories, :linked_project_proposal)
         .order(created_at: :desc)
         .search(params[:query])
+
+    scope = visible_to_viewer(scope)
 
     # Status filtering (handles approved: 1, 0, and nil for pending/revisions)
     if params[:status].present?
@@ -84,7 +89,9 @@ class ProjectProposalsController < SessionsController
     @project_files = @project_proposal.project_files
     @linked_pp = @project_proposal.linked_project_proposal
     @revisions =
-      ProjectProposal.where(linked_project_proposal_id: @project_proposal.id)
+      visible_to_viewer(
+        ProjectProposal.where(linked_project_proposal_id: @project_proposal.id)
+      )
   end
 
   # GET /project_proposals/new
@@ -177,6 +184,11 @@ class ProjectProposalsController < SessionsController
     if params[:old_project_proposal_id] &&
          ProjectProposal.where(id: params[:old_project_proposal_id]).present?
       @old_project_proposal = ProjectProposal.find(params[:old_project_proposal_id])
+      unless owner_or_admin?(@old_project_proposal)
+        redirect_to project_proposals_path,
+                    alert: 'You are not allowed to create a revision of this project proposal.'
+        return
+      end
       values = @old_project_proposal.attributes.except(
         'id',
         'user_id',
@@ -245,15 +257,23 @@ class ProjectProposalsController < SessionsController
   # PATCH/PUT /project_proposals/1
   def update
     @project_proposal.categories.destroy_all
+    attributes = project_proposal_params.except(:categories)
+    needs_re_review = @project_proposal.approved? && !current_user.admin?
+    attributes = attributes.merge(approved: nil, admin_id: nil) if needs_re_review
     respond_to do |format|
-      if @project_proposal.update(project_proposal_params.except(:categories))
+      if @project_proposal.update(attributes)
         update_photos
         update_files
         create_categories
 
         format.html do
           redirect_to project_proposal_path(@project_proposal.slug),
-                      notice: 'Project proposal was successfully updated.'
+                      notice:
+                        if needs_re_review
+                          'Project proposal was updated. It is pending again and needs to be re-approved by an admin before it is listed publicly.'
+                        else
+                          'Project proposal was successfully updated.'
+                        end
         end
         format.json do
           render json: {
@@ -298,6 +318,11 @@ class ProjectProposalsController < SessionsController
 
   def join_project_proposal
     @project_proposal = ProjectProposal.find(params[:project_proposal_id])
+    unless @project_proposal.approved?
+      redirect_to project_proposals_path,
+                  alert: 'You can only join an approved project proposal.'
+      return
+    end
     @project_join = ProjectJoin.new(project_join_params)
     @project_join.user_id = current_user.id
     if @project_join.save
@@ -312,7 +337,12 @@ class ProjectProposalsController < SessionsController
 
   def unjoin_project_proposal
     @project_proposal = ProjectProposal.find(params[:project_proposal_id])
-    @project_join = ProjectJoin.find(params[:project_join_id])
+    @project_join = @project_proposal.project_joins.find(params[:project_join_id])
+    unless current_user.admin? || @project_join.user_id == current_user.id
+      redirect_to project_proposal_path(@project_proposal.slug),
+                  alert: 'You can only leave a project you joined yourself.'
+      return
+    end
     if @project_join.delete
       redirect_to project_proposal_path(@project_proposal.slug),
                   notice: 'You unjoined this project.'
@@ -323,6 +353,39 @@ class ProjectProposalsController < SessionsController
   end
 
   private
+
+  # Admins see everything; everyone else sees approved proposals plus their own.
+  def visible_to_viewer(scope)
+    return scope if current_user.admin?
+
+    visible = ProjectProposal.where(approved: :approved)
+    visible = visible.or(ProjectProposal.where(user_id: current_user.id)) if signed_in?
+    scope.merge(visible)
+  end
+
+  def owner_or_admin?(proposal)
+    current_user.admin? ||
+      (proposal.user_id.present? && proposal.user_id == current_user.id)
+  end
+
+  def require_admin
+    return if current_user.admin?
+
+    redirect_to project_proposals_path,
+                alert: 'Only admins can review project proposals.'
+  end
+
+  def require_owner_or_admin
+    return if owner_or_admin?(@project_proposal)
+
+    respond_to do |format|
+      format.html do
+        redirect_to project_proposals_path,
+                    alert: 'You are not allowed to modify this project proposal.'
+      end
+      format.json { head :forbidden }
+    end
+  end
 
   def create_photos
     images = params[:images] || params.dig(:project_proposal, :images)
@@ -389,9 +452,6 @@ class ProjectProposalsController < SessionsController
 
   def project_proposal_params
     permitted = [
-      :user_id,
-      :admin_id,
-      :approved,
       :title,
       :description,
       :youtube_link,
@@ -407,7 +467,6 @@ class ProjectProposalsController < SessionsController
       :project_cost,
       :prototype_cost,
       :past_experiences,
-      :linked_project_proposal_id,
       { area: [], categories: [], photos: [], project_files: [] }
     ]
 
