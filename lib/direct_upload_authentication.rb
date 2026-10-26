@@ -17,7 +17,6 @@ module DirectUploadAuthentication
   MAX_BYTE_SIZE = 1.gigabyte
 
   included do
-    include ApplicationHelper
     before_action :require_signed_in_user
     before_action :limit_byte_size
   end
@@ -25,7 +24,22 @@ module DirectUploadAuthentication
   private
 
   def require_signed_in_user
-    head :unauthorized unless signed_in?
+    head :unauthorized unless signed_in_user?
+  end
+
+  # Same checks as ApplicationHelper#signed_in? (session user, or a valid HS256 Bearer JWT).
+  # The helper is deliberately not included: it is a reloadable app/ module and would be
+  # pinned into this non-reloadable engine controller (see the initializer).
+  def signed_in_user?
+    return true if session[:user_id].present?
+
+    token = request.headers["Authorization"].to_s.split(" ")[1]
+    return false if token.blank?
+
+    JWT.decode(token, Rails.application.credentials.secret_key_base, true, { algorithm: "HS256" })
+    true
+  rescue JWT::DecodeError
+    false
   end
 
   def limit_byte_size

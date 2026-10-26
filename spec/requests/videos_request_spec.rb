@@ -187,6 +187,17 @@ RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
       expect(response).to have_http_status(:unauthorized)
     end
 
+    it "does not pin the reloadable ApplicationHelper into the engine controller" do
+      expect(ActiveStorage::DirectUploadsController.ancestors).not_to include(ApplicationHelper)
+    end
+
+    it "refuses an expired JWT" do
+      user = create(:user, :volunteer_with_dev_program)
+      token = JWT.encode({ user_id: user.id, exp: 1.hour.ago.to_i }, Rails.application.credentials.secret_key_base, "HS256")
+      post rails_direct_uploads_path, params: payload, as: :json, headers: { "Authorization" => "Bearer #{token}" }
+      expect(response).to have_http_status(:unauthorized)
+    end
+
     it "refuses an invalid JWT" do
       expect do
         post rails_direct_uploads_path, params: payload, as: :json, headers: { "Authorization" => "Bearer not.a.token" }
