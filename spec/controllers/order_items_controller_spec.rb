@@ -78,7 +78,8 @@ level: training_session.level)
   describe "PATCH /update" do
     context "logged as volunteer user" do
       it "should update an order item" do
-        create(:order_item)
+        create(:order_item, :order_in_progress)
+        Order.last.update!(user: @volunteer)
         session[:order_id] = Order.last.id
         patch :update,
               params: {
@@ -97,7 +98,8 @@ level: training_session.level)
   describe "DELETE /destroy" do
     context "destroy the order item" do
       it "should delete the order item" do
-        create(:order_item)
+        create(:order_item, :order_in_progress)
+        Order.last.update!(user: @volunteer)
         session[:order_id] = Order.last.id
         expect do
           delete :destroy, params: { order_item_id: OrderItem.last.id }, format: "js"

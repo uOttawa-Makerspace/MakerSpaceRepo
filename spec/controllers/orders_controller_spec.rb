@@ -43,6 +43,7 @@ RSpec.describe OrdersController, type: :controller do
         create(:order_item, :order_in_progress)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
+        Order.last.update!(user: user)
         session[:order_id] = Order.last.id
       end
 
@@ -69,6 +70,7 @@ RSpec.describe OrdersController, type: :controller do
         create(:order_item, :order_in_progress_with_kit)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
+        Order.last.update!(user: user, order_status: OrderStatus.find_by!(name: "In progress"))
         session[:order_id] = Order.last.id
         CcMoney.create(user_id: User.last.id, cc: 50)
         expect { post :create }.to change(ProjectKit, :count).by(1)
