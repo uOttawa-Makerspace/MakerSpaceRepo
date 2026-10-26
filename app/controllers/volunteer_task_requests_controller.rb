@@ -2,7 +2,8 @@
 
 class VolunteerTaskRequestsController < SessionsController
   before_action -> { @with_volunteer_header = true }
-  before_action :signed_in, :ensure_staff, only: :update_approval
+  before_action :signed_in, only: %i[create_request update_approval]
+  before_action :ensure_staff, only: :update_approval
 
   def index
     @volunteer_task_requests = if current_user.staff?
