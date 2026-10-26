@@ -55,7 +55,7 @@ RSpec.describe VolunteerHoursController, type: :controller do
         user = create(:user, :volunteer_with_volunteer_program)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
-        create(:volunteer_hour, :approved1, user_id: user.id)
+        create(:volunteer_hour, :not_processed, user_id: user.id)
         get :edit, params: { id: VolunteerHour.last.id }
         expect(response).to have_http_status(:success)
         expect(@controller.instance_variable_get(:@hour)).to eq(10)

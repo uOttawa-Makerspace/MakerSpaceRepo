@@ -2,7 +2,7 @@
 
 class VolunteerHoursController < VolunteersController
   before_action :validate_user_for_editing, only: %i[edit update destroy]
-  before_action :validate_unprocessed_for_owner, only: :update
+  before_action :validate_unprocessed_for_owner, only: %i[edit update]
   before_action :validate_staff_for_request,
                 only: %i[volunteer_hour_requests volunteer_hour_per_user update_approval]
   include VolunteerHoursHelper

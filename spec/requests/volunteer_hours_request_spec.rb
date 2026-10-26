@@ -205,6 +205,17 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    it "refuses the owner a form for a processed hour, and still shows staff one" do
+      hour = make_hour(approval: true)
+      vol_login!(owner)
+      get edit_volunteer_hour_path(hour)
+      expect(response).to redirect_to(volunteer_hours_path)
+      expect(flash[:alert]).to eq("This volunteer hour was already processed.")
+      vol_login!(create(:user, :staff))
+      get edit_volunteer_hour_path(hour)
+      expect(response).to have_http_status(:ok)
+    end
+
     it "renders for staff on someone else's hour" do
       hour = make_hour
       vol_login!(create(:user, :staff))
