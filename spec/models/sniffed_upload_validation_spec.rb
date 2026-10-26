@@ -20,6 +20,26 @@ RSpec.describe SniffedUploadValidation do
     expect(proposal.reload.project_files.map { |f| f.filename.to_s }).to be_empty
   end
 
+  it "re-submitting the blob a has_one record already holds (edit form signed_id) saves without error" do
+    repo_file = create(:repo_file, repository: create(:repository, owner: create(:user)))
+    expect { repo_file.update!(file: repo_file.file.signed_id) }.not_to raise_error
+    expect(repo_file.reload.file).to be_attached
+  end
+
+  it "re-submitting the avatar blob via signed_id saves" do
+    user = create(:user)
+    user.avatar.attach(content_named_upload("a.png", content: "\x89PNG\r\n\x1a\n".b + ("\x00" * 40), type: "image/png"))
+    expect { user.update!(avatar: user.avatar.signed_id) }.not_to raise_error
+  end
+
+  it "a revision copy keeps files whose blob is already attached to the old proposal, even legacy ones" do
+    old = create(:project_proposal)
+    ActiveStorage::Attachment.create!(record: old, name: "project_files", blob: evil) # predates the validation
+    copy = create(:project_proposal)
+    old.project_files.each { |f| copy.project_files.attach(f.blob) }
+    expect(copy.reload.project_files.map { |f| f.filename.to_s }).to eq(["evil.exe"])
+  end
+
   it "turns a storage-service error while sniffing into a validation error, not an exception" do
     allow_any_instance_of(ActiveStorage::Service::DiskService).to receive(:download_chunk).and_raise(StandardError, "InvalidRange")
     expect { proposal.project_files.attach(fine.signed_id) }.not_to raise_error

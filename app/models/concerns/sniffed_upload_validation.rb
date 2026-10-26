@@ -46,10 +46,10 @@ module SniffedUploadValidation
   def validate_sniffed_upload(name, allow, deny, max_size, name_fallback)
     max_size = max_size.call if max_size.respond_to?(:call)
     new_uploads_for(name).each do |attachable, blob|
-      # Only a blob already attached to this record (re-linked by a later `attach`) was
-      # checked on its way in. Any other blob, persisted or not, is inspected: a
-      # rejected pending blob comes back as a persisted Blob on the next attach call.
-      next if already_attached_upload?(name, blob)
+      # A blob already attached to some record was validated when it was first attached
+      # (or is legacy). A rejected blob is never attached, so it stays inspected even when
+      # a later `attach` hands it back as a persisted Blob.
+      next if already_attached_upload?(blob)
 
       filename = blob.filename.to_s
       if blob.byte_size.to_i > max_size
@@ -63,8 +63,8 @@ module SniffedUploadValidation
     end
   end
 
-  def already_attached_upload?(name, blob)
-    blob.persisted? && persisted? && public_send("#{name}_attachments").any? { |a| a.blob_id == blob.id }
+  def already_attached_upload?(blob)
+    blob.persisted? && blob.attachments.exists?
   end
 
   # ActiveStorage#attach on has_many re-assigns pending (unsaved) blobs as Blob
