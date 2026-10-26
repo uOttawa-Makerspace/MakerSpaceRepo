@@ -95,6 +95,11 @@ class Admin::KeysController < AdminAreaController
   def assign_key
     user = User.find(params[:key][:user_id])
 
+    unless user.key_request&.status_approved?
+      redirect_to admin_keys_path,
+                  alert: "The key holder must have an approved key request." and return
+    end
+
     key_transaction =
       KeyTransaction.new(
         user_id: user.id,

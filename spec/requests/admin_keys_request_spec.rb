@@ -129,10 +129,16 @@ RSpec.describe "Admin keys", type: :request do
   end
 
   describe "assignment, deposit and return chain" do
-    before { sign_in_as(:admin) }
+    before do
+      sign_in_as(:admin)
+      # D-EQ26: assignment requires the holder's key request to be approved
+      unless RSpec.current_example.metadata[:no_request]
+        create(:key_request, :status_approved, :all_questions_answered, user: holder, supervisor: supervisor, space: space)
+      end
+    end
 
     # N+1 pinned: see defects D-PERF-EQ04
-    it "renders the assign page flagging staff without an approved request form", skip_bullet: true do
+    it "renders the assign page flagging staff without an approved request form", skip_bullet: true, no_request: true do
       create(:key_request, :status_waiting_for_approval, :all_questions_answered, user: holder, supervisor: supervisor, space: space)
       get admin_key_assign_path(key)
       expect(response).to have_http_status(:ok)
@@ -253,9 +259,23 @@ RSpec.describe "Admin keys", type: :request do
       expect(flash[:alert]).to eq("The key request id was not found.")
     end
 
-    # WART(D-EQ26): approving a key request is not required to assign a key: assign_key never checks the holder's request status
-    it "still lets an admin assign a key to a holder whose request was never approved" do
+    # FIXED(D-EQ26): assign_key requires the holder's key request to be approved
+    it "refuses to assign a key to a holder whose request is not approved" do
       kr.update_columns(status: KeyRequest.statuses[:in_progress])
+      patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id }, deposit_amount: 0 }
+      expect(response).to redirect_to(admin_keys_path)
+      expect(flash[:alert]).to eq("The key holder must have an approved key request.")
+      expect(key.reload.status).to eq("inventory")
+    end
+
+    it "refuses to assign a key to a holder with no key request at all" do
+      kr.destroy
+      patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id }, deposit_amount: 0 }
+      expect(key.reload.status).to eq("inventory")
+    end
+
+    it "assigns the key once the holder's request is approved" do
+      kr.update_columns(status: KeyRequest.statuses[:approved])
       patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id }, deposit_amount: 0 }
       expect(key.reload.status).to eq("held")
     end
