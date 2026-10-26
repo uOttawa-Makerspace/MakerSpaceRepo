@@ -159,6 +159,14 @@ RSpec.describe "Admin keys", type: :request do
         expect(Key.last).to have_attributes(user_id: holder.id, status: "held")
       end
 
+      it "update cannot blank the holder of a held key (revoke_key is the path)" do
+        key.update_columns(status: Key.statuses[:held], user_id: holder.id, supervisor_id: supervisor.id)
+        patch admin_key_path(key), params: { key: { user_id: "", additional_info: "n" } }
+        expect(flash[:alert]).to eq("Use revoke to remove the holder of a held key.")
+        expect(key.reload).to have_attributes(status: "held", user_id: holder.id)
+        expect(key.additional_info).not_to eq("n")
+      end
+
       it "leaves a held key's unchanged holder editable without re-checking" do
         key.update_columns(status: Key.statuses[:held], user_id: holder.id, supervisor_id: supervisor.id)
         patch admin_key_path(key), params: { key: { user_id: holder.id, additional_info: "n" } }

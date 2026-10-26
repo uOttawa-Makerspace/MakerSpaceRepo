@@ -182,6 +182,10 @@ class Admin::KeysController < AdminAreaController
   # on every path that sets it (assign_key checks the same rule).
   def ensure_holder_has_approved_request
     holder_id = params.dig(:key, :user_id).presence
+    if holder_id.nil? && @key&.status_held? && params[:key]&.key?(:user_id)
+      redirect_to admin_keys_path,
+                  alert: "Use revoke to remove the holder of a held key." and return
+    end
     return if holder_id.nil? || holder_id.to_s == @key&.user_id.to_s
 
     holder = User.find_by(id: holder_id)
