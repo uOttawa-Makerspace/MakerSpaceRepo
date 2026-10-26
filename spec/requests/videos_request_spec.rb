@@ -18,7 +18,10 @@ RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
   # Mimics what the browser's DirectUpload does: creates the blob row via the
   # app's endpoint contract, then the bytes land in the service without any
   # server-side identification (identify: false).
-  def direct_blob(filename:, content_type:, content: "0123456789")
+  # Leading bytes of a real mp4 (ftyp box): the Video validation sniffs the content
+  MP4_BYTES = "\x00\x00\x00\x18ftypmp42".b + ("\x00" * 30)
+
+  def direct_blob(filename:, content_type:, content: MP4_BYTES)
     blob = ActiveStorage::Blob.create_before_direct_upload!(
       filename: filename, byte_size: content.bytesize,
       checksum: OpenSSL::Digest::MD5.base64digest(content), content_type: content_type
@@ -89,17 +92,34 @@ RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
     end
 
     it "rejects a declared non-video content type server-side (redirects to new with an alert)" do
-      blob = direct_blob(filename: "evil.exe", content_type: "application/x-msdownload")
+      blob = direct_blob(filename: "evil.exe", content_type: "application/x-msdownload", content: "MZ" * 100)
       expect { post videos_path, params: video_params([blob]) }.not_to change(Video, :count)
       expect(response).to redirect_to(new_video_path)
       expect(flash[:alert]).to eq("Something went wrong. Try again.")
     end
 
-    it "trusts the declared content type when the bytes are not identifiable: any filename, no size cap (D-C45)" do
-      blob = direct_blob(filename: "malware.exe", content_type: "video/mp4", content: "plain text bytes" * 1000)
-      expect { post videos_path, params: video_params([blob]) }.to change(Video, :count).by(1)
-      # WART(D-C45): the validator falls back to the browser-declared type for unidentifiable content; size is never checked
-      expect(Video.last.video.first.filename.to_s).to eq("malware.exe")
+    # FIXED(D-C45): the bytes must sniff as a video; the declared type and filename no longer decide
+    it "refuses bytes that are not a video even when declared video/mp4 and named .mp4 (D-C45)" do
+      blob = direct_blob(filename: "malware.mp4", content_type: "video/mp4", content: "plain text bytes" * 1000)
+      expect { post videos_path, params: video_params([blob]) }.not_to change(Video, :count)
+      expect(response).to redirect_to(new_video_path)
+    end
+
+    it "accepts real mp4, mov and avi bytes" do
+      mp4 = "\x00\x00\x00\x18ftypmp42".b + ("\x00" * 30)
+      mov = "\x00\x00\x00\x14ftypqt  ".b + ("\x00" * 30)
+      avi = "RIFF\x00\x00\x00\x00AVI LIST".b + ("\x00" * 30)
+      blobs = [["a.mp4", "video/mp4", mp4], ["b.mov", "video/quicktime", mov], ["c.avi", "video/avi", avi]].map do |n, t, c|
+        direct_blob(filename: n, content_type: t, content: c)
+      end
+      expect { post videos_path, params: video_params(blobs) }.to change(Video, :count).by(1)
+      expect(Video.last.video.count).to eq(3)
+    end
+
+    it "refuses a video over the size cap" do
+      stub_const("Video::MAX_VIDEO_SIZE", 10.bytes)
+      blob = direct_blob(filename: "clip.mp4", content_type: "video/mp4", content: MP4_BYTES)
+      expect { post videos_path, params: video_params([blob]) }.not_to change(Video, :count)
     end
 
     it "does sniff identifiable content: an executable declared video/mp4 is refused" do
@@ -213,11 +233,11 @@ RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
       order = create(:order, :completed, user_id: buyer.id)
       oi = create(:order_item, order: order, proficient_project: project)
       content_login!(buyer)
-      bad = direct_blob(filename: "evil.exe", content_type: "application/x-msdownload")
+      bad = direct_blob(filename: "evil.exe", content_type: "application/x-msdownload", content: "MZ" * 100)
       put complete_project_proficient_projects_path, params: { id: project.id, order_item: { user_comments: "x", files: [bad.signed_id] } }
       expect(flash[:alert]).to eq("Something went wrong with updating the proficient project. Please check the allowed file types.")
       expect(oi.reload.status).to eq("In progress")
-      good = direct_blob(filename: "ok.pdf", content_type: "application/pdf")
+      good = direct_blob(filename: "ok.pdf", content_type: "application/pdf", content: "%PDF-1.4\n")
       put complete_project_proficient_projects_path, params: { id: project.id, order_item: { user_comments: "x", files: [good.signed_id] } }
       expect(oi.reload.status).to eq("Waiting for approval")
     end
