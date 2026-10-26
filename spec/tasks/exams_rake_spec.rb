@@ -51,6 +51,16 @@ RSpec.describe "exams:check_expired_exams" do
     expect(Exam.order(:id).last.exam_questions.count).to eq($n_exams_question)
   end
 
+  # FIXED(retro round 2): an exam without questions used to abort the whole run
+  it "skips an expired exam without questions and still grades the others" do
+    empty = create(:exam, user: create(:user, :regular_user), training_session: training_session,
+                          expired_at: 2.hours.ago, status: Exam::STATUS[:incomplete])
+    exam = expired_exam(correct_count: 3)
+    expect { run_task }.not_to raise_error
+    expect(empty.reload.status).to eq("incomplete")
+    expect(exam.reload.status).to eq("passed")
+  end
+
   it "leaves exams that have not expired alone" do
     exam = expired_exam(correct_count: 3)
     exam.update!(expired_at: 1.hour.from_now)
