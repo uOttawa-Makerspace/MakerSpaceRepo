@@ -258,8 +258,15 @@ class ProficientProjectsController < DevelopmentProgramsController
 
   def revoke_project
     order_item = OrderItem.find_by(id: params[:oi_id])
+    revoked = false
     if order_item
-      order_item.update(order_item_params.merge(status: "Revoked"))
+      order_item.with_lock do
+        if order_item.status == "Waiting for approval"
+          revoked = order_item.update(order_item_params.merge(status: "Revoked"))
+        end
+      end
+    end
+    if revoked
       MsrMailer.send_results_pp(
         order_item,
         order_item.order.user,
