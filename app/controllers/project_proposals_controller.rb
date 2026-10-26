@@ -17,11 +17,7 @@ class ProjectProposalsController < SessionsController
         .order(created_at: :desc)
         .search(params[:query])
 
-    unless current_user.admin?
-      visible = ProjectProposal.where(approved: :approved)
-      visible = visible.or(ProjectProposal.where(user_id: current_user.id)) if signed_in?
-      scope = scope.merge(visible)
-    end
+    scope = visible_to_viewer(scope)
 
     # Status filtering (handles approved: 1, 0, and nil for pending/revisions)
     if params[:status].present?
@@ -93,7 +89,9 @@ class ProjectProposalsController < SessionsController
     @project_files = @project_proposal.project_files
     @linked_pp = @project_proposal.linked_project_proposal
     @revisions =
-      ProjectProposal.where(linked_project_proposal_id: @project_proposal.id)
+      visible_to_viewer(
+        ProjectProposal.where(linked_project_proposal_id: @project_proposal.id)
+      )
   end
 
   # GET /project_proposals/new
@@ -347,6 +345,15 @@ class ProjectProposalsController < SessionsController
   end
 
   private
+
+  # Admins see everything; everyone else sees approved proposals plus their own.
+  def visible_to_viewer(scope)
+    return scope if current_user.admin?
+
+    visible = ProjectProposal.where(approved: :approved)
+    visible = visible.or(ProjectProposal.where(user_id: current_user.id)) if signed_in?
+    scope.merge(visible)
+  end
 
   def owner_or_admin?(proposal)
     current_user.admin? ||

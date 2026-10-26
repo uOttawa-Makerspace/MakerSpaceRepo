@@ -128,6 +128,34 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    context "revisions listed on an approved proposal (visibility as the index)" do
+      let!(:rev_pending) { create(:project_proposal, user: other, linked_project_proposal: approved, title: "Revision Pending Other") }
+      let!(:rev_approved) { create(:project_proposal, :approved, user: other, linked_project_proposal: approved, title: "Revision Approved Other") }
+      let!(:rev_own) { create(:project_proposal, user: owner, linked_project_proposal: approved, title: "Revision Own Pending") }
+
+      it "shows a guest only approved revisions" do
+        get project_proposal_path(approved.slug)
+        expect(response.body).to include("Revision Approved Other")
+        expect(response.body).not_to include("Revision Pending Other", "Revision Own Pending")
+      end
+
+      it "shows the viewer their own pending revision but not other users'" do
+        content_login!(owner)
+        get project_proposal_path(approved.slug)
+        expect(response.body).to include("Revision Approved Other", "Revision Own Pending")
+        expect(response.body).not_to include("Revision Pending Other")
+      end
+
+      it "shows an admin every revision, and staff only the approved one" do
+        content_sign_in_as(:staff)
+        get project_proposal_path(approved.slug)
+        expect(response.body).not_to include("Revision Pending Other")
+        content_sign_in_as(:admin)
+        get project_proposal_path(approved.slug)
+        expect(response.body).to include("Revision Pending Other", "Revision Own Pending", "Revision Approved Other")
+      end
+    end
+
     it "redirects with 'not found' for an unknown id (no 404)" do
       get project_proposal_path("nope")
       expect(response).to redirect_to(project_proposals_path)
