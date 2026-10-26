@@ -27,14 +27,41 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
   end
 
   describe "GET index" do
-    it "shows every proposal, pending and declined included, to a guest (D-C33)" do
+    it "shows only approved proposals to a guest (D-C33)" do
       get project_proposals_path
       expect(response).to have_http_status(:ok)
-      # WART(D-C33): index applies no approved filter, so unreviewed/declined proposals are public
+      # FIXED(D-C33): pending and declined proposals are no longer listed publicly
+      expect(response.body).to include("Approved One")
+      expect(response.body).not_to include("Pending One", "Declined One")
+      get project_proposals_path, params: { status: %w[0 nil] }
+      expect(response.body).not_to include("Pending One", "Declined One")
+    end
+
+    it "shows a regular user approved proposals plus their own, but not other users' pending ones (D-C33)" do
+      content_login!(other)
+      get project_proposals_path
+      expect(response.body).to include("Approved One")
+      expect(response.body).not_to include("Pending One", "Declined One")
+      content_login!(owner)
+      get project_proposals_path
+      expect(response.body).to include("Approved One", "Pending One", "Declined One")
+      get project_proposals_path, params: { status: %w[0 nil] }
+      expect(response.body).to include("Pending One", "Declined One")
+      expect(response.body).not_to include("Approved One")
+    end
+
+    it "shows staff only approved proposals and admins everything (D-C33)" do
+      content_sign_in_as(:staff)
+      get project_proposals_path
+      expect(response.body).to include("Approved One")
+      expect(response.body).not_to include("Pending One", "Declined One")
+      content_sign_in_as(:admin)
+      get project_proposals_path
       expect(response.body).to include("Approved One", "Pending One", "Declined One")
     end
 
     it "filters by status (1 approved, 0 declined, nil pending) and combinations" do
+      content_sign_in_as(:admin)
       get project_proposals_path, params: { status: ["1"] }
       expect(response.body).to include("Approved One")
       expect(response.body).not_to include("Pending One", "Declined One")
@@ -48,13 +75,14 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
 
     it "searches by title and filters by semester" do
       approved.update_columns(season: ProjectProposal.seasons[:fall], year: 2024)
-      create(:project_proposal, title: "Zebra Crossing")
+      create(:project_proposal, :approved, title: "Zebra Crossing")
       get project_proposals_path, params: { query: "zebra" }
       expect(response.body).to include("Zebra Crossing")
       expect(response.body).not_to include("Pending One", "Approved One")
       get project_proposals_path, params: { semester: "fall_2024" }
       expect(response.body).to include("Approved One")
       expect(response.body).not_to include("Pending One")
+      content_sign_in_as(:admin)
       get project_proposals_path, params: { semester: "bogus_xx" }
       expect(response.body).to include("Pending One")
     end

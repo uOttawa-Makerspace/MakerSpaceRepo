@@ -17,6 +17,12 @@ class ProjectProposalsController < SessionsController
         .order(created_at: :desc)
         .search(params[:query])
 
+    unless current_user.admin?
+      visible = ProjectProposal.where(approved: :approved)
+      visible = visible.or(ProjectProposal.where(user_id: current_user.id)) if signed_in?
+      scope = scope.merge(visible)
+    end
+
     # Status filtering (handles approved: 1, 0, and nil for pending/revisions)
     if params[:status].present?
       statuses = Array(params[:status])
