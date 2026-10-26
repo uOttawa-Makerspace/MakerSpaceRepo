@@ -3,9 +3,14 @@
 # Applied to the stock ActiveStorage::DirectUploadsController (see
 # config/initializers/direct_uploads_authentication.rb). The stock controller
 # inherits from ActiveStorage::BaseController, not ApplicationController, so none
-# of the app's auth applies to it. Every direct-upload form in the app lives
-# behind a login, so a signed-in user (session or JWT) is required, and the
-# declared size is capped before a blob row / signed URL is issued.
+# of the app's auth applies to it. Every direct-upload form in the app is an HTML
+# form behind a login (the React app and Design Day app do not use direct upload;
+# see frontend-api-inventory.md), so a signed-in user is required and the declared
+# size is capped before a blob row / signed URL is issued.
+#
+# Note: ApplicationHelper#signed_in? also accepts a Bearer JWT, but
+# ActiveStorage::BaseController's protect_from_forgery rejects a Bearer-only POST in
+# production (no CSRF token), so in practice this is a session-cookie flow.
 module DirectUploadAuthentication
   extend ActiveSupport::Concern
 
