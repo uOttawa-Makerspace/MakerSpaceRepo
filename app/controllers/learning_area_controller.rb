@@ -1,6 +1,6 @@
 class LearningAreaController < DevelopmentProgramsController
   include ActiveStorage::Streaming
-  before_action :only_admin_access, only: %i[new create edit update destroy]
+  before_action :only_admin_access, only: %i[new create edit update destroy reorder]
   before_action :set_learning_module,
                 only: %i[
                   show

@@ -47,7 +47,7 @@ RSpec.describe "Journey: training exam", type: :system, skip_bullet: true do
       click_link "Start Exam"
       expect(page).to have_current_path(exam_path(exam))
       answer_all(correct: true)
-      click_link "Finish Exam"
+      click_button "Finish Exam"
       expect(page).to have_current_path(exams_path)
       expect(page).to have_text("Score: 100. You passed the exam.")
       expect(page).to have_css("tr", text: "Passed")
@@ -80,7 +80,7 @@ RSpec.describe "Journey: training exam", type: :system, skip_bullet: true do
       log_in_as(user)
       visit exam_path(exam)
       answer_all(correct: false)
-      click_link "Finish Exam"
+      click_button "Finish Exam"
       expect(page).to have_text("Score: 0. You failed the exam.")
     end
     expect(exam.reload.status).to eq("failed")

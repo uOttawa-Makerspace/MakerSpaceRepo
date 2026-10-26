@@ -114,9 +114,9 @@
                 <%= exam.status.capitalize %>
                 <br />
                 <%= if exam.failed? && user.exams.count < 2
-                      link_to 'Resend Exam',
+                      button_to 'Resend Exam',
                               create_for_single_user_exams_path(training_session_id: @current_training_session.id, user_id: user.id),
-                              class: 'btn btn-secondary'
+                              method: :post, class: 'btn btn-secondary'
                     end %>
               <% end %>
             <% else %>

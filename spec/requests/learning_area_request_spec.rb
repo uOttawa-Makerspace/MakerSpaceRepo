@@ -377,15 +377,14 @@ RSpec.describe "Learning area", type: :request do
       expect(JSON.parse(response.body)).to eq("status" => "ok")
     end
 
-    # WART(D-T01): reorder is not behind only_admin_access: any signed-in user can reorder every learning module
+    # FIXED(D-T01): reorder is now behind only_admin_access
     %i[regular staff].each do |role|
-      it "lets a #{role} reorder the modules (no admin check)" do
-        sorted = orders.values.sort
+      it "does not let a #{role} reorder the modules (admin only)" do
+        before_orders = orders
         sign_in_as(role)
         put reorder_learning_area_index_path, params: { data: [third.id, second.id, learning_module.id] }
         expect(response).to redirect_to(learning_area_index_path)
-        expect(orders[third.id]).to eq(sorted[0])
-        expect(orders[learning_module.id]).to eq(sorted[2])
+        expect(orders).to eq(before_orders)
       end
     end
 

@@ -48,6 +48,16 @@ class Certification < ApplicationRecord
   end
 
   def self.certify_user(training_session_id, user_id, level)
+    training_id = TrainingSession.where(id: training_session_id).pick(:training_id)
+    if training_id
+      existing =
+        joins(:training_session).find_by(
+          user_id: user_id,
+          level: level,
+          training_sessions: { training_id: training_id }
+        )
+      return existing if existing
+    end
     create(user_id:, training_session_id:, level:)
   end
 

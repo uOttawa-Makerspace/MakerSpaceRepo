@@ -173,8 +173,23 @@ RSpec.describe Certification, type: :model do
       expect(Certification.new(user: user, level: "Advanced")).to be_valid
     end
 
-    it "certify_user creates an active certification without checking for duplicates or exam results" do
-      expect { 2.times { Certification.certify_user(ts.id, user.id, "Beginner") } }.to change(Certification, :count).by(2)
+    # FIXED(D-T08): certify_user no longer adds a second active certification for the same user + training + level
+    it "certify_user creates one active certification per user, training and level, without checking exam results" do
+      expect { 2.times { Certification.certify_user(ts.id, user.id, "Beginner") } }.to change(Certification, :count).by(1)
+    end
+
+    it "certify_user returns the existing certification for a repeat, even from another session of the same training" do
+      first = Certification.certify_user(ts.id, user.id, "Beginner")
+      other_session = create(:training_session, user: ts.user, training: training, level: "Beginner")
+      expect(Certification.certify_user(other_session.id, user.id, "Beginner")).to eq(first)
+    end
+
+    it "certify_user still certifies a different level, a different user, or after the earlier one was deactivated" do
+      first = Certification.certify_user(ts.id, user.id, "Beginner")
+      expect { Certification.certify_user(ts.id, user.id, "Advanced") }.to change(Certification, :count).by(1)
+      expect { Certification.certify_user(ts.id, create(:user, :regular_user).id, "Beginner") }.to change(Certification, :count).by(1)
+      first.update!(active: false)
+      expect { Certification.certify_user(ts.id, user.id, "Beginner") }.to change(Certification, :count).by(1)
     end
 
     it "certify_user returns an unsaved record for an invalid level" do
