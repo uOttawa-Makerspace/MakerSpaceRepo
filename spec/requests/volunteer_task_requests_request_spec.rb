@@ -111,7 +111,7 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
       expect(mail.subject).to eq("New Request for task: Tour guide")
     end
 
-    # FIXED(D-V16, uniqueness + status parts): no second open/approved request per user and task, none for a completed task
+    # FIXED(D-V16, uniqueness part): no second open/approved request per user and task. The status part was dropped: assigned volunteers may still submit after staff mark the task completed
     it "refuses a duplicate pending request and sends no second email" do
       assign!(volunteer)
       vol_login!(volunteer)
@@ -134,12 +134,17 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
       expect { request! }.to change(VolunteerTaskRequest, :count).by(1)
     end
 
-    it "refuses a request for a completed task" do
+    it "lets an assigned volunteer submit after staff marked the task completed" do
       task.update!(status: "completed")
       assign!(volunteer)
       vol_login!(volunteer)
-      expect { request! }.not_to change { [VolunteerTaskRequest.count, vol_deliveries.size] }
-      expect(flash[:alert]).to eq("This task is already completed.")
+      expect { request! }.to change(VolunteerTaskRequest, :count).by(1)
+    end
+
+    it "refuses an unassigned user on a completed task" do
+      task.update!(status: "completed")
+      vol_login!(volunteer)
+      expect { request! }.not_to change(VolunteerTaskRequest, :count)
     end
 
     it "lets two different users each request the same task" do

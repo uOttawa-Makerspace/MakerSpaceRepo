@@ -85,10 +85,6 @@ class VolunteerTaskRequestsController < SessionsController
       flash[:alert] = "You must be assigned to this task to submit it."
       return redirect_back(fallback_location: root_path)
     end
-    if volunteer_task.status == "completed"
-      flash[:alert] = "This task is already completed."
-      return redirect_back(fallback_location: root_path)
-    end
     if VolunteerTaskRequest
          .where(volunteer_task_id: volunteer_task.id, user_id: current_user.id)
          .where("approval IS NULL OR approval = ?", true)
