@@ -226,8 +226,16 @@ class SubSpaceBookingController < SessionsController
     end
     if ActiveModel::Type::Boolean.new.cast(params[:sub_space_booking][:blocking]) &&
          !current_user.admin?
-      flash[:alert] = "You do not have permission to block a space."
-      redirect_to sub_space_booking_index_path
+      message = "You do not have permission to block a space."
+      respond_to do |format|
+        format.json do
+          render json: { errors: [message] }, status: :forbidden
+        end
+        format.html do
+          flash[:alert] = message
+          redirect_to sub_space_booking_index_path
+        end
+      end
       return
     end
 
