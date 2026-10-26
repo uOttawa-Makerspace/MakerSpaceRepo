@@ -208,6 +208,29 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
         expect(vol_deliveries.size).to eq(1)
       end
 
+      # FIXED(D-V29): the award is paid at most once per user and task, whatever the approval history
+      it "pays only once for approve -> reject -> approve" do
+        approve!("true")
+        approve!("false")
+        expect { approve!("true") }.not_to change { [CcMoney.count, VolunteerHour.count] }
+        expect(req.reload.approval).to be(true)
+        expect(volunteer.reload.wallet).to eq(12)
+        expect(volunteer.get_total_hours).to eq(3.5)
+      end
+
+      it "pays only once for approve -> unprocessed -> approve" do
+        approve!("true")
+        put update_approval_volunteer_task_requests_path, params: { id: req.id }
+        expect(req.reload.approval).to be_nil
+        expect { approve!("true") }.not_to change { [CcMoney.count, VolunteerHour.count] }
+      end
+
+      it "takes the row lock while approving" do
+        expect_any_instance_of(VolunteerTaskRequest).to receive(:with_lock).and_call_original
+        approve!("true")
+        expect(CcMoney.count).to eq(1)
+      end
+
       it "treats a missing approval param as 'unprocessed': deactivates the join and still emails" do
         join = create(:volunteer_task_join, :active, volunteer_task: task, user: volunteer)
         put update_approval_volunteer_task_requests_path, params: { id: req.id }

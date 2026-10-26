@@ -111,35 +111,47 @@ class VolunteerTaskRequestsController < SessionsController
 
   def update_approval
     volunteer_task_request = VolunteerTaskRequest.find(params[:id])
-    if volunteer_task_request.approval == true &&
-         ActiveModel::Type::Boolean.new.cast(params[:approval]) == true
-      flash[:notice] = "Task request was already approved"
-      return redirect_to volunteer_task_requests_path
+    result = nil
+    volunteer_task_request.with_lock do
+      if volunteer_task_request.approval == true &&
+           ActiveModel::Type::Boolean.new.cast(params[:approval]) == true
+        result = :already_approved
+      elsif volunteer_task_request.update(approval: params[:approval])
+        volunteer_task_join = volunteer_task_request.volunteer_task_join
+        volunteer_task_join&.update(active: false)
+
+        if volunteer_task_request.approval
+          volunteer_task = volunteer_task_request.volunteer_task
+          volunteer_id = volunteer_task_request.user_id
+          volunteer = volunteer_task_request.user
+
+          # The award is paid at most once per user and task, whatever the
+          # approval history (CC money rows are only created by this path).
+          unless CcMoney.exists?(user_id: volunteer_id, volunteer_task_id: volunteer_task.id)
+            volunteer.update_wallet
+            CcMoney.create_cc_money_from_approval(
+              volunteer_task.id,
+              volunteer_id,
+              volunteer_task.cc
+            )
+            volunteer.update_wallet
+            VolunteerHour.create_volunteer_hour_from_approval(
+              volunteer_task.id,
+              volunteer_id,
+              volunteer_task.hours
+            )
+          end
+        end
+        result = :updated
+      else
+        result = :failed
+      end
     end
 
-    if volunteer_task_request.update(approval: params[:approval])
-      volunteer_task_join = volunteer_task_request.volunteer_task_join
-      volunteer_task_join&.update(active: false)
-
-      if volunteer_task_request.approval
-        volunteer_task = volunteer_task_request.volunteer_task
-        volunteer_id = volunteer_task_request.user_id
-        volunteer = volunteer_task_request.user
-
-        volunteer.update_wallet
-        CcMoney.create_cc_money_from_approval(
-          volunteer_task.id,
-          volunteer_id,
-          volunteer_task.cc
-        )
-        volunteer.update_wallet
-        VolunteerHour.create_volunteer_hour_from_approval(
-          volunteer_task.id,
-          volunteer_id,
-          volunteer_task.hours
-        )
-      end
-
+    case result
+    when :already_approved
+      flash[:notice] = "Task request was already approved"
+    when :updated
       MsrMailer.send_notification_for_task_request_update(
         volunteer_task_request.id
       ).deliver
