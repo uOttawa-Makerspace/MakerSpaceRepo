@@ -547,7 +547,7 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
     it "proficient_project_modal renders without a layout for any signed-in user, even without an order (D-C31)" do
       content_sign_in_as(:regular)
       get proficient_project_proficient_project_modal_path(project)
-      # WART(D-C31): show gates on ownership but the modal exposes the same project data to anyone signed in
+      # INTENDED(D-C31): storefront preview for unbought projects (user decision 2026-10-26)
       expect(response).to have_http_status(:ok)
       expect(response.body).not_to include("<html")
     end
