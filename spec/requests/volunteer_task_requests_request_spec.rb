@@ -172,12 +172,14 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
         expect(vol_deliveries.map(&:subject)).to eq(["Your request was updated: Tour guide"])
       end
 
-      # WART(D-V18): approving again re-awards CC and hours and re-emails (no processed-state check)
-      it "double-awards CC money and hours when approved twice" do
+      # FIXED(D-V18): approving an already-approved request is a no-op (no second award, no second email)
+      it "awards CC money and hours only once when approved twice" do
         approve!("true")
-        expect { approve!("true") }.to change(CcMoney, :count).by(1).and change(VolunteerHour, :count).by(1)
-        expect(volunteer.reload.wallet).to eq(24)
-        expect(vol_deliveries.size).to eq(2)
+        expect { approve!("true") }.not_to change { [CcMoney.count, VolunteerHour.count, vol_deliveries.size] }
+        expect(volunteer.reload.wallet).to eq(12)
+        expect(flash[:notice]).to eq("Task request was already approved")
+        expect(response).to redirect_to(volunteer_task_requests_path)
+        expect(vol_deliveries.size).to eq(1)
       end
 
       it "treats a missing approval param as 'unprocessed': deactivates the join and still emails" do

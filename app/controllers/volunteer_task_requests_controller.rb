@@ -99,6 +99,12 @@ class VolunteerTaskRequestsController < SessionsController
 
   def update_approval
     volunteer_task_request = VolunteerTaskRequest.find(params[:id])
+    if volunteer_task_request.approval == true &&
+         ActiveModel::Type::Boolean.new.cast(params[:approval]) == true
+      flash[:notice] = "Task request was already approved"
+      return redirect_to volunteer_task_requests_path
+    end
+
     if volunteer_task_request.update(approval: params[:approval])
       volunteer_task_join = volunteer_task_request.volunteer_task_join
       volunteer_task_join&.update(active: false)
