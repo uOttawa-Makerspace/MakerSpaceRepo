@@ -397,8 +397,8 @@ RSpec.describe ProficientProjectsController, type: :controller do
         end.to change(Certification, :count).by(1)
       end
 
-      it "should NOT create a new Certification" do
-        create(:certification, user: OrderItem.last.order.user, training: @proficient_project.training, 
+      it "creates its own Certification and leaves an existing training certification alone (D-C29)" do
+        existing = create(:certification, user: OrderItem.last.order.user, training: @proficient_project.training,
 level: @proficient_project.level)
         expect do
           get :approve_project,
@@ -408,7 +408,9 @@ level: @proficient_project.level)
                 admin_comments: ""
               }
             }
-        end.to change(Certification, :count).by(0)
+        end.to change(Certification, :count).by(1)
+        expect(Certification.exists?(existing.id)).to be(true)
+        expect(ProficientProjectSession.last.certification_id).not_to eq(existing.id)
       end
     end
   end

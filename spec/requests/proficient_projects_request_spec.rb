@@ -442,6 +442,19 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
       end
     end
 
+    it "does not award, certify or email when the session fails to save (D-C29)" do
+      content_sign_in_as(:admin)
+      ActionMailer::Base.deliveries.clear
+      allow(ProficientProjectSession).to receive(:create!).and_raise(ActiveRecord::RecordInvalid.new(ProficientProjectSession.new))
+      expect do
+        get approve_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "x" } }
+      end.to change(Certification, :count).by(0)
+      expect(oi.reload.status).to eq("Waiting for approval")
+      expect(flash[:error]).to eq("An error has occurred, please try again later.")
+      expect(flash[:notice]).to be_nil
+      expect(ActionMailer::Base.deliveries).to be_empty
+    end
+
     it "gives each approval its own certification, so deleting one project never destroys another's (D-C29)" do
       other_project = create(:proficient_project, training: training, level: project.level, title: "Second widget")
       second = order_item_for(buyer, status: "Waiting for approval", pp: other_project)

@@ -214,24 +214,25 @@ class ProficientProjectsController < DevelopmentProgramsController
       admin = @user
       duplicates = 0
       awarded = false
-      order_item.with_lock do
-        if order_item.status == "Waiting for approval"
-          level = order_item.proficient_project.level
-          user_id = order_item.order.user_id
-          cert = Certification.create(user_id: user_id, level: level)
-          proficient_project_session =
-            ProficientProjectSession.create(
+      begin
+        order_item.with_lock do
+          if order_item.status == "Waiting for approval"
+            level = order_item.proficient_project.level
+            user_id = order_item.order.user_id
+            cert = Certification.create!(user_id: user_id, level: level)
+            ProficientProjectSession.create!(
               proficient_project_id: order_item.proficient_project.id,
               level: level,
               user_id: admin.id,
               certification_id: cert.id
             )
-          # Award the cert
-          if proficient_project_session.present?
-            order_item.update(order_item_params.merge({ status: "Awarded" }))
+            # Award the cert
+            order_item.update!(order_item_params.merge({ status: "Awarded" }))
             awarded = true
           end
         end
+      rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved
+        awarded = false
       end
       if awarded
         MsrMailer.send_results_pp(
