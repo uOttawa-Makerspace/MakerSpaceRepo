@@ -400,18 +400,7 @@ class SubSpaceBookingController < SessionsController
         .find(params[:sub_space_booking][:sub_space_id])
         .maximum_booking_hours_per_week
         .nil? && !current_user.admin?
-      user_bookings =
-        SubSpaceBooking
-          .where(sub_space_id: booking.sub_space.id)
-          .where(user_id: current_user.id)
-          .where("start_time >= ?", DateTime.now.beginning_of_week)
-          .where("start_time <= ?", DateTime.now.end_of_week)
-      total_duration = 0 - duration
-      user_bookings.each do |booking|
-        total_duration += booking.end_time - booking.start_time
-      end
-      total_duration /= 1.hour
-      if total_duration > booking.sub_space.maximum_booking_hours_per_week
+      if weekly_booked_hours(booking) + duration > booking.sub_space.maximum_booking_hours_per_week
         render json: {
                 errors: [
                   "DurationWeek You cannot book #{booking.sub_space.name} for more than #{booking.sub_space.maximum_booking_hours_per_week} hours per week."
@@ -562,22 +551,13 @@ class SubSpaceBookingController < SessionsController
     end
 
     max_per_week = sub_space.maximum_booking_hours_per_week
-    if !max_per_week.nil? && !@user.admin?
-      other_seconds =
-        SubSpaceBooking
-          .where(sub_space_id: sub_space.id)
-          .where(user_id: @sub_space_booking.user_id)
-          .where.not(id: @sub_space_booking.id)
-          .where("start_time >= ?", DateTime.now.beginning_of_week)
-          .where("start_time <= ?", DateTime.now.end_of_week)
-          .sum { |other| other.end_time - other.start_time }
-      if other_seconds / 1.hour + duration > max_per_week
-        render_update_limit_error(
-          "DurationWeek",
-          "You cannot book #{sub_space.name} for more than #{max_per_week} hours per week."
-        )
-        return
-      end
+    if !max_per_week.nil? && !@user.admin? &&
+         weekly_booked_hours(@sub_space_booking) + duration > max_per_week
+      render_update_limit_error(
+        "DurationWeek",
+        "You cannot book #{sub_space.name} for more than #{max_per_week} hours per week."
+      )
+      return
     end
 
     if @sub_space_booking.update(sub_space_booking_update_params)
@@ -729,6 +709,17 @@ class SubSpaceBookingController < SessionsController
   end
 
   private
+
+  # Hours the booking's owner already has in the booking's sub space, in the week
+  # (Time.zone) containing the booking's start_time, not counting the booking itself.
+  def weekly_booked_hours(booking)
+    week = booking.start_time.in_time_zone.all_week
+    SubSpaceBooking
+      .where(sub_space_id: booking.sub_space_id, user_id: booking.user_id)
+      .where.not(id: booking.id)
+      .where(start_time: week)
+      .sum { |other| other.end_time - other.start_time } / 1.hour
+  end
 
   def render_update_limit_error(code, message)
     respond_to do |format|

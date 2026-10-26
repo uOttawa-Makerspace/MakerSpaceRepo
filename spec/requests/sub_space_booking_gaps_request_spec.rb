@@ -102,6 +102,30 @@ RSpec.describe "Sub space booking gaps", type: :request do
       expect(SubSpaceBooking.exists?(name: "Fresh")).to be(true)
     end
 
+    # FIXED(retro round 2, D-NEW-RETRO-1): the quota window is the week of the new
+    # booking, not the current calendar week.
+    it "books next week while this week is full, and still refuses this week" do
+      travel_to(Time.zone.local(2027, 4, 7, 8, 0)) do
+        log_in!(user)
+        capped = create(:sub_space, space: space, maximum_booking_hours_per_week: 4)
+        create(:sub_space_booking, sub_space: capped, user: user, name: "Full",
+                                   start_time: DateTime.parse("2027-04-07 10:00"),
+                                   end_time: DateTime.parse("2027-04-07 13:00"))
+        create_booking(capped, name: "ThisWeek", start_time: "2027-04-08 10:00", end_time: "2027-04-08 13:00")
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.parsed_body["errors"].first).to start_with("DurationWeek")
+        create_booking(capped, name: "NextWeek", start_time: "2027-04-14 10:00", end_time: "2027-04-14 13:00")
+        expect(response).to have_http_status(:no_content)
+        expect(SubSpaceBooking.where(name: %w[ThisWeek NextWeek]).pluck(:name)).to eq(["NextWeek"])
+
+        # next week now holds 3h: a second 3h booking there is over the quota (it used to be
+        # judged against the current week only, so a future week had no limit at all)
+        create_booking(capped, name: "NextWeek2", start_time: "2027-04-15 10:00", end_time: "2027-04-15 13:00")
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(SubSpaceBooking.exists?(name: "NextWeek2")).to be(false)
+      end
+    end
+
     # Same fixture as the pinned "backwards weekly quota" rejection in
     # sub_space_booking_request_spec.rb (D-B05), but for an admin: no quota.
     it "lets an admin skip the weekly quota that rejects a regular user" do
@@ -468,6 +492,23 @@ RSpec.describe "Sub space booking gaps", type: :request do
           update_times(own, "10:00", "11:00") # 2h + 1h = 3h, exactly the quota
           expect(response).to have_http_status(:ok)
           expect(own.reload.name).to eq("Quota")
+        end
+      end
+
+      # FIXED(retro round 2, D-NEW-RETRO-1): the week is the one containing the booking
+      it "counts the week of the booking, so moving it to an empty next week is fine" do
+        travel_to(wednesday) do
+          log_in!(user)
+          week_booking(user, "06", "10:00", "12:00") # 2h this week
+          own = week_booking(user, "07", "10:00", "11:00")
+          own.sub_space_booking_status.update!(booking_status_id: @pending_status.id)
+
+          patch update_path_for(own), as: :json, params: {
+            sub_space_booking: { start_time: "2027-04-14 10:00", end_time: "2027-04-14 13:00",
+                                 name: "NextWeek", description: "D" }
+          }
+          expect(response).to have_http_status(:ok)
+          expect(own.reload.name).to eq("NextWeek")
         end
       end
 
