@@ -53,18 +53,29 @@ class ExamsController < SessionsController
   def finish_exam
     exam = @exam
     user = exam.user
-    score = exam.calculate_score
-    training_session = exam.training_session
-    if score < Exam::SCORE_TO_PASS
-      status = Exam::STATUS[:failed]
-      if user.exams.where(training_session_id: training_session.id).count < 2
-        create_exam_and_exam_questions(user, training_session)
+    graded = false
+    score = nil
+    status = nil
+    # Two concurrent submits both pass only_open_exam: lock the row and check
+    # again inside the lock so only one of them grades (retake, certification).
+    exam.with_lock do
+      next unless exam.open_for_answers?
+      graded = true
+      score = exam.calculate_score
+      training_session = exam.training_session
+      if score < Exam::SCORE_TO_PASS
+        status = Exam::STATUS[:failed]
+        if user.exams.where(training_session_id: training_session.id).count < 2
+          create_exam_and_exam_questions(user, training_session)
+        end
+      else
+        status = Exam::STATUS[:passed]
+        Certification.certify_user(training_session.id, user.id, training_session.level)
       end
-    else
-      status = Exam::STATUS[:passed]
-      Certification.certify_user(training_session.id, user.id, training_session.level)
+      exam.update(status: status, score: score)
     end
-    exam.update(status: status, score: score)
+    return reject_unopen_exam unless graded
+
     MsrMailer.finishing_exam(user, exam).deliver_now
     # MsrMailer.exam_results_staff(user, exam).deliver_now
     flash[:notice] = "Score: #{score}. You #{status} the exam."
@@ -121,6 +132,10 @@ class ExamsController < SessionsController
 
   def only_open_exam
     return if @exam.open_for_answers?
+    reject_unopen_exam
+  end
+
+  def reject_unopen_exam
     flash[:alert] =
       if @exam.ungraded?
         "This exam has expired."

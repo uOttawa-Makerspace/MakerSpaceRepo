@@ -477,6 +477,47 @@ RSpec.describe "Exams", type: :request do
       expect(exam.reload.status).to eq("not started")
     end
 
+    # FIXED(retro of A5): a double-submit passes only_open_exam in both requests;
+    # the grading re-checks inside a row lock, so only the first one grades.
+    context "when a concurrent request has already graded the exam" do
+      before do
+        # The second request got past only_open_exam while the exam was still open.
+        allow_any_instance_of(ExamsController).to receive(:only_open_exam)
+      end
+
+      it "does not create a second retake or send a second email for a failed exam" do
+        exam = new_exam
+        exam.update!(status: Exam::STATUS[:failed], score: 0)
+        expect { perform_enqueued_jobs { finish(exam) } }.not_to change(Exam, :count)
+        expect(response).to redirect_to(exams_path)
+        expect(flash[:alert]).to eq("You cannot finish an exam that is already finished.")
+        expect(deliveries).to be_empty
+      end
+
+      it "does not certify or email again for a passed exam" do
+        exam = new_exam
+        exam.update!(status: Exam::STATUS[:passed], score: 100)
+        expect { perform_enqueued_jobs { finish(exam) } }.not_to change(Certification, :count)
+        expect(flash[:alert]).to eq("You cannot finish an exam that is already finished.")
+        expect(deliveries).to be_empty
+      end
+
+      it "does not grade an exam that expired in the meantime" do
+        exam = new_exam
+        exam.update!(expired_at: 1.minute.ago)
+        expect { finish(exam) }.not_to change(Certification, :count)
+        expect(flash[:alert]).to eq("This exam has expired.")
+        expect(exam.reload.status).to eq("not started")
+      end
+    end
+
+    it "grades under a row lock" do
+      exam = new_exam
+      expect_any_instance_of(Exam).to receive(:with_lock).and_call_original
+      finish(exam)
+      expect(exam.reload.status).to eq("failed")
+    end
+
     # WART(D-T13): an exam created with no matching questions has 0 questions; grading it divides by zero
     it "answers 500 (FloatDomainError) for an exam without questions and leaves it ungraded" do
       exam = new_exam(questions: [])
