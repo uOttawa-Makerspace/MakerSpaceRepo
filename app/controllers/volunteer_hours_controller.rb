@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
 class VolunteerHoursController < VolunteersController
-  before_action :validate_user_for_editing, only: [:edit]
+  before_action :validate_user_for_editing, only: %i[edit update destroy]
+  before_action :validate_unprocessed_for_owner, only: :update
   before_action :validate_staff_for_request,
-                only: %i[volunteer_hour_requests volunteer_hour_per_user]
+                only: %i[volunteer_hour_requests volunteer_hour_per_user update_approval]
   include VolunteerHoursHelper
 
   def index
@@ -41,7 +42,7 @@ class VolunteerHoursController < VolunteersController
 
   def destroy
     volunteer_hour = VolunteerHour.find(params[:id])
-    if (volunteer_hour && !volunteer_hour.was_processed?) || current_user.staff?
+    if !volunteer_hour.was_processed? || current_user.staff?
       volunteer_hour.destroy
       flash[:notice] = "Volunteer Hour Deleted"
     else
@@ -94,18 +95,24 @@ class VolunteerHoursController < VolunteersController
   private
 
   def volunteer_hour_params
-    params.require(:volunteer_hour).permit(
-      :volunteer_task_id,
-      :date_of_task,
-      :total_time,
-      :approval
-    )
+    permitted = %i[volunteer_task_id date_of_task total_time]
+    permitted << :approval if current_user.staff?
+    params.require(:volunteer_hour).permit(*permitted)
   end
 
   def validate_user_for_editing
     volunteer_hour = VolunteerHour.find(params[:id])
     if (current_user.id != volunteer_hour.user_id) && !current_user.staff?
       flash[:alert] = "You are not authorized to edit this."
+      redirect_to volunteer_hours_path
+    end
+  end
+
+  def validate_unprocessed_for_owner
+    return if current_user.staff?
+
+    if VolunteerHour.find(params[:id]).was_processed?
+      flash[:alert] = "This volunteer hour was already processed."
       redirect_to volunteer_hours_path
     end
   end

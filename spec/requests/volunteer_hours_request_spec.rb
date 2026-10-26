@@ -6,8 +6,8 @@ require "rails_helper"
 # inherited `grant_access` gate applies: volunteer-program member, staff or admin).
 #
 # Gates: grant_access (all actions); `edit` adds owner-or-staff; the two staff
-# pages add staff-only. `update`, `destroy`, `update_approval` have NO ownership
-# or staff check beyond grant_access (D-V01..D-V03).
+# pages and `update_approval` add staff-only. `edit`, `update` and `destroy` add
+# owner-or-staff (owners only while the hour is unprocessed on update) (D-V01..D-V03).
 RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
   let(:task) { create(:volunteer_task, title: "booth") }
   let(:owner) { create(:user, :volunteer_with_volunteer_program) }
@@ -118,11 +118,17 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       expect(hour.approval).to be_nil
     end
 
-    # WART(D-V01): `approval` is permitted, so a volunteer submits hours already approved (self-approval)
-    it "lets the submitter set approval: true on their own new hour" do
+    # FIXED(D-V01): `approval` is only permitted for staff, so a volunteer cannot submit pre-approved hours
+    it "ignores approval: true from the volunteer submitting their own new hour" do
+      post volunteer_hours_path, params: { volunteer_hour: hour_params[:volunteer_hour].merge(approval: true) }
+      expect(VolunteerHour.last.approval).to be_nil
+      expect(owner.get_total_hours).to eq(0)
+    end
+
+    it "keeps approval for a staff member creating an hour" do
+      vol_login!(create(:user, :staff))
       post volunteer_hours_path, params: { volunteer_hour: hour_params[:volunteer_hour].merge(approval: true) }
       expect(VolunteerHour.last.approval).to be(true)
-      expect(owner.get_total_hours).to eq(2.5)
     end
 
     # WART(D-V04): no range validation: negative and far-future hours are stored
@@ -222,16 +228,50 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
   end
 
   describe "PATCH /volunteer_hours/:id (update)" do
-    # WART(D-V02): update has no ownership check: any volunteer edits anyone's hour, even a processed one, and can set approval
-    it "lets another volunteer change someone else's hour, including approval" do
+    # FIXED(D-V02): only the owner (while unprocessed) or staff may update an hour
+    it "refuses another volunteer changing someone else's hour" do
       hour = make_hour(approval: false, total_time: 1)
       vol_login!(other_volunteer)
       patch volunteer_hour_path(hour), params: { volunteer_hour: { total_time: 40, approval: true } }
       expect(response).to redirect_to(volunteer_hours_path)
+      expect(flash[:alert]).to eq("You are not authorized to edit this.")
+      expect(hour.reload.total_time).to eq(1)
+      expect(hour.approval).to be(false)
+    end
+
+    it "refuses another volunteer changing someone else's unprocessed hour" do
+      hour = make_hour(total_time: 1)
+      vol_login!(other_volunteer)
+      patch volunteer_hour_path(hour), params: { volunteer_hour: { total_time: 40 } }
+      expect(flash[:alert]).to eq("You are not authorized to edit this.")
+      expect(hour.reload.total_time).to eq(1)
+    end
+
+    it "lets the owner change an unprocessed hour but not set approval" do
+      hour = make_hour(total_time: 1)
+      vol_login!(owner)
+      patch volunteer_hour_path(hour), params: { volunteer_hour: { total_time: 5, approval: true } }
+      expect(response).to redirect_to(volunteer_hours_path)
       expect(flash[:notice]).to eq("Volunteer hour updated")
-      expect(hour.reload.total_time).to eq(40)
-      expect(hour.approval).to be(true)
-      expect(hour.user_id).to eq(owner.id)
+      expect(hour.reload.total_time).to eq(5)
+      expect(hour.approval).to be_nil
+    end
+
+    it "refuses the owner changing a processed hour" do
+      hour = make_hour(approval: true, total_time: 1)
+      vol_login!(owner)
+      patch volunteer_hour_path(hour), params: { volunteer_hour: { total_time: 40 } }
+      expect(response).to redirect_to(volunteer_hours_path)
+      expect(flash[:alert]).to eq("This volunteer hour was already processed.")
+      expect(hour.reload.total_time).to eq(1)
+    end
+
+    it "lets staff change a processed hour and its approval" do
+      hour = make_hour(approval: true, total_time: 1)
+      vol_login!(create(:user, :staff))
+      patch volunteer_hour_path(hour), params: { volunteer_hour: { total_time: 2, approval: false } }
+      expect(hour.reload.total_time).to eq(2)
+      expect(hour.approval).to be(false)
     end
 
     it "redirects staff/admin to the requests page" do
@@ -279,12 +319,13 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       expect(flash[:notice]).to eq("Volunteer Hour Deleted")
     end
 
-    # WART(D-V03): no ownership check: any volunteer deletes another volunteer's unprocessed hour
-    it "lets a different volunteer delete someone else's unprocessed hour" do
+    # FIXED(D-V03): only the owner or staff may delete an hour
+    it "refuses a different volunteer deleting someone else's unprocessed hour" do
       hour = make_hour
       vol_login!(other_volunteer)
-      expect { delete volunteer_hour_path(hour) }.to change(VolunteerHour, :count).by(-1)
-      expect(flash[:notice]).to eq("Volunteer Hour Deleted")
+      expect { delete volunteer_hour_path(hour) }.not_to change(VolunteerHour, :count)
+      expect(response).to redirect_to(volunteer_hours_path)
+      expect(flash[:alert]).to eq("You are not authorized to edit this.")
     end
 
     it "refuses a volunteer deleting a processed hour" do
@@ -310,12 +351,21 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
   end
 
   describe "PUT /volunteer_hours/update_approval" do
-    # WART(D-V01): update_approval has no staff check: a volunteer approves any hour, including their own
-    it "lets a volunteer approve their own hour" do
+    # FIXED(D-V01): update_approval is staff/admin only
+    it "refuses a volunteer approving their own hour" do
       hour = make_hour(total_time: 8)
       vol_login!(owner)
       put update_approval_volunteer_hours_path, params: { id: hour.id, approval: "true" }
       expect(response).to redirect_to(volunteer_hours_path)
+      expect(flash[:alert]).to eq("You are not authorized access this area")
+      expect(hour.reload.approval).to be_nil
+      expect(owner.get_total_hours).to eq(0)
+    end
+
+    it "lets staff approve an hour" do
+      hour = make_hour(total_time: 8)
+      vol_login!(create(:user, :staff))
+      put update_approval_volunteer_hours_path, params: { id: hour.id, approval: "true" }
       expect(flash[:notice]).to eq("Volunteer hour updated")
       expect(hour.reload.approval).to be(true)
       expect(owner.get_total_hours).to eq(8)
