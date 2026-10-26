@@ -169,6 +169,15 @@ RSpec.describe "Exams", type: :request do
       expect(response.body).to include("Finish Exam")
     end
 
+    # N+1 pinned: see defects.md D-PERF17
+    it "leaves the owner's answer radios enabled", skip_bullet: true do
+      log_in!(student)
+      get exam_path(exam)
+      inputs = response.body.scan(/<input [^>]*type="radio"[^>]*>/)
+      expect(inputs.size).to be > 0
+      expect(inputs.grep(/disabled/)).to be_empty
+    end
+
     %i[staff admin].each do |role|
       # N+1 pinned: see defects.md D-PERF17
       it "shows #{role} the student's exam without a Finish button", skip_bullet: true do
@@ -186,6 +195,19 @@ RSpec.describe "Exams", type: :request do
         expect(response).to have_http_status(:ok)
         expect(response.body).not_to include("Finish Exam")
         expect(exam.reload.status).to eq("not started")
+      end
+
+      # FIXED(retro round 2): the answer inputs are read-only for a reviewer
+      # N+1 pinned: see defects.md D-PERF17
+      it "renders the answer radios disabled for #{role}, with and without a saved answer", skip_bullet: true do
+        ExamResponse.create!(exam_question: exam.exam_questions.first,
+                             answer: fixture[:questions].first[:correct], correct: true)
+        sign_in_as(role)
+        get exam_path(exam)
+        inputs = response.body.scan(/<input [^>]*type="radio"[^>]*>/)
+        expect(inputs.size).to be > 0
+        expect(inputs).to all(include("disabled"))
+        expect(inputs.grep(/checked=true/)).not_to be_empty
       end
 
       it "still redirects #{role} away from a graded exam" do
