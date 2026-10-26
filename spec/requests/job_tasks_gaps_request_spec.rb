@@ -240,14 +240,15 @@ RSpec.describe "JobTasks gaps", type: :request do
       expect { delete job_order_job_task_path(order, order.job_tasks.first) }.to change(JobTask, :count).by(-1)
     end
 
-    # WART(D-J48): task routes use a plain JobOrder.find, so soft-deleted orders stay addressable
-    it "still creates and edits tasks on a soft-deleted order" do
+    # FIXED(D-J48): task routes scope to not_deleted, so soft-deleted orders 404
+    it "404s create and edit on a soft-deleted order" do
       order = order_with_task!
       order.update!(is_deleted: true)
       session_login!(owner)
-      expect { post job_order_job_tasks_path(order) }.to change { order.job_tasks.count }.by(1)
+      expect { post job_order_job_tasks_path(order) }.not_to(change { order.job_tasks.count })
+      expect(response).to have_http_status(:not_found)
       get wizard(order, order.job_tasks.first, 1)
-      expect(response).to have_http_status(:ok)
+      expect(response).to have_http_status(:not_found)
     end
 
     it "redirects a missing step on edit to the order page" do

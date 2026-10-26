@@ -106,18 +106,20 @@ RSpec.describe "ChatMessages gaps", type: :request do
   describe "rendering" do
     it "renders an empty thread as an empty 200 body" do
       order = active_order!
+      session_login!(owner)
       get chat_messages_path(job_order_id: order.id)
       expect(response).to have_http_status(:ok)
       expect(response.body.strip).to eq("")
     end
 
-    it "still renders the thread of a soft-deleted order (plain JobOrder.find)" do
+    # FIXED(D-J48): the thread lookup is scoped to not_deleted
+    it "404s the thread of a soft-deleted order" do
       order = active_order!
       ChatMessage.create!(job_order: order, sender: staff, message: "from the grave")
       order.update!(is_deleted: true)
+      session_login!(owner)
       get chat_messages_path(job_order_id: order.id)
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include("from the grave")
+      expect(response).to have_http_status(:not_found)
     end
 
     # simple_format sanitizes (allow-list) rather than escapes: script tags are
@@ -125,6 +127,7 @@ RSpec.describe "ChatMessages gaps", type: :request do
     it "sanitizes HTML in a message in the thread (script stripped, <b> kept, & escaped)" do
       order = active_order!
       ChatMessage.create!(job_order: order, sender: owner, message: "<script>alert(1)</script> & <b>bold</b>")
+      session_login!(owner)
       get chat_messages_path(job_order_id: order.id)
       expect(response.body).not_to include("<script>alert(1)</script>")
       expect(response.body).not_to include("<script>")
