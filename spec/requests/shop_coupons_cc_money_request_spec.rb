@@ -463,12 +463,13 @@ RSpec.describe "Shop coupons, price rules and cc money (HTTP contract)", type: :
         expect(response).to redirect_to(cc_moneys_path)
       end
 
-      it "500s for a validly signed token whose cc_money row no longer exists" do
+      it "redirects with the generic alert for a validly signed token whose cc_money row no longer exists" do
         stale = verifier.generate(999_999_999)
         shop_log_in!(user)
         get link_cc_to_user_cc_moneys_path, params: { token: stale }
-        # WART(D-S14): no nil guard on CcMoney.find_by_id; a deleted row is a NoMethodError 500
-        expect(response).to have_http_status(:internal_server_error)
+        # FIXED(D-S14): a missing row gets the same alert as an invalid token instead of a NoMethodError 500
+        expect(response).to redirect_to(cc_moneys_path)
+        expect(flash[:alert]).to start_with("Something went wrong.")
       end
     end
 
@@ -512,6 +513,16 @@ RSpec.describe "Shop coupons, price rules and cc money (HTTP contract)", type: :
         # WART(D-S16): an unknown email reports "already added to an account" although nothing was linked
         expect(flash[:alert]).to eq("The CC Money has already been added to an account")
         expect(unlinked.reload.linked).to be(false)
+      end
+
+      it "redirects with the generic alert for a validly signed token whose cc_money row no longer exists" do
+        stale = verifier.generate(999_999_999)
+        shop_log_in!(user)
+        get redeem_cc_moneys_path, params: { token: stale, user: { email: user.email } }
+        # FIXED(D-S14): same alert as an invalid token instead of a NoMethodError 500
+        expect(response).to redirect_to(cc_moneys_path)
+        expect(flash[:alert]).to start_with("Something went wrong.")
+        expect(user.cc_moneys.sum(:cc)).to eq(0)
       end
 
       it "tampered token raises InvalidSignature (500) and missing user param is a 302 to root" do
