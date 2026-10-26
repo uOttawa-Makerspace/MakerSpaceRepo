@@ -13,6 +13,7 @@ class JobOrdersController < SessionsController
                 ]
   before_action :grant_access,
                 only: %w[
+                  assign_staff
                   admin
                   settings
                   start_processing
@@ -73,6 +74,11 @@ class JobOrdersController < SessionsController
       return redirect_to job_orders_path     
     end
     
+    unless current_user.admin? || current_user.staff? || current_user.id == @job_order.user_id
+      flash[:alert] = t("job_orders.alerts.no_permission")
+      return redirect_to new_job_orders_path
+    end
+
     if current_user.id == @job_order.user_id
       @unread_messages = @job_order.chat_messages.unread(current_user)
       @unread_messages.update_all(is_read: true) # rubocop:disable Rails/SkipsModelValidations

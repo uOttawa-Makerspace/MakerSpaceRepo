@@ -221,10 +221,17 @@ RSpec.describe "Staff training sessions", type: :request do
     end
 
     describe "DELETE revoke_certification" do
-      # WART(D-T36): revoke_certification only checks ownership of the session in the URL; cert_id may belong to ANY user's certification of ANY session
-      it "deletes a certification that belongs to another trainer's session" do
+      # FIXED(D-T36): the certification is looked up through the URL's session, so another session's certification is a 404
+      it "does not delete a certification that belongs to another trainer's session" do
         foreign_session = create(:training_session, user: create(:user, :staff))
         cert = create(:certification, user: student, training_session: foreign_session, training: foreign_session.training)
+        expect { delete revoke_certification_staff_training_session_path(record), params: { cert_id: cert.id } }
+          .not_to change { Certification.unscoped.count }
+        expect(response).to have_http_status(:not_found)
+      end
+
+      it "deletes a certification of the session in the URL" do
+        cert = create(:certification, user: student, training_session: record, training: training)
         expect { delete revoke_certification_staff_training_session_path(record), params: { cert_id: cert.id } }
           .to change { Certification.unscoped.count }.by(-1)
         expect(response).to redirect_to(user_path(student.username))

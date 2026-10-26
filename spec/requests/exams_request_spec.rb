@@ -4,10 +4,13 @@ require "rails_helper"
 # create_from_training, create_for_single_user, finish_exam, destroy),
 # ExamResponsesController#create and the certification awarded on a pass.
 #
-# ExamsController < SessionsController: there is NO sign-in requirement. The
-# only gate is `grant_access` on #show (owner or staff/admin). Every other
-# action is open to guests (see the D-T07..D-T10 pins).
-# ExamResponsesController is the opposite: it only lets the exam's owner answer.
+# ExamsController < SessionsController: #index and #show are open to a guest
+# (index lists nothing; show is gated by `grant_access`: owner or staff/admin).
+# finish_exam (POST) is owner-only, create_from_training / create_for_single_user
+# (POST) are for the session's trainer or an admin, destroy is admin-only
+# (FIXED D-T07, D-T15, D-T16). Graded or expired exams reject answers and
+# finishing (FIXED D-T08, D-T09, D-T10).
+# ExamResponsesController only lets the exam's owner answer.
 #
 # Pass rule: score = round(correct_responses * 100.0 / exam_questions) >= 68
 # (Exam::SCORE_TO_PASS). Unanswered questions count as wrong. A failed exam
@@ -36,7 +39,7 @@ RSpec.describe "Exams", type: :request do
   end
 
   def finish(exam)
-    get finish_exam_exams_path(exam_id: exam.id)
+    post finish_exam_exams_path(exam_id: exam.id)
   end
 
   # ------------------------------------------------------------------- index
@@ -111,7 +114,7 @@ RSpec.describe "Exams", type: :request do
         expect(response.body).to include(q[:question].description.to_s.truncate(20, omission: "")[0, 10])
         expect(response.body).to include("examResponse(#{exam.id}, #{q[:correct].id})")
       end
-      expect(response.body).to include(finish_exam_exams_path(exam_id: exam.id))
+      expect(response.body).to match(/<form[^>]*method="post"[^>]*action="#{Regexp.escape(finish_exam_exams_path(exam_id: exam.id))}"/)
     end
 
     # N+1 pinned: see defects.md D-PERF17
@@ -132,14 +135,24 @@ RSpec.describe "Exams", type: :request do
     end
 
     %i[staff admin].each do |role|
-      # WART(D-T11): staff/admin opening someone else's exam also flips it to incomplete (starts it for the student)
+      # FIXED(D-T11): only the owner's first visit starts the exam; staff/admin just look at it
       # N+1 pinned: see defects.md D-PERF17
-      it "lets #{role} open the student's exam and starts it", skip_bullet: true do
+      it "lets #{role} open the student's exam without starting it", skip_bullet: true do
         sign_in_as(role)
         get exam_path(exam)
         expect(response).to have_http_status(:ok)
-        expect(exam.reload.status).to eq("incomplete")
+        expect(exam.reload.status).to eq("not started")
       end
+    end
+
+    # FIXED(D-T10): expiry is enforced on show
+    it "redirects the owner to the exam list when the exam has expired, without starting it" do
+      exam.update!(expired_at: 1.minute.ago)
+      log_in!(student)
+      get exam_path(exam)
+      expect(response).to redirect_to(exams_path)
+      expect(flash[:alert]).to eq("This exam has expired.")
+      expect(exam.reload.status).to eq("not started")
     end
 
     it "redirects to the exam list once the exam is passed or failed" do
@@ -244,21 +257,33 @@ RSpec.describe "Exams", type: :request do
       expect(error_text).to include("ActionController::UnknownFormat")
     end
 
-    # WART(D-T09): there is no status or expiry check, so answers can be rewritten after the exam was graded
-    it "still accepts and rewrites answers on a finished exam" do
+    # FIXED(D-T09): answers are rejected (403) once the exam is graded
+    %w[passed failed].each do |status|
+      it "rejects and does not rewrite answers on a #{status} exam" do
+        log_in!(student)
+        post_answer(entry[:wrongs].first)
+        exam.update!(status: status, score: 0)
+        expect { post_answer(entry[:correct]) }.not_to change(ExamResponse, :count)
+        expect(response).to have_http_status(:forbidden)
+        expect(ExamResponse.last.correct).to be(false)
+      end
+    end
+
+    # FIXED(D-T10): answers are rejected (403) once the exam has expired
+    it "rejects answers on an expired exam" do
       log_in!(student)
-      post_answer(entry[:wrongs].first)
-      exam.update!(status: Exam::STATUS[:failed], score: 0)
+      exam.update!(expired_at: 1.minute.ago)
       expect { post_answer(entry[:correct]) }.not_to change(ExamResponse, :count)
-      expect(response).to have_http_status(:no_content)
-      expect(ExamResponse.last.correct).to be(true)
+      expect(response).to have_http_status(:forbidden)
     end
   end
 
   # -------------------------------------------------------------- finish_exam
 
-  describe "GET /exams/finish_exam: scoring and certification" do
+  describe "POST /exams/finish_exam: scoring and certification" do
     let(:fixture) { build_exam_fixture(level: "Intermediate") }
+
+    before { log_in!(student) }
 
     def answer_all(exam, correct_count:)
       fixture[:questions].each_with_index do |entry, i|
@@ -374,8 +399,40 @@ RSpec.describe "Exams", type: :request do
       expect(deliveries.map(&:to).flatten).to eq([student.email])
     end
 
-    # WART(D-T07): finish_exam has no sign-in and no ownership check: a guest finalizes anyone's exam
-    it "lets a guest finalize a student's exam, consuming the attempt and emailing the student" do
+    # FIXED(D-T07): finish_exam is a POST that needs the exam's owner
+    it "makes a guest sign in and finalizes nothing" do
+      exam = new_exam
+      get logout_path
+      perform_enqueued_jobs { post finish_exam_exams_path(exam_id: exam.id) }
+      expect(response).to redirect_to(login_path(back_to: finish_exam_exams_path(exam_id: exam.id)))
+      expect(exam.reload.status).to eq("not started")
+      expect(Exam.where(user: student).count).to eq(1)
+      expect(deliveries).to be_empty
+    end
+
+    it "does not let a GET finish the exam anymore" do
+      exam = new_exam
+      log_in!(student)
+      get finish_exam_exams_path(exam_id: exam.id)
+      expect(response).to redirect_to(root_path) # routed to exams#show with id "finish_exam"
+      expect(exam.reload.status).to eq("not started")
+    end
+
+    %i[regular staff admin].each do |role|
+      it "does not let a #{role} who is not the owner finish the student's exam" do
+        exam = new_exam
+        sign_in_as(role)
+        expect { perform_enqueued_jobs { post finish_exam_exams_path(exam_id: exam.id) } }
+          .not_to change(Certification, :count)
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to eq("You cannot access this area.")
+        expect(exam.reload.status).to eq("not started")
+        expect(Exam.where(user: student).count).to eq(1)
+        expect(deliveries).to be_empty
+      end
+    end
+
+    it "lets the owner finalize their own exam, consuming the attempt and emailing them" do
       exam = new_exam
       perform_enqueued_jobs { finish(exam) }
       expect(response).to redirect_to(exams_path)
@@ -384,43 +441,40 @@ RSpec.describe "Exams", type: :request do
       expect(deliveries.map(&:to).flatten).to eq([student.email])
     end
 
-    it "lets a guest trigger the certification of a student who answered everything but never clicked Finish" do
-      exam = new_exam
-      log_in!(student)
-      answer_all(exam, correct_count: 3)
-      get logout_path
-      expect { finish(exam) }.to change(Certification, :count).by(1)
-      expect(exam.reload.status).to eq("passed")
-    end
-
-    # WART(D-T08): a finished exam can be re-answered and re-finished: the 2-attempt limit and the pass rule are bypassable, and every pass adds another certification
-    it "awards a second certification when a passed exam is finished again" do
+    # FIXED(D-T08): a graded exam cannot be finished again, so no second certification and no pass-by-rewriting
+    it "rejects finishing a passed exam again: no second certification" do
       exam = new_exam
       log_in!(student)
       answer_all(exam, correct_count: 3)
       finish(exam)
-      expect { finish(exam) }.to change(Certification, :count).by(1)
-      expect(Certification.where(user: student, training_session: session_record).count).to eq(2)
+      expect { finish(exam) }.not_to change(Certification, :count)
+      expect(response).to redirect_to(exams_path)
+      expect(flash[:alert]).to eq("You cannot finish an exam that is already finished.")
+      expect(Certification.where(user: student, training_session: session_record).count).to eq(1)
     end
 
-    it "lets a failed exam be turned into a pass by rewriting the answers and finishing again" do
+    it "cannot turn a failed exam into a pass by rewriting the answers and finishing again" do
       exam = new_exam
       log_in!(student)
       answer_all(exam, correct_count: 0)
       finish(exam)
       expect(exam.reload.status).to eq("failed")
       fixture[:questions].each { |entry| answer!(exam, entry) }
-      expect { finish(exam) }.to change(Certification, :count).by(1)
-      expect(exam.reload).to have_attributes(status: "passed", score: 100)
+      expect { finish(exam) }.not_to change(Certification, :count)
+      expect(exam.reload).to have_attributes(status: "failed", score: 0)
+      expect(ExamResponse.where(exam_question: exam.exam_questions).pluck(:correct).uniq).to eq([false])
     end
 
-    # WART(D-T10): Exam#expired_at is stored and displayed but never enforced
-    it "grades and certifies an exam that expired a year ago" do
+    # FIXED(D-T10): an expired exam can no longer be finished, graded or certified
+    it "rejects finishing an exam that expired a year ago" do
       exam = new_exam
-      exam.update!(expired_at: 1.year.ago)
       log_in!(student)
       answer_all(exam, correct_count: 3)
-      expect { finish(exam) }.to change(Certification, :count).by(1)
+      exam.update!(expired_at: 1.year.ago)
+      expect { finish(exam) }.not_to change(Certification, :count)
+      expect(response).to redirect_to(exams_path)
+      expect(flash[:alert]).to eq("This exam has expired.")
+      expect(exam.reload.status).to eq("not started")
     end
 
     # WART(D-T13): an exam created with no matching questions has 0 questions; grading it divides by zero
@@ -446,6 +500,8 @@ RSpec.describe "Exams", type: :request do
     def create_from_training(session = session_record)
       post create_from_training_exams_path, params: { training_session_id: session.id }
     end
+
+    before { log_in!(session_record.user) }
 
     it "creates one exam (with questions) per enrolled user, emails each and redirects to the staff dashboard" do
       second_student
@@ -473,6 +529,7 @@ RSpec.describe "Exams", type: :request do
     it "answers 500 (RangeError) when the training has no questions at that level, leaving an empty exam behind" do
       empty = build_exam_fixture(question_count: 0)
       empty[:session].users << create(:user, :regular_user)
+      sign_in_as(:admin)
       expect { perform_enqueued_jobs { create_from_training(empty[:session]) } }.to change(Exam, :count).by(1)
       expect(response).to have_http_status(:internal_server_error)
       expect(error_text).to include("RangeError")
@@ -481,7 +538,7 @@ RSpec.describe "Exams", type: :request do
     end
 
     it "does nothing for a session without users but still redirects" do
-      empty = create(:training_session, user: create(:user, :staff))
+      empty = create(:training_session, user: session_record.user)
       expect { create_from_training(empty) }.not_to change(Exam, :count)
       expect(response).to redirect_to(staff_dashboard_index_path(space_id: empty.space.id))
     end
@@ -491,22 +548,49 @@ RSpec.describe "Exams", type: :request do
       expect(response).to have_http_status(:not_found)
     end
 
-    # WART(D-T15): create_from_training / create_for_single_user need no sign-in: a guest can issue exams and mass-email a session's trainees
-    %i[guest regular staff admin].each do |role|
-      it "is allowed for a #{role} (no role gate)" do
+    # FIXED(D-T15): only the session's trainer or an admin may issue exams; a guest must sign in
+    it "makes a guest sign in and issues nothing" do
+      get logout_path
+      expect { perform_enqueued_jobs { create_from_training } }.not_to change(Exam, :count)
+      expect(response).to redirect_to(login_path(back_to: create_from_training_exams_path))
+      expect(deliveries).to be_empty
+    end
+
+    %i[regular staff].each do |role|
+      it "refuses a #{role} who is not the session's trainer" do
         sign_in_as(role)
-        expect { perform_enqueued_jobs { create_from_training } }.to change(Exam, :count).by(1)
-        expect(response).to have_http_status(:found)
-        expect(deliveries.size).to eq(1)
+        expect { perform_enqueued_jobs { create_from_training } }.not_to change(Exam, :count)
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to eq("You cannot access this area.")
+        expect(deliveries).to be_empty
       end
+    end
+
+    it "is allowed for an admin" do
+      sign_in_as(:admin)
+      expect { perform_enqueued_jobs { create_from_training } }.to change(Exam, :count).by(1)
+      expect(response).to have_http_status(:found)
+      expect(deliveries.size).to eq(1)
+    end
+
+    it "does not accept a GET anymore" do
+      get create_from_training_exams_path, params: { training_session_id: session_record.id }
+      expect(response).to have_http_status(:not_found) # routed to exams#show with id "create_from_training"
+      expect(Exam.count).to eq(0)
     end
   end
 
-  describe "GET /exams/create_for_single_user" do
+  describe "POST /exams/create_for_single_user" do
+    def create_for_single_user(user, session = session_record)
+      post create_for_single_user_exams_path, params: { training_session_id: session.id, user_id: user.id }
+    end
+
+    before { log_in!(session_record.user) }
+
     it "creates the exam for that user without emailing, and redirects to the staff session page" do
       expect do
         perform_enqueued_jobs do
-          get create_for_single_user_exams_path, params: { training_session_id: session_record.id, user_id: student.id }
+          create_for_single_user(student)
         end
       end.to change { Exam.where(user: student).count }.by(1)
       expect(response).to redirect_to(staff_training_session_path(session_record.id))
@@ -514,17 +598,36 @@ RSpec.describe "Exams", type: :request do
       expect(Exam.last.exam_questions.count).to eq($n_exams_question)
     end
 
-    it "is open to a guest and does not require the user to be enrolled in the session" do
+    it "does not require the user to be enrolled in the session" do
       stranger = create(:user, :regular_user)
-      expect do
-        get create_for_single_user_exams_path, params: { training_session_id: session_record.id, user_id: stranger.id }
-      end.to change { Exam.where(user: stranger).count }.by(1)
+      expect { create_for_single_user(stranger) }.to change { Exam.where(user: stranger).count }.by(1)
+    end
+
+    # FIXED(D-T15)
+    it "makes a guest sign in and issues nothing" do
+      get logout_path
+      expect { create_for_single_user(student) }.not_to change(Exam, :count)
+      expect(response).to redirect_to(login_path(back_to: create_for_single_user_exams_path))
+    end
+
+    %i[regular staff].each do |role|
+      it "refuses a #{role} who is not the session's trainer" do
+        sign_in_as(role)
+        expect { create_for_single_user(student) }.not_to change(Exam, :count)
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to eq("You cannot access this area.")
+      end
+    end
+
+    it "is allowed for an admin" do
+      sign_in_as(:admin)
+      expect { create_for_single_user(student) }.to change { Exam.where(user: student).count }.by(1)
     end
 
     it "answers 404 for an unknown user or session" do
-      get create_for_single_user_exams_path, params: { training_session_id: session_record.id, user_id: 0 }
+      post create_for_single_user_exams_path, params: { training_session_id: session_record.id, user_id: 0 }
       expect(response).to have_http_status(:not_found)
-      get create_for_single_user_exams_path, params: { training_session_id: 0, user_id: student.id }
+      post create_for_single_user_exams_path, params: { training_session_id: 0, user_id: student.id }
       expect(response).to have_http_status(:not_found)
     end
   end
@@ -534,24 +637,43 @@ RSpec.describe "Exams", type: :request do
   describe "DELETE /exams/:id" do
     let!(:exam) { new_exam }
 
-    # WART(D-T16): destroy has no sign-in or role check
-    %i[guest regular staff admin].each do |role|
-      it "deletes the exam and its questions for a #{role}" do
+    # FIXED(D-T16): destroy is admin-only (a guest must sign in)
+    it "makes a guest sign in and deletes nothing" do
+      expect { delete exam_path(exam) }.not_to change(Exam, :count)
+      expect(response).to redirect_to(login_path(back_to: exam_path(exam)))
+    end
+
+    %i[regular staff].each do |role|
+      it "does not let a #{role} delete the exam" do
         sign_in_as(role)
-        expect { delete exam_path(exam) }.to change(Exam, :count).by(-1)
-          .and change(ExamQuestion, :count).by(-fixture[:questions].size)
-        expect(response).to redirect_to(exams_path)
-        expect(flash[:notice]).to eq("Exam Deleted")
+        expect { delete exam_path(exam) }.not_to change(Exam, :count)
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to eq("You cannot access this area.")
       end
+    end
+
+    it "does not let the exam's owner delete it" do
+      log_in!(student)
+      expect { delete exam_path(exam) }.not_to change(Exam, :count)
+    end
+
+    it "deletes the exam and its questions for an admin" do
+      sign_in_as(:admin)
+      expect { delete exam_path(exam) }.to change(Exam, :count).by(-1)
+        .and change(ExamQuestion, :count).by(-fixture[:questions].size)
+      expect(response).to redirect_to(exams_path)
+      expect(flash[:notice]).to eq("Exam Deleted")
     end
 
     it "keeps the responses' rows but loses the exam link (exam_questions are destroyed, responses are not)" do
       log_in!(student)
       answer!(exam, fixture[:questions].first)
+      sign_in_as(:admin)
       expect { delete exam_path(exam) }.not_to change(ExamResponse, :count)
     end
 
     it "answers 404 for an unknown id" do
+      sign_in_as(:admin)
       delete exam_path(0)
       expect(response).to have_http_status(:not_found)
     end

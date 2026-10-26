@@ -10,6 +10,7 @@ RUN apk add --no-cache \
     build-base \
     ca-certificates \
     chromium \
+    chromium-chromedriver \
     curl \
     git \
     jemalloc \

@@ -42,10 +42,16 @@ RSpec.describe ChatMessage, type: :model do
       expect(described_class.unread(owner)).not_to include(read)
     end
 
-    it "excludes messages with a NULL sender (SQL != NULL is never true)" do
-      orphan = described_class.create!(job_order: order, sender: User.new, message: "guest")
-      expect(orphan.reload.sender_id).to be_nil
+    it "excludes legacy messages with a NULL sender (SQL != NULL is never true)" do
+      orphan = described_class.new(job_order: order, sender_id: nil, message: "legacy")
+      orphan.save!(validate: false)
       expect(described_class.unread(owner)).to be_empty
+    end
+
+    # FIXED(D-J05): a message needs a sender, including the unsaved guest User.new
+    it "is invalid without a sender" do
+      expect(described_class.new(job_order: order, sender: User.new, message: "guest")).not_to be_valid
+      expect(described_class.new(job_order: order, message: "nobody")).not_to be_valid
     end
   end
 

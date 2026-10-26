@@ -1,5 +1,10 @@
 # frozen_string_literal: true
 
+# Same plaintext as always ("asa32A353#"), hashed once at bcrypt's minimum cost.
+# The previous literal was a cost-12 hash, so every real login in specs spent
+# ~0.3 s inside bcrypt (rails_helper's MIN_COST only affects newly created hashes).
+TEST_USER_PASSWORD_HASH = BCrypt::Password.create("asa32A353#", cost: BCrypt::Engine::MIN_COST).to_s
+
 FactoryBot.define do
   factory :user do
     read_and_accepted_waiver_form { true }
@@ -10,7 +15,7 @@ FactoryBot.define do
     sequence(:username) { |n| "user#{n}#{SecureRandom.hex(3)}" }
     wallet { 1000 }
     confirmed { true }
-    password { "$2a$12$t3MkhdxmndlLDLHiJiVqBOdBAjFZWidydW/vd53.pS5ej7DcIZ1LC" }
+    password { TEST_USER_PASSWORD_HASH }
     role { "regular_user" }
     identity { "community_member" }
     gender { "Male" }

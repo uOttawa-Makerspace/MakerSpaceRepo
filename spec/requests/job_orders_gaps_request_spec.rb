@@ -281,16 +281,17 @@ RSpec.describe "JobOrders gaps", type: :request do
       end
     end
 
-    it "withholds the action-required notice from a non-owner" do
+    it "withholds the action-required notice from a non-owner (staff)" do
       order = order_with_task!(status_key: :user_approval)
       order.job_tasks.first.update!(job_type: JobType.find_by!(name: "3D Print"))
-      session_login!(other)
+      order.job_tasks.first.build_job_task_quote(price: 10, service_price: 0, service_quantity: 0).save!
+      session_login!(staff)
       get job_order_path(order)
       expect(response).to have_http_status(:ok)
       expect(flash[:notice]).to be_nil
     end
 
-    it "renders for staff and admin viewers (no ownership gate, D-J06) without marking messages read" do
+    it "renders for staff and admin viewers (allowed by the D-J06 gate) without marking messages read" do
       order = order_with_task!(status_key: :staff_approval)
       order.job_tasks.first.update!(job_type: JobType.find_by!(name: "3D Print"))
       ChatMessage.create!(job_order: order, sender: staff, message: "internal note")

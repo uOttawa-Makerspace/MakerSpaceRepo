@@ -1,5 +1,8 @@
 class JobTasksController < SessionsController
+  before_action :signed_in
   before_action :set_job_order_and_task, except: [:create]
+  before_action :set_job_order, only: [:create]
+  before_action :authorize_order!
 
   def destroy
     @job_task.destroy
@@ -10,8 +13,6 @@ class JobTasksController < SessionsController
   end
 
   def create
-    @job_order = JobOrder.find(params[:job_order_id])
-
     highest_numbered_task = @job_order.job_tasks.maximum("CAST(SUBSTRING(title FROM 'Task ([0-9]+)') AS INTEGER)") || 0
     total_tasks_count = @job_order.job_tasks.count
     next_task_number = [highest_numbered_task, total_tasks_count].max + 1
@@ -185,8 +186,20 @@ step: params[:step]))
     flash[:notice] = t("job_orders.alerts.job_order_submitted_for_approval")
   end
 
+  def set_job_order
+    @job_order = JobOrder.not_deleted.find(params[:job_order_id])
+  end
+
   def set_job_order_and_task
-    @job_order = JobOrder.find(params[:job_order_id])
+    set_job_order
     @job_task = @job_order.job_tasks.find(params[:id])
+  end
+
+  # Same audience as JobOrdersController#set_job_order: owner, staff or admin.
+  def authorize_order!
+    return if current_user.admin? || current_user.staff? || current_user.id == @job_order.user_id
+
+    flash[:alert] = t("job_orders.alerts.no_permission")
+    redirect_to new_job_orders_path
   end
 end

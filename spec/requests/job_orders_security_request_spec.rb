@@ -38,104 +38,85 @@ RSpec.describe "Job order security pins", type: :request do
     end
   end
 
-  describe "D-J25: a guest chat message poisons the order" do
+  describe "D-J25: a NULL-sender chat row can no longer poison the order" do
     let(:order) { order_with_task! }
 
-    before do
-      post chat_messages_path,
-           params: { chat_message: { message: "hello from nowhere", job_order_id: order.id } }
-      expect(response).to have_http_status(:no_content)
+    # A legacy row, as it could exist before the fix / data migration.
+    let!(:legacy) do
+      ChatMessage.new(job_order: order, sender_id: nil, message: "hello from nowhere").tap { |m| m.save!(validate: false) }
     end
 
-    # WART(D-J25): the NULL-sender row is stored (D-J05), then the shared
-    # partial `_message.html.erb` calls `chat_message.sender.name` on nil.
-    it "stores a message without a sender" do
-      message = ChatMessage.find_by!(message: "hello from nowhere")
-      expect(message.sender_id).to be_nil
-      expect(message.job_order_id).to eq(order.id)
-    end
-
-    it "makes the chat thread endpoint raise NoMethodError (500) for guests, owners and staff" do
-      [nil, owner, staff].each do |viewer|
-        session_login!(viewer) if viewer
+    # FIXED(D-J25): the partial is nil-safe ("Unknown"), so a stray row never 500s
+    it "renders the chat thread with an Unknown sender for owners and staff" do
+      [owner, staff].each do |viewer|
+        session_login!(viewer)
         get chat_messages_path(job_order_id: order.id)
-        expect(response).to have_http_status(:internal_server_error)
-        expect(response.body).to include("NoMethodError")
-        expect(error_text).to include("undefined method 'name' for nil")
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("hello from nowhere")
+        expect(response.body).to include("Unknown")
       end
     end
 
-    it "makes the order page itself 500 for the owner (the show page renders the same partial)" do
-      session_login!(owner)
-      get job_order_path(order)
-      expect(response).to have_http_status(:internal_server_error)
-      expect(error_text).to include("undefined method 'name' for nil")
+    it "renders the order page for the owner and for staff" do
+      # (a task without a job type breaks the staff quote modal: separate, unfixed defect)
+      order.job_tasks.first.update!(job_type: JobType.find_by!(name: "3D Print"))
+      [owner, staff].each do |viewer|
+        session_login!(viewer)
+        get job_order_path(order)
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("Unknown")
+      end
     end
 
-    it "makes the order page 500 for staff too" do
-      session_login!(staff)
-      get job_order_path(order)
-      expect(response).to have_http_status(:internal_server_error)
-    end
+    it "a guest POST stores nothing and does not break the order page" do
+      expect do
+        post chat_messages_path,
+             params: { chat_message: { message: "guest note", job_order_id: order.id } }
+      end.not_to(change { ChatMessage.count })
 
-    it "leaves other orders unaffected" do
-      healthy = order_with_task!(title: "Task #1")
       session_login!(owner)
-      get job_order_path(healthy)
+      get job_order_path(order)
       expect(response).to have_http_status(:ok)
     end
 
-    it "also breaks the notification mail for that message" do
-      message = ChatMessage.find_by!(message: "hello from nowhere")
-      expect { ChatMessageMailer.new_message(message, [owner]).deliver_now }
-        .to raise_error(NoMethodError, /email/)
+    it "the model rejects a message without a sender (also for the unsaved guest User.new)" do
+      expect(ChatMessage.new(job_order: order, sender: User.new, message: "x")).not_to be_valid
+      expect(ChatMessage.new(job_order: order, message: "x")).not_to be_valid
     end
 
-    # No notification is attempted for the guest message: `sender_id != NULL`
-    # matches nobody, so no recipients are found and nothing is delivered.
-    it "delivers no notification mail for the guest message (an owner message precedes it)" do
-      ChatMessage.create!(job_order: order, sender: owner, message: "owner was here first")
-      ActionMailer::Base.deliveries.clear
-      perform_enqueued_jobs do
-        post chat_messages_path,
-             params: { chat_message: { message: "second guest note", job_order_id: order.id } }
-      end
-      expect(ActionMailer::Base.deliveries).to be_empty
-    end
-
-    it "cannot be saved again afterwards (the sender validation only passes on the unsaved User.new)" do
-      message = ChatMessage.find_by!(message: "hello from nowhere")
-      expect { message.save! }.to raise_error(ActiveRecord::RecordInvalid, /Sender must exist/)
+    it "cannot be saved again while the sender is missing" do
+      expect { legacy.save! }.to raise_error(ActiveRecord::RecordInvalid, /Sender/)
     end
   end
 
-  describe "D-J05: chat writes need no ownership" do
-    # WART(D-J05): a signed-in stranger writes into the owner's order thread
-    it "lets a signed-in non-participant post into someone else's order" do
+  describe "D-J05: chat writes need order access" do
+    # FIXED(D-J05): signed-in strangers are forbidden; owner/staff/admin may post
+    it "forbids a signed-in non-participant" do
       order = order_with_task!
       session_login!(other)
 
       expect do
         post chat_messages_path,
              params: { chat_message: { message: "stranger speaking", job_order_id: order.id } }
-      end.to change { order.chat_messages.count }.by(1)
+      end.not_to(change { order.chat_messages.count })
 
-      expect(response).to have_http_status(:no_content)
-      expect(order.chat_messages.last.sender).to eq(other)
+      expect(response).to have_http_status(:forbidden)
     end
 
-    it "accepts a message on a Draft order from a non-owner and a soft-deleted order" do
+    it "lets the owner post on a Draft order but refuses a soft-deleted order" do
       draft = order_with_task!(status_key: :draft)
       deleted = order_with_task!
       deleted.update!(is_deleted: true)
-      session_login!(other)
+      session_login!(owner)
 
-      [draft, deleted].each do |order|
-        post chat_messages_path,
-             params: { chat_message: { message: "anyone home?", job_order_id: order.id } }
-        expect(response).to have_http_status(:no_content)
-        expect(order.chat_messages.pluck(:message)).to eq(["anyone home?"])
-      end
+      post chat_messages_path, params: { chat_message: { message: "anyone home?", job_order_id: draft.id } }
+      expect(response).to have_http_status(:no_content)
+      expect(draft.chat_messages.pluck(:message)).to eq(["anyone home?"])
+
+      post chat_messages_path, params: { chat_message: { message: "anyone home?", job_order_id: deleted.id } }
+      expect(response).to have_http_status(:no_content)
+      expect(flash[:error]).to start_with("Failed to send message")
+      expect(deleted.chat_messages).to be_empty
     end
 
     it "answers 204 with a failure flash for a missing or unknown job_order_id" do
@@ -151,7 +132,7 @@ RSpec.describe "Job order security pins", type: :request do
     end
   end
 
-  describe "D-J26: the wizard leaks uploads to guests" do
+  describe "D-J26: the wizard no longer leaks uploads" do
     let(:order) { order_with_task!(status_key: :draft) }
     let(:task) { order.job_tasks.first }
 
@@ -160,9 +141,25 @@ RSpec.describe "Job order security pins", type: :request do
       task.user_files.attach(FilesTestHelper.stl)
     end
 
-    # WART(D-J26): edit has no gate (D-J03) and step 2 prints every uploaded
-    # file's name, its attachment signed id (checkbox value) and a download link.
-    it "shows a guest the filenames, signed ids and proxy download links of the owner's files" do
+    # FIXED(D-J26): the edit gate (D-J03) blocks guests/strangers, and only the
+    # owner/admin (who can submit the form) get the signed-id checkbox.
+    it "shows a guest nothing (redirect to login)" do
+      get edit_job_order_job_task_path(order, task, step: 2)
+
+      expect(response).to have_http_status(:redirect)
+      expect(response.body).not_to include(task.user_files.first.filename.to_s)
+      expect(response.body).not_to include("/rails/active_storage/blobs/")
+    end
+
+    it "shows a signed-in stranger nothing" do
+      session_login!(other)
+      get edit_job_order_job_task_path(order, task, step: 2)
+      expect(response).to redirect_to(new_job_orders_path)
+      expect(response.body).not_to include(task.user_files.first.filename.to_s)
+    end
+
+    it "gives the owner the filenames, signed-id checkbox and download link" do
+      session_login!(owner)
       get edit_job_order_job_task_path(order, task, step: 2)
 
       expect(response).to have_http_status(:ok)
@@ -173,20 +170,15 @@ RSpec.describe "Job order security pins", type: :request do
       expect(response.body).to include("/rails/active_storage/blobs/proxy/#{attachment.blob.signed_id}/")
     end
 
-    it "lets the guest actually download the file through the leaked link (UNVERIFIED in the review: confirmed)" do
+    it "shows staff the filename and download link but no signed-id checkbox" do
+      session_login!(staff)
       get edit_job_order_job_task_path(order, task, step: 2)
-      link = response.body[%r{/rails/active_storage/blobs/proxy/[^"?]+}]
-      expect(link).to be_present
 
-      get link
       expect(response).to have_http_status(:ok)
-      expect(response.body.bytesize).to eq(File.size(Rails.root.join("spec/support/assets/test.stl")))
-    end
-
-    it "leaks to a signed-in stranger the same way" do
-      session_login!(other)
-      get edit_job_order_job_task_path(order, task, step: 2)
-      expect(response.body).to include(task.user_files.first.filename.to_s)
+      attachment = task.reload.user_files.first
+      expect(response.body).to include(attachment.filename.to_s)
+      expect(response.body).not_to include(%(value="#{attachment.signed_id}"))
+      expect(response.body).to include("/rails/active_storage/blobs/proxy/")
     end
   end
 
@@ -201,12 +193,22 @@ RSpec.describe "Job order security pins", type: :request do
       order.job_quote_line_items.create!(description: "Rush", price: 5)
     end
 
-    # WART(D-J02/D-J35): delete has no gate and no state guard; the has_one
-    # :job_task_quote (and its options) are destroyed with the task.
-    it "lets a guest delete a task of a COMPLETED, quoted order and the total drops" do
+    # FIXED(D-J02): guests and strangers can no longer delete (and so cascade the
+    # quote). WART(D-J35) stays: the OWNER may still delete after submit/payment.
+    it "refuses a guest and a stranger on a COMPLETED, quoted order" do
       expect(order.reload.total_price).to eq(55)
-      quote_id = task.job_task_quote.id
 
+      expect { delete job_order_job_task_path(order, task) }.not_to change(JobTask, :count)
+      session_login!(other)
+      expect do
+        delete job_order_job_task_path(order, task)
+      end.not_to change(JobTaskQuote, :count)
+
+      expect(order.reload.total_price).to eq(55)
+    end
+
+    it "still lets the owner delete from a COMPLETED order, cascading the quote (D-J35, intended)" do
+      session_login!(owner)
       expect do
         delete job_order_job_task_path(order, task)
       end.to change(JobTask, :count).by(-1)
@@ -214,21 +216,16 @@ RSpec.describe "Job order security pins", type: :request do
         .and change(JobTaskQuoteOption, :count).by(-1)
 
       expect(response).to redirect_to(job_order_path(order))
-      expect(JobTaskQuote.exists?(quote_id)).to be(false)
-      expect(order.reload.total_price).to eq(5) # only the line item is left
-      expect(order.job_order_statuses.last.job_status).to eq(JobStatus::COMPLETED)
+      expect(order.reload.total_price).to eq(5)
     end
 
-    it "also works on a PAID order and on a soft-deleted order" do
-      advance = order.job_order_statuses.create!(job_status: JobStatus::PAID, user: owner)
-      expect(advance).to be_persisted
-      order.update!(is_deleted: true) # D-J48: task routes use a plain JobOrder.find
-
+    it "404s on a soft-deleted order (D-J48)" do
+      order.update!(is_deleted: true)
+      session_login!(owner)
       delete job_order_job_task_path(order, task)
-      expect(response).to redirect_to(job_order_path(order))
-      expect(JobTask.exists?(task.id)).to be(false)
+      expect(response).to have_http_status(:not_found)
+      expect(JobTask.exists?(task.id)).to be(true)
     end
-
   end
 
   describe "D-J35: the owner can still edit after submission" do

@@ -83,10 +83,9 @@ class QuestionsController < AdminAreaController
   end
 
   def delete_individually
-    @image = ActiveStorage::Attachment.find(params[:id])
-    question_id = @image.record.id
+    @question = Question.find(params[:question_id])
+    @image = @question.images.attachments.find(params[:id])
     @image.purge
-    @question = Question.find(question_id)
     redirect_to edit_question_path(params[:question_id]),
                 notice: "Question image deleted"
   end
