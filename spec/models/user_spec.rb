@@ -807,11 +807,13 @@ RSpec.describe User, type: :model do
       expect(payload["exp"]).to be_within(10).of(14.days.from_now.to_i)
     end
 
-    it "send_password_reset emails the reset link with user and expiry tokens" do
+    it "send_password_reset emails the reset link with a single purpose-scoped token" do
       expect { u.send_password_reset }.to change { ActionMailer::Base.deliveries.size }.by(1)
       mail = ActionMailer::Base.deliveries.last
       expect(mail.to).to eq([u.email])
       expect(mail.subject).to eq("Reset your MakerRepo password")
+      token = CGI.unescape(mail.body.encoded[/reset_password_form\?token=([^"'&\s<]+)/, 1])
+      expect(User.find_by_token_for(:password_reset, token)).to eq(u)
     end
   end
 

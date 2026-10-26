@@ -34,14 +34,15 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
     JSON.parse(response.body)["signed_in"] == "true"
   end
 
-  def reset_params(u, expires: 1.day.from_now, pw: "NewPassw0rd!x#9", confirm: pw)
+  def reset_params(u, pw: "NewPassw0rd!x#9", confirm: pw)
     {
-      user_token: verifier.generate(u.id),
-      expiry_date_token: verifier.generate(expires),
+      token: u.generate_token_for(:password_reset),
       password: pw,
       password_confirmation: confirm
     }
   end
+
+  let(:expired_alert) { "This link has expired or has already been used. Please request a new one." }
 
   def registration_params(overrides = {})
     FactoryBot.attributes_for(:user, :regular_user, password: password).merge(overrides)
@@ -268,7 +269,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(deliveries.size).to eq(1)
       expect(deliveries.first.to).to eq([user.email])
       expect(deliveries.first.subject).to eq("Reset your MakerRepo password")
-      expect(deliveries.first.body.to_s).to include("user_token=").and include("expiry_date_token=")
+      expect(deliveries.first.body.to_s).to include("reset_password_form?token=")
     end
 
     it "unknown address: same notice, no mail" do
@@ -298,10 +299,20 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
   end
 
   describe "password reset (GET /reset_password_form, PATCH /reset_password_confirmation)" do
-    it "renders the form with the tokens as hidden fields (no token validation on GET)" do
-      get reset_password_form_users_path, params: { user_token: "garbage", expiry_date_token: "junk" }
+    it "renders the form with the token as a hidden field" do
+      token = user.generate_token_for(:password_reset)
+      get reset_password_form_users_path, params: { token: token }
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include('name="user_token"').and include("garbage")
+      expect(response.body).to include('name="token"').and include(token)
+    end
+
+    it "a garbage, missing or legacy-format link redirects to the forgot-password page with the expired message" do
+      # FIXED(D-I11): the form validates the token on GET; previously mailed links (user_token + expiry_date_token) are dead
+      [{ token: "garbage" }, {}, { user_token: verifier.generate(user.id), expiry_date_token: verifier.generate(1.day.from_now) }].each do |params|
+        get reset_password_form_users_path, params: params
+        expect(response).to redirect_to(forgot_password_path)
+        expect(flash[:alert]).to eq(expired_alert)
+      end
     end
 
     it "full flow: emailed link resets the password, confirms by email, and the new password works" do
@@ -311,7 +322,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       deliveries.clear
 
       patch reset_password_confirmation_users_path,
-            params: { user_token: query["user_token"], expiry_date_token: query["expiry_date_token"],
+            params: { token: query["token"],
                       password: "NewPassw0rd!x#9", password_confirmation: "NewPassw0rd!x#9" }
       expect(response).to redirect_to(root_path)
       expect(flash[:notice]).to eq("Your password has been updated, an email will be sent to confirm!")
@@ -337,63 +348,71 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(user.reload.authenticate_password(password)).to be(true)
     end
 
-    it "expired expiry token (older than 24h): alert, password unchanged" do
-      params = reset_params(user, expires: 1.day.from_now)
-      travel 25.hours do
+    it "a link older than 2 hours is expired: alert, password unchanged" do
+      # FIXED(D-I11): reset tokens expire after 2 hours (was a separate 24h timestamp)
+      params = reset_params(user)
+      travel 121.minutes do
         patch reset_password_confirmation_users_path, params: params
-        expect(flash[:alert]).to start_with("Something went wrong. You might have tried to change your password more than 24h")
+        expect(flash[:alert]).to eq(expired_alert)
       end
       expect(user.reload.authenticate_password(password)).to be(true)
     end
 
-    it "tampered user token: generic alert" do
+    it "a link younger than 2 hours still works" do
+      params = reset_params(user)
+      travel 119.minutes do
+        patch reset_password_confirmation_users_path, params: params
+        expect(flash[:notice]).to start_with("Your password has been updated")
+      end
+    end
+
+    it "tampered token: expired alert, password unchanged" do
       p = reset_params(user)
-      patch reset_password_confirmation_users_path, params: p.merge(user_token: p[:user_token] + "x")
-      expect(flash[:alert]).to eq(
-        "Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com"
-      )
+      patch reset_password_confirmation_users_path, params: p.merge(token: p[:token] + "x")
+      expect(flash[:alert]).to eq(expired_alert)
       expect(user.reload.authenticate_password(password)).to be(true)
     end
 
-    it "tampered expiry token: generic alert" do
-      p = reset_params(user)
-      patch reset_password_confirmation_users_path, params: p.merge(expiry_date_token: p[:expiry_date_token] + "x")
-      expect(flash[:alert]).to start_with("Something went wrong. Try")
-    end
-
-    it "the same link can be reused after a successful reset (not single-use)" do
-      # WART(D-I10): reset tokens are not invalidated after use; the link stays valid for the full 24h and can be replayed to set another password
+    it "the same link cannot be reused after a successful reset" do
+      # FIXED(D-I10): the token is bound to the password digest, so it dies once the password changes
       p = reset_params(user)
       patch reset_password_confirmation_users_path, params: p
       expect(flash[:notice]).to start_with("Your password has been updated")
       patch reset_password_confirmation_users_path,
             params: p.merge(password: "SecondPassw0rd!x#7", password_confirmation: "SecondPassw0rd!x#7")
-      expect(flash[:notice]).to start_with("Your password has been updated")
-      expect(user.reload.authenticate_password("SecondPassw0rd!x#7")).to be(true)
-    end
-
-    it "the user token never expires and is not bound to the expiry token" do
-      # WART(D-I11): the reset user token is the same :user verifier message as the confirmation-email token (no expiry, no purpose); the expiry token is an independent signed timestamp not bound to the user id
-      confirmation_token = verifier.generate(user.id)
-      other_expiry = verifier.generate(1.day.from_now) # e.g. from the attacker's own reset email
-      travel 400.days do
-        patch reset_password_confirmation_users_path,
-              params: { user_token: confirmation_token,
-                        expiry_date_token: verifier.generate(1.day.from_now),
-                        password: "NewPassw0rd!x#9", password_confirmation: "NewPassw0rd!x#9" }
-        expect(flash[:notice]).to start_with("Your password has been updated")
-      end
-      expect(other_expiry).to be_present
+      expect(flash[:alert]).to eq(expired_alert)
       expect(user.reload.authenticate_password("NewPassw0rd!x#9")).to be(true)
     end
 
-    it "a non-timestamp :user token as the expiry token is treated as expired" do
+    it "a mismatched confirmation does not consume the link" do
+      p = reset_params(user)
+      patch reset_password_confirmation_users_path, params: p.merge(password_confirmation: "different")
+      patch reset_password_confirmation_users_path, params: p
+      expect(flash[:notice]).to start_with("Your password has been updated")
+    end
+
+    it "an old confirmation-email token (same :user verifier, no purpose) cannot reset a password" do
+      # FIXED(D-I11): reset tokens are purpose-scoped and bound to the user; a confirmation token plus any timestamp no longer works
       patch reset_password_confirmation_users_path,
-            params: { user_token: verifier.generate(user.id), expiry_date_token: verifier.generate(user.id),
+            params: { token: verifier.generate(user.id), user_token: verifier.generate(user.id),
+                      expiry_date_token: verifier.generate(1.day.from_now),
                       password: "NewPassw0rd!x#9", password_confirmation: "NewPassw0rd!x#9" }
-      expect(response).to redirect_to(root_path)
-      expect(flash[:alert]).to start_with("Something went wrong. You might have tried")
+      expect(flash[:alert]).to eq(expired_alert)
       expect(user.reload.authenticate_password(password)).to be(true)
+    end
+
+    it "another user's reset token cannot reset this account" do
+      other = create(:user, :regular_user)
+      patch reset_password_confirmation_users_path, params: reset_params(other)
+      expect(user.reload.authenticate_password(password)).to be(true)
+      expect(other.reload.authenticate_password(password)).to be(false)
+    end
+
+    it "a reset revokes JWTs issued before it (D-I01)" do
+      tok = user.token
+      patch reset_password_confirmation_users_path, params: reset_params(user)
+      get check_signed_in_path, headers: { "Authorization" => "Bearer #{tok}" }
+      expect(JSON.parse(response.body)["signed_in"]).to eq("false")
     end
 
     it "a reset also unlocks a locked account" do
@@ -423,12 +442,12 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(user.reload.authenticate_password("abc")).to be(true)
     end
 
-    it "soft-deleted user: 404" do
+    it "soft-deleted user: the link is treated as expired" do
       u = create(:user, :regular_user)
       p = reset_params(u)
       u.update_columns(deleted: true)
       patch reset_password_confirmation_users_path, params: p
-      expect(response).to have_http_status(:not_found)
+      expect(flash[:alert]).to eq(expired_alert)
     end
   end
 

@@ -139,8 +139,7 @@ class MsrMailerPreview < ActionMailer::Preview
   def forgot_password_email
     MsrMailer.forgot_password(
       User.first.email,
-      "sample_user_hash",
-      "sample_expiry_date_hash"
+      "sample_reset_token"
     )
   end
 

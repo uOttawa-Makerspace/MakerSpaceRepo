@@ -211,9 +211,8 @@ class MsrMailer < ApplicationMailer
   #   mail(to: email, subject: 'New password for MakerRepo')
   # end
 
-  def forgot_password(email, user_hash, expiry_date_hash)
-    @user_hash = user_hash
-    @expiry_date_hash = expiry_date_hash
+  def forgot_password(email, token)
+    @token = token
     mail(to: email, subject: "Reset your MakerRepo password")
   end
 

@@ -243,6 +243,12 @@ class User < ApplicationRecord
 
   default_scope { where(deleted: false) }
 
+  # D-I10/D-I11: purpose-scoped, expiring reset token that dies with the
+  # password it was issued for (the digest changes on every reset).
+  generates_token_for :password_reset, expires_in: 2.hours do
+    password&.last(10)
+  end
+
   scope :no_waiver_users, -> { where(read_and_accepted_waiver_form: false) }
   
   scope :between_dates_picked, ->(start_date, end_date) {
@@ -394,9 +400,7 @@ class User < ApplicationRecord
   end
 
   def send_password_reset
-    user_hash = Rails.application.message_verifier(:user).generate(id)
-    expiry_date_hash = Rails.application.message_verifier(:user).generate(1.day.from_now)
-    MsrMailer.forgot_password(email, user_hash, expiry_date_hash).deliver_now
+    MsrMailer.forgot_password(email, generate_token_for(:password_reset)).deliver_now
   end
 
   # ============================================

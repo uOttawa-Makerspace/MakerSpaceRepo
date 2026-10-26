@@ -25,6 +25,9 @@ class UsersController < SessionsController
                   unlock_account
                 ]
 
+  LINK_EXPIRED_ALERT =
+    'This link has expired or has already been used. Please request a new one.'
+
   def create
     @new_user = User.new(user_params)
     @new_user.pword = params[:user][:password] if @new_user.valid?
@@ -282,47 +285,35 @@ class UsersController < SessionsController
   end
 
   def reset_password_form
+    return if User.find_by_token_for(:password_reset, params[:token])
+
+    flash[:alert] = LINK_EXPIRED_ALERT
+    redirect_to forgot_password_path
   end
 
   def reset_password_confirmation
-    @user_token = params[:user_token]
-    @expiry_date_token = params[:expiry_date_token]
-    @user_verifier = Rails.application.message_verifier(:user)
-    if @user_verifier.valid_message?(@user_token) &&
-         @user_verifier.valid_message?(@expiry_date_token)
-      if params[:password] == params[:password_confirmation]
-        user_id = @user_verifier.verify(@user_token)
-        expiry_date = @user_verifier.verify(@expiry_date_token)
-        if User.find(user_id).present? && Time.now <= expiry_date
-          @user = User.find(user_id)
-          if @user.locked?
-            @user.update(locked: false)
-            @user.update(auth_attempts: 0)
-            @user.update(locked_until: nil)
-          end
-          @user.pword = params[:password]
-          if @user.save!
-            MsrMailer.confirm_password_change(@user).deliver_now
-            flash[
-              :notice
-            ] = 'Your password has been updated, an email will be sent to confirm!'
-          else
-            flash[
-              :alert
-            ] = 'An error occured while trying to change your password. Please try again later or send us an email at uottawa.makerepo@gmail.com'
-          end
-        else
-          flash[
-            :alert
-          ] = 'Something went wrong. You might have tried to change your password more than 24h after the email was sent. Try to access the page again or send us an email at uottawa.makerepo@gmail.com.'
-        end
-      else
-        flash[:alert] = 'Your password and password confirmation do not match.'
-      end
+    user = User.find_by_token_for(:password_reset, params[:token])
+    if user.nil?
+      flash[:alert] = LINK_EXPIRED_ALERT
+    elsif params[:password] != params[:password_confirmation]
+      flash[:alert] = 'Your password and password confirmation do not match.'
     else
-      flash[
-        :alert
-      ] = 'Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com'
+      if user.locked?
+        user.update(locked: false)
+        user.update(auth_attempts: 0)
+        user.update(locked_until: nil)
+      end
+      user.pword = params[:password]
+      if user.save!
+        MsrMailer.confirm_password_change(user).deliver_now
+        flash[
+          :notice
+        ] = 'Your password has been updated, an email will be sent to confirm!'
+      else
+        flash[
+          :alert
+        ] = 'An error occured while trying to change your password. Please try again later or send us an email at uottawa.makerepo@gmail.com'
+      end
     end
     redirect_to root_path
   end
