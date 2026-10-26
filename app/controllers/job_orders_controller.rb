@@ -165,7 +165,8 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
            JobStatus::WAITING_PROCESSED,
            true,
            JobStatus::DECLINED,
-           nil
+           nil,
+           actor: @job_order.user
          )
         true
       else
@@ -550,7 +551,8 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
     true_status,
     need_false_status,
     false_status = nil,
-    redirect_link = job_order_path(@job_order.id)
+    redirect_link = job_order_path(@job_order.id),
+    actor: @user
   )
     error = false
 
@@ -564,14 +566,14 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
       @job_order.job_order_statuses << JobOrderStatus.create(
         job_order: @job_order,
         job_status: true_status,
-        user: @user
+        user: actor
       )
       error = true unless @job_order.save
     elsif param.present? && param == "false" && need_false_status
       @job_order.job_order_statuses << JobOrderStatus.create(
         job_order: @job_order,
         job_status: false_status,
-        user: @user
+        user: actor
       )
       error = true unless @job_order.save
     else

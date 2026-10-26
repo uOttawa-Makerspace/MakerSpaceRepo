@@ -414,12 +414,13 @@ RSpec.describe "JobOrders workflow", type: :request do
       expect(error_text).to include("NoMethodError")
     end
 
-    # WART(D-J11): any logged-in user holding the link can approve; the recorded actor is that user
-    it "lets a signed-in non-owner approve and records them as the actor, without any staff mail" do
+    # WART(D-J11): any logged-in user holding the link can approve
+    # FIXED(D-J09): the recorded actor is always the order's owner, never the visitor
+    it "lets a signed-in non-owner approve and records the order owner as the actor, without any staff mail" do
       session_login!(other)
       patch user_magic_approval_confirmation_job_orders_path, params: { token: token, approved: "true" }
       expect(status_names(order)).to end_with("Waiting to be Processed")
-      expect(order.job_order_statuses.last.user).to eq(other)
+      expect(order.job_order_statuses.last.user).to eq(owner)
       expect(deliveries).to be_empty
     end
 

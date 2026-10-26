@@ -1167,18 +1167,31 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
         end
       end
 
-      # WART(D-J09): for an anonymous visitor @user is User.new, so the new status row
-      # fails its presence validation and the update fails silently — the
-      # guest approval flow cannot persist unless the visitor is logged in.
-      it "renders the error page and changes nothing for an anonymous visitor (no mail)" do
-        expect do
+      # FIXED(D-J09): the status row is attributed to the order's owner, so a
+      # guest following the emailed link can approve or deny without signing in.
+      it "lets an anonymous visitor approve: the status is persisted and attributed to the order owner" do
+        patch user_magic_approval_confirmation_job_orders_path,
+              params: { token: token, approved: "true" }
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("Thank You for Approving/Denying the Job Order!")
+        expect(status_names(magic_order)).to eq(["Waiting for User Approval", "Waiting to be Processed"])
+        expect(magic_order.job_order_statuses.last.user).to eq(owner)
+      end
+
+      it "lets an anonymous visitor deny: Declined, attributed to the owner" do
+        patch user_magic_approval_confirmation_job_orders_path,
+              params: { token: token, approved: "false" }
+        expect(status_names(magic_order)).to end_with("Declined")
+        expect(magic_order.job_order_statuses.last.user).to eq(owner)
+      end
+
+      it "an anonymous replay of a spent link records nothing more" do
+        2.times do
           patch user_magic_approval_confirmation_job_orders_path,
                 params: { token: token, approved: "true" }
-        end.not_to(change { ActionMailer::Base.deliveries.size })
-        expect(response).to have_http_status(:ok)
-        expect(response.body)
-          .to include("An error occured while trying to Approve/Deny the Job Order...")
-        expect(status_names(magic_order)).to eq(["Waiting for User Approval"])
+        end
+        expect(response.body).to include("An error occured while trying to Approve/Deny the Job Order...")
+        expect(status_names(magic_order)).to eq(["Waiting for User Approval", "Waiting to be Processed"])
       end
 
       # WART(D-J10): a validly-signed token with no matching record crashes on nil.
