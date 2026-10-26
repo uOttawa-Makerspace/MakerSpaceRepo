@@ -113,7 +113,7 @@
                 E<%= i + 1 %>:
                 <%= exam.status.capitalize %>
                 <br />
-                <%= if exam.failed? && user.exams.count < 2
+                <%= if (exam.failed? || (exam.ungraded? && exam.expired?)) && exams.size < 2
                       button_to 'Resend Exam',
                               create_for_single_user_exams_path(training_session_id: @current_training_session.id, user_id: user.id),
                               method: :post, class: 'btn btn-secondary'
