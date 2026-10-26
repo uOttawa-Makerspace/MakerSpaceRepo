@@ -28,12 +28,13 @@ namespace :exams do
             ExamQuestion.create_exam_questions(
               new_exam.id,
               new_exam.training.id,
-              $n_exams_question
+              $n_exams_question,
+              training_session.level
             )
           end
         else
           status = Exam::STATUS[:passed]
-          Certification.certify_user(training_session.id, user.id)
+          Certification.certify_user(training_session.id, user.id, training_session.level)
         end
         exam.update(status: status, score: score)
         MsrMailer.finishing_exam(user, exam).deliver_now

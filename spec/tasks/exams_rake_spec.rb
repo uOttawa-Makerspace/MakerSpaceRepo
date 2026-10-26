@@ -1,0 +1,60 @@
+# frozen_string_literal: true
+
+require "rails_helper"
+require "rake"
+
+# The exams:check_expired_exams cron is not scheduled (config/schedule.rb), but
+# the task is still runnable by hand; it must grade an expired open exam the
+# way ExamsController#finish_exam does.
+RSpec.describe "exams:check_expired_exams" do
+  include ActiveJob::TestHelper
+  include TrainingSpecHelpers
+
+  before(:all) do
+    Rails.application.load_tasks unless Rake::Task.task_defined?("exams:check_expired_exams")
+  end
+
+  let(:fixture) { build_exam_fixture(level: "Intermediate") }
+  let(:student) { fixture[:user] }
+  let(:training_session) { fixture[:session] }
+
+  def expired_exam(correct_count:)
+    exam = create(:exam, user: student, training_session: training_session, expired_at: 1.hour.ago,
+                         status: Exam::STATUS[:incomplete], category: fixture[:training].name_en)
+    fixture[:questions].each_with_index do |entry, i|
+      eq = ExamQuestion.create!(exam: exam, question: entry[:question])
+      ExamResponse.create!(exam_question: eq, answer: entry[:correct], correct: true) if i < correct_count
+    end
+    exam
+  end
+
+  def run_task
+    task = Rake::Task["exams:check_expired_exams"]
+    task.reenable
+    perform_enqueued_jobs { task.invoke }
+  end
+
+  before { ActionMailer::Base.deliveries.clear }
+
+  it "certifies a passing expired exam at the session's level" do
+    exam = expired_exam(correct_count: 3)
+    expect { run_task }.to change(Certification, :count).by(1)
+    cert = Certification.last
+    expect([cert.user, cert.training_session, cert.level]).to eq([student, training_session, "Intermediate"])
+    expect(exam.reload).to have_attributes(status: "passed", score: 100)
+  end
+
+  it "fails an expired exam below the pass mark, certifies nothing and creates one retake" do
+    exam = expired_exam(correct_count: 0)
+    expect { run_task }.to change(Exam, :count).by(1).and change(Certification, :count).by(0)
+    expect(exam.reload).to have_attributes(status: "failed", score: 0)
+    expect(Exam.order(:id).last.exam_questions.count).to eq($n_exams_question)
+  end
+
+  it "leaves exams that have not expired alone" do
+    exam = expired_exam(correct_count: 3)
+    exam.update!(expired_at: 1.hour.from_now)
+    expect { run_task }.not_to change(Certification, :count)
+    expect(exam.reload.status).to eq("incomplete")
+  end
+end
