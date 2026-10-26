@@ -199,28 +199,19 @@ class Staff::TrainingSessionsController < StaffDashboardController
 
   private
 
+  # The React app always sends user_id. Only an admin may pick another instructor;
+  # for everyone else the instructor is the current staff user (D-API05).
   def default_params
-    if params[:user_id].present?
-      if @user.admin?
-        {
-          user_id: params[:user_id],
-          training_id: params[:training_id],
-          course: params[:course],
-          space_id: params[:training_session][:space_id],
-          level: params[:level],
-          user_ids: params["training_session_users"]
-        }
-      end
-    else
-      {
-        user_id: current_user.id,
-        training_id: params[:training_id],
-        course: params[:course],
-        space_id: params[:training_session][:space_id],
-        level: params[:level],
-        user_ids: params["training_session_users"]
-      }
-    end
+    instructor_id =
+      @user.admin? && params[:user_id].present? ? params[:user_id] : current_user.id
+    {
+      user_id: instructor_id,
+      training_id: params[:training_id],
+      course: params[:course],
+      space_id: params[:training_session][:space_id],
+      level: params[:level],
+      user_ids: params["training_session_users"]
+    }
   end
 
   def training_session_params
