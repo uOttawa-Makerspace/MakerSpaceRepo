@@ -91,6 +91,17 @@ class PrinterIssuesController < StaffAreaController
     end
   end
 
+  # POST /printer_issues/:id/resolve (MakerRepo React app): same as the staff
+  # UI's resolve, i.e. update(active: false).
+  def resolve
+    issue = PrinterIssue.find(params[:id])
+    if issue.update(active: false)
+      head :ok
+    else
+      render json: { errors: issue.errors.full_messages }, status: :unprocessable_content
+    end
+  end
+
   def destroy
     unless current_user.admin?
       redirect_to printer_issues_path

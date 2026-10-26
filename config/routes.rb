@@ -121,6 +121,7 @@ Rails.application.routes.draw do
   resources :printer_types, except: %i[show]
   resources :printer_issues,
             only: %i[index show new create edit update destroy] do
+    post :resolve, on: :member
     collection do
       get :history
       patch :update_notification_email
