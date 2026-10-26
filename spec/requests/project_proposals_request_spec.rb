@@ -149,18 +149,30 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(mail.subject).to eq("New Project Proposal")
     end
 
-    it "ignores a spoofed user_id but accepts approved/admin_id: a guest can self-approve (D-C36, severity 1)" do
+    it "ignores spoofed approved/admin_id/user_id: a guest cannot self-approve (D-C36)" do
       post project_proposals_path, params: proposal_params(approved: "approved", admin_id: owner.id, user_id: other.id)
       pp = ProjectProposal.find_by(title: "New Idea")
-      # WART(D-C36): :approved and :admin_id are in project_proposal_params, so the review step can be skipped by anyone
-      expect(pp.approved).to eq("approved")
-      expect(pp.admin_id).to eq(owner.id)
+      # FIXED(D-C36): :approved/:admin_id/:user_id are no longer permitted; only approve/decline set review fields
+      expect(pp.approved).to be_nil
+      expect(pp.admin_id).to be_nil
       expect(pp.user_id).to be_nil
     end
 
-    it "500s when approved is sent as the numeric string '1' (enum rejects it)" do
-      expect { post project_proposals_path, params: proposal_params(approved: 1) }.not_to change(ProjectProposal, :count)
-      expect(response).to have_http_status(:internal_server_error)
+    it "a signed-in user cannot self-approve or spoof the owner on create (D-C36)" do
+      content_login!(owner)
+      post project_proposals_path, params: proposal_params(approved: "approved", admin_id: owner.id, user_id: other.id)
+      expect(ProjectProposal.find_by(title: "New Idea")).to have_attributes(approved: nil, admin_id: nil, user_id: owner.id)
+    end
+
+    it "an admin cannot set review fields through create either (D-C36)" do
+      content_sign_in_as(:admin)
+      post project_proposals_path, params: proposal_params(approved: "approved", admin_id: owner.id)
+      expect(ProjectProposal.find_by(title: "New Idea")).to have_attributes(approved: nil, admin_id: nil)
+    end
+
+    it "ignores approved sent as the numeric string '1' instead of 500ing (D-C36)" do
+      expect { post project_proposals_path, params: proposal_params(approved: 1) }.to change(ProjectProposal, :count).by(1)
+      expect(ProjectProposal.find_by(title: "New Idea").approved).to be_nil
     end
 
     it "only admins can set season and year" do
@@ -230,18 +242,25 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
   describe "PATCH update" do
     it "lets a guest rewrite anyone's proposal, including approving it (D-C38, severity 1)" do
       patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Hijacked", approved: "approved" } }
-      # WART(D-C38): update has no auth or ownership check and permits :approved/:admin_id/:user_id
+      # WART(D-C38): update has no auth or ownership check (the review fields are no longer permitted: FIXED(D-C36))
       pending.reload
       expect(pending.title).to eq("Hijacked")
-      expect(pending.approved).to eq("approved")
+      expect(pending.approved).to be_nil
       expect(response).to redirect_to(project_proposal_path(pending.slug))
       expect(flash[:notice]).to eq("Project proposal was successfully updated.")
     end
 
-    it "the owner can reassign user_id (ownership) through mass assignment" do
+    it "the owner cannot reassign user_id or set review fields through mass assignment (D-C36)" do
       content_login!(owner)
-      patch project_proposal_path(pending.slug), params: { project_proposal: { user_id: other.id } }
-      expect(pending.reload.user_id).to eq(other.id)
+      patch project_proposal_path(pending.slug),
+            params: { project_proposal: { user_id: other.id, approved: "approved", admin_id: owner.id } }
+      expect(pending.reload).to have_attributes(user_id: owner.id, approved: nil, admin_id: nil)
+    end
+
+    it "an admin cannot mass-assign review fields on update either (D-C36)" do
+      content_sign_in_as(:admin)
+      patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Edited", approved: "approved", user_id: other.id } }
+      expect(pending.reload).to have_attributes(title: "Edited", approved: nil, user_id: owner.id)
     end
 
     it "replaces categories, JSON answers with the uri" do

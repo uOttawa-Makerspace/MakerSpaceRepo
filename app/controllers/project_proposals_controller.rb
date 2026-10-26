@@ -389,9 +389,6 @@ class ProjectProposalsController < SessionsController
 
   def project_proposal_params
     permitted = [
-      :user_id,
-      :admin_id,
-      :approved,
       :title,
       :description,
       :youtube_link,
