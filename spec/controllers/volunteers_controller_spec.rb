@@ -84,7 +84,7 @@ RSpec.describe VolunteersController, type: :controller do
         session[:user_id] = user.id
         Space.find_or_create_by(name: "Makerspace")
         expect {
-          get :create_event,
+          post :create_event,
               params: {
                 space: "makerspace",
                 datepicker_start: DateTime.now,
@@ -99,7 +99,7 @@ RSpec.describe VolunteersController, type: :controller do
         user = create(:user, :volunteer_with_volunteer_program)
         session[:expires_at] = DateTime.tomorrow.end_of_day
         session[:user_id] = user.id
-        get :create_event
+        post :create_event
         expect(response).to redirect_to root_path
       end
 
@@ -107,7 +107,7 @@ RSpec.describe VolunteersController, type: :controller do
         user = create(:user, :regular_user)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
-        get :create_event
+        post :create_event
         expect(response).to redirect_to root_path
       end
     end

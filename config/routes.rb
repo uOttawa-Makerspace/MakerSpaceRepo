@@ -615,7 +615,7 @@ Rails.application.routes.draw do
       get :calendar
       get :shadowing_shifts
       get :delete_event
-      get :create_event
+      post :create_event
       get :new_event
       get :populate_users
     end

@@ -154,6 +154,10 @@ class VolunteersController < SessionsController
           '%Y-%m-%dT%k:%M:00'
         )
       user = User.find(params[:user_id])
+      unless user.volunteer?
+        flash[:alert] = 'Shadowing shifts can only be booked for volunteers.'
+        return redirect_to calendar_volunteers_path
+      end
 
       event =
         ShadowingHour.create_event(start_time, end_time, user, params[:space])
