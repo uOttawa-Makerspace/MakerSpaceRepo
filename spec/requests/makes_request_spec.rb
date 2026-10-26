@@ -132,13 +132,39 @@ RSpec.describe "Makes (HTTP contract)", type: :request do
       expect(flash[:alert]).to include("Original Thing")
     end
 
-    it "lets a maker make a private repository without its password (D-C23)" do
-      secret = create(:repository, :private, owner: owner, title: "Hush", users: [owner])
-      content_login!(maker)
-      # WART(D-C23): no check_auth on makes#new/create; the private original's data is copied to a public child
-      post makes_create_path(owner.username, secret.id),
-           params: { secret.title => { title: "Leak", description: "d", photos_attributes: { "0" => { image: content_png_upload } } } }
-      expect(Repository.find_by(title: "Leak").share_type).to eq("public")
+    context "on a private original (D-C23)" do
+      let!(:secret) { create(:repository, :private, owner: owner, title: "Hush", users: [owner]) }
+      let(:secret_params) do
+        { secret.title => { title: "Leak", description: "d", photos_attributes: { "0" => { image: content_png_upload } } } }
+      end
+
+      it "refuses new and create without the password" do
+        content_login!(maker)
+        get makes_new_path(owner.username, secret.id)
+        # FIXED(D-C23): makes run the shared private-repository gate
+        expect(response).to redirect_to(password_entry_repository_path(owner.username, secret.id))
+        expect { post makes_create_path(owner.username, secret.id), params: secret_params }
+          .not_to change(Repository, :count)
+        expect(response).to redirect_to(password_entry_repository_path(owner.username, secret.id))
+      end
+
+      it "lets the owner, a collaborator, admin and a user who entered the password make it" do
+        secret.update_columns(password: BCrypt::Password.create("open-sesame"))
+        collaborator = create(:user, :regular_user)
+        secret.users << collaborator
+        [owner, collaborator].each do |u|
+          content_login!(u)
+          get makes_new_path(owner.username, secret.id)
+          expect(response).to have_http_status(:ok)
+        end
+        content_login!(maker)
+        post pass_authenticate_repository_path(owner.username, secret.id), params: { password: "open-sesame" }
+        expect { post makes_create_path(owner.username, secret.id), params: secret_params }
+          .to change(Repository, :count).by(1)
+        content_sign_in_as(:admin)
+        get makes_new_path(owner.username, secret.id)
+        expect(response).to have_http_status(:ok)
+      end
     end
   end
 end

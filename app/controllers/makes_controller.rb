@@ -4,6 +4,7 @@ class MakesController < SessionsController
   before_action :current_user
   before_action :signed_in
   before_action :set_repository
+  before_action -> { ensure_repository_unlocked(@repository) }
 
   # A make is just another repository that points to another one
   def create
