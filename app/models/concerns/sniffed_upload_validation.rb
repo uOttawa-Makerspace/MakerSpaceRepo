@@ -47,10 +47,12 @@ module SniffedUploadValidation
   def validate_sniffed_upload(name, allow, deny, max_size, name_fallback)
     max_size = max_size.call if max_size.respond_to?(:call)
     new_uploads_for(name).each do |attachable, blob|
-      # A blob already attached to some record was validated when it was first attached
-      # (or is legacy). A rejected blob is never attached, so it stays inspected even when
-      # a later `attach` hands it back as a persisted Blob.
-      next if already_attached_upload?(blob)
+      # A blob already attached under THIS policy (same record type and attachment name)
+      # was validated when it was first attached, or is legacy. A rejected blob is never
+      # attached, so it stays inspected even when a later `attach` hands it back as a
+      # persisted Blob; a blob attached under another policy (a proposal file offered as
+      # an avatar) is inspected against this one.
+      next if already_attached_upload?(name, blob)
 
       filename = blob.filename.to_s
       if blob.byte_size.to_i > max_size
@@ -64,8 +66,19 @@ module SniffedUploadValidation
     end
   end
 
-  def already_attached_upload?(blob)
-    blob.persisted? && blob.attachments.exists?
+  def already_attached_upload?(name, blob)
+    return false unless blob.persisted?
+
+    # in memory first: what this record already holds under this name
+    held =
+      if self.class.reflect_on_attachment(name).macro == :has_one_attached
+        [public_send("#{name}_attachment")].compact
+      else
+        public_send("#{name}_attachments").to_a
+      end
+    return true if held.any? { |attachment| attachment.blob_id == blob.id }
+
+    ActiveStorage::Attachment.exists?(blob_id: blob.id, record_type: self.class.polymorphic_name, name: name.to_s)
   end
 
   # ActiveStorage#attach on has_many re-assigns pending (unsaved) blobs as Blob

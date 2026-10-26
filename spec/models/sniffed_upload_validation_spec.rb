@@ -40,6 +40,23 @@ RSpec.describe SniffedUploadValidation do
     expect(copy.reload.project_files.map { |f| f.filename.to_s }).to eq(["evil.exe"])
   end
 
+  it "validates a blob attached under another policy: a proposal file offered as an avatar is refused" do
+    other = create(:project_proposal)
+    other.project_files.attach(content_named_upload("tiny.txt", content: "just text"))
+    blob = other.project_files.first.blob
+    user = create(:user)
+    expect(user.update(avatar: blob.signed_id)).to be(false)
+    expect(user.errors[:avatar].join).to include("not allowed")
+    expect(user.reload.avatar).not_to be_attached
+  end
+
+  it "validates a proposal-file blob offered as a video" do
+    other = create(:project_proposal)
+    other.project_files.attach(content_named_upload("tiny.txt", content: "just text"))
+    video = Video.new(video: [other.project_files.first.blob.signed_id])
+    expect(video).not_to be_valid
+  end
+
   it "turns a storage-service error while sniffing into a validation error, not an exception" do
     allow_any_instance_of(ActiveStorage::Service::DiskService).to receive(:download_chunk).and_raise(ActiveStorage::IntegrityError, "InvalidRange")
     expect(Rails.error).to receive(:report).with(instance_of(ActiveStorage::IntegrityError), hash_including(handled: true))
