@@ -216,19 +216,9 @@ class ProficientProjectsController < DevelopmentProgramsController
       awarded = false
       order_item.with_lock do
         if order_item.status == "Waiting for approval"
-          training_id = order_item.proficient_project.training_id
           level = order_item.proficient_project.level
           user_id = order_item.order.user_id
-          cert =
-            Certification
-              .left_joins(:training_session)
-              .left_joins(proficient_project_session: :proficient_project)
-              .where(user_id: user_id, level: level)
-              .where(
-                "training_sessions.training_id = :t OR proficient_projects.training_id = :t",
-                t: training_id
-              )
-              .first || Certification.create(user_id: user_id, level: level)
+          cert = Certification.create(user_id: user_id, level: level)
           proficient_project_session =
             ProficientProjectSession.create(
               proficient_project_id: order_item.proficient_project.id,

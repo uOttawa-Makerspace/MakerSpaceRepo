@@ -442,15 +442,18 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
       end
     end
 
-    it "reuses the certification the user already holds for that training and level (D-C29)" do
+    it "gives each approval its own certification, so deleting one project never destroys another's (D-C29)" do
       other_project = create(:proficient_project, training: training, level: project.level, title: "Second widget")
       second = order_item_for(buyer, status: "Waiting for approval", pp: other_project)
       content_sign_in_as(:admin)
       get approve_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "x" } }
       expect do
         get approve_project_proficient_projects_path, params: { oi_id: second.id, order_item: { admin_comments: "x" } }
-      end.to change(ProficientProjectSession, :count).by(1).and change(Certification, :count).by(0)
-      expect(second.reload.status).to eq("Awarded")
+      end.to change(Certification, :count).by(1)
+      certs = ProficientProjectSession.where(proficient_project: [project, other_project]).pluck(:certification_id)
+      expect(certs.uniq.size).to eq(2)
+      ProficientProjectSession.find_by(proficient_project: project).destroy
+      expect(Certification.where(id: certs.last)).to exist
     end
   end
 
