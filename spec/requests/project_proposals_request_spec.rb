@@ -196,14 +196,37 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(ProjectProposal.find_by(title: "New Idea").categories.pluck(:name)).to match_array(%w[a b c d e])
     end
 
-    it "attaches up to 5 images and any number of files of any type (D-C37)" do
-      files = [content_pdf_upload, content_named_upload("run.exe", type: "application/x-msdownload")]
+    # FIXED(D-C37): ProjectProposal validates project_files (sniffed type + size) in the model
+    it "attaches up to 5 images and any number of allowed files, but not an executable (D-C37)" do
+      # the controller attaches one by one; a rejected file stays pending on the record, so keep it last
+      files = [content_pdf_upload, content_named_upload("a.stl", content: "solid x\nfacet normal 0 0 0\n", type: "model/stl"),
+               content_named_upload("run.exe", type: "application/x-msdownload")]
       imgs = Array.new(6) { content_png_upload }
       post project_proposals_path, params: { images: imgs, files: files }.merge(proposal_params)
       pp = ProjectProposal.find_by(title: "New Idea")
       expect(pp.photos.count).to eq(5)
-      # WART(D-C37): project_files has no content-type or size validation
-      expect(pp.project_files.map { |f| f.filename.to_s }).to contain_exactly("RepoFile1.pdf", "run.exe")
+      expect(pp.project_files.map { |f| f.filename.to_s }).to contain_exactly("RepoFile1.pdf", "a.stl")
+    end
+
+    it "does not store an executable disguised as a pdf" do
+      exe = "MZ" + ("\x00" * 200)
+      files = [content_named_upload("ok.txt", content: "tiny"), content_named_upload("fake.pdf", content: exe, type: "application/pdf")]
+      post project_proposals_path, params: { files: files }.merge(proposal_params)
+      expect(ProjectProposal.find_by(title: "New Idea").project_files.map { |f| f.filename.to_s }).to eq(["ok.txt"])
+    end
+
+    it "does not store a file over the size cap" do
+      stub_const("ProjectProposal::MAX_PROJECT_FILE_SIZE", 20.bytes)
+      files = [content_named_upload("ok.txt", content: "tiny"), content_named_upload("big.txt", content: "x" * 21)]
+      post project_proposals_path, params: { files: files }.merge(proposal_params)
+      expect(ProjectProposal.find_by(title: "New Idea").project_files.map { |f| f.filename.to_s }).to eq(["ok.txt"])
+    end
+
+    it "model: invalid project_files make the proposal invalid" do
+      pp = build(:project_proposal)
+      pp.project_files.attach(content_named_upload("run.exe", type: "application/x-msdownload"))
+      expect(pp).not_to be_valid
+      expect(pp.errors[:project_files].join).to include("run.exe")
     end
 
     it "sanitizes path-like attachment names" do

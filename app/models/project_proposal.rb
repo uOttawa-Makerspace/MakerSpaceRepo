@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class ProjectProposal < ApplicationRecord
+  include SniffedUploadValidation
+
   belongs_to :user, optional: true
   belongs_to :admin, class_name: 'User', foreign_key: 'admin_id', optional: true
   has_many :categories, dependent: :destroy
@@ -23,6 +25,13 @@ class ProjectProposal < ApplicationRecord
   end
 
   has_many_attached :project_files
+
+  # D-C37: project files are checked by sniffed content type and size in the model
+  # (the controller attaches them one by one; an invalid file is simply not stored).
+  MAX_PROJECT_FILE_SIZE = 100.megabytes
+  validates_sniffed_upload :project_files,
+                           allow: SniffedUploadValidation::GENERAL_FILE_TYPES,
+                           max_size: -> { MAX_PROJECT_FILE_SIZE }
 
   enum :approved, { not_approved: 0, approved: 1 }
   enum :season, { fall: 0, summer: 1, winter: 2 }

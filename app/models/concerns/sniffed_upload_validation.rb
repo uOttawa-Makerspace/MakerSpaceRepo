@@ -46,15 +46,25 @@ module SniffedUploadValidation
   def validate_sniffed_upload(name, allow, max_size, name_fallback)
     max_size = max_size.call if max_size.respond_to?(:call)
     new_uploads_for(name).each do |attachable, blob|
+      # An already-stored blob being re-linked was checked on its way in.
+      next if attachable.is_a?(ActiveStorage::Blob) && blob.persisted?
+
       filename = blob.filename.to_s
       if blob.byte_size.to_i > max_size
         errors.add(name, "#{filename} is too large (maximum is #{ActiveSupport::NumberHelper.number_to_human_size(max_size)})")
       end
-      sniffed = sniff_upload(attachable, blob, name_fallback)
+      sniffed = sniffed_upload_types[blob] ||= sniff_upload(attachable, blob, name_fallback)
       unless sniffed && Array(allow).any? { |type| type === sniffed }
         errors.add(name, "#{filename} has a file type that is not allowed (#{sniffed || 'unreadable'})")
       end
     end
+  end
+
+  # ActiveStorage#attach on has_many re-assigns pending (unsaved) blobs as Blob
+  # attachables on the next call, when their original IO is gone; remembering the
+  # verdict per blob keeps a rejected file rejected instead of "unreadable".
+  def sniffed_upload_types
+    @sniffed_upload_types ||= {}.compare_by_identity
   end
 
   def new_uploads_for(name)
