@@ -161,12 +161,17 @@ RSpec.describe "Walk-in safety sheets", type: :request do
       expect(sheet.reload.emergency_contact_name).to eq("New Person")
     end
 
-    # WART(D-P23): update re-permits space_id/is_minor/signature, so a signed sheet can be re-pointed at another space (or flipped to minor) after signing, without re-agreeing to the terms
-    it "lets the owner move a signed sheet to another space with no agreement check" do
+    # FIXED(D-P23): update permits only the contact fields, so a signed sheet cannot be re-pointed or flipped to minor
+    it "ignores space_id, is_minor and signature changes on a signed sheet" do
       other = create(:space)
       log_in!(owner)
-      patch walk_in_safety_sheet_path(sheet), params: { walk_in_safety_sheet: { space_id: other.id } }
-      expect(sheet.reload.space_id).to eq(other.id)
+      patch walk_in_safety_sheet_path(sheet),
+            params: { walk_in_safety_sheet: { space_id: other.id, is_minor: true, participant_signature: "Forged", emergency_contact_name: "Kept Moving" } }
+      sheet.reload
+      expect(sheet.space_id).to eq(space.id)
+      expect(sheet.is_minor).to eq(false)
+      expect(sheet.participant_signature).not_to eq("Forged")
+      expect(sheet.emergency_contact_name).to eq("Kept Moving")
     end
 
     it "re-renders 422 when an update empties a required field" do

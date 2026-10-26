@@ -28,6 +28,14 @@ RSpec.describe "Printer issues", type: :request do
       end
     end
 
+    it "blocks guests and regular users from resolve" do
+      post resolve_printer_issue_path(issue), as: :json
+      expect(issue.reload.active).to be true
+      sign_in_as(:regular)
+      post resolve_printer_issue_path(issue), as: :json
+      expect(issue.reload.active).to be true
+    end
+
     it "blocks guests and regular users from create, update, destroy and update_notification_email" do
       expect { post printer_issues_path, params: { printer_issue: { printer_id: printer.id, summary: "x" } } }.not_to change(PrinterIssue, :count)
       patch printer_issue_path(issue), params: { printer_issue: { active: false } }
@@ -142,11 +150,27 @@ RSpec.describe "Printer issues", type: :request do
         expect(issue.reload.summary).to include("Nozzle clogged")
       end
 
-      # WART(D-EQ19): update permits printer_id, so staff can silently move an issue to another printer
-      it "can re-point the issue at a different printer" do
+      # FIXED(D-EQ19): update ignores printer_id (create still takes it)
+      it "cannot re-point the issue at a different printer" do
         other = create(:printer, :UM3_01)
-        patch printer_issue_path(issue), params: { printer_issue: { printer_id: other.id } }
-        expect(issue.reload.printer_id).to eq(other.id)
+        patch printer_issue_path(issue), params: { printer_issue: { printer_id: other.id, description: "still editable" } }
+        expect(issue.reload.printer_id).to eq(printer.id)
+        expect(issue.description).to eq("still editable")
+      end
+    end
+
+    # FIXED(D-API03): the React app's POST /printer_issues/:id/resolve now exists and deactivates the issue
+    describe "POST resolve" do
+      it "marks the issue inactive and returns 200 with no body" do
+        post resolve_printer_issue_path(issue), as: :json
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to be_blank
+        expect(issue.reload.active).to be false
+      end
+
+      it "404s for an unknown issue" do
+        post resolve_printer_issue_path(0), as: :json
+        expect(response).to have_http_status(:not_found)
       end
     end
 

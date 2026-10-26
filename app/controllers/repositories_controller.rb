@@ -407,7 +407,6 @@ class RepositoriesController < SessionsController
       :title,
       :description,
       :license,
-      :user_id,
       :share_type,
       :password,
       :youtube_link,

@@ -20,6 +20,9 @@ class Admin::UsersController < AdminAreaController
 
   ASSIGNABLE_ROLES = %w[admin staff regular_user volunteer].freeze
 
+  LAST_ADMIN_MESSAGE = "You cannot remove the last admin."
+  LAST_ADMIN_LOCK_MESSAGE = "You cannot lock the last admin."
+
   def index
     unless valid_sort_params?
       redirect_to admin_users_path, alert: "Invalid parameters!"
@@ -63,8 +66,6 @@ class Admin::UsersController < AdminAreaController
   end
 
   def update
-    @edit_admin_user.certifications.destroy_all
-    
     # Handle RFID assignment separately
     assign_rfid_if_present
     
@@ -90,6 +91,11 @@ class Admin::UsersController < AdminAreaController
     end
 
     delete_user = User.find(params[:id])
+    if last_admin?(delete_user)
+      redirect_to user_path(delete_user.username), alert: LAST_ADMIN_MESSAGE
+      return
+    end
+
     soft_delete_user(delete_user)
     redirect_to root_path, notice: "User flagged as deleted"
   end
@@ -102,12 +108,25 @@ class Admin::UsersController < AdminAreaController
 
   def toggle_lock_user
     user_to_toggle = User.find(params[:id])
+    if !user_to_toggle.locked && last_admin?(user_to_toggle)
+      redirect_to user_path(user_to_toggle.username), alert: LAST_ADMIN_LOCK_MESSAGE
+      return
+    end
+
     toggle_user_lock_status(user_to_toggle)
     redirect_to user_path(user_to_toggle.username),
                 notice: "User #{user_to_toggle.locked ? 'locked' : 'unlocked'}!"
   end
 
   def set_role
+    if valid_role_update_params? && removes_last_admin?
+      respond_to do |format|
+        format.json { render json: { error: LAST_ADMIN_MESSAGE }, status: :unprocessable_content }
+        format.any { redirect_back(fallback_location: root_path, alert: LAST_ADMIN_MESSAGE) }
+      end
+      return
+    end
+
     update_user_roles if valid_role_update_params?
     update_user_staff_spaces if params[:spaces].present?
 
@@ -328,9 +347,12 @@ class Admin::UsersController < AdminAreaController
 
   def create_certifications
     return unless params["certifications"].present?
-    
-    params["certifications"].first(5).each do |cert_name|
-      Certification.create(name: cert_name, user_id: @edit_admin_user.id)
+
+    Certification.transaction do
+      @edit_admin_user.certifications.destroy_all
+      params["certifications"].first(5).each do |cert_name|
+        Certification.create(name: cert_name, user_id: @edit_admin_user.id)
+      end
     end
   end
 
@@ -366,6 +388,28 @@ class Admin::UsersController < AdminAreaController
   # ============================================
   # Role Management
   # ============================================
+
+  # Admins who can actually sign in (soft-deleted ones are excluded by the default scope).
+  # `locked` is nullable, and an expired lockout is cleared at the next login
+  # (SessionsController#login_authentication), so both count as usable.
+  def usable_admins
+    User.where(role: "admin").where(
+      "users.locked IS NOT TRUE OR users.locked_until < ?", Time.current
+    )
+  end
+
+  def last_admin?(user)
+    user.admin? && usable_admins.where.not(id: user.id).none?
+  end
+
+  # True when the requested role change would leave no admin at all.
+  def removes_last_admin?
+    return false if params[:role] == "admin"
+
+    user_ids = params[:user_ids].map(&:to_i)
+    User.where(role: "admin", id: user_ids).any? &&
+      usable_admins.where.not(id: user_ids).none?
+  end
 
   def update_user_roles
     # SECURITY: Validate role before assignment

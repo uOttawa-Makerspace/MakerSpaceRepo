@@ -168,12 +168,12 @@ RSpec.describe "Key requests", type: :request do
       expect(kr.reload.status).to eq("waiting_for_approval")
     end
 
-    # WART(D-EQ23): steps permits :status, so the requester can PATCH status=approved and approve their own key request without an admin
-    it "lets the owner self-approve by sending status=approved with a complete form" do
+    # FIXED(D-EQ23): :status is no longer permitted on steps, so the requester cannot self-approve
+    it "ignores status=approved from the owner (no self-approval)" do
       kr.update!(answers.merge(read_lab_rules: true, read_policies: true, read_agreement: true))
       patch key_request_steps_path(key_request_id: kr.id, step: 5), params: { key_request: { status: "approved" } }
       expect(response).to have_http_status(:ok)
-      expect(kr.reload.status).to eq("approved")
+      expect(kr.reload.status).to eq("in_progress")
     end
 
     it "cannot change the owner through steps" do

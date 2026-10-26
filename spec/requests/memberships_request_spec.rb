@@ -149,12 +149,14 @@ RSpec.describe "Memberships (HTTP contract)", type: :request do
         expect(admin_client.calls).to be_empty
       end
 
-      it "accepts ANY tier id, hidden tiers included" do
+      it "refuses hidden tiers (no row, no Shopify call)" do
         hidden = create(:membership_tier, title_en: "Hidden Tier", hidden: true, duration: 30)
-        # WART(D-S19): purchase does not check MembershipTier#hidden (nor that the tier is purchasable, e.g. "Custom Membership")
-        post memberships_path, params: { membership: { membership_tier_id: hidden.id } }
-        expect(response.location).to eq("https://shop.example.test/invoices/abc")
-        expect(Membership.last.membership_tier).to eq(hidden)
+        # FIXED(D-S19): purchase rejects MembershipTier#hidden tiers (Custom/Faculty are hidden)
+        expect { post memberships_path, params: { membership: { membership_tier_id: hidden.id } } }
+          .not_to change(Membership, :count)
+        expect(response).to redirect_to(memberships_path)
+        expect(flash[:alert]).to eq("This membership is not available for purchase.")
+        expect(admin_client.calls).to be_empty
       end
 
       it "unknown tier id: no row, and the error page is the same 500 as D-S23" do

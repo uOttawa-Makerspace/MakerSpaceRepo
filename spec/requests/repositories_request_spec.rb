@@ -435,13 +435,13 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(secret.password).to be_nil
     end
 
-    it "a member can reassign user_id (ownership) via mass assignment (D-C09)" do
+    it "a member cannot reassign user_id (ownership) via mass assignment" do
       collab = create(:user, :regular_user)
       repo.users << collab
       content_login!(collab)
       patch repository_path(owner.username, repo.slug), params: { repository: { user_id: collab.id } }
-      # WART(D-C09): :user_id is permitted in repository_params, bypassing transfer_owner's checks
-      expect(repo.reload.user_id).to eq(collab.id)
+      # FIXED(D-C09): :user_id removed from repository_params; transfer_owner is the only way
+      expect(repo.reload.user_id).to eq(owner.id)
     end
 
     it "can add and soft-remove a photo through nested attributes" do

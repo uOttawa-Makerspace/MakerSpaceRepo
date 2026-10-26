@@ -121,6 +121,68 @@ RSpec.describe "Admin keys", type: :request do
       expect(key.reload).to have_attributes(status: "held", additional_info: "n")
     end
 
+    # FIXED(D-EQ26): create/update cannot set a holder without an approved key request.
+    describe "setting user_id directly" do
+      let(:holder_attrs) { { user_id: holder.id, supervisor_id: supervisor.id, status: "held" } }
+
+      it "update is refused without an approved request" do
+        patch admin_key_path(key), params: { key: holder_attrs }
+        expect(flash[:alert]).to eq("The key holder must have an approved key request.")
+        expect(key.reload).to have_attributes(user_id: nil, status: "inventory")
+      end
+
+      it "update is refused when the request is only waiting for approval" do
+        create(:key_request, :status_waiting_for_approval, :all_questions_answered, user: holder, supervisor: supervisor, space: space)
+        patch admin_key_path(key), params: { key: holder_attrs }
+        expect(key.reload.user_id).to be_nil
+      end
+
+      it "update is allowed with an approved request" do
+        create(:key_request, :status_approved, :all_questions_answered, user: holder, supervisor: supervisor, space: space)
+        patch admin_key_path(key), params: { key: holder_attrs }
+        expect(flash[:notice]).to eq("The key was successfully updated.")
+        expect(key.reload).to have_attributes(user_id: holder.id, status: "held")
+      end
+
+      it "create is refused without an approved request" do
+        expect {
+          post admin_keys_path, params: { key: key_attrs.merge(number: 77, **holder_attrs) }
+        }.not_to change(Key, :count)
+        expect(flash[:alert]).to eq("The key holder must have an approved key request.")
+      end
+
+      it "create is allowed with an approved request" do
+        create(:key_request, :status_approved, :all_questions_answered, user: holder, supervisor: supervisor, space: space)
+        expect {
+          post admin_keys_path, params: { key: key_attrs.merge(number: 77, **holder_attrs) }
+        }.to change(Key, :count).by(1)
+        expect(Key.last).to have_attributes(user_id: holder.id, status: "held")
+      end
+
+      it "update cannot blank the holder of a held key (revoke_key is the path)" do
+        key.update_columns(status: Key.statuses[:held], user_id: holder.id, supervisor_id: supervisor.id)
+        patch admin_key_path(key), params: { key: { user_id: "", additional_info: "n" } }
+        expect(flash[:alert]).to eq("Use revoke to remove the holder of a held key.")
+        expect(key.reload).to have_attributes(status: "held", user_id: holder.id)
+        expect(key.additional_info).not_to eq("n")
+      end
+
+      it "update cannot move a held key to another holder (revoke then assign)" do
+        other = create(:user, :staff)
+        create(:key_request, :status_approved, :all_questions_answered, user: other, supervisor: supervisor, space: space)
+        key.update_columns(status: Key.statuses[:held], user_id: holder.id, supervisor_id: supervisor.id)
+        patch admin_key_path(key), params: { key: { user_id: other.id } }
+        expect(flash[:alert]).to eq("Revoke the key before assigning it to another holder.")
+        expect(key.reload.user_id).to eq(holder.id)
+      end
+
+      it "leaves a held key's unchanged holder editable without re-checking" do
+        key.update_columns(status: Key.statuses[:held], user_id: holder.id, supervisor_id: supervisor.id)
+        patch admin_key_path(key), params: { key: { user_id: holder.id, additional_info: "n" } }
+        expect(key.reload.additional_info).to eq("n")
+      end
+    end
+
     it "destroys a key with its transactions" do
       KeyTransaction.create!(user: holder, key: key, deposit_amount: 10)
       expect { delete admin_key_path(key) }.to change(Key, :count).by(-1).and change(KeyTransaction, :count).by(-1)
@@ -129,10 +191,16 @@ RSpec.describe "Admin keys", type: :request do
   end
 
   describe "assignment, deposit and return chain" do
-    before { sign_in_as(:admin) }
+    before do
+      sign_in_as(:admin)
+      # D-EQ26: assignment requires the holder's key request to be approved
+      unless RSpec.current_example.metadata[:no_request]
+        create(:key_request, :status_approved, :all_questions_answered, user: holder, supervisor: supervisor, space: space)
+      end
+    end
 
     # N+1 pinned: see defects D-PERF-EQ04
-    it "renders the assign page flagging staff without an approved request form", skip_bullet: true do
+    it "renders the assign page flagging staff without an approved request form", skip_bullet: true, no_request: true do
       create(:key_request, :status_waiting_for_approval, :all_questions_answered, user: holder, supervisor: supervisor, space: space)
       get admin_key_assign_path(key)
       expect(response).to have_http_status(:ok)
@@ -253,9 +321,23 @@ RSpec.describe "Admin keys", type: :request do
       expect(flash[:alert]).to eq("The key request id was not found.")
     end
 
-    # WART(D-EQ26): approving a key request is not required to assign a key: assign_key never checks the holder's request status
-    it "still lets an admin assign a key to a holder whose request was never approved" do
+    # FIXED(D-EQ26): assign_key requires the holder's key request to be approved
+    it "refuses to assign a key to a holder whose request is not approved" do
       kr.update_columns(status: KeyRequest.statuses[:in_progress])
+      patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id }, deposit_amount: 0 }
+      expect(response).to redirect_to(admin_keys_path)
+      expect(flash[:alert]).to eq("The key holder must have an approved key request.")
+      expect(key.reload.status).to eq("inventory")
+    end
+
+    it "refuses to assign a key to a holder with no key request at all" do
+      kr.destroy
+      patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id }, deposit_amount: 0 }
+      expect(key.reload.status).to eq("inventory")
+    end
+
+    it "assigns the key once the holder's request is approved" do
+      kr.update_columns(status: KeyRequest.statuses[:approved])
       patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id }, deposit_amount: 0 }
       expect(key.reload.status).to eq("held")
     end

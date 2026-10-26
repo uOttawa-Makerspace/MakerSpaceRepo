@@ -29,7 +29,7 @@ RSpec.describe "StaffSpaces", type: :request do
     end
   end
 
-  %i[staff admin].each do |role|
+  %i[admin].each do |role|
     context "as #{role}" do
       before { sign_in_as(role) }
 
@@ -70,10 +70,11 @@ RSpec.describe "StaffSpaces", type: :request do
     end
   end
 
-  # WART(D-SP12): a staff user (not just admin) may promote anyone to staff and attach them to any space.
-  it "lets a plain staff user create staff accounts from regular users" do
+  # FIXED(D-SP12): only admins may promote users to staff / attach them to spaces
+  it "refuses a plain staff user (no promotion, no StaffSpace)" do
     sign_in_as(:staff)
-    post bulk_add_users_staff_spaces_path, params: params
-    expect(target.reload.role).to eq("staff")
+    expect { post bulk_add_users_staff_spaces_path, params: params }.not_to change { state }
+    expect(response).to redirect_to(root_path)
+    expect(flash[:alert]).to eq("Only admins can add staff to spaces.")
   end
 end

@@ -52,7 +52,7 @@ class WalkInSafetySheetsController < SessionsController
   def update
     # Only get user's sheets
     @walk_in_safety_sheet = current_user.walk_in_safety_sheets.find(params[:id])
-    if @walk_in_safety_sheet.update(walk_in_safety_sheet_params)
+    if @walk_in_safety_sheet.update(walk_in_safety_sheet_update_params)
       # The actual path is weird, we give the space ID instead
       redirect_to walk_in_safety_sheet_path(@walk_in_safety_sheet.space_id)
     else
@@ -65,6 +65,18 @@ class WalkInSafetySheetsController < SessionsController
   end
 
   private
+
+  # A signed sheet may only have its contact details changed (not the space,
+  # minor flag, names or signatures, which required agreeing to the terms).
+  def walk_in_safety_sheet_update_params
+    walk_in_safety_sheet_params.slice(
+      :participant_telephone_at_home,
+      :guardian_telephone_at_home,
+      :guardian_telephone_at_work,
+      :emergency_contact_name,
+      :emergency_contact_telephone
+    )
+  end
 
   def walk_in_safety_sheet_params
     params.require(:walk_in_safety_sheet).permit(

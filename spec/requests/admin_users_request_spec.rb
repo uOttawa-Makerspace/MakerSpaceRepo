@@ -207,19 +207,27 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(target.name).not_to eq("Hacked")
     end
 
-    it "wipes all existing certifications on every update, even when none are re-sent" do
-      # WART(D-I20): update runs `certifications.destroy_all` before validating, so a failed or certificate-less save silently deletes the user's certifications
+    it "keeps existing certifications when none are re-sent" do
+      # FIXED(D-I20): certifications are only replaced when the param is sent and the save succeeds
       create(:certification, :basic_training, user_id: target.id)
       patch admin_user_path(target), params: { user: { gender: "Female" } }
-      expect(target.certifications.reload.count).to eq(0)
+      expect(target.certifications.reload.count).to eq(1)
     end
 
-    it "a validation failure still wipes certifications and re-renders edit (200)" do
+    it "a validation failure keeps certifications and re-renders edit (200)" do
       create(:certification, :basic_training, user_id: target.id)
-      patch admin_user_path(target), params: { user: { gender: "Bogus" } }
+      patch admin_user_path(target), params: { user: { gender: "Bogus" }, certifications: %w[A] }
       expect(response).to have_http_status(:ok)
       expect(target.reload.gender).to eq("Male")
-      expect(target.certifications.reload.count).to eq(0)
+      expect(target.certifications.reload.count).to eq(1)
+    end
+
+    it "a re-sent certifications list raises (Certification has no `name`) but rolls back, keeping the old ones" do
+      # WART(D-NEW-A13-1): create_certifications calls Certification.create(name:), a column that does not exist, so sending `certifications` always 500s; the destroy_all is now rolled back with it
+      create(:certification, :basic_training, user_id: target.id)
+      patch admin_user_path(target), params: { user: { gender: "Male" }, certifications: %w[A B] }
+      expect(response).to have_http_status(:internal_server_error)
+      expect(target.certifications.reload.count).to eq(1)
     end
 
     it "re-creates up to five named certifications" do
@@ -267,11 +275,53 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(target.reload.role).to eq("regular_user")
     end
 
-    it "admin can demote themselves, including the last admin" do
-      # WART(D-I21): no guard against demoting yourself / the last remaining admin via set_role
+    it "blocks demoting the last admin (HTML: redirect + alert)" do
+      # FIXED(D-I21): set_role refuses a change that would leave no admin
+      patch set_role_admin_users_path, params: { role: "regular_user", user_ids: [admin.id] }
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You cannot remove the last admin.")
+      expect(admin.reload.role).to eq("admin")
+    end
+
+    it "blocks demoting the last admin with a 422 JSON error (React app)" do
+      patch set_role_admin_users_path, params: { role: "staff", user_ids: [admin.id, target.id] }.to_json,
+                                       headers: { "Content-Type" => "application/json", "Accept" => "application/json" }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(JSON.parse(response.body)["error"]).to eq("You cannot remove the last admin.")
+      expect(admin.reload.role).to eq("admin")
+      expect(target.reload.role).to eq("regular_user")
+    end
+
+    it "does not count a locked admin as remaining (the only usable admin cannot demote themselves)" do
+      # FIXED(D-I21): the guard counts only admins who can sign in
+      create(:user, :admin, locked: true, locked_until: 99.years.from_now)
+      patch set_role_admin_users_path, params: { role: "regular_user", user_ids: [admin.id] }
+      expect(flash[:alert]).to eq("You cannot remove the last admin.")
+      expect(admin.reload.role).to eq("admin")
+    end
+
+    it "counts an admin with NULL locked as remaining" do
+      # FIXED(D-I21): `locked` is nullable; an expired lockout is cleared at next login
+      create(:user, :admin).update_columns(locked: nil)
       patch set_role_admin_users_path, params: { role: "regular_user", user_ids: [admin.id] }
       expect(admin.reload.role).to eq("regular_user")
-      expect(User.where(role: "admin").count).to eq(0)
+    end
+
+    it "counts an admin whose temporary lockout has expired as remaining" do
+      create(:user, :admin, locked: true, locked_until: 1.hour.ago)
+      patch set_role_admin_users_path, params: { role: "regular_user", user_ids: [admin.id] }
+      expect(admin.reload.role).to eq("regular_user")
+    end
+
+    it "lets an admin demote themselves when another admin remains" do
+      create(:user, :admin)
+      patch set_role_admin_users_path, params: { role: "regular_user", user_ids: [admin.id] }
+      expect(admin.reload.role).to eq("regular_user")
+    end
+
+    it "still lets an admin promote and keeps the admin when role is admin" do
+      patch set_role_admin_users_path, params: { role: "admin", user_ids: [admin.id, target.id] }
+      expect(target.reload.role).to eq("admin")
     end
 
     it "does not touch soft-deleted users (default scope)" do
@@ -350,8 +400,24 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(response).to have_http_status(:not_found)
     end
 
-    it "an admin may delete themselves" do
-      # WART(D-I22): no guard against an admin soft-deleting their own account (or the last admin)
+    it "refuses to delete the last admin (even themselves)" do
+      # FIXED(D-I22): the last admin cannot be soft-deleted
+      delete delete_user_admin_users_path, params: { id: admin.id, password: password }
+      expect(response).to redirect_to(user_path(admin.username))
+      expect(flash[:alert]).to eq("You cannot remove the last admin.")
+      expect(User.unscoped.find(admin.id).deleted).to be(false)
+    end
+
+    it "does not count a locked admin as remaining when deleting" do
+      # FIXED(D-I22): the guard counts only admins who can sign in
+      create(:user, :admin, locked: true, locked_until: 99.years.from_now)
+      delete delete_user_admin_users_path, params: { id: admin.id, password: password }
+      expect(flash[:alert]).to eq("You cannot remove the last admin.")
+      expect(User.unscoped.find(admin.id).deleted).to be(false)
+    end
+
+    it "lets an admin delete themselves when another admin remains" do
+      create(:user, :admin)
       delete delete_user_admin_users_path, params: { id: admin.id, password: password }
       expect(User.unscoped.find(admin.id).deleted).to be(true)
     end
@@ -423,6 +489,39 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(target.locked).to be(false)
       expect(target.auth_attempts).to eq(0)
       expect(target.locked_until).to be_nil
+    end
+  end
+
+  describe "PUT /admin/users/toggle_lock_user last-admin guard" do
+    before { login!(admin) }
+
+    # FIXED(D-I21/D-I22): locking cannot remove the last usable admin
+    it "refuses to lock the only usable admin" do
+      put toggle_lock_user_admin_users_path, params: { id: admin.id }
+      expect(response).to redirect_to(user_path(admin.username))
+      expect(flash[:alert]).to eq("You cannot lock the last admin.")
+      expect(admin.reload.locked).to be(false)
+    end
+
+    it "refuses to lock an admin when every other admin is locked" do
+      other = create(:user, :admin)
+      admin.update_columns(locked: true)
+      put toggle_lock_user_admin_users_path, params: { id: other.id }
+      expect(flash[:alert]).to eq("You cannot lock the last admin.")
+      expect(other.reload.locked).to be(false)
+    end
+
+    it "locks an admin when another usable admin remains" do
+      other = create(:user, :admin)
+      put toggle_lock_user_admin_users_path, params: { id: other.id }
+      expect(flash[:notice]).to eq("User locked!")
+      expect(other.reload.locked).to be(true)
+    end
+
+    it "always allows unlocking an admin" do
+      other = create(:user, :admin, locked: true, locked_until: 99.years.from_now)
+      put toggle_lock_user_admin_users_path, params: { id: other.id }
+      expect(flash[:notice]).to eq("User unlocked!")
     end
   end
 

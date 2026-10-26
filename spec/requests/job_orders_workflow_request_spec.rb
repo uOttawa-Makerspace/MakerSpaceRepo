@@ -205,11 +205,13 @@ RSpec.describe "JobOrders workflow", type: :request do
       expect(flash[:notice]).to eq(I18n.t("job_orders.alerts.updated_successfully"))
     end
 
-    # WART(D-J39): `user_id` is permitted, so staff can reassign the order's owner
-    it "lets staff reassign the order to another owner via a mass-assigned user_id" do
+    # FIXED(D-J39): `user_id` is no longer permitted on the staff comments update
+    it "does not let staff reassign the order's owner via a mass-assigned user_id" do
       session_login!(staff)
-      patch job_order_comments_path(order), params: { job_order: { user_id: other.id } }
-      expect(order.reload.user_id).to eq(other.id)
+      original_owner = order.user_id
+      patch job_order_comments_path(order), params: { job_order: { user_id: other.id, staff_comments: "kept" } }
+      expect(order.reload.user_id).to eq(original_owner)
+      expect(order.staff_comments).to eq("kept")
     end
 
     it "flashes the generic error when the update is invalid (disallowed staff upload)" do

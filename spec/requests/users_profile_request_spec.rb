@@ -205,24 +205,26 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       expect(flash[:alert]).to include("Username")
     end
 
-    it "changes the email immediately without confirmation or notice" do
-      # WART(D-I15): profile update permits :email directly, bypassing the confirm-by-email flow (and the email-changed notice to the old address)
+    it "ignores :email on profile update (the confirm-by-email flow is the only way)" do
+      # FIXED(D-I15): :email removed from the profile update params
       login!(user)
-      patch user_path(user.username), params: { user: { email: "swapped@example.com" } }
+      original = user.email
+      patch user_path(user.username), params: { user: { email: "swapped@example.com", name: "Still Works" } }
       expect(response).to redirect_to(settings_profile_path)
-      expect(user.reload.email).to eq("swapped@example.com")
+      expect(user.reload.email).to eq(original)
+      expect(user.name).to eq("Still Works")
       expect(deliveries).to be_empty
     end
 
-    it "sets a raw plaintext password into the hash column, which then breaks login" do
-      # WART(D-I16): profile update permits :password; it is stored unhashed (the strength validator sees the raw value) and later logins raise BCrypt InvalidHash (500)
+    it "ignores :password on profile update so the hash column is never clobbered" do
+      # FIXED(D-I16): :password/:password_confirmation removed from the profile update params
       login!(user)
       patch user_path(user.username),
             params: { user: { password: "NewPassw0rd!x#9", password_confirmation: "NewPassw0rd!x#9" } }
       expect(response).to redirect_to(settings_profile_path)
-      expect(user.reload.password).to eq("NewPassw0rd!x#9")
-      post login_authentication_path, params: { username_email: user.username, password: "NewPassw0rd!x#9" }
-      expect(response).to have_http_status(:internal_server_error)
+      expect(user.reload.password).not_to eq("NewPassw0rd!x#9")
+      post login_authentication_path, params: { username_email: user.username, password: password }
+      expect(response).not_to have_http_status(:internal_server_error)
     end
 
     it "student identity requires program, faculty, year and student id" do
@@ -316,6 +318,32 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       expect(deliveries.first.subject).to eq("MakerRepo | Your password has been changed")
     end
 
+    # FIXED(D-I15): change_password only takes the password fields.
+    it "ignores email and username posted alongside the password" do
+      login!(user)
+      original = user.slice(:email, :username, :name)
+      patch change_password_user_path(user.username),
+            params: { user: { old_password: password, password: new_pw, password_confirmation: new_pw,
+                              email: "hijack@example.com", username: "hijacked", name: "Hijacked" } }
+      user.reload
+      expect(user.authenticate_password(new_pw)).to be(true)
+      expect(user.slice(:email, :username, :name)).to eq(original)
+    end
+
+    # FIXED: update({}) used to succeed and `pword = password` re-hashed the stored bcrypt hash
+    it "blank or missing new password: re-renders (200), password still works, no email" do
+      login!(user)
+      [{}, { password: "", password_confirmation: "" }].each do |extra|
+        patch change_password_user_path(user.username), params: { user: { old_password: password }.merge(extra) }
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("New password cannot be blank.")
+      end
+      user.reload
+      expect(user.authenticate_password(password)).to be(true)
+      expect(user.pword).to eq(password)
+      expect(deliveries).to be_empty
+    end
+
     it "wrong old password: re-renders settings/admin (200) with alert, unchanged" do
       login!(user)
       change!(old: "wrong")
@@ -376,15 +404,26 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       expect(user.flag_message).to be_nil
     end
 
-    it "any signed-in user can remove a flag message from any user" do
-      # WART(D-I19): #remove_flag has no staff/admin check (flag/unflag do), so any signed-in user can clear anyone's moderation flags
+    it "a regular user cannot remove a flag message" do
+      # FIXED(D-I19): #remove_flag requires staff/admin like flag/unflag
       user.update_columns(flagged: true, flag_message: "; bad")
       login!(other)
       put remove_flag_users_path, params: { repo_user_id: user.id, flag_msg: "bad" }
-      expect(response).to redirect_to(user_path(user.username))
+      expect(response).to redirect_to(user_path(other.username))
       user.reload
-      expect(user.flagged).to be(false)
-      expect(user.flag_message).to eq("")
+      expect(user.flagged).to be(true)
+      expect(user.flag_message).to eq("; bad")
+    end
+
+    it "staff and admin can remove a flag message" do
+      [staff, admin].each do |actor|
+        user.update_columns(flagged: true, flag_message: "; bad")
+        login!(actor)
+        put remove_flag_users_path, params: { repo_user_id: user.id, flag_msg: "bad" }
+        expect(response).to redirect_to(user_path(user.username))
+        expect(user.reload.flagged).to be(false)
+        expect(user.flag_message).to eq("")
+      end
     end
 
     it "guest cannot remove a flag" do
@@ -423,6 +462,42 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       login!(staff)
       post change_programs_users_path, params: { user_id: 0 }
       expect(response).to have_http_status(:not_found)
+    end
+  end
+
+  # FIXED(D-API02): the React app sends PATCH /change_programs with JSON; the route now accepts PATCH and answers JSON.
+  describe "PATCH /change_programs (JSON, React app)" do
+    let(:body) { { user_id: user.id, dev_program: true, volunteer: false } }
+
+    def patch_programs(as_user, payload = body)
+      login!(as_user)
+      patch change_programs_users_path, params: payload.to_json,
+                                        headers: { "Content-Type" => "application/json", "Accept" => "application/json" }
+    end
+
+    it "lets staff set programs and returns them as JSON, leaving teams alone" do
+      user.programs.create!(program_type: Program::TEAMS)
+      patch_programs(staff)
+      expect(response).to have_http_status(:ok)
+      expect(json["programs"]).to match_array([Program::DEV_PROGRAM, Program::TEAMS])
+      expect(user.programs.reload.pluck(:program_type)).to match_array([Program::DEV_PROGRAM, Program::TEAMS])
+    end
+
+    it "removes a program when it is sent as false" do
+      user.programs.create!(program_type: Program::VOLUNTEER)
+      patch_programs(staff)
+      expect(user.programs.reload.pluck(:program_type)).to eq([Program::DEV_PROGRAM])
+    end
+
+    it "refuses a regular user with 403 and changes nothing" do
+      patch_programs(other)
+      expect(response).to have_http_status(:forbidden)
+      expect(user.programs).to be_empty
+    end
+
+    it "does not touch the caller's profile (no fall-through to users#update)" do
+      patch_programs(staff)
+      expect(staff.reload.name).to eq(staff.name)
     end
   end
 

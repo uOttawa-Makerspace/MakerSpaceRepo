@@ -121,6 +121,7 @@ Rails.application.routes.draw do
   resources :printer_types, except: %i[show]
   resources :printer_issues,
             only: %i[index show new create edit update destroy] do
+    post :resolve, on: :member
     collection do
       get :history
       patch :update_notification_email
@@ -239,6 +240,7 @@ Rails.application.routes.draw do
 
   # HELP
   resource :help, only: [:show, :create], controller: "help"
+  put "send_email", to: "help#send_email"
 
   # keep index singular, rename path
   # don't define second resourece, that breaks HTTP verbs
@@ -698,7 +700,7 @@ Rails.application.routes.draw do
       get :reset_password_form
       patch :reset_password_confirmation
       get :confirm
-      post :change_programs
+      match :change_programs, via: %i[post patch]
       post :create, path: "/new"
       get :remove_avatar
       post :flag

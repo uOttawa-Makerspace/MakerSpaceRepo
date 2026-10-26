@@ -352,11 +352,13 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(response.body).to include(I18n.t("job_orders.new.title"))
     end
 
-    # WART(D-J39): job_order_params permits staff-only fields on create
-    it "lets a customer set staff_comments on their own new order" do
+    # FIXED(D-J39): create no longer permits staff-only fields
+    it "ignores staff_comments sent by a customer on their own new order" do
       post job_orders_path,
-           params: { job_order: { staff_comments: "customer wrote this as staff" }, redirect_step: "1" }
-      expect(JobOrder.order(:id).last.staff_comments).to eq("customer wrote this as staff")
+           params: { job_order: { staff_comments: "customer wrote this as staff", user_comments: "mine" }, redirect_step: "1" }
+      order = JobOrder.order(:id).last
+      expect(order.staff_comments).to be_blank
+      expect(order.user_comments).to eq("mine")
     end
 
     it "falls back to a nil job type when the Design Services row is missing" do
