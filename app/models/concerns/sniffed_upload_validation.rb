@@ -104,9 +104,17 @@ module SniffedUploadValidation
       io.rewind
       data
     elsif blob.persisted?
-      blob.service.download_chunk(blob.key, 0...SNIFF_BYTES)
+      download_leading_bytes(blob)
     end
-  rescue ActiveStorage::FileNotFoundError, Errno::ENOENT
+  rescue Errno::ENOENT
+    nil
+  end
+
+  # A missing or zero-byte object (S3 416 InvalidRange), or any service/network
+  # error, must surface as an "unreadable" validation error, not a 500.
+  def download_leading_bytes(blob)
+    blob.service.download_chunk(blob.key, 0...SNIFF_BYTES)
+  rescue StandardError
     nil
   end
 end

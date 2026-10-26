@@ -20,6 +20,13 @@ RSpec.describe SniffedUploadValidation do
     expect(proposal.reload.project_files.map { |f| f.filename.to_s }).to be_empty
   end
 
+  it "turns a storage-service error while sniffing into a validation error, not an exception" do
+    allow_any_instance_of(ActiveStorage::Service::DiskService).to receive(:download_chunk).and_raise(StandardError, "InvalidRange")
+    expect { proposal.project_files.attach(fine.signed_id) }.not_to raise_error
+    expect(proposal.errors[:project_files].join).to include("unreadable")
+    expect(proposal.reload.project_files).not_to be_attached
+  end
+
   it "stores the allowed blob on its own" do
     proposal.project_files.attach(fine.signed_id)
     expect(proposal.reload.project_files.map { |f| f.filename.to_s }).to eq(["ok.txt"])
