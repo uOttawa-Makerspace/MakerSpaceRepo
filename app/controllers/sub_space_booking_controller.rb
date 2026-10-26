@@ -1,7 +1,6 @@
 class SubSpaceBookingController < SessionsController
   before_action :no_container
   before_action :user_account
-  before_action :user_signed_in, only: %i[index request_access bookings]
   before_action :user_approved, only: [:create]
   before_action :user_admin_or_staff,
                 only: %i[
@@ -781,12 +780,6 @@ class SubSpaceBookingController < SessionsController
   def user_account
     return if signed_in?
       redirect_to login_path, alert: "You must be logged in to view this page."
-    
-  end
-  def user_signed_in
-    return if signed_in?
-      redirect_to login_path, alert: "You must be logged in to view this page."
-      nil
     
   end
   def user_approved

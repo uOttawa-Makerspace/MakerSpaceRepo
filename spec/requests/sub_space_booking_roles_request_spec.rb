@@ -8,7 +8,7 @@ require "rails_helper"
 # CSRF probe.
 #
 # The controller's gates (sub_space_booking_controller.rb:3-17):
-#   user_signed_in        index, request_access, bookings
+#   user_account          every action (guests are redirected to the login page)
 #   user_admin_or_staff   approve, decline, approve_access, bulk_approve_access,
 #                         deny_access, users, get_sub_space_booking
 #   user_admin            publish
@@ -269,7 +269,7 @@ RSpec.describe "Sub space booking role matrix", type: :request do
     end
   end
 
-  describe "request_access (user_signed_in gate)" do
+  describe "request_access (user_account gate)" do
     it "redirects guests to the login page with the sign-in alert and records nothing" do
       put request_access_sub_space_booking_index_path, params: { comments: "x", identity: "Other" }
       expect(response).to redirect_to(login_path)
