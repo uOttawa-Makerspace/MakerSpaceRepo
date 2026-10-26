@@ -15,7 +15,12 @@ class RepositoriesController < SessionsController
                   password_entry
                 ]
   before_action :check_auth, only: %i[show download_files]
-  before_action :check_ownership, only: %i[edit update destroy]
+  before_action :set_member_repository,
+                only: %i[link_to_pp add_member remove_member]
+  before_action :check_ownership,
+                only: %i[edit update destroy add_member remove_member]
+  # Same rule as the show page's link form: members, staff and admin
+  before_action :check_link_permission, only: :link_to_pp
 
   def show
     if @repository.private? && !@check_passed
@@ -275,8 +280,13 @@ class RepositoriesController < SessionsController
   end
 
   def link_to_pp
-    repository = Repository.find params[:repo][:repository_id]
+    repository = @repository
     project_proposal_id = params[:repo][:project_proposal_id]
+    if project_proposal_id.present? &&
+       !ProjectProposal.approved.exists?(id: project_proposal_id)
+      flash[:alert] = "Only an approved Project Proposal can be linked."
+      redirect_to repository_path(repository.user_username, repository.slug) and return
+    end
     repository.project_proposal_id = project_proposal_id
     if repository.save
       flash[
@@ -289,7 +299,7 @@ class RepositoriesController < SessionsController
   end
 
   def add_member
-    repository = Repository.find params[:repo_owner][:repository_id]
+    repository = @repository
     member_username = params[:repo_owner][:owner_username]
     member = User.find_by_username(member_username)
 
@@ -314,7 +324,7 @@ class RepositoriesController < SessionsController
   end
 
   def remove_member
-    repository = Repository.find params[:repo_owner][:repository_id]
+    repository = @repository
     member_id = params[:repo_owner][:owner_id]
     member = User.find_by(id: member_id)
 
@@ -374,6 +384,18 @@ class RepositoriesController < SessionsController
   def check_ownership
     # admins can modify repo
     unless @user.admin? || @repository.owned_by?(@user)
+      flash[:alert] = "You are not allowed to perform this action!"
+      redirect_to repository_path(@repository.user_username, @repository.slug)
+    end
+  end
+
+  def set_member_repository
+    id = (params[:repo] || params[:repo_owner])[:repository_id]
+    @repository = Repository.find(id)
+  end
+
+  def check_link_permission
+    unless @user.staff? || @user.admin? || @repository.owned_by?(@user)
       flash[:alert] = "You are not allowed to perform this action!"
       redirect_to repository_path(@repository.user_username, @repository.slug)
     end

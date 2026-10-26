@@ -565,14 +565,41 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(repo.reload.users).to eq([owner])
     end
 
-    it "any signed-in stranger can add a member to someone else's repository (D-C12, severity 1)" do
+    it "refuses a signed-in stranger adding a member to someone else's repository (D-C12)" do
       content_login!(stranger)
       patch add_member_repositories_path(owner.username),
             params: { repo_owner: { repository_id: repo.id, owner_username: newbie.username } }
-      # WART(D-C12): add_member has no ownership check
-      expect(repo.reload.users).to contain_exactly(owner, newbie)
-      expect(flash[:notice]).to eq("This user was added to your repository.")
+      # FIXED(D-C12): add_member runs check_ownership (owner, member or admin)
+      expect(repo.reload.users).to eq([owner])
+      expect(flash[:alert]).to eq("You are not allowed to perform this action!")
       expect(response).to redirect_to(repo_path)
+    end
+
+    it "lets the owner (even when not in users), a collaborator and admin add a member (D-C12)" do
+      orphan = create(:repository, owner: owner, title: "Orphan")
+      content_login!(owner)
+      patch add_member_repositories_path(owner.username),
+            params: { repo_owner: { repository_id: orphan.id, owner_username: newbie.username } }
+      expect(orphan.reload.users).to eq([newbie])
+      expect(flash[:notice]).to eq("This user was added to your repository.")
+
+      content_login!(newbie) # now a collaborator of orphan
+      patch add_member_repositories_path(owner.username),
+            params: { repo_owner: { repository_id: orphan.id, owner_username: stranger.username } }
+      expect(orphan.reload.users).to contain_exactly(newbie, stranger)
+
+      third = create(:user, :regular_user)
+      content_sign_in_as(:admin)
+      patch add_member_repositories_path(owner.username),
+            params: { repo_owner: { repository_id: orphan.id, owner_username: third.username } }
+      expect(orphan.reload.users).to include(third)
+    end
+
+    it "refuses staff adding a member (staff are not repository owners) (D-C12)" do
+      content_sign_in_as(:staff)
+      patch add_member_repositories_path(owner.username),
+            params: { repo_owner: { repository_id: repo.id, owner_username: newbie.username } }
+      expect(repo.reload.users).to eq([owner])
     end
 
     it "add_member reports unknown users and duplicates" do
@@ -585,14 +612,28 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq("This user is already a member of your repository.")
     end
 
-    it "any signed-in stranger can remove a member from someone else's repository (D-C13, severity 1)" do
+    it "refuses a signed-in stranger removing a member from someone else's repository (D-C13)" do
       repo.users << newbie
       content_login!(stranger)
       patch remove_member_repositories_path(owner.username),
             params: { repo_owner: { repository_id: repo.id, owner_id: newbie.id } }
-      # WART(D-C13): remove_member has no ownership check
+      # FIXED(D-C13): remove_member runs check_ownership
+      expect(repo.reload.users).to contain_exactly(owner, newbie)
+      expect(flash[:alert]).to eq("You are not allowed to perform this action!")
+    end
+
+    it "lets the owner and admin remove a member (D-C13)" do
+      repo.users << newbie
+      content_login!(owner)
+      patch remove_member_repositories_path(owner.username),
+            params: { repo_owner: { repository_id: repo.id, owner_id: newbie.id } }
       expect(repo.reload.users).to eq([owner])
       expect(flash[:notice]).to eq("This user was removed from your repository.")
+      repo.users << newbie
+      content_sign_in_as(:admin)
+      patch remove_member_repositories_path(owner.username),
+            params: { repo_owner: { repository_id: repo.id, owner_id: newbie.id } }
+      expect(repo.reload.users).to eq([owner])
     end
 
     it "remove_member protects the last member and the owner, and reports unknown users" do
@@ -636,14 +677,39 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(repo.reload.user_id).to eq(newbie.id)
     end
 
-    it "any signed-in stranger can link someone else's repository to a project proposal (D-C14, severity 1)" do
+    it "refuses a signed-in stranger linking someone else's repository to a project proposal (D-C14)" do
       pp = create(:project_proposal, :approved)
       content_login!(stranger)
       patch link_to_pp_repositories_path(owner.username),
             params: { repo: { repository_id: repo.id, project_proposal_id: pp.id } }
-      # WART(D-C14): link_to_pp has no ownership check
+      # FIXED(D-C14): link_to_pp is limited to members, staff (as the show page form) and admin
+      expect(repo.reload.project_proposal_id).to be_nil
+      expect(flash[:alert]).to eq("You are not allowed to perform this action!")
+    end
+
+    it "lets the owner, staff and admin link an approved proposal (D-C14)" do
+      pp = create(:project_proposal, :approved)
+      content_login!(owner)
+      patch link_to_pp_repositories_path(owner.username),
+            params: { repo: { repository_id: repo.id, project_proposal_id: pp.id } }
       expect(repo.reload.project_proposal_id).to eq(pp.id)
       expect(flash[:notice]).to eq("This Repository was linked to the selected Project Proposal")
+      %i[staff admin].each do |role|
+        repo.update_columns(project_proposal_id: nil)
+        content_sign_in_as(role)
+        patch link_to_pp_repositories_path(owner.username),
+              params: { repo: { repository_id: repo.id, project_proposal_id: pp.id } }
+        expect(repo.reload.project_proposal_id).to eq(pp.id)
+      end
+    end
+
+    it "refuses to link a proposal that is not approved (D-C14)" do
+      pending_pp = create(:project_proposal)
+      content_login!(owner)
+      patch link_to_pp_repositories_path(owner.username),
+            params: { repo: { repository_id: repo.id, project_proposal_id: pending_pp.id } }
+      expect(repo.reload.project_proposal_id).to be_nil
+      expect(flash[:alert]).to eq("Only an approved Project Proposal can be linked.")
     end
 
     it "member actions on an unknown repository raise RecordNotFound" do
