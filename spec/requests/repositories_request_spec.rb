@@ -96,7 +96,8 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
         get repo_path(secret)
         expect(response).to redirect_to(password_entry_repository_path(owner.username, secret.id))
         follow_redirect!
-        expect(response.location).to include("/login")
+        # FIXED(D-C16): the guest lands on the password page, not /login
+        expect(response).to have_http_status(:ok)
       end
 
       it "redirects a signed-in stranger to the password entry page" do
@@ -140,11 +141,35 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
   describe "password entry as a guest" do
     let!(:secret) { create(:repository, :private, owner: owner, title: "Secret", users: [owner]) }
 
-    it "password_entry and pass_authenticate need a login: a guest is bounced to /login (D-C16)" do
+    before { secret.update_columns(password: BCrypt::Password.create("open-sesame")) }
+
+    it "a guest can open the password page and enter the password (D-C16)" do
       get password_entry_repository_path(owner.username, secret.id)
-      expect(response).to redirect_to(login_path(back_to: "/#{owner.username}/#{secret.id}/password_entry"))
+      # FIXED(D-C16): password_entry / pass_authenticate no longer require a login
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("This project is private")
+      expect(response.body).not_to include("Secret")
       post pass_authenticate_repository_path(owner.username, secret.id), params: { password: "open-sesame" }
-      # WART(D-C16): show sends guests to the password page, which then sends them to login; guests can never enter a private repo's password
+      expect(response).to redirect_to(repo_path(secret))
+      get repo_path(secret)
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "a guest with a wrong password is bounced back and sees nothing" do
+      post pass_authenticate_repository_path(owner.username, secret.id), params: { password: "nope" }
+      expect(response).to redirect_to(password_entry_repository_path(owner.username, secret.id))
+      get repo_path(secret)
+      expect(response).to redirect_to(password_entry_repository_path(owner.username, secret.id))
+    end
+
+    it "the guest password page for a public repository redirects to show, and the other private actions still need a login" do
+      get password_entry_repository_path(owner.username, repo.id)
+      expect(response).to redirect_to(repository_path(owner.username, repo.id))
+      post pass_authenticate_repository_path(owner.username, repo.id), params: { password: "x" }
+      expect(response).to redirect_to(repo_path)
+      post add_like_repository_path(owner.username, secret.slug)
+      expect(response.location).to include("/login")
+      get edit_repository_path(owner.username, repo.slug)
       expect(response.location).to include("/login")
     end
   end

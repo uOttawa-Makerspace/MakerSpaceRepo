@@ -1,7 +1,8 @@
 class RepositoriesController < SessionsController
   include BCrypt
   before_action :current_user
-  before_action :signed_in, except: %i[show download_files]
+  before_action :signed_in,
+                except: %i[show download_files password_entry pass_authenticate]
   before_action :set_repository,
                 only: %i[
                   show
