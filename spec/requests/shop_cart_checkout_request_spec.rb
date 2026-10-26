@@ -287,26 +287,57 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
   describe "order item modals" do
     let(:item) { cart_for(other, 10).order_items.first }
 
-    it "renders any order item's modal for ANY signed-in user (no ownership/role check)" do
+    # FIXED(D-S03): the three modals are staff/admin only (403 fragment for signed-in non-staff, including the item's owner); guests still go to login
+    it "renders the info modal for staff and admin" do
+      [staff, admin].each do |u|
+        get logout_path
+        shop_log_in!(u)
+        get order_item_order_item_modal_path(item)
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include(other.username)
+        expect(response.body).to include("Order Item Information")
+        expect(response.body).not_to include("<html")
+      end
+    end
+
+    it "renders the approve and revoke modals for staff and admin" do
+      [staff, admin].each do |u|
+        get logout_path
+        shop_log_in!(u)
+        get order_item_approve_order_item_modal_path(item)
+        expect(response).to have_http_status(:ok)
+        get order_item_revoke_order_item_modal_path(item)
+        expect(response).to have_http_status(:ok)
+      end
+    end
+
+    it "403s all three modals for a regular user who is not the owner, leaking nothing" do
       shop_log_in!(user)
+      [order_item_order_item_modal_path(item),
+       order_item_approve_order_item_modal_path(item),
+       order_item_revoke_order_item_modal_path(item)].each do |path|
+        get path
+        expect(response).to have_http_status(:forbidden)
+        expect(response.body).not_to include(other.username)
+      end
+    end
+
+    it "403s the modals for the item's own owner too (staff tooling)" do
+      shop_log_in!(other)
       get order_item_order_item_modal_path(item)
-      # WART(D-S03): modals expose another user's username, project and comments to any signed-in user (sequential ids)
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include(other.username)
-      expect(response.body).to include("Order Item Information")
-      expect(response.body).not_to include("<html")
-    end
-
-    it "renders the approve and revoke modals for any signed-in user too" do
-      shop_log_in!(user)
+      expect(response).to have_http_status(:forbidden)
       get order_item_approve_order_item_modal_path(item)
-      expect(response).to have_http_status(:ok)
-      get order_item_revoke_order_item_modal_path(item)
-      expect(response).to have_http_status(:ok)
+      expect(response).to have_http_status(:forbidden)
     end
 
-    it "404s for an unknown item" do
-      shop_log_in!(user)
+    it "sends guests to login" do
+      get order_item_order_item_modal_path(item)
+      expect(response).to have_http_status(:found)
+      expect(response.location).to include("/login")
+    end
+
+    it "404s for an unknown item (staff)" do
+      shop_log_in!(staff)
       get order_item_order_item_modal_path(order_item_id: 999_999_999)
       expect(response).to have_http_status(:not_found)
     end

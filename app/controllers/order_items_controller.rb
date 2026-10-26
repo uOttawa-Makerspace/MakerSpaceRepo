@@ -1,6 +1,14 @@
 # frozen_string_literal: true
 
 class OrderItemsController < DevelopmentProgramsController
+  # Modals are fragments fetched by the staff-only requests page
+  before_action :ensure_staff_modal,
+                only: %i[
+                  order_item_modal
+                  approve_order_item_modal
+                  revoke_order_item_modal
+                ]
+
   def create
     @order = current_order
     @order.user = current_user
@@ -73,6 +81,10 @@ class OrderItemsController < DevelopmentProgramsController
   end
 
   private
+
+  def ensure_staff_modal
+    head :forbidden unless current_user.staff?
+  end
 
   def order_item_params
     params.require(:order_item).permit(:quantity, :proficient_project_id)
