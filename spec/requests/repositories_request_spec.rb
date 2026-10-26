@@ -829,13 +829,26 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
   end
 
   describe "GET /repositories/populate_users" do
-    it "is unreachable: the /:user_username/:id show route shadows it, so JS callers get a 404 (D-C15)" do
-      create(:user, :regular_user, name: "Zelda Searchable")
-      get "/repositories/populate_users", params: { search: "zelda" }
-      # WART(D-C15): routes.rb declares it after resources :repositories path '/:user_username'; it resolves to repositories#show
-      expect(response).to have_http_status(:not_found)
+    let!(:zelda) { create(:user, :regular_user, name: "Zelda Searchable") }
+
+    it "routes to repositories#populate_users instead of the show catch-all (D-C15)" do
+      # FIXED(D-C15): declared above resources :repositories path '/:user_username'
       expect(Rails.application.routes.recognize_path("/repositories/populate_users"))
-        .to include(action: "show", user_username: "repositories", id: "populate_users")
+        .to include(controller: "repositories", action: "populate_users")
+    end
+
+    it "sends a guest to login" do
+      get "/repositories/populate_users", params: { search: "zelda" }
+      expect(response.location).to include("/login")
+    end
+
+    it "returns only id, name and username to any signed-in user" do
+      content_login!(stranger)
+      get "/repositories/populate_users", params: { search: "zelda" }
+      expect(response).to have_http_status(:ok)
+      users = JSON.parse(response.body)["users"]
+      expect(users).to eq([{ "id" => zelda.id, "name" => "Zelda Searchable", "username" => zelda.username }])
+      expect(response.body).not_to include("password", "access_token", "email")
     end
   end
 end
