@@ -29,7 +29,7 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
   end
 
   describe "volunteer-area gate (grant_access)" do
-    { emails: :emails_volunteers_path, my_stats: :my_stats_volunteers_path, calendar: :calendar_volunteers_path,
+    { my_stats: :my_stats_volunteers_path, calendar: :calendar_volunteers_path,
       populate_users: :populate_users_volunteers_path, shadowing_shifts: :shadowing_shifts_volunteers_path }.each do |action, helper|
       %i[guest regular role_only].each do |role|
         it "#{role}: #{action} redirects to root with an alert" do
@@ -51,7 +51,7 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
   end
 
   describe "staff-only gate (grant_access_list)" do
-    { volunteer_list: :volunteer_list_volunteers_path, new_event: :new_event_volunteers_path,
+    { emails: :emails_volunteers_path, volunteer_list: :volunteer_list_volunteers_path, new_event: :new_event_volunteers_path,
       create_event: :create_event_volunteers_path, delete_event: :delete_event_volunteers_path }.each do |action, helper|
       %i[guest regular role_only volunteer inactive].each do |role|
         it "#{role}: #{action} redirects to root with an alert" do
@@ -64,8 +64,10 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
     end
 
     %i[staff admin].each do |role|
-      it "#{role}: volunteer_list and new_event render" do
+      it "#{role}: emails, volunteer_list and new_event render" do
         vol_sign_in_as(role)
+        get emails_volunteers_path
+        expect(response).to have_http_status(:ok)
         get volunteer_list_volunteers_path
         expect(response).to have_http_status(:ok)
         get new_event_volunteers_path
@@ -92,7 +94,7 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
       a = create(:user, :volunteer_with_volunteer_program)
       i = create(:user, :unactive_volunteer_with_volunteer_program)
       r = create(:user, :regular_user)
-      vol_login!(a)
+      vol_login!(create(:user, :staff))
       get emails_volunteers_path
       expect(ivar(:@all_emails)).to contain_exactly(a.email, i.email)
       expect(ivar(:@active_emails)).to eq([a.email])
@@ -101,17 +103,15 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
       expect(response.body).not_to include(r.email)
     end
 
-    # WART(D-V24): any volunteer (not just staff) reads every volunteer's email, and the program is self-service (join_volunteer_program), so any signed-in user can reach this
-    it "is reachable by a regular user after self-enrolling through join_volunteer_program" do
-      victim = create(:user, :volunteer_with_volunteer_program)
+    # FIXED(D-V24): emails is staff/admin only (grant_access_list), so self-enrolment no longer exposes it
+    it "stays closed to a regular user who self-enrols through join_volunteer_program, and to volunteers" do
+      create(:user, :volunteer_with_volunteer_program)
       user = create(:user, :regular_user)
       vol_login!(user)
-      get emails_volunteers_path
-      expect(response).to redirect_to(root_path)
       get join_volunteer_program_volunteers_path
       get emails_volunteers_path
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include(victim.email)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You cannot access this area.")
     end
   end
 

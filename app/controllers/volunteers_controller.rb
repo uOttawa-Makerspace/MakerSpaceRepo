@@ -17,7 +17,7 @@ class VolunteersController < SessionsController
                   }
 
   before_action :grant_access_list,
-                only: %i[volunteer_list create_event delete_event new_event]
+                only: %i[emails volunteer_list create_event delete_event new_event]
 
   def index
     @user = current_user
