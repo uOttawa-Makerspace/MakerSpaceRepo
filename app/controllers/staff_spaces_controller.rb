@@ -1,5 +1,10 @@
 class StaffSpacesController < StaffAreaController
   def bulk_add_users
+    unless current_user.admin?
+      flash[:alert] = "Only admins can add staff to spaces."
+      redirect_back(fallback_location: root_path) and return
+    end
+
     if params[:space_ids].present? && params[:user_ids].present?
       space_list = params[:space_ids]
       user_list = params[:user_ids]
