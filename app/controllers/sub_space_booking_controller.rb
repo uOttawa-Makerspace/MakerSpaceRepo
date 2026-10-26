@@ -538,21 +538,38 @@ class SubSpaceBookingController < SessionsController
       return
     end
 
-    max_duration = @sub_space_booking.sub_space.maximum_booking_duration
-    if !max_duration.nil? && !@user.admin? &&
-         (end_datetime.to_time - start_datetime.to_time) / 1.hour > max_duration
-      message =
-        "You cannot book #{@sub_space_booking.sub_space.name} for more than #{max_duration} hours."
-      respond_to do |format|
-        format.json do
-          render json: { errors: ["DurationHour #{message}"] },
-                 status: :unprocessable_content
-        end
-        format.html do
-          redirect_to sub_space_booking_edit_path, alert: message
-        end
-      end
+    # Check the limits against the values the model will store (the user's own
+    # offsets included), not against a re-parsed copy of the raw params.
+    @sub_space_booking.assign_attributes(sub_space_booking_update_params)
+    sub_space = @sub_space_booking.sub_space
+    duration = (@sub_space_booking.end_time - @sub_space_booking.start_time) / 1.hour
+
+    max_duration = sub_space.maximum_booking_duration
+    if !max_duration.nil? && !@user.admin? && duration > max_duration
+      render_update_limit_error(
+        "DurationHour",
+        "You cannot book #{sub_space.name} for more than #{max_duration} hours."
+      )
       return
+    end
+
+    max_per_week = sub_space.maximum_booking_hours_per_week
+    if !max_per_week.nil? && !@user.admin?
+      other_seconds =
+        SubSpaceBooking
+          .where(sub_space_id: sub_space.id)
+          .where(user_id: @sub_space_booking.user_id)
+          .where.not(id: @sub_space_booking.id)
+          .where("start_time >= ?", DateTime.now.beginning_of_week)
+          .where("start_time <= ?", DateTime.now.end_of_week)
+          .sum { |other| other.end_time - other.start_time }
+      if other_seconds / 1.hour + duration > max_per_week
+        render_update_limit_error(
+          "DurationWeek",
+          "You cannot book #{sub_space.name} for more than #{max_per_week} hours per week."
+        )
+        return
+      end
     end
 
     if @sub_space_booking.update(sub_space_booking_update_params)
@@ -704,6 +721,18 @@ class SubSpaceBookingController < SessionsController
   end
 
   private
+
+  def render_update_limit_error(code, message)
+    respond_to do |format|
+      format.json do
+        render json: { errors: ["#{code} #{message}"] },
+               status: :unprocessable_content
+      end
+      format.html do
+        redirect_to sub_space_booking_edit_path, alert: message
+      end
+    end
+  end
 
   def grant_booking_access!(uba)
     uba.identity = "Other" unless %w[JMTS Staff GNG Other].include?(uba.identity)
