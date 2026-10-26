@@ -239,14 +239,53 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(response).to redirect_to(password_entry_repository_path(owner.username, secret.id))
     end
 
-    it "a guest can brute-force the password with no rate limit or lockout (D-C04)" do
-      11.times do
-        post pass_authenticate_repository_path(owner.username, secret.id), params: { password: "wrong" }
+    # test env uses :null_store (never counts), so back the limiter's store with a counter
+    context "rate limit (D-C04)" do
+      let(:counts) { Hash.new(0) }
+
+      before do
+        allow(RepositoriesController.cache_store).to receive(:increment) { |key, *| counts[key] += 1 }
+      end
+
+      def guess(r = secret, password: "wrong")
+        post pass_authenticate_repository_path(owner.username, r.id), params: { password: password }
+      end
+
+      it "allows 10 guesses, then refuses even the correct password" do
+        10.times do
+          guess
+          expect(flash[:alert]).to eq("Incorrect password. Try again!")
+        end
+        guess(password: "open-sesame")
+        # FIXED(D-C04): pass_authenticate is rate limited (10 per 10 minutes) per repository and user/IP
+        expect(response).to redirect_to(password_entry_repository_path(owner.username, secret.id))
+        expect(flash[:alert]).to eq("Too many attempts. Please try again later.")
+        get repo_path(secret)
         expect(response).to redirect_to(password_entry_repository_path(owner.username, secret.id))
       end
-      # WART(D-C04): no throttling on pass_authenticate
-      post pass_authenticate_repository_path(owner.username, secret.id), params: { password: "open-sesame" }
-      expect(flash[:notice]).to eq("Success")
+
+      it "counts per repository (id, slug and title share one bucket) and per user" do
+        other = create(:repository, :private, owner: owner, title: "Other Secret", users: [owner])
+        other.update_columns(password: BCrypt::Password.create("open-sesame"))
+        5.times { guess }
+        post pass_authenticate_repository_path(owner.username, secret.slug), params: { password: "x" }
+        post pass_authenticate_repository_path(owner.username, secret.title), params: { password: "x" }
+        3.times { guess }
+        guess
+        expect(flash[:alert]).to eq("Too many attempts. Please try again later.")
+        guess(other, password: "open-sesame")
+        expect(flash[:notice]).to eq("Success")
+        content_login!(create(:user, :regular_user))
+        guess(password: "open-sesame")
+        expect(flash[:notice]).to eq("Success")
+      end
+
+      it "throttles a guest by IP" do
+        reset!
+        10.times { guess }
+        guess(password: "open-sesame")
+        expect(flash[:alert]).to eq("Too many attempts. Please try again later.")
+      end
     end
 
     it "pass_authenticate on a public repository redirects to show instead of raising (D-C05)" do

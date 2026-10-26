@@ -15,6 +15,13 @@ class RepositoriesController < SessionsController
                   pass_authenticate
                   password_entry
                 ]
+  # Password guessing: per repository and per user (or IP for guests)
+  rate_limit to: 10, within: 10.minutes, only: :pass_authenticate,
+             by: -> { "#{@repository.id}:#{@user.id.presence || request.remote_ip}" },
+             with: -> {
+               redirect_to password_entry_repository_path(@repository.user_username, @repository.id),
+                           alert: "Too many attempts. Please try again later."
+             }
   before_action :check_auth, only: %i[show download_files]
   before_action -> { ensure_repository_unlocked(@repository) }, only: :add_like
   before_action :set_member_repository,
