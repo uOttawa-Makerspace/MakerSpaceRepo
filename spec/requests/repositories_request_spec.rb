@@ -829,6 +829,21 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq("Only an approved Project Proposal can be linked.")
     end
 
+    it "member actions without their params go to the ParameterMissing handler, not a 500 (review)" do
+      content_login!(owner)
+      {
+        add_member_repositories_path(owner.username) => [{}, { repo_owner: "x" }],
+        remove_member_repositories_path(owner.username) => [{}, { repo_owner: "x" }],
+        link_to_pp_repositories_path(owner.username) => [{}, { repo: "x" }]
+      }.each do |path, variants|
+        variants.each do |params|
+          patch path, params: params
+          expect(response).to redirect_to(root_path)
+          expect(flash[:alert]).to be_present
+        end
+      end
+    end
+
     it "member actions on an unknown repository raise RecordNotFound" do
       content_login!(owner)
       patch add_member_repositories_path(owner.username),

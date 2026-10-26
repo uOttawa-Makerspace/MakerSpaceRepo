@@ -407,8 +407,8 @@ class RepositoriesController < SessionsController
   end
 
   def set_member_repository
-    id = (params[:repo] || params[:repo_owner])[:repository_id]
-    @repository = Repository.find(id)
+    key = params.key?(:repo) ? :repo : :repo_owner
+    @repository = Repository.find(params.expect(key => [:repository_id])[:repository_id])
   end
 
   def check_link_permission
