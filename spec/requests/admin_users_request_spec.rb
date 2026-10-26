@@ -292,6 +292,14 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(target.reload.role).to eq("regular_user")
     end
 
+    it "does not count a locked admin as remaining (the only usable admin cannot demote themselves)" do
+      # FIXED(D-I21): the guard counts only admins who can sign in
+      create(:user, :admin, locked: true, locked_until: 99.years.from_now)
+      patch set_role_admin_users_path, params: { role: "regular_user", user_ids: [admin.id] }
+      expect(flash[:alert]).to eq("You cannot remove the last admin.")
+      expect(admin.reload.role).to eq("admin")
+    end
+
     it "lets an admin demote themselves when another admin remains" do
       create(:user, :admin)
       patch set_role_admin_users_path, params: { role: "regular_user", user_ids: [admin.id] }
@@ -387,6 +395,14 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(User.unscoped.find(admin.id).deleted).to be(false)
     end
 
+    it "does not count a locked admin as remaining when deleting" do
+      # FIXED(D-I22): the guard counts only admins who can sign in
+      create(:user, :admin, locked: true, locked_until: 99.years.from_now)
+      delete delete_user_admin_users_path, params: { id: admin.id, password: password }
+      expect(flash[:alert]).to eq("You cannot remove the last admin.")
+      expect(User.unscoped.find(admin.id).deleted).to be(false)
+    end
+
     it "lets an admin delete themselves when another admin remains" do
       create(:user, :admin)
       delete delete_user_admin_users_path, params: { id: admin.id, password: password }
@@ -460,6 +476,39 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(target.locked).to be(false)
       expect(target.auth_attempts).to eq(0)
       expect(target.locked_until).to be_nil
+    end
+  end
+
+  describe "PUT /admin/users/toggle_lock_user last-admin guard" do
+    before { login!(admin) }
+
+    # FIXED(D-I21/D-I22): locking cannot remove the last usable admin
+    it "refuses to lock the only usable admin" do
+      put toggle_lock_user_admin_users_path, params: { id: admin.id }
+      expect(response).to redirect_to(user_path(admin.username))
+      expect(flash[:alert]).to eq("You cannot lock the last admin.")
+      expect(admin.reload.locked).to be(false)
+    end
+
+    it "refuses to lock an admin when every other admin is locked" do
+      other = create(:user, :admin)
+      admin.update_columns(locked: true)
+      put toggle_lock_user_admin_users_path, params: { id: other.id }
+      expect(flash[:alert]).to eq("You cannot lock the last admin.")
+      expect(other.reload.locked).to be(false)
+    end
+
+    it "locks an admin when another usable admin remains" do
+      other = create(:user, :admin)
+      put toggle_lock_user_admin_users_path, params: { id: other.id }
+      expect(flash[:notice]).to eq("User locked!")
+      expect(other.reload.locked).to be(true)
+    end
+
+    it "always allows unlocking an admin" do
+      other = create(:user, :admin, locked: true, locked_until: 99.years.from_now)
+      put toggle_lock_user_admin_users_path, params: { id: other.id }
+      expect(flash[:notice]).to eq("User unlocked!")
     end
   end
 

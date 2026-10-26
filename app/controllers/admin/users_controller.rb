@@ -21,6 +21,7 @@ class Admin::UsersController < AdminAreaController
   ASSIGNABLE_ROLES = %w[admin staff regular_user volunteer].freeze
 
   LAST_ADMIN_MESSAGE = "You cannot remove the last admin."
+  LAST_ADMIN_LOCK_MESSAGE = "You cannot lock the last admin."
 
   def index
     unless valid_sort_params?
@@ -107,6 +108,11 @@ class Admin::UsersController < AdminAreaController
 
   def toggle_lock_user
     user_to_toggle = User.find(params[:id])
+    if !user_to_toggle.locked && last_admin?(user_to_toggle)
+      redirect_to user_path(user_to_toggle.username), alert: LAST_ADMIN_LOCK_MESSAGE
+      return
+    end
+
     toggle_user_lock_status(user_to_toggle)
     redirect_to user_path(user_to_toggle.username),
                 notice: "User #{user_to_toggle.locked ? 'locked' : 'unlocked'}!"
@@ -383,8 +389,13 @@ class Admin::UsersController < AdminAreaController
   # Role Management
   # ============================================
 
+  # Admins who can actually sign in (soft-deleted ones are excluded by the default scope).
+  def usable_admins
+    User.where(role: "admin", locked: false)
+  end
+
   def last_admin?(user)
-    user.admin? && User.where(role: "admin").where.not(id: user.id).none?
+    user.admin? && usable_admins.where.not(id: user.id).none?
   end
 
   # True when the requested role change would leave no admin at all.
@@ -393,7 +404,7 @@ class Admin::UsersController < AdminAreaController
 
     user_ids = params[:user_ids].map(&:to_i)
     User.where(role: "admin", id: user_ids).any? &&
-      User.where(role: "admin").where.not(id: user_ids).none?
+      usable_admins.where.not(id: user_ids).none?
   end
 
   def update_user_roles
