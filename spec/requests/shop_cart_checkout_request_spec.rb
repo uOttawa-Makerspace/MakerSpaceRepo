@@ -224,6 +224,26 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(staff.orders.last.order_items.count).to eq(1)
     end
 
+    # FIXED(D-S08 follow-up): a session order is only the live cart while it is In progress and owned by current_user
+    it "does not serve a Completed session order as the cart (no second checkout of it)" do
+      credit_cc!(user, 100)
+      add_to_cart(pp_with_cc(10))
+      order = user.orders.last
+      order.update!(order_status: order_status!("Completed"))
+      expect { post orders_path }.not_to change { order.cc_moneys.count }
+      expect(order.reload.order_items.count).to eq(1)
+      expect(user.reload.wallet).to eq(100)
+    end
+
+    it "does not adopt a NULL-user (orphan) session order" do
+      add_to_cart(pp_with_cc(10))
+      order = user.orders.last
+      title = order.order_items.first.proficient_project.title
+      order.update_column(:user_id, nil)
+      get carts_path
+      expect(response.body).not_to include(title)
+    end
+
     it "keeps the same user's cart across requests" do
       add_to_cart(pp_with_cc(10))
       add_to_cart(pp_with_cc(5))
