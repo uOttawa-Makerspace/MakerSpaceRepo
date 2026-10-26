@@ -192,16 +192,74 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       end
     end
 
-    it "hands the previous user's cart to whoever logs in next on the same browser session" do
+    # FIXED(D-S08): sign_out clears session[:order_id] and current_order ignores a session order owned by someone else
+    it "does not hand the previous user's cart to whoever logs in next on the same browser session" do
       add_to_cart(pp_with_cc(10))
       first_order = user.orders.last
       get logout_path
       shop_log_in!(staff)
       add_to_cart(pp_with_cc(5))
-      # WART(D-S08): logout does not clear session[:order_id], so the next login adopts the previous user's cart and re-assigns the order to itself
-      expect(first_order.reload.user_id).to eq(staff.id)
-      expect(first_order.order_items.count).to eq(2)
-      expect(user.orders.count).to eq(0)
+      expect(first_order.reload.user_id).to eq(user.id)
+      expect(first_order.order_items.count).to eq(1)
+      expect(staff.orders.last.order_items.count).to eq(1)
+      expect(staff.orders.last).not_to eq(first_order)
+    end
+
+    it "shows an empty cart to the next user after logout" do
+      add_to_cart(pp_with_cc(10))
+      title = user.orders.last.order_items.first.proficient_project.title
+      get logout_path
+      shop_log_in!(staff)
+      get carts_path
+      expect(response.body).not_to include(title)
+    end
+
+    it "never adopts another user's order even when login happens without a logout" do
+      add_to_cart(pp_with_cc(10))
+      first_order = user.orders.last
+      shop_log_in!(staff)
+      add_to_cart(pp_with_cc(5))
+      expect(first_order.reload.user_id).to eq(user.id)
+      expect(first_order.order_items.count).to eq(1)
+      expect(staff.orders.last.order_items.count).to eq(1)
+    end
+
+    # FIXED(D-S08 follow-up): a session order is only the live cart while it is In progress and owned by current_user
+    it "does not serve a Completed session order as the cart (no second checkout of it)" do
+      credit_cc!(user, 100)
+      add_to_cart(pp_with_cc(10))
+      order = user.orders.last
+      order.update!(order_status: order_status!("Completed"))
+      expect { post orders_path }.not_to change { order.cc_moneys.count }
+      expect(order.reload.order_items.count).to eq(1)
+      expect(user.reload.wallet).to eq(100)
+    end
+
+    it "does not adopt a NULL-user (orphan) session order" do
+      add_to_cart(pp_with_cc(10))
+      order = user.orders.last
+      title = order.order_items.first.proficient_project.title
+      order.update_column(:user_id, nil)
+      get carts_path
+      expect(response.body).not_to include(title)
+    end
+
+    # FIXED: a session order id that no longer resolves falls back to the user's own cart instead of a 404
+    it "falls back to the user's cart when the session order was deleted" do
+      add_to_cart(pp_with_cc(10))
+      Order.where(user: user).destroy_all
+      get carts_path
+      expect(response).to have_http_status(:ok)
+      add_to_cart(pp_with_cc(5))
+      expect(user.orders.count).to eq(1)
+      expect(user.orders.last.order_items.count).to eq(1)
+    end
+
+    it "keeps the same user's cart across requests" do
+      add_to_cart(pp_with_cc(10))
+      add_to_cart(pp_with_cc(5))
+      expect(user.orders.count).to eq(1)
+      expect(user.orders.last.order_items.count).to eq(2)
     end
   end
 
@@ -287,26 +345,57 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
   describe "order item modals" do
     let(:item) { cart_for(other, 10).order_items.first }
 
-    it "renders any order item's modal for ANY signed-in user (no ownership/role check)" do
+    # FIXED(D-S03): the three modals are staff/admin only (403 fragment for signed-in non-staff, including the item's owner); guests still go to login
+    it "renders the info modal for staff and admin" do
+      [staff, admin].each do |u|
+        get logout_path
+        shop_log_in!(u)
+        get order_item_order_item_modal_path(item)
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include(other.username)
+        expect(response.body).to include("Order Item Information")
+        expect(response.body).not_to include("<html")
+      end
+    end
+
+    it "renders the approve and revoke modals for staff and admin" do
+      [staff, admin].each do |u|
+        get logout_path
+        shop_log_in!(u)
+        get order_item_approve_order_item_modal_path(item)
+        expect(response).to have_http_status(:ok)
+        get order_item_revoke_order_item_modal_path(item)
+        expect(response).to have_http_status(:ok)
+      end
+    end
+
+    it "403s all three modals for a regular user who is not the owner, leaking nothing" do
       shop_log_in!(user)
+      [order_item_order_item_modal_path(item),
+       order_item_approve_order_item_modal_path(item),
+       order_item_revoke_order_item_modal_path(item)].each do |path|
+        get path
+        expect(response).to have_http_status(:forbidden)
+        expect(response.body).not_to include(other.username)
+      end
+    end
+
+    it "403s the modals for the item's own owner too (staff tooling)" do
+      shop_log_in!(other)
       get order_item_order_item_modal_path(item)
-      # WART(D-S03): modals expose another user's username, project and comments to any signed-in user (sequential ids)
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include(other.username)
-      expect(response.body).to include("Order Item Information")
-      expect(response.body).not_to include("<html")
-    end
-
-    it "renders the approve and revoke modals for any signed-in user too" do
-      shop_log_in!(user)
+      expect(response).to have_http_status(:forbidden)
       get order_item_approve_order_item_modal_path(item)
-      expect(response).to have_http_status(:ok)
-      get order_item_revoke_order_item_modal_path(item)
-      expect(response).to have_http_status(:ok)
+      expect(response).to have_http_status(:forbidden)
     end
 
-    it "404s for an unknown item" do
-      shop_log_in!(user)
+    it "sends guests to login" do
+      get order_item_order_item_modal_path(item)
+      expect(response).to have_http_status(:found)
+      expect(response.location).to include("/login")
+    end
+
+    it "404s for an unknown item (staff)" do
+      shop_log_in!(staff)
       get order_item_order_item_modal_path(order_item_id: 999_999_999)
       expect(response).to have_http_status(:not_found)
     end

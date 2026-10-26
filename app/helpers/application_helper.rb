@@ -13,6 +13,7 @@ module ApplicationHelper
     session[:user_id] = nil
     session[:authorized_repo_ids] = nil
     session[:selected_dates] = nil
+    session[:order_id] = nil
   end
 
   def current_user

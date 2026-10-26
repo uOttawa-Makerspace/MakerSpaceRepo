@@ -463,12 +463,13 @@ RSpec.describe "Shop coupons, price rules and cc money (HTTP contract)", type: :
         expect(response).to redirect_to(cc_moneys_path)
       end
 
-      it "500s for a validly signed token whose cc_money row no longer exists" do
+      it "redirects with the generic alert for a validly signed token whose cc_money row no longer exists" do
         stale = verifier.generate(999_999_999)
         shop_log_in!(user)
         get link_cc_to_user_cc_moneys_path, params: { token: stale }
-        # WART(D-S14): no nil guard on CcMoney.find_by_id; a deleted row is a NoMethodError 500
-        expect(response).to have_http_status(:internal_server_error)
+        # FIXED(D-S14): a missing row gets the same alert as an invalid token instead of a NoMethodError 500
+        expect(response).to redirect_to(cc_moneys_path)
+        expect(flash[:alert]).to start_with("Something went wrong.")
       end
     end
 
@@ -492,7 +493,7 @@ RSpec.describe "Shop coupons, price rules and cc money (HTTP contract)", type: :
       it "lets a signed-in user credit the points to ANY account by typing its email" do
         shop_log_in!(user)
         get redeem_cc_moneys_path, params: { token: token, user: { email: other.email } }
-        # WART(D-S15): redeem trusts the submitted email, not the signed-in user, and does so on a GET (CSRF-able); anyone holding a mailed token can push the points to a third party
+        # INTENDED(D-S15): crediting the typed email is deliberate (guest purchasers credit their account by email); no behavior change. The GET->POST conversion belongs to slice A14 (D-S02)
         expect(flash[:notice]).to eq("The CC Money has been added to #{other.name}")
         expect(unlinked.reload.user_id).to eq(other.id)
       end
@@ -509,15 +510,30 @@ RSpec.describe "Shop coupons, price rules and cc money (HTTP contract)", type: :
         shop_log_in!(user)
         get redeem_cc_moneys_path, params: { token: token, user: { email: "nobody@example.com" } }
         expect(response).to redirect_to(cc_moneys_path)
-        # WART(D-S16): an unknown email reports "already added to an account" although nothing was linked
+        # INTENDED(D-S16): keep the existing alert for an unknown email (user decision: crediting a typed email is intended); no behavior change
         expect(flash[:alert]).to eq("The CC Money has already been added to an account")
         expect(unlinked.reload.linked).to be(false)
       end
 
-      it "tampered token raises InvalidSignature (500) and missing user param is a 302 to root" do
+      it "redirects with the generic alert for a validly signed token whose cc_money row no longer exists" do
+        stale = verifier.generate(999_999_999)
         shop_log_in!(user)
+        get redeem_cc_moneys_path, params: { token: stale, user: { email: user.email } }
+        # FIXED(D-S14): same alert as an invalid token instead of a NoMethodError 500
+        expect(response).to redirect_to(cc_moneys_path)
+        expect(flash[:alert]).to start_with("Something went wrong.")
+        expect(user.cc_moneys.sum(:cc)).to eq(0)
+      end
+
+      it "tampered or garbage token gets the generic alert (no 500) and missing user param is a 302 to root" do
+        shop_log_in!(user)
+        # FIXED: redeem used verifier.verify (InvalidSignature 500); verified returns nil, handled like a missing row
         get redeem_cc_moneys_path, params: { token: "bad", user: { email: user.email } }
-        expect(response).to have_http_status(:internal_server_error)
+        expect(response).to redirect_to(cc_moneys_path)
+        expect(flash[:alert]).to start_with("Something went wrong.")
+        get redeem_cc_moneys_path, params: { user: { email: user.email } }
+        expect(response).to redirect_to(cc_moneys_path)
+        expect(flash[:alert]).to start_with("Something went wrong.")
         get redeem_cc_moneys_path, params: { token: token }
         expect(response).to redirect_to(root_path)
         expect(unlinked.reload.linked).to be(false)

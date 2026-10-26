@@ -1,6 +1,6 @@
 class MembershipsController < SessionsController
   before_action :signed_in, except: [:index]
-  before_action only: :admin_create_membership do
+  before_action only: %i[admin_create_membership revoke] do
     head :unauthorized unless current_user.admin?
   end
   before_action :no_container, only: :index
