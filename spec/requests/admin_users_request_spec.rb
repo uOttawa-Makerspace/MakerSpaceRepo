@@ -207,19 +207,27 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(target.name).not_to eq("Hacked")
     end
 
-    it "wipes all existing certifications on every update, even when none are re-sent" do
-      # WART(D-I20): update runs `certifications.destroy_all` before validating, so a failed or certificate-less save silently deletes the user's certifications
+    it "keeps existing certifications when none are re-sent" do
+      # FIXED(D-I20): certifications are only replaced when the param is sent and the save succeeds
       create(:certification, :basic_training, user_id: target.id)
       patch admin_user_path(target), params: { user: { gender: "Female" } }
-      expect(target.certifications.reload.count).to eq(0)
+      expect(target.certifications.reload.count).to eq(1)
     end
 
-    it "a validation failure still wipes certifications and re-renders edit (200)" do
+    it "a validation failure keeps certifications and re-renders edit (200)" do
       create(:certification, :basic_training, user_id: target.id)
-      patch admin_user_path(target), params: { user: { gender: "Bogus" } }
+      patch admin_user_path(target), params: { user: { gender: "Bogus" }, certifications: %w[A] }
       expect(response).to have_http_status(:ok)
       expect(target.reload.gender).to eq("Male")
-      expect(target.certifications.reload.count).to eq(0)
+      expect(target.certifications.reload.count).to eq(1)
+    end
+
+    it "a re-sent certifications list raises (Certification has no `name`) but rolls back, keeping the old ones" do
+      # WART(D-NEW-A13-1): create_certifications calls Certification.create(name:), a column that does not exist, so sending `certifications` always 500s; the destroy_all is now rolled back with it
+      create(:certification, :basic_training, user_id: target.id)
+      patch admin_user_path(target), params: { user: { gender: "Male" }, certifications: %w[A B] }
+      expect(response).to have_http_status(:internal_server_error)
+      expect(target.certifications.reload.count).to eq(1)
     end
 
     it "re-creates up to five named certifications" do

@@ -63,8 +63,6 @@ class Admin::UsersController < AdminAreaController
   end
 
   def update
-    @edit_admin_user.certifications.destroy_all
-    
     # Handle RFID assignment separately
     assign_rfid_if_present
     
@@ -328,9 +326,12 @@ class Admin::UsersController < AdminAreaController
 
   def create_certifications
     return unless params["certifications"].present?
-    
-    params["certifications"].first(5).each do |cert_name|
-      Certification.create(name: cert_name, user_id: @edit_admin_user.id)
+
+    Certification.transaction do
+      @edit_admin_user.certifications.destroy_all
+      params["certifications"].first(5).each do |cert_name|
+        Certification.create(name: cert_name, user_id: @edit_admin_user.id)
+      end
     end
   end
 
