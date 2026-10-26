@@ -210,10 +210,18 @@ RSpec.describe "Content models (part 1 characterization)" do
   end
 
   describe Photo do
-    it "validates the content type on create only: an invalid image saved earlier can be re-saved, and a swap to a bad type on update is accepted (D-C54)" do
+    # FIXED(D-C54): the content-type validation runs on every save, not only on create
+    it "validates the content type on every save: swapping in a non-image on update is refused (D-C54)" do
       photo = create(:photo, :in_repository)
       photo.image.attach(FilesTestHelper.stl)
-      # WART(D-C54): the content-type validation is `on: :create`
+      expect(photo).not_to be_valid
+      expect(photo.errors[:image]).to be_present
+    end
+
+    it "still accepts a valid image swap on update, and a clean re-save" do
+      photo = create(:photo, :in_repository)
+      expect(photo.save).to be(true)
+      photo.image.attach(FilesTestHelper.png)
       expect(photo).to be_valid
     end
 
