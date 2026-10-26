@@ -433,6 +433,7 @@ level: @proficient_project.level)
       end
 
       it "should set the oi as Revoked" do
+        session[:user_id] = create(:user, :staff).id # revoke_project is staff-only (D-C30)
         get :revoke_project,
             format: "js",
             params: {
@@ -449,6 +450,7 @@ level: @proficient_project.level)
       end
 
       it "should NOT set the oi as Revoked" do
+        session[:user_id] = create(:user, :staff).id # revoke_project is staff-only (D-C30)
         get :revoke_project, format: "js"
         expect(response).to redirect_to requests_proficient_projects_path
         expect(OrderItem.order(updated_at: :desc).first.status).to eq(
