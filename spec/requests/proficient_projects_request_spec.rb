@@ -396,12 +396,40 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
       expect(flash[:error]).to eq("An error has occurred, please try again later.")
     end
 
-    it "approving the same item twice creates a second ProficientProjectSession (no idempotency) (D-C29)" do
+    it "approving the same item twice creates one session and one certification (D-C29)" do
       content_sign_in_as(:admin)
+      ActionMailer::Base.deliveries.clear
       2.times { get approve_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "x" } } }
-      # WART(D-C29): no status guard; also re-awards an item that was never submitted
-      expect(ProficientProjectSession.where(proficient_project_id: project.id).count).to eq(2)
-      expect(Certification.where(user_id: buyer.id).count).to eq(2) # find_or_create_by under joins never finds the first one
+      # FIXED(D-C29): approval is guarded on 'Waiting for approval', so a replay is refused
+      expect(ProficientProjectSession.where(proficient_project_id: project.id).count).to eq(1)
+      expect(Certification.where(user_id: buyer.id).count).to eq(1)
+      expect(flash[:error]).to eq("An error has occurred, please try again later.")
+      expect(ActionMailer::Base.deliveries.size).to eq(1)
+    end
+
+    ["In progress", "Awarded", "Revoked"].each do |status|
+      it "does not approve a #{status} item (D-C29)" do
+        item = order_item_for(buyer, status: status)
+        content_sign_in_as(:staff)
+        ActionMailer::Base.deliveries.clear
+        expect do
+          get approve_project_proficient_projects_path, params: { oi_id: item.id, order_item: { admin_comments: "x" } }
+        end.to change(ProficientProjectSession, :count).by(0).and change(Certification, :count).by(0)
+        expect(item.reload.status).to eq(status)
+        expect(flash[:error]).to eq("An error has occurred, please try again later.")
+        expect(ActionMailer::Base.deliveries).to be_empty
+      end
+    end
+
+    it "reuses the certification the user already holds for that training and level (D-C29)" do
+      other_project = create(:proficient_project, training: training, level: project.level, title: "Second widget")
+      second = order_item_for(buyer, status: "Waiting for approval", pp: other_project)
+      content_sign_in_as(:admin)
+      get approve_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "x" } }
+      expect do
+        get approve_project_proficient_projects_path, params: { oi_id: second.id, order_item: { admin_comments: "x" } }
+      end.to change(ProficientProjectSession, :count).by(1).and change(Certification, :count).by(0)
+      expect(second.reload.status).to eq("Awarded")
     end
   end
 

@@ -213,22 +213,37 @@ class ProficientProjectsController < DevelopmentProgramsController
     if order_item
       admin = @user
       duplicates = 0
-      training_id = order_item.proficient_project.training_id
-      cert = Certification.joins(:training).where(
-        training: {id: training_id}).find_or_create_by(
-          user_id: order_item.order.user_id,
-          level: order_item.proficient_project.level
-        )
-      proficient_project_session =
-        ProficientProjectSession.create(
-          proficient_project_id: order_item.proficient_project.id,
-          level: order_item.proficient_project.level,
-          user_id: admin.id,
-          certification_id: cert.id
-      )
-      # Award the cert
-      if proficient_project_session.present?
-        order_item.update(order_item_params.merge({ status: "Awarded" }))
+      awarded = false
+      order_item.with_lock do
+        if order_item.status == "Waiting for approval"
+          training_id = order_item.proficient_project.training_id
+          level = order_item.proficient_project.level
+          user_id = order_item.order.user_id
+          cert =
+            Certification
+              .left_joins(:training_session)
+              .left_joins(proficient_project_session: :proficient_project)
+              .where(user_id: user_id, level: level)
+              .where(
+                "training_sessions.training_id = :t OR proficient_projects.training_id = :t",
+                t: training_id
+              )
+              .first || Certification.create(user_id: user_id, level: level)
+          proficient_project_session =
+            ProficientProjectSession.create(
+              proficient_project_id: order_item.proficient_project.id,
+              level: level,
+              user_id: admin.id,
+              certification_id: cert.id
+            )
+          # Award the cert
+          if proficient_project_session.present?
+            order_item.update(order_item_params.merge({ status: "Awarded" }))
+            awarded = true
+          end
+        end
+      end
+      if awarded
         MsrMailer.send_results_pp(
           order_item,
           order_item.order.user,
