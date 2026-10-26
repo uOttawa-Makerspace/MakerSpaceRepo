@@ -182,7 +182,7 @@ class ProficientProjectsController < DevelopmentProgramsController
 
   def complete_project
     order_items =
-      current_user.order_items.where(
+      current_user.order_items.completed_order.where(
         proficient_project_id: @proficient_project.id
       )
     if !order_items.present?

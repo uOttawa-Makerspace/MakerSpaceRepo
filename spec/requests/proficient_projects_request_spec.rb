@@ -334,6 +334,27 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
       end
     end
 
+    it "does not submit an item whose order is not paid (unpaid cart) (D-C28)" do
+      cart = create(:order, user_id: buyer.id)
+      expect(cart.order_status.name).not_to eq("Completed")
+      oi = create(:order_item, order: cart, proficient_project: project, status: "In progress")
+      content_login!(buyer)
+      ActionMailer::Base.deliveries.clear
+      put complete_project_proficient_projects_path, params: { id: project.id, order_item: { user_comments: "free" } }
+      expect(oi.reload.status).to eq("In progress")
+      expect(flash[:alert]).to eq("This project hasn't been found")
+      expect(ActionMailer::Base.deliveries).to be_empty
+    end
+
+    it "submits the paid item, not an unpaid cart item for the same project (D-C28)" do
+      cart_item = create(:order_item, order: create(:order, user_id: buyer.id), proficient_project: project, status: "In progress")
+      paid = order_item_for(buyer)
+      content_login!(buyer)
+      put complete_project_proficient_projects_path, params: { id: project.id, order_item: { user_comments: "ok" } }
+      expect(paid.reload.status).to eq("Waiting for approval")
+      expect(cart_item.reload.status).to eq("In progress")
+    end
+
     it "submits the In progress item when the user also holds an older Awarded one (D-C28)" do
       awarded = order_item_for(buyer, status: "Awarded")
       current = order_item_for(buyer, status: "In progress")

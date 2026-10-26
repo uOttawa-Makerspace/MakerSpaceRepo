@@ -298,7 +298,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
         user = create(:user, :volunteer_with_dev_program)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
-        create(:order, :with_item, user_id: user.id)
+        create(:order, :completed, :with_item, user_id: user.id)
         proficient_project = ProficientProject.last
         put :complete_project,
             format: "js",
@@ -327,7 +327,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
         @user = create(:user, :admin)
         session[:user_id] = @user.id
         session[:expires_at] = Time.zone.now + 10_000
-        create(:order, :with_item, user_id: @user.id)
+        create(:order, :completed, :with_item, user_id: @user.id)
         create(:user, email: "avend029@uottawa.ca")
         @proficient_project = ProficientProject.last
         put :complete_project,
@@ -419,7 +419,7 @@ level: @proficient_project.level)
         @user = create(:user, :volunteer_with_dev_program)
         session[:user_id] = @user.id
         session[:expires_at] = Time.zone.now + 10_000
-        create(:order, :with_item, user_id: @user.id)
+        create(:order, :completed, :with_item, user_id: @user.id)
         @proficient_project = ProficientProject.last
         put :complete_project,
             format: "js",
