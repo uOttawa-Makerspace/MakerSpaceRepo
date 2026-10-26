@@ -94,7 +94,7 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
   end
 
   def create
-    @job_order = JobOrder.new(job_order_params)
+    @job_order = JobOrder.new(job_order_create_params)
     @job_order.user = @user
 
     if @job_order.save
@@ -509,9 +509,15 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
     end
   end
 
+  # Customer-facing params: no staff-only fields, no owner (the owner is set to
+  # the current user in #create).
+  def job_order_create_params
+    job_order_params.except(:staff_comments, :staff_files)
+  end
+
+  # Staff params (comments action). The owner can never be reassigned.
   def job_order_params
     params.require(:job_order).permit(
-      :user_id,
       :job_type_id,
       :job_service_group_id,
       :job_service_ids,
