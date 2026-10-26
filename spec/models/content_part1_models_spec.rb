@@ -174,12 +174,27 @@ RSpec.describe "Content models (part 1 characterization)" do
   end
 
   describe RepoFile do
-    it "enforces the content-type allow-list only when attached to a proficient project" do
+    # FIXED(D-C06): the sniffed type and size are validated for every RepoFile; proficient projects keep the narrower list
+    it "refuses an executable whatever it is attached to (proficient project, repository, proposal) (D-C06)" do
       pp = create(:proficient_project)
       exe = -> { content_named_upload("run.exe", type: "application/x-msdownload") }
       expect(RepoFile.new(file: exe.call, proficient_project: pp)).not_to be_valid
-      expect(RepoFile.new(file: exe.call, repository: create(:repository, owner: owner))).to be_valid
-      expect(RepoFile.new(file: exe.call, project_proposal: create(:project_proposal))).to be_valid
+      expect(RepoFile.new(file: exe.call, repository: create(:repository, owner: owner))).not_to be_valid
+      expect(RepoFile.new(file: exe.call, project_proposal: create(:project_proposal))).not_to be_valid
+    end
+
+    it "keeps the narrow list for proficient projects but the broad one for repositories" do
+      pp = create(:proficient_project)
+      zip = -> { content_named_upload("a.zip", content: "PK\x03\x04".b + ("\x00" * 40), type: "application/zip") }
+      expect(RepoFile.new(file: zip.call, proficient_project: pp)).not_to be_valid
+      expect(RepoFile.new(file: zip.call, repository: create(:repository, owner: owner))).to be_valid
+    end
+
+    it "does not re-check an unchanged older file when the record is saved again" do
+      repo = create(:repository, owner: owner)
+      legacy = RepoFile.new(repository: repo, file: content_named_upload("run.exe", type: "application/x-msdownload"))
+      legacy.save!(validate: false)
+      expect(legacy.reload.save).to be(true)
     end
 
     it "requires a file" do
