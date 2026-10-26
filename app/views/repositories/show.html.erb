@@ -216,6 +216,7 @@
                 </div>
             <% end %>
 
+            <% if @repository.owned_by?(@user) || @user.admin? %>
             <hr />
 
             <div class="repo-info-item">
@@ -251,6 +252,7 @@
                     <% end %>
             </div>
                 <% end %>
+            <% end %>
 
         </div>
         <% end %>

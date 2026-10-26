@@ -71,6 +71,23 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    it "shows the member forms to owners and admin only, the link-to-proposal form to staff too" do
+      forms = ->(path) { %w[link_to_pp add_member remove_member].select { |a| response.body.include?("/#{a}") } }
+      content_login!(owner)
+      get repo_path
+      expect(forms.call(nil)).to eq(%w[link_to_pp add_member remove_member])
+      content_sign_in_as(:admin)
+      get repo_path
+      expect(forms.call(nil)).to eq(%w[link_to_pp add_member remove_member])
+      # FIXED(review): staff cannot use the member forms (check_ownership), so they are no longer rendered
+      content_sign_in_as(:staff)
+      get repo_path
+      expect(forms.call(nil)).to eq(%w[link_to_pp])
+      content_login!(stranger)
+      get repo_path
+      expect(forms.call(nil)).to be_empty
+    end
+
     it "strips a format suffix from the id" do
       get repository_path(repo.user_username, "#{repo.id}.json") rescue nil
       expect(response.status).to be < 500
