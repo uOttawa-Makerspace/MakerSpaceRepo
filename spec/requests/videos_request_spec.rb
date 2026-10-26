@@ -155,23 +155,52 @@ RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
     end
   end
 
-  describe "ActiveStorage direct uploads endpoint (stock Rails)" do
+  describe "ActiveStorage direct uploads endpoint (authenticated stock controller)" do
     let(:payload) do
       { blob: { filename: "x.bin", content_type: "application/x-msdownload", byte_size: 4,
                 checksum: OpenSSL::Digest::MD5.base64digest("abcd") } }
     end
 
-    it "issues a signed upload target to a GUEST for any file type and size (D-C46, severity 1)" do
+    # FIXED(D-C46): the stock controller now requires a signed-in user (session or JWT)
+    it "refuses a GUEST: 401 and no blob row is created (D-C46, severity 1)" do
+      expect { post rails_direct_uploads_path, params: payload, as: :json }.not_to change(ActiveStorage::Blob, :count)
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it "refuses an invalid JWT" do
+      expect do
+        post rails_direct_uploads_path, params: payload, as: :json, headers: { "Authorization" => "Bearer not.a.token" }
+      end.not_to change(ActiveStorage::Blob, :count)
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it "issues a signed upload target to a signed-in user" do
+      content_login!(create(:user, :volunteer_with_dev_program))
       expect { post rails_direct_uploads_path, params: payload, as: :json }.to change(ActiveStorage::Blob, :count).by(1)
-      # WART(D-C46): ActiveStorage::DirectUploadsController is not authenticated; anyone can store arbitrary blobs, which the signed id then lets a privileged form attach
       expect(response).to have_http_status(:ok)
       body = response.parsed_body
       expect(body.keys).to include("signed_id", "direct_upload")
       expect(body["direct_upload"]["url"]).to be_present
-      expect(body["content_type"]).to eq("application/x-msdownload")
+    end
+
+    it "issues a signed upload target to a bearer-JWT caller" do
+      user = create(:user, :volunteer_with_dev_program)
+      token = JWT.encode({ user_id: user.id }, Rails.application.credentials.secret_key_base, "HS256")
+      expect do
+        post rails_direct_uploads_path, params: payload, as: :json, headers: { "Authorization" => "Bearer #{token}" }
+      end.to change(ActiveStorage::Blob, :count).by(1)
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "refuses a declared size over the cap (413) even when signed in" do
+      content_login!(create(:user, :volunteer_with_dev_program))
+      big = payload.deep_merge(blob: { byte_size: DirectUploadAuthentication::MAX_BYTE_SIZE + 1 })
+      expect { post rails_direct_uploads_path, params: big, as: :json }.not_to change(ActiveStorage::Blob, :count)
+      expect(response).to have_http_status(:content_too_large)
     end
 
     it "rejects a payload without a checksum or byte_size (blob validations)" do
+      content_login!(create(:user, :volunteer_with_dev_program))
       post rails_direct_uploads_path, params: { blob: { filename: "x.bin" } }, as: :json
       expect(response.status).to be >= 400
     end
