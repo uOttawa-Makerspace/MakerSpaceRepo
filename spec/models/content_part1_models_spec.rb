@@ -239,6 +239,13 @@ RSpec.describe "Content models (part 1 characterization)" do
       expect(photo.update(image: photo.image.signed_id, position: 3)).to be(true)
     end
 
+    it "refuses a swap to a different, already stored non-image blob given by signed_id" do
+      photo = create(:photo, :in_repository)
+      stl_blob = ActiveStorage::Blob.create_and_upload!(io: StringIO.new("solid x\nfacet normal 0 0 0\n"), filename: "a.stl", identify: false)
+      expect(photo.update(image: stl_blob.signed_id)).to be(false)
+      expect(photo.errors[:image]).to be_present
+    end
+
     it "still accepts a valid image swap on update, and a clean re-save" do
       photo = create(:photo, :in_repository)
       expect(photo.save).to be(true)
