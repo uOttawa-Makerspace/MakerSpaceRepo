@@ -178,6 +178,21 @@ RSpec.describe "ChatMessages (HTTP contract)", type: :request do
       expect(flash[:error]).to start_with("Failed to send message")
     end
 
+    # FIXED(retro of A2): an unknown or deleted order used to get a 204 and a sticky flash error
+    it "404s without a flash or a message for an unknown or soft-deleted order" do
+      deleted = active_order!
+      deleted.update!(is_deleted: true)
+      session_login!(owner)
+
+      [0, 987_654_321, deleted.id].each do |order_id|
+        expect do
+          post chat_messages_path, params: { chat_message: { message: "hi", job_order_id: order_id } }
+        end.not_to change { ChatMessage.count }
+        expect(response).to have_http_status(:not_found)
+        expect(flash[:error]).to be_nil
+      end
+    end
+
     # Missing chat_message param is rescued application-wide:
     # redirect to root with the raw exception message (same as JobOrders#create).
     it "redirects to root with the raw parameter_missing message when the params key is absent" do

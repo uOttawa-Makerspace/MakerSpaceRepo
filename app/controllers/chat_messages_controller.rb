@@ -3,7 +3,8 @@ class ChatMessagesController < SessionsController
 
   def create
     order = JobOrder.not_deleted.find_by(id: chat_message_params[:job_order_id])
-    return head :forbidden if order && !can_access_order?(order)
+    return head :not_found unless order
+    return head :forbidden unless can_access_order?(order)
 
     @chat_message = ChatMessage.new(chat_message_params)
     @chat_message.job_order = order
