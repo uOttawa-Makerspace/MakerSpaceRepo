@@ -417,6 +417,15 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
       expect(flash[:error]).to eq("An error has occurred, please try again later.")
     end
 
+    it "a missing or stale oi_id redirects staff to the queue with the error flash instead of 500ing (D-C29)" do
+      content_sign_in_as(:staff)
+      get approve_project_proficient_projects_path, params: { order_item: { admin_comments: "x" } }
+      expect(response).to redirect_to(requests_proficient_projects_path)
+      get approve_project_proficient_projects_path, params: { oi_id: 0, order_item: { admin_comments: "x" } }
+      expect(response).to redirect_to(requests_proficient_projects_path)
+      expect(flash[:error]).to eq("An error has occurred, please try again later.")
+    end
+
     it "approving the same item twice creates one session and one certification (D-C29)" do
       content_sign_in_as(:admin)
       ActionMailer::Base.deliveries.clear

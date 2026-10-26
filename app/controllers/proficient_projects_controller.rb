@@ -247,7 +247,12 @@ class ProficientProjectsController < DevelopmentProgramsController
     else
       flash[:error] = "An error has occurred, please try again later."
     end
-    redirect_path = current_user.admin? ? requests_proficient_projects_path : order_item.proficient_project
+    redirect_path =
+      if order_item.nil? || current_user.admin?
+        requests_proficient_projects_path
+      else
+        order_item.proficient_project
+      end
     redirect_to redirect_path
   end
 
