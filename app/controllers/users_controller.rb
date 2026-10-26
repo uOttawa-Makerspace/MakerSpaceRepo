@@ -232,7 +232,7 @@ class UsersController < SessionsController
       render 'settings/admin', layout: 'setting' and return
     end
 
-    if @user.update(user_params)
+    if @user.update(user_params.slice(:password, :password_confirmation))
       @user.pword = @user.password
       @user.save
       MsrMailer.confirm_password_change(@user).deliver_now

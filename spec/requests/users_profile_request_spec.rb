@@ -318,6 +318,18 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       expect(deliveries.first.subject).to eq("MakerRepo | Your password has been changed")
     end
 
+    # FIXED(D-I15): change_password only takes the password fields.
+    it "ignores email and username posted alongside the password" do
+      login!(user)
+      original = user.slice(:email, :username, :name)
+      patch change_password_user_path(user.username),
+            params: { user: { old_password: password, password: new_pw, password_confirmation: new_pw,
+                              email: "hijack@example.com", username: "hijacked", name: "Hijacked" } }
+      user.reload
+      expect(user.authenticate_password(new_pw)).to be(true)
+      expect(user.slice(:email, :username, :name)).to eq(original)
+    end
+
     it "wrong old password: re-renders settings/admin (200) with alert, unchanged" do
       login!(user)
       change!(old: "wrong")
