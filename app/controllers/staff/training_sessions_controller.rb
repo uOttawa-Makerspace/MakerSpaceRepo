@@ -122,13 +122,11 @@ class Staff::TrainingSessionsController < StaffDashboardController
     # Count users that already have a certification
     @current_training_session.users.each do |graduate|
       # Skip if user already has a certifications that match the training id and training level
-      if graduate
-           .certifications
-           .joins(:training)
-           .where(
-              training: {id: @current_training_session.training_id},
-              level: @current_training_session.level
-               ).any?
+      if Certification.held_by(
+           graduate.id,
+           @current_training_session.training_id,
+           @current_training_session.level
+         ).exists?
         duplicates += 1
         next
       end

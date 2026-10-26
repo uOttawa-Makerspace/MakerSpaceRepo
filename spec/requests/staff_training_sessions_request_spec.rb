@@ -273,6 +273,25 @@ RSpec.describe "Staff training sessions", type: :request do
         expect(flash[:notice]).to eq("Training Session Completed Successfully (1 duplicates skipped)")
       end
 
+      # FIXED(retro round 2): the repeat check also sees project-granted certifications (no session)
+      it "skips a user who already holds that training and level from a proficient project" do
+        project = create(:proficient_project, training: training)
+        granted = create(:certification, user: student, training_session: nil, training: nil, level: "Beginner")
+        create(:proficient_project_session, certification: granted, user: student,
+                                            proficient_project: project, level: "Beginner")
+        expect { post certify_trainees_staff_training_session_path(record) }.to change(Certification, :count).by(1)
+        expect(flash[:notice]).to eq("Training Session Completed Successfully (1 duplicates skipped)")
+        expect(student.certifications.count).to eq(1)
+      end
+
+      it "still certifies a user whose project certification is for another level" do
+        project = create(:proficient_project, training: training)
+        granted = create(:certification, user: student, training_session: nil, training: nil, level: "Advanced")
+        create(:proficient_project_session, certification: granted, user: student,
+                                            proficient_project: project, level: "Advanced")
+        expect { post certify_trainees_staff_training_session_path(record) }.to change(Certification, :count).by(2)
+      end
+
       it "is idempotent: a second run certifies nobody new" do
         post certify_trainees_staff_training_session_path(record)
         expect { post certify_trainees_staff_training_session_path(record) }.not_to change(Certification, :count)
