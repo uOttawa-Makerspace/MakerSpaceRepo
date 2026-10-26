@@ -882,5 +882,22 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(users).to eq([{ "id" => zelda.id, "name" => "Zelda Searchable", "username" => zelda.username }])
       expect(response.body).not_to include("password", "access_token", "email")
     end
+
+    it "treats % and _ in the search literally instead of as wildcards (review)" do
+      content_login!(stranger)
+      get "/repositories/populate_users", params: { search: "%" }
+      expect(JSON.parse(response.body)["users"]).to be_empty
+      get "/repositories/populate_users", params: { search: "Zel_a" }
+      expect(JSON.parse(response.body)["users"]).to be_empty
+      get "/repositories/populate_users", params: { search: "zelda" }
+      expect(JSON.parse(response.body)["users"].size).to eq(1)
+    end
+
+    it "returns at most 10 users (review)" do
+      create_list(:user, 12, :regular_user, name: "Crowd Member")
+      content_login!(stranger)
+      get "/repositories/populate_users", params: { search: "crowd" }
+      expect(JSON.parse(response.body)["users"].size).to eq(10)
+    end
   end
 end

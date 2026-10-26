@@ -388,7 +388,11 @@ class RepositoriesController < SessionsController
     # Only the fields the user-search autocompletes read (repositories.js, teams.js, add_new_staff.js)
     json_data =
       User
-        .where("LOWER(name) like LOWER(?)", "%#{params[:search]}%")
+        .where(
+          "LOWER(name) like LOWER(?)",
+          "%#{User.sanitize_sql_like(params[:search].to_s)}%"
+        )
+        .limit(10)
         .pluck(:id, :name, :username)
         .map { |id, name, username| { id: id, name: name, username: username } }
     render json: { users: json_data }
