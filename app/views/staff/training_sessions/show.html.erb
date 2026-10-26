@@ -124,7 +124,7 @@
               <br />
             <% end %>
           </td>
-          <td><%= @current_training_session.certifications.where(user_id: user.id).last.try(:training).try(:name) || 'None' %></td>
+          <td><%= (Certification.held_by(user.id, @current_training_session.training_id, @current_training_session.level).exists? ? @current_training_session.training.name : nil) || 'None' %></td>
         </tr>
       <% end %>
     </table>

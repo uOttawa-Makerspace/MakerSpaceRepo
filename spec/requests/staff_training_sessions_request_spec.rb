@@ -147,6 +147,25 @@ RSpec.describe "Staff training sessions", type: :request do
         expect(response.body).to include(student.name)
       end
 
+      # FIXED(retro of A5): certify_user returns an existing certification of another
+      # session, so the Training's Cert. column looks at the training, not this session.
+      it "shows the training in Training's Cert. when the student holds it from another session" do
+        record.users << student
+        other = create(:training_session, user: trainer, training: training, space: space, level: "Beginner")
+        create(:certification, user: student, training_session: other, training: training, level: "Beginner")
+        get staff_training_session_path(record)
+        expect(response.body).to include("<td>#{ERB::Util.html_escape(training.name)}</td>")
+      end
+
+      it "shows None in Training's Cert. when the student only holds another level" do
+        record.users << student
+        other = create(:training_session, user: trainer, training: training, space: space, level: "Advanced")
+        create(:certification, user: student, training_session: other, training: training, level: "Advanced")
+        get staff_training_session_path(record)
+        expect(response.body).to include("<td>None</td>")
+        expect(response.body).not_to include("<td>#{ERB::Util.html_escape(training.name)}</td>")
+      end
+
       it "answers 404 for an unknown session" do
         get staff_training_session_path(0)
         expect(response).to have_http_status(:not_found)

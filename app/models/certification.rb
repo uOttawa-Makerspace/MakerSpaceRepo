@@ -47,15 +47,21 @@ class Certification < ApplicationRecord
     CSV.generate { |csv| attributes.each { |row| csv << row } }
   end
 
+  # Active certifications a user holds for a training at a level, whichever way
+  # they were earned (a training session or a proficient project).
+  def self.held_by(user_id, training_id, level)
+    left_joins(:training_session, proficient_project_session: :proficient_project)
+      .where(user_id: user_id, level: level)
+      .where(
+        "training_sessions.training_id = :training_id OR proficient_projects.training_id = :training_id",
+        training_id: training_id
+      )
+  end
+
   def self.certify_user(training_session_id, user_id, level)
     training_id = TrainingSession.where(id: training_session_id).pick(:training_id)
     if training_id
-      existing =
-        joins(:training_session).find_by(
-          user_id: user_id,
-          level: level,
-          training_sessions: { training_id: training_id }
-        )
+      existing = held_by(user_id, training_id, level).first
       return existing if existing
     end
     create(user_id:, training_session_id:, level:)
