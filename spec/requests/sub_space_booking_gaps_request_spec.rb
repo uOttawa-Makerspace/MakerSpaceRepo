@@ -489,9 +489,30 @@ RSpec.describe "Sub space booking gaps", type: :request do
           own = week_booking(user, "07", "10:00", "11:00")
           own.sub_space_booking_status.update!(booking_status_id: @pending_status.id)
 
-          update_times(own, "10:00", "11:00") # 2h + 1h = 3h, exactly the quota
+          update_times(own, "11:00", "12:00") # moved: 2h + 1h = 3h, exactly the quota
           expect(response).to have_http_status(:ok)
           expect(own.reload.name).to eq("Quota")
+        end
+      end
+
+      # FIXED(retro round 2): the quota is only re-checked when the times move
+      it "lets the owner rename a booking whose week is already over quota, but not move it" do
+        travel_to(wednesday) do
+          log_in!(user)
+          week_booking(user, "06", "10:00", "13:00") # 3h
+          own = week_booking(user, "07", "10:00", "13:00") # 3h: 6h in a 3h week
+          own.sub_space_booking_status.update!(booking_status_id: @pending_status.id)
+
+          patch update_path_for(own), as: :json, params: {
+            sub_space_booking: { start_time: "2027-04-07T10:00:00Z", end_time: "2027-04-07T13:00:00Z",
+                                 name: "Renamed", description: "D" }
+          }
+          expect(response).to have_http_status(:ok)
+          expect(own.reload.name).to eq("Renamed")
+
+          update_times(own, "11:00", "14:00", name: "Moved")
+          expect(response).to have_http_status(:unprocessable_content)
+          expect(own.reload.name).to eq("Renamed")
         end
       end
 

@@ -550,8 +550,11 @@ class SubSpaceBookingController < SessionsController
       return
     end
 
+    # The weekly quota only matters when the booking's times move; renaming a
+    # booking must not be blocked by a week that is already over quota.
     max_per_week = sub_space.maximum_booking_hours_per_week
     if !max_per_week.nil? && !@user.admin? &&
+         (@sub_space_booking.start_time_changed? || @sub_space_booking.end_time_changed?) &&
          weekly_booked_hours(@sub_space_booking) + duration > max_per_week
       render_update_limit_error(
         "DurationWeek",
