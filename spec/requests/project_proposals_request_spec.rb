@@ -309,6 +309,28 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(flash[:alert]).not_to include("ok.txt")
     end
 
+    it "caps the refused-names flash so many long names cannot overflow the cookie session" do
+      files = Array.new(12) { |i| content_named_upload("#{'x' * 200}#{i}.exe", type: "application/x-msdownload") }
+      post project_proposals_path, params: { files: files }.merge(proposal_params)
+      expect(response).to have_http_status(:found)
+      expect(flash[:alert].length).to be < 400
+      expect(flash[:alert]).to include("and 7 more")
+      expect(ProjectProposal.find_by(title: "New Idea").project_files).not_to be_attached
+    end
+
+    it "shows the model's real error when an accepted file still fails to attach, not 'type not allowed' for everyone" do
+      allow_any_instance_of(ProjectProposal).to receive(:sniffed_upload_problems).and_return([])
+      post project_proposals_path, params: { files: [content_named_upload("run.exe", type: "application/x-msdownload")] }.merge(proposal_params)
+      expect(flash[:alert]).to include("run.exe has a file type that is not allowed")
+      expect(flash[:alert]).not_to include("These files were not uploaded")
+    end
+
+    it "ignores a file param that is a string (signed id) instead of an upload" do
+      post project_proposals_path, params: { files: ["not-an-upload"] }.merge(proposal_params)
+      expect(response).to have_http_status(:found)
+      expect(ProjectProposal.find_by(title: "New Idea").project_files).not_to be_attached
+    end
+
     it "does not store an executable disguised as a pdf" do
       exe = "MZ" + ("\x00" * 200)
       files = [content_named_upload("ok.txt", content: "tiny"), content_named_upload("fake.pdf", content: exe, type: "application/pdf")]

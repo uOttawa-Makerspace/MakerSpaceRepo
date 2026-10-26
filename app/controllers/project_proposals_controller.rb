@@ -439,21 +439,32 @@ class ProjectProposalsController < SessionsController
     attach_project_files(files)
   end
 
-  # Attaches the files one at a time. ProjectProposal validates each file (sniffed type
-  # and size); a refused file stays pending on the record and would make every later
-  # attach and save fail, so it is dropped and reported to the user instead.
+  MAX_FLASH_FILENAMES = 5
+  MAX_FLASH_FILENAME_LENGTH = 40
+
+  # Each upload is checked with the model's rules first (sniffed type and size). The
+  # accepted files are attached in one call and the refused ones are reported by name,
+  # so a bad file neither drops the good ones nor leaves the record with a pending
+  # invalid change. Only uploaded files are considered, never signed ids.
   def attach_project_files(files)
-    refused = []
-    files.each do |f|
-      next if @project_proposal.project_files.attach(f)
-
-      refused << (f.respond_to?(:original_filename) ? f.original_filename : f.to_s)
-      @project_proposal.attachment_changes.delete('project_files')
-      @project_proposal.errors.clear
+    uploads = Array(files).select { |f| f.respond_to?(:original_filename) }
+    accepted, refused = uploads.partition { |f| @project_proposal.sniffed_upload_problems(:project_files, f).empty? }
+    if accepted.any? && !@project_proposal.project_files.attach(*accepted)
+      flash[:alert] = truncated_error_messages(@project_proposal.errors[:project_files])
+    elsif refused.any?
+      flash[:alert] = "These files were not uploaded because their type or size is not allowed: #{truncated_filenames(refused.map(&:original_filename))}"
     end
-    return if refused.empty?
+  end
 
-    flash[:alert] = "These files were not uploaded because their type or size is not allowed: #{refused.join(', ')}"
+  # The flash lives in the 4 KB cookie session, so names are shortened and capped.
+  def truncated_filenames(names)
+    shown = names.first(MAX_FLASH_FILENAMES).map { |n| n.to_s.truncate(MAX_FLASH_FILENAME_LENGTH) }
+    extra = names.size - shown.size
+    shown.join(', ') + (extra.positive? ? " and #{extra} more" : '')
+  end
+
+  def truncated_error_messages(messages)
+    messages.first(3).map { |m| m.to_s.truncate(120) }.join('; ').presence || 'Some files could not be uploaded.'
   end
 
   def set_project_proposal

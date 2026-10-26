@@ -34,15 +34,41 @@ module SniffedUploadValidation
     %r{\A(text/html|application/xhtml\+xml)\z}
   ].freeze
 
+  included do
+    class_attribute :sniffed_upload_rules, instance_writer: false, default: {}
+  end
+
   class_methods do
     def validates_sniffed_upload(*names, max_size:, allow: nil, deny: nil, name_fallback: true, **options)
+      rules = { allow: allow, deny: deny, max_size: max_size, name_fallback: name_fallback }
+      self.sniffed_upload_rules = sniffed_upload_rules.merge(names.to_h { |name| [name.to_sym, rules] })
       validate(**options) do
         names.each { |name| validate_sniffed_upload(name, allow, deny, max_size, name_fallback) }
       end
     end
   end
 
+  # Checks one incoming upload (an ActionDispatch uploaded file) against the rules of
+  # +name+ without attaching it; returns the list of problems (empty when acceptable).
+  # Lets a caller that attaches files one at a time keep the good ones and report the
+  # refused ones.
+  def sniffed_upload_problems(name, upload)
+    rules = sniffed_upload_rules.fetch(name.to_sym)
+    max_size = rules[:max_size].respond_to?(:call) ? rules[:max_size].call : rules[:max_size]
+    filename = upload.original_filename.to_s
+    problems = []
+    problems << "#{filename} is too large" if upload.size.to_i > max_size
+    head = upload_leading_bytes(upload, nil)
+    sniffed = head && Marcel::MimeType.for(StringIO.new(head), name: (filename if rules[:name_fallback]))
+    problems << "#{filename} has a file type that is not allowed" unless sniffed_type_acceptable?(sniffed, rules[:allow], rules[:deny])
+    problems
+  end
+
   private
+
+  def sniffed_type_acceptable?(sniffed, allow, deny)
+    !(sniffed.nil? || (allow && Array(allow).none? { |type| type === sniffed }) || Array(deny).any? { |type| type === sniffed })
+  end
 
   def validate_sniffed_upload(name, allow, deny, max_size, name_fallback)
     max_size = max_size.call if max_size.respond_to?(:call)
@@ -59,8 +85,7 @@ module SniffedUploadValidation
         errors.add(name, "#{filename} is too large (maximum is #{ActiveSupport::NumberHelper.number_to_human_size(max_size)})")
       end
       sniffed = sniffed_upload_types[blob] ||= sniff_upload(attachable, blob, name_fallback)
-      if sniffed.nil? || (allow && Array(allow).none? { |type| type === sniffed }) ||
-         Array(deny).any? { |type| type === sniffed }
+      unless sniffed_type_acceptable?(sniffed, allow, deny)
         errors.add(name, "#{filename} has a file type that is not allowed (#{sniffed || 'unreadable'})")
       end
     end
