@@ -5,6 +5,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    # Run tini as PID 1 so orphaned processes (e.g. Chrome helpers from system
+    # specs) get reaped; with `sleep infinity` as PID 1 zombies accumulate until
+    # the container's pids limit is hit and nothing can fork.
+    init: true
     volumes:
       - ..:/rails:cached
       - bundle_cache:/usr/local/bundle
