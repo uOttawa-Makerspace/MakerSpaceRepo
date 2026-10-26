@@ -167,6 +167,15 @@ RSpec.describe "Admin keys", type: :request do
         expect(key.additional_info).not_to eq("n")
       end
 
+      it "update cannot move a held key to another holder (revoke then assign)" do
+        other = create(:user, :staff)
+        create(:key_request, :status_approved, :all_questions_answered, user: other, supervisor: supervisor, space: space)
+        key.update_columns(status: Key.statuses[:held], user_id: holder.id, supervisor_id: supervisor.id)
+        patch admin_key_path(key), params: { key: { user_id: other.id } }
+        expect(flash[:alert]).to eq("Revoke the key before assigning it to another holder.")
+        expect(key.reload.user_id).to eq(holder.id)
+      end
+
       it "leaves a held key's unchanged holder editable without re-checking" do
         key.update_columns(status: Key.statuses[:held], user_id: holder.id, supervisor_id: supervisor.id)
         patch admin_key_path(key), params: { key: { user_id: holder.id, additional_info: "n" } }

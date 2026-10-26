@@ -188,6 +188,11 @@ class Admin::KeysController < AdminAreaController
     end
     return if holder_id.nil? || holder_id.to_s == @key&.user_id.to_s
 
+    if @key&.status_held?
+      redirect_to admin_keys_path,
+                  alert: "Revoke the key before assigning it to another holder." and return
+    end
+
     holder = User.find_by(id: holder_id)
     return if holder&.key_request&.status_approved?
 
