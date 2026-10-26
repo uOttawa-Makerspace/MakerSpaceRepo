@@ -565,11 +565,28 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(owner.reload.reputation).to eq(5)
     end
 
-    it "likes a private repository without needing its password (D-C11)" do
+    it "refuses to like a private repository without its password (D-C11)" do
       secret = create(:repository, :private, owner: owner, title: "Sec", users: [owner])
       content_login!(stranger)
+      expect { post add_like_repository_path(owner.username, secret.slug) }.not_to change(Like, :count)
+      # FIXED(D-C11): add_like runs the shared private-repository gate
+      expect(response).to redirect_to(password_entry_repository_path(owner.username, secret.id))
+    end
+
+    it "lets the owner, a collaborator and a user who entered the password like a private repository (D-C11)" do
+      secret = create(:repository, :private, owner: owner, title: "Sec", users: [owner])
+      secret.update_columns(password: BCrypt::Password.create("open-sesame"))
+      collaborator = create(:user, :regular_user)
+      secret.users << collaborator
+      [owner, collaborator].each do |u|
+        content_login!(u)
+        post add_like_repository_path(owner.username, secret.slug)
+        expect(response).to redirect_to(repo_path(secret))
+      end
+      expect(Like.where(repository_id: secret.id).count).to eq(2)
+      content_login!(stranger)
+      post pass_authenticate_repository_path(owner.username, secret.id), params: { password: "open-sesame" }
       expect { post add_like_repository_path(owner.username, secret.slug) }.to change(Like, :count).by(1)
-      # WART(D-C11): add_like does not run check_auth; a private repo can be probed/liked without its password
     end
   end
 

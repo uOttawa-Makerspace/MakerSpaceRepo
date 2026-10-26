@@ -15,6 +15,7 @@ class RepositoriesController < SessionsController
                   password_entry
                 ]
   before_action :check_auth, only: %i[show download_files]
+  before_action -> { ensure_repository_unlocked(@repository) }, only: :add_like
   before_action :set_member_repository,
                 only: %i[link_to_pp add_member remove_member]
   before_action :check_ownership,
