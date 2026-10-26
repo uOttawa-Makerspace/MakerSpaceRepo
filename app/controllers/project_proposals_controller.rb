@@ -5,7 +5,8 @@ class ProjectProposalsController < SessionsController
 
   before_action :set_project_proposal, only: %i[show edit update destroy]
   before_action :current_user
-  before_action :signed_in, only: %i[edit update]
+  before_action :signed_in, only: %i[edit update approve decline]
+  before_action :require_admin, only: %i[approve decline]
   before_action :require_owner_or_admin, only: %i[edit update]
 
   # GET /project_proposals
@@ -329,6 +330,13 @@ class ProjectProposalsController < SessionsController
   def owner_or_admin?(proposal)
     current_user.admin? ||
       (proposal.user_id.present? && proposal.user_id == current_user.id)
+  end
+
+  def require_admin
+    return if current_user.admin?
+
+    redirect_to project_proposals_path,
+                alert: 'Only admins can review project proposals.'
   end
 
   def require_owner_or_admin

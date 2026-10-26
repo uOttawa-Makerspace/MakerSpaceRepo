@@ -372,41 +372,51 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
   end
 
   describe "POST approve / decline" do
-    it "lets a guest approve and decline any proposal; admin_id ends nil (D-C41, severity 1)" do
+    it "sends a guest to login and changes nothing (D-C41)" do
       post approve_project_proposals_path, params: { id: pending.id }
-      # WART(D-C41): approve/decline have no auth at all
-      expect(pending.reload.approved).to eq("approved")
-      expect(pending.admin_id).to be_nil
-      expect(response).to redirect_to(project_proposals_url)
-      expect(flash[:notice]).to eq("Project Proposal Approved")
+      # FIXED(D-C41): approve/decline are admin-only
+      expect(response).to redirect_to(login_path(back_to: approve_project_proposals_path))
       post decline_project_proposals_path, params: { id: approved.id }
-      expect(approved.reload.approved).to eq("not_approved")
-      expect(flash[:notice]).to eq("Project Proposal Declined")
+      expect(response).to redirect_to(login_path(back_to: decline_project_proposals_path))
+      expect(pending.reload.approved).to be_nil
+      expect(approved.reload.approved).to eq("approved")
     end
 
-    it "records the signed-in reviewer as admin_id (staff and regular users too) and sends no email" do
-      content_login!(other)
+    it "refuses regular users, the proposal owner and staff (D-C41)" do
+      [other, owner, create(:user, :staff)].each do |user|
+        content_login!(user)
+        post approve_project_proposals_path, params: { id: pending.id }
+        expect(response).to redirect_to(project_proposals_path)
+        expect(flash[:alert]).to eq("Only admins can review project proposals.")
+        post decline_project_proposals_path, params: { id: approved.id }
+        expect(response).to redirect_to(project_proposals_path)
+      end
+      expect(pending.reload).to have_attributes(approved: nil, admin_id: nil)
+      expect(approved.reload.approved).to eq("approved")
+    end
+
+    it "records the admin as reviewer on approve and decline, and sends no email (D-C41)" do
+      admin = content_sign_in_as(:admin)
       ActionMailer::Base.deliveries.clear
       post approve_project_proposals_path, params: { id: pending.id }
-      expect(pending.reload.admin_id).to eq(other.id)
+      expect(pending.reload).to have_attributes(approved: "approved", admin_id: admin.id)
+      expect(response).to redirect_to(project_proposals_url)
+      expect(flash[:notice]).to eq("Project Proposal Approved")
       post decline_project_proposals_path, params: { id: pending.id }
-      expect(pending.reload.approved).to eq("not_approved")
+      expect(pending.reload).to have_attributes(approved: "not_approved", admin_id: admin.id)
+      expect(flash[:notice]).to eq("Project Proposal Declined")
       expect(ActionMailer::Base.deliveries).to be_empty
     end
 
-    it "an admin approval is the same code path" do
-      admin = content_sign_in_as(:admin)
-      post approve_project_proposals_path, params: { id: pending.id }
-      expect(pending.reload).to have_attributes(approved: "approved", admin_id: admin.id)
-    end
-
-    it "approve is not idempotent-guarded: re-approving a declined proposal flips it back, overwriting the reviewer" do
+    it "approve is not idempotent-guarded: an admin re-approving a declined proposal flips it back, overwriting the reviewer" do
+      content_sign_in_as(:admin)
       post decline_project_proposals_path, params: { id: pending.id }
       post approve_project_proposals_path, params: { id: pending.id }
       expect(pending.reload.approved).to eq("approved")
     end
 
     it "404s for an unknown id" do
+      content_sign_in_as(:admin)
       post approve_project_proposals_path, params: { id: 0 }
       expect(response).to have_http_status(:not_found)
     end
