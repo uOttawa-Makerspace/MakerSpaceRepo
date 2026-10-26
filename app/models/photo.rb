@@ -27,7 +27,16 @@ class Photo < ApplicationRecord
   validates :image,
             file_content_type: {
               allow: [ALLOWED_CONTENT_TYPES],
-              if: -> { image.attached? && attachment_changes['image'].present? }
+              if: -> { image_changing? }
             }
   validates :image, presence: true
+
+  private
+
+  # Validate only when a different blob is being attached in this save; a form that
+  # posts back the blob already attached (signed_id) must not re-check a legacy image.
+  def image_changing?
+    change = attachment_changes['image']
+    change.respond_to?(:blob) && image.attached? && change.blob != image_attachment&.blob
+  end
 end

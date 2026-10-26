@@ -232,6 +232,13 @@ RSpec.describe "Content models (part 1 characterization)" do
       expect(photo.reload.position).to eq(7)
     end
 
+    it "does not re-validate when the form posts back the blob already attached (signed_id)" do
+      photo = create(:photo, :in_repository)
+      photo.image.blob.update_columns(content_type: "image/heic")
+      photo = Photo.find(photo.id)
+      expect(photo.update(image: photo.image.signed_id, position: 3)).to be(true)
+    end
+
     it "still accepts a valid image swap on update, and a clean re-save" do
       photo = create(:photo, :in_repository)
       expect(photo.save).to be(true)
