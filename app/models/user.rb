@@ -349,6 +349,7 @@ class User < ApplicationRecord
 
   def pword=(new_password)
     @pword = Password.create(new_password)
+    self.token_version += 1 if persisted?
     self.password = @pword
     self.password_confirmation = @pword
   end
@@ -386,7 +387,7 @@ class User < ApplicationRecord
 
   def token(exp = 14.days.from_now.to_i)
     JWT.encode(
-      { user_id: id, exp: exp },
+      { user_id: id, ver: token_version, exp: exp },
       Rails.application.credentials.secret_key_base,
       'HS256'
     )

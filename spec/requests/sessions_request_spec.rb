@@ -254,14 +254,77 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
       expect(JSON.parse(response.body)["signed_in"]).to eq("true")
     end
 
-    it "a JWT survives logout and a password reset (no revocation)" do
-      # WART(D-I01): the 14-day JWT returned at login is stateless and is not invalidated by logout or password change; a leaked token stays valid until expiry
+    def bearer(tok)
+      { "Authorization" => "Bearer #{tok}" }
+    end
+
+    def jwt_signed_in?(tok)
+      get check_signed_in_path, headers: bearer(tok)
+      JSON.parse(response.body)["signed_in"] == "true"
+    end
+
+    def legacy_token(u, exp: 14.days.from_now.to_i)
+      JWT.encode({ user_id: u.id, exp: exp }, Rails.application.credentials.secret_key_base, "HS256")
+    end
+
+    it "embeds the user's token_version as ver" do
+      payload, = JWT.decode(user.token, nil, false)
+      expect(payload["ver"]).to eq(0)
+    end
+
+    it "a JWT survives a plain logout (logout ends only that session)" do
+      # INTENDED(D-I01): plain logout does not bump token_version; only password change/reset revoke tokens
       tok = user.token
       login!(user)
       get logout_path
-      user.update_columns(password: BCrypt::Password.create("SomethingElse1!x"))
-      get check_signed_in_path, headers: { "Authorization" => "Bearer #{tok}" }
-      expect(JSON.parse(response.body)["signed_in"]).to eq("true")
+      expect(jwt_signed_in?(tok)).to be(true)
+    end
+
+    it "a JWT issued before the deploy (no ver claim) still works" do
+      expect(jwt_signed_in?(legacy_token(user))).to be(true)
+    end
+
+    it "a JWT is revoked by a password change" do
+      # FIXED(D-I01): the token carries ver; a password change bumps token_version
+      tok = user.token
+      user.pword = "SomethingElse1!x"
+      user.save!
+      expect(user.reload.token_version).to eq(1)
+      expect(jwt_signed_in?(tok)).to be(false)
+      expect(jwt_signed_in?(legacy_token(user))).to be(false)
+      expect(jwt_signed_in?(user.token)).to be(true)
+    end
+
+    it "a legacy (no ver) token is rejected once the version is bumped" do
+      user.update_columns(token_version: 1)
+      expect(jwt_signed_in?(legacy_token(user))).to be(false)
+    end
+
+    it "rejects a JWT of a user that no longer exists" do
+      tok = user.token
+      user.delete
+      expect(jwt_signed_in?(tok)).to be(false)
+    end
+
+    it "rejects a JWT of a soft-deleted user" do
+      tok = user.token
+      user.update_columns(deleted: true)
+      expect(jwt_signed_in?(tok)).to be(false)
+    end
+
+    it "rejects a JWT of a locked user, accepts it again once the lock has lapsed" do
+      tok = user.token
+      user.update_columns(locked: true, locked_until: 1.hour.from_now)
+      expect(jwt_signed_in?(tok)).to be(false)
+      user.update_columns(locked_until: 1.minute.ago)
+      expect(jwt_signed_in?(tok)).to be(true)
+    end
+
+    it "rejects a JWT of an inactive user" do
+      # D-I03 (what `active` means for cookie login) is another slice; this is only the JWT side
+      tok = user.token
+      user.update_columns(active: false)
+      expect(jwt_signed_in?(tok)).to be(false)
     end
 
     it "rejects an expired JWT" do

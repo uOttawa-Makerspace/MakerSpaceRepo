@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_25_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_26_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -1483,6 +1483,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_25_000001) do
     t.bigint "space_id"
     t.string "student_id"
     t.boolean "terms_and_conditions"
+    t.integer "token_version", default: 0, null: false
     t.datetime "updated_at", precision: nil, null: false
     t.string "url"
     t.string "use"

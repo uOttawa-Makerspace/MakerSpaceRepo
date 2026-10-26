@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require Rails.root.join("lib/jwt_authenticator")
+
 module ApplicationHelper
   attr_accessor :github
 
@@ -31,27 +33,11 @@ module ApplicationHelper
   end
 
   def has_valid_jwt?
-    auth_header = request.headers["Authorization"]
-    if auth_header
-      user_token = auth_header.split(" ")[1]
-      begin
-        decoded_token =
-          JWT.decode(
-            user_token,
-            Rails.application.credentials.secret_key_base,
-            true,
-            { algorithm: "HS256" }
-          )
-        session[:user_id] = decoded_token[0]["user_id"]
-        return true
-      rescue JWT::ExpiredSignature
-        return false
-      rescue JWT::DecodeError
-        return false
-      end
-    end
+    user = JwtAuthenticator.user_for(request.headers["Authorization"])
+    return false unless user
 
-    false
+    session[:user_id] = user.id
+    true
   end
 
   def github?
