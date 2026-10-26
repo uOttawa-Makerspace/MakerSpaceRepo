@@ -179,7 +179,7 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
       end
     end
 
-    # WART(D-V26): enrolment is a one-request, unapproved GET that grants volunteer access (emails, volunteer list JSON, tasks); GET mutates state
+    # INTENDED(D-V26): enrolment stays open and instant by design (an external form covers approval). The GET-verb half belongs to slice A14 and is left as is
     it "gives instant access to the volunteer area" do
       vol_login!(create(:user, :regular_user))
       get join_volunteer_program_volunteers_path

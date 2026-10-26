@@ -77,7 +77,7 @@ RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
       expect(vol_deliveries.size).to eq(4)
     end
 
-    # WART(D-V13): capacity only counts user_type "Volunteer" (users.role), so a program member whose role is regular_user is stored as "Regular_user" and never consumes a seat
+    # INTENDED(D-V13): volunteer enrolment/joining is open by design (an external form covers approval); capacity only counts user_type "Volunteer" (users.role), so a program member whose role is regular_user is stored as "Regular_user" and never consumes a seat
     it "stores a program member with role regular_user as Regular_user, leaving the seat free for others" do
       member = create(:user, :regular_user)
       Program.create!(user: member, program_type: Program::VOLUNTEER)
@@ -99,7 +99,7 @@ RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq("This task is already full")
     end
 
-    # WART(D-V14): no role gate: a plain regular user (no program) joins any task
+    # INTENDED(D-V14): open by design (an external form covers approval): a plain regular user (no program) joins any task
     it "lets a regular user with no program join" do
       user = create(:user, :regular_user)
       vol_login!(user)
