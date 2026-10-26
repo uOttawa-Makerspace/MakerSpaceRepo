@@ -74,20 +74,18 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
     end
 
     it "bounces guests on the admin-ish endpoints (users)" do
-      # WART(D-B24): current_user is ALWAYS a (blank) User instance for guests
-      # (ApplicationHelper#current_user falls back to User.new), so the
-      # user_account gate never fires; guests land on user_admin_or_staff.
+      # FIXED(D-B01): the user_account gate now tests signed_in? (guests are a
+      # blank User.new, never nil), so guests are sent to login before the
+      # staff gate is reached.
       get users_sub_space_booking_index_path
-      expect(response).to redirect_to(root_path)
-      expect(flash[:alert])
-        .to eq("You must be an admin or staff to view this page.")
+      expect(response).to redirect_to(login_path)
+      expect(flash[:alert]).to eq("You must be logged in to view this page.")
     end
 
-    it "bounces guests hitting create on user_approved" do
+    it "bounces guests hitting create to login" do
       post sub_space_booking_index_path, params: { sub_space_booking: { name: "x" } }
-      expect(response).to redirect_to(root_path)
-      expect(flash[:alert])
-        .to eq("You must be approved to book to view this page.")
+      expect(response).to redirect_to(login_path)
+      expect(flash[:alert]).to eq("You must be logged in to view this page.")
       expect(SubSpaceBooking.where(name: "x")).to be_empty
     end
 
@@ -291,17 +289,34 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
     end
 
     context "blocking" do
-      it "redirects a non-admin JSON-boolean blocking request with an alert but still books it" do
-        # WART(D-B03) (controller:219): the permission check uses `== true`, matches
-        # JSON booleans, and has NO `return` after redirect_to — the flow
-        # continues into book() and the blocking row persists.
+      it "rejects a non-admin JSON-boolean blocking request with an alert and books nothing" do
+        # FIXED(D-B03): the permission check casts the param (boolean or
+        # string) and returns after the redirect, so no row is created.
         json_create(blocking: true)
         expect(response.status).to eq(302)
         expect(flash[:alert])
           .to eq("You do not have permission to block a space.")
-        booking = SubSpaceBooking.find_by!(name: "Fresh")
-        expect(booking.blocking).to be(true)
-        expect(status_name(booking)).to eq("Approved")
+        expect(SubSpaceBooking.where(name: "Fresh")).to be_empty
+      end
+
+      it "rejects a non-admin blocking request sent as the string 'true' (or '1') and books nothing" do
+        # FIXED(D-B27): same root as D-B03; HTML form strings used to skip
+        # the permission check entirely.
+        %w[true 1].each do |value|
+          json_create(blocking: value)
+          expect(response.status).to eq(302)
+          expect(flash[:alert])
+            .to eq("You do not have permission to block a space.")
+        end
+        expect(SubSpaceBooking.where(name: "Fresh")).to be_empty
+      end
+
+      it "still books a non-admin request whose blocking is false" do
+        [false, "false"].each do |value|
+          json_create(blocking: value, name: "Fresh#{value}")
+          expect(response.status).to eq(204)
+          expect(SubSpaceBooking.find_by!(name: "Fresh#{value}").blocking).to be(false)
+        end
       end
 
       it "admin JSON boolean blocking is created" do
@@ -319,13 +334,17 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
         expect(status_name(booking)).to eq("Approved")
       end
 
-      it "skips the overlap check when params[:blocking] is the string 'true'" do
-        # WART(D-B04/D-B27) (controller:335): `params[:...] != "true"` — an HTML form string
-        # bypasses the overlap query entirely, so a regular user can block.
+      it "lets an admin send blocking as the string 'true' over an existing block without a conflict" do
+        # INTENDED(D-B04): admin blocks skip the overlap check (user decision
+        # 2026-10-25, admins may block over existing bookings without warning).
+        create(:sub_space_booking, sub_space: subspace, user: user,
+                                   start_time: DateTime.parse("2027-03-03 09:00"),
+                                   end_time: DateTime.parse("2027-03-03 12:00"),
+                                   name: "Taker", blocking: true)
+        log_in!(create(:user, :admin, booking_approval: true))
         json_create(blocking: "true")
         expect(response.status).to eq(204)
-        booking = SubSpaceBooking.find_by!(name: "Fresh")
-        expect(booking.blocking).to be(true)
+        expect(SubSpaceBooking.find_by!(name: "Fresh").blocking).to be(true)
       end
 
       it "destroys the booking and reports TimeSlot when a literal-wall blocking row overlaps" do
@@ -862,32 +881,22 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
       expect(booking.reload.public).to be(false)
     end
 
-    # WART(D-B01) (controller:before_action list): bulk_approve_decline is NOT gated
-    # by user_admin_or_staff — any signed-in user can bulk-approve/decline.
-    it "any signed-in user can bulk_approve_decline" do
+    # FIXED(D-B01): bulk_approve_decline is staff/admin only (a regular
+    # approved user is bounced; guest/staff paths: roles_request_spec).
+    it "a regular signed-in user cannot bulk_approve_decline" do
       nobody = create(:user, :regular_user, booking_approval: true)
       log_in!(nobody)
       b1 = booking_by(create(:user, :regular_user, booking_approval: true))
-      b2 = booking_by(create(:user, :regular_user, booking_approval: true))
 
       put bulk_approve_decline_sub_space_booking_index_path,
-          params: { sub_space_booking_ids: [b1.id, b2.id],
-                    bulk_status: "approve" }
-      expect(response).to redirect_to(
-        sub_space_booking_index_path(anchor: "booking-admin-tab")
-      )
-      expect(flash[:notice]).to eq("Bookings approved successfully.")
-      expect(status_name(b1)).to eq("Approved")
-      expect(status_name(b2)).to eq("Approved")
-
-      put bulk_approve_decline_sub_space_booking_index_path,
-          params: { sub_space_booking_ids: [b1.id], bulk_status: "decline" }
-      expect(flash[:notice]).to eq("Bookings declined successfully.")
-      expect(status_name(b1)).to eq("Declined")
+          params: { sub_space_booking_ids: [b1.id], bulk_status: "approve" }
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You must be an admin or staff to view this page.")
+      expect(status_name(b1)).to eq("Pending")
     end
 
     it "bulk_approve_decline edge flashes" do
-      log_in!(create(:user, :regular_user, booking_approval: true))
+      log_in!(create(:user, :staff))
       put bulk_approve_decline_sub_space_booking_index_path
       expect(flash[:alert]).to eq("No bookings selected.")
 

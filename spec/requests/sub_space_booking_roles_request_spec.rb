@@ -71,6 +71,21 @@ RSpec.describe "Sub space booking role matrix", type: :request do
   let(:staff_only_alert) { "You must be an admin or staff to view this page." }
   let(:owner_alert) { "You must be the owner of this booking or an admin to delete it." }
 
+  # Guests are redirected to the login page by the user_account gate (D-B01);
+  # signed-in users without the role are bounced to root with the gate's alert.
+  def expect_bounced(role, alert)
+    if role == :guest
+      expect_bounced_to_login
+    else
+      expect_bounced_to_root(alert)
+    end
+  end
+
+  def expect_bounced_to_login
+    expect(response).to redirect_to(login_path)
+    expect(flash[:alert]).to eq("You must be logged in to view this page.")
+  end
+
   def expect_bounced_to_root(alert)
     expect(response).to redirect_to(root_path)
     expect(flash[:alert]).to eq(alert)
@@ -85,7 +100,7 @@ RSpec.describe "Sub space booking role matrix", type: :request do
           booking = pending_booking
           sign_in_as(role)
           put sub_space_booking_approve_path(sub_space_booking_id: booking.id)
-          expect_bounced_to_root(staff_only_alert)
+          expect_bounced(role, staff_only_alert)
           expect(status_name(booking)).to eq("Pending")
           expect(booking.approved_at).to be_nil
         end
@@ -94,7 +109,7 @@ RSpec.describe "Sub space booking role matrix", type: :request do
           booking = pending_booking
           sign_in_as(role)
           put sub_space_booking_decline_path(sub_space_booking_id: booking.id)
-          expect_bounced_to_root(staff_only_alert)
+          expect_bounced(role, staff_only_alert)
           expect(status_name(booking)).to eq("Pending")
         end
 
@@ -102,7 +117,7 @@ RSpec.describe "Sub space booking role matrix", type: :request do
           applicant = create(:user, :regular_user, booking_approval: false)
           sign_in_as(role)
           put approve_access_sub_space_booking_index_path, params: { user_id: applicant.id }
-          expect_bounced_to_root(staff_only_alert)
+          expect_bounced(role, staff_only_alert)
           expect(applicant.reload.booking_approval).to be(false)
           expect(UserBookingApproval.where(user: applicant)).to be_empty
         end
@@ -112,7 +127,7 @@ RSpec.describe "Sub space booking role matrix", type: :request do
           uba = uba_for(applicant, approved: true)
           sign_in_as(role)
           put deny_access_sub_space_booking_index_path, params: { id: uba.id }
-          expect_bounced_to_root(staff_only_alert)
+          expect_bounced(role, staff_only_alert)
           expect(UserBookingApproval.exists?(uba.id)).to be(true)
           expect(applicant.reload.booking_approval).to be(true)
         end
@@ -123,7 +138,7 @@ RSpec.describe "Sub space booking role matrix", type: :request do
           sign_in_as(role)
           put bulk_approve_access_sub_space_booking_index_path,
               params: { user_booking_approval_ids: [uba.id] }
-          expect_bounced_to_root(staff_only_alert)
+          expect_bounced(role, staff_only_alert)
           expect(uba.reload.approved).to be(false)
           expect(applicant.reload.booking_approval).to be(false)
         end
@@ -132,13 +147,13 @@ RSpec.describe "Sub space booking role matrix", type: :request do
           booking = pending_booking
           sign_in_as(role)
           get get_sub_space_booking_sub_space_booking_index_path, params: { id: booking.id }
-          expect_bounced_to_root(staff_only_alert)
+          expect_bounced(role, staff_only_alert)
         end
 
         it "users is bounced" do
           sign_in_as(role)
           get users_sub_space_booking_index_path
-          expect_bounced_to_root(staff_only_alert)
+          expect_bounced(role, staff_only_alert)
         end
       end
     end
@@ -240,10 +255,10 @@ RSpec.describe "Sub space booking role matrix", type: :request do
   end
 
   describe "publish" do
-    it "bounces guests (admin gate) and leaves the booking private" do
+    it "bounces guests (login gate) and leaves the booking private" do
       booking = pending_booking(public: false)
       put sub_space_booking_publish_path(sub_space_booking_id: booking.id)
-      expect_bounced_to_root("You must be an admin to view this page.")
+      expect_bounced_to_login
       expect(booking.reload.public).to be(false)
     end
 
@@ -277,20 +292,20 @@ RSpec.describe "Sub space booking role matrix", type: :request do
         it "edit is bounced with the owner-or-admin alert" do
           sign_in_as(role)
           get sub_space_booking_edit_path(sub_space_booking_id: booking.id)
-          expect_bounced_to_root(owner_alert)
+          expect_bounced(role, owner_alert)
         end
 
         it "update is bounced and changes nothing" do
           sign_in_as(role)
           patch sub_space_booking_update_path(sub_space_booking_id: booking.id), params: patch_params
-          expect_bounced_to_root(owner_alert)
+          expect_bounced(role, owner_alert)
           expect(booking.reload.name).not_to eq("Changed")
         end
 
         it "delete is bounced and the booking survives" do
           sign_in_as(role)
           delete sub_space_booking_delete_path(booking.id)
-          expect_bounced_to_root(owner_alert)
+          expect_bounced(role, owner_alert)
           expect(SubSpaceBooking.exists?(booking.id)).to be(true)
         end
       end
@@ -340,24 +355,25 @@ RSpec.describe "Sub space booking role matrix", type: :request do
   end
 
   describe "bookings without an owner" do
-    # WART(D-B52): `booking.user_id == current_user.id` is nil == nil for a guest
-    # and a booking with a NULL user_id, so the owner gate passes for guests.
-    it "lets a guest update and delete a booking whose user_id is NULL (edit then stops at its own status check)" do
+    # FIXED(D-B52 guest case, closed as a side effect of D-B01): the user_account
+    # gate now redirects guests to login before `nil == nil` in the owner gate
+    # can pass them.
+    it "bounces a guest on update and delete of a booking whose user_id is NULL" do
       orphan = pending_booking
       orphan.update_column(:user_id, nil)
 
-      # the owner gate passes (no root redirect); the edit action's own pending/owner check redirects
       get sub_space_booking_edit_path(sub_space_booking_id: orphan.id)
-      expect(response).to redirect_to(sub_space_booking_index_path)
-      expect(flash[:alert]).to eq("You can't access this subspace booking.")
+      expect_bounced_to_login
 
       patch sub_space_booking_update_path(sub_space_booking_id: orphan.id),
             params: { sub_space_booking: { start_time: "2027-04-03 12:00", end_time: "2027-04-03 13:00",
                                            name: "GuestEdit", description: "D" } }
-      expect(orphan.reload.name).to eq("GuestEdit")
+      expect_bounced_to_login
+      expect(orphan.reload.name).not_to eq("GuestEdit")
 
       delete sub_space_booking_delete_path(orphan.id)
-      expect(SubSpaceBooking.exists?(orphan.id)).to be(false)
+      expect_bounced_to_login
+      expect(SubSpaceBooking.exists?(orphan.id)).to be(true)
     end
   end
 
@@ -374,7 +390,7 @@ RSpec.describe "Sub space booking role matrix", type: :request do
       it "bounces a #{role} who is not the owner and deletes nothing" do
         sign_in_as(role)
         delete delete_remaining_recurring_sub_space_booking_path(first_booking.id)
-        expect_bounced_to_root("You are not authorized to view this page.")
+        expect_bounced(role, "You are not authorized to view this page.")
         expect(SubSpaceBooking.where(id: [first_booking.id, second_booking.id]).count).to eq(2)
       end
     end
@@ -404,52 +420,62 @@ RSpec.describe "Sub space booking role matrix", type: :request do
 
   # ------------------------------------------------- severity-1 security pins
 
-  describe "bulk_approve_decline without any gate" do
-    # WART(D-B01): bulk_approve_decline has no before_action gate at all (not in
-    # user_signed_in, user_admin_or_staff or user_admin) and the dead
-    # user_account check never fires, so a GUEST can approve or decline anyone's
-    # bookings. An approval is stamped with approved_by_id NULL.
-    it "lets a guest bulk-approve other users' bookings (approved_by is NULL, one mail per booking)" do
+  describe "bulk_approve_decline gate" do
+    # FIXED(D-B01): bulk_approve_decline is behind user_admin_or_staff and the
+    # user_account gate now really redirects guests to login.
+    it "bounces a guest to login and changes nothing (no status change, no mail)" do
       b1 = pending_booking
       b2 = pending_booking(start_time: DateTime.parse("2027-04-04 10:00"),
                            end_time: DateTime.parse("2027-04-04 11:00"))
 
       perform_enqueued_jobs do
+        %w[approve decline].each do |bulk_status|
+          put bulk_approve_decline_sub_space_booking_index_path,
+              params: { sub_space_booking_ids: [b1.id, b2.id], bulk_status: bulk_status }
+          expect_bounced_to_login
+        end
+      end
+
+      expect([b1, b2].map { |b| status_name(b) }).to eq(%w[Pending Pending])
+      expect(b1.approved_by_id).to be_nil
+      expect(b1.approved_at).to be_nil
+      expect(ActionMailer::Base.deliveries).to be_empty
+    end
+
+    it "bounces a regular user with the staff alert and changes nothing" do
+      booking = pending_booking
+      sign_in_as(:regular)
+      %w[approve decline].each do |bulk_status|
+        put bulk_approve_decline_sub_space_booking_index_path,
+            params: { sub_space_booking_ids: [booking.id], bulk_status: bulk_status }
+        expect_bounced_to_root(staff_only_alert)
+      end
+      expect(status_name(booking)).to eq("Pending")
+    end
+
+    it "lets staff approve (mailing each owner) and decline" do
+      b1 = pending_booking
+      b2 = pending_booking(start_time: DateTime.parse("2027-04-04 10:00"),
+                           end_time: DateTime.parse("2027-04-04 11:00"))
+      sign_in_as(:staff)
+
+      perform_enqueued_jobs do
         put bulk_approve_decline_sub_space_booking_index_path,
             params: { sub_space_booking_ids: [b1.id, b2.id], bulk_status: "approve" }
       end
-
       expect(response).to redirect_to(sub_space_booking_index_path(anchor: "booking-admin-tab"))
       expect(flash[:notice]).to eq("Bookings approved successfully.")
       expect([b1, b2].map { |b| status_name(b) }).to eq(%w[Approved Approved])
-      expect(b1.approved_by_id).to be_nil
-      expect(b1.approved_at).to be_present
-      expect(ActionMailer::Base.deliveries.map(&:subject).uniq).to eq(["Booking approved"])
       expect(ActionMailer::Base.deliveries.flat_map(&:to)).to eq([b1.user.email, b2.user.email])
-    end
 
-    # WART(D-B01): the guest can also decline (silently, no mail) and re-approve
-    # an already declined booking (D-B31: no state guard).
-    it "lets a guest decline silently and then re-approve the declined booking" do
-      booking = pending_booking
-
-      perform_enqueued_jobs do
-        put bulk_approve_decline_sub_space_booking_index_path,
-            params: { sub_space_booking_ids: [booking.id], bulk_status: "decline" }
-      end
+      put bulk_approve_decline_sub_space_booking_index_path,
+          params: { sub_space_booking_ids: [b1.id], bulk_status: "decline" }
       expect(flash[:notice]).to eq("Bookings declined successfully.")
-      expect(status_name(booking)).to eq("Declined")
-      expect(ActionMailer::Base.deliveries).to be_empty
-
-      perform_enqueued_jobs do
-        put bulk_approve_decline_sub_space_booking_index_path,
-            params: { sub_space_booking_ids: [booking.id], bulk_status: "approve" }
-      end
-      expect(status_name(booking)).to eq("Approved")
-      expect(ActionMailer::Base.deliveries.size).to eq(1)
+      expect(status_name(b1)).to eq("Declined")
     end
 
-    it "silently ignores ids that do not exist" do
+    it "silently ignores ids that do not exist (staff)" do
+      sign_in_as(:staff)
       put bulk_approve_decline_sub_space_booking_index_path,
           params: { sub_space_booking_ids: [99_999_999], bulk_status: "approve" }
       expect(flash[:notice]).to eq("Bookings approved successfully.")
