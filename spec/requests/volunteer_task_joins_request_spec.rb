@@ -218,6 +218,13 @@ RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
       expect { post remove_volunteer_task_joins_path, params: remove_params }.to change(VolunteerTaskJoin, :count).by(-1)
     end
 
+    it "redirects with the missing-param alert instead of a 500 when the volunteer_task_join param is missing" do
+      vol_login!(volunteer)
+      expect { post remove_volunteer_task_joins_path }.not_to change(VolunteerTaskJoin, :count)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to include("volunteer_task_join")
+    end
+
     it "404s when no such join exists" do
       vol_login!(other_volunteer)
       post remove_volunteer_task_joins_path,

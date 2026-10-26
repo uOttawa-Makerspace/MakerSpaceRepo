@@ -48,8 +48,9 @@ class VolunteerTaskJoinsController < SessionsController
 
   def remove
     # TODO: Make this 'destroy' instead of 'remove'
-    user_id = params[:volunteer_task_join][:user_id]
-    volunteer_task_id = params[:volunteer_task_join][:volunteer_task_id]
+    join_params = params.require(:volunteer_task_join)
+    user_id = join_params[:user_id]
+    volunteer_task_id = join_params[:volunteer_task_id]
     unless current_user.staff? || user_id.to_s == current_user.id.to_s
       flash[:alert] = "You are not authorized to remove this user from the task."
       return redirect_back(fallback_location: root_path)
