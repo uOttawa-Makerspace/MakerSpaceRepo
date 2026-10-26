@@ -244,6 +244,17 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(response.body).not_to include(title)
     end
 
+    # FIXED: a session order id that no longer resolves falls back to the user's own cart instead of a 404
+    it "falls back to the user's cart when the session order was deleted" do
+      add_to_cart(pp_with_cc(10))
+      Order.where(user: user).destroy_all
+      get carts_path
+      expect(response).to have_http_status(:ok)
+      add_to_cart(pp_with_cc(5))
+      expect(user.orders.count).to eq(1)
+      expect(user.orders.last.order_items.count).to eq(1)
+    end
+
     it "keeps the same user's cart across requests" do
       add_to_cart(pp_with_cc(10))
       add_to_cart(pp_with_cc(5))

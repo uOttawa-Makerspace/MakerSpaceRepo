@@ -27,13 +27,16 @@ class ApplicationController < ActionController::Base
   end
 
   def current_order
-    session_order = Order.find(session[:order_id]) unless session[:order_id].nil?
+    session_order = Order.find_by(id: session[:order_id]) unless session[:order_id].nil?
     if session_order.present? && current_user.id.present? &&
          session_order.user_id == current_user.id &&
          session_order.order_status&.name.eql?("In progress")
-      session_order
-    elsif current_user.orders.last.present? &&
-          current_user.orders.last.order_status.name.eql?("In progress")
+      return session_order
+    end
+    session[:order_id] = nil
+
+    if current_user.orders.last.present? &&
+         current_user.orders.last.order_status.name.eql?("In progress")
       current_user.orders.last
     else
       Order.new
