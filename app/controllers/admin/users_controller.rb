@@ -390,8 +390,12 @@ class Admin::UsersController < AdminAreaController
   # ============================================
 
   # Admins who can actually sign in (soft-deleted ones are excluded by the default scope).
+  # `locked` is nullable, and an expired lockout is cleared at the next login
+  # (SessionsController#login_authentication), so both count as usable.
   def usable_admins
-    User.where(role: "admin", locked: false)
+    User.where(role: "admin").where(
+      "users.locked IS NOT TRUE OR users.locked_until < ?", Time.current
+    )
   end
 
   def last_admin?(user)

@@ -300,6 +300,19 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(admin.reload.role).to eq("admin")
     end
 
+    it "counts an admin with NULL locked as remaining" do
+      # FIXED(D-I21): `locked` is nullable; an expired lockout is cleared at next login
+      create(:user, :admin).update_columns(locked: nil)
+      patch set_role_admin_users_path, params: { role: "regular_user", user_ids: [admin.id] }
+      expect(admin.reload.role).to eq("regular_user")
+    end
+
+    it "counts an admin whose temporary lockout has expired as remaining" do
+      create(:user, :admin, locked: true, locked_until: 1.hour.ago)
+      patch set_role_admin_users_path, params: { role: "regular_user", user_ids: [admin.id] }
+      expect(admin.reload.role).to eq("regular_user")
+    end
+
     it "lets an admin demote themselves when another admin remains" do
       create(:user, :admin)
       patch set_role_admin_users_path, params: { role: "regular_user", user_ids: [admin.id] }
