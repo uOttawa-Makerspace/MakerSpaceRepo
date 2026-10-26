@@ -103,6 +103,36 @@ RSpec.describe "PUT /send_email (React Help form)", type: :request do
     expect(response).to have_http_status(:unauthorized)
   end
 
+  # test env uses :null_store (never counts), so back the limiter's store with a counter
+  describe "rate limit" do
+    let(:counts) { Hash.new(0) }
+
+    before do
+      allow(HelpController.cache_store).to receive(:increment) { |key, *| counts[key] += 1 }
+    end
+
+    def send!(as_headers = headers)
+      put "/send_email", params: payload.to_json, headers: as_headers.merge("Content-Type" => "application/json")
+    end
+
+    it "allows 5 calls an hour per user, then answers 429 JSON and creates nothing" do
+      5.times { send!; expect(response).to have_http_status(:ok) }
+      expect { send! }.not_to change(Help, :count)
+      expect(response).to have_http_status(:too_many_requests)
+      expect(JSON.parse(response.body)).to eq("error" => "Too many requests")
+    end
+
+    it "counts per user, not globally" do
+      5.times { send! }
+      other = create(:user, :regular_user)
+      # fresh session: the first user's cookie would otherwise win over the bearer token
+      other_session = open_session
+      other_session.put "/send_email", params: payload.to_json,
+                                       headers: { "Authorization" => "Bearer #{other.token}", "Content-Type" => "application/json" }
+      expect(other_session.response).to have_http_status(:ok)
+    end
+  end
+
   describe "regression: PUT /:username still updates the real profile" do
     it "updates the profile for the owner" do
       put user_path(user.username),
