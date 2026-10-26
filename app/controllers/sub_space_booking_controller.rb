@@ -342,7 +342,7 @@ class SubSpaceBookingController < SessionsController
         offset: DateTime.now.offset
       )
 
-    if params[:sub_space_booking][:blocking] != "true" &&
+    if !ActiveModel::Type::Boolean.new.cast(params[:sub_space_booking][:blocking]) &&
         SubSpaceBooking
           .where(sub_space_id: params[:sub_space_booking][:sub_space_id])
           .where(blocking: true)

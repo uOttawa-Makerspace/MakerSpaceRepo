@@ -347,6 +347,21 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
         expect(SubSpaceBooking.find_by!(name: "Fresh").blocking).to be(true)
       end
 
+      it "skips the overlap check for an admin JSON boolean true or '1' alike" do
+        # INTENDED(D-B04) + retro of A3: book() casts blocking the same way
+        # create does, so every truthy spelling skips the check.
+        create(:sub_space_booking, sub_space: subspace, user: user,
+                                   start_time: DateTime.parse("2027-03-03 09:00"),
+                                   end_time: DateTime.parse("2027-03-03 12:00"),
+                                   name: "Taker", blocking: true)
+        log_in!(create(:user, :admin, booking_approval: true))
+        [true, "1"].each_with_index do |value, i|
+          json_create(blocking: value, name: "Over#{i}")
+          expect(response.status).to eq(204)
+          expect(SubSpaceBooking.find_by!(name: "Over#{i}").blocking).to be(true)
+        end
+      end
+
       it "destroys the booking and reports TimeSlot when a literal-wall blocking row overlaps" do
         # Overlap detection compares the new booking's wall (parsed at offset
         # 0) against stored rows; factory rows store the literal wall, so
