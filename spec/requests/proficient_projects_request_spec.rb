@@ -8,9 +8,9 @@ require "rails_helper"
 # Inherited gate: DevelopmentProgramsController#grant_access = signed_in (no
 # Development Program membership is required). Then per action:
 #   admin only      new create edit update destroy      (others -> proficient_projects_path, no flash)
-#   staff or admin  requests approve_project            (others -> development_programs_path + alert)
+#   staff or admin  requests approve_project revoke_project (others -> development_programs_path + alert)
 #   show            ordered/in-progress/awarded buyer, staff or admin
-#   revoke_project, complete_project, modals, badge text: signed in only
+#   complete_project, modals, badge text: signed in only
 RSpec.describe "Proficient projects (HTTP contract)", type: :request do
   include ContentSpecHelpers
 
@@ -392,17 +392,37 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
   describe "GET revoke_project" do
     let!(:oi) { order_item_for(buyer, status: "Awarded") }
 
-    it "lets ANY signed-in user revoke anyone's order item and email them 'Failed' (D-C30, severity 1)" do
-      attacker = create(:user, :regular_user)
-      content_login!(attacker)
-      ActionMailer::Base.deliveries.clear
+    it "refuses a regular user and the item's own buyer, changing and emailing nothing (D-C30)" do
+      [create(:user, :regular_user), buyer].each do |user|
+        content_login!(user)
+        ActionMailer::Base.deliveries.clear
+        get revoke_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "gotcha" } }
+        # FIXED(D-C30): revoke_project is in only_staff_access
+        expect(response).to redirect_to(development_programs_path)
+        expect(flash[:alert]).to eq("Only staff members can access this area.")
+        expect(oi.reload.status).to eq("Awarded")
+        expect(oi.admin_comments).to be_blank
+        expect(ActionMailer::Base.deliveries).to be_empty
+      end
+    end
+
+    it "sends a guest to login without revoking" do
       get revoke_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "gotcha" } }
-      # WART(D-C30): revoke_project has no only_staff_access (only approve_project/requests do); a GET with no CSRF token
-      expect(oi.reload.status).to eq("Revoked")
-      expect(oi.admin_comments).to eq("gotcha")
-      expect(flash[:alert_yellow]).to eq("The project has been revoked.")
-      expect(response).to redirect_to(requests_proficient_projects_path)
-      expect(ActionMailer::Base.deliveries.last.to).to eq([buyer.email])
+      expect(response.location).to include("/login")
+      expect(oi.reload.status).to eq("Awarded")
+    end
+
+    %i[staff admin].each do |role|
+      it "#{role}: revokes the item and emails the buyer 'Failed'" do
+        content_sign_in_as(role)
+        ActionMailer::Base.deliveries.clear
+        get revoke_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "gotcha" } }
+        expect(oi.reload.status).to eq("Revoked")
+        expect(oi.admin_comments).to eq("gotcha")
+        expect(flash[:alert_yellow]).to eq("The project has been revoked.")
+        expect(response).to redirect_to(requests_proficient_projects_path)
+        expect(ActionMailer::Base.deliveries.last.to).to eq([buyer.email])
+      end
     end
 
     it "flashes an error for an unknown item" do

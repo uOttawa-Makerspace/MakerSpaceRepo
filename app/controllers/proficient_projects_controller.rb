@@ -13,6 +13,7 @@ class ProficientProjectsController < DevelopmentProgramsController
                 only: %i[
                   requests
                   approve_project
+                  revoke_project
   ]
   before_action :set_proficient_project,
                 only: %i[show destroy edit update complete_project]
