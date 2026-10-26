@@ -192,16 +192,43 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       end
     end
 
-    it "hands the previous user's cart to whoever logs in next on the same browser session" do
+    # FIXED(D-S08): sign_out clears session[:order_id] and current_order ignores a session order owned by someone else
+    it "does not hand the previous user's cart to whoever logs in next on the same browser session" do
       add_to_cart(pp_with_cc(10))
       first_order = user.orders.last
       get logout_path
       shop_log_in!(staff)
       add_to_cart(pp_with_cc(5))
-      # WART(D-S08): logout does not clear session[:order_id], so the next login adopts the previous user's cart and re-assigns the order to itself
-      expect(first_order.reload.user_id).to eq(staff.id)
-      expect(first_order.order_items.count).to eq(2)
-      expect(user.orders.count).to eq(0)
+      expect(first_order.reload.user_id).to eq(user.id)
+      expect(first_order.order_items.count).to eq(1)
+      expect(staff.orders.last.order_items.count).to eq(1)
+      expect(staff.orders.last).not_to eq(first_order)
+    end
+
+    it "shows an empty cart to the next user after logout" do
+      add_to_cart(pp_with_cc(10))
+      title = user.orders.last.order_items.first.proficient_project.title
+      get logout_path
+      shop_log_in!(staff)
+      get carts_path
+      expect(response.body).not_to include(title)
+    end
+
+    it "never adopts another user's order even when login happens without a logout" do
+      add_to_cart(pp_with_cc(10))
+      first_order = user.orders.last
+      shop_log_in!(staff)
+      add_to_cart(pp_with_cc(5))
+      expect(first_order.reload.user_id).to eq(user.id)
+      expect(first_order.order_items.count).to eq(1)
+      expect(staff.orders.last.order_items.count).to eq(1)
+    end
+
+    it "keeps the same user's cart across requests" do
+      add_to_cart(pp_with_cc(10))
+      add_to_cart(pp_with_cc(5))
+      expect(user.orders.count).to eq(1)
+      expect(user.orders.last.order_items.count).to eq(2)
     end
   end
 
