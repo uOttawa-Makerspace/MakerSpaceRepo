@@ -113,7 +113,10 @@ class Repository < ApplicationRecord
       id.to_s + '.' + title.downcase.gsub(/[^0-9a-z ]/i, '').gsub(/\s+/, '-')
   end
 
-  before_destroy { users.each { |u| u.decrement!(:reputation, 25) } }
+  # Undo what creating it awarded: 25 for a repository, 15 for a make
+  before_destroy do
+    users.each { |u| u.decrement!(:reputation, make_id.present? ? 15 : 25) }
+  end
 
   def thumbnail_variant(variant)
     return unless photos.any?

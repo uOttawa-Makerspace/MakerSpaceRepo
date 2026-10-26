@@ -90,6 +90,25 @@ RSpec.describe "Makes (HTTP contract)", type: :request do
       expect { delete repository_path(maker.username, made.slug) }.to change(Repository, :count).by(-1)
     end
 
+    it "deleting a make takes back only the 15 its creation awarded (review)" do
+      content_login!(maker)
+      post makes_create_path(owner.username, original.id), params: make_params
+      made = Repository.find_by(title: "My Make")
+      expect(maker.reload.reputation).to eq(15)
+      expect { delete repository_path(maker.username, made.slug) }.to change(Repository, :count).by(-1)
+      # FIXED(review): make_id rows decrement 15, not the 25 a normal repository awards
+      expect(maker.reload.reputation).to eq(0)
+      expect(owner.reload.reputation).to eq(0)
+    end
+
+    it "deleting a normal repository still costs each member 25" do
+      maker.update!(reputation: 100)
+      mine = create(:repository, owner: maker, title: "Mine", users: [maker])
+      content_login!(maker)
+      delete repository_path(maker.username, mine.slug)
+      expect(maker.reload.reputation).to eq(75)
+    end
+
     it "copies categories and equipment from the original" do
       Category.create!(name: "Laser", repository_id: original.id)
       Equipment.create!(name: "Cutter", repository_id: original.id)
