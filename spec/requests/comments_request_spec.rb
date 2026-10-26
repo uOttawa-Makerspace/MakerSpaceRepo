@@ -4,9 +4,8 @@ require "rails_helper"
 
 # Chunk 16: CommentsController (repository comments + up/down votes).
 #
-# Gates: `signed_in` on every action. There is no ownership or visibility check
-# on create/vote (private repositories, self-voting); destroy is
-# author-or-admin only.
+# Gates: `signed_in` on every action; create/vote also run the private-repository
+# password gate (no self-vote guard); destroy is author-or-admin only.
 RSpec.describe "Comments (HTTP contract)", type: :request do
   include ContentSpecHelpers
 
@@ -66,11 +65,35 @@ RSpec.describe "Comments (HTTP contract)", type: :request do
       expect(response.body).not_to include("<script>alert(1)</script>")
     end
 
-    it "lets anyone comment on a private repository without its password (D-C17)" do
-      secret = create(:repository, :private, owner: owner, title: "Hush", users: [owner])
-      content_login!(author)
-      # WART(D-C17): create does not run check_auth; the password gate is only on show/download
-      expect { post_comment("peek", repository: secret) }.to change { secret.comments.count }.by(1)
+    context "on a private repository (D-C17)" do
+      let!(:secret) { create(:repository, :private, owner: owner, title: "Hush", users: [owner]) }
+
+      it "refuses a signed-in user who has not entered the password" do
+        content_login!(author)
+        expect { post_comment("peek", repository: secret) }.not_to change(Comment, :count)
+        # FIXED(D-C17): create runs the shared private-repository gate
+        expect(response).to redirect_to(password_entry_repository_path(owner.username, secret.id))
+      end
+
+      it "lets the owner, a collaborator, staff and admin comment" do
+        collaborator = create(:user, :regular_user)
+        secret.users << collaborator
+        [owner, collaborator].each do |u|
+          content_login!(u)
+          expect { post_comment("ok", repository: secret) }.to change(Comment, :count).by(1)
+        end
+        %i[staff admin].each do |role|
+          content_sign_in_as(role)
+          expect { post_comment("ok", repository: secret) }.to change(Comment, :count).by(1)
+        end
+      end
+
+      it "lets a user who passed the password comment" do
+        secret.update_columns(password: BCrypt::Password.create("open-sesame"))
+        content_login!(author)
+        post pass_authenticate_repository_path(owner.username, secret.id), params: { password: "open-sesame" }
+        expect { post_comment("ok", repository: secret) }.to change(Comment, :count).by(1)
+      end
     end
 
     it "404s for an unknown or soft-deleted repository" do
@@ -192,13 +215,24 @@ RSpec.describe "Comments (HTTP contract)", type: :request do
       expect(author.reload.reputation).to eq(2)
     end
 
-    it "accepts a comment_id from a different repository than the :id segment (D-C20)" do
+    it "404s for a comment_id from a different repository than the :id segment (D-C20)" do
       other = create(:repository, owner: owner, title: "Other", users: [owner])
       content_login!(voter)
-      # WART(D-C20): vote never checks comment.repository == :id; the :id only drives the redirect
-      post comments_vote_path(other.id), params: { comment_id: comment.id }
-      expect(comment.reload.upvote).to eq(1)
-      expect(response).to redirect_to(repository_path(owner.username, other.id, anchor: "repo-comments"))
+      # FIXED(D-C20): the comment is looked up through the repository in the URL
+      expect { post comments_vote_path(other.id), params: { comment_id: comment.id } }
+        .not_to change(Upvote, :count)
+      expect(response).to have_http_status(:not_found)
+      expect(comment.reload.upvote).to eq(0)
+    end
+
+    it "refuses to vote on a private repository's comment without the password (D-C20)" do
+      secret = create(:repository, :private, owner: owner, title: "Hush", users: [owner])
+      secret_comment = create(:comment, repository: secret, user: author, username: author.username)
+      content_login!(voter)
+      expect { vote(secret_comment, repository: secret) }.not_to change(Upvote, :count)
+      expect(response).to redirect_to(password_entry_repository_path(owner.username, secret.id))
+      content_login!(owner)
+      expect { vote(secret_comment, repository: secret) }.to change(Upvote, :count).by(1)
     end
 
     it "404s for an unknown comment or repository" do

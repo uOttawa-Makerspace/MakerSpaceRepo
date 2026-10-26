@@ -152,6 +152,21 @@ class SessionsController < ApplicationController
 
   private
 
+  # The one private-repository rule: admin, staff, the owner or a member
+  # (user_id / repository.users), or a password already entered this session
+  # (the session stores the repository id, never the raw URL segment).
+  def repository_unlocked?(repository)
+    authorized_repo_ids.include?(repository.id) || @user.admin? ||
+      @user.staff? || repository.owned_by?(@user)
+  end
+
+  # Redirects to the password page when a private repository is still locked.
+  def ensure_repository_unlocked(repository)
+    return if repository.nil? || !repository.private? || repository_unlocked?(repository)
+
+    redirect_to password_entry_repository_path(repository.user_username, repository.id)
+  end
+
   def get_session_time_left
     expire_time = session[:expires_at] || 72.hours.from_now
     @session_time_left = (expire_time.to_time - Time.zone.now).to_i

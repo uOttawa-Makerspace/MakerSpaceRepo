@@ -53,30 +53,25 @@ class SearchController < SessionsController
 
     repos1 =
       if (category = SLUG_TO_OLD_CATEGORY[params[:slug]])
-        Repository.where(category: category).distinct
+        Repository.public_repos.where(category: category).distinct
       else
         []
       end
 
     repos2 =
       if (name = SLUG_TO_CATEGORY_MODEL[params[:slug]])
-        Category
-          .where(name: name)
-          .where.not(repository_id: nil)
-          .distinct
-          .includes(:repository)
-          .map(&:repository)
+        Repository.public_repos.where(
+          id: Category.where(name: name).where.not(repository_id: nil).select(:repository_id)
+        ).to_a
       else
         []
       end
 
     repos3 =
       if (category_option = CategoryOption.find_by(name: name))
-        Category
-          .where(category_option_id: category_option.id)
-          .distinct
-          .includes(:repository)
-          .map(&:repository)
+        Repository.public_repos.where(
+          id: Category.where(category_option_id: category_option.id).select(:repository_id)
+        ).to_a
       else
         []
       end
@@ -97,13 +92,10 @@ class SearchController < SessionsController
     sort_arr = sort_order
     name = params[:slug].to_s.tr("-", " ")
 
-    repos = Equipment
-              .where(name: name)
-              .distinct
-              .includes(:repository)
-              .map(&:repository)
-              .compact
-              .uniq
+    repos = Repository
+              .public_repos
+              .where(id: Equipment.where(name: name).select(:repository_id))
+              .to_a
               .sort_by { |s| -s[sort_arr.first].to_i }
 
     @pagy, @repositories = pagy(repos, limit: 12)

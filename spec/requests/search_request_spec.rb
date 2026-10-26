@@ -143,32 +143,44 @@ RSpec.describe "Search and explore", type: :request do
   end
 
   describe "GET /category/:slug and /equipment/:slug" do
-    # WART(D-P22) SEVERITY 1: /category/:slug and /equipment/:slug do not filter on share_type, so a GUEST sees the title, description snippet, owner and like count of PRIVATE repositories (SearchController has no gate beyond current_user/no_container; explore/search use public_repos, these two do not)
-    # N+1 pinned: see defects D-PERF-P01
-    it "lists PRIVATE repos filed under a legacy category to a guest", skip_bullet: true do
+    # FIXED(D-P22): both pages go through Repository.public_repos, like explore and search
+    it "lists only public repos filed under a legacy category, never private ones", skip_bullet: true do
       pub_robot.update_columns(category: "Mobile")
       private_laser.update_columns(category: "Mobile")
       get category_path(slug: "mobile-development")
       expect(response).to have_http_status(:ok)
-      expect(repos.map(&:title)).to match_array(["Laser Secret Prototype", "Robot Arm"])
-      expect(response.body).to include("Laser Secret Prototype")
+      expect(repos.map(&:title)).to eq(["Robot Arm"])
+      expect(response.body).not_to include("Laser Secret Prototype")
       expect(session[:user_id]).to be_nil
     end
 
-    it "lists PRIVATE repos filed under a new-style category to a guest" do
+    it "lists only public repos filed under a new-style category, for a guest and a signed-in user" do
       CategoryOption.find_or_create_by!(name: "Wearable")
       Category.create!(repository_id: private_laser.id, name: "Wearable")
+      Category.create!(repository_id: pub_robot.id, name: "Wearable")
       get category_path(slug: "wearable")
-      expect(repos).to eq([private_laser])
+      expect(repos).to eq([pub_robot])
+      sign_in_as(:regular)
+      get category_path(slug: "wearable")
+      expect(repos).to eq([pub_robot])
+    end
+
+    it "a private repo's own owner and admin do not see it on the public category page either" do
+      CategoryOption.find_or_create_by!(name: "Wearable")
+      Category.create!(repository_id: private_laser.id, name: "Wearable")
+      sign_in_as(:admin)
+      get category_path(slug: "wearable")
+      expect(repos).to be_empty
     end
 
     # N+1 pinned: see defects D-PERF-P01
-    it "lists PRIVATE repos using a given equipment name to a guest", skip_bullet: true do
+    it "lists only public repos using a given equipment name", skip_bullet: true do
       Equipment.create!(repository_id: pub_robot.id, name: "3d printer")
       Equipment.create!(repository_id: private_laser.id, name: "3d printer")
       get equipment_path(slug: "3d-printer")
       expect(response).to have_http_status(:ok)
-      expect(repos.map(&:title)).to match_array(["Laser Secret Prototype", "Robot Arm"])
+      expect(repos.map(&:title)).to eq(["Robot Arm"])
+      expect(response.body).not_to include("Laser Secret Prototype")
     end
 
     it "hides soft-deleted repositories everywhere (Repository default_scope)" do
