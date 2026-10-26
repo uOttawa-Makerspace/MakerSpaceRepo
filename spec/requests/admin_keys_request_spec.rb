@@ -175,7 +175,9 @@ RSpec.describe "Admin keys", type: :request do
       expect(KeyTransaction.where(key: key)).to be_empty
     end
 
+    # Midday Eastern, so the server's UTC date and Date.current agree (see D-EQ32 for the evening case).
     it "revokes a held key: back to inventory, return date set and zero deposit marked returned" do
+      travel_to(Time.zone.now.change(hour: 12))
       patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id }, deposit_amount: 0 }
       patch admin_key_revoke_key_path(key)
       expect(response).to redirect_to(admin_keys_path)
@@ -184,7 +186,16 @@ RSpec.describe "Admin keys", type: :request do
       expect(key.get_latest_key_transaction).to have_attributes(return_date: Date.current, deposit_return_date: Date.current)
     end
 
+    # WART(D-EQ32): revoke stamps return_date with Date.today (server/UTC date), so after 20:00 Eastern the key is returned "tomorrow"
+    it "stamps the UTC date as the return date when revoked in the Eastern evening" do
+      travel_to(Time.zone.now.change(hour: 21))
+      patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id }, deposit_amount: 0 }
+      patch admin_key_revoke_key_path(key)
+      expect(key.get_latest_key_transaction.return_date).to eq(Date.current + 1)
+    end
+
     it "revokes with a non-zero deposit: deposit stays outstanding unless a return date is given" do
+      travel_to(Time.zone.now.change(hour: 12))
       patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id }, deposit_amount: 30 }
       patch admin_key_revoke_key_path(key)
       tx = key.get_latest_key_transaction

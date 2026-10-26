@@ -305,10 +305,21 @@ RSpec.describe "Admin report generator", type: :request do
       end
     end
 
+    # Midday Eastern, so DateTime.now's server/UTC date and Date.current agree.
     it "defaults to 2015-06-01 .. today when no dates are given" do
+      travel_to(Time.zone.now.change(hour: 12))
       fetch_xlsx("kit_purchased")
       expect(response.headers["Content-Disposition"]).to include(
         "kit_purchased_2015-06-01_#{Date.current.strftime("%Y-%m-%d")}.xlsx"
+      )
+    end
+
+    # WART(D-R26): the default range ends at DateTime.now (server/UTC), so after 20:00 Eastern "today" is tomorrow's date
+    it "ends the default range on the UTC date in the Eastern evening" do
+      travel_to(Time.zone.now.change(hour: 21))
+      fetch_xlsx("kit_purchased")
+      expect(response.headers["Content-Disposition"]).to include(
+        "kit_purchased_2015-06-01_#{(Date.current + 1).strftime("%Y-%m-%d")}.xlsx"
       )
     end
 
