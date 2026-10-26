@@ -337,12 +337,21 @@ class UsersController < SessionsController
 
       if params[:teams].present?
         user.programs.find_or_create_by(program_type: Program::TEAMS)
-      elsif user.programs.find_by(program_type: Program::TEAMS).present?
+      elsif !json_request? &&
+            user.programs.find_by(program_type: Program::TEAMS).present?
         user.programs.find_by(program_type: Program::TEAMS).destroy
+      end
+      if json_request?
+        render json: { programs: user.programs.reload.pluck(:program_type) }
+        return
       end
       flash[:notice] = "The programs for #{user.name} has been updated!"
       redirect_to user_path(user.username)
     else
+      if json_request?
+        head :forbidden
+        return
+      end
       flash[
         :alert
       ] = 'An error occurred: A user must me selected; You need to be staff/admin to change the programs.'
@@ -459,6 +468,10 @@ class UsersController < SessionsController
   end
 
   private
+
+  def json_request?
+    request.format.json? || request.content_mime_type&.json?
+  end
 
   def user_params
     params.require(:user).permit(

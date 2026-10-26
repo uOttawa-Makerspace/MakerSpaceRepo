@@ -426,6 +426,42 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
     end
   end
 
+  # FIXED(D-API02): the React app sends PATCH /change_programs with JSON; the route now accepts PATCH and answers JSON.
+  describe "PATCH /change_programs (JSON, React app)" do
+    let(:body) { { user_id: user.id, dev_program: true, volunteer: false } }
+
+    def patch_programs(as_user, payload = body)
+      login!(as_user)
+      patch change_programs_users_path, params: payload.to_json,
+                                        headers: { "Content-Type" => "application/json", "Accept" => "application/json" }
+    end
+
+    it "lets staff set programs and returns them as JSON, leaving teams alone" do
+      user.programs.create!(program_type: Program::TEAMS)
+      patch_programs(staff)
+      expect(response).to have_http_status(:ok)
+      expect(json["programs"]).to match_array([Program::DEV_PROGRAM, Program::TEAMS])
+      expect(user.programs.reload.pluck(:program_type)).to match_array([Program::DEV_PROGRAM, Program::TEAMS])
+    end
+
+    it "removes a program when it is sent as false" do
+      user.programs.create!(program_type: Program::VOLUNTEER)
+      patch_programs(staff)
+      expect(user.programs.reload.pluck(:program_type)).to eq([Program::DEV_PROGRAM])
+    end
+
+    it "refuses a regular user with 403 and changes nothing" do
+      patch_programs(other)
+      expect(response).to have_http_status(:forbidden)
+      expect(user.programs).to be_empty
+    end
+
+    it "does not touch the caller's profile (no fall-through to users#update)" do
+      patch_programs(staff)
+      expect(staff.reload.name).to eq(staff.name)
+    end
+  end
+
   describe "GET /users/search" do
     before do
       create(:user, :regular_user, name: "Zebulon Quasar", username: "zebulonq")

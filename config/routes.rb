@@ -699,7 +699,7 @@ Rails.application.routes.draw do
       get :reset_password_form
       patch :reset_password_confirmation
       get :confirm
-      post :change_programs
+      match :change_programs, via: %i[post patch]
       post :create, path: "/new"
       get :remove_avatar
       post :flag
