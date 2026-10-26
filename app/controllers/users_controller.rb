@@ -39,7 +39,7 @@ class UsersController < SessionsController
         format.json { render json: {errors: 'captcha failure'}, status: :unprocessable_content }
       end 
     elsif @new_user.save
-      hash = Rails.application.message_verifier(:user).generate(@new_user.id)
+      hash = @new_user.generate_token_for(:email_confirmation)
       MsrMailer.confirmation_email(@new_user, hash).deliver_now
       
       respond_to do |format| 
@@ -68,7 +68,7 @@ class UsersController < SessionsController
     email = params[:user][:email]
     user = User.find_by(email: email)
     if user.present?
-      hash = Rails.application.message_verifier(:user).generate(user.id)
+      hash = user.generate_token_for(:email_confirmation)
       MsrMailer.confirmation_email(user, hash).deliver_now
       flash[:notice] = 'A new confirmation email has been sent'
     else
@@ -80,26 +80,15 @@ class UsersController < SessionsController
   end
 
   def confirm
-    @cc_token = params[:token]
-    @verifier = Rails.application.message_verifier(:user)
-    if @verifier.valid_message?(@cc_token)
-      user_id = @verifier.verify(@cc_token)
-      if User.find(user_id).present?
-        user = User.find(user_id)
-        user.update(confirmed: true)
-        MsrMailer.welcome_email(user).deliver_now
-        flash[
-          :notice
-        ] = 'The email has been confirmed, you can now fully use your Makerepo Account !'
-      else
-        flash[
-          :alert
-        ] = 'Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com'
-      end
-    else
+    user = User.find_by_token_for(:email_confirmation, params[:token])
+    if user
+      user.update(confirmed: true)
+      MsrMailer.welcome_email(user).deliver_now
       flash[
-        :alert
-      ] = 'Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com'
+        :notice
+      ] = 'The email has been confirmed, you can now fully use your Makerepo Account !'
+    else
+      flash[:alert] = LINK_EXPIRED_ALERT
     end
     redirect_to root_path
   end
@@ -133,23 +122,14 @@ class UsersController < SessionsController
   end
 
   def unlock_account
-    @user_token = params[:token]
-    @user_verifier = Rails.application.message_verifier('unlock')
-    if @user_verifier.valid_message?(@user_token)
-      user_id = @user_verifier.verify(@user_token)
-      if User.find(user_id).present?
-        user = User.find(user_id)
-        if user.locked?
-          user.update(locked: false)
-          user.update(auth_attempts: 0)
-          user.update(locked_until: nil)
-          flash[:notice] = 'The account has been unlocked!'
-        end
-      else
-        flash[:alert] = 'We can not find that user. Please try again..'
-      end
+    user = User.find_by_token_for(:account_unlock, params[:token])
+    if user
+      user.update(locked: false)
+      user.update(auth_attempts: 0)
+      user.update(locked_until: nil)
+      flash[:notice] = 'The account has been unlocked!'
     else
-      flash[:alert] = 'Invalid Token'
+      flash[:alert] = LINK_EXPIRED_ALERT
     end
     redirect_to root_path
   end

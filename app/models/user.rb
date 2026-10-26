@@ -249,6 +249,16 @@ class User < ApplicationRecord
     password&.last(10)
   end
 
+  # D-I11: confirmation (3 days, dies once confirmed) and unlock (1 hour, dies
+  # once the lock is cleared) links are purpose-scoped as well.
+  generates_token_for :email_confirmation, expires_in: 3.days do
+    confirmed
+  end
+
+  generates_token_for :account_unlock, expires_in: 1.hour do
+    [locked, locked_until&.to_i]
+  end
+
   scope :no_waiver_users, -> { where(read_and_accepted_waiver_form: false) }
   
   scope :between_dates_picked, ->(start_date, end_date) {
@@ -387,7 +397,7 @@ class User < ApplicationRecord
   end
 
   def send_unlock_email
-    user_hash = Rails.application.message_verifier('unlock').generate(id)
+    user_hash = generate_token_for(:account_unlock)
     MsrMailer.unlock_account(self, user_hash).deliver_now
   end
 

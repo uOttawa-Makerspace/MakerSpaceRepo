@@ -196,9 +196,10 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
 
   describe "GET /confirm" do
     let(:unconfirmed) { create(:user, :regular_user_not_confirmed) }
+    let(:confirm_token) { unconfirmed.generate_token_for(:email_confirmation) }
 
     it "confirms the account and sends the welcome email" do
-      get confirm_users_path, params: { token: verifier.generate(unconfirmed.id) }
+      get confirm_users_path, params: { token: confirm_token }
       expect(response).to redirect_to(root_path)
       expect(flash[:notice]).to eq(
         "The email has been confirmed, you can now fully use your Makerepo Account !"
@@ -209,50 +210,74 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(deliveries.first.subject).to eq("Welcome to MakerRepo")
     end
 
-    it "the token never expires" do
-      token = verifier.generate(unconfirmed.id)
-      travel 400.days do
+    it "the token expires after 3 days" do
+      # FIXED(D-I11): confirmation tokens are purpose-scoped and expire (3 days)
+      token = confirm_token
+      travel 73.hours do
+        get confirm_users_path, params: { token: token }
+        expect(flash[:alert]).to eq(expired_alert)
+        expect(unconfirmed.reload.confirmed).to be(false)
+      end
+    end
+
+    it "still works just inside 3 days" do
+      token = confirm_token
+      travel 71.hours do
         get confirm_users_path, params: { token: token }
         expect(unconfirmed.reload.confirmed).to be(true)
       end
     end
 
-    it "can be replayed: every use re-sends the welcome email" do
-      token = verifier.generate(unconfirmed.id)
+    it "cannot be replayed: the second use is refused and sends no second welcome email" do
+      # FIXED(D-I11): the token is bound to the confirmed flag
+      token = confirm_token
       2.times { get confirm_users_path, params: { token: token } }
-      expect(deliveries.map(&:subject)).to eq(["Welcome to MakerRepo"] * 2)
+      expect(deliveries.map(&:subject)).to eq(["Welcome to MakerRepo"])
+      expect(flash[:alert]).to eq(expired_alert)
+    end
+
+    it "a legacy token (plain :user verifier message, mailed before the deploy) is refused with the expired message" do
+      get confirm_users_path, params: { token: verifier.generate(unconfirmed.id) }
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq(expired_alert)
+      expect(unconfirmed.reload.confirmed).to be(false)
+      expect(deliveries).to be_empty
     end
 
     it "tampered token: alert, nothing changes" do
-      get confirm_users_path, params: { token: verifier.generate(unconfirmed.id) + "x" }
+      get confirm_users_path, params: { token: confirm_token + "x" }
       expect(response).to redirect_to(root_path)
-      expect(flash[:alert]).to start_with("Something went wrong.")
+      expect(flash[:alert]).to eq(expired_alert)
       expect(unconfirmed.reload.confirmed).to be(false)
       expect(deliveries).to be_empty
     end
 
     it "missing token: same alert" do
       get confirm_users_path
-      expect(flash[:alert]).to start_with("Something went wrong.")
+      expect(flash[:alert]).to eq(expired_alert)
     end
 
-    it "a token signed with a different verifier name is rejected" do
-      tok = Rails.application.message_verifier(:email).generate(unconfirmed.id)
+    it "another purpose's token (password reset) does not confirm" do
+      get confirm_users_path, params: { token: unconfirmed.generate_token_for(:password_reset) }
+      expect(flash[:alert]).to eq(expired_alert)
+      expect(unconfirmed.reload.confirmed).to be(false)
+    end
+
+    it "a soft-deleted user's token is refused" do
+      u = create(:user, :regular_user_not_confirmed)
+      tok = u.generate_token_for(:email_confirmation)
+      u.update_columns(deleted: true)
       get confirm_users_path, params: { token: tok }
-      expect(flash[:alert]).to start_with("Something went wrong.")
-    end
-
-    it "valid token for a deleted id: 404" do
-      tok = verifier.generate(0)
-      get confirm_users_path, params: { token: tok }
-      expect(response).to have_http_status(:not_found)
-    end
-
-    it "valid token for a soft-deleted user: 404 (default scope)" do
-      u = create(:user, :regular_user_not_confirmed, deleted: true)
-      get confirm_users_path, params: { token: verifier.generate(u.id) }
-      expect(response).to have_http_status(:not_found)
+      expect(flash[:alert]).to eq(expired_alert)
       expect(User.unscoped.find(u.id).confirmed).to be(false)
+    end
+
+    it "the emailed link from registration confirms the account" do
+      attrs = registration_params
+      post users_path, params: { user: attrs }
+      token = CGI.unescape(deliveries.first.body.to_s[/confirm\?token=([^"'&\s<]+)/, 1])
+      get confirm_users_path, params: { token: token }
+      expect(User.find_by(username: attrs[:username]).confirmed).to be(true)
     end
   end
 
@@ -549,13 +574,13 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
   end
 
   describe "GET /unlock_account" do
-    let(:unlock_verifier) { Rails.application.message_verifier("unlock") }
     let(:locked_user) do
       create(:user, :regular_user, locked: true, locked_until: 1.hour.from_now, auth_attempts: 5)
     end
+    let(:unlock_token) { locked_user.generate_token_for(:account_unlock) }
 
     it "unlocks the account and clears counters" do
-      get unlock_account_users_path, params: { token: unlock_verifier.generate(locked_user.id) }
+      get unlock_account_users_path, params: { token: unlock_token }
       expect(response).to redirect_to(root_path)
       expect(flash[:notice]).to eq("The account has been unlocked!")
       locked_user.reload
@@ -564,29 +589,38 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(locked_user.locked_until).to be_nil
     end
 
-    it "is silent on an already-unlocked account" do
-      get unlock_account_users_path, params: { token: unlock_verifier.generate(user.id) }
-      expect(response).to redirect_to(root_path)
-      expect(flash[:notice]).to be_nil
-      expect(flash[:alert]).to be_nil
+    it "is single-use: the link is refused once the account is unlocked" do
+      # FIXED(D-I11): was silent on an already-unlocked account; the token is bound to the lock
+      token = unlock_token
+      get unlock_account_users_path, params: { token: token }
+      get unlock_account_users_path, params: { token: token }
+      expect(flash[:alert]).to eq(expired_alert)
     end
 
-    it "does not expire" do
-      tok = unlock_verifier.generate(locked_user.id)
-      travel 400.days do
-        get unlock_account_users_path, params: { token: tok }
+    it "expires after 1 hour" do
+      # FIXED(D-I11)
+      token = unlock_token
+      travel 61.minutes do
+        get unlock_account_users_path, params: { token: token }
       end
-      expect(locked_user.reload.locked).to be(false)
+      expect(flash[:alert]).to eq(expired_alert)
+      expect(locked_user.reload.locked).to be(true)
     end
 
     it "invalid token" do
       get unlock_account_users_path, params: { token: "nope" }
-      expect(flash[:alert]).to eq("Invalid Token")
+      expect(flash[:alert]).to eq(expired_alert)
     end
 
-    it "a :user-verifier token does not unlock" do
-      get unlock_account_users_path, params: { token: verifier.generate(locked_user.id) }
-      expect(flash[:alert]).to eq("Invalid Token")
+    it "a legacy 'unlock' verifier token is refused with the expired message" do
+      get unlock_account_users_path, params: { token: Rails.application.message_verifier("unlock").generate(locked_user.id) }
+      expect(flash[:alert]).to eq(expired_alert)
+      expect(locked_user.reload.locked).to be(true)
+    end
+
+    it "a confirmation token does not unlock" do
+      get unlock_account_users_path, params: { token: locked_user.generate_token_for(:email_confirmation) }
+      expect(flash[:alert]).to eq(expired_alert)
       expect(locked_user.reload.locked).to be(true)
     end
 

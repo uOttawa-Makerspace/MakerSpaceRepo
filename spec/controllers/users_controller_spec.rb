@@ -33,7 +33,7 @@ RSpec.describe UsersController, type: :controller do
     context "confirm" do
       it "should confirm the user" do
         user = create(:user, :regular_user_not_confirmed)
-        @hash = Rails.application.message_verifier(:user).generate(user.id)
+        @hash = user.generate_token_for(:email_confirmation)
         get :confirm, params: { token: @hash }
         expect(response).to redirect_to root_path
         expect(flash[:notice]).to eq(
@@ -49,7 +49,7 @@ RSpec.describe UsersController, type: :controller do
         get :confirm, params: { token: "abc" }
         expect(response).to redirect_to root_path
         expect(flash[:alert]).to eq(
-          "Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com"
+          "This link has expired or has already been used. Please request a new one."
         )
         expect(User.find(user.id).confirmed?).to be_falsey
       end
