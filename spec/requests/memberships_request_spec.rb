@@ -264,21 +264,42 @@ RSpec.describe "Memberships (HTTP contract)", type: :request do
       expect(membership.reload.status).to eq("paid")
     end
 
-    it "lets ANY signed-in user revoke ANY membership" do
+    # FIXED(D-S21): revoke is admin-only, with the same head :unauthorized denial as admin_create_membership
+    it "401s a regular user (even a non-owner) and leaves the membership alone" do
       shop_log_in!(user)
       patch revoke_membership_path(membership)
-      # WART(D-S21): revoke has no admin or ownership check (only admin_create_membership is gated); any signed-in user can revoke anyone's paid membership by id
-      expect(response).to redirect_to(memberships_path)
+      expect(response).to have_http_status(:unauthorized)
+      expect(membership.reload.status).to eq("paid")
+      expect(other.memberships.active).not_to be_empty
+    end
+
+    it "401s the membership's own owner" do
+      shop_log_in!(other)
+      patch revoke_membership_path(membership)
+      expect(response).to have_http_status(:unauthorized)
+      expect(membership.reload.status).to eq("paid")
+    end
+
+    it "401s staff" do
+      shop_log_in!(staff)
+      patch revoke_membership_path(membership)
+      expect(response).to have_http_status(:unauthorized)
+      expect(membership.reload.status).to eq("paid")
+    end
+
+    it "lets an admin revoke, redirecting back to the referer" do
+      shop_log_in!(admin)
+      patch revoke_membership_path(membership), headers: { "HTTP_REFERER" => "http://www.example.com/admin/users/1" }
+      expect(response).to redirect_to("http://www.example.com/admin/users/1")
       expect(flash[:notice]).to eq("Membership revoked successfully.")
       expect(membership.reload.status).to eq("revoked")
       expect(other.memberships.active).to be_empty
     end
 
-    it "works for staff and admin, redirecting back to the referer" do
+    it "falls back to the memberships page without a referer" do
       shop_log_in!(admin)
-      patch revoke_membership_path(membership), headers: { "HTTP_REFERER" => "http://www.example.com/admin/users/1" }
-      expect(response).to redirect_to("http://www.example.com/admin/users/1")
-      expect(membership.reload.status).to eq("revoked")
+      patch revoke_membership_path(membership)
+      expect(response).to redirect_to(memberships_path)
     end
 
     it "404s for an unknown id" do
