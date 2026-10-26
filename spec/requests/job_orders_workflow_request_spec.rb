@@ -351,7 +351,7 @@ RSpec.describe "JobOrders workflow", type: :request do
     end
 
     it "rejects a well-signed token for an order that does not exist" do
-      token = Rails.application.message_verifier(:job_order_id).generate(99_999_999)
+      token = Rails.application.message_verifier(:job_order_magic_link).generate([99_999_999, nil, nil], purpose: :job_order_approval, expires_in: 1.day)
       get user_magic_approval_job_orders_path, params: { token: token }
       expect(response).to redirect_to(job_orders_path)
       expect(flash[:alert]).to eq(expired_flash)
@@ -363,11 +363,15 @@ RSpec.describe "JobOrders workflow", type: :request do
       expect(flash[:alert]).to eq(expired_flash)
 
       foreign = Rails.application.message_verifier(:something_else).generate(order.id)
+      legacy = Rails.application.message_verifier(:job_order_id).generate(order.id)
+      get user_magic_approval_job_orders_path, params: { token: legacy }
+      expect(response).to redirect_to(job_orders_path)
+      expect(flash[:alert]).to eq(expired_flash)
       get user_magic_approval_job_orders_path, params: { token: foreign }
       expect(response).to redirect_to(job_orders_path)
     end
 
-    # WART(D-J09/D-J11): the page opens for any viewer holding the token, signed in or not
+    # INTENDED(D-J09/D-J11): the page opens for any viewer holding the (expiring, owner-bound) token, signed in or not
     it "renders for a signed-in user who is not the owner" do
       session_login!(other)
       get user_magic_approval_job_orders_path, params: { token: magic_link_token_for(order) }
@@ -414,7 +418,6 @@ RSpec.describe "JobOrders workflow", type: :request do
       expect(error_text).to include("NoMethodError")
     end
 
-    # WART(D-J11): any logged-in user holding the link can approve
     # FIXED(D-J09): the recorded actor is always the order's owner, never the visitor
     it "lets a signed-in non-owner approve and records the order owner as the actor, without any staff mail" do
       session_login!(other)

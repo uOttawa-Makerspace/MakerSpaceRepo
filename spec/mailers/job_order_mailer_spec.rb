@@ -54,7 +54,7 @@ RSpec.describe JobOrderMailer, type: :mailer do
   end
 
   describe ".send_job_quote" do
-    it "mails the customer with reply-to, bcc and a magic link that verifies to the order id" do
+    it "mails the customer with reply-to, bcc and an approval link that resolves to the order id" do
       described_class.send_job_quote(order.id).deliver_now
 
       mail = delivered.last
@@ -64,7 +64,8 @@ RSpec.describe JobOrderMailer, type: :mailer do
       expect(mail.subject)
         .to eq("Votre commande ##{order.id} a été approuvée // Your job order ##{order.id} has been approved")
       token = CGI.unescape(mail.body.decoded[/user_magic_approval\?token=([^"&\s]+)/, 1].to_s)
-      expect(Rails.application.message_verifier(:job_order_id).verify(token)).to eq(order.id)
+      expect(JobOrder.id_from_approval_token(token)).to eq(order.id)
+      expect(JobOrder.id_from_pay_token(token)).to be_nil
       expect(mail.body.encoded).not_to include("This is a reminder")
     end
 
