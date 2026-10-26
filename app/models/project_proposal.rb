@@ -27,7 +27,8 @@ class ProjectProposal < ApplicationRecord
   has_many_attached :project_files
 
   # D-C37: project files are checked by sniffed content type and size in the model
-  # (the controller attaches them one by one; an invalid file is simply not stored).
+  # (an invalid file makes the record invalid, so `attach` returns false and nothing is stored;
+  # callers that attach one file at a time must check the result - see a9-notes).
   MAX_PROJECT_FILE_SIZE = 100.megabytes
   validates_sniffed_upload :project_files,
                            allow: SniffedUploadValidation::GENERAL_FILE_TYPES,
