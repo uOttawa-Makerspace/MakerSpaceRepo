@@ -31,7 +31,7 @@ class CcMoneysController < SessionsController
 
   def redeem
     cc_token = params[:token]
-    cc_id = @verifier.verify(cc_token)
+    cc_id = @verifier.verified(cc_token)
     user = User.find_by(email: user_params[:email])
     cc_money = CcMoney.find_by_id(cc_id)
     if cc_money.nil?

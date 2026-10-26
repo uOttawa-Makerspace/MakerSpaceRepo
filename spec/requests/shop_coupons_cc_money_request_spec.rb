@@ -525,10 +525,15 @@ RSpec.describe "Shop coupons, price rules and cc money (HTTP contract)", type: :
         expect(user.cc_moneys.sum(:cc)).to eq(0)
       end
 
-      it "tampered token raises InvalidSignature (500) and missing user param is a 302 to root" do
+      it "tampered or garbage token gets the generic alert (no 500) and missing user param is a 302 to root" do
         shop_log_in!(user)
+        # FIXED: redeem used verifier.verify (InvalidSignature 500); verified returns nil, handled like a missing row
         get redeem_cc_moneys_path, params: { token: "bad", user: { email: user.email } }
-        expect(response).to have_http_status(:internal_server_error)
+        expect(response).to redirect_to(cc_moneys_path)
+        expect(flash[:alert]).to start_with("Something went wrong.")
+        get redeem_cc_moneys_path, params: { user: { email: user.email } }
+        expect(response).to redirect_to(cc_moneys_path)
+        expect(flash[:alert]).to start_with("Something went wrong.")
         get redeem_cc_moneys_path, params: { token: token }
         expect(response).to redirect_to(root_path)
         expect(unlinked.reload.linked).to be(false)
