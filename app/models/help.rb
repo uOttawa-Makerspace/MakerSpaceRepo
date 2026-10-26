@@ -20,11 +20,13 @@ class Help < ApplicationRecord
   before_create :send_github_issue
   
   def send_github_issue
-    self.gh_issue_number = GithubIssuesService.new.create_issue(
-                           reporter: name,
-                           title: subject,
-                           body: comments
-                         )[:number]
+    # create_issue returns false when the GitHub API call fails
+    issue = GithubIssuesService.new.create_issue(
+              reporter: name,
+              title: subject,
+              body: comments
+            )
+    self.gh_issue_number = issue ? issue[:number] : nil
     unless self.gh_issue_number
       errors.add(:base, 'Internal error while submitting issue.')
       throw :abort
