@@ -24,9 +24,13 @@ module DirectUploadAuthentication
   end
 
   def limit_byte_size
-    byte_size = params.dig(:blob, :byte_size).to_s
-    return unless byte_size.match?(/\A\d+\z/) && byte_size.to_i > MAX_BYTE_SIZE
+    raw = params.dig(:blob, :byte_size)
+    return if raw.nil? # the blob validations reject a missing size
 
-    head :content_too_large
+    byte_size = Integer(raw.to_s, 10)
+    head :content_too_large if byte_size > MAX_BYTE_SIZE
+  rescue ArgumentError, TypeError
+    # ActiveRecord would still cast "5000000000.0" or " 5000000000", so do not let it through
+    head :unprocessable_content
   end
 end

@@ -219,6 +219,15 @@ RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
       expect(response).to have_http_status(:content_too_large)
     end
 
+    it "refuses a byte_size that is not a plain integer, so the cap cannot be dodged by formatting" do
+      content_login!(create(:user, :volunteer_with_dev_program))
+      ["5000000000.0", " 5000000000", "5e9", "abc", "0x10"].each do |bad|
+        expect { post rails_direct_uploads_path, params: payload.deep_merge(blob: { byte_size: bad }), as: :json }
+          .not_to change(ActiveStorage::Blob, :count)
+        expect([413, 422]).to include(response.status), bad
+      end
+    end
+
     it "rejects a payload without a checksum or byte_size (blob validations)" do
       content_login!(create(:user, :volunteer_with_dev_program))
       post rails_direct_uploads_path, params: { blob: { filename: "x.bin" } }, as: :json
