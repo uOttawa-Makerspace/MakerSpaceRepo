@@ -257,15 +257,23 @@ class ProjectProposalsController < SessionsController
   # PATCH/PUT /project_proposals/1
   def update
     @project_proposal.categories.destroy_all
+    attributes = project_proposal_params.except(:categories)
+    needs_re_review = @project_proposal.approved? && !current_user.admin?
+    attributes = attributes.merge(approved: nil, admin_id: nil) if needs_re_review
     respond_to do |format|
-      if @project_proposal.update(project_proposal_params.except(:categories))
+      if @project_proposal.update(attributes)
         update_photos
         update_files
         create_categories
 
         format.html do
           redirect_to project_proposal_path(@project_proposal.slug),
-                      notice: 'Project proposal was successfully updated.'
+                      notice:
+                        if needs_re_review
+                          'Project proposal was updated. It is pending again and needs to be re-approved by an admin before it is listed publicly.'
+                        else
+                          'Project proposal was successfully updated.'
+                        end
         end
         format.json do
           render json: {

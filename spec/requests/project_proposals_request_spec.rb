@@ -350,6 +350,40 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(pending.reload.title).to eq("Admin Edit")
     end
 
+    it "an owner's edit of an approved proposal sends it back to pending and drops it from the public list" do
+      content_login!(owner)
+      patch project_proposal_path(approved.slug), params: { project_proposal: { title: "Approved Reworked" } }
+      expect(approved.reload).to have_attributes(approved: nil, admin_id: nil, title: "Approved Reworked")
+      expect(flash[:notice]).to include("needs to be re-approved by an admin")
+      reset!
+      get project_proposals_path
+      expect(response.body).not_to include("Approved Reworked")
+    end
+
+    it "an admin sees the re-pended proposal in the Pending Decision filter" do
+      approved.update!(user: owner)
+      content_login!(owner)
+      patch project_proposal_path(approved.slug), params: { project_proposal: { title: "Approved Reworked" } }
+      content_sign_in_as(:admin)
+      get project_proposals_path, params: { status: ["nil"] }
+      expect(response.body).to include("Approved Reworked")
+    end
+
+    it "an admin's edit keeps an approved proposal approved" do
+      admin = content_sign_in_as(:admin)
+      approved.update_columns(admin_id: admin.id)
+      patch project_proposal_path(approved.slug), params: { project_proposal: { title: "Admin Tweak" } }
+      expect(approved.reload).to have_attributes(approved: "approved", admin_id: admin.id, title: "Admin Tweak")
+      expect(flash[:notice]).to eq("Project proposal was successfully updated.")
+    end
+
+    it "an owner's edit of a pending proposal keeps it pending" do
+      content_login!(owner)
+      patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Pending Reworked" } }
+      expect(pending.reload.approved).to be_nil
+      expect(flash[:notice]).to eq("Project proposal was successfully updated.")
+    end
+
     it "the owner cannot reassign user_id or set review fields through mass assignment (D-C36)" do
       content_login!(owner)
       patch project_proposal_path(pending.slug),
