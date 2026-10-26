@@ -106,14 +106,41 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
       expect(mail.subject).to eq("New Request for task: Tour guide")
     end
 
-    # WART(D-V16): no uniqueness / status check: duplicate requests, and requests on completed tasks, are accepted
-    it "accepts duplicate requests and requests for a completed task" do
-      task.update!(status: "completed")
+    # FIXED(D-V16, uniqueness + status parts): no second open/approved request per user and task, none for a completed task
+    it "refuses a duplicate pending request and sends no second email" do
       vol_login!(volunteer)
-      expect { 2.times { request! } }.to change(VolunteerTaskRequest, :count).by(2)
-      expect(vol_deliveries.size).to eq(2)
+      request!
+      expect { request! }.not_to change { [VolunteerTaskRequest.count, vol_deliveries.size] }
+      expect(flash[:alert]).to eq("You have already sent a request for this task.")
     end
 
+    it "refuses a new request after an approved one" do
+      create(:volunteer_task_request, :approved, user: volunteer, volunteer_task: task)
+      vol_login!(volunteer)
+      expect { request! }.not_to change(VolunteerTaskRequest, :count)
+    end
+
+    it "accepts a new request after a rejected one" do
+      create(:volunteer_task_request, :rejected, user: volunteer, volunteer_task: task)
+      vol_login!(volunteer)
+      expect { request! }.to change(VolunteerTaskRequest, :count).by(1)
+    end
+
+    it "refuses a request for a completed task" do
+      task.update!(status: "completed")
+      vol_login!(volunteer)
+      expect { request! }.not_to change { [VolunteerTaskRequest.count, vol_deliveries.size] }
+      expect(flash[:alert]).to eq("This task is already completed.")
+    end
+
+    it "lets two different users each request the same task" do
+      vol_login!(volunteer)
+      request!
+      vol_login!(other_volunteer)
+      expect { request! }.to change(VolunteerTaskRequest, :count).by(1)
+    end
+
+    # INTENDED(D-V14, role part of D-V16): requests stay open to any signed-in user (enrolment is open by design)
     it "lets a regular user (no program) request a task" do
       user = create(:user, :regular_user)
       vol_login!(user)

@@ -81,6 +81,17 @@ class VolunteerTaskRequestsController < SessionsController
 
   def create_request
     volunteer_task = VolunteerTask.find(params[:id])
+    if volunteer_task.status == "completed"
+      flash[:alert] = "This task is already completed."
+      return redirect_back(fallback_location: root_path)
+    end
+    if VolunteerTaskRequest
+         .where(volunteer_task_id: volunteer_task.id, user_id: current_user.id)
+         .where("approval IS NULL OR approval = ?", true)
+         .exists?
+      flash[:alert] = "You have already sent a request for this task."
+      return redirect_back(fallback_location: root_path)
+    end
     volunteer_task_request = VolunteerTaskRequest.new(
       volunteer_task_id: volunteer_task.id,
       user_id: current_user.id
