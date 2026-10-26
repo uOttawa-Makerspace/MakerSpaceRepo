@@ -27,7 +27,7 @@ class Photo < ApplicationRecord
   validates :image,
             file_content_type: {
               allow: [ALLOWED_CONTENT_TYPES],
-              if: -> { image.attached? }
+              if: -> { image.attached? && attachment_changes['image'].present? }
             }
   validates :image, presence: true
 end

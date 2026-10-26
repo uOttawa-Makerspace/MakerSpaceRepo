@@ -211,11 +211,19 @@ RSpec.describe "Content models (part 1 characterization)" do
 
   describe Photo do
     # FIXED(D-C54): the content-type validation runs on every save, not only on create
-    it "validates the content type on every save: swapping in a non-image on update is refused (D-C54)" do
+    it "validates the content type whenever the image is changed: swapping in a non-image on update is refused (D-C54)" do
       photo = create(:photo, :in_repository)
       photo.image.attach(FilesTestHelper.stl)
       expect(photo).not_to be_valid
       expect(photo.errors[:image]).to be_present
+    end
+
+    it "does not re-validate an unchanged legacy image: reordering a photo with an old webp/heic image still saves" do
+      photo = create(:photo, :in_repository)
+      photo.image.blob.update_columns(content_type: "image/heic")
+      photo = Photo.find(photo.id)
+      expect(photo.update(position: 7)).to be(true)
+      expect(photo.reload.position).to eq(7)
     end
 
     it "still accepts a valid image swap on update, and a clean re-save" do
