@@ -4,6 +4,7 @@ class User < ApplicationRecord
   include BCrypt
   include ActiveModel::Serialization
   include UoengConcern
+  include SniffedUploadValidation
 
   # ============================================
   # Constants
@@ -74,6 +75,7 @@ class User < ApplicationRecord
   ].freeze
 
   ALLOWED_AVATAR_TYPES = %w[image/jpeg image/png image/webp image/gif].freeze
+  MAX_AVATAR_SIZE = 5.megabytes
 
   # ============================================
   # Associations
@@ -152,6 +154,12 @@ class User < ApplicationRecord
               allow: ALLOWED_AVATAR_TYPES,
               if: -> { avatar.attached? }
             }
+
+  # D-I17: also check what the bytes are (no filename/declared-type fallback) and cap the size
+  validates_sniffed_upload :avatar,
+                           allow: ALLOWED_AVATAR_TYPES,
+                           max_size: -> { MAX_AVATAR_SIZE },
+                           name_fallback: false
 
   validates :name,
             presence: true,

@@ -265,11 +265,29 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       expect(user.reload.avatar).not_to be_attached
     end
 
-    it "validates by declared content type only: an stl bytes file labelled image/png is accepted" do
-      # WART(D-I17): avatar validation trusts the client-declared content type (file_content_type) so non-image bytes labelled image/png are stored
+    # FIXED(D-I17): the avatar is validated by sniffed content (not the declared type, not the filename) and size
+    it "refuses non-image bytes labelled image/png (D-I17)" do
       login!(user)
       fake = Rack::Test::UploadedFile.new("spec/support/assets/test.stl", "image/png")
       patch user_path(user.username), params: { user: { avatar: fake } }
+      expect(flash[:alert]).to start_with("Could not save changes.")
+      expect(user.reload.avatar).not_to be_attached
+    end
+
+    it "refuses text bytes named .png and labelled image/png" do
+      login!(user)
+      fake = Rack::Test::UploadedFile.new(StringIO.new("<script>alert(1)</script>"), "image/png", original_filename: "me.png")
+      patch user_path(user.username), params: { user: { avatar: fake } }
+      expect(user.reload.avatar).not_to be_attached
+    end
+
+    it "refuses an avatar over the size cap but accepts one under it" do
+      stub_const("User::MAX_AVATAR_SIZE", AvatarTestHelper.png.size - 1)
+      login!(user)
+      patch user_path(user.username), params: { user: { avatar: AvatarTestHelper.png } }
+      expect(user.reload.avatar).not_to be_attached
+      stub_const("User::MAX_AVATAR_SIZE", AvatarTestHelper.png.size + 1)
+      patch user_path(user.username), params: { user: { avatar: AvatarTestHelper.png } }
       expect(user.reload.avatar).to be_attached
     end
 
