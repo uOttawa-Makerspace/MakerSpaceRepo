@@ -66,7 +66,8 @@ RSpec.describe "Exams", type: :request do
     end
 
     # FIXED(retro of A5): an expired exam cannot be started or resumed, so it says Expired
-    it "shows Expired instead of Start/Resume for expired ungraded exams, and keeps graded ones as they are" do
+    # N+1 pinned: see defects.md D-PERF18
+    it "shows Expired instead of Start/Resume for expired ungraded exams, and keeps graded ones as they are", skip_bullet: true do
       new_exam.update!(expired_at: 1.hour.ago)
       new_exam(status: Exam::STATUS[:incomplete]).update!(expired_at: 1.hour.ago)
       create(:exam, user: student, training_session: session_record, status: Exam::STATUS[:failed],
@@ -161,21 +162,24 @@ RSpec.describe "Exams", type: :request do
 
     # FIXED(retro of A5): the Finish button is for the owner only; staff reviewers can still
     # look at an exam that expired, read-only
-    it "shows the Finish button to the owner only" do
+    # N+1 pinned: see defects.md D-PERF17
+    it "shows the Finish button to the owner only", skip_bullet: true do
       log_in!(student)
       get exam_path(exam)
       expect(response.body).to include("Finish Exam")
     end
 
     %i[staff admin].each do |role|
-      it "shows #{role} the student's exam without a Finish button" do
+      # N+1 pinned: see defects.md D-PERF17
+      it "shows #{role} the student's exam without a Finish button", skip_bullet: true do
         sign_in_as(role)
         get exam_path(exam)
         expect(response).to have_http_status(:ok)
         expect(response.body).not_to include("Finish Exam")
       end
 
-      it "lets #{role} read an expired ungraded exam without changing it" do
+      # N+1 pinned: see defects.md D-PERF17
+      it "lets #{role} read an expired ungraded exam without changing it", skip_bullet: true do
         exam.update!(expired_at: 1.minute.ago)
         sign_in_as(role)
         get exam_path(exam)

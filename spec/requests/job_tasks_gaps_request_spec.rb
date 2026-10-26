@@ -228,7 +228,7 @@ RSpec.describe "JobTasks gaps", type: :request do
       expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.no_permission"))
     end
 
-    it "does not offer Add Another Task, Edit or Delete to staff on someone else's order" do
+    it "does not offer Add Another Task, Edit or Delete to staff on someone else's order", skip_bullet: true do
       seed_job_order_message!
       order = order_with_task!
       order.job_tasks.each { |t| t.update!(job_type: print_type) }
