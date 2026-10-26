@@ -239,6 +239,7 @@ Rails.application.routes.draw do
 
   # HELP
   resource :help, only: [:show, :create], controller: "help"
+  put "send_email", to: "help#send_email"
 
   # keep index singular, rename path
   # don't define second resourece, that breaks HTTP verbs
