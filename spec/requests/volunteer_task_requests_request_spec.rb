@@ -87,11 +87,16 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
   end
 
   describe "GET /volunteer_task_requests/create_request" do
+    def assign!(user, to: task)
+      create(:volunteer_task_join, :active, volunteer_task: to, user: user)
+    end
+
     def request!(id = task.id, headers: {})
       perform_enqueued_jobs { get create_request_volunteer_task_requests_path(id: id), headers: headers }
     end
 
     it "creates a pending request, redirects back with a notice, emails the requester with staff bcc'd" do
+      assign!(volunteer)
       vol_login!(volunteer)
       expect { request!(headers: { "HTTP_REFERER" => volunteer_task_url(task) }) }
         .to change(VolunteerTaskRequest, :count).by(1)
@@ -108,6 +113,7 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
 
     # FIXED(D-V16, uniqueness + status parts): no second open/approved request per user and task, none for a completed task
     it "refuses a duplicate pending request and sends no second email" do
+      assign!(volunteer)
       vol_login!(volunteer)
       request!
       expect { request! }.not_to change { [VolunteerTaskRequest.count, vol_deliveries.size] }
@@ -116,26 +122,31 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
 
     it "refuses a new request after an approved one" do
       create(:volunteer_task_request, :approved, user: volunteer, volunteer_task: task)
+      assign!(volunteer)
       vol_login!(volunteer)
       expect { request! }.not_to change(VolunteerTaskRequest, :count)
     end
 
     it "accepts a new request after a rejected one" do
       create(:volunteer_task_request, :rejected, user: volunteer, volunteer_task: task)
+      assign!(volunteer)
       vol_login!(volunteer)
       expect { request! }.to change(VolunteerTaskRequest, :count).by(1)
     end
 
     it "refuses a request for a completed task" do
       task.update!(status: "completed")
+      assign!(volunteer)
       vol_login!(volunteer)
       expect { request! }.not_to change { [VolunteerTaskRequest.count, vol_deliveries.size] }
       expect(flash[:alert]).to eq("This task is already completed.")
     end
 
     it "lets two different users each request the same task" do
+      assign!(volunteer)
       vol_login!(volunteer)
       request!
+      assign!(other_volunteer)
       vol_login!(other_volunteer)
       expect { request! }.to change(VolunteerTaskRequest, :count).by(1)
     end
@@ -143,7 +154,39 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
     # INTENDED(D-V14, role part of D-V16): requests stay open to any signed-in user (enrolment is open by design)
     it "lets a regular user (no program) request a task" do
       user = create(:user, :regular_user)
+      assign!(user)
       vol_login!(user)
+      expect { request! }.to change(VolunteerTaskRequest, :count).by(1)
+    end
+
+    # FIXED(create_request assignment): only a user with an active join on the task may file the request
+    it "refuses a user who never joined the task and creates nothing" do
+      vol_login!(volunteer)
+      expect { request! }.not_to change { [VolunteerTaskRequest.count, vol_deliveries.size] }
+      expect(flash[:alert]).to eq("You must be assigned to this task to submit it.")
+    end
+
+    it "refuses a user whose join is no longer active" do
+      create(:volunteer_task_join, :not_active, volunteer_task: task, user: volunteer)
+      vol_login!(volunteer)
+      expect { request! }.not_to change(VolunteerTaskRequest, :count)
+    end
+
+    it "refuses a user who is joined to a different task only" do
+      assign!(volunteer, to: create(:volunteer_task))
+      vol_login!(volunteer)
+      expect { request! }.not_to change(VolunteerTaskRequest, :count)
+    end
+
+    it "refuses unassigned staff" do
+      vol_login!(create(:user, :staff))
+      expect { request! }.not_to change(VolunteerTaskRequest, :count)
+    end
+
+    it "lets assigned staff file the request" do
+      staff = create(:user, :staff)
+      create(:volunteer_task_join, :active_not_volunteer, volunteer_task: task, user: staff)
+      vol_login!(staff)
       expect { request! }.to change(VolunteerTaskRequest, :count).by(1)
     end
 
@@ -155,6 +198,7 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
     end
 
     it "404s for a nonexistent task and creates nothing" do
+      assign!(volunteer)
       vol_login!(volunteer)
       expect { request!(999_999) }.not_to change(VolunteerTaskRequest, :count)
       expect(response).to have_http_status(:not_found)

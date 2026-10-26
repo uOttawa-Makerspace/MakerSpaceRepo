@@ -63,6 +63,7 @@ RSpec.describe VolunteerTaskRequestsController, type: :controller do
         session[:user_id] = volunteer.id
         session[:expires_at] = Time.zone.now + 10_000
         create(:volunteer_task)
+        create(:volunteer_task_join, :active, user: volunteer, volunteer_task: VolunteerTask.last)
 
         expect {
           get :create_request, params: { id: VolunteerTask.last.id }

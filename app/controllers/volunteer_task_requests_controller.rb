@@ -81,6 +81,10 @@ class VolunteerTaskRequestsController < SessionsController
 
   def create_request
     volunteer_task = VolunteerTask.find(params[:id])
+    unless volunteer_task.volunteer_task_joins.active.exists?(user_id: current_user.id)
+      flash[:alert] = "You must be assigned to this task to submit it."
+      return redirect_back(fallback_location: root_path)
+    end
     if volunteer_task.status == "completed"
       flash[:alert] = "This task is already completed."
       return redirect_back(fallback_location: root_path)
