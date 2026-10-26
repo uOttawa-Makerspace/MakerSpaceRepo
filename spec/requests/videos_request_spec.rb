@@ -187,8 +187,10 @@ RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
       expect(response).to have_http_status(:unauthorized)
     end
 
-    it "does not pin the reloadable ApplicationHelper into the engine controller" do
-      expect(ActiveStorage::DirectUploadsController.ancestors).not_to include(ApplicationHelper)
+    it "does not depend on the reloadable ApplicationHelper (it is not called for the sign-in check)" do
+      allow_any_instance_of(ApplicationHelper).to receive(:signed_in?).and_raise("ApplicationHelper#signed_in? must not be used here")
+      post rails_direct_uploads_path, params: payload, as: :json
+      expect(response).to have_http_status(:unauthorized)
     end
 
     it "refuses an expired JWT" do
