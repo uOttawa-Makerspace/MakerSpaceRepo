@@ -1,6 +1,6 @@
 class RepositoriesController < SessionsController
   include BCrypt
-  before_action :current_user, :check_session
+  before_action :current_user
   before_action :signed_in, except: %i[show download_files]
   before_action :set_repository,
                 only: %i[
@@ -254,11 +254,17 @@ class RepositoriesController < SessionsController
   end
 
   def pass_authenticate
-    @auth = Repository.authenticate(params[:id], params[:password])
+    unless @repository.private?
+      redirect_to repository_path(@repository.user_username, @repository.slug) and return
+    end
+
+    @auth =
+      @repository.password.present? &&
+        Repository.authenticate(@repository.id, params[:password])
     respond_to do |format|
       if @auth
         @authorized = true
-        authorized_repo_ids << params[:id]
+        authorized_repo_ids << @repository.id
         flash[:notice] = "Success"
         format.html do
           redirect_to repository_path(
@@ -401,18 +407,8 @@ class RepositoriesController < SessionsController
     end
   end
 
-  def check_session
-    @authorized = true if authorized_repo_ids.include? params[:id]
-  end
-
   def check_auth
-    @check_passed =
-      if @authorized || @user.admin? || @user.staff? ||
-           @repository.user_username.casecmp?(@user.username)
-        true
-      else
-        false
-      end
+    @check_passed = repository_unlocked?(@repository)
   end
 
   def set_repository

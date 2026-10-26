@@ -119,13 +119,20 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
         end
       end
 
-      it "does NOT let a collaborator (in users, not the owner) in without the password" do
+      it "lets a collaborator (in users, not the owner) in without the password (D-C02)" do
         collaborator = create(:user, :regular_user)
         secret.users << collaborator
         content_login!(collaborator)
         get repo_path(secret)
-        # WART(D-C02): check_auth only whitelists the owner's username, not repository.users
-        expect(response).to redirect_to(password_entry_repository_path(owner.username, secret.id))
+        # FIXED(D-C02): members of repository.users are authorized like the owner
+        expect(response).to have_http_status(:ok)
+      end
+
+      it "lets the owner in by user_id even when not in users (D-C02)" do
+        secret.users.clear
+        content_login!(owner)
+        get repo_path(secret)
+        expect(response).to have_http_status(:ok)
       end
     end
   end
@@ -163,13 +170,13 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(response).to redirect_to(repository_path(owner.username, repo.id))
     end
 
-    it "a correct password redirects to the slug URL, which asks for the password again (redirect loop) (D-C03)" do
+    it "a correct password redirects to the slug URL, which is then accepted (D-C03)" do
       post pass_authenticate_repository_path(owner.username, secret.id), params: { password: "open-sesame" }
       expect(response).to redirect_to(repo_path(secret))
       expect(flash[:notice]).to eq("Success")
       follow_redirect!
-      # WART(D-C03): the session whitelist stores the raw URL id; the success redirect uses the slug, so it is not recognised
-      expect(response).to redirect_to(password_entry_repository_path(owner.username, secret.id))
+      # FIXED(D-C03): the session stores the repository id, so the slug URL is recognised
+      expect(response).to have_http_status(:ok)
     end
 
     it "the numeric-id URL is recognised after a correct password" do
@@ -178,13 +185,25 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
-    it "authorization is remembered per params[:id]: the numeric id passes, the slug does not (D-C03)" do
+    it "authorization is remembered per repository: id, slug and title all pass, other repositories stay locked (D-C03)" do
+      other = create(:repository, :private, owner: owner, title: "Other Secret", users: [owner])
       post pass_authenticate_repository_path(owner.username, secret.id), params: { password: "open-sesame" }
       get repository_path(owner.username, secret.id)
       expect(response).to have_http_status(:ok)
       get repository_path(owner.username, secret.title)
-      # WART(D-C03): the session whitelist stores the raw URL id string, so the slug URL still asks for the password
-      expect(response).to redirect_to(password_entry_repository_path(owner.username, secret.id))
+      # FIXED(D-C03): whitelist is by repository id, normalised across id/slug/title
+      expect(response).to have_http_status(:ok)
+      get repo_path(secret)
+      expect(response).to have_http_status(:ok)
+      get repo_path(other)
+      expect(response).to redirect_to(password_entry_repository_path(owner.username, other.id))
+    end
+
+    it "pass_authenticate posted to the slug URL also unlocks (D-C03)" do
+      post pass_authenticate_repository_path(owner.username, secret.slug), params: { password: "open-sesame" }
+      expect(flash[:notice]).to eq("Success")
+      get repository_path(owner.username, secret.id)
+      expect(response).to have_http_status(:ok)
     end
 
     it "a wrong password redirects back with an alert and grants nothing" do
@@ -205,10 +224,10 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(flash[:notice]).to eq("Success")
     end
 
-    it "pass_authenticate on a public repository (blank stored password) raises (D-C05)" do
-      # WART(D-C05): BCrypt::Password.new(nil) raises InvalidHash -> 500
+    it "pass_authenticate on a public repository redirects to show instead of raising (D-C05)" do
       post pass_authenticate_repository_path(owner.username, repo.id), params: { password: "x" }
-      expect(response).to have_http_status(:internal_server_error)
+      # FIXED(D-C05): a public repository has no password to check; go to show
+      expect(response).to redirect_to(repo_path)
     end
   end
 
