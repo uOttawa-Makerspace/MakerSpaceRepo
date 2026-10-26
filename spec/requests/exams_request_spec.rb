@@ -65,6 +65,20 @@ RSpec.describe "Exams", type: :request do
       expect(response.body.scan("Resume Exam").size).to eq(1)
     end
 
+    # FIXED(retro of A5): an expired exam cannot be started or resumed, so it says Expired
+    it "shows Expired instead of Start/Resume for expired ungraded exams, and keeps graded ones as they are" do
+      new_exam.update!(expired_at: 1.hour.ago)
+      new_exam(status: Exam::STATUS[:incomplete]).update!(expired_at: 1.hour.ago)
+      create(:exam, user: student, training_session: session_record, status: Exam::STATUS[:failed],
+                    score: 10, expired_at: 1.hour.ago)
+      log_in!(student)
+      get exams_path
+      expect(response.body).not_to include("Start Exam")
+      expect(response.body).not_to include("Resume Exam")
+      expect(response.body.scan("Expired").size).to eq(4) # status + action, for two exams
+      expect(response.body).to include("Failed")
+    end
+
     it "does not list other users' exams even to an admin, but offers the admin a Delete button" do
       admin = sign_in_as(:admin)
       mine = create(:exam, user: admin, training_session: session_record)
