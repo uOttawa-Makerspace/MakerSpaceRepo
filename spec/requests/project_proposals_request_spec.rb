@@ -119,11 +119,30 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
-    it "renders edit for a guest on someone else's proposal (D-C34, severity 1)" do
+    it "sends a guest to the login page instead of rendering edit (D-C34)" do
       get edit_project_proposal_path(pending.slug)
-      # WART(D-C34): no auth/ownership on edit: any visitor can open any proposal's edit form (email, client details)
+      # FIXED(D-C34): edit requires sign-in, then ownership or admin
+      expect(response).to redirect_to(login_path(back_to: edit_project_proposal_path(pending.slug)))
+      expect(response.body).not_to include(pending.email)
+    end
+
+    it "refuses edit to a stranger and to staff (D-C34)" do
+      [create(:user, :regular_user), create(:user, :staff)].each do |user|
+        content_login!(user)
+        get edit_project_proposal_path(pending.slug)
+        expect(response).to redirect_to(project_proposals_path)
+        expect(flash[:alert]).to eq("You are not allowed to modify this project proposal.")
+      end
+    end
+
+    it "renders edit for the owner and for an admin (D-C34)" do
+      content_login!(owner)
+      get edit_project_proposal_path(pending.slug)
       expect(response).to have_http_status(:ok)
       expect(response.body).to include(pending.email)
+      content_sign_in_as(:admin)
+      get edit_project_proposal_path(pending.slug)
+      expect(response).to have_http_status(:ok)
     end
   end
 
@@ -240,14 +259,33 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
   end
 
   describe "PATCH update" do
-    it "lets a guest rewrite anyone's proposal, including approving it (D-C38, severity 1)" do
-      patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Hijacked", approved: "approved" } }
-      # WART(D-C38): update has no auth or ownership check (the review fields are no longer permitted: FIXED(D-C36))
-      pending.reload
-      expect(pending.title).to eq("Hijacked")
-      expect(pending.approved).to be_nil
-      expect(response).to redirect_to(project_proposal_path(pending.slug))
+    it "does not let a guest rewrite a proposal (D-C38)" do
+      patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Hijacked" } }
+      # FIXED(D-C38): update requires sign-in, then ownership or admin
+      expect(response).to redirect_to(login_path(back_to: project_proposal_path(pending.slug)))
+      expect(pending.reload.title).to eq("Pending One")
+    end
+
+    it "does not let a stranger or staff rewrite a proposal (D-C38)" do
+      [create(:user, :regular_user), create(:user, :staff)].each do |user|
+        content_login!(user)
+        patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Hijacked" } }
+        expect(response).to redirect_to(project_proposals_path)
+        expect(flash[:alert]).to eq("You are not allowed to modify this project proposal.")
+        patch project_proposal_path(pending.slug, format: :json), params: { project_proposal: { title: "Hijacked" } }
+        expect(response).to have_http_status(:forbidden)
+        expect(pending.reload.title).to eq("Pending One")
+      end
+    end
+
+    it "lets the owner and an admin edit (D-C38)" do
+      content_login!(owner)
+      patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Owner Edit" } }
+      expect(response).to redirect_to(project_proposal_path(pending.reload.slug))
       expect(flash[:notice]).to eq("Project proposal was successfully updated.")
+      content_sign_in_as(:admin)
+      patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Admin Edit" } }
+      expect(pending.reload.title).to eq("Admin Edit")
     end
 
     it "the owner cannot reassign user_id or set review fields through mass assignment (D-C36)" do
@@ -264,6 +302,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     end
 
     it "replaces categories, JSON answers with the uri" do
+      content_login!(owner)
       Category.create!(name: "Old", project_proposal_id: pending.id)
       patch project_proposal_path(pending.slug, format: :json),
             params: { project_proposal: { title: "Retitled", categories: %w[New] } }
@@ -272,6 +311,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     end
 
     it "wipes categories even when the update is invalid (D-C39)" do
+      content_login!(owner)
       Category.create!(name: "Old", project_proposal_id: pending.id)
       patch project_proposal_path(pending.slug), params: { project_proposal: { title: "" } }
       expect(response).to have_http_status(:unprocessable_content)
@@ -280,11 +320,13 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     end
 
     it "re-slugs to '<id>.<title>' on update" do
+      content_login!(owner)
       patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Zed Title" } }
       expect(pending.reload.slug).to eq("#{pending.id}.zed-title")
     end
 
     it "adds and deletes attachments (by filename or attachment id)" do
+      content_login!(owner)
       pending.photos.attach(io: File.open(Rails.root.join("spec/support/assets/avatar.png")), filename: "keep.png", content_type: "image/png")
       pending.photos.attach(io: File.open(Rails.root.join("spec/support/assets/avatar.png")), filename: "drop.png", content_type: "image/png")
       patch project_proposal_path(pending.slug),

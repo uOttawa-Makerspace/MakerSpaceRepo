@@ -5,6 +5,8 @@ class ProjectProposalsController < SessionsController
 
   before_action :set_project_proposal, only: %i[show edit update destroy]
   before_action :current_user
+  before_action :signed_in, only: %i[edit update]
+  before_action :require_owner_or_admin, only: %i[edit update]
 
   # GET /project_proposals
   def index
@@ -323,6 +325,23 @@ class ProjectProposalsController < SessionsController
   end
 
   private
+
+  def owner_or_admin?(proposal)
+    current_user.admin? ||
+      (proposal.user_id.present? && proposal.user_id == current_user.id)
+  end
+
+  def require_owner_or_admin
+    return if owner_or_admin?(@project_proposal)
+
+    respond_to do |format|
+      format.html do
+        redirect_to project_proposals_path,
+                    alert: 'You are not allowed to modify this project proposal.'
+      end
+      format.json { head :forbidden }
+    end
+  end
 
   def create_photos
     images = params[:images] || params.dig(:project_proposal, :images)
