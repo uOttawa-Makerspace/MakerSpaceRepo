@@ -401,9 +401,7 @@ class ProjectProposalsController < SessionsController
     files = params[:files] || params.dig(:project_proposal, :files)
     return unless files.present?
 
-    files.each do |f|
-      @project_proposal.project_files.attach(f)
-    end
+    attach_project_files(files)
   end
 
   def update_photos
@@ -438,9 +436,24 @@ class ProjectProposalsController < SessionsController
     files = params[:files] || params.dig(:project_proposal, :files)
     return unless files.present?
 
+    attach_project_files(files)
+  end
+
+  # Attaches the files one at a time. ProjectProposal validates each file (sniffed type
+  # and size); a refused file stays pending on the record and would make every later
+  # attach and save fail, so it is dropped and reported to the user instead.
+  def attach_project_files(files)
+    refused = []
     files.each do |f|
-      @project_proposal.project_files.attach(f)
+      next if @project_proposal.project_files.attach(f)
+
+      refused << (f.respond_to?(:original_filename) ? f.original_filename : f.to_s)
+      @project_proposal.attachment_changes.delete('project_files')
+      @project_proposal.errors.clear
     end
+    return if refused.empty?
+
+    flash[:alert] = "These files were not uploaded because their type or size is not allowed: #{refused.join(', ')}"
   end
 
   def set_project_proposal

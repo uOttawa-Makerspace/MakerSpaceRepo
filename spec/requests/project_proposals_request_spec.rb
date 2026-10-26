@@ -291,14 +291,22 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
 
     # FIXED(D-C37): ProjectProposal validates project_files (sniffed type + size) in the model
     it "attaches up to 5 images and any number of allowed files, but not an executable (D-C37)" do
-      # the controller attaches one by one; a rejected file stays pending on the record, so keep it last
-      files = [content_pdf_upload, content_named_upload("a.stl", content: "solid x\nfacet normal 0 0 0\n", type: "model/stl"),
-               content_named_upload("run.exe", type: "application/x-msdownload")]
+      files = [content_pdf_upload, content_named_upload("run.exe", type: "application/x-msdownload"),
+               content_named_upload("a.stl", content: "solid x\nfacet normal 0 0 0\n", type: "model/stl")]
       imgs = Array.new(6) { content_png_upload }
       post project_proposals_path, params: { images: imgs, files: files }.merge(proposal_params)
       pp = ProjectProposal.find_by(title: "New Idea")
       expect(pp.photos.count).to eq(5)
       expect(pp.project_files.map { |f| f.filename.to_s }).to contain_exactly("RepoFile1.pdf", "a.stl")
+    end
+
+    it "keeps the good files after a refused one and tells the user which file was refused" do
+      files = [content_named_upload("run.exe", type: "application/x-msdownload"), content_named_upload("ok.txt", content: "tiny")]
+      post project_proposals_path, params: { files: files }.merge(proposal_params)
+      pp = ProjectProposal.find_by(title: "New Idea")
+      expect(pp.project_files.map { |f| f.filename.to_s }).to eq(["ok.txt"])
+      expect(flash[:alert]).to include("run.exe")
+      expect(flash[:alert]).not_to include("ok.txt")
     end
 
     it "does not store an executable disguised as a pdf" do
@@ -344,6 +352,15 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
   end
 
   describe "PATCH update" do
+    it "keeps the good files after a refused one on update and reports the refused name" do
+      content_login!(owner)
+      mine = pending
+      files = [content_named_upload("run.exe", type: "application/x-msdownload"), content_named_upload("ok.txt", content: "tiny")]
+      patch project_proposal_path(mine.slug), params: { project_proposal: { title: "Pending One" }, files: files }
+      expect(mine.reload.project_files.map { |f| f.filename.to_s }).to eq(["ok.txt"])
+      expect(flash[:alert]).to include("run.exe")
+    end
+
     it "does not let a guest rewrite a proposal (D-C38)" do
       patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Hijacked" } }
       # FIXED(D-C38): update requires sign-in, then ownership or admin
