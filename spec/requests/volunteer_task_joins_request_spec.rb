@@ -3,7 +3,7 @@
 require "rails_helper"
 
 # Chunk 13: VolunteerTaskJoinsController. It inherits only SessionsController:
-# NO sign-in, role or ownership gate on either action.
+# `create` has NO sign-in or role gate; `remove` needs sign-in plus owner or staff (D-V15).
 RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
   let(:task) { create(:volunteer_task, title: "open house", joins: 1) }
   let(:volunteer) { create(:user, :volunteer_with_volunteer_program) }
@@ -177,33 +177,52 @@ RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
     end
 
     it "frees the seat for another volunteer" do
-      vol_login!(other_volunteer)
+      vol_login!(volunteer)
       post remove_volunteer_task_joins_path, params: remove_params
+      vol_login!(other_volunteer)
       post volunteer_task_joins_path, params: join_params
       expect(task.volunteer_task_joins.pluck(:user_id)).to eq([other_volunteer.id])
     end
 
-    # WART(D-V15): remove has no auth/ownership check: any volunteer removes anyone, and a GUEST can too (unauthenticated write)
-    it "lets another volunteer remove someone else" do
+    # FIXED(D-V15): remove needs sign-in, and the target must be the caller or the caller must be staff
+    it "refuses another volunteer removing someone else" do
       vol_login!(other_volunteer)
-      expect { post remove_volunteer_task_joins_path, params: remove_params }.to change(VolunteerTaskJoin, :count).by(-1)
+      expect { post remove_volunteer_task_joins_path, params: remove_params }.not_to change(VolunteerTaskJoin, :count)
+      expect(flash[:alert]).to eq("You are not authorized to remove this user from the task.")
     end
 
-    it "lets a guest remove a volunteer from a task" do
+    it "refuses a regular user removing someone else" do
+      vol_login!(create(:user, :regular_user))
+      expect { post remove_volunteer_task_joins_path, params: remove_params }.not_to change(VolunteerTaskJoin, :count)
+    end
+
+    it "redirects a guest to login and removes nothing" do
+      expect { post remove_volunteer_task_joins_path, params: remove_params }.not_to change(VolunteerTaskJoin, :count)
+      expect(response).to redirect_to(login_path(back_to: remove_volunteer_task_joins_path))
+    end
+
+    it "lets staff remove anyone" do
+      vol_login!(create(:user, :staff))
       expect { post remove_volunteer_task_joins_path, params: remove_params }.to change(VolunteerTaskJoin, :count).by(-1)
-      expect(response).to redirect_to(root_path)
       expect(flash[:notice]).to eq("User was removed from the Volunteer Task")
+    end
+
+    it "lets an admin remove anyone" do
+      vol_login!(create(:user, :admin))
+      expect { post remove_volunteer_task_joins_path, params: remove_params }.to change(VolunteerTaskJoin, :count).by(-1)
     end
 
     it "destroys only one join when duplicates exist" do
       create(:volunteer_task_join, :active, volunteer_task: task, user: volunteer)
+      vol_login!(volunteer)
       expect { post remove_volunteer_task_joins_path, params: remove_params }.to change(VolunteerTaskJoin, :count).by(-1)
     end
 
-    it "500s when no such join exists" do
+    it "404s when no such join exists" do
+      vol_login!(other_volunteer)
       post remove_volunteer_task_joins_path,
            params: { volunteer_task_join: { user_id: other_volunteer.id, volunteer_task_id: task.id } }
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:not_found)
     end
   end
 end
