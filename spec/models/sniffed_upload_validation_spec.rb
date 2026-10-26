@@ -27,6 +27,20 @@ RSpec.describe SniffedUploadValidation do
     expect(proposal.reload.project_files).not_to be_attached
   end
 
+  it "opens a Pathname attachable in block form so the descriptor is closed" do
+    path = Pathname.new(Dir.mktmpdir("a9")).join("note.txt")
+    path.write("hello")
+    block_forms = []
+    allow(path).to receive(:open).and_wrap_original do |orig, *args, &blk|
+      block_forms << !blk.nil?
+      blk ? orig.call(*args, &blk) : orig.call(*args)
+    end
+    pp = build(:project_proposal)
+    pp.project_files.attach(path)
+    pp.valid?
+    expect(block_forms).to include(true) # the sniff; ActiveStorage's own open is the non-block one
+  end
+
   it "stores the allowed blob on its own" do
     proposal.project_files.attach(fine.signed_id)
     expect(proposal.reload.project_files.map { |f| f.filename.to_s }).to eq(["ok.txt"])

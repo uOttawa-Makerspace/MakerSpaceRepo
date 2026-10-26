@@ -91,23 +91,23 @@ module SniffedUploadValidation
   end
 
   def upload_leading_bytes(attachable, blob)
-    io =
-      case attachable
-      when ActionDispatch::Http::UploadedFile, Rack::Test::UploadedFile then attachable.tempfile
-      when Hash then attachable[:io]
-      when File then attachable
-      when Pathname then attachable.open
-      end
-    if io
-      io.rewind
-      data = io.read(SNIFF_BYTES).to_s
-      io.rewind
-      data
-    elsif blob.persisted?
-      download_leading_bytes(blob)
+    case attachable
+    when ActionDispatch::Http::UploadedFile, Rack::Test::UploadedFile then read_head(attachable.tempfile)
+    when Hash then read_head(attachable[:io])
+    when File then read_head(attachable)
+    when Pathname then attachable.open { |file| read_head(file) }
+    else
+      download_leading_bytes(blob) if blob.persisted?
     end
   rescue Errno::ENOENT
     nil
+  end
+
+  def read_head(io)
+    io.rewind
+    data = io.read(SNIFF_BYTES).to_s
+    io.rewind
+    data
   end
 
   # A missing or zero-byte object (S3 416 InvalidRange), or any service/network
