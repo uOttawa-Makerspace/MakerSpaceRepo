@@ -17,33 +17,33 @@ module SniffedUploadValidation
 
   SNIFF_BYTES = 64.kilobytes
 
-  # Broad allow-list for user "project files" (repositories, project proposals):
-  # documents, archives, images, text/source, CAD/3D. Opaque formats with no magic
-  # bytes (STEP, OBJ, gcode ...) sniff as application/octet-stream, so that is
-  # allowed; executables, scripts and HTML are identified by magic and refused.
-  GENERAL_FILE_TYPES = [
-    %r{\Aimage/(jpeg|png|gif|webp|bmp|tiff|x-icon|vnd\.microsoft\.icon|svg\+xml|vnd\.dxf)\z},
-    %r{\Avideo/(mp4|quicktime|x-msvideo|webm)\z},
-    %r{\Amodel/},
-    %r{\Atext/(?!html)},
-    %r{\Aapplication/(
-      pdf|octet-stream|json|zip|x-zip-compressed|gzip|x-gzip|x-tar|x-7z-compressed|vnd\.rar|x-rar-compressed|
-      msword|vnd\.ms-[a-z.-]+|vnd\.openxmlformats-officedocument\.[a-z.-]+|vnd\.oasis\.opendocument\.[a-z.-]+|
-      vnd\.ms-pki\.stl|sla|x-dxf
-    )\z}x
+  # Sniffed types refused for general user "project files" (repositories, project
+  # proposals). These are open-ended (CAD, Illustrator, SolidWorks, EPS, HEIC, audio,
+  # xml ...), so a denylist of dangerous types is used instead of an allow-list:
+  # native executables, scripts, and html/xhtml.
+  DANGEROUS_FILE_TYPES = [
+    # executables / installers / libraries
+    %r{\Aapplication/(x-dosexec|x-msdownload|x-msdos-program|x-ms-dos-executable|x-executable|x-elf|x-sharedlib|
+      x-pie-executable|x-mach-binary|x-msi|vnd\.microsoft\.portable-executable|vnd\.android\.package-archive|
+      x-apple-diskimage|x-ms-shortcut)\z}x,
+    # shell / scripting languages
+    %r{\A(application|text)/(x-)?(sh|shellscript|csh|bat|msdos-batch|javascript|ecmascript|php|httpd-php|python|perl|
+      ruby|powershell)\z}x,
+    # markup that browsers execute
+    %r{\A(text/html|application/xhtml\+xml)\z}
   ].freeze
 
   class_methods do
-    def validates_sniffed_upload(*names, allow:, max_size:, name_fallback: true, **options)
+    def validates_sniffed_upload(*names, max_size:, allow: nil, deny: nil, name_fallback: true, **options)
       validate(**options) do
-        names.each { |name| validate_sniffed_upload(name, allow, max_size, name_fallback) }
+        names.each { |name| validate_sniffed_upload(name, allow, deny, max_size, name_fallback) }
       end
     end
   end
 
   private
 
-  def validate_sniffed_upload(name, allow, max_size, name_fallback)
+  def validate_sniffed_upload(name, allow, deny, max_size, name_fallback)
     max_size = max_size.call if max_size.respond_to?(:call)
     new_uploads_for(name).each do |attachable, blob|
       # Only a blob already attached to this record (re-linked by a later `attach`) was
@@ -56,7 +56,8 @@ module SniffedUploadValidation
         errors.add(name, "#{filename} is too large (maximum is #{ActiveSupport::NumberHelper.number_to_human_size(max_size)})")
       end
       sniffed = sniffed_upload_types[blob] ||= sniff_upload(attachable, blob, name_fallback)
-      unless sniffed && Array(allow).any? { |type| type === sniffed }
+      if sniffed.nil? || (allow && Array(allow).none? { |type| type === sniffed }) ||
+         Array(deny).any? { |type| type === sniffed }
         errors.add(name, "#{filename} has a file type that is not allowed (#{sniffed || 'unreadable'})")
       end
     end

@@ -51,7 +51,7 @@ module ContentSpecHelpers
   def content_named_upload(filename, content: "hello", type: "text/plain")
     dir = Dir.mktmpdir("content-upload")
     path = File.join(dir, "payload")
-    File.write(path, content)
+    File.binwrite(path, content)
     Rack::Test::UploadedFile.new(path, type, original_filename: filename)
   end
 end

@@ -38,7 +38,7 @@ class RepoFile < ApplicationRecord
                            max_size: -> { MAX_FILE_SIZE },
                            if: -> { proficient_project_id.present? }
   validates_sniffed_upload :file,
-                           allow: SniffedUploadValidation::GENERAL_FILE_TYPES,
+                           deny: SniffedUploadValidation::DANGEROUS_FILE_TYPES,
                            max_size: -> { MAX_FILE_SIZE },
                            unless: -> { proficient_project_id.present? }
 

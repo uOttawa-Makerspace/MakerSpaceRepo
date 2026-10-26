@@ -36,3 +36,43 @@ RSpec.describe SniffedUploadValidation do
     expect(proposal.reload.project_files).not_to be_attached
   end
 end
+
+# Denylist for general project files: formats Marcel sniffs to types an allow-list would have missed
+RSpec.describe SniffedUploadValidation, "general project-file denylist" do
+  include ContentSpecHelpers
+
+  let(:proposal) { build(:project_proposal) }
+
+  def valid_with?(name, content, type = "application/octet-stream")
+    pp = build(:project_proposal)
+    pp.project_files.attach(content_named_upload(name, content: content, type: type))
+    pp.valid?
+  end
+
+  {
+    "design.ai" => "%PDF-1.5\n%\xC2\xB5\xC2\xB6\nAdobe Illustrator",
+    "map.xml" => "<?xml version='1.0'?><gpx></gpx>",
+    "art.eps" => "%!PS-Adobe-3.0 EPSF-3.0\n",
+    "song.mp3" => "ID3\x03\x00\x00\x00\x00\x00\x00".b + ("\x00" * 40),
+    "part.sldprt" => "\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1".b + ("\x00" * 100),
+    "plan.dwg" => "AC1032".b + ("\x00" * 40),
+    "a.stl" => "solid x\nfacet normal 0 0 0\n",
+    "b.gcode" => "G28\n"
+  }.each do |name, body|
+    it "accepts #{name}" do
+      expect(valid_with?(name, body)).to be(true)
+    end
+  end
+
+  {
+    "run.exe" => ["MZ" + ("\x00" * 100), "application/octet-stream"],
+    "elf.bin" => ["\x7FELF".b + ("\x00" * 60), "application/octet-stream"],
+    "s.sh" => ["#!/bin/sh\necho hi\n", "text/plain"],
+    "page.txt" => ["<!DOCTYPE html><html><script>alert(1)</script></html>", "text/plain"],
+    "x.js" => ["function f(){}\n", "text/plain"]
+  }.each do |name, (body, type)|
+    it "refuses #{name}" do
+      expect(valid_with?(name, body, type)).to be(false)
+    end
+  end
+end

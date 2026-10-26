@@ -31,7 +31,7 @@ class ProjectProposal < ApplicationRecord
   # callers that attach one file at a time must check the result - see a9-notes).
   MAX_PROJECT_FILE_SIZE = 100.megabytes
   validates_sniffed_upload :project_files,
-                           allow: SniffedUploadValidation::GENERAL_FILE_TYPES,
+                           deny: SniffedUploadValidation::DANGEROUS_FILE_TYPES,
                            max_size: -> { MAX_PROJECT_FILE_SIZE }
 
   enum :approved, { not_approved: 0, approved: 1 }
