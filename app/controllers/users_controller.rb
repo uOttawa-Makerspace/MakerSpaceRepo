@@ -232,6 +232,11 @@ class UsersController < SessionsController
       render 'settings/admin', layout: 'setting' and return
     end
 
+    if user_params[:password].blank?
+      flash.now[:alert] = 'New password cannot be blank.'
+      render 'settings/admin', layout: 'setting' and return
+    end
+
     if @user.update(user_params.slice(:password, :password_confirmation))
       @user.pword = @user.password
       @user.save

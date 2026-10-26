@@ -330,6 +330,20 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       expect(user.slice(:email, :username, :name)).to eq(original)
     end
 
+    # FIXED: update({}) used to succeed and `pword = password` re-hashed the stored bcrypt hash
+    it "blank or missing new password: re-renders (200), password still works, no email" do
+      login!(user)
+      [{}, { password: "", password_confirmation: "" }].each do |extra|
+        patch change_password_user_path(user.username), params: { user: { old_password: password }.merge(extra) }
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("New password cannot be blank.")
+      end
+      user.reload
+      expect(user.authenticate_password(password)).to be(true)
+      expect(user.pword).to eq(password)
+      expect(deliveries).to be_empty
+    end
+
     it "wrong old password: re-renders settings/admin (200) with alert, unchanged" do
       login!(user)
       change!(old: "wrong")
