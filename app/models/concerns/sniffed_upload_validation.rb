@@ -124,21 +124,31 @@ module SniffedUploadValidation
     data
   end
 
-  # Errors from the storage service or the network while reading the stored object.
-  # Other exceptions are bugs and are left to raise.
-  SERVICE_ERRORS = [
-    ActiveStorage::Error, SystemCallError, IOError, Timeout::Error, SocketError, OpenSSL::SSL::SSLError,
-    (Aws::Errors::ServiceError if defined?(Aws::Errors::ServiceError)),
-    (Seahorse::Client::NetworkingError if defined?(Seahorse::Client::NetworkingError))
-  ].compact.freeze
+  # Class names are matched at rescue time: aws-sdk-s3 is `require: false`, so the Aws
+  # constants may not exist when this module loads.
+  EMPTY_OBJECT_ERROR_NAMES = %w[Aws::S3::Errors::InvalidRange Aws::S3::Errors::NoSuchKey].freeze
+  AWS_ERROR_BASES = %w[Aws::Errors::ServiceError Seahorse::Client::NetworkingError].freeze
 
-  # A missing or zero-byte object (S3 416 InvalidRange), or a service/network error,
-  # surfaces as an "unreadable" validation error, not a 500; it is reported to the error reporter.
+  # An empty or missing stored object is an expected case: unreadable, not reported.
+  def empty_object_error?(error)
+    error.is_a?(ActiveStorage::FileNotFoundError) || (error.class.ancestors.map(&:name) & EMPTY_OBJECT_ERROR_NAMES).any?
+  end
+
+  # Errors from the storage service or the network while reading the stored object.
+  # Anything else is a bug and is re-raised.
+  def storage_error?(error)
+    [ActiveStorage::Error, SystemCallError, IOError, Timeout::Error, SocketError, OpenSSL::SSL::SSLError].any? { |k| error.is_a?(k) } ||
+      (error.class.ancestors.map(&:name) & AWS_ERROR_BASES).any?
+  end
+
+  # A missing or zero-byte object (S3 416 InvalidRange) is unreadable; a service/network
+  # error is unreadable and reported. Neither is a 500.
   def download_leading_bytes(blob)
     blob.service.download_chunk(blob.key, 0...SNIFF_BYTES)
-  rescue ActiveStorage::FileNotFoundError
-    nil
-  rescue *SERVICE_ERRORS => e
+  rescue StandardError => e
+    return nil if empty_object_error?(e)
+    raise unless storage_error?(e)
+
     Rails.error.report(e, handled: true, context: { blob_id: blob.id })
     nil
   end

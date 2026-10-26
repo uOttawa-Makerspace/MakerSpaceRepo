@@ -77,12 +77,32 @@ RSpec.describe SniffedUploadValidation do
     expect(proposal.errors[:project_files].join).to include("unreadable")
   end
 
-  it "treats a closed stream as unreadable" do
-    io = StringIO.new("hello")
-    io.close
+  it "treats an S3 zero-byte object (InvalidRange) as unreadable without reporting, resolving the AWS class lazily" do
+    invalid_range = Class.new(StandardError)
+    stub_const("Aws::S3::Errors::InvalidRange", invalid_range)
+    allow_any_instance_of(ActiveStorage::Service::DiskService).to receive(:download_chunk).and_raise(invalid_range)
+    expect(Rails.error).not_to receive(:report)
+    proposal.project_files.attach(fine.signed_id)
+    expect(proposal.errors[:project_files].join).to include("unreadable")
+  end
+
+  it "reports an AWS service error that is not an empty object, resolving the class lazily" do
+    stub_const("Aws::Errors::ServiceError", Class.new(StandardError))
+    boom = Class.new(Aws::Errors::ServiceError)
+    stub_const("Aws::S3::Errors::SlowDown", boom)
+    allow_any_instance_of(ActiveStorage::Service::DiskService).to receive(:download_chunk).and_raise(boom)
+    expect(Rails.error).to receive(:report).with(instance_of(boom), hash_including(handled: true))
+    proposal.project_files.attach(fine.signed_id)
+    expect(proposal.errors[:project_files].join).to include("unreadable")
+  end
+
+  it "treats a closed stream as unreadable (a tempfile closed after it was attached)" do
+    tf = Tempfile.new("a9")
+    tf.write("hello")
+    tf.flush
     pp = build(:project_proposal)
-    pp.project_files.attach(io: StringIO.new("x"), filename: "a.txt", content_type: "text/plain")
-    allow(pp).to receive(:read_head).and_raise(IOError, "closed stream")
+    pp.project_files.attach(io: tf, filename: "a.txt", content_type: "text/plain")
+    tf.close
     expect(pp.valid?).to be(false)
     expect(pp.errors[:project_files].join).to include("unreadable")
   end
