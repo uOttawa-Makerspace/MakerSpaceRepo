@@ -617,7 +617,7 @@ Rails.application.routes.draw do
       get :calendar
       get :shadowing_shifts
       get :delete_event
-      get :create_event
+      post :create_event
       get :new_event
       get :populate_users
     end
@@ -644,7 +644,7 @@ Rails.application.routes.draw do
   resources :volunteer_tasks do
     collection do
       get :my_tasks
-      get :complete_task
+      post :complete_task
     end
   end
 

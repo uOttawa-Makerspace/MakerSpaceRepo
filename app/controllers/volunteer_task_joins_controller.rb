@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class VolunteerTaskJoinsController < SessionsController
+  before_action :signed_in, only: :remove
+
   def create
     volunteer_join = VolunteerTaskJoin.new(volunteer_task_joins_params)
     volunteer_task = volunteer_join.volunteer_task
@@ -46,10 +48,16 @@ class VolunteerTaskJoinsController < SessionsController
 
   def remove
     # TODO: Make this 'destroy' instead of 'remove'
-    user_id = params[:volunteer_task_join][:user_id]
-    volunteer_task_id = params[:volunteer_task_join][:volunteer_task_id]
+    join_params =
+      params.expect(volunteer_task_join: %i[user_id volunteer_task_id])
+    user_id = join_params[:user_id]
+    volunteer_task_id = join_params[:volunteer_task_id]
+    unless current_user.staff? || user_id.to_s == current_user.id.to_s
+      flash[:alert] = "You are not authorized to remove this user from the task."
+      return redirect_back(fallback_location: root_path)
+    end
     volunteer_join =
-      VolunteerTaskJoin.find_by(
+      VolunteerTaskJoin.find_by!(
         user_id: user_id,
         volunteer_task_id: volunteer_task_id
       )

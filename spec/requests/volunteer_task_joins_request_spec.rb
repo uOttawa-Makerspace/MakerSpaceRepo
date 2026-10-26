@@ -3,7 +3,7 @@
 require "rails_helper"
 
 # Chunk 13: VolunteerTaskJoinsController. It inherits only SessionsController:
-# NO sign-in, role or ownership gate on either action.
+# `create` has NO sign-in or role gate; `remove` needs sign-in plus owner or staff (D-V15).
 RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
   let(:task) { create(:volunteer_task, title: "open house", joins: 1) }
   let(:volunteer) { create(:user, :volunteer_with_volunteer_program) }
@@ -77,7 +77,7 @@ RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
       expect(vol_deliveries.size).to eq(4)
     end
 
-    # WART(D-V13): capacity only counts user_type "Volunteer" (users.role), so a program member whose role is regular_user is stored as "Regular_user" and never consumes a seat
+    # INTENDED(D-V13): volunteer enrolment/joining is open by design (an external form covers approval); capacity only counts user_type "Volunteer" (users.role), so a program member whose role is regular_user is stored as "Regular_user" and never consumes a seat
     it "stores a program member with role regular_user as Regular_user, leaving the seat free for others" do
       member = create(:user, :regular_user)
       Program.create!(user: member, program_type: Program::VOLUNTEER)
@@ -99,7 +99,7 @@ RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq("This task is already full")
     end
 
-    # WART(D-V14): no role gate: a plain regular user (no program) joins any task
+    # INTENDED(D-V14): open by design (an external form covers approval): a plain regular user (no program) joins any task
     it "lets a regular user with no program join" do
       user = create(:user, :regular_user)
       vol_login!(user)
@@ -177,33 +177,66 @@ RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
     end
 
     it "frees the seat for another volunteer" do
-      vol_login!(other_volunteer)
+      vol_login!(volunteer)
       post remove_volunteer_task_joins_path, params: remove_params
+      vol_login!(other_volunteer)
       post volunteer_task_joins_path, params: join_params
       expect(task.volunteer_task_joins.pluck(:user_id)).to eq([other_volunteer.id])
     end
 
-    # WART(D-V15): remove has no auth/ownership check: any volunteer removes anyone, and a GUEST can too (unauthenticated write)
-    it "lets another volunteer remove someone else" do
+    # FIXED(D-V15): remove needs sign-in, and the target must be the caller or the caller must be staff
+    it "refuses another volunteer removing someone else" do
       vol_login!(other_volunteer)
-      expect { post remove_volunteer_task_joins_path, params: remove_params }.to change(VolunteerTaskJoin, :count).by(-1)
+      expect { post remove_volunteer_task_joins_path, params: remove_params }.not_to change(VolunteerTaskJoin, :count)
+      expect(flash[:alert]).to eq("You are not authorized to remove this user from the task.")
     end
 
-    it "lets a guest remove a volunteer from a task" do
+    it "refuses a regular user removing someone else" do
+      vol_login!(create(:user, :regular_user))
+      expect { post remove_volunteer_task_joins_path, params: remove_params }.not_to change(VolunteerTaskJoin, :count)
+    end
+
+    it "redirects a guest to login and removes nothing" do
+      expect { post remove_volunteer_task_joins_path, params: remove_params }.not_to change(VolunteerTaskJoin, :count)
+      expect(response).to redirect_to(login_path(back_to: remove_volunteer_task_joins_path))
+    end
+
+    it "lets staff remove anyone" do
+      vol_login!(create(:user, :staff))
       expect { post remove_volunteer_task_joins_path, params: remove_params }.to change(VolunteerTaskJoin, :count).by(-1)
-      expect(response).to redirect_to(root_path)
       expect(flash[:notice]).to eq("User was removed from the Volunteer Task")
+    end
+
+    it "lets an admin remove anyone" do
+      vol_login!(create(:user, :admin))
+      expect { post remove_volunteer_task_joins_path, params: remove_params }.to change(VolunteerTaskJoin, :count).by(-1)
     end
 
     it "destroys only one join when duplicates exist" do
       create(:volunteer_task_join, :active, volunteer_task: task, user: volunteer)
+      vol_login!(volunteer)
       expect { post remove_volunteer_task_joins_path, params: remove_params }.to change(VolunteerTaskJoin, :count).by(-1)
     end
 
-    it "500s when no such join exists" do
+    it "redirects with the missing-param alert instead of a 500 when the volunteer_task_join param is missing" do
+      vol_login!(volunteer)
+      expect { post remove_volunteer_task_joins_path }.not_to change(VolunteerTaskJoin, :count)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to include("volunteer_task_join")
+    end
+
+    it "redirects with the missing-param alert when volunteer_task_join is a plain string" do
+      vol_login!(volunteer)
+      expect { post remove_volunteer_task_joins_path, params: { volunteer_task_join: "x" } }
+        .not_to change(VolunteerTaskJoin, :count)
+      expect(response).to redirect_to(root_path)
+    end
+
+    it "404s when no such join exists" do
+      vol_login!(other_volunteer)
       post remove_volunteer_task_joins_path,
            params: { volunteer_task_join: { user_id: other_volunteer.id, volunteer_task_id: task.id } }
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:not_found)
     end
   end
 end

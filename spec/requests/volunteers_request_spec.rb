@@ -29,7 +29,7 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
   end
 
   describe "volunteer-area gate (grant_access)" do
-    { emails: :emails_volunteers_path, my_stats: :my_stats_volunteers_path, calendar: :calendar_volunteers_path,
+    { my_stats: :my_stats_volunteers_path, calendar: :calendar_volunteers_path,
       populate_users: :populate_users_volunteers_path, shadowing_shifts: :shadowing_shifts_volunteers_path }.each do |action, helper|
       %i[guest regular role_only].each do |role|
         it "#{role}: #{action} redirects to root with an alert" do
@@ -51,12 +51,12 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
   end
 
   describe "staff-only gate (grant_access_list)" do
-    { volunteer_list: :volunteer_list_volunteers_path, new_event: :new_event_volunteers_path,
+    { emails: :emails_volunteers_path, volunteer_list: :volunteer_list_volunteers_path, new_event: :new_event_volunteers_path,
       create_event: :create_event_volunteers_path, delete_event: :delete_event_volunteers_path }.each do |action, helper|
       %i[guest regular role_only volunteer inactive].each do |role|
         it "#{role}: #{action} redirects to root with an alert" do
           vol_sign_in_as(role)
-          get send(helper)
+          send(action == :create_event ? :post : :get, send(helper))
           expect(response).to redirect_to(root_path)
           expect(flash[:alert]).to eq("You cannot access this area.")
         end
@@ -64,8 +64,10 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
     end
 
     %i[staff admin].each do |role|
-      it "#{role}: volunteer_list and new_event render" do
+      it "#{role}: emails, volunteer_list and new_event render" do
         vol_sign_in_as(role)
+        get emails_volunteers_path
+        expect(response).to have_http_status(:ok)
         get volunteer_list_volunteers_path
         expect(response).to have_http_status(:ok)
         get new_event_volunteers_path
@@ -92,7 +94,7 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
       a = create(:user, :volunteer_with_volunteer_program)
       i = create(:user, :unactive_volunteer_with_volunteer_program)
       r = create(:user, :regular_user)
-      vol_login!(a)
+      vol_login!(create(:user, :staff))
       get emails_volunteers_path
       expect(ivar(:@all_emails)).to contain_exactly(a.email, i.email)
       expect(ivar(:@active_emails)).to eq([a.email])
@@ -101,17 +103,15 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
       expect(response.body).not_to include(r.email)
     end
 
-    # WART(D-V24): any volunteer (not just staff) reads every volunteer's email, and the program is self-service (join_volunteer_program), so any signed-in user can reach this
-    it "is reachable by a regular user after self-enrolling through join_volunteer_program" do
-      victim = create(:user, :volunteer_with_volunteer_program)
+    # FIXED(D-V24): emails is staff/admin only (grant_access_list), so self-enrolment no longer exposes it
+    it "stays closed to a regular user who self-enrols through join_volunteer_program, and to volunteers" do
+      create(:user, :volunteer_with_volunteer_program)
       user = create(:user, :regular_user)
       vol_login!(user)
-      get emails_volunteers_path
-      expect(response).to redirect_to(root_path)
       get join_volunteer_program_volunteers_path
       get emails_volunteers_path
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include(victim.email)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You cannot access this area.")
     end
   end
 
@@ -179,7 +179,7 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
       end
     end
 
-    # WART(D-V26): enrolment is a one-request, unapproved GET that grants volunteer access (emails, volunteer list JSON, tasks); GET mutates state
+    # INTENDED(D-V26): enrolment stays open and instant by design (an external form covers approval). The GET-verb half belongs to slice A14 and is left as is
     it "gives instant access to the volunteer area" do
       vol_login!(create(:user, :regular_user))
       get join_volunteer_program_volunteers_path
@@ -286,7 +286,7 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
       end
     end
 
-    describe "GET create_event" do
+    describe "POST create_event" do
       let(:params) do
         { space: "makerspace", datepicker_start: "2030-05-06 09:00", datepicker_end: "2030-05-06 11:30", user_id: volunteer.id }
       end
@@ -296,7 +296,7 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
       it "creates the calendar event and a ShadowingHour, redirecting to the calendar" do
         expect(ShadowingHour).to receive(:create_event)
           .with("2030-05-06T 9:00:00", "2030-05-06T11:30:00", volunteer, "makerspace").and_return(event)
-        expect { get create_event_volunteers_path, params: params }.to change(ShadowingHour, :count).by(1)
+        expect { post create_event_volunteers_path, params: params }.to change(ShadowingHour, :count).by(1)
         expect(response).to redirect_to(calendar_volunteers_path)
         expect(flash[:notice]).to eq("The shadowing shift has been added")
         shift = ShadowingHour.last
@@ -307,51 +307,72 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
 
       it "flashes an error and stores nothing when Google reports the event cancelled" do
         allow(ShadowingHour).to receive(:create_event).and_return(double(id: "x", status: "cancelled"))
-        expect { get create_event_volunteers_path, params: params }.not_to change(ShadowingHour, :count)
+        expect { post create_event_volunteers_path, params: params }.not_to change(ShadowingHour, :count)
         expect(response).to redirect_to(calendar_volunteers_path)
         expect(flash[:alert]).to eq("An Error occurred")
       end
 
       it "rejects an unknown space name without calling Google" do
         expect(ShadowingHour).not_to receive(:create_event)
-        get create_event_volunteers_path, params: params.merge(space: "garage")
+        post create_event_volunteers_path, params: params.merge(space: "garage")
         expect(response).to redirect_to(calendar_volunteers_path)
         expect(flash[:alert]).to eq("An error occurred, please make sure you choose a space.")
       end
 
       it "rejects missing dates or user_id" do
         expect(ShadowingHour).not_to receive(:create_event)
-        get create_event_volunteers_path, params: params.except(:datepicker_end)
+        post create_event_volunteers_path, params: params.except(:datepicker_end)
         expect(flash[:alert]).to eq("An error occurred, please make sure you choose a space.")
-        get create_event_volunteers_path, params: params.except(:user_id)
+        post create_event_volunteers_path, params: params.except(:user_id)
         expect(flash[:alert]).to eq("An error occurred, please make sure you choose a space.")
       end
 
       it "404s for a nonexistent user_id" do
-        get create_event_volunteers_path, params: params.merge(user_id: 999_999)
+        post create_event_volunteers_path, params: params.merge(user_id: 999_999)
         expect(response).to have_http_status(:not_found)
       end
 
-      # WART(D-V27): any user id is accepted (not only volunteers); a state-changing GET
-      it "books a shift for a non-volunteer user" do
-        allow(ShadowingHour).to receive(:create_event).and_return(event)
+      # FIXED(D-V27): POST only (the GET route is gone), and the target must be a volunteer-program member
+      it "refuses to book a shift for a non-volunteer user" do
+        expect(ShadowingHour).not_to receive(:create_event)
         regular = create(:user, :regular_user)
-        expect { get create_event_volunteers_path, params: params.merge(user_id: regular.id) }
-          .to change(ShadowingHour, :count).by(1)
+        expect { post create_event_volunteers_path, params: params.merge(user_id: regular.id) }
+          .not_to change(ShadowingHour, :count)
+        expect(response).to redirect_to(calendar_volunteers_path)
+        expect(flash[:alert]).to eq("Shadowing shifts can only be booked for volunteers.")
+      end
+
+      it "refuses to book a shift for a staff member who is not in the volunteer program" do
+        expect(ShadowingHour).not_to receive(:create_event)
+        expect { post create_event_volunteers_path, params: params.merge(user_id: staff.id) }
+          .not_to change(ShadowingHour, :count)
+      end
+
+      it "is no longer routable by GET" do
+        expect(ShadowingHour).not_to receive(:create_event)
+        expect { get "/volunteers/create_event", params: params }.not_to change(ShadowingHour, :count)
+        expect(response).to have_http_status(:not_found)
+      end
+
+      it "refuses a volunteer, who cannot book shifts even for themselves" do
+        vol_login!(volunteer)
+        expect(ShadowingHour).not_to receive(:create_event)
+        expect { post create_event_volunteers_path, params: params }.not_to change(ShadowingHour, :count)
+        expect(response).to redirect_to(root_path)
       end
 
       # WART(D-V28): the calendar event is created BEFORE the space row is looked up; a missing Space row 500s and leaves an orphan Google event
       it "500s after calling Google when no Space matches the name" do
         Space.where("LOWER(name) = 'makerspace'").destroy_all
         expect(ShadowingHour).to receive(:create_event).and_return(event)
-        expect { get create_event_volunteers_path, params: params }.not_to change(ShadowingHour, :count)
+        expect { post create_event_volunteers_path, params: params }.not_to change(ShadowingHour, :count)
         expect(response).to have_http_status(:internal_server_error)
       end
 
       it "accepts 'brunsfield centre' as a space" do
         brunsfield = create(:space, name: "Brunsfield Centre")
         expect(ShadowingHour).to receive(:create_event).with(anything, anything, volunteer, "brunsfield centre").and_return(event)
-        get create_event_volunteers_path, params: params.merge(space: "brunsfield centre")
+        post create_event_volunteers_path, params: params.merge(space: "brunsfield centre")
         expect(ShadowingHour.last.space_id).to eq(brunsfield.id)
       end
     end
