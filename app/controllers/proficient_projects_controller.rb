@@ -187,7 +187,9 @@ class ProficientProjectsController < DevelopmentProgramsController
       )
     if !order_items.present?
       flash[:alert] = "This project hasn't been found"
-    elsif order_items.first.update(
+    elsif !order_items.in_progress.exists?
+      flash[:alert] = "This project can only be submitted while it is in progress."
+    elsif order_items.in_progress.first.update(
           order_item_params.merge(status: "Waiting for approval")
         )
       MsrMailer.send_admin_pp_evaluation(@proficient_project).deliver_now

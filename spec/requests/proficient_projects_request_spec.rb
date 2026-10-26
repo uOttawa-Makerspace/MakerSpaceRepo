@@ -319,12 +319,28 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
       expect(ActionMailer::Base.deliveries).to be_empty
     end
 
-    it "does not check the item's current status: a revoked or awarded item can be resubmitted (D-C28)" do
-      oi = order_item_for(buyer, status: "Awarded")
+    ["Awarded", "Revoked", "Waiting for approval"].each do |status|
+      it "does not resubmit a #{status} item: status, comments and emails stay as they were (D-C28)" do
+        oi = order_item_for(buyer, status: status)
+        content_login!(buyer)
+        ActionMailer::Base.deliveries.clear
+        put complete_project_proficient_projects_path, params: { id: project.id, order_item: { user_comments: "again" } }
+        # FIXED(D-C28): only an In progress item can be submitted
+        expect(oi.reload.status).to eq(status)
+        expect(oi.user_comments).not_to eq("again")
+        expect(flash[:alert]).to eq("This project can only be submitted while it is in progress.")
+        expect(response).to redirect_to(project_path_for(project))
+        expect(ActionMailer::Base.deliveries).to be_empty
+      end
+    end
+
+    it "submits the In progress item when the user also holds an older Awarded one (D-C28)" do
+      awarded = order_item_for(buyer, status: "Awarded")
+      current = order_item_for(buyer, status: "In progress")
       content_login!(buyer)
-      put complete_project_proficient_projects_path, params: { id: project.id, order_item: { user_comments: "again" } }
-      # WART(D-C28): an Awarded item silently reverts to Waiting for approval
-      expect(oi.reload.status).to eq("Waiting for approval")
+      put complete_project_proficient_projects_path, params: { id: project.id, order_item: { user_comments: "second" } }
+      expect(current.reload.status).to eq("Waiting for approval")
+      expect(awarded.reload.status).to eq("Awarded")
     end
 
     it "stores attached submission files on the order item" do
