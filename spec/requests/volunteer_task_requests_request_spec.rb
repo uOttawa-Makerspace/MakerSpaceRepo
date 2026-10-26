@@ -127,9 +127,14 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
       expect { request! }.not_to change(VolunteerTaskRequest, :count)
     end
 
-    it "accepts a new request after a rejected one" do
-      create(:volunteer_task_request, :rejected, user: volunteer, volunteer_task: task)
-      assign!(volunteer)
+    # FIXED(rejection keeps the join): the real flow, using the original join after a staff rejection
+    it "accepts a new request after a staff rejection, on the original join" do
+      join = assign!(volunteer)
+      vol_login!(volunteer)
+      request!
+      vol_login!(create(:user, :staff))
+      put update_approval_volunteer_task_requests_path, params: { id: VolunteerTaskRequest.last.id, approval: "false" }
+      expect(join.reload.active).to be(true)
       vol_login!(volunteer)
       expect { request! }.to change(VolunteerTaskRequest, :count).by(1)
     end
@@ -239,11 +244,11 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
         )
       end
 
-      it "rejects: marks approval false, deactivates the join, awards nothing, still emails" do
+      it "rejects: marks approval false, keeps the join active so the volunteer can resubmit, awards nothing, still emails" do
         join = create(:volunteer_task_join, :active, volunteer_task: task, user: volunteer)
         expect { approve!("false") }.not_to change { [CcMoney.count, VolunteerHour.count] }
         expect(req.reload.approval).to be(false)
-        expect(join.reload.active).to be(false)
+        expect(join.reload.active).to be(true)
         expect(vol_deliveries.map(&:subject)).to eq(["Your request was updated: Tour guide"])
       end
 
@@ -280,11 +285,11 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
         expect(CcMoney.count).to eq(1)
       end
 
-      it "treats a missing approval param as 'unprocessed': deactivates the join and still emails" do
+      it "treats a missing approval param as 'unprocessed': keeps the join and still emails" do
         join = create(:volunteer_task_join, :active, volunteer_task: task, user: volunteer)
         put update_approval_volunteer_task_requests_path, params: { id: req.id }
         expect(req.reload.approval).to be_nil
-        expect(join.reload.active).to be(false)
+        expect(join.reload.active).to be(true)
         expect(response).to redirect_to(volunteer_task_requests_path)
       end
 

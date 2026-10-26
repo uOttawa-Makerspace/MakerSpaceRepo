@@ -117,10 +117,8 @@ class VolunteerTaskRequestsController < SessionsController
            ActiveModel::Type::Boolean.new.cast(params[:approval]) == true
         result = :already_approved
       elsif volunteer_task_request.update(approval: params[:approval])
-        volunteer_task_join = volunteer_task_request.volunteer_task_join
-        volunteer_task_join&.update(active: false)
-
         if volunteer_task_request.approval
+          volunteer_task_request.volunteer_task_join&.update(active: false)
           volunteer_task = volunteer_task_request.volunteer_task
           volunteer_id = volunteer_task_request.user_id
           volunteer = volunteer_task_request.user
