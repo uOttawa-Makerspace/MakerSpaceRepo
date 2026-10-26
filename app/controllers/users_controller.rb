@@ -195,6 +195,8 @@ class UsersController < SessionsController
   end
 
   def remove_flag
+    redirect_to user_path(@user.username) and return unless @user.staff?
+
     @repo_user = User.find(params[:repo_user_id])
     msg = params[:flag_msg]
     @repo_user.flag_message = @repo_user.flag_message.gsub("; #{msg}", '')
@@ -209,7 +211,7 @@ class UsersController < SessionsController
   end
 
   def update
-    if @user.update(user_params)
+    if @user.update(profile_params)
       flash[:notice] = 'Profile updated successfully.'
       redirect_to settings_profile_path
     else
@@ -471,6 +473,12 @@ class UsersController < SessionsController
 
   def json_request?
     request.format.json? || request.content_mime_type&.json?
+  end
+
+  # Profile edits: no :email (use change_email's confirm flow) and no :password
+  # (use change_password).
+  def profile_params
+    user_params.except(:password, :password_confirmation, :email)
   end
 
   def user_params

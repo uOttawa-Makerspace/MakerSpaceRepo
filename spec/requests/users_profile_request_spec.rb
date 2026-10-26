@@ -205,24 +205,26 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       expect(flash[:alert]).to include("Username")
     end
 
-    it "changes the email immediately without confirmation or notice" do
-      # WART(D-I15): profile update permits :email directly, bypassing the confirm-by-email flow (and the email-changed notice to the old address)
+    it "ignores :email on profile update (the confirm-by-email flow is the only way)" do
+      # FIXED(D-I15): :email removed from the profile update params
       login!(user)
-      patch user_path(user.username), params: { user: { email: "swapped@example.com" } }
+      original = user.email
+      patch user_path(user.username), params: { user: { email: "swapped@example.com", name: "Still Works" } }
       expect(response).to redirect_to(settings_profile_path)
-      expect(user.reload.email).to eq("swapped@example.com")
+      expect(user.reload.email).to eq(original)
+      expect(user.name).to eq("Still Works")
       expect(deliveries).to be_empty
     end
 
-    it "sets a raw plaintext password into the hash column, which then breaks login" do
-      # WART(D-I16): profile update permits :password; it is stored unhashed (the strength validator sees the raw value) and later logins raise BCrypt InvalidHash (500)
+    it "ignores :password on profile update so the hash column is never clobbered" do
+      # FIXED(D-I16): :password/:password_confirmation removed from the profile update params
       login!(user)
       patch user_path(user.username),
             params: { user: { password: "NewPassw0rd!x#9", password_confirmation: "NewPassw0rd!x#9" } }
       expect(response).to redirect_to(settings_profile_path)
-      expect(user.reload.password).to eq("NewPassw0rd!x#9")
-      post login_authentication_path, params: { username_email: user.username, password: "NewPassw0rd!x#9" }
-      expect(response).to have_http_status(:internal_server_error)
+      expect(user.reload.password).not_to eq("NewPassw0rd!x#9")
+      post login_authentication_path, params: { username_email: user.username, password: password }
+      expect(response).not_to have_http_status(:internal_server_error)
     end
 
     it "student identity requires program, faculty, year and student id" do
@@ -376,15 +378,26 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       expect(user.flag_message).to be_nil
     end
 
-    it "any signed-in user can remove a flag message from any user" do
-      # WART(D-I19): #remove_flag has no staff/admin check (flag/unflag do), so any signed-in user can clear anyone's moderation flags
+    it "a regular user cannot remove a flag message" do
+      # FIXED(D-I19): #remove_flag requires staff/admin like flag/unflag
       user.update_columns(flagged: true, flag_message: "; bad")
       login!(other)
       put remove_flag_users_path, params: { repo_user_id: user.id, flag_msg: "bad" }
-      expect(response).to redirect_to(user_path(user.username))
+      expect(response).to redirect_to(user_path(other.username))
       user.reload
-      expect(user.flagged).to be(false)
-      expect(user.flag_message).to eq("")
+      expect(user.flagged).to be(true)
+      expect(user.flag_message).to eq("; bad")
+    end
+
+    it "staff and admin can remove a flag message" do
+      [staff, admin].each do |actor|
+        user.update_columns(flagged: true, flag_message: "; bad")
+        login!(actor)
+        put remove_flag_users_path, params: { repo_user_id: user.id, flag_msg: "bad" }
+        expect(response).to redirect_to(user_path(user.username))
+        expect(user.reload.flagged).to be(false)
+        expect(user.flag_message).to eq("")
+      end
     end
 
     it "guest cannot remove a flag" do
