@@ -1,4 +1,6 @@
 class Admin::KeysController < AdminAreaController
+  HOLDER_NOT_APPROVED_MESSAGE = "The key holder must have an approved key request."
+
   before_action :set_key,
                 only: %i[
                   show
@@ -96,9 +98,8 @@ class Admin::KeysController < AdminAreaController
   def assign_key
     user = User.find(params[:key][:user_id])
 
-    unless user.key_request&.status_approved?
-      redirect_to admin_keys_path,
-                  alert: "The key holder must have an approved key request." and return
+    unless holder_approved?(user)
+      redirect_to admin_keys_path, alert: HOLDER_NOT_APPROVED_MESSAGE and return
     end
 
     key_transaction =
@@ -193,11 +194,13 @@ class Admin::KeysController < AdminAreaController
                   alert: "Revoke the key before assigning it to another holder." and return
     end
 
-    holder = User.find_by(id: holder_id)
-    return if holder&.key_request&.status_approved?
+    return if holder_approved?(User.find_by(id: holder_id))
 
-    redirect_to admin_keys_path,
-                alert: "The key holder must have an approved key request."
+    redirect_to admin_keys_path, alert: HOLDER_NOT_APPROVED_MESSAGE
+  end
+
+  def holder_approved?(user)
+    user&.key_request&.status_approved? || false
   end
 
   def set_key
