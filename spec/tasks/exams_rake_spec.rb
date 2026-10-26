@@ -51,6 +51,18 @@ RSpec.describe "exams:check_expired_exams" do
     expect(Exam.order(:id).last.exam_questions.count).to eq($n_exams_question)
   end
 
+  # FIXED(retro round 2): the task grades under a row lock, like finish_exam
+  it "does not grade an exam that was graded after the task loaded it" do
+    exam = expired_exam(correct_count: 3)
+    allow_any_instance_of(Exam).to receive(:with_lock).and_wrap_original do |original, *args, &block|
+      Exam.where(id: exam.id).update_all(status: Exam::STATUS[:failed], score: 0)
+      original.call(*args, &block)
+    end
+    expect { run_task }.not_to change(Certification, :count)
+    expect(exam.reload).to have_attributes(status: "failed", score: 0)
+    expect(ActionMailer::Base.deliveries).to be_empty
+  end
+
   # FIXED(retro round 2): an exam without questions used to abort the whole run
   it "skips an expired exam without questions and still grades the others" do
     empty = create(:exam, user: create(:user, :regular_user), training_session: training_session,

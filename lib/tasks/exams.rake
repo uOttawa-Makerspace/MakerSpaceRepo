@@ -18,9 +18,12 @@ namespace :exams do
           warn "exams:check_expired_exams skipped exam #{exam.id}: it has no questions"
           next
         end
-        graded = true
+        graded = false
         status = nil
-        begin
+        # Same guard as ExamsController#finish_exam: lock the row and re-check inside it
+        exam.with_lock do
+          next unless exam.ungraded?
+          graded = true
           score = exam.calculate_score
           if score < Exam::SCORE_TO_PASS
             status = Exam::STATUS[:failed]
