@@ -159,6 +159,39 @@ RSpec.describe "Exams", type: :request do
       end
     end
 
+    # FIXED(retro of A5): the Finish button is for the owner only; staff reviewers can still
+    # look at an exam that expired, read-only
+    it "shows the Finish button to the owner only" do
+      log_in!(student)
+      get exam_path(exam)
+      expect(response.body).to include("Finish Exam")
+    end
+
+    %i[staff admin].each do |role|
+      it "shows #{role} the student's exam without a Finish button" do
+        sign_in_as(role)
+        get exam_path(exam)
+        expect(response).to have_http_status(:ok)
+        expect(response.body).not_to include("Finish Exam")
+      end
+
+      it "lets #{role} read an expired ungraded exam without changing it" do
+        exam.update!(expired_at: 1.minute.ago)
+        sign_in_as(role)
+        get exam_path(exam)
+        expect(response).to have_http_status(:ok)
+        expect(response.body).not_to include("Finish Exam")
+        expect(exam.reload.status).to eq("not started")
+      end
+
+      it "still redirects #{role} away from a graded exam" do
+        exam.update!(status: Exam::STATUS[:failed])
+        sign_in_as(role)
+        get exam_path(exam)
+        expect(response).to redirect_to(exams_path)
+      end
+    end
+
     # FIXED(D-T10): expiry is enforced on show
     it "redirects the owner to the exam list when the exam has expired, without starting it" do
       exam.update!(expired_at: 1.minute.ago)

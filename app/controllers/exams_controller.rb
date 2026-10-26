@@ -153,6 +153,8 @@ class ExamsController < SessionsController
   end
 
   def check_exam_status
+    # Staff reviewing a student's exam may look at it after it expired (read-only).
+    return if @exam.ungraded? && !@exam.user.eql?(current_user)
     if !@exam.open_for_answers?
       flash[:alert] =
         if @exam.ungraded?
