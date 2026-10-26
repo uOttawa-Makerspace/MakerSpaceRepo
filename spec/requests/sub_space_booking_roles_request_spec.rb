@@ -502,7 +502,7 @@ RSpec.describe "Sub space booking role matrix", type: :request do
       expect(response).to have_http_status(:ok)
 
       entry = response.parsed_body.find { |u| u["id"] == subject_user.id }
-      expect(entry.keys).to match_array(User.column_names - User::SERIALIZATION_EXCLUDED_ATTRIBUTES)
+      expect(entry.keys).to match_array(User.column_names - %w[password access_token])
       expect(entry).not_to have_key("password")
       expect(entry).not_to have_key("access_token")
       expect(entry["email"]).to eq(subject_user.email)
