@@ -68,7 +68,7 @@ RSpec.describe "exams:check_expired_exams" do
     empty = create(:exam, user: create(:user, :regular_user), training_session: training_session,
                           expired_at: 2.hours.ago, status: Exam::STATUS[:incomplete])
     exam = expired_exam(correct_count: 3)
-    expect { run_task }.not_to raise_error
+    expect { run_task }.to output(/skipped exam #{empty.id}: it has no questions/).to_stderr
     expect(empty.reload.status).to eq("incomplete")
     expect(exam.reload.status).to eq("passed")
   end

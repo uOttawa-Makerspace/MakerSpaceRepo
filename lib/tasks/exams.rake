@@ -15,7 +15,9 @@ namespace :exams do
         training_session = exam.training_session
         # calculate_score divides by the question count: leave such an exam for staff to resend
         if exam.exam_questions.none?
-          warn "exams:check_expired_exams skipped exam #{exam.id}: it has no questions"
+          message = "exams:check_expired_exams skipped exam #{exam.id}: it has no questions"
+          warn message
+          Rails.logger.warn message
           next
         end
         graded = false

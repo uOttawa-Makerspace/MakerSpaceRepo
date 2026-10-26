@@ -54,12 +54,18 @@ class ExamsController < SessionsController
     exam = @exam
     user = exam.user
     graded = false
+    empty = false
     score = nil
     status = nil
     # Two concurrent submits both pass only_open_exam: lock the row and check
     # again inside the lock so only one of them grades (retake, certification).
     exam.with_lock do
       next unless exam.open_for_answers?
+      # An exam without questions cannot be graded (a "failed" grade would issue a retake)
+      if exam.exam_questions.none?
+        empty = true
+        next
+      end
       graded = true
       score = exam.calculate_score
       training_session = exam.training_session
@@ -73,6 +79,10 @@ class ExamsController < SessionsController
         Certification.certify_user(training_session.id, user.id, training_session.level)
       end
       exam.update(status: status, score: score)
+    end
+    if empty
+      flash[:alert] = "This exam has no questions. Ask staff to resend it."
+      return redirect_to exams_path
     end
     return reject_unopen_exam unless graded
 

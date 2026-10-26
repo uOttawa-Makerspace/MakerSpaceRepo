@@ -17,6 +17,8 @@ class Exam < ApplicationRecord
 
   def calculate_score
     all_questions = exam_questions.count
+    return 0 if all_questions.zero?
+
     exam_responses_right = exam_responses.where(correct: true).count
     (exam_responses_right * 100.0 / all_questions).round
   end

@@ -591,13 +591,14 @@ RSpec.describe "Exams", type: :request do
       expect(exam.reload.status).to eq("failed")
     end
 
-    # WART(D-T13): an exam created with no matching questions has 0 questions; grading it divides by zero
-    it "answers 500 (FloatDomainError) for an exam without questions and leaves it ungraded" do
+    # FIXED(D-T13): an exam with no questions is refused, not graded: failing it would issue a retake
+    it "refuses to finish an exam without questions and leaves it ungraded, with no retake or email" do
       exam = new_exam(questions: [])
-      finish(exam)
-      expect(response).to have_http_status(:internal_server_error)
-      expect(error_text).to include("FloatDomainError")
+      expect { perform_enqueued_jobs { finish(exam) } }.not_to change(Exam, :count)
+      expect(response).to redirect_to(exams_path)
+      expect(flash[:alert]).to eq("This exam has no questions. Ask staff to resend it.")
       expect(exam.reload.status).to eq("not started")
+      expect(deliveries).to be_empty
     end
 
     it "answers 404 for an unknown exam id and 400-ish ParameterMissing is not used (find(nil))" do
