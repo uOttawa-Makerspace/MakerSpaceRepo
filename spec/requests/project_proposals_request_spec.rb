@@ -423,29 +423,48 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
   end
 
   describe "POST create_revision" do
-    it "lets a guest clone ANY proposal (even a pending one) into a new pending 'Revision of ...' (D-C42, severity 1)" do
+    it "sends a guest to login and clones nothing (D-C42)" do
+      expect { post create_revision_project_proposals_path, params: { old_project_proposal_id: pending.id } }
+        .not_to change(ProjectProposal, :count)
+      # FIXED(D-C42): create_revision requires sign-in and ownership of the original (or admin)
+      expect(response).to redirect_to(login_path(back_to: create_revision_project_proposals_path))
+    end
+
+    it "refuses a stranger and staff, for pending and approved originals alike (D-C42)" do
+      [other, create(:user, :staff)].each do |user|
+        content_login!(user)
+        [pending, approved].each do |pp|
+          expect { post create_revision_project_proposals_path, params: { old_project_proposal_id: pp.id } }
+            .not_to change(ProjectProposal, :count)
+          expect(response).to redirect_to(project_proposals_path)
+          expect(flash[:alert]).to eq("You are not allowed to create a revision of this project proposal.")
+        end
+      end
+    end
+
+    it "lets the owner revise their pending proposal and an admin revise any (D-C42)" do
+      content_login!(owner)
       expect { post create_revision_project_proposals_path, params: { old_project_proposal_id: pending.id } }
         .to change(ProjectProposal, :count).by(1)
-      # WART(D-C42): no auth/ownership; copies another user's private proposal data into a new row
       rev = ProjectProposal.find_by(title: "Revision of Pending One")
-      expect(rev.linked_project_proposal_id).to eq(pending.id)
-      expect(rev.user_id).to be_nil
-      expect(rev.approved).to be_nil
-      expect(rev.admin_id).to be_nil
-      expect(rev.email).to eq(pending.email)
+      expect(rev).to have_attributes(linked_project_proposal_id: pending.id, user_id: owner.id, approved: nil, admin_id: nil, email: pending.email)
       expect(response).to redirect_to(project_proposal_path(rev.slug))
       expect(flash[:notice]).to eq("The project proposal revision has been successfully created.")
+      admin = content_sign_in_as(:admin)
+      expect { post create_revision_project_proposals_path, params: { old_project_proposal_id: declined.id } }
+        .to change(ProjectProposal, :count).by(1)
+      expect(ProjectProposal.find_by(title: "Revision of Declined One").user_id).to eq(admin.id)
     end
 
     it "sets the owner, copies photos, files (shared blobs) and categories, and sends NO email" do
       approved.photos.attach(io: File.open(Rails.root.join("spec/support/assets/avatar.png")), filename: "a.png", content_type: "image/png")
       approved.project_files.attach(io: File.open(Rails.root.join("spec/support/assets/RepoFile1.pdf")), filename: "f.pdf", content_type: "application/pdf")
       Category.create!(name: "cat", project_proposal_id: approved.id)
-      content_login!(other)
+      content_login!(owner)
       ActionMailer::Base.deliveries.clear
       post create_revision_project_proposals_path(format: :json), params: { old_project_proposal_id: approved.id }
       rev = ProjectProposal.find_by(linked_project_proposal_id: approved.id)
-      expect(rev.user_id).to eq(other.id)
+      expect(rev.user_id).to eq(owner.id)
       expect(rev.photos.first.blob_id).to eq(approved.photos.first.blob_id)
       expect(rev.project_files.first.blob_id).to eq(approved.project_files.first.blob_id)
       expect(rev.categories.pluck(:name)).to eq(["cat"])
@@ -455,12 +474,14 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
 
     it "does not carry over season/year/approval (a revision starts unreviewed)" do
       approved.update_columns(season: ProjectProposal.seasons[:fall], year: 2024)
+      content_login!(owner)
       post create_revision_project_proposals_path, params: { old_project_proposal_id: approved.id }
       rev = ProjectProposal.find_by(linked_project_proposal_id: approved.id)
       expect(rev.attributes.values_at("season", "year", "approved")).to eq([nil, nil, nil])
     end
 
     it "redirects back with an alert for a missing or unknown id" do
+      content_login!(owner)
       post create_revision_project_proposals_path
       expect(response).to redirect_to(root_path)
       expect(flash[:alert]).to start_with("An error occured while trying to create")

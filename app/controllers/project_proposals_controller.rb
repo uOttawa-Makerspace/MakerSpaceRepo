@@ -5,7 +5,7 @@ class ProjectProposalsController < SessionsController
 
   before_action :set_project_proposal, only: %i[show edit update destroy]
   before_action :current_user
-  before_action :signed_in, only: %i[edit update approve decline]
+  before_action :signed_in, only: %i[edit update approve decline create_revision]
   before_action :require_admin, only: %i[approve decline]
   before_action :require_owner_or_admin, only: %i[edit update]
 
@@ -180,6 +180,11 @@ class ProjectProposalsController < SessionsController
     if params[:old_project_proposal_id] &&
          ProjectProposal.where(id: params[:old_project_proposal_id]).present?
       @old_project_proposal = ProjectProposal.find(params[:old_project_proposal_id])
+      unless owner_or_admin?(@old_project_proposal)
+        redirect_to project_proposals_path,
+                    alert: 'You are not allowed to create a revision of this project proposal.'
+        return
+      end
       values = @old_project_proposal.attributes.except(
         'id',
         'user_id',
