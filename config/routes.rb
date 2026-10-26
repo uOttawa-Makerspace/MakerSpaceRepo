@@ -642,7 +642,7 @@ Rails.application.routes.draw do
   resources :volunteer_tasks do
     collection do
       get :my_tasks
-      get :complete_task
+      post :complete_task
     end
   end
 
