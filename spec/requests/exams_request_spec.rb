@@ -690,6 +690,7 @@ RSpec.describe "Exams", type: :request do
       expect(Exam.last.exam_questions.count).to eq($n_exams_question)
     end
 
+    # INTENDED: any user may be sent a session's exam (user decision 2026-10-26, e.g. walk-ins)
     it "does not require the user to be enrolled in the session" do
       stranger = create(:user, :regular_user)
       expect { create_for_single_user(stranger) }.to change { Exam.where(user: stranger).count }.by(1)
