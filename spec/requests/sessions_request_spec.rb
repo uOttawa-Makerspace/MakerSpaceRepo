@@ -338,6 +338,57 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
     end
   end
 
+  describe "session hygiene" do
+    def session_id
+      request.session.id.to_s
+    end
+
+    it "issues a new session id on sign-in (session fixation)" do
+      get login_path
+      before = session_id
+      login!(user)
+      expect(session_id).not_to eq(before)
+    end
+
+    it "keeps the locale across sign-in and across sign-out" do
+      get login_path(locale: "fr")
+      login!(user)
+      get check_signed_in_path
+      expect(session[:locale].to_s).to eq("fr")
+      get logout_path
+      get check_signed_in_path
+      expect(session[:locale].to_s).to eq("fr")
+    end
+
+    it "a failed sign-in keeps the session" do
+      get login_path
+      before = session_id
+      login!(user, pw: "wrong")
+      expect(session_id).to eq(before)
+    end
+
+    it "sign-out issues a new session id and drops the user" do
+      login!(user)
+      before = session_id
+      get logout_path
+      expect(session_id).not_to eq(before)
+      expect(session[:user_id]).to be_nil
+    end
+
+    it "a Bearer request does not mint a cookie session" do
+      get check_signed_in_path, headers: { "Authorization" => "Bearer #{user.token}" }
+      expect(JSON.parse(response.body)["user"]["id"]).to eq(user.id)
+      expect(session[:user_id]).to be_nil
+      get check_signed_in_path
+      expect(JSON.parse(response.body)["signed_in"]).to eq("false")
+    end
+
+    it "Bearer authenticates a protected endpoint without a cookie" do
+      get settings_admin_path, headers: { "Authorization" => "Bearer #{user.token}" }
+      expect(response).to have_http_status(:ok)
+    end
+  end
+
   describe "GET /logout" do
     it "clears the session and redirects to root" do
       login!(user)

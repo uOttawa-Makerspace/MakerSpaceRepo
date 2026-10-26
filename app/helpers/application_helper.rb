@@ -5,21 +5,30 @@ require Rails.root.join("lib/jwt_authenticator")
 module ApplicationHelper
   attr_accessor :github
 
+  # Keys that are not about who is signed in and must survive the session
+  # reset done on sign-in (sign-out keeps only the locale).
+  SESSION_KEYS_KEPT_ON_SIGN_IN = %w[locale expires_at authorized_repo_ids selected_dates order_id].freeze
+
   def sign_in(username_email, password)
     user = User.authenticate(username_email, password)
-    session[:user_id] = user.id unless user.nil?
+    unless user.nil?
+      kept = session.to_hash.slice(*SESSION_KEYS_KEPT_ON_SIGN_IN)
+      reset_session # new session id on privilege change (session fixation)
+      kept.each { |key, value| session[key] = value }
+      session[:user_id] = user.id
+    end
     user
   end
 
   def sign_out
-    session[:user_id] = nil
-    session[:authorized_repo_ids] = nil
-    session[:selected_dates] = nil
-    session[:order_id] = nil
+    locale = session[:locale]
+    reset_session
+    session[:locale] = locale if locale
   end
 
   def current_user
-    @user ||= User.find(session[:user_id]) if signed_in?
+    @user ||= User.find(session[:user_id]) if session[:user_id].present?
+    @user ||= jwt_user
     @user ||= User.new
   end
 
@@ -33,11 +42,15 @@ module ApplicationHelper
   end
 
   def has_valid_jwt?
-    user = JwtAuthenticator.user_for(request.headers["Authorization"])
-    return false unless user
+    jwt_user.present?
+  end
 
-    session[:user_id] = user.id
-    true
+  # The user a valid Bearer token authenticates. Not written to the session:
+  # a Bearer request must not mint a cookie session.
+  def jwt_user
+    return @jwt_user if defined?(@jwt_user)
+
+    @jwt_user = JwtAuthenticator.user_for(request.headers["Authorization"])
   end
 
   def github?
