@@ -429,6 +429,27 @@ RSpec.describe "Sub space booking gaps", type: :request do
       expect(capped_booking.reload.name).not_to eq("Sneaky")
     end
 
+    # FIXED(retro round 3): the duration cap, like the weekly quota, only applies when the times move
+    it "lets the owner rename a booking longer than a since-lowered duration cap, but not move it" do
+      capped = create(:sub_space, space: space, maximum_booking_duration: 1)
+      long = pending_booking(user, sub_space: capped,
+                                   end_time: DateTime.parse("2027-04-03 13:00")) # 3h, over the 1h cap
+      patch update_path_for(long), as: :json, params: {
+        sub_space_booking: { start_time: "2027-04-03T10:00:00Z", end_time: "2027-04-03T13:00:00Z",
+                             name: "Renamed", description: "D" }
+      }
+      expect(response).to have_http_status(:ok)
+      expect(long.reload.name).to eq("Renamed")
+
+      patch update_path_for(long), as: :json, params: {
+        sub_space_booking: { start_time: "2027-04-03T11:00:00Z", end_time: "2027-04-03T14:00:00Z",
+                             name: "Moved", description: "D" }
+      }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body["errors"].first).to start_with("DurationHour")
+      expect(long.reload.name).to eq("Renamed")
+    end
+
     it "accepts a within-cap update that carries an explicit offset" do
       capped = create(:sub_space, space: space, maximum_booking_duration: 1)
       capped_booking = pending_booking(user, sub_space: capped)

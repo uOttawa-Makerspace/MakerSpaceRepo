@@ -541,8 +541,12 @@ class SubSpaceBookingController < SessionsController
     sub_space = @sub_space_booking.sub_space
     duration = (@sub_space_booking.end_time - @sub_space_booking.start_time) / 1.hour
 
+    # The limits only matter when the booking's times move; renaming a booking
+    # must not be blocked because a room's limits were lowered since.
+    times_changed = @sub_space_booking.start_time_changed? || @sub_space_booking.end_time_changed?
+
     max_duration = sub_space.maximum_booking_duration
-    if !max_duration.nil? && !@user.admin? && duration > max_duration
+    if !max_duration.nil? && !@user.admin? && times_changed && duration > max_duration
       render_update_limit_error(
         "DurationHour",
         "You cannot book #{sub_space.name} for more than #{max_duration} hours."
@@ -550,11 +554,8 @@ class SubSpaceBookingController < SessionsController
       return
     end
 
-    # The weekly quota only matters when the booking's times move; renaming a
-    # booking must not be blocked by a week that is already over quota.
     max_per_week = sub_space.maximum_booking_hours_per_week
-    if !max_per_week.nil? && !@user.admin? &&
-         (@sub_space_booking.start_time_changed? || @sub_space_booking.end_time_changed?) &&
+    if !max_per_week.nil? && !@user.admin? && times_changed &&
          weekly_booked_hours(@sub_space_booking) + duration > max_per_week
       render_update_limit_error(
         "DurationWeek",
