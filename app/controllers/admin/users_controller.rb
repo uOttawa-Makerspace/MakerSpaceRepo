@@ -20,6 +20,8 @@ class Admin::UsersController < AdminAreaController
 
   ASSIGNABLE_ROLES = %w[admin staff regular_user volunteer].freeze
 
+  LAST_ADMIN_MESSAGE = "You cannot remove the last admin."
+
   def index
     unless valid_sort_params?
       redirect_to admin_users_path, alert: "Invalid parameters!"
@@ -88,6 +90,11 @@ class Admin::UsersController < AdminAreaController
     end
 
     delete_user = User.find(params[:id])
+    if last_admin?(delete_user)
+      redirect_to user_path(delete_user.username), alert: LAST_ADMIN_MESSAGE
+      return
+    end
+
     soft_delete_user(delete_user)
     redirect_to root_path, notice: "User flagged as deleted"
   end
@@ -106,6 +113,14 @@ class Admin::UsersController < AdminAreaController
   end
 
   def set_role
+    if valid_role_update_params? && removes_last_admin?
+      respond_to do |format|
+        format.json { render json: { error: LAST_ADMIN_MESSAGE }, status: :unprocessable_content }
+        format.any { redirect_back(fallback_location: root_path, alert: LAST_ADMIN_MESSAGE) }
+      end
+      return
+    end
+
     update_user_roles if valid_role_update_params?
     update_user_staff_spaces if params[:spaces].present?
 
@@ -367,6 +382,19 @@ class Admin::UsersController < AdminAreaController
   # ============================================
   # Role Management
   # ============================================
+
+  def last_admin?(user)
+    user.admin? && User.where(role: "admin").where.not(id: user.id).none?
+  end
+
+  # True when the requested role change would leave no admin at all.
+  def removes_last_admin?
+    return false if params[:role] == "admin"
+
+    user_ids = params[:user_ids].map(&:to_i)
+    User.where(role: "admin", id: user_ids).any? &&
+      User.where(role: "admin").where.not(id: user_ids).none?
+  end
 
   def update_user_roles
     # SECURITY: Validate role before assignment

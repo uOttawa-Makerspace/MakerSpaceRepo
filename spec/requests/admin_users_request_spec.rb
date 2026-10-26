@@ -275,11 +275,32 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(target.reload.role).to eq("regular_user")
     end
 
-    it "admin can demote themselves, including the last admin" do
-      # WART(D-I21): no guard against demoting yourself / the last remaining admin via set_role
+    it "blocks demoting the last admin (HTML: redirect + alert)" do
+      # FIXED(D-I21): set_role refuses a change that would leave no admin
+      patch set_role_admin_users_path, params: { role: "regular_user", user_ids: [admin.id] }
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You cannot remove the last admin.")
+      expect(admin.reload.role).to eq("admin")
+    end
+
+    it "blocks demoting the last admin with a 422 JSON error (React app)" do
+      patch set_role_admin_users_path, params: { role: "staff", user_ids: [admin.id, target.id] }.to_json,
+                                       headers: { "Content-Type" => "application/json", "Accept" => "application/json" }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(JSON.parse(response.body)["error"]).to eq("You cannot remove the last admin.")
+      expect(admin.reload.role).to eq("admin")
+      expect(target.reload.role).to eq("regular_user")
+    end
+
+    it "lets an admin demote themselves when another admin remains" do
+      create(:user, :admin)
       patch set_role_admin_users_path, params: { role: "regular_user", user_ids: [admin.id] }
       expect(admin.reload.role).to eq("regular_user")
-      expect(User.where(role: "admin").count).to eq(0)
+    end
+
+    it "still lets an admin promote and keeps the admin when role is admin" do
+      patch set_role_admin_users_path, params: { role: "admin", user_ids: [admin.id, target.id] }
+      expect(target.reload.role).to eq("admin")
     end
 
     it "does not touch soft-deleted users (default scope)" do
@@ -358,8 +379,16 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(response).to have_http_status(:not_found)
     end
 
-    it "an admin may delete themselves" do
-      # WART(D-I22): no guard against an admin soft-deleting their own account (or the last admin)
+    it "refuses to delete the last admin (even themselves)" do
+      # FIXED(D-I22): the last admin cannot be soft-deleted
+      delete delete_user_admin_users_path, params: { id: admin.id, password: password }
+      expect(response).to redirect_to(user_path(admin.username))
+      expect(flash[:alert]).to eq("You cannot remove the last admin.")
+      expect(User.unscoped.find(admin.id).deleted).to be(false)
+    end
+
+    it "lets an admin delete themselves when another admin remains" do
+      create(:user, :admin)
       delete delete_user_admin_users_path, params: { id: admin.id, password: password }
       expect(User.unscoped.find(admin.id).deleted).to be(true)
     end
