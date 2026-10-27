@@ -55,4 +55,36 @@ RSpec.describe "Confirm dialogs", type: :system do
     dismiss_confirm("Legacy?") { click_button "Probe go" }
     expect(page.evaluate_script("window.listenerRuns")).to eq(0)
   end
+
+  def add_link(classes:, attrs:)
+    page.execute_script(<<~JS)
+      window.linkRuns = 0;
+      const a = document.createElement("a");
+      a.id = "probe-link"; a.className = "#{classes}"; a.href = "#probe-hit"; a.textContent = "Probe link";
+      #{attrs.map { |k, v| "a.setAttribute('#{k}', '#{v}');" }.join}
+      a.addEventListener("click", (e) => { window.linkRuns += 1; e.preventDefault(); });
+      document.body.prepend(a);
+    JS
+  end
+
+  it "prompts natively for a .useTurbo link with data-turbo-confirm but no data-turbo-method" do
+    add_link(classes: "useTurbo", attrs: { "data-turbo-confirm" => "Visit?" })
+    dismiss_confirm("Visit?") { click_link "Probe link" }
+    expect(page.evaluate_script("window.linkRuns")).to eq(0)
+    accept_confirm("Visit?") { click_link "Probe link" }
+    expect(page.evaluate_script("window.linkRuns")).to eq(1)
+  end
+
+  it "uses the submitter's own message over the form's" do
+    add_form(classes: "", attrs: { "data-confirm" => "Form?" })
+    page.execute_script("document.getElementById('probe-go').setAttribute('data-confirm', 'Button?')")
+    accept_confirm("Button?") { click_button "Probe go" }
+    expect(page.evaluate_script("window.listenerRuns")).to eq(1)
+  end
+
+  it "does not switch Turbo off for an explicit data-turbo=true form" do
+    add_form(classes: "", attrs: { "data-turbo" => "true" })
+    click_button "Probe go"
+    expect(page.evaluate_script("document.getElementById('probe').getAttribute('data-turbo')")).to eq("true")
+  end
 end

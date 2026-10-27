@@ -35,8 +35,11 @@ document.addEventListener("turbo:before-render", (event) => {
     });
 });
 
-// Single rule for "Turbo is off for this element": everything without .useTurbo.
-const turboOff = (el) => !el.classList.contains("useTurbo");
+// Single rule for "Turbo is off for this element": everything without .useTurbo,
+// except elements explicitly data-turbo="true" (Turbo 8 builds such hidden forms
+// for data-turbo-method links; marking them off would submit a DELETE as a GET).
+const turboOff = (el) =>
+  el.dataset.turbo !== "true" && !el.classList.contains("useTurbo");
 const disableTurboUnlessOptedIn = (root = document) => {
   root.querySelectorAll("form, a").forEach((el) => {
     if (turboOff(el)) el.dataset.turbo = "false";
@@ -68,22 +71,28 @@ document.addEventListener("turbo:load", () => {
 });
 
 // Confirmations Turbo does not show. Turbo prompts only for data-turbo-confirm
-// on elements it handles (.useTurbo); everything else, and legacy data-confirm
-// (rails-ujs is not loaded), is prompted here. Handling an element also marks it
-// data-turbo=false (the same rule as the turbo:load pass), so a click before
+// on elements it handles; everything else (Turbo off, legacy data-confirm since
+// rails-ujs is not loaded, a Turbo link without data-turbo-method, which Turbo 8
+// does not prompt for) is prompted here. The first of `sources` (submitter before
+// form) that carries a message decides. Handling an element also marks it
+// data-turbo=false (same rule as the turbo:load pass), so a click before
 // turbo:load neither skips the prompt nor lets Turbo prompt again.
-const confirmMessage = (off, ...elements) => {
-  const turbo = elements.find((el) => el?.dataset.turboConfirm);
-  if (turbo) return off ? turbo.dataset.turboConfirm : null;
-  return elements.find((el) => el?.dataset.confirm)?.dataset.confirm || null;
+const confirmMessage = (turboPrompts, sources) => {
+  for (const el of sources) {
+    if (!el) continue;
+    if (el.dataset.turboConfirm) return turboPrompts ? null : el.dataset.turboConfirm;
+    if (el.dataset.confirm) return el.dataset.confirm;
+  }
+  return null;
 };
 
-const declined = (event, off, ...elements) => {
-  const msg = confirmMessage(off, ...elements);
-  if (!msg || window.confirm(msg)) return false;
+const confirmOrCancel = (event, el, { turboPrompts = false, sources = [el] } = {}) => {
+  const off = turboOff(el);
+  if (off) el.dataset.turbo = "false";
+  const msg = confirmMessage(!off && turboPrompts, sources);
+  if (!msg || window.confirm(msg)) return;
   event.preventDefault();
   event.stopImmediatePropagation();
-  return true;
 };
 
 document.addEventListener(
@@ -91,9 +100,7 @@ document.addEventListener(
   (event) => {
     const form = event.target;
     if (!(form instanceof HTMLFormElement)) return;
-    const off = turboOff(form);
-    if (off) form.dataset.turbo = "false";
-    declined(event, off, event.submitter, form);
+    confirmOrCancel(event, form, { turboPrompts: true, sources: [event.submitter, form] });
   },
   true,
 );
@@ -105,9 +112,7 @@ document.addEventListener(
       event.target instanceof Element &&
       event.target.closest("a[data-turbo-confirm], a[data-confirm]");
     if (!link) return;
-    const off = turboOff(link);
-    if (off) link.dataset.turbo = "false";
-    declined(event, off, link);
+    confirmOrCancel(event, link, { turboPrompts: Boolean(link.dataset.turboMethod) });
   },
   true,
 );
