@@ -26,6 +26,61 @@ RSpec.describe "Tap box ActionCable channels" do
     it "rejects a session whose user no longer exists" do
       expect { connect "/cable", session: { user_id: 0 } }.to have_rejected_connection
     end
+
+    # A12 rules (lib/jwt_authenticator.rb), shared with the HTTP side
+    describe "session rules" do
+      let(:user) { create(:user, :staff) }
+
+      it "rejects a session whose token_version no longer matches (password changed/reset, admin lock)" do
+        stale = { user_id: user.id, token_version: user.token_version }
+        user.update_columns(token_version: user.token_version + 1)
+        expect { connect "/cable", session: stale }.to have_rejected_connection
+        expect { connect "/cable", session: stale.merge(token_version: user.token_version) }.not_to have_rejected_connection
+      end
+
+      it "treats a session without token_version as version 0" do
+        expect { connect "/cable", session: { user_id: user.id } }.not_to have_rejected_connection
+        user.update_columns(token_version: 1)
+        expect { connect "/cable", session: { user_id: user.id } }.to have_rejected_connection
+      end
+
+      it "rejects a deactivated or soft-deleted user" do
+        user.update_columns(active: false)
+        expect { connect "/cable", session: { user_id: user.id, token_version: user.token_version } }.to have_rejected_connection
+        user.update_columns(active: true, deleted: true)
+        expect { connect "/cable", session: { user_id: user.id, token_version: user.token_version } }.to have_rejected_connection
+      end
+
+      it "rejects an idle-expired session and accepts one inside the window" do
+        expect { connect "/cable", session: { user_id: user.id, expires_at: 1.minute.ago } }.to have_rejected_connection
+        expect { connect "/cable", session: { user_id: user.id, expires_at: 1.hour.from_now } }.not_to have_rejected_connection
+      end
+    end
+
+    describe "Bearer JWT" do
+      let(:user) { create(:user, :staff) }
+
+      it "identifies the user from the Authorization header" do
+        connect "/cable", headers: { "Authorization" => "Bearer #{user.token}" }
+        expect(connection.current_user).to eq(user)
+      end
+
+      it "identifies the user from a token query param" do
+        connect "/cable?token=#{user.token}"
+        expect(connection.current_user).to eq(user)
+      end
+
+      it "rejects garbage, a revoked (old token_version) token and an inactive user's token" do
+        old = user.token
+        expect { connect "/cable", headers: { "Authorization" => "Bearer nope" } }.to have_rejected_connection
+        expect { connect "/cable?token=nope" }.to have_rejected_connection
+        user.update_columns(token_version: user.token_version + 1)
+        expect { connect "/cable", headers: { "Authorization" => "Bearer #{old}" } }.to have_rejected_connection
+        expect { connect "/cable", headers: { "Authorization" => "Bearer #{user.token}" } }.not_to have_rejected_connection
+        user.update_columns(active: false)
+        expect { connect "/cable", headers: { "Authorization" => "Bearer #{user.token}" } }.to have_rejected_connection
+      end
+    end
   end
 
   describe StaffDashboardChannel, type: :channel do
