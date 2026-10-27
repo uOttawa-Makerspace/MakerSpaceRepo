@@ -14,8 +14,6 @@ require "rails_helper"
 #   SettingsController: signed_in only (any role)
 # Guests get current_user = User.new (never nil).
 RSpec.describe "Content pages (part 2)", type: :request do
-  after { I18n.locale = I18n.default_locale }
-
   def login_redirect?(path)
     expect(response).to have_http_status(:found)
     expect(CGI.unescape(response.location)).to include("/login?back_to=#{path}")
