@@ -3,7 +3,8 @@
 require "jwt"
 
 # The one rule for "is this Bearer JWT acceptable?", shared by
-# ApplicationHelper#has_valid_jwt? and the direct-upload authentication.
+# ApplicationHelper#has_valid_jwt?. Other Bearer entry points (e.g. direct
+# uploads) should call it instead of decoding tokens themselves.
 # Returns the User the token authenticates, or nil.
 #
 # Rejected: bad signature / expired token, a `ver` that differs from the

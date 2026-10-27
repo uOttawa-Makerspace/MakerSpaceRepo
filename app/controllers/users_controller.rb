@@ -208,6 +208,7 @@ class UsersController < SessionsController
     if @user.update(user_params.slice(:password, :password_confirmation))
       @user.pword = @user.password
       @user.save
+      session[:token_version] = @user.token_version if session[:user_id] # this session stays signed in
       MsrMailer.confirm_password_change(@user).deliver_now
       redirect_to settings_admin_path,
                   notice:
@@ -262,6 +263,7 @@ class UsersController < SessionsController
       end
       user.pword = params[:password]
       if user.save!
+        session[:token_version] = user.token_version if session[:user_id] == user.id
         MsrMailer.confirm_password_change(user).deliver_now
         flash[
           :notice

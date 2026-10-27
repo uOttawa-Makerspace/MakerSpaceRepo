@@ -389,6 +389,70 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
     end
   end
 
+  describe "cookie sessions and token_version (D-I01)" do
+    let(:new_pw) { "NewPassw0rd!x#9" }
+
+    def attacker
+      @attacker ||= open_session.tap do |sess|
+        sess.post login_authentication_path, params: { username_email: user.username, password: password }
+      end
+    end
+
+    def attacker_signed_in?
+      attacker.get check_signed_in_path
+      JSON.parse(attacker.response.body)["signed_in"] == "true"
+    end
+
+    it "stores the token_version in the session at sign-in" do
+      user.update_columns(token_version: 3)
+      login!(user)
+      expect(session[:token_version]).to eq(3)
+    end
+
+    it "a session opened before a password change is rejected afterwards and cannot mint a JWT" do
+      # FIXED(D-I01): cookie sessions are checked against token_version too
+      expect(attacker_signed_in?).to be(true)
+      login!(user)
+      patch change_password_user_path(user.username),
+            params: { user: { old_password: password, password: new_pw, password_confirmation: new_pw } }
+      expect(attacker_signed_in?).to be(false)
+      expect(JSON.parse(attacker.response.body)).not_to have_key("token")
+    end
+
+    it "the session that changes the password stays signed in" do
+      login!(user)
+      patch change_password_user_path(user.username),
+            params: { user: { old_password: password, password: new_pw, password_confirmation: new_pw } }
+      get check_signed_in_path
+      expect(JSON.parse(response.body)["signed_in"]).to eq("true")
+      expect(session[:token_version]).to eq(1)
+    end
+
+    it "a session opened before a password reset is rejected afterwards" do
+      expect(attacker_signed_in?).to be(true)
+      patch reset_password_confirmation_users_path,
+            params: { token: user.generate_token_for(:password_reset), password: new_pw, password_confirmation: new_pw }
+      expect(attacker_signed_in?).to be(false)
+    end
+
+    it "a signed-in user who resets their own password stays signed in" do
+      login!(user)
+      patch reset_password_confirmation_users_path,
+            params: { token: user.generate_token_for(:password_reset), password: new_pw, password_confirmation: new_pw }
+      get check_signed_in_path
+      expect(JSON.parse(response.body)["signed_in"]).to eq("true")
+    end
+
+    it "a session from before the deploy (no token_version key) counts as version 0" do
+      login!(user)
+      get check_signed_in_path
+      expect(JSON.parse(response.body)["signed_in"]).to eq("true")
+      user.update_columns(token_version: 1)
+      get check_signed_in_path
+      expect(JSON.parse(response.body)["signed_in"]).to eq("false")
+    end
+  end
+
   describe "GET /logout" do
     it "clears the session and redirects to root" do
       login!(user)

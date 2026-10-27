@@ -16,6 +16,7 @@ module ApplicationHelper
       reset_session # new session id on privilege change (session fixation)
       kept.each { |key, value| session[key] = value }
       session[:user_id] = user.id
+      session[:token_version] = user.token_version
     end
     user
   end
@@ -24,12 +25,32 @@ module ApplicationHelper
     locale = session[:locale]
     reset_session
     session[:locale] = locale if locale
+    @session_user = nil
+    @user = nil
   end
 
   def current_user
-    @user ||= User.find(session[:user_id]) if session[:user_id].present?
+    @user ||= session_user
     @user ||= jwt_user
     @user ||= User.new
+  end
+
+  # The cookie-session user, or nil. A session whose stored token_version no
+  # longer matches the user's (password changed/reset elsewhere; a session
+  # without the key is version 0) is ended, like an expired session.
+  def session_user
+    return @session_user if defined?(@session_user)
+
+    @session_user = nil
+    return nil if session[:user_id].blank?
+
+    user = User.find(session[:user_id])
+    if session.fetch(:token_version, 0) == user.token_version
+      @session_user = user
+    else
+      sign_out
+    end
+    @session_user
   end
 
   def github_client
@@ -38,7 +59,7 @@ module ApplicationHelper
   end
 
   def signed_in?
-    session[:user_id].present? || has_valid_jwt?
+    session_user.present? || has_valid_jwt?
   end
 
   def has_valid_jwt?
