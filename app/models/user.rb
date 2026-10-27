@@ -194,7 +194,6 @@ class User < ApplicationRecord
   # bcrypt hash, which can contain a word of the name/email by chance, so the
   # rules must not run on it (they used to, on every update of the user, making
   # unrelated saves such as the brute-force lock fail silently).
-  BCRYPT_HASH = /\A\$2[abxy]?\$\d{2}\$[.\/A-Za-z0-9]{53}\z/
   PASSWORD_STRENGTH_OPTIONS = { name: :username, email: :email }.freeze
   validates :password,
             password: PASSWORD_STRENGTH_OPTIONS,
@@ -384,11 +383,14 @@ class User < ApplicationRecord
   # (a rolled-back change_password reloads the user).
   def reload(*)
     @pword = nil
+    @own_password_hash = nil
     super
   end
 
+  # True unless the value in `password` is the hash pword= produced: a
+  # bcrypt-SHAPED string typed by a user is still a plaintext password.
   def plaintext_password_changing?
-    password_changed? && password.present? && !BCRYPT_HASH.match?(password)
+    password_changed? && password.present? && password != @own_password_hash
   end
 
   # Problems with a candidate plaintext password (strength rules only; no other
@@ -408,6 +410,7 @@ class User < ApplicationRecord
 
   def pword=(new_password)
     @pword = Password.create(new_password)
+    @own_password_hash = @pword.to_s
     self.token_version += 1 if persisted?
     self.password = @pword
     self.password_confirmation = @pword

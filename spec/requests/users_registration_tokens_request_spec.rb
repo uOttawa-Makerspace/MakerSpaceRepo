@@ -96,6 +96,14 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(response).to have_http_status(:unprocessable_content)
     end
 
+    it "checks a bcrypt-shaped plaintext password for strength like any other (it is not skipped by its shape)" do
+      shaped = "$2a$10$" + ("a" * 22) + "signupname" + ("b" * 21)
+      expect {
+        post users_path, params: { user: registration_params(username: "signupname", password: shaped) }
+      }.not_to change(User, :count)
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
     it "rejects a duplicate email regardless of case" do
       existing = create(:user, :regular_user)
       expect {

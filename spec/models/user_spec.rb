@@ -961,6 +961,21 @@ RSpec.describe User, type: :model do
       expect(u.errors[:password]).to be_present
     end
 
+    it "a bcrypt-SHAPED plaintext is still checked for strength; only the hash pword= made is skipped" do
+      shaped = "$2a$10$" + ("a" * 22) + "hunterxsmith" + ("b" * 19)
+      typed = build(:user, :regular_user, username: "hunterxsmith")
+      typed.password = shaped
+      typed.password_confirmation = shaped
+      expect(typed).not_to be_valid
+      expect(typed.errors[:password]).to be_present
+
+      own = build(:user, :regular_user, username: "hunterxsmith")
+      allow(BCrypt::Password).to receive(:create).and_return(BCrypt::Password.new(shaped))
+      own.pword = "Xk3#vbN9!qLw"
+      own.valid?
+      expect(own.errors[:password]).to be_empty
+    end
+
     it "plaintext_password_problems reports weak passwords and runs no other validation" do
       expect(u.plaintext_password_problems("abc")).not_to be_empty
       expect(u.plaintext_password_problems("")).not_to be_empty
