@@ -18,12 +18,13 @@ class SamlIdpController < ApplicationController
 
   before_action :enforce_saml_request, only: %i[login auth]
 
-  # Password guesses over SAML get the same budget as SessionsController#login_authentication
-  # (10 per 3 minutes per IP). Only the credential submission is counted.
-  rate_limit to: 10, within: 3.minutes, only: :auth, if: -> { params[:submit] == "sign_in" }, with: -> {
+  # Password guesses over SAML draw on the SAME budget as
+  # SessionsController#login_authentication (one limit, window and cache key per IP).
+  # Only the credential submission is counted.
+  rate_limit(**SessionsController::SIGN_IN_RATE_LIMIT, only: :auth, if: -> { params[:submit] == "sign_in" }, with: -> {
     @error_message = "Too many requests. Please wait a few minutes and try again."
     render template: "saml/login", status: :too_many_requests
-  }
+  })
 
   layout false # this is technically outside the "standard" website
 

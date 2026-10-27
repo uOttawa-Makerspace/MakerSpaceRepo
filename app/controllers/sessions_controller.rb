@@ -7,9 +7,13 @@ class SessionsController < ApplicationController
   before_action :update_activity_time
   before_action :current_user, only: [:login]
   before_action :authorized_repo_ids
-  rate_limit to: 10, within: 3.minutes, only: :login_authentication, with: -> {
+  # Password-guess budget shared with SamlIdpController (same limit, window and
+  # cache key), so the two sign-in surfaces cannot be alternated to double it.
+  SIGN_IN_RATE_LIMIT = { to: 10, within: 3.minutes, scope: "password-sign-in" }.freeze
+
+  rate_limit(**SIGN_IN_RATE_LIMIT, only: :login_authentication, with: -> {
     render status: :too_many_requests, json: { error: "Too many requests" }
-  }
+  })
 
   SUPPORT_EMAIL = "uottawa.makerepo@gmail.com"
   

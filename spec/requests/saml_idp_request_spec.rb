@@ -332,6 +332,18 @@ RSpec.describe "SAML IdP", type: :request do
         expect(c18_saml_response_xml).to be_nil
       end
 
+      it "shares one budget with the HTML login: 6 HTML + 5 SAML attempts from one IP: the 11th is a 429" do
+        6.times { post login_authentication_path, params: { username_email: user.username, password: "wrong" } }
+        expect(response).not_to have_http_status(:too_many_requests)
+        4.times do
+          post_auth(submit: "sign_in", username: user.username, password: "wrong")
+          expect(response).to have_http_status(:ok)
+        end
+        post_auth(submit: "sign_in", username: user.username, password: password) # the 11th attempt
+        expect(response).to have_http_status(:too_many_requests)
+        expect(c18_saml_response_xml).to be_nil
+      end
+
       it "does not count current_user / logout submissions" do
         c18_sign_in(:regular)
         12.times { post_auth(submit: "current_user") }
