@@ -9,7 +9,7 @@ class ApplicationController < ActionController::Base
   include ApplicationHelper
   require "zip"
   include Pagy::Method
-  before_action :set_locale
+  around_action :switch_locale
   before_action :set_last_seen_at,
                 if:
                   proc {
@@ -21,9 +21,15 @@ class ApplicationController < ActionController::Base
                   }
   helper_method :current_order
 
-  def set_locale
-    I18n.locale = params[:locale] || session[:locale] || I18n.default_locale
-    session[:locale] = I18n.locale
+  # I18n.locale is thread-global, so scope it to the request (with_locale
+  # restores it afterwards) and ignore unsupported values instead of raising
+  # I18n::InvalidLocale.
+  def switch_locale(&action)
+    available = I18n.available_locales.map(&:to_s)
+    candidate = [params[:locale], session[:locale]].find { |l| l.to_s.presence_in(available) }
+    locale = candidate ? candidate.to_s.to_sym : I18n.default_locale
+    session[:locale] = locale
+    I18n.with_locale(locale, &action)
   end
 
   def current_order

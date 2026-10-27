@@ -14,9 +14,6 @@ require "rails_helper"
 # renders. spec/support/webmock.rb installs happy-path empty stubs; the
 # examples below re-stub them to exercise each failure mode.
 RSpec.describe "Static pages", type: :request do
-  # set_locale writes the thread-global I18n.locale; do not leak :fr
-  after { I18n.locale = I18n.default_locale }
-
   let(:simpli_url) { %r{\Ahttps://simpli\.events/api/organizer/} }
   let(:shopify_url) { %r{\Ahttps://[^/]+\.myshopify\.com/admin/api/} }
 
@@ -280,10 +277,24 @@ RSpec.describe "Static pages", type: :request do
       expect(session[:locale]).to eq(:fr)
     end
 
-    # WART(D-P01): an unsupported ?locale= raises I18n::InvalidLocale (500) instead of falling back to the default
-    it "answers 500 for an unsupported locale param" do
+    it "ignores an unsupported locale param: default locale, bad value not stored" do
       get root_path, params: { locale: "xx" }
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:ok)
+      expect(session[:locale]).to eq(I18n.default_locale)
+    end
+
+    it "does not 500 on an unsupported locale already in the session" do
+      get root_path, params: { locale: "fr" }
+      allow_any_instance_of(ActionDispatch::Request).to receive(:session).and_wrap_original do |m, *a|
+        m.call(*a).tap { |sess| sess[:locale] = "xx" }
+      end
+      get root_path
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "does not leak the request locale into the calling thread" do
+      get root_path, params: { locale: "fr" }
+      expect(I18n.locale).to eq(I18n.default_locale)
     end
   end
 
