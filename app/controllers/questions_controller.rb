@@ -60,7 +60,7 @@ class QuestionsController < AdminAreaController
   end
 
   def remove_answer
-    @question.answers.find(params[:answer_id]).destroy
+    @question.answers.where(correct: false).find(params[:answer_id]).destroy
     redirect_to edit_question_path(@question),
                 notice: "Successfully removed answer"
   end

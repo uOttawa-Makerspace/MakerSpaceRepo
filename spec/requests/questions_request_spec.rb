@@ -221,6 +221,12 @@ RSpec.describe "Questions (admin question bank)", type: :request do
       expect(Answer.exists?(victim.id)).to be(false)
     end
 
+    it "404s and keeps the correct answer" do
+      correct = question.answers.find_by!(correct: true)
+      expect { delete remove_answer_question_path(question, answer_id: correct.id) }.not_to change(Answer, :count)
+      expect(response).to have_http_status(:not_found)
+    end
+
     it "404s and destroys nothing for an answer that belongs to another question" do
       other = create(:question)
       victim = Answer.create!(question: other, correct: false, description: "someone else's")
