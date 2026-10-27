@@ -9,14 +9,20 @@ class RfidController < SessionsController
   before_action :signed_in, only: %i[get_unset_rfids]
   before_action :grant_access, only: %i[get_unset_rfids]
 
-  # D-EQ03: per reader (mac) or per staff user, generous for a busy door; plus a
-  # coarse per-IP ceiling (readers may share one NAT egress IP) that caps floods
-  # of made-up MACs.
+  # D-EQ03: 60 taps/min per reader (mac AND source IP: a real reader taps from a
+  # fixed IP, so someone replaying a known MAC from elsewhere only exhausts their
+  # own bucket and cannot lock the real door out) or per staff user, plus a coarse
+  # 600/min per-IP ceiling (readers may share one NAT egress IP).
   RATE_LIMITED = -> { render json: { error: "Too many requests" }, status: :too_many_requests }
   rate_limit to: 60, within: 1.minute, only: :card_number, name: "tap",
              by: -> { tap_rate_limit_key }, with: RATE_LIMITED
   rate_limit to: 600, within: 1.minute, only: :card_number, name: "tap-ip",
              by: -> { request.remote_ip }, with: RATE_LIMITED
+
+  # Rejected taps (unknown MAC, 401) are counted per IP and capped much tighter,
+  # to slow brute-forcing of a reader's MAC. Only rejections count, so a real
+  # reader on the same IP is never throttled by them.
+  REJECTED_TAPS_PER_MINUTE = 10
 
   # Shows the list of student cards tapped for staff members to link to newly
   # signed up users
@@ -55,6 +61,8 @@ class RfidController < SessionsController
     # D-EQ01/D-EQ03: no staff auth and no registered reader -> nothing is
     # created, logged or broadcast.
     unless staff || pi_reader
+      return render json: { error: "Too many requests" }, status: :too_many_requests if rejected_taps_exceeded?
+
       return render json: { error: "Unauthorized" }, status: :unauthorized
     end
 
@@ -142,11 +150,16 @@ class RfidController < SessionsController
     tap_reader&.pi_mac_address || tap_mac_address
   end
 
+  def rejected_taps_exceeded?
+    count = self.class.cache_store.increment("rate-limit:rfid:rejected:#{request.remote_ip}", 1, expires_in: 1.minute)
+    count.present? && count > REJECTED_TAPS_PER_MINUTE
+  end
+
   def tap_rate_limit_key
     if tap_staff?
       "staff:#{current_user.id}"
     elsif tap_mac_address
-      "mac:#{tap_mac_address}"
+      "mac:#{tap_mac_address}|ip:#{request.remote_ip}"
     else
       "ip:#{request.remote_ip}"
     end

@@ -413,11 +413,48 @@ RSpec.describe "RFID endpoints", type: :request do
       expect(other_session.response).to have_http_status(:ok)
     end
 
-    it "caps floods of made-up macs per IP at 600 a minute" do
-      600.times { |i| post rfid_card_number_path, params: { rfid: "X", mac_address: "00:00:00:00:#{i / 256}:#{i % 256}" }, as: :json }
-      expect(response).to have_http_status(:unauthorized)
-      post rfid_card_number_path, params: { rfid: "X", mac_address: "ff:ff:ff:ff:ff:ff" }, as: :json
+    it "caps all taps per source IP at 600 a minute" do
+      counts["rate-limit:rfid:tap-ip:127.0.0.1"] = 600
+      tap_card
       expect(response).to have_http_status(:too_many_requests)
+    end
+
+    describe "per reader mac AND source IP (A10 review: a known MAC cannot lock the door out)" do
+      let(:attacker) { { "REMOTE_ADDR" => "203.0.113.9" } }
+
+      it "lets a flood from another IP exhaust only its own bucket, not the real reader's" do
+        61.times { post rfid_card_number_path, params: { rfid: rfid.card_number, mac_address: pi_reader.pi_mac_address }, headers: attacker, as: :json }
+        expect(response).to have_http_status(:too_many_requests)
+        tap_card # the real reader, fixed IP 127.0.0.1
+        expect(response).to have_http_status(:ok)
+        expect(body[:success]).to eq("RFID sign in")
+      end
+
+      it "treats mac case variants as one bucket for the same IP" do
+        60.times { tap_card }
+        tap_card_with(mac: pi_reader.pi_mac_address.upcase)
+        expect(response).to have_http_status(:too_many_requests)
+      end
+    end
+
+    describe "rejected taps (unknown mac) per IP" do
+      def bad_tap(i = 0, headers: {})
+        post rfid_card_number_path, params: { rfid: "X", mac_address: "00:00:00:00:00:%02x" % i }, headers: headers, as: :json
+      end
+
+      it "answers 401 ten times a minute per IP, then 429" do
+        10.times { |i| bad_tap(i); expect(response).to have_http_status(:unauthorized) }
+        bad_tap(11)
+        expect(response).to have_http_status(:too_many_requests)
+      end
+
+      it "does not throttle the real reader on the same IP, nor other IPs' rejections" do
+        11.times { |i| bad_tap(i) }
+        tap_card
+        expect(response).to have_http_status(:ok)
+        bad_tap(1, headers: { "REMOTE_ADDR" => "203.0.113.10" })
+        expect(response).to have_http_status(:unauthorized)
+      end
     end
   end
 end
