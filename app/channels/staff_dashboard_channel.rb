@@ -4,6 +4,9 @@ class StaffDashboardChannel < ApplicationCable::Channel
   # include Turbo::StreamsHelper
 
   def subscribed
+    # D-EQ31: tap-in modals carry names, emails and certifications: staff/admin only
+    return reject unless current_user&.staff?
+
     # stream_from takes a string as an argument
     # stream_for takes an object or a record
     stream_from "space_event_#{params[:space_id]}"

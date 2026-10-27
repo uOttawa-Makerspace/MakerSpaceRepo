@@ -92,7 +92,7 @@ RSpec.describe TapBoxLog, type: :model do
       expect(TapBoxLog.log_new_unknown_card(card_number: "C", space: space, mac_address: "m").event_type).to eq("warning")
       expect(TapBoxLog.log_invalid_rfid(card_number: nil, mac_address: "m", errors: ["bad"]).event_type).to eq("error")
       expect(TapBoxLog.log_no_space_resolved(card_number: "C", mac_address: "m").event_type).to eq("error")
-      expect(TapBoxLog.log_new_pi_reader(card_number: "C", mac_address: "m").event_type).to eq("info")
+      expect(TapBoxLog).not_to respond_to(:log_new_pi_reader) # readers no longer self-register (D-EQ03)
       expect(TapBoxLog.log_membership_check_queued(user: user, card_number: "C", space: space, mac_address: "m").event_type).to eq("info")
       expect(TapBoxLog.log_card_recognized(user: user, card_number: "C", space: space, mac_address: "m", elapsed_ms: 1.5).details).to include("user_email" => user.email, "resolve_time_ms" => 1.5)
     end

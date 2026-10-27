@@ -625,3 +625,115 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
     end
   end
 end
+
+RSpec.describe "Admin user changes on a legacy-invalid user", type: :request do
+  let(:password) { "asa32A353#" }
+  let(:admin) { create(:user, :admin) }
+  let!(:target) { create(:user, :staff) }
+  let(:disconnected) { [] }
+
+  before do
+    block_external_http!
+    allow(ActionCable.server.remote_connections).to receive(:where) do |current_user:|
+      double("remote").tap { |r| allow(r).to receive(:disconnect) { disconnected << current_user } }
+    end
+    post login_authentication_path, params: { username_email: admin.username, password: password }
+    target.update_columns(username: "old_user_name_longer_than_20", gender: "stale value")
+    expect(target.reload).not_to be_valid
+  end
+
+  it "demotes (one disconnect, role stored)" do
+    patch set_role_admin_users_path, params: { role: "regular_user", user_ids: [target.id] }
+    expect(target.reload.role).to eq("regular_user")
+    expect(disconnected).to eq([target])
+  end
+
+  it "does not disconnect on a promotion of an invalid row" do
+    patch set_role_admin_users_path, params: { role: "admin", user_ids: [target.id] }
+    expect(target.reload.role).to eq("admin")
+    expect(disconnected).to be_empty
+  end
+
+  it "soft-deletes (one disconnect, session and JWT dead) and restores" do
+    token = target.token
+    victim = open_session
+    victim.post login_authentication_path, params: { username_email: target.username, password: password }
+    victim.get check_signed_in_path
+    expect(JSON.parse(victim.response.body)["signed_in"]).to eq("true")
+
+    delete delete_user_admin_users_path, params: { id: target.id, password: password }
+    expect(response).to redirect_to(root_path)
+    expect(flash[:notice]).to eq("User flagged as deleted")
+    expect(User.unscoped.find(target.id).deleted).to be(true)
+    expect(disconnected).to eq([target])
+    victim.get check_signed_in_path
+    expect(JSON.parse(victim.response.body)["signed_in"]).to eq("false")
+    expect(JwtAuthenticator.user_for("Bearer #{token}")).to be_nil
+
+    patch restore_user_admin_users_path, params: { id: target.id }
+    expect(flash[:notice]).to eq("User restored!")
+    expect(User.unscoped.find(target.id).deleted).to be(false)
+    expect(disconnected).to eq([target])
+  end
+end
+
+RSpec.describe "Bulk role change atomicity", type: :request do
+  let(:password) { "asa32A353#" }
+  let(:admin) { create(:user, :admin) }
+
+  before do
+    block_external_http!
+    post login_authentication_path, params: { username_email: admin.username, password: password }
+  end
+
+  it "leaves every role unchanged when the second user's write raises" do
+    a = create(:user, :staff)
+    b = create(:user, :staff)
+    calls = 0
+    allow_any_instance_of(User).to receive(:change_role!).and_wrap_original do |m, *args|
+      calls += 1
+      raise ActiveRecord::StatementInvalid, "boom" if calls == 2
+      m.call(*args)
+    end
+    begin
+      patch set_role_admin_users_path, params: { role: "regular_user", user_ids: [a.id, b.id] }
+    rescue ActiveRecord::StatementInvalid
+      nil
+    end
+    expect(calls).to eq(2)
+    expect([a.reload.role, b.reload.role]).to eq(%w[staff staff])
+  end
+end
+
+RSpec.describe "Soft delete revokes sessions for good", type: :request do
+  let(:password) { "asa32A353#" }
+  let(:admin) { create(:user, :admin) }
+  let!(:target) { create(:user, :regular_user) }
+
+  before do
+    block_external_http!
+    post login_authentication_path, params: { username_email: admin.username, password: password }
+  end
+
+  it "keeps pre-delete sessions and JWTs dead after restore, while a fresh login works" do
+    token = target.token
+    victim = open_session
+    victim.post login_authentication_path, params: { username_email: target.username, password: password }
+    victim.get check_signed_in_path
+    expect(JSON.parse(victim.response.body)["signed_in"]).to eq("true")
+
+    delete delete_user_admin_users_path, params: { id: target.id, password: password }
+    patch restore_user_admin_users_path, params: { id: target.id }
+    expect(User.find(target.id).token_version).to eq(1)
+
+    victim.get check_signed_in_path
+    expect(JSON.parse(victim.response.body)["signed_in"]).to eq("false")
+    expect(JwtAuthenticator.user_for("Bearer #{token}")).to be_nil
+
+    fresh = open_session
+    fresh.post login_authentication_path, params: { username_email: target.username, password: password }
+    fresh.get check_signed_in_path
+    expect(JSON.parse(fresh.response.body)["signed_in"]).to eq("true")
+    expect(JwtAuthenticator.user_for("Bearer #{User.find(target.id).token}")).to eq(target)
+  end
+end

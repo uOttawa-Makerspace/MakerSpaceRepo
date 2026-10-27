@@ -120,7 +120,9 @@ class SessionsController < ApplicationController
   end
 
   def logout
+    leaving = current_user
     sign_out
+    leaving.disconnect_cable! if leaving.persisted?
     @user = User.new
     respond_to do |format|
       format.html { redirect_to root_path }

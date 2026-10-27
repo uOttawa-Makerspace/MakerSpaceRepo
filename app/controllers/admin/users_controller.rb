@@ -362,34 +362,22 @@ class Admin::UsersController < AdminAreaController
 
   def soft_delete_user(user)
     user.transaction do
-      user.deleted = true
       user.repositories.update_all(deleted: true)
       LabSession.where(user_id: user.id).destroy_all
       Certification.where(user_id: user.id).destroy_all
-      user.save!
+      user.soft_delete!
     end
   end
 
   def restore_user_account(user)
     user.transaction do
-      user.deleted = false
       user.repositories.update_all(deleted: false)
-      user.save!
+      user.restore!
     end
   end
 
   def toggle_user_lock_status(user)
-    locking = !user.locked
-    columns = {
-      locked: locking,
-      locked_until: locking ? 99.years.from_now : nil,
-      auth_attempts: locking ? 5 : 0,
-      updated_at: Time.current
-    }
-    # an admin lock ends every existing session and JWT for good (they stay dead after unlocking)
-    columns[:token_version] = user.token_version + 1 if locking
-    # update_columns: a validated save! raises for a row that is invalid for an unrelated legacy reason
-    user.update_columns(columns)
+    user.locked ? user.admin_unlock! : user.admin_lock!
   end
 
   # ============================================
@@ -425,10 +413,14 @@ class Admin::UsersController < AdminAreaController
     # SECURITY: Validate user_ids are integers
     user_ids = params[:user_ids].map(&:to_i).reject(&:zero?)
     
-    User.where(id: user_ids).find_each do |user|
-      # Audit log for role changes
-      Rails.logger.info "[ROLE_CHANGE] User##{user.id} role changed from '#{user.role}' to '#{params[:role]}' by Admin##{@user.id}"
-      user.update(role: params[:role])
+    # One transaction: a bulk change is all-or-nothing, and the cable disconnects
+    # (commit callback) fire only after it commits.
+    User.transaction do
+      User.where(id: user_ids).find_each do |user|
+        # Audit log for role changes
+        Rails.logger.info "[ROLE_CHANGE] User##{user.id} role changed from '#{user.role}' to '#{params[:role]}' by Admin##{@user.id}"
+        user.change_role!(params[:role])
+      end
     end
   end
 
