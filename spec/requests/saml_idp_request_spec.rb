@@ -95,7 +95,19 @@ RSpec.describe "SAML IdP", type: :request do
       expect(Nokogiri::XML(response.body).root["entityID"]).to eq("https://makerepo.com/saml/auth")
     end
 
-    it "keeps the assertion Issuer the request URL (unchanged by the metadata configuration)" do
+    it "uses the same value for the assertion Issuer and the metadata entityID when SAML_IDP_BASE_URL is set" do
+      stub_const("ENV", ENV.to_h.merge("SAML_IDP_BASE_URL" => "https://makerepo.com/"))
+      get "/saml/metadata"
+      entity_id = Nokogiri::XML(response.body).root["entityID"]
+      c18_sign_in(:regular)
+      post "/saml/auth", params: { SAMLRequest: c18_authn_request, submit: "current_user" }
+      doc = Nokogiri::XML(c18_saml_response_xml)
+      doc.remove_namespaces!
+      expect(doc.at_xpath("//Assertion/Issuer").text).to eq(entity_id)
+      expect(entity_id).to eq("https://makerepo.com/saml/auth")
+    end
+
+    it "keeps the assertion Issuer the request URL when SAML_IDP_BASE_URL is unset" do
       c18_sign_in(:regular)
       post "/saml/auth", params: { SAMLRequest: c18_authn_request, submit: "current_user" }
       doc = Nokogiri::XML(c18_saml_response_xml)

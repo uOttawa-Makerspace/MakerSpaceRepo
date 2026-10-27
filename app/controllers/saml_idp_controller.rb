@@ -76,10 +76,21 @@ class SamlIdpController < ApplicationController
 
   private
 
+  # The Issuer on assertions. With SAML_IDP_BASE_URL set it is the same value the
+  # metadata advertises as entityID (so an SP configured from the metadata accepts
+  # the responses); unset, the gem's request-derived URL is kept.
+  def issuer_uri
+    configured_base_url ? "#{configured_base_url}/saml/auth" : super
+  end
+
+  def configured_base_url
+    ENV["SAML_IDP_BASE_URL"].presence&.chomp("/")
+  end
+
   # The IdP's public base URL: SAML_IDP_BASE_URL when set (use it behind a proxy
   # that rewrites the host), otherwise the host this request came in on.
   def saml_base_url
-    (ENV["SAML_IDP_BASE_URL"].presence || request.base_url).chomp("/")
+    configured_base_url || request.base_url
   end
 
   # A per-request copy of the global config with the entityID and SSO endpoints
