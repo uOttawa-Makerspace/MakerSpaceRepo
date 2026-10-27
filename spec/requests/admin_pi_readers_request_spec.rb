@@ -126,6 +126,29 @@ RSpec.describe "Admin pi readers", type: :request do
       expect(response.body.scan("de:ad:be:ef:00:01").size).to eq(1) # now only in the registered readers table
     end
 
+    it "shows only the 50 most recently seen macs plus a count of the rest, with one registered-macs query" do
+      sign_in_as(:admin)
+      now = Time.current
+      rows = (0...60).map do |i|
+        { event_type: "warning", message: TapBoxLog::UNKNOWN_READER_MESSAGE, mac_address: "de:ad:be:ef:%02x:%02x" % [i / 256, i % 256],
+          created_at: now - i.minutes, updated_at: now - i.minutes, details: {} }
+      end
+      TapBoxLog.insert_all(rows)
+      create(:pi_reader, pi_mac_address: "de:ad:be:ef:00:00").tap { |r| r.update_column(:pi_mac_address, "DE:AD:BE:EF:00:00") } # newest, registered: filtered out
+
+      sql = []
+      sub = ActiveSupport::Notifications.subscribe("sql.active_record") { |*, payload| sql << payload[:sql] }
+      get edit_admin_space_path(space)
+      ActiveSupport::Notifications.unsubscribe(sub)
+
+      shown = response.body.scan(/de:ad:be:ef:00:[0-9a-f]{2}/).uniq.size
+      expect(shown).to eq(50)
+      expect(response.body).to include("de:ad:be:ef:00:01").and include("de:ad:be:ef:00:32")
+      expect(response.body).not_to include("de:ad:be:ef:00:33")
+      expect(response.body).to include("...and 9 more not shown.")
+      expect(sql.grep(/lower\(replace/)).to be_empty
+    end
+
     it "does not show the section to non-admins" do
       sign_in_as(:staff)
       get edit_admin_space_path(space)

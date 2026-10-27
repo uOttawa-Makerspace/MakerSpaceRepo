@@ -69,10 +69,12 @@ class TapBoxLog < ApplicationRecord
     where(event_type: WARNING, message: UNKNOWN_READER_MESSAGE)
   end
 
-  # { "aa:bb:..." => last_seen_at } for unregistered readers seen recently, newest first
-  def self.unknown_readers_seen(since: 7.days.ago)
-    unknown_reader_logs.where(created_at: since..).group(:mac_address).maximum(:created_at)
-                       .sort_by { |_mac, seen| seen }.reverse
+  # [[mac, last_seen_at], ...] for unregistered readers seen recently, newest first.
+  # Capped in SQL (a flood of fake MACs must not make the admin page expensive).
+  def self.unknown_readers_seen(since: 7.days.ago, limit: 1000)
+    unknown_reader_logs.where(created_at: since..).group(:mac_address)
+                       .order(Arel.sql("MAX(created_at) DESC")).limit(limit).maximum(:created_at)
+                       .to_a
   end
 
   def self.log_no_space_resolved(card_number:, mac_address:)

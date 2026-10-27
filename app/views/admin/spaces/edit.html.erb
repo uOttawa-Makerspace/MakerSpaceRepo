@@ -152,6 +152,9 @@
         </tr>
       <% end %>
     </table>
+    <% if @unknown_readers_more.positive? %>
+      <p class="text-muted">...and <%= @unknown_readers_more %> more not shown.</p>
+    <% end %>
 
     <h3>Register a new RFID Reader</h3>
     <p>Readers must be registered here before their taps are accepted.</p>

@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Admin::SpacesController < AdminAreaController
+  UNKNOWN_READERS_SHOWN = 50
+
   layout "admin_area"
 
   def index
@@ -104,7 +106,10 @@ class Admin::SpacesController < AdminAreaController
     @new_training = Training.new
     @sub_spaces = SubSpace.where(space: Space.find(params[:id]))
     # readers seen tapping but not registered (those already in pi_readers show in the tables above)
-    @unknown_readers = TapBoxLog.unknown_readers_seen.reject { |mac, _seen| PiReader.find_by_mac(mac) }
+    registered = PiReader.pluck(:pi_mac_address).filter_map { |mac| PiReader.normalize_mac(mac) }.to_set
+    unknown = TapBoxLog.unknown_readers_seen.reject { |mac, _seen| registered.include?(mac) }
+    @unknown_readers = unknown.first(UNKNOWN_READERS_SHOWN)
+    @unknown_readers_more = unknown.size - @unknown_readers.size
     admins = User.where(role: "admin").order("LOWER(name) ASC")
     @admin_options = admins.map { |admin| [admin.name, admin.id] }
     @admin_options.unshift(["Select an Admin", -1])
