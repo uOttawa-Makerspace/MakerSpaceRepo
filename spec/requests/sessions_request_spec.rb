@@ -288,6 +288,17 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
       expect(response).not_to redirect_to(root_path)
     end
 
+    it "a lock without an end (locked_until nil) refuses the login instead of raising, html and json" do
+      # FIXED: login_authentication compared nil < now (a 500) for this valid admin-lock state
+      user.update_columns(locked: true, locked_until: nil)
+      login!(user)
+      expect(response).to have_http_status(:ok)
+      expect(flash[:alert]).to include("locked")
+      post login_authentication_path, params: { username_email: user.username, password: password }, as: :json
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(JSON.parse(response.body)["error"]).to include("locked").and(satisfy { |m| !m.include?("wait") })
+    end
+
     it "a lock that has lapsed no longer ends the session" do
       login!(user)
       user.update_columns(locked: true, locked_until: 1.minute.ago)

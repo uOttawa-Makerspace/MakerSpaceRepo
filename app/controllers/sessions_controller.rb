@@ -17,7 +17,7 @@ class SessionsController < ApplicationController
     if User.username_or_email(params[:username_email])
       user = User.username_or_email(params[:username_email])
       if user.locked?
-        if user.locked_until < DateTime.now
+        if user.locked_until.present? && user.locked_until < DateTime.now
           user.update(locked: false)
           user.update(auth_attempts: 0)
         else
@@ -26,14 +26,14 @@ class SessionsController < ApplicationController
               flash[:alert] = ActionController::Base.helpers.sanitize("""
               Your account has been locked due to too many failed login attempts. 
               Please #{view_context.link_to('contact an administrator', "mailto:#{SUPPORT_EMAIL}?subject=Account%20Locked", class: 'text-primary')} 
-              to unlock your account or wait #{distance_of_time_in_words(user.locked_until, DateTime.now)}.
+              to unlock your account#{lock_wait_suffix(user)}.
               """)
               render :login
             end
             format.json do
               render json: {
                        error:
-                         "Your account has been locked due to too many failed login attempts. Please contact an administrator at #{SUPPORT_EMAIL} to unlock your account or wait #{distance_of_time_in_words user.locked_until, DateTime.now}.",
+                         "Your account has been locked due to too many failed login attempts. Please contact an administrator at #{SUPPORT_EMAIL} to unlock your account#{lock_wait_suffix(user)}.",
                        support_email: SUPPORT_EMAIL
                      },
                      status: :unprocessable_content
@@ -174,6 +174,13 @@ class SessionsController < ApplicationController
     return if repository.nil? || !repository.private? || repository_unlocked?(repository)
 
     redirect_to password_entry_repository_path(repository.user_username, repository.id)
+  end
+
+  # " or wait 5 minutes", nothing for a lock without an end (locked_until nil)
+  def lock_wait_suffix(user)
+    return "" if user.locked_until.nil?
+
+    " or wait #{distance_of_time_in_words(user.locked_until, DateTime.now)}"
   end
 
   def get_session_time_left
