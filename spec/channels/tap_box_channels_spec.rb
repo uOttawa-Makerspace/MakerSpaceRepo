@@ -29,19 +29,34 @@ RSpec.describe "Tap box ActionCable channels" do
   end
 
   describe StaffDashboardChannel, type: :channel do
-    # WART(D-EQ31): StaffDashboardChannel streams "space_event_<space_id>" to any subscriber (unauthenticated, any space_id), exposing tapped users' name, email and certifications
-    it "subscribes any connection to the raw space_event stream for the requested space" do
-      stub_connection current_user: 7
-      subscribe(space_id: 3)
-      expect(subscription).to be_confirmed
-      expect(subscription).to have_stream_from("space_event_3")
+    # FIXED(D-EQ31): only staff/admin may stream "space_event_<space_id>" (tapped users' name, email, certifications)
+    %i[staff admin].each do |role|
+      it "streams space_event_<id> to a #{role}" do
+        stub_connection current_user: create(:user, role)
+        subscribe(space_id: 3)
+        expect(subscription).to be_confirmed
+        expect(subscription).to have_stream_from("space_event_3")
+      end
     end
 
-    it "subscribes even without a space id (stream space_event_)" do
+    %i[regular_user volunteer_with_dev_program].each do |trait|
+      it "rejects a #{trait}" do
+        stub_connection current_user: create(:user, trait)
+        subscribe(space_id: 3)
+        expect(subscription).to be_rejected
+      end
+    end
+
+    it "rejects a missing user and a non-user identity" do
       stub_connection current_user: nil
-      subscribe
-      expect(subscription).to be_confirmed
-      expect(subscription).to have_stream_from("space_event_")
+      subscribe(space_id: 3)
+      expect(subscription).to be_rejected
+    end
+
+    it "rejects a guest User.new" do
+      stub_connection current_user: User.new
+      subscribe(space_id: 3)
+      expect(subscription).to be_rejected
     end
   end
 
