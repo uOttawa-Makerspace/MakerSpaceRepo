@@ -24,6 +24,14 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
     post login_authentication_path, params: { username_email: u.username, password: pw }
   end
 
+  # What an admin's lock/unlock does, through the real endpoint (a lock bumps token_version).
+  def admin_toggle_lock!(target)
+    admin = User.where(role: "admin").first || create(:user, :admin)
+    sess = open_session
+    sess.post login_authentication_path, params: { username_email: admin.username, password: "asa32A353#" }
+    sess.put toggle_lock_user_admin_users_path, params: { id: target.id }
+  end
+
   def deliveries
     ActionMailer::Base.deliveries
   end
@@ -164,11 +172,13 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
       expect(body["error"]).to include("locked")
     end
 
-    it "rejects even the correct password while locked (html: 200 re-render with flash)" do
+    it "rejects even the correct password while locked (html: 422 re-render with a flash.now)" do
       user.update_columns(locked: true, locked_until: 5.minutes.from_now, auth_attempts: 5)
       login!(user)
-      expect(response).to have_http_status(:ok)
-      expect(flash[:alert]).to include("locked due to too many failed login attempts")
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(flash[:alert]).to include("locked due to too many failed login attempts").and include("or wait")
+      get login_path
+      expect(flash[:alert]).to be_nil # flash.now: it does not leak into the next request
       get check_signed_in_path
       expect(JSON.parse(response.body)["signed_in"]).to eq("false")
     end
@@ -210,11 +220,132 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
       expect(response.body).to eq("Account not confirmed")
     end
 
-    it "inactive (active: false) users can still log in" do
-      # WART(D-I03): the `active` flag is never checked at login; inactive accounts sign in normally
+    it "inactive (active: false) users cannot sign in (html: login re-rendered with an alert, no session)" do
+      # FIXED(D-I03): active:false refuses sign-in with the locked/unconfirmed refusal shape
       u = create(:user, :regular_user, active: false)
       login!(u)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("login")
+      expect(flash[:alert]).to start_with("Your account is inactive.")
+      get check_signed_in_path
+      expect(JSON.parse(response.body)["signed_in"]).to eq("false")
+    end
+
+    it "inactive users: json login is refused with an error and support email, and no token" do
+      u = create(:user, :regular_user, active: false)
+      post login_authentication_path, params: { username_email: u.username, password: password }, as: :json
+      expect(response).to have_http_status(:unprocessable_content)
+      body = JSON.parse(response.body)
+      expect(body["error"]).to start_with("Your account is inactive.")
+      expect(body["support_email"]).to eq("uottawa.makerepo@gmail.com")
+      expect(body).not_to have_key("token")
+    end
+
+    it "a wrong password for an inactive user is still just 'Incorrect password.' (no status leak)" do
+      u = create(:user, :regular_user, active: false)
+      login!(u, pw: "wrong")
+      expect(flash[:alert]).to eq("Incorrect password.")
+    end
+
+    it "an existing cookie session of a user who is deactivated is ended on the next request" do
+      login!(user)
+      get check_signed_in_path
+      expect(JSON.parse(response.body)["signed_in"]).to eq("true")
+      user.update_columns(active: false)
+      get check_signed_in_path
+      expect(JSON.parse(response.body)["signed_in"]).to eq("false")
+    end
+
+    it "a cookie session of a user who gets ADMIN-locked mid-session is ended, and stays dead after unlocking" do
+      # FIXED(D-I01): an admin lock bumps token_version, so sessions end for good
+      login!(user)
+      admin_toggle_lock!(user)
+      expect(user.reload.locked).to be(true)
+      get check_signed_in_path
+      expect(JSON.parse(response.body)["signed_in"]).to eq("false")
+      expect(session[:user_id]).to be_nil
+      admin_toggle_lock!(user)
+      expect(user.reload.locked).to be(false)
+      get check_signed_in_path
+      expect(JSON.parse(response.body)["signed_in"]).to eq("false")
+      login!(user)
       expect(response).to redirect_to(root_path)
+    end
+
+    it "a cookie session survives the brute-force lockout (five wrong passwords by anyone)" do
+      login!(user)
+      5.times { open_session.post login_authentication_path, params: { username_email: user.username, password: "wrong" } }
+      expect(user.reload.locked).to be(true)
+      get check_signed_in_path
+      expect(JSON.parse(response.body)["signed_in"]).to eq("true")
+    end
+
+    it "a JWT survives the brute-force lockout, but a new login is refused while it lasts" do
+      tok = user.token
+      5.times { open_session.post login_authentication_path, params: { username_email: user.username, password: "wrong" } }
+      expect(user.reload.locked).to be(true)
+      get check_signed_in_path, headers: { "Authorization" => "Bearer #{tok}" }
+      expect(JSON.parse(response.body)["signed_in"]).to eq("true")
+      login!(user)
+      expect(response).not_to redirect_to(root_path)
+    end
+
+    it "a lock without an end (locked_until nil) refuses the login instead of raising, html and json" do
+      # FIXED: login_authentication compared nil < now (a 500) for this valid admin-lock state
+      user.update_columns(locked: true, locked_until: nil)
+      login!(user)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(flash[:alert]).to include("locked")
+      post login_authentication_path, params: { username_email: user.username, password: password }, as: :json
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(JSON.parse(response.body)["error"]).to include("locked").and(satisfy { |m| !m.include?("wait") })
+    end
+
+    it "an admin lock (99 years) is not described as a 99-year wait, html and json" do
+      user.update_columns(locked: true, locked_until: 99.years.from_now, auth_attempts: 5)
+      login!(user)
+      expect(flash[:alert]).to include("locked").and(satisfy { |m| !m.include?("wait") && !m.include?("years") })
+      post login_authentication_path, params: { username_email: user.username, password: password }, as: :json
+      expect(JSON.parse(response.body)["error"]).to include("locked").and(satisfy { |m| !m.include?("wait") && !m.include?("years") })
+    end
+
+    it "a lock seen by sign_in gets the locked wording, never 'Incorrect password'" do
+      user.update_columns(locked: true, locked_until: 3.minutes.from_now, auth_attempts: 5)
+      post login_authentication_path, params: { username_email: user.username, password: "wrong" }, as: :json
+      expect(JSON.parse(response.body)["error"]).to start_with("Your account has been locked").and include("wait")
+      expect(user.reload.auth_attempts).to eq(5)
+    end
+
+    it "five wrong passwords lock a legacy-invalid account over HTTP too" do
+      user.update_columns(username: "old_user_name_longer_than_20", gender: "stale value")
+      5.times { open_session.post login_authentication_path, params: { username_email: user.username, password: "wrong" } }
+      user.reload
+      expect(user.locked).to be(true)
+      expect(user.locked_until).to be_present
+    end
+
+    it "a lapsed timed lockout is cleared and persisted even when the stored hash contains the username" do
+      u = create(:user, :regular_user, username: "hunterxsmith")
+      u.update_columns(password: "$2a$12$" + ("a" * 22) + "hunterxsmith" + ("b" * 19),
+                       locked: true, locked_until: 1.minute.ago, auth_attempts: 5)
+      post login_authentication_path, params: { username_email: u.username, password: "wrong" }
+      u.reload
+      expect(u.locked).to be(false)
+      expect(u.auth_attempts).to be <= 1 # reset to 0 by the unlock, then the wrong password counted once
+    end
+
+    it "a lock that has lapsed no longer ends the session" do
+      login!(user)
+      user.update_columns(locked: true, locked_until: 1.minute.ago)
+      get check_signed_in_path
+      expect(JSON.parse(response.body)["signed_in"]).to eq("true")
+    end
+
+    it "an existing JWT of a deactivated user is rejected as well" do
+      tok = user.token
+      user.update_columns(active: false)
+      get check_signed_in_path, headers: { "Authorization" => "Bearer #{tok}" }
+      expect(JSON.parse(response.body)["signed_in"]).to eq("false")
     end
 
     it "soft-deleted users cannot log in (default_scope hides them: 'could not find user')" do
@@ -224,12 +355,23 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
       expect(flash[:alert]).to start_with("Could not find user")
     end
 
-    it "a session of a user who is soft-deleted afterwards gets a 404 on the next request" do
+    it "a session of a user who is soft-deleted afterwards is ended cleanly on the next request" do
+      # FIXED(D-I04): the session user is looked up with find_by and a missing/deleted user signs the session out
       login!(user)
       user.update_columns(deleted: true)
-      # WART(D-I04): session user is loaded with User.find under the default scope -> RecordNotFound (404 page) for a user soft-deleted mid-session instead of a clean sign-out
       get settings_profile_path
-      expect(response).to have_http_status(:not_found)
+      expect(response).to redirect_to(login_path(back_to: "/settings/profile"))
+      expect(session[:user_id]).to be_nil
+    end
+
+    it "a session whose user row is gone does not crash any page, the login page included" do
+      login!(user)
+      user.delete
+      get login_path
+      expect(response).to have_http_status(:ok)
+      expect(session[:user_id]).to be_nil
+      get check_signed_in_path
+      expect(JSON.parse(response.body)["signed_in"]).to eq("false")
     end
   end
 
@@ -254,14 +396,95 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
       expect(JSON.parse(response.body)["signed_in"]).to eq("true")
     end
 
-    it "a JWT survives logout and a password reset (no revocation)" do
-      # WART(D-I01): the 14-day JWT returned at login is stateless and is not invalidated by logout or password change; a leaked token stays valid until expiry
+    def bearer(tok)
+      { "Authorization" => "Bearer #{tok}" }
+    end
+
+    def jwt_signed_in?(tok)
+      get check_signed_in_path, headers: bearer(tok)
+      JSON.parse(response.body)["signed_in"] == "true"
+    end
+
+    def legacy_token(u, exp: 14.days.from_now.to_i)
+      JWT.encode({ user_id: u.id, exp: exp }, Rails.application.credentials.secret_key_base, "HS256")
+    end
+
+    it "embeds the user's token_version as ver" do
+      payload, = JWT.decode(user.token, nil, false)
+      expect(payload["ver"]).to eq(0)
+    end
+
+    it "a JWT survives a plain logout (logout ends only that session)" do
+      # INTENDED(D-I01): plain logout does not bump token_version; only password change/reset revoke tokens
       tok = user.token
       login!(user)
       get logout_path
-      user.update_columns(password: BCrypt::Password.create("SomethingElse1!x"))
-      get check_signed_in_path, headers: { "Authorization" => "Bearer #{tok}" }
-      expect(JSON.parse(response.body)["signed_in"]).to eq("true")
+      expect(jwt_signed_in?(tok)).to be(true)
+    end
+
+    it "a JWT issued before the deploy (no ver claim) still works" do
+      expect(jwt_signed_in?(legacy_token(user))).to be(true)
+    end
+
+    it "a JWT is revoked by a password change" do
+      # FIXED(D-I01): the token carries ver; a password change bumps token_version
+      tok = user.token
+      user.pword = "SomethingElse1!x"
+      user.save!
+      expect(user.reload.token_version).to eq(1)
+      expect(jwt_signed_in?(tok)).to be(false)
+      expect(jwt_signed_in?(legacy_token(user))).to be(false)
+      expect(jwt_signed_in?(user.token)).to be(true)
+    end
+
+    it "a legacy (no ver) token is rejected once the version is bumped" do
+      user.update_columns(token_version: 1)
+      expect(jwt_signed_in?(legacy_token(user))).to be(false)
+    end
+
+    it "rejects a JWT of a user that no longer exists" do
+      tok = user.token
+      user.delete
+      expect(jwt_signed_in?(tok)).to be(false)
+    end
+
+    it "rejects a JWT of a soft-deleted user" do
+      tok = user.token
+      user.update_columns(deleted: true)
+      expect(jwt_signed_in?(tok)).to be(false)
+    end
+
+    it "rejects a JWT of an admin-locked user and keeps rejecting it after the unlock (a new login works)" do
+      tok = user.token
+      admin_toggle_lock!(user)
+      expect(jwt_signed_in?(tok)).to be(false)
+      admin_toggle_lock!(user)
+      expect(jwt_signed_in?(tok)).to be(false)
+      post login_authentication_path, params: { username_email: user.username, password: password }, as: :json
+      expect(jwt_signed_in?(JSON.parse(response.body)["token"])).to be(true)
+    end
+
+    it "a login is refused while an admin lock lasts, for html and json" do
+      admin_toggle_lock!(user)
+      login!(user)
+      expect(response).not_to redirect_to(root_path)
+      post login_authentication_path, params: { username_email: user.username, password: password }, as: :json
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(JSON.parse(response.body)["support_email"]).to be_present
+    end
+
+    it "accepts a JWT during a timed (brute-force) lockout and after it has lapsed" do
+      tok = user.token
+      user.update_columns(locked: true, locked_until: 4.minutes.from_now)
+      expect(jwt_signed_in?(tok)).to be(true)
+      user.update_columns(locked_until: 1.minute.ago)
+      expect(jwt_signed_in?(tok)).to be(true)
+    end
+
+    it "rejects a JWT of an inactive user" do
+      tok = user.token
+      user.update_columns(active: false)
+      expect(jwt_signed_in?(tok)).to be(false)
     end
 
     it "rejects an expired JWT" do
@@ -271,6 +494,121 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
 
     it "rejects a tampered JWT" do
       get check_signed_in_path, headers: { "Authorization" => "Bearer #{user.token}x" }
+      expect(JSON.parse(response.body)["signed_in"]).to eq("false")
+    end
+  end
+
+  describe "session hygiene" do
+    def session_id
+      request.session.id.to_s
+    end
+
+    it "issues a new session id on sign-in (session fixation)" do
+      get login_path
+      before = session_id
+      login!(user)
+      expect(session_id).not_to eq(before)
+    end
+
+    it "keeps the locale across sign-in and across sign-out" do
+      get login_path(locale: "fr")
+      login!(user)
+      get check_signed_in_path
+      expect(session[:locale].to_s).to eq("fr")
+      get logout_path
+      get check_signed_in_path
+      expect(session[:locale].to_s).to eq("fr")
+    end
+
+    it "a failed sign-in keeps the session" do
+      get login_path
+      before = session_id
+      login!(user, pw: "wrong")
+      expect(session_id).to eq(before)
+    end
+
+    it "sign-out issues a new session id and drops the user" do
+      login!(user)
+      before = session_id
+      get logout_path
+      expect(session_id).not_to eq(before)
+      expect(session[:user_id]).to be_nil
+    end
+
+    it "a Bearer request does not mint a cookie session" do
+      get check_signed_in_path, headers: { "Authorization" => "Bearer #{user.token}" }
+      expect(JSON.parse(response.body)["user"]["id"]).to eq(user.id)
+      expect(session[:user_id]).to be_nil
+      get check_signed_in_path
+      expect(JSON.parse(response.body)["signed_in"]).to eq("false")
+    end
+
+    it "Bearer authenticates a protected endpoint without a cookie" do
+      get settings_admin_path, headers: { "Authorization" => "Bearer #{user.token}" }
+      expect(response).to have_http_status(:ok)
+    end
+  end
+
+  describe "cookie sessions and token_version (D-I01)" do
+    let(:new_pw) { "NewPassw0rd!x#9" }
+
+    def attacker
+      @attacker ||= open_session.tap do |sess|
+        sess.post login_authentication_path, params: { username_email: user.username, password: password }
+      end
+    end
+
+    def attacker_signed_in?
+      attacker.get check_signed_in_path
+      JSON.parse(attacker.response.body)["signed_in"] == "true"
+    end
+
+    it "stores the token_version in the session at sign-in" do
+      user.update_columns(token_version: 3)
+      login!(user)
+      expect(session[:token_version]).to eq(3)
+    end
+
+    it "a session opened before a password change is rejected afterwards and cannot mint a JWT" do
+      # FIXED(D-I01): cookie sessions are checked against token_version too
+      expect(attacker_signed_in?).to be(true)
+      login!(user)
+      patch change_password_user_path(user.username),
+            params: { user: { old_password: password, password: new_pw, password_confirmation: new_pw } }
+      expect(attacker_signed_in?).to be(false)
+      expect(JSON.parse(attacker.response.body)).not_to have_key("token")
+    end
+
+    it "the session that changes the password stays signed in" do
+      login!(user)
+      patch change_password_user_path(user.username),
+            params: { user: { old_password: password, password: new_pw, password_confirmation: new_pw } }
+      get check_signed_in_path
+      expect(JSON.parse(response.body)["signed_in"]).to eq("true")
+      expect(session[:token_version]).to eq(1)
+    end
+
+    it "a session opened before a password reset is rejected afterwards" do
+      expect(attacker_signed_in?).to be(true)
+      patch reset_password_confirmation_users_path,
+            params: { token: user.generate_token_for(:password_reset), password: new_pw, password_confirmation: new_pw }
+      expect(attacker_signed_in?).to be(false)
+    end
+
+    it "a signed-in user who resets their own password stays signed in" do
+      login!(user)
+      patch reset_password_confirmation_users_path,
+            params: { token: user.generate_token_for(:password_reset), password: new_pw, password_confirmation: new_pw }
+      get check_signed_in_path
+      expect(JSON.parse(response.body)["signed_in"]).to eq("true")
+    end
+
+    it "a session from before the deploy (no token_version key) counts as version 0" do
+      login!(user)
+      get check_signed_in_path
+      expect(JSON.parse(response.body)["signed_in"]).to eq("true")
+      user.update_columns(token_version: 1)
+      get check_signed_in_path
       expect(JSON.parse(response.body)["signed_in"]).to eq("false")
     end
   end
@@ -322,6 +660,37 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
         expect(response).to have_http_status(:ok)
         expect(JSON.parse(response.body)["signed_in"]).to eq("false")
         expect(flash[:alert]).to be_nil
+      end
+    end
+
+    it "an expired staff cookie sent with a non-staff user's Bearer JWT is that non-staff user, not staff" do
+      # An expired session used to stay memoized as current_user for the request that expired it
+      # (set_last_seen_at ran first) while signed_in? passed on the Bearer token of ANY valid user.
+      create(:space)
+      staff = create(:user, :staff)
+      login!(staff)
+      bearer = { "Authorization" => "Bearer #{user.token}" }
+      travel 73.hours do
+        get staff_dashboard_index_path, headers: bearer
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to eq("You cannot access this area.")
+      end
+    end
+
+    it "the same request with only the expired staff cookie is sent to login" do
+      login!(create(:user, :staff))
+      travel 73.hours do
+        get staff_dashboard_index_path
+        expect(response).to redirect_to(login_path(back_to: "/staff_dashboard"))
+      end
+    end
+
+    it "a non-expired staff cookie still reaches the staff area" do
+      create(:space)
+      login!(create(:user, :staff))
+      travel 71.hours do
+        get staff_dashboard_index_path
+        expect(response).to have_http_status(:ok)
       end
     end
 

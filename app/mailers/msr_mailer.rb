@@ -7,11 +7,10 @@ class MsrMailer < ApplicationMailer
     mail(to: @user.email, subject: "Makerepo | Please confirm your email")
   end
 
-  def email_confirmation_email(new_email, user, user_hash, email_hash)
+  def email_confirmation_email(new_email, user, token)
     @new_email = new_email
     @user = user
-    @email_hash = email_hash
-    @user_hash = user_hash
+    @token = token
     mail(to: new_email, subject: "Makerepo | Please confirm your new email")
   end
 
@@ -211,9 +210,8 @@ class MsrMailer < ApplicationMailer
   #   mail(to: email, subject: 'New password for MakerRepo')
   # end
 
-  def forgot_password(email, user_hash, expiry_date_hash)
-    @user_hash = user_hash
-    @expiry_date_hash = expiry_date_hash
+  def forgot_password(email, token)
+    @token = token
     mail(to: email, subject: "Reset your MakerRepo password")
   end
 

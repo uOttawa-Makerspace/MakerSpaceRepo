@@ -6,8 +6,8 @@ require "rails_helper"
 # no webhook and no signature path in this controller: the only inbound surface
 # is the OAuth callback. GitHub is stubbed at the HTTP boundary (WebMock).
 #
-# Gates: before_action :signed_in applies to authorize/unauthorize/repositories
-# but NOT to callback; callback does User.find(session[:user_id]) instead.
+# Gates: before_action :signed_in applies to every action, callback included
+# (it used User.find(session[:user_id]), which bypassed the session rules).
 RSpec.describe "GitHub integration", type: :request do
   include Chunk18Helpers
 
@@ -39,10 +39,28 @@ RSpec.describe "GitHub integration", type: :request do
   end
 
   describe "GET /github/callback" do
-    it "for a guest (no session user) is a RecordNotFound 404, before any call to GitHub" do
+    it "for a guest redirects to login before any call to GitHub" do
+      # FIXED: was a RecordNotFound 404 from User.find(session[:user_id])
       get "/github/callback", params: { code: "abc" }
-      expect(response).to have_http_status(:not_found)
+      expect(response).to redirect_to(login_path(back_to: "/github/callback?code=abc"))
       expect(a_request(:post, token_url)).not_to have_been_made
+    end
+
+    it "for a session whose user was deactivated or revoked is treated as a guest" do
+      user = c18_sign_in(:regular)
+      user.update_columns(active: false)
+      get "/github/callback", params: { code: "abc" }
+      expect(response).to have_http_status(:found)
+      expect(response.location).to include("/login")
+      expect(a_request(:post, token_url)).not_to have_been_made
+    end
+
+    it "accepts a Bearer JWT caller too (current_user, no session needed)" do
+      user = create(:user, :regular_user)
+      stub_token_exchange(access_token: "gho_jwt", token_type: "bearer")
+      get "/github/callback", params: { code: "abc" }, headers: { "Authorization" => "Bearer #{user.token}" }
+      expect(response).to redirect_to(settings_admin_path)
+      expect(user.reload.access_token).to eq("gho_jwt")
     end
 
     it "exchanges the code (client id/secret from ENV constants), stores the token on the session user and redirects to the admin settings" do

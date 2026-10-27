@@ -203,27 +203,66 @@ RSpec.describe "SAML IdP", type: :request do
         expect(c18_saml_response_xml).to be_nil
       end
 
-      it "still issues an assertion to a LOCKED account with the right password" do
-        # WART(D-R14): the SAML sign_in path calls User.authenticate directly, skipping the locked?/locked_until check that login_authentication performs, so the account lockout (and the login rate limit) does not protect this endpoint: passwords can be guessed without limit and a locked account still gets assertions
+      it "refuses a LOCKED account even with the right password" do
+        # FIXED(D-R14): sign_in checks the lock for every login path
         user.update!(locked: true, locked_until: 1.hour.from_now)
         post_auth(submit: "sign_in", username: user.username, password: password)
-        expect(c18_saml_response_xml).to be_present
-        expect(c18_form_action).to eq(WIKIJS_ACS)
+        expect(c18_saml_response_xml).to be_nil
+        expect(response.body).to include("Your account has been locked due to too many failed login attempts")
+        expect(response.body).to include("or wait")
+        expect(session[:user_id]).to be_nil
       end
 
-      it "keeps counting failed attempts past the lock threshold and keeps answering normally" do
-        # same WART(D-R14): after MAX_AUTH_ATTEMPTS the account locks, but the endpoint keeps evaluating guesses
-        (User::MAX_AUTH_ATTEMPTS + 2).times { post_auth(submit: "sign_in", username: user.username, password: "bad") }
-        expect(user.reload).to be_locked
+      it "words an admin lock (99 years) as locked, without a 99-year wait" do
+        user.update!(locked: true, locked_until: 99.years.from_now)
         post_auth(submit: "sign_in", username: user.username, password: password)
-        expect(c18_saml_response_xml).to be_present
+        expect(response.body).to include("Your account has been locked")
+        expect(response.body).not_to include("or wait")
       end
 
-      it "issues an assertion to an UNCONFIRMED account" do
-        # WART(D-R15): login_authentication refuses unconfirmed accounts ("Please confirm your account"), the SAML sign_in path does not check confirmed?
+      it "words an admin lock without an end as locked, without a wait time" do
+        user.update!(locked: true, locked_until: nil)
+        post_auth(submit: "sign_in", username: user.username, password: password)
+        expect(response.body).to include("Your account has been locked")
+        expect(response.body).not_to include("or wait")
+      end
+
+      it "stops evaluating guesses once the account is locked: attempts stop counting and the lock is not rewritten" do
+        # FIXED(D-R14)
+        (User::MAX_AUTH_ATTEMPTS + 2).times { post_auth(submit: "sign_in", username: user.username, password: "bad") }
+        user.reload
+        expect(user).to be_locked
+        expect(user.auth_attempts).to eq(User::MAX_AUTH_ATTEMPTS)
+        post_auth(submit: "sign_in", username: user.username, password: password)
+        expect(c18_saml_response_xml).to be_nil
+      end
+
+      it "a wrong password on an ADMIN-locked account neither shortens the lock nor revives old tokens" do
+        old_token = user.token
+        admin_until = 99.years.from_now
+        user.update!(locked: true, locked_until: admin_until, auth_attempts: 5, token_version: user.token_version + 1)
+        3.times { post_auth(submit: "sign_in", username: user.username, password: "bad") }
+        user.reload
+        expect(user.locked_until).to be_within(1.second).of(admin_until)
+        expect(user.locked).to be(true)
+        expect(User.find(user.id).token_version).to eq(1)
+        expect(JwtAuthenticator.user_for("Bearer #{old_token}")).to be_nil
+      end
+
+      it "refuses an UNCONFIRMED account like the HTML login does" do
+        # FIXED(D-R15)
         user.update!(confirmed: false)
         post_auth(submit: "sign_in", username: user.username, password: password)
-        expect(c18_saml_response_xml).to be_present
+        expect(c18_saml_response_xml).to be_nil
+        expect(response.body).to include("Please confirm your account before logging in")
+        expect(session[:user_id]).to be_nil
+      end
+
+      it "refuses an INACTIVE account" do
+        user.update!(active: false)
+        post_auth(submit: "sign_in", username: user.username, password: password)
+        expect(c18_saml_response_xml).to be_nil
+        expect(response.body).to include("Your account is inactive.")
       end
     end
 

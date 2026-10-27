@@ -10,8 +10,7 @@ class MsrMailerPreview < ActionMailer::Preview
     MsrMailer.email_confirmation_email(
       "new_email@example.com",
       User.first,
-      "sample_user_hash",
-      "sample_email_hash"
+      "sample_email_change_token"
     )
   end
 
@@ -139,8 +138,7 @@ class MsrMailerPreview < ActionMailer::Preview
   def forgot_password_email
     MsrMailer.forgot_password(
       User.first.email,
-      "sample_user_hash",
-      "sample_expiry_date_hash"
+      "sample_reset_token"
     )
   end
 

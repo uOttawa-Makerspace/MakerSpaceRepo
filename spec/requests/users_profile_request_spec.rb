@@ -325,6 +325,65 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       expect(response.location).to start_with("http://www.example.com/login")
     end
 
+    it "a failed save keeps the old password, the session version and sends no mail" do
+      # FIXED: the result of the hashing save was ignored (session got N+1 while the DB stayed at N, success mail sent)
+      login!(user)
+      allow_any_instance_of(User).to receive(:update_columns).and_raise(ActiveRecord::StatementInvalid, "boom")
+      expect(Rails.error).to receive(:report).with(an_instance_of(ActiveRecord::StatementInvalid), handled: true)
+      perform_enqueued_jobs { change! }
+      expect(response).to have_http_status(:ok)
+      expect(flash[:alert]).to eq("Your password could not be changed. Please try again.")
+      expect(deliveries).to be_empty
+      user.reload
+      expect(user.authenticate_password(password)).to be(true)
+      expect(user.token_version).to eq(0)
+      expect(user.password).to start_with("$2") # the bcrypt hash, not the plain new password
+      allow_any_instance_of(User).to receive(:update_columns).and_call_original
+      get check_signed_in_path
+      expect(JSON.parse(response.body)["signed_in"]).to eq("true")
+    end
+
+    it "works for a legacy user whose row fails an unrelated validation (old username, stale gender)" do
+      # FIXED: only the password columns are written, so unrelated legacy-invalid fields cannot block the change
+      user.update_columns(username: "old_user_name_longer_than_20", gender: "stale value")
+      expect(user.reload).not_to be_valid
+      login!(user.reload, pw: password)
+      patch change_password_user_path(user.username),
+            params: { user: { old_password: password, password: new_pw, password_confirmation: new_pw } }
+      expect(response).to redirect_to(settings_admin_path)
+      expect(user.reload.authenticate_password(new_pw)).to be(true)
+      expect(user.token_version).to eq(1)
+      expect(user.username).to eq("old_user_name_longer_than_20") # nothing else was touched
+    end
+
+    it "refuses a confirmation mismatch" do
+      login!(user)
+      change!(confirm: "different")
+      expect(response).to have_http_status(:ok)
+      expect(flash[:alert]).to eq("Your password and password confirmation do not match.")
+      expect(user.reload.authenticate_password(password)).to be(true)
+    end
+
+    it "still refuses a weak plaintext password" do
+      login!(user)
+      change!(pw: "abc")
+      expect(response).to have_http_status(:ok)
+      expect(user.reload.authenticate_password(password)).to be(true)
+      expect(user.token_version).to eq(0)
+    end
+
+    it "succeeds even when the bcrypt hash happens to contain the username" do
+      # FIXED: the hashing save re-ran the nobspw validator on the hash and failed at random
+      u = create(:user, :regular_user, username: "hunterxsmith")
+      login!(u)
+      forced = "$2a$12$" + ("a" * 22) + "hunterxsmith" + ("b" * 19)
+      allow(BCrypt::Password).to receive(:create).and_return(BCrypt::Password.new(forced))
+      patch change_password_user_path(u.username),
+            params: { user: { old_password: password, password: new_pw, password_confirmation: new_pw } }
+      expect(response).to redirect_to(settings_admin_path)
+      expect(u.reload.password).to eq(forced)
+    end
+
     it "changes the password, emails the owner, redirects with notice" do
       login!(user)
       perform_enqueued_jobs { change! }

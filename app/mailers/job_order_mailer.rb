@@ -23,8 +23,7 @@ class JobOrderMailer < ApplicationMailer
     @job_order = JobOrder.find(job_order_id)
 
     @reminder = reminder
-    @hash =
-      Rails.application.message_verifier(:job_order_id).generate(job_order_id)
+    @hash = @job_order.approval_token
 
     approved_fr, approved_en =
       if @job_order
