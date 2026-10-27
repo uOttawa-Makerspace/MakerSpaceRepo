@@ -6,7 +6,7 @@ class QuestionsController < AdminAreaController
                 only: %i[show edit update destroy remove_answer add_answer]
   before_action :set_levels,
                 :set_categories,
-                only: %i[new edit remove_answer add_answer]
+                only: %i[new edit add_answer]
 
   def index
     if current_user.space.present?
