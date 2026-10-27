@@ -9,12 +9,16 @@ RSpec.describe AddTokenVersionToUsers do
   let(:timed) { create(:user, :regular_user) }
   let(:unlocked) { create(:user, :regular_user) }
   let(:lapsed) { create(:user, :regular_user) }
+  let(:timed_hours) { create(:user, :regular_user) }
+  let(:two_days) { create(:user, :regular_user) }
 
   before do
     admin_locked_far.update_columns(locked: true, locked_until: 99.years.from_now)
     admin_locked_nil.update_columns(locked: true, locked_until: nil)
     timed.update_columns(locked: true, locked_until: 4.minutes.from_now)
     lapsed.update_columns(locked: true, locked_until: 1.hour.ago)
+    timed_hours.update_columns(locked: true, locked_until: 20.hours.from_now)
+    two_days.update_columns(locked: true, locked_until: 2.days.from_now)
   end
 
   def backfill
@@ -28,6 +32,8 @@ RSpec.describe AddTokenVersionToUsers do
     expect(admin_locked_nil.reload.token_version).to eq(1)
     expect(timed.reload.token_version).to eq(0)
     expect(lapsed.reload.token_version).to eq(0)
+    expect(timed_hours.reload.token_version).to eq(0) # within the one-day threshold: timed
+    expect(two_days.reload.token_version).to eq(1) # beyond it: admin
     expect(unlocked.reload.token_version).to eq(0)
   end
 

@@ -6,13 +6,15 @@
 # Backfill: an admin lock now revokes sessions by bumping token_version, so
 # users who are ALREADY admin-locked when this runs get the bump too (their
 # live sessions/JWTs would otherwise survive until expiry). Admin-locked =
-# locked with no end, or an end further ahead than the brute-force lockout
-# (User::LOCK_DURATION, 5 minutes), i.e. the complement of User#timed_lockout?.
+# locked with no end, or an end more than one day ahead (a brute-force lockout
+# lasts 5 minutes; the wide margin tolerates clock skew), i.e. the complement of
+# User#timed_lockout?, whose threshold (User::TIMED_LOCKOUT_CEILING, 1 day) this
+# matches.
 # Written in SQL so the migration does not depend on the model. Only rows still
 # at version 0 are touched, so running the backfill again changes nothing, and
 # `down` drops the column, so no separate reversal is needed.
 class AddTokenVersionToUsers < ActiveRecord::Migration[8.1]
-  TIMED_LOCKOUT_SECONDS = 5 * 60
+  TIMED_LOCKOUT_CEILING = "1 day"
 
   def up
     add_column :users, :token_version, :integer, null: false, default: 0
@@ -29,7 +31,7 @@ class AddTokenVersionToUsers < ActiveRecord::Migration[8.1]
       SET token_version = token_version + 1
       WHERE token_version = 0
         AND locked = TRUE
-        AND (locked_until IS NULL OR locked_until > now() + interval '#{TIMED_LOCKOUT_SECONDS} seconds')
+        AND (locked_until IS NULL OR locked_until > now() + interval '#{TIMED_LOCKOUT_CEILING}')
     SQL
   end
 end

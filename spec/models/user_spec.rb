@@ -919,6 +919,26 @@ RSpec.describe User, type: :model do
     end
   end
 
+  describe "#timed_lockout? (one-day threshold, matching the migration backfill)" do
+    let(:u) { create(:user, :regular_user) }
+
+    it "is true for a brute-force lock, a lapsed lock and a lock ending within a day" do
+      [5.minutes.from_now, 1.minute.ago, 20.hours.from_now].each do |until_time|
+        u.update_columns(locked: true, locked_until: until_time)
+        expect(u.reload.timed_lockout?).to be(true), until_time.to_s
+      end
+    end
+
+    it "is false for an admin lock (99 years, two days, or no end) and for an unlocked user" do
+      [99.years.from_now, 2.days.from_now, nil].each do |until_time|
+        u.update_columns(locked: true, locked_until: until_time)
+        expect(u.reload.timed_lockout?).to be(false), until_time.to_s
+      end
+      u.update_columns(locked: false, locked_until: nil)
+      expect(u.reload.timed_lockout?).to be(false)
+    end
+  end
+
   describe "#reload and the memoized pword" do
     it "drops an unsaved password change, so authenticate_password follows the stored hash again" do
       u = create(:user, :regular_user)

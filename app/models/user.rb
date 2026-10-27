@@ -458,11 +458,15 @@ class User < ApplicationRecord
     locked? && (locked_until.nil? || locked_until > Time.current)
   end
 
-  # The brute-force lockout (locked_until at most LOCK_DURATION ahead, or already
-  # lapsed), as opposed to an admin lock (99 years ahead, or no end). Only this
-  # kind is cleared by a password reset.
+  # The brute-force lockout (locked_until within TIMED_LOCKOUT_CEILING, or already
+  # lapsed), as opposed to an admin lock (99 years ahead, or no end). The ceiling is
+  # deliberately far above LOCK_DURATION so clock skew between nodes cannot
+  # misclassify a lock. Only the timed kind is cleared by a password reset. The
+  # migration backfill (AddTokenVersionToUsers) uses the same one-day threshold.
+  TIMED_LOCKOUT_CEILING = 1.day
+
   def timed_lockout?
-    locked? && locked_until.present? && locked_until <= LOCK_DURATION.from_now
+    locked? && locked_until.present? && locked_until <= TIMED_LOCKOUT_CEILING.from_now
   end
 
   # Never shortens an existing lock (an admin lock lasts 99 years): a no-op, and
