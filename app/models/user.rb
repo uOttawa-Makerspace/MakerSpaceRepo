@@ -413,6 +413,7 @@ class User < ApplicationRecord
   # was checked beforehand (plaintext_password_problems); validating the whole row
   # again would block users whose row fails an unrelated, legacy validation
   # (old usernames, a stale gender, a student without a program ...).
+  # Callers must have checked plaintext_password_problems(plain) first (one UPDATE, no transaction needed).
   def store_new_password!(plain, clear_timed_lock: false)
     clear_lock = clear_timed_lock && timed_lockout?
     self.pword = plain

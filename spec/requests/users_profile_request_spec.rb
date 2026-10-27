@@ -329,6 +329,7 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       # FIXED: the result of the hashing save was ignored (session got N+1 while the DB stayed at N, success mail sent)
       login!(user)
       allow_any_instance_of(User).to receive(:update_columns).and_raise(ActiveRecord::StatementInvalid, "boom")
+      expect(Rails.error).to receive(:report).with(an_instance_of(ActiveRecord::StatementInvalid), handled: true)
       perform_enqueued_jobs { change! }
       expect(response).to have_http_status(:ok)
       expect(flash[:alert]).to eq("Your password could not be changed. Please try again.")

@@ -220,8 +220,9 @@ class UsersController < SessionsController
     end
 
     begin
-      User.transaction { @user.store_new_password!(new_password) }
-    rescue ActiveRecord::ActiveRecordError
+      @user.store_new_password!(new_password)
+    rescue ActiveRecord::ActiveRecordError => e
+      Rails.error.report(e, handled: true)
       @user.reload
       flash.now[:alert] = 'Your password could not be changed. Please try again.'
       render 'settings/admin', layout: 'setting' and return
@@ -276,14 +277,21 @@ class UsersController < SessionsController
       flash[:alert] = "Your password was not changed: #{problems.to_sentence}."
       return redirect_to reset_password_form_users_path(token: params[:token])
     else
-      begin
-        User.transaction { user.store_new_password!(params[:password], clear_timed_lock: true) }
+      stored =
+        begin
+          user.store_new_password!(params[:password], clear_timed_lock: true)
+          true
+        rescue ActiveRecord::ActiveRecordError => e
+          Rails.error.report(e, handled: true)
+          false
+        end
+      if stored
         session[:token_version] = user.token_version if session[:user_id] == user.id
         MsrMailer.confirm_password_change(user).deliver_now
         flash[
           :notice
         ] = 'Your password has been updated, an email will be sent to confirm!'
-      rescue ActiveRecord::ActiveRecordError
+      else
         flash[
           :alert
         ] = 'An error occured while trying to change your password. Please try again later or send us an email at uottawa.makerepo@gmail.com'
