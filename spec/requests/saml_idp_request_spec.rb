@@ -147,6 +147,12 @@ RSpec.describe "SAML IdP", type: :request do
       expect(entity_id).to eq("https://makerepo.com/saml/auth")
     end
 
+    it "does not double a mount prefix: SCRIPT_NAME=/app with SAML_IDP_BASE_URL=https://host/app" do
+      stub_const("ENV", ENV.to_h.merge("SAML_IDP_BASE_URL" => "https://host/app"))
+      get "/saml/metadata", env: { "SCRIPT_NAME" => "/app" }
+      expect(Nokogiri::XML(response.body).root["entityID"]).to eq("https://host/app/saml/auth")
+    end
+
     it "keeps the assertion Issuer the request URL when SAML_IDP_BASE_URL is unset" do
       c18_sign_in(:regular)
       post "/saml/auth", params: { SAMLRequest: c18_authn_request, submit: "current_user" }

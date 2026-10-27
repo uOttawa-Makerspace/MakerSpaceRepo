@@ -113,16 +113,12 @@ class SamlIdpController < ApplicationController
     ENV["SAML_IDP_BASE_URL"].presence&.chomp("/")
   end
 
-  # The IdP's public base URL: SAML_IDP_BASE_URL when set (use it behind a proxy
-  # that rewrites the host), otherwise the host this request came in on.
-  def saml_base_url
-    configured_base_url || request.base_url
-  end
-
   # The IdP's identity: the SSO endpoint URL. It is the metadata entityID and, via
   # issuer_uri, the Issuer on assertions.
   def saml_entity_id
-    "#{saml_base_url}#{saml_auth_path}"
+    # The configured base URL already holds any mount prefix, so add the route path
+    # without SCRIPT_NAME; the request-derived base never includes it, so keep it there.
+    configured_base_url ? "#{configured_base_url}#{saml_auth_path(script_name: '')}" : "#{request.base_url}#{saml_auth_path}"
   end
 
   # A per-request copy of the global config with the entityID and SSO endpoints
