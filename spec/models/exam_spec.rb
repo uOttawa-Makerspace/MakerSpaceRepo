@@ -98,9 +98,9 @@ RSpec.describe Exam, type: :model do
       expect(exam.calculate_score).to eq(0)
     end
 
-    # WART(D-T13): an exam without questions divides by zero (NaN.round)
-    it "raises FloatDomainError for an exam without questions" do
-      expect { exam.calculate_score }.to raise_error(FloatDomainError)
+    # FIXED(D-T13): an exam without questions scores 0 instead of dividing by zero
+    it "scores 0 for an exam without questions" do
+      expect(exam.calculate_score).to eq(0)
     end
 
     it "has the status vocabulary used by the controllers" do

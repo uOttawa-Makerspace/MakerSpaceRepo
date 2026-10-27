@@ -80,7 +80,7 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
       expect(order.reload.job_tasks.last.title).to eq("Task #1")
     end
 
-    # FIXED(D-J01): create now requires sign-in and owner/staff/admin.
+    # FIXED(D-J01): create now requires sign-in and owner/admin (staff: retro of A2).
     it "redirects a GUEST to login and creates no task" do
       order = order_with_task!
       expect do
@@ -101,9 +101,9 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.no_permission"))
     end
 
-    it "lets staff and admin append a task" do
+    it "lets the owner and an admin append a task" do
       order = order_with_task!
-      [staff, admin].each do |user|
+      [owner, admin].each do |user|
         session_login!(user)
         expect { post job_order_job_tasks_path(order) }.to change { order.reload.job_tasks.count }.by(1)
       end
@@ -515,7 +515,7 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
 
   # ------------------------------------------------------------- DELETE destroy
 
-  # FIXED(D-J02): destroy requires sign-in and owner/staff/admin. (No Draft-only
+  # FIXED(D-J02): destroy requires sign-in and owner/admin (staff: retro of A2). (No Draft-only
   # state guard: owner edits/deletes after submit are INTENDED, D-J35.)
   describe "DELETE /job_orders/:job_order_id/task/:id (destroy)" do
     it "lets the owner delete and redirects back to the order page with the flash" do

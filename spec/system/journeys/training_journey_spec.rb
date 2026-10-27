@@ -31,7 +31,7 @@ RSpec.describe "Journey: training exam", type: :system, skip_bullet: true do
     as_actor(:staff) do
       log_in_as(staff)
       visit staff_training_session_path(fx[:session])
-      click_button "Send Exams"
+      accept_confirm { click_button "Send Exams" }
       expect(page).to have_current_path(%r{/staff_dashboard})
     end
     exam = user.exams.order(:id).last
@@ -47,7 +47,7 @@ RSpec.describe "Journey: training exam", type: :system, skip_bullet: true do
       click_link "Start Exam"
       expect(page).to have_current_path(exam_path(exam))
       answer_all(correct: true)
-      click_button "Finish Exam"
+      accept_confirm { click_button "Finish Exam" }
       expect(page).to have_current_path(exams_path)
       expect(page).to have_text("Score: 100. You passed the exam.")
       expect(page).to have_css("tr", text: "Passed")
@@ -67,12 +67,38 @@ RSpec.describe "Journey: training exam", type: :system, skip_bullet: true do
     end
   end
 
+  # FIXED(retro of A5): data-confirm is a no-op under Turbo; the buttons use turbo_confirm
+  it "does nothing when the confirmation is dismissed (Send Exams, Certify, Finish Exam)" do
+    as_actor(:staff) do
+      log_in_as(staff)
+      visit staff_training_session_path(fx[:session])
+      dismiss_confirm { click_button "Send Exams" }
+      expect(page).to have_current_path(staff_training_session_path(fx[:session]))
+    end
+    expect(Exam.count).to eq(0)
+    as_actor(:staff) do
+      dismiss_confirm { click_button "Certify" }
+      expect(page).to have_current_path(staff_training_session_path(fx[:session]))
+    end
+    expect(Certification.count).to eq(0)
+
+    exam = create(:exam, user: user, training_session: fx[:session])
+    fx[:questions].each { |q| ExamQuestion.create!(exam: exam, question: q[:question]) }
+    as_actor(:user) do
+      log_in_as(user)
+      visit exam_path(exam)
+      dismiss_confirm { click_button "Finish Exam" }
+      expect(page).to have_current_path(exam_path(exam))
+    end
+    expect(exam.reload.status).to eq("incomplete")
+  end
+
   it "a failed exam shows the failure notice, no certification, and a retake is issued" do
     exam = nil
     as_actor(:staff) do
       log_in_as(staff)
       visit staff_training_session_path(fx[:session])
-      click_button "Send Exams"
+      accept_confirm { click_button "Send Exams" }
       expect(page).to have_current_path(%r{/staff_dashboard})
     end
     exam = user.exams.order(:id).last
@@ -80,7 +106,7 @@ RSpec.describe "Journey: training exam", type: :system, skip_bullet: true do
       log_in_as(user)
       visit exam_path(exam)
       answer_all(correct: false)
-      click_button "Finish Exam"
+      accept_confirm { click_button "Finish Exam" }
       expect(page).to have_text("Score: 0. You failed the exam.")
     end
     expect(exam.reload.status).to eq("failed")

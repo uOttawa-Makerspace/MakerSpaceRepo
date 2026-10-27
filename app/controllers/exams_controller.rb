@@ -53,18 +53,39 @@ class ExamsController < SessionsController
   def finish_exam
     exam = @exam
     user = exam.user
-    score = exam.calculate_score
-    training_session = exam.training_session
-    if score < Exam::SCORE_TO_PASS
-      status = Exam::STATUS[:failed]
-      if user.exams.where(training_session_id: training_session.id).count < 2
-        create_exam_and_exam_questions(user, training_session)
+    graded = false
+    empty = false
+    score = nil
+    status = nil
+    # Two concurrent submits both pass only_open_exam: lock the row and check
+    # again inside the lock so only one of them grades (retake, certification).
+    exam.with_lock do
+      next unless exam.open_for_answers?
+      # An exam without questions cannot be graded (a "failed" grade would issue a retake)
+      if exam.exam_questions.none?
+        empty = true
+        next
       end
-    else
-      status = Exam::STATUS[:passed]
-      Certification.certify_user(training_session.id, user.id, training_session.level)
+      graded = true
+      score = exam.calculate_score
+      training_session = exam.training_session
+      if score < Exam::SCORE_TO_PASS
+        status = Exam::STATUS[:failed]
+        if user.exams.where(training_session_id: training_session.id).count < 2
+          create_exam_and_exam_questions(user, training_session)
+        end
+      else
+        status = Exam::STATUS[:passed]
+        Certification.certify_user(training_session.id, user.id, training_session.level)
+      end
+      exam.update(status: status, score: score)
     end
-    exam.update(status: status, score: score)
+    if empty
+      flash[:alert] = "This exam has no questions. Ask staff to resend it."
+      return redirect_to exams_path
+    end
+    return reject_unopen_exam unless graded
+
     MsrMailer.finishing_exam(user, exam).deliver_now
     # MsrMailer.exam_results_staff(user, exam).deliver_now
     flash[:notice] = "Score: #{score}. You #{status} the exam."
@@ -121,6 +142,10 @@ class ExamsController < SessionsController
 
   def only_open_exam
     return if @exam.open_for_answers?
+    reject_unopen_exam
+  end
+
+  def reject_unopen_exam
     flash[:alert] =
       if @exam.ungraded?
         "This exam has expired."
@@ -138,6 +163,8 @@ class ExamsController < SessionsController
   end
 
   def check_exam_status
+    # Staff reviewing a student's exam may look at it after it expired (read-only).
+    return if @exam.ungraded? && !@exam.user.eql?(current_user)
     if !@exam.open_for_answers?
       flash[:alert] =
         if @exam.ungraded?

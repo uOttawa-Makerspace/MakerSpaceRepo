@@ -113,21 +113,23 @@ RSpec.describe "Job order security pins", type: :request do
       expect(response).to have_http_status(:no_content)
       expect(draft.chat_messages.pluck(:message)).to eq(["anyone home?"])
 
+      # FIXED(retro of A2): a deleted order answers 404, with no sticky flash
       post chat_messages_path, params: { chat_message: { message: "anyone home?", job_order_id: deleted.id } }
-      expect(response).to have_http_status(:no_content)
-      expect(flash[:error]).to start_with("Failed to send message")
+      expect(response).to have_http_status(:not_found)
+      expect(flash[:error]).to be_nil
       expect(deleted.chat_messages).to be_empty
     end
 
-    it "answers 204 with a failure flash for a missing or unknown job_order_id" do
+    # FIXED(retro of A2): 404 instead of 204 plus a sticky flash
+    it "answers 404 without a flash for a missing or unknown job_order_id" do
       session_login!(other)
       post chat_messages_path, params: { chat_message: { message: "orphan" } }
-      expect(response).to have_http_status(:no_content)
-      expect(flash[:error]).to start_with("Failed to send message")
+      expect(response).to have_http_status(:not_found)
+      expect(flash[:error]).to be_nil
       expect(ChatMessage.where(message: "orphan")).to be_empty
 
       post chat_messages_path, params: { chat_message: { message: "orphan", job_order_id: 99_999_999 } }
-      expect(response).to have_http_status(:no_content)
+      expect(response).to have_http_status(:not_found)
       expect(ChatMessage.where(message: "orphan")).to be_empty
     end
   end

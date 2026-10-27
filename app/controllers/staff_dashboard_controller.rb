@@ -39,7 +39,7 @@ class StaffDashboardController < StaffAreaController
           space_users:
             users_with_certs
               .map do |u|
-                u.attributes.except(*User::SERIALIZATION_EXCLUDED_ATTRIBUTES).merge({
+                u.serializable_hash.merge({
                   "certifications" => u.certifications.map do |c|
                     {
                       id: c.id,

@@ -65,6 +65,21 @@ RSpec.describe "Exams", type: :request do
       expect(response.body.scan("Resume Exam").size).to eq(1)
     end
 
+    # FIXED(retro of A5): an expired exam cannot be started or resumed, so it says Expired
+    # N+1 pinned: see defects.md D-PERF18
+    it "shows Expired instead of Start/Resume for expired ungraded exams, and keeps graded ones as they are", skip_bullet: true do
+      new_exam.update!(expired_at: 1.hour.ago)
+      new_exam(status: Exam::STATUS[:incomplete]).update!(expired_at: 1.hour.ago)
+      create(:exam, user: student, training_session: session_record, status: Exam::STATUS[:failed],
+                    score: 10, expired_at: 1.hour.ago)
+      log_in!(student)
+      get exams_path
+      expect(response.body).not_to include("Start Exam")
+      expect(response.body).not_to include("Resume Exam")
+      expect(response.body.scan("Expired").size).to eq(4) # status + action, for two exams
+      expect(response.body).to include("Failed")
+    end
+
     it "does not list other users' exams even to an admin, but offers the admin a Delete button" do
       admin = sign_in_as(:admin)
       mine = create(:exam, user: admin, training_session: session_record)
@@ -142,6 +157,64 @@ RSpec.describe "Exams", type: :request do
         get exam_path(exam)
         expect(response).to have_http_status(:ok)
         expect(exam.reload.status).to eq("not started")
+      end
+    end
+
+    # FIXED(retro of A5): the Finish button is for the owner only; staff reviewers can still
+    # look at an exam that expired, read-only
+    # N+1 pinned: see defects.md D-PERF17
+    it "shows the Finish button to the owner only", skip_bullet: true do
+      log_in!(student)
+      get exam_path(exam)
+      expect(response.body).to include("Finish Exam")
+    end
+
+    # N+1 pinned: see defects.md D-PERF17
+    it "leaves the owner's answer radios enabled", skip_bullet: true do
+      log_in!(student)
+      get exam_path(exam)
+      inputs = response.body.scan(/<input [^>]*type="radio"[^>]*>/)
+      expect(inputs.size).to be > 0
+      expect(inputs.grep(/disabled/)).to be_empty
+    end
+
+    %i[staff admin].each do |role|
+      # N+1 pinned: see defects.md D-PERF17
+      it "shows #{role} the student's exam without a Finish button", skip_bullet: true do
+        sign_in_as(role)
+        get exam_path(exam)
+        expect(response).to have_http_status(:ok)
+        expect(response.body).not_to include("Finish Exam")
+      end
+
+      # N+1 pinned: see defects.md D-PERF17
+      it "lets #{role} read an expired ungraded exam without changing it", skip_bullet: true do
+        exam.update!(expired_at: 1.minute.ago)
+        sign_in_as(role)
+        get exam_path(exam)
+        expect(response).to have_http_status(:ok)
+        expect(response.body).not_to include("Finish Exam")
+        expect(exam.reload.status).to eq("not started")
+      end
+
+      # FIXED(retro round 2): the answer inputs are read-only for a reviewer
+      # N+1 pinned: see defects.md D-PERF17
+      it "renders the answer radios disabled for #{role}, with and without a saved answer", skip_bullet: true do
+        ExamResponse.create!(exam_question: exam.exam_questions.first,
+                             answer: fixture[:questions].first[:correct], correct: true)
+        sign_in_as(role)
+        get exam_path(exam)
+        inputs = response.body.scan(/<input [^>]*type="radio"[^>]*>/)
+        expect(inputs.size).to be > 0
+        expect(inputs).to all(include("disabled"))
+        expect(inputs.grep(/checked=true/)).not_to be_empty
+      end
+
+      it "still redirects #{role} away from a graded exam" do
+        exam.update!(status: Exam::STATUS[:failed])
+        sign_in_as(role)
+        get exam_path(exam)
+        expect(response).to redirect_to(exams_path)
       end
     end
 
@@ -477,13 +550,55 @@ RSpec.describe "Exams", type: :request do
       expect(exam.reload.status).to eq("not started")
     end
 
-    # WART(D-T13): an exam created with no matching questions has 0 questions; grading it divides by zero
-    it "answers 500 (FloatDomainError) for an exam without questions and leaves it ungraded" do
-      exam = new_exam(questions: [])
+    # FIXED(retro of A5): a double-submit passes only_open_exam in both requests;
+    # the grading re-checks inside a row lock, so only the first one grades.
+    context "when a concurrent request has already graded the exam" do
+      before do
+        # The second request got past only_open_exam while the exam was still open.
+        allow_any_instance_of(ExamsController).to receive(:only_open_exam)
+      end
+
+      it "does not create a second retake or send a second email for a failed exam" do
+        exam = new_exam
+        exam.update!(status: Exam::STATUS[:failed], score: 0)
+        expect { perform_enqueued_jobs { finish(exam) } }.not_to change(Exam, :count)
+        expect(response).to redirect_to(exams_path)
+        expect(flash[:alert]).to eq("You cannot finish an exam that is already finished.")
+        expect(deliveries).to be_empty
+      end
+
+      it "does not certify or email again for a passed exam" do
+        exam = new_exam
+        exam.update!(status: Exam::STATUS[:passed], score: 100)
+        expect { perform_enqueued_jobs { finish(exam) } }.not_to change(Certification, :count)
+        expect(flash[:alert]).to eq("You cannot finish an exam that is already finished.")
+        expect(deliveries).to be_empty
+      end
+
+      it "does not grade an exam that expired in the meantime" do
+        exam = new_exam
+        exam.update!(expired_at: 1.minute.ago)
+        expect { finish(exam) }.not_to change(Certification, :count)
+        expect(flash[:alert]).to eq("This exam has expired.")
+        expect(exam.reload.status).to eq("not started")
+      end
+    end
+
+    it "grades under a row lock" do
+      exam = new_exam
+      expect_any_instance_of(Exam).to receive(:with_lock).and_call_original
       finish(exam)
-      expect(response).to have_http_status(:internal_server_error)
-      expect(error_text).to include("FloatDomainError")
+      expect(exam.reload.status).to eq("failed")
+    end
+
+    # FIXED(D-T13): an exam with no questions is refused, not graded: failing it would issue a retake
+    it "refuses to finish an exam without questions and leaves it ungraded, with no retake or email" do
+      exam = new_exam(questions: [])
+      expect { perform_enqueued_jobs { finish(exam) } }.not_to change(Exam, :count)
+      expect(response).to redirect_to(exams_path)
+      expect(flash[:alert]).to eq("This exam has no questions. Ask staff to resend it.")
       expect(exam.reload.status).to eq("not started")
+      expect(deliveries).to be_empty
     end
 
     it "answers 404 for an unknown exam id and 400-ish ParameterMissing is not used (find(nil))" do
@@ -598,6 +713,7 @@ RSpec.describe "Exams", type: :request do
       expect(Exam.last.exam_questions.count).to eq($n_exams_question)
     end
 
+    # INTENDED: any user may be sent a session's exam (user decision 2026-10-26, e.g. walk-ins)
     it "does not require the user to be enrolled in the session" do
       stranger = create(:user, :regular_user)
       expect { create_for_single_user(stranger) }.to change { Exam.where(user: stranger).count }.by(1)

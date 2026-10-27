@@ -147,6 +147,76 @@ RSpec.describe "Staff training sessions", type: :request do
         expect(response.body).to include(student.name)
       end
 
+      # FIXED(retro of A5): certify_user returns an existing certification of another
+      # session, so the Training's Cert. column looks at the training, not this session.
+      it "shows the training in Training's Cert. when the student holds it from another session" do
+        record.users << student
+        other = create(:training_session, user: trainer, training: training, space: space, level: "Beginner")
+        create(:certification, user: student, training_session: other, training: training, level: "Beginner")
+        get staff_training_session_path(record)
+        expect(response.body).to include("<td>#{ERB::Util.html_escape(training.name)}</td>")
+      end
+
+      it "shows None in Training's Cert. when the student only holds another level" do
+        record.users << student
+        other = create(:training_session, user: trainer, training: training, space: space, level: "Advanced")
+        create(:certification, user: student, training_session: other, training: training, level: "Advanced")
+        get staff_training_session_path(record)
+        expect(response.body).to include("<td>None</td>")
+        expect(response.body).not_to include("<td>#{ERB::Util.html_escape(training.name)}</td>")
+      end
+
+      # FIXED(retro of A5): finishing an expired exam is blocked (D-T10) and nothing grades
+      # it, so staff must be able to resend it or the trainee is locked out.
+      describe "Resend Exam" do
+        let(:resend_path) do
+          create_for_single_user_exams_path(training_session_id: record.id, user_id: student.id)
+        end
+
+        before { record.users << student }
+
+        def exam_with(status:, expired_at: 3.days.from_now, session: record)
+          create(:exam, user: student, training_session: session, status: status, expired_at: expired_at)
+        end
+
+        it "is offered for an expired exam that was never graded" do
+          exam_with(status: Exam::STATUS[:incomplete], expired_at: 1.hour.ago)
+          get staff_training_session_path(record)
+          expect(response.body).to include("Resend Exam").and include(CGI.escapeHTML(resend_path))
+        end
+
+        it "is offered for a failed exam, also when the student has exams in other sessions" do
+          exam_with(status: Exam::STATUS[:failed])
+          other = create(:training_session, user: trainer, training: training, space: space)
+          2.times { exam_with(status: Exam::STATUS[:passed], session: other) }
+          get staff_training_session_path(record)
+          expect(response.body).to include("Resend Exam")
+        end
+
+        it "is not offered for an exam that is still open, or passed" do
+          exam_with(status: Exam::STATUS[:incomplete])
+          get staff_training_session_path(record)
+          expect(response.body).not_to include("Resend Exam")
+          Exam.destroy_all
+          exam_with(status: Exam::STATUS[:passed], expired_at: 1.hour.ago)
+          get staff_training_session_path(record)
+          expect(response.body).not_to include("Resend Exam")
+        end
+
+        it "is not offered once the session already has two exams for the student" do
+          exam_with(status: Exam::STATUS[:failed])
+          exam_with(status: Exam::STATUS[:incomplete], expired_at: 1.hour.ago)
+          get staff_training_session_path(record)
+          expect(response.body).not_to include("Resend Exam")
+        end
+
+        it "sends a fresh exam without certifying anyone" do
+          exam_with(status: Exam::STATUS[:incomplete], expired_at: 1.hour.ago)
+          expect { post resend_path }.to change { student.exams.count }.by(1).and change(Certification, :count).by(0)
+          expect(student.exams.order(:id).last).to be_open_for_answers
+        end
+      end
+
       it "answers 404 for an unknown session" do
         get staff_training_session_path(0)
         expect(response).to have_http_status(:not_found)
@@ -201,6 +271,25 @@ RSpec.describe "Staff training sessions", type: :request do
         create(:certification, user: student, training_session: create(:training_session, training: training, user: trainer, space: space, level: "Beginner"), training: training, level: "Beginner")
         expect { post certify_trainees_staff_training_session_path(record) }.to change(Certification, :count).by(1)
         expect(flash[:notice]).to eq("Training Session Completed Successfully (1 duplicates skipped)")
+      end
+
+      # FIXED(retro round 2): the repeat check also sees project-granted certifications (no session)
+      it "skips a user who already holds that training and level from a proficient project" do
+        project = create(:proficient_project, training: training)
+        granted = create(:certification, user: student, training_session: nil, training: nil, level: "Beginner")
+        create(:proficient_project_session, certification: granted, user: student,
+                                            proficient_project: project, level: "Beginner")
+        expect { post certify_trainees_staff_training_session_path(record) }.to change(Certification, :count).by(1)
+        expect(flash[:notice]).to eq("Training Session Completed Successfully (1 duplicates skipped)")
+        expect(student.certifications.count).to eq(1)
+      end
+
+      it "still certifies a user whose project certification is for another level" do
+        project = create(:proficient_project, training: training)
+        granted = create(:certification, user: student, training_session: nil, training: nil, level: "Advanced")
+        create(:proficient_project_session, certification: granted, user: student,
+                                            proficient_project: project, level: "Advanced")
+        expect { post certify_trainees_staff_training_session_path(record) }.to change(Certification, :count).by(2)
       end
 
       it "is idempotent: a second run certifies nobody new" do
