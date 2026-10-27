@@ -17,7 +17,9 @@ class TapBoxLog < ApplicationRecord
 
   scope :recent, -> { order(created_at: :desc).limit(500) }
 
-  after_create_commit :broadcast_log
+  # The unregistered-reader trace is attacker-triggerable (even bounded), so it is
+  # never pushed live to the staff console; it stays in the console's history.
+  after_create_commit :broadcast_log, unless: :unknown_reader_trace?
 
   # Generic Log
 
@@ -350,6 +352,10 @@ class TapBoxLog < ApplicationRecord
   end
 
   private
+
+  def unknown_reader_trace?
+    message == UNKNOWN_READER_MESSAGE
+  end
 
   def broadcast_log
     Turbo::StreamsChannel.broadcast_prepend_to(

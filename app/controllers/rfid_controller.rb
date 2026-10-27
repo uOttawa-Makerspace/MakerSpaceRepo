@@ -58,8 +58,9 @@ class RfidController < SessionsController
     staff = tap_staff?
     mac_address = tap_mac
 
-    # D-EQ01/D-EQ03: no staff auth and no registered reader -> nothing is
-    # created, logged or broadcast.
+    # D-EQ01/D-EQ03: no staff auth and no registered reader -> no PiReader, Rfid,
+    # LabSession or broadcast; only the bounded unregistered-reader trace is
+    # logged (one row per MAC per hour, not broadcast).
     # A reader with no space (e.g. legacy rows the old self-registration created
     # for any MAC) is not registered until an admin associates it with a space.
     unless staff || pi_reader&.space

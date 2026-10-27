@@ -40,7 +40,9 @@ exposed endpoints:
     that an admin registered **and associated with a space**. The reader's
     space decides where the tap lands (any `space_id` they send is ignored).
     Taps from anything else (unknown MAC, a reader row with no space, no MAC)
-    get `401 {"error":"Unauthorized"}`; nothing is created. The firmware reads
+    get `401 {"error":"Unauthorized"}`; no reader, card or session is created and
+    the only trace is one bounded `Unregistered reader seen` warning per MAC per
+    hour (not broadcast to the console). The firmware reads
     only `success`: `"RFID sign in"`, `"RFID sign out"`, or anything else
     (treated as an error).
   - **The React app.** A staff/admin session or `Authorization: Bearer <JWT>`

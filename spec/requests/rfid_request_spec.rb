@@ -374,6 +374,11 @@ RSpec.describe "RFID endpoints", type: :request do
       expect(trace_rows.last).to have_attributes(event_type: TapBoxLog::WARNING, mac_address: new_mac, card_number: nil, user_id: nil, space_id: nil)
     end
 
+    it "does not broadcast the trace row to the tap box console, while other rows still are" do
+      expect { tap_card_with(mac: new_mac) }.not_to have_broadcasted_to("tap_box_console")
+      expect { tap_card }.to have_broadcasted_to("tap_box_console").at_least(:once)
+    end
+
     it "writes at most one row per mac per hour, then again after the hour" do
       3.times { tap_card_with(mac: new_mac) }
       expect(trace_rows.count).to eq(1)
