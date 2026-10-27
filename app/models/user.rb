@@ -576,9 +576,14 @@ class User < ApplicationRecord
     self
   end
 
+  # Also revokes every session and JWT issued so far (SQL increment, like admin_lock!,
+  # so a concurrent bump is not overwritten): restore! must not revive them.
   def soft_delete!
-    self.deleted = true
-    save!(validate: false)
+    transaction do
+      self.deleted = true
+      save!(validate: false)
+      increment!(:token_version)
+    end
     self
   end
 

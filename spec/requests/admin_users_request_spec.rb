@@ -704,3 +704,36 @@ RSpec.describe "Bulk role change atomicity", type: :request do
     expect([a.reload.role, b.reload.role]).to eq(%w[staff staff])
   end
 end
+
+RSpec.describe "Soft delete revokes sessions for good", type: :request do
+  let(:password) { "asa32A353#" }
+  let(:admin) { create(:user, :admin) }
+  let!(:target) { create(:user, :regular_user) }
+
+  before do
+    block_external_http!
+    post login_authentication_path, params: { username_email: admin.username, password: password }
+  end
+
+  it "keeps pre-delete sessions and JWTs dead after restore, while a fresh login works" do
+    token = target.token
+    victim = open_session
+    victim.post login_authentication_path, params: { username_email: target.username, password: password }
+    victim.get check_signed_in_path
+    expect(JSON.parse(victim.response.body)["signed_in"]).to eq("true")
+
+    delete delete_user_admin_users_path, params: { id: target.id, password: password }
+    patch restore_user_admin_users_path, params: { id: target.id }
+    expect(User.find(target.id).token_version).to eq(1)
+
+    victim.get check_signed_in_path
+    expect(JSON.parse(victim.response.body)["signed_in"]).to eq("false")
+    expect(JwtAuthenticator.user_for("Bearer #{token}")).to be_nil
+
+    fresh = open_session
+    fresh.post login_authentication_path, params: { username_email: target.username, password: password }
+    fresh.get check_signed_in_path
+    expect(JSON.parse(fresh.response.body)["signed_in"]).to eq("true")
+    expect(JwtAuthenticator.user_for("Bearer #{User.find(target.id).token}")).to eq(target)
+  end
+end
