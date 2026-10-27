@@ -14,8 +14,9 @@ class RepoFile < ApplicationRecord
     application/pdf
     image/svg+xml
     text/html
-    .doc
-    .docx
+    application/msword
+    application/vnd.openxmlformats-officedocument.wordprocessingml.document
+    application/x-ole-storage
     model/stl
     application/vnd.ms-pki.stl
     application/octet-stream
