@@ -208,8 +208,16 @@ RSpec.describe "SAML IdP", type: :request do
         user.update!(locked: true, locked_until: 1.hour.from_now)
         post_auth(submit: "sign_in", username: user.username, password: password)
         expect(c18_saml_response_xml).to be_nil
-        expect(response.body).to include("Invalid username/password")
+        expect(response.body).to include("Your account has been locked due to too many failed login attempts")
+        expect(response.body).to include("or wait")
         expect(session[:user_id]).to be_nil
+      end
+
+      it "words an admin lock without an end as locked, without a wait time" do
+        user.update!(locked: true, locked_until: nil)
+        post_auth(submit: "sign_in", username: user.username, password: password)
+        expect(response.body).to include("Your account has been locked")
+        expect(response.body).not_to include("or wait")
       end
 
       it "stops evaluating guesses once the account is locked: attempts stop counting and the lock is not rewritten" do
@@ -239,6 +247,7 @@ RSpec.describe "SAML IdP", type: :request do
         user.update!(confirmed: false)
         post_auth(submit: "sign_in", username: user.username, password: password)
         expect(c18_saml_response_xml).to be_nil
+        expect(response.body).to include("Please confirm your account before logging in")
         expect(session[:user_id]).to be_nil
       end
 
@@ -246,6 +255,7 @@ RSpec.describe "SAML IdP", type: :request do
         user.update!(active: false)
         post_auth(submit: "sign_in", username: user.username, password: password)
         expect(c18_saml_response_xml).to be_nil
+        expect(response.body).to include("Your account is inactive.")
       end
     end
 
