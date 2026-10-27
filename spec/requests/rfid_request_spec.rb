@@ -1,20 +1,9 @@
 require "rails_helper"
 
-# Load RfidController while the spec files load, before any example runs.
-# RfidController < SessionsController, and ParamsWrapper copies the parent's
-# options (including its already-resolved wrapper name, "session") when a
-# subclass is defined. With lazy autoloading (non-CI), a request handled by
-# SessionsController earlier in the same process makes RfidController wrap JSON
-# params under "session" instead of "rfid", so D-EQ04's hash-valued params[:rfid]
-# never happens and the pinned 500 became a 422. CI=1 eager-loads, which hid it.
-RfidController
-
-# Chunk 15: RfidController. RFID card taps come from Raspberry Pi tap boxes.
-# card_number is a machine-to-machine endpoint: it has NO authentication
-# (no shared secret, no IP allow-list, no env guard) and CSRF is off app-wide
-# (D-B26). Anyone on the internet can post a tap for any known card number and
-# sign that card's owner in/out of a space, create Rfid / PiReader / TapBoxLog
-# rows and trigger broadcasts. get_unset_rfids is staff-only.
+# Chunk 15: RfidController. card_number has two callers: Raspberry Pi tap boxes
+# (JSON {rfid, mac_address}, no credentials, frozen firmware, registered readers
+# only) and the React app (staff session / Bearer JWT with {rfid, space_id}).
+# get_unset_rfids is staff-only.
 RSpec.describe "RFID endpoints", type: :request do
   include ActiveJob::TestHelper
 
@@ -256,10 +245,26 @@ RSpec.describe "RFID endpoints", type: :request do
       expect(temp.reload.mac_address).to eq(pi_reader.pi_mac_address)
     end
 
-    # WART(D-EQ04): a JSON tap without an rfid key is wrapped by ParamsWrapper (controller is named rfid) so params[:rfid] is a hash and the action 500s
-    it "raises a 500 for a JSON tap with no rfid key (params wrapper turns params[:rfid] into a hash)" do
-      post rfid_card_number_path, params: { mac_address: pi_reader.pi_mac_address }, as: :json
-      expect(response).to have_http_status(:internal_server_error)
+    # FIXED(D-EQ04): parameter wrapping is off for RfidController, so a JSON tap without an rfid key is a clean 422
+    it "answers 422 for a JSON tap with no rfid key, creating nothing" do
+      expect {
+        post rfid_card_number_path, params: { mac_address: pi_reader.pi_mac_address }, as: :json
+      }.not_to change(Rfid, :count)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(body).to eq(new_rfid: "Error, requires rfid param")
+    end
+
+    it "answers 422 when rfid is not a string (hash or array) or the body is empty" do
+      [{ a: 1 }, [1]].each do |bad|
+        post rfid_card_number_path, params: { rfid: bad, mac_address: pi_reader.pi_mac_address }, as: :json
+        expect(response).to have_http_status(:unprocessable_content)
+      end
+      post rfid_card_number_path, params: {}, as: :json
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it "does not wrap JSON params under :rfid" do
+      expect(RfidController._wrapper_options.format).to be_empty
     end
 
     it "rejects a blank card number (form-encoded) and logs an invalid_rfid error" do

@@ -2,6 +2,10 @@
 include ActionView::Helpers::DateHelper
 
 class RfidController < SessionsController
+  # D-EQ04: the controller is named "rfid", so ParamsWrapper would nest a JSON
+  # tap's params under :rfid and a tap without an rfid key made params[:rfid] a hash.
+  wrap_parameters false
+
   before_action :signed_in, only: %i[get_unset_rfids]
   before_action :grant_access, only: %i[get_unset_rfids]
 
@@ -44,7 +48,7 @@ class RfidController < SessionsController
     tap_start = Time.current
 
     mac_address = params[:mac_address].presence if params[:mac_address].is_a?(String)
-    card = params[:rfid]
+    card = params[:rfid] if params[:rfid].is_a?(String)
     pi_reader = PiReader.find_by(pi_mac_address: mac_address) if mac_address
     staff = signed_in? && current_user.staff?
 
