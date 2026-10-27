@@ -45,11 +45,25 @@ end
 # The matching rule for cookie sessions: the session's stored token_version
 # (absent = 0, a session from before the column existed) must equal the user's,
 # and the user must be eligible (AuthEligibility). Used by
-# ApplicationHelper#session_user and DirectUploadAuthentication.
+# ApplicationHelper#session_user and DirectUploadAuthentication (which also
+# applies the idle expiry).
 module SessionAuthenticator
   module_function
 
   def valid_for?(session, user)
     AuthEligibility.allowed?(user) && session.fetch(:token_version, 0) == user.token_version
+  end
+
+  # The 72h sliding idle window (session[:expires_at] is refreshed by
+  # SessionsController#update_activity_time). A session without the key has a
+  # full window. Shared by SessionsController#session_expiry and the
+  # direct-upload module, which has no such before_action.
+  def seconds_left(session)
+    expire_time = session[:expires_at] || 72.hours.from_now
+    (expire_time.to_time - Time.zone.now).to_i
+  end
+
+  def expired?(session)
+    seconds_left(session) <= 0
   end
 end

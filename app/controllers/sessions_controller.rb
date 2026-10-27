@@ -180,7 +180,6 @@ class SessionsController < ApplicationController
   end
 
   def get_session_time_left
-    expire_time = session[:expires_at] || 72.hours.from_now
-    @session_time_left = (expire_time.to_time - Time.zone.now).to_i
+    @session_time_left = SessionAuthenticator.seconds_left(session)
   end
 end

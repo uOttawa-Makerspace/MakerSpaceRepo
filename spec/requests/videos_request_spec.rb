@@ -274,6 +274,22 @@ RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
         expect(response).to have_http_status(:unauthorized)
       end
 
+      it "refuses a cookie session idle for more than 72 hours, as every page does" do
+        content_login!(member)
+        travel 73.hours do
+          upload!
+          expect(response).to have_http_status(:unauthorized)
+        end
+      end
+
+      it "accepts a cookie session idle for less than 72 hours" do
+        content_login!(member)
+        travel 71.hours do
+          post rails_direct_uploads_path, params: payload, as: :json
+          expect(response).to have_http_status(:ok)
+        end
+      end
+
       it "refuses a cookie session of a user locked afterwards" do
         content_login!(member)
         member.update_columns(locked: true, locked_until: 1.hour.from_now)
