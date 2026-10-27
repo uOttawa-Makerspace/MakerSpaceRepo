@@ -168,6 +168,25 @@ RSpec.describe "Questions (admin question bank)", type: :request do
       expect(response.body.index("The cut width")).to be < response.body.index("A tool")
     end
 
+    it "renders one closed, resolvable remove form per removable answer" do
+      3.times { |i| Answer.create!(question: question, correct: false, description: "extra #{i}") }
+      get edit_question_path(question)
+      doc = Nokogiri::HTML5(response.body, max_errors: 100)
+      removable = question.answers.where(correct: false).pluck(:id)
+      expect(removable.size).to eq(4)
+      buttons = doc.css("button[form^='remove-answer-']")
+      expect(buttons.size).to eq(4)
+      removable.each do |id|
+        form = doc.at_css("form##{"remove-answer-#{id}"}")
+        expect(form).not_to be_nil
+        expect(form["action"]).to eq(remove_answer_question_path(question, answer_id: id))
+        # a form that was never closed would swallow the following forms
+        expect(form.css("form")).to be_empty
+        expect(form.parent.name).not_to eq("form")
+      end
+      expect(doc.css("form#remove-answer-#{removable.first}").first.ancestors("form")).to be_empty
+    end
+
     it "renders a DELETE remove form (not a GET link) for each incorrect saved answer" do
       victim = question.answers.where(correct: false).first
       get edit_question_path(question)
