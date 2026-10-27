@@ -28,6 +28,7 @@ RSpec.describe Admin::UsersController, type: :controller do
         Rfid.create(card_number: "abc", user_id: @admin.id)
         @admin.pword = "password"
         @admin.save!
+        session[:token_version] = @admin.token_version # pword= bumped it
       end
 
       it "should delete a user" do

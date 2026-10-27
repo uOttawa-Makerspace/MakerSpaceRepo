@@ -130,22 +130,11 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
 
   def user_magic_approval
     @token = params[:token]
-    verifier = Rails.application.message_verifier(:job_order_id)
-    if verifier.valid_message?(@token) &&
-         JobOrder.where(
-           id: verifier.verify(@token),
-           is_deleted: false
-         ).present? &&
+    @job_order = JobOrder.from_approval_token(@token)
+    if @job_order &&
          [JobStatus::USER_APPROVAL, JobStatus::SENT_REMINDER].include?(
-           JobOrder
-             .where(id: verifier.verify(@token), is_deleted: false)
-             .first
-             .job_order_statuses
-             .last
-             .job_status
+           @job_order.job_order_statuses.last.job_status
          )
-      @job_order =
-        JobOrder.where(id: verifier.verify(@token), is_deleted: false).first
       render "job_orders/magic_approval"
     else
       flash[:alert] = t("job_orders.alerts.approval_magic_link_expired")
@@ -155,17 +144,16 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
 
   def user_magic_approval_confirmation
     @token = params[:token]
-    verifier = Rails.application.message_verifier(:job_order_id)
-    if verifier.valid_message?(params[:token])
-      @job_order =
-        JobOrder.where(id: verifier.verify(@token), is_deleted: false).first
+    @job_order = JobOrder.from_approval_token(@token)
+    if @job_order
       @status = if update_status(
            params[:approved],
            [JobStatus::USER_APPROVAL, JobStatus::SENT_REMINDER],
            JobStatus::WAITING_PROCESSED,
            true,
            JobStatus::DECLINED,
-           nil
+           nil,
+           actor: @job_order.user
          )
         true
       else
@@ -458,21 +446,12 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
 
   def pay
     @token = params[:token]
-    verifier = Rails.application.message_verifier(:job_order_id)
-    if verifier.valid_message?(@token) &&
-         JobOrder.where(
-           id: verifier.verify(@token),
-           is_deleted: false
-         ).present? &&
-         JobStatus::COMPLETED ==
-           JobOrder
-             .where(id: verifier.verify(@token), is_deleted: false)
-             .first
-             .job_order_statuses
-             .last
-             .job_status
-      @job_order =
-        JobOrder.where(id: verifier.verify(@token), is_deleted: false).first
+    @job_order = JobOrder.from_pay_token(@token)
+    if @job_order.nil?
+      # expired, tampered, deleted-order, already-retired or pre-D-J11 links
+      flash[:alert] = t("job_orders.alerts.pay_magic_link_expired")
+      redirect_to job_orders_path
+    elsif JobStatus::COMPLETED == @job_order.job_order_statuses.last.job_status
       @payment_link = @job_order.checkout_link
       render "job_orders/pay"
     else
@@ -550,7 +529,8 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
     true_status,
     need_false_status,
     false_status = nil,
-    redirect_link = job_order_path(@job_order.id)
+    redirect_link = job_order_path(@job_order.id),
+    actor: @user
   )
     error = false
 
@@ -564,14 +544,14 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
       @job_order.job_order_statuses << JobOrderStatus.create(
         job_order: @job_order,
         job_status: true_status,
-        user: @user
+        user: actor
       )
       error = true unless @job_order.save
     elsif param.present? && param == "false" && need_false_status
       @job_order.job_order_statuses << JobOrderStatus.create(
         job_order: @job_order,
         job_status: false_status,
-        user: @user
+        user: actor
       )
       error = true unless @job_order.save
     else

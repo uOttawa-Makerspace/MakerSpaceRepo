@@ -807,11 +807,13 @@ RSpec.describe User, type: :model do
       expect(payload["exp"]).to be_within(10).of(14.days.from_now.to_i)
     end
 
-    it "send_password_reset emails the reset link with user and expiry tokens" do
+    it "send_password_reset emails the reset link with a single purpose-scoped token" do
       expect { u.send_password_reset }.to change { ActionMailer::Base.deliveries.size }.by(1)
       mail = ActionMailer::Base.deliveries.last
       expect(mail.to).to eq([u.email])
       expect(mail.subject).to eq("Reset your MakerRepo password")
+      token = CGI.unescape(mail.body.encoded[/reset_password_form\?token=([^"'&\s<]+)/, 1])
+      expect(User.find_by_token_for(:password_reset, token)).to eq(u)
     end
   end
 
@@ -886,6 +888,130 @@ RSpec.describe User, type: :model do
       create(:membership, user: u, status: "paid", end_date: 1.day.ago)
       create(:membership, user: u, status: "revoked", end_date: 1.week.from_now)
       expect(u.has_active_membership?).to be(false)
+    end
+  end
+
+  describe "#lock_account! / #record_failed_attempt! (never shorten a lock)" do
+    let(:u) { create(:user, :regular_user) }
+
+    it "locks for LOCK_DURATION and mails the unlock link" do
+      expect { u.lock_account! }.to change { ActionMailer::Base.deliveries.size }.by(1)
+      expect(u.reload.locked).to be(true)
+      expect(u.locked_until).to be_within(5.seconds).of(User::LOCK_DURATION.from_now)
+    end
+
+    it "is a no-op, with no second mail, for an account already locked for longer (admin lock)" do
+      admin_until = 99.years.from_now
+      u.update_columns(locked: true, locked_until: admin_until)
+      expect { u.lock_account! }.not_to(change { ActionMailer::Base.deliveries.size })
+      expect(u.reload.locked_until).to be_within(1.second).of(admin_until)
+    end
+
+    it "is a no-op for a permanent lock (locked_until nil)" do
+      u.update_columns(locked: true, locked_until: nil)
+      expect { u.lock_account! }.not_to(change { ActionMailer::Base.deliveries.size })
+      expect(u.reload.locked_until).to be_nil
+    end
+
+    it "failed attempts past the threshold leave an admin lock alone" do
+      u.update_columns(locked: true, locked_until: 99.years.from_now, auth_attempts: 5)
+      expect { u.record_failed_attempt! }.not_to(change { u.reload.locked_until })
+    end
+  end
+
+  describe "#timed_lockout? (one-day threshold, matching the migration backfill)" do
+    let(:u) { create(:user, :regular_user) }
+
+    it "is true for a brute-force lock, a lapsed lock and a lock ending within a day" do
+      [5.minutes.from_now, 1.minute.ago, 20.hours.from_now].each do |until_time|
+        u.update_columns(locked: true, locked_until: until_time)
+        expect(u.reload.timed_lockout?).to be(true), until_time.to_s
+      end
+    end
+
+    it "is false for an admin lock (99 years, two days, or no end) and for an unlocked user" do
+      [99.years.from_now, 2.days.from_now, nil].each do |until_time|
+        u.update_columns(locked: true, locked_until: until_time)
+        expect(u.reload.timed_lockout?).to be(false), until_time.to_s
+      end
+      u.update_columns(locked: false, locked_until: nil)
+      expect(u.reload.timed_lockout?).to be(false)
+    end
+  end
+
+  describe "#reload and the memoized pword" do
+    it "drops an unsaved password change, so authenticate_password follows the stored hash again" do
+      u = create(:user, :regular_user)
+      u.pword = "SomethingElse1!x"
+      expect(u.authenticate_password("SomethingElse1!x")).to be(true)
+      u.reload
+      expect(u.authenticate_password("SomethingElse1!x")).to be(false)
+      expect(u.authenticate_password("asa32A353#")).to be(true)
+      expect(u.token_version).to eq(0)
+    end
+  end
+
+  describe "a stored bcrypt hash that contains a word of the username" do
+    # The strength validator used to run against the stored hash on every update,
+    # so unrelated saves (the brute-force lock, counters, profile edits) failed
+    # silently for such users.
+    let(:forced) { "$2a$12$" + ("a" * 22) + "hunterxsmith" + ("b" * 19) }
+    let(:u) { create(:user, :regular_user, username: "hunterxsmith").tap { |x| x.update_columns(password: forced) } }
+
+    it "still locks the account after MAX_AUTH_ATTEMPTS failed attempts" do
+      User::MAX_AUTH_ATTEMPTS.times { u.reload.record_failed_attempt! }
+      u.reload
+      expect(u.locked).to be(true)
+      expect(u.locked_until).to be_present
+    end
+
+    it "locks a legacy-invalid row (old username, stale gender) after MAX_AUTH_ATTEMPTS failures" do
+      # FIXED: the lock was written with a validated update that silently failed for such rows
+      legacy = create(:user, :regular_user)
+      legacy.update_columns(username: "old_user_name_longer_than_20", gender: "stale value")
+      expect(legacy.reload).not_to be_valid
+      User::MAX_AUTH_ATTEMPTS.times { legacy.reload.record_failed_attempt! }
+      expect(legacy.reload.locked).to be(true)
+      legacy.reset_auth_attempts!
+      expect(legacy.reload.auth_attempts).to eq(0)
+    end
+
+    it "persists reset_auth_attempts!, last_signed_in_time and an ordinary profile update" do
+      u.update_columns(auth_attempts: 3)
+      u.reset_auth_attempts!
+      expect(u.reload.auth_attempts).to eq(0)
+      expect(u.update(last_signed_in_time: Time.current, name: "New Name")).to be(true)
+      expect(u.reload.name).to eq("New Name")
+    end
+
+    it "does not validate a stored hash, but still validates a plaintext password" do
+      expect(u.plaintext_password_changing?).to be(false)
+      u.password = "hunterxsmith1A!"
+      expect(u.plaintext_password_changing?).to be(true)
+      expect(u).not_to be_valid
+      expect(u.errors[:password]).to be_present
+    end
+
+    it "a bcrypt-SHAPED plaintext is still checked for strength; only the hash pword= made is skipped" do
+      shaped = "$2a$10$" + ("a" * 22) + "hunterxsmith" + ("b" * 19)
+      typed = build(:user, :regular_user, username: "hunterxsmith")
+      typed.password = shaped
+      typed.password_confirmation = shaped
+      expect(typed).not_to be_valid
+      expect(typed.errors[:password]).to be_present
+
+      own = build(:user, :regular_user, username: "hunterxsmith")
+      allow(BCrypt::Password).to receive(:create).and_return(BCrypt::Password.new(shaped))
+      own.pword = "Xk3#vbN9!qLw"
+      own.valid?
+      expect(own.errors[:password]).to be_empty
+    end
+
+    it "plaintext_password_problems reports weak passwords and runs no other validation" do
+      expect(u.plaintext_password_problems("abc")).not_to be_empty
+      expect(u.plaintext_password_problems("")).not_to be_empty
+      expect(u.plaintext_password_problems("hunterxsmith1A!")).not_to be_empty
+      expect(u.plaintext_password_problems("Xk3#vbN9!qLw")).to be_empty
     end
   end
 end

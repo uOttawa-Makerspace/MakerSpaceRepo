@@ -160,7 +160,7 @@ RSpec.describe "Journey: job order", type: :system, skip_bullet: true do
     )
   end
 
-  it "pinned: following the quote magic link while signed out cannot approve (D-J09)" do
+  it "following the quote magic link while signed out approves, attributed to the owner (D-J09)" do
     order = make_job_order!(owner: user, status_key: :user_approval, staff: staff)
     task = order.job_tasks.create!(title: "Task #1", job_type: JobType.find_by!(name: "3D Print"))
     ActionMailer::Base.deliveries.clear
@@ -170,11 +170,12 @@ RSpec.describe "Journey: job order", type: :system, skip_bullet: true do
       visit path
       expect(page).to have_content("Thank You for ordering a Job Order!")
       click_button "Approve the Quote"
-      # WART(D-J09): @user is the blank guest User.new, so the status row is invalid
-      expect(page).to have_content("An error occured while trying to Approve/Deny the Job Order...")
-      expect(page).to have_content("An error occurred while updating the Job Order Status")
+      # FIXED(D-J09): the status row is attributed to the order owner and persists
+      expect(page).to have_content("Thank You for Approving/Denying the Job Order!")
     end
-    expect(order.reload.job_order_statuses.last.job_status.name).to eq("Waiting for User Approval")
+    last_status = order.reload.job_order_statuses.last
+    expect(last_status.job_status.name).to eq("Waiting to be Processed")
+    expect(last_status.user).to eq(user)
     expect(task.reload).to be_persisted
     expect(deliver_mail).to be_empty
   end

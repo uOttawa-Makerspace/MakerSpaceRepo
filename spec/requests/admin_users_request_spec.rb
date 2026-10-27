@@ -422,12 +422,14 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(User.unscoped.find(admin.id).deleted).to be(true)
     end
 
-    it "has no effect on the lingering session of the deleted user, which now 404s" do
+    it "ends the lingering session of the deleted user on its next request" do
+      # FIXED(D-I04): was a 404 for the lingering session; session_user now signs it out
       other_session = open_session
       other_session.post login_authentication_path, params: { username_email: target.username, password: password }
       delete delete_user_admin_users_path, params: { id: target.id, password: password }
       other_session.get settings_profile_path
-      expect(other_session.response).to have_http_status(:not_found)
+      expect(other_session.response).to have_http_status(:found)
+      expect(other_session.response.location).to include("/login")
     end
   end
 
@@ -492,6 +494,52 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
     end
   end
 
+  describe "PUT /admin/users/toggle_lock_user and token_version" do
+    before { login!(admin) }
+
+    it "bumps the target's token_version when locking, not when unlocking" do
+      # FIXED(D-I01): an admin lock permanently ends existing sessions and JWTs
+      expect { put toggle_lock_user_admin_users_path, params: { id: target.id } }
+        .to change { target.reload.token_version }.by(1)
+      expect { put toggle_lock_user_admin_users_path, params: { id: target.id } }
+        .not_to(change { target.reload.token_version })
+    end
+  end
+
+  describe "PUT /admin/users/toggle_lock_user on a legacy-invalid user" do
+    before { login!(admin) }
+
+    it "locks (token_version bumped, sessions and JWTs dead) and unlocks without validating the row" do
+      # FIXED: the lock was written with save!, which raised (500) for a row invalid for an unrelated legacy reason
+      target.update_columns(username: "old_user_name_longer_than_20", gender: "stale value")
+      expect(target.reload).not_to be_valid
+      token = target.token
+      victim = open_session
+      victim.post login_authentication_path, params: { username_email: target.username, password: password }
+      victim.get check_signed_in_path
+      expect(JSON.parse(victim.response.body)["signed_in"]).to eq("true")
+
+      put toggle_lock_user_admin_users_path, params: { id: target.id }
+      expect(response).to redirect_to(user_path(target.username))
+      expect(flash[:notice]).to eq("User locked!")
+      target.reload
+      expect(target.locked).to be(true)
+      expect(target.locked_until).to be > 90.years.from_now
+      expect(target.token_version).to eq(1)
+      victim.get check_signed_in_path
+      expect(JSON.parse(victim.response.body)["signed_in"]).to eq("false")
+      expect(JwtAuthenticator.user_for("Bearer #{token}")).to be_nil
+
+      put toggle_lock_user_admin_users_path, params: { id: target.id }
+      expect(flash[:notice]).to eq("User unlocked!")
+      target.reload
+      expect(target.locked).to be(false)
+      expect(target.locked_until).to be_nil
+      expect(target.auth_attempts).to eq(0)
+      expect(target.token_version).to eq(1)
+    end
+  end
+
   describe "PUT /admin/users/toggle_lock_user last-admin guard" do
     before { login!(admin) }
 
@@ -503,12 +551,13 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(admin.reload.locked).to be(false)
     end
 
-    it "refuses to lock an admin when every other admin is locked" do
-      other = create(:user, :admin)
-      admin.update_columns(locked: true)
-      put toggle_lock_user_admin_users_path, params: { id: other.id }
+    it "refuses to lock the acting admin when every other admin is locked" do
+      # (a locked admin can no longer be the acting session: locked sessions end on the next request)
+      other = create(:user, :admin, locked: true, locked_until: 99.years.from_now)
+      put toggle_lock_user_admin_users_path, params: { id: admin.id }
       expect(flash[:alert]).to eq("You cannot lock the last admin.")
-      expect(other.reload.locked).to be(false)
+      expect(admin.reload.locked).to be(false)
+      expect(other.reload.locked).to be(true)
     end
 
     it "locks an admin when another usable admin remains" do

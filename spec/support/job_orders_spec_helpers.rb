@@ -110,12 +110,14 @@ module JobOrderSpecHelpers
     user
   end
 
-  # The token the mailer generates (JobOrderMailer#send_job_quote uses
-  # `Rails.application.message_verifier(:job_order_id).generate(order_id)`) and
-  # the controller verifies. Producing it here uses the same verifier so the
-  # characterization hits the real signed-token seam.
+  # The emailed approval / pay tokens (JobOrder#approval_token / #pay_token),
+  # produced the same way the mailer and views do.
   def magic_link_token_for(job_order)
-    Rails.application.message_verifier(:job_order_id).generate(job_order.id)
+    job_order.approval_token
+  end
+
+  def magic_pay_token_for(job_order)
+    job_order.pay_token
   end
 
   # Same plaintext the seeded user fixture bundle answers (BCrypt factory

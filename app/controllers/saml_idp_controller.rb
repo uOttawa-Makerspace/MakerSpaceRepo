@@ -32,7 +32,7 @@ class SamlIdpController < ApplicationController
       when "sign_in"
         user = sign_in(params[:username], params[:password])
 
-        @error_message = "Invalid username/password" if user.nil?
+        @error_message = sign_in_error_message if user.nil?
 
         user
       when "current_user"
@@ -50,6 +50,25 @@ class SamlIdpController < ApplicationController
     else
       @saml_response = encode_response @current_user
       render template: "saml/saml_post"
+    end
+  end
+
+  private
+
+  # The same refusals the HTML login words (SessionsController#login_authentication),
+  # as plain text for this page.
+  def sign_in_error_message
+    support = SessionsController::SUPPORT_EMAIL
+    case @sign_in_refusal
+    when :locked
+      locked_user = User.username_or_email(params[:username])
+      "Your account has been locked due to too many failed login attempts. Please contact an administrator at #{support} to unlock your account#{lock_wait_suffix(locked_user)}."
+    when :unconfirmed
+      "Please confirm your account before logging in. You can resend the confirmation email from the MakerRepo login page."
+    when :inactive
+      "Your account is inactive. Please contact an administrator at #{support}."
+    else
+      "Invalid username/password"
     end
   end
 end

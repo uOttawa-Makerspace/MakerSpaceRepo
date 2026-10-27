@@ -25,6 +25,9 @@ class UsersController < SessionsController
                   unlock_account
                 ]
 
+  LINK_EXPIRED_ALERT =
+    'This link has expired or has already been used. Please request a new one.'
+
   def create
     @new_user = User.new(user_params)
     @new_user.pword = params[:user][:password] if @new_user.valid?
@@ -36,7 +39,7 @@ class UsersController < SessionsController
         format.json { render json: {errors: 'captcha failure'}, status: :unprocessable_content }
       end 
     elsif @new_user.save
-      hash = Rails.application.message_verifier(:user).generate(@new_user.id)
+      hash = @new_user.generate_token_for(:email_confirmation)
       MsrMailer.confirmation_email(@new_user, hash).deliver_now
       
       respond_to do |format| 
@@ -65,7 +68,7 @@ class UsersController < SessionsController
     email = params[:user][:email]
     user = User.find_by(email: email)
     if user.present?
-      hash = Rails.application.message_verifier(:user).generate(user.id)
+      hash = user.generate_token_for(:email_confirmation)
       MsrMailer.confirmation_email(user, hash).deliver_now
       flash[:notice] = 'A new confirmation email has been sent'
     else
@@ -77,76 +80,43 @@ class UsersController < SessionsController
   end
 
   def confirm
-    @cc_token = params[:token]
-    @verifier = Rails.application.message_verifier(:user)
-    if @verifier.valid_message?(@cc_token)
-      user_id = @verifier.verify(@cc_token)
-      if User.find(user_id).present?
-        user = User.find(user_id)
-        user.update(confirmed: true)
-        MsrMailer.welcome_email(user).deliver_now
-        flash[
-          :notice
-        ] = 'The email has been confirmed, you can now fully use your Makerepo Account !'
-      else
-        flash[
-          :alert
-        ] = 'Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com'
-      end
-    else
+    user = User.find_by_token_for(:email_confirmation, params[:token])
+    if user
+      user.update(confirmed: true)
+      MsrMailer.welcome_email(user).deliver_now
       flash[
-        :alert
-      ] = 'Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com'
+        :notice
+      ] = 'The email has been confirmed, you can now fully use your Makerepo Account !'
+    else
+      flash[:alert] = LINK_EXPIRED_ALERT
     end
     redirect_to root_path
   end
 
   def confirm_edited_email
-    @user_token = params[:user_token]
-    @user_verifier = Rails.application.message_verifier(:user)
-    @email_token = params[:email_token]
-    @email_verifier = Rails.application.message_verifier(:email)
-    if @user_verifier.valid_message?(@user_token) and
-         @email_verifier.valid_message?(@email_token)
-      user_id = @user_verifier.verify(@user_token)
-      new_email = @email_verifier.verify(@email_token)
-      if User.find(user_id).present?
-        user = User.find(user_id)
-        old_email = user.email
-        user.update(email: new_email)
-        MsrMailer.email_changed_email(user, old_email).deliver_now
-        flash[:notice] = "The email has been updated to #{user.email} !"
-      else
-        flash[
-          :alert
-        ] = 'Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com'
-      end
+    user, new_email = User.email_change_from_token(params[:token])
+    if user.nil?
+      flash[:alert] = LINK_EXPIRED_ALERT
+    elsif user != @user
+      flash[:alert] =
+        'This link was requested by a different account. Please sign in as the account that requested the change.'
+    elsif change_email_to(user, new_email)
+      MsrMailer.email_changed_email(user, @old_email).deliver_now
+      flash[:notice] = "The email has been updated to #{user.email} !"
     else
-      flash[
-        :alert
-      ] = 'Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com'
+      flash[:alert] =
+        'The email could not be updated, the address may already be used by another account. Please request a new change.'
     end
     redirect_to root_path
   end
 
   def unlock_account
-    @user_token = params[:token]
-    @user_verifier = Rails.application.message_verifier('unlock')
-    if @user_verifier.valid_message?(@user_token)
-      user_id = @user_verifier.verify(@user_token)
-      if User.find(user_id).present?
-        user = User.find(user_id)
-        if user.locked?
-          user.update(locked: false)
-          user.update(auth_attempts: 0)
-          user.update(locked_until: nil)
-          flash[:notice] = 'The account has been unlocked!'
-        end
-      else
-        flash[:alert] = 'We can not find that user. Please try again..'
-      end
+    user = User.find_by_token_for(:account_unlock, params[:token])
+    if user
+      user.update_columns(locked: false, auth_attempts: 0, locked_until: nil)
+      flash[:notice] = 'The account has been unlocked!'
     else
-      flash[:alert] = 'Invalid Token'
+      flash[:alert] = LINK_EXPIRED_ALERT
     end
     redirect_to root_path
   end
@@ -237,34 +207,42 @@ class UsersController < SessionsController
       render 'settings/admin', layout: 'setting' and return
     end
 
-    if @user.update(user_params.slice(:password, :password_confirmation))
-      @user.pword = @user.password
-      @user.save
-      MsrMailer.confirm_password_change(@user).deliver_now
-      redirect_to settings_admin_path,
-                  notice:
-                    'Password changed successfully, an email will be sent to confirm.'
-    else
-      render 'settings/admin', layout: 'setting'
+    new_password = user_params[:password]
+    if new_password != user_params[:password_confirmation]
+      flash.now[:alert] = 'Your password and password confirmation do not match.'
+      render 'settings/admin', layout: 'setting' and return
     end
+
+    # The plaintext is checked (presence, strength); only the password columns are
+    # then written, so an unrelated legacy-invalid field cannot block the change.
+    if @user.plaintext_password_problems(new_password).any?
+      render 'settings/admin', layout: 'setting' and return
+    end
+
+    begin
+      @user.store_new_password!(new_password)
+    rescue ActiveRecord::ActiveRecordError => e
+      Rails.error.report(e, handled: true)
+      @user.reload
+      flash.now[:alert] = 'Your password could not be changed. Please try again.'
+      render 'settings/admin', layout: 'setting' and return
+    end
+
+    session[:token_version] = @user.token_version if session[:user_id] # this session stays signed in
+    MsrMailer.confirm_password_change(@user).deliver_now
+    redirect_to settings_admin_path,
+                notice:
+                  'Password changed successfully, an email will be sent to confirm.'
   end
 
   def change_email
     if params[:new_email].present? and params[:confirm_new_email].present?
       if params[:new_email] == params[:confirm_new_email]
         if !User.find_by_email(params[:new_email]).present?
-          user_hash =
-            Rails.application.message_verifier(:user).generate(@user.id)
-          email_hash =
-            Rails
-              .application
-              .message_verifier(:email)
-              .generate(params[:new_email])
           MsrMailer.email_confirmation_email(
             params[:new_email],
             @user,
-            user_hash,
-            email_hash
+            @user.generate_email_change_token(params[:new_email])
           ).deliver_now
           flash[:notice] = 'A confirmation email has been sent to the new email'
         else
@@ -282,47 +260,42 @@ class UsersController < SessionsController
   end
 
   def reset_password_form
+    return if User.find_by_token_for(:password_reset, params[:token])
+
+    flash[:alert] = LINK_EXPIRED_ALERT
+    redirect_to forgot_password_path
   end
 
   def reset_password_confirmation
-    @user_token = params[:user_token]
-    @expiry_date_token = params[:expiry_date_token]
-    @user_verifier = Rails.application.message_verifier(:user)
-    if @user_verifier.valid_message?(@user_token) &&
-         @user_verifier.valid_message?(@expiry_date_token)
-      if params[:password] == params[:password_confirmation]
-        user_id = @user_verifier.verify(@user_token)
-        expiry_date = @user_verifier.verify(@expiry_date_token)
-        if User.find(user_id).present? && Time.now <= expiry_date
-          @user = User.find(user_id)
-          if @user.locked?
-            @user.update(locked: false)
-            @user.update(auth_attempts: 0)
-            @user.update(locked_until: nil)
-          end
-          @user.pword = params[:password]
-          if @user.save!
-            MsrMailer.confirm_password_change(@user).deliver_now
-            flash[
-              :notice
-            ] = 'Your password has been updated, an email will be sent to confirm!'
-          else
-            flash[
-              :alert
-            ] = 'An error occured while trying to change your password. Please try again later or send us an email at uottawa.makerepo@gmail.com'
-          end
-        else
-          flash[
-            :alert
-          ] = 'Something went wrong. You might have tried to change your password more than 24h after the email was sent. Try to access the page again or send us an email at uottawa.makerepo@gmail.com.'
-        end
-      else
-        flash[:alert] = 'Your password and password confirmation do not match.'
-      end
+    user = User.find_by_token_for(:password_reset, params[:token])
+    if user.nil?
+      flash[:alert] = LINK_EXPIRED_ALERT
+    elsif params[:password] != params[:password_confirmation]
+      flash[:alert] = 'Your password and password confirmation do not match.'
+    elsif (problems = user.plaintext_password_problems(params[:password])).any?
+      # D-I14 for this action: the strength rules now see the plain password
+      flash[:alert] = "Your password was not changed: #{problems.to_sentence}."
+      return redirect_to reset_password_form_users_path(token: params[:token])
     else
-      flash[
-        :alert
-      ] = 'Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com'
+      stored =
+        begin
+          user.store_new_password!(params[:password], clear_timed_lock: true)
+          true
+        rescue ActiveRecord::ActiveRecordError => e
+          Rails.error.report(e, handled: true)
+          false
+        end
+      if stored
+        session[:token_version] = user.token_version if session[:user_id] == user.id
+        MsrMailer.confirm_password_change(user).deliver_now
+        flash[
+          :notice
+        ] = 'Your password has been updated, an email will be sent to confirm!'
+      else
+        flash[
+          :alert
+        ] = 'An error occured while trying to change your password. Please try again later or send us an email at uottawa.makerepo@gmail.com'
+      end
     end
     redirect_to root_path
   end
@@ -475,6 +448,15 @@ class UsersController < SessionsController
   end
 
   private
+
+  # Applies the address; false (nothing changed) when it is rejected, e.g. taken
+  # by another account in the meantime. Remembers the previous address.
+  def change_email_to(user, new_email)
+    @old_email = user.email
+    user.update(email: new_email)
+  rescue ActiveRecord::RecordNotUnique
+    false
+  end
 
   def json_request?
     request.format.json? || request.content_mime_type&.json?

@@ -33,7 +33,7 @@ RSpec.describe UsersController, type: :controller do
     context "confirm" do
       it "should confirm the user" do
         user = create(:user, :regular_user_not_confirmed)
-        @hash = Rails.application.message_verifier(:user).generate(user.id)
+        @hash = user.generate_token_for(:email_confirmation)
         get :confirm, params: { token: @hash }
         expect(response).to redirect_to root_path
         expect(flash[:notice]).to eq(
@@ -49,7 +49,7 @@ RSpec.describe UsersController, type: :controller do
         get :confirm, params: { token: "abc" }
         expect(response).to redirect_to root_path
         expect(flash[:alert]).to eq(
-          "Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com"
+          "This link has expired or has already been used. Please request a new one."
         )
         expect(User.find(user.id).confirmed?).to be_falsey
       end
@@ -63,14 +63,8 @@ RSpec.describe UsersController, type: :controller do
         old_email = user.email
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
-        @user_hash = Rails.application.message_verifier(:user).generate(user.id)
-        @email_hash =
-          Rails.application.message_verifier(:email).generate("bob@bob.ca")
         get :confirm_edited_email,
-            params: {
-              email_token: @email_hash,
-              user_token: @user_hash
-            }
+            params: { token: user.generate_email_change_token("bob@bob.ca") }
         expect(response).to redirect_to root_path
         expect(ActionMailer::Base.deliveries.count).to eq(1)
         expect(ActionMailer::Base.deliveries.first.to.first).to eq(old_email)
@@ -85,16 +79,10 @@ RSpec.describe UsersController, type: :controller do
         old_email = user.email
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
-        @email_hash =
-          Rails.application.message_verifier(:email).generate("bob@bob.ca")
-        get :confirm_edited_email,
-            params: {
-              email_token: @email_hash,
-              user_token: ""
-            }
+        get :confirm_edited_email, params: { token: "" }
         expect(response).to redirect_to root_path
         expect(flash[:alert]).to eq(
-          "Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com"
+          "This link has expired or has already been used. Please request a new one."
         )
         expect(User.last.email).to eq(old_email)
       end
