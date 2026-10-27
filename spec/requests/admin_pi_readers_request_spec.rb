@@ -119,6 +119,15 @@ RSpec.describe "Admin pi readers", type: :request do
     expect(legacy.reload.space_id).to eq(space.id)
   end
 
+  it "names the reader's space in the staff unlinked-cards menu even when the card's mac differs in case (A10 round 3)" do
+    sign_in_as(:staff)
+    reader = create(:pi_reader, space: space)
+    reader.update_column(:pi_mac_address, reader.pi_mac_address.upcase)
+    create(:rfid, user: nil, mac_address: reader.pi_mac_address.downcase)
+    get user_path(create(:user, :regular_user).username)
+    expect(response.body).to include("Tapped at #{space.name}")
+  end
+
   it "shows the register-reader form on the space edit page for an admin" do
     sign_in_as(:admin)
     get edit_admin_space_path(space)

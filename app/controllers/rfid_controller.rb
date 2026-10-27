@@ -39,7 +39,7 @@ class RfidController < SessionsController
         rfids << {
           cardNumber: card.card_number,
           tappedAt:
-            "Tapped at #{PiReader.find_by(pi_mac_address: card.mac_address).space.name} #{time_ago_in_words(card.updated_at)} ago"
+            "Tapped at #{PiReader.find_by_mac(card.mac_address).space.name} #{time_ago_in_words(card.updated_at)} ago"
         }
       end
     render json: rfids
