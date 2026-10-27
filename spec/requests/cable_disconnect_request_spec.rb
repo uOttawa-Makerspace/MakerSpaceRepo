@@ -112,6 +112,20 @@ RSpec.describe "Cable disconnect failures", type: :request do
     expect(Rails.error).to have_received(:report).with(error, handled: true)
   end
 
+  it "reports, and does not raise, when the disconnect call itself fails" do
+    remote = double("remote")
+    allow(remote).to receive(:disconnect).and_raise(error)
+    allow(ActionCable.server.remote_connections).to receive(:where).and_return(remote)
+    user = create(:user, :regular_user)
+    expect { user.disconnect_cable! }.not_to raise_error
+    expect(Rails.error).to have_received(:report).with(error, handled: true)
+  end
+
+  it "does not hide programming errors" do
+    allow(ActionCable.server.remote_connections).to receive(:where).and_raise(NoMethodError, "oops")
+    expect { create(:user, :regular_user).disconnect_cable! }.to raise_error(NoMethodError)
+  end
+
   it "still stores an admin lock and reports the error" do
     login!(create(:user, :admin))
     target = create(:user, :regular_user)

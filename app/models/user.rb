@@ -556,7 +556,7 @@ class User < ApplicationRecord
   # (callers rescue ActiveRecordError and would wrongly report the change as failed).
   def disconnect_cable!
     ActionCable.server.remote_connections.where(current_user: self).disconnect
-  rescue StandardError => e
+  rescue ActiveRecord::ActiveRecordError => e
     Rails.error.report(e, handled: true)
   end
 
