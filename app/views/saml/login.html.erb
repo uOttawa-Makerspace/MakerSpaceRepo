@@ -12,7 +12,7 @@
   <div class="alert alert-danger"><%= @error_message %></div>
 <% end %>
 
-<%= form_tag params: { SAMLRequest: params[:SAMLRequest], RelayState: params[:RelayState], Signature: params[:Signature].presence, SigAlg: params[:SigAlg].presence } do %>
+<%= form_tag params: { SAMLRequest: params[:SAMLRequest], RelayState: params[:RelayState], Signature: params[:Signature], SigAlg: params[:SigAlg] } do %>
   <% if not @current_user.nil? %>
     <div class="mb-3">
       <button class="btn btn-primary w-100" type="submit" name="submit" value="current_user"><%= t('saml.login.use_this_account') %></button>

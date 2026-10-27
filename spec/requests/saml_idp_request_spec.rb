@@ -501,22 +501,23 @@ RSpec.describe "SAML IdP", type: :request do
       expect(response).to have_http_status(:bad_request)
     end
 
-    context "client-controlled malformed signed XML is a 400, not a 500" do
+    context "signature verification failures are refused (403), never a 500" do
       def ds = "http://www.w3.org/2000/09/xmldsig#"
 
-      def signed_logout(signature_xml, extra: "")
+      def signed_logout(signature_xml, extra: "", id: "_lo1")
         c18_deflate(%(<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ) +
-                    %(xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="_lo1" Version="2.0" ) +
+                    %(xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="#{id}" Version="2.0" ) +
                     %(IssueInstant="2026-03-10T15:00:00Z"><saml:Issuer>rooms.makerepo.com</saml:Issuer>) +
                     %(<saml:NameID>x</saml:NameID>#{extra}#{signature_xml}</samlp:LogoutRequest>))
       end
 
-      def full_signature(key_info: "", before: "")
-        %(<ds:Signature xmlns:ds="#{ds}">#{before}<ds:SignedInfo><ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>) +
+      def full_signature(key_info: "", digest_method: %(<ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>),
+                         digest_value: "<ds:DigestValue>AAAA</ds:DigestValue>", signature_value: "<ds:SignatureValue>AAAA</ds:SignatureValue>",
+                         reference_uri: "#_lo1", transforms: "", reference_outside: "")
+        %(<ds:Signature xmlns:ds="#{ds}"><ds:SignedInfo><ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>) +
           %(<ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/>) +
-          %(<ds:Reference URI="#_lo1"><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>) +
-          %(<ds:DigestValue>AAAA</ds:DigestValue></ds:Reference></ds:SignedInfo>) +
-          %(<ds:SignatureValue>AAAA</ds:SignatureValue>#{key_info}</ds:Signature>)
+          (reference_outside.empty? ? %(<ds:Reference URI="#{reference_uri}">#{transforms}#{digest_method}#{digest_value}</ds:Reference>) : "") +
+          %(</ds:SignedInfo>#{reference_outside}#{signature_value}#{key_info}</ds:Signature>)
       end
 
       def post_logout(request)
@@ -524,34 +525,129 @@ RSpec.describe "SAML IdP", type: :request do
         post "/saml/auth", params: { SAMLRequest: request, submit: "logout" }
       end
 
-      it "a LogoutRequest whose Signature has no SignedInfo" do
-        c18_with_signing_sps do
-          post_logout(signed_logout(%(<ds:Signature xmlns:ds="#{ds}"><ds:SignatureValue>AAAA</ds:SignatureValue></ds:Signature>)))
-          expect(response).to have_http_status(:bad_request)
+      {
+        "no SignedInfo" => -> { %(<ds:Signature xmlns:ds="#{ds}"><ds:SignatureValue>AAAA</ds:SignatureValue></ds:Signature>) },
+        "an empty SignatureValue" => -> { full_signature(signature_value: "<ds:SignatureValue/>") },
+        "an empty DigestValue" => -> { full_signature(digest_value: "<ds:DigestValue/>") },
+        "a missing DigestValue" => -> { full_signature(digest_value: "") },
+        "a Reference outside SignedInfo" => -> {
+          full_signature(reference_outside: %(<ds:Reference URI="#_lo1"><ds:DigestValue>AAAA</ds:DigestValue></ds:Reference>))
+        },
+        "a DigestMethod without Algorithm" => -> { full_signature(digest_method: "<ds:DigestMethod/>") },
+        "InclusiveNamespaces without PrefixList" => -> {
+          full_signature(transforms: %(<ds:Transforms><ds:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"><ec:InclusiveNamespaces xmlns:ec="http://www.w3.org/2001/10/xml-exc-c14n#"/></ds:Transform></ds:Transforms>))
+        },
+        "an empty X509Certificate" => -> {
+          full_signature(key_info: %(<ds:KeyInfo><ds:X509Data><ds:X509Certificate/></ds:X509Data></ds:KeyInfo>))
+        },
+        "a garbage embedded certificate" => -> {
+          full_signature(key_info: %(<ds:KeyInfo><ds:X509Data><ds:X509Certificate>bm90IGEgY2VydA==</ds:X509Certificate></ds:X509Data></ds:KeyInfo>))
+        },
+        "a Reference to an ID that does not exist" => -> { full_signature(reference_uri: "#nope") },
+        "an empty Reference URI" => -> { full_signature(reference_uri: "") }
+      }.each do |shape, build|
+        it "a LogoutRequest with #{shape}" do
+          c18_with_signing_sps do
+            post_logout(signed_logout(instance_exec(&build)))
+            expect(response).to have_http_status(:forbidden)
+          end
         end
       end
 
-      it "a LogoutRequest whose Reference points at an ID that does not exist or lacks a DigestValue" do
-        c18_with_signing_sps do
-          post_logout(signed_logout(full_signature.sub('URI="#_lo1"', 'URI="#nope"')))
-          expect(response).to have_http_status(:bad_request)
-          post_logout(signed_logout(full_signature.sub("<ds:DigestValue>AAAA</ds:DigestValue>", "")))
-          expect(response).to have_http_status(:bad_request)
-        end
-      end
-
-      it "a LogoutRequest with a garbage embedded certificate" do
-        c18_with_signing_sps do
-          key_info = %(<ds:KeyInfo><ds:X509Data><ds:X509Certificate>bm90IGEgY2VydA==</ds:X509Certificate></ds:X509Data></ds:KeyInfo>)
-          post_logout(signed_logout(full_signature(key_info: key_info)))
-          expect(response).to have_http_status(:bad_request)
-        end
-      end
-
-      it "XML REXML cannot parse but Nokogiri recovers" do
+      it "XML REXML cannot parse but Nokogiri recovers is a 400 (malformed input)" do
         c18_with_signing_sps do
           post_logout(signed_logout(full_signature, extra: "<junk a='1' a='2'/>"))
           expect(response).to have_http_status(:bad_request)
+        end
+      end
+
+      it "an SP that does not require signatures still gets its assertion with an odd ds:Signature in the request" do
+        odd = full_signature(reference_uri: "")
+        xml = %(<samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ) +
+              %(ID="_req1" Version="2.0" IssueInstant="2026-03-10T15:00:00Z" AssertionConsumerServiceURL="#{WIKIJS_ACS}">) +
+              %(<saml:Issuer>wikijs.makerepo.com</saml:Issuer>#{odd}</samlp:AuthnRequest>)
+        c18_sign_in(:regular)
+        post "/saml/auth", params: { SAMLRequest: c18_deflate(xml), submit: "current_user" }
+        expect(response).to have_http_status(:ok)
+        expect(c18_saml_response_xml).to be_present
+        get "/saml/auth", params: { SAMLRequest: c18_deflate(xml) }
+        expect(response).to have_http_status(:ok)
+      end
+
+      context "with a real signature" do
+        let(:key) { OpenSSL::PKey::RSA.new(2048) }
+        let(:cert) do
+          OpenSSL::X509::Certificate.new.tap do |c|
+            c.version = 2
+            c.serial = 1
+            c.subject = c.issuer = OpenSSL::X509::Name.parse("/CN=sp.test")
+            c.public_key = key.public_key
+            c.not_before = 1.day.ago
+            c.not_after = 1.day.from_now
+            c.sign(key, OpenSSL::Digest.new("SHA256"))
+          end
+        end
+        # the gem decodes the configured certificate as base64 DER
+        let(:cert_b64) { Base64.strict_encode64(cert.to_der) }
+
+        # Signs the element with the given ID (exclusive c14n, rsa-sha256) and returns the XML
+        # of an enveloped ds:Signature for it, computed over the document WITHOUT the signature.
+        def signature_for(xml, signed_id)
+          doc = Nokogiri::XML(xml)
+          target = doc.at_xpath("//*[@ID='#{signed_id}']")
+          digest = Base64.strict_encode64(OpenSSL::Digest::SHA256.digest(target.canonicalize(Nokogiri::XML::XML_C14N_EXCLUSIVE_1_0)))
+          signed_info = %(<ds:SignedInfo xmlns:ds="#{ds}"><ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>) +
+                        %(<ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/>) +
+                        %(<ds:Reference URI="##{signed_id}"><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>) +
+                        %(<ds:DigestValue>#{digest}</ds:DigestValue></ds:Reference></ds:SignedInfo>)
+          canonical = Nokogiri::XML(signed_info).root.canonicalize(Nokogiri::XML::XML_C14N_EXCLUSIVE_1_0)
+          sig = Base64.strict_encode64(key.sign(OpenSSL::Digest.new("SHA256"), canonical))
+          %(<ds:Signature xmlns:ds="#{ds}">#{signed_info}<ds:SignatureValue>#{sig}</ds:SignatureValue></ds:Signature>)
+        end
+
+        def logout_xml(inner)
+          %(<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ) +
+            %(ID="_lo1" Version="2.0" IssueInstant="2026-03-10T15:00:00Z"><saml:Issuer>rooms.makerepo.com</saml:Issuer>) +
+            %(<saml:NameID>x</saml:NameID>#{inner}</samlp:LogoutRequest>)
+        end
+
+        it "accepts a LogoutRequest whose root element is signed (control for the wrapping examples)" do
+          c18_with_signing_sps(cert_pem: cert_b64) do
+            unsigned = logout_xml("")
+            post_logout(c18_deflate(logout_xml(signature_for(unsigned, "_lo1"))))
+            expect(response).to have_http_status(:ok)
+          end
+        end
+
+        it "refuses a wrapped document: a validly signed element elsewhere, an unsigned root request (403)" do
+          c18_with_signing_sps(cert_pem: cert_b64) do
+            extra = %(<Extension ID="signed1">harmless</Extension>)
+            body = logout_xml(extra)
+            wrapped = logout_xml(extra + signature_for(body, "signed1"))
+            # control: the signature itself verifies against the configured cert
+            expect(Saml::XML::Document.parse(wrapped).valid_signature?(cert_b64, "")).to be(true)
+            post_logout(c18_deflate(wrapped))
+            expect(response).to have_http_status(:forbidden)
+          end
+        end
+
+        it "refuses a document with two signatures (403)" do
+          c18_with_signing_sps(cert_pem: cert_b64) do
+            unsigned = logout_xml("")
+            sig = signature_for(unsigned, "_lo1")
+            post_logout(c18_deflate(logout_xml(sig + sig)))
+            expect(response).to have_http_status(:forbidden)
+          end
+        end
+      end
+
+      it "a broken SP certificate refuses the request (403) and is reported at error level" do
+        c18_with_signing_sps(cert_pem: "not a certificate") do
+          expect(Rails.error).to receive(:report).with(instance_of(OpenSSL::X509::CertificateError), hash_including(severity: :error)).at_least(:once)
+          c18_sign_in(:regular)
+          post "/saml/auth", params: { SAMLRequest: c18_authn_request, submit: "current_user", Signature: Base64.strict_encode64("sig"),
+                                       SigAlg: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256" }
+          expect(response).to have_http_status(:forbidden)
         end
       end
     end
