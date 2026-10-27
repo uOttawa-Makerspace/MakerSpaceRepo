@@ -8,6 +8,14 @@ class SamlIdpController < ApplicationController
 
   protect_from_forgery with: :exception
 
+  # The wiki-server SP's metadata. No copy of it exists in the repository or its
+  # history; the tracked location is checked first, the old precompile-dir path
+  # (git-ignored, hand-placed) is kept so existing deploys keep working.
+  WIKI_METADATA_PATHS = [
+    Rails.root.join("config/saml/wiki_metadata.xml"),
+    Rails.root.join("public/assets/metadata.xml")
+  ].freeze
+
   before_action :enforce_saml_request, only: %i[login auth]
 
   # Password guesses over SAML get the same budget as SessionsController#login_authentication
@@ -30,7 +38,13 @@ class SamlIdpController < ApplicationController
   end
 
   def wiki_metadata
-    render file: "public/assets/metadata.xml", content_type: "application/xml"
+    path = WIKI_METADATA_PATHS.find(&:file?)
+    if path.nil?
+      Rails.logger.error("SAML wiki metadata not found; looked in #{WIKI_METADATA_PATHS.join(', ')}")
+      return head :not_found
+    end
+
+    render xml: path.read
   end
 
   def auth

@@ -105,33 +105,43 @@ RSpec.describe "SAML IdP", type: :request do
   end
 
   describe "GET /saml/wiki_metadata" do
-    let(:file) { Rails.root.join("public/assets/metadata.xml") }
+    let(:tracked) { Rails.root.join("config/saml/wiki_metadata.xml") }
+    let(:legacy) { Rails.root.join("public/assets/metadata.xml") }
 
-    def with_metadata_file(content)
-      made_dir = !file.dirname.exist?
-      FileUtils.mkdir_p(file.dirname)
-      backup = file.exist? ? file.read : nil
-      content ? file.write(content) : FileUtils.rm_f(file)
+    def with_files(tracked_content: nil, legacy_content: nil)
+      paths = { tracked => tracked_content, legacy => legacy_content }
+      backups = paths.keys.to_h { |f| [f, f.exist? ? f.read : nil] }
+      paths.each do |f, content|
+        FileUtils.mkdir_p(f.dirname) if content
+        content ? f.write(content) : FileUtils.rm_f(f)
+      end
       yield
     ensure
-      backup ? file.write(backup) : FileUtils.rm_f(file)
-      FileUtils.rmdir(file.dirname) if made_dir && file.dirname.empty?
+      backups.each { |f, old| old ? f.write(old) : FileUtils.rm_f(f) }
     end
 
-    it "serves public/assets/metadata.xml as application/xml when the file exists" do
-      with_metadata_file("<EntityDescriptor entityID=\"wiki-server\"/>") do
+    it "serves the tracked config/saml/wiki_metadata.xml as application/xml" do
+      with_files(tracked_content: "<EntityDescriptor entityID=\"tracked\"/>", legacy_content: "<legacy/>") do
         get "/saml/wiki_metadata"
         expect(response).to have_http_status(:ok)
         expect(response.media_type).to eq("application/xml")
+        expect(response.body).to eq("<EntityDescriptor entityID=\"tracked\"/>")
+      end
+    end
+
+    it "falls back to the hand-placed public/assets/metadata.xml" do
+      with_files(legacy_content: "<EntityDescriptor entityID=\"wiki-server\"/>") do
+        get "/saml/wiki_metadata"
+        expect(response).to have_http_status(:ok)
         expect(response.body).to eq("<EntityDescriptor entityID=\"wiki-server\"/>")
       end
     end
 
-    it "is a 500 when the file is missing (it lives in public/assets, which is gitignored)" do
-      # WART(D-R17): the wiki SP metadata is read from the gitignored public/assets directory (precompile output), so a fresh checkout/deploy without that hand-placed file answers 500 at the URL the SP config points to
-      with_metadata_file(nil) do
+    it "is a 404 (logged), not a 500, when no metadata file exists (D-R17)" do
+      with_files do
+        expect(Rails.logger).to receive(:error).with(/SAML wiki metadata not found/)
         get "/saml/wiki_metadata"
-        expect(response).to have_http_status(:internal_server_error)
+        expect(response).to have_http_status(:not_found)
       end
     end
   end
