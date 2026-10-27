@@ -70,3 +70,54 @@ RSpec.describe "Cable disconnects", type: :request do
     expect(disconnected).to eq([target])
   end
 end
+
+# A failing cable broadcast (solid_cable INSERT) must not undo or mask a committed change.
+RSpec.describe "Cable disconnect failures", type: :request do
+  let(:password) { "asa32A353#" }
+  let(:new_pw) { "Brand-new-pw-7731!" }
+  let(:error) { ActiveRecord::StatementInvalid.new("cable db down") }
+
+  before do
+    block_external_http!
+    allow(ActionCable.server.remote_connections).to receive(:where).and_raise(error)
+    allow(Rails.error).to receive(:report).and_call_original
+  end
+
+  def login!(user)
+    post login_authentication_path, params: { username_email: user.username, password: password }
+    user
+  end
+
+  it "still completes a password change (notice, own session kept, mail sent) and reports the error" do
+    user = login!(create(:user, :regular_user))
+    expect do
+      patch change_password_user_path(user.username),
+            params: { user: { old_password: password, password: new_pw, password_confirmation: new_pw } }
+    end.to change { ActionMailer::Base.deliveries.size }.by(1)
+    expect(flash[:notice]).to match(/Password changed successfully/)
+    expect(Rails.error).to have_received(:report).with(error, handled: true)
+    expect(user.reload.pword).to eq(new_pw)
+    follow_redirect!
+    expect(response).to have_http_status(:ok)
+  end
+
+  it "still completes a password reset and reports the error" do
+    user = create(:user, :regular_user)
+    expect do
+      patch reset_password_confirmation_users_path,
+            params: { token: user.generate_token_for(:password_reset), password: new_pw, password_confirmation: new_pw }
+    end.to change { ActionMailer::Base.deliveries.size }.by(1)
+    expect(flash[:alert]).to be_blank
+    expect(user.reload.pword).to eq(new_pw)
+    expect(Rails.error).to have_received(:report).with(error, handled: true)
+  end
+
+  it "still stores an admin lock and reports the error" do
+    login!(create(:user, :admin))
+    target = create(:user, :regular_user)
+    put toggle_lock_user_admin_users_path, params: { id: target.id }
+    expect(response).not_to have_http_status(:internal_server_error)
+    expect(target.reload.locked).to be(true)
+    expect(Rails.error).to have_received(:report).with(error, handled: true)
+  end
+end

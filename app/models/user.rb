@@ -551,8 +551,13 @@ class User < ApplicationRecord
   # by current_user). Called when the credentials or rights behind them change:
   # sign out, password change/reset, admin lock, demotion from staff/admin. A
   # still-valid session simply reconnects and is re-checked at the handshake.
+  # Best effort: it runs after the change is already committed (the solid_cable
+  # broadcast is an INSERT that can fail), so a failure is reported, never raised
+  # (callers rescue ActiveRecordError and would wrongly report the change as failed).
   def disconnect_cable!
     ActionCable.server.remote_connections.where(current_user: self).disconnect
+  rescue StandardError => e
+    Rails.error.report(e, handled: true)
   end
 
   # Demoted from staff/admin: a connection opened as staff must not keep receiving
