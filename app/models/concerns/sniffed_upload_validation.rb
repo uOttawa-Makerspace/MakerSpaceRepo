@@ -39,29 +39,37 @@ module SniffedUploadValidation
   end
 
   class_methods do
+    # Several rules may be declared for one attachment name (mutually exclusive via
+    # if:/unless:); every rule is kept, not only the last.
     def validates_sniffed_upload(*names, max_size:, allow: nil, deny: nil, name_fallback: true, **options)
-      rules = { allow: allow, deny: deny, max_size: max_size, name_fallback: name_fallback }
-      self.sniffed_upload_rules = sniffed_upload_rules.merge(names.to_h { |name| [name.to_sym, rules] })
+      rule = { allow: allow, deny: deny, max_size: max_size, name_fallback: name_fallback,
+               if: options[:if], unless: options[:unless] }
+      names.each do |name|
+        self.sniffed_upload_rules = sniffed_upload_rules.merge(name.to_sym => sniffed_upload_rules.fetch(name.to_sym, []) + [rule])
+      end
       validate(**options) do
-        names.each { |name| validate_sniffed_upload(name, allow, deny, max_size, name_fallback) }
+        names.each { |name| validate_sniffed_upload(name, rule) }
       end
     end
   end
 
   # Checks one incoming upload (an ActionDispatch uploaded file) against the rules of
-  # +name+ without attaching it; returns the list of problems (empty when acceptable).
-  # Lets a caller that attaches files one at a time keep the good ones and report the
-  # refused ones.
+  # +name+ that apply to this record, without attaching it; returns the list of
+  # problems (empty when acceptable). Lets a caller that attaches files one at a time
+  # keep the good ones and report the refused ones.
   def sniffed_upload_problems(name, upload)
-    rules = sniffed_upload_rules.fetch(name.to_sym)
-    max_size = rules[:max_size].respond_to?(:call) ? rules[:max_size].call : rules[:max_size]
     filename = (upload.respond_to?(:original_filename) ? upload.original_filename : upload.class.name).to_s
-    problems = []
-    problems << "#{filename} is too large" if upload.respond_to?(:size) && upload.size.to_i > max_size
     head = upload_leading_bytes(upload, nil)
-    sniffed = head && Marcel::MimeType.for(StringIO.new(head), name: (filename if rules[:name_fallback]))
-    problems << "#{filename} has a file type that is not allowed" unless sniffed_type_acceptable?(sniffed, rules[:allow], rules[:deny])
-    problems
+    sniffed_by_name = {}
+    sniffed_upload_rules.fetch(name.to_sym).select { |rule| sniffed_rule_applies?(rule) }.flat_map do |rule|
+      max_size = rule[:max_size].respond_to?(:call) ? rule[:max_size].call : rule[:max_size]
+      problems = []
+      problems << "#{filename} is too large" if upload.respond_to?(:size) && upload.size.to_i > max_size
+      sniffed = sniffed_by_name[rule[:name_fallback]] ||=
+        (head && Marcel::MimeType.for(StringIO.new(head), name: (filename if rule[:name_fallback])))
+      problems << "#{filename} has a file type that is not allowed" unless sniffed_type_acceptable?(sniffed, rule[:allow], rule[:deny])
+      problems
+    end.uniq
   end
 
   private
@@ -70,8 +78,14 @@ module SniffedUploadValidation
     !(sniffed.nil? || (allow && Array(allow).none? { |type| type === sniffed }) || Array(deny).any? { |type| type === sniffed })
   end
 
-  def validate_sniffed_upload(name, allow, deny, max_size, name_fallback)
-    max_size = max_size.call if max_size.respond_to?(:call)
+  def sniffed_rule_applies?(rule)
+    evaluate = ->(cond) { cond.is_a?(Symbol) ? send(cond) : instance_exec(&cond) }
+    Array(rule[:if]).all?(&evaluate) && Array(rule[:unless]).none?(&evaluate)
+  end
+
+  def validate_sniffed_upload(name, rule)
+    allow, deny, name_fallback = rule.values_at(:allow, :deny, :name_fallback)
+    max_size = rule[:max_size].respond_to?(:call) ? rule[:max_size].call : rule[:max_size]
     new_uploads_for(name).each do |attachable, blob|
       # A blob already attached under THIS policy (same record type and attachment name)
       # was validated when it was first attached, or is legacy. A rejected blob is never
@@ -102,6 +116,11 @@ module SniffedUploadValidation
         public_send("#{name}_attachments").to_a
       end
     return true if held.any? { |attachment| attachment.blob_id == blob.id }
+
+    # With several rules for this name (e.g. RepoFile: proficient-project allow-list vs
+    # general denylist) another record's attachment may have passed a different rule,
+    # so a blob this record does not already hold is always re-sniffed.
+    return false if sniffed_upload_rules.fetch(name.to_sym, []).size > 1
 
     ActiveStorage::Attachment.exists?(blob_id: blob.id, record_type: self.class.polymorphic_name, name: name.to_s)
   end

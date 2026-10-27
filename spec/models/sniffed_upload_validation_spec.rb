@@ -189,3 +189,31 @@ RSpec.describe SniffedUploadValidation, "general project-file denylist" do
     end
   end
 end
+
+RSpec.describe RepoFile, "sniff rules for the same attachment name" do
+  include ContentSpecHelpers
+
+  it "keeps every declared rule, not only the last" do
+    expect(RepoFile.sniffed_upload_rules.fetch(:file).size).to eq(2)
+  end
+
+  it "refuses a general-repository blob re-attached to a proficient-project RepoFile" do
+    general = RepoFile.create!(repository: create(:repository, owner: create(:user)),
+                               file: content_named_upload("a.zip", content: "PK\x03\x04".b + ("\x00" * 40), type: "application/zip"))
+    reuse = RepoFile.new(proficient_project: create(:proficient_project), file: general.file.signed_id)
+    expect(reuse).not_to be_valid
+    expect(reuse.errors[:file].join).to include("not allowed")
+  end
+
+  it "still lets a RepoFile re-submit its own blob (repository edit form)" do
+    general = RepoFile.create!(repository: create(:repository, owner: create(:user)),
+                               file: content_named_upload("a.zip", content: "PK\x03\x04".b + ("\x00" * 40), type: "application/zip"))
+    expect(general.update(file: general.file.signed_id)).to be(true)
+  end
+
+  it "pre-checks an upload against the rule that applies to the record" do
+    zip = content_named_upload("a.zip", content: "PK\x03\x04".b + ("\x00" * 40), type: "application/zip")
+    expect(RepoFile.new(repository: create(:repository, owner: create(:user))).sniffed_upload_problems(:file, zip)).to be_empty
+    expect(RepoFile.new(proficient_project: create(:proficient_project)).sniffed_upload_problems(:file, zip)).not_to be_empty
+  end
+end
