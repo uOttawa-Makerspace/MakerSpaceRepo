@@ -8,6 +8,10 @@ class SamlIdpController < ApplicationController
 
   protect_from_forgery with: :exception
 
+  # What the gem raises for a malformed (as opposed to refused) request. Anything
+  # else (SP metadata getter, DB, network) is a server failure and must surface.
+  MALFORMED_REQUEST_ERRORS = [Zlib::Error, Nokogiri::XML::SyntaxError, URI::InvalidURIError].freeze
+
   # The wiki-server SP's metadata. No copy of it exists in the repository or its
   # history; the tracked location is checked first, the old precompile-dir path
   # (git-ignored, hand-placed) is kept so existing deploys keep working.
@@ -77,6 +81,12 @@ class SamlIdpController < ApplicationController
 
   private
 
+  # Signature, SigAlg and RelayState are plain strings, and a Signature needs its SigAlg.
+  def saml_binding_params_wellformed?
+    values = params.values_at(:Signature, :SigAlg, :RelayState)
+    values.all? { |v| v.nil? || v.is_a?(String) } && (params[:Signature].blank? || params[:SigAlg].present?)
+  end
+
   # The Issuer on assertions. With SAML_IDP_BASE_URL set it is the same value the
   # metadata advertises as entityID (so an SP configured from the metadata accepts
   # the responses); unset, the gem's request-derived URL is kept.
@@ -115,11 +125,12 @@ class SamlIdpController < ApplicationController
   def enforce_saml_request
     raw = params[:SAMLRequest]
     return head :bad_request unless raw.is_a?(String) && raw.present?
+    return head :bad_request unless saml_binding_params_wellformed?
 
     begin
       valid = validate_saml_request(raw)
       malformed = saml_request.issuer.blank? || saml_request.errors.include?(:unaccepted_request)
-    rescue StandardError => e # undecodable payload, bad XML, unparseable ACS URL
+    rescue *MALFORMED_REQUEST_ERRORS => e # undecodable payload, bad XML, unparseable ACS URL
       Rails.logger.info("SAML request rejected as malformed: #{e.class}")
       return head :bad_request
     end

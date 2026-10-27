@@ -405,6 +405,28 @@ RSpec.describe "SAML IdP", type: :request do
       expect(response).to have_http_status(:bad_request)
     end
 
+    it "answers 400 for a Signature without SigAlg or non-string binding params" do
+      c18_sign_in(:regular)
+      post "/saml/auth", params: { submit: "current_user", SAMLRequest: c18_authn_request, Signature: "c2ln" }
+      expect(response).to have_http_status(:bad_request)
+      post "/saml/auth", params: { submit: "current_user", SAMLRequest: c18_authn_request, RelayState: ["x"] }
+      expect(response).to have_http_status(:bad_request)
+    end
+
+    it "does not swallow a server failure as a 400" do
+      c18_sign_in(:regular)
+      allow_any_instance_of(SamlIdp::Request).to receive(:valid?).and_raise(ActiveRecord::ConnectionNotEstablished)
+      post "/saml/auth", params: { submit: "current_user", SAMLRequest: c18_authn_request }
+      expect(response).to have_http_status(:internal_server_error)
+    end
+
+    it "answers 400 when the payload is malformed in a way the gem raises (bad ACS URL)" do
+      c18_sign_in(:regular)
+      bad = c18_authn_request(issuer: "rooms.makerepo.com", acs: "https://rooms.makerepo.com/a b")
+      post "/saml/auth", params: { submit: "current_user", SAMLRequest: bad }
+      expect(response).to have_http_status(:bad_request)
+    end
+
     context "SECURITY: SAML request validation gates issuance (D-R13)" do
       it "refuses an UNKNOWN issuer with 403 and issues no assertion" do
         c18_sign_in(:regular)
