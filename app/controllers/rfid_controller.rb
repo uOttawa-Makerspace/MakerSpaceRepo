@@ -143,10 +143,10 @@ class RfidController < SessionsController
   end
 
   def tap_rate_limit_key
-    if signed_in? && current_user.staff?
+    if tap_staff?
       "staff:#{current_user.id}"
-    elsif params[:mac_address].is_a?(String) && params[:mac_address].present?
-      "mac:#{params[:mac_address]}"
+    elsif tap_mac_address
+      "mac:#{tap_mac_address}"
     else
       "ip:#{request.remote_ip}"
     end
@@ -154,7 +154,7 @@ class RfidController < SessionsController
 
   # Pi firmware and the React app read only `success`; nothing about the card
   # owner is returned (D-EQ02).
-  def user_response_payload(_user, success_message)
+  def user_response_payload(success_message)
     { success: success_message }
   end
 
@@ -176,7 +176,7 @@ class RfidController < SessionsController
       else
         TapBoxLog.log_sign_out(user: rfid.user, card_number: rfid.card_number, space: space, mac_address: tap_mac)
         StaffDashboardChannel.send_tap_out rfid.user, space_id
-        render json: user_response_payload(rfid.user, "RFID sign out"), status: :ok
+        render json: user_response_payload("RFID sign out"), status: :ok
       end
     else
       new_session(rfid, space_id)
@@ -197,7 +197,7 @@ class RfidController < SessionsController
     )
 
     TapBoxLog.log_sign_in(user: rfid.user, card_number: rfid.card_number, space: space, mac_address: tap_mac)
-    render json: user_response_payload(rfid.user, "RFID sign in"), status: :ok
+    render json: user_response_payload("RFID sign in"), status: :ok
   end
 
   def grant_access

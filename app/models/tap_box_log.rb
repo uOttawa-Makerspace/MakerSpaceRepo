@@ -47,15 +47,6 @@ class TapBoxLog < ApplicationRecord
     )
   end
 
-  def self.log_new_pi_reader(card_number:, mac_address:)
-    log!(
-      event_type: INFO,
-      message: "New Pi reader registered (not yet linked to a space)",
-      card_number: card_number,
-      mac_address: mac_address
-    )
-  end
-
   def self.log_no_space_resolved(card_number:, mac_address:)
     log!(
       event_type: ERROR,
