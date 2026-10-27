@@ -325,6 +325,26 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       expect(response.location).to start_with("http://www.example.com/login")
     end
 
+    it "a failed save keeps the old password, the session version and sends no mail" do
+      # FIXED: the result of the hashing save was ignored (session got N+1 while the DB stayed at N, success mail sent)
+      login!(user)
+      # only the hashing save (the one that bumps token_version) fails
+      allow_any_instance_of(User).to receive(:save).and_wrap_original do |original, *args, **kwargs|
+        original.receiver.token_version_changed? ? false : original.call(*args, **kwargs)
+      end
+      perform_enqueued_jobs { change! }
+      expect(response).to have_http_status(:ok)
+      expect(flash[:alert]).to eq("Your password could not be changed. Please try again.")
+      expect(deliveries).to be_empty
+      user.reload
+      expect(user.authenticate_password(password)).to be(true)
+      expect(user.token_version).to eq(0)
+      expect(user.password).to start_with("$2") # the bcrypt hash, not the plain new password
+      allow_any_instance_of(User).to receive(:save).and_call_original
+      get check_signed_in_path
+      expect(JSON.parse(response.body)["signed_in"]).to eq("true")
+    end
+
     it "changes the password, emails the owner, redirects with notice" do
       login!(user)
       perform_enqueued_jobs { change! }

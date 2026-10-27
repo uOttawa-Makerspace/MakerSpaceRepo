@@ -209,14 +209,29 @@ class UsersController < SessionsController
       render 'settings/admin', layout: 'setting' and return
     end
 
-    if @user.update(user_params.slice(:password, :password_confirmation))
-      @user.pword = @user.password
-      @user.save
+    # The plain password is written first and replaced by its hash: both writes
+    # succeed together or neither is kept (never a plaintext password in the DB).
+    validated = false
+    hashed = false
+    User.transaction do
+      validated = @user.update(user_params.slice(:password, :password_confirmation))
+      if validated
+        @user.pword = @user.password
+        hashed = @user.save
+      end
+      raise ActiveRecord::Rollback unless hashed
+    end
+
+    if hashed
       session[:token_version] = @user.token_version if session[:user_id] # this session stays signed in
       MsrMailer.confirm_password_change(@user).deliver_now
       redirect_to settings_admin_path,
                   notice:
                     'Password changed successfully, an email will be sent to confirm.'
+    elsif validated
+      @user.reload
+      flash.now[:alert] = 'Your password could not be changed. Please try again.'
+      render 'settings/admin', layout: 'setting'
     else
       render 'settings/admin', layout: 'setting'
     end
