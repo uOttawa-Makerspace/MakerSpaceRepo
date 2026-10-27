@@ -379,12 +379,17 @@ class Admin::UsersController < AdminAreaController
   end
 
   def toggle_user_lock_status(user)
-    user.locked = !user.locked
-    user.locked_until = user.locked ? 99.years.from_now : nil
-    user.auth_attempts = user.locked ? 5 : 0
+    locking = !user.locked
+    columns = {
+      locked: locking,
+      locked_until: locking ? 99.years.from_now : nil,
+      auth_attempts: locking ? 5 : 0,
+      updated_at: Time.current
+    }
     # an admin lock ends every existing session and JWT for good (they stay dead after unlocking)
-    user.token_version += 1 if user.locked
-    user.save!
+    columns[:token_version] = user.token_version + 1 if locking
+    # update_columns: a validated save! raises for a row that is invalid for an unrelated legacy reason
+    user.update_columns(columns)
   end
 
   # ============================================

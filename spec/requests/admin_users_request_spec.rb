@@ -506,6 +506,40 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
     end
   end
 
+  describe "PUT /admin/users/toggle_lock_user on a legacy-invalid user" do
+    before { login!(admin) }
+
+    it "locks (token_version bumped, sessions and JWTs dead) and unlocks without validating the row" do
+      # FIXED: the lock was written with save!, which raised (500) for a row invalid for an unrelated legacy reason
+      target.update_columns(username: "old_user_name_longer_than_20", gender: "stale value")
+      expect(target.reload).not_to be_valid
+      token = target.token
+      victim = open_session
+      victim.post login_authentication_path, params: { username_email: target.username, password: password }
+      victim.get check_signed_in_path
+      expect(JSON.parse(victim.response.body)["signed_in"]).to eq("true")
+
+      put toggle_lock_user_admin_users_path, params: { id: target.id }
+      expect(response).to redirect_to(user_path(target.username))
+      expect(flash[:notice]).to eq("User locked!")
+      target.reload
+      expect(target.locked).to be(true)
+      expect(target.locked_until).to be > 90.years.from_now
+      expect(target.token_version).to eq(1)
+      victim.get check_signed_in_path
+      expect(JSON.parse(victim.response.body)["signed_in"]).to eq("false")
+      expect(JwtAuthenticator.user_for("Bearer #{token}")).to be_nil
+
+      put toggle_lock_user_admin_users_path, params: { id: target.id }
+      expect(flash[:notice]).to eq("User unlocked!")
+      target.reload
+      expect(target.locked).to be(false)
+      expect(target.locked_until).to be_nil
+      expect(target.auth_attempts).to eq(0)
+      expect(target.token_version).to eq(1)
+    end
+  end
+
   describe "PUT /admin/users/toggle_lock_user last-admin guard" do
     before { login!(admin) }
 
