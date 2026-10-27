@@ -100,7 +100,7 @@ class ApplicationController < ActionController::Base
   rescue URI::InvalidURIError
     nil
   end
-  helper_method :login_back_to
+  helper_method :login_back_to, :safe_back_to
 
   def parameter_missing(exception)
     respond_to do |format|

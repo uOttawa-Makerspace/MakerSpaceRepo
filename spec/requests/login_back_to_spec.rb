@@ -139,4 +139,18 @@ RSpec.describe "Login back_to for guests", type: :request do
     post order_items_path, headers: { "HTTP_REFERER" => "http://www.example.com/LOGIN" }
     expect(back_to_of(response)).to be_nil
   end
+
+  def page_back_tos
+    Nokogiri::HTML(response.body).css("input[name=back_to]").map { |i| i["value"] }
+  end
+
+  it "echoes only a safe back_to into the login page's own form" do
+    get login_path(back_to: "/carts")
+    expect(page_back_tos).to all(eq("/carts"))
+    expect(page_back_tos.size).to eq(2) # page form and modal agree
+    ["//evil.com", "https://evil.com", "/login", "/LOGIN_authentication"].each do |bad|
+      get login_path(back_to: bad)
+      expect(page_back_tos.map(&:to_s)).to all(eq(""))
+    end
+  end
 end
