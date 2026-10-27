@@ -13,13 +13,23 @@ class SessionsController < ApplicationController
 
   SUPPORT_EMAIL = "uottawa.makerepo@gmail.com"
   
+  # Same-site paths only: url_from drops foreign hosts, and protocol-relative
+  # or backslash forms ("//evil.com", "/\\evil.com") are refused outright.
+  def safe_back_to
+    target = params[:back_to].to_s
+    return if target.start_with?("//", "/\\")
+
+    url_from(target)
+  end
+  private :safe_back_to
+
   def login_authentication
     @user = sign_in(params[:username_email], params[:password])
 
     respond_to do |format|
       if @user
         @user.update(last_signed_in_time: DateTime.now)
-        format.html { redirect_to(params[:back_to] || root_path) }
+        format.html { redirect_to(safe_back_to || root_path) }
         format.json do
           render json: {
                    user: @user.as_json,

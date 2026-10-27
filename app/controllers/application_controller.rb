@@ -67,12 +67,14 @@ class ApplicationController < ActionController::Base
     return request.fullpath if request.get? || request.head?
 
     referer = URI.parse(request.referer.to_s)
-    return unless referer.host.present? && referer.host == request.host
+    return unless referer.is_a?(URI::HTTP) && referer.host.present? && referer.host == request.host
 
-    referer.request_uri
+    path = referer.request_uri
+    path unless URI.parse(path).path == login_path
   rescue URI::InvalidURIError
     nil
   end
+  helper_method :login_back_to
 
   def parameter_missing(exception)
     respond_to do |format|
