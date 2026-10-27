@@ -373,6 +373,13 @@ class User < ApplicationRecord
     @pword ||= Password.new(password)
   end
 
+  # The memoized Password must not outlive the row it was built from
+  # (a rolled-back change_password reloads the user).
+  def reload(*)
+    @pword = nil
+    super
+  end
+
   def pword=(new_password)
     @pword = Password.create(new_password)
     self.token_version += 1 if persisted?

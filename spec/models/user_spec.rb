@@ -918,4 +918,16 @@ RSpec.describe User, type: :model do
       expect { u.record_failed_attempt! }.not_to(change { u.reload.locked_until })
     end
   end
+
+  describe "#reload and the memoized pword" do
+    it "drops an unsaved password change, so authenticate_password follows the stored hash again" do
+      u = create(:user, :regular_user)
+      u.pword = "SomethingElse1!x"
+      expect(u.authenticate_password("SomethingElse1!x")).to be(true)
+      u.reload
+      expect(u.authenticate_password("SomethingElse1!x")).to be(false)
+      expect(u.authenticate_password("asa32A353#")).to be(true)
+      expect(u.token_version).to eq(0)
+    end
+  end
 end
