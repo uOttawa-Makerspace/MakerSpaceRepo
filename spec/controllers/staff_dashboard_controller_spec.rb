@@ -69,7 +69,7 @@ RSpec.describe StaffDashboardController, type: :controller do
     end
   end
 
-  describe "PUT /sign_out_all_users" do
+  describe "POST /sign_out_all_users" do
     context "sign out all users" do
       it "should sign out all users" do
         user = create(:user, :regular_user)
@@ -95,7 +95,7 @@ RSpec.describe StaffDashboardController, type: :controller do
             sign_in_time: 1.day.ago,
             sign_out_time: 1.day.ago + 3.hours
           )
-        put :sign_out_all_users
+        post :sign_out_all_users
         expect(response).to redirect_to staff_dashboard_index_path(
                       space_id: Space.first.id
                     )

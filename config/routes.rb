@@ -523,7 +523,7 @@ Rails.application.routes.draw do
     put "/remove_users", as: "sign_out_users", action: "sign_out_users"
     put "link_rfid"
     put "unlink_rfid"
-    get "sign_out_all_users"
+    post "sign_out_all_users"
     get :user_profile
     get :populate_users
     post :import_excel
