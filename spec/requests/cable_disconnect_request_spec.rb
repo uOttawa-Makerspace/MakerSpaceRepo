@@ -190,7 +190,7 @@ RSpec.describe "Cable disconnect on hard account deletion", type: :request do
   it "disconnects when the account is destroyed" do
     user = create(:user, :regular_user)
     user.destroy
-    expect(disconnected).to include(user)
+    expect(disconnected).to eq([user])
   end
 end
 
