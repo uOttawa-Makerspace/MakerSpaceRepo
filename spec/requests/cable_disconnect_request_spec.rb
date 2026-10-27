@@ -193,3 +193,26 @@ RSpec.describe "Cable disconnect on hard account deletion", type: :request do
     expect(disconnected).to include(user)
   end
 end
+
+RSpec.describe User, "role/soft-delete writes" do
+  let(:disconnected) { [] }
+
+  before do
+    allow(ActionCable.server.remote_connections).to receive(:where) do |current_user:|
+      double("remote").tap { |r| allow(r).to receive(:disconnect) { disconnected << current_user } }
+    end
+  end
+
+  it "rejects an unknown role" do
+    expect { create(:user, :staff).change_role!("root") }.to raise_error(ArgumentError)
+  end
+
+  it "disconnects a soft delete inside an outer transaction only after the outer commit" do
+    user = create(:user, :regular_user)
+    User.transaction do
+      user.soft_delete!
+      expect(disconnected).to be_empty
+    end
+    expect(disconnected).to eq([user])
+  end
+end

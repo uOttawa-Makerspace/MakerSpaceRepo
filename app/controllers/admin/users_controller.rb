@@ -367,7 +367,6 @@ class Admin::UsersController < AdminAreaController
       Certification.where(user_id: user.id).destroy_all
       user.soft_delete!
     end
-    user.disconnect_cable! # after the commit
   end
 
   def restore_user_account(user)
