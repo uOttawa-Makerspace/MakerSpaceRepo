@@ -18,6 +18,10 @@ RSpec.describe "RFID endpoints", type: :request do
     post rfid_card_number_path, params: { rfid: card, mac_address: pi_reader.pi_mac_address }.merge(extra), as: :json
   end
 
+  def tap_card_with(mac:, card: rfid.card_number)
+    post rfid_card_number_path, params: { rfid: card, mac_address: mac }, as: :json
+  end
+
   def body
     JSON.parse(response.body, symbolize_names: true)
   end
@@ -36,6 +40,21 @@ RSpec.describe "RFID endpoints", type: :request do
       tap_card
       expect(body[:success]).to eq("RFID sign out")
       expect(LabSession.where(user: owner).active).to be_empty
+    end
+
+    it "accepts the registered mac in any case, with hyphens or padding (A10 review: MAC normalization)" do
+      mac = pi_reader.pi_mac_address
+      ["#{mac.upcase}", mac.tr(":", "-"), "  #{mac.upcase.tr(':', '-')} "].each do |variant|
+        post rfid_card_number_path, params: { rfid: rfid.card_number, mac_address: variant }, as: :json
+        expect(response).to have_http_status(:ok)
+      end
+    end
+
+    it "accepts a lower-case tap for a reader stored upper-case before normalization existed" do
+      pi_reader.update_column(:pi_mac_address, pi_reader.pi_mac_address.upcase)
+      tap_card_with(mac: pi_reader.pi_mac_address.downcase)
+      expect(response).to have_http_status(:ok)
+      expect(LabSession.where(user: owner).active.pluck(:space_id)).to eq([space.id])
     end
 
     # FIXED(D-EQ01): a guest without a registered mac cannot tap, whatever the card or space_id

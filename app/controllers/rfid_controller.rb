@@ -49,7 +49,7 @@ class RfidController < SessionsController
 
     mac_address = params[:mac_address].presence if params[:mac_address].is_a?(String)
     card = params[:rfid] if params[:rfid].is_a?(String)
-    pi_reader = PiReader.find_by(pi_mac_address: mac_address) if mac_address
+    pi_reader = PiReader.find_by_mac(mac_address)
     staff = signed_in? && current_user.staff?
 
     # D-EQ01/D-EQ03: no staff auth and no registered reader -> nothing is
