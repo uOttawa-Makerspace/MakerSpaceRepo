@@ -289,13 +289,15 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
     end
 
     context "blocking" do
-      it "rejects a non-admin JSON-boolean blocking request with an alert and books nothing" do
+      it "rejects a non-admin JSON-boolean blocking request with a 403 JSON error and books nothing" do
         # FIXED(D-B03): the permission check casts the param (boolean or
-        # string) and returns after the redirect, so no row is created.
+        # string) and returns, so no row is created. Retro of A3: a JSON
+        # request now gets the endpoint's JSON error shape, not a 302.
         json_create(blocking: true)
-        expect(response.status).to eq(302)
-        expect(flash[:alert])
-          .to eq("You do not have permission to block a space.")
+        expect(response.status).to eq(403)
+        expect(response.parsed_body)
+          .to eq("errors" => ["You do not have permission to block a space."])
+        expect(flash[:alert]).to be_nil
         expect(SubSpaceBooking.where(name: "Fresh")).to be_empty
       end
 
@@ -304,10 +306,22 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
         # the permission check entirely.
         %w[true 1].each do |value|
           json_create(blocking: value)
-          expect(response.status).to eq(302)
-          expect(flash[:alert])
-            .to eq("You do not have permission to block a space.")
+          expect(response.status).to eq(403)
+          expect(response.parsed_body)
+            .to eq("errors" => ["You do not have permission to block a space."])
         end
+        expect(SubSpaceBooking.where(name: "Fresh")).to be_empty
+      end
+
+      it "keeps the HTML redirect with a flash for a non-admin blocking request" do
+        post sub_space_booking_index_path,
+             params: { sub_space_booking: {
+               sub_space_id: subspace.id, start_time: "2027-03-03 10:00",
+               end_time: "2027-03-03 11:00", name: "Fresh", description: "Desc",
+               blocking: "true"
+             } }
+        expect(response).to redirect_to(sub_space_booking_index_path)
+        expect(flash[:alert]).to eq("You do not have permission to block a space.")
         expect(SubSpaceBooking.where(name: "Fresh")).to be_empty
       end
 
@@ -345,6 +359,21 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
         json_create(blocking: "true")
         expect(response.status).to eq(204)
         expect(SubSpaceBooking.find_by!(name: "Fresh").blocking).to be(true)
+      end
+
+      it "skips the overlap check for an admin JSON boolean true or '1' alike" do
+        # INTENDED(D-B04) + retro of A3: book() casts blocking the same way
+        # create does, so every truthy spelling skips the check.
+        create(:sub_space_booking, sub_space: subspace, user: user,
+                                   start_time: DateTime.parse("2027-03-03 09:00"),
+                                   end_time: DateTime.parse("2027-03-03 12:00"),
+                                   name: "Taker", blocking: true)
+        log_in!(create(:user, :admin, booking_approval: true))
+        [true, "1"].each_with_index do |value, i|
+          json_create(blocking: value, name: "Over#{i}")
+          expect(response.status).to eq(204)
+          expect(SubSpaceBooking.find_by!(name: "Over#{i}").blocking).to be(true)
+        end
       end
 
       it "destroys the booking and reports TimeSlot when a literal-wall blocking row overlaps" do

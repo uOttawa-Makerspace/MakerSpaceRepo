@@ -403,13 +403,52 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(response).to have_http_status(:unprocessable_content)
     end
 
-    it "accepts any file type as a repo_file on a repository (the type allow-list only applies to proficient projects) (D-C06)" do
+    # FIXED(D-C06): RepoFile validates the sniffed content type and size for every repository file
+    it "refuses an executable as a repo_file on a repository, even with a friendly name or declared type (D-C06)" do
       content_login!(stranger)
-      p = valid_params(title: "Files")
-      p[:repository][:repo_files_attributes] = { "0" => { file: content_named_upload("evil.exe", type: "application/x-msdownload") } }
-      expect { post repositories_path(stranger.username), params: p }.to change(RepoFile, :count).by(1)
-      # WART(D-C06): no content-type or size validation for repository files
-      expect(RepoFile.last.file.filename.to_s).to eq("evil.exe")
+      exe = "MZ" + ("\x00" * 200)
+      [["evil.exe", "application/x-msdownload"], ["design.stl", "model/stl"], ["notes.txt", "text/plain"]].each do |name, type|
+        p = valid_params(title: "Files #{name}")
+        p[:repository][:repo_files_attributes] = { "0" => { file: content_named_upload(name, content: exe, type: type) } }
+        expect { post repositories_path(stranger.username), params: p }.not_to change(RepoFile, :count)
+        expect(response).to have_http_status(:unprocessable_content)
+      end
+    end
+
+    it "refuses html and shell scripts as repo_files" do
+      content_login!(stranger)
+      { "page.stl" => "<!DOCTYPE html><html><script>alert(1)</script></html>", "run.sh" => "#!/bin/sh\nrm -rf /\n" }.each do |name, body|
+        p = valid_params(title: "Bad #{name}")
+        p[:repository][:repo_files_attributes] = { "0" => { file: content_named_upload(name, content: body, type: "text/plain") } }
+        expect { post repositories_path(stranger.username), params: p }.not_to change(RepoFile, :count)
+      end
+    end
+
+    it "still accepts the legitimate project file types (pdf, stl, zip, text, gcode, step, docx)" do
+      content_login!(stranger)
+      files = {
+        "a.pdf" => ["%PDF-1.4\n", "application/pdf"],
+        "a.stl" => ["solid x\nfacet normal 0 0 0\n", "model/stl"],
+        "a.zip" => ["PK\x03\x04".b + ("\x00" * 40), "application/zip"],
+        "a.txt" => ["hello", "text/plain"],
+        "a.gcode" => ["G28\nG1 X0\n", "application/octet-stream"],
+        "a.step" => ["ISO-10303-21;\nHEADER;", "application/octet-stream"],
+        "a.docx" => ["PK\x03\x04".b + ("\x00" * 40), "application/octet-stream"]
+      }
+      files.each do |name, (body, type)|
+        p = valid_params(title: "Ok #{name}")
+        p[:repository][:repo_files_attributes] = { "0" => { file: content_named_upload(name, content: body, type: type) } }
+        expect { post repositories_path(stranger.username), params: p }.to change(RepoFile, :count).by(1), name
+      end
+    end
+
+    it "refuses a repo_file over the size cap" do
+      stub_const("RepoFile::MAX_FILE_SIZE", 10.bytes)
+      content_login!(stranger)
+      p = valid_params(title: "Huge")
+      p[:repository][:repo_files_attributes] = { "0" => { file: content_named_upload("big.txt", content: "x" * 11) } }
+      expect { post repositories_path(stranger.username), params: p }.not_to change(RepoFile, :count)
+      expect(response).to have_http_status(:unprocessable_content)
     end
 
     it "an unparseable youtube link is silently nulled" do

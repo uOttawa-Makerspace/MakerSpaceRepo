@@ -113,7 +113,7 @@
                 E<%= i + 1 %>:
                 <%= exam.status.capitalize %>
                 <br />
-                <%= if exam.failed? && user.exams.count < 2
+                <%= if (exam.failed? || (exam.ungraded? && exam.expired?)) && exams.size < 2
                       button_to 'Resend Exam',
                               create_for_single_user_exams_path(training_session_id: @current_training_session.id, user_id: user.id),
                               method: :post, class: 'btn btn-secondary'
@@ -124,7 +124,7 @@
               <br />
             <% end %>
           </td>
-          <td><%= @current_training_session.certifications.where(user_id: user.id).last.try(:training).try(:name) || 'None' %></td>
+          <td><%= (Certification.held_by(user.id, @current_training_session.training_id, @current_training_session.level).exists? ? @current_training_session.training.name : nil) || 'None' %></td>
         </tr>
       <% end %>
     </table>
@@ -133,11 +133,11 @@
     <div class="text-center">
       <% if @current_training_session.users.present? %>
         <% if @current_training_session.training.questions.where(level: @current_training_session.level).count >= $n_exams_question && @current_training_session.created_at > DateTime.new(2019, 8, 9) %>
-          <%= button_to 'Certify', certify_trainees_staff_training_session_path(@current_training_session, skip_badge: true), method: 'POST', class: 'mb-5 certify-button display-6', form_class: 'mt-3', data: { confirm: 'Are you sure? This will grant the user bypassing the exams.' } %>
-          <%= button_to 'Send Exams', create_from_training_exams_path(training_session_id: @current_training_session.id), method: 'POST', class: 'd-inline-block certify-button bg-secondary', data: { confirm: 'Are you sure? This send exams to the users.' } if @current_training_session.exams.blank? %>
+          <%= button_to 'Certify', certify_trainees_staff_training_session_path(@current_training_session, skip_badge: true), method: 'POST', class: 'mb-5 certify-button display-6', form: { class: 'button_to mt-3 useTurbo', data: { turbo_confirm: 'Are you sure? This will grant the user bypassing the exams.' } } %>
+          <%= button_to 'Send Exams', create_from_training_exams_path(training_session_id: @current_training_session.id), method: 'POST', class: 'd-inline-block certify-button bg-secondary', form: { class: 'button_to useTurbo', data: { turbo_confirm: 'Are you sure? This send exams to the users.' } } if @current_training_session.exams.blank? %>
           <%#%= button_to 'Certify & Issue Badges', certify_trainees_staff_training_session_path(@current_training_session), method: 'POST', class: 'certify-button bg-secondary', data: { confirm: 'Are you sure? This will grant the user bypassing the exams.' } %>
         <% else %>
-          <%= button_to 'Certify', certify_trainees_staff_training_session_path(@current_training_session, skip_badge: true), method: 'POST', class: 'certify-button', data: { confirm: 'Are you sure? This will grant the user bypassing the exams.' } %>
+          <%= button_to 'Certify', certify_trainees_staff_training_session_path(@current_training_session, skip_badge: true), method: 'POST', class: 'certify-button', form: { class: 'button_to useTurbo', data: { turbo_confirm: 'Are you sure? This will grant the user bypassing the exams.' } } %>
           <%#%= button_to 'Certify & Issue Badges', certify_trainees_staff_training_session_path(@current_training_session), method: 'POST', class: 'certify-button bg-secondary', data: { confirm: 'Are you sure? This will grant the user bypassing the exams.' } %>
         <% end %>
       <% end %>

@@ -23,5 +23,23 @@ RSpec.describe "Staff dashboard JSON", type: :request do
     expect(entry).not_to have_key("access_token")
     expect(entry).to include("username" => visitor.username, "name" => visitor.name, "email" => visitor.email)
     expect(entry).to include("certifications", "signed_safety_sheet", "membership_status", "flagged")
+    # The React app's contract: every column except the two secrets, plus the three computed keys.
+    expect(entry.keys).to match_array(
+      User.column_names - %w[password access_token] + %w[certifications signed_safety_sheet membership_status]
+    )
+  end
+
+  it "applies the User serializer filter (later hardening of User#serializable_hash reaches it)" do
+    visitor = create(:user, :regular_user)
+    create(:lab_session, space: space, user: visitor, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
+    sign_in_as(:staff, space: space)
+    allow_any_instance_of(User).to receive(:serializable_hash).and_wrap_original do |original, *args|
+      original.call(*args).except("description")
+    end
+
+    get staff_dashboard_index_path, as: :json
+
+    entry = response.parsed_body["space_users"].find { |u| u["id"] == visitor.id }
+    expect(entry).not_to have_key("description")
   end
 end

@@ -2,9 +2,9 @@
 
 require 'rails_helper'
 
-include ApplicationHelper
-
 RSpec.describe LockerRentalsController, type: :controller do
+  include ApplicationHelper # end_of_this_semester; scoped here so it does not leak into Object
+
   before(:each) do
     LockerOption.lockers_enabled = true
     CourseName.find_or_create_by(name: 'GNG1103')

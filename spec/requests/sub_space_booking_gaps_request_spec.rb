@@ -102,6 +102,30 @@ RSpec.describe "Sub space booking gaps", type: :request do
       expect(SubSpaceBooking.exists?(name: "Fresh")).to be(true)
     end
 
+    # FIXED(retro round 2, D-NEW-RETRO-1): the quota window is the week of the new
+    # booking, not the current calendar week.
+    it "books next week while this week is full, and still refuses this week" do
+      travel_to(Time.zone.local(2027, 4, 7, 8, 0)) do
+        log_in!(user)
+        capped = create(:sub_space, space: space, maximum_booking_hours_per_week: 4)
+        create(:sub_space_booking, sub_space: capped, user: user, name: "Full",
+                                   start_time: DateTime.parse("2027-04-07 10:00"),
+                                   end_time: DateTime.parse("2027-04-07 13:00"))
+        create_booking(capped, name: "ThisWeek", start_time: "2027-04-08 10:00", end_time: "2027-04-08 13:00")
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.parsed_body["errors"].first).to start_with("DurationWeek")
+        create_booking(capped, name: "NextWeek", start_time: "2027-04-14 10:00", end_time: "2027-04-14 13:00")
+        expect(response).to have_http_status(:no_content)
+        expect(SubSpaceBooking.where(name: %w[ThisWeek NextWeek]).pluck(:name)).to eq(["NextWeek"])
+
+        # next week now holds 3h: a second 3h booking there is over the quota (it used to be
+        # judged against the current week only, so a future week had no limit at all)
+        create_booking(capped, name: "NextWeek2", start_time: "2027-04-15 10:00", end_time: "2027-04-15 13:00")
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(SubSpaceBooking.exists?(name: "NextWeek2")).to be(false)
+      end
+    end
+
     # Same fixture as the pinned "backwards weekly quota" rejection in
     # sub_space_booking_request_spec.rb (D-B05), but for an admin: no quota.
     it "lets an admin skip the weekly quota that rejects a regular user" do
@@ -387,6 +411,165 @@ RSpec.describe "Sub space booking gaps", type: :request do
       expect(response).to redirect_to(sub_space_booking_edit_path(sub_space_booking_id: capped_booking.id))
       expect(flash[:alert]).to include("for more than 1 hours")
       expect(capped_booking.reload.name).not_to eq("Stretched")
+    end
+
+    # FIXED(D-B28, retro of A3): the cap is computed from the values the model
+    # stores, so an offset in the param can no longer hide the real duration.
+    it "measures the duration cap on the stored times, not on the offset-stripped wall clock" do
+      capped = create(:sub_space, space: space, maximum_booking_duration: 1)
+      capped_booking = pending_booking(user, sub_space: capped)
+      # 10:00 UTC to 10:00 at -12:00 is 12 hours.
+      patch update_path_for(capped_booking), as: :json, params: {
+        sub_space_booking: { start_time: "2027-04-03T10:00:00+00:00",
+                             end_time: "2027-04-03T10:00:00-12:00",
+                             name: "Sneaky", description: "D" }
+      }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body["errors"].first).to start_with("DurationHour")
+      expect(capped_booking.reload.name).not_to eq("Sneaky")
+    end
+
+    # FIXED(retro round 3): the duration cap, like the weekly quota, only applies when the times move
+    it "lets the owner rename a booking longer than a since-lowered duration cap, but not move it" do
+      capped = create(:sub_space, space: space, maximum_booking_duration: 1)
+      long = pending_booking(user, sub_space: capped,
+                                   end_time: DateTime.parse("2027-04-03 13:00")) # 3h, over the 1h cap
+      patch update_path_for(long), as: :json, params: {
+        sub_space_booking: { start_time: "2027-04-03T10:00:00Z", end_time: "2027-04-03T13:00:00Z",
+                             name: "Renamed", description: "D" }
+      }
+      expect(response).to have_http_status(:ok)
+      expect(long.reload.name).to eq("Renamed")
+
+      patch update_path_for(long), as: :json, params: {
+        sub_space_booking: { start_time: "2027-04-03T11:00:00Z", end_time: "2027-04-03T14:00:00Z",
+                             name: "Moved", description: "D" }
+      }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body["errors"].first).to start_with("DurationHour")
+      expect(long.reload.name).to eq("Renamed")
+    end
+
+    it "accepts a within-cap update that carries an explicit offset" do
+      capped = create(:sub_space, space: space, maximum_booking_duration: 1)
+      capped_booking = pending_booking(user, sub_space: capped)
+      patch update_path_for(capped_booking), as: :json, params: {
+        sub_space_booking: { start_time: "2027-04-03T10:00:00-04:00",
+                             end_time: "2027-04-03T11:00:00-04:00",
+                             name: "Fine", description: "D" }
+      }
+      expect(response).to have_http_status(:ok)
+      expect(capped_booking.reload.name).to eq("Fine")
+    end
+
+    describe "weekly quota" do
+      # Wednesday 2027-04-07; the quota window is the server's current week.
+      let(:wednesday) { Time.zone.local(2027, 4, 7, 12, 0) }
+      let(:capped) { create(:sub_space, space: space, maximum_booking_hours_per_week: 3) }
+
+      def week_booking(owner, day, from, to, **attrs)
+        create(:sub_space_booking,
+               { sub_space: capped, user: owner,
+                 start_time: DateTime.parse("2027-04-#{day} #{from}"),
+                 end_time: DateTime.parse("2027-04-#{day} #{to}") }.merge(attrs))
+      end
+
+      def update_times(target, from, to, as: :json, name: "Quota")
+        patch update_path_for(target), as: as, params: {
+          sub_space_booking: { start_time: "2027-04-07 #{from}", end_time: "2027-04-07 #{to}",
+                               name: name, description: "D" }
+        }
+      end
+
+      it "rejects stretching a pending booking past the room's weekly quota (JSON and HTML)" do
+        travel_to(wednesday) do
+          log_in!(user)
+          week_booking(user, "06", "10:00", "12:00") # 2h already used
+          own = week_booking(user, "07", "10:00", "11:00")
+          own.sub_space_booking_status.update!(booking_status_id: @pending_status.id)
+
+          update_times(own, "10:00", "12:00") # 2h + 2h > 3h
+          expect(response).to have_http_status(:unprocessable_content)
+          expect(response.parsed_body).to eq(
+            "errors" =>
+              ["DurationWeek You cannot book #{capped.name} for more than 3 hours per week."]
+          )
+
+          update_times(own, "10:00", "12:00", as: :html)
+          expect(response).to redirect_to(sub_space_booking_edit_path(sub_space_booking_id: own.id))
+          expect(flash[:alert]).to include("for more than 3 hours per week")
+          expect(own.reload.name).not_to eq("Quota")
+          expect(own.end_time - own.start_time).to eq(1.hour)
+        end
+      end
+
+      it "does not count the booking's own current hours twice" do
+        travel_to(wednesday) do
+          log_in!(user)
+          week_booking(user, "06", "10:00", "12:00")
+          own = week_booking(user, "07", "10:00", "11:00")
+          own.sub_space_booking_status.update!(booking_status_id: @pending_status.id)
+
+          update_times(own, "11:00", "12:00") # moved: 2h + 1h = 3h, exactly the quota
+          expect(response).to have_http_status(:ok)
+          expect(own.reload.name).to eq("Quota")
+        end
+      end
+
+      # FIXED(retro round 2): the quota is only re-checked when the times move
+      it "lets the owner rename a booking whose week is already over quota, but not move it" do
+        travel_to(wednesday) do
+          log_in!(user)
+          week_booking(user, "06", "10:00", "13:00") # 3h
+          own = week_booking(user, "07", "10:00", "13:00") # 3h: 6h in a 3h week
+          own.sub_space_booking_status.update!(booking_status_id: @pending_status.id)
+
+          patch update_path_for(own), as: :json, params: {
+            sub_space_booking: { start_time: "2027-04-07T10:00:00Z", end_time: "2027-04-07T13:00:00Z",
+                                 name: "Renamed", description: "D" }
+          }
+          expect(response).to have_http_status(:ok)
+          expect(own.reload.name).to eq("Renamed")
+
+          update_times(own, "11:00", "14:00", name: "Moved")
+          expect(response).to have_http_status(:unprocessable_content)
+          expect(own.reload.name).to eq("Renamed")
+        end
+      end
+
+      # FIXED(retro round 2, D-NEW-RETRO-1): the week is the one containing the booking
+      it "counts the week of the booking, so moving it to an empty next week is fine" do
+        travel_to(wednesday) do
+          log_in!(user)
+          week_booking(user, "06", "10:00", "12:00") # 2h this week
+          own = week_booking(user, "07", "10:00", "11:00")
+          own.sub_space_booking_status.update!(booking_status_id: @pending_status.id)
+
+          patch update_path_for(own), as: :json, params: {
+            sub_space_booking: { start_time: "2027-04-14 10:00", end_time: "2027-04-14 13:00",
+                                 name: "NextWeek", description: "D" }
+          }
+          expect(response).to have_http_status(:ok)
+          expect(own.reload.name).to eq("NextWeek")
+        end
+      end
+
+      it "ignores other users' bookings and the quota of an admin" do
+        travel_to(wednesday) do
+          week_booking(create(:user, :regular_user), "06", "10:00", "16:00")
+          log_in!(user)
+          own = week_booking(user, "07", "10:00", "11:00")
+          own.sub_space_booking_status.update!(booking_status_id: @pending_status.id)
+          update_times(own, "10:00", "12:00")
+          expect(response).to have_http_status(:ok)
+
+          log_in!(admin)
+          week_booking(admin, "06", "10:00", "16:00")
+          update_times(own, "10:00", "14:00", name: "AdminHeavy")
+          expect(response).to have_http_status(:ok)
+          expect(own.reload.name).to eq("AdminHeavy")
+        end
+      end
     end
 
     it "lets an admin set blocking, move rooms and exceed the duration cap" do

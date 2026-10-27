@@ -27,7 +27,21 @@ class Photo < ApplicationRecord
   validates :image,
             file_content_type: {
               allow: [ALLOWED_CONTENT_TYPES],
-              if: -> { image.attached? }
-            }, on: :create
+              if: -> { image_changing? }
+            }
   validates :image, presence: true
+
+  private
+
+  # Validate only when a different blob is being attached in this save; a form that
+  # posts back the blob already attached (signed_id) must not re-check a legacy image.
+  # Compared by blob id against the attachment row in the database.
+  def image_changing?
+    change = attachment_changes['image']
+    return false unless change.is_a?(ActiveStorage::Attached::Changes::CreateOne)
+
+    current_blob_id =
+      ActiveStorage::Attachment.where(record_type: self.class.polymorphic_name, record_id: id, name: 'image').pick(:blob_id) if persisted?
+    change.blob.id.nil? || change.blob.id != current_blob_id
+  end
 end

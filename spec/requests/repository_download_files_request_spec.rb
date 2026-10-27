@@ -66,8 +66,9 @@ RSpec.describe "Repository zip download", type: :request do
     expect(names.first).to end_with("evil.txt")
   end
 
-  it "keeps non-PDF/any content types: executables are zipped like anything else (see D-C06)" do
-    add_file("run.exe", content: "MZ", type: "application/x-msdownload")
+  it "zips a legacy non-allow-listed file that predates the type validation (D-C06 now blocks new ones)" do
+    legacy = RepoFile.new(repository: repo, file: content_named_upload("run.exe", content: "MZ", type: "application/x-msdownload"))
+    legacy.save!(validate: false)
     download
     expect(zip_entries.keys).to eq(["run.exe"])
   end

@@ -18,7 +18,10 @@ RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
   # Mimics what the browser's DirectUpload does: creates the blob row via the
   # app's endpoint contract, then the bytes land in the service without any
   # server-side identification (identify: false).
-  def direct_blob(filename:, content_type:, content: "0123456789")
+  # Leading bytes of a real mp4 (ftyp box): the Video validation sniffs the content
+  MP4_BYTES = "\x00\x00\x00\x18ftypmp42".b + ("\x00" * 30)
+
+  def direct_blob(filename:, content_type:, content: MP4_BYTES)
     blob = ActiveStorage::Blob.create_before_direct_upload!(
       filename: filename, byte_size: content.bytesize,
       checksum: OpenSSL::Digest::MD5.base64digest(content), content_type: content_type
@@ -89,17 +92,34 @@ RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
     end
 
     it "rejects a declared non-video content type server-side (redirects to new with an alert)" do
-      blob = direct_blob(filename: "evil.exe", content_type: "application/x-msdownload")
+      blob = direct_blob(filename: "evil.exe", content_type: "application/x-msdownload", content: "MZ" * 100)
       expect { post videos_path, params: video_params([blob]) }.not_to change(Video, :count)
       expect(response).to redirect_to(new_video_path)
       expect(flash[:alert]).to eq("Something went wrong. Try again.")
     end
 
-    it "trusts the declared content type when the bytes are not identifiable: any filename, no size cap (D-C45)" do
-      blob = direct_blob(filename: "malware.exe", content_type: "video/mp4", content: "plain text bytes" * 1000)
-      expect { post videos_path, params: video_params([blob]) }.to change(Video, :count).by(1)
-      # WART(D-C45): the validator falls back to the browser-declared type for unidentifiable content; size is never checked
-      expect(Video.last.video.first.filename.to_s).to eq("malware.exe")
+    # FIXED(D-C45): the bytes must sniff as a video; the declared type and filename no longer decide
+    it "refuses bytes that are not a video even when declared video/mp4 and named .mp4 (D-C45)" do
+      blob = direct_blob(filename: "malware.mp4", content_type: "video/mp4", content: "plain text bytes" * 1000)
+      expect { post videos_path, params: video_params([blob]) }.not_to change(Video, :count)
+      expect(response).to redirect_to(new_video_path)
+    end
+
+    it "accepts real mp4, mov and avi bytes" do
+      mp4 = "\x00\x00\x00\x18ftypmp42".b + ("\x00" * 30)
+      mov = "\x00\x00\x00\x14ftypqt  ".b + ("\x00" * 30)
+      avi = "RIFF\x00\x00\x00\x00AVI LIST".b + ("\x00" * 30)
+      blobs = [["a.mp4", "video/mp4", mp4], ["b.mov", "video/quicktime", mov], ["c.avi", "video/avi", avi]].map do |n, t, c|
+        direct_blob(filename: n, content_type: t, content: c)
+      end
+      expect { post videos_path, params: video_params(blobs) }.to change(Video, :count).by(1)
+      expect(Video.last.video.count).to eq(3)
+    end
+
+    it "refuses a video over the size cap" do
+      stub_const("Video::MAX_VIDEO_SIZE", 10.bytes)
+      blob = direct_blob(filename: "clip.mp4", content_type: "video/mp4", content: MP4_BYTES)
+      expect { post videos_path, params: video_params([blob]) }.not_to change(Video, :count)
     end
 
     it "does sniff identifiable content: an executable declared video/mp4 is refused" do
@@ -155,23 +175,85 @@ RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
     end
   end
 
-  describe "ActiveStorage direct uploads endpoint (stock Rails)" do
+  describe "ActiveStorage direct uploads endpoint (authenticated stock controller)" do
     let(:payload) do
       { blob: { filename: "x.bin", content_type: "application/x-msdownload", byte_size: 4,
                 checksum: OpenSSL::Digest::MD5.base64digest("abcd") } }
     end
 
-    it "issues a signed upload target to a GUEST for any file type and size (D-C46, severity 1)" do
+    # FIXED(D-C46): the stock controller now requires a signed-in user (session or JWT)
+    it "refuses a GUEST: 401 and no blob row is created (D-C46, severity 1)" do
+      expect { post rails_direct_uploads_path, params: payload, as: :json }.not_to change(ActiveStorage::Blob, :count)
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it "does not pin the reloadable ApplicationHelper into the engine controller" do
+      # Compared with Object: a top-level `include ApplicationHelper` in another spec leaks
+      # into Object (and so into every ancestor chain) for the whole run; only an include
+      # made by the controller or its concern would add it beyond that.
+      leaked = Object.include?(ApplicationHelper)
+      expect(ActiveStorage::DirectUploadsController.include?(ApplicationHelper)).to eq(leaked)
+      expect(DirectUploadAuthentication.include?(ApplicationHelper)).to be(false)
+      own = ActiveStorage::DirectUploadsController.ancestors.take_while { |m| m != ActionController::Base }
+      expect(own).not_to include(ApplicationHelper)
+    end
+
+    it "does not use ApplicationHelper#signed_in? for the sign-in check" do
+      allow_any_instance_of(ApplicationHelper).to receive(:signed_in?).and_raise("ApplicationHelper#signed_in? must not be used here")
+      post rails_direct_uploads_path, params: payload, as: :json
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it "refuses an expired JWT" do
+      user = create(:user, :volunteer_with_dev_program)
+      token = JWT.encode({ user_id: user.id, exp: 1.hour.ago.to_i }, Rails.application.credentials.secret_key_base, "HS256")
+      post rails_direct_uploads_path, params: payload, as: :json, headers: { "Authorization" => "Bearer #{token}" }
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it "refuses an invalid JWT" do
+      expect do
+        post rails_direct_uploads_path, params: payload, as: :json, headers: { "Authorization" => "Bearer not.a.token" }
+      end.not_to change(ActiveStorage::Blob, :count)
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it "issues a signed upload target to a signed-in user" do
+      content_login!(create(:user, :volunteer_with_dev_program))
       expect { post rails_direct_uploads_path, params: payload, as: :json }.to change(ActiveStorage::Blob, :count).by(1)
-      # WART(D-C46): ActiveStorage::DirectUploadsController is not authenticated; anyone can store arbitrary blobs, which the signed id then lets a privileged form attach
       expect(response).to have_http_status(:ok)
       body = response.parsed_body
       expect(body.keys).to include("signed_id", "direct_upload")
       expect(body["direct_upload"]["url"]).to be_present
-      expect(body["content_type"]).to eq("application/x-msdownload")
+    end
+
+    it "issues a signed upload target to a bearer-JWT caller" do
+      user = create(:user, :volunteer_with_dev_program)
+      token = JWT.encode({ user_id: user.id }, Rails.application.credentials.secret_key_base, "HS256")
+      expect do
+        post rails_direct_uploads_path, params: payload, as: :json, headers: { "Authorization" => "Bearer #{token}" }
+      end.to change(ActiveStorage::Blob, :count).by(1)
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "refuses a declared size over the cap (413) even when signed in" do
+      content_login!(create(:user, :volunteer_with_dev_program))
+      big = payload.deep_merge(blob: { byte_size: DirectUploadAuthentication::MAX_BYTE_SIZE + 1 })
+      expect { post rails_direct_uploads_path, params: big, as: :json }.not_to change(ActiveStorage::Blob, :count)
+      expect(response).to have_http_status(:content_too_large)
+    end
+
+    it "refuses a byte_size that is not a plain integer, so the cap cannot be dodged by formatting" do
+      content_login!(create(:user, :volunteer_with_dev_program))
+      ["5000000000.0", " 5000000000", "5e9", "abc", "0x10"].each do |bad|
+        expect { post rails_direct_uploads_path, params: payload.deep_merge(blob: { byte_size: bad }), as: :json }
+          .not_to change(ActiveStorage::Blob, :count)
+        expect([413, 422]).to include(response.status), bad
+      end
     end
 
     it "rejects a payload without a checksum or byte_size (blob validations)" do
+      content_login!(create(:user, :volunteer_with_dev_program))
       post rails_direct_uploads_path, params: { blob: { filename: "x.bin" } }, as: :json
       expect(response.status).to be >= 400
     end
@@ -184,11 +266,11 @@ RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
       order = create(:order, :completed, user_id: buyer.id)
       oi = create(:order_item, order: order, proficient_project: project)
       content_login!(buyer)
-      bad = direct_blob(filename: "evil.exe", content_type: "application/x-msdownload")
+      bad = direct_blob(filename: "evil.exe", content_type: "application/x-msdownload", content: "MZ" * 100)
       put complete_project_proficient_projects_path, params: { id: project.id, order_item: { user_comments: "x", files: [bad.signed_id] } }
       expect(flash[:alert]).to eq("Something went wrong with updating the proficient project. Please check the allowed file types.")
       expect(oi.reload.status).to eq("In progress")
-      good = direct_blob(filename: "ok.pdf", content_type: "application/pdf")
+      good = direct_blob(filename: "ok.pdf", content_type: "application/pdf", content: "%PDF-1.4\n")
       put complete_project_proficient_projects_path, params: { id: project.id, order_item: { user_comments: "x", files: [good.signed_id] } }
       expect(oi.reload.status).to eq("Waiting for approval")
     end

@@ -2,7 +2,8 @@ class JobTasksController < SessionsController
   before_action :signed_in
   before_action :set_job_order_and_task, except: [:create]
   before_action :set_job_order, only: [:create]
-  before_action :authorize_order!
+  before_action :authorize_order!, only: [:edit]
+  before_action :authorize_order_owner!, except: [:edit]
 
   def destroy
     @job_task.destroy
@@ -58,11 +59,6 @@ class JobTasksController < SessionsController
   end
 
   def update
-    unless @job_order.user == current_user || current_user.admin?
-      redirect_to job_orders_path, alert: t("job_orders.alerts.job_order_not_found")
-      return
-    end
-
     if params[:comments].present?
       @job_order.chat_messages.create(
         message: params[:comments],
@@ -195,7 +191,17 @@ step: params[:step]))
     @job_task = @job_order.job_tasks.find(params[:id])
   end
 
-  # Same audience as JobOrdersController#set_job_order: owner, staff or admin.
+  # Creating, changing and deleting tasks is for the order's owner or an admin
+  # (the same rule the order page uses to show the task buttons).
+  def authorize_order_owner!
+    return if current_user.admin? || current_user.id == @job_order.user_id
+
+    flash[:alert] = t("job_orders.alerts.no_permission")
+    redirect_to new_job_orders_path
+  end
+
+  # Viewing the wizard: same audience as JobOrdersController#set_job_order,
+  # owner, staff or admin.
   def authorize_order!
     return if current_user.admin? || current_user.staff? || current_user.id == @job_order.user_id
 

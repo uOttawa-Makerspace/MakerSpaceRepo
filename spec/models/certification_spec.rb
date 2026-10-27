@@ -184,6 +184,27 @@ RSpec.describe Certification, type: :model do
       expect(Certification.certify_user(other_session.id, user.id, "Beginner")).to eq(first)
     end
 
+    # FIXED(retro of A5): the repeat check also sees certifications without a training session
+    it "certify_user returns the certification a proficient project already granted for that training and level" do
+      project = create(:proficient_project, training: training)
+      granted = create(:certification, user: user, training_session: nil, training: nil, level: "Beginner")
+      create(:proficient_project_session, certification: granted, user: user, proficient_project: project, level: "Beginner")
+      expect { expect(Certification.certify_user(ts.id, user.id, "Beginner")).to eq(granted) }
+        .not_to change(Certification, :count)
+    end
+
+    it "certify_user does not treat a project certification of another training, level or user as a repeat" do
+      project = create(:proficient_project, training: create(:training))
+      granted = create(:certification, user: user, training_session: nil, training: nil, level: "Beginner")
+      create(:proficient_project_session, certification: granted, user: user, proficient_project: project, level: "Beginner")
+      other_level = create(:certification, user: user, training_session: nil, training: nil, level: "Advanced")
+      create(:proficient_project_session, certification: other_level, user: user, level: "Advanced",
+                                          proficient_project: create(:proficient_project, training: training))
+      expect { Certification.certify_user(ts.id, user.id, "Beginner") }.to change(Certification, :count).by(1)
+      expect { Certification.certify_user(ts.id, create(:user, :regular_user).id, "Advanced") }
+        .to change(Certification, :count).by(1)
+    end
+
     it "certify_user still certifies a different level, a different user, or after the earlier one was deactivated" do
       first = Certification.certify_user(ts.id, user.id, "Beginner")
       expect { Certification.certify_user(ts.id, user.id, "Advanced") }.to change(Certification, :count).by(1)
