@@ -26,61 +26,65 @@ class RfidController < SessionsController
     render json: rfids
   end
 
-  # Notify server of a student card tap
+  # Notify server of a student card tap. Two callers:
+  # - Raspberry Pi readers (frozen firmware): JSON {rfid, mac_address}, no
+  #   credentials. Accepted only when mac_address belongs to a PiReader an admin
+  #   registered; the reader's space decides where the tap lands.
+  # - The React app: a staff/admin session or Bearer JWT with {rfid, space_id}.
   def card_number
     tap_start = Time.current
 
+    mac_address = params[:mac_address].presence if params[:mac_address].is_a?(String)
+    card = params[:rfid]
+    pi_reader = PiReader.find_by(pi_mac_address: mac_address) if mac_address
+    staff = signed_in? && current_user.staff?
+
+    # D-EQ01/D-EQ03: no staff auth and no registered reader -> nothing is
+    # created, logged or broadcast.
+    unless staff || pi_reader
+      return render json: { error: "Unauthorized" }, status: :unauthorized
+    end
+
     TapBoxLog.log_card_tap(
-      card_number: params[:rfid],
-      mac_address: params[:mac_address],
+      card_number: card,
+      mac_address: mac_address,
       space_id_param: params[:space_id]
     )
 
     # --- Resolve space ---
-    if params[:space_id].present? && Space.find_by(id: params[:space_id]).present?
-      space_id = params[:space_id]
-    else
-      pi_reader = PiReader.find_by(pi_mac_address: params[:mac_address])
-
-      unless pi_reader
-        pi_reader = PiReader.create(pi_mac_address: params[:mac_address])
-        TapBoxLog.log_new_pi_reader(card_number: params[:rfid], mac_address: params[:mac_address])
-      end
-
-      space_id = pi_reader.space_id
-    end
-
-    space = space_id ? Space.find_by(id: space_id) : nil
+    space = Space.find_by(id: params[:space_id].to_s) if staff && params[:space_id].present?
+    space ||= pi_reader&.space
+    space_id = space&.id
 
     unless space_id
-      TapBoxLog.log_no_space_resolved(card_number: params[:rfid], mac_address: params[:mac_address])
+      TapBoxLog.log_no_space_resolved(card_number: card, mac_address: mac_address)
       return render json: { new_rfid: "Error, missing space_id or mac_address param" }, status: :unprocessable_content
     end
 
     # --- Look up RFID ---
-    rfid = Rfid.find_by(card_number: params[:rfid])
+    rfid = Rfid.find_by(card_number: card)
 
     if rfid
       if rfid.user_id
         # User has a card associated with their account
         user = rfid.user
         elapsed_ms = ((Time.current - tap_start) * 1000).round(1)
-        TapBoxLog.log_card_recognized(user: user, card_number: params[:rfid], space: space, mac_address: params[:mac_address], elapsed_ms: elapsed_ms)
+        TapBoxLog.log_card_recognized(user: user, card_number: card, space: space, mac_address: mac_address, elapsed_ms: elapsed_ms)
         check_session(rfid, space_id)
       else
-        rfid.mac_address = params[:mac_address]
+        rfid.mac_address = mac_address
         rfid.touch
         rfid.save
-        TapBoxLog.log_unlinked_card(card_number: params[:rfid], space: space, mac_address: params[:mac_address])
+        TapBoxLog.log_unlinked_card(card_number: card, space: space, mac_address: mac_address)
         render json: { error: "Temporary RFID already exists" }, status: :unprocessable_content
       end
     else
-      new_rfid = Rfid.create(card_number: params[:rfid], mac_address: params[:mac_address])
+      new_rfid = Rfid.create(card_number: card, mac_address: mac_address)
       if new_rfid.valid?
-        TapBoxLog.log_new_unknown_card(card_number: params[:rfid], space: space, mac_address: params[:mac_address])
+        TapBoxLog.log_new_unknown_card(card_number: card, space: space, mac_address: mac_address)
         render json: { new_rfid: "Temporary RFID created" }, status: :unprocessable_content
       else
-        TapBoxLog.log_invalid_rfid(card_number: params[:rfid], mac_address: params[:mac_address], errors: new_rfid.errors.full_messages)
+        TapBoxLog.log_invalid_rfid(card_number: card, mac_address: mac_address, errors: new_rfid.errors.full_messages)
         render json: { new_rfid: "Error, requires rfid param" }, status: :unprocessable_content
       end
     end

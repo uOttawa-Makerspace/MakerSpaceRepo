@@ -35,36 +35,125 @@ RSpec.describe "RFID endpoints", type: :request do
 
   let(:status_payload) { { has_membership: false, has_shop_fundamentals: false, signed_consent_form: false } }
 
-  describe "POST /rfid/card_number as an unauthenticated guest (no machine auth at all)" do
-    # WART(D-EQ01): RfidController#card_number has no authentication, so a guest can sign any card's owner in/out of a space
-    it "lets a guest sign a user in for any known card number" do
+  describe "POST /rfid/card_number as a Pi reader (no credentials, registered mac only)" do
+    # FIXED(D-EQ01): a registered reader mac is the only credential a guest can present
+    it "signs the card owner in for a registered reader" do
       expect { tap_card }.to change { LabSession.where(user: owner, space: space).active.count }.from(0).to(1)
       expect(response).to have_http_status(:ok)
-      expect(body).to eq(status_payload.merge(success: "RFID sign in"))
+      expect(body[:success]).to eq("RFID sign in")
       expect(session[:user_id]).to be_nil
     end
 
-    it "lets a guest sign the same user out again" do
+    it "signs the same user out again" do
       tap_card
       tap_card
-      expect(body).to eq(status_payload.merge(success: "RFID sign out"))
+      expect(body[:success]).to eq("RFID sign out")
       expect(LabSession.where(user: owner).active).to be_empty
     end
 
-    # WART(D-EQ02): response to an unauthenticated tap discloses membership/safety-sheet state of the card owner
-    it "returns membership, fundamentals and consent state of the card owner to a guest" do
+    # FIXED(D-EQ01): a guest without a registered mac cannot tap, whatever the card or space_id
+    it "answers 401 and changes nothing for an unknown mac, even with a known card" do
+      expect {
+        post rfid_card_number_path, params: { rfid: rfid.card_number, mac_address: "aa:bb:cc:dd:ee:ff", space_id: space.id }, as: :json
+      }.not_to change { [LabSession.count, TapBoxLog.count, PiReader.count, Rfid.count] }
+      expect(response).to have_http_status(:unauthorized)
+      expect(body).to eq(error: "Unauthorized")
+    end
+
+    it "answers 401 for a guest with a space_id but no mac" do
+      expect {
+        post rfid_card_number_path, params: { rfid: rfid.card_number, space_id: space.id }, as: :json
+      }.not_to change { [LabSession.count, TapBoxLog.count] }
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it "answers 401 for a guest with neither mac nor space_id, and for a non-string mac" do
+      post rfid_card_number_path, params: { rfid: rfid.card_number }, as: :json
+      expect(response).to have_http_status(:unauthorized)
+      post rfid_card_number_path, params: { rfid: rfid.card_number, mac_address: { a: 1 } }, as: :json
+      expect(response).to have_http_status(:unauthorized)
+      expect(LabSession.count).to eq(0)
+    end
+
+    it "does not let a Pi redirect its tap to another space with space_id" do
+      other = create(:space)
+      post rfid_card_number_path, params: { rfid: rfid.card_number, mac_address: pi_reader.pi_mac_address, space_id: other.id }, as: :json
+      expect(LabSession.where(user: owner).active.pluck(:space_id)).to eq([space.id])
+    end
+
+    # FIXED(D-EQ03): an unknown mac no longer creates a PiReader, a temporary Rfid or TapBoxLog rows
+    it "creates no PiReader, Rfid or TapBoxLog rows for an unknown mac with a new card" do
+      expect {
+        post rfid_card_number_path, params: { rfid: "BRANDNEW1", mac_address: "aa:bb:cc:dd:ee:ff" }, as: :json
+      }.not_to change { [PiReader.count, Rfid.count, TapBoxLog.count] }
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it "answers 422 for a registered reader that has no space assigned" do
+      unassigned = create(:pi_reader, space: nil)
+      expect {
+        post rfid_card_number_path, params: { rfid: rfid.card_number, mac_address: unassigned.pi_mac_address }, as: :json
+      }.not_to change(LabSession, :count)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(TapBoxLog.where(event_type: TapBoxLog::ERROR).last.details["reason"]).to eq("no_space")
+    end
+
+    # WART(D-EQ02): response to a tap discloses membership/safety-sheet state of the card owner
+    it "returns membership, fundamentals and consent state of the card owner" do
       tap_card
       expect(body.keys).to match_array(%i[success has_membership has_shop_fundamentals signed_consent_form])
     end
+  end
 
-    # WART(D-EQ03): any guest can create PiReader rows (unbounded) by posting arbitrary MAC addresses and TapBoxLog rows with arbitrary card numbers
-    it "creates an unlinked PiReader and TapBoxLog rows for an unknown mac, but no Rfid" do
-      expect {
-        post rfid_card_number_path, params: { rfid: "BRANDNEW1", mac_address: "aa:bb:cc:dd:ee:ff" }, as: :json
-      }.to change(PiReader, :count).by(1).and change(TapBoxLog, :count).by(3)
-      expect(Rfid.find_by(card_number: "BRANDNEW1")).to be_nil
+  describe "POST /rfid/card_number as the React app (staff session or Bearer JWT with space_id)" do
+    def tap_as(headers, **params)
+      post rfid_card_number_path, params: { rfid: rfid.card_number, space_id: space.id }.merge(params), headers: headers, as: :json
+    end
+
+    def bearer(user) = { "Authorization" => "Bearer #{user.token}" }
+
+    %i[staff admin].each do |role|
+      it "signs the card owner in then out for a #{role} Bearer JWT without any session" do
+        user = create(:user, role)
+        expect { tap_as(bearer(user)) }.to change { LabSession.where(user: owner, space: space).active.count }.from(0).to(1)
+        expect(response).to have_http_status(:ok)
+        expect(body[:success]).to eq("RFID sign in")
+        tap_as(bearer(user))
+        expect(body[:success]).to eq("RFID sign out")
+      end
+    end
+
+    it "accepts a staff browser session" do
+      sign_in_as(:staff)
+      tap_as({})
+      expect(response).to have_http_status(:ok)
+      expect(body[:success]).to eq("RFID sign in")
+    end
+
+    %i[regular volunteer].each do |role|
+      it "answers 401 for a #{role} session with a space_id" do
+        sign_in_as(role)
+        expect { tap_as({}) }.not_to change(LabSession, :count)
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+
+    it "answers 401 for a regular user's Bearer JWT and for a garbage token" do
+      expect { tap_as(bearer(create(:user, :regular_user))) }.not_to change(LabSession, :count)
+      expect(response).to have_http_status(:unauthorized)
+      tap_as({ "Authorization" => "Bearer nope" })
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it "answers 422 for a staff tap with an unknown space_id and no registered mac" do
+      tap_as(bearer(create(:user, :staff)), space_id: 0)
       expect(response).to have_http_status(:unprocessable_content)
-      expect(body).to eq(new_rfid: "Error, missing space_id or mac_address param")
+      expect(LabSession.count).to eq(0)
+    end
+
+    it "falls back to a registered reader's space when staff omit space_id" do
+      post rfid_card_number_path, params: { rfid: rfid.card_number, mac_address: pi_reader.pi_mac_address }, headers: bearer(create(:user, :staff)), as: :json
+      expect(body[:success]).to eq("RFID sign in")
     end
   end
 
@@ -85,10 +174,12 @@ RSpec.describe "RFID endpoints", type: :request do
       expect(LabSession.where(user: owner).active).to be_empty
     end
 
-    it "accepts space_id instead of mac_address and ignores an unknown space_id in favour of the mac" do
-      post rfid_card_number_path, params: { rfid: rfid.card_number, space_id: space.id }, as: :json
+    it "lets staff tap with space_id only, and toggles sign in/out (integer space comparison)" do
+      staff = create(:user, :staff)
+      headers = { "Authorization" => "Bearer #{staff.token}" }
+      post rfid_card_number_path, params: { rfid: rfid.card_number, space_id: space.id.to_s }, headers: headers, as: :json
       expect(body[:success]).to eq("RFID sign in")
-      post rfid_card_number_path, params: { rfid: rfid.card_number, space_id: 0, mac_address: pi_reader.pi_mac_address }, as: :json
+      post rfid_card_number_path, params: { rfid: rfid.card_number, space_id: space.id.to_s }, headers: headers, as: :json
       expect(body[:success]).to eq("RFID sign out")
     end
 
@@ -175,18 +266,19 @@ RSpec.describe "RFID endpoints", type: :request do
       expect(TapBoxLog.where(event_type: TapBoxLog::ERROR).last.details["reason"]).to eq("invalid_rfid")
     end
 
-    it "rejects a tap without space_id or mac_address and logs no_space" do
-      post rfid_card_number_path, params: { rfid: rfid.card_number }, as: :json
+    it "rejects a staff tap without space_id or mac_address and logs no_space" do
+      post rfid_card_number_path, params: { rfid: rfid.card_number }, headers: { "Authorization" => "Bearer #{create(:user, :staff).token}" }, as: :json
       expect(response).to have_http_status(:unprocessable_content)
       expect(body).to eq(new_rfid: "Error, missing space_id or mac_address param")
       expect(TapBoxLog.where(event_type: TapBoxLog::ERROR).last.details["reason"]).to eq("no_space")
     end
 
-    it "registers an unknown reader mac without a space and logs it" do
-      post rfid_card_number_path, params: { rfid: rfid.card_number, mac_address: "de:ad:be:ef:00:01" }, as: :json
-      expect(response).to have_http_status(:unprocessable_content)
-      expect(PiReader.find_by(pi_mac_address: "de:ad:be:ef:00:01")).to have_attributes(space_id: nil)
-      expect(TapBoxLog.where(event_type: TapBoxLog::INFO).pluck(:message)).to include(a_string_matching(/New Pi reader registered/))
+    # FIXED(D-EQ03): an unknown reader mac is rejected and is not registered
+    it "does not register an unknown reader mac" do
+      expect {
+        post rfid_card_number_path, params: { rfid: rfid.card_number, mac_address: "de:ad:be:ef:00:01" }, as: :json
+      }.not_to change { [PiReader.count, TapBoxLog.count] }
+      expect(response).to have_http_status(:unauthorized)
     end
   end
 

@@ -64,7 +64,8 @@ RSpec.describe RfidController, type: :controller do
         expect(actual).to eq(expected)
       end
 
-      it 'should not create rfid and should sign in RFID with Space ID' do
+      it 'should not create rfid and should sign in RFID with Space ID (staff only, D-EQ01)' do
+        session[:user_id] = create(:user, :staff).id
         existing_rfid = create(:rfid, mac_address: pi_reader.pi_mac_address)
         rfid_params = {
           rfid: existing_rfid.card_number,
@@ -78,7 +79,8 @@ RSpec.describe RfidController, type: :controller do
         expect(actual).to eq(expected)
       end
 
-      it 'should not create rfid and should MOT sign in RFID without Mac Address or Space ID' do
+      it 'should not create rfid and should MOT sign in RFID without Mac Address or Space ID (staff session)' do
+        session[:user_id] = create(:user, :staff).id
         existing_rfid = create(:rfid, mac_address: pi_reader.pi_mac_address)
         rfid_params = { rfid: existing_rfid.card_number }
         expect {
