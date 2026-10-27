@@ -52,6 +52,15 @@ RSpec.describe PiReader, type: :model do
         expect(PiReader.find_by_mac("aa:bb:cc:dd:ee:ff")).to eq(legacy)
       end
 
+      it "prefers a row with a space over a lower-id legacy space-less variant of the same mac" do
+        legacy = create(:pi_reader, space: nil)
+        legacy.update_column(:pi_mac_address, "AA:BB:CC:DD:EE:FF")
+        registered = create(:pi_reader, pi_mac_address: "x")
+        registered.update_column(:pi_mac_address, "aa-bb-cc-dd-ee-ff")
+        expect(legacy.id).to be < registered.id
+        expect(PiReader.find_by_mac("aa:bb:cc:dd:ee:ff")).to eq(registered)
+      end
+
       it "returns nil for a blank, unknown or non-string mac" do
         create(:pi_reader)
         expect([PiReader.find_by_mac(nil), PiReader.find_by_mac("  "), PiReader.find_by_mac("de:ad:be:ef:00:01"), PiReader.find_by_mac({ a: 1 })]).to all(be_nil)

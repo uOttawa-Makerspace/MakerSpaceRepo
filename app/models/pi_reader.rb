@@ -16,11 +16,12 @@ class PiReader < ApplicationRecord
 
   # Case/separator-insensitive lookup that also matches rows registered before
   # normalization existed (they may be stored upper-case); no data migration needed.
+  # When several rows match, one with a space wins over a legacy space-less row.
   def self.find_by_mac(raw)
     mac = normalize_mac(raw)
     return nil unless mac
 
-    where("lower(replace(trim(pi_mac_address), '-', ':')) = ?", mac).order(:id).first
+    where("lower(replace(trim(pi_mac_address), '-', ':')) = ?", mac).order(Arel.sql("space_id IS NULL"), :id).first
   end
 
   def pi_mac_with_location
