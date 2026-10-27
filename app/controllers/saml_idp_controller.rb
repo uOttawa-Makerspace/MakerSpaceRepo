@@ -82,6 +82,15 @@ class SamlIdpController < ApplicationController
 
   private
 
+  # The one verdict every caller of the gem's validation sees (validate_saml_request,
+  # enforce_saml_request, any later direct call): the request must be valid AND the
+  # gem must have recorded no error. The gem's valid_external_signature? returns a
+  # truthy errors array when the SP certificate cannot be parsed, which `valid?`
+  # alone would accept.
+  def valid_saml_request?
+    saml_request.valid? && saml_request.errors.empty?
+  end
+
   # Signature, SigAlg and RelayState are plain strings; a Signature present
   # needs its SigAlg. A present-but-blank Signature/SigAlg is refused too: the gem
   # only runs its signature checks on a nil (embedded) or present (external)
@@ -144,9 +153,7 @@ class SamlIdpController < ApplicationController
       return head :bad_request
     end
 
-    # errors must be empty too: the gem's valid_external_signature? returns a
-    # truthy errors array when the SP certificate cannot be parsed.
-    return if valid && saml_request.errors.empty?
+    return if valid
     return head :bad_request if malformed
 
     Rails.logger.warn("SAML request refused for issuer #{saml_request.issuer.to_s.truncate(200).inspect}: #{saml_request.errors.join(',')}")
