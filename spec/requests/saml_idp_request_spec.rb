@@ -496,6 +496,61 @@ RSpec.describe "SAML IdP", type: :request do
       expect(response).to have_http_status(:bad_request)
     end
 
+    context "client-controlled malformed signed XML is a 400, not a 500" do
+      def ds = "http://www.w3.org/2000/09/xmldsig#"
+
+      def signed_logout(signature_xml, extra: "")
+        c18_deflate(%(<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ) +
+                    %(xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="_lo1" Version="2.0" ) +
+                    %(IssueInstant="2026-03-10T15:00:00Z"><saml:Issuer>rooms.makerepo.com</saml:Issuer>) +
+                    %(<saml:NameID>x</saml:NameID>#{extra}#{signature_xml}</samlp:LogoutRequest>))
+      end
+
+      def full_signature(key_info: "", before: "")
+        %(<ds:Signature xmlns:ds="#{ds}">#{before}<ds:SignedInfo><ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>) +
+          %(<ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/>) +
+          %(<ds:Reference URI="#_lo1"><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>) +
+          %(<ds:DigestValue>AAAA</ds:DigestValue></ds:Reference></ds:SignedInfo>) +
+          %(<ds:SignatureValue>AAAA</ds:SignatureValue>#{key_info}</ds:Signature>)
+      end
+
+      def post_logout(request)
+        c18_sign_in(:regular)
+        post "/saml/auth", params: { SAMLRequest: request, submit: "logout" }
+      end
+
+      it "a LogoutRequest whose Signature has no SignedInfo" do
+        c18_with_signing_sps do
+          post_logout(signed_logout(%(<ds:Signature xmlns:ds="#{ds}"><ds:SignatureValue>AAAA</ds:SignatureValue></ds:Signature>)))
+          expect(response).to have_http_status(:bad_request)
+        end
+      end
+
+      it "a LogoutRequest whose Reference points at an ID that does not exist or lacks a DigestValue" do
+        c18_with_signing_sps do
+          post_logout(signed_logout(full_signature.sub('URI="#_lo1"', 'URI="#nope"')))
+          expect(response).to have_http_status(:bad_request)
+          post_logout(signed_logout(full_signature.sub("<ds:DigestValue>AAAA</ds:DigestValue>", "")))
+          expect(response).to have_http_status(:bad_request)
+        end
+      end
+
+      it "a LogoutRequest with a garbage embedded certificate" do
+        c18_with_signing_sps do
+          key_info = %(<ds:KeyInfo><ds:X509Data><ds:X509Certificate>bm90IGEgY2VydA==</ds:X509Certificate></ds:X509Data></ds:KeyInfo>)
+          post_logout(signed_logout(full_signature(key_info: key_info)))
+          expect(response).to have_http_status(:bad_request)
+        end
+      end
+
+      it "XML REXML cannot parse but Nokogiri recovers" do
+        c18_with_signing_sps do
+          post_logout(signed_logout(full_signature, extra: "<junk a='1' a='2'/>"))
+          expect(response).to have_http_status(:bad_request)
+        end
+      end
+    end
+
     context "SECURITY: blank Signature / SigAlg must not skip the gem's signature checks" do
       it "refuses a LogoutRequest with an empty Signature= (400), without signing the user out" do
         c18_with_signing_sps do

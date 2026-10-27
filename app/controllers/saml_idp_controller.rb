@@ -10,7 +10,15 @@ class SamlIdpController < ApplicationController
 
   # What the gem raises for a malformed (as opposed to refused) request. Anything
   # else (SP metadata getter, DB, network) is a server failure and must surface.
-  MALFORMED_REQUEST_ERRORS = [Zlib::Error, Nokogiri::XML::SyntaxError, URI::InvalidURIError].freeze
+  MALFORMED_REQUEST_ERRORS = [
+    Zlib::Error, Nokogiri::XML::SyntaxError, URI::InvalidURIError,
+    REXML::ParseException,                      # embedded-signature path re-parses the XML with REXML
+    SamlIdp::XMLSecurity::SignedDocument::ValidationError,
+    OpenSSL::X509::CertificateError,            # a garbage certificate embedded in the request
+    OpenSSL::PKey::PKeyError                    # signature that does not fit the key/algorithm
+  ].freeze
+
+  DSIG_NS = { "ds" => "http://www.w3.org/2000/09/xmldsig#" }.freeze
 
   # The wiki-server SP's metadata. No copy of it exists in the repository or its
   # history, so placing it at config/saml/wiki_metadata.xml is a deploy step. The
@@ -82,6 +90,25 @@ class SamlIdpController < ApplicationController
 
   private
 
+  # The gem dereferences the parts of an embedded signature without nil checks (a
+  # missing SignedInfo/Reference/DigestValue/SignatureValue, or a Reference whose
+  # target ID is absent, is a NoMethodError). Refuse such a document up front
+  # instead of rescuing NoMethodError, which would also hide real bugs.
+  def embedded_signature_wellformed?
+    doc = Nokogiri::XML(saml_request.raw_xml.to_s)
+    signature = doc.at_xpath("//ds:Signature", DSIG_NS)
+    return true if signature.nil?
+
+    references = signature.xpath("./ds:SignedInfo/ds:Reference", DSIG_NS)
+    ids = doc.xpath("//*[@ID]").map { |node| node["ID"] }
+    references.any? &&
+      signature.at_xpath("./ds:SignatureValue", DSIG_NS).present? &&
+      references.all? do |ref|
+        uri = ref["URI"].to_s
+        uri.start_with?("#") && ids.include?(uri[1..]) && ref.at_xpath("./ds:DigestValue", DSIG_NS).present?
+      end
+  end
+
   # The one verdict every caller of the gem's validation sees (validate_saml_request,
   # enforce_saml_request, any later direct call): the request must be valid AND the
   # gem must have recorded no error. The gem's valid_external_signature? returns a
@@ -146,7 +173,10 @@ class SamlIdpController < ApplicationController
     return head :bad_request unless saml_binding_params_wellformed?
 
     begin
-      valid = validate_saml_request(raw)
+      decode_request(raw, params[:Signature], params[:SigAlg], params[:RelayState])
+      return head :bad_request unless embedded_signature_wellformed?
+
+      valid = valid_saml_request?
       malformed = saml_request.issuer.blank? || saml_request.errors.include?(:unaccepted_request)
     rescue *MALFORMED_REQUEST_ERRORS => e # undecodable payload, bad XML, unparseable ACS URL
       Rails.logger.info("SAML request rejected as malformed: #{e.class}")
