@@ -111,14 +111,14 @@
                 <td><%= session.sign_in_time.getlocal.strftime('%B %d, %Y %H:%M:%S') %></td>
                 <td>Current session</td>
                 <td><%= ((Time.zone.now - session.sign_in_time) / 60).round %> min. so far</td>
-                <td><%= PiReader.find_by(pi_mac_address: session.mac_address).try(:pi_location) %></td>
+                <td><%= PiReader.find_by_mac(session.mac_address).try(:pi_location) %></td>
               </tr>
              <% else %>
               <tr>
                 <td><%= session.sign_in_time.getlocal.strftime('%B %d, %Y %H:%M:%S') %></td>
                 <td><%= session.sign_out_time.getlocal.strftime('%B %d, %Y %H:%M:%S') %></td>
                 <td><%= ((session.sign_out_time - session.sign_in_time) / 60).round %> minutes</td>
-                <td><%= PiReader.find_by(pi_mac_address: session.mac_address).try(:pi_location) %></td>
+                <td><%= PiReader.find_by_mac(session.mac_address).try(:pi_location) %></td>
               </tr>
             <% end %>
           <% end %>

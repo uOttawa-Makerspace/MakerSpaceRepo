@@ -351,7 +351,7 @@ Rails.application.routes.draw do
       get "/", as: "index", action: "index"
     end
     
-    resources :pi_readers, only: [:update]
+    resources :pi_readers, only: %i[create update]
 
     resources :trainings do
       collection do

@@ -420,6 +420,7 @@ class User < ApplicationRecord
     columns = { password: password, token_version: token_version, updated_at: Time.current }
     columns.merge!(locked: false, auth_attempts: 0, locked_until: nil) if clear_lock
     update_columns(columns)
+    disconnect_cable!
   end
 
   def pword=(new_password)
@@ -521,6 +522,83 @@ class User < ApplicationRecord
   def admin?
     role == 'admin'
   end
+
+  # Admin lock: blocks new logins for 99 years AND ends every existing session and JWT
+  # for good by bumping token_version. The bump is a SQL increment (not
+  # token_version + 1 computed from a possibly stale in-memory value), so a password
+  # reset racing with the lock cannot overwrite it with an equal or lower version.
+  # Column writes only (no validations): a row that is invalid for an unrelated
+  # legacy reason must still be lockable.
+  def admin_lock!
+    self.class.where(id: id).update_all(
+      [
+        "locked = ?, locked_until = ?, auth_attempts = ?, updated_at = ?, token_version = token_version + 1",
+        true, 99.years.from_now, MAX_AUTH_ATTEMPTS, Time.current
+      ]
+    )
+    reload
+    disconnect_cable!
+    self
+  end
+
+  # Does not restore token_version: sessions and JWTs revoked by the lock stay dead.
+  def admin_unlock!
+    update_columns(locked: false, locked_until: nil, auth_attempts: 0, updated_at: Time.current)
+    self
+  end
+
+  # Closes this user's open websocket connections (ApplicationCable identifies them
+  # by current_user). Called when the credentials or rights behind them change:
+  # sign out, password change/reset, admin lock, demotion from staff/admin. A
+  # still-valid session simply reconnects and is re-checked at the handshake.
+  # Best effort: it runs after the change is already committed (mostly from the
+  # after_update_commit below; the solid_cable broadcast is an INSERT that can fail),
+  # so a failure is reported, never raised.
+  # Rescues StandardError, not just ActiveRecordError: any broadcast failure (Timeout,
+  # a raw PG error from the pool, ActionCable server errors) must not 500 a role change,
+  # delete, lock or logout that already happened. Rails.error.report keeps real bugs
+  # visible in the error tracker.
+  def disconnect_cable!
+    ActionCable.server.remote_connections.where(current_user: self).disconnect
+  rescue StandardError => e
+    Rails.error.report(e, handled: true)
+  end
+
+  # Role and soft-delete writes skip validations only (a row that is invalid for an
+  # unrelated legacy reason must still be demotable/deletable); callbacks run, so the
+  # after_update_commit below (cable_access_lost?) closes the connections once, after
+  # the real commit, even inside an outer transaction.
+  def change_role!(new_role)
+    raise ArgumentError, "unknown role #{new_role.inspect}" unless ROLES.include?(new_role)
+
+    self.role = new_role
+    save!(validate: false)
+    self
+  end
+
+  # Also revokes every session and JWT issued so far (SQL increment, like admin_lock!,
+  # so a concurrent bump is not overwritten): restore! must not revive them.
+  def soft_delete!
+    transaction do
+      self.deleted = true
+      save!(validate: false)
+      increment!(:token_version)
+    end
+    self
+  end
+
+  def restore!
+    self.deleted = false
+    save!(validate: false)
+    self
+  end
+
+  # Demoted from staff/admin, soft-deleted or deactivated: such a connection must not
+  # keep receiving broadcasts (StaffDashboardChannel authorizes at subscribe time
+  # only; the handshake already refuses deleted/inactive users on reconnect).
+  after_update_commit :disconnect_cable!, if: :cable_access_lost?
+  # A block, not the method symbol: Rails de-duplicates commit callbacks by method name.
+  after_destroy_commit { disconnect_cable! }
 
   def staff?
     role.in?(%w[staff admin])
@@ -687,5 +765,10 @@ class User < ApplicationRecord
 
   def translate_faculty
     self.faculty = FACULTY_TRANSLATIONS[faculty] if FACULTY_TRANSLATIONS.key?(faculty)
+  end
+
+  def cable_access_lost?
+    demoted = saved_change_to_role? && role_before_last_save.in?(%w[staff admin]) && !staff?
+    demoted || ((saved_change_to_deleted? || saved_change_to_active?) && !AuthEligibility.allowed?(self))
   end
 end

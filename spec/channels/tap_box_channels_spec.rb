@@ -6,28 +6,112 @@ require "rails_helper"
 # is no connection authentication at all.
 RSpec.describe "Tap box ActionCable channels" do
   describe ApplicationCable::Connection, type: :channel do
-    # WART(D-EQ30): ApplicationCable::Connection accepts every websocket and sets current_user to a random Integer; nothing authenticates cable subscribers
-    it "accepts a connection with no cookies and identifies it as an Integer" do
-      connect "/cable"
-      expect(connection.current_user).to be_a(Integer)
-      expect(connection.current_user).to be_between(0, 99)
+    # FIXED(D-EQ30): the connection identifies the user from the session cookie and rejects everyone else
+    it "identifies the session's user" do
+      user = create(:user, :staff)
+      connect "/cable", session: { user_id: user.id }
+      expect(connection.current_user).to eq(user)
+    end
+
+    it "identifies a regular user too (channels decide what they may subscribe to)" do
+      user = create(:user, :regular_user)
+      connect "/cable", session: { user_id: user.id }
+      expect(connection.current_user).to eq(user)
+    end
+
+    it "rejects a connection with no session" do
+      expect { connect "/cable" }.to have_rejected_connection
+    end
+
+    it "rejects a session whose user no longer exists" do
+      expect { connect "/cable", session: { user_id: 0 } }.to have_rejected_connection
+    end
+
+    # A12 rules (lib/jwt_authenticator.rb), shared with the HTTP side
+    describe "session rules" do
+      let(:user) { create(:user, :staff) }
+
+      it "rejects a session whose token_version no longer matches (password changed/reset, admin lock)" do
+        stale = { user_id: user.id, token_version: user.token_version }
+        user.update_columns(token_version: user.token_version + 1)
+        expect { connect "/cable", session: stale }.to have_rejected_connection
+        expect { connect "/cable", session: stale.merge(token_version: user.token_version) }.not_to have_rejected_connection
+      end
+
+      it "treats a session without token_version as version 0" do
+        expect { connect "/cable", session: { user_id: user.id } }.not_to have_rejected_connection
+        user.update_columns(token_version: 1)
+        expect { connect "/cable", session: { user_id: user.id } }.to have_rejected_connection
+      end
+
+      it "rejects a deactivated or soft-deleted user" do
+        user.update_columns(active: false)
+        expect { connect "/cable", session: { user_id: user.id, token_version: user.token_version } }.to have_rejected_connection
+        user.update_columns(active: true, deleted: true)
+        expect { connect "/cable", session: { user_id: user.id, token_version: user.token_version } }.to have_rejected_connection
+      end
+
+      it "rejects an idle-expired session and accepts one inside the window" do
+        expect { connect "/cable", session: { user_id: user.id, expires_at: 1.minute.ago } }.to have_rejected_connection
+        expect { connect "/cable", session: { user_id: user.id, expires_at: 1.hour.from_now } }.not_to have_rejected_connection
+      end
+    end
+
+    describe "Bearer JWT" do
+      let(:user) { create(:user, :staff) }
+
+      it "identifies the user from the Authorization header" do
+        connect "/cable", headers: { "Authorization" => "Bearer #{user.token}" }
+        expect(connection.current_user).to eq(user)
+      end
+
+      it "identifies the user from a token query param" do
+        connect "/cable?token=#{user.token}"
+        expect(connection.current_user).to eq(user)
+      end
+
+      it "rejects garbage, a revoked (old token_version) token and an inactive user's token" do
+        old = user.token
+        expect { connect "/cable", headers: { "Authorization" => "Bearer nope" } }.to have_rejected_connection
+        expect { connect "/cable?token=nope" }.to have_rejected_connection
+        user.update_columns(token_version: user.token_version + 1)
+        expect { connect "/cable", headers: { "Authorization" => "Bearer #{old}" } }.to have_rejected_connection
+        expect { connect "/cable", headers: { "Authorization" => "Bearer #{user.token}" } }.not_to have_rejected_connection
+        user.update_columns(active: false)
+        expect { connect "/cable", headers: { "Authorization" => "Bearer #{user.token}" } }.to have_rejected_connection
+      end
     end
   end
 
   describe StaffDashboardChannel, type: :channel do
-    # WART(D-EQ31): StaffDashboardChannel streams "space_event_<space_id>" to any subscriber (unauthenticated, any space_id), exposing tapped users' name, email and certifications
-    it "subscribes any connection to the raw space_event stream for the requested space" do
-      stub_connection current_user: 7
-      subscribe(space_id: 3)
-      expect(subscription).to be_confirmed
-      expect(subscription).to have_stream_from("space_event_3")
+    # FIXED(D-EQ31): only staff/admin may stream "space_event_<space_id>" (tapped users' name, email, certifications)
+    %i[staff admin].each do |role|
+      it "streams space_event_<id> to a #{role}" do
+        stub_connection current_user: create(:user, role)
+        subscribe(space_id: 3)
+        expect(subscription).to be_confirmed
+        expect(subscription).to have_stream_from("space_event_3")
+      end
     end
 
-    it "subscribes even without a space id (stream space_event_)" do
+    %i[regular_user volunteer_with_dev_program].each do |trait|
+      it "rejects a #{trait}" do
+        stub_connection current_user: create(:user, trait)
+        subscribe(space_id: 3)
+        expect(subscription).to be_rejected
+      end
+    end
+
+    it "rejects a missing user and a non-user identity" do
       stub_connection current_user: nil
-      subscribe
-      expect(subscription).to be_confirmed
-      expect(subscription).to have_stream_from("space_event_")
+      subscribe(space_id: 3)
+      expect(subscription).to be_rejected
+    end
+
+    it "rejects a guest User.new" do
+      stub_connection current_user: User.new
+      subscribe(space_id: 3)
+      expect(subscription).to be_rejected
     end
   end
 
@@ -51,10 +135,12 @@ RSpec.describe "Tap box ActionCable channels" do
       expect(subscription).to be_rejected
     end
 
-    # WART(D-EQ08): with the real connection (current_user is a random Integer) subscribe raises NoMethodError on Integer#staff?, so the console status channel never confirms, even for staff
-    it "raises for the Integer identity the real connection assigns" do
-      stub_connection current_user: 42
-      expect { subscribe }.to raise_error(NoMethodError, /staff\?/)
+    # FIXED(D-EQ08): with a real (authenticated) connection the console channel confirms for staff
+    it "confirms for the staff user the real connection identifies" do
+      staff = create(:user, :staff)
+      stub_connection current_user: staff
+      subscribe
+      expect(subscription).to be_confirmed
     end
   end
 end

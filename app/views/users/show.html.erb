@@ -116,7 +116,7 @@
                                         <h5 class="dropdown-header text-center"><%= t('.unregistered_cards') %></h5>
                                         <% Rfid.recent_unset.first(5).each do |rfid| %>
                                             <% space = begin
-                                            PiReader.find_by(pi_mac_address: rfid.mac_address).space.name
+                                            PiReader.find_by_mac(rfid.mac_address).space.name
                                             rescue StandardError
                                             'unknown'
                                             end %>

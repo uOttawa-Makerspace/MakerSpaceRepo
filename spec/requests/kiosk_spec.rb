@@ -114,10 +114,16 @@ RSpec.describe "Kiosks", type: :request do
       expect(flash[:alert]).to eq("User not found")
     end
 
-    # WART(D-EQ06): sign_email calls `head :unprocessable_content` for an unknown space but does not return, so the later redirect_to raises DoubleRenderError (500)
-    it "answers 500 (double render) and creates nothing for an unknown space" do
+    # FIXED(D-EQ06): sign_email returns after `head :unprocessable_content` for an unknown space (no DoubleRenderError)
+    it "answers 422 and creates nothing for an unknown space" do
       expect { post kiosk_sign_email_path(0), params: { visitor: visitor.username, entering: "true" } }.not_to change(LabSession, :count)
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to be_empty
+    end
+
+    it "answers 422 and ends no session when leaving an unknown space" do
+      post kiosk_sign_email_path(0), params: { visitor: visitor.username, leaving: "true" }
+      expect(response).to have_http_status(:unprocessable_content)
     end
 
     # WART(D-EQ07): kiosk sign-in needs no password or token for the visitor: any staff session can sign any user (even admins) into a space by username
