@@ -64,15 +64,35 @@ class ApplicationController < ActionController::Base
   # a POST/PATCH/DELETE target would 404 as a GET, so for those fall back to the
   # referring page when it is on this host, otherwise nothing.
   def login_back_to
-    return request.fullpath if request.get? || request.head?
+    if request.get? || request.head?
+      # On the login page itself the real destination is the one it was given.
+      return login_page_path?(request.path) ? safe_back_to : request.fullpath
+    end
 
     referer = URI.parse(request.referer.to_s)
     return unless referer.is_a?(URI::HTTP) && referer.host.present? && referer.host == request.host
 
     path = referer.request_uri
-    path unless URI.parse(path).path == login_path
+    path unless login_page_path?(URI.parse(path).path)
   rescue URI::InvalidURIError
     nil
+  end
+
+  LOGIN_PAGE_PATHS = %w[/login /login_authentication].freeze
+
+  # /login and /login_authentication (POST-only; a failed login renders at that
+  # URL) normalised without trailing slash or format extension.
+  def login_page_path?(path)
+    LOGIN_PAGE_PATHS.include?(path.to_s.sub(/\.\w+\z/, "").chomp("/"))
+  end
+
+  # Same-site paths only: url_from drops foreign hosts, and protocol-relative
+  # or backslash forms ("//evil.com", "/\\evil.com") are refused outright.
+  def safe_back_to
+    target = params[:back_to].to_s
+    return if target.start_with?("//", "/\\")
+
+    url_from(target)
   end
   helper_method :login_back_to
 

@@ -94,4 +94,28 @@ RSpec.describe "Login back_to for guests", type: :request do
     post login_authentication_path, params: { username_email: user.username, password: "asa32A353#", back_to: target }
     expect(response).to redirect_to("/carts")
   end
+
+  it "never stores login-related paths from a referer (normalised)" do
+    %w[/login /login/ /login.html /login_authentication /login_authentication/].each do |path|
+      post order_items_path, headers: { "HTTP_REFERER" => "http://www.example.com#{path}?x=1" }
+      expect(response).to redirect_to(login_path)
+      expect(back_to_of(response)).to be_nil
+    end
+  end
+
+  def modal_back_to
+    Nokogiri::HTML(response.body).at_css("#loginModal input[name=back_to]")&.[]("value")
+  end
+
+  it "carries the login page's own back_to into its modal instead of the login URL" do
+    get login_path(back_to: "/carts")
+    expect(modal_back_to).to eq("/carts")
+  end
+
+  it "drops an unsafe or absent back_to on the login page modal" do
+    get login_path(back_to: "//evil.com")
+    expect(modal_back_to.to_s).to eq("")
+    get login_path
+    expect(modal_back_to.to_s).to eq("")
+  end
 end
