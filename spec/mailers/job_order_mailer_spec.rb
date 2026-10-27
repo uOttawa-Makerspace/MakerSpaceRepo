@@ -64,8 +64,8 @@ RSpec.describe JobOrderMailer, type: :mailer do
       expect(mail.subject)
         .to eq("Votre commande ##{order.id} a été approuvée // Your job order ##{order.id} has been approved")
       token = CGI.unescape(mail.body.decoded[/user_magic_approval\?token=([^"&\s]+)/, 1].to_s)
-      expect(JobOrder.id_from_approval_token(token)).to eq(order.id)
-      expect(JobOrder.id_from_pay_token(token)).to be_nil
+      expect(JobOrder.from_approval_token(token)).to eq(order)
+      expect(JobOrder.from_pay_token(token)).to be_nil
       expect(mail.body.encoded).not_to include("This is a reminder")
     end
 

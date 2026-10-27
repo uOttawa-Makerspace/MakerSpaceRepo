@@ -54,25 +54,25 @@ class JobOrder < ApplicationRecord
     MAGIC_LINK_VERIFIER.call.generate([id, user_id], purpose: :job_order_pay, expires_in: MAGIC_LINK_TTL)
   end
 
-  # The id of the order a live approval / pay token was issued for, else nil.
-  # Soft-deleted orders still resolve (the controllers decide what to do).
-  def self.id_from_approval_token(token)
-    id_from_magic_token(token, :job_order_approval)
+  # The (not soft-deleted) order a live approval / pay token was issued for,
+  # else nil.
+  def self.from_approval_token(token)
+    from_magic_token(token, :job_order_approval)
   end
 
-  def self.id_from_pay_token(token)
-    id_from_magic_token(token, :job_order_pay)
+  def self.from_pay_token(token)
+    from_magic_token(token, :job_order_pay)
   end
 
-  def self.id_from_magic_token(token, purpose)
+  def self.from_magic_token(token, purpose)
     id, owner_id, marker = MAGIC_LINK_VERIFIER.call.verified(token.to_s, purpose: purpose)
-    order = find_by(id: id) if id
+    order = not_deleted.find_by(id: id) if id
     return nil unless order && order.user_id == owner_id
     return nil if purpose == :job_order_approval && order.approval_status_marker != marker
 
-    order.id
+    order
   end
-  private_class_method :id_from_magic_token
+  private_class_method :from_magic_token
 
   def approval_status_marker
     job_order_statuses.where(job_status: JobStatus::USER_APPROVAL).maximum(:id)

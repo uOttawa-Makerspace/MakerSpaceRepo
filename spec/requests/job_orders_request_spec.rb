@@ -1295,19 +1295,29 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
         .to eq(amount: BigDecimal("29.99"), currencyCode: "CAD")
     end
 
-    # WART(D-J12): valid signature but wrong status lands in the else branch,
-    # which dereferences @job_order.id — with @job_order never assigned → 500.
-    it "renders 500 (NoMethodError) for a valid token on a non-COMPLETED order" do
+    # FIXED(D-J12, as a side effect of the token lookup now returning the order):
+    # a valid token on a non-COMPLETED order used to 500 on a nil @job_order; it
+    # now redirects to the order page (login for a guest) with the pay flash.
+    it "redirects with the pay flash for a valid token on a non-COMPLETED order" do
       order = order_with_task!(owner: owner, status_key: :user_approval)
       get pay_job_orders_path, params: { token: magic_pay_token_for(order) }
-      expect(response).to have_http_status(:internal_server_error)
-      expect(response.body).to include("NoMethodError")
+      expect(response).to redirect_to(job_order_path(order.id))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.pay_magic_link_expired"))
       expect(shopify.calls).to be_empty
+    end
+
+    it "redirects with the pay flash for a valid token of a soft-deleted order" do
+      order = order_with_task!(owner: owner, status_key: :completed)
+      minted = magic_pay_token_for(order)
+      order.update!(is_deleted: true)
+      get pay_job_orders_path, params: { token: minted }
+      expect(response).to redirect_to(job_orders_path)
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.pay_magic_link_expired"))
     end
 
     # FIXED(D-J11): an unparsable, expired or pre-D-J11 token gets the "invalid or
     # has expired" redirect instead of the nil @job_order crash. (A valid token
-    # on a non-COMPLETED order still 500s: D-J12, another slice.)
+    # on a non-COMPLETED order is covered below.)
     it "redirects with the expired flash for an invalid token" do
       order_with_task!(owner: owner, status_key: :completed)
       get pay_job_orders_path, params: { token: "bogus-token" }
