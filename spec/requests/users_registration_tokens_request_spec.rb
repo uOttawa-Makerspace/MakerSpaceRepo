@@ -440,13 +440,31 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(JSON.parse(response.body)["signed_in"]).to eq("false")
     end
 
-    it "a reset also unlocks a locked account" do
-      user.update_columns(locked: true, locked_until: 1.hour.from_now, auth_attempts: 5)
+    it "a reset also clears a timed (brute-force) lockout, current or lapsed" do
+      [4.minutes.from_now, 1.minute.ago].each do |until_time|
+        user.update_columns(locked: true, locked_until: until_time, auth_attempts: 5)
+        patch reset_password_confirmation_users_path, params: reset_params(user)
+        user.reload
+        expect(user.locked).to be(false)
+        expect(user.auth_attempts).to eq(0)
+        expect(user.locked_until).to be_nil
+      end
+    end
+
+    it "a reset does not lift an admin lock: the new password is saved and the login is still refused" do
+      # FIXED: only the timed brute-force lockout is cleared by a reset
+      user.update_columns(locked: true, locked_until: 99.years.from_now, auth_attempts: 5)
       patch reset_password_confirmation_users_path, params: reset_params(user)
+      expect(flash[:notice]).to start_with("Your password has been updated")
       user.reload
-      expect(user.locked).to be(false)
-      expect(user.auth_attempts).to eq(0)
-      expect(user.locked_until).to be_nil
+      expect(user.authenticate_password("NewPassw0rd!x#9")).to be(true)
+      expect(user.locked).to be(true)
+      expect(user.locked_until).to be > 90.years.from_now
+      post login_authentication_path, params: { username_email: user.username, password: "NewPassw0rd!x#9" }
+      expect(flash[:alert]).to include("locked")
+      user.update_columns(locked_until: nil)
+      patch reset_password_confirmation_users_path, params: reset_params(user, pw: "AnotherPassw0rd!y#7")
+      expect(user.reload.locked).to be(true)
     end
 
     it "a reset does not confirm an unconfirmed account" do

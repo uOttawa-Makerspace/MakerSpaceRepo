@@ -439,6 +439,13 @@ class User < ApplicationRecord
     locked? && (locked_until.nil? || locked_until > Time.current)
   end
 
+  # The brute-force lockout (locked_until at most LOCK_DURATION ahead, or already
+  # lapsed), as opposed to an admin lock (99 years ahead, or no end). Only this
+  # kind is cleared by a password reset.
+  def timed_lockout?
+    locked? && locked_until.present? && locked_until <= LOCK_DURATION.from_now
+  end
+
   # Never shortens an existing lock (an admin lock lasts 99 years): a no-op, and
   # no second unlock mail, when the user is already locked for longer.
   def lock_account!

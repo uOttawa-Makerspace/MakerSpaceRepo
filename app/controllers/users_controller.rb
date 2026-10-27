@@ -279,7 +279,7 @@ class UsersController < SessionsController
       flash[:alert] = "Your password was not changed: #{problems.to_sentence}."
       return redirect_to reset_password_form_users_path(token: params[:token])
     else
-      user.assign_attributes(locked: false, auth_attempts: 0, locked_until: nil) if user.locked?
+      user.assign_attributes(locked: false, auth_attempts: 0, locked_until: nil) if user.timed_lockout? # never an admin lock
       user.pword = params[:password]
       if user.save
         session[:token_version] = user.token_version if session[:user_id] == user.id
