@@ -706,7 +706,7 @@ Rails.application.routes.draw do
       get :confirm
       match :change_programs, via: %i[post patch]
       post :create, path: "/new"
-      get :remove_avatar
+      delete :remove_avatar
       post :flag
       post :unflag
       get :change_email

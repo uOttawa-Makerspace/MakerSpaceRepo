@@ -221,7 +221,7 @@ RSpec.describe UsersController, type: :controller do
         user = create(:user, :regular_user_with_avatar)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
-        get :remove_avatar
+        delete :remove_avatar
         expect(response).to redirect_to settings_profile_path
         user = User.find(user.id)
         expect(user.display_avatar).to eq("/default-avatar.png")
@@ -231,7 +231,7 @@ RSpec.describe UsersController, type: :controller do
         user = create(:user, :regular_user)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
-        get :remove_avatar
+        delete :remove_avatar
         expect(response).to redirect_to settings_profile_path
         expect(user.display_avatar).to eq("/default-avatar.png")
       end

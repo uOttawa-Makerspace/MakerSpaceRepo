@@ -291,23 +291,43 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       expect(user.reload.avatar).to be_attached
     end
 
-    it "GET /remove_avatar purges the avatar (state-changing GET)" do
-      # WART(D-I18): remove_avatar is a state-changing GET (CSRF-able)
+    # FIXED(D-I18): remove_avatar is DELETE; a GET no longer purges the avatar
+    it "DELETE /remove_avatar purges the avatar" do
       login!(user)
       patch user_path(user.username), params: { user: { avatar: AvatarTestHelper.png } }
-      get remove_avatar_users_path
+      delete remove_avatar_users_path
       expect(response).to redirect_to(settings_profile_path)
       expect(user.reload.avatar).not_to be_attached
     end
 
+    it "GET /remove_avatar no longer removes the avatar" do
+      login!(user)
+      patch user_path(user.username), params: { user: { avatar: AvatarTestHelper.png } }
+      get "/remove_avatar"
+      expect(user.reload.avatar).to be_attached
+    end
+
+    it "the profile settings page offers the removal as a DELETE form" do
+      login!(user)
+      patch user_path(user.username), params: { user: { avatar: AvatarTestHelper.png } }
+      get settings_profile_path
+      doc = Nokogiri::HTML5(response.body)
+      form = doc.at_css(%(form[action="#{remove_avatar_users_path}"]))
+      expect(form).not_to be_nil
+      expect(form["id"]).to eq("remove-avatar-form")
+      expect(form.at_css("input[name=_method]")["value"]).to eq("delete")
+      expect(form.ancestors("form")).to be_empty # not nested in the profile form
+      expect(doc.at_css(%(button[form="remove-avatar-form"]))).not_to be_nil
+    end
+
     it "remove_avatar with no avatar is a harmless redirect" do
       login!(user)
-      get remove_avatar_users_path
+      delete remove_avatar_users_path
       expect(response).to redirect_to(settings_profile_path)
     end
 
     it "remove_avatar as guest redirects to login" do
-      get remove_avatar_users_path
+      delete remove_avatar_users_path
       expect(response.location).to start_with("http://www.example.com/login")
     end
   end
