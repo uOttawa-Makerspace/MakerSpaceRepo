@@ -69,6 +69,29 @@ RSpec.describe "Admin pi readers", type: :request do
       expect(PiReader.last).to have_attributes(pi_mac_address: "aa:bb:cc:00:11:22", space_id: space.id, pi_location: "Door")
     end
 
+    it "adopts a legacy space-less row with the same normalized mac: assigns space/location, normalizes the mac, no duplicate" do
+      sign_in_as(:admin)
+      legacy = create(:pi_reader, space: nil, pi_location: "old")
+      legacy.update_column(:pi_mac_address, "AA-BB-CC-00-11-22")
+      expect {
+        post admin_pi_readers_path, params: { pi_reader_params: { pi_mac_address: "aa:bb:cc:00:11:22", space_id: space.id, pi_location: "Door" } }
+      }.not_to change(PiReader, :count)
+      expect(flash[:notice]).to eq("Reader registered")
+      expect(legacy.reload).to have_attributes(pi_mac_address: "aa:bb:cc:00:11:22", space_id: space.id, pi_location: "Door")
+    end
+
+    it "keeps the legacy location when none is given, and still refuses a mac already registered to a space" do
+      sign_in_as(:admin)
+      legacy = create(:pi_reader, space: nil, pi_location: "old")
+      post admin_pi_readers_path, params: { pi_reader_params: { pi_mac_address: legacy.pi_mac_address, space_id: space.id } }
+      expect(legacy.reload).to have_attributes(space_id: space.id, pi_location: "old")
+      expect {
+        post admin_pi_readers_path, params: { pi_reader_params: { pi_mac_address: legacy.pi_mac_address.upcase, space_id: create(:space).id } }
+      }.not_to change(PiReader, :count)
+      expect(flash[:alert]).to match(/already been taken/)
+      expect(legacy.reload.space_id).to eq(space.id)
+    end
+
     it "refuses a duplicate or blank mac address with an alert" do
       sign_in_as(:admin)
       existing = create(:pi_reader)

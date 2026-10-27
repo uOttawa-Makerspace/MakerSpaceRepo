@@ -4,7 +4,21 @@ class Admin::PiReadersController < AdminAreaController
   # Readers no longer register themselves on their first tap (D-EQ03); an admin
   # registers the reader's MAC address here.
   def create
-    reader = PiReader.new(pi_reader_create_params)
+    attrs = pi_reader_create_params
+    legacy = PiReader.find_by_mac(attrs[:pi_mac_address])
+    if legacy && legacy.space_id.nil?
+      # A legacy self-registered row for this MAC exists: adopt it instead of failing.
+      legacy.update_columns(
+        pi_mac_address: PiReader.normalize_mac(attrs[:pi_mac_address]),
+        space_id: attrs[:space_id].presence,
+        pi_location: attrs[:pi_location].presence || legacy.pi_location,
+        updated_at: Time.current
+      )
+      flash[:notice] = "Reader registered"
+      return redirect_back(fallback_location: root_path)
+    end
+
+    reader = PiReader.new(attrs)
     if reader.save
       flash[:notice] = "Reader registered"
     else
