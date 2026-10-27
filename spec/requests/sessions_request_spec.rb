@@ -246,13 +246,31 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
       expect(JSON.parse(response.body)["signed_in"]).to eq("false")
     end
 
-    it "a cookie session of a user who gets locked mid-session is ended on the next request" do
-      # FIXED(D-I01): sessions follow the same eligibility rule as JWTs (locked users)
+    it "a cookie session of a user who gets ADMIN-locked mid-session is ended on the next request" do
+      # FIXED(D-I01): sessions follow the same eligibility rule as JWTs (admin lock = locked_until far ahead)
       login!(user)
-      user.update_columns(locked: true, locked_until: 1.hour.from_now)
+      user.update_columns(locked: true, locked_until: 99.years.from_now, auth_attempts: 5)
       get check_signed_in_path
       expect(JSON.parse(response.body)["signed_in"]).to eq("false")
       expect(session[:user_id]).to be_nil
+    end
+
+    it "a cookie session survives the brute-force lockout (five wrong passwords by anyone)" do
+      login!(user)
+      5.times { open_session.post login_authentication_path, params: { username_email: user.username, password: "wrong" } }
+      expect(user.reload.locked).to be(true)
+      get check_signed_in_path
+      expect(JSON.parse(response.body)["signed_in"]).to eq("true")
+    end
+
+    it "a JWT survives the brute-force lockout, but a new login is refused while it lasts" do
+      tok = user.token
+      5.times { open_session.post login_authentication_path, params: { username_email: user.username, password: "wrong" } }
+      expect(user.reload.locked).to be(true)
+      get check_signed_in_path, headers: { "Authorization" => "Bearer #{tok}" }
+      expect(JSON.parse(response.body)["signed_in"]).to eq("true")
+      login!(user)
+      expect(response).not_to redirect_to(root_path)
     end
 
     it "a lock that has lapsed no longer ends the session" do
@@ -375,10 +393,18 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
       expect(jwt_signed_in?(tok)).to be(false)
     end
 
-    it "rejects a JWT of a locked user, accepts it again once the lock has lapsed" do
+    it "rejects a JWT of an admin-locked user, accepts it again once unlocked" do
       tok = user.token
-      user.update_columns(locked: true, locked_until: 1.hour.from_now)
+      user.update_columns(locked: true, locked_until: 99.years.from_now)
       expect(jwt_signed_in?(tok)).to be(false)
+      user.update_columns(locked: false, locked_until: nil)
+      expect(jwt_signed_in?(tok)).to be(true)
+    end
+
+    it "accepts a JWT during a timed (brute-force) lockout and after it has lapsed" do
+      tok = user.token
+      user.update_columns(locked: true, locked_until: 4.minutes.from_now)
+      expect(jwt_signed_in?(tok)).to be(true)
       user.update_columns(locked_until: 1.minute.ago)
       expect(jwt_signed_in?(tok)).to be(true)
     end

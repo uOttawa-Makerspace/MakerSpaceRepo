@@ -253,9 +253,9 @@ RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
         expect(response).to have_http_status(:unauthorized)
       end
 
-      it "refuses a JWT of a locked user" do
+      it "refuses a JWT of an admin-locked user" do
         headers = bearer_for(member, ver: 0)
-        member.update_columns(locked: true, locked_until: 1.hour.from_now)
+        member.update_columns(locked: true, locked_until: 99.years.from_now)
         upload!(headers)
         expect(response).to have_http_status(:unauthorized)
       end
@@ -290,9 +290,16 @@ RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
         end
       end
 
-      it "refuses a cookie session of a user locked afterwards" do
+      it "accepts a cookie session during a timed (brute-force) lockout" do
         content_login!(member)
-        member.update_columns(locked: true, locked_until: 1.hour.from_now)
+        member.update_columns(locked: true, locked_until: 4.minutes.from_now)
+        post rails_direct_uploads_path, params: payload, as: :json
+        expect(response).to have_http_status(:ok)
+      end
+
+      it "refuses a cookie session of a user admin-locked afterwards" do
+        content_login!(member)
+        member.update_columns(locked: true, locked_until: 99.years.from_now)
         upload!
         expect(response).to have_http_status(:unauthorized)
       end

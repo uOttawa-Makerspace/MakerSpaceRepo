@@ -3,16 +3,26 @@
 require "jwt"
 
 # Who may be signed in at all, whatever the credential (Bearer JWT or cookie
-# session): present, not soft-deleted, not locked, not deactivated. A lock that
-# has lapsed (locked_until in the past) no longer counts, as at login.
+# session): present, not soft-deleted, not under an ADMIN lock, not deactivated.
+#
+# The brute-force lockout (User#lock_account!: locked, locked_until = now +
+# User::LOCK_DURATION) blocks new logins only, otherwise anyone could log a
+# user out by guessing five wrong passwords. An admin lock (admin
+# toggle_lock_user: locked_until 99 years ahead, or nil) ends sessions and
+# tokens. The two are told apart by how far locked_until lies ahead: a timed
+# lockout never exceeds LOCK_DURATION.
 module AuthEligibility
   module_function
 
   def allowed?(user)
     return false if user.nil? || user.deleted?
-    return false if user.locked? && (user.locked_until.nil? || user.locked_until > Time.current)
+    return false if admin_locked?(user)
 
     user.active != false
+  end
+
+  def admin_locked?(user)
+    user.locked? && (user.locked_until.nil? || user.locked_until > Time.current + User::LOCK_DURATION)
   end
 end
 
