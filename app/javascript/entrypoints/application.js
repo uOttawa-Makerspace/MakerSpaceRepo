@@ -64,6 +64,43 @@ document.addEventListener("turbo:load", () => {
   });
 });
 
+// Confirmations for elements Turbo does not handle. Turbo-enabled elements
+// (.useTurbo) prompt through Turbo's own data-turbo-confirm, so only elements
+// with data-turbo="false" are handled here (no double prompt). Legacy
+// data-confirm is honoured too because rails-ujs is not loaded.
+const confirmMessage = (...elements) => {
+  for (const el of elements) {
+    const msg = el && (el.dataset.turboConfirm || el.dataset.confirm);
+    if (msg) return msg;
+  }
+  return null;
+};
+
+document.addEventListener(
+  "submit",
+  (event) => {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement) || form.dataset.turbo !== "false") return;
+    const msg = confirmMessage(event.submitter, form);
+    if (msg && !window.confirm(msg)) event.preventDefault();
+  },
+  true,
+);
+
+document.addEventListener(
+  "click",
+  (event) => {
+    const link = event.target instanceof Element && event.target.closest("a[data-turbo-confirm], a[data-confirm]");
+    if (!link || link.dataset.turbo !== "false") return;
+    const msg = confirmMessage(link);
+    if (msg && !window.confirm(msg)) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+  },
+  true,
+);
+
 window.clearEndDate = function () {
   const endDate = document.getElementById("end_date");
   if (endDate) endDate.value = "";
