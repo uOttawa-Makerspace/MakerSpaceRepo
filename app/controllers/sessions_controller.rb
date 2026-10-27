@@ -32,12 +32,12 @@ class SessionsController < ApplicationController
         @user = User.new
         locked_user = User.username_or_email(params[:username_email])
         format.html do
-          flash[:alert] = ActionController::Base.helpers.sanitize("""
+          flash.now[:alert] = ActionController::Base.helpers.sanitize("""
           Your account has been locked due to too many failed login attempts. 
           Please #{view_context.link_to('contact an administrator', "mailto:#{SUPPORT_EMAIL}?subject=Account%20Locked", class: 'text-primary')} 
           to unlock your account#{lock_wait_suffix(locked_user)}.
           """)
-          render :login
+          render :login, status: :unprocessable_content
         end
         format.json do
           render json: {
@@ -164,13 +164,6 @@ class SessionsController < ApplicationController
     return if repository.nil? || !repository.private? || repository_unlocked?(repository)
 
     redirect_to password_entry_repository_path(repository.user_username, repository.id)
-  end
-
-  # " or wait 5 minutes", nothing for a lock without an end (locked_until nil)
-  def lock_wait_suffix(user, verb = "wait")
-    return "" if user.nil? || user.locked_until.nil?
-
-    " or #{verb} #{distance_of_time_in_words(user.locked_until, DateTime.now)}"
   end
 
   def get_session_time_left

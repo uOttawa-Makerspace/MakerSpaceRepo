@@ -172,11 +172,13 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
       expect(body["error"]).to include("locked")
     end
 
-    it "rejects even the correct password while locked (html: 200 re-render with flash)" do
+    it "rejects even the correct password while locked (html: 422 re-render with a flash.now)" do
       user.update_columns(locked: true, locked_until: 5.minutes.from_now, auth_attempts: 5)
       login!(user)
-      expect(response).to have_http_status(:ok)
-      expect(flash[:alert]).to include("locked due to too many failed login attempts")
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(flash[:alert]).to include("locked due to too many failed login attempts").and include("or wait")
+      get login_path
+      expect(flash[:alert]).to be_nil # flash.now: it does not leak into the next request
       get check_signed_in_path
       expect(JSON.parse(response.body)["signed_in"]).to eq("false")
     end
@@ -292,11 +294,19 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
       # FIXED: login_authentication compared nil < now (a 500) for this valid admin-lock state
       user.update_columns(locked: true, locked_until: nil)
       login!(user)
-      expect(response).to have_http_status(:ok)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(flash[:alert]).to include("locked")
       post login_authentication_path, params: { username_email: user.username, password: password }, as: :json
       expect(response).to have_http_status(:unprocessable_content)
       expect(JSON.parse(response.body)["error"]).to include("locked").and(satisfy { |m| !m.include?("wait") })
+    end
+
+    it "an admin lock (99 years) is not described as a 99-year wait, html and json" do
+      user.update_columns(locked: true, locked_until: 99.years.from_now, auth_attempts: 5)
+      login!(user)
+      expect(flash[:alert]).to include("locked").and(satisfy { |m| !m.include?("wait") && !m.include?("years") })
+      post login_authentication_path, params: { username_email: user.username, password: password }, as: :json
+      expect(JSON.parse(response.body)["error"]).to include("locked").and(satisfy { |m| !m.include?("wait") && !m.include?("years") })
     end
 
     it "a lock seen by sign_in gets the locked wording, never 'Incorrect password'" do

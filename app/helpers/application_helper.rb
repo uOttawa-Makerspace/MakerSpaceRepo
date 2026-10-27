@@ -45,6 +45,14 @@ module ApplicationHelper
     user
   end
 
+  # " or wait 5 minutes" for a timed (brute-force) lockout; nothing for an admin
+  # lock, which has no meaningful wait (99 years, or no end).
+  def lock_wait_suffix(user, verb = "wait")
+    return "" unless user&.timed_lockout?
+
+    " or #{verb} #{ActionController::Base.helpers.distance_of_time_in_words(user.locked_until, Time.current)}"
+  end
+
   def sign_out
     locale = session[:locale]
     reset_session

@@ -213,6 +213,13 @@ RSpec.describe "SAML IdP", type: :request do
         expect(session[:user_id]).to be_nil
       end
 
+      it "words an admin lock (99 years) as locked, without a 99-year wait" do
+        user.update!(locked: true, locked_until: 99.years.from_now)
+        post_auth(submit: "sign_in", username: user.username, password: password)
+        expect(response.body).to include("Your account has been locked")
+        expect(response.body).not_to include("or wait")
+      end
+
       it "words an admin lock without an end as locked, without a wait time" do
         user.update!(locked: true, locked_until: nil)
         post_auth(submit: "sign_in", username: user.username, password: password)
