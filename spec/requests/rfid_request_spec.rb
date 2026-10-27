@@ -1,5 +1,14 @@
 require "rails_helper"
 
+# Load RfidController while the spec files load, before any example runs.
+# RfidController < SessionsController, and ParamsWrapper copies the parent's
+# options (including its already-resolved wrapper name, "session") when a
+# subclass is defined. With lazy autoloading (non-CI), a request handled by
+# SessionsController earlier in the same process makes RfidController wrap JSON
+# params under "session" instead of "rfid", so D-EQ04's hash-valued params[:rfid]
+# never happens and the pinned 500 became a 422. CI=1 eager-loads, which hid it.
+RfidController
+
 # Chunk 15: RfidController. RFID card taps come from Raspberry Pi tap boxes.
 # card_number is a machine-to-machine endpoint: it has NO authentication
 # (no shared secret, no IP allow-list, no env guard) and CSRF is off app-wide
