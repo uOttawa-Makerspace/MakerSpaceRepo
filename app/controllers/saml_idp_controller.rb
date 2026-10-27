@@ -133,7 +133,7 @@ class SamlIdpController < ApplicationController
   # metadata advertises as entityID (so an SP configured from the metadata accepts
   # the responses); unset, the gem's request-derived URL is kept.
   def issuer_uri
-    configured_base_url ? "#{configured_base_url}/saml/auth" : super
+    configured_base_url ? saml_entity_id : super
   end
 
   def configured_base_url
@@ -146,19 +146,24 @@ class SamlIdpController < ApplicationController
     configured_base_url || request.base_url
   end
 
+  # The IdP's identity: the SSO endpoint URL. It is the metadata entityID and, via
+  # issuer_uri, the Issuer on assertions.
+  def saml_entity_id
+    "#{saml_base_url}#{saml_auth_path}"
+  end
+
   # A per-request copy of the global config with the entityID and SSO endpoints
-  # filled in. The entityID is the SSO URL, which is also the Issuer the gem puts
-  # on assertions (the request URL), so SPs see one consistent identity. The
-  # global base_saml_location is left unset so assertion Issuers do not change.
+  # filled in (the global config is not touched, see the attribute copy below).
+  # base_saml_location stays unset on purpose: the gem would then use it as the
+  # Issuer of every assertion, and the Issuer is issuer_uri's decision.
   def metadata_configuration
     SamlIdp.config.dup.tap do |config|
       # dup is shallow and the metadata builder writes :friendly_name into each
       # attribute hash, so give this copy its own hashes.
       config.attributes = config.attributes.transform_values(&:dup)
-      sso = "#{saml_base_url}/saml/auth"
-      config.entity_id = sso
-      config.single_service_post_location = sso
-      config.single_service_redirect_location = sso
+      config.entity_id = saml_entity_id
+      config.single_service_post_location = saml_entity_id
+      config.single_service_redirect_location = saml_entity_id
     end
   end
 
