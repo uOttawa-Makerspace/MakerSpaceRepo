@@ -459,6 +459,16 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       end
     end
 
+    it "works for a legacy user whose row fails an unrelated validation" do
+      # FIXED: only the password columns are written
+      user.update_columns(username: "old_user_name_longer_than_20", gender: "stale value")
+      expect(user.reload).not_to be_valid
+      patch reset_password_confirmation_users_path, params: reset_params(user)
+      expect(flash[:notice]).to start_with("Your password has been updated")
+      expect(user.reload.authenticate_password("NewPassw0rd!x#9")).to be(true)
+      expect(user.token_version).to eq(1)
+    end
+
     it "a reset does not lift an admin lock: the new password is saved and the login is still refused" do
       # FIXED: only the timed brute-force lockout is cleared by a reset
       user.update_columns(locked: true, locked_until: 99.years.from_now, auth_attempts: 5)

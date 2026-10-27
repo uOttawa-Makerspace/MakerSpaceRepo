@@ -408,6 +408,19 @@ class User < ApplicationRecord
     errors.full_messages_for(:password)
   end
 
+  # Stores a new password and what goes with it (token_version bump, and the
+  # timed lockout if asked) with ONE UPDATE of those columns only. The plaintext
+  # was checked beforehand (plaintext_password_problems); validating the whole row
+  # again would block users whose row fails an unrelated, legacy validation
+  # (old usernames, a stale gender, a student without a program ...).
+  def store_new_password!(plain, clear_timed_lock: false)
+    clear_lock = clear_timed_lock && timed_lockout?
+    self.pword = plain
+    columns = { password: password, token_version: token_version, updated_at: Time.current }
+    columns.merge!(locked: false, auth_attempts: 0, locked_until: nil) if clear_lock
+    update_columns(columns)
+  end
+
   def pword=(new_password)
     @pword = Password.create(new_password)
     @own_password_hash = @pword.to_s

@@ -209,32 +209,31 @@ class UsersController < SessionsController
       render 'settings/admin', layout: 'setting' and return
     end
 
-    # The plain password is written first and replaced by its hash: both writes
-    # succeed together or neither is kept (never a plaintext password in the DB).
-    validated = false
-    hashed = false
-    User.transaction do
-      validated = @user.update(user_params.slice(:password, :password_confirmation))
-      if validated
-        @user.pword = @user.password
-        hashed = @user.save
-      end
-      raise ActiveRecord::Rollback unless hashed
+    new_password = user_params[:password]
+    if new_password != user_params[:password_confirmation]
+      flash.now[:alert] = 'Your password and password confirmation do not match.'
+      render 'settings/admin', layout: 'setting' and return
     end
 
-    if hashed
-      session[:token_version] = @user.token_version if session[:user_id] # this session stays signed in
-      MsrMailer.confirm_password_change(@user).deliver_now
-      redirect_to settings_admin_path,
-                  notice:
-                    'Password changed successfully, an email will be sent to confirm.'
-    elsif validated
+    # The plaintext is checked (presence, strength); only the password columns are
+    # then written, so an unrelated legacy-invalid field cannot block the change.
+    if @user.plaintext_password_problems(new_password).any?
+      render 'settings/admin', layout: 'setting' and return
+    end
+
+    begin
+      User.transaction { @user.store_new_password!(new_password) }
+    rescue ActiveRecord::ActiveRecordError
       @user.reload
       flash.now[:alert] = 'Your password could not be changed. Please try again.'
-      render 'settings/admin', layout: 'setting'
-    else
-      render 'settings/admin', layout: 'setting'
+      render 'settings/admin', layout: 'setting' and return
     end
+
+    session[:token_version] = @user.token_version if session[:user_id] # this session stays signed in
+    MsrMailer.confirm_password_change(@user).deliver_now
+    redirect_to settings_admin_path,
+                notice:
+                  'Password changed successfully, an email will be sent to confirm.'
   end
 
   def change_email
@@ -279,15 +278,14 @@ class UsersController < SessionsController
       flash[:alert] = "Your password was not changed: #{problems.to_sentence}."
       return redirect_to reset_password_form_users_path(token: params[:token])
     else
-      user.assign_attributes(locked: false, auth_attempts: 0, locked_until: nil) if user.timed_lockout? # never an admin lock
-      user.pword = params[:password]
-      if user.save
+      begin
+        User.transaction { user.store_new_password!(params[:password], clear_timed_lock: true) }
         session[:token_version] = user.token_version if session[:user_id] == user.id
         MsrMailer.confirm_password_change(user).deliver_now
         flash[
           :notice
         ] = 'Your password has been updated, an email will be sent to confirm!'
-      else
+      rescue ActiveRecord::ActiveRecordError
         flash[
           :alert
         ] = 'An error occured while trying to change your password. Please try again later or send us an email at uottawa.makerepo@gmail.com'

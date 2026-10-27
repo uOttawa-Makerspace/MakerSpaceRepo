@@ -328,10 +328,7 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
     it "a failed save keeps the old password, the session version and sends no mail" do
       # FIXED: the result of the hashing save was ignored (session got N+1 while the DB stayed at N, success mail sent)
       login!(user)
-      # only the hashing save (the one that bumps token_version) fails
-      allow_any_instance_of(User).to receive(:save).and_wrap_original do |original, *args, **kwargs|
-        original.receiver.token_version_changed? ? false : original.call(*args, **kwargs)
-      end
+      allow_any_instance_of(User).to receive(:update_columns).and_raise(ActiveRecord::StatementInvalid, "boom")
       perform_enqueued_jobs { change! }
       expect(response).to have_http_status(:ok)
       expect(flash[:alert]).to eq("Your password could not be changed. Please try again.")
@@ -340,9 +337,30 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       expect(user.authenticate_password(password)).to be(true)
       expect(user.token_version).to eq(0)
       expect(user.password).to start_with("$2") # the bcrypt hash, not the plain new password
-      allow_any_instance_of(User).to receive(:save).and_call_original
+      allow_any_instance_of(User).to receive(:update_columns).and_call_original
       get check_signed_in_path
       expect(JSON.parse(response.body)["signed_in"]).to eq("true")
+    end
+
+    it "works for a legacy user whose row fails an unrelated validation (old username, stale gender)" do
+      # FIXED: only the password columns are written, so unrelated legacy-invalid fields cannot block the change
+      user.update_columns(username: "old_user_name_longer_than_20", gender: "stale value")
+      expect(user.reload).not_to be_valid
+      login!(user.reload, pw: password)
+      patch change_password_user_path(user.username),
+            params: { user: { old_password: password, password: new_pw, password_confirmation: new_pw } }
+      expect(response).to redirect_to(settings_admin_path)
+      expect(user.reload.authenticate_password(new_pw)).to be(true)
+      expect(user.token_version).to eq(1)
+      expect(user.username).to eq("old_user_name_longer_than_20") # nothing else was touched
+    end
+
+    it "refuses a confirmation mismatch" do
+      login!(user)
+      change!(confirm: "different")
+      expect(response).to have_http_status(:ok)
+      expect(flash[:alert]).to eq("Your password and password confirmation do not match.")
+      expect(user.reload.authenticate_password(password)).to be(true)
     end
 
     it "still refuses a weak plaintext password" do
