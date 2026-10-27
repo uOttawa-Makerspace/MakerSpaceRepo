@@ -573,14 +573,17 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(user.reload.email).to eq("changed.again@example.com")
     end
 
-    it "is not applied when a different account follows the link" do
+    it "is not applied when a different account follows the link, and says so" do
       # FIXED(D-I12): a signed-in bystander can no longer apply a link to the user inside the token
       bystander = create(:user, :regular_user)
       login!(bystander)
       get confirm_edited_email_users_path, params: { token: user.generate_email_change_token(new_email) }
-      expect(flash[:alert]).to eq(expired_alert)
+      expect(flash[:alert]).to eq(
+        "This link was requested by a different account. Please sign in as the account that requested the change."
+      )
       expect(user.reload.email).not_to eq(new_email)
       expect(bystander.reload.email).not_to eq(new_email)
+      expect(deliveries).to be_empty
     end
 
     it "legacy two-token links (user_token + email_token) are refused with the expired message" do
@@ -598,14 +601,17 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq(expired_alert)
     end
 
-    it "confirm_edited_email to a taken address 500s on the DB unique index" do
-      # WART(D-I13): email uniqueness/format validations are `on: :create` only, so a duplicate address surfaces as a 500 (PG unique index) from confirm_edited_email and profile update instead of a validation message
+    it "confirm_edited_email to an address taken in the meantime fails cleanly: error flash, no mail, no change" do
+      # FIXED(D-I13, confirm_edited_email part only): was a 500 on the PG unique index plus a success mail
       other = create(:user, :regular_user)
       original = user.email
       login!(user)
       get confirm_edited_email_users_path, params: { token: user.generate_email_change_token(other.email) }
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to start_with("The email could not be updated")
+      expect(flash[:notice]).to be_nil
       expect(user.reload.email).to eq(original)
+      expect(deliveries).to be_empty
     end
 
     it "tampered token: generic alert and no change" do

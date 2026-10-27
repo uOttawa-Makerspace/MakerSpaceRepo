@@ -95,13 +95,17 @@ class UsersController < SessionsController
 
   def confirm_edited_email
     user, new_email = User.email_change_from_token(params[:token])
-    if user && user == @user
-      old_email = user.email
-      user.update(email: new_email)
-      MsrMailer.email_changed_email(user, old_email).deliver_now
+    if user.nil?
+      flash[:alert] = LINK_EXPIRED_ALERT
+    elsif user != @user
+      flash[:alert] =
+        'This link was requested by a different account. Please sign in as the account that requested the change.'
+    elsif change_email_to(user, new_email)
+      MsrMailer.email_changed_email(user, @old_email).deliver_now
       flash[:notice] = "The email has been updated to #{user.email} !"
     else
-      flash[:alert] = LINK_EXPIRED_ALERT
+      flash[:alert] =
+        'The email could not be updated, the address may already be used by another account. Please request a new change.'
     end
     redirect_to root_path
   end
@@ -425,6 +429,15 @@ class UsersController < SessionsController
   end
 
   private
+
+  # Applies the address; false (nothing changed) when it is rejected, e.g. taken
+  # by another account in the meantime. Remembers the previous address.
+  def change_email_to(user, new_email)
+    @old_email = user.email
+    user.update(email: new_email)
+  rescue ActiveRecord::RecordNotUnique
+    false
+  end
 
   def json_request?
     request.format.json? || request.content_mime_type&.json?
