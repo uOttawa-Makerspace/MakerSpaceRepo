@@ -57,6 +57,12 @@ RSpec.describe SniffedUploadValidation do
     expect(video).not_to be_valid
   end
 
+  it "sniffed_upload_problems reports an unknown attachable type as a problem instead of raising" do
+    expect(proposal.sniffed_upload_problems(:project_files, Object.new).join).to include("not allowed")
+    expect(proposal.sniffed_upload_problems(:project_files, "a signed id")).not_to be_empty
+    expect(proposal.sniffed_upload_problems(:project_files, nil)).not_to be_empty
+  end
+
   it "turns a storage-service error while sniffing into a validation error, not an exception" do
     allow_any_instance_of(ActiveStorage::Service::DiskService).to receive(:download_chunk).and_raise(ActiveStorage::IntegrityError, "InvalidRange")
     expect(Rails.error).to receive(:report).with(instance_of(ActiveStorage::IntegrityError), hash_including(handled: true))

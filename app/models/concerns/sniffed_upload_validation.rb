@@ -55,9 +55,9 @@ module SniffedUploadValidation
   def sniffed_upload_problems(name, upload)
     rules = sniffed_upload_rules.fetch(name.to_sym)
     max_size = rules[:max_size].respond_to?(:call) ? rules[:max_size].call : rules[:max_size]
-    filename = upload.original_filename.to_s
+    filename = (upload.respond_to?(:original_filename) ? upload.original_filename : upload.class.name).to_s
     problems = []
-    problems << "#{filename} is too large" if upload.size.to_i > max_size
+    problems << "#{filename} is too large" if upload.respond_to?(:size) && upload.size.to_i > max_size
     head = upload_leading_bytes(upload, nil)
     sniffed = head && Marcel::MimeType.for(StringIO.new(head), name: (filename if rules[:name_fallback]))
     problems << "#{filename} has a file type that is not allowed" unless sniffed_type_acceptable?(sniffed, rules[:allow], rules[:deny])
@@ -136,7 +136,7 @@ module SniffedUploadValidation
     when File then read_head(attachable)
     when Pathname then attachable.open { |file| read_head(file) }
     else
-      download_leading_bytes(blob) if blob.persisted?
+      download_leading_bytes(blob) if blob&.persisted?
     end
   rescue Errno::ENOENT, IOError
     nil # a missing file or closed stream: unreadable
