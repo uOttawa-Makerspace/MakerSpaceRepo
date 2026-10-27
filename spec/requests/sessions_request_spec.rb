@@ -627,9 +627,38 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
       expect(JSON.parse(response.body)).to eq("logout" => "true")
     end
 
-    it "is a GET (CSRF-able logout)" do
-      # WART(D-I05): logout is a state-changing GET
+    # INTENDED(D-I05): GET /logout is kept for MakerRepoApp (frontend-api-inventory.md row 3) until it ships POST logout
+    it "is still routable as a GET" do
       expect(Rails.application.routes.recognize_path("/logout", method: :get)[:action]).to eq("logout")
+    end
+  end
+
+  describe "POST and DELETE /logout" do
+    # FIXED(D-I05): the site's own UI logs out with DELETE; POST works too
+    %i[post delete].each do |verb|
+      it "#{verb.to_s.upcase} clears the session and redirects to root" do
+        login!(user)
+        send(verb, logout_path)
+        expect(response).to redirect_to(root_path)
+        get check_signed_in_path
+        expect(JSON.parse(response.body)["signed_in"]).to eq("false")
+      end
+
+      it "#{verb.to_s.upcase} answers json" do
+        login!(user)
+        send(verb, logout_path, as: :json)
+        expect(JSON.parse(response.body)).to eq("logout" => "true")
+      end
+    end
+
+    it "renders the sign-out controls as DELETE forms, not links, in the header and home panel" do
+      login!(user)
+      get root_path
+      doc = Nokogiri::HTML5(response.body)
+      forms = doc.css(%(form[action="/logout"]))
+      expect(forms).not_to be_empty
+      forms.each { |f| expect(f.at_css("input[name=_method]")["value"]).to eq("delete") }
+      expect(doc.css(%(a[href="/logout"]))).to be_empty
     end
   end
 

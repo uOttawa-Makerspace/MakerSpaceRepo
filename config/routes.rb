@@ -218,7 +218,10 @@ Rails.application.routes.draw do
   # SESSION
   namespace :sessions, path: "/", as: nil do
     post "login_authentication"
+    # INTENDED: GET /logout is kept for MakerRepoApp until it ships POST logout
+    # (frontend-api-inventory.md row 3). The site's own UI uses DELETE.
     get "logout"
+    match "logout", via: %i[post delete], as: :perform_logout
     get "login"
     get "resend_email_confirmation"
     get "check_signed_in"
