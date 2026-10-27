@@ -477,7 +477,7 @@ RSpec.describe "Exams", type: :request do
       exam = new_exam
       get logout_path
       perform_enqueued_jobs { post finish_exam_exams_path(exam_id: exam.id) }
-      expect(response).to redirect_to(login_path(back_to: finish_exam_exams_path(exam_id: exam.id)))
+      expect(response).to redirect_to(login_path)
       expect(exam.reload.status).to eq("not started")
       expect(Exam.where(user: student).count).to eq(1)
       expect(deliveries).to be_empty
@@ -667,7 +667,7 @@ RSpec.describe "Exams", type: :request do
     it "makes a guest sign in and issues nothing" do
       get logout_path
       expect { perform_enqueued_jobs { create_from_training } }.not_to change(Exam, :count)
-      expect(response).to redirect_to(login_path(back_to: create_from_training_exams_path))
+      expect(response).to redirect_to(login_path)
       expect(deliveries).to be_empty
     end
 
@@ -723,7 +723,7 @@ RSpec.describe "Exams", type: :request do
     it "makes a guest sign in and issues nothing" do
       get logout_path
       expect { create_for_single_user(student) }.not_to change(Exam, :count)
-      expect(response).to redirect_to(login_path(back_to: create_for_single_user_exams_path))
+      expect(response).to redirect_to(login_path)
     end
 
     %i[regular staff].each do |role|
@@ -756,7 +756,7 @@ RSpec.describe "Exams", type: :request do
     # FIXED(D-T16): destroy is admin-only (a guest must sign in)
     it "makes a guest sign in and deletes nothing" do
       expect { delete exam_path(exam) }.not_to change(Exam, :count)
-      expect(response).to redirect_to(login_path(back_to: exam_path(exam)))
+      expect(response).to redirect_to(login_path)
     end
 
     %i[regular staff].each do |role|

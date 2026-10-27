@@ -29,7 +29,7 @@ RSpec.describe "Shop coupons, price rules and cc money (HTTP contract)", type: :
         get new_discount_code_path
         expect(response).to redirect_to(login_path(back_to: "/discount_codes/new"))
         post discount_codes_path, params: { dollar_cost: 5 }
-        expect(response).to redirect_to(login_path(back_to: "/discount_codes"))
+        expect(response).to redirect_to(login_path)
         expect(CouponCode.count).to eq(0)
       end
     end
@@ -165,9 +165,9 @@ RSpec.describe "Shop coupons, price rules and cc money (HTTP contract)", type: :
       get coupon_codes_path
       expect(response).to redirect_to(login_path(back_to: "/coupon_codes"))
       post coupon_codes_path, params: { coupon_code: { code: "X", cc_cost: 1, dollar_cost: 1 } }
-      expect(response).to redirect_to(login_path(back_to: "/coupon_codes"))
+      expect(response).to redirect_to(login_path)
       delete coupon_code_path(coupon)
-      expect(response).to redirect_to(login_path(back_to: "/coupon_codes/#{coupon.id}"))
+      expect(response).to redirect_to(login_path)
       expect(CouponCode.exists?(coupon.id)).to be(true)
     end
 
@@ -270,7 +270,7 @@ RSpec.describe "Shop coupons, price rules and cc money (HTTP contract)", type: :
       get price_rules_path
       expect(response).to redirect_to(login_path(back_to: "/price_rules"))
       post price_rules_path, params: valid_params
-      expect(response).to redirect_to(login_path(back_to: "/price_rules"))
+      expect(response).to redirect_to(login_path)
       expect(PriceRule.count).to eq(1)
     end
 

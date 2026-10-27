@@ -40,25 +40,25 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(flash[:alert]).to be_nil
 
       post order_items_path, params: { order_item: { proficient_project_id: pp.id, quantity: 1 } }
-      expect(response).to redirect_to(login_path(back_to: "/order_items"))
+      expect(response).to redirect_to(login_path)
 
       patch order_item_path(item), params: { order_item: { quantity: 2 } }
-      expect(response).to redirect_to(login_path(back_to: "/order_items/#{item.id}"))
+      expect(response).to redirect_to(login_path)
 
       post order_item_revoke_path(item)
-      expect(response).to redirect_to(login_path(back_to: "/order_items/#{item.id}/revoke"))
+      expect(response).to redirect_to(login_path)
 
       delete order_item_path(item)
-      expect(response).to redirect_to(login_path(back_to: "/order_items/#{item.id}"))
+      expect(response).to redirect_to(login_path)
 
       get orders_path
       expect(response).to redirect_to(login_path(back_to: "/orders"))
 
       post orders_path
-      expect(response).to redirect_to(login_path(back_to: "/orders"))
+      expect(response).to redirect_to(login_path)
 
       delete order_path(item.order)
-      expect(response).to redirect_to(login_path(back_to: "/orders/#{item.order_id}"))
+      expect(response).to redirect_to(login_path)
       expect(Order.exists?(item.order_id)).to be(true)
 
       %i[order_item_modal approve_order_item_modal revoke_order_item_modal].each do |modal|

@@ -407,7 +407,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     it "does not let a guest rewrite a proposal (D-C38)" do
       patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Hijacked" } }
       # FIXED(D-C38): update requires sign-in, then ownership or admin
-      expect(response).to redirect_to(login_path(back_to: project_proposal_path(pending.slug)))
+      expect(response).to redirect_to(login_path)
       expect(pending.reload.title).to eq("Pending One")
     end
 
@@ -560,9 +560,9 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     it "sends a guest to login and changes nothing (D-C41)" do
       post approve_project_proposals_path, params: { id: pending.id }
       # FIXED(D-C41): approve/decline are admin-only
-      expect(response).to redirect_to(login_path(back_to: approve_project_proposals_path))
+      expect(response).to redirect_to(login_path)
       post decline_project_proposals_path, params: { id: approved.id }
-      expect(response).to redirect_to(login_path(back_to: decline_project_proposals_path))
+      expect(response).to redirect_to(login_path)
       expect(pending.reload.approved).to be_nil
       expect(approved.reload.approved).to eq("approved")
     end
@@ -612,7 +612,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect { post create_revision_project_proposals_path, params: { old_project_proposal_id: pending.id } }
         .not_to change(ProjectProposal, :count)
       # FIXED(D-C42): create_revision requires sign-in and ownership of the original (or admin)
-      expect(response).to redirect_to(login_path(back_to: create_revision_project_proposals_path))
+      expect(response).to redirect_to(login_path)
     end
 
     it "refuses a stranger and staff, for pending and approved originals alike (D-C42)" do
@@ -680,7 +680,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect { post join_project_proposal_project_proposals_path, params: { project_proposal_id: approved.id } }
         .not_to change(ProjectJoin, :count)
       # FIXED(D-C43): join requires sign-in and an approved proposal
-      expect(response).to redirect_to(login_path(back_to: join_project_proposal_project_proposals_path))
+      expect(response).to redirect_to(login_path)
     end
 
     # FIXED(join/unjoin GET): neither changes state on a GET any more

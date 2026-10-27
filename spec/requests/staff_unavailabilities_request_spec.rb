@@ -40,7 +40,11 @@ RSpec.describe "Staff unavailabilities", type: :request do
         before_state = state.call
         instance_exec(&call)
         expect(response).to have_http_status(:found), name.to_s
-        expect(response.location).to start_with("http://www.example.com/login?back_to="), name.to_s
+        # back_to is stored only for replayable (GET) requests; other verbs get a bare /login
+        expect(response.location).to(
+          integration_session.request.get? ? start_with("http://www.example.com/login?back_to=") : eq("http://www.example.com/login"),
+          name.to_s
+        )
         expect(state.call).to eq(before_state), name.to_s
       end
     end

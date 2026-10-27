@@ -168,7 +168,7 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
     %i[post].each do |verb|
       it "#{verb}: guest is sent to login with back_to" do
         send(verb, join_volunteer_program_volunteers_path)
-        expect(response).to redirect_to(login_path(back_to: join_volunteer_program_volunteers_path))
+        expect(response).to redirect_to(login_path)
         expect(Program.count).to eq(0)
       end
 

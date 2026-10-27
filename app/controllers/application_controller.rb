@@ -54,10 +54,24 @@ class ApplicationController < ActionController::Base
     return if signed_in?
 
     respond_to do |format|
-      format.html { redirect_to login_path(back_to: request.fullpath) }
+      format.html { redirect_to login_path(back_to: login_back_to) }
       format.js { render js: "window.location.href = '#{login_path}'" }
       format.json { render json: "redirect" }
     end
+  end
+
+  # Where to send the user after logging in. Only GET/HEAD URLs can be revisited;
+  # a POST/PATCH/DELETE target would 404 as a GET, so for those fall back to the
+  # referring page when it is on this host, otherwise nothing.
+  def login_back_to
+    return request.fullpath if request.get? || request.head?
+
+    referer = URI.parse(request.referer.to_s)
+    return unless referer.host.present? && referer.host == request.host
+
+    referer.request_uri
+  rescue URI::InvalidURIError
+    nil
   end
 
   def parameter_missing(exception)

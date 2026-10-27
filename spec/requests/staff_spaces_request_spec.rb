@@ -18,7 +18,7 @@ RSpec.describe "StaffSpaces", type: :request do
   describe "auth" do
     it "sends a guest to login with back_to" do
       expect { post bulk_add_users_staff_spaces_path, params: params }.not_to change { state }
-      expect(response).to redirect_to(login_path(back_to: bulk_add_users_staff_spaces_path))
+      expect(response).to redirect_to(login_path)
     end
 
     it "sends a regular user to root with an alert (no privilege escalation)" do

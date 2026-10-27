@@ -87,7 +87,7 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
         post job_order_job_tasks_path(order)
       end.not_to(change { order.reload.job_tasks.count })
 
-      expect(response).to redirect_to(login_path(back_to: job_order_job_tasks_path(order)))
+      expect(response).to redirect_to(login_path)
     end
 
     it "refuses a signed-in stranger (no_permission redirect) and creates no task" do
@@ -281,7 +281,7 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
       task = order.job_tasks.first
       patch job_order_job_task_path(order, task),
             params: { step: "1", job_task: { job_type_id: JobType.find_by!(name: "3D Print").id } }
-      expect(response).to redirect_to(login_path(back_to: job_order_job_task_path(order, task)))
+      expect(response).to redirect_to(login_path)
       expect(task.reload.job_type).to be_nil
     end
 
@@ -551,7 +551,7 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
       expect do
         delete job_order_job_task_path(order, task)
       end.not_to change(JobTask, :count)
-      expect(response).to redirect_to(login_path(back_to: job_order_job_task_path(order, task)))
+      expect(response).to redirect_to(login_path)
     end
 
     it "answers 204 for the JSON API shape" do

@@ -21,7 +21,10 @@ RSpec.describe "Learning module tracks", type: :request do
           request.arity.zero? ? instance_exec(&request) : instance_exec(learning_module, &request)
         end.not_to change(LearningModuleTrack, :count)
         expect(response).to have_http_status(:found)
-        expect(response.location).to start_with("http://www.example.com/login?back_to=")
+        # back_to is stored only for replayable (GET) requests; other verbs get a bare /login
+        expect(response.location).to(
+          integration_session.request.get? ? start_with("http://www.example.com/login?back_to=") : eq("http://www.example.com/login")
+        )
       end
     end
 
