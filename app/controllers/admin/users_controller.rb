@@ -413,10 +413,14 @@ class Admin::UsersController < AdminAreaController
     # SECURITY: Validate user_ids are integers
     user_ids = params[:user_ids].map(&:to_i).reject(&:zero?)
     
-    User.where(id: user_ids).find_each do |user|
-      # Audit log for role changes
-      Rails.logger.info "[ROLE_CHANGE] User##{user.id} role changed from '#{user.role}' to '#{params[:role]}' by Admin##{@user.id}"
-      user.change_role!(params[:role])
+    # One transaction: a bulk change is all-or-nothing, and the cable disconnects
+    # (commit callback) fire only after it commits.
+    User.transaction do
+      User.where(id: user_ids).find_each do |user|
+        # Audit log for role changes
+        Rails.logger.info "[ROLE_CHANGE] User##{user.id} role changed from '#{user.role}' to '#{params[:role]}' by Admin##{@user.id}"
+        user.change_role!(params[:role])
+      end
     end
   end
 

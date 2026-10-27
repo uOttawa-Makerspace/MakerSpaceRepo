@@ -676,3 +676,31 @@ RSpec.describe "Admin user changes on a legacy-invalid user", type: :request do
     expect(disconnected).to eq([target])
   end
 end
+
+RSpec.describe "Bulk role change atomicity", type: :request do
+  let(:password) { "asa32A353#" }
+  let(:admin) { create(:user, :admin) }
+
+  before do
+    block_external_http!
+    post login_authentication_path, params: { username_email: admin.username, password: password }
+  end
+
+  it "leaves every role unchanged when the second user's write raises" do
+    a = create(:user, :staff)
+    b = create(:user, :staff)
+    calls = 0
+    allow_any_instance_of(User).to receive(:change_role!).and_wrap_original do |m, *args|
+      calls += 1
+      raise ActiveRecord::StatementInvalid, "boom" if calls == 2
+      m.call(*args)
+    end
+    begin
+      patch set_role_admin_users_path, params: { role: "regular_user", user_ids: [a.id, b.id] }
+    rescue ActiveRecord::StatementInvalid
+      nil
+    end
+    expect(calls).to eq(2)
+    expect([a.reload.role, b.reload.role]).to eq(%w[staff staff])
+  end
+end
