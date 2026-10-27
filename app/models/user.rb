@@ -560,9 +560,10 @@ class User < ApplicationRecord
     Rails.error.report(e, handled: true)
   end
 
-  # Demoted from staff/admin: a connection opened as staff must not keep receiving
-  # staff-only broadcasts (StaffDashboardChannel authorizes at subscribe time only).
-  after_update_commit :disconnect_cable!, if: -> { saved_change_to_role? && role_before_last_save.in?(%w[staff admin]) && !staff? }
+  # Demoted from staff/admin, soft-deleted or deactivated: such a connection must not
+  # keep receiving broadcasts (StaffDashboardChannel authorizes at subscribe time
+  # only; the handshake already refuses deleted/inactive users on reconnect).
+  after_update_commit :disconnect_cable!, if: :cable_access_lost?
 
   def staff?
     role.in?(%w[staff admin])
@@ -729,5 +730,10 @@ class User < ApplicationRecord
 
   def translate_faculty
     self.faculty = FACULTY_TRANSLATIONS[faculty] if FACULTY_TRANSLATIONS.key?(faculty)
+  end
+
+  def cable_access_lost?
+    demoted = saved_change_to_role? && role_before_last_save.in?(%w[staff admin]) && !staff?
+    demoted || (saved_change_to_deleted? && deleted?) || (saved_change_to_active? && active == false)
   end
 end

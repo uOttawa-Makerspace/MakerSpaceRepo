@@ -121,3 +121,40 @@ RSpec.describe "Cable disconnect failures", type: :request do
     expect(Rails.error).to have_received(:report).with(error, handled: true)
   end
 end
+
+RSpec.describe "Cable disconnects on soft delete / deactivation", type: :request do
+  let(:password) { "asa32A353#" }
+  let(:disconnected) { [] }
+
+  before do
+    allow(ActionCable.server.remote_connections).to receive(:where) do |current_user:|
+      double("remote", disconnect: disconnected << current_user)
+    end
+  end
+
+  it "disconnects a soft-deleted user (admin delete), not on restore" do
+    admin = create(:user, :admin)
+    post login_authentication_path, params: { username_email: admin.username, password: password }
+    target = create(:user, :regular_user)
+    delete delete_user_admin_users_path, params: { id: target.id, password: password }
+    expect(User.unscoped.find(target.id).deleted).to be(true)
+    expect(disconnected).to eq([target])
+    patch restore_user_admin_users_path, params: { id: target.id }
+    expect(disconnected).to eq([target])
+  end
+
+  it "disconnects on deactivation, not on re-activation" do
+    user = create(:user, :regular_user)
+    user.update!(active: false)
+    expect(disconnected).to eq([user])
+    user.update!(active: true)
+    expect(disconnected).to eq([user])
+  end
+
+  it "disconnects on deleted=true, not on deleted=false" do
+    user = create(:user, :regular_user)
+    user.update!(deleted: true)
+    user.update!(deleted: false)
+    expect(disconnected).to eq([user])
+  end
+end
