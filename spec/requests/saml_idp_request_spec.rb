@@ -73,14 +73,34 @@ RSpec.describe "SAML IdP", type: :request do
       expect(doc.xpath("//IDPSSODescriptor/Attribute/@FriendlyName").map(&:value)).to include("groups", "is_admin", "role")
     end
 
-    it "advertises an empty entityID and no endpoints (no base_saml_location is configured)" do
-      # WART(D-R16): the IdP metadata has entityID="", no SingleSignOnService/SingleLogoutService locations and blank attribute Names because config.base_saml_location and the endpoint URLs are never set, so SPs cannot be configured from it
-      get "/saml/metadata"
+    it "advertises the entityID, the SSO endpoints and named attributes (D-R16)" do
+      get "/saml/metadata", headers: { "Host" => "idp.example.test" }
       doc = Nokogiri::XML(response.body)
       doc.remove_namespaces!
-      expect(doc.root["entityID"]).to eq("")
-      expect(doc.xpath("//SingleSignOnService")).to be_empty
-      expect(doc.xpath("//IDPSSODescriptor/Attribute/@Name").map(&:value).uniq).to eq([""]) # attributes carry FriendlyName only
+      expect(doc.root["entityID"]).to eq("http://idp.example.test/saml/auth")
+      sso = doc.xpath("//IDPSSODescriptor/SingleSignOnService")
+      expect(sso.map { |n| n["Location"] }.uniq).to eq(["http://idp.example.test/saml/auth"])
+      expect(sso.map { |n| n["Binding"] }).to contain_exactly(
+        "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST", "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
+      )
+      attrs = doc.xpath("//IDPSSODescriptor/Attribute")
+      expect(attrs).not_to be_empty
+      expect(attrs.map { |a| a["Name"] }).to all(be_present)
+      expect(attrs.map { |a| a["Name"] }).to eq(attrs.map { |a| a["FriendlyName"] })
+    end
+
+    it "prefers SAML_IDP_BASE_URL over the request host" do
+      stub_const("ENV", ENV.to_h.merge("SAML_IDP_BASE_URL" => "https://makerepo.com/"))
+      get "/saml/metadata"
+      expect(Nokogiri::XML(response.body).root["entityID"]).to eq("https://makerepo.com/saml/auth")
+    end
+
+    it "keeps the assertion Issuer the request URL (unchanged by the metadata configuration)" do
+      c18_sign_in(:regular)
+      post "/saml/auth", params: { SAMLRequest: c18_authn_request, submit: "current_user" }
+      doc = Nokogiri::XML(c18_saml_response_xml)
+      doc.remove_namespaces!
+      expect(doc.at_xpath("//Assertion/Issuer").text).to eq("http://www.example.com/saml/auth")
     end
   end
 

@@ -26,7 +26,7 @@ class SamlIdpController < ApplicationController
   end
 
   def metadata
-    render xml: SamlIdp.metadata.signed
+    render xml: SamlIdp::MetadataBuilder.new(metadata_configuration).signed
   end
 
   def wiki_metadata
@@ -61,6 +61,25 @@ class SamlIdpController < ApplicationController
   end
 
   private
+
+  # The IdP's public base URL: SAML_IDP_BASE_URL when set (use it behind a proxy
+  # that rewrites the host), otherwise the host this request came in on.
+  def saml_base_url
+    (ENV["SAML_IDP_BASE_URL"].presence || request.base_url).chomp("/")
+  end
+
+  # A per-request copy of the global config with the entityID and SSO endpoints
+  # filled in. The entityID is the SSO URL, which is also the Issuer the gem puts
+  # on assertions (the request URL), so SPs see one consistent identity. The
+  # global base_saml_location is left unset so assertion Issuers do not change.
+  def metadata_configuration
+    SamlIdp.config.dup.tap do |config|
+      sso = "#{saml_base_url}/saml/auth"
+      config.entity_id = sso
+      config.single_service_post_location = sso
+      config.single_service_redirect_location = sso
+    end
+  end
 
   # The gem's validate_saml_request only returns true/false, which a
   # before_action cannot act on, so check the verdict here and halt:
