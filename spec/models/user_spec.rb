@@ -930,4 +930,42 @@ RSpec.describe User, type: :model do
       expect(u.token_version).to eq(0)
     end
   end
+
+  describe "a stored bcrypt hash that contains a word of the username" do
+    # The strength validator used to run against the stored hash on every update,
+    # so unrelated saves (the brute-force lock, counters, profile edits) failed
+    # silently for such users.
+    let(:forced) { "$2a$12$" + ("a" * 22) + "hunterxsmith" + ("b" * 19) }
+    let(:u) { create(:user, :regular_user, username: "hunterxsmith").tap { |x| x.update_columns(password: forced) } }
+
+    it "still locks the account after MAX_AUTH_ATTEMPTS failed attempts" do
+      User::MAX_AUTH_ATTEMPTS.times { u.reload.record_failed_attempt! }
+      u.reload
+      expect(u.locked).to be(true)
+      expect(u.locked_until).to be_present
+    end
+
+    it "persists reset_auth_attempts!, last_signed_in_time and an ordinary profile update" do
+      u.update_columns(auth_attempts: 3)
+      u.reset_auth_attempts!
+      expect(u.reload.auth_attempts).to eq(0)
+      expect(u.update(last_signed_in_time: Time.current, name: "New Name")).to be(true)
+      expect(u.reload.name).to eq("New Name")
+    end
+
+    it "does not validate a stored hash, but still validates a plaintext password" do
+      expect(u.plaintext_password_changing?).to be(false)
+      u.password = "hunterxsmith1A!"
+      expect(u.plaintext_password_changing?).to be(true)
+      expect(u).not_to be_valid
+      expect(u.errors[:password]).to be_present
+    end
+
+    it "plaintext_password_problems reports weak passwords and runs no other validation" do
+      expect(u.plaintext_password_problems("abc")).not_to be_empty
+      expect(u.plaintext_password_problems("")).not_to be_empty
+      expect(u.plaintext_password_problems("hunterxsmith1A!")).not_to be_empty
+      expect(u.plaintext_password_problems("Xk3#vbN9!qLw")).to be_empty
+    end
+  end
 end

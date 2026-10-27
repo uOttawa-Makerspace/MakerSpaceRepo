@@ -188,10 +188,17 @@ class User < ApplicationRecord
             inclusion: { in: [true] },
             on: :create
 
+  validates :password, confirmation: true, presence: true
+
+  # The strength rules (nobspw) are for a PLAINTEXT password. The column holds a
+  # bcrypt hash, which can contain a word of the name/email by chance, so the
+  # rules must not run on it (they used to, on every update of the user, making
+  # unrelated saves such as the brute-force lock fail silently).
+  BCRYPT_HASH = /\A\$2[abxy]?\$\d{2}\$[.\/A-Za-z0-9]{53}\z/
+  PASSWORD_STRENGTH_OPTIONS = { name: :username, email: :email }.freeze
   validates :password,
-            confirmation: true,
-            presence: true,
-            password: { name: :username, email: :email }
+            password: PASSWORD_STRENGTH_OPTIONS,
+            if: :plaintext_password_changing?
 
   validates :gender,
             presence: true,
@@ -378,6 +385,25 @@ class User < ApplicationRecord
   def reload(*)
     @pword = nil
     super
+  end
+
+  def plaintext_password_changing?
+    password_changed? && password.present? && !BCRYPT_HASH.match?(password)
+  end
+
+  # Problems with a candidate plaintext password (strength rules only; no other
+  # validation of the user runs). Leaves the plaintext assigned, like update would.
+  def plaintext_password_problems(plain)
+    errors.clear
+    self.password = plain
+    self.password_confirmation = plain
+    errors.add(:password, :blank) if plain.blank?
+    if plain.present?
+      ActiveModel::Validations::PasswordValidator
+        .new(attributes: [:password], **PASSWORD_STRENGTH_OPTIONS)
+        .validate_each(self, :password, plain)
+    end
+    errors.full_messages_for(:password)
   end
 
   def pword=(new_password)

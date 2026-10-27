@@ -299,6 +299,16 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
       expect(JSON.parse(response.body)["error"]).to include("locked").and(satisfy { |m| !m.include?("wait") })
     end
 
+    it "a lapsed timed lockout is cleared and persisted even when the stored hash contains the username" do
+      u = create(:user, :regular_user, username: "hunterxsmith")
+      u.update_columns(password: "$2a$12$" + ("a" * 22) + "hunterxsmith" + ("b" * 19),
+                       locked: true, locked_until: 1.minute.ago, auth_attempts: 5)
+      post login_authentication_path, params: { username_email: u.username, password: "wrong" }
+      u.reload
+      expect(u.locked).to be(false)
+      expect(u.auth_attempts).to be <= 1 # reset to 0 by the unlock, then the wrong password counted once
+    end
+
     it "a lock that has lapsed no longer ends the session" do
       login!(user)
       user.update_columns(locked: true, locked_until: 1.minute.ago)

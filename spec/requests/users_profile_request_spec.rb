@@ -345,6 +345,14 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       expect(JSON.parse(response.body)["signed_in"]).to eq("true")
     end
 
+    it "still refuses a weak plaintext password" do
+      login!(user)
+      change!(pw: "abc")
+      expect(response).to have_http_status(:ok)
+      expect(user.reload.authenticate_password(password)).to be(true)
+      expect(user.token_version).to eq(0)
+    end
+
     it "succeeds even when the bcrypt hash happens to contain the username" do
       # FIXED: the hashing save re-ran the nobspw validator on the hash and failed at random
       u = create(:user, :regular_user, username: "hunterxsmith")
