@@ -70,11 +70,13 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
       expect(response).to redirect_to("/lockers")
     end
 
-    it "an external back_to is refused by Rails' open-redirect guard (500, UnsafeRedirectError)" do
-      # Not a defect in the app's own code: Rails 7+ raise_on_open_redirects turns it into an error page. The 500 (instead of a clean fallback to root) is cosmetic.
-      post login_authentication_path,
-           params: { username_email: user.username, password: password, back_to: "https://evil.example/phish" }
-      expect(response).to have_http_status(:internal_server_error)
+    it "ignores an external or protocol-relative back_to and lands on root" do
+      ["https://evil.example/phish", "//evil.example/phish"].each do |bad|
+        post login_authentication_path,
+             params: { username_email: user.username, password: password, back_to: bad }
+        expect(response).to redirect_to(root_path)
+        delete perform_logout_path
+      end
     end
 
     it "sets last_signed_in_time and resets auth_attempts" do

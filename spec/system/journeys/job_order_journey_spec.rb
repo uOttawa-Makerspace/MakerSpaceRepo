@@ -105,14 +105,14 @@ RSpec.describe "Journey: job order", type: :system, skip_bullet: true do
       visit magic_path
       expect(page).to have_content("Thank You for ordering a Job Order!")
       expect(page).to have_content("Total Quote")
-      click_button "Approve the Quote"
+      accept_confirm { click_button "Approve the Quote" }
       expect(page).to have_content("Thank You for Approving/Denying the Job Order!")
     end
     expect(order.reload.job_order_statuses.last.job_status.name).to eq("Waiting to be Processed")
 
     as_actor(:staff) do
       visit job_order_path(order)
-      click_button "Start Processing"
+      accept_confirm { click_button "Start Processing" }
       expect(page).to have_content("Currently being Processed")
       click_button "Completed"
       within("#completed-email-modal") do
@@ -122,9 +122,9 @@ RSpec.describe "Journey: job order", type: :system, skip_bullet: true do
       expect(page).to have_content("Price: $15.00") # 12.50 base fee + 2.50 option
       # WART(D-E2E05): the Invoice button label shows its icon markup as text
       expect(page).to have_link("<i class='fa fa-download'></i> Invoice")
-      click_button "Mark as Paid"
+      accept_confirm { click_button "Mark as Paid" }
       expect(page).to have_content("Paid (Waiting for Pick-Up)")
-      click_button "Mark as Picked Up"
+      accept_confirm { click_button "Mark as Picked Up" }
       expect(page).to have_content("Picked-Up")
     end
     expect(order.reload.job_order_statuses.order(:created_at, :id).map { |s| s.job_status.name }).to eq(
@@ -169,7 +169,7 @@ RSpec.describe "Journey: job order", type: :system, skip_bullet: true do
     as_actor(:phone) do
       visit path
       expect(page).to have_content("Thank You for ordering a Job Order!")
-      click_button "Approve the Quote"
+      accept_confirm { click_button "Approve the Quote" }
       # FIXED(D-J09): the status row is attributed to the order owner and persists
       expect(page).to have_content("Thank You for Approving/Denying the Job Order!")
     end

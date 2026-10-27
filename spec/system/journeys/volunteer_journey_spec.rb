@@ -32,7 +32,7 @@ RSpec.describe "Journey: volunteer task", type: :system, skip_bullet: true do
       log_in_as(volunteer)
       visit volunteer_task_path(task)
       expect(page).to have_text("You are assigned to this volunteer task!")
-      click_button "Submit Task as Complete"
+      accept_confirm { click_button "Submit Task as Complete" }
       expect(page).to have_text("You've sent a request. No further action is needed.")
     end
     request = VolunteerTaskRequest.find_by!(volunteer_task: task, user: volunteer)
@@ -43,7 +43,7 @@ RSpec.describe "Journey: volunteer task", type: :system, skip_bullet: true do
     as_actor(:staff) do
       visit volunteer_task_requests_path
       expect(page).to have_text(/stocktake/i)
-      click_button "Approve"
+      accept_confirm { click_button "Approve" }
       expect(page).to have_text("Task request updated")
     end
     expect(request.reload.approval).to be(true)

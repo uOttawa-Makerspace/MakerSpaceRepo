@@ -54,7 +54,7 @@ RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
       expect(page).to have_text("Staff Actions")
       within(:xpath, "//form[.//button[contains(normalize-space(.),'Send to Checkout')]]") do
         select "JA-1", from: "locker_rental_locker_id"
-        click_button "Send to Checkout"
+        accept_confirm { click_button "Send to Checkout" }
       end
       expect(page).to have_text("Locker rental updated")
       expect(page).to have_text("Awaiting Payment").or have_text("Await payment").or have_text(I18n.t("lockers.state.await_payment"))
@@ -103,7 +103,7 @@ RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
       visit locker_rental_path(rental)
       within(:xpath, "//form[.//button[contains(normalize-space(.),'Move Locker')]]") do
         select "JB-2", from: "locker_rental_locker_id"
-        click_button "Move Locker"
+        accept_confirm { click_button "Move Locker" }
       end
       expect(page).to have_text("Locker rental updated")
     end
@@ -131,7 +131,7 @@ RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
         # no end date, so a plain "Assign Now" makes an indefinite rental.
         expect(page).to have_checked_field("Indefinite")
         uncheck "Indefinite"
-        click_button "Assign Now"
+        accept_confirm { click_button "Assign Now" }
       end
       expect(page).to have_text("Locker rental updated")
       expect(page).to have_text("Move Locker")
@@ -154,7 +154,7 @@ RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
     as_actor(:staff) do
       within(:xpath, "//form[.//button[contains(normalize-space(.),'Move Locker')]]") do
         select "JB-2", from: "locker_rental_locker_id"
-        click_button "Move Locker"
+        accept_confirm { click_button "Move Locker" }
       end
       expect(page).to have_text("Locker rental updated")
     end
@@ -195,7 +195,7 @@ RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
       staff_opens_request(rental)
       within(:xpath, "//form[.//button[contains(normalize-space(.),'Assign Now')]]") do
         select "JA-1", from: "locker_rental_locker_id"
-        click_button "Assign Now"
+        accept_confirm { click_button "Assign Now" }
       end
       expect(page).to have_text("Locker rental updated")
     end
