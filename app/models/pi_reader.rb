@@ -21,7 +21,7 @@ class PiReader < ApplicationRecord
     mac = normalize_mac(raw)
     return nil unless mac
 
-    where("lower(replace(trim(pi_mac_address), '-', ':')) = ?", mac).order(Arel.sql("space_id IS NULL"), :id).first
+    where("lower(replace(regexp_replace(pi_mac_address, '^\\s+|\\s+$', '', 'g'), '-', ':')) = ?", mac).order(Arel.sql("space_id IS NULL"), :id).first
   end
 
   def pi_mac_with_location

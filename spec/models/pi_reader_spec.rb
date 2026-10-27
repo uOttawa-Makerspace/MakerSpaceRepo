@@ -52,6 +52,12 @@ RSpec.describe PiReader, type: :model do
         expect(PiReader.find_by_mac("aa:bb:cc:dd:ee:ff")).to eq(legacy)
       end
 
+      it "matches legacy rows padded with tabs or newlines like Ruby's strip does" do
+        legacy = create(:pi_reader)
+        legacy.update_column(:pi_mac_address, "\tAA:BB:CC:DD:EE:FF\n")
+        expect(PiReader.find_by_mac("aa:bb:cc:dd:ee:ff")).to eq(legacy)
+      end
+
       it "prefers a row with a space over a lower-id legacy space-less variant of the same mac" do
         legacy = create(:pi_reader, space: nil)
         legacy.update_column(:pi_mac_address, "AA:BB:CC:DD:EE:FF")
