@@ -10,7 +10,7 @@ RSpec.describe "Cable disconnects", type: :request do
   before do
     block_external_http!
     allow(ActionCable.server.remote_connections).to receive(:where) do |current_user:|
-      double("remote", disconnect: disconnected << current_user)
+      double("remote").tap { |remote| allow(remote).to receive(:disconnect) { disconnected << current_user } }
     end
   end
 
@@ -141,8 +141,9 @@ RSpec.describe "Cable disconnects on soft delete / deactivation", type: :request
   let(:disconnected) { [] }
 
   before do
+    block_external_http!
     allow(ActionCable.server.remote_connections).to receive(:where) do |current_user:|
-      double("remote", disconnect: disconnected << current_user)
+      double("remote").tap { |remote| allow(remote).to receive(:disconnect) { disconnected << current_user } }
     end
   end
 
@@ -180,7 +181,7 @@ RSpec.describe "Cable disconnect on hard account deletion", type: :request do
   before do
     block_external_http!
     allow(ActionCable.server.remote_connections).to receive(:where) do |current_user:|
-      double("remote", disconnect: disconnected << current_user)
+      double("remote").tap { |remote| allow(remote).to receive(:disconnect) { disconnected << current_user } }
     end
   end
 
