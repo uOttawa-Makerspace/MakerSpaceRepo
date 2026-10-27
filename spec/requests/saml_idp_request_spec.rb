@@ -124,10 +124,15 @@ RSpec.describe "SAML IdP", type: :request do
     end
 
     it "does not write into the global attribute config while building the metadata" do
-      SamlIdp.config.attributes.each_value { |opts| opts.delete(:friendly_name) }
-      get "/saml/metadata"
-      expect(response).to have_http_status(:ok)
-      expect(SamlIdp.config.attributes.values.flat_map(&:keys)).not_to include(:friendly_name)
+      original = SamlIdp.config.attributes
+      SamlIdp.config.attributes = original.transform_values { |opts| opts.except(:friendly_name) }
+      begin
+        get "/saml/metadata"
+        expect(response).to have_http_status(:ok)
+        expect(SamlIdp.config.attributes.values.flat_map(&:keys)).not_to include(:friendly_name)
+      ensure
+        SamlIdp.config.attributes = original # no leakage into other examples
+      end
     end
 
     it "uses the same value for the assertion Issuer and the metadata entityID when SAML_IDP_BASE_URL is set" do
