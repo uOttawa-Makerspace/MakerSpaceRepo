@@ -60,4 +60,13 @@ RSpec.describe "Cable disconnects", type: :request do
       expect(disconnected).to be_empty
     end
   end
+
+  it "disconnects an admin-locked user, not on unlock" do
+    login!(create(:user, :admin))
+    target = create(:user, :regular_user)
+    put toggle_lock_user_admin_users_path, params: { id: target.id }
+    expect(disconnected).to eq([target])
+    put toggle_lock_user_admin_users_path, params: { id: target.id }
+    expect(disconnected).to eq([target])
+  end
 end

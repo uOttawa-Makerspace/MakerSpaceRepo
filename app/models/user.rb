@@ -523,6 +523,30 @@ class User < ApplicationRecord
     role == 'admin'
   end
 
+  # Admin lock: blocks new logins for 99 years AND ends every existing session and JWT
+  # for good by bumping token_version. The bump is a SQL increment (not
+  # token_version + 1 computed from a possibly stale in-memory value), so a password
+  # reset racing with the lock cannot overwrite it with an equal or lower version.
+  # Column writes only (no validations): a row that is invalid for an unrelated
+  # legacy reason must still be lockable.
+  def admin_lock!
+    self.class.where(id: id).update_all(
+      [
+        "locked = ?, locked_until = ?, auth_attempts = ?, updated_at = ?, token_version = token_version + 1",
+        true, 99.years.from_now, MAX_AUTH_ATTEMPTS, Time.current
+      ]
+    )
+    reload
+    disconnect_cable!
+    self
+  end
+
+  # Does not restore token_version: sessions and JWTs revoked by the lock stay dead.
+  def admin_unlock!
+    update_columns(locked: false, locked_until: nil, auth_attempts: 0, updated_at: Time.current)
+    self
+  end
+
   # Closes this user's open websocket connections (ApplicationCable identifies them
   # by current_user). Called when the credentials or rights behind them change:
   # sign out, password change/reset, admin lock, demotion from staff/admin. A
