@@ -318,11 +318,24 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(ProjectProposal.find_by(title: "New Idea").project_files).not_to be_attached
     end
 
-    it "shows the model's real error when an accepted file still fails to attach, not 'type not allowed' for everyone" do
-      allow_any_instance_of(ProjectProposal).to receive(:sniffed_upload_problems).and_return([])
-      post project_proposals_path, params: { files: [content_named_upload("run.exe", type: "application/x-msdownload")] }.merge(proposal_params)
-      expect(flash[:alert]).to include("run.exe has a file type that is not allowed")
-      expect(flash[:alert]).not_to include("These files were not uploaded")
+    it "reports both the pre-check refusals and the model's own errors, with no success flash, and still saves the proposal" do
+      # run.exe passes the (stubbed) pre-check but fails the model validation; fake.exe is refused by the pre-check
+      allow_any_instance_of(ProjectProposal).to receive(:sniffed_upload_problems) { |_, _name, f| f.original_filename == "fake.exe" ? ["bad"] : [] }
+      files = [content_named_upload("run.exe", type: "application/x-msdownload"), content_named_upload("fake.exe", type: "application/x-msdownload")]
+      expect { post project_proposals_path, params: { files: files }.merge(proposal_params) }.to change(ProjectProposal, :count).by(1)
+      pp = ProjectProposal.find_by(title: "New Idea")
+      expect(response).to redirect_to(project_proposal_path(pp.slug))
+      expect(flash[:notice]).to be_blank
+      expect(flash[:alert]).to include("fake.exe") # pre-check refusal
+      expect(flash[:alert]).to include("run.exe has a file type that is not allowed") # the model's real error
+      expect(pp.project_files).not_to be_attached
+      expect(pp.errors).to be_empty
+    end
+
+    it "keeps the success notice when every file was accepted" do
+      post project_proposals_path, params: { files: [content_named_upload("ok.txt", content: "tiny")] }.merge(proposal_params)
+      expect(flash[:notice]).to eq("Project proposal was successfully created.")
+      expect(flash[:alert]).to be_blank
     end
 
     it "ignores a file param that is a string (signed id) instead of an upload" do
@@ -374,6 +387,14 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
   end
 
   describe "PATCH update" do
+    it "update with a refused file gives no success notice" do
+      content_login!(owner)
+      files = [content_named_upload("run.exe", type: "application/x-msdownload")]
+      patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Pending One" }, files: files }
+      expect(flash[:notice]).to be_blank
+      expect(flash[:alert]).to include("run.exe")
+    end
+
     it "keeps the good files after a refused one on update and reports the refused name" do
       content_login!(owner)
       mine = pending

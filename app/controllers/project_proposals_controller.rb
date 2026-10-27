@@ -160,7 +160,7 @@ class ProjectProposalsController < SessionsController
           @project_proposal.save
           format.html do
             redirect_to project_proposal_path(@project_proposal.slug),
-                        notice: 'Project proposal was successfully created.'
+                        notice: ('Project proposal was successfully created.' unless @project_files_failed)
           end
           format.json do
             render json: {
@@ -269,7 +269,9 @@ class ProjectProposalsController < SessionsController
         format.html do
           redirect_to project_proposal_path(@project_proposal.slug),
                       notice:
-                        if needs_re_review
+                        if @project_files_failed
+                          nil
+                        elsif needs_re_review
                           'Project proposal was updated. It is pending again and needs to be re-approved by an admin before it is listed publicly.'
                         else
                           'Project proposal was successfully updated.'
@@ -449,11 +451,22 @@ class ProjectProposalsController < SessionsController
   def attach_project_files(files)
     uploads = Array(files).select { |f| f.respond_to?(:original_filename) }
     accepted, refused = uploads.partition { |f| @project_proposal.sniffed_upload_problems(:project_files, f).empty? }
+    model_errors = []
     if accepted.any? && !@project_proposal.project_files.attach(*accepted)
-      flash[:alert] = truncated_error_messages(@project_proposal.errors[:project_files])
-    elsif refused.any?
-      flash[:alert] = "These files were not uploaded because their type or size is not allowed: #{truncated_filenames(refused.map(&:original_filename))}"
+      model_errors = @project_proposal.errors[:project_files].dup
+      # drop the invalid pending change so later saves of the proposal succeed
+      @project_proposal.attachment_changes.delete('project_files')
+      @project_proposal.errors.delete(:project_files)
     end
+    return if refused.empty? && model_errors.empty?
+
+    @project_files_failed = true
+    messages = []
+    if refused.any?
+      messages << "These files were not uploaded because their type or size is not allowed: #{truncated_filenames(refused.map(&:original_filename))}."
+    end
+    messages << truncated_error_messages(model_errors) if model_errors.any?
+    flash[:alert] = messages.join(' ')
   end
 
   # The flash lives in the 4 KB cookie session, so names are shortened and capped.
