@@ -554,9 +554,13 @@ class User < ApplicationRecord
   # Best effort: it runs after the change is already committed (the solid_cable
   # broadcast is an INSERT that can fail), so a failure is reported, never raised
   # (callers rescue ActiveRecordError and would wrongly report the change as failed).
+  # Rescues StandardError, not just ActiveRecordError: any broadcast failure (Timeout,
+  # a raw PG error from the pool, ActionCable server errors) must not 500 a role change,
+  # delete, lock or logout that already happened. Rails.error.report keeps real bugs
+  # visible in the error tracker.
   def disconnect_cable!
     ActionCable.server.remote_connections.where(current_user: self).disconnect
-  rescue ActiveRecord::ActiveRecordError => e
+  rescue StandardError => e
     Rails.error.report(e, handled: true)
   end
 

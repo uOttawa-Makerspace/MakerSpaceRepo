@@ -121,9 +121,11 @@ RSpec.describe "Cable disconnect failures", type: :request do
     expect(Rails.error).to have_received(:report).with(error, handled: true)
   end
 
-  it "does not hide programming errors" do
-    allow(ActionCable.server.remote_connections).to receive(:where).and_raise(NoMethodError, "oops")
-    expect { create(:user, :regular_user).disconnect_cable! }.to raise_error(NoMethodError)
+  it "also swallows and reports non-ActiveRecord broadcast errors (e.g. a Timeout)" do
+    timeout = Timeout::Error.new("pool")
+    allow(ActionCable.server.remote_connections).to receive(:where).and_raise(timeout)
+    expect { create(:user, :regular_user).disconnect_cable! }.not_to raise_error
+    expect(Rails.error).to have_received(:report).with(timeout, handled: true)
   end
 
   it "still stores an admin lock and reports the error" do
