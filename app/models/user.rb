@@ -420,6 +420,7 @@ class User < ApplicationRecord
     columns = { password: password, token_version: token_version, updated_at: Time.current }
     columns.merge!(locked: false, auth_attempts: 0, locked_until: nil) if clear_lock
     update_columns(columns)
+    disconnect_cable!
   end
 
   def pword=(new_password)
@@ -521,6 +522,18 @@ class User < ApplicationRecord
   def admin?
     role == 'admin'
   end
+
+  # Closes this user's open websocket connections (ApplicationCable identifies them
+  # by current_user). Called when the credentials or rights behind them change:
+  # sign out, password change/reset, admin lock, demotion from staff/admin. A
+  # still-valid session simply reconnects and is re-checked at the handshake.
+  def disconnect_cable!
+    ActionCable.server.remote_connections.where(current_user: self).disconnect
+  end
+
+  # Demoted from staff/admin: a connection opened as staff must not keep receiving
+  # staff-only broadcasts (StaffDashboardChannel authorizes at subscribe time only).
+  after_update_commit :disconnect_cable!, if: -> { saved_change_to_role? && role_before_last_save.in?(%w[staff admin]) && !staff? }
 
   def staff?
     role.in?(%w[staff admin])
