@@ -35,7 +35,7 @@ RSpec.describe CcMoneysController, type: :controller do
     end
   end
 
-  describe "GET /redeem" do
+  describe "POST /redeem" do
     context "logged in" do
       before(:each) do
         @user = create(:user, :volunteer_with_dev_program)
@@ -46,7 +46,7 @@ RSpec.describe CcMoneysController, type: :controller do
       end
 
       it "should put the cc in the wallet" do
-        get :redeem, params: { token: @hash, user: { email: @user.email } }
+        post :redeem, params: { token: @hash, user: { email: @user.email } }
         expect(response).to redirect_to cc_moneys_path
         expect(flash[:notice]).to eq(
           "The CC Money has been added to #{@user.name}"
@@ -56,7 +56,7 @@ RSpec.describe CcMoneysController, type: :controller do
 
       it "should not put the cc in the wallet (already used)" do
         CcMoney.last.update(linked: true)
-        get :redeem, params: { token: @hash, user: { email: @user.email } }
+        post :redeem, params: { token: @hash, user: { email: @user.email } }
         expect(response).to redirect_to cc_moneys_path
         expect(flash[:alert]).to eq(
           "The CC Money has already been added to an account"

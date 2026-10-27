@@ -443,6 +443,7 @@ RSpec.describe "Shop coupons, price rules and cc money (HTTP contract)", type: :
         get link_cc_to_user_cc_moneys_path, params: { token: token }
         expect(response).to have_http_status(:ok)
         expect(response.body).to include("Link CC to an user")
+        expect(response.body).to match(%r{<form[^>]*action="#{redeem_cc_moneys_path}"[^>]*method="post"})
         expect(response.body).to include(token)
       end
 
@@ -473,16 +474,23 @@ RSpec.describe "Shop coupons, price rules and cc money (HTTP contract)", type: :
       end
     end
 
-    describe "GET /cc_moneys/redeem" do
+    describe "POST /cc_moneys/redeem" do
+      it "does not link on a plain GET (the mailed link only opens the confirm page)" do
+        shop_log_in!(user)
+        get "/cc_moneys/redeem", params: { token: token, user: { email: user.email } }
+        expect(unlinked.reload.linked).to be(false)
+        expect(user.cc_moneys.sum(:cc)).to eq(0)
+      end
+
       it "redirects guests to login and changes nothing" do
-        get redeem_cc_moneys_path, params: { token: token, user: { email: user.email } }
+        post redeem_cc_moneys_path, params: { token: token, user: { email: user.email } }
         expect(response.location).to include("/login")
         expect(unlinked.reload.linked).to be(false)
       end
 
       it "links the points to the user whose email is submitted" do
         shop_log_in!(user)
-        get redeem_cc_moneys_path, params: { token: token, user: { email: user.email } }
+        post redeem_cc_moneys_path, params: { token: token, user: { email: user.email } }
         expect(response).to redirect_to(cc_moneys_path)
         expect(flash[:notice]).to eq("The CC Money has been added to #{user.name}")
         expect(unlinked.reload.user_id).to eq(user.id)
@@ -492,23 +500,23 @@ RSpec.describe "Shop coupons, price rules and cc money (HTTP contract)", type: :
 
       it "lets a signed-in user credit the points to ANY account by typing its email" do
         shop_log_in!(user)
-        get redeem_cc_moneys_path, params: { token: token, user: { email: other.email } }
-        # INTENDED(D-S15): crediting the typed email is deliberate (guest purchasers credit their account by email); no behavior change. The GET->POST conversion belongs to slice A14 (D-S02)
+        post redeem_cc_moneys_path, params: { token: token, user: { email: other.email } }
+        # INTENDED(D-S15): crediting the typed email is deliberate (guest purchasers credit their account by email); no behavior change. FIXED(D-S15, GET half): redeem is POST only; the mailed link opens link_cc_to_user (a GET confirm page with the POST form)
         expect(flash[:notice]).to eq("The CC Money has been added to #{other.name}")
         expect(unlinked.reload.user_id).to eq(other.id)
       end
 
       it "is single-use: a second redeem alerts and keeps the first owner" do
         shop_log_in!(user)
-        get redeem_cc_moneys_path, params: { token: token, user: { email: user.email } }
-        get redeem_cc_moneys_path, params: { token: token, user: { email: other.email } }
+        post redeem_cc_moneys_path, params: { token: token, user: { email: user.email } }
+        post redeem_cc_moneys_path, params: { token: token, user: { email: other.email } }
         expect(flash[:alert]).to eq("The CC Money has already been added to an account")
         expect(unlinked.reload.user_id).to eq(user.id)
       end
 
       it "unknown email: misleading 'already added' alert, points stay unlinked" do
         shop_log_in!(user)
-        get redeem_cc_moneys_path, params: { token: token, user: { email: "nobody@example.com" } }
+        post redeem_cc_moneys_path, params: { token: token, user: { email: "nobody@example.com" } }
         expect(response).to redirect_to(cc_moneys_path)
         # INTENDED(D-S16): keep the existing alert for an unknown email (user decision: crediting a typed email is intended); no behavior change
         expect(flash[:alert]).to eq("The CC Money has already been added to an account")
@@ -518,7 +526,7 @@ RSpec.describe "Shop coupons, price rules and cc money (HTTP contract)", type: :
       it "redirects with the generic alert for a validly signed token whose cc_money row no longer exists" do
         stale = verifier.generate(999_999_999)
         shop_log_in!(user)
-        get redeem_cc_moneys_path, params: { token: stale, user: { email: user.email } }
+        post redeem_cc_moneys_path, params: { token: stale, user: { email: user.email } }
         # FIXED(D-S14): same alert as an invalid token instead of a NoMethodError 500
         expect(response).to redirect_to(cc_moneys_path)
         expect(flash[:alert]).to start_with("Something went wrong.")
@@ -528,13 +536,13 @@ RSpec.describe "Shop coupons, price rules and cc money (HTTP contract)", type: :
       it "tampered or garbage token gets the generic alert (no 500) and missing user param is a 302 to root" do
         shop_log_in!(user)
         # FIXED: redeem used verifier.verify (InvalidSignature 500); verified returns nil, handled like a missing row
-        get redeem_cc_moneys_path, params: { token: "bad", user: { email: user.email } }
+        post redeem_cc_moneys_path, params: { token: "bad", user: { email: user.email } }
         expect(response).to redirect_to(cc_moneys_path)
         expect(flash[:alert]).to start_with("Something went wrong.")
-        get redeem_cc_moneys_path, params: { user: { email: user.email } }
+        post redeem_cc_moneys_path, params: { user: { email: user.email } }
         expect(response).to redirect_to(cc_moneys_path)
         expect(flash[:alert]).to start_with("Something went wrong.")
-        get redeem_cc_moneys_path, params: { token: token }
+        post redeem_cc_moneys_path, params: { token: token }
         expect(response).to redirect_to(root_path)
         expect(unlinked.reload.linked).to be(false)
       end

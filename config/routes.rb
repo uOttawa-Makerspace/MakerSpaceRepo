@@ -34,7 +34,7 @@ Rails.application.routes.draw do
 
   resources :cc_moneys, only: [:index] do
     collection do
-      get :redeem
+      post :redeem
       get :link_cc_to_user
     end
   end
