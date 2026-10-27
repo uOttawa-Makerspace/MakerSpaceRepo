@@ -217,7 +217,10 @@ class UsersController < SessionsController
       validated = @user.update(user_params.slice(:password, :password_confirmation))
       if validated
         @user.pword = @user.password
-        hashed = @user.save
+        # the plain password was validated by the update above; the strength
+        # validator must not run again on the bcrypt hash (it can trip on a
+        # name/email word inside the hash)
+        hashed = @user.save(validate: false)
       end
       raise ActiveRecord::Rollback unless hashed
     end
@@ -274,14 +277,15 @@ class UsersController < SessionsController
       flash[:alert] = LINK_EXPIRED_ALERT
     elsif params[:password] != params[:password_confirmation]
       flash[:alert] = 'Your password and password confirmation do not match.'
+    elsif (problems = new_password_problems(user, params[:password])).any?
+      # D-I14 for this action: the strength rules now see the plain password
+      flash[:alert] = "Your password was not changed: #{problems.to_sentence}."
+      return redirect_to reset_password_form_users_path(token: params[:token])
     else
-      if user.locked?
-        user.update(locked: false)
-        user.update(auth_attempts: 0)
-        user.update(locked_until: nil)
-      end
+      user.assign_attributes(locked: false, auth_attempts: 0, locked_until: nil) if user.locked?
       user.pword = params[:password]
-      if user.save!
+      # validated above on the plain password; not again on the bcrypt hash
+      if user.save(validate: false)
         session[:token_version] = user.token_version if session[:user_id] == user.id
         MsrMailer.confirm_password_change(user).deliver_now
         flash[
@@ -452,6 +456,15 @@ class UsersController < SessionsController
     user.update(email: new_email)
   rescue ActiveRecord::RecordNotUnique
     false
+  end
+
+  # Messages for the password rules (strength, not containing the username/email)
+  # applied to the PLAIN new password; empty when it is acceptable.
+  def new_password_problems(user, plain)
+    user.password = plain
+    user.password_confirmation = plain
+    user.validate
+    user.errors.full_messages_for(:password) + user.errors.full_messages_for(:password_confirmation)
   end
 
   def json_request?

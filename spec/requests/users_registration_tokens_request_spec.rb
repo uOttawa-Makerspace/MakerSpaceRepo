@@ -460,11 +460,26 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(signed_in?).to be(false)
     end
 
-    it "accepts a weak new password (strength validator sees only the bcrypt hash)" do
-      # WART(D-I14): reset_password_confirmation (and change_password) bypass the password-strength rule: the validator runs on the already-hashed column, so "abc" is accepted
-      patch reset_password_confirmation_users_path, params: reset_params(user, pw: "abc")
+    it "refuses a weak new password and leaves the link usable" do
+      # FIXED(D-I14, reset action): the strength rules run on the plain password
+      p = reset_params(user, pw: "abc")
+      patch reset_password_confirmation_users_path, params: p
+      expect(response).to redirect_to(reset_password_form_users_path(token: p[:token]))
+      expect(flash[:alert]).to start_with("Your password was not changed:")
+      expect(user.reload.authenticate_password(password)).to be(true)
+      patch reset_password_confirmation_users_path, params: reset_params(user)
       expect(flash[:notice]).to start_with("Your password has been updated")
-      expect(user.reload.authenticate_password("abc")).to be(true)
+    end
+
+    it "succeeds even when the bcrypt hash happens to contain the username (strength rules are not re-run on the hash)" do
+      # FIXED: the hashing save re-ran the nobspw validator on the hash and raised (save!) for such a hash
+      u = create(:user, :regular_user, username: "hunterxsmith")
+      forced = "$2a$12$" + ("a" * 22) + "hunterxsmith" + ("b" * 19)
+      allow(BCrypt::Password).to receive(:create).and_return(BCrypt::Password.new(forced))
+      patch reset_password_confirmation_users_path, params: reset_params(u)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:notice]).to start_with("Your password has been updated")
+      expect(u.reload.password).to eq(forced)
     end
 
     it "soft-deleted user: the link is treated as expired" do

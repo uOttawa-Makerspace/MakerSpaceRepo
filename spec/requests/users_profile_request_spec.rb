@@ -345,6 +345,18 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       expect(JSON.parse(response.body)["signed_in"]).to eq("true")
     end
 
+    it "succeeds even when the bcrypt hash happens to contain the username" do
+      # FIXED: the hashing save re-ran the nobspw validator on the hash and failed at random
+      u = create(:user, :regular_user, username: "hunterxsmith")
+      login!(u)
+      forced = "$2a$12$" + ("a" * 22) + "hunterxsmith" + ("b" * 19)
+      allow(BCrypt::Password).to receive(:create).and_return(BCrypt::Password.new(forced))
+      patch change_password_user_path(u.username),
+            params: { user: { old_password: password, password: new_pw, password_confirmation: new_pw } }
+      expect(response).to redirect_to(settings_admin_path)
+      expect(u.reload.password).to eq(forced)
+    end
+
     it "changes the password, emails the owner, redirects with notice" do
       login!(user)
       perform_enqueued_jobs { change! }
