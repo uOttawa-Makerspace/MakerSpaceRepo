@@ -187,7 +187,18 @@ RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
       expect(response).to have_http_status(:unauthorized)
     end
 
-    it "does not depend on the reloadable ApplicationHelper (it is not called for the sign-in check)" do
+    it "does not pin the reloadable ApplicationHelper into the engine controller" do
+      # Compared with Object: a top-level `include ApplicationHelper` in another spec leaks
+      # into Object (and so into every ancestor chain) for the whole run; only an include
+      # made by the controller or its concern would add it beyond that.
+      leaked = Object.include?(ApplicationHelper)
+      expect(ActiveStorage::DirectUploadsController.include?(ApplicationHelper)).to eq(leaked)
+      expect(DirectUploadAuthentication.include?(ApplicationHelper)).to be(false)
+      own = ActiveStorage::DirectUploadsController.ancestors.take_while { |m| m != ActionController::Base }
+      expect(own).not_to include(ApplicationHelper)
+    end
+
+    it "does not use ApplicationHelper#signed_in? for the sign-in check" do
       allow_any_instance_of(ApplicationHelper).to receive(:signed_in?).and_raise("ApplicationHelper#signed_in? must not be used here")
       post rails_direct_uploads_path, params: payload, as: :json
       expect(response).to have_http_status(:unauthorized)
