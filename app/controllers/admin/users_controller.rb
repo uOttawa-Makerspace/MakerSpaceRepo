@@ -362,19 +362,18 @@ class Admin::UsersController < AdminAreaController
 
   def soft_delete_user(user)
     user.transaction do
-      user.deleted = true
       user.repositories.update_all(deleted: true)
       LabSession.where(user_id: user.id).destroy_all
       Certification.where(user_id: user.id).destroy_all
-      user.save!
+      user.soft_delete!
     end
+    user.disconnect_cable! # after the commit
   end
 
   def restore_user_account(user)
     user.transaction do
-      user.deleted = false
       user.repositories.update_all(deleted: false)
-      user.save!
+      user.restore!
     end
   end
 
@@ -418,7 +417,7 @@ class Admin::UsersController < AdminAreaController
     User.where(id: user_ids).find_each do |user|
       # Audit log for role changes
       Rails.logger.info "[ROLE_CHANGE] User##{user.id} role changed from '#{user.role}' to '#{params[:role]}' by Admin##{@user.id}"
-      user.update(role: params[:role])
+      user.change_role!(params[:role])
     end
   end
 

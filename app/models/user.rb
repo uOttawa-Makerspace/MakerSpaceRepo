@@ -560,6 +560,30 @@ class User < ApplicationRecord
     Rails.error.report(e, handled: true)
   end
 
+  # Writes the role as a column write (no validations: a row that is invalid for an
+  # unrelated legacy reason must still be demotable) and closes the connections
+  # exactly once when staff/admin rights were lost. update_columns skips the commit
+  # callback, so the disconnect is explicit here.
+  def change_role!(new_role)
+    was_staff = staff?
+    update_columns(role: new_role, updated_at: Time.current)
+    disconnect_cable! if was_staff && !staff?
+    self
+  end
+
+  # Soft delete / restore: column writes for the same reason as change_role!.
+  # update_columns skips callbacks, so the caller disconnects explicitly, after its
+  # transaction commits (see Admin::UsersController#soft_delete_user).
+  def soft_delete!
+    update_columns(deleted: true, updated_at: Time.current)
+    self
+  end
+
+  def restore!
+    update_columns(deleted: false, updated_at: Time.current)
+    self
+  end
+
   # Demoted from staff/admin, soft-deleted or deactivated: such a connection must not
   # keep receiving broadcasts (StaffDashboardChannel authorizes at subscribe time
   # only; the handshake already refuses deleted/inactive users on reconnect).
