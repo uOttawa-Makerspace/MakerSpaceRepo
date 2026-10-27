@@ -80,15 +80,33 @@ RSpec.describe "Admin pi readers", type: :request do
       expect(legacy.reload).to have_attributes(pi_mac_address: "aa:bb:cc:00:11:22", space_id: space.id, pi_location: "Door")
     end
 
+    it "refuses to adopt a legacy row with a blank or non-existent space: error flash, no success notice, nothing changes" do
+      sign_in_as(:admin)
+      legacy = create(:pi_reader, space: nil, pi_location: "old")
+      legacy.update_column(:pi_mac_address, "AA-BB-CC-00-11-22")
+      [{}, { space_id: "" }, { space_id: 0 }, { space_id: "abc" }].each do |space_param|
+        post admin_pi_readers_path, params: { pi_reader_params: { pi_mac_address: "aa:bb:cc:00:11:22", pi_location: "Door" }.merge(space_param) }
+        expect(flash[:alert]).to eq("Space must exist")
+        expect(flash[:notice]).to be_nil
+        expect(legacy.reload).to have_attributes(pi_mac_address: "AA-BB-CC-00-11-22", space_id: nil, pi_location: "old")
+      end
+    end
+
     it "keeps the legacy location when none is given, and still refuses a mac already registered to a space" do
       sign_in_as(:admin)
       legacy = create(:pi_reader, space: nil, pi_location: "old")
       post admin_pi_readers_path, params: { pi_reader_params: { pi_mac_address: legacy.pi_mac_address, space_id: space.id } }
       expect(legacy.reload).to have_attributes(space_id: space.id, pi_location: "old")
+    end
+
+    it "refuses a mac already registered to a space as an error, not a success" do
+      sign_in_as(:admin)
+      legacy = create(:pi_reader, space: space)
       expect {
         post admin_pi_readers_path, params: { pi_reader_params: { pi_mac_address: legacy.pi_mac_address.upcase, space_id: create(:space).id } }
       }.not_to change(PiReader, :count)
       expect(flash[:alert]).to match(/already been taken/)
+      expect(flash[:notice]).to be_nil
       expect(legacy.reload.space_id).to eq(space.id)
     end
 

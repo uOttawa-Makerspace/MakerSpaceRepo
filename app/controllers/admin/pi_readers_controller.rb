@@ -7,14 +7,20 @@ class Admin::PiReadersController < AdminAreaController
     attrs = pi_reader_create_params
     legacy = PiReader.find_by_mac(attrs[:pi_mac_address])
     if legacy && legacy.space_id.nil?
-      # A legacy self-registered row for this MAC exists: adopt it instead of failing.
-      legacy.update_columns(
+      # A legacy self-registered row for this MAC exists: adopt it instead of failing,
+      # but only into a space that exists (a space-less reader cannot tap).
+      space = Space.find_by(id: attrs[:space_id].to_s) if attrs[:space_id].present?
+      if space.nil?
+        flash[:alert] = "Space must exist"
+      elsif legacy.update(
         pi_mac_address: PiReader.normalize_mac(attrs[:pi_mac_address]),
-        space_id: attrs[:space_id].presence,
-        pi_location: attrs[:pi_location].presence || legacy.pi_location,
-        updated_at: Time.current
+        space_id: space.id,
+        pi_location: attrs[:pi_location].presence || legacy.pi_location
       )
-      flash[:notice] = "Reader registered"
+        flash[:notice] = "Reader registered"
+      else
+        flash[:alert] = legacy.errors.full_messages.to_sentence
+      end
       return redirect_back(fallback_location: root_path)
     end
 
