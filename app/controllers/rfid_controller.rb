@@ -47,10 +47,10 @@ class RfidController < SessionsController
   def card_number
     tap_start = Time.current
 
-    mac_address = params[:mac_address].presence if params[:mac_address].is_a?(String)
     card = params[:rfid] if params[:rfid].is_a?(String)
-    pi_reader = PiReader.find_by_mac(mac_address)
-    staff = signed_in? && current_user.staff?
+    pi_reader = tap_reader
+    staff = tap_staff?
+    mac_address = tap_mac
 
     # D-EQ01/D-EQ03: no staff auth and no registered reader -> nothing is
     # created, logged or broadcast.
@@ -117,6 +117,31 @@ class RfidController < SessionsController
 
   private
 
+  # The caller's MAC as a normalized string, or nil (never a hash/array param).
+  def tap_mac_address
+    return @tap_mac_address if defined?(@tap_mac_address)
+
+    @tap_mac_address = PiReader.normalize_mac(params[:mac_address])
+  end
+
+  def tap_reader
+    return @tap_reader if defined?(@tap_reader)
+
+    @tap_reader = tap_mac_address && PiReader.find_by_mac(tap_mac_address)
+  end
+
+  def tap_staff?
+    return @tap_staff if defined?(@tap_staff)
+
+    @tap_staff = signed_in? && current_user.staff?
+  end
+
+  # The MAC stored on LabSession/Rfid/TapBoxLog rows: the registered reader's own
+  # value (so it matches PiReader exactly), else the normalized param.
+  def tap_mac
+    tap_reader&.pi_mac_address || tap_mac_address
+  end
+
   def tap_rate_limit_key
     if signed_in? && current_user.staff?
       "staff:#{current_user.id}"
@@ -146,16 +171,16 @@ class RfidController < SessionsController
 
       if last_active_location != space_id
         previous_space = Space.find_by(id: last_active_location)
-        TapBoxLog.log_sign_out(user: rfid.user, card_number: rfid.card_number, space: space, mac_address: params[:mac_address], previous_space: previous_space)
+        TapBoxLog.log_sign_out(user: rfid.user, card_number: rfid.card_number, space: space, mac_address: tap_mac, previous_space: previous_space)
         new_session(rfid, space_id)
       else
-        TapBoxLog.log_sign_out(user: rfid.user, card_number: rfid.card_number, space: space, mac_address: params[:mac_address])
+        TapBoxLog.log_sign_out(user: rfid.user, card_number: rfid.card_number, space: space, mac_address: tap_mac)
         StaffDashboardChannel.send_tap_out rfid.user, space_id
         render json: user_response_payload(rfid.user, "RFID sign out"), status: :ok
       end
     else
       new_session(rfid, space_id)
-      TapBoxLog.log_membership_check_queued(user: rfid.user, card_number: rfid.card_number, space: space, mac_address: params[:mac_address])
+      TapBoxLog.log_membership_check_queued(user: rfid.user, card_number: rfid.card_number, space: space, mac_address: tap_mac)
       CardTapJob.perform_later(rfid, space_id)
     end
     # While membership check is running, return an HTTP code to card scanner to
@@ -167,11 +192,11 @@ class RfidController < SessionsController
 
     LabSession.create_session(
       user: rfid.user,
-      mac_address: params[:mac_address],
+      mac_address: tap_mac,
       space_id: new_location
     )
 
-    TapBoxLog.log_sign_in(user: rfid.user, card_number: rfid.card_number, space: space, mac_address: params[:mac_address])
+    TapBoxLog.log_sign_in(user: rfid.user, card_number: rfid.card_number, space: space, mac_address: tap_mac)
     render json: user_response_payload(rfid.user, "RFID sign in"), status: :ok
   end
 

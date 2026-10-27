@@ -57,6 +57,14 @@ RSpec.describe "RFID endpoints", type: :request do
       expect(LabSession.where(user: owner).active.pluck(:space_id)).to eq([space.id])
     end
 
+    it "stores the registered reader's own mac on the session, tap and sign_in rows whatever variant was tapped" do
+      tap_card_with(mac: pi_reader.pi_mac_address.upcase.tr(":", "-"))
+      expect(LabSession.where(user: owner).last.mac_address).to eq(pi_reader.pi_mac_address)
+      expect(TapBoxLog.where(event_type: [TapBoxLog::CARD_TAP, TapBoxLog::SIGN_IN]).pluck(:mac_address).uniq).to eq([pi_reader.pi_mac_address])
+      tap_card_with(mac: pi_reader.pi_mac_address.upcase)
+      expect(TapBoxLog.where(event_type: TapBoxLog::SIGN_OUT).last.mac_address).to eq(pi_reader.pi_mac_address)
+    end
+
     # FIXED(D-EQ01): a guest without a registered mac cannot tap, whatever the card or space_id
     it "answers 401 and changes nothing for an unknown mac, even with a known card" do
       expect {
@@ -162,6 +170,22 @@ RSpec.describe "RFID endpoints", type: :request do
       tap_as(bearer(create(:user, :staff)), space_id: 0)
       expect(response).to have_http_status(:unprocessable_content)
       expect(LabSession.count).to eq(0)
+    end
+
+    it "never stores a stringified hash/array mac from a staff tap (sessions and logs get nil)" do
+      headers = { "Authorization" => "Bearer #{create(:user, :staff).token}" }
+      [{ a: 1 }, [1, 2]].each do |bad|
+        post rfid_card_number_path, params: { rfid: rfid.card_number, space_id: space.id, mac_address: bad }, headers: headers, as: :json
+        expect(response).to have_http_status(:ok)
+      end
+      expect(LabSession.where(user: owner).pluck(:mac_address).uniq).to eq([nil])
+      expect(TapBoxLog.where.not(mac_address: nil)).to be_empty
+    end
+
+    it "stores a normalized unregistered mac from a staff tap" do
+      headers = { "Authorization" => "Bearer #{create(:user, :staff).token}" }
+      post rfid_card_number_path, params: { rfid: rfid.card_number, space_id: space.id, mac_address: " AA-BB-CC-00-11-22" }, headers: headers, as: :json
+      expect(LabSession.where(user: owner).last.mac_address).to eq("aa:bb:cc:00:11:22")
     end
 
     it "falls back to a registered reader's space when staff omit space_id" do
