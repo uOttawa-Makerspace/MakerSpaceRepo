@@ -40,13 +40,9 @@ RSpec.describe Faq, type: :model do
   describe "#localized_title / #localized_body" do
     let(:faq) { build(:faq, title_en: "Hello", title_fr: "Bonjour", body_en: "Body", body_fr: "Corps") }
 
-    after { I18n.locale = I18n.default_locale }
-
     it "uses English by default and French for :fr" do
-      I18n.locale = :en
-      expect([faq.localized_title, faq.localized_body]).to eq(%w[Hello Body])
-      I18n.locale = :fr
-      expect([faq.localized_title, faq.localized_body]).to eq(%w[Bonjour Corps])
+      I18n.with_locale(:en) { expect([faq.localized_title, faq.localized_body]).to eq(%w[Hello Body]) }
+      I18n.with_locale(:fr) { expect([faq.localized_title, faq.localized_body]).to eq(%w[Bonjour Corps]) }
     end
   end
 end
