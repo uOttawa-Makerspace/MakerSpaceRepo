@@ -351,7 +351,7 @@ RSpec.describe "JobOrders workflow", type: :request do
     end
 
     it "rejects a well-signed token for an order that does not exist" do
-      token = Rails.application.message_verifier(:job_order_magic_link).generate([99_999_999, nil, nil], purpose: :job_order_approval, expires_in: 1.day)
+      token = JobOrder.new(id: 99_999_999, user_id: owner.id).generate_token_for(:approval)
       get user_magic_approval_job_orders_path, params: { token: token }
       expect(response).to redirect_to(job_orders_path)
       expect(flash[:alert]).to eq(expired_flash)

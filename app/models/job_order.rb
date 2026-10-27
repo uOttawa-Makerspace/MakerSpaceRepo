@@ -39,40 +39,38 @@ class JobOrder < ApplicationRecord
 
   scope :not_deleted, -> { where(is_deleted: false) }
 
-  # D-J11: emailed approve / pay links. Purpose-scoped, bound to the order and
-  # its owner, valid for 14 days. The approval link is also bound to the latest
-  # "Waiting for User Approval" status row, so a re-quote retires older links
-  # and, once the order moves on, the link is spent.
+  # D-J11: emailed approve / pay links. Purpose-scoped (generates_token_for),
+  # bound to the order and its owner, valid for 14 days. The approval link is
+  # also bound to the latest "Waiting for User Approval" status row: a re-quote
+  # retires older links, a reminder does not, and once the order moves on the
+  # link is spent.
   MAGIC_LINK_TTL = 14.days
-  MAGIC_LINK_VERIFIER = -> { Rails.application.message_verifier(:job_order_magic_link) }
+
+  generates_token_for :approval, expires_in: MAGIC_LINK_TTL do
+    [user_id, approval_status_marker]
+  end
+
+  generates_token_for :pay, expires_in: MAGIC_LINK_TTL do
+    user_id
+  end
 
   def approval_token
-    MAGIC_LINK_VERIFIER.call.generate([id, user_id, approval_status_marker], purpose: :job_order_approval, expires_in: MAGIC_LINK_TTL)
+    generate_token_for(:approval)
   end
 
   def pay_token
-    MAGIC_LINK_VERIFIER.call.generate([id, user_id], purpose: :job_order_pay, expires_in: MAGIC_LINK_TTL)
+    generate_token_for(:pay)
   end
 
   # The (not soft-deleted) order a live approval / pay token was issued for,
   # else nil.
   def self.from_approval_token(token)
-    from_magic_token(token, :job_order_approval)
+    not_deleted.find_by_token_for(:approval, token)
   end
 
   def self.from_pay_token(token)
-    from_magic_token(token, :job_order_pay)
+    not_deleted.find_by_token_for(:pay, token)
   end
-
-  def self.from_magic_token(token, purpose)
-    id, owner_id, marker = MAGIC_LINK_VERIFIER.call.verified(token.to_s, purpose: purpose)
-    order = not_deleted.find_by(id: id) if id
-    return nil unless order && order.user_id == owner_id
-    return nil if purpose == :job_order_approval && order.approval_status_marker != marker
-
-    order
-  end
-  private_class_method :from_magic_token
 
   def approval_status_marker
     job_order_statuses.where(job_status: JobStatus::USER_APPROVAL).maximum(:id)

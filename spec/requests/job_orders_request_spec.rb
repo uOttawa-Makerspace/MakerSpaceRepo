@@ -1251,8 +1251,8 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
         expect(status_names(magic_order)).to eq(["Waiting for User Approval", "Waiting to be Processed"])
       end
 
-      it "refuses a token for an order that does not exist (it cannot be signed any more)" do
-        broken = Rails.application.message_verifier(:job_order_magic_link).generate([999_999_999, nil, nil], purpose: :job_order_approval, expires_in: 1.day)
+      it "refuses a token that is not a signed approval token" do
+        broken = "not-a-token"
         patch user_magic_approval_confirmation_job_orders_path,
               params: { token: broken, approved: "true" }
         expect(response).to redirect_to(job_orders_path)
