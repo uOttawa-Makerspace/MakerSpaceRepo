@@ -118,4 +118,25 @@ RSpec.describe "Login back_to for guests", type: :request do
     get login_path
     expect(modal_back_to.to_s).to eq("")
   end
+
+  it "keeps the destination when a failed login re-renders at POST /login_authentication" do
+    post login_authentication_path, params: { username_email: "nobody", password: "wrong", back_to: "/carts" }
+    expect(modal_back_to).to eq("/carts")
+    expect(Nokogiri::HTML(response.body).css("input[name=back_to]").map { |i| i["value"] }).to all(eq("/carts"))
+  end
+
+  it "never carries a login path as back_to, in any case" do
+    %w[/login /LOGIN /Login/ /login_authentication /login.html].each do |bad|
+      get login_path(back_to: bad)
+      expect(modal_back_to.to_s).to eq("")
+      post login_authentication_path, params: { username_email: user.username, password: "asa32A353#", back_to: bad }
+      expect(response).to redirect_to(root_path)
+      delete perform_logout_path
+    end
+  end
+
+  it "treats an upper-case login referer as the login page" do
+    post order_items_path, headers: { "HTTP_REFERER" => "http://www.example.com/LOGIN" }
+    expect(back_to_of(response)).to be_nil
+  end
 end

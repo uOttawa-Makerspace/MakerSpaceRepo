@@ -69,6 +69,9 @@ class ApplicationController < ActionController::Base
       return login_page_path?(request.path) ? safe_back_to : request.fullpath
     end
 
+    # A failed login re-renders the login view at POST /login_authentication.
+    return safe_back_to if login_page_path?(request.path)
+
     referer = URI.parse(request.referer.to_s)
     return unless referer.is_a?(URI::HTTP) && referer.host.present? && referer.host == request.host
 
@@ -83,7 +86,7 @@ class ApplicationController < ActionController::Base
   # /login and /login_authentication (POST-only; a failed login renders at that
   # URL) normalised without trailing slash or format extension.
   def login_page_path?(path)
-    LOGIN_PAGE_PATHS.include?(path.to_s.sub(/\.\w+\z/, "").chomp("/"))
+    LOGIN_PAGE_PATHS.include?(path.to_s.downcase.sub(/\.\w+\z/, "").chomp("/"))
   end
 
   # Same-site paths only: url_from drops foreign hosts, and protocol-relative
@@ -92,7 +95,10 @@ class ApplicationController < ActionController::Base
     target = params[:back_to].to_s
     return if target.start_with?("//", "/\\")
 
-    url_from(target)
+    safe = url_from(target)
+    safe unless safe && login_page_path?(URI.parse(safe).path)
+  rescue URI::InvalidURIError
+    nil
   end
   helper_method :login_back_to
 
