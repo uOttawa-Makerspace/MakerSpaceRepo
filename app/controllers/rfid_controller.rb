@@ -104,20 +104,10 @@ class RfidController < SessionsController
 
   private
 
-  # Helper method to build the response payload with additional user status info
-  def user_response_payload(user, success_message)
-    # Check if user has "Shop Fundamentals" training certification
-    has_fundamentals = user.certifications.any? do |cert|
-      name = cert.training_session&.training&.name_en || ""
-      name.downcase.include?("shop fundamentals")
-    end
-
-    {
-      success: success_message,
-      has_membership: user.has_active_membership?,
-      has_shop_fundamentals: has_fundamentals,
-      signed_consent_form: user.walk_in_safety_sheets.any?
-    }
+  # Pi firmware and the React app read only `success`; nothing about the card
+  # owner is returned (D-EQ02).
+  def user_response_payload(_user, success_message)
+    { success: success_message }
   end
 
   def check_session(rfid, space_id)

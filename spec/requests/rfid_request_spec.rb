@@ -33,8 +33,6 @@ RSpec.describe "RFID endpoints", type: :request do
     JSON.parse(response.body, symbolize_names: true)
   end
 
-  let(:status_payload) { { has_membership: false, has_shop_fundamentals: false, signed_consent_form: false } }
-
   describe "POST /rfid/card_number as a Pi reader (no credentials, registered mac only)" do
     # FIXED(D-EQ01): a registered reader mac is the only credential a guest can present
     it "signs the card owner in for a registered reader" do
@@ -98,10 +96,17 @@ RSpec.describe "RFID endpoints", type: :request do
       expect(TapBoxLog.where(event_type: TapBoxLog::ERROR).last.details["reason"]).to eq("no_space")
     end
 
-    # WART(D-EQ02): response to a tap discloses membership/safety-sheet state of the card owner
-    it "returns membership, fundamentals and consent state of the card owner" do
+    # FIXED(D-EQ02): the response carries only `success`, no membership/safety-sheet state of the card owner
+    it "returns only the success string, for sign in and sign out" do
       tap_card
-      expect(body.keys).to match_array(%i[success has_membership has_shop_fundamentals signed_consent_form])
+      expect(body).to eq(success: "RFID sign in")
+      tap_card
+      expect(body).to eq(success: "RFID sign out")
+    end
+
+    it "returns only the success string to a staff Bearer JWT too" do
+      post rfid_card_number_path, params: { rfid: rfid.card_number, space_id: space.id }, headers: { "Authorization" => "Bearer #{create(:user, :staff).token}" }, as: :json
+      expect(body).to eq(success: "RFID sign in")
     end
   end
 
