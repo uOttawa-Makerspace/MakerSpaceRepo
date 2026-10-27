@@ -80,7 +80,8 @@ document.addEventListener("turbo:load", () => {
 // rails-ujs is not loaded, a Turbo link without data-turbo-method, which Turbo 8
 // does not prompt for) is prompted here. The first of `sources` (submitter before
 // form) that carries a message decides. Handling an element also marks it
-// data-turbo=false (same rule as the turbo:load pass), so a click before
+// data-turbo=false (turboOffAtEvent, which unlike the load pass's turboOptedOut
+// spares Turbo's own data-turbo="true" hidden forms), so a click before
 // turbo:load neither skips the prompt nor lets Turbo prompt again.
 const confirmMessage = (turboPrompts, sources) => {
   for (const el of sources) {
