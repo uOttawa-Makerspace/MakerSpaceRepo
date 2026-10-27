@@ -3,8 +3,8 @@
 require "jwt"
 
 # The one rule for "is this Bearer JWT acceptable?", shared by
-# ApplicationHelper#has_valid_jwt?. Other Bearer entry points (e.g. direct
-# uploads) should call it instead of decoding tokens themselves.
+# ApplicationHelper#has_valid_jwt? and DirectUploadAuthentication (lib/, so it
+# can be required by non-reloadable engine controllers).
 # Returns the User the token authenticates, or nil.
 #
 # Rejected: bad signature / expired token, a `ver` that differs from the
@@ -27,5 +27,19 @@ module JwtAuthenticator
     user
   rescue JWT::DecodeError
     nil
+  end
+end
+
+# The matching rule for cookie sessions: the session's stored token_version
+# (absent = 0, a session from before the column existed) must equal the user's,
+# and the user must not be deactivated. Used by ApplicationHelper#session_user
+# and DirectUploadAuthentication.
+module SessionAuthenticator
+  module_function
+
+  def valid_for?(session, user)
+    return false if user.nil?
+
+    session.fetch(:token_version, 0) == user.token_version && user.active != false
   end
 end

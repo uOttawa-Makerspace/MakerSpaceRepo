@@ -52,7 +52,7 @@ module ApplicationHelper
     return nil if session[:user_id].blank?
 
     user = User.find(session[:user_id])
-    if session.fetch(:token_version, 0) == user.token_version && user.active != false
+    if SessionAuthenticator.valid_for?(session, user)
       @session_user = user
     else
       sign_out

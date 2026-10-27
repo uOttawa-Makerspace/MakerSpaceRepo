@@ -8,9 +8,11 @@
 # see frontend-api-inventory.md), so a signed-in user is required and the declared
 # size is capped before a blob row / signed URL is issued.
 #
-# Note: ApplicationHelper#signed_in? also accepts a Bearer JWT, but
+# Note: signed_in? also accepts a Bearer JWT, but
 # ActiveStorage::BaseController's protect_from_forgery rejects a Bearer-only POST in
 # production (no CSRF token), so in practice this is a session-cookie flow.
+require Rails.root.join("lib/jwt_authenticator")
+
 module DirectUploadAuthentication
   extend ActiveSupport::Concern
 
@@ -27,19 +29,18 @@ module DirectUploadAuthentication
     head :unauthorized unless signed_in_user?
   end
 
-  # Same checks as ApplicationHelper#signed_in? (session user, or a valid HS256 Bearer JWT).
+  # Same rules as ApplicationHelper#signed_in? (session user checked against
+  # token_version / active, or a Bearer JWT), through the shared lib/ validators.
   # The helper is deliberately not included: it is a reloadable app/ module and would be
   # pinned into this non-reloadable engine controller (see the initializer).
   def signed_in_user?
-    return true if session[:user_id].present?
+    session_user? || JwtAuthenticator.user_for(request.headers["Authorization"]).present?
+  end
 
-    token = request.headers["Authorization"].to_s.split(" ")[1]
-    return false if token.blank?
+  def session_user?
+    return false if session[:user_id].blank?
 
-    JWT.decode(token, Rails.application.credentials.secret_key_base, true, { algorithm: "HS256" })
-    true
-  rescue JWT::DecodeError
-    false
+    SessionAuthenticator.valid_for?(session, User.find_by(id: session[:user_id]))
   end
 
   def limit_byte_size
