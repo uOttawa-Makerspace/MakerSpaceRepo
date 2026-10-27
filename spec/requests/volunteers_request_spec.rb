@@ -28,6 +28,20 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
     end
   end
 
+  describe "join buttons" do
+    # The action redirects cross-origin to HubSpot; a Turbo-fetched form would fail CORS, so Turbo is off for it.
+    it "submits the join forms as plain (non-Turbo) POSTs" do
+      vol_sign_in_as(:regular)
+      get volunteers_path
+      forms = Nokogiri::HTML5(response.body).css(%(form[action="#{join_volunteer_program_volunteers_path}"]))
+      expect(forms.size).to eq(2)
+      forms.each do |f|
+        expect(f["method"]).to eq("post")
+        expect(f["data-turbo"]).to eq("false")
+      end
+    end
+  end
+
   describe "volunteer-area gate (grant_access)" do
     { my_stats: :my_stats_volunteers_path, calendar: :calendar_volunteers_path,
       populate_users: :populate_users_volunteers_path, shadowing_shifts: :shadowing_shifts_volunteers_path }.each do |action, helper|
