@@ -422,12 +422,14 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(User.unscoped.find(admin.id).deleted).to be(true)
     end
 
-    it "has no effect on the lingering session of the deleted user, which now 404s" do
+    it "ends the lingering session of the deleted user on its next request" do
+      # FIXED(D-I04): was a 404 for the lingering session; session_user now signs it out
       other_session = open_session
       other_session.post login_authentication_path, params: { username_email: target.username, password: password }
       delete delete_user_admin_users_path, params: { id: target.id, password: password }
       other_session.get settings_profile_path
-      expect(other_session.response).to have_http_status(:not_found)
+      expect(other_session.response).to have_http_status(:found)
+      expect(other_session.response.location).to include("/login")
     end
   end
 
@@ -503,12 +505,13 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(admin.reload.locked).to be(false)
     end
 
-    it "refuses to lock an admin when every other admin is locked" do
-      other = create(:user, :admin)
-      admin.update_columns(locked: true)
-      put toggle_lock_user_admin_users_path, params: { id: other.id }
+    it "refuses to lock the acting admin when every other admin is locked" do
+      # (a locked admin can no longer be the acting session: locked sessions end on the next request)
+      other = create(:user, :admin, locked: true, locked_until: 99.years.from_now)
+      put toggle_lock_user_admin_users_path, params: { id: admin.id }
       expect(flash[:alert]).to eq("You cannot lock the last admin.")
-      expect(other.reload.locked).to be(false)
+      expect(admin.reload.locked).to be(false)
+      expect(other.reload.locked).to be(true)
     end
 
     it "locks an admin when another usable admin remains" do
