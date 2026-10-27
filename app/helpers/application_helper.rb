@@ -23,6 +23,9 @@ module ApplicationHelper
       kept.each { |key, value| session[key] = value }
       session[:user_id] = user.id
       session[:token_version] = user.token_version
+      # a user memoized earlier in this request (set_last_seen_at) is stale now
+      remove_instance_variable(:@session_user) if instance_variable_defined?(:@session_user)
+      @user = nil
     end
     user
   end
