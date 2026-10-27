@@ -184,6 +184,40 @@ RSpec.describe "SAML IdP", type: :request do
       expect(response).to have_http_status(:bad_request)
     end
 
+    it "keeps a redirect-binding Signature/SigAlg through the login form so the credential POST still validates" do
+      key = OpenSSL::PKey::RSA.new(2048)
+      cert = OpenSSL::X509::Certificate.new.tap do |c|
+        c.version = 2
+        c.serial = 1
+        c.subject = c.issuer = OpenSSL::X509::Name.parse("/CN=sp.test")
+        c.public_key = key.public_key
+        c.not_before = 1.day.ago
+        c.not_after = 1.day.from_now
+        c.sign(key, OpenSSL::Digest.new("SHA256"))
+      end
+      original = SamlIdp.config.service_provider.finder
+      SamlIdp.config.service_provider.finder = lambda do |id|
+        original.call(id)&.merge(sign_authn_request: true, cert: cert.to_pem, fingerprint: "aa:bb")
+      end
+      saml_request = c18_authn_request
+      sig_alg = "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"
+      signed = "SAMLRequest=#{CGI.escape(saml_request)}&RelayState=rs1&SigAlg=#{CGI.escape(sig_alg)}"
+      signature = Base64.strict_encode64(key.sign(OpenSSL::Digest.new("SHA256"), signed))
+      query = { SAMLRequest: saml_request, RelayState: "rs1", SigAlg: sig_alg, Signature: signature }
+
+      get "/saml/auth", params: query
+      expect(response).to have_http_status(:ok)
+      action = Rack::Utils.parse_query(URI(c18_form_action).query)
+      expect(action).to include("Signature" => signature, "SigAlg" => sig_alg)
+
+      user = create(:user, :regular_user, password: BCrypt::Password.create(password))
+      post c18_form_action, params: { submit: "sign_in", username: user.username, password: password }
+      expect(response).to have_http_status(:ok)
+      expect(c18_saml_response_xml).to be_present
+    ensure
+      SamlIdp.config.service_provider.finder = original
+    end
+
     it "answers 403 for an unknown issuer and for an ACS host the SP is not registered for (D-R13)" do
       get "/saml/auth", params: { SAMLRequest: c18_authn_request(issuer: "evil.example.com", acs: "https://evil.example.com/acs") }
       expect(response).to have_http_status(:forbidden)
