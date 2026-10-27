@@ -246,6 +246,22 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
       expect(JSON.parse(response.body)["signed_in"]).to eq("false")
     end
 
+    it "a cookie session of a user who gets locked mid-session is ended on the next request" do
+      # FIXED(D-I01): sessions follow the same eligibility rule as JWTs (locked users)
+      login!(user)
+      user.update_columns(locked: true, locked_until: 1.hour.from_now)
+      get check_signed_in_path
+      expect(JSON.parse(response.body)["signed_in"]).to eq("false")
+      expect(session[:user_id]).to be_nil
+    end
+
+    it "a lock that has lapsed no longer ends the session" do
+      login!(user)
+      user.update_columns(locked: true, locked_until: 1.minute.ago)
+      get check_signed_in_path
+      expect(JSON.parse(response.body)["signed_in"]).to eq("true")
+    end
+
     it "an existing JWT of a deactivated user is rejected as well" do
       tok = user.token
       user.update_columns(active: false)

@@ -274,6 +274,20 @@ RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
         expect(response).to have_http_status(:unauthorized)
       end
 
+      it "refuses a cookie session of a user locked afterwards" do
+        content_login!(member)
+        member.update_columns(locked: true, locked_until: 1.hour.from_now)
+        upload!
+        expect(response).to have_http_status(:unauthorized)
+      end
+
+      it "refuses a cookie session of a user soft-deleted afterwards" do
+        content_login!(member)
+        member.update_columns(deleted: true)
+        upload!
+        expect(response).to have_http_status(:unauthorized)
+      end
+
       it "refuses a cookie session of a user deactivated afterwards" do
         content_login!(member)
         member.update_columns(active: false)
