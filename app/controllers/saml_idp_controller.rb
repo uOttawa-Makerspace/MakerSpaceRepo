@@ -13,8 +13,9 @@ class SamlIdpController < ApplicationController
   MALFORMED_REQUEST_ERRORS = [Zlib::Error, Nokogiri::XML::SyntaxError, URI::InvalidURIError].freeze
 
   # The wiki-server SP's metadata. No copy of it exists in the repository or its
-  # history; the tracked location is checked first, the old precompile-dir path
-  # (git-ignored, hand-placed) is kept so existing deploys keep working.
+  # history, so placing it at config/saml/wiki_metadata.xml is a deploy step. The
+  # old precompile-dir path (git-ignored, hand-placed) is still read as a fallback
+  # so existing deploys keep working.
   WIKI_METADATA_PATHS = [
     Rails.root.join("config/saml/wiki_metadata.xml"),
     Rails.root.join("public/assets/metadata.xml")
