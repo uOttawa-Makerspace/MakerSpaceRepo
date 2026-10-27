@@ -66,8 +66,17 @@ document.addEventListener("turbo:load", () => {
 
 // Confirmations for elements Turbo does not handle. Turbo-enabled elements
 // (.useTurbo) prompt through Turbo's own data-turbo-confirm, so only elements
-// with data-turbo="false" are handled here (no double prompt). Legacy
+// Turbo is off for (data-turbo="false") are handled here (no double prompt). Legacy
 // data-confirm is honoured too because rails-ujs is not loaded.
+// Same rule as the turbo:load pass above (everything without .useTurbo is
+// opted out), applied directly so a click before turbo:load has run is still
+// confirmed. Marking the element also stops Turbo from prompting a second time.
+const handledHere = (el) => {
+  if (el.dataset.turbo === "true" || el.classList.contains("useTurbo")) return false;
+  el.dataset.turbo = "false";
+  return true;
+};
+
 const confirmMessage = (...elements) => {
   for (const el of elements) {
     const msg = el && (el.dataset.turboConfirm || el.dataset.confirm);
@@ -80,7 +89,7 @@ document.addEventListener(
   "submit",
   (event) => {
     const form = event.target;
-    if (!(form instanceof HTMLFormElement) || form.dataset.turbo !== "false") return;
+    if (!(form instanceof HTMLFormElement) || !handledHere(form)) return;
     const msg = confirmMessage(event.submitter, form);
     if (msg && !window.confirm(msg)) event.preventDefault();
   },
@@ -91,7 +100,7 @@ document.addEventListener(
   "click",
   (event) => {
     const link = event.target instanceof Element && event.target.closest("a[data-turbo-confirm], a[data-confirm]");
-    if (!link || link.dataset.turbo !== "false") return;
+    if (!link || !handledHere(link)) return;
     const msg = confirmMessage(link);
     if (msg && !window.confirm(msg)) {
       event.preventDefault();
