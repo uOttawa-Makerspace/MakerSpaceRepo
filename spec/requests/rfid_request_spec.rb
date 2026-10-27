@@ -103,13 +103,31 @@ RSpec.describe "RFID endpoints", type: :request do
       expect(response).to have_http_status(:unauthorized)
     end
 
-    it "answers 422 for a registered reader that has no space assigned" do
-      unassigned = create(:pi_reader, space: nil)
+    # FIXED(A10 review item 7): legacy self-registered PiReader rows (no space) are not registered
+    it "answers 401 for a legacy space-less reader row, like an unknown mac, and traces it" do
+      legacy = create(:pi_reader, space: nil)
       expect {
-        post rfid_card_number_path, params: { rfid: rfid.card_number, mac_address: unassigned.pi_mac_address }, as: :json
-      }.not_to change(LabSession, :count)
-      expect(response).to have_http_status(:unprocessable_content)
-      expect(TapBoxLog.where(event_type: TapBoxLog::ERROR).last.details["reason"]).to eq("no_space")
+        post rfid_card_number_path, params: { rfid: rfid.card_number, mac_address: legacy.pi_mac_address }, as: :json
+      }.not_to change { [LabSession.count, Rfid.count, PiReader.count] }
+      expect(response).to have_http_status(:unauthorized)
+      expect(body).to eq(error: "Unauthorized")
+      expect(TapBoxLog.where(message: TapBoxLog::UNKNOWN_READER_MESSAGE).pluck(:mac_address)).to eq([legacy.pi_mac_address])
+    end
+
+    it "creates no temporary Rfid for a new card on a space-less reader" do
+      legacy = create(:pi_reader, space: nil)
+      expect {
+        post rfid_card_number_path, params: { rfid: "NEWCARD", mac_address: legacy.pi_mac_address }, as: :json
+      }.not_to change(Rfid, :count)
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it "works as soon as an admin associates the legacy row with a space" do
+      legacy = create(:pi_reader, space: nil)
+      legacy.update!(space: space)
+      tap_card_with(mac: legacy.pi_mac_address)
+      expect(response).to have_http_status(:ok)
+      expect(LabSession.where(user: owner).active.pluck(:space_id)).to eq([space.id])
     end
 
     # FIXED(D-EQ02): the response carries only `success`, no membership/safety-sheet state of the card owner
@@ -186,6 +204,13 @@ RSpec.describe "RFID endpoints", type: :request do
       headers = { "Authorization" => "Bearer #{create(:user, :staff).token}" }
       post rfid_card_number_path, params: { rfid: rfid.card_number, space_id: space.id, mac_address: " AA-BB-CC-00-11-22" }, headers: headers, as: :json
       expect(LabSession.where(user: owner).last.mac_address).to eq("aa:bb:cc:00:11:22")
+    end
+
+    it "answers 422 no_space for a staff tap that names neither a space nor a reader with a space" do
+      legacy = create(:pi_reader, space: nil)
+      post rfid_card_number_path, params: { rfid: rfid.card_number, mac_address: legacy.pi_mac_address }, headers: { "Authorization" => "Bearer #{create(:user, :staff).token}" }, as: :json
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(TapBoxLog.where(event_type: TapBoxLog::ERROR).last.details["reason"]).to eq("no_space")
     end
 
     it "falls back to a registered reader's space when staff omit space_id" do

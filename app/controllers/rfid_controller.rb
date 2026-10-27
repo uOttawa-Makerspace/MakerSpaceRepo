@@ -60,7 +60,9 @@ class RfidController < SessionsController
 
     # D-EQ01/D-EQ03: no staff auth and no registered reader -> nothing is
     # created, logged or broadcast.
-    unless staff || pi_reader
+    # A reader with no space (e.g. legacy rows the old self-registration created
+    # for any MAC) is not registered until an admin associates it with a space.
+    unless staff || pi_reader&.space
       return render json: { error: "Too many requests" }, status: :too_many_requests if rejected_taps_exceeded?
 
       TapBoxLog.log_unknown_reader(mac_address: tap_mac_address)

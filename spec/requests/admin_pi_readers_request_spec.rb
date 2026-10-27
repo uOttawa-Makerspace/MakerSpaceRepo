@@ -110,6 +110,15 @@ RSpec.describe "Admin pi readers", type: :request do
     end
   end
 
+  it "keeps space-less (legacy self-registered) readers in the Unassociated list so an admin can associate them" do
+    sign_in_as(:admin)
+    legacy = create(:pi_reader, space: nil)
+    get edit_admin_space_path(space)
+    expect(response.body).to include("Unassociated RFID Readers").and include(legacy.pi_mac_address)
+    patch admin_pi_reader_path(legacy), params: { pi_reader_params: { space_id: space.id } }
+    expect(legacy.reload.space_id).to eq(space.id)
+  end
+
   it "shows the register-reader form on the space edit page for an admin" do
     sign_in_as(:admin)
     get edit_admin_space_path(space)
