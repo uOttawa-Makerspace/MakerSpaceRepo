@@ -325,4 +325,48 @@ RSpec.describe "RFID endpoints", type: :request do
       expect(body.map { |c| c[:cardNumber] }).to eq([unset.card_number])
     end
   end
+
+  # test env uses :null_store (never counts), so back the limiter's store with a counter
+  describe "rate limit (D-EQ03)" do
+    let(:counts) { Hash.new(0) }
+
+    before do
+      allow(RfidController.cache_store).to receive(:increment) { |key, *| counts[key] += 1 }
+    end
+
+    it "allows 60 taps a minute per reader mac, then answers 429 and taps nothing" do
+      60.times { tap_card; expect(response).not_to have_http_status(:too_many_requests) }
+      expect { tap_card }.not_to change { [TapBoxLog.count, LabSession.count] }
+      expect(response).to have_http_status(:too_many_requests)
+      expect(body).to eq(error: "Too many requests")
+    end
+
+    it "counts per reader, not globally" do
+      60.times { tap_card }
+      other = create(:pi_reader, space: space)
+      post rfid_card_number_path, params: { rfid: rfid.card_number, mac_address: other.pi_mac_address }, as: :json
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "counts per staff user for the React app" do
+      staff = create(:user, :staff)
+      other_staff = create(:user, :staff)
+      call = ->(u) { post rfid_card_number_path, params: { rfid: rfid.card_number, space_id: space.id }, headers: { "Authorization" => "Bearer #{u.token}" }, as: :json }
+      60.times { call.(staff) }
+      call.(staff)
+      expect(response).to have_http_status(:too_many_requests)
+      # fresh session: the first user's cookie would otherwise win over the bearer token
+      other_session = open_session
+      other_session.post rfid_card_number_path, params: { rfid: rfid.card_number, space_id: space.id }.to_json,
+                                                headers: { "Authorization" => "Bearer #{other_staff.token}", "Content-Type" => "application/json" }
+      expect(other_session.response).to have_http_status(:ok)
+    end
+
+    it "caps floods of made-up macs per IP at 600 a minute" do
+      600.times { |i| post rfid_card_number_path, params: { rfid: "X", mac_address: "00:00:00:00:#{i / 256}:#{i % 256}" }, as: :json }
+      expect(response).to have_http_status(:unauthorized)
+      post rfid_card_number_path, params: { rfid: "X", mac_address: "ff:ff:ff:ff:ff:ff" }, as: :json
+      expect(response).to have_http_status(:too_many_requests)
+    end
+  end
 end

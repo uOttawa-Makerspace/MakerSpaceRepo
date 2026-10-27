@@ -5,6 +5,15 @@ class RfidController < SessionsController
   before_action :signed_in, only: %i[get_unset_rfids]
   before_action :grant_access, only: %i[get_unset_rfids]
 
+  # D-EQ03: per reader (mac) or per staff user, generous for a busy door; plus a
+  # coarse per-IP ceiling (readers may share one NAT egress IP) that caps floods
+  # of made-up MACs.
+  RATE_LIMITED = -> { render json: { error: "Too many requests" }, status: :too_many_requests }
+  rate_limit to: 60, within: 1.minute, only: :card_number, name: "tap",
+             by: -> { tap_rate_limit_key }, with: RATE_LIMITED
+  rate_limit to: 600, within: 1.minute, only: :card_number, name: "tap-ip",
+             by: -> { request.remote_ip }, with: RATE_LIMITED
+
   # Shows the list of student cards tapped for staff members to link to newly
   # signed up users
   def get_unset_rfids
@@ -103,6 +112,16 @@ class RfidController < SessionsController
   end
 
   private
+
+  def tap_rate_limit_key
+    if signed_in? && current_user.staff?
+      "staff:#{current_user.id}"
+    elsif params[:mac_address].is_a?(String) && params[:mac_address].present?
+      "mac:#{params[:mac_address]}"
+    else
+      "ip:#{request.remote_ip}"
+    end
+  end
 
   # Pi firmware and the React app read only `success`; nothing about the card
   # owner is returned (D-EQ02).
