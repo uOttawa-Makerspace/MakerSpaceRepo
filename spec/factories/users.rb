@@ -1,9 +1,14 @@
 # frozen_string_literal: true
 
-# Same plaintext as always ("asa32A353#"), hashed once at bcrypt's minimum cost.
-# The previous literal was a cost-12 hash, so every real login in specs spent
-# ~0.3 s inside bcrypt (rails_helper's MIN_COST only affects newly created hashes).
-TEST_USER_PASSWORD_HASH = BCrypt::Password.create("asa32A353#", cost: BCrypt::Engine::MIN_COST).to_s
+# Plaintext "asa32A353#", stored as a FIXED bcrypt hash at bcrypt's minimum cost.
+# (The previous literal was cost 12, so every real login in specs spent ~0.3 s
+# inside bcrypt; rails_helper's MIN_COST only affects newly created hashes.)
+# The hash is a literal, not generated at load time, on purpose: the nobspw
+# validator checks the `password` attribute value, which here IS the hash, for any
+# name/username/email word longer than 2 chars. A random hash sometimes contained
+# e.g. "tom" and failed "Password is too similar to your email/name". This one was
+# picked so that it has no run of 3+ letters, so no such word can ever match.
+TEST_USER_PASSWORD_HASH = "$2a$04$745165//11.171653//26.Eq7TK1uF2b9cx7T6H6UQ9uS/Vg3ZH3y"
 
 FactoryBot.define do
   factory :user do
