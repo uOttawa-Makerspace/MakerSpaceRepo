@@ -54,6 +54,13 @@ RSpec.describe "Staff calendar", type: :system do
     expect(page).not_to have_css(".fc-event", text: "Hidden draft", visible: :all)
   end
 
+  it "forces the server-rendered data-turbo=true links to full page loads after turbo:load", js: true, skip_bullet: true do
+    log_in_as(staff)
+    show_week_of_march_14
+    link = find_link("View and manage your unavailabilities here")
+    expect(link["data-turbo"]).to eq("false")
+  end
+
   # N+1 pinned: see defects D-PERF-SP01 (the page's JSON feed 500s under CI Bullet)
   it "shows the space picker, view switchers and toggle buttons", js: true, skip_bullet: true do
     log_in_as(staff)

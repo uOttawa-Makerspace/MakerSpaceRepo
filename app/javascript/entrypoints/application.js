@@ -35,14 +35,19 @@ document.addEventListener("turbo:before-render", (event) => {
     });
 });
 
-// Single rule for "Turbo is off for this element": everything without .useTurbo,
-// except elements explicitly data-turbo="true" (Turbo 8 builds such hidden forms
-// for data-turbo-method links; marking them off would submit a DELETE as a GET).
-const turboOff = (el) =>
-  el.dataset.turbo !== "true" && !el.classList.contains("useTurbo");
+// Two predicates, deliberately different:
+// - turboOptedOut: the load-time rule for server-rendered markup. Everything
+//   without .useTurbo is forced to data-turbo=false, even when the markup says
+//   data-turbo="true" (the calendar links rely on full page loads).
+// - turboOffAtEvent: used by the confirm handler at event time. Elements that say
+//   data-turbo="true" there are Turbo's own hidden forms (built after load for
+//   data-turbo-method links); marking them off would submit a DELETE as a GET.
+const turboOptedOut = (el) => !el.classList.contains("useTurbo");
+const turboOffAtEvent = (el) =>
+  el.dataset.turbo !== "true" && turboOptedOut(el);
 const disableTurboUnlessOptedIn = (root = document) => {
   root.querySelectorAll("form, a").forEach((el) => {
-    if (turboOff(el)) el.dataset.turbo = "false";
+    if (turboOptedOut(el)) el.dataset.turbo = "false";
   });
 };
 
@@ -87,7 +92,7 @@ const confirmMessage = (turboPrompts, sources) => {
 };
 
 const confirmOrCancel = (event, el, { turboPrompts = false, sources = [el] } = {}) => {
-  const off = turboOff(el);
+  const off = turboOffAtEvent(el);
   if (off) el.dataset.turbo = "false";
   const msg = confirmMessage(!off && turboPrompts, sources);
   if (!msg || window.confirm(msg)) return;
