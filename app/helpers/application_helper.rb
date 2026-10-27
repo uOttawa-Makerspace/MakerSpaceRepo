@@ -40,9 +40,7 @@ module ApplicationHelper
       kept.each { |key, value| session[key] = value }
       session[:user_id] = user.id
       session[:token_version] = user.token_version
-      # a user memoized earlier in this request (set_last_seen_at) is stale now
-      remove_instance_variable(:@session_user) if instance_variable_defined?(:@session_user)
-      @user = nil
+      reset_auth_memo # a user memoized earlier in this request (set_last_seen_at) is stale now
     end
     user
   end
@@ -51,8 +49,7 @@ module ApplicationHelper
     locale = session[:locale]
     reset_session
     session[:locale] = locale if locale
-    @session_user = nil
-    @user = nil
+    reset_auth_memo
   end
 
   def current_user
@@ -123,6 +120,14 @@ module ApplicationHelper
   end
 
   private
+
+  # Forget who was resolved earlier in this request (cookie user, current user,
+  # Bearer user) so the next call looks again. Used when the session changes.
+  def reset_auth_memo
+    %i[@session_user @user @jwt_user].each do |ivar|
+      remove_instance_variable(ivar) if instance_variable_defined?(ivar)
+    end
+  end
 
   def page_title(curr_page = "", base_title: "MakerRepo")
     #base_title = "MakerRepo"

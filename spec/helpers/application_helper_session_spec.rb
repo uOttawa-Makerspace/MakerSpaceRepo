@@ -21,8 +21,10 @@ RSpec.describe ApplicationHelper do
         @session.clear
       end
 
+      attr_writer :headers
+
       def request
-        Struct.new(:headers).new({})
+        Struct.new(:headers).new(@headers || {})
       end
     end
   end
@@ -57,5 +59,20 @@ RSpec.describe ApplicationHelper do
     host.sign_out
     expect(host.signed_in?).to be(false)
     expect(host.current_user.id).to be_nil
+  end
+
+  it "sign_in and sign_out both forget the memoized Bearer user (one reset_auth_memo)" do
+    host.headers = { "Authorization" => "Bearer #{first.token}" }
+    expect(host.jwt_user).to eq(first)
+
+    host.headers = { "Authorization" => "Bearer #{second.token}" }
+    expect(host.jwt_user).to eq(first) # memoized for the rest of the request
+    host.sign_out
+    expect(host.jwt_user).to eq(second)
+
+    host.headers = { "Authorization" => "Bearer #{first.token}" }
+    host.sign_in(second.username, password)
+    expect(host.jwt_user).to eq(first)
+    expect(host.current_user).to eq(second) # the session user wins over Bearer, as before
   end
 end
