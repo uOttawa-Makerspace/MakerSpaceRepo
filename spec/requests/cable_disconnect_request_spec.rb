@@ -172,3 +172,21 @@ RSpec.describe "Cable disconnects on soft delete / deactivation", type: :request
     expect(disconnected).to eq([user])
   end
 end
+
+RSpec.describe "Cable disconnect on hard account deletion", type: :request do
+  let(:password) { "asa32A353#" }
+  let(:disconnected) { [] }
+
+  before do
+    block_external_http!
+    allow(ActionCable.server.remote_connections).to receive(:where) do |current_user:|
+      double("remote", disconnect: disconnected << current_user)
+    end
+  end
+
+  it "disconnects when the account is destroyed" do
+    user = create(:user, :regular_user)
+    user.destroy
+    expect(disconnected).to include(user)
+  end
+end

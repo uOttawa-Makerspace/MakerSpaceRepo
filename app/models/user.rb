@@ -564,6 +564,8 @@ class User < ApplicationRecord
   # keep receiving broadcasts (StaffDashboardChannel authorizes at subscribe time
   # only; the handshake already refuses deleted/inactive users on reconnect).
   after_update_commit :disconnect_cable!, if: :cable_access_lost?
+  # A block, not the method symbol: Rails de-duplicates commit callbacks by method name.
+  after_destroy_commit { disconnect_cable! }
 
   def staff?
     role.in?(%w[staff admin])
