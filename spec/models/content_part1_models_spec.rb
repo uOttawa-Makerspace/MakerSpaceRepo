@@ -180,12 +180,27 @@ RSpec.describe "Content models (part 1 characterization)" do
   end
 
   describe RepoFile do
-    it "enforces the content-type allow-list only when attached to a proficient project" do
+    # FIXED(D-C06): the sniffed type and size are validated for every RepoFile; proficient projects keep the narrower list
+    it "refuses an executable whatever it is attached to (proficient project, repository, proposal) (D-C06)" do
       pp = create(:proficient_project)
       exe = -> { content_named_upload("run.exe", type: "application/x-msdownload") }
       expect(RepoFile.new(file: exe.call, proficient_project: pp)).not_to be_valid
-      expect(RepoFile.new(file: exe.call, repository: create(:repository, owner: owner))).to be_valid
-      expect(RepoFile.new(file: exe.call, project_proposal: create(:project_proposal))).to be_valid
+      expect(RepoFile.new(file: exe.call, repository: create(:repository, owner: owner))).not_to be_valid
+      expect(RepoFile.new(file: exe.call, project_proposal: create(:project_proposal))).not_to be_valid
+    end
+
+    it "keeps the narrow list for proficient projects but the broad one for repositories" do
+      pp = create(:proficient_project)
+      zip = -> { content_named_upload("a.zip", content: "PK\x03\x04".b + ("\x00" * 40), type: "application/zip") }
+      expect(RepoFile.new(file: zip.call, proficient_project: pp)).not_to be_valid
+      expect(RepoFile.new(file: zip.call, repository: create(:repository, owner: owner))).to be_valid
+    end
+
+    it "does not re-check an unchanged older file when the record is saved again" do
+      repo = create(:repository, owner: owner)
+      legacy = RepoFile.new(repository: repo, file: content_named_upload("run.exe", type: "application/x-msdownload"))
+      legacy.save!(validate: false)
+      expect(legacy.reload.save).to be(true)
     end
 
     it "requires a file" do
@@ -201,10 +216,40 @@ RSpec.describe "Content models (part 1 characterization)" do
   end
 
   describe Photo do
-    it "validates the content type on create only: an invalid image saved earlier can be re-saved, and a swap to a bad type on update is accepted (D-C54)" do
+    # FIXED(D-C54): the content-type validation runs on every save, not only on create
+    it "validates the content type whenever the image is changed: swapping in a non-image on update is refused (D-C54)" do
       photo = create(:photo, :in_repository)
       photo.image.attach(FilesTestHelper.stl)
-      # WART(D-C54): the content-type validation is `on: :create`
+      expect(photo).not_to be_valid
+      expect(photo.errors[:image]).to be_present
+    end
+
+    it "does not re-validate an unchanged legacy image: reordering a photo with an old webp/heic image still saves" do
+      photo = create(:photo, :in_repository)
+      photo.image.blob.update_columns(content_type: "image/heic")
+      photo = Photo.find(photo.id)
+      expect(photo.update(position: 7)).to be(true)
+      expect(photo.reload.position).to eq(7)
+    end
+
+    it "does not re-validate when the form posts back the blob already attached (signed_id)" do
+      photo = create(:photo, :in_repository)
+      photo.image.blob.update_columns(content_type: "image/heic")
+      photo = Photo.find(photo.id)
+      expect(photo.update(image: photo.image.signed_id, position: 3)).to be(true)
+    end
+
+    it "refuses a swap to a different, already stored non-image blob given by signed_id" do
+      photo = create(:photo, :in_repository)
+      stl_blob = ActiveStorage::Blob.create_and_upload!(io: StringIO.new("solid x\nfacet normal 0 0 0\n"), filename: "a.stl", identify: false)
+      expect(photo.update(image: stl_blob.signed_id)).to be(false)
+      expect(photo.errors[:image]).to be_present
+    end
+
+    it "still accepts a valid image swap on update, and a clean re-save" do
+      photo = create(:photo, :in_repository)
+      expect(photo.save).to be(true)
+      photo.image.attach(FilesTestHelper.png)
       expect(photo).to be_valid
     end
 

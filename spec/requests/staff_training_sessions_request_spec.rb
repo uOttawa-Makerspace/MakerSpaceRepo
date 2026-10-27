@@ -131,11 +131,19 @@ RSpec.describe "Staff training sessions", type: :request do
         expect(JSON.parse(response.body)).to eq("created" => false)
       end
 
-      # WART(D-T35): default_params returns nil for a non-admin who sends user_id: the create silently fails with a generic alert
-      it "ignores nothing: staff passing user_id gets default_params nil and the create fails" do
-        expect { post staff_training_sessions_path, params: create_params(user_id: create(:user, :staff).id) }
-          .not_to change(TrainingSession, :count)
-        expect(flash[:alert]).to eq("Something went wrong. Please try again.")
+      # FIXED(D-API05, D-T35): a non-admin who sends user_id (the React app always does) creates the session as themselves
+      it "ignores user_id for staff: the session is created with the current staff member as instructor" do
+        other = create(:user, :staff)
+        expect { post staff_training_sessions_path(format: :json), params: create_params(user_id: other.id) }
+          .to change(TrainingSession, :count).by(1)
+        expect(JSON.parse(response.body)).to eq("id" => TrainingSession.unscoped.order(:id).last.id, "created" => true)
+        expect(TrainingSession.unscoped.order(:id).last.user_id).to eq(trainer.id)
+      end
+
+      it "ignores a user_id that is not a user at all" do
+        expect { post staff_training_sessions_path(format: :json), params: create_params(user_id: 0) }
+          .to change(TrainingSession, :count).by(1)
+        expect(TrainingSession.unscoped.order(:id).last.user_id).to eq(trainer.id)
       end
     end
 
@@ -371,6 +379,11 @@ RSpec.describe "Staff training sessions", type: :request do
       expect(flash[:notice]).to eq("Training session updated succesfully")
       expect(record.reload.user).to eq(new_trainer)
       expect { delete staff_training_session_path(record) }.to change(TrainingSession, :count).by(-1)
+    end
+
+    it "creates the session as themselves when no user_id is sent" do
+      post staff_training_sessions_path, params: create_params
+      expect(TrainingSession.unscoped.order(:id).last.user_id).to eq(controller.send(:current_user).id)
     end
 
     it "can create a session for another trainer by passing user_id" do
