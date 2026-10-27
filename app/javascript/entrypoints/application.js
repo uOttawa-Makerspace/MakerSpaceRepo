@@ -35,6 +35,14 @@ document.addEventListener("turbo:before-render", (event) => {
     });
 });
 
+// Single rule for "Turbo is off for this element": everything without .useTurbo.
+const turboOff = (el) => !el.classList.contains("useTurbo");
+const disableTurboUnlessOptedIn = (root = document) => {
+  root.querySelectorAll("form, a").forEach((el) => {
+    if (turboOff(el)) el.dataset.turbo = "false";
+  });
+};
+
 document.addEventListener("turbo:load", () => {
   // Initialize Bootstrap Tooltips
   document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((el) => {
@@ -56,42 +64,36 @@ document.addEventListener("turbo:load", () => {
   });
 
   // Disable Turbo on forms/links not explicitly opted in
-  document.querySelectorAll("form:not(.useTurbo)").forEach((el) => {
-    el.dataset.turbo = "false";
-  });
-  document.querySelectorAll("a:not(.useTurbo)").forEach((el) => {
-    el.dataset.turbo = "false";
-  });
+  disableTurboUnlessOptedIn();
 });
 
-// Confirmations for elements Turbo does not handle. Turbo-enabled elements
-// (.useTurbo) prompt through Turbo's own data-turbo-confirm, so only elements
-// Turbo is off for (data-turbo="false") are handled here (no double prompt). Legacy
-// data-confirm is honoured too because rails-ujs is not loaded.
-// Same rule as the turbo:load pass above (everything without .useTurbo is
-// opted out), applied directly so a click before turbo:load has run is still
-// confirmed. Marking the element also stops Turbo from prompting a second time.
-const handledHere = (el) => {
-  if (el.dataset.turbo === "true" || el.classList.contains("useTurbo")) return false;
-  el.dataset.turbo = "false";
-  return true;
+// Confirmations Turbo does not show. Turbo prompts only for data-turbo-confirm
+// on elements it handles (.useTurbo); everything else, and legacy data-confirm
+// (rails-ujs is not loaded), is prompted here. Handling an element also marks it
+// data-turbo=false (the same rule as the turbo:load pass), so a click before
+// turbo:load neither skips the prompt nor lets Turbo prompt again.
+const confirmMessage = (off, ...elements) => {
+  const turbo = elements.find((el) => el?.dataset.turboConfirm);
+  if (turbo) return off ? turbo.dataset.turboConfirm : null;
+  return elements.find((el) => el?.dataset.confirm)?.dataset.confirm || null;
 };
 
-const confirmMessage = (...elements) => {
-  for (const el of elements) {
-    const msg = el && (el.dataset.turboConfirm || el.dataset.confirm);
-    if (msg) return msg;
-  }
-  return null;
+const declined = (event, off, ...elements) => {
+  const msg = confirmMessage(off, ...elements);
+  if (!msg || window.confirm(msg)) return false;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  return true;
 };
 
 document.addEventListener(
   "submit",
   (event) => {
     const form = event.target;
-    if (!(form instanceof HTMLFormElement) || !handledHere(form)) return;
-    const msg = confirmMessage(event.submitter, form);
-    if (msg && !window.confirm(msg)) event.preventDefault();
+    if (!(form instanceof HTMLFormElement)) return;
+    const off = turboOff(form);
+    if (off) form.dataset.turbo = "false";
+    declined(event, off, event.submitter, form);
   },
   true,
 );
@@ -99,13 +101,13 @@ document.addEventListener(
 document.addEventListener(
   "click",
   (event) => {
-    const link = event.target instanceof Element && event.target.closest("a[data-turbo-confirm], a[data-confirm]");
-    if (!link || !handledHere(link)) return;
-    const msg = confirmMessage(link);
-    if (msg && !window.confirm(msg)) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-    }
+    const link =
+      event.target instanceof Element &&
+      event.target.closest("a[data-turbo-confirm], a[data-confirm]");
+    if (!link) return;
+    const off = turboOff(link);
+    if (off) link.dataset.turbo = "false";
+    declined(event, off, link);
   },
   true,
 );
