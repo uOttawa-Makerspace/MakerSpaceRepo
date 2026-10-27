@@ -96,8 +96,8 @@ Rails.application.routes.draw do
       post :create_revision
       post :approve
       post :decline
-      get :join_project_proposal
-      get :unjoin_project_proposal
+      post :join_project_proposal
+      delete :unjoin_project_proposal
       get :projects_assigned
       get :projects_completed
       get :user_projects

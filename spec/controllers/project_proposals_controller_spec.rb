@@ -279,16 +279,16 @@ RSpec.describe ProjectProposalsController, type: :controller do
     end
   end
 
-  describe "GET #unjoin_project_proposal" do
+  describe "DELETE #unjoin_project_proposal" do
     context "Un-join project proposal" do
       it "should un-join the project proposal" do
         project_proposal = create(:project_proposal, :joined)
         session[:user_id] = regular_user.id
-        get :join_project_proposal,
+        post :join_project_proposal,
             params: {
               project_proposal_id: project_proposal.id
             }
-        get :unjoin_project_proposal,
+        delete :unjoin_project_proposal,
             params: {
               project_proposal_id: project_proposal.id,
               project_join_id: ProjectJoin.last.id
