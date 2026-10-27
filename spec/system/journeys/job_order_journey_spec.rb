@@ -127,7 +127,7 @@ RSpec.describe "Journey: job order", type: :system, skip_bullet: true do
       click_button "Mark as Picked Up"
       expect(page).to have_content("Picked-Up")
     end
-    expect(order.reload.job_order_statuses.map { |s| s.job_status.name }).to eq(
+    expect(order.reload.job_order_statuses.order(:created_at, :id).map { |s| s.job_status.name }).to eq(
       ["Draft", "Waiting for Staff Approval", "Waiting for User Approval", "Waiting to be Processed",
        "Currently being Processed", "Completed (Waiting for Payment)", "Paid (Waiting for Pick-Up)", "Picked-Up"]
     )
