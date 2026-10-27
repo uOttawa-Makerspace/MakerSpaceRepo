@@ -52,3 +52,8 @@
   </div>
 
 <% end %>
+
+<%# Remove-answer forms live outside the update form (HTML forbids nesting); the Remove buttons point at them via the form attribute. %>
+<% @answers.select { |a| a.persisted? && !a.correct }.each do |answer| %>
+  <%= form_with url: remove_answer_question_path(@question, answer_id: answer.id), method: :delete, id: "remove-answer-#{answer.id}", data: { turbo_confirm: 'Are you sure?' } %>
+<% end %>

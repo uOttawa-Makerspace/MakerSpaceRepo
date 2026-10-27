@@ -2,7 +2,13 @@
   <p class="text-success text-center"><b>First answer</b> is the correct answer.</p>
   <%= f.fields_for :answers, @answers do |af| %>
     <%= af.rich_text_area :description, placeholder: 'Write the answers here...', class: "form-control h-auto #{return_answer_border_color(af.object)}", required: true %>
-    <%= link_to 'Remove', edit_question_path(remove_answer: af.object.id.nil? ? 'none' : af.object.id, id: @question.id, n_answers: @answers.count - 1), class: 'btn btn-danger text-white float-end', data: { confirm: 'Are you sure?' } unless af.object.correct %>
+    <% unless af.object.correct %>
+      <% if af.object.persisted? %>
+        <%= button_tag 'Remove', type: 'submit', form: "remove-answer-#{af.object.id}", class: 'btn btn-danger text-white float-end' %>
+      <% else %>
+        <%= link_to 'Remove', edit_question_path(id: @question.id, n_answers: @answers.count - 1), class: 'btn btn-danger text-white float-end' %>
+      <% end %>
+    <% end %>
     <br />
     <br />
     <div class="invalid-feedback">

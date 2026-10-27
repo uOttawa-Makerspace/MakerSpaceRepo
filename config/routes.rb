@@ -625,6 +625,7 @@ Rails.application.routes.draw do
 
   resources :questions do
     collection { delete :delete_individually }
+    member { delete "answers/:answer_id", action: :remove_answer, as: :remove_answer }
   end
 
   resources :staff_availabilities, except: :show do

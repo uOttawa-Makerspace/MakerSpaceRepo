@@ -55,13 +55,14 @@ class QuestionsController < AdminAreaController
       end
       flash[:notice] = "Answer added. Please update its content!"
     end
-    if params[:remove_answer].present?
-      answer = Answer.find_by(id: params[:remove_answer])
-      answer.destroy unless answer.nil?
-      flash[:notice] = "Successfully removed answer"
-    end
 
     @answers = @question.answers.sort_by { |a| a.correct ? 0 : 1 }
+  end
+
+  def remove_answer
+    @question.answers.find(params[:answer_id]).destroy
+    redirect_to edit_question_path(@question),
+                notice: "Successfully removed answer"
   end
 
   def update
