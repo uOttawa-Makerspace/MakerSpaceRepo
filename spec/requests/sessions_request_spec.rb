@@ -276,12 +276,23 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
       expect(flash[:alert]).to start_with("Could not find user")
     end
 
-    it "a session of a user who is soft-deleted afterwards gets a 404 on the next request" do
+    it "a session of a user who is soft-deleted afterwards is ended cleanly on the next request" do
+      # FIXED(D-I04): the session user is looked up with find_by and a missing/deleted user signs the session out
       login!(user)
       user.update_columns(deleted: true)
-      # WART(D-I04): session user is loaded with User.find under the default scope -> RecordNotFound (404 page) for a user soft-deleted mid-session instead of a clean sign-out
       get settings_profile_path
-      expect(response).to have_http_status(:not_found)
+      expect(response).to redirect_to(login_path(back_to: "/settings/profile"))
+      expect(session[:user_id]).to be_nil
+    end
+
+    it "a session whose user row is gone does not crash any page, the login page included" do
+      login!(user)
+      user.delete
+      get login_path
+      expect(response).to have_http_status(:ok)
+      expect(session[:user_id]).to be_nil
+      get check_signed_in_path
+      expect(JSON.parse(response.body)["signed_in"]).to eq("false")
     end
   end
 

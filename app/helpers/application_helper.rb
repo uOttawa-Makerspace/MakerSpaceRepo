@@ -51,7 +51,7 @@ module ApplicationHelper
     @session_user = nil
     return nil if session[:user_id].blank?
 
-    user = User.find(session[:user_id])
+    user = User.find_by(id: session[:user_id])
     if SessionAuthenticator.valid_for?(session, user)
       @session_user = user
     else
