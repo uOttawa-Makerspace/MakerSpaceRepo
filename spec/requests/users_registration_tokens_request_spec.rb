@@ -707,6 +707,14 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(locked_user.reload.locked).to be(true)
     end
 
+    it "unlocks a legacy-invalid account too (the unlock is written without validations)" do
+      locked_user.update_columns(gender: "stale value")
+      get unlock_account_users_path, params: { token: unlock_token }
+      expect(flash[:notice]).to eq("The account has been unlocked!")
+      expect(locked_user.reload.locked).to be(false)
+      expect(locked_user.auth_attempts).to eq(0)
+    end
+
     it "invalid token" do
       get unlock_account_users_path, params: { token: "nope" }
       expect(flash[:alert]).to eq(expired_alert)

@@ -22,7 +22,7 @@ module ApplicationHelper
         @sign_in_refusal = :locked
         return nil
       end
-      candidate.update(locked: false, auth_attempts: 0) # the timed lockout has lapsed
+      candidate.update_columns(locked: false, auth_attempts: 0) # the timed lockout has lapsed
     end
 
     user = User.authenticate(username_email, password)

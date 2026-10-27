@@ -441,8 +441,11 @@ class User < ApplicationRecord
     super
   end
 
+  # Lock bookkeeping uses update_columns: a validated update silently fails for a
+  # row that is invalid for an unrelated legacy reason, and the lock would never
+  # persist (unlimited guessing).
   def reset_auth_attempts!
-    update(auth_attempts: 0)
+    update_columns(auth_attempts: 0)
   end
 
   def record_failed_attempt!
@@ -468,7 +471,7 @@ class User < ApplicationRecord
     new_until = LOCK_DURATION.from_now
     return if lock_in_effect? && (locked_until.nil? || locked_until >= new_until)
 
-    update(locked: true, locked_until: new_until)
+    update_columns(locked: true, locked_until: new_until)
     send_unlock_email
   end
 

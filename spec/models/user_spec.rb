@@ -945,6 +945,17 @@ RSpec.describe User, type: :model do
       expect(u.locked_until).to be_present
     end
 
+    it "locks a legacy-invalid row (old username, stale gender) after MAX_AUTH_ATTEMPTS failures" do
+      # FIXED: the lock was written with a validated update that silently failed for such rows
+      legacy = create(:user, :regular_user)
+      legacy.update_columns(username: "old_user_name_longer_than_20", gender: "stale value")
+      expect(legacy.reload).not_to be_valid
+      User::MAX_AUTH_ATTEMPTS.times { legacy.reload.record_failed_attempt! }
+      expect(legacy.reload.locked).to be(true)
+      legacy.reset_auth_attempts!
+      expect(legacy.reload.auth_attempts).to eq(0)
+    end
+
     it "persists reset_auth_attempts!, last_signed_in_time and an ordinary profile update" do
       u.update_columns(auth_attempts: 3)
       u.reset_auth_attempts!

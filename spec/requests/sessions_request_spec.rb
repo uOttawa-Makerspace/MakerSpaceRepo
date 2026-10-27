@@ -306,6 +306,14 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
       expect(user.reload.auth_attempts).to eq(5)
     end
 
+    it "five wrong passwords lock a legacy-invalid account over HTTP too" do
+      user.update_columns(username: "old_user_name_longer_than_20", gender: "stale value")
+      5.times { open_session.post login_authentication_path, params: { username_email: user.username, password: "wrong" } }
+      user.reload
+      expect(user.locked).to be(true)
+      expect(user.locked_until).to be_present
+    end
+
     it "a lapsed timed lockout is cleared and persisted even when the stored hash contains the username" do
       u = create(:user, :regular_user, username: "hunterxsmith")
       u.update_columns(password: "$2a$12$" + ("a" * 22) + "hunterxsmith" + ("b" * 19),

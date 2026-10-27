@@ -113,9 +113,7 @@ class UsersController < SessionsController
   def unlock_account
     user = User.find_by_token_for(:account_unlock, params[:token])
     if user
-      user.update(locked: false)
-      user.update(auth_attempts: 0)
-      user.update(locked_until: nil)
+      user.update_columns(locked: false, auth_attempts: 0, locked_until: nil)
       flash[:notice] = 'The account has been unlocked!'
     else
       flash[:alert] = LINK_EXPIRED_ALERT
