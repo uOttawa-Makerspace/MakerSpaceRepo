@@ -6,7 +6,7 @@ require "jwt"
 # session): present, not soft-deleted, not deactivated. Locks are NOT looked at:
 # a lock (the timed brute-force lockout or an admin lock) blocks NEW logins only
 # (ApplicationHelper#sign_in). An admin lock ends existing sessions and JWTs
-# permanently by bumping token_version (Admin::UsersController#toggle_lock_user),
+# permanently by bumping token_version (User#admin_lock!),
 # which no later change of the lock fields can undo.
 module AuthEligibility
   module_function
