@@ -736,6 +736,6 @@ class User < ApplicationRecord
 
   def cable_access_lost?
     demoted = saved_change_to_role? && role_before_last_save.in?(%w[staff admin]) && !staff?
-    demoted || (saved_change_to_deleted? && deleted?) || (saved_change_to_active? && active == false)
+    demoted || ((saved_change_to_deleted? || saved_change_to_active?) && !AuthEligibility.allowed?(self))
   end
 end
