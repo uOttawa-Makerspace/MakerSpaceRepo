@@ -40,7 +40,7 @@ RSpec.describe "Printers", type: :request do
 
     it "bounces guests and regular users from every write action" do
       patch printer_path(um2p), params: { printer: { maintenance: true } }
-      expect(response).to redirect_to(login_path(back_to: printer_path(um2p)))
+      expect(response).to redirect_to(login_path)
       patch link_printer_to_user_printers_path, params: { printer: { printer_id: um2p.id, user_id: "clear" } }
       expect(response).to have_http_status(:found)
       expect(PrinterSession.count).to eq(0)

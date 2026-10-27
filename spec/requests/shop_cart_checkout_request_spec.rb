@@ -40,25 +40,25 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(flash[:alert]).to be_nil
 
       post order_items_path, params: { order_item: { proficient_project_id: pp.id, quantity: 1 } }
-      expect(response).to redirect_to(login_path(back_to: "/order_items"))
+      expect(response).to redirect_to(login_path)
 
       patch order_item_path(item), params: { order_item: { quantity: 2 } }
-      expect(response).to redirect_to(login_path(back_to: "/order_items/#{item.id}"))
+      expect(response).to redirect_to(login_path)
 
-      get order_item_destroy_path(item)
-      expect(response).to redirect_to(login_path(back_to: "/order_items/#{item.id}/revoke"))
+      post order_item_revoke_path(item)
+      expect(response).to redirect_to(login_path)
 
       delete order_item_path(item)
-      expect(response).to redirect_to(login_path(back_to: "/order_items/#{item.id}"))
+      expect(response).to redirect_to(login_path)
 
       get orders_path
       expect(response).to redirect_to(login_path(back_to: "/orders"))
 
       post orders_path
-      expect(response).to redirect_to(login_path(back_to: "/orders"))
+      expect(response).to redirect_to(login_path)
 
       delete order_path(item.order)
-      expect(response).to redirect_to(login_path(back_to: "/orders/#{item.order_id}"))
+      expect(response).to redirect_to(login_path)
       expect(Order.exists?(item.order_id)).to be(true)
 
       %i[order_item_modal approve_order_item_modal revoke_order_item_modal].each do |modal|
@@ -306,24 +306,25 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
     end
   end
 
-  describe "DELETE /order_items/:id and GET /order_items/:id/revoke" do
+  describe "DELETE /order_items/:id and POST /order_items/:order_item_id/revoke" do
     before { shop_log_in!(user) }
 
-    it "DELETE /order_items/:id (what the cart's remove button sends) 404s and removes nothing" do
+    # FIXED(D-S07): #destroy reads params[:id], which is what the cart's remove button DELETEs
+    it "DELETE /order_items/:id (what the cart's remove button sends) removes the item from the cart" do
       add_to_cart(pp_with_cc(10))
       item = user.orders.last.order_items.first
-      # WART(D-S07): #destroy reads params[:order_item_id] but the cart button DELETEs /order_items/:id (params[:id]), so removing an item from the cart is broken
-      expect { delete order_item_path(item) }.not_to change(OrderItem, :count)
-      expect(response).to have_http_status(:not_found)
-    end
-
-    it "treats a GET on /revoke as a cart removal too (route points at #destroy)" do
-      add_to_cart(pp_with_cc(10))
-      item = user.orders.last.order_items.first
-      # WART(D-S02): the badge-revoke route maps to order_items#destroy; OrderItemsController#revoke is unreachable and a bare GET deletes a cart row
-      expect { get order_item_destroy_path(item) }.to change(OrderItem, :count).by(-1)
+      expect { delete order_item_path(item) }.to change(OrderItem, :count).by(-1)
       expect(response).to redirect_to(carts_path)
       expect(flash[:notice]).to eq("Successfully removed item from cart")
+    end
+
+    # FIXED(D-S02): the GET /order_items/:id/revoke alias of #destroy is gone; a bare GET changes nothing
+    it "no longer deletes a cart row on GET /order_items/:id/revoke" do
+      add_to_cart(pp_with_cc(10))
+      item = user.orders.last.order_items.first
+      expect { get "/order_items/#{item.id}/revoke" }.not_to change(OrderItem, :count)
+      expect(response).not_to have_http_status(:ok)
+      expect(OrderItem.exists?(item.id)).to be(true)
     end
 
     it "404s when the item belongs to another user's order" do
@@ -333,10 +334,28 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(response).to have_http_status(:not_found)
     end
 
-    it "OrderItemsController#revoke is not routable from any path" do
-      expect(OrderItemsController.action_methods).to include("revoke")
+    # FIXED(D-S02): OrderItemsController#revoke is routed (POST) and admin only
+    it "routes POST /order_items/:order_item_id/revoke to #revoke" do
       expect(Rails.application.routes.routes.map { |r| r.defaults.slice(:controller, :action) })
-        .not_to include({ controller: "order_items", action: "revoke" })
+        .to include({ controller: "order_items", action: "revoke" })
+    end
+
+    it "forbids a regular user and staff from revoking, changing nothing" do
+      item = cart_for(other, 10).order_items.first
+      [user, staff].each do |u|
+        shop_log_in!(u)
+        expect { post order_item_revoke_path(item) }.not_to(change { item.reload.status })
+        expect(response).to have_http_status(:forbidden)
+      end
+    end
+
+    it "lets an admin revoke the order item and redirects to the manage-badges page (the old admin_badges_path helper does not exist)" do
+      item = cart_for(other, 10).order_items.first
+      shop_log_in!(admin)
+      post order_item_revoke_path(item)
+      expect(response).to redirect_to(admin_manage_badges_path)
+      expect(flash[:notice]).to eq("The badge has been revoked.")
+      expect(item.reload.status).to eq("Revoked")
     end
   end
 

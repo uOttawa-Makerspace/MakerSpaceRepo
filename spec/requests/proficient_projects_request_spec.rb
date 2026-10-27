@@ -41,7 +41,7 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
       expect { post proficient_projects_path, params: project_params }.not_to change(ProficientProject, :count)
       expect(response.location).to include("/login")
       expect { delete proficient_project_path(project) }.not_to change(ProficientProject, :count)
-      get revoke_project_proficient_projects_path(oi_id: order_item_for(buyer).id)
+      post revoke_project_proficient_projects_path(oi_id: order_item_for(buyer).id)
       expect(response.location).to include("/login")
     end
   end
@@ -380,12 +380,26 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
     end
   end
 
-  describe "GET approve_project" do
+  describe "approve_project / revoke_project via GET" do
+    # FIXED(approve/revoke GET): both are POST only; a GET (link, prefetch, image tag) changes nothing
+    it "neither approves nor revokes on a plain GET" do
+      oi = order_item_for(buyer)
+      oi.update!(status: "Waiting for approval")
+      content_login!(create(:user, :admin))
+      expect { get "/proficient_projects/approve_project", params: { oi_id: oi.id, order_item: { admin_comments: "x" } } }
+        .not_to(change { oi.reload.status })
+      expect { get "/proficient_projects/revoke_project", params: { oi_id: oi.id, order_item: { admin_comments: "x" } } }
+        .not_to(change { oi.reload.status })
+      expect(oi.status).to eq("Waiting for approval")
+    end
+  end
+
+  describe "POST approve_project" do
     let!(:oi) { order_item_for(buyer, status: "Waiting for approval") }
 
     it "refuses a regular user and the buyer themself" do
       content_login!(buyer)
-      get approve_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "x" } }
+      post approve_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "x" } }
       expect(response).to redirect_to(development_programs_path)
       expect(flash[:alert]).to eq("Only staff members can access this area.")
       expect(oi.reload.status).to eq("Waiting for approval")
@@ -396,7 +410,7 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
         user = content_sign_in_as(role)
         ActionMailer::Base.deliveries.clear
         expect do
-          get approve_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "great" } }
+          post approve_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "great" } }
         end.to change(ProficientProjectSession, :count).by(1).and change(Certification, :count).by(1)
         expect(oi.reload.status).to eq("Awarded")
         expect(oi.admin_comments).to eq("great")
@@ -413,15 +427,15 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
 
     it "an unknown order item flashes an error and redirects to the staff queue (admin)" do
       content_sign_in_as(:admin)
-      get approve_project_proficient_projects_path, params: { oi_id: 0, order_item: { admin_comments: "x" } }
+      post approve_project_proficient_projects_path, params: { oi_id: 0, order_item: { admin_comments: "x" } }
       expect(flash[:error]).to eq("An error has occurred, please try again later.")
     end
 
     it "a missing or stale oi_id redirects staff to the queue with the error flash instead of 500ing (D-C29)" do
       content_sign_in_as(:staff)
-      get approve_project_proficient_projects_path, params: { order_item: { admin_comments: "x" } }
+      post approve_project_proficient_projects_path, params: { order_item: { admin_comments: "x" } }
       expect(response).to redirect_to(requests_proficient_projects_path)
-      get approve_project_proficient_projects_path, params: { oi_id: 0, order_item: { admin_comments: "x" } }
+      post approve_project_proficient_projects_path, params: { oi_id: 0, order_item: { admin_comments: "x" } }
       expect(response).to redirect_to(requests_proficient_projects_path)
       expect(flash[:error]).to eq("An error has occurred, please try again later.")
     end
@@ -429,7 +443,7 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
     it "approving the same item twice creates one session and one certification (D-C29)" do
       content_sign_in_as(:admin)
       ActionMailer::Base.deliveries.clear
-      2.times { get approve_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "x" } } }
+      2.times { post approve_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "x" } } }
       # FIXED(D-C29): approval is guarded on 'Waiting for approval', so a replay is refused
       expect(ProficientProjectSession.where(proficient_project_id: project.id).count).to eq(1)
       expect(Certification.where(user_id: buyer.id).count).to eq(1)
@@ -443,7 +457,7 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
         content_sign_in_as(:staff)
         ActionMailer::Base.deliveries.clear
         expect do
-          get approve_project_proficient_projects_path, params: { oi_id: item.id, order_item: { admin_comments: "x" } }
+          post approve_project_proficient_projects_path, params: { oi_id: item.id, order_item: { admin_comments: "x" } }
         end.to change(ProficientProjectSession, :count).by(0).and change(Certification, :count).by(0)
         expect(item.reload.status).to eq(status)
         expect(flash[:error]).to eq("An error has occurred, please try again later.")
@@ -456,7 +470,7 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
       ActionMailer::Base.deliveries.clear
       allow(ProficientProjectSession).to receive(:create!).and_raise(ActiveRecord::RecordInvalid.new(ProficientProjectSession.new))
       expect do
-        get approve_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "x" } }
+        post approve_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "x" } }
       end.to change(Certification, :count).by(0)
       expect(oi.reload.status).to eq("Waiting for approval")
       expect(flash[:error]).to eq("An error has occurred, please try again later.")
@@ -468,9 +482,9 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
       other_project = create(:proficient_project, training: training, level: project.level, title: "Second widget")
       second = order_item_for(buyer, status: "Waiting for approval", pp: other_project)
       content_sign_in_as(:admin)
-      get approve_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "x" } }
+      post approve_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "x" } }
       expect do
-        get approve_project_proficient_projects_path, params: { oi_id: second.id, order_item: { admin_comments: "x" } }
+        post approve_project_proficient_projects_path, params: { oi_id: second.id, order_item: { admin_comments: "x" } }
       end.to change(Certification, :count).by(1)
       certs = ProficientProjectSession.where(proficient_project: [project, other_project]).pluck(:certification_id)
       expect(certs.uniq.size).to eq(2)
@@ -479,14 +493,14 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
     end
   end
 
-  describe "GET revoke_project" do
+  describe "POST revoke_project" do
     let!(:oi) { order_item_for(buyer, status: "Waiting for approval") }
 
     it "refuses a regular user and the item's own buyer, changing and emailing nothing (D-C30)" do
       [create(:user, :regular_user), buyer].each do |user|
         content_login!(user)
         ActionMailer::Base.deliveries.clear
-        get revoke_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "gotcha" } }
+        post revoke_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "gotcha" } }
         # FIXED(D-C30): revoke_project is in only_staff_access
         expect(response).to redirect_to(development_programs_path)
         expect(flash[:alert]).to eq("Only staff members can access this area.")
@@ -497,7 +511,7 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
     end
 
     it "sends a guest to login without revoking" do
-      get revoke_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "gotcha" } }
+      post revoke_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "gotcha" } }
       expect(response.location).to include("/login")
       expect(oi.reload.status).to eq("Waiting for approval")
     end
@@ -506,7 +520,7 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
       it "#{role}: revokes the item and emails the buyer 'Failed'" do
         content_sign_in_as(role)
         ActionMailer::Base.deliveries.clear
-        get revoke_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "gotcha" } }
+        post revoke_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "gotcha" } }
         expect(oi.reload.status).to eq("Revoked")
         expect(oi.admin_comments).to eq("gotcha")
         expect(flash[:alert_yellow]).to eq("The project has been revoked.")
@@ -520,7 +534,7 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
         item = order_item_for(buyer, status: status)
         content_sign_in_as(:staff)
         ActionMailer::Base.deliveries.clear
-        get revoke_project_proficient_projects_path, params: { oi_id: item.id, order_item: { admin_comments: "again" } }
+        post revoke_project_proficient_projects_path, params: { oi_id: item.id, order_item: { admin_comments: "again" } }
         expect(item.reload.status).to eq(status)
         expect(item.admin_comments).to be_blank
         expect(flash[:error]).to eq("An error has occurred, please try again later.")
@@ -531,14 +545,14 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
     it "revoking twice sends one email" do
       content_sign_in_as(:admin)
       ActionMailer::Base.deliveries.clear
-      2.times { get revoke_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "x" } } }
+      2.times { post revoke_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "x" } } }
       expect(oi.reload.status).to eq("Revoked")
       expect(ActionMailer::Base.deliveries.size).to eq(1)
     end
 
     it "flashes an error for an unknown item" do
       content_sign_in_as(:admin)
-      get revoke_project_proficient_projects_path, params: { oi_id: 0, order_item: { admin_comments: "x" } }
+      post revoke_project_proficient_projects_path, params: { oi_id: 0, order_item: { admin_comments: "x" } }
       expect(flash[:error]).to eq("An error has occurred, please try again later.")
     end
   end

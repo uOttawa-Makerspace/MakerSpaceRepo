@@ -407,7 +407,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     it "does not let a guest rewrite a proposal (D-C38)" do
       patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Hijacked" } }
       # FIXED(D-C38): update requires sign-in, then ownership or admin
-      expect(response).to redirect_to(login_path(back_to: project_proposal_path(pending.slug)))
+      expect(response).to redirect_to(login_path)
       expect(pending.reload.title).to eq("Pending One")
     end
 
@@ -560,9 +560,9 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     it "sends a guest to login and changes nothing (D-C41)" do
       post approve_project_proposals_path, params: { id: pending.id }
       # FIXED(D-C41): approve/decline are admin-only
-      expect(response).to redirect_to(login_path(back_to: approve_project_proposals_path))
+      expect(response).to redirect_to(login_path)
       post decline_project_proposals_path, params: { id: approved.id }
-      expect(response).to redirect_to(login_path(back_to: decline_project_proposals_path))
+      expect(response).to redirect_to(login_path)
       expect(pending.reload.approved).to be_nil
       expect(approved.reload.approved).to eq("approved")
     end
@@ -612,7 +612,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect { post create_revision_project_proposals_path, params: { old_project_proposal_id: pending.id } }
         .not_to change(ProjectProposal, :count)
       # FIXED(D-C42): create_revision requires sign-in and ownership of the original (or admin)
-      expect(response).to redirect_to(login_path(back_to: create_revision_project_proposals_path))
+      expect(response).to redirect_to(login_path)
     end
 
     it "refuses a stranger and staff, for pending and approved originals alike (D-C42)" do
@@ -677,17 +677,28 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
 
   describe "join / unjoin" do
     it "sends a guest to login and stores no join (D-C43)" do
-      expect { get join_project_proposal_project_proposals_path, params: { project_proposal_id: approved.id } }
+      expect { post join_project_proposal_project_proposals_path, params: { project_proposal_id: approved.id } }
         .not_to change(ProjectJoin, :count)
       # FIXED(D-C43): join requires sign-in and an approved proposal
-      expect(response).to redirect_to(login_path(back_to: join_project_proposal_project_proposals_path(project_proposal_id: approved.id)))
+      expect(response).to redirect_to(login_path)
+    end
+
+    # FIXED(join/unjoin GET): neither changes state on a GET any more
+    it "neither joins nor unjoins on a plain GET" do
+      join = ProjectJoin.create!(project_proposal_id: approved.id, user_id: owner.id)
+      content_login!(owner)
+      expect { get "/project_proposals/join_project_proposal", params: { project_proposal_id: approved.id } }
+        .not_to change(ProjectJoin, :count)
+      expect { get "/project_proposals/unjoin_project_proposal", params: { project_proposal_id: approved.id, project_join_id: join.id } }
+        .not_to change(ProjectJoin, :count)
+      expect(ProjectJoin.exists?(join.id)).to be(true)
     end
 
     it "joins as the signed-in user, once; the second time alerts" do
       content_login!(other)
-      expect { get join_project_proposal_project_proposals_path, params: { project_proposal_id: approved.id } }
+      expect { post join_project_proposal_project_proposals_path, params: { project_proposal_id: approved.id } }
         .to change { ProjectJoin.where(user_id: other.id).count }.by(1)
-      expect { get join_project_proposal_project_proposals_path, params: { project_proposal_id: approved.id } }
+      expect { post join_project_proposal_project_proposals_path, params: { project_proposal_id: approved.id } }
         .not_to change(ProjectJoin, :count)
       expect(flash[:alert]).to eq("You already joined this project or something went wrong.")
     end
@@ -695,7 +706,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     it "cannot join a pending or declined proposal (D-C43)" do
       content_login!(other)
       [pending, declined].each do |pp|
-        expect { get join_project_proposal_project_proposals_path, params: { project_proposal_id: pp.id } }
+        expect { post join_project_proposal_project_proposals_path, params: { project_proposal_id: pp.id } }
           .not_to change(ProjectJoin, :count)
         expect(response).to redirect_to(project_proposals_path)
         expect(flash[:alert]).to eq("You can only join an approved project proposal.")
@@ -704,7 +715,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
 
     it "does not let a guest remove a join (D-C44)" do
       join = ProjectJoin.create!(project_proposal_id: approved.id, user_id: owner.id)
-      get unjoin_project_proposal_project_proposals_path, params: { project_proposal_id: approved.id, project_join_id: join.id }
+      delete unjoin_project_proposal_project_proposals_path, params: { project_proposal_id: approved.id, project_join_id: join.id }
       expect(response.location).to start_with(login_url)
       expect(ProjectJoin.exists?(join.id)).to be(true)
     end
@@ -713,7 +724,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       join = ProjectJoin.create!(project_proposal_id: approved.id, user_id: owner.id)
       [other, create(:user, :staff)].each do |user|
         content_login!(user)
-        get unjoin_project_proposal_project_proposals_path,
+        delete unjoin_project_proposal_project_proposals_path,
             params: { project_proposal_id: approved.id, project_join_id: join.id }
         # FIXED(D-C44): only the join's own user (or an admin) can remove it
         expect(ProjectJoin.exists?(join.id)).to be(true)
@@ -725,7 +736,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       join = ProjectJoin.create!(project_proposal_id: approved.id, user_id: owner.id)
       other_approved = create(:project_proposal, :approved)
       content_login!(owner)
-      get unjoin_project_proposal_project_proposals_path,
+      delete unjoin_project_proposal_project_proposals_path,
           params: { project_proposal_id: other_approved.id, project_join_id: join.id }
       expect(response).to have_http_status(:not_found)
       expect(ProjectJoin.exists?(join.id)).to be(true)
@@ -734,18 +745,18 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     it "lets users remove their own join, and an admin remove any (D-C44)" do
       join = ProjectJoin.create!(project_proposal_id: approved.id, user_id: owner.id)
       content_login!(owner)
-      get unjoin_project_proposal_project_proposals_path, params: { project_proposal_id: approved.id, project_join_id: join.id }
+      delete unjoin_project_proposal_project_proposals_path, params: { project_proposal_id: approved.id, project_join_id: join.id }
       expect(ProjectJoin.exists?(join.id)).to be(false)
       expect(flash[:notice]).to eq("You unjoined this project.")
       join = ProjectJoin.create!(project_proposal_id: approved.id, user_id: other.id)
       content_sign_in_as(:admin)
-      get unjoin_project_proposal_project_proposals_path, params: { project_proposal_id: approved.id, project_join_id: join.id }
+      delete unjoin_project_proposal_project_proposals_path, params: { project_proposal_id: approved.id, project_join_id: join.id }
       expect(ProjectJoin.exists?(join.id)).to be(false)
     end
 
     it "404s for an unknown join" do
       content_login!(owner)
-      get unjoin_project_proposal_project_proposals_path, params: { project_proposal_id: approved.id, project_join_id: 0 }
+      delete unjoin_project_proposal_project_proposals_path, params: { project_proposal_id: approved.id, project_join_id: 0 }
       expect(response).to have_http_status(:not_found)
     end
   end

@@ -34,14 +34,14 @@ Rails.application.routes.draw do
 
   resources :cc_moneys, only: [:index] do
     collection do
-      get :redeem
+      post :redeem
       get :link_cc_to_user
     end
   end
 
   resources :carts, only: [:index]
   resources :order_items, only: %i[create update destroy] do
-    get :destroy, path: "revoke"
+    post :revoke
     get :order_item_modal
     get :approve_order_item_modal
     get :revoke_order_item_modal
@@ -96,8 +96,8 @@ Rails.application.routes.draw do
       post :create_revision
       post :approve
       post :decline
-      get :join_project_proposal
-      get :unjoin_project_proposal
+      post :join_project_proposal
+      delete :unjoin_project_proposal
       get :projects_assigned
       get :projects_completed
       get :user_projects
@@ -181,7 +181,7 @@ Rails.application.routes.draw do
     get "about"
     get "contact"
     get "calendar"
-    get "report_repository/:repository_id",
+    post "report_repository/:repository_id",
         as: "report_repository",
         action: "report_repository"
     post "join_team_program"
@@ -218,7 +218,10 @@ Rails.application.routes.draw do
   # SESSION
   namespace :sessions, path: "/", as: nil do
     post "login_authentication"
+    # INTENDED: GET /logout is kept for MakerRepoApp until it ships POST logout
+    # (frontend-api-inventory.md row 3). The site's own UI uses DELETE.
     get "logout"
+    match "logout", via: %i[post delete], as: :perform_logout
     get "login"
     get "resend_email_confirmation"
     get "check_signed_in"
@@ -523,7 +526,7 @@ Rails.application.routes.draw do
     put "/remove_users", as: "sign_out_users", action: "sign_out_users"
     put "link_rfid"
     put "unlink_rfid"
-    get "sign_out_all_users"
+    post "sign_out_all_users"
     get :user_profile
     get :populate_users
     post :import_excel
@@ -575,8 +578,8 @@ Rails.application.routes.draw do
       get :join_development_program
       get :requests
       put :complete_project
-      get :approve_project
-      get :revoke_project
+      post :approve_project
+      post :revoke_project
       get :generate_acquired_badge
     end
   end
@@ -600,8 +603,8 @@ Rails.application.routes.draw do
 
   resources :learning_module_track, only: %i[index] do
     collection do
-      get :start
-      get :completed
+      post :start
+      post :completed
     end
   end
 
@@ -611,12 +614,12 @@ Rails.application.routes.draw do
     collection do
       get :emails
       get :volunteer_list
-      match :join_volunteer_program, via: %i[get post]
+      post :join_volunteer_program
       get :my_stats
       get :transcript
       get :calendar
       get :shadowing_shifts
-      get :delete_event
+      delete :delete_event
       post :create_event
       get :new_event
       get :populate_users
@@ -625,6 +628,7 @@ Rails.application.routes.draw do
 
   resources :questions do
     collection { delete :delete_individually }
+    member { delete "answers/:answer_id", action: :remove_answer, as: :remove_answer }
   end
 
   resources :staff_availabilities, except: :show do
@@ -650,7 +654,7 @@ Rails.application.routes.draw do
 
   resources :volunteer_task_requests, only: [:index] do
     collection do
-      get :create_request
+      post :create_request
       put :update_approval
       get :search_pending
       get :search_processed
@@ -702,7 +706,7 @@ Rails.application.routes.draw do
       get :confirm
       match :change_programs, via: %i[post patch]
       post :create, path: "/new"
-      get :remove_avatar
+      delete :remove_avatar
       post :flag
       post :unflag
       get :change_email

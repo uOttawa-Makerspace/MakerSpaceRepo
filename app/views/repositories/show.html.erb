@@ -188,7 +188,7 @@
             </span>
         </div>
         <div class="report mb-3">
-            <%= link_to "<i class=\"fa-solid fa-flag\"></i> #{t('repository.report_in')}".html_safe, report_repository_path(@repository.id), class: 'repository_report', rel: 'nofollow' %>
+            <%= button_to "<i class=\"fa-solid fa-flag\"></i> #{t('repository.report_in')}".html_safe, report_repository_path(@repository.id), method: :post, class: 'repository_report btn btn-link p-0', form: { data: { turbo_confirm: t('repository.report_confirm') } } %>
             <div class="spinner">
                 <div class="rect1"></div>
                 <div class="rect2"></div>

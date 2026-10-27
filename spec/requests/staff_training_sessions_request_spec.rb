@@ -39,7 +39,10 @@ RSpec.describe "Staff training sessions", type: :request do
       calls.each_value do |call|
         expect { instance_exec(&call) }.not_to change { [TrainingSession.count, Certification.count, record.reload.level] }
         expect(response).to have_http_status(:found)
-        expect(response.location).to start_with("http://www.example.com/login?back_to=")
+        # back_to is stored only for replayable (GET) requests; other verbs get a bare /login
+        expect(response.location).to(
+          integration_session.request.get? ? start_with("http://www.example.com/login?back_to=") : eq("http://www.example.com/login")
+        )
       end
     end
 

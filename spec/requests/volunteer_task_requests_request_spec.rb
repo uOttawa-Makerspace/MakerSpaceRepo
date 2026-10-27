@@ -86,13 +86,19 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
     end
   end
 
-  describe "GET /volunteer_task_requests/create_request" do
+  describe "POST /volunteer_task_requests/create_request" do
     def assign!(user, to: task)
       create(:volunteer_task_join, :active, volunteer_task: to, user: user)
     end
 
     def request!(id = task.id, headers: {})
-      perform_enqueued_jobs { get create_request_volunteer_task_requests_path(id: id), headers: headers }
+      perform_enqueued_jobs { post create_request_volunteer_task_requests_path(id: id), headers: headers }
+    end
+
+    it "creates nothing on a plain GET" do
+      assign!(volunteer)
+      vol_login!(volunteer)
+      expect { get "/volunteer_task_requests/create_request", params: { id: task.id } }.not_to change(VolunteerTaskRequest, :count)
     end
 
     it "creates a pending request, redirects back with a notice, emails the requester with staff bcc'd" do
@@ -203,7 +209,7 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
     # FIXED(D-V17): a guest is sent to login and nothing is persisted
     it "redirects a guest to login without storing an orphan request" do
       expect { request! }.not_to change(VolunteerTaskRequest, :count)
-      expect(response).to redirect_to(login_path(back_to: create_request_volunteer_task_requests_path(id: task.id)))
+      expect(response).to redirect_to(login_path)
       expect(vol_deliveries).to be_empty
     end
 
@@ -318,7 +324,7 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
     it "redirects a GUEST to login and awards nothing" do
       expect { approve!("true") }.not_to change { [CcMoney.count, VolunteerHour.count] }
       expect(req.reload.approval).to be_nil
-      expect(response).to redirect_to(login_path(back_to: update_approval_volunteer_task_requests_path))
+      expect(response).to redirect_to(login_path)
     end
 
     it "lets an admin approve" do

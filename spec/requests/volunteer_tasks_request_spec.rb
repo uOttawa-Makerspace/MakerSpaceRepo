@@ -278,7 +278,7 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
 
     it "redirects a guest to login and leaves the task open" do
       post complete_task_volunteer_tasks_path(id: task.id)
-      expect(response).to redirect_to(login_path(back_to: complete_task_volunteer_tasks_path(id: task.id)))
+      expect(response).to redirect_to(login_path)
       expect(task.reload.status).to eq("open")
     end
 

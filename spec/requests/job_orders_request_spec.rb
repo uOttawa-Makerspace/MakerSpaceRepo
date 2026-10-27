@@ -99,7 +99,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       order = order_with_task!(owner: owner)
       patch job_order_start_processing_path(order), params: { start_processing: "true" }
       expect(response)
-        .to redirect_to(login_path(back_to: "/job_orders/#{order.id}/start_processing"))
+        .to redirect_to(login_path)
     end
   end
 
@@ -602,7 +602,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
         patch send("job_order_#{action}_path", order),
               params: { flow.fetch(:ok_param) => "true" }
         expect(response)
-          .to redirect_to(login_path(back_to: "/job_orders/#{order.id}/#{action}"))
+          .to redirect_to(login_path)
       end
 
       it "rejects regular users to root with cannot_access_area" do

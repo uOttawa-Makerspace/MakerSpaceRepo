@@ -27,7 +27,7 @@ RSpec.describe "Comments (HTTP contract)", type: :request do
   describe "POST create" do
     it "sends a guest to login and persists nothing" do
       expect { post_comment("hi") }.not_to change(Comment, :count)
-      expect(response).to redirect_to(login_path(back_to: "/comments/#{repo.id}"))
+      expect(response).to redirect_to(login_path)
     end
 
     it "persists the comment under the current user and redirects to the repo comments anchor" do

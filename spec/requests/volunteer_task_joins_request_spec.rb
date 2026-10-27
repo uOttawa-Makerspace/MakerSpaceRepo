@@ -198,7 +198,7 @@ RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
 
     it "redirects a guest to login and removes nothing" do
       expect { post remove_volunteer_task_joins_path, params: remove_params }.not_to change(VolunteerTaskJoin, :count)
-      expect(response).to redirect_to(login_path(back_to: remove_volunteer_task_joins_path))
+      expect(response).to redirect_to(login_path)
     end
 
     it "lets staff remove anyone" do

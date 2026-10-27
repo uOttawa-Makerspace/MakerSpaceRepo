@@ -68,8 +68,8 @@ RSpec.describe "Checkout", type: :system do
       find("#cart-button").click
       expect(page).to have_current_path(carts_path)
 
-      # data-confirm has no JS handler wired up (turbo), so the button submits straight away
-      click_button "Confirm order"
+      # the data-confirm prompt is handled by the delegated confirm handler in application.js
+      accept_confirm { click_button "Confirm order" }
 
       expect(page).to have_current_path(orders_path)
       expect(page).to have_text("Your Order was successfully processed.")
@@ -90,7 +90,7 @@ RSpec.describe "Checkout", type: :system do
       CcMoney.create!(user: user, cc: -80) # wallet now 20 < 40
       open_training_accordion
       find("#cart-button").click
-      click_button "Confirm order"
+      accept_confirm { click_button "Confirm order" }
 
       expect(page).to have_text("Not enough Cc Points.")
       expect(user.orders.last.order_status.name).to eq("In progress")

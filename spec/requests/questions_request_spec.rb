@@ -35,6 +35,7 @@ RSpec.describe "Questions (admin question bank)", type: :request do
         create: -> { post questions_path, params: valid_params },
         update: -> { patch question_path(question), params: { question: { description: "Hacked" } } },
         destroy: -> { delete question_path(question) },
+        remove_answer: -> { delete remove_answer_question_path(question, answer_id: question.answers.where(correct: false).first.id) },
         delete_individually: -> { delete delete_individually_questions_path, params: { id: 0, question_id: question.id } }
       }
     end
@@ -167,18 +168,71 @@ RSpec.describe "Questions (admin question bank)", type: :request do
       expect(response.body.index("The cut width")).to be < response.body.index("A tool")
     end
 
+    it "renders one closed, resolvable remove form per removable answer", skip_bullet: true do
+      3.times { |i| Answer.create!(question: question, correct: false, description: "extra #{i}") }
+      get edit_question_path(question)
+      doc = Nokogiri::HTML5(response.body, max_errors: 100)
+      removable = question.answers.where(correct: false).pluck(:id)
+      expect(removable.size).to eq(4)
+      buttons = doc.css("button[form^='remove-answer-']")
+      expect(buttons.size).to eq(4)
+      removable.each do |id|
+        form = doc.at_css("form##{"remove-answer-#{id}"}")
+        expect(form).not_to be_nil
+        expect(form["action"]).to eq(remove_answer_question_path(question, answer_id: id))
+        # a form that was never closed would swallow the following forms
+        expect(form.css("form")).to be_empty
+        expect(form.parent.name).not_to eq("form")
+      end
+      expect(doc.css("form#remove-answer-#{removable.first}").first.ancestors("form")).to be_empty
+    end
+
+    it "renders a DELETE remove form (not a GET link) for each incorrect saved answer", skip_bullet: true do
+      victim = question.answers.where(correct: false).first
+      get edit_question_path(question)
+      expect(response.body).to include(%(id="remove-answer-#{victim.id}"))
+      expect(response.body).to include(%(action="#{remove_answer_question_path(question, answer_id: victim.id)}"))
+      expect(response.body).not_to include("remove_answer=")
+    end
+
     it "adds blank answers (unsaved) when n_answers is larger than the current count, with a notice" do
       expect { get edit_question_path(question, n_answers: 4) }.not_to change(Answer, :count)
       expect(flash[:notice]).to eq("Answer added. Please update its content!")
     end
 
-    # WART(D-T19): a GET with ?remove_answer=ID deletes the answer (state change on GET, any answer id, no check it belongs to this question)
-    it "destroys the answer named by remove_answer on a plain GET" do
-      other = create(:question)
-      victim = Answer.create!(question: other, correct: false, description: "someone else's")
-      expect { get edit_question_path(question, remove_answer: victim.id) }.to change(Answer, :count).by(-1)
+    # FIXED(D-T19): GET /questions/:id/edit?remove_answer=ID no longer destroys anything (removal is DELETE /questions/:id/answers/:answer_id)
+    it "does not destroy the answer named by remove_answer on a plain GET", skip_bullet: true do
+      victim = question.answers.where(correct: false).first
+      expect { get edit_question_path(question, remove_answer: victim.id) }.not_to change(Answer, :count)
+      expect(response).to have_http_status(:ok)
+      expect(Answer.exists?(victim.id)).to be(true)
+    end
+  end
+
+  describe "DELETE /questions/:id/answers/:answer_id (remove_answer)" do
+    before { log_in!(admin) }
+
+    # FIXED(D-T19): removal is a DELETE scoped to the question's own answers
+    it "destroys the question's own answer and redirects to the edit form with a notice" do
+      victim = question.answers.where(correct: false).first
+      expect { delete remove_answer_question_path(question, answer_id: victim.id) }.to change(Answer, :count).by(-1)
+      expect(response).to redirect_to(edit_question_path(question))
       expect(flash[:notice]).to eq("Successfully removed answer")
       expect(Answer.exists?(victim.id)).to be(false)
+    end
+
+    it "404s and keeps the correct answer" do
+      correct = question.answers.find_by!(correct: true)
+      expect { delete remove_answer_question_path(question, answer_id: correct.id) }.not_to change(Answer, :count)
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "404s and destroys nothing for an answer that belongs to another question" do
+      other = create(:question)
+      victim = Answer.create!(question: other, correct: false, description: "someone else's")
+      expect { delete remove_answer_question_path(question, answer_id: victim.id) }.not_to change(Answer, :count)
+      expect(response).to have_http_status(:not_found)
+      expect(Answer.exists?(victim.id)).to be(true)
     end
   end
 

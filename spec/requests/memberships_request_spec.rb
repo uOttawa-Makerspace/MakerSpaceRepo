@@ -83,7 +83,7 @@ RSpec.describe "Memberships (HTTP contract)", type: :request do
     it "redirects guests to login without creating anything" do
       expect { post memberships_path, params: { membership: { membership_tier_id: tier.id } } }
         .not_to change(Membership, :count)
-      expect(response).to redirect_to(login_path(back_to: "/memberships"))
+      expect(response).to redirect_to(login_path)
     end
 
     context "signed in" do
@@ -191,7 +191,7 @@ RSpec.describe "Memberships (HTTP contract)", type: :request do
 
     it "sends guests to login" do
       post admin_create_membership_memberships_path, params: params
-      expect(response).to redirect_to(login_path(back_to: "/memberships/admin_create_membership"))
+      expect(response).to redirect_to(login_path)
     end
 
     it "answers a bare 401 to regular users and staff and creates nothing" do
@@ -262,7 +262,7 @@ RSpec.describe "Memberships (HTTP contract)", type: :request do
 
     it "sends guests to login and leaves the membership alone" do
       patch revoke_membership_path(membership)
-      expect(response).to redirect_to(login_path(back_to: "/memberships/#{membership.id}/revoke"))
+      expect(response).to redirect_to(login_path)
       expect(membership.reload.status).to eq("paid")
     end
 

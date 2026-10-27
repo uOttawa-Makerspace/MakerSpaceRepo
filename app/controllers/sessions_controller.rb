@@ -19,7 +19,7 @@ class SessionsController < ApplicationController
     respond_to do |format|
       if @user
         @user.update(last_signed_in_time: DateTime.now)
-        format.html { redirect_to(params[:back_to] || root_path) }
+        format.html { redirect_to(safe_back_to || root_path) }
         format.json do
           render json: {
                    user: @user.as_json,

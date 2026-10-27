@@ -6,7 +6,7 @@
         <h1 class="text-center"><%= t('sessions.login.sign_in') %></h1>
 
         <%= form_tag login_authentication_path do %>
-          <%= hidden_field_tag :back_to, params[:back_to] if params[:back_to].present? %>
+          <%= hidden_field_tag :back_to, safe_back_to if safe_back_to.present? %>
           
           <div class="mb-3 attach">
             <%= text_field_tag :username_email, params[:username_email], placeholder: t('sessions.login.username_or_email'), class: 'form-control' %>

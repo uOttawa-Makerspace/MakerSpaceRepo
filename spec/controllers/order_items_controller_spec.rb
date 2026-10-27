@@ -102,7 +102,7 @@ level: training_session.level)
         Order.last.update!(user: @volunteer)
         session[:order_id] = Order.last.id
         expect do
-          delete :destroy, params: { order_item_id: OrderItem.last.id }, format: "js"
+          delete :destroy, params: { id: OrderItem.last.id }, format: "js"
         end.to change(OrderItem, :count).by(-1)
         expect(flash[:notice]).to eq("Successfully removed item from cart")
         expect(response).to redirect_to carts_path

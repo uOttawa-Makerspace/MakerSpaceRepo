@@ -69,7 +69,10 @@ RSpec.describe "JobOrders gaps", type: :request do
         instance_exec(&request)
 
         expect(response).to have_http_status(:redirect)
-        expect(response.location).to start_with("http://www.example.com/login?back_to=")
+        # back_to is stored only for replayable (GET) requests; other verbs get a bare /login
+        expect(response.location).to(
+          integration_session.request.get? ? start_with("http://www.example.com/login?back_to=") : eq("http://www.example.com/login")
+        )
         expect(JobOrderStatus.count).to eq(statuses_before)
         expect(JobOrder.count).to eq(orders_before)
         expect(order.reload.is_deleted).to be(false)
@@ -112,7 +115,10 @@ RSpec.describe "JobOrders gaps", type: :request do
 
       it "bounces a guest from #{name} through the sign-in gate first" do
         instance_exec(&request)
-        expect(response.location).to start_with("http://www.example.com/login?back_to=")
+        # back_to is stored only for replayable (GET) requests; other verbs get a bare /login
+        expect(response.location).to(
+          integration_session.request.get? ? start_with("http://www.example.com/login?back_to=") : eq("http://www.example.com/login")
+        )
       end
     end
 

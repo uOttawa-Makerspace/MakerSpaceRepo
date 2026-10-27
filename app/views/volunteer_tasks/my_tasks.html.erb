@@ -267,9 +267,9 @@
                         <% end %>
 
                         <% if req.blank? %>
-                          <%= link_to create_request_volunteer_task_requests_path(id: vt.id),
-                                      class: "btn btn-sm btn-success fw-semibold d-inline-flex align-items-center justify-content-center gap-1 shadow-sm text-white",
-                                      data: { turbo_confirm: "Submit this task as completed for staff review?", confirm: "Submit this task as completed for staff review?" } do %>
+                          <%= button_to create_request_volunteer_task_requests_path(id: vt.id), method: :post,
+                                      form: { data: { turbo_confirm: "Submit this task as completed for staff review?" } },
+                                      class: "btn btn-sm btn-success fw-semibold d-inline-flex align-items-center justify-content-center gap-1 shadow-sm text-white" do %>
                             <i class="fa-solid fa-circle-check"></i>
                             <span>Submit Complete</span>
                           <% end %>

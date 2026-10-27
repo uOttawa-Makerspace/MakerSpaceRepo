@@ -54,11 +54,53 @@ class ApplicationController < ActionController::Base
     return if signed_in?
 
     respond_to do |format|
-      format.html { redirect_to login_path(back_to: request.fullpath) }
+      format.html { redirect_to login_path(back_to: login_back_to) }
       format.js { render js: "window.location.href = '#{login_path}'" }
       format.json { render json: "redirect" }
     end
   end
+
+  # Where to send the user after logging in. Only GET/HEAD URLs can be revisited;
+  # a POST/PATCH/DELETE target would 404 as a GET, so for those fall back to the
+  # referring page when it is on this host, otherwise nothing.
+  def login_back_to
+    if request.get? || request.head?
+      # On the login page itself the real destination is the one it was given.
+      return login_page_path?(request.path) ? safe_back_to : request.fullpath
+    end
+
+    # A failed login re-renders the login view at POST /login_authentication.
+    return safe_back_to if login_page_path?(request.path)
+
+    referer = URI.parse(request.referer.to_s)
+    return unless referer.is_a?(URI::HTTP) && referer.host.present? && referer.host == request.host
+
+    path = referer.request_uri
+    path unless login_page_path?(URI.parse(path).path)
+  rescue URI::InvalidURIError
+    nil
+  end
+
+  LOGIN_PAGE_PATHS = %w[/login /login_authentication].freeze
+
+  # /login and /login_authentication (POST-only; a failed login renders at that
+  # URL) normalised without trailing slash or format extension.
+  def login_page_path?(path)
+    LOGIN_PAGE_PATHS.include?(path.to_s.downcase.sub(/\.\w+\z/, "").chomp("/"))
+  end
+
+  # Same-site paths only: url_from drops foreign hosts, and protocol-relative
+  # or backslash forms ("//evil.com", "/\\evil.com") are refused outright.
+  def safe_back_to
+    target = params[:back_to].to_s
+    return if target.start_with?("//", "/\\")
+
+    safe = url_from(target)
+    safe unless safe && login_page_path?(URI.parse(safe).path)
+  rescue URI::InvalidURIError
+    nil
+  end
+  helper_method :login_back_to, :safe_back_to
 
   def parameter_missing(exception)
     respond_to do |format|

@@ -82,11 +82,11 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
 
       patch locker_rental_path(rental), params: { locker_rental: { state: "cancelled" } }
       expect(response)
-        .to redirect_to(login_path(back_to: "/locker_rentals/#{rental.id}"))
+        .to redirect_to(login_path)
 
       patch renew_locker_rental_path(rental)
       expect(response)
-        .to redirect_to(login_path(back_to: "/locker_rentals/#{rental.id}/renew"))
+        .to redirect_to(login_path)
 
       get expired_locker_rentals_path
       expect(response)
@@ -102,7 +102,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
 
       patch toggle_contacted_locker_rental_path(rental)
       expect(response)
-        .to redirect_to(login_path(back_to: "/locker_rentals/#{rental.id}/toggle_contacted"))
+        .to redirect_to(login_path)
     end
 
     it "does not mutate anything for a guest create attempt" do
@@ -110,7 +110,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         post locker_rentals_path,
              params: { locker_rental: { notes: "guest notes" } }
       end.not_to change(LockerRental, :count)
-      expect(response).to redirect_to(login_path(back_to: "/locker_rentals"))
+      expect(response).to redirect_to(login_path)
     end
   end
 

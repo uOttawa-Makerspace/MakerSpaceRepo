@@ -9,6 +9,8 @@ class OrderItemsController < DevelopmentProgramsController
                   revoke_order_item_modal
                 ]
 
+  before_action :ensure_admin_revoke, only: :revoke
+
   def create
     @order = current_order
     @order.user = current_user
@@ -49,7 +51,7 @@ class OrderItemsController < DevelopmentProgramsController
 
   def destroy
     @order = current_order
-    @order_item = @order.order_items.find(params[:order_item_id])
+    @order_item = @order.order_items.find(params[:id])
     @order_item.destroy
     @order_items = @order.order_items
     redirect_to carts_path, notice: "Successfully removed item from cart"
@@ -62,7 +64,7 @@ class OrderItemsController < DevelopmentProgramsController
     else
       flash[:alert] = "There was an error trying to revoke the badge, please try again later."
     end
-    redirect_to admin_badges_path
+    redirect_to admin_manage_badges_path
   end
 
   def order_item_modal
@@ -84,6 +86,10 @@ class OrderItemsController < DevelopmentProgramsController
 
   def ensure_staff_modal
     head :forbidden unless current_user.staff?
+  end
+
+  def ensure_admin_revoke
+    head :forbidden unless current_user.admin?
   end
 
   def order_item_params

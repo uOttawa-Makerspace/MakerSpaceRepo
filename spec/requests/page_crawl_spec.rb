@@ -20,8 +20,6 @@ RSpec.describe "Page crawl (request level)", type: :request, skip_bullet: true d
     "/staff_availabilities/get_availabilities" => ALL.index_with { "D-CRAWL02" },
     "/staff_availabilities/new" => ALL.index_with { "D-CRAWL02" },
     "/staff_availabilities/:id/edit" => ALL.index_with { "D-CRAWL02" },
-    "/learning_module_track/start" => %i[regular staff admin].index_with { "D-CRAWL03" },
-    "/learning_module_track/completed" => %i[regular staff admin].index_with { "D-CRAWL03" },
     "/job_orders/:job_order_id/quote_modal" => %i[staff admin].index_with { "D-CRAWL04" },
     "/job_orders/:job_order_id/decline_modal" => %i[staff admin].index_with { "D-CRAWL04" },
     "/job_orders/:job_order_id/comments_modal" => %i[staff admin].index_with { "D-CRAWL04" },
