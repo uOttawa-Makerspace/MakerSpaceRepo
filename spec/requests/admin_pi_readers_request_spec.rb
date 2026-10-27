@@ -48,4 +48,42 @@ RSpec.describe "Admin pi readers", type: :request do
     expect(response).to redirect_to(root_path)
     expect(flash[:alert]).to match(/pi_reader_params/)
   end
+
+  # D-EQ03: readers no longer self-register on their first tap, so admins register them here
+  describe "POST /admin/pi_readers (register a reader)" do
+    let(:create_params) { { pi_reader_params: { pi_mac_address: "aa:bb:cc:00:11:22", space_id: space.id, pi_location: "Door" } } }
+
+    %i[guest regular staff volunteer].each do |role|
+      it "redirects a #{role} to / without creating a reader" do
+        sign_in_as(role)
+        expect { post admin_pi_readers_path, params: create_params }.not_to change(PiReader, :count)
+        expect(response).to redirect_to("/")
+      end
+    end
+
+    it "lets an admin register a reader with its space and location" do
+      sign_in_as(:admin)
+      expect { post admin_pi_readers_path, params: create_params, headers: { "HTTP_REFERER" => admin_keys_url } }.to change(PiReader, :count).by(1)
+      expect(response).to redirect_to(admin_keys_url)
+      expect(flash[:notice]).to eq("Reader registered")
+      expect(PiReader.last).to have_attributes(pi_mac_address: "aa:bb:cc:00:11:22", space_id: space.id, pi_location: "Door")
+    end
+
+    it "refuses a duplicate or blank mac address with an alert" do
+      sign_in_as(:admin)
+      existing = create(:pi_reader)
+      expect do
+        post admin_pi_readers_path, params: { pi_reader_params: { pi_mac_address: existing.pi_mac_address } }
+        expect(flash[:alert]).to match(/Pi mac address has already been taken/)
+        post admin_pi_readers_path, params: { pi_reader_params: { pi_mac_address: "" } }
+        expect(flash[:alert]).to match(/Pi mac address This field is required/)
+      end.not_to change(PiReader, :count)
+    end
+  end
+
+  it "shows the register-reader form on the space edit page for an admin" do
+    sign_in_as(:admin)
+    get edit_admin_space_path(space)
+    expect(response.body).to include("Register a new RFID Reader").and include(admin_pi_readers_path)
+  end
 end

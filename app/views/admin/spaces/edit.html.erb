@@ -133,6 +133,15 @@
         </tr>
       <% end %>
     </table>
+
+    <h3>Register a new RFID Reader</h3>
+    <p>Readers must be registered here before their taps are accepted.</p>
+    <%= form_with url: admin_pi_readers_path, scope: :pi_reader_params, method: :post, class: 'd-flex gap-2' do |f| %>
+      <%= f.text_field :pi_mac_address, class: 'form-control', placeholder: 'MAC address', required: true %>
+      <%= f.text_field :pi_location, class: 'form-control', placeholder: 'Location (optional)' %>
+      <%= f.hidden_field :space_id, value: @space.id %>
+      <%= f.submit 'Register reader for ' + @space.name, class: 'btn btn-primary' %>
+    <% end %>
   </div>
 
   <br>
