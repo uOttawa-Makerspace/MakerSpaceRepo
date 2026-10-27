@@ -551,9 +551,9 @@ class User < ApplicationRecord
   # by current_user). Called when the credentials or rights behind them change:
   # sign out, password change/reset, admin lock, demotion from staff/admin. A
   # still-valid session simply reconnects and is re-checked at the handshake.
-  # Best effort: it runs after the change is already committed (the solid_cable
-  # broadcast is an INSERT that can fail), so a failure is reported, never raised
-  # (callers rescue ActiveRecordError and would wrongly report the change as failed).
+  # Best effort: it runs after the change is already committed (mostly from the
+  # after_update_commit below; the solid_cable broadcast is an INSERT that can fail),
+  # so a failure is reported, never raised.
   # Rescues StandardError, not just ActiveRecordError: any broadcast failure (Timeout,
   # a raw PG error from the pool, ActionCable server errors) must not 500 a role change,
   # delete, lock or logout that already happened. Rails.error.report keeps real bugs
