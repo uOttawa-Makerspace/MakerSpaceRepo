@@ -25,7 +25,9 @@ end
 #
 # Rejected: bad signature / expired token, a `ver` that differs from the
 # user's token_version (a token without `ver` counts as version 0), and users
-# that are gone, soft-deleted, locked or inactive (AuthEligibility).
+# that are gone, soft-deleted or inactive (AuthEligibility). Locks are not looked
+# at: an admin lock revokes tokens by bumping token_version; a timed lockout
+# blocks new logins only.
 module JwtAuthenticator
   module_function
 
