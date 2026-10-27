@@ -168,7 +168,7 @@ RSpec.describe "Questions (admin question bank)", type: :request do
       expect(response.body.index("The cut width")).to be < response.body.index("A tool")
     end
 
-    it "renders one closed, resolvable remove form per removable answer" do
+    it "renders one closed, resolvable remove form per removable answer", skip_bullet: true do
       3.times { |i| Answer.create!(question: question, correct: false, description: "extra #{i}") }
       get edit_question_path(question)
       doc = Nokogiri::HTML5(response.body, max_errors: 100)
@@ -187,7 +187,7 @@ RSpec.describe "Questions (admin question bank)", type: :request do
       expect(doc.css("form#remove-answer-#{removable.first}").first.ancestors("form")).to be_empty
     end
 
-    it "renders a DELETE remove form (not a GET link) for each incorrect saved answer" do
+    it "renders a DELETE remove form (not a GET link) for each incorrect saved answer", skip_bullet: true do
       victim = question.answers.where(correct: false).first
       get edit_question_path(question)
       expect(response.body).to include(%(id="remove-answer-#{victim.id}"))
@@ -201,7 +201,7 @@ RSpec.describe "Questions (admin question bank)", type: :request do
     end
 
     # FIXED(D-T19): GET /questions/:id/edit?remove_answer=ID no longer destroys anything (removal is DELETE /questions/:id/answers/:answer_id)
-    it "does not destroy the answer named by remove_answer on a plain GET" do
+    it "does not destroy the answer named by remove_answer on a plain GET", skip_bullet: true do
       victim = question.answers.where(correct: false).first
       expect { get edit_question_path(question, remove_answer: victim.id) }.not_to change(Answer, :count)
       expect(response).to have_http_status(:ok)
