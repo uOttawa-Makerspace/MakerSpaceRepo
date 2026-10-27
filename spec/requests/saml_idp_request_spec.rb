@@ -11,10 +11,9 @@ require "zlib"
 #
 # Gate facts (verified in the controller, not assumed):
 #  * SamlIdpController < ApplicationController (NOT SessionsController): no
-#    session_expiry/activity hooks, no rate_limit.
-#  * `before_action :validate_saml_request` only RECORDS validity: its return
-#    value cannot halt, so requests with unknown issuers / foreign ACS URLs are
-#    processed exactly like valid ones (D-R13).
+#    session_expiry/activity hooks.
+#  * `enforce_saml_request` halts on the gem's validity verdict (D-R13): 400
+#    for a missing/garbage request, 403 for an unknown issuer / foreign ACS.
 #  * `protect_from_forgery with: :exception` is declared here, unlike the
 #    app-wide (ineffective, D-B26) declaration, so CSRF is enforced for
 #    POST /saml/auth when forgery protection is enabled.
@@ -134,12 +133,20 @@ RSpec.describe "SAML IdP", type: :request do
       expect(response.body).to include('value="current_user"', 'value="logout"', user.username, ERB::Util.html_escape(user.name))
     end
 
-    it "renders the login page (200) even when the SAMLRequest is missing or garbage (no validation gate)" do
-      # WART(D-R13): validate_saml_request is a before_action whose false result cannot halt; the old spec expected 403 for a bad SAMLRequest, today every request proceeds
+    it "answers 400 for a missing or garbage SAMLRequest (D-R13)" do
       get "/saml/auth"
-      expect(response).to have_http_status(:ok)
+      expect(response).to have_http_status(:bad_request)
       get "/saml/auth", params: { SAMLRequest: "abc" }
-      expect(response).to have_http_status(:ok)
+      expect(response).to have_http_status(:bad_request)
+      get "/saml/auth", params: { SAMLRequest: ["x"] }
+      expect(response).to have_http_status(:bad_request)
+    end
+
+    it "answers 403 for an unknown issuer and for an ACS host the SP is not registered for (D-R13)" do
+      get "/saml/auth", params: { SAMLRequest: c18_authn_request(issuer: "evil.example.com", acs: "https://evil.example.com/acs") }
+      expect(response).to have_http_status(:forbidden)
+      get "/saml/auth", params: { SAMLRequest: c18_authn_request(issuer: "rooms.makerepo.com", acs: "https://evil.example.com/steal") }
+      expect(response).to have_http_status(:forbidden)
     end
   end
 
@@ -307,35 +314,41 @@ RSpec.describe "SAML IdP", type: :request do
       expect(response.body).to include("Invalid request")
     end
 
-    it "signed in with no SAMLRequest at all is a 500 ('Unknown request')" do
-      # WART(D-R18): encode_response raises RuntimeError for a request that is neither an AuthnRequest nor a LogoutRequest, so a signed-in user posting without/with garbage SAMLRequest gets a 500 page
+    it "answers 400 (not a 500) for a missing or garbage SAMLRequest, even signed in (D-R18)" do
       c18_sign_in(:regular)
       post "/saml/auth", params: { submit: "current_user" }
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:bad_request)
       post "/saml/auth", params: { submit: "current_user", SAMLRequest: "abc" }
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:bad_request)
+      post "/saml/auth", params: { submit: "current_user", SAMLRequest: Base64.strict_encode64("<not-xml") }
+      expect(response).to have_http_status(:bad_request)
+      post "/saml/auth", params: { submit: "current_user", SAMLRequest: ["x"] }
+      expect(response).to have_http_status(:bad_request)
     end
 
-    context "SECURITY: SAML request validation does not gate issuance" do
-      it "signs an assertion for an UNKNOWN issuer and posts it to the attacker-chosen ACS URL" do
-        # WART(D-R13): validate_saml_request's result is ignored (before_action cannot halt on false), so an AuthnRequest from an unregistered issuer/ACS host (evil.example.com) gets a signed assertion for the signed-in user; with Issuer set to a real SP id (audience restriction satisfied) the attacker can replay it at the genuine ACS. Verified: valid_service_provider/response host checks run but are not enforced.
-        signed_in = c18_sign_in(:regular)
+    context "SECURITY: SAML request validation gates issuance (D-R13)" do
+      it "refuses an UNKNOWN issuer with 403 and issues no assertion" do
+        c18_sign_in(:regular)
         evil = c18_authn_request(issuer: "evil.example.com", acs: "https://evil.example.com/acs")
         post "/saml/auth", params: { SAMLRequest: evil, submit: "current_user" }
-        expect(response).to have_http_status(:ok)
-        expect(c18_form_action).to eq("https://evil.example.com/acs")
-        doc = Nokogiri::XML(c18_saml_response_xml)
-        doc.remove_namespaces!
-        expect(doc.at_xpath("//Assertion/Subject/NameID").text).to eq(signed_in.id.to_s)
-        expect(doc.at_xpath("//Assertion/Signature")).to be_present
+        expect(response).to have_http_status(:forbidden)
+        expect(response.body).not_to include("evil.example.com")
       end
 
-      it "for a registered SP WITHOUT a configured acs_url (rooms) also posts to the request's own foreign ACS" do
-        # same WART(D-R13): the response_hosts allow-list is checked by Request#valid? but never enforced, so a registered issuer without a pinned acs_url can be paired with any ACS URL
+      it "refuses a registered SP (rooms) paired with a foreign ACS host" do
         c18_sign_in(:regular)
         spoofed = c18_authn_request(issuer: "rooms.makerepo.com", acs: "https://evil.example.com/steal")
         post "/saml/auth", params: { SAMLRequest: spoofed, submit: "current_user" }
-        expect(c18_form_action).to eq("https://evil.example.com/steal")
+        expect(response).to have_http_status(:forbidden)
+        expect(c18_saml_response_xml).to be_nil
+      end
+
+      it "still issues to a registered SP whose ACS host is allowed" do
+        c18_sign_in(:regular)
+        ok = c18_authn_request(issuer: "rooms.makerepo.com", acs: "https://rooms.makerepo.com/users/auth/saml/callback")
+        post "/saml/auth", params: { SAMLRequest: ok, submit: "current_user" }
+        expect(response).to have_http_status(:ok)
+        expect(c18_form_action).to eq("https://rooms.makerepo.com/users/auth/saml/callback")
         doc = Nokogiri::XML(c18_saml_response_xml)
         doc.remove_namespaces!
         expect(doc.at_xpath("//Assertion/Conditions/AudienceRestriction/Audience").text).to eq("rooms.makerepo.com")
@@ -348,11 +361,22 @@ RSpec.describe "SAML IdP", type: :request do
         expect(c18_form_action).to eq(WIKIJS_ACS)
       end
 
-      it "a guest cannot obtain an assertion without credentials" do
-        post "/saml/auth", params: { SAMLRequest: c18_authn_request(issuer: "evil.example.com", acs: "https://evil.example.com/acs"),
-                                     submit: "current_user" }
+      it "refuses with 403 when the SP config requires a signed request and the request is not signed" do
+        original = SamlIdp.config.service_provider.finder
+        SamlIdp.config.service_provider.finder = lambda do |id|
+          original.call(id)&.merge(sign_authn_request: true, cert: "", fingerprint: "")
+        end
+        c18_sign_in(:regular)
+        post "/saml/auth", params: { SAMLRequest: c18_authn_request, submit: "current_user" }
+        expect(response).to have_http_status(:forbidden)
         expect(c18_saml_response_xml).to be_nil
-        expect(response.body).not_to include("evil.example.com/acs")
+      ensure
+        SamlIdp.config.service_provider.finder = original
+      end
+
+      it "a guest cannot obtain an assertion without credentials" do
+        post "/saml/auth", params: { SAMLRequest: c18_authn_request, submit: "current_user" }
+        expect(c18_saml_response_xml).to be_nil
       end
     end
 

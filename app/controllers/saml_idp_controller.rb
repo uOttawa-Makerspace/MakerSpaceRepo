@@ -8,7 +8,7 @@ class SamlIdpController < ApplicationController
 
   protect_from_forgery with: :exception
 
-  before_action :validate_saml_request, only: %i[login auth]
+  before_action :enforce_saml_request, only: %i[login auth]
 
   layout false # this is technically outside the "standard" website
 
@@ -54,6 +54,30 @@ class SamlIdpController < ApplicationController
   end
 
   private
+
+  # The gem's validate_saml_request only returns true/false, which a
+  # before_action cannot act on, so check the verdict here and halt:
+  #   400 - no request, or one that is not a parseable AuthnRequest/LogoutRequest
+  #   403 - a well-formed request from an unknown issuer, an ACS host the SP is
+  #         not registered for, or one whose required signature does not verify
+  def enforce_saml_request
+    raw = params[:SAMLRequest]
+    return head :bad_request unless raw.is_a?(String) && raw.present?
+
+    begin
+      valid = validate_saml_request(raw)
+      malformed = saml_request.issuer.blank? || saml_request.errors.include?(:unaccepted_request)
+    rescue StandardError => e # undecodable payload, bad XML, unparseable ACS URL
+      Rails.logger.info("SAML request rejected as malformed: #{e.class}")
+      return head :bad_request
+    end
+
+    return if valid
+    return head :bad_request if malformed
+
+    Rails.logger.warn("SAML request refused for issuer #{saml_request.issuer.to_s.truncate(200).inspect}: #{saml_request.errors.join(',')}")
+    head :forbidden
+  end
 
   # The same refusals the HTML login words (SessionsController#login_authentication),
   # as plain text for this page.
