@@ -6,11 +6,25 @@ require "rails_helper"
 # is no connection authentication at all.
 RSpec.describe "Tap box ActionCable channels" do
   describe ApplicationCable::Connection, type: :channel do
-    # WART(D-EQ30): ApplicationCable::Connection accepts every websocket and sets current_user to a random Integer; nothing authenticates cable subscribers
-    it "accepts a connection with no cookies and identifies it as an Integer" do
-      connect "/cable"
-      expect(connection.current_user).to be_a(Integer)
-      expect(connection.current_user).to be_between(0, 99)
+    # FIXED(D-EQ30): the connection identifies the user from the session cookie and rejects everyone else
+    it "identifies the session's user" do
+      user = create(:user, :staff)
+      connect "/cable", session: { user_id: user.id }
+      expect(connection.current_user).to eq(user)
+    end
+
+    it "identifies a regular user too (channels decide what they may subscribe to)" do
+      user = create(:user, :regular_user)
+      connect "/cable", session: { user_id: user.id }
+      expect(connection.current_user).to eq(user)
+    end
+
+    it "rejects a connection with no session" do
+      expect { connect "/cable" }.to have_rejected_connection
+    end
+
+    it "rejects a session whose user no longer exists" do
+      expect { connect "/cable", session: { user_id: 0 } }.to have_rejected_connection
     end
   end
 
@@ -51,10 +65,12 @@ RSpec.describe "Tap box ActionCable channels" do
       expect(subscription).to be_rejected
     end
 
-    # WART(D-EQ08): with the real connection (current_user is a random Integer) subscribe raises NoMethodError on Integer#staff?, so the console status channel never confirms, even for staff
-    it "raises for the Integer identity the real connection assigns" do
-      stub_connection current_user: 42
-      expect { subscribe }.to raise_error(NoMethodError, /staff\?/)
+    # FIXED(D-EQ08): with a real (authenticated) connection the console channel confirms for staff
+    it "confirms for the staff user the real connection identifies" do
+      staff = create(:user, :staff)
+      stub_connection current_user: staff
+      subscribe
+      expect(subscription).to be_confirmed
     end
   end
 end
