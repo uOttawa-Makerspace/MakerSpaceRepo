@@ -575,8 +575,8 @@ Rails.application.routes.draw do
       get :join_development_program
       get :requests
       put :complete_project
-      get :approve_project
-      get :revoke_project
+      post :approve_project
+      post :revoke_project
       get :generate_acquired_badge
     end
   end
