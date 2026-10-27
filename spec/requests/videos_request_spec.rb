@@ -218,6 +218,114 @@ RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
       expect(response).to have_http_status(:unauthorized)
     end
 
+    describe "revoked or deactivated callers (D-I01, D-I03)" do
+      let(:member) { create(:user, :volunteer_with_dev_program) }
+
+      def bearer_for(user, **claims)
+        token = JWT.encode({ user_id: user.id, exp: 1.hour.from_now.to_i }.merge(claims),
+                           Rails.application.credentials.secret_key_base, "HS256")
+        { "Authorization" => "Bearer #{token}" }
+      end
+
+      def admin_toggle_lock!(target)
+        admin = User.where(role: "admin").first || create(:user, :admin)
+        sess = open_session
+        sess.post login_authentication_path, params: { username_email: admin.username, password: "asa32A353#" }
+        sess.put toggle_lock_user_admin_users_path, params: { id: target.id }
+      end
+
+      def upload!(headers = {})
+        expect { post rails_direct_uploads_path, params: payload, as: :json, headers: headers }
+          .not_to change(ActiveStorage::Blob, :count)
+      end
+
+      it "refuses a JWT whose ver is stale (password changed since)" do
+        headers = bearer_for(member, ver: 0)
+        member.update_columns(token_version: 1)
+        upload!(headers)
+        expect(response).to have_http_status(:unauthorized)
+      end
+
+      it "accepts a JWT with the current ver, and a pre-deploy JWT without ver for a version-0 user" do
+        [bearer_for(member, ver: 0), bearer_for(member)].each do |headers|
+          post rails_direct_uploads_path, params: payload, as: :json, headers: headers
+          expect(response).to have_http_status(:ok)
+        end
+      end
+
+      it "refuses a JWT of an inactive user" do
+        headers = bearer_for(member, ver: 0)
+        member.update_columns(active: false)
+        upload!(headers)
+        expect(response).to have_http_status(:unauthorized)
+      end
+
+      it "refuses a JWT of an admin-locked user" do
+        headers = bearer_for(member, ver: 0)
+        admin_toggle_lock!(member)
+        upload!(headers)
+        expect(response).to have_http_status(:unauthorized)
+      end
+
+      it "refuses a JWT of a soft-deleted user" do
+        headers = bearer_for(member, ver: 0)
+        member.update_columns(deleted: true)
+        upload!(headers)
+        expect(response).to have_http_status(:unauthorized)
+      end
+
+      it "refuses a cookie session opened before a password change" do
+        content_login!(member)
+        member.update_columns(token_version: 1)
+        upload!
+        expect(response).to have_http_status(:unauthorized)
+      end
+
+      it "refuses a cookie session idle for more than 72 hours, as every page does" do
+        content_login!(member)
+        travel 73.hours do
+          upload!
+          expect(response).to have_http_status(:unauthorized)
+        end
+      end
+
+      it "accepts a cookie session idle for less than 72 hours" do
+        content_login!(member)
+        travel 71.hours do
+          post rails_direct_uploads_path, params: payload, as: :json
+          expect(response).to have_http_status(:ok)
+        end
+      end
+
+      it "accepts a cookie session during a timed (brute-force) lockout" do
+        content_login!(member)
+        member.update_columns(locked: true, locked_until: 4.minutes.from_now)
+        post rails_direct_uploads_path, params: payload, as: :json
+        expect(response).to have_http_status(:ok)
+      end
+
+      it "refuses a cookie session of a user admin-locked afterwards" do
+        content_login!(member)
+        admin_toggle_lock!(member)
+        upload!
+        expect(response).to have_http_status(:unauthorized)
+      end
+
+      it "refuses a cookie session of a user soft-deleted afterwards" do
+        content_login!(member)
+        member.update_columns(deleted: true)
+        upload!
+        expect(response).to have_http_status(:unauthorized)
+      end
+
+      it "refuses a cookie session of a user deactivated afterwards" do
+        content_login!(member)
+        member.update_columns(active: false)
+        upload!
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+
     it "issues a signed upload target to a signed-in user" do
       content_login!(create(:user, :volunteer_with_dev_program))
       expect { post rails_direct_uploads_path, params: payload, as: :json }.to change(ActiveStorage::Blob, :count).by(1)

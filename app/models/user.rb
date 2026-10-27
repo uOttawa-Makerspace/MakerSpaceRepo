@@ -188,10 +188,16 @@ class User < ApplicationRecord
             inclusion: { in: [true] },
             on: :create
 
+  validates :password, confirmation: true, presence: true
+
+  # The strength rules (nobspw) are for a PLAINTEXT password. The column holds a
+  # bcrypt hash, which can contain a word of the name/email by chance, so the
+  # rules must not run on it (they used to, on every update of the user, making
+  # unrelated saves such as the brute-force lock fail silently).
+  PASSWORD_STRENGTH_OPTIONS = { name: :username, email: :email }.freeze
   validates :password,
-            confirmation: true,
-            presence: true,
-            password: { name: :username, email: :email }
+            password: PASSWORD_STRENGTH_OPTIONS,
+            if: :plaintext_password_changing?
 
   validates :gender,
             presence: true,
@@ -250,6 +256,24 @@ class User < ApplicationRecord
   # ============================================
 
   default_scope { where(deleted: false) }
+
+  EMAIL_CHANGE_VERIFIER = -> { Rails.application.message_verifier(:email_change) }
+
+  # D-I10/D-I11: purpose-scoped, expiring reset token that dies with the
+  # password it was issued for (the digest changes on every reset).
+  generates_token_for :password_reset, expires_in: 2.hours do
+    password&.last(10)
+  end
+
+  # D-I11: confirmation (3 days, dies once confirmed) and unlock (1 hour, dies
+  # once the lock is cleared) links are purpose-scoped as well.
+  generates_token_for :email_confirmation, expires_in: 3.days do
+    confirmed
+  end
+
+  generates_token_for :account_unlock, expires_in: 1.hour do
+    [locked, locked_until&.to_i]
+  end
 
   scope :no_waiver_users, -> { where(read_and_accepted_waiver_form: false) }
   
@@ -355,8 +379,53 @@ class User < ApplicationRecord
     @pword ||= Password.new(password)
   end
 
+  # The memoized Password must not outlive the row it was built from
+  # (a rolled-back change_password reloads the user).
+  def reload(*)
+    @pword = nil
+    @own_password_hash = nil
+    super
+  end
+
+  # True unless the value in `password` is the hash pword= produced: a
+  # bcrypt-SHAPED string typed by a user is still a plaintext password.
+  def plaintext_password_changing?
+    password_changed? && password.present? && password != @own_password_hash
+  end
+
+  # Problems with a candidate plaintext password (strength rules only; no other
+  # validation of the user runs). Leaves the plaintext assigned, like update would.
+  def plaintext_password_problems(plain)
+    errors.clear
+    self.password = plain
+    self.password_confirmation = plain
+    errors.add(:password, :blank) if plain.blank?
+    if plain.present?
+      ActiveModel::Validations::PasswordValidator
+        .new(attributes: [:password], **PASSWORD_STRENGTH_OPTIONS)
+        .validate_each(self, :password, plain)
+    end
+    errors.full_messages_for(:password)
+  end
+
+  # Stores a new password and what goes with it (token_version bump, and the
+  # timed lockout if asked) with ONE UPDATE of those columns only. The plaintext
+  # was checked beforehand (plaintext_password_problems); validating the whole row
+  # again would block users whose row fails an unrelated, legacy validation
+  # (old usernames, a stale gender, a student without a program ...).
+  # Callers must have checked plaintext_password_problems(plain) first (one UPDATE, no transaction needed).
+  def store_new_password!(plain, clear_timed_lock: false)
+    clear_lock = clear_timed_lock && timed_lockout?
+    self.pword = plain
+    columns = { password: password, token_version: token_version, updated_at: Time.current }
+    columns.merge!(locked: false, auth_attempts: 0, locked_until: nil) if clear_lock
+    update_columns(columns)
+  end
+
   def pword=(new_password)
     @pword = Password.create(new_password)
+    @own_password_hash = @pword.to_s
+    self.token_version += 1 if persisted?
     self.password = @pword
     self.password_confirmation = @pword
   end
@@ -373,8 +442,11 @@ class User < ApplicationRecord
     super
   end
 
+  # Lock bookkeeping uses update_columns: a validated update silently fails for a
+  # row that is invalid for an unrelated legacy reason, and the lock would never
+  # persist (unlimited guessing).
   def reset_auth_attempts!
-    update(auth_attempts: 0)
+    update_columns(auth_attempts: 0)
   end
 
   def record_failed_attempt!
@@ -382,28 +454,60 @@ class User < ApplicationRecord
     lock_account! if auth_attempts >= MAX_AUTH_ATTEMPTS
   end
 
+  # A lock (timed or admin) blocks NEW logins; it never ends existing sessions.
+  def lock_in_effect?
+    locked? && (locked_until.nil? || locked_until > Time.current)
+  end
+
+  # The brute-force lockout (locked_until within TIMED_LOCKOUT_CEILING, or already
+  # lapsed), as opposed to an admin lock (99 years ahead, or no end). The ceiling is
+  # deliberately far above LOCK_DURATION so clock skew between nodes cannot
+  # misclassify a lock. Only the timed kind is cleared by a password reset. The
+  # migration backfill (AddTokenVersionToUsers) uses the same one-day threshold.
+  TIMED_LOCKOUT_CEILING = 1.day
+
+  def timed_lockout?
+    locked? && locked_until.present? && locked_until <= TIMED_LOCKOUT_CEILING.from_now
+  end
+
+  # Never shortens an existing lock (an admin lock lasts 99 years): a no-op, and
+  # no second unlock mail, when the user is already locked for longer.
   def lock_account!
-    update(locked: true, locked_until: LOCK_DURATION.from_now)
+    new_until = LOCK_DURATION.from_now
+    return if lock_in_effect? && (locked_until.nil? || locked_until >= new_until)
+
+    update_columns(locked: true, locked_until: new_until)
     send_unlock_email
   end
 
   def send_unlock_email
-    user_hash = Rails.application.message_verifier('unlock').generate(id)
+    user_hash = generate_token_for(:account_unlock)
     MsrMailer.unlock_account(self, user_hash).deliver_now
   end
 
   def token(exp = 14.days.from_now.to_i)
     JWT.encode(
-      { user_id: id, exp: exp },
+      { user_id: id, ver: token_version, exp: exp },
       Rails.application.credentials.secret_key_base,
       'HS256'
     )
   end
 
+  # D-I12: bound to this user, the target address and the current address (so
+  # it dies once the address changes), purpose-scoped, valid for 24 hours.
+  def generate_email_change_token(new_email)
+    EMAIL_CHANGE_VERIFIER.call.generate([id, new_email, email], purpose: :email_change, expires_in: 24.hours)
+  end
+
+  # Returns [user, new_email] for a live token, nil otherwise.
+  def self.email_change_from_token(token)
+    id, new_email, old_email = EMAIL_CHANGE_VERIFIER.call.verified(token.to_s, purpose: :email_change)
+    user = find_by(id: id) if id
+    [user, new_email] if user && user.email == old_email
+  end
+
   def send_password_reset
-    user_hash = Rails.application.message_verifier(:user).generate(id)
-    expiry_date_hash = Rails.application.message_verifier(:user).generate(1.day.from_now)
-    MsrMailer.forgot_password(email, user_hash, expiry_date_hash).deliver_now
+    MsrMailer.forgot_password(email, generate_token_for(:password_reset)).deliver_now
   end
 
   # ============================================

@@ -22,11 +22,11 @@ RSpec.describe MsrMailer, type: :mailer do
     expect(mail.subject).to eq("Welcome to MakerRepo")
   end
 
-  it "email_confirmation_email goes to the NEW address with both tokens" do
-    mail = MsrMailer.email_confirmation_email("new@example.com", user, "UT", "ET")
+  it "email_confirmation_email goes to the NEW address with the change token" do
+    mail = MsrMailer.email_confirmation_email("new@example.com", user, "ECT")
     expect(mail.to).to eq(["new@example.com"])
     expect(mail.subject).to eq("Makerepo | Please confirm your new email")
-    expect(mail.body.encoded).to include("email_token=ET").and include("user_token=UT")
+    expect(mail.body.encoded).to include("confirm_edited_email?token=ECT")
   end
 
   it "email_changed_email goes to the OLD address" do
@@ -41,11 +41,11 @@ RSpec.describe MsrMailer, type: :mailer do
     expect(mail.subject).to eq("MakerRepo | Your password has been changed")
   end
 
-  it "forgot_password carries both reset tokens and says the link lasts 24 hours" do
-    mail = MsrMailer.forgot_password("a@b.co", "UHASH", "EHASH")
+  it "forgot_password carries the reset token and says the link lasts 2 hours" do
+    mail = MsrMailer.forgot_password("a@b.co", "RTOKEN")
     expect(mail.to).to eq(["a@b.co"])
     expect(mail.subject).to eq("Reset your MakerRepo password")
-    expect(mail.body.encoded).to include("UHASH").and include("EHASH").and include("24 hours")
+    expect(mail.body.encoded).to include("reset_password_form?token=RTOKEN").and include("2 hours")
   end
 
   it "unlock_account carries the unlock token" do

@@ -1,24 +1,88 @@
 # frozen_string_literal: true
 
+require Rails.root.join("lib/jwt_authenticator")
+
 module ApplicationHelper
   attr_accessor :github
 
+  # Keys that are not about who is signed in and must survive the session
+  # reset done on sign-in (sign-out keeps only the locale).
+  SESSION_KEYS_KEPT_ON_SIGN_IN = %w[locale expires_at authorized_repo_ids selected_dates order_id].freeze
+
+  # Every login path (HTML, JSON, SAML) goes through here, so the refusals live
+  # here: a lock still in effect (checked BEFORE the password so a locked account
+  # cannot be probed or have its lock rewritten by failed attempts), a
+  # deactivated account (D-I03) and an unconfirmed one. The caller words the
+  # refusal from @sign_in_refusal (:locked, :inactive, :unconfirmed).
   def sign_in(username_email, password)
+    @sign_in_refusal = nil
+    candidate = User.username_or_email(username_email)
+    if candidate&.locked?
+      if candidate.lock_in_effect?
+        @sign_in_refusal = :locked
+        return nil
+      end
+      candidate.update_columns(locked: false, auth_attempts: 0) # the timed lockout has lapsed
+    end
+
     user = User.authenticate(username_email, password)
-    session[:user_id] = user.id unless user.nil?
+    if user&.active == false
+      @sign_in_refusal = :inactive
+      return nil
+    end
+    if user && !user.confirmed?
+      @sign_in_refusal = :unconfirmed
+      return nil
+    end
+    unless user.nil?
+      kept = session.to_hash.slice(*SESSION_KEYS_KEPT_ON_SIGN_IN)
+      reset_session # new session id on privilege change (session fixation)
+      kept.each { |key, value| session[key] = value }
+      session[:user_id] = user.id
+      session[:token_version] = user.token_version
+      reset_auth_memo # a user memoized earlier in this request (set_last_seen_at) is stale now
+    end
     user
   end
 
+  # " or wait 5 minutes" for a timed (brute-force) lockout; nothing for an admin
+  # lock, which has no meaningful wait (99 years, or no end).
+  def lock_wait_suffix(user, verb = "wait")
+    return "" unless user&.timed_lockout?
+
+    " or #{verb} #{ActionController::Base.helpers.distance_of_time_in_words(user.locked_until, Time.current)}"
+  end
+
   def sign_out
-    session[:user_id] = nil
-    session[:authorized_repo_ids] = nil
-    session[:selected_dates] = nil
-    session[:order_id] = nil
+    locale = session[:locale]
+    reset_session
+    session[:locale] = locale if locale
+    reset_auth_memo
   end
 
   def current_user
-    @user ||= User.find(session[:user_id]) if signed_in?
+    @user ||= session_user
+    @user ||= jwt_user
     @user ||= User.new
+  end
+
+  # The cookie-session user, or nil. A session whose stored token_version no
+  # longer matches the user's (password changed/reset elsewhere; a session
+  # without the key is version 0), or whose user was deactivated (D-I03), is
+  # ended like an expired session.
+  def session_user
+    return @session_user if defined?(@session_user)
+
+    @session_user = nil
+    return nil if session[:user_id].blank?
+
+    user = User.find_by(id: session[:user_id])
+    if SessionAuthenticator.valid_for?(session, user)
+      @session_user = user
+    else
+      sign_out
+    end
+    @session_user
   end
 
   def github_client
@@ -27,31 +91,19 @@ module ApplicationHelper
   end
 
   def signed_in?
-    session[:user_id].present? || has_valid_jwt?
+    session_user.present? || has_valid_jwt?
   end
 
   def has_valid_jwt?
-    auth_header = request.headers["Authorization"]
-    if auth_header
-      user_token = auth_header.split(" ")[1]
-      begin
-        decoded_token =
-          JWT.decode(
-            user_token,
-            Rails.application.credentials.secret_key_base,
-            true,
-            { algorithm: "HS256" }
-          )
-        session[:user_id] = decoded_token[0]["user_id"]
-        return true
-      rescue JWT::ExpiredSignature
-        return false
-      rescue JWT::DecodeError
-        return false
-      end
-    end
+    jwt_user.present?
+  end
 
-    false
+  # The user a valid Bearer token authenticates. Not written to the session:
+  # a Bearer request must not mint a cookie session.
+  def jwt_user
+    return @jwt_user if defined?(@jwt_user)
+
+    @jwt_user = JwtAuthenticator.user_for(request.headers["Authorization"])
   end
 
   def github?
@@ -76,6 +128,14 @@ module ApplicationHelper
   end
 
   private
+
+  # Forget who was resolved earlier in this request (cookie user, current user,
+  # Bearer user) so the next call looks again. Used when the session changes.
+  def reset_auth_memo
+    %i[@session_user @user @jwt_user].each do |ivar|
+      remove_instance_variable(ivar) if instance_variable_defined?(ivar)
+    end
+  end
 
   def page_title(curr_page = "", base_title: "MakerRepo")
     #base_title = "MakerRepo"

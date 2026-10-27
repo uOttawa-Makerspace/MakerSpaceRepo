@@ -1101,19 +1101,76 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
           .to eq(I18n.t("job_orders.alerts.approval_magic_link_expired"))
       end
 
-      # WART(D-J11): tokens are generated WITHOUT expires_at (message_verifier
-      # default), so the "expired" state only exists through status/deletion
-      # changes. The order and the token are minted NOW, before any time
-      # travel, so the example really proves an old token keeps working.
-      it "still accepts a token minted today after one year and after five years (no expiry)" do
-        minted = token # evaluates magic_order and signs the token at real "now"
-        [1.year, 5.years].each do |age|
-          travel_to(age.from_now) do
-            get user_magic_approval_job_orders_path, params: { token: minted }
-            expect(response).to have_http_status(:ok)
-            expect(response.body).to include("Approve the Quote")
-          end
+      # FIXED(D-J11): approval links expire after 14 days. The order and token
+      # are minted NOW, before any time travel.
+      it "accepts a token for 14 days and refuses it afterwards" do
+        minted = token
+        travel_to(13.days.from_now) do
+          get user_magic_approval_job_orders_path, params: { token: minted }
+          expect(response).to have_http_status(:ok)
         end
+        travel_to(15.days.from_now) do
+          get user_magic_approval_job_orders_path, params: { token: minted }
+          expect(response).to redirect_to(job_orders_path)
+          expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.approval_magic_link_expired"))
+        end
+      end
+
+      it "refuses an expired token on the confirmation too, changing nothing" do
+        minted = token
+        travel_to(15.days.from_now) do
+          patch user_magic_approval_confirmation_job_orders_path, params: { token: minted, approved: "true" }
+        end
+        expect(response).to redirect_to(job_orders_path)
+        expect(status_names(magic_order)).to eq(["Waiting for User Approval"])
+      end
+
+      it "refuses a pay token (separate purpose) and a pre-D-J11 legacy token" do
+        [magic_pay_token_for(magic_order),
+         Rails.application.message_verifier(:job_order_id).generate(magic_order.id)].each do |bad|
+          get user_magic_approval_job_orders_path, params: { token: bad }
+          expect(response).to redirect_to(job_orders_path)
+          expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.approval_magic_link_expired"))
+          patch user_magic_approval_confirmation_job_orders_path, params: { token: bad, approved: "true" }
+          expect(response).to redirect_to(job_orders_path)
+        end
+        expect(status_names(magic_order)).to eq(["Waiting for User Approval"])
+      end
+
+      it "refuses a token whose owner no longer matches the order" do
+        minted = token
+        magic_order.update_columns(user_id: create(:user, :regular_user).id)
+        get user_magic_approval_job_orders_path, params: { token: minted }
+        expect(response).to redirect_to(job_orders_path)
+      end
+
+      it "a link for another order does not open this one" do
+        other_order = order_with_task!(owner: owner, status_key: :user_approval)
+        patch user_magic_approval_confirmation_job_orders_path, params: { token: magic_link_token_for(other_order), approved: "true" }
+        expect(status_names(magic_order)).to eq(["Waiting for User Approval"])
+        expect(status_names(other_order)).to end_with("Waiting to be Processed")
+      end
+
+      it "a link from before a re-quote is retired when the order gets a new approval round" do
+        old = token
+        magic_order.job_order_statuses.create!(job_status: JobStatus::USER_APPROVAL, user: owner)
+        get user_magic_approval_job_orders_path, params: { token: old }
+        expect(response).to redirect_to(job_orders_path)
+        get user_magic_approval_job_orders_path, params: { token: magic_order.reload.approval_token }
+        expect(response).to have_http_status(:ok)
+      end
+
+      it "a reminder keeps the original link working" do
+        old = token
+        magic_order.job_order_statuses.create!(job_status: JobStatus::SENT_REMINDER, user: owner)
+        get user_magic_approval_job_orders_path, params: { token: old }
+        expect(response).to have_http_status(:ok)
+      end
+
+      it "the link is spent once the order has been approved" do
+        patch user_magic_approval_confirmation_job_orders_path, params: { token: token, approved: "true" }
+        get user_magic_approval_job_orders_path, params: { token: token }
+        expect(response).to redirect_to(job_orders_path)
       end
     end
 
@@ -1167,27 +1224,38 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
         end
       end
 
-      # WART(D-J09): for an anonymous visitor @user is User.new, so the new status row
-      # fails its presence validation and the update fails silently — the
-      # guest approval flow cannot persist unless the visitor is logged in.
-      it "renders the error page and changes nothing for an anonymous visitor (no mail)" do
-        expect do
-          patch user_magic_approval_confirmation_job_orders_path,
-                params: { token: token, approved: "true" }
-        end.not_to(change { ActionMailer::Base.deliveries.size })
+      # FIXED(D-J09): the status row is attributed to the order's owner, so a
+      # guest following the emailed link can approve or deny without signing in.
+      it "lets an anonymous visitor approve: the status is persisted and attributed to the order owner" do
+        patch user_magic_approval_confirmation_job_orders_path,
+              params: { token: token, approved: "true" }
         expect(response).to have_http_status(:ok)
-        expect(response.body)
-          .to include("An error occured while trying to Approve/Deny the Job Order...")
-        expect(status_names(magic_order)).to eq(["Waiting for User Approval"])
+        expect(response.body).to include("Thank You for Approving/Denying the Job Order!")
+        expect(status_names(magic_order)).to eq(["Waiting for User Approval", "Waiting to be Processed"])
+        expect(magic_order.job_order_statuses.last.user).to eq(owner)
       end
 
-      # WART(D-J10): a validly-signed token with no matching record crashes on nil.
-      it "renders 500 (NoMethodError) for a well-signed token pointing at a missing order" do
-        broken = Rails.application.message_verifier(:job_order_id).generate(999_999_999)
+      it "lets an anonymous visitor deny: Declined, attributed to the owner" do
+        patch user_magic_approval_confirmation_job_orders_path,
+              params: { token: token, approved: "false" }
+        expect(status_names(magic_order)).to end_with("Declined")
+        expect(magic_order.job_order_statuses.last.user).to eq(owner)
+      end
+
+      it "an anonymous replay of a spent link records nothing more" do
+        2.times do
+          patch user_magic_approval_confirmation_job_orders_path,
+                params: { token: token, approved: "true" }
+        end
+        expect(response.body).to include("An error occured while trying to Approve/Deny the Job Order...")
+        expect(status_names(magic_order)).to eq(["Waiting for User Approval", "Waiting to be Processed"])
+      end
+
+      it "refuses a token that is not a signed approval token" do
+        broken = "not-a-token"
         patch user_magic_approval_confirmation_job_orders_path,
               params: { token: broken, approved: "true" }
-        expect(response).to have_http_status(:internal_server_error)
-        expect(response.body).to include("NoMethodError")
+        expect(response).to redirect_to(job_orders_path)
       end
     end
   end
@@ -1208,7 +1276,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
         price: 29.99, service_price: 0, service_quantity: 0
       ).save!
 
-      get pay_job_orders_path, params: { token: magic_link_token_for(order) }
+      get pay_job_orders_path, params: { token: magic_pay_token_for(order) }
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Proceed to the payment page")
       expect(response.body).to include("https://pay.example/inv")
@@ -1227,37 +1295,70 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
         .to eq(amount: BigDecimal("29.99"), currencyCode: "CAD")
     end
 
-    # WART(D-J12): valid signature but wrong status lands in the else branch,
-    # which dereferences @job_order.id — with @job_order never assigned → 500.
-    it "renders 500 (NoMethodError) for a valid token on a non-COMPLETED order" do
+    # FIXED(D-J12, as a side effect of the token lookup now returning the order):
+    # a valid token on a non-COMPLETED order used to 500 on a nil @job_order; it
+    # now redirects to the order page (login for a guest) with the pay flash.
+    it "redirects with the pay flash for a valid token on a non-COMPLETED order" do
       order = order_with_task!(owner: owner, status_key: :user_approval)
-      get pay_job_orders_path, params: { token: magic_link_token_for(order) }
-      expect(response).to have_http_status(:internal_server_error)
-      expect(response.body).to include("NoMethodError")
+      get pay_job_orders_path, params: { token: magic_pay_token_for(order) }
+      expect(response).to redirect_to(job_order_path(order.id))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.pay_magic_link_expired"))
       expect(shopify.calls).to be_empty
     end
 
-    # WART(D-J12): same nil @job_order crash for an unparsable token.
-    it "renders 500 (NoMethodError) for an invalid token" do
-      order_with_task!(owner: owner, status_key: :completed)
-      get pay_job_orders_path, params: { token: "bogus-token" }
-      expect(response).to have_http_status(:internal_server_error)
-      expect(response.body).to include("Action Controller: Exception caught")
-      expect(response.body).to include("NoMethodError")
+    it "redirects with the pay flash for a valid token of a soft-deleted order" do
+      order = order_with_task!(owner: owner, status_key: :completed)
+      minted = magic_pay_token_for(order)
+      order.update!(is_deleted: true)
+      get pay_job_orders_path, params: { token: minted }
+      expect(response).to redirect_to(job_orders_path)
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.pay_magic_link_expired"))
     end
 
-    # WART(D-J11): no expiry. Order and token are created BEFORE the clock
-    # moves, so this proves a token minted today still opens the pay page.
-    it "does not expire: a token minted today works after one and five years (no expiry)" do
+    # FIXED(D-J11): an unparsable, expired or pre-D-J11 token gets the "invalid or
+    # has expired" redirect instead of the nil @job_order crash. (A valid token
+    # on a non-COMPLETED order is covered below.)
+    it "redirects with the expired flash for an invalid token" do
+      order_with_task!(owner: owner, status_key: :completed)
+      get pay_job_orders_path, params: { token: "bogus-token" }
+      expect(response).to redirect_to(job_orders_path)
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.pay_magic_link_expired"))
+      expect(shopify.calls).to be_empty
+    end
+
+    it "redirects with the expired flash for a legacy (pre-D-J11) token and for an approval token" do
       order = order_with_task!(owner: owner, status_key: :completed)
-      minted = magic_link_token_for(order)
-      [1.year, 5.years].each do |age|
-        travel_to(age.from_now) do
-          get pay_job_orders_path, params: { token: minted }
-          expect(response).to have_http_status(:ok)
-          expect(response.body).to include("https://pay.example/inv")
-        end
+      [Rails.application.message_verifier(:job_order_id).generate(order.id), magic_link_token_for(order)].each do |bad|
+        get pay_job_orders_path, params: { token: bad }
+        expect(response).to redirect_to(job_orders_path)
+        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.pay_magic_link_expired"))
       end
+      expect(shopify.calls).to be_empty
+    end
+
+    # FIXED(D-J11): pay links expire after 14 days. Order and token are created
+    # BEFORE the clock moves.
+    it "works for 14 days and is refused afterwards" do
+      order = order_with_task!(owner: owner, status_key: :completed)
+      minted = magic_pay_token_for(order)
+      travel_to(13.days.from_now) do
+        get pay_job_orders_path, params: { token: minted }
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("https://pay.example/inv")
+      end
+      travel_to(15.days.from_now) do
+        get pay_job_orders_path, params: { token: minted }
+        expect(response).to redirect_to(job_orders_path)
+        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.pay_magic_link_expired"))
+      end
+    end
+
+    it "refuses a token issued for a different owner of the order" do
+      order = order_with_task!(owner: owner, status_key: :completed)
+      minted = magic_pay_token_for(order)
+      order.update_columns(user_id: create(:user, :regular_user).id)
+      get pay_job_orders_path, params: { token: minted }
+      expect(response).to redirect_to(job_orders_path)
     end
   end
 end

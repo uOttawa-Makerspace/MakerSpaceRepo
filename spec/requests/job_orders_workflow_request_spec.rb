@@ -351,7 +351,7 @@ RSpec.describe "JobOrders workflow", type: :request do
     end
 
     it "rejects a well-signed token for an order that does not exist" do
-      token = Rails.application.message_verifier(:job_order_id).generate(99_999_999)
+      token = JobOrder.new(id: 99_999_999, user_id: owner.id).generate_token_for(:approval)
       get user_magic_approval_job_orders_path, params: { token: token }
       expect(response).to redirect_to(job_orders_path)
       expect(flash[:alert]).to eq(expired_flash)
@@ -363,11 +363,15 @@ RSpec.describe "JobOrders workflow", type: :request do
       expect(flash[:alert]).to eq(expired_flash)
 
       foreign = Rails.application.message_verifier(:something_else).generate(order.id)
+      legacy = Rails.application.message_verifier(:job_order_id).generate(order.id)
+      get user_magic_approval_job_orders_path, params: { token: legacy }
+      expect(response).to redirect_to(job_orders_path)
+      expect(flash[:alert]).to eq(expired_flash)
       get user_magic_approval_job_orders_path, params: { token: foreign }
       expect(response).to redirect_to(job_orders_path)
     end
 
-    # WART(D-J09/D-J11): the page opens for any viewer holding the token, signed in or not
+    # INTENDED(D-J09/D-J11): the page opens for any viewer holding the (expiring, owner-bound) token, signed in or not
     it "renders for a signed-in user who is not the owner" do
       session_login!(other)
       get user_magic_approval_job_orders_path, params: { token: magic_link_token_for(order) }
@@ -405,21 +409,31 @@ RSpec.describe "JobOrders workflow", type: :request do
       expect(status_names(order)).to eq(["Waiting for User Approval"])
     end
 
-    # WART(D-J10): a soft-deleted order is looked up as nil and dereferenced
-    it "raises (500 NoMethodError) for a soft-deleted order" do
+    # FIXED(D-J10): the token lookup returns only a live order, so a link for a
+    # soft-deleted order gets the invalid-link flash instead of a nil crash
+    it "redirects with the accept/deny error flash for a soft-deleted order" do
+      minted = token
       order.update!(is_deleted: true)
       session_login!(owner)
-      patch user_magic_approval_confirmation_job_orders_path, params: { token: token, approved: "true" }
-      expect(response).to have_http_status(:internal_server_error)
-      expect(error_text).to include("NoMethodError")
+      patch user_magic_approval_confirmation_job_orders_path, params: { token: minted, approved: "true" }
+      expect(response).to redirect_to(job_orders_path)
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_accept_deny_order"))
     end
 
-    # WART(D-J11): any logged-in user holding the link can approve; the recorded actor is that user
-    it "lets a signed-in non-owner approve and records them as the actor, without any staff mail" do
+    it "shows the invalid-link flash on the approval page for a soft-deleted order" do
+      minted = token
+      order.update!(is_deleted: true)
+      get user_magic_approval_job_orders_path, params: { token: minted }
+      expect(response).to redirect_to(job_orders_path)
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.approval_magic_link_expired"))
+    end
+
+    # FIXED(D-J09): the recorded actor is always the order's owner, never the visitor
+    it "lets a signed-in non-owner approve and records the order owner as the actor, without any staff mail" do
       session_login!(other)
       patch user_magic_approval_confirmation_job_orders_path, params: { token: token, approved: "true" }
       expect(status_names(order)).to end_with("Waiting to be Processed")
-      expect(order.job_order_statuses.last.user).to eq(other)
+      expect(order.job_order_statuses.last.user).to eq(owner)
       expect(deliveries).to be_empty
     end
 

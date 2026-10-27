@@ -2,7 +2,7 @@
 
 class GithubController < SessionsController
   before_action :current_user
-  before_action :signed_in, except: [:callback]
+  before_action :signed_in
   before_action :github_client, only: [:repositories]
 
   CLIENT_ID = ENV["GITHUB_APP_KEY"]
@@ -21,7 +21,7 @@ class GithubController < SessionsController
   end
 
   def callback
-    user = User.find(session[:user_id])
+    user = current_user
     access_token =
       Octokit.exchange_code_for_token(
         params[:code],
