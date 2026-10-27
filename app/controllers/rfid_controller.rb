@@ -63,6 +63,7 @@ class RfidController < SessionsController
     unless staff || pi_reader
       return render json: { error: "Too many requests" }, status: :too_many_requests if rejected_taps_exceeded?
 
+      TapBoxLog.log_unknown_reader(mac_address: tap_mac_address)
       return render json: { error: "Unauthorized" }, status: :unauthorized
     end
 

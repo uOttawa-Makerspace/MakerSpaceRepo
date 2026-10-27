@@ -134,6 +134,25 @@
       <% end %>
     </table>
 
+    <h3>Recently seen unregistered readers</h3>
+    <p>Taps from these MAC addresses were rejected in the last 7 days.</p>
+    <table class="table text-center table-striped">
+      <thead class="table-primary">
+      <tr>
+        <th>Reader Mac Address</th>
+        <th>Last seen</th>
+        <th>Register for <%= @space.name %></th>
+      </tr>
+      </thead>
+      <% @unknown_readers.each do |mac, seen| %>
+        <tr>
+          <td><%= mac %></td>
+          <td><%= time_ago_in_words(seen) %> ago</td>
+          <td><%= button_to '<i class="fa-solid fa-check"></i>'.html_safe, admin_pi_readers_path, params: { pi_reader_params: { pi_mac_address: mac, space_id: @space.id } }, method: :post, class: 'btn btn-default' %></td>
+        </tr>
+      <% end %>
+    </table>
+
     <h3>Register a new RFID Reader</h3>
     <p>Readers must be registered here before their taps are accepted.</p>
     <%= form_with url: admin_pi_readers_path, scope: :pi_reader_params, method: :post, class: 'd-flex gap-2' do |f| %>

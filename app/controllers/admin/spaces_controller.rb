@@ -103,6 +103,8 @@ class Admin::SpacesController < AdminAreaController
     @staff_needed_calendars = StaffNeededCalendar.where(space: params[:id])
     @new_training = Training.new
     @sub_spaces = SubSpace.where(space: Space.find(params[:id]))
+    # readers seen tapping but not registered (those already in pi_readers show in the tables above)
+    @unknown_readers = TapBoxLog.unknown_readers_seen.reject { |mac, _seen| PiReader.find_by_mac(mac) }
     admins = User.where(role: "admin").order("LOWER(name) ASC")
     @admin_options = admins.map { |admin| [admin.name, admin.id] }
     @admin_options.unshift(["Select an Admin", -1])

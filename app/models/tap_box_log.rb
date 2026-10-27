@@ -47,6 +47,34 @@ class TapBoxLog < ApplicationRecord
     )
   end
 
+  # Discovery trace for a reader nobody has registered (so an admin can learn the
+  # MAC of a new or swapped Pi). Bounded: only well-formed MACs, at most one row
+  # per MAC per hour, holding just the MAC and the time. Creates no PiReader.
+  UNKNOWN_READER_MESSAGE = "Unregistered reader seen"
+  UNKNOWN_READER_MAC_FORMAT = /\A(?:\h{2}:){5}\h{2}\z/
+
+  def self.log_unknown_reader(mac_address:)
+    return unless mac_address.is_a?(String) && mac_address.match?(UNKNOWN_READER_MAC_FORMAT)
+    return if unknown_reader_logs.where(mac_address: mac_address, created_at: 1.hour.ago..).exists?
+
+    log!(
+      event_type: WARNING,
+      message: UNKNOWN_READER_MESSAGE,
+      mac_address: mac_address,
+      details: { reason: "unknown_reader", suggestion: "Register this reader in admin > spaces > Manage RFID Readers" }
+    )
+  end
+
+  def self.unknown_reader_logs
+    where(event_type: WARNING, message: UNKNOWN_READER_MESSAGE)
+  end
+
+  # { "aa:bb:..." => last_seen_at } for unregistered readers seen recently, newest first
+  def self.unknown_readers_seen(since: 7.days.ago)
+    unknown_reader_logs.where(created_at: since..).group(:mac_address).maximum(:created_at)
+                       .sort_by { |_mac, seen| seen }.reverse
+  end
+
   def self.log_no_space_resolved(card_number:, mac_address:)
     log!(
       event_type: ERROR,
