@@ -401,8 +401,18 @@ class User < ApplicationRecord
     lock_account! if auth_attempts >= MAX_AUTH_ATTEMPTS
   end
 
+  # A lock (timed or admin) blocks NEW logins; it never ends existing sessions.
+  def lock_in_effect?
+    locked? && (locked_until.nil? || locked_until > Time.current)
+  end
+
+  # Never shortens an existing lock (an admin lock lasts 99 years): a no-op, and
+  # no second unlock mail, when the user is already locked for longer.
   def lock_account!
-    update(locked: true, locked_until: LOCK_DURATION.from_now)
+    new_until = LOCK_DURATION.from_now
+    return if lock_in_effect? && (locked_until.nil? || locked_until >= new_until)
+
+    update(locked: true, locked_until: new_until)
     send_unlock_email
   end
 

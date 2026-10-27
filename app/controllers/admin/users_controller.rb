@@ -382,6 +382,8 @@ class Admin::UsersController < AdminAreaController
     user.locked = !user.locked
     user.locked_until = user.locked ? 99.years.from_now : nil
     user.auth_attempts = user.locked ? 5 : 0
+    # an admin lock ends every existing session and JWT for good (they stay dead after unlocking)
+    user.token_version += 1 if user.locked
     user.save!
   end
 

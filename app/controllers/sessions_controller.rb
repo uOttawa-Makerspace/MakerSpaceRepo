@@ -47,30 +47,27 @@ class SessionsController < ApplicationController
 
     respond_to do |format|
       if @user
-        if @user.confirmed?
-          @user.update(last_signed_in_time: DateTime.now)
-          format.html { redirect_to(params[:back_to] || root_path) }
-          format.json do
-            render json: {
-                     user: @user.as_json,
-                     signed_in: true,
-                     token: @user.token
-                   }
-          end
-        else
-          @user = User.new
-          session[:user_id] = nil
-          format.html do
-            flash.now[
-              :alert
-            ] = ActionController::Base.helpers.sanitize("Please confirm your account before logging in, you can resend the email #{view_context.link_to "here", resend_email_confirmation_path(email: params[:username_email]), class: "text-primary"}")
-            render :login
-          end
-          format.json do
-            render json: "Account not confirmed", status: :unprocessable_content
-          end
+        @user.update(last_signed_in_time: DateTime.now)
+        format.html { redirect_to(params[:back_to] || root_path) }
+        format.json do
+          render json: {
+                   user: @user.as_json,
+                   signed_in: true,
+                   token: @user.token
+                 }
         end
         format.json { render json: { role: :guest }, status: :ok }
+      elsif @sign_in_refusal == :unconfirmed
+        @user = User.new
+        format.html do
+          flash.now[
+            :alert
+          ] = ActionController::Base.helpers.sanitize("Please confirm your account before logging in, you can resend the email #{view_context.link_to "here", resend_email_confirmation_path(email: params[:username_email]), class: "text-primary"}")
+          render :login
+        end
+        format.json do
+          render json: "Account not confirmed", status: :unprocessable_content
+        end
       elsif @sign_in_refusal == :inactive
         @user = User.new
         inactive_message =

@@ -890,4 +890,32 @@ RSpec.describe User, type: :model do
       expect(u.has_active_membership?).to be(false)
     end
   end
+
+  describe "#lock_account! / #record_failed_attempt! (never shorten a lock)" do
+    let(:u) { create(:user, :regular_user) }
+
+    it "locks for LOCK_DURATION and mails the unlock link" do
+      expect { u.lock_account! }.to change { ActionMailer::Base.deliveries.size }.by(1)
+      expect(u.reload.locked).to be(true)
+      expect(u.locked_until).to be_within(5.seconds).of(User::LOCK_DURATION.from_now)
+    end
+
+    it "is a no-op, with no second mail, for an account already locked for longer (admin lock)" do
+      admin_until = 99.years.from_now
+      u.update_columns(locked: true, locked_until: admin_until)
+      expect { u.lock_account! }.not_to(change { ActionMailer::Base.deliveries.size })
+      expect(u.reload.locked_until).to be_within(1.second).of(admin_until)
+    end
+
+    it "is a no-op for a permanent lock (locked_until nil)" do
+      u.update_columns(locked: true, locked_until: nil)
+      expect { u.lock_account! }.not_to(change { ActionMailer::Base.deliveries.size })
+      expect(u.reload.locked_until).to be_nil
+    end
+
+    it "failed attempts past the threshold leave an admin lock alone" do
+      u.update_columns(locked: true, locked_until: 99.years.from_now, auth_attempts: 5)
+      expect { u.record_failed_attempt! }.not_to(change { u.reload.locked_until })
+    end
+  end
 end

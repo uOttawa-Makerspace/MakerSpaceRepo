@@ -24,6 +24,14 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
     post login_authentication_path, params: { username_email: u.username, password: pw }
   end
 
+  # What an admin's lock/unlock does, through the real endpoint (a lock bumps token_version).
+  def admin_toggle_lock!(target)
+    admin = User.where(role: "admin").first || create(:user, :admin)
+    sess = open_session
+    sess.post login_authentication_path, params: { username_email: admin.username, password: "asa32A353#" }
+    sess.put toggle_lock_user_admin_users_path, params: { id: target.id }
+  end
+
   def deliveries
     ActionMailer::Base.deliveries
   end
@@ -246,13 +254,20 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
       expect(JSON.parse(response.body)["signed_in"]).to eq("false")
     end
 
-    it "a cookie session of a user who gets ADMIN-locked mid-session is ended on the next request" do
-      # FIXED(D-I01): sessions follow the same eligibility rule as JWTs (admin lock = locked_until far ahead)
+    it "a cookie session of a user who gets ADMIN-locked mid-session is ended, and stays dead after unlocking" do
+      # FIXED(D-I01): an admin lock bumps token_version, so sessions end for good
       login!(user)
-      user.update_columns(locked: true, locked_until: 99.years.from_now, auth_attempts: 5)
+      admin_toggle_lock!(user)
+      expect(user.reload.locked).to be(true)
       get check_signed_in_path
       expect(JSON.parse(response.body)["signed_in"]).to eq("false")
       expect(session[:user_id]).to be_nil
+      admin_toggle_lock!(user)
+      expect(user.reload.locked).to be(false)
+      get check_signed_in_path
+      expect(JSON.parse(response.body)["signed_in"]).to eq("false")
+      login!(user)
+      expect(response).to redirect_to(root_path)
     end
 
     it "a cookie session survives the brute-force lockout (five wrong passwords by anyone)" do
@@ -393,12 +408,23 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
       expect(jwt_signed_in?(tok)).to be(false)
     end
 
-    it "rejects a JWT of an admin-locked user, accepts it again once unlocked" do
+    it "rejects a JWT of an admin-locked user and keeps rejecting it after the unlock (a new login works)" do
       tok = user.token
-      user.update_columns(locked: true, locked_until: 99.years.from_now)
+      admin_toggle_lock!(user)
       expect(jwt_signed_in?(tok)).to be(false)
-      user.update_columns(locked: false, locked_until: nil)
-      expect(jwt_signed_in?(tok)).to be(true)
+      admin_toggle_lock!(user)
+      expect(jwt_signed_in?(tok)).to be(false)
+      post login_authentication_path, params: { username_email: user.username, password: password }, as: :json
+      expect(jwt_signed_in?(JSON.parse(response.body)["token"])).to be(true)
+    end
+
+    it "a login is refused while an admin lock lasts, for html and json" do
+      admin_toggle_lock!(user)
+      login!(user)
+      expect(response).not_to redirect_to(root_path)
+      post login_authentication_path, params: { username_email: user.username, password: password }, as: :json
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(JSON.parse(response.body)["support_email"]).to be_present
     end
 
     it "accepts a JWT during a timed (brute-force) lockout and after it has lapsed" do

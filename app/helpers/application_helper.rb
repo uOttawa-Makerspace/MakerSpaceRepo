@@ -9,12 +9,29 @@ module ApplicationHelper
   # reset done on sign-in (sign-out keeps only the locale).
   SESSION_KEYS_KEPT_ON_SIGN_IN = %w[locale expires_at authorized_repo_ids selected_dates order_id].freeze
 
+  # Every login path (HTML, JSON, SAML) goes through here, so the refusals live
+  # here: a lock still in effect (checked BEFORE the password so a locked account
+  # cannot be probed or have its lock rewritten by failed attempts), a
+  # deactivated account (D-I03) and an unconfirmed one. The caller words the
+  # refusal from @sign_in_refusal (:locked, :inactive, :unconfirmed).
   def sign_in(username_email, password)
     @sign_in_refusal = nil
+    candidate = User.username_or_email(username_email)
+    if candidate&.locked?
+      if candidate.lock_in_effect?
+        @sign_in_refusal = :locked
+        return nil
+      end
+      candidate.update(locked: false, auth_attempts: 0) # the timed lockout has lapsed
+    end
+
     user = User.authenticate(username_email, password)
     if user&.active == false
-      # D-I03: deactivated accounts cannot sign in (the caller words the refusal)
       @sign_in_refusal = :inactive
+      return nil
+    end
+    if user && !user.confirmed?
+      @sign_in_refusal = :unconfirmed
       return nil
     end
     unless user.nil?

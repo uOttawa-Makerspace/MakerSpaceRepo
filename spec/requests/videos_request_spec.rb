@@ -227,6 +227,13 @@ RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
         { "Authorization" => "Bearer #{token}" }
       end
 
+      def admin_toggle_lock!(target)
+        admin = User.where(role: "admin").first || create(:user, :admin)
+        sess = open_session
+        sess.post login_authentication_path, params: { username_email: admin.username, password: "asa32A353#" }
+        sess.put toggle_lock_user_admin_users_path, params: { id: target.id }
+      end
+
       def upload!(headers = {})
         expect { post rails_direct_uploads_path, params: payload, as: :json, headers: headers }
           .not_to change(ActiveStorage::Blob, :count)
@@ -255,7 +262,7 @@ RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
 
       it "refuses a JWT of an admin-locked user" do
         headers = bearer_for(member, ver: 0)
-        member.update_columns(locked: true, locked_until: 99.years.from_now)
+        admin_toggle_lock!(member)
         upload!(headers)
         expect(response).to have_http_status(:unauthorized)
       end
@@ -299,7 +306,7 @@ RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
 
       it "refuses a cookie session of a user admin-locked afterwards" do
         content_login!(member)
-        member.update_columns(locked: true, locked_until: 99.years.from_now)
+        admin_toggle_lock!(member)
         upload!
         expect(response).to have_http_status(:unauthorized)
       end

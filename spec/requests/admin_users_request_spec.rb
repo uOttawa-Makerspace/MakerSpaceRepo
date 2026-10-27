@@ -494,6 +494,18 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
     end
   end
 
+  describe "PUT /admin/users/toggle_lock_user and token_version" do
+    before { login!(admin) }
+
+    it "bumps the target's token_version when locking, not when unlocking" do
+      # FIXED(D-I01): an admin lock permanently ends existing sessions and JWTs
+      expect { put toggle_lock_user_admin_users_path, params: { id: target.id } }
+        .to change { target.reload.token_version }.by(1)
+      expect { put toggle_lock_user_admin_users_path, params: { id: target.id } }
+        .not_to(change { target.reload.token_version })
+    end
+  end
+
   describe "PUT /admin/users/toggle_lock_user last-admin guard" do
     before { login!(admin) }
 
