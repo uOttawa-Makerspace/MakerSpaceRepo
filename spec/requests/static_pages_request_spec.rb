@@ -417,21 +417,21 @@ RSpec.describe "Static pages", type: :request do
     end
   end
 
-  describe "GET /report_repository/:repository_id" do
+  describe "POST /report_repository/:repository_id" do
     let(:repo) { create(:repository) }
 
     it "asks a guest to log in and sends nothing" do
       deliveries.clear
-      get report_repository_path(repo)
+      post report_repository_path(repo)
       expect(response).to redirect_to(root_path)
       expect(flash[:alert]).to eq("Please login if you wish to report this repository")
       expect(deliveries).to be_empty
     end
 
-    it "emails the report to the support inbox for a signed-in user (via GET, no CSRF concern)" do
+    it "emails the report to the support inbox for a signed-in user (via POST)" do
       user = sign_in_as(:regular)
       deliveries.clear
-      get report_repository_path(repo), headers: { "HTTP_REFERER" => "http://www.example.com/back" }
+      post report_repository_path(repo), headers: { "HTTP_REFERER" => "http://www.example.com/back" }
       expect(response).to redirect_to("http://www.example.com/back")
       expect(flash[:alert]).to eq("Repository has been reported")
       expect(deliveries.size).to eq(1)
@@ -442,21 +442,28 @@ RSpec.describe "Static pages", type: :request do
 
     it "redirects to root when there is no referer" do
       sign_in_as(:regular)
-      get report_repository_path(repo)
+      post report_repository_path(repo)
       expect(response).to redirect_to(root_path)
     end
 
-    # WART(D-P02): reporting a repository is a state-changing (email-sending) GET, so a crafted link or image tag makes any signed-in visitor spam the support inbox
-    it "sends the email from a plain GET with no confirmation" do
+    # FIXED(D-P02): reporting is a POST; a plain GET (link, image tag, prefetch) no longer emails the support inbox
+    it "does not send the email, on a plain GET" do
       sign_in_as(:regular)
       deliveries.clear
-      get report_repository_path(repo)
-      expect(deliveries.size).to eq(1)
+      get "/report_repository/#{repo.id}"
+      expect(flash[:alert]).not_to eq("Repository has been reported")
+      expect(deliveries).to be_empty
+    end
+
+    it "renders the report as a confirm-guarded POST button on the repository page" do
+      sign_in_as(:regular)
+      get repository_path(repo.user_username, repo)
+      expect(response.body).to match(%r{<form[^>]*data-turbo-confirm=[^>]*action="/report_repository/#{repo.id}"|<form[^>]*action="/report_repository/#{repo.id}"[^>]*data-turbo-confirm=})
     end
 
     it "raises RecordNotFound for an unknown repository (signed in)" do
       sign_in_as(:regular)
-      get report_repository_path(repository_id: 0)
+      post report_repository_path(repository_id: 0)
       expect(response).to have_http_status(:not_found)
     end
   end

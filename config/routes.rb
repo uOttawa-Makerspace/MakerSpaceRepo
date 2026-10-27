@@ -181,7 +181,7 @@ Rails.application.routes.draw do
     get "about"
     get "contact"
     get "calendar"
-    get "report_repository/:repository_id",
+    post "report_repository/:repository_id",
         as: "report_repository",
         action: "report_repository"
     post "join_team_program"
