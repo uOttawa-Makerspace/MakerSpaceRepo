@@ -34,6 +34,34 @@ RSpec.describe "SAML IdP", type: :request do
     Base64.strict_encode64(deflated)
   end
 
+  def c18_logout_request(issuer: "rooms.makerepo.com", id: "_logout1")
+    xml = %(<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ) +
+          %(xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="#{id}" Version="2.0" ) +
+          %(IssueInstant="2026-03-10T15:00:00Z"><saml:Issuer>#{issuer}</saml:Issuer>) +
+          %(<saml:NameID>x</saml:NameID></samlp:LogoutRequest>)
+    c18_deflate(xml)
+  end
+
+  def c18_deflate(xml)
+    deflater = Zlib::Deflate.new(Zlib::DEFAULT_COMPRESSION, -Zlib::MAX_WBITS)
+    deflated = deflater.deflate(xml, Zlib::FINISH)
+    deflater.close
+    Base64.strict_encode64(deflated)
+  end
+
+  # Registers a certificate + fingerprint for every SP, requires signed AuthnRequests
+  # and gives them a logout endpoint, for the duration of the block.
+  def c18_with_signing_sps(cert_pem: "not a certificate")
+    original = SamlIdp.config.service_provider.finder
+    SamlIdp.config.service_provider.finder = lambda do |id|
+      original.call(id)&.merge(sign_authn_request: true, cert: cert_pem, fingerprint: "aa:bb",
+                               assertion_consumer_logout_service_url: "https://rooms.makerepo.com/logout")
+    end
+    yield
+  ensure
+    SamlIdp.config.service_provider.finder = original
+  end
+
   def c18_form_action
     Nokogiri::HTML(response.body).at_css("form")&.[]("action")
   end
@@ -466,6 +494,47 @@ RSpec.describe "SAML IdP", type: :request do
       bad = c18_authn_request(issuer: "rooms.makerepo.com", acs: "https://rooms.makerepo.com/a b")
       post "/saml/auth", params: { submit: "current_user", SAMLRequest: bad }
       expect(response).to have_http_status(:bad_request)
+    end
+
+    context "SECURITY: blank Signature / SigAlg must not skip the gem's signature checks" do
+      it "refuses a LogoutRequest with an empty Signature= (400), without signing the user out" do
+        c18_with_signing_sps do
+          user = c18_sign_in(:regular)
+          [{ Signature: "", SigAlg: "" },
+           { Signature: "", SigAlg: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256" },
+           { Signature: "c2ln", SigAlg: "" },
+           { SigAlg: "" }].each do |blank|
+            post "/saml/auth", params: { SAMLRequest: c18_logout_request, submit: "logout" }.merge(blank)
+            expect(response).to have_http_status(:bad_request)
+          end
+          post "/saml/auth", params: { SAMLRequest: c18_authn_request, submit: "current_user" }
+          expect(response).to have_http_status(:forbidden) # (unsigned) still refused, and the session survived
+          expect(session[:user_id]).to eq(user.id)
+        end
+      end
+
+      it "refuses an unsigned LogoutRequest outright (403)" do
+        c18_with_signing_sps do
+          c18_sign_in(:regular)
+          post "/saml/auth", params: { SAMLRequest: c18_logout_request, submit: "logout" }
+          expect(response).to have_http_status(:forbidden)
+        end
+      end
+
+      it "refuses a signing-SP AuthnRequest with an empty Signature= (400), never an assertion" do
+        c18_with_signing_sps do
+          c18_sign_in(:regular)
+          post "/saml/auth", params: { SAMLRequest: c18_authn_request, submit: "current_user", Signature: "", SigAlg: "" }
+          expect(response).to have_http_status(:bad_request)
+          expect(c18_saml_response_xml).to be_nil
+        end
+      end
+
+      it "never carries a blank Signature/SigAlg forward in the login form" do
+        get "/saml/auth", params: { SAMLRequest: c18_authn_request }
+        query = Rack::Utils.parse_query(URI(c18_form_action).query)
+        expect(query.keys).not_to include("Signature", "SigAlg")
+      end
     end
 
     context "SECURITY: SAML request validation gates issuance (D-R13)" do

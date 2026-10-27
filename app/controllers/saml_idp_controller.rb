@@ -82,10 +82,15 @@ class SamlIdpController < ApplicationController
 
   private
 
-  # Signature, SigAlg and RelayState are plain strings, and a Signature needs its SigAlg.
+  # Signature, SigAlg and RelayState are plain strings; a Signature present
+  # needs its SigAlg. A present-but-blank Signature/SigAlg is refused too: the gem
+  # only runs its signature checks on a nil (embedded) or present (external)
+  # Signature, so "Signature=" would skip both.
   def saml_binding_params_wellformed?
-    values = params.values_at(:Signature, :SigAlg, :RelayState)
-    values.all? { |v| v.nil? || v.is_a?(String) } && (params[:Signature].blank? || params[:SigAlg].present?)
+    return false unless params.values_at(:Signature, :SigAlg, :RelayState).all? { |v| v.nil? || v.is_a?(String) }
+
+    %i[Signature SigAlg].none? { |key| params.key?(key) && params[key].blank? } &&
+      (params[:Signature].blank? || params[:SigAlg].present?)
   end
 
   # The Issuer on assertions. With SAML_IDP_BASE_URL set it is the same value the
