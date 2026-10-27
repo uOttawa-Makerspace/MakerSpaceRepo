@@ -273,6 +273,31 @@ RSpec.describe "SAML IdP", type: :request do
       end
     end
 
+    # test env uses :null_store (never counts), so back the limiter's store with a counter
+    context "rate limit (D-R14)" do
+      let(:counts) { Hash.new(0) }
+
+      before { allow(SamlIdpController.cache_store).to receive(:increment) { |key, *| counts[key] += 1 } }
+
+      it "allows 10 password submissions, then refuses even the correct password with 429 and no assertion" do
+        10.times do
+          post_auth(submit: "sign_in", username: user.username, password: "wrong")
+          expect(response).to have_http_status(:ok)
+        end
+        post_auth(submit: "sign_in", username: user.username, password: password)
+        expect(response).to have_http_status(:too_many_requests)
+        expect(response.body).to include("Too many requests")
+        expect(c18_saml_response_xml).to be_nil
+      end
+
+      it "does not count current_user / logout submissions" do
+        c18_sign_in(:regular)
+        12.times { post_auth(submit: "current_user") }
+        expect(response).to have_http_status(:ok)
+        expect(c18_saml_response_xml).to be_present
+      end
+    end
+
     context "submit=current_user" do
       it "signed in: issues a signed assertion for the session user" do
         signed_in = c18_sign_in(:staff)
