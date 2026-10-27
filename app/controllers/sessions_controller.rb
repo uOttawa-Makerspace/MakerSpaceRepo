@@ -14,35 +14,6 @@ class SessionsController < ApplicationController
   SUPPORT_EMAIL = "uottawa.makerepo@gmail.com"
   
   def login_authentication
-    if User.username_or_email(params[:username_email])
-      user = User.username_or_email(params[:username_email])
-      if user.locked?
-        if user.locked_until.present? && user.locked_until < DateTime.now
-          user.update(locked: false)
-          user.update(auth_attempts: 0)
-        else
-          respond_to do |format|
-            format.html do
-              flash[:alert] = ActionController::Base.helpers.sanitize("""
-              Your account has been locked due to too many failed login attempts. 
-              Please #{view_context.link_to('contact an administrator', "mailto:#{SUPPORT_EMAIL}?subject=Account%20Locked", class: 'text-primary')} 
-              to unlock your account#{lock_wait_suffix(user)}.
-              """)
-              render :login
-            end
-            format.json do
-              render json: {
-                       error:
-                         "Your account has been locked due to too many failed login attempts. Please contact an administrator at #{SUPPORT_EMAIL} to unlock your account#{lock_wait_suffix(user)}.",
-                       support_email: SUPPORT_EMAIL
-                     },
-                     status: :unprocessable_content
-            end
-          end
-          return
-        end
-      end
-    end
     @user = sign_in(params[:username_email], params[:password])
 
     respond_to do |format|
@@ -57,6 +28,25 @@ class SessionsController < ApplicationController
                  }
         end
         format.json { render json: { role: :guest }, status: :ok }
+      elsif @sign_in_refusal == :locked
+        @user = User.new
+        locked_user = User.username_or_email(params[:username_email])
+        format.html do
+          flash[:alert] = ActionController::Base.helpers.sanitize("""
+          Your account has been locked due to too many failed login attempts. 
+          Please #{view_context.link_to('contact an administrator', "mailto:#{SUPPORT_EMAIL}?subject=Account%20Locked", class: 'text-primary')} 
+          to unlock your account#{lock_wait_suffix(locked_user)}.
+          """)
+          render :login
+        end
+        format.json do
+          render json: {
+                   error:
+                     "Your account has been locked due to too many failed login attempts. Please contact an administrator at #{SUPPORT_EMAIL} to unlock your account#{lock_wait_suffix(locked_user)}.",
+                   support_email: SUPPORT_EMAIL
+                 },
+                 status: :unprocessable_content
+        end
       elsif @sign_in_refusal == :unconfirmed
         @user = User.new
         format.html do
@@ -88,8 +78,8 @@ class SessionsController < ApplicationController
             (
               if user.auth_attempts >= User::MAX_AUTH_ATTEMPTS
                 format.html? ? 
-                  "Your account has been locked due to too many failed login attempts. #{view_context.link_to 'Contact support', "mailto:#{SUPPORT_EMAIL}?subject=Account%20Locked%20-%20#{user.username}", class: 'text-primary'} to unlock your account or try again in #{sanitize(distance_of_time_in_words user.locked_until, DateTime.now)}." :
-                  "Your account has been locked due to too many failed login attempts. Contact support at #{SUPPORT_EMAIL} to unlock your account or try again in #{distance_of_time_in_words user.locked_until, DateTime.now}."
+                  "Your account has been locked due to too many failed login attempts. #{view_context.link_to 'Contact support', "mailto:#{SUPPORT_EMAIL}?subject=Account%20Locked%20-%20#{user.username}", class: 'text-primary'} to unlock your account#{lock_wait_suffix(user, 'try again in')}." :
+                  "Your account has been locked due to too many failed login attempts. Contact support at #{SUPPORT_EMAIL} to unlock your account#{lock_wait_suffix(user, 'try again in')}."
               elsif user.auth_attempts > 1
                 "Incorrect password. You have #{User::MAX_AUTH_ATTEMPTS - user.auth_attempts} attempts left before your account is locked."
               else
@@ -177,10 +167,10 @@ class SessionsController < ApplicationController
   end
 
   # " or wait 5 minutes", nothing for a lock without an end (locked_until nil)
-  def lock_wait_suffix(user)
-    return "" if user.locked_until.nil?
+  def lock_wait_suffix(user, verb = "wait")
+    return "" if user.nil? || user.locked_until.nil?
 
-    " or wait #{distance_of_time_in_words(user.locked_until, DateTime.now)}"
+    " or #{verb} #{distance_of_time_in_words(user.locked_until, DateTime.now)}"
   end
 
   def get_session_time_left
