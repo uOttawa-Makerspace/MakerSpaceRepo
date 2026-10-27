@@ -95,6 +95,13 @@ RSpec.describe "SAML IdP", type: :request do
       expect(Nokogiri::XML(response.body).root["entityID"]).to eq("https://makerepo.com/saml/auth")
     end
 
+    it "does not write into the global attribute config while building the metadata" do
+      SamlIdp.config.attributes.each_value { |opts| opts.delete(:friendly_name) }
+      get "/saml/metadata"
+      expect(response).to have_http_status(:ok)
+      expect(SamlIdp.config.attributes.values.flat_map(&:keys)).not_to include(:friendly_name)
+    end
+
     it "uses the same value for the assertion Issuer and the metadata entityID when SAML_IDP_BASE_URL is set" do
       stub_const("ENV", ENV.to_h.merge("SAML_IDP_BASE_URL" => "https://makerepo.com/"))
       get "/saml/metadata"

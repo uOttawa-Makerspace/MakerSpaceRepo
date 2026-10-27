@@ -110,6 +110,9 @@ class SamlIdpController < ApplicationController
   # global base_saml_location is left unset so assertion Issuers do not change.
   def metadata_configuration
     SamlIdp.config.dup.tap do |config|
+      # dup is shallow and the metadata builder writes :friendly_name into each
+      # attribute hash, so give this copy its own hashes.
+      config.attributes = config.attributes.transform_values(&:dup)
       sso = "#{saml_base_url}/saml/auth"
       config.entity_id = sso
       config.single_service_post_location = sso
