@@ -66,7 +66,7 @@ RSpec.describe VolunteerTaskRequestsController, type: :controller do
         create(:volunteer_task_join, :active, user: volunteer, volunteer_task: VolunteerTask.last)
 
         expect {
-          get :create_request, params: { id: VolunteerTask.last.id }
+          post :create_request, params: { id: VolunteerTask.last.id }
         }.to change(ActionMailer::Base.deliveries, :count).by(1)
       end
     end

@@ -122,7 +122,7 @@ RSpec.describe VolunteersController, type: :controller do
       #   volunteer = create(:user, :volunteer_with_volunteer_program)
       #   Space.find_or_create_by(name: "Makerspace")
       #   expect { get :create_event, params: {space: 'makerspace', datepicker_start: DateTime.now, datepicker_end: DateTime.now.tomorrow, user_id: volunteer.id} }.to change(ShadowingHour, :count).by(1)
-      #   expect { get :delete_event, params: {event_id: ShadowingHour.last.event_id}}.to change(ShadowingHour, :count).by(-1)
+      #   expect { delete :delete_event, params: {event_id: ShadowingHour.last.event_id}}.to change(ShadowingHour, :count).by(-1)
       #   expect(response).to redirect_to calendar_volunteers_path
       # end
 
@@ -130,7 +130,7 @@ RSpec.describe VolunteersController, type: :controller do
         user = create(:user, :volunteer_with_volunteer_program)
         session[:expires_at] = DateTime.tomorrow.end_of_day
         session[:user_id] = user.id
-        get :delete_event
+        delete :delete_event
         expect(response).to redirect_to root_path
       end
 
@@ -138,7 +138,7 @@ RSpec.describe VolunteersController, type: :controller do
         user = create(:user, :regular_user)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
-        get :delete_event
+        delete :delete_event
         expect(response).to redirect_to root_path
       end
     end
@@ -239,7 +239,7 @@ RSpec.describe VolunteersController, type: :controller do
         staff = create(:user, :staff)
         session[:user_id] = staff.id
         session[:expires_at] = Time.zone.now + 10_000
-        get :join_volunteer_program
+        post :join_volunteer_program
         expect(flash[:notice]).to eq(
           "You already have access to the Volunteer Program."
         )
@@ -250,7 +250,7 @@ RSpec.describe VolunteersController, type: :controller do
         user = create(:user, :regular_user)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
-        get :join_volunteer_program
+        post :join_volunteer_program
         expect(flash[:notice]).to eq("You've joined the Volunteer Program")
         expect(Program.last.user_id).to eq(user.id)
         expect(response).to redirect_to(hubspot_form_url)

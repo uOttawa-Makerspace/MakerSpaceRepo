@@ -611,12 +611,12 @@ Rails.application.routes.draw do
     collection do
       get :emails
       get :volunteer_list
-      match :join_volunteer_program, via: %i[get post]
+      post :join_volunteer_program
       get :my_stats
       get :transcript
       get :calendar
       get :shadowing_shifts
-      get :delete_event
+      delete :delete_event
       post :create_event
       get :new_event
       get :populate_users
@@ -651,7 +651,7 @@ Rails.application.routes.draw do
 
   resources :volunteer_task_requests, only: [:index] do
     collection do
-      get :create_request
+      post :create_request
       put :update_approval
       get :search_pending
       get :search_processed

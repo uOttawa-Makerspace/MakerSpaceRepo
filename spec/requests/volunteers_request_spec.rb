@@ -56,7 +56,7 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
       %i[guest regular role_only volunteer inactive].each do |role|
         it "#{role}: #{action} redirects to root with an alert" do
           vol_sign_in_as(role)
-          send(action == :create_event ? :post : :get, send(helper))
+          send(%i[create_event delete_event].include?(action) ? { create_event: :post, delete_event: :delete }[action] : :get, send(helper))
           expect(response).to redirect_to(root_path)
           expect(flash[:alert]).to eq("You cannot access this area.")
         end
@@ -108,7 +108,7 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
       create(:user, :volunteer_with_volunteer_program)
       user = create(:user, :regular_user)
       vol_login!(user)
-      get join_volunteer_program_volunteers_path
+      post join_volunteer_program_volunteers_path
       get emails_volunteers_path
       expect(response).to redirect_to(root_path)
       expect(flash[:alert]).to eq("You cannot access this area.")
@@ -150,8 +150,8 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
     end
   end
 
-  describe "join_volunteer_program (GET and POST)" do
-    %i[get post].each do |verb|
+  describe "join_volunteer_program (POST only)" do
+    %i[post].each do |verb|
       it "#{verb}: guest is sent to login with back_to" do
         send(verb, join_volunteer_program_volunteers_path)
         expect(response).to redirect_to(login_path(back_to: join_volunteer_program_volunteers_path))
@@ -179,25 +179,32 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
       end
     end
 
-    # INTENDED(D-V26): enrolment stays open and instant by design (an external form covers approval). The GET-verb half belongs to slice A14 and is left as is
+    # INTENDED(D-V26): enrolment stays open and instant by design (an external form covers approval). FIXED(D-V26 GET half): the verb is POST only
     it "gives instant access to the volunteer area" do
       vol_login!(create(:user, :regular_user))
-      get join_volunteer_program_volunteers_path
+      post join_volunteer_program_volunteers_path
       get volunteer_tasks_path
       expect(response).to have_http_status(:ok)
+    end
+
+    it "does not enrol on a plain GET" do
+      user = create(:user, :regular_user)
+      vol_login!(user)
+      expect { get "/volunteers/join_volunteer_program" }.not_to change(Program, :count)
+      expect(flash[:notice]).not_to eq("You've joined the Volunteer Program")
     end
 
     it "does not duplicate the enrolment and still flashes success" do
       user = create(:user, :volunteer_with_volunteer_program)
       vol_login!(user)
-      expect { get join_volunteer_program_volunteers_path }.not_to change(Program, :count)
+      expect { post join_volunteer_program_volunteers_path }.not_to change(Program, :count)
       expect(flash[:notice]).to eq("You've joined the Volunteer Program")
     end
 
     it "does not reactivate an inactive membership" do
       user = create(:user, :unactive_volunteer_with_volunteer_program)
       vol_login!(user)
-      get join_volunteer_program_volunteers_path
+      post join_volunteer_program_volunteers_path
       expect(user.programs.sole.active).to be(false)
     end
   end
@@ -377,29 +384,35 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
       end
     end
 
-    describe "GET delete_event" do
+    describe "DELETE delete_event" do
       let!(:shift) { ShadowingHour.create!(user: volunteer, space: makerspace, start_time: 1.day.from_now, end_time: 2.days.from_now, event_id: "evt-9") }
 
       before { vol_login!(staff) }
 
       it "deletes the calendar event (by the space's name) and the row" do
         expect(ShadowingHour).to receive(:delete_event).with("evt-9", makerspace.name).and_return(double)
-        expect { get delete_event_volunteers_path(event_id: "evt-9") }.to change(ShadowingHour, :count).by(-1)
+        expect { delete delete_event_volunteers_path(event_id: "evt-9") }.to change(ShadowingHour, :count).by(-1)
         expect(response).to redirect_to(calendar_volunteers_path)
         expect(flash[:notice]).to eq("This shift has been cancelled.")
       end
 
+      it "does nothing on a plain GET (state change needs DELETE)" do
+        expect(ShadowingHour).not_to receive(:delete_event)
+        expect { get "/volunteers/delete_event", params: { event_id: "evt-9" } }.not_to change(ShadowingHour, :count)
+        expect(flash[:notice]).not_to eq("This shift has been cancelled.")
+      end
+
       it "keeps the row and alerts when Google returns 'error'" do
         allow(ShadowingHour).to receive(:delete_event).and_return("error")
-        expect { get delete_event_volunteers_path(event_id: "evt-9") }.not_to change(ShadowingHour, :count)
+        expect { delete delete_event_volunteers_path(event_id: "evt-9") }.not_to change(ShadowingHour, :count)
         expect(flash[:alert]).to eq("An error occured while deleting the shift.")
       end
 
       it "alerts for an unknown or missing event_id without calling Google" do
         expect(ShadowingHour).not_to receive(:delete_event)
-        get delete_event_volunteers_path(event_id: "nope")
+        delete delete_event_volunteers_path(event_id: "nope")
         expect(flash[:alert]).to eq("This shift has not been found.")
-        get delete_event_volunteers_path
+        delete delete_event_volunteers_path
         expect(flash[:alert]).to eq("This shift has not been found.")
         expect(response).to redirect_to(calendar_volunteers_path)
       end

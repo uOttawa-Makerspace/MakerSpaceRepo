@@ -86,13 +86,19 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
     end
   end
 
-  describe "GET /volunteer_task_requests/create_request" do
+  describe "POST /volunteer_task_requests/create_request" do
     def assign!(user, to: task)
       create(:volunteer_task_join, :active, volunteer_task: to, user: user)
     end
 
     def request!(id = task.id, headers: {})
-      perform_enqueued_jobs { get create_request_volunteer_task_requests_path(id: id), headers: headers }
+      perform_enqueued_jobs { post create_request_volunteer_task_requests_path(id: id), headers: headers }
+    end
+
+    it "creates nothing on a plain GET" do
+      assign!(volunteer)
+      vol_login!(volunteer)
+      expect { get "/volunteer_task_requests/create_request", params: { id: task.id } }.not_to change(VolunteerTaskRequest, :count)
     end
 
     it "creates a pending request, redirects back with a notice, emails the requester with staff bcc'd" do
