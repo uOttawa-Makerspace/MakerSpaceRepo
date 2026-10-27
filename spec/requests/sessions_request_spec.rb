@@ -565,6 +565,37 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
       end
     end
 
+    it "an expired staff cookie sent with a non-staff user's Bearer JWT is that non-staff user, not staff" do
+      # An expired session used to stay memoized as current_user for the request that expired it
+      # (set_last_seen_at ran first) while signed_in? passed on the Bearer token of ANY valid user.
+      create(:space)
+      staff = create(:user, :staff)
+      login!(staff)
+      bearer = { "Authorization" => "Bearer #{user.token}" }
+      travel 73.hours do
+        get staff_dashboard_index_path, headers: bearer
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to eq("You cannot access this area.")
+      end
+    end
+
+    it "the same request with only the expired staff cookie is sent to login" do
+      login!(create(:user, :staff))
+      travel 73.hours do
+        get staff_dashboard_index_path
+        expect(response).to redirect_to(login_path(back_to: "/staff_dashboard"))
+      end
+    end
+
+    it "a non-expired staff cookie still reaches the staff area" do
+      create(:space)
+      login!(create(:user, :staff))
+      travel 71.hours do
+        get staff_dashboard_index_path
+        expect(response).to have_http_status(:ok)
+      end
+    end
+
     it "a protected page after expiry redirects to login with back_to and no flash" do
       login!(user)
       travel 73.hours do
