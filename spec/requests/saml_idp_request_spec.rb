@@ -475,6 +475,20 @@ RSpec.describe "SAML IdP", type: :request do
         SamlIdp.config.service_provider.finder = original
       end
 
+      it "refuses with 403 when the gem reports an error but still returns a truthy verdict (unparseable SP certificate)" do
+        original = SamlIdp.config.service_provider.finder
+        SamlIdp.config.service_provider.finder = lambda do |id|
+          original.call(id)&.merge(sign_authn_request: true, cert: "not a certificate", fingerprint: "aa:bb")
+        end
+        c18_sign_in(:regular)
+        post "/saml/auth", params: { SAMLRequest: c18_authn_request, submit: "current_user", Signature: Base64.strict_encode64("sig"),
+                                     SigAlg: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256" }
+        expect(response).to have_http_status(:forbidden)
+        expect(c18_saml_response_xml).to be_nil
+      ensure
+        SamlIdp.config.service_provider.finder = original
+      end
+
       it "a guest cannot obtain an assertion without credentials" do
         post "/saml/auth", params: { SAMLRequest: c18_authn_request, submit: "current_user" }
         expect(c18_saml_response_xml).to be_nil

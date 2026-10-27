@@ -135,7 +135,9 @@ class SamlIdpController < ApplicationController
       return head :bad_request
     end
 
-    return if valid
+    # errors must be empty too: the gem's valid_external_signature? returns a
+    # truthy errors array when the SP certificate cannot be parsed.
+    return if valid && saml_request.errors.empty?
     return head :bad_request if malformed
 
     Rails.logger.warn("SAML request refused for issuer #{saml_request.issuer.to_s.truncate(200).inspect}: #{saml_request.errors.join(',')}")
