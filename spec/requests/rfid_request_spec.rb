@@ -212,13 +212,16 @@ RSpec.describe "RFID endpoints", type: :request do
       )
     end
 
-    # WART(D-EQ05): CardTapJob needs a "Faculty membership" tier; without it the job raises, the failure is logged to TapBoxLog and no modal is broadcast
-    it "logs a card_tap_job_failure and broadcasts nothing when the Faculty membership tier is missing" do
+    # FIXED(D-EQ05): a missing "Faculty membership" tier is logged to TapBoxLog, the job does not raise and the staff modal is still broadcast
+    it "logs a card_tap_job_failure but still broadcasts the modal when the Faculty membership tier is missing" do
       expect {
-        expect { perform_enqueued_jobs { tap_card } }.not_to have_broadcasted_to("space_event_#{space.id}")
+        expect { perform_enqueued_jobs { tap_card } }.to have_broadcasted_to("space_event_#{space.id}").with(
+          a_hash_including("add_user" => a_hash_including("id" => owner.id))
+        )
       }.to change { TapBoxLog.where(event_type: TapBoxLog::ERROR).count }.by(1)
       expect(TapBoxLog.where(event_type: TapBoxLog::ERROR).last.details["reason"]).to eq("card_tap_job_failure")
-      expect(response).to have_http_status(:not_found)
+      expect(response).to have_http_status(:ok)
+      expect(body).to eq(success: "RFID sign in")
     end
 
     it "sends no StaffDashboardChannel broadcast until the job runs" do
