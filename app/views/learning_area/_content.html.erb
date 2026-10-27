@@ -14,7 +14,7 @@
             <p class="mb-0">Ready to start?</p>
             <p class="small mb-0">You haven't begun this module yet.</p>
         </div>
-        <%= link_to 'Start Module',
+        <%= button_to 'Start Module',
                     start_learning_module_track_index_path(learning_module_id: learning_module.id),
                     class: 'btn btn-primary btn-sm' %>
     <% elsif learning_module.tracks_for_user(current_user).in_progress? %>
@@ -22,7 +22,7 @@
             <p class="mb-0">In Progress</p>
             <p class="small mb-0">Mark this module as complete when you're done.</p>
         </div>
-        <%= link_to 'Mark Completed',
+        <%= button_to 'Mark Completed',
                     completed_learning_module_track_index_path(learning_module_id: learning_module.id),
                     class: 'btn btn-primary btn-sm' %>
     <% elsif learning_module.tracks_for_user(current_user).completed? %>

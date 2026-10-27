@@ -600,8 +600,8 @@ Rails.application.routes.draw do
 
   resources :learning_module_track, only: %i[index] do
     collection do
-      get :start
-      get :completed
+      post :start
+      post :completed
     end
   end
 

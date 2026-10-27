@@ -3,7 +3,7 @@
 require "rails_helper"
 
 # DOM-level characterization of the learning-module journey: learning area index
-# -> module page -> Start Module -> Mark Completed (plain link GETs, no JS
+# -> module page -> Start Module -> Mark Completed (button_to POSTs, no JS
 # needed), plus the admin Edit affordance and the guest redirect.
 RSpec.describe "Training module completion", type: :system do
   let(:user) { create(:user, :regular_user) }
@@ -29,20 +29,20 @@ RSpec.describe "Training module completion", type: :system do
     expect(page).to have_css("h1", text: "Kerf basics")
     expect(page).to have_content("Learn about kerf")
     expect(page).to have_content("Ready to start?")
-    expect(page).to have_no_link("Mark Completed")
+    expect(page).to have_no_button("Mark Completed")
 
-    click_link "Start Module"
+    click_button "Start Module"
     expect(page).to have_current_path(learning_area_path(learning_module.id))
     expect(page).to have_content("You have successfully started the learning module !")
     expect(page).to have_content("In Progress")
-    expect(page).to have_no_link("Start Module")
+    expect(page).to have_no_button("Start Module")
     expect(user.learning_module_tracks.last.status).to eq("in_progress")
 
-    click_link "Mark Completed"
+    click_button "Mark Completed"
     expect(page).to have_content("You have successfully completed the learning module !")
     expect(page).to have_content("You've completed this module")
-    expect(page).to have_no_link("Mark Completed")
-    expect(page).to have_no_link("Start Module")
+    expect(page).to have_no_button("Mark Completed")
+    expect(page).to have_no_button("Start Module")
     expect(user.learning_module_tracks.last.status).to eq("completed")
   end
 
