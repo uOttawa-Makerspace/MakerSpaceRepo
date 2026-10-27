@@ -71,6 +71,18 @@ class SessionsController < ApplicationController
           end
         end
         format.json { render json: { role: :guest }, status: :ok }
+      elsif @sign_in_refusal == :inactive
+        @user = User.new
+        inactive_message =
+          "Your account is inactive. Please contact an administrator at #{SUPPORT_EMAIL}."
+        format.html do
+          flash.now[:alert] = inactive_message
+          render :login
+        end
+        format.json do
+          render json: { error: inactive_message, support_email: SUPPORT_EMAIL },
+                 status: :unprocessable_content
+        end
       else
         @user = User.new
         user = User.username_or_email(params[:username_email])

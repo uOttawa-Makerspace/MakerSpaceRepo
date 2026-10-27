@@ -10,7 +10,13 @@ module ApplicationHelper
   SESSION_KEYS_KEPT_ON_SIGN_IN = %w[locale expires_at authorized_repo_ids selected_dates order_id].freeze
 
   def sign_in(username_email, password)
+    @sign_in_refusal = nil
     user = User.authenticate(username_email, password)
+    if user&.active == false
+      # D-I03: deactivated accounts cannot sign in (the caller words the refusal)
+      @sign_in_refusal = :inactive
+      return nil
+    end
     unless user.nil?
       kept = session.to_hash.slice(*SESSION_KEYS_KEPT_ON_SIGN_IN)
       reset_session # new session id on privilege change (session fixation)
@@ -37,7 +43,8 @@ module ApplicationHelper
 
   # The cookie-session user, or nil. A session whose stored token_version no
   # longer matches the user's (password changed/reset elsewhere; a session
-  # without the key is version 0) is ended, like an expired session.
+  # without the key is version 0), or whose user was deactivated (D-I03), is
+  # ended like an expired session.
   def session_user
     return @session_user if defined?(@session_user)
 
@@ -45,7 +52,7 @@ module ApplicationHelper
     return nil if session[:user_id].blank?
 
     user = User.find(session[:user_id])
-    if session.fetch(:token_version, 0) == user.token_version
+    if session.fetch(:token_version, 0) == user.token_version && user.active != false
       @session_user = user
     else
       sign_out
