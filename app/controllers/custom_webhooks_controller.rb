@@ -18,6 +18,16 @@ class CustomWebhooksController < ApplicationController
       process_membership_hook(order_hook)
     end
     
+    # Job-order payment is recorded by staff, not automatically. Leave a trace so a
+    # paid job-order draft order can be reconciled by hand.
+    if JobOrder.draft_order_processable?(order_hook["tags"])
+      Rails.logger.info(
+        "[orders_paid] paid job-order draft order ignored (no automatic payment recording): " \
+        "order id=#{order_hook['id'].inspect} name=#{order_hook['name'].inspect} " \
+        "draft_order_id=#{order_hook['draft_order_id'].inspect}"
+      )
+    end
+
     # CC Money credit handling
     customer_email = order_hook.dig("customer", "email")
     if order_hook["line_items"].present? && customer_email.present?

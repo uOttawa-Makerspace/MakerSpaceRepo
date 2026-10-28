@@ -163,8 +163,10 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
         line_items: [{ title: "Print", quantity: 1 }],
         metafields: [{ namespace: "makerepo", key: "job_order_db_reference", value: job_order.id.to_s }]
       }
-      expect { hook(payload) }.not_to change(JobOrderStatus, :count)
+      allow(Rails.logger).to receive(:info).and_call_original
+      expect { hook(payload.merge(id: 9001, name: "#1042")) }.not_to change(JobOrderStatus, :count)
       expect(response).to have_http_status(:ok)
+      expect(Rails.logger).to have_received(:info).with(/paid job-order draft order ignored.*id=9001.*name="#1042"/)
     end
   end
 
