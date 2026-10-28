@@ -1,0 +1,2 @@
+# ICS fixtures must keep CRLF line endings and RFC 5545 folding byte-for-byte
+spec/fixtures/files/*.ics -text

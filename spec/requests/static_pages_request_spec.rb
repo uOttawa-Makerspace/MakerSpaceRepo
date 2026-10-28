@@ -369,6 +369,227 @@ RSpec.describe "Static pages", type: :request do
       expect(json.size).to eq(1)
       expect(json.first["events"]).to eq([])
     end
+
+    # Happy path: what production serves to the homepage / hours FullCalendar
+    # (app/javascript/entrypoints/fullcalendar_setup_homepage.js). Time is frozen
+    # because parse_ics_calendar drops NON-recurring events (and modified instances)
+    # that ended > 2 months ago; recurring series are never dropped (WART D-SP27).
+    # Date#to_time inside safe_to_time uses the PROCESS time zone, so the examples
+    # pin TZ explicitly. Most pin UTC process-zone behaviour; the production host's
+    # TZ is UNVERIFIED (Capistrano-deployed host, staging Docker sets none), see D-SP24.
+    # One example also pins America/Toronto so both host configurations are characterized.
+    describe "happy path with a Google-style ICS feed" do
+      let(:feed_url) { "https://calendar.example.test/feed.ics" }
+      let(:ics) { File.binread(Rails.root.join("spec/fixtures/files/open_hours_google.ics")) }
+      let(:source_id) { Digest::MD5.hexdigest(feed_url) }
+      let(:process_tz) { "UTC" }
+
+      around do |example|
+        original_tz = ENV["TZ"]
+        ENV["TZ"] = process_tz
+        travel_to(Time.utc(2026, 10, 28, 16, 0, 0)) { example.run }
+      ensure
+        ENV["TZ"] = original_tz
+      end
+
+      def fetch_sources
+        get open_hours_path
+        expect(response).to have_http_status(:ok)
+        expect(response.media_type).to eq("application/json")
+        JSON.parse(response.body)
+      end
+
+      def event_named(source, id)
+        source["events"].find { |e| e["id"] == id }
+      end
+
+      context "with one space calendar and an explicit color" do
+        let!(:space) { create(:space, name: "Makerspace") }
+        let(:sources) { fetch_sources }
+        let(:source) { sources.first }
+
+        before do
+          create(:staff_needed_calendar, role: "open_hours", space: space, name: "Ignored when space present",
+                                         color: "#112233", calendar_url: feed_url)
+          stub_request(:get, feed_url).to_return(status: 200, body: ics)
+        end
+
+        it "returns one event source keyed by the MD5 of the feed URL, carrying the stored color and 5 events" do
+          expect(sources.size).to eq(1)
+          # WART: the source has only id/color/events. There is NO source-level "name"; the JS reads the
+          # name from events[0].extendedProps.name, so a source with zero events gets no filter checkbox.
+          expect(source.keys).to eq(%w[id color events])
+          expect(source["id"]).to eq(source_id)
+          expect(source["color"]).to eq("#112233")
+          expect(source["events"].map { |e| e["id"] }).to eq(
+            ["oneoff-1@google.com", "allday-1@google.com", "weekly-1@google.com",
+             "weekly-1@google.com_1793628000", "old-series-1@google.com"]
+          )
+          expect(source["events"].map { |e| e.dig("extendedProps", "name") }.uniq).to eq(["Makerspace"])
+          expect(source["events"].map { |e| e["groupId"] }.uniq).to eq([source_id])
+        end
+
+        it "emits a one-off timed event as Toronto wall-clock strings without offset" do
+          expect(event_named(source, "oneoff-1@google.com")).to eq(
+            "id" => "oneoff-1@google.com",
+            "groupId" => source_id,
+            "title" => "Special Tour",
+            "extendedProps" => { "name" => "Makerspace", "description" => "Guest tour" },
+            "allDay" => false,
+            "display" => "auto",
+            "start" => "2026-10-29T10:00:00",
+            "end" => "2026-10-29T12:00:00"
+          )
+        end
+
+        # WART: DTSTART;VALUE=DATE:20261030 (a single all-day Oct 30) is emitted as a timed
+        # window 2026-10-29T20:00 -> 2026-10-30T20:00. Date#to_time is midnight in the PROCESS zone
+        # (UTC here), then converted to Toronto (-4h), so it lands on the previous evening.
+        # The calendar expects "2026-10-30" / "2026-10-31" (or midnight Toronto). With allDay: true
+        # FullCalendar keeps only the date part, so the closure shows on Oct 29, one day early.
+        it "emits an all-day event with allDay true but a shifted, timed start/end under a UTC process zone" do
+          expect(event_named(source, "allday-1@google.com")).to eq(
+            "id" => "allday-1@google.com",
+            "groupId" => source_id,
+            "title" => "Closed for Maintenance",
+            "extendedProps" => { "name" => "Makerspace", "description" => "" },
+            "allDay" => true,
+            "display" => "auto",
+            "start" => "2026-10-29T20:00:00",
+            "end" => "2026-10-30T20:00:00"
+          )
+        end
+
+        context "when the process zone is America/Toronto" do
+          let(:process_tz) { "America/Toronto" }
+
+          # Same feed, different host TZ: the all-day event is correct only in this configuration.
+          it "emits the all-day event at Toronto midnight (the date the calendar intends)" do
+            event = event_named(source, "allday-1@google.com")
+            expect(event).to include("allDay" => true, "start" => "2026-10-30T00:00:00", "end" => "2026-10-31T00:00:00")
+          end
+        end
+
+        it "emits the weekly recurring event as a multi-line rrule string, a duration in ms, and exdates" do
+          expect(event_named(source, "weekly-1@google.com")).to eq(
+            "id" => "weekly-1@google.com",
+            "groupId" => source_id,
+            "title" => "Open Hours",
+            # DESCRIPTION is folded in the feed (CRLF + space, RFC 5545 3.1) and "\," is an escaped comma
+            "extendedProps" => {
+              "name" => "Makerspace",
+              "description" => "Regular hours - open to all members, bring your membership card and wear closed-toe shoes on the shop floor."
+            },
+            "allDay" => false,
+            "display" => "auto",
+            "start" => "2026-10-26T09:00:00",
+            "end" => "2026-10-26T17:00:00",
+            # WART (D-SP20 sibling): rrule is a newline-joined STRING (DTSTART/RRULE/EXDATE lines), not an
+            # object; it relies on @fullcalendar/rrule parsing it. DTSTART/EXDATE are Toronto wall-clock with
+            # no TZID/Z while UNTIL stays UTC ("Z"), so the two are in different frames of reference.
+            "rrule" => "DTSTART:20261026T090000\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE;UNTIL=20261221T235959Z\n" \
+                       "EXDATE:20261028T090000\nEXDATE:20261102T090000",
+            "duration" => 28_800_000
+          )
+        end
+
+        it "suppresses the overridden slot in the series via EXDATE and emits the override exactly once" do
+          rrule = event_named(source, "weekly-1@google.com")["rrule"]
+          # Removing the RECURRENCE-ID -> EXDATE conversion drops this line and the series would
+          # render a second 09:00 event on 2026-11-02 next to the override.
+          expect(rrule.split("\n")).to include("EXDATE:20261102T090000")
+          override_id = "weekly-1@google.com_1793628000"
+          expect(source["events"].count { |e| e["id"] == override_id }).to eq(1)
+          # The id suffix 1793628000 is the RECURRENCE-ID epoch: 2026-11-02T14:00:00Z == 09:00 EST (the original slot).
+          # Override is its own event: no rrule/duration/display keys.
+          expect(event_named(source, override_id)).to eq(
+            "id" => override_id,
+            "groupId" => source_id,
+            "title" => "Open Hours (late start)",
+            "extendedProps" => { "name" => "Makerspace", "description" => "Late start" },
+            "allDay" => false,
+            "start" => "2026-11-02T13:00:00",
+            "end" => "2026-11-02T17:00:00"
+          )
+        end
+
+        it "keeps Toronto wall-clock on both sides of the 2026-11-01 DST change (EDT then EST)" do
+          series = event_named(source, "weekly-1@google.com")
+          override = event_named(source, "weekly-1@google.com_1793628000")
+          # October (EDT, UTC-4): 09:00 local == 13:00Z; the emitted strings are local wall-clock
+          expect(series["start"]).to eq("2026-10-26T09:00:00")
+          expect(series["end"]).to eq("2026-10-26T17:00:00")
+          expect(series["rrule"].split("\n").first).to eq("DTSTART:20261026T090000")
+          # November (EST, UTC-5): 13:00 local == 18:00Z
+          expect(override["start"]).to eq("2026-11-02T13:00:00")
+          expect(override["end"]).to eq("2026-11-02T17:00:00")
+          expect(series["rrule"].split("\n")).to include("EXDATE:20261102T090000")
+        end
+
+        it "emits every timed event's start/end as offset-free Toronto wall-clock (no Z, no +hh:mm)" do
+          timed = source["events"].reject { |e| e["allDay"] }
+          expect(timed).not_to be_empty
+          expect(timed.flat_map { |e| [e["start"], e["end"]] }).to all(match(/\A\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\z/))
+        end
+
+        it "drops non-recurring events that ended more than 2 months ago" do
+          expect(event_named(source, "old-oneoff-1@google.com")).to be_nil
+          expect(source["events"].map { |e| e["title"] }).not_to include("Old Workshop")
+        end
+
+        it "drops a modified instance that ended more than 2 months ago, but keeps its recurring parent" do
+          # old override (RECURRENCE-ID 2026-06-08) is absent; the parent series is still emitted (it has an rrule)
+          # and still EXDATEs the overridden slot.
+          expect(source["events"].map { |e| e["title"] }).not_to include("Spring Hours (late start)")
+          expect(source["events"].map { |e| e["id"] }.select { |id| id.start_with?("old-series-1@google.com_") }).to eq([])
+          # WART(D-SP27): a series whose UNTIL ended four months ago is still emitted (rrule, EXDATEs), so the
+          # payload grows as feeds age. A fix that drops ended series should flip this expectation.
+          parent = event_named(source, "old-series-1@google.com")
+          expect(parent["rrule"]).to eq(
+            "DTSTART:20260601T090000\nRRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=20260629T235959Z\nEXDATE:20260608T090000"
+          )
+        end
+      end
+
+      it "gives each space's calendar its own event source (two sources)" do
+        other_url = "https://calendar.example.test/other.ics"
+        wood_shop = create(:space, name: "Wood Shop")
+        electronics_lab = create(:space, name: "Electronics Lab")
+        create(:staff_needed_calendar, role: "open_hours", space: wood_shop, color: "#aa0000", calendar_url: feed_url)
+        create(:staff_needed_calendar, role: "open_hours", space: electronics_lab, color: "#00aa00", calendar_url: other_url)
+        stub_request(:get, feed_url).to_return(status: 200, body: ics)
+        stub_request(:get, other_url).to_return(status: 200, body: ics)
+
+        sources = fetch_sources.sort_by { |s| s["color"] }
+        expect(sources.map { |s| s["id"] }).to eq([Digest::MD5.hexdigest(other_url), Digest::MD5.hexdigest(feed_url)])
+        expect(sources.map { |s| s["color"] }).to eq(%w[#00aa00 #aa0000])
+        expect(sources.map { |s| s["events"].map { |e| e.dig("extendedProps", "name") }.uniq }).to eq([["Electronics Lab"], ["Wood Shop"]])
+        expect(sources.map { |s| s["events"].size }).to eq([5, 5])
+        expect(sources.map { |s| s["events"].map { |e| e["groupId"] }.uniq }).to eq(sources.map { |s| [s["id"]] })
+      end
+
+      it "falls back to the calendar's own name when the space is nil, and a generated rgba color when none is stored" do
+        create(:staff_needed_calendar, role: "open_hours", space: nil, name: "Front Desk", calendar_url: feed_url)
+        stub_request(:get, feed_url).to_return(status: 200, body: ics)
+
+        source = fetch_sources.first
+        expect(source["events"].map { |e| e.dig("extendedProps", "name") }.uniq).to eq(["Front Desk"])
+        expect(source["color"]).to eq("rgba(18, 151, 161, 1.0)")
+      end
+
+      it "falls back to \"Unnamed Calendar\" when neither space nor calendar name exists" do
+        create(:staff_needed_calendar, role: "open_hours", space: nil, name: "", calendar_url: feed_url)
+        stub_request(:get, feed_url).to_return(status: 200, body: ics)
+
+        expect(fetch_sources.first["events"].map { |e| e.dig("extendedProps", "name") }.uniq).to eq(["Unnamed Calendar"])
+      end
+
+      it "ignores calendars whose role is not open_hours" do
+        create(:staff_needed_calendar, role: nil, calendar_url: feed_url)
+        expect(fetch_sources).to eq([])
+        expect(a_request(:get, feed_url)).not_to have_been_made
+      end
+    end
   end
 
   describe "POST /join_team_program" do
