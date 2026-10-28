@@ -6,6 +6,7 @@ module Api
     class UsersController < BaseController
       ASSIGNABLE_ROLES = %w[admin staff regular_user].freeze
       MIN_QUERY_LENGTH = 2
+      MAX_QUERY_LENGTH = 100
       SEARCH_LIMIT = 50
 
       before_action :authenticate!
@@ -45,8 +46,13 @@ module Api
                               fields: { query: ["is too short (minimum is #{MIN_QUERY_LENGTH} characters)"] })
         end
 
+        if query.length > MAX_QUERY_LENGTH
+          return render_error(:validation_failed, "Validation failed", status: :unprocessable_content,
+                              fields: { query: ["is too long (maximum is #{MAX_QUERY_LENGTH} characters)"] })
+        end
+
         found = User.text_search(User.sanitize_sql_like(query)).with_attached_avatar
-                    .order(:updated_at, :id).limit(SEARCH_LIMIT + 1).to_a
+                    .order(updated_at: :desc, id: :desc).limit(SEARCH_LIMIT + 1).to_a
         render json: {
           users: found.first(SEARCH_LIMIT).map { |u| UserSearchResultSerializer.call(u, avatar_url: avatar_url_for(u)) },
           meta: { limit: SEARCH_LIMIT, truncated: found.size > SEARCH_LIMIT }

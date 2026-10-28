@@ -196,6 +196,27 @@ RSpec.describe "/api/v1/users", type: :request do
       expect(body["meta"]).to eq("limit" => 2, "truncated" => true)
     end
 
+    it "keeps the most recently active users when truncating (updated_at DESC)" do
+      stub_const("Api::V1::UsersController::SEARCH_LIMIT", 2)
+      oldest = create(:user, name: "Recent Match A")
+      middle = create(:user, name: "Recent Match B")
+      newest = create(:user, name: "Recent Match C")
+      oldest.update_column(:updated_at, 3.days.ago)
+      middle.update_column(:updated_at, 2.days.ago)
+      newest.update_column(:updated_at, 1.day.ago)
+      api_get "/api/v1/users", as: staff, params: { query: "Recent Match" }
+      expect(body["users"].map { |u| u["id"] }).to eq([newest.id, middle.id])
+      expect(body["meta"]["truncated"]).to be(true)
+    end
+
+    it "422s a query longer than 100 characters, and accepts exactly 100" do
+      api_get "/api/v1/users", as: staff, params: { query: "a" * 101 }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(error["fields"]["query"].first).to include("too long")
+      api_get "/api/v1/users", as: staff, params: { query: "a" * 100 }
+      expect(response).to have_http_status(:ok)
+    end
+
     describe "rate limit" do
       let(:counts) { Hash.new(0) }
 

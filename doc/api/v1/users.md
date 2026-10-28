@@ -38,7 +38,7 @@ Staff/admin: any user (soft-deleted accounts included, as in the legacy profile)
 | 404 | `not_found` | Staff caller, unknown username |
 
 ## GET /api/v1/users?query=
-Staff/admin. Substring match on name, email and username, case- and accent-insensitive (`zoe` finds `Zoë`). `%` and `_` match literally. At most 50 results, ordered by `updated_at`. Rate limit: 60 per minute per user (429 `rate_limited`).
+Staff/admin. Substring match on name, email and username, case- and accent-insensitive (`zoe` finds `Zoë`). `%` and `_` match literally. At most 50 results, most recently active (`updated_at`) first; the oldest are dropped when truncating. `query` is 2 to 100 characters. Rate limit: 60 per minute per user (429 `rate_limited`).
 
 200:
 ```json
@@ -53,7 +53,7 @@ Staff/admin. Substring match on name, email and username, case- and accent-insen
 |---|---|---|
 | 401 / 403 | `unauthenticated` / `forbidden` | No token / not staff |
 | 422 | `parameter_missing` | `query` absent or empty |
-| 422 | `validation_failed` | `query` shorter than 2 characters after trimming (`fields.query`) |
+| 422 | `validation_failed` | `query` shorter than 2 or longer than 100 characters after trimming (`fields.query`) |
 | 429 | `rate_limited` | More than 60 searches in a minute |
 
 ## PATCH /api/v1/users/:id/role
