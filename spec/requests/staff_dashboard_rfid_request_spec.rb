@@ -7,6 +7,8 @@ require "rails_helper"
 # {card_number, user_id} / {card_number} and ignores the body; the HTML profile
 # page uses the redirect + flash).
 RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
+  include StaffDashboardSpecHelpers
+
   let(:space_a) { create(:space) }
   let(:space_b) { create(:space) }
   let!(:reader_a) { create(:pi_reader, space: space_a) }
@@ -15,18 +17,6 @@ RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
   let(:owner) { create(:user, :regular_user) }
   let!(:card) { create(:rfid, user: owner, mac_address: "aa:aa:aa:aa:aa:aa") }
   let(:staff) { sign_in_as(:staff, space: space_a) }
-
-  def body
-    JSON.parse(response.body)
-  end
-
-  def sign_in_session(user, space)
-    create(:lab_session, user: user, space: space, sign_in_time: 1.hour.ago, sign_out_time: 1.hour.from_now)
-  end
-
-  def exception_class
-    response.body[/<h1>\s*(\S+)\s+in /, 1]
-  end
 
   describe "PUT /staff_dashboard/link_rfid" do
     let!(:unlinked) { create(:rfid, user: nil, mac_address: reader_a.pi_mac_address) }
@@ -161,7 +151,7 @@ RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
       expect(card.reload.mac_address).to eq(reader_a.pi_mac_address)
 
       get rfid_get_unset_rfids_path
-      expect(JSON.parse(response.body)).to eq([])
+      expect(json).to eq([])
     end
 
     it "makes the unlinked card show up in the staff member's own space's unset list when both agree" do
@@ -170,7 +160,7 @@ RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
       put staff_dashboard_unlink_rfid_path, params: { card_number: card.card_number }, as: :json
 
       get rfid_get_unset_rfids_path
-      expect(JSON.parse(response.body).map { |c| c["cardNumber"] }).to eq([card.card_number])
+      expect(json.map { |c| c["cardNumber"] }).to eq([card.card_number])
     end
 
     it "without card_number changes nothing and still says ok" do

@@ -12,6 +12,8 @@ require "rails_helper"
 # signed_in partial calls `user.walk_in_safety_sheets.any?` per row (N+1; Bullet asks for
 # `.includes(:walk_in_safety_sheets)`). Pinned with skip_bullet, as for the other D-PERF items.
 RSpec.describe "Staff dashboard refresh_tables", type: :request, skip_bullet: true do
+  include StaffDashboardSpecHelpers
+
   let!(:space) { create(:space) }
   let!(:other_space) { create(:space) }
   let!(:staff) { sign_in_as(:staff, space: space) }
@@ -32,10 +34,6 @@ RSpec.describe "Staff dashboard refresh_tables", type: :request, skip_bullet: tr
 
   def refresh(params = {})
     get "/staff_dashboard/refresh_tables", params: params
-  end
-
-  def json
-    JSON.parse(response.body)
   end
 
   it "answers JSON with the signed-in users, in sign-out order, as [name, email, username] triples" do

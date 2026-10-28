@@ -7,24 +7,13 @@ require "rails_helper"
 # calls them: PUT add_users?added_users=:username, PUT remove_users?dropped_users[]=:username,
 # GET search?query=, PUT change_space?space_id=. Plus the not-signed-in / unknown-user edges.
 RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
+  include StaffDashboardSpecHelpers
   include ActiveSupport::Testing::TimeHelpers
 
   let!(:space) { create(:space) }
   let!(:other_space) { create(:space) }
   let!(:staff) { sign_in_as(:staff, space: space) }
   let(:visitor) { create(:user, :regular_user) }
-
-  def json
-    JSON.parse(response.body)
-  end
-
-  def exception_class
-    response.body[/<h1>\s*(\S+)\s+in /, 1]
-  end
-
-  def sign_in_session(user, sp = space)
-    create(:lab_session, user: user, space: sp, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
-  end
 
   describe "PUT /staff_dashboard/add_users (sign_in_users)" do
     it "signs the user in to the staff member's space for 6 hours and answers {status: ok}" do
