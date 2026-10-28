@@ -119,4 +119,66 @@ RSpec.describe "Shopify orders_paid webhook (locker path)", type: :request do
     expect(response).to have_http_status(:unprocessable_content)
     expect(rental.reload.state).to eq("reviewing")
   end
+  # Real Shopify payloads carry a numeric draft_order_id and no inline metafields;
+  # the controller queries Shopify for them. Only the HTTP endpoint is stubbed:
+  # draft_order_metafields and the GraphQL client run for real.
+  describe "draft order metafield lookup over HTTP (draft_order_metafields not stubbed)" do
+    let!(:rental) { create(:locker_rental, :await_payment) }
+    let!(:bystander) { create(:locker_rental, :await_payment) }
+
+    before do
+      allow_any_instance_of(CustomWebhooksController).to receive(:draft_order_metafields).and_call_original
+      prime_shopify_context!
+    end
+
+    def metafields_response(*fields)
+      { "node" => { "metafields" => { "edges" => fields.map { |f| { "node" => f } } } } }
+    end
+
+    it "queries DraftOrder/<draft_order_id> and activates the rental referenced by the locker_db_reference metafield" do
+      seen = stub_shopify_graphql("query NodeMetafields", metafields_response(
+        { "namespace" => "makerepo", "key" => "locker_db_reference", "value" => rental.id.to_s }
+      ))
+      perform_enqueued_jobs do
+        signed_orders_paid({ tags: "x, #{tag}", draft_order_id: 424_242, admin_graphql_api_id: "gid://shopify/Order/9" })
+      end
+
+      expect(response).to have_http_status(:ok)
+      expect(seen.size).to eq(1)
+      expect_shopify_auth(seen.first)
+      expect(seen.first[:body]["query"]).to include("query NodeMetafields($ownerId: ID!)")
+      expect(seen.first[:body]["variables"]).to eq("ownerId" => "gid://shopify/DraftOrder/424242")
+      expect(rental.reload.state).to eq("active")
+      expect(bystander.reload.state).to eq("await_payment")
+      expect(ActionMailer::Base.deliveries.size).to eq(1)
+    end
+
+    it "uses admin_graphql_api_id when there is no draft_order_id" do
+      seen = stub_shopify_graphql("query NodeMetafields", metafields_response(
+        { "namespace" => "makerepo", "key" => "locker_db_reference", "value" => rental.id.to_s }
+      ))
+      signed_orders_paid({ tags: [tag], admin_graphql_api_id: "gid://shopify/Order/9" })
+      expect(seen.map { |r| r[:body]["variables"] }).to eq([{ "ownerId" => "gid://shopify/Order/9" }])
+      expect(rental.reload.state).to eq("active")
+      expect(bystander.reload.state).to eq("await_payment")
+    end
+
+    it "picks the locker_db_reference field among other metafields (a decoy listed first is ignored)" do
+      stub_shopify_graphql("query NodeMetafields", metafields_response(
+        { "namespace" => "makerepo", "key" => "membership_db_reference", "value" => bystander.id.to_s },
+        { "namespace" => "makerepo", "key" => "locker_db_reference", "value" => rental.id.to_s }
+      ))
+      signed_orders_paid({ tags: [tag], draft_order_id: 5 })
+      expect(rental.reload.state).to eq("active")
+      expect(bystander.reload.state).to eq("await_payment")
+    end
+
+    it "does nothing when Shopify returns no locker_db_reference" do
+      stub_shopify_graphql("query NodeMetafields", metafields_response)
+      signed_orders_paid({ tags: [tag], draft_order_id: 1 })
+      expect(response).to have_http_status(:ok)
+      expect(LockerRental.where(state: "active")).to be_empty
+    end
+  end
+
 end

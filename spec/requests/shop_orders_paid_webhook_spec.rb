@@ -128,6 +128,66 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
     end
   end
 
+  # ---------------------------------------------- metafield lookup over real HTTP
+  # Real Shopify orders/paid payloads carry no inline `metafields` and a numeric
+  # `draft_order_id`; the controller then asks Shopify (NodeMetafields query) for
+  # the draft order's metafields. Only the HTTP endpoint is stubbed here;
+  # `draft_order_metafields` and the GraphQL client run for real.
+  describe "draft order metafield lookup (draft_order_metafields not stubbed)" do
+    let!(:pending) { create(:membership, user: user, membership_tier: tier, status: "pending") }
+    let!(:bystander) { create(:membership, user: create(:user, :regular_user), membership_tier: tier, status: "pending") }
+
+    before do
+      allow_any_instance_of(CustomWebhooksController).to receive(:draft_order_metafields).and_call_original
+      prime_shopify_context!
+    end
+
+    def metafields_response(*fields)
+      { "node" => { "metafields" => { "edges" => fields.map { |f| { "node" => f } } } } }
+    end
+
+    def membership_ref(id)
+      { "namespace" => "makerepo", "key" => "membership_db_reference", "value" => id.to_s }
+    end
+
+    def real_payload(**extra)
+      { tags: "foo, #{membership_tag}", line_items: [{ title: "1 Day Membership", quantity: 1 }] }.merge(extra)
+    end
+
+    it "turns a numeric draft_order_id into a DraftOrder gid, queries its metafields and marks that membership paid" do
+      seen = stub_shopify_graphql("query NodeMetafields", metafields_response(
+        { "namespace" => "custom", "key" => "other", "value" => "1" }, membership_ref(pending.id)
+      ))
+      hook(real_payload(draft_order_id: 987_654, admin_graphql_api_id: "gid://shopify/Order/555"))
+
+      expect(response).to have_http_status(:ok)
+      expect(seen.size).to eq(1)
+      expect_shopify_auth(seen.first)
+      expect(seen.first[:body]["query"]).to include("query NodeMetafields($ownerId: ID!)")
+      expect(seen.first[:body]["variables"]).to eq("ownerId" => "gid://shopify/DraftOrder/987654")
+      expect(pending.reload.status).to eq("paid")
+      expect(bystander.reload.status).to eq("pending")
+      expect(Membership.count).to eq(2)
+    end
+
+    it "falls back to admin_graphql_api_id as the owner id when the hook has no draft_order_id" do
+      seen = stub_shopify_graphql("query NodeMetafields", metafields_response(membership_ref(pending.id)))
+      hook(real_payload(admin_graphql_api_id: "gid://shopify/Order/555"))
+
+      expect(seen.map { |r| r[:body]["variables"] }).to eq([{ "ownerId" => "gid://shopify/Order/555" }])
+      expect(pending.reload.status).to eq("paid")
+      expect(bystander.reload.status).to eq("pending")
+    end
+
+    it "ignores metafields that are not the membership reference: nothing is marked paid and no row is created" do
+      stub_shopify_graphql("query NodeMetafields", metafields_response(
+        { "namespace" => "makerepo", "key" => "locker_db_reference", "value" => pending.id.to_s }
+      ))
+      expect { hook(real_payload(draft_order_id: 1)) }.not_to change { Membership.pluck(:id, :status).sort }
+      expect(response).to have_http_status(:ok)
+    end
+  end
+
   it "uses the env-specific tag names (production tags are not honored in test)" do
     expect(membership_tag).to eq("makerepo_test_membership")
     expect(job_order_tag).to eq("makerepo_test_job_order")
