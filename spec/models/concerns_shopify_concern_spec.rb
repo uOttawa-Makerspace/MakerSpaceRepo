@@ -49,9 +49,9 @@ RSpec.describe ShopifyConcern do
 
   describe ".start_shopify_session" do
     it "activates a session for <shop_name>.myshopify.com from the env credentials" do
-      cfg = Rails.application.credentials.dig(:test, :shopify) || {}
       session = Membership.start_shopify_session
-      expect(session.shop).to eq("#{cfg[:shop_name]}.myshopify.com")
+      expect(session.shop).to eq("fake-shop.myshopify.com")
+      expect(session.access_token).to eq("shpat_test_fake")
       expect(ShopifyAPI::Context.active_session).to eq(session)
     end
   end

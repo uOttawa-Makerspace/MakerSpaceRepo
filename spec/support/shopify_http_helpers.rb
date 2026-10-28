@@ -8,8 +8,34 @@
 module ShopifyHttpHelpers
   JSON_HEADERS = { "Content-Type" => "application/json" }.freeze
 
+  # Fixed fake Shopify config. config/credentials.yml.enc's test section holds a real-looking
+  # access token; WebMock failure diffs print request headers, which would leak it into CI
+  # logs. Every example sees these values instead (see the before hook below), and the
+  # real credential is never read, asserted against or printed.
+  FAKE_SHOPIFY_CONFIG = {
+    shop_name: "fake-shop", api_key: "fake_api_key", password: "shpat_test_fake", api_version: "2025-01"
+  }.freeze
+
   def shopify_test_config
-    Rails.application.credentials.dig(:test, :shopify)
+    FAKE_SHOPIFY_CONFIG
+  end
+
+  # Replaces credentials.test.shopify (dig and [] access, as used by ShopifyConcern,
+  # ShopifyService and StaticPagesController) with FAKE_SHOPIFY_CONFIG.
+  def stub_shopify_credentials!
+    creds = Rails.application.credentials
+    env = Rails.env.to_sym
+    allow(creds).to receive(:dig).and_wrap_original do |original, *keys|
+      next original.call(*keys) unless keys.first(2) == [env, :shopify] && keys[2] != :webhook
+
+      keys.size > 2 ? FAKE_SHOPIFY_CONFIG.dig(*keys.drop(2)) : FAKE_SHOPIFY_CONFIG
+    end
+    allow(creds).to receive(:[]).and_wrap_original do |original, key|
+      value = original.call(key)
+      next value unless key == env
+
+      (value || {}).merge(shopify: FAKE_SHOPIFY_CONFIG.merge(webhook: value&.dig(:shopify, :webhook)))
+    end
   end
 
   def shopify_graphql_url
@@ -61,6 +87,6 @@ module ShopifyHttpHelpers
 end
 
 RSpec.configure do |config|
-  config.include ShopifyHttpHelpers, type: :request
-  config.include ShopifyHttpHelpers, type: :model
+  config.include ShopifyHttpHelpers
+  config.before { stub_shopify_credentials! }
 end

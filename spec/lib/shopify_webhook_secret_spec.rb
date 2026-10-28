@@ -43,7 +43,8 @@ RSpec.describe ShopifyWebhookSecret do
     expected = described_class.resolve(
       env: Rails.env, credential: Rails.application.credentials.dig(Rails.env.to_sym, :shopify, :webhook)
     )
-    expect(ShopifyApp.configuration.secret).to eq(expected)
+    # boolean compare: a failure diff must not print the real webhook secret
+    expect(ShopifyApp.configuration.secret == expected).to be(true)
   end
 
   describe "config/initializers/shopify_app.rb" do
