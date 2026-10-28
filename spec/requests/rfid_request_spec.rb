@@ -6,6 +6,7 @@ require "rails_helper"
 # get_unset_rfids is staff-only.
 RSpec.describe "RFID endpoints", type: :request do
   include ActiveJob::TestHelper
+  include ActiveSupport::Testing::TimeHelpers
 
   include_context "with test cable adapter"
 
