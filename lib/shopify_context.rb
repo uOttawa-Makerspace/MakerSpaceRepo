@@ -46,7 +46,9 @@ module ShopifyContext
     NotConfigured, ShopifyAPI::Errors::HttpResponseError, ShopifyAPI::Errors::MaxHttpRetriesExceededError
   ].freeze
 
-  # At most one failure report per kind (error class) per 10 minutes per process; every failure is still logged.
+  # At most one failure report per kind per 10 minutes per process; every failure is still logged.
+  # A kind is the error class plus, for MissingConfig, the sorted missing key names and, for
+  # SetupFailed, the class Context.setup raised: a different misconfiguration still reports.
   REPORT_THROTTLE = ReportThrottle.new(interval: 10.minutes)
 
   SETUP_MUTEX = Mutex.new
@@ -124,11 +126,20 @@ module ShopifyContext
     %w[production staging].include?(env.to_s)
   end
 
+  def self.throttle_kind(error)
+    case error
+    when MissingConfig then [error.class.name, *error.keys]
+    when SetupFailed then [error.class.name, error.error_class_name]
+    else [error.class.name]
+    end
+  end
+  private_class_method :throttle_kind
+
   def self.failed(error)
     message = "[shopify_context] #{error.class}: #{error.message}"
     if !report_to_tracker?
       Rails.logger.warn(message)
-    elsif REPORT_THROTTLE.allow?(error.class.name)
+    elsif REPORT_THROTTLE.allow?(throttle_kind(error))
       Rails.logger.warn(message)
       Rails.error.report(error, handled: true, severity: :error, context: { source: "shopify_context" })
     else

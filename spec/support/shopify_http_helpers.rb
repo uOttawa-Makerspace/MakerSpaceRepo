@@ -94,6 +94,8 @@ RSpec.configure do |config|
   # The :shopify_context tag (shopify_context_isolation.rb) only snapshots/restores the Context.
   config.before(:each) do
     stub_shopify_credentials!
-    ShopifyContext::REPORT_THROTTLE.reset! # failure reports are throttled per process; keep examples independent
+    # failure reports are throttled per process; keep examples independent
+    ShopifyContext::REPORT_THROTTLE.reset!
+    CustomWebhooksController.reset_missing_secret_report_throttle!
   end
 end

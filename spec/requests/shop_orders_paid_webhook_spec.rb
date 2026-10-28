@@ -92,8 +92,6 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
     describe "when no webhook secret is configured" do
       before { allow(ShopifyApp.configuration).to receive(:secret).and_return(nil) }
 
-      before { CustomWebhooksController.reset_missing_secret_report_throttle! }
-
       it "refuses a request signed with the public test_secret (503) and changes nothing, every time" do
         3.times do
           expect { signed_orders_paid(forged, secret: "test_secret") }.not_to change { money_state }

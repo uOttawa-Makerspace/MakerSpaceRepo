@@ -196,6 +196,34 @@ RSpec.describe ShopifyContext, :shopify_context do
       expect(reports.map { |e, _| e.class }).to eq([ShopifyContext::MissingConfig, ShopifyContext::SetupFailed])
     end
 
+    it "a different misconfiguration (other missing keys) still reports inside the window; the same one does not" do
+      cfg = ShopifyHttpHelpers::FAKE_SHOPIFY_CONFIG
+      allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify).and_return(cfg.merge(api_key: nil))
+      2.times { described_class.ensure_setup! }
+      expect(reports.size).to eq(1)
+
+      allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify).and_return(cfg.merge(password: nil))
+      2.times { described_class.ensure_setup! }
+      expect(reports.size).to eq(2)
+
+      # the same SET of missing keys is the same kind, however the credentials list them
+      allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify).and_return(cfg.merge(password: nil, api_key: nil))
+      described_class.ensure_setup!
+      allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify).and_return(cfg.slice(:shop_name, :api_version))
+      described_class.ensure_setup!
+      expect(reports.size).to eq(3)
+    end
+
+    it "throttles Context.setup failures per underlying error class" do
+      stub_shopify_credentials! # complete config again (this group's before hook blanks it)
+      blank_context!
+      allow(ShopifyAPI::Context).to receive(:setup).and_raise(ShopifyAPI::Errors::UnsupportedVersionError, "x")
+      2.times { described_class.ensure_setup! }
+      allow(ShopifyAPI::Context).to receive(:setup).and_raise(TypeError, "y")
+      2.times { described_class.ensure_setup! }
+      expect(reports.size).to eq(2)
+    end
+
     it "shares ReportThrottle with the webhook-secret report" do
       expect(ShopifyContext::REPORT_THROTTLE).to be_a(ReportThrottle)
       expect(CustomWebhooksController::MISSING_SECRET_REPORT_THROTTLE).to be_a(ReportThrottle)
@@ -313,6 +341,19 @@ RSpec.describe ShopifyContext, :shopify_context do
     ensure
       2.times { release << :go } if release
       [first, second].compact.each { |t| t.join(2) }
+    end
+  end
+
+  # The global before hook (spec/support/shopify_http_helpers.rb) resets both report throttles, so
+  # no example resets them by hand. Defined order: the second example runs after the first used the throttle.
+  describe "global throttle reset", order: :defined do
+    it "first use of the missing-secret throttle in a run is allowed" do
+      expect(CustomWebhooksController.report_missing_secret?).to be(true)
+      expect(CustomWebhooksController.report_missing_secret?).to be(false)
+    end
+
+    it "is allowed again in the next example (the before hook reset it)" do
+      expect(CustomWebhooksController.report_missing_secret?).to be(true)
     end
   end
 end
