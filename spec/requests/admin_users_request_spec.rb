@@ -363,8 +363,12 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
     it "soft-deletes: flags user and repositories, removes lab sessions and certifications" do
       repo = create(:repository)
       repo.users << target
-      create(:lab_session, user_id: target.id) if FactoryBot.factories.registered?(:lab_session)
+      space = create(:space)
+      create(:lab_session, user_id: target.id, space: space, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
+      create(:lab_session, user_id: target.id, space: space, sign_in_time: 2.days.ago, sign_out_time: 2.days.ago + 1.hour)
+      bystander = create(:lab_session, space: space, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
       create(:certification, :basic_training, user_id: target.id)
+      expect(LabSession.where(user_id: target.id).count).to eq(2)
       delete delete_user_admin_users_path, params: { id: target.id, password: password }
       expect(response).to redirect_to(root_path)
       expect(flash[:notice]).to eq("User flagged as deleted")
@@ -373,6 +377,8 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(gone.deleted).to be(true)
       expect(gone.repositories.reload.pluck(:deleted)).to all(be(true))
       expect(Certification.where(user_id: target.id)).to be_empty
+      expect(LabSession.where(user_id: target.id)).to be_empty
+      expect(LabSession.where(id: bystander.id)).to exist
     end
 
     it "the deleted user can no longer log in or be found by username/email" do
