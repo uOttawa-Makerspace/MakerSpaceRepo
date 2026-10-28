@@ -187,39 +187,75 @@ RSpec.describe "Shopify Admin GraphQL over real HTTP (WebMock)", type: :request 
     end
   end
 
-  it "WART(D-S36-new): ShopifyAPI::Context.setup is only called from ShopifyService (reached via LockerOption) and the unused ShopifyCartConcern" do
+  it "ShopifyAPI::Context.setup is called from the boot initializer, ShopifyService and the unused ShopifyCartConcern only" do
     callers = Dir[Rails.root.join("{app,lib,config}/**/*.rb")].select { |f| File.read(f).include?("ShopifyAPI::Context.setup") }
                   .map { |f| Pathname(f).relative_path_from(Rails.root).to_s }
-    expect(callers).to contain_exactly("app/services/shopify_service.rb", "app/models/concerns/shopify_cart_concern.rb")
-    users = Dir[Rails.root.join("{app,lib,config}/**/*.rb")].select { |f| File.read(f) =~ /include ShopifyCartConcern|ShopifyCartConcern\.start|ShopifyService\./ }
-                .map { |f| Pathname(f).relative_path_from(Rails.root).to_s }
-    expect(users).to contain_exactly("app/models/locker_option.rb")
+    expect(callers).to contain_exactly("config/initializers/shopify_api.rb", "app/services/shopify_service.rb",
+                                       "app/models/concerns/shopify_cart_concern.rb")
   end
 
-  describe "when ShopifyConcern runs in a process where nothing called ShopifyAPI::Context.setup" do
-    it "sends the request to /admin/api//graphql.json (empty API version)" do
-      # WART(D-S36-new): ShopifyConcern.start_shopify_session only activates a session;
-      # it never calls ShopifyAPI::Context.setup. The ONLY live caller of Context.setup is
-      # ShopifyService.start_shopify_session (app/services/shopify_service.rb:24), reached only via
-      # LockerOption.locker_product_info (app/models/locker_option.rb:32, the staff lockers
-      # pages). ShopifyCartConcern also calls it but no model includes it (dead). Nothing in
-      # an initializer, Puma boot or solid_queue boot calls it, and the homepage's Shopify
-      # call (StaticPagesController#home_user_widgets) builds its own Session without setup.
-      # So a fresh Puma worker or job process that creates a draft order before any staff
-      # lockers page was served in that process posts to /admin/api//graphql.json.
-      # NOT guaranteed (order dependency); not fixed here.
-      original = ShopifyAPI::Context.instance_variable_get(:@api_version)
-      ShopifyAPI::Context.instance_variable_set(:@api_version, "")
-      cfg = shopify_test_config
-      stub = stub_request(:post, "https://#{cfg[:shop_name]}.myshopify.com/admin/api//graphql.json")
-             .to_return(status: 404, body: "{}", headers: ShopifyHttpHelpers::JSON_HEADERS)
-      tier = create(:membership_tier, duration: 30, internal_price: 1, external_price: 2)
-      membership = create(:membership, user: create(:user, :regular_user), membership_tier: tier, status: "pending")
+  describe "in a fresh process (nothing but the boot initializer ran Context.setup)" do
+    # Regression for D-S36-new: ShopifyConcern.start_shopify_session never calls
+    # Context.setup, so the API version comes from config/initializers/shopify_api.rb.
+    # Simulated by blanking the Context, then re-running the initializer.
+    let(:context_ivars) { %i[@api_key @api_secret_key @api_version @host] }
 
-      expect { membership.checkout_link }.to raise_error(ShopifyAPI::Errors::HttpResponseError)
-      expect(stub).to have_been_requested.once
+    def blank_context!
+      context_ivars.each { |iv| ShopifyAPI::Context.instance_variable_set(iv, iv == :@host ? nil : "") }
+    end
+
+    def membership_for_checkout
+      tier = create(:membership_tier, duration: 30, internal_price: 1, external_price: 2)
+      create(:membership, user: create(:user, :regular_user), membership_tier: tier, status: "pending")
+    end
+
+    around do |example|
+      saved = context_ivars.to_h { |iv| [iv, ShopifyAPI::Context.instance_variable_get(iv)] }
+      example.run
     ensure
-      ShopifyAPI::Context.instance_variable_set(:@api_version, original)
+      saved.each { |iv, v| ShopifyAPI::Context.instance_variable_set(iv, v) }
+    end
+
+    it "posts the draft order to /admin/api/<configured version>/graphql.json" do
+      blank_context!
+      expect(ShopifyAPI::Context.api_version).to eq("")
+      load Rails.root.join("config/initializers/shopify_api.rb")
+
+      creates = stub_draft_order_create(draft_id)
+      stub_draft_order_fetch(draft_id, invoice_url: invoice_url)
+      expect(membership_for_checkout.checkout_link).to eq(invoice_url)
+
+      expect(creates.size).to eq(1)
+      expect(creates.first[:url]).to eq("https://fake-shop.myshopify.com/admin/api/2025-01/graphql.json")
+      expect(ShopifyAPI::Context.api_version).to eq("2025-01")
+    end
+
+    it "calls Context.setup with the arguments master's start_shopify_session used" do
+      expect(ShopifyAPI::Context).to receive(:setup).with(
+        api_key: "fake_api_key", api_secret_key: "shpat_test_fake", host: "fake-shop.myshopify.com",
+        is_embedded: false, is_private: true, api_version: "2025-01"
+      )
+      load Rails.root.join("config/initializers/shopify_api.rb")
+    end
+
+    it "is idempotent: ShopifyService.start_shopify_session after the initializer keeps the same config" do
+      load Rails.root.join("config/initializers/shopify_api.rb")
+      expect { ShopifyService.start_shopify_session }.not_to(change { [ShopifyAPI::Context.api_version, ShopifyAPI::Context.host] })
+    end
+
+    it "boots with a warning, and skips setup, when the shopify credentials are missing" do
+      allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify).and_return(nil)
+      allow(Rails.logger).to receive(:warn)
+      expect(ShopifyAPI::Context).not_to receive(:setup)
+      expect { load Rails.root.join("config/initializers/shopify_api.rb") }.not_to raise_error
+      expect(Rails.logger).to have_received(:warn).with(/shopify_api.*missing/)
+    end
+
+    it "boots with a warning when Shopify rejects the api_version" do
+      allow(Rails.logger).to receive(:warn)
+      allow(ShopifyAPI::Context).to receive(:setup).and_raise(ShopifyAPI::Errors::UnsupportedVersionError, "nope")
+      expect { load Rails.root.join("config/initializers/shopify_api.rb") }.not_to raise_error
+      expect(Rails.logger).to have_received(:warn).with(/setup skipped.*UnsupportedVersionError/)
     end
   end
 end
