@@ -102,6 +102,20 @@ RSpec.describe "/api/v1 token revocation on token_version bumps", type: :request
       expect(token.reload.revoked_at).to be_nil
     end
 
+    it "is not answered from, and does not leave stale entries in, the query cache" do
+      u = User.find(user.id)
+      start = u.token_version
+      freeze_time do # identical SQL text for every bump
+        User.cache do
+          User.unscoped.where(id: user.id).pick(:token_version) # cached
+          first = u.bump_token_version!.token_version
+          second = u.bump_token_version!.token_version
+          expect([first, second]).to eq([start + 1, start + 2])
+          expect(User.unscoped.where(id: user.id).pick(:token_version)).to eq(start + 2)
+        end
+      end
+    end
+
     it "is the path used by store_new_password!, admin_lock! and soft_delete!" do
       [->(u) { u.store_new_password!("Brand-new-pw-123!") }, :admin_lock!, :soft_delete!].each do |action|
         u = create(:user)

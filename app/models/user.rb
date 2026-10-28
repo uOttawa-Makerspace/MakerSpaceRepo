@@ -445,7 +445,9 @@ class User < ApplicationRecord
     # One transaction: a failure to revoke the refresh tokens rolls the bump (and the
     # lock/delete columns) back, so a deleted user can never keep live refresh tokens.
     new_version = self.class.transaction(requires_new: true) do
-      conn.select_value(sql).tap { ApiRefreshToken.revoke_all_for!(id) }
+      # select_value is a read API: never let the query cache answer this write.
+      # (Rails 8.1 already clears the cache on write SQL; this is belt and braces.)
+      self.class.uncached { conn.select_value(sql) }.tap { ApiRefreshToken.revoke_all_for!(id) }
     end
     self.token_version = new_version
     self.updated_at = values[:updated_at]
