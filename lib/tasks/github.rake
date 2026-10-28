@@ -9,6 +9,7 @@ namespace :github do
     scope = User.where.not(access_token: nil)
     count = scope.count
 
+    # Fail-safe: ANY DRY_RUN value (even 0/false) only counts. The real run needs DRY_RUN unset.
     if ENV["DRY_RUN"].present?
       puts "[DRY RUN] #{count} user(s) have a stored GitHub access token; nothing changed."
     else
