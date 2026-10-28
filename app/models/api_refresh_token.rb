@@ -29,6 +29,11 @@ class ApiRefreshToken < ApplicationRecord
 
   GRACE = 30.seconds
 
+  # Invariant (issue! sets it): a token never outlives its family cap, so
+  # `expired?` alone covers the cap and no query needs a separate family_expires_at test
+  # (except pruning rotated rows, which is about the cap itself).
+  validate :expires_within_family_cap
+
   attr_reader :raw_token
 
   def self.digest(raw)
@@ -114,7 +119,7 @@ class ApiRefreshToken < ApplicationRecord
   def expired?(now = Time.current) = expires_at <= now
 
   def usable?(now = Time.current)
-    !revoked? && !expired?(now) && family_expires_at > now && AuthEligibility.allowed?(user) && token_version == user.token_version
+    !revoked? && !expired?(now) && AuthEligibility.allowed?(user) && token_version == user.token_version
   end
 
   # Revokes this token and issues its successor in the same family, under the
@@ -133,7 +138,7 @@ class ApiRefreshToken < ApplicationRecord
     outcome = nil
     successor = transaction do
       self.class.lock_family!(family_id)
-      lock! # reloads the row AND drops the cached user, so usable? below sees the CURRENT token_version/state
+      reload # (the family lock is held) refreshes the row AND drops the cached user, so usable? below sees the CURRENT token_version/state
       if revoked?
         outcome = replay_outcome if replaced_by_id.present?
         next nil
@@ -161,5 +166,11 @@ class ApiRefreshToken < ApplicationRecord
     in_window = revoked_at > GRACE.ago
     family_live = self.class.where(family_id: family_id, revoked_at: nil).any?(&:usable?)
     in_window && family_live ? :in_progress : :theft
+  end
+
+  def expires_within_family_cap
+    return unless expires_at && family_expires_at && expires_at > family_expires_at
+
+    errors.add(:expires_at, "must not be after the family cap")
   end
 end

@@ -123,7 +123,7 @@ RSpec.describe ApiRefreshToken, type: :model do
 
     it "slides the expiry but never past 90 days from the family's first login" do
       first = described_class.issue!(user, now: 80.days.ago)
-      first.update!(expires_at: 10.days.from_now) # as if renewed by earlier rotations
+      first.update!(expires_at: first.family_expires_at) # as if renewed by earlier rotations
       second = first.rotate!
       expect(second.expires_at).to be_within(1.second).of(first.family_expires_at)
       expect(second.family_expires_at).to eq(first.family_expires_at)
@@ -133,7 +133,7 @@ RSpec.describe ApiRefreshToken, type: :model do
     it "sets the cap once, at the first login, and keeps it when older rows are pruned" do
       first = described_class.issue!(user, now: 80.days.ago)
       expect(first.family_expires_at).to be_within(1.second).of(first.created_at + 90.days)
-      first.update!(expires_at: 10.days.from_now)
+      first.update!(expires_at: first.family_expires_at)
       second = first.rotate!
       described_class.where(id: first.id).delete_all # a prune removed the oldest row
       third = second.rotate!
@@ -151,10 +151,17 @@ RSpec.describe ApiRefreshToken, type: :model do
       expect(first.rotate!.expires_at).to be_within(2.seconds).of(30.days.from_now)
     end
 
-    it "returns nil for a token past the family cap, even if its own expiry is later" do
+    it "returns nil for a token past the family cap (its expiry is capped by the invariant)" do
       first = described_class.issue!(user, now: 100.days.ago)
-      first.update!(expires_at: 5.days.from_now)
+      expect(first.expires_at).to be <= first.family_expires_at
       expect(first.rotate!).to be_nil
+    end
+
+    it "refuses to persist a token that outlives its family cap" do
+      first = described_class.issue!(user)
+      first.expires_at = first.family_expires_at + 1.day
+      expect(first).not_to be_valid
+      expect(first.errors[:expires_at]).to be_present
     end
 
     it "returns nil for a revoked token without a successor" do
