@@ -510,11 +510,11 @@ RSpec.describe "SAML IdP", type: :request do
       expect(c18_saml_response_xml).to be_nil
     end
 
-    it "answers 400 when the gem raises its SignedDocument::ValidationError outside the guard" do
+    it "answers 403 (signature invalid) when the gem raises its SignedDocument::ValidationError outside the guard" do
       allow_any_instance_of(SamlIdp::Request).to receive(:valid?).and_raise(SamlIdp::XMLSecurity::SignedDocument::ValidationError, "Digest mismatch")
       c18_sign_in(:regular)
       post "/saml/auth", params: { submit: "current_user", SAMLRequest: c18_authn_request }
-      expect(response).to have_http_status(:bad_request)
+      expect(response).to have_http_status(:forbidden)
     end
 
     it "answers 400 when the payload is malformed in a way the gem raises (bad ACS URL)" do

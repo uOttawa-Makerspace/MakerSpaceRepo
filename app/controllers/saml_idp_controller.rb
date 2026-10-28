@@ -10,7 +10,7 @@ class SamlIdpController < ApplicationController
 
   # What the gem raises for a malformed (as opposed to refused) request. Anything
   # else (SP metadata getter, DB, network) is a server failure and must surface.
-  MALFORMED_REQUEST_ERRORS = (SamlSignatureGuard::PARSE_ERRORS + [SamlIdp::XMLSecurity::SignedDocument::ValidationError]).freeze
+  MALFORMED_REQUEST_ERRORS = SamlSignatureGuard::PARSE_ERRORS
 
   # The wiki-server SP's metadata. No copy of it exists in the repository or its
   # history, so placing it at config/saml/wiki_metadata.xml is a deploy step. The
@@ -155,6 +155,9 @@ class SamlIdpController < ApplicationController
     rescue *MALFORMED_REQUEST_ERRORS => e # undecodable payload, bad XML, unparseable ACS URL
       Rails.logger.info("SAML request rejected as malformed: #{e.class}")
       return head :bad_request
+    rescue SamlIdp::XMLSecurity::SignedDocument::ValidationError => e # digest/fingerprint mismatch: a refusal
+      Rails.logger.warn("SAML request refused: signature invalid (#{e.message.to_s.truncate(100)})")
+      return head :forbidden
     end
 
     return if valid
