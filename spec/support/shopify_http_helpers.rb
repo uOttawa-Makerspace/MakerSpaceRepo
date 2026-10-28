@@ -88,5 +88,7 @@ end
 
 RSpec.configure do |config|
   config.include ShopifyHttpHelpers
-  config.before { stub_shopify_credentials! }
+  # Only examples tagged :shopify_context (see shopify_context_isolation.rb: auto-tagged by file)
+  # get the fake credentials; nothing else in the suite touches Shopify.
+  config.before(:each, :shopify_context) { stub_shopify_credentials! }
 end

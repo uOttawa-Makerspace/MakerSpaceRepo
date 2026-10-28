@@ -17,10 +17,10 @@ RSpec.describe "Shopify Admin GraphQL over real HTTP (WebMock)", type: :request 
   # Hygiene: the real shpat_/shppa_ token in config/credentials.yml.enc must never reach a
   # spec (WebMock diffs print request headers into CI logs).
   it "runs against the fake Shopify credentials, never the real token" do
-    expect(Rails.application.credentials.dig(:test, :shopify, :password)).to eq("shpat_test_fake")
-    expect(Rails.application.credentials[:test][:shopify][:password]).to eq("shpat_test_fake")
+    expect(Rails.application.credentials.dig(:test, :shopify, :password) == "shpat_test_fake").to be(true) # boolean: a failure must not print the real token
+    expect(Rails.application.credentials[:test][:shopify][:password] == "shpat_test_fake").to be(true)
     expect(ShopifyAPI::Context.api_version).to eq("2025-01")
-    expect(ShopifyAPI::Context.active_session.access_token).to eq("shpat_test_fake")
+    expect(ShopifyAPI::Context.active_session.access_token == "shpat_test_fake").to be(true)
     expect(ShopifyAPI::Context.active_session.shop).to eq("fake-shop.myshopify.com")
   end
 

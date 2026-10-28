@@ -51,7 +51,7 @@ RSpec.describe ShopifyConcern do
     it "activates a session for <shop_name>.myshopify.com from the env credentials" do
       session = Membership.start_shopify_session
       expect(session.shop).to eq("fake-shop.myshopify.com")
-      expect(session.access_token).to eq("shpat_test_fake")
+      expect(session.access_token == "shpat_test_fake").to be(true)
       expect(ShopifyAPI::Context.active_session).to eq(session)
     end
   end

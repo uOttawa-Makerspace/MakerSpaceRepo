@@ -14,6 +14,18 @@ RSpec.describe ShopifyContext, :shopify_context do
     allow(Rails.logger).to receive(:warn)
   end
 
+  describe "credential stubbing is scoped to :shopify_context examples" do
+    it "tagged: the fake Shopify credentials are in force (dig and [])" do
+      expect(Rails.application.credentials.dig(:test, :shopify, :password) == "shpat_test_fake").to be(true) # boolean: a failure must not print the real token
+      expect(Rails.application.credentials[:test][:shopify].slice(:shop_name, :api_version)).to eq(shop_name: "fake-shop", api_version: "2025-01")
+    end
+
+    it "untagged (shopify_context: false): the credentials are not stubbed", shopify_context: false do
+      # only the negative is asserted, so a failure can never print the real token
+      expect(Rails.application.credentials.dig(:test, :shopify, :password)).not_to eq("shpat_test_fake")
+    end
+  end
+
   def blank_context!
     %i[@api_key @api_secret_key @api_version].each { |iv| ShopifyAPI::Context.instance_variable_set(iv, "") }
     ShopifyAPI::Context.instance_variable_set(:@host, nil)

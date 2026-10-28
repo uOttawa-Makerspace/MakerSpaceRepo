@@ -57,7 +57,7 @@ end
 
 RSpec.configure do |config|
   config.define_derived_metadata(file_path: %r{/spec/(#{Regexp.union(ShopifyContextIsolation::SPEC_FILES).source})\.rb\z}) do |meta|
-    meta[:shopify_context] = true
+    meta[:shopify_context] = true unless meta.key?(:shopify_context) # `shopify_context: false` opts out
   end
 
   config.around(:each, :shopify_context) do |example|
