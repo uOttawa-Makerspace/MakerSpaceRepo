@@ -781,6 +781,16 @@ RSpec.describe "SAML IdP", type: :request do
         end
       end
 
+      it "reports a broken SP certificate once across replayed signed LogoutRequests (embedded path)" do
+        c18_with_signing_sps(cert_pem: "not a certificate") do
+          expect(Rails.error).to receive(:report).once.with(anything, hash_including(context: hash_including(saml_service_provider: "rooms.makerepo.com")))
+          3.times do
+            post_logout(signed_logout(full_signature))
+            expect(response).to have_http_status(:forbidden)
+          end
+        end
+      end
+
       it "a broken SP certificate refuses the request (403) and is reported at error level" do
         c18_with_signing_sps(cert_pem: "not a certificate") do
           expect(Rails.error).to receive(:report).with(instance_of(OpenSSL::X509::CertificateError), hash_including(severity: :error)).once

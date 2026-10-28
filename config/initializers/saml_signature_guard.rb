@@ -46,6 +46,7 @@ module SamlSignatureGuard
     return super unless verifying_signature?
 
     load_service_provider_credentials
+    certificate_checks # reports a broken configured certificate, once
     guarded("embedded") { covers_root_request? && super }
   end
 
@@ -87,55 +88,39 @@ module SamlSignatureGuard
     raise # malformed input (400; REXML::ParseException is a RuntimeError), a network timeout or a bug: never a bad signature
   rescue *VERIFICATION_FAILURES => e
     log("#{kind} signature check failed for issuer #{issuer.to_s.truncate(200).inspect}: #{e.class}")
-    if sp_config_fault?(e)
-      Rails.error.report(e, handled: true, severity: :error, context: { saml_service_provider: issuer.to_s.truncate(200) })
-    end
     false
   end
 
-  # Only a configured certificate that itself fails to parse is a misconfiguration.
-  # Any other OpenSSL failure (e.g. a PKeyError from attacker-supplied Signature bytes)
-  # is just an invalid signature.
-  def sp_config_fault?(error)
-    error.is_a?(OpenSSL::OpenSSLError) && !configured_certificate_parses?
-  end
+  CertificateChecks = Struct.new(:strict, :lenient)
 
-  # The embedded check hands the gem a base64 DER certificate, the external one PEM/DER.
-  def configured_certificate_parses?
-    cached_certificate_check(:lenient) do |cert|
-      [cert, Base64.decode64(cert)].any? do |candidate|
-        OpenSSL::X509::Certificate.new(candidate)
-        true
-      rescue OpenSSL::X509::CertificateError
-        false
-      end
-    end
-  end
-
-  def sp_certificate_parses?
-    parses = cached_certificate_check(:strict) do |cert|
-      OpenSSL::X509::Certificate.new(cert)
-      true
-    rescue OpenSSL::X509::CertificateError
-      false
-    end
-    log("service provider #{issuer.to_s.truncate(200).inspect} has an unparseable certificate") unless parses
-    parses
-  end
-
-  # The parse result is memoized per process, per certificate (the finder's value, not
-  # request data), and a broken certificate is reported to Rails.error exactly once, so
-  # an unauthenticated client cannot flood the error tracker by replaying a request.
-  def cached_certificate_check(mode)
+  # The SP's configured certificate, parsed the way each path uses it: the external
+  # check hands the gem PEM/DER (strict), the embedded one a base64 DER (lenient here
+  # also accepts PEM). ONE entry per certificate, memoized per process (the finder's
+  # value, not request data); a certificate that fails either way is reported to
+  # Rails.error exactly once, so a client replaying requests cannot flood the tracker.
+  def certificate_checks
     cert = service_provider.cert.to_s
-    SamlSignatureGuard::CERTIFICATE_CHECKS.compute_if_absent([mode, Digest::SHA256.hexdigest(cert)]) do
-      parses = yield(cert)
-      unless parses
+    SamlSignatureGuard::CERTIFICATE_CHECKS.compute_if_absent(Digest::SHA256.hexdigest(cert)) do
+      checks = CertificateChecks.new(parses_as_certificate?(cert), [cert, Base64.decode64(cert)].any? { |c| parses_as_certificate?(c) })
+      unless checks.strict && checks.lenient
         Rails.error.report(OpenSSL::X509::CertificateError.new("SP certificate does not parse"), handled: true, severity: :error,
                            context: { saml_service_provider: issuer.to_s.truncate(200) })
       end
-      parses
+      checks
     end
+  end
+
+  def parses_as_certificate?(candidate)
+    OpenSSL::X509::Certificate.new(candidate)
+    true
+  rescue OpenSSL::X509::CertificateError
+    false
+  end
+
+  def sp_certificate_parses?
+    parses = certificate_checks.strict
+    log("service provider #{issuer.to_s.truncate(200).inspect} has an unparseable certificate") unless parses
+    parses
   end
 
   # The gem verifies a REXML parse of the re-serialized document, not the Nokogiri one;
