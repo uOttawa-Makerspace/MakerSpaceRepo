@@ -747,10 +747,15 @@ class User < ApplicationRecord
     certifications.map(&:get_name_en)
   end
 
+  # Trainings with no active certification, whether it was earned in a training
+  # session or through a proficient project. One query; a certification with
+  # neither (legacy/orphaned rows) simply holds no training.
   def remaining_trainings
-    trainings = []
-    certifications.each { |cert| trainings << cert.training.id }
-    Training.all.where.not(id: trainings)
+    held = certifications
+           .left_joins(:training_session, proficient_project_session: :proficient_project)
+           .pluck("training_sessions.training_id", "proficient_projects.training_id")
+           .flatten.compact
+    Training.all.where.not(id: held)
   end
 
   def has_requirements?(training_reqs)

@@ -110,6 +110,19 @@ RSpec.describe "/api/v1/users", type: :request do
       expect(body["remaining_trainings"].first.keys).to match_array(%w[id name_en])
     end
 
+    it "does not 500 on certifications without a training session (proficient-project or orphaned) and counts their training as held" do
+      pp = create(:proficient_project)
+      pp_cert = create(:certification, user: target, training_session: nil)
+      create(:proficient_project_session, certification: pp_cert, user: target, proficient_project: pp, level: "Beginner")
+      create(:certification, user: target, training_session: nil) # orphan: no session of any kind
+      other = create(:training, name_en: "Untouched")
+      api_get "/api/v1/users/#{target.username}", as: staff
+      expect(response).to have_http_status(:ok)
+      ids = body["remaining_trainings"].map { |t| t["id"] }
+      expect(ids).to include(other.id)
+      expect(ids).not_to include(pp.training_id)
+    end
+
     it "404s an unknown username for staff" do
       api_get "/api/v1/users/nobodyhere", as: staff
       expect(response).to have_http_status(:not_found)
