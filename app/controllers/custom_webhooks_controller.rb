@@ -12,6 +12,9 @@ class CustomWebhooksController < ApplicationController
   # webhooks, so deliveries are processed once the secret is set. This runs before the
   # gem's HMAC check (declared first).
   before_action :require_webhook_secret!, unless: -> { Rails.env.development? }
+  # A request with no X-Shopify-Hmac-Sha256 header would make the gem's secure_compare(nil, ..)
+  # raise (500); answer 401 before the gem's check instead.
+  before_action :require_hmac_header!, unless: -> { Rails.env.development? }
   include ShopifyApp::WebhookVerification unless Rails.env.development?
   include ShopifyConcern
 
@@ -50,6 +53,10 @@ class CustomWebhooksController < ApplicationController
   end
 
   private
+
+  def require_hmac_header!
+    head :unauthorized if request.headers["HTTP_X_SHOPIFY_HMAC_SHA256"].blank?
+  end
 
   def require_webhook_secret!
     return if ShopifyWebhookSecret.configured?(ShopifyApp.configuration.secret)

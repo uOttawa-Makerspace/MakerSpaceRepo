@@ -75,11 +75,10 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
     end
 
     it "rejects a request with no signature header and changes no membership, CC money or locker" do
-      # WART(D-S34-nil-header, new): with no X-Shopify-Hmac-Sha256 header, shopify_app's hmac_valid? runs
-      # secure_compare(nil, ...) which raises, so the response is a 500 (not a 401). Still
-      # fail-closed (the action never runs), but noisy: every unsigned probe is an error report.
+      # Fixed (was WART D-S34-nil-header): the gem's secure_compare(nil, ..) used to raise (500);
+      # CustomWebhooksController#require_hmac_header! now answers 401 before the gem runs.
       expect { unsigned_orders_paid(forged) }.not_to change { money_state }
-      expect(response).to have_http_status(:internal_server_error)
+      expect_rejected
       expect(pending.status).to eq("pending")
       expect(rental.state).to eq("await_payment")
       expect(CcMoney.count).to eq(0)
