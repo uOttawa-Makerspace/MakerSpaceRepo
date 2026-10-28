@@ -123,6 +123,15 @@ RSpec.describe "/api/v1/users", type: :request do
       expect(ids).not_to include(pp.training_id)
     end
 
+    it "loads several certifications without N+1 queries (Bullet is on)" do
+      create(:certification, :"3d_printing", user: target)
+      create(:certification, :basic_training, user: target)
+      create(:rfid, user: target)
+      api_get "/api/v1/users/#{target.username}", as: staff
+      expect(response).to have_http_status(:ok)
+      expect(body["certifications"].size).to eq(2)
+    end
+
     it "404s an unknown username for staff" do
       api_get "/api/v1/users/nobodyhere", as: staff
       expect(response).to have_http_status(:not_found)

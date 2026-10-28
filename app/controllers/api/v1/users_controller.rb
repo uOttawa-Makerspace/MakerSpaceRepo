@@ -29,7 +29,7 @@ module Api
 
         raise ActiveRecord::RecordNotFound if user.nil?
 
-        certifications = user.certifications.highest_level
+        certifications = user.certifications.includes(training_session: :training).highest_level
         render json: UserProfileSerializer.call(
           user,
           avatar_url: avatar_url_for(user),
