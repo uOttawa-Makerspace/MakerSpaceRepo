@@ -49,11 +49,20 @@ RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
       expect(unlinked.reload.user_id).to eq(owner.id)
     end
 
-    it "without card_number or user_id changes nothing and still says ok" do
+    it "without user_id (card_number present) changes nothing and still says ok" do
       staff
       put staff_dashboard_link_rfid_path, params: { card_number: unlinked.card_number }, as: :json
       expect(body).to eq("status" => "ok")
       expect(unlinked.reload.user_id).to be_nil
+    end
+
+    it "without card_number (user_id present) changes nothing and still says ok" do
+      staff
+      put staff_dashboard_link_rfid_path, params: { user_id: owner.id }, as: :json
+      expect(response).to have_http_status(:ok)
+      expect(body).to eq("status" => "ok")
+      expect(unlinked.reload.user_id).to be_nil
+      expect(card.reload.user_id).to eq(owner.id)
     end
 
     it "refuses a regular user (redirect to root) and leaves the card alone" do
