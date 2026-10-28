@@ -60,7 +60,7 @@ module Api
       end
 
       def role
-        user = User.find(params[:id])
+        user = find_user!
         new_role = params.require(:role)
         unless new_role.is_a?(String) && ASSIGNABLE_ROLES.include?(new_role)
           return render_error(:validation_failed, "Validation failed", status: :unprocessable_content,
@@ -74,7 +74,7 @@ module Api
       end
 
       def programs
-        user = User.find(params[:id])
+        user = find_user!
         flags = %i[development volunteer].index_with do |key|
           params.key?(key) or raise ActionController::ParameterMissing, key
           params[key]
@@ -89,6 +89,13 @@ module Api
       end
 
       private
+
+      # Strict integer id: `find("12abc")` would silently mean 12.
+      def find_user!
+        raise ActiveRecord::RecordNotFound unless params[:id].to_s.match?(/\A\d+\z/)
+
+        User.find(params[:id])
+      end
 
       # Uploaded avatar -> its Active Storage URL; otherwise the bundled default image.
       def avatar_url_for(user)

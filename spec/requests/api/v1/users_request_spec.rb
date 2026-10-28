@@ -375,6 +375,17 @@ RSpec.describe "/api/v1/users", type: :request do
     end
   end
 
+  it "404s ids that are only a numeric prefix (12abc is not 12), for role and programs" do
+    api_send :patch, "/api/v1/users/#{target.id}abc/role", { role: "staff" }, as: admin
+    expect(response).to have_http_status(:not_found)
+    api_send :put, "/api/v1/users/#{target.id}x/programs", { development: true, volunteer: true }, as: staff
+    expect(response).to have_http_status(:not_found)
+    api_send :put, "/api/v1/users/#{target.id}.5/programs", { development: true, volunteer: true }, as: staff
+    expect(response).to have_http_status(:not_found)
+    expect(target.reload.role).to eq("regular_user")
+    expect(target.programs).to be_empty
+  end
+
   it "answers every response with Cache-Control no-store and no cookie" do
     api_get "/api/v1/users/#{target.username}", as: staff
     expect(response.headers["Cache-Control"]).to eq("no-store")
