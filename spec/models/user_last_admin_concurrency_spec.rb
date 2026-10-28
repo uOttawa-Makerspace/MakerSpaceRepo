@@ -104,17 +104,6 @@ RSpec.describe User, "last-admin guard locking", type: :model do
     end
   end
 
-  it "takes no row locks at all when none of the affected users is an admin" do
-    locking = []
-    subscriber = ActiveSupport::Notifications.subscribe("sql.active_record") do |*, payload|
-      locking << payload[:sql] if payload[:sql].match?(/FOR UPDATE/i)
-    end
-    User.guarding_last_admin!([plain.id]) { :ran }
-    expect(locking).to be_empty
-  ensure
-    ActiveSupport::Notifications.unsubscribe(subscriber)
-  end
-
   def statements_of
     seen = []
     subscriber = ActiveSupport::Notifications.subscribe("sql.active_record") do |*, payload|
@@ -166,5 +155,79 @@ RSpec.describe User, "last-admin guard locking", type: :model do
     results = [demotion.value, promotion.value]
     expect(results.grep(StandardError)).to be_empty
     expect(User.where(id: [plain.id, admin_b.id]).pluck(:role).uniq.size).to eq(1)
+  end
+end
+
+RSpec.describe User, "last-admin guard vs a role change between check and write", type: :model do
+  self.use_transactional_tests = false
+
+  let!(:target) { create(:user) }          # not an admin when the guard starts
+  let!(:admin_a) { create(:user, :admin) } # the only admin
+
+  after { User.unscoped.where(id: [target.id, admin_a.id]).delete_all }
+
+  def in_thread(&block)
+    Thread.new do
+      ActiveRecord::Base.connection_pool.with_connection(&block)
+    rescue StandardError => e
+      e
+    end
+  end
+
+  # Pauses the given thread just BEFORE it executes its first row-locking statement
+  # (nothing is held yet in the fixed code; in the old code the "is an admin
+  # affected?" pre-check has already run and said no).
+  def pause_before_first_lock(thread_getter, paused, resume)
+    done = false
+    subscriber = Object.new
+    subscriber.define_singleton_method(:start) do |_name, _id, payload|
+      next if done || Thread.current != thread_getter.call || !payload[:sql].to_s.match?(/FOR UPDATE/i)
+
+      done = true
+      paused << true
+      resume.pop
+    end
+    subscriber.define_singleton_method(:finish) { |*| }
+    ActiveSupport::Notifications.subscribe("sql.active_record", subscriber)
+  end
+
+  # T1 runs `guard` on a non-admin and is held before its first lock. T2 promotes the
+  # target, T3 demotes the only other admin (allowed: the target is a usable admin),
+  # both commit. Then T1 continues.
+  def interleave(&guard)
+    t1 = nil
+    paused = Queue.new
+    resume = Queue.new
+    subscriber = pause_before_first_lock(-> { t1 }, paused, resume)
+    t1 = in_thread { guard.call }
+    paused.pop
+    promoted = in_thread { User.change_roles!([target.id], "admin") }.value
+    demoted = in_thread { User.change_roles!([admin_a.id], "staff") }.value
+    resume << true
+    [t1.value, promoted, demoted]
+  ensure
+    ActiveSupport::Notifications.unsubscribe(subscriber)
+  end
+
+  it "a demotion of a user promoted meanwhile cannot take away the last usable admin" do
+    demotion, promoted, demoted = interleave { User.change_roles!([target.id], "regular_user") }
+    expect(promoted).not_to be_a(StandardError)
+    expect(demoted).not_to be_a(StandardError)
+    expect(demotion).to be_a(User::LastAdminError)
+    expect(User.usable_admins.where(id: [target.id, admin_a.id]).count).to eq(1)
+  end
+
+  it "an admin lock toggle of a user promoted meanwhile cannot lock the last usable admin" do
+    toggle = lambda do
+      User.guarding_last_admin!([target.id], message: User::LAST_ADMIN_LOCK_MESSAGE,
+                                             only_if: -> { !target.lock!.locked }) do
+        target.locked ? target.admin_unlock! : target.admin_lock!
+      end
+    end
+    result, promoted, demoted = interleave(&toggle)
+    expect(promoted).not_to be_a(StandardError)
+    expect(demoted).not_to be_a(StandardError)
+    expect(result).to be_a(User::LastAdminError)
+    expect(User.usable_admins.where(id: [target.id, admin_a.id]).count).to eq(1)
   end
 end
