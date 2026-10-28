@@ -31,8 +31,6 @@ class ApiRefreshToken < ApplicationRecord
 
   attr_reader :raw_token
 
-  scope :live, -> { where(revoked_at: nil).where("expires_at > ?", Time.current) }
-
   def self.digest(raw)
     Digest::SHA256.hexdigest(raw.to_s)
   end

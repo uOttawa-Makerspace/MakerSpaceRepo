@@ -419,12 +419,35 @@ class User < ApplicationRecord
   def store_new_password!(plain, clear_timed_lock: false)
     clear_lock = clear_timed_lock && timed_lockout?
     self.pword = plain
-    columns = { password: password, token_version: token_version, updated_at: Time.current }
-    columns.merge!(locked: false, auth_attempts: 0, locked_until: nil) if clear_lock
-    update_columns(columns)
-    # /api/v1 refresh tokens die with the bump (they also fail their own token_version check)
+    columns = [:password]
+    if clear_lock
+      assign_attributes(locked: false, auth_attempts: 0, locked_until: nil)
+      columns += %i[locked auth_attempts locked_until]
+    end
+    bump_token_version!(*columns)
+  end
+
+  # The one way to end every credential of a user (password change/reset, admin
+  # lock, soft delete): increments token_version IN SQL (never from a possibly
+  # stale in-memory value, so concurrent bumps cannot overwrite each other) in the
+  # same UPDATE that writes the given columns' current in-memory values (and
+  # updated_at), no validations or callbacks; then revokes the user's /api/v1
+  # refresh tokens and closes their websocket connections. The access JWTs, legacy
+  # JWTs and cookie sessions die through the new token_version.
+  def bump_token_version!(*columns)
+    values = columns.index_with { |column| self[column] }.merge(updated_at: Time.current)
+    assignments = values.keys.map { |column| "#{self.class.connection.quote_column_name(column)} = ?" }
+    self.class.unscoped.where(id: id).update_all(
+      ["token_version = token_version + 1, #{assignments.join(', ')}", *values.values]
+    )
+    self.token_version = self.class.unscoped.where(id: id).pick(:token_version)
+    self.updated_at = values[:updated_at]
+    clear_attribute_changes(columns + %i[token_version updated_at])
     ApiRefreshToken.revoke_all_for!(id)
-    disconnect_cable!
+    # After the real commit when called inside a caller's transaction (a rolled-back
+    # change must not drop connections, and a reconnect must see the new state).
+    ActiveRecord.after_all_transactions_commit { disconnect_cable! }
+    self
   end
 
   def pword=(new_password)
@@ -534,16 +557,8 @@ class User < ApplicationRecord
   # Column writes only (no validations): a row that is invalid for an unrelated
   # legacy reason must still be lockable.
   def admin_lock!
-    self.class.where(id: id).update_all(
-      [
-        "locked = ?, locked_until = ?, auth_attempts = ?, updated_at = ?, token_version = token_version + 1",
-        true, 99.years.from_now, MAX_AUTH_ATTEMPTS, Time.current
-      ]
-    )
-    ApiRefreshToken.revoke_all_for!(id)
-    reload
-    disconnect_cable!
-    self
+    assign_attributes(locked: true, locked_until: 99.years.from_now, auth_attempts: MAX_AUTH_ATTEMPTS)
+    bump_token_version!(:locked, :locked_until, :auth_attempts)
   end
 
   # Does not restore token_version: sessions and JWTs revoked by the lock stay dead.
@@ -584,13 +599,8 @@ class User < ApplicationRecord
   # Also revokes every session and JWT issued so far (SQL increment, like admin_lock!,
   # so a concurrent bump is not overwritten): restore! must not revive them.
   def soft_delete!
-    transaction do
-      self.deleted = true
-      save!(validate: false)
-      increment!(:token_version)
-      ApiRefreshToken.revoke_all_for!(id)
-    end
-    self
+    self.deleted = true
+    bump_token_version!(:deleted)
   end
 
   def restore!

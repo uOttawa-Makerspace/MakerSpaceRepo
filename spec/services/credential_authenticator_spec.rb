@@ -35,3 +35,19 @@ RSpec.describe CredentialAuthenticator do
     expect(described_class.lock_wait_suffix(user)).to eq("")
   end
 end
+
+RSpec.describe CredentialAuthenticator, "#candidate" do
+  let(:user) { create(:user) }
+
+  it "is the named account, fresh after a failed attempt" do
+    user.update_columns(auth_attempts: 4)
+    result = described_class.call(user.username, "wrong")
+    expect(result.candidate).to eq(user)
+    expect(result.candidate.auth_attempts).to eq(5)
+  end
+
+  it "is nil for an unknown login and the user on success" do
+    expect(described_class.call("nobody", "x").candidate).to be_nil
+    expect(described_class.call(user.username, "asa32A353#").candidate).to eq(user)
+  end
+end

@@ -24,7 +24,7 @@ RSpec.describe "/api/v1 token revocation on token_version bumps", type: :request
     expect(response).to have_http_status(:unauthorized)
     refresh(pair["refresh_token"])
     expect(response).to have_http_status(:unauthorized)
-    expect(ApiRefreshToken.where(user_id: user.id).live).to be_empty
+    expect(ApiRefreshToken.where(user_id: user.id).where(revoked_at: nil)).to be_empty
   end
 
   it "is alive before any bump" do
@@ -76,5 +76,26 @@ RSpec.describe "/api/v1 token revocation on token_version bumps", type: :request
     user.update_columns(token_version: user.token_version + 1)
     refresh(pair["refresh_token"])
     expect(response).to have_http_status(:unauthorized)
+  end
+
+  describe "User#bump_token_version!" do
+    it "increments in SQL (a stale instance cannot lower or repeat a version), revokes tokens, closes cables" do
+      stale = User.find(user.id)
+      User.where(id: user.id).update_all("token_version = token_version + 5")
+      expect(stale).to receive(:disconnect_cable!)
+      stale.bump_token_version!
+      expect(User.find(user.id).token_version).to eq(6)
+      expect(stale.token_version).to eq(6)
+      expect(stale).not_to be_changed
+      expect(ApiRefreshToken.where(user_id: user.id, revoked_at: nil)).to be_empty
+    end
+
+    it "is the path used by store_new_password!, admin_lock! and soft_delete!" do
+      [->(u) { u.store_new_password!("Brand-new-pw-123!") }, :admin_lock!, :soft_delete!].each do |action|
+        u = create(:user)
+        expect(u).to receive(:bump_token_version!).and_call_original
+        action.respond_to?(:call) ? action.call(u) : u.public_send(action)
+      end
+    end
   end
 end

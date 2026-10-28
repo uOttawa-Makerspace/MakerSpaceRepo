@@ -304,7 +304,7 @@ RSpec.describe "/api/v1/session", type: :request do
       delete "/api/v1/session", params: { refresh_token: newest }.to_json, headers: json_headers
       expect(response).to have_http_status(:no_content)
       expect(response.body).to be_empty
-      expect(ApiRefreshToken.where(family_id: ApiRefreshToken.first.family_id).live).to be_empty
+      expect(ApiRefreshToken.where(family_id: ApiRefreshToken.first.family_id).where(revoked_at: nil)).to be_empty
 
       delete "/api/v1/session", params: { refresh_token: newest }.to_json, headers: json_headers
       expect(response).to have_http_status(:no_content)
@@ -317,7 +317,7 @@ RSpec.describe "/api/v1/session", type: :request do
       token = body["refresh_token"]
       delete "/api/v1/session", headers: { "X-Refresh-Token" => token }
       expect(response).to have_http_status(:no_content)
-      expect(ApiRefreshToken.live).to be_empty
+      expect(ApiRefreshToken.where(revoked_at: nil)).to be_empty
     end
 
     it "204s with no token or an unknown one, and revokes nothing" do
@@ -325,7 +325,7 @@ RSpec.describe "/api/v1/session", type: :request do
       expect(response).to have_http_status(:no_content)
       delete "/api/v1/session", params: { refresh_token: "unknown" }.to_json, headers: json_headers
       expect(response).to have_http_status(:no_content)
-      expect(ApiRefreshToken.live.count).to eq(1)
+      expect(ApiRefreshToken.where(revoked_at: nil).count).to eq(1)
     end
 
     it "leaves the user's other devices signed in" do

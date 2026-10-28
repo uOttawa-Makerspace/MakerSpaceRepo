@@ -345,7 +345,7 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
     it "a failed save keeps the old password, the session version and sends no mail" do
       # FIXED: the result of the hashing save was ignored (session got N+1 while the DB stayed at N, success mail sent)
       login!(user)
-      allow_any_instance_of(User).to receive(:update_columns).and_raise(ActiveRecord::StatementInvalid, "boom")
+      allow_any_instance_of(User).to receive(:bump_token_version!).and_raise(ActiveRecord::StatementInvalid, "boom")
       expect(Rails.error).to receive(:report).with(an_instance_of(ActiveRecord::StatementInvalid), handled: true)
       perform_enqueued_jobs { change! }
       expect(response).to have_http_status(:ok)
@@ -355,7 +355,7 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       expect(user.authenticate_password(password)).to be(true)
       expect(user.token_version).to eq(0)
       expect(user.password).to start_with("$2") # the bcrypt hash, not the plain new password
-      allow_any_instance_of(User).to receive(:update_columns).and_call_original
+      allow_any_instance_of(User).to receive(:bump_token_version!).and_call_original
       get check_signed_in_path
       expect(JSON.parse(response.body)["signed_in"]).to eq("true")
     end

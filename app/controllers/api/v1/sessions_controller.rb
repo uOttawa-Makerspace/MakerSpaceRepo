@@ -21,14 +21,14 @@ module Api
 
         case result.refusal
         when :locked
-          render_locked(User.username_or_email(login))
+          render_locked(result.candidate)
         when :inactive
           render_error(:account_inactive, "Your account is inactive. Please contact an administrator at #{SUPPORT_EMAIL}.",
                        status: :forbidden, support_email: SUPPORT_EMAIL)
         when :unconfirmed
           render_error(:account_unconfirmed, "Please confirm your account before logging in.", status: :forbidden)
         else
-          result.user ? render_new_session(result.user) : render_bad_credentials(login)
+          result.user ? render_new_session(result.user) : render_bad_credentials(result.candidate)
         end
       end
 
@@ -86,8 +86,7 @@ module Api
 
       # Unknown login and wrong password answer identically (no account
       # enumeration). The attempt that reaches the limit answers as locked.
-      def render_bad_credentials(login)
-        user = User.username_or_email(login)
+      def render_bad_credentials(user)
         return render_locked(user) if user && user.auth_attempts >= User::MAX_AUTH_ATTEMPTS
 
         render_error(:invalid_credentials, "Invalid login or password", status: :unauthorized)

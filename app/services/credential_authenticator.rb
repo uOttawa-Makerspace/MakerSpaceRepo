@@ -9,23 +9,27 @@
 # are refused. No session or token work happens here; callers do their own.
 #
 # Result#user is the authenticated User or nil; Result#refusal is nil (bad
-# credentials, or success), :locked, :inactive or :unconfirmed.
+# credentials, or success), :locked, :inactive or :unconfirmed. Result#candidate is
+# the account the login named (nil if none), fresh after a failed attempt, so
+# callers can word the refusal (lock wait, attempts) without looking it up again.
 class CredentialAuthenticator
-  Result = Struct.new(:user, :refusal, keyword_init: true)
+  Result = Struct.new(:user, :refusal, :candidate, keyword_init: true)
 
   def self.call(login, password)
     candidate = User.username_or_email(login)
     if candidate&.locked?
-      return Result.new(refusal: :locked) if candidate.lock_in_effect?
+      return Result.new(refusal: :locked, candidate: candidate) if candidate.lock_in_effect?
 
       candidate.update_columns(locked: false, auth_attempts: 0) # the timed lockout has lapsed
     end
 
     user = User.authenticate(login, password)
-    return Result.new(refusal: :inactive) if user&.active == false
-    return Result.new(refusal: :unconfirmed) if user && !user.confirmed?
+    return Result.new(refusal: :inactive, candidate: user) if user&.active == false
+    return Result.new(refusal: :unconfirmed, candidate: user) if user && !user.confirmed?
+    return Result.new(user: user, candidate: user) if user
 
-    Result.new(user: user)
+    # Bad credentials: User.authenticate counted the failure on its own instance.
+    Result.new(candidate: candidate&.reload)
   end
 
   # " or wait 5 minutes" for a timed (brute-force) lockout; nothing for an admin

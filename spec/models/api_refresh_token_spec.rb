@@ -204,7 +204,7 @@ RSpec.describe ApiRefreshToken, type: :model do
       found.user # association loaded and cached before the change
       User.find(user.id).store_new_password!("Brand-new-pw-123!")
       expect(found.rotate!).to be_nil
-      expect(described_class.where(user_id: user.id).live).to be_empty
+      expect(described_class.where(user_id: user.id).where(revoked_at: nil)).to be_empty
     end
 
     it "uses the CURRENT token_version even when nothing revoked the row (bump without revocation)" do
