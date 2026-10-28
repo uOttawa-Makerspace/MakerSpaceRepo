@@ -66,8 +66,9 @@ RSpec.describe UniProgram, type: :model do
       create(:uni_program, faculty: "Science", program: "Math")
       create(:uni_program, faculty: "", program: "Undeclared")
 
-      expect(UniProgram.programs_by_faculty).to eq(
-        "Engineering" => %w[CS SE], "Science" => %w[Math]
+      # No ORDER BY in the model: compare programs as sets, not ordered arrays.
+      expect(UniProgram.programs_by_faculty).to match(
+        "Engineering" => contain_exactly("CS", "SE"), "Science" => %w[Math]
       )
     end
 
