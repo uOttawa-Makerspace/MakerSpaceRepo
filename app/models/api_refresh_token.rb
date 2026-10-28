@@ -86,6 +86,17 @@ class ApiRefreshToken < ApplicationRecord
     where(family_id: family_id).order(:id).lock.pluck(:id)
   end
 
+  PRUNE_AFTER = 7.days
+
+  # Deletes rows that can no longer matter: past their own expiry or the family cap
+  # by more than PRUNE_AFTER, or revoked more than PRUNE_AFTER ago. Safe for the cap
+  # because every row carries family_expires_at. Returns the number of rows deleted.
+  # A pruned rotated token is simply unknown if replayed (401), same as a live replay minus the family revoke.
+  def self.prune!(now: Time.current)
+    cutoff = now - PRUNE_AFTER
+    where("expires_at < :c OR family_expires_at < :c OR revoked_at < :c", c: cutoff).delete_all
+  end
+
   # Every refresh token of a user (token_version bumps).
   def self.revoke_all_for!(user_id, now: Time.current)
     where(user_id: user_id, revoked_at: nil).update_all(revoked_at: now)
@@ -130,6 +141,8 @@ class ApiRefreshToken < ApplicationRecord
 
     self.class.revoke_family!(family_id) if outcome == :theft
     successor
+  rescue ActiveRecord::RecordNotFound
+    nil # pruned (expired or revoked long ago) between lookup and lock
   end
 
   def revoke_family! = self.class.revoke_family!(family_id)

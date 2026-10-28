@@ -18,5 +18,9 @@ production: &production
     class: TapBoxLogCleanupJob
     schedule: every day at 3am
 
+  prune_api_refresh_tokens:
+    command: "ApiRefreshToken.prune!"
+    schedule: every day at 3:30am
+
 staging:
   <<: *production
