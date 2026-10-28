@@ -372,7 +372,8 @@ RSpec.describe "Static pages", type: :request do
 
     # Happy path: what production serves to the homepage / hours FullCalendar
     # (app/javascript/entrypoints/fullcalendar_setup_homepage.js). Time is frozen
-    # because parse_ics_calendar drops events that ended > 2 months ago.
+    # because parse_ics_calendar drops NON-recurring events (and modified instances)
+    # that ended > 2 months ago; recurring series are never dropped (WART D-SP27).
     # Date#to_time inside safe_to_time uses the PROCESS time zone, so the examples
     # pin TZ explicitly. Most pin UTC process-zone behaviour; the production host's
     # TZ is UNVERIFIED (Capistrano-deployed host, staging Docker sets none), see D-SP24.
@@ -499,8 +500,7 @@ RSpec.describe "Static pages", type: :request do
           expect(rrule.split("\n")).to include("EXDATE:20261102T090000")
           override_id = "weekly-1@google.com_1793628000"
           expect(source["events"].count { |e| e["id"] == override_id }).to eq(1)
-          # 1793628000 == 2026-11-02T14:00:00Z == 09:00 EST (the original slot)
-          expect(Time.at(1_793_628_000).utc).to eq(Time.utc(2026, 11, 2, 14, 0, 0))
+          # The id suffix 1793628000 is the RECURRENCE-ID epoch: 2026-11-02T14:00:00Z == 09:00 EST (the original slot).
           # Override is its own event: no rrule/duration/display keys.
           expect(event_named(source, override_id)).to eq(
             "id" => override_id,
@@ -526,6 +526,12 @@ RSpec.describe "Static pages", type: :request do
           expect(series["rrule"].split("\n")).to include("EXDATE:20261102T090000")
         end
 
+        it "emits every timed event's start/end as offset-free Toronto wall-clock (no Z, no +hh:mm)" do
+          timed = source["events"].reject { |e| e["allDay"] }
+          expect(timed).not_to be_empty
+          expect(timed.flat_map { |e| [e["start"], e["end"]] }).to all(match(/\A\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\z/))
+        end
+
         it "drops non-recurring events that ended more than 2 months ago" do
           expect(event_named(source, "old-oneoff-1@google.com")).to be_nil
           expect(source["events"].map { |e| e["title"] }).not_to include("Old Workshop")
@@ -535,7 +541,9 @@ RSpec.describe "Static pages", type: :request do
           # old override (RECURRENCE-ID 2026-06-08) is absent; the parent series is still emitted (it has an rrule)
           # and still EXDATEs the overridden slot.
           expect(source["events"].map { |e| e["title"] }).not_to include("Spring Hours (late start)")
-          expect(source["events"].map { |e| e["id"] }.grep(/\Aold-series-1@google.com_/)).to eq([])
+          expect(source["events"].map { |e| e["id"] }.select { |id| id.start_with?("old-series-1@google.com_") }).to eq([])
+          # WART(D-SP27): a series whose UNTIL ended four months ago is still emitted (rrule, EXDATEs), so the
+          # payload grows as feeds age. A fix that drops ended series should flip this expectation.
           parent = event_named(source, "old-series-1@google.com")
           expect(parent["rrule"]).to eq(
             "DTSTART:20260601T090000\nRRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=20260629T235959Z\nEXDATE:20260608T090000"
