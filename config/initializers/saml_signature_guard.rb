@@ -124,8 +124,33 @@ module SamlSignatureGuard
   # The gem verifies a REXML parse of the re-serialized document, not the Nokogiri one;
   # count the signatures the way it sees them so a parser differential cannot hide one.
   # (REXML::ParseException is in PARSE_ERRORS: the controller answers 400.)
-  def rexml_signature_count
-    REXML::XPath.match(REXML::Document.new(document.to_xml), "//ds:Signature", DSIG).size
+  def rexml_count(path, namespaces = DSIG)
+    @_guard_rexml ||= REXML::Document.new(document.to_xml)
+    REXML::XPath.match(@_guard_rexml, path, namespaces).size
+  end
+
+  # The gem reads these with absolute `//ds:...` lookups (REXML ignores the context
+  # element), so a decoy anywhere in the document would be the one it uses. Each must
+  # occur exactly once, in its proper place, in both parsers.
+  SIGNATURE_PARTS = {
+    "SignedInfo" => "Signature", "SignatureValue" => "Signature",
+    "CanonicalizationMethod" => "SignedInfo", "SignatureMethod" => "SignedInfo", "Reference" => "SignedInfo",
+    "DigestMethod" => "Reference", "DigestValue" => "Reference"
+  }.freeze
+
+  def signature_structure_unambiguous?(doc)
+    SIGNATURE_PARTS.all? do |name, parent|
+      nodes = doc.xpath("//ds:#{name}", DSIG)
+      nodes.size == 1 && nodes.first.parent.name == parent && nodes.first.parent.namespace&.href == DSIG["ds"] &&
+        rexml_count("//ds:#{name}") == 1
+    end && optional_part_unambiguous?(doc, "//ds:X509Certificate", DSIG) &&
+      optional_part_unambiguous?(doc, "//ec:InclusiveNamespaces", { "ec" => "http://www.w3.org/2001/10/xml-exc-c14n#" })
+  end
+
+  # Read by the gem with an absolute lookup but optional: at most one, inside the signature.
+  def optional_part_unambiguous?(doc, path, namespaces)
+    nodes = doc.xpath(path, namespaces)
+    nodes.size <= 1 && rexml_count(path, namespaces) == nodes.size && nodes.all? { |n| n.ancestors.any? { |a| a.name == "Signature" } }
   end
 
   # What the gem will act on must be exactly what the (single) signature covers:
@@ -146,10 +171,11 @@ module SamlSignatureGuard
 
     first_issuer = doc.at_xpath("//saml:Issuer", "saml" => SAML_ASSERTION)
     return false unless first_issuer && first_issuer.parent == root
-    return false unless doc.xpath("//ds:Signature", DSIG).size == 1 && rexml_signature_count == 1
+    return false unless doc.xpath("//ds:Signature", DSIG).size == 1 && rexml_count("//ds:Signature") == 1
 
-    references = doc.xpath("//ds:Reference", DSIG)
-    references.any? && references.all? { |ref| ref["URI"] == "##{root['ID']}" }
+    return false unless signature_structure_unambiguous?(doc)
+
+    doc.at_xpath("//ds:Reference", DSIG)["URI"] == "##{root['ID']}"
   end
 end
 

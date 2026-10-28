@@ -620,10 +620,10 @@ RSpec.describe "SAML IdP", type: :request do
           %(<ds:Signature xmlns:ds="#{ds}">#{signed_info}<ds:SignatureValue>#{sig}</ds:SignatureValue></ds:Signature>)
         end
 
-        def logout_xml(inner, id: "_lo1", lead: "", issuer: "rooms.makerepo.com")
+        def logout_xml(inner, id: "_lo1", lead: "", issuer: "rooms.makerepo.com", name_id: "x")
           %(<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ) +
             %(ID="#{id}" Version="2.0" IssueInstant="2026-03-10T15:00:00Z">#{lead}<saml:Issuer>#{issuer}</saml:Issuer>) +
-            %(<saml:NameID>x</saml:NameID>#{inner}</samlp:LogoutRequest>)
+            %(<saml:NameID>#{name_id}</saml:NameID>#{inner}</samlp:LogoutRequest>)
         end
 
         it "accepts a LogoutRequest whose root element is signed (control for the wrapping examples)" do
@@ -698,6 +698,36 @@ RSpec.describe "SAML IdP", type: :request do
             post "/saml/auth", params: { SAMLRequest: c18_authn_request, submit: "current_user", Signature: Base64.strict_encode64("sig"),
                                          SigAlg: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256" }
             expect(response).to have_http_status(:forbidden)
+          end
+        end
+
+        context "decoy digest: the gem's //ds:DigestValue lookup ignores its context element" do
+          # The signature signs the ORIGINAL root; the NameID is then tampered with and a decoy
+          # DigestValue (the digest of the tampered root) is put in front of the real one.
+          def decoy_document(decoy: true)
+            sig = signature_for(logout_xml(""), "_lo1")
+            tampered_digest = Base64.strict_encode64(
+              OpenSSL::Digest::SHA256.digest(Nokogiri::XML(logout_xml("", name_id: "evil")).root.canonicalize(Nokogiri::XML::XML_C14N_EXCLUSIVE_1_0))
+            )
+            open_tag = %(<ds:Signature xmlns:ds="#{ds}">)
+            sig = sig.sub(open_tag, "#{open_tag}<ds:DigestValue>#{tampered_digest}</ds:DigestValue>") if decoy
+            logout_xml(sig, name_id: decoy ? "evil" : "x")
+          end
+
+          it "accepts the properly signed document (control)" do
+            c18_with_signing_sps(cert_pem: cert_b64) do
+              post_logout(c18_deflate(decoy_document(decoy: false)))
+              expect(response).to have_http_status(:ok)
+            end
+          end
+
+          it "refuses the tampered document carrying a decoy DigestValue (403)" do
+            c18_with_signing_sps(cert_pem: cert_b64) do
+              wrapped = decoy_document
+              expect(Saml::XML::Document.parse(wrapped).valid_signature?(cert_b64, "")).to be(true) # the gem is fooled
+              post_logout(c18_deflate(wrapped))
+              expect(response).to have_http_status(:forbidden)
+            end
           end
         end
 
