@@ -14,7 +14,7 @@ module SamlAuthnRequestHelper
   end
 
   # Raw-deflate + base64, as the HTTP-Redirect binding sends it.
-  def c18_deflate(xml)
+  def saml_deflate(xml)
     deflater = Zlib::Deflate.new(Zlib::DEFAULT_COMPRESSION, -Zlib::MAX_WBITS)
     deflated = deflater.deflate(xml, Zlib::FINISH)
     deflater.close
@@ -22,11 +22,11 @@ module SamlAuthnRequestHelper
   end
 
   # A deflated + base64 AuthnRequest.
-  def c18_authn_request(issuer: "wikijs.makerepo.com", acs: wikijs_acs, id: "_req1")
+  def authn_request(issuer: "wikijs.makerepo.com", acs: wikijs_acs, id: "_req1")
     xml = %(<samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ) +
           %(xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="#{id}" Version="2.0" ) +
           %(IssueInstant="2026-03-10T15:00:00Z" AssertionConsumerServiceURL="#{acs}">) +
           %(<saml:Issuer>#{issuer}</saml:Issuer></samlp:AuthnRequest>)
-    c18_deflate(xml)
+    saml_deflate(xml)
   end
 end

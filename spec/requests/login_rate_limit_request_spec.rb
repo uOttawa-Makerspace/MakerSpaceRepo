@@ -38,7 +38,7 @@ RSpec.describe "Login rate limit (real cache store)", type: :request do
 
   def failed_saml_login(n = 0, ip: nil, username: "nobody-#{n}", pw: "wrong")
     post "/saml/auth",
-         params: { SAMLRequest: c18_authn_request, RelayState: "rs1", submit: "sign_in", username: username, password: pw },
+         params: { SAMLRequest: authn_request, RelayState: "rs1", submit: "sign_in", username: username, password: pw },
          env: ip ? { "REMOTE_ADDR" => ip } : {}
   end
 
