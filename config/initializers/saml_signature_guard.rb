@@ -121,6 +121,13 @@ module SamlSignatureGuard
     end
   end
 
+  # The gem verifies a REXML parse of the re-serialized document, not the Nokogiri one;
+  # count the signatures the way it sees them so a parser differential cannot hide one.
+  # (REXML::ParseException is in PARSE_ERRORS: the controller answers 400.)
+  def rexml_signature_count
+    REXML::XPath.match(REXML::Document.new(document.to_xml), "//ds:Signature", DSIG).size
+  end
+
   # What the gem will act on must be exactly what the (single) signature covers:
   #  * the root is the SAML-protocol AuthnRequest/LogoutRequest, and is the very node the
   #    gem's own `//samlp:...` XPath returns (a foreign-namespace root of the same name
@@ -129,6 +136,8 @@ module SamlSignatureGuard
   #    root, so it is covered by the digest (not inside ds:Signature/ds:Object/ds:KeyInfo,
   #    which the digest does not cover).
   def covers_root_request?
+    # The gem's own memoized Nokogiri parse of raw_xml: the node identity checks below
+    # only mean something against the very document its XPath lookups run on.
     doc = document
     root = doc.root
     return false unless root && root.namespace&.href == SAML_PROTOCOL && %w[AuthnRequest LogoutRequest].include?(root.name)
@@ -137,7 +146,7 @@ module SamlSignatureGuard
 
     first_issuer = doc.at_xpath("//saml:Issuer", "saml" => SAML_ASSERTION)
     return false unless first_issuer && first_issuer.parent == root
-    return false unless doc.xpath("//ds:Signature", DSIG).size == 1
+    return false unless doc.xpath("//ds:Signature", DSIG).size == 1 && rexml_signature_count == 1
 
     references = doc.xpath("//ds:Reference", DSIG)
     references.any? && references.all? { |ref| ref["URI"] == "##{root['ID']}" }
