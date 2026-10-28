@@ -97,12 +97,6 @@ end
 #   rake "exams:check_expired_exams"
 # end
 
-# Removed acclaim, no longer needed
-# every :day, at: "3am" do
-#   rake "badges:get_data"
-#   rake "badges:get_and_update_badge_templates"
-# end
-
 # every :day, at: "2am" do
 #   rake "update_wiki_users:run"
 # end

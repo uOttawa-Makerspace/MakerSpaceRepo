@@ -278,8 +278,6 @@ Rails.application.routes.draw do
     resources :job_options, only: %i[index new create edit update destroy]
     resources :job_types, only: %i[index new create edit update]
 
-    get "manage_badges"
-
     namespace :report_generator do
       get "/", as: "index", action: "index"
       post "/generate", as: "generate", action: "generate"
