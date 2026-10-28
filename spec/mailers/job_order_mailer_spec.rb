@@ -82,6 +82,45 @@ RSpec.describe JobOrderMailer, type: :mailer do
       )
     end
 
+    # Money the customer reads before approving. The mail carries a French and
+    # an English half; both must show the exact per-task prices (base fee +
+    # parts fee), option and line-item prices and the grand total.
+    # The `before` block's "Task #1" has no quote, so it also covers the
+    # pending-price line.
+    describe "quote amounts (multiple tasks, option price, line items)" do
+      let(:text) do
+        described_class.send_job_quote(order.id).deliver_now
+        html = (delivered.last.html_part || delivered.last).body.decoded
+        Nokogiri::HTML(html).text.gsub(/[[:space:]]+/, " ")
+      end
+      let(:french) { text.split("Hello,").first }
+      let(:english) { "Hello," + text.split("Hello,").last }
+
+      before { add_quoted_tasks!(order) }
+
+      it "totals the quote to 58.50 (the fixture's arithmetic)" do
+        expect(order.total_price).to eq(BigDecimal("58.5"))
+      end
+
+      it "shows the English per-task prices, option, line items and Grand Total" do
+        expect(english).to include("- Print A : CAD $32.00 (base fee of $20.00 plus 4.0 unit × $3.00 )")
+        expect(english).to include("• Polish : CAD $7.25")
+        expect(english).to include("- Print B : CAD $15.50 (base fee of $15.50 plus 0.0 unit × $0.00 )")
+        expect(english).to include("- Task #1 : Pending pricing")
+        expect(english).to include("Line items: - Rush: CAD $2.50 - Setup: CAD $1.25")
+        expect(english).to include("Grand Total: CAD $58.50")
+      end
+
+      it "shows the French per-task prices, option, line items and Total général" do
+        expect(french).to include("- Print A : CAD $32.00 (frais de base de $20.00 plus 4.0 unité × $3.00 )")
+        expect(french).to include("• Polish : CAD $7.25")
+        expect(french).to include("- Print B : CAD $15.50 (frais de base de $15.50 plus 0.0 unité × $0.00 )")
+        expect(french).to include("- Task #1 : Prix en attente")
+        expect(french).to include("Articles détaillés : - Rush: CAD $2.50 - Setup: CAD $1.25")
+        expect(french).to include("Total général : CAD $58.50")
+      end
+    end
+
     it "sends nothing for an unknown order" do
       described_class.send_job_quote(99_999_999).deliver_now
       expect(delivered).to be_empty
