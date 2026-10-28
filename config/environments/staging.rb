@@ -50,10 +50,4 @@ Rails.application.configure do
   # Schema migrations
   config.active_record.dump_schema_after_migration = false
 
-  Octokit.configure do |c|
-    c.client_id =
-      Rails.application.credentials.dig(Rails.env.to_sym, :github, :app_key)
-    c.client_secret =
-      Rails.application.credentials.dig(Rails.env.to_sym, :github, :app_key_secret)
-  end
 end

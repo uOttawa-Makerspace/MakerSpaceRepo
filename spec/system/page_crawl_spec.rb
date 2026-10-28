@@ -14,7 +14,6 @@ RSpec.describe "Page crawl (browser, JS entrypoints)", type: :system, skip_bulle
   let!(:admin) { create(:user, :admin) }
 
   before do
-    allow_any_instance_of(Octokit::Client).to receive(:login).and_raise(Octokit::Unauthorized)
     stub_shopify_admin!
     allow(LockerOption).to receive(:locker_product_info).and_return({ variants: {} })
   end

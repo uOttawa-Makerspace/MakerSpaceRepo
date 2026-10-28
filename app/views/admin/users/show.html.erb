@@ -47,12 +47,6 @@
           <%= link_to @edit_admin_user.url.gsub(%r{\Ahttps?://}, '').to_s, @edit_admin_user.url %>
         </div>
       <% end %>
-      <% if @github_username.present? %>
-        <div class="user-info">
-          <i class="fa-brands fa-github-alt"></i>
-          <%= link_to @github_username, "https://github.com/#{@github_username}" %>
-        </div>
-      <% end %>
       <% if @edit_admin_user.location.present? %>
       <div class="user-info">
         <i class="fa-solid fa-location-arrow"></i>

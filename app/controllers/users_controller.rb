@@ -192,11 +192,6 @@ class UsersController < SessionsController
   end
 
   def change_password
-    if github?
-      @client = github_client
-      @client_info = @client.user
-    end
-
     if @user.pword != params[:user][:old_password]
       flash.now[:alert] = 'Incorrect old password.'
       render 'settings/admin', layout: 'setting' and return
@@ -350,12 +345,6 @@ class UsersController < SessionsController
     raise ActiveRecord::RecordNotFound if @repo_user.nil?
 
     @programs = @repo_user.programs.pluck(:program_type)
-    begin
-      @github_username =
-        Octokit::Client.new(access_token: @repo_user.access_token).login
-    rescue Octokit::Unauthorized
-      @github_username = nil
-    end
 
     # Get repositories owned by user
     repo_scope = @repo_user.repositories.where(make_id: nil).order(created_at: :desc)

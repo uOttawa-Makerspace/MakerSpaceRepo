@@ -226,14 +226,6 @@ Rails.application.routes.draw do
     get "check_signed_in"
   end
 
-  # GITHUB
-  namespace :github do
-    get "authorize"
-    get "callback"
-    get "unauthorize"
-    get "repositories"
-  end
-
   # SETTING
   namespace :settings do
     get "profile"

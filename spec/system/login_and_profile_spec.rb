@@ -4,17 +4,13 @@ require "rails_helper"
 
 # System (browser) characterization for the identity journey: log in, view the
 # public profile, edit a profile field in settings, and see it persisted.
-# Pins DOM structure only. Octokit is stubbed (the profile page builds a GitHub
-# client for the owner); the browser journey itself uses no external HTTP.
+# Pins DOM structure only; the browser journey uses no external HTTP.
 # Net::HTTP is NOT globally blocked here because Selenium talks to chromedriver
 # over Net::HTTP on localhost.
 
 RSpec.describe "Login and profile", type: :system do
   let(:user) { create(:user, :regular_user, name: "Pat Example") }
 
-  before do
-    allow_any_instance_of(Octokit::Client).to receive(:login).and_raise(Octokit::Unauthorized)
-  end
 
   it "logs in, shows the profile page and edits the name in settings" do
     log_in_as(user)

@@ -36,7 +36,6 @@ module PageCrawl
     [%r{\A/confirm_edited_email\z}, "needs a signed token"],
     [%r{\A/resend_confirmation\z}, "sends mail, mutates"],
     [%r{\A/resend_email_confirmation\z}, "sends mail"],
-    [%r{\A/github/}, "OAuth redirect to an external provider"],
     [%r{\A/saml/}, "SAML IdP, needs a SAML request"],
     [%r{\A/admin/cdel_reports/generate_output\z}, "heavy report generation"],
     [%r{\A/admin/report_generator/generate_spreadsheet\z}, "heavy spreadsheet generation"],
