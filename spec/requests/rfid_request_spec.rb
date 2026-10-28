@@ -230,6 +230,15 @@ RSpec.describe "RFID endpoints", type: :request do
       expect(TapBoxLog.where(event_type: TapBoxLog::SIGN_IN).last).to have_attributes(user_id: owner.id, space_id: space.id, card_number: rfid.card_number)
     end
 
+    it "opens the session for exactly 6 hours from the tap (frozen time)" do
+      freeze_time do
+        tap_card
+        session_row = LabSession.where(user: owner).last
+        expect(session_row.sign_in_time).to eq(Time.zone.now)
+        expect(session_row.sign_out_time).to eq(Time.zone.now + 6.hours)
+      end
+    end
+
     it "ends the session and logs sign_out on the second tap" do
       tap_card
       expect { tap_card }.to change { TapBoxLog.where(event_type: TapBoxLog::SIGN_OUT).count }.by(1)
