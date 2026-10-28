@@ -88,7 +88,9 @@ end
 
 RSpec.configure do |config|
   config.include ShopifyHttpHelpers
-  # Only examples tagged :shopify_context (see shopify_context_isolation.rb: auto-tagged by file)
-  # get the fake credentials; nothing else in the suite touches Shopify.
-  config.before(:each, :shopify_context) { stub_shopify_credentials! }
+  # EVERY example sees the fake Shopify credentials, tagged or not: config/credentials.yml.enc's
+  # test section holds a real shppa_ token, and any untagged spec that reaches Shopify (the
+  # homepage makerstore query, a WebMock failure diff) would otherwise print or send it.
+  # The :shopify_context tag (shopify_context_isolation.rb) only snapshots/restores the Context.
+  config.before(:each) { stub_shopify_credentials! }
 end
