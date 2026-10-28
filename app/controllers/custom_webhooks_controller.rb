@@ -58,15 +58,39 @@ class CustomWebhooksController < ApplicationController
     head :unauthorized if request.headers["HTTP_X_SHOPIFY_HMAC_SHA256"].blank?
   end
 
+  MISSING_SECRET_REPORT_INTERVAL = 10.minutes
+  MISSING_SECRET_REPORT_MUTEX = Mutex.new
+  @last_missing_secret_report_at = nil
+
+  class << self
+    # True at most once per MISSING_SECRET_REPORT_INTERVAL per process, so a Shopify retry
+    # storm cannot flood the error tracker. The requests themselves are always refused.
+    def report_missing_secret?
+      MISSING_SECRET_REPORT_MUTEX.synchronize do
+        now = Time.current
+        return false if @last_missing_secret_report_at && now - @last_missing_secret_report_at < MISSING_SECRET_REPORT_INTERVAL
+
+        @last_missing_secret_report_at = now
+        true
+      end
+    end
+
+    def reset_missing_secret_report_throttle!
+      MISSING_SECRET_REPORT_MUTEX.synchronize { @last_missing_secret_report_at = nil }
+    end
+  end
+
   def require_webhook_secret!
     return if ShopifyWebhookSecret.configured?(ShopifyApp.configuration.secret) ||
               ShopifyWebhookSecret.configured?(ShopifyApp.configuration.old_secret)
 
-    error = ShopifyWebhookSecret::MissingSecret.new(
-      "Shopify webhook secret is not configured (credentials.#{Rails.env}.shopify.webhook); refusing webhook"
-    )
-    Rails.error.report(error, handled: true, severity: :error, context: { path: request.path })
-    Airbrake.notify(error) if defined?(Airbrake) && Airbrake.configured?
+    if self.class.report_missing_secret?
+      error = ShopifyWebhookSecret::MissingSecret.new(
+        "Shopify webhook secret is not configured (credentials.#{Rails.env}.shopify.webhook); refusing webhooks (503)"
+      )
+      Rails.error.report(error, handled: true, severity: :error, context: { path: request.path })
+      Airbrake.notify(error) if defined?(Airbrake) && Airbrake.configured?
+    end
     head :service_unavailable
   end
 

@@ -13,6 +13,8 @@ require "rails_helper"
 # * The Shopify metafield fallback (`draft_order_metafields`) is stubbed; no
 #   network. The Stripe endpoint IS signed here with the configured secret.
 RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
+  include ActiveSupport::Testing::TimeHelpers
+
   let(:membership_tag) { Membership.draft_order_operating_tag }
   let(:job_order_tag) { JobOrder.draft_order_operating_tag }
   let(:cc_product_id) { 4_359_597_129_784 }
@@ -90,13 +92,10 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
     describe "when no webhook secret is configured" do
       before { allow(ShopifyApp.configuration).to receive(:secret).and_return(nil) }
 
-      it "refuses a request signed with the public test_secret (503), changes nothing, and reports each refusal" do
-        reported = []
-        allow(Rails.error).to receive(:report) { |e, **opts| reported << [e, opts] }
-        allow(Airbrake).to receive(:configured?).and_return(true)
-        allow(Airbrake).to receive(:notify)
+      before { CustomWebhooksController.reset_missing_secret_report_throttle! }
 
-        2.times do
+      it "refuses a request signed with the public test_secret (503) and changes nothing, every time" do
+        3.times do
           expect { signed_orders_paid(forged, secret: "test_secret") }.not_to change { money_state }
           expect(response).to have_http_status(:service_unavailable)
           expect(response.body).to be_blank
@@ -104,9 +103,33 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
         expect(pending.reload.status).to eq("pending")
         expect(rental.reload.state).to eq("await_payment")
         expect(CcMoney.count).to eq(0)
-        expect(reported.size).to eq(2)
-        expect(reported.first.first).to be_a(ShopifyWebhookSecret::MissingSecret)
-        expect(reported.first.last).to include(severity: :error)
+      end
+
+      it "reports (Rails.error + Airbrake) at most once per 10 minutes per process, yet refuses every request" do
+        reported = []
+        allow(Rails.error).to receive(:report) { |e, **opts| reported << [e, opts] }
+        allow(Airbrake).to receive(:configured?).and_return(true)
+        allow(Airbrake).to receive(:notify)
+
+        travel_to(Time.zone.local(2026, 1, 1, 12, 0, 0)) do
+          3.times do
+            signed_orders_paid(forged, secret: "test_secret")
+            expect(response).to have_http_status(:service_unavailable)
+          end
+          expect(reported.size).to eq(1)
+          expect(reported.first.first).to be_a(ShopifyWebhookSecret::MissingSecret)
+          expect(reported.first.last).to include(severity: :error)
+
+          travel 9.minutes
+          signed_orders_paid(forged, secret: "test_secret")
+          expect(response).to have_http_status(:service_unavailable)
+          expect(reported.size).to eq(1)
+
+          travel 2.minutes # 11 minutes after the first report
+          signed_orders_paid(forged, secret: "test_secret")
+          expect(response).to have_http_status(:service_unavailable)
+          expect(reported.size).to eq(2)
+        end
         expect(Airbrake).to have_received(:notify).with(an_instance_of(ShopifyWebhookSecret::MissingSecret)).twice
       end
 
