@@ -7,6 +7,17 @@ Rails.application.routes.draw do
     mount LetterOpenerWeb::Engine, at: "/letter_opener"
   end
 
+  # JSON API for the React frontends: Bearer auth, no cookies. Contracts: doc/api/v1/.
+  namespace :api do
+    namespace :v1 do
+      resource :session, only: %i[create show destroy] do
+        post :refresh
+      end
+      # keep last: unknown /api/v1 paths answer with the JSON 404, not the HTML one
+      match "*path", to: "base#route_not_found", via: :all
+    end
+  end
+
   resources :discount_codes, only: %i[new index create]
   resources :coupon_codes, only: %i[index new create destroy edit update]
 

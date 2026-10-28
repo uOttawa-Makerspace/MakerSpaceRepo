@@ -1,14 +1,31 @@
 # Every origin is either an exact string (scheme included) or a fully anchored
 # regexp (\A...\z), so look-alikes such as app.makerepo.com.attacker.io cannot match.
+cors_origins = [
+  "http://localhost:5173",
+  "https://localhost:5173",
+  "https://uottawa-makerspace.github.io",
+  "https://designday.makerepo.com",
+  %r{\Ahttps://([a-z0-9-]+\.)+design-day-react\.pages\.dev\z},
+  "https://app.makerepo.com",
+  %r{\Ahttps://([a-z0-9-]+\.)+makerepo-app\.pages\.dev\z}
+].freeze
+
 Rails.application.config.middleware.insert_before 0, Rack::Cors do
+  # /api/* (JSON API, Bearer tokens): no cookies, so no credentials. Listed first
+  # because rack-cors uses the first block whose origin AND path match, so the
+  # catch-all block below never answers an /api request with credentials.
   allow do
-    origins "http://localhost:5173",
-            "https://localhost:5173",
-            "https://uottawa-makerspace.github.io",
-            "https://designday.makerepo.com",
-            %r{\Ahttps://([a-z0-9-]+\.)+design-day-react\.pages\.dev\z},
-            "https://app.makerepo.com",
-            %r{\Ahttps://([a-z0-9-]+\.)+makerepo-app\.pages\.dev\z}
+    origins(*cors_origins)
+
+    resource "/api/*",
+             headers: %w[Authorization Content-Type X-Refresh-Token],
+             methods: %i[get post put patch delete options],
+             credentials: false,
+             max_age: 600
+  end
+
+  allow do
+    origins(*cors_origins)
 
     resource "*",
              headers: :any,

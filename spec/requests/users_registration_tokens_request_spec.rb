@@ -470,7 +470,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
     end
 
     it "a database error while storing the password is reported, shown as a failed change, and sends no mail" do
-      allow_any_instance_of(User).to receive(:update_columns).and_raise(ActiveRecord::StatementInvalid, "boom")
+      allow_any_instance_of(User).to receive(:bump_token_version!).and_raise(ActiveRecord::StatementInvalid, "boom")
       expect(Rails.error).to receive(:report).with(an_instance_of(ActiveRecord::StatementInvalid), handled: true)
       patch reset_password_confirmation_users_path, params: reset_params(user)
       expect(flash[:alert]).to start_with("An error occured while trying to change your password")
