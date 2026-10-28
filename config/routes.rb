@@ -7,7 +7,6 @@ Rails.application.routes.draw do
     mount LetterOpenerWeb::Engine, at: "/letter_opener"
   end
 
-  resources :price_rules, only: %i[index new create destroy edit update]
   resources :discount_codes, only: %i[new index create]
   resources :coupon_codes, only: %i[index new create destroy edit update]
 

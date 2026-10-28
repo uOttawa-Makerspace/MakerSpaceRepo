@@ -179,39 +179,6 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
     end
   end
 
-  # ---------------------------------------------------------- discount codes
-
-  describe "discount code usage" do
-    let!(:code) { create(:discount_code, usage_count: 0) }
-
-    it "bumps usage_count of the FIRST discount code that matches a stored code" do
-      other_code = create(:discount_code, usage_count: 0)
-      hook(discount_codes: [{ code: code.code }, { code: other_code.code }])
-      expect(code.reload.usage_count).to eq(1)
-      expect(other_code.reload.usage_count).to eq(0)
-    end
-
-    it "treats a NULL usage_count as zero" do
-      code.update_column(:usage_count, nil)
-      hook(discount_codes: [{ code: code.code }])
-      expect(code.reload.usage_count).to eq(1)
-    end
-
-    it "ignores unknown codes, and never touches CouponCode (the codes users actually buy now)" do
-      coupon = create(:coupon_code, :claimed, user: user)
-      expect { hook(discount_codes: [{ code: coupon.code }]) }.not_to change { coupon.reload.attributes }
-      expect(response).to have_http_status(:ok)
-      # WART(D-S28): coupons bought with cc (CouponCode) have no usage tracking; only the retired DiscountCode rows are ever counted
-    end
-
-    it "counts the same order twice when the webhook is replayed" do
-      hook(discount_codes: [{ code: code.code }])
-      hook(discount_codes: [{ code: code.code }])
-      # WART(D-S29): replayed orders_paid double-counts discount usage (no order-id dedupe)
-      expect(code.reload.usage_count).to eq(2)
-    end
-  end
-
   # ------------------------------------------------------------- cc money
 
   describe "cc money credit" do
@@ -287,18 +254,15 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
 
   # ---------------------------------------------------- combined payloads
 
-  it "handles membership, discount and cc effects of one payload in the same request" do
+  it "handles membership and cc effects of one payload in the same request" do
     m = create(:membership, user: user, membership_tier: tier, status: "pending")
-    code = create(:discount_code, usage_count: 0)
     hook(
       tags: [membership_tag],
       customer: { email: user.email },
       line_items: [{ title: "1 Day Membership", product_id: cc_product_id, quantity: 1 }],
-      discount_codes: [{ code: code.code }],
       metafields: [{ namespace: "makerepo", key: "membership_db_reference", value: m.id.to_s }]
     )
     expect(m.reload.status).to eq("paid")
-    expect(code.reload.usage_count).to eq(1)
     expect(user.cc_moneys.pluck(:cc)).to eq([10])
   end
 end

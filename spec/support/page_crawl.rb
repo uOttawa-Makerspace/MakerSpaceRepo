@@ -209,9 +209,7 @@ module PageCrawl
       make(:contact_info) { create(:contact_info) }
       make(:drop_off_location) { create(:drop_off_location) }
       make(:time_period) { create(:time_period) }
-      make(:price_rule) { create(:price_rule) }
       make(:coupon_code) { create(:coupon_code) }
-      make(:discount_code) { create(:discount_code) }
       make(:video) { create(:video) }
       make(:design_day) { create(:design_day) }
       make(:uni_program) { create(:uni_program) }

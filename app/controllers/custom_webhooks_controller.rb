@@ -23,13 +23,6 @@ class CustomWebhooksController < ApplicationController
       process_job_orders_hook(order_hook)
     end
 
-    # Discount codes handling
-    if order_hook["discount_codes"].present?
-      shopify_discount_code = order_hook["discount_codes"][0]["code"]
-      discount_code = DiscountCode.find_by(code: shopify_discount_code)
-      discount_code&.update(usage_count: (discount_code.usage_count.to_i + 1))
-    end
-
     # CC Money credit handling
     customer_email = order_hook.dig("customer", "email")
     if order_hook["line_items"].present? && customer_email.present?

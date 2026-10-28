@@ -495,9 +495,8 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(user.reload.wallet).to eq(90)
     end
 
-    it "is NOT affected by owned discount/coupon codes or price rules (they do not enter checkout math)" do
+    it "is NOT affected by owned coupon codes (they do not enter checkout math)" do
       credit_cc!(user, 100)
-      create(:discount_code, user: user, price_rule: create(:price_rule, value: 5, cc: 50))
       create(:coupon_code, :claimed, user: user, dollar_cost: 5, cc_cost: 50)
       add_to_cart(pp_with_cc(40))
       post orders_path

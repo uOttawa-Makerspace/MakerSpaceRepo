@@ -31,15 +31,6 @@ RSpec.describe CustomWebhooksController, type: :controller do
         expect(locker.reload.active?).to eq false
       end
 
-      it "should update discount code as used (usage count = 1)" do
-        discount_code = create(:discount_code)
-        
-        post :orders_paid, params: {
-          discount_codes: [{ code: discount_code.code }]
-        }
-        expect(discount_code.reload.usage_count).to eq(1)
-      end
-
       it "should increment cc_points after purchase" do
         user = create(:user, :regular_user)
         

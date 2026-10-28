@@ -3,7 +3,7 @@
 require "rails_helper"
 
 # ShopifyConcern as used by Membership (has the draft-order column), JobOrder,
-# LockerRental, PriceRule and DiscountCode (REST session only). The GraphQL
+# LockerRental. The GraphQL
 # client is replaced by ShopSpecHelpers::FakeShopifyAdmin; nothing opens a socket.
 RSpec.describe ShopifyConcern do
   let(:user) { create(:user, :regular_user) }
@@ -26,10 +26,6 @@ RSpec.describe ShopifyConcern do
       expect(ShopifyConcern.target_tag).to eq("makerepo")
     end
 
-    it "raises NotImplementedError for models that include the concern but do not name a draft key" do
-      expect { PriceRule.draft_order_operating_tag }.to raise_error(NotImplementedError)
-      expect { DiscountCode.shopify_draft_order_key_name }.to raise_error(NotImplementedError)
-    end
   end
 
   describe ".draft_order_processable?" do
@@ -108,12 +104,6 @@ RSpec.describe ShopifyConcern do
       expect(membership.reload.shopify_draft_order_id).to eq(fake.draft_id)
     end
 
-    it "refuses to run on a model without the shopify_draft_order_id column" do
-      expect { PriceRule.new.send(:ensure_can_use_draft_order) }
-        .to raise_error(RuntimeError, "Model PriceRule does not define a shopify_draft_order_id column")
-      expect { DiscountCode.new.send(:shopify_draft_order) }
-        .to raise_error(RuntimeError, /does not define a shopify_draft_order_id column/)
-    end
   end
 
   describe "#draft_order_metafields" do

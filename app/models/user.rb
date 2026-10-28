@@ -115,7 +115,6 @@ class User < ApplicationRecord
   has_many :programs, dependent: :destroy
   has_many :orders, dependent: :destroy
   has_many :order_items, through: :orders
-  has_many :discount_codes, dependent: :destroy
   has_many :project_kits, dependent: :destroy
   has_many :learning_module_tracks
   has_many :shadowing_hours
