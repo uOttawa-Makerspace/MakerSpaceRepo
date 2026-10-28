@@ -24,6 +24,8 @@ module ShopifyContext
   # At most one failure report per kind (error class) per 10 minutes per process; every failure is still logged.
   REPORT_THROTTLE = ReportThrottle.new(interval: 10.minutes)
 
+  SETUP_MUTEX = Mutex.new
+
   REQUIRED_KEYS = %i[api_key password shop_name api_version].freeze
 
   def self.ensure_setup!
@@ -44,9 +46,11 @@ module ShopifyContext
       is_private: true,
       api_version: config[:api_version]
     }
-    return true if current?(args)
-
-    ShopifyAPI::Context.setup(**args)
+    # Context.setup unloads and reloads the REST resource loader, so two Puma threads must never
+    # both run it: check and setup are one critical section.
+    SETUP_MUTEX.synchronize do
+      ShopifyAPI::Context.setup(**args) unless current?(args)
+    end
     true
   rescue StandardError => e
     failed(e)

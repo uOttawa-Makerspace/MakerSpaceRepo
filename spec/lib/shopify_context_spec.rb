@@ -221,4 +221,32 @@ RSpec.describe ShopifyContext, :shopify_context do
       end
     end
   end
+
+  describe "thread safety" do
+    it "two threads calling ensure_setup! on a cold Context run Context.setup exactly once" do
+      blank_context!
+      entered = Queue.new
+      release = Queue.new
+      calls = Concurrent::AtomicFixnum.new(0)
+      allow(ShopifyAPI::Context).to receive(:setup).and_wrap_original do |original, **args|
+        calls.increment
+        entered << :in
+        release.pop # hold the first setup open until the second thread has had every chance to race in
+        original.call(**args)
+      end
+
+      first = Thread.new { described_class.ensure_setup! }
+      entered.pop # first thread is inside Context.setup, Context still cold
+      second = Thread.new { described_class.ensure_setup! }
+      deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 0.5
+      sleep 0.01 until second.status == "sleep" && (calls.value > 1 || Process.clock_gettime(Process::CLOCK_MONOTONIC) > deadline)
+      2.times { release << :go } # unblocks the first, and the second too if the mutex is missing
+
+      expect([first.value, second.value]).to eq([true, true])
+      expect(calls.value).to eq(1)
+    ensure
+      2.times { release << :go } if release
+      [first, second].compact.each { |t| t.join(2) }
+    end
+  end
 end
