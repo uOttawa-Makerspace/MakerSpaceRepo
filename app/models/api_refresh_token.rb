@@ -57,7 +57,7 @@ class ApiRefreshToken < ApplicationRecord
   def self.authenticate(raw)
     return nil if raw.blank? || !raw.is_a?(String)
 
-    record = includes(:user).find_by(token_digest: digest(raw))
+    record = find_by(token_digest: digest(raw))
     return nil unless record
 
     if record.revoked?
