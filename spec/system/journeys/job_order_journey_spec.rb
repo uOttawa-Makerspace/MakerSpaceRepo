@@ -141,6 +141,7 @@ RSpec.describe "Journey: job order", type: :system, skip_bullet: true do
       fill_in "chat_message[message]", with: "Thanks, when can I collect?"
       click_button "Send"
       expect(page).to have_field("chat_message[message]", with: "")
+      within("#chat-messages") { expect(page).to have_content("Thanks, when can I collect?") }
     end
     expect(ChatMessage.where(job_order: order, sender: user).order(:id).pluck(:message).last).to eq("Thanks, when can I collect?")
     as_actor(:staff) do
@@ -149,6 +150,7 @@ RSpec.describe "Journey: job order", type: :system, skip_bullet: true do
       fill_in "chat_message[message]", with: "Tomorrow after 10"
       click_button "Send"
       expect(page).to have_field("chat_message[message]", with: "")
+      within("#chat-messages") { expect(page).to have_content("Tomorrow after 10") }
     end
     as_actor(:user) do
       visit job_order_path(order)

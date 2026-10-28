@@ -27,6 +27,7 @@ RSpec.describe "Login and profile", type: :system do
     fill_in "user_name", with: "Pat Renamed"
     click_button "Save Changes"
 
+    expect(page).to have_text("Profile updated successfully.")
     expect(page).to have_current_path(settings_profile_path)
     expect(page).to have_css("input#user_name[value='Pat Renamed']")
     expect(user.reload.name).to eq("Pat Renamed")
@@ -38,6 +39,9 @@ RSpec.describe "Login and profile", type: :system do
     fill_in "user_name", with: ""
     click_button "Save Changes"
 
+    # the PATCH redirects back to this same path, so the path alone proves
+    # nothing: wait for the failure flash the redirect renders
+    expect(page).to have_text("Could not save changes.")
     expect(page).to have_current_path(settings_profile_path)
     expect(user.reload.name).to eq("Pat Example")
   end
