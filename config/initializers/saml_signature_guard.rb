@@ -21,6 +21,10 @@ module SamlSignatureGuard
     Zlib::Error, Nokogiri::XML::SyntaxError, URI::InvalidURIError, REXML::ParseException
   ].freeze
 
+  # xsd:ID / NCName. The gem interpolates the Reference URI unescaped into an XPath
+  # (//*[@ID='...']), so any other root ID could smuggle XPath syntax in.
+  VALID_ID = /\A[A-Za-z_][A-Za-z0-9_.-]*\z/
+
   DSIG = { "ds" => "http://www.w3.org/2000/09/xmldsig#" }.freeze
 
   def valid_signature?
@@ -79,7 +83,7 @@ module SamlSignatureGuard
   def covers_root_request?
     doc = Nokogiri::XML(raw_xml.to_s)
     root = doc.root
-    return false unless root && %w[AuthnRequest LogoutRequest].include?(root.name) && root["ID"].present?
+    return false unless root && %w[AuthnRequest LogoutRequest].include?(root.name) && root["ID"].to_s.match?(VALID_ID)
     return false unless doc.xpath("//ds:Signature", DSIG).size == 1
 
     references = doc.xpath("//ds:Reference", DSIG)

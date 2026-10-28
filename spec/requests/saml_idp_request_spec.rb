@@ -598,22 +598,22 @@ RSpec.describe "SAML IdP", type: :request do
 
         # Signs the element with the given ID (exclusive c14n, rsa-sha256) and returns the XML
         # of an enveloped ds:Signature for it, computed over the document WITHOUT the signature.
-        def signature_for(xml, signed_id)
+        def signature_for(xml, signed_id, reference_uri: "##{signed_id}")
           doc = Nokogiri::XML(xml)
           target = doc.at_xpath("//*[@ID='#{signed_id}']")
           digest = Base64.strict_encode64(OpenSSL::Digest::SHA256.digest(target.canonicalize(Nokogiri::XML::XML_C14N_EXCLUSIVE_1_0)))
           signed_info = %(<ds:SignedInfo xmlns:ds="#{ds}"><ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>) +
                         %(<ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/>) +
-                        %(<ds:Reference URI="##{signed_id}"><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>) +
+                        %(<ds:Reference URI="#{reference_uri}"><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>) +
                         %(<ds:DigestValue>#{digest}</ds:DigestValue></ds:Reference></ds:SignedInfo>)
           canonical = Nokogiri::XML(signed_info).root.canonicalize(Nokogiri::XML::XML_C14N_EXCLUSIVE_1_0)
           sig = Base64.strict_encode64(key.sign(OpenSSL::Digest.new("SHA256"), canonical))
           %(<ds:Signature xmlns:ds="#{ds}">#{signed_info}<ds:SignatureValue>#{sig}</ds:SignatureValue></ds:Signature>)
         end
 
-        def logout_xml(inner)
+        def logout_xml(inner, id: "_lo1", lead: "")
           %(<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ) +
-            %(ID="_lo1" Version="2.0" IssueInstant="2026-03-10T15:00:00Z"><saml:Issuer>rooms.makerepo.com</saml:Issuer>) +
+            %(ID="#{id}" Version="2.0" IssueInstant="2026-03-10T15:00:00Z">#{lead}<saml:Issuer>rooms.makerepo.com</saml:Issuer>) +
             %(<saml:NameID>x</saml:NameID>#{inner}</samlp:LogoutRequest>)
         end
 
@@ -631,6 +631,18 @@ RSpec.describe "SAML IdP", type: :request do
             body = logout_xml(extra)
             wrapped = logout_xml(extra + signature_for(body, "signed1"))
             # control: the signature itself verifies against the configured cert
+            expect(Saml::XML::Document.parse(wrapped).valid_signature?(cert_b64, "")).to be(true)
+            post_logout(c18_deflate(wrapped))
+            expect(response).to have_http_status(:forbidden)
+          end
+        end
+
+        it "refuses an XPath-injection root ID that makes the gem digest a nested signed element (403)" do
+          c18_with_signing_sps(cert_pem: cert_b64) do
+            root_id = "x' or @ID='s1"
+            extra = %(<Extension ID="s1">harmless</Extension>)
+            wrapped = logout_xml(extra + signature_for(logout_xml(extra, id: root_id), "s1", reference_uri: "##{root_id}"), id: root_id)
+            # control: the gem itself accepts this unsigned-root document
             expect(Saml::XML::Document.parse(wrapped).valid_signature?(cert_b64, "")).to be(true)
             post_logout(c18_deflate(wrapped))
             expect(response).to have_http_status(:forbidden)
