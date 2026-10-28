@@ -69,10 +69,22 @@ module SamlSignatureGuard
     false
   end
 
-  # An OpenSSL failure with no certificate embedded in the request can only come from
-  # the SP's configured certificate.
+  # Only a configured certificate that itself fails to parse is a misconfiguration.
+  # Any other OpenSSL failure (e.g. a PKeyError from attacker-supplied Signature bytes)
+  # is just an invalid signature.
   def sp_config_fault?(error)
-    error.is_a?(OpenSSL::OpenSSLError) && Nokogiri::XML(raw_xml.to_s).at_xpath("//ds:X509Certificate", DSIG).nil?
+    error.is_a?(OpenSSL::OpenSSLError) && !configured_certificate_parses?
+  end
+
+  # The embedded check hands the gem a base64 DER certificate, the external one PEM/DER.
+  def configured_certificate_parses?
+    cert = service_provider.cert.to_s
+    [cert, Base64.decode64(cert)].any? do |candidate|
+      OpenSSL::X509::Certificate.new(candidate)
+      true
+    rescue OpenSSL::X509::CertificateError
+      false
+    end
   end
 
   def sp_certificate_parses?

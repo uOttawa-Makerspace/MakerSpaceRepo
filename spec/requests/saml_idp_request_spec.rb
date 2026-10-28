@@ -681,6 +681,17 @@ RSpec.describe "SAML IdP", type: :request do
           end
         end
 
+        it "treats attacker-supplied Signature bytes that raise in OpenSSL as an invalid signature, not an SP misconfiguration" do
+          c18_with_signing_sps(cert_pem: cert.to_pem) do
+            allow_any_instance_of(OpenSSL::PKey::RSA).to receive(:verify).and_raise(OpenSSL::PKey::PKeyError, "bad signature bytes")
+            expect(Rails.error).not_to receive(:report)
+            c18_sign_in(:regular)
+            post "/saml/auth", params: { SAMLRequest: c18_authn_request, submit: "current_user", Signature: Base64.strict_encode64("sig"),
+                                         SigAlg: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256" }
+            expect(response).to have_http_status(:forbidden)
+          end
+        end
+
         it "refuses a document with two signatures (403)" do
           c18_with_signing_sps(cert_pem: cert_b64) do
             unsigned = logout_xml("")
