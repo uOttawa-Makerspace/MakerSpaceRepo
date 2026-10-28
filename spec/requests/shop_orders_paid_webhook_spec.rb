@@ -264,6 +264,49 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
     end
   end
 
+  # Shopify retries a non-2xx webhook, so config trouble must answer 503 BEFORE any money branch applied:
+  # locker activation, membership paid and CC credit are all-or-nothing with respect to NotConfigured.
+  describe "when Shopify is not configured mid-webhook (draft_order_metafields raises NotConfigured)" do
+    let!(:pending) { create(:membership, user: user, membership_tier: tier, status: "pending") }
+    let!(:rental) { create(:locker_rental, :await_payment) }
+    let(:payload) do
+      { # the locker reference is inline; the membership one needs the Shopify lookup, which cannot run
+        tags: [membership_tag, LockerRental.draft_order_operating_tag],
+        draft_order_id: 42,
+        line_items: [{ title: "1 Day Membership", quantity: 3, product_id: cc_product_id }],
+        customer: { email: user.email },
+        metafields: [{ namespace: "makerepo", key: "locker_db_reference", value: rental.id.to_s }]
+      }
+    end
+
+    before do
+      allow_any_instance_of(CustomWebhooksController).to receive(:draft_order_metafields).and_call_original
+      allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify).and_return({})
+      allow(Rails.logger).to receive(:warn)
+    end
+
+    it "answers 503 and has applied nothing (locker not activated, membership not paid, no CC money)" do
+      expect { signed_orders_paid(payload) }.not_to change { [rental.reload.state, pending.reload.status, CcMoney.count, Membership.count] }
+      expect(response).to have_http_status(:service_unavailable)
+      expect(response.body).to be_blank
+      expect(a_request(:any, /graphql/)).not_to have_been_made
+    end
+
+    it "is processed in full once the config is fixed (Shopify's retry)" do
+      signed_orders_paid(payload)
+      expect(response).to have_http_status(:service_unavailable)
+
+      stub_shopify_credentials! # the config is fixed: the fake credentials are back
+      prime_shopify_context!
+      stub_shopify_graphql("query NodeMetafields", { "node" => { "metafields" => { "edges" => [
+        { "node" => { "namespace" => "makerepo", "key" => "membership_db_reference", "value" => pending.id.to_s } }
+      ] } } })
+      signed_orders_paid(payload)
+      expect(response).to have_http_status(:ok)
+      expect([rental.reload.state, pending.reload.status, user.cc_moneys.pluck(:cc)]).to eq(["active", "paid", [30]])
+    end
+  end
+
   it "uses the env-specific tag names (production tags are not honored in test)" do
     expect(membership_tag).to eq("makerepo_test_membership")
     expect(job_order_tag).to eq("makerepo_test_job_order")
