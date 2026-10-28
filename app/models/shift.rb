@@ -5,4 +5,6 @@
 # foreign keys to spaces and trainings, so this bare record class stays only so
 # Space/Training can clear their shifts on destroy. Do not add behavior here.
 class Shift < ApplicationRecord
+  # Cleanup only: removes shifts_users join rows when a shift is destroyed.
+  has_and_belongs_to_many :users
 end
