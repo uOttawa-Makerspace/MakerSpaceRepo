@@ -6,6 +6,7 @@ require "rails_helper"
 # get_unset_rfids is staff-only.
 RSpec.describe "RFID endpoints", type: :request do
   include ActiveJob::TestHelper
+  include ActiveSupport::Testing::TimeHelpers
 
   include_context "with test cable adapter"
 
@@ -230,6 +231,15 @@ RSpec.describe "RFID endpoints", type: :request do
       expect(TapBoxLog.where(event_type: TapBoxLog::SIGN_IN).last).to have_attributes(user_id: owner.id, space_id: space.id, card_number: rfid.card_number)
     end
 
+    it "opens the session for exactly 6 hours from the tap (frozen time)" do
+      freeze_time do
+        tap_card
+        session_row = LabSession.where(user: owner).last
+        expect(session_row.sign_in_time).to eq(Time.zone.now)
+        expect(session_row.sign_out_time).to eq(Time.zone.now + 6.hours)
+      end
+    end
+
     it "ends the session and logs sign_out on the second tap" do
       tap_card
       expect { tap_card }.to change { TapBoxLog.where(event_type: TapBoxLog::SIGN_OUT).count }.by(1)
@@ -439,6 +449,51 @@ RSpec.describe "RFID endpoints", type: :request do
       get rfid_get_unset_rfids_path
       expect(response).to have_http_status(:ok)
       expect(body).to eq([{ cardNumber: unset.card_number, tappedAt: "Tapped at #{space.name} less than a minute ago" }])
+    end
+
+    context "with many unset cards in two spaces" do
+      let(:other_space) { create(:space) }
+      let(:other_reader) { create(:pi_reader, space: other_space) }
+
+      before do
+        unset.destroy!
+        # own[0] is the newest (1 minute ago) ... own[6] the oldest (7 minutes ago), all tapped at this space
+        @own = (1..7).map do |n|
+          create(:rfid, user: nil, mac_address: pi_reader.pi_mac_address).tap { |c| c.update_columns(updated_at: n.minutes.ago) }
+        end
+        # even newer, but tapped at a reader of another space
+        @foreign = create(:rfid, user: nil, mac_address: other_reader.pi_mac_address).tap { |c| c.update_columns(updated_at: 10.seconds.ago) }
+        # a card that is linked to a user is never "unset"
+        create(:rfid, user: owner, mac_address: pi_reader.pi_mac_address)
+      end
+
+      it "returns at most 5 cards, newest first, only those tapped at the staff member's space readers" do
+        staff = log_in!(create(:user, :staff))
+        staff.update!(space: space)
+
+        get rfid_get_unset_rfids_path
+
+        expect(body.map { |c| c[:cardNumber] }).to eq(@own.first(5).map(&:card_number))
+        expect(body.first[:tappedAt]).to eq("Tapped at #{space.name} 1 minute ago")
+        expect(body.last[:tappedAt]).to eq("Tapped at #{space.name} 5 minutes ago")
+      end
+
+      it "scopes a staff member of the other space to that space's readers" do
+        staff = log_in!(create(:user, :staff))
+        staff.update!(space: other_space)
+
+        get rfid_get_unset_rfids_path
+
+        expect(body).to eq([{ cardNumber: @foreign.card_number, tappedAt: "Tapped at #{other_space.name} less than a minute ago" }])
+      end
+
+      it "gives an admin without a space the newest 5 across all spaces" do
+        sign_in_as(:admin)
+
+        get rfid_get_unset_rfids_path
+
+        expect(body.map { |c| c[:cardNumber] }).to eq([@foreign, *@own.first(4)].map(&:card_number))
+      end
     end
 
     it "lets an admin through (staff? covers admins) and lists unset cards across all spaces" do

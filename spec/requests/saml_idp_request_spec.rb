@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "rails_helper"
-require "zlib"
 
 # Chunk 18: SamlIdpController (the SAML identity provider used by the wiki,
 # Wiki.js, rooms and print). Config shape (service providers, name ids,
@@ -19,34 +18,14 @@ require "zlib"
 #    POST /saml/auth when forgery protection is enabled.
 RSpec.describe "SAML IdP", type: :request do
   include Chunk18Helpers
-
-  WIKIJS_ACS = "https://wikijs.makerepo.com/login/258365f7-0b23-403c-817a-5d1ca2be771f/callback"
-
-  # A deflated + base64 AuthnRequest, as an SP's HTTP-Redirect binding sends it.
-  def c18_authn_request(issuer: "wikijs.makerepo.com", acs: WIKIJS_ACS, id: "_req1")
-    xml = %(<samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ) +
-          %(xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="#{id}" Version="2.0" ) +
-          %(IssueInstant="2026-03-10T15:00:00Z" AssertionConsumerServiceURL="#{acs}">) +
-          %(<saml:Issuer>#{issuer}</saml:Issuer></samlp:AuthnRequest>)
-    deflater = Zlib::Deflate.new(Zlib::DEFAULT_COMPRESSION, -Zlib::MAX_WBITS)
-    deflated = deflater.deflate(xml, Zlib::FINISH)
-    deflater.close
-    Base64.strict_encode64(deflated)
-  end
+  include SamlAuthnRequestHelper
 
   def c18_logout_request(issuer: "rooms.makerepo.com", id: "_logout1")
     xml = %(<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ) +
           %(xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="#{id}" Version="2.0" ) +
           %(IssueInstant="2026-03-10T15:00:00Z"><saml:Issuer>#{issuer}</saml:Issuer>) +
           %(<saml:NameID>x</saml:NameID></samlp:LogoutRequest>)
-    c18_deflate(xml)
-  end
-
-  def c18_deflate(xml)
-    deflater = Zlib::Deflate.new(Zlib::DEFAULT_COMPRESSION, -Zlib::MAX_WBITS)
-    deflated = deflater.deflate(xml, Zlib::FINISH)
-    deflater.close
-    Base64.strict_encode64(deflated)
+    saml_deflate(xml)
   end
 
   # Registers a certificate + fingerprint for every SP, requires signed AuthnRequests
@@ -140,7 +119,7 @@ RSpec.describe "SAML IdP", type: :request do
       get "/saml/metadata"
       entity_id = Nokogiri::XML(response.body).root["entityID"]
       c18_sign_in(:regular)
-      post "/saml/auth", params: { SAMLRequest: c18_authn_request, submit: "current_user" }
+      post "/saml/auth", params: { SAMLRequest: authn_request, submit: "current_user" }
       doc = Nokogiri::XML(c18_saml_response_xml)
       doc.remove_namespaces!
       expect(doc.at_xpath("//Assertion/Issuer").text).to eq(entity_id)
@@ -155,7 +134,7 @@ RSpec.describe "SAML IdP", type: :request do
 
     it "keeps the assertion Issuer the request URL when SAML_IDP_BASE_URL is unset" do
       c18_sign_in(:regular)
-      post "/saml/auth", params: { SAMLRequest: c18_authn_request, submit: "current_user" }
+      post "/saml/auth", params: { SAMLRequest: authn_request, submit: "current_user" }
       doc = Nokogiri::XML(c18_saml_response_xml)
       doc.remove_namespaces!
       expect(doc.at_xpath("//Assertion/Issuer").text).to eq("http://www.example.com/saml/auth")
@@ -206,7 +185,7 @@ RSpec.describe "SAML IdP", type: :request do
 
   describe "GET /saml/auth (login page)" do
     it "shows the sign-in form to a guest and keeps the SAMLRequest in the form action" do
-      request_param = c18_authn_request
+      request_param = authn_request
       get "/saml/auth", params: { SAMLRequest: request_param, RelayState: "rs1" }
       expect(response).to have_http_status(:ok)
       expect(response.body).to include('name="username"', 'name="password"', 'value="sign_in"')
@@ -217,7 +196,7 @@ RSpec.describe "SAML IdP", type: :request do
 
     it "shows 'use this account' / 'use another account' to a signed-in user" do
       user = c18_sign_in(:regular)
-      get "/saml/auth", params: { SAMLRequest: c18_authn_request }
+      get "/saml/auth", params: { SAMLRequest: authn_request }
       expect(response.body).to include('value="current_user"', 'value="logout"', user.username, ERB::Util.html_escape(user.name))
     end
 
@@ -245,7 +224,7 @@ RSpec.describe "SAML IdP", type: :request do
       SamlIdp.config.service_provider.finder = lambda do |id|
         original.call(id)&.merge(sign_authn_request: true, cert: cert.to_pem, fingerprint: "aa:bb")
       end
-      saml_request = c18_authn_request
+      saml_request = authn_request
       sig_alg = "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"
       signed = "SAMLRequest=#{CGI.escape(saml_request)}&RelayState=rs1&SigAlg=#{CGI.escape(sig_alg)}"
       signature = Base64.strict_encode64(key.sign(OpenSSL::Digest.new("SHA256"), signed))
@@ -265,9 +244,9 @@ RSpec.describe "SAML IdP", type: :request do
     end
 
     it "answers 403 for an unknown issuer and for an ACS host the SP is not registered for (D-R13)" do
-      get "/saml/auth", params: { SAMLRequest: c18_authn_request(issuer: "evil.example.com", acs: "https://evil.example.com/acs") }
+      get "/saml/auth", params: { SAMLRequest: authn_request(issuer: "evil.example.com", acs: "https://evil.example.com/acs") }
       expect(response).to have_http_status(:forbidden)
-      get "/saml/auth", params: { SAMLRequest: c18_authn_request(issuer: "rooms.makerepo.com", acs: "https://evil.example.com/steal") }
+      get "/saml/auth", params: { SAMLRequest: authn_request(issuer: "rooms.makerepo.com", acs: "https://evil.example.com/steal") }
       expect(response).to have_http_status(:forbidden)
     end
   end
@@ -276,14 +255,14 @@ RSpec.describe "SAML IdP", type: :request do
     let!(:user) { create(:user, :regular_user, password: BCrypt::Password.create(password)) }
 
     def post_auth(extra = {})
-      post "/saml/auth", params: { SAMLRequest: c18_authn_request, RelayState: "rs1" }.merge(extra)
+      post "/saml/auth", params: { SAMLRequest: authn_request, RelayState: "rs1" }.merge(extra)
     end
 
     context "submit=sign_in" do
       it "with valid credentials answers the auto-submitting form to the SP's ACS URL carrying a signed SAMLResponse and the RelayState" do
         post_auth(submit: "sign_in", username: user.username, password: password)
         expect(response).to have_http_status(:ok)
-        expect(c18_form_action).to eq(WIKIJS_ACS)
+        expect(c18_form_action).to eq(wikijs_acs)
         expect(response.body).to include('name="RelayState"', 'value="rs1"')
         expect(session[:user_id]).to eq(user.id) # the app session is also established
 
@@ -291,7 +270,7 @@ RSpec.describe "SAML IdP", type: :request do
         doc = Nokogiri::XML(xml)
         doc.remove_namespaces!
         expect(doc.root.name).to eq("Response")
-        expect(doc.root["Destination"]).to eq(WIKIJS_ACS)
+        expect(doc.root["Destination"]).to eq(wikijs_acs)
         expect(doc.root["InResponseTo"]).to eq("_req1")
         expect(doc.at_xpath("//Assertion/Signature")).to be_present
         expect(doc.at_xpath("//Assertion/Conditions/AudienceRestriction/Audience").text).to eq("wikijs.makerepo.com")
@@ -437,7 +416,7 @@ RSpec.describe "SAML IdP", type: :request do
         signed_in = c18_sign_in(:staff)
         post_auth(submit: "current_user")
         expect(response).to have_http_status(:ok)
-        expect(c18_form_action).to eq(WIKIJS_ACS)
+        expect(c18_form_action).to eq(wikijs_acs)
         doc = Nokogiri::XML(c18_saml_response_xml)
         doc.remove_namespaces!
         expect(doc.at_xpath("//Assertion/Subject/NameID").text).to eq(signed_in.id.to_s)
@@ -487,16 +466,16 @@ RSpec.describe "SAML IdP", type: :request do
 
     it "answers 400 for a Signature without SigAlg or non-string binding params" do
       c18_sign_in(:regular)
-      post "/saml/auth", params: { submit: "current_user", SAMLRequest: c18_authn_request, Signature: "c2ln" }
+      post "/saml/auth", params: { submit: "current_user", SAMLRequest: authn_request, Signature: "c2ln" }
       expect(response).to have_http_status(:bad_request)
-      post "/saml/auth", params: { submit: "current_user", SAMLRequest: c18_authn_request, RelayState: ["x"] }
+      post "/saml/auth", params: { submit: "current_user", SAMLRequest: authn_request, RelayState: ["x"] }
       expect(response).to have_http_status(:bad_request)
     end
 
     it "does not swallow a server failure as a 400" do
       c18_sign_in(:regular)
       allow_any_instance_of(SamlIdp::Request).to receive(:valid?).and_raise(ActiveRecord::ConnectionNotEstablished)
-      post "/saml/auth", params: { submit: "current_user", SAMLRequest: c18_authn_request }
+      post "/saml/auth", params: { submit: "current_user", SAMLRequest: authn_request }
       expect(response).to have_http_status(:internal_server_error)
     end
 
@@ -504,8 +483,8 @@ RSpec.describe "SAML IdP", type: :request do
       c18_sign_in(:regular)
       xml = %(<!DOCTYPE samlp:AuthnRequest [<!ENTITY a "aaaa">]><samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ) +
             %(xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="_req1" Version="2.0" IssueInstant="2026-03-10T15:00:00Z" ) +
-            %(AssertionConsumerServiceURL="#{WIKIJS_ACS}"><saml:Issuer>wikijs.makerepo.com</saml:Issuer></samlp:AuthnRequest>)
-      post "/saml/auth", params: { submit: "current_user", SAMLRequest: c18_deflate(xml) }
+            %(AssertionConsumerServiceURL="#{wikijs_acs}"><saml:Issuer>wikijs.makerepo.com</saml:Issuer></samlp:AuthnRequest>)
+      post "/saml/auth", params: { submit: "current_user", SAMLRequest: saml_deflate(xml) }
       expect(response).to have_http_status(:bad_request)
       expect(c18_saml_response_xml).to be_nil
     end
@@ -513,13 +492,13 @@ RSpec.describe "SAML IdP", type: :request do
     it "answers 403 (signature invalid) when the gem raises its SignedDocument::ValidationError outside the guard" do
       allow_any_instance_of(SamlIdp::Request).to receive(:valid?).and_raise(SamlIdp::XMLSecurity::SignedDocument::ValidationError, "Digest mismatch")
       c18_sign_in(:regular)
-      post "/saml/auth", params: { submit: "current_user", SAMLRequest: c18_authn_request }
+      post "/saml/auth", params: { submit: "current_user", SAMLRequest: authn_request }
       expect(response).to have_http_status(:forbidden)
     end
 
     it "answers 400 when the payload is malformed in a way the gem raises (bad ACS URL)" do
       c18_sign_in(:regular)
-      bad = c18_authn_request(issuer: "rooms.makerepo.com", acs: "https://rooms.makerepo.com/a b")
+      bad = authn_request(issuer: "rooms.makerepo.com", acs: "https://rooms.makerepo.com/a b")
       post "/saml/auth", params: { submit: "current_user", SAMLRequest: bad }
       expect(response).to have_http_status(:bad_request)
     end
@@ -528,7 +507,7 @@ RSpec.describe "SAML IdP", type: :request do
       def ds = "http://www.w3.org/2000/09/xmldsig#"
 
       def signed_logout(signature_xml, extra: "", id: "_lo1")
-        c18_deflate(%(<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ) +
+        saml_deflate(%(<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ) +
                     %(xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="#{id}" Version="2.0" ) +
                     %(IssueInstant="2026-03-10T15:00:00Z"><saml:Issuer>rooms.makerepo.com</saml:Issuer>) +
                     %(<saml:NameID>x</saml:NameID>#{extra}#{signature_xml}</samlp:LogoutRequest>))
@@ -582,7 +561,7 @@ RSpec.describe "SAML IdP", type: :request do
           xml = %(<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ) +
                 %(xmlns:rel="relative" ID="_lo1" Version="2.0" IssueInstant="2026-03-10T15:00:00Z"><saml:Issuer>rooms.makerepo.com</saml:Issuer>) +
                 %(<saml:NameID>x</saml:NameID>#{full_signature}</samlp:LogoutRequest>)
-          post_logout(c18_deflate(xml))
+          post_logout(saml_deflate(xml))
           expect(response).to have_http_status(:forbidden)
         end
       end
@@ -605,13 +584,13 @@ RSpec.describe "SAML IdP", type: :request do
       it "an SP that does not require signatures still gets its assertion with an odd ds:Signature in the request" do
         odd = full_signature(reference_uri: "")
         xml = %(<samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ) +
-              %(ID="_req1" Version="2.0" IssueInstant="2026-03-10T15:00:00Z" AssertionConsumerServiceURL="#{WIKIJS_ACS}">) +
+              %(ID="_req1" Version="2.0" IssueInstant="2026-03-10T15:00:00Z" AssertionConsumerServiceURL="#{wikijs_acs}">) +
               %(<saml:Issuer>wikijs.makerepo.com</saml:Issuer>#{odd}</samlp:AuthnRequest>)
         c18_sign_in(:regular)
-        post "/saml/auth", params: { SAMLRequest: c18_deflate(xml), submit: "current_user" }
+        post "/saml/auth", params: { SAMLRequest: saml_deflate(xml), submit: "current_user" }
         expect(response).to have_http_status(:ok)
         expect(c18_saml_response_xml).to be_present
-        get "/saml/auth", params: { SAMLRequest: c18_deflate(xml) }
+        get "/saml/auth", params: { SAMLRequest: saml_deflate(xml) }
         expect(response).to have_http_status(:ok)
       end
 
@@ -655,7 +634,7 @@ RSpec.describe "SAML IdP", type: :request do
         it "accepts a LogoutRequest whose root element is signed (control for the wrapping examples)" do
           c18_with_signing_sps(cert_pem: cert_b64) do
             unsigned = logout_xml("")
-            post_logout(c18_deflate(logout_xml(signature_for(unsigned, "_lo1"))))
+            post_logout(saml_deflate(logout_xml(signature_for(unsigned, "_lo1"))))
             expect(response).to have_http_status(:ok)
           end
         end
@@ -667,7 +646,7 @@ RSpec.describe "SAML IdP", type: :request do
             wrapped = logout_xml(extra + signature_for(body, "signed1"))
             # control: the signature itself verifies against the configured cert
             expect(Saml::XML::Document.parse(wrapped).valid_signature?(cert_b64, "")).to be(true)
-            post_logout(c18_deflate(wrapped))
+            post_logout(saml_deflate(wrapped))
             expect(response).to have_http_status(:forbidden)
           end
         end
@@ -679,7 +658,7 @@ RSpec.describe "SAML IdP", type: :request do
             wrapped = logout_xml(extra + signature_for(logout_xml(extra, id: root_id), "s1", reference_uri: "##{root_id}"), id: root_id)
             # control: the gem itself accepts this unsigned-root document
             expect(Saml::XML::Document.parse(wrapped).valid_signature?(cert_b64, "")).to be(true)
-            post_logout(c18_deflate(wrapped))
+            post_logout(saml_deflate(wrapped))
             expect(response).to have_http_status(:forbidden)
           end
         end
@@ -691,7 +670,7 @@ RSpec.describe "SAML IdP", type: :request do
             end
             wrapped = foreign.call(signature_for(foreign.call(""), "_lo1"))
             expect(Saml::XML::Document.parse(wrapped).valid_signature?(cert_b64, "")).to be(true)
-            post_logout(c18_deflate(wrapped))
+            post_logout(saml_deflate(wrapped))
             expect(response).to have_http_status(:forbidden)
           end
         end
@@ -703,7 +682,7 @@ RSpec.describe "SAML IdP", type: :request do
             wrapped = logout_xml("", lead: evil, issuer: "wikijs.makerepo.com")
             expect(Saml::XML::Document.parse(wrapped).valid_signature?(cert_b64, "")).to be(true)
             expect(Saml::XML::Document.parse(wrapped).at_xpath("//saml:Issuer", saml: "urn:oasis:names:tc:SAML:2.0:assertion").text).to eq("rooms.makerepo.com")
-            post_logout(c18_deflate(wrapped))
+            post_logout(saml_deflate(wrapped))
             expect(response).to have_http_status(:forbidden)
           end
         end
@@ -711,7 +690,7 @@ RSpec.describe "SAML IdP", type: :request do
         it "does not turn an infrastructure failure inside the verification into a 403" do
           c18_with_signing_sps(cert_pem: cert_b64) do
             allow_any_instance_of(SamlIdp::XMLSecurity::SignedDocument).to receive(:validate).and_raise(ActiveRecord::ConnectionNotEstablished)
-            post_logout(c18_deflate(logout_xml(signature_for(logout_xml(""), "_lo1"))))
+            post_logout(saml_deflate(logout_xml(signature_for(logout_xml(""), "_lo1"))))
             expect(response).to have_http_status(:internal_server_error)
           end
         end
@@ -721,7 +700,7 @@ RSpec.describe "SAML IdP", type: :request do
             allow_any_instance_of(OpenSSL::PKey::RSA).to receive(:verify).and_raise(OpenSSL::PKey::PKeyError, "bad signature bytes")
             expect(Rails.error).not_to receive(:report)
             c18_sign_in(:regular)
-            post "/saml/auth", params: { SAMLRequest: c18_authn_request, submit: "current_user", Signature: Base64.strict_encode64("sig"),
+            post "/saml/auth", params: { SAMLRequest: authn_request, submit: "current_user", Signature: Base64.strict_encode64("sig"),
                                          SigAlg: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256" }
             expect(response).to have_http_status(:forbidden)
           end
@@ -742,7 +721,7 @@ RSpec.describe "SAML IdP", type: :request do
 
           it "accepts the properly signed document (control)" do
             c18_with_signing_sps(cert_pem: cert_b64) do
-              post_logout(c18_deflate(decoy_document(decoy: false)))
+              post_logout(saml_deflate(decoy_document(decoy: false)))
               expect(response).to have_http_status(:ok)
             end
           end
@@ -751,7 +730,7 @@ RSpec.describe "SAML IdP", type: :request do
             c18_with_signing_sps(cert_pem: cert_b64) do
               wrapped = decoy_document
               expect(Saml::XML::Document.parse(wrapped).valid_signature?(cert_b64, "")).to be(true) # the gem is fooled
-              post_logout(c18_deflate(wrapped))
+              post_logout(saml_deflate(wrapped))
               expect(response).to have_http_status(:forbidden)
             end
           end
@@ -761,7 +740,7 @@ RSpec.describe "SAML IdP", type: :request do
           c18_with_signing_sps(cert_pem: cert_b64) do
             unsigned = logout_xml("")
             sig = signature_for(unsigned, "_lo1")
-            post_logout(c18_deflate(logout_xml(sig + sig)))
+            post_logout(saml_deflate(logout_xml(sig + sig)))
             expect(response).to have_http_status(:forbidden)
           end
         end
@@ -772,7 +751,7 @@ RSpec.describe "SAML IdP", type: :request do
           expect(Rails.error).to receive(:report).once
           c18_sign_in(:regular)
           3.times do
-            post "/saml/auth", params: { SAMLRequest: c18_authn_request, submit: "current_user", Signature: Base64.strict_encode64("sig"),
+            post "/saml/auth", params: { SAMLRequest: authn_request, submit: "current_user", Signature: Base64.strict_encode64("sig"),
                                          SigAlg: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256" }
             expect(response).to have_http_status(:forbidden)
           end
@@ -793,7 +772,7 @@ RSpec.describe "SAML IdP", type: :request do
         c18_with_signing_sps(cert_pem: "not a certificate") do
           expect(Rails.error).to receive(:report).with(instance_of(OpenSSL::X509::CertificateError), hash_including(severity: :error)).once
           c18_sign_in(:regular)
-          post "/saml/auth", params: { SAMLRequest: c18_authn_request, submit: "current_user", Signature: Base64.strict_encode64("sig"),
+          post "/saml/auth", params: { SAMLRequest: authn_request, submit: "current_user", Signature: Base64.strict_encode64("sig"),
                                        SigAlg: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256" }
           expect(response).to have_http_status(:forbidden)
         end
@@ -811,7 +790,7 @@ RSpec.describe "SAML IdP", type: :request do
             post "/saml/auth", params: { SAMLRequest: c18_logout_request, submit: "logout" }.merge(blank)
             expect(response).to have_http_status(:bad_request)
           end
-          post "/saml/auth", params: { SAMLRequest: c18_authn_request, submit: "current_user" }
+          post "/saml/auth", params: { SAMLRequest: authn_request, submit: "current_user" }
           expect(response).to have_http_status(:forbidden) # (unsigned) still refused, and the session survived
           expect(session[:user_id]).to eq(user.id)
         end
@@ -828,14 +807,14 @@ RSpec.describe "SAML IdP", type: :request do
       it "refuses a signing-SP AuthnRequest with an empty Signature= (400), never an assertion" do
         c18_with_signing_sps do
           c18_sign_in(:regular)
-          post "/saml/auth", params: { SAMLRequest: c18_authn_request, submit: "current_user", Signature: "", SigAlg: "" }
+          post "/saml/auth", params: { SAMLRequest: authn_request, submit: "current_user", Signature: "", SigAlg: "" }
           expect(response).to have_http_status(:bad_request)
           expect(c18_saml_response_xml).to be_nil
         end
       end
 
       it "never carries a blank Signature/SigAlg forward in the login form" do
-        get "/saml/auth", params: { SAMLRequest: c18_authn_request }
+        get "/saml/auth", params: { SAMLRequest: authn_request }
         query = Rack::Utils.parse_query(URI(c18_form_action).query)
         expect(query.keys).not_to include("Signature", "SigAlg")
       end
@@ -844,7 +823,7 @@ RSpec.describe "SAML IdP", type: :request do
     context "SECURITY: SAML request validation gates issuance (D-R13)" do
       it "refuses an UNKNOWN issuer with 403 and issues no assertion" do
         c18_sign_in(:regular)
-        evil = c18_authn_request(issuer: "evil.example.com", acs: "https://evil.example.com/acs")
+        evil = authn_request(issuer: "evil.example.com", acs: "https://evil.example.com/acs")
         post "/saml/auth", params: { SAMLRequest: evil, submit: "current_user" }
         expect(response).to have_http_status(:forbidden)
         expect(response.body).not_to include("evil.example.com")
@@ -852,7 +831,7 @@ RSpec.describe "SAML IdP", type: :request do
 
       it "refuses a registered SP (rooms) paired with a foreign ACS host" do
         c18_sign_in(:regular)
-        spoofed = c18_authn_request(issuer: "rooms.makerepo.com", acs: "https://evil.example.com/steal")
+        spoofed = authn_request(issuer: "rooms.makerepo.com", acs: "https://evil.example.com/steal")
         post "/saml/auth", params: { SAMLRequest: spoofed, submit: "current_user" }
         expect(response).to have_http_status(:forbidden)
         expect(c18_saml_response_xml).to be_nil
@@ -860,7 +839,7 @@ RSpec.describe "SAML IdP", type: :request do
 
       it "still issues to a registered SP whose ACS host is allowed" do
         c18_sign_in(:regular)
-        ok = c18_authn_request(issuer: "rooms.makerepo.com", acs: "https://rooms.makerepo.com/users/auth/saml/callback")
+        ok = authn_request(issuer: "rooms.makerepo.com", acs: "https://rooms.makerepo.com/users/auth/saml/callback")
         post "/saml/auth", params: { SAMLRequest: ok, submit: "current_user" }
         expect(response).to have_http_status(:ok)
         expect(c18_form_action).to eq("https://rooms.makerepo.com/users/auth/saml/callback")
@@ -871,9 +850,9 @@ RSpec.describe "SAML IdP", type: :request do
 
       it "a registered SP WITH a pinned acs_url (wikijs) always gets its configured ACS, whatever the request says" do
         c18_sign_in(:regular)
-        spoofed = c18_authn_request(issuer: "wikijs.makerepo.com", acs: "https://evil.example.com/steal")
+        spoofed = authn_request(issuer: "wikijs.makerepo.com", acs: "https://evil.example.com/steal")
         post "/saml/auth", params: { SAMLRequest: spoofed, submit: "current_user" }
-        expect(c18_form_action).to eq(WIKIJS_ACS)
+        expect(c18_form_action).to eq(wikijs_acs)
       end
 
       it "refuses with 403 when the SP config requires a signed request and the request is not signed" do
@@ -882,7 +861,7 @@ RSpec.describe "SAML IdP", type: :request do
           original.call(id)&.merge(sign_authn_request: true, cert: "", fingerprint: "")
         end
         c18_sign_in(:regular)
-        post "/saml/auth", params: { SAMLRequest: c18_authn_request, submit: "current_user" }
+        post "/saml/auth", params: { SAMLRequest: authn_request, submit: "current_user" }
         expect(response).to have_http_status(:forbidden)
         expect(c18_saml_response_xml).to be_nil
       ensure
@@ -895,7 +874,7 @@ RSpec.describe "SAML IdP", type: :request do
           original.call(id)&.merge(sign_authn_request: true, cert: "not a certificate", fingerprint: "aa:bb")
         end
         c18_sign_in(:regular)
-        post "/saml/auth", params: { SAMLRequest: c18_authn_request, submit: "current_user", Signature: Base64.strict_encode64("sig"),
+        post "/saml/auth", params: { SAMLRequest: authn_request, submit: "current_user", Signature: Base64.strict_encode64("sig"),
                                      SigAlg: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256" }
         expect(response).to have_http_status(:forbidden)
         expect(c18_saml_response_xml).to be_nil
@@ -904,13 +883,13 @@ RSpec.describe "SAML IdP", type: :request do
       end
 
       it "a guest cannot obtain an assertion without credentials" do
-        post "/saml/auth", params: { SAMLRequest: c18_authn_request, submit: "current_user" }
+        post "/saml/auth", params: { SAMLRequest: authn_request, submit: "current_user" }
         expect(c18_saml_response_xml).to be_nil
       end
     end
 
     context "wiki-server staff gate (view only)" do
-      let(:wiki_request) { c18_authn_request(issuer: "wiki-server.makerepo.com", acs: "https://wiki-server.makerepo.com/acs") }
+      let(:wiki_request) { authn_request(issuer: "wiki-server.makerepo.com", acs: "https://wiki-server.makerepo.com/acs") }
 
       it "tells a non-staff user they cannot log in to the wiki and renders no SAMLResponse form" do
         c18_sign_in(:regular)
@@ -938,7 +917,7 @@ RSpec.describe "SAML IdP", type: :request do
 
       it "rejects a POST without an authenticity token (this controller enforces CSRF, unlike the app-wide declaration)" do
         c18_sign_in(:regular)
-        post "/saml/auth", params: { SAMLRequest: c18_authn_request, submit: "current_user" }
+        post "/saml/auth", params: { SAMLRequest: authn_request, submit: "current_user" }
         expect(response).to have_http_status(:unprocessable_content)
         expect(c18_saml_response_xml).to be_nil
       end

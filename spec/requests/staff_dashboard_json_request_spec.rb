@@ -42,4 +42,57 @@ RSpec.describe "Staff dashboard JSON", type: :request do
     entry = response.parsed_body["space_users"].find { |u| u["id"] == visitor.id }
     expect(entry).not_to have_key("description")
   end
+
+  # The exact fields MakerRepoApp reads (frontend-api-inventory.md row 9): space.id/name,
+  # space_users[].{id, username, name, email, flagged, certifications[].{id,name},
+  # signed_safety_sheet, membership_status}, space_list[][0] (name) and [1] (id).
+  it "answers the space, the space list and the per-user certification/sheet/membership fields the React app reads" do
+    other_space = create(:space)
+    visitor = create(:user, :regular_user)
+    create(:lab_session, space: space, user: visitor, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
+    cert = create(:certification, :basic_training, user: visitor)
+    create(:walk_in_safety_sheet, :is_adult, user: visitor, space: space)
+    create(:membership, user: visitor, end_date: 10.days.from_now)
+    sign_in_as(:staff, space: space)
+
+    get staff_dashboard_index_path, as: :json
+
+    body = response.parsed_body
+    expect(body.keys).to match_array(%w[space space_users space_list])
+    expect(body["space"]).to include("id" => space.id, "name" => space.name)
+    expect(body["space_list"]).to include([space.name, space.id], [other_space.name, other_space.id])
+    expect(body["space_list"].all? { |name, id| name.is_a?(String) && id.is_a?(Integer) }).to be(true)
+    entry = body["space_users"].sole
+    expect(entry).to include(
+      "id" => visitor.id, "username" => visitor.username, "name" => visitor.name,
+      "email" => visitor.email, "flagged" => visitor.flagged,
+      "signed_safety_sheet" => true, "membership_status" => true
+    )
+    expect(entry["certifications"]).to eq([{ "id" => cert.id, "name" => cert.training.name_en }])
+  end
+
+  it "reports a user without sheet, membership or certifications with explicit false/[] values" do
+    visitor = create(:user, :regular_user)
+    create(:lab_session, space: space, user: visitor, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
+    sign_in_as(:staff, space: space)
+
+    get staff_dashboard_index_path, as: :json
+
+    entry = response.parsed_body["space_users"].sole
+    expect(entry).to include("signed_safety_sheet" => false, "membership_status" => false, "certifications" => [])
+  end
+
+  it "lists only users signed in to the staff member's space and not expired sessions" do
+    here = create(:user, :regular_user)
+    expired = create(:user, :regular_user)
+    elsewhere = create(:user, :regular_user)
+    create(:lab_session, space: space, user: here, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
+    create(:lab_session, space: space, user: expired, sign_in_time: 5.hours.ago, sign_out_time: 1.hour.ago)
+    create(:lab_session, space: create(:space), user: elsewhere, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
+    sign_in_as(:staff, space: space)
+
+    get staff_dashboard_index_path, as: :json
+
+    expect(response.parsed_body["space_users"].map { |u| u["id"] }).to eq([here.id])
+  end
 end
