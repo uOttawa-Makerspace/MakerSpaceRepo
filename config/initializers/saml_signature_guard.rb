@@ -5,9 +5,9 @@
 # LogoutRequest, and AuthnRequests from SPs configured with sign_authn_request).
 # Requests from SPs that do not require signatures never reach this code's checks.
 #
-#  * Any StandardError raised while verifying means the signature is not valid: the
-#    gem dereferences the parts of the XML signature without nil checks, so a crafted
-#    document raises NoMethodError and friends. The request is refused (the gem's
+#  * What the gem's XML walk and crypto raise while verifying (VERIFICATION_FAILURES)
+#    means the signature is not valid: the gem dereferences the parts of the XML
+#    signature without nil checks, so a crafted document raises NoMethodError and friends. The request is refused (the gem's
 #    `valid?` then answers false, the controller 403s) instead of a 500.
 #    Client-input parse errors are re-raised: the controller answers those with 400.
 #  * Signature wrapping: exactly one ds:Signature, and every Reference must point at the
@@ -32,22 +32,16 @@ module SamlSignatureGuard
 
   def valid_signature?
     return super unless verifying_signature?
+    return false unless covers_root_request?
 
-    guarded("embedded") do
-      next false unless covers_root_request?
-
-      super
-    end
+    guarded("embedded") { super }
   end
 
   def valid_external_signature?
     return super unless verifying_signature?
+    return false unless sp_certificate_parses?
 
-    guarded("external") do
-      next false unless sp_certificate_parses?
-
-      super
-    end
+    guarded("external") { super }
   end
 
   private
@@ -56,11 +50,18 @@ module SamlSignatureGuard
     logout_request? || (authn_request? && validate_auth_request_signature?)
   end
 
+  # What the gem's XML walk and crypto raise for a crafted document: nil dereferences
+  # (NoMethodError, TypeError), bad arguments, OpenSSL failures and its own
+  # ValidationError. Wraps only the gem's call; DB, network and metadata-getter
+  # failures (and real bugs of other kinds) propagate as 500s and reach Rails.error.
+  VERIFICATION_FAILURES = [
+    NoMethodError, TypeError, ArgumentError, OpenSSL::OpenSSLError,
+    SamlIdp::XMLSecurity::SignedDocument::ValidationError
+  ].freeze
+
   def guarded(kind)
     yield
-  rescue *PARSE_ERRORS
-    raise
-  rescue StandardError => e
+  rescue *VERIFICATION_FAILURES => e
     log("#{kind} signature check failed for issuer #{issuer.to_s.truncate(200).inspect}: #{e.class}")
     if sp_config_fault?(e)
       Rails.error.report(e, handled: true, severity: :error, context: { saml_service_provider: issuer.to_s.truncate(200) })

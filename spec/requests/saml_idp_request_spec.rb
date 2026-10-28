@@ -673,6 +673,14 @@ RSpec.describe "SAML IdP", type: :request do
           end
         end
 
+        it "does not turn an infrastructure failure inside the verification into a 403" do
+          c18_with_signing_sps(cert_pem: cert_b64) do
+            allow_any_instance_of(SamlIdp::XMLSecurity::SignedDocument).to receive(:validate).and_raise(ActiveRecord::ConnectionNotEstablished)
+            post_logout(c18_deflate(logout_xml(signature_for(logout_xml(""), "_lo1"))))
+            expect(response).to have_http_status(:internal_server_error)
+          end
+        end
+
         it "refuses a document with two signatures (403)" do
           c18_with_signing_sps(cert_pem: cert_b64) do
             unsigned = logout_xml("")
