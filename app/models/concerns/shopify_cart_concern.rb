@@ -16,14 +16,7 @@ module ShopifyCartConcern
         access_token: config[:password]
       )
 
-      ShopifyAPI::Context.setup(
-        api_key: config[:api_key],
-        api_secret_key: config[:password],
-        host: "#{config[:shop_name]}.myshopify.com",
-        is_embedded: false,
-        is_private: true,
-        api_version: config[:api_version]
-      )
+      ShopifyContext.ensure_setup!
 
       ShopifyAPI::Context.activate_session(session)
       session

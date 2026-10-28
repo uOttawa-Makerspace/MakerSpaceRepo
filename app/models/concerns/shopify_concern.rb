@@ -16,6 +16,7 @@ module ShopifyConcern
         access_token: shopify_config[:password]
       )
 
+      ShopifyContext.ensure_setup!
       ShopifyAPI::Context.activate_session(session)
       session
     end

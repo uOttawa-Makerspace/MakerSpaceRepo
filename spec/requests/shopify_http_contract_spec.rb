@@ -187,11 +187,17 @@ RSpec.describe "Shopify Admin GraphQL over real HTTP (WebMock)", type: :request 
     end
   end
 
-  it "ShopifyAPI::Context.setup is called from the boot initializer, ShopifyService and the unused ShopifyCartConcern only" do
+  it "ShopifyAPI::Context.setup has a single call site: ShopifyContext.ensure_setup!" do
     callers = Dir[Rails.root.join("{app,lib,config}/**/*.rb")].select { |f| File.read(f).include?("ShopifyAPI::Context.setup") }
                   .map { |f| Pathname(f).relative_path_from(Rails.root).to_s }
-    expect(callers).to contain_exactly("config/initializers/shopify_api.rb", "app/services/shopify_service.rb",
-                                       "app/models/concerns/shopify_cart_concern.rb")
+    expect(callers).to eq(["lib/shopify_context.rb"])
+  end
+
+  it "every Shopify session start and the boot initializer go through ShopifyContext.ensure_setup!" do
+    %w[app/services/shopify_service.rb app/models/concerns/shopify_concern.rb
+       app/models/concerns/shopify_cart_concern.rb config/initializers/shopify_api.rb].each do |file|
+      expect(File.read(Rails.root.join(file))).to include("ShopifyContext.ensure_setup!"), file
+    end
   end
 
   describe "in a fresh process (nothing but the boot initializer ran Context.setup)" do
@@ -230,32 +236,29 @@ RSpec.describe "Shopify Admin GraphQL over real HTTP (WebMock)", type: :request 
       expect(ShopifyAPI::Context.api_version).to eq("2025-01")
     end
 
-    it "calls Context.setup with the arguments master's start_shopify_session used" do
-      expect(ShopifyAPI::Context).to receive(:setup).with(
-        api_key: "fake_api_key", api_secret_key: "shpat_test_fake", host: "fake-shop.myshopify.com",
-        is_embedded: false, is_private: true, api_version: "2025-01"
-      )
-      load Rails.root.join("config/initializers/shopify_api.rb")
+    it "heals a failed boot setup: the next draft order still goes to the versioned URL" do
+      blank_context!
+      allow(Rails.error).to receive(:report)
+      allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify)
+                                                            .and_return(ShopifyHttpHelpers::FAKE_SHOPIFY_CONFIG.merge(api_key: nil))
+      load Rails.root.join("config/initializers/shopify_api.rb") # boot setup fails (api_key missing), no raise
+      expect(ShopifyAPI::Context.api_version).to eq("")
+      allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify)
+                                                            .and_return(ShopifyHttpHelpers::FAKE_SHOPIFY_CONFIG)
+
+      creates = stub_draft_order_create(draft_id)
+      stub_draft_order_fetch(draft_id, invoice_url: invoice_url)
+      expect(membership_for_checkout.checkout_link).to eq(invoice_url)
+      expect(creates.first[:url]).to eq("https://fake-shop.myshopify.com/admin/api/2025-01/graphql.json")
     end
 
-    it "is idempotent: ShopifyService.start_shopify_session after the initializer keeps the same config" do
-      load Rails.root.join("config/initializers/shopify_api.rb")
-      expect { ShopifyService.start_shopify_session }.not_to(change { [ShopifyAPI::Context.api_version, ShopifyAPI::Context.host] })
-    end
-
-    it "boots with a warning, and skips setup, when the shopify credentials are missing" do
-      allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify).and_return(nil)
-      allow(Rails.logger).to receive(:warn)
-      expect(ShopifyAPI::Context).not_to receive(:setup)
+    it "a missing api_key reports and does not raise at boot" do
+      reported = []
+      allow(Rails.error).to receive(:report) { |e, **| reported << e }
+      allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify)
+                                                            .and_return(ShopifyHttpHelpers::FAKE_SHOPIFY_CONFIG.merge(api_key: nil))
       expect { load Rails.root.join("config/initializers/shopify_api.rb") }.not_to raise_error
-      expect(Rails.logger).to have_received(:warn).with(/shopify_api.*missing/)
-    end
-
-    it "boots with a warning when Shopify rejects the api_version" do
-      allow(Rails.logger).to receive(:warn)
-      allow(ShopifyAPI::Context).to receive(:setup).and_raise(ShopifyAPI::Errors::UnsupportedVersionError, "nope")
-      expect { load Rails.root.join("config/initializers/shopify_api.rb") }.not_to raise_error
-      expect(Rails.logger).to have_received(:warn).with(/setup skipped.*UnsupportedVersionError/)
+      expect(reported.map(&:class)).to eq([ShopifyContext::MissingConfig])
     end
   end
 end
