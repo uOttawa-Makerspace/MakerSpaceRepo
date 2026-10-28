@@ -119,6 +119,25 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
       end
     end
 
+    # Secret rotation: the gem's hmac_valid? accepts ShopifyApp.configuration.old_secret too, so the
+    # missing-secret guard must not refuse when only old_secret is set.
+    describe "when only old_secret is configured (rotation)" do
+      before do
+        allow(ShopifyApp.configuration).to receive(:secret).and_return(nil)
+        allow(ShopifyApp.configuration).to receive(:old_secret).and_return("old-rotating-secret")
+      end
+
+      it "processes a request signed with old_secret" do
+        expect { signed_orders_paid(forged, secret: "old-rotating-secret") }.to change { pending.reload.status }.to("paid")
+        expect(response).to have_http_status(:ok)
+      end
+
+      it "still rejects (401) a request signed with anything else" do
+        expect { signed_orders_paid(forged, secret: "test_secret") }.not_to change { money_state }
+        expect_rejected
+      end
+    end
+
     it "rejects a signature made with the wrong secret (401) and changes nothing" do
       body = forged.to_json
       bad = shopify_hmac_for(body, secret: "not-the-secret")

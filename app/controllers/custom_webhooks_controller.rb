@@ -59,7 +59,8 @@ class CustomWebhooksController < ApplicationController
   end
 
   def require_webhook_secret!
-    return if ShopifyWebhookSecret.configured?(ShopifyApp.configuration.secret)
+    return if ShopifyWebhookSecret.configured?(ShopifyApp.configuration.secret) ||
+              ShopifyWebhookSecret.configured?(ShopifyApp.configuration.old_secret)
 
     error = ShopifyWebhookSecret::MissingSecret.new(
       "Shopify webhook secret is not configured (credentials.#{Rails.env}.shopify.webhook); refusing webhook"
