@@ -21,7 +21,6 @@ RSpec.describe User, type: :model do
       it { should have_and_belong_to_many(:repositories) }
       it { should have_and_belong_to_many(:training_sessions) }
       it { should have_and_belong_to_many(:proficient_projects) }
-      it { should have_and_belong_to_many(:shifts) }
     end
 
     context "has_many" do

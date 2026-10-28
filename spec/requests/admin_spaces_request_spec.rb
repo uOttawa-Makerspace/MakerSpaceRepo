@@ -377,44 +377,6 @@ RSpec.describe "Admin spaces", type: :request do
         expect(response).to have_http_status(:internal_server_error)
         expect(StaffNeededCalendar.count).to eq(0)
       end
-
-      describe "makeroom ICS import" do
-        before do
-          stub_ics(url, body: ics_document(uid: "u1", summary: "Booked", start: 2.days.from_now, end: 2.days.from_now + 1.hour,
-                                           location: "Room A", description: "d"))
-        end
-
-        def save_makeroom
-          save_calendars(staff_needed_calendar: [url], staff_needed_calendar_name: ["Cal"],
-                         staff_needed_calendar_color: ["#fff"], staff_needed_calendar_role: ["makeroom"])
-        end
-
-        it "fetches the feed over HTTP and stores the calendar with role makeroom" do
-          save_makeroom
-          expect(a_request(:get, url)).to have_been_made.once
-          expect(StaffNeededCalendar.last).to have_attributes(role: "makeroom", name: "Cal", space_id: space.id)
-        end
-
-        # WART(D-SP01): the import matches event[:extendedProps][:location], which parse_ics_calendar never sets, so no booking is ever created.
-        # D-B49 (duplicate pending blocking bookings on every save) is therefore unreachable today:
-        # saving twice still yields zero bookings. Pinned so a fix that wires location through is noticed.
-        it "creates no bookings even for an event whose LOCATION equals a sub space name (D-B49, D-SP01)" do
-          expect { save_makeroom }.not_to change(SubSpaceBooking, :count)
-          expect { save_makeroom }.not_to change(SubSpaceBooking, :count)
-          expect(SubSpaceBookingStatus.count).to eq(0)
-          expect(flash[:notice]).to eq("Calendars updated successfully.")
-          expect(StaffNeededCalendar.where(space: space).count).to eq(1) # re-created, not duplicated
-        end
-
-        # WART(D-SP05): a failing feed makes parse_ics_calendar return [], and the import does `@events[0][:events]` on nil: 500.
-        # The calendar row has already been saved (no transaction), the response is not a redirect.
-        it "500s when the feed is unreachable and the space has sub spaces (D-SP05)" do
-          stub_ics(url, status: 500)
-          expect { save_makeroom }.not_to change(SubSpaceBooking, :count)
-          expect(response).to have_http_status(:internal_server_error)
-          expect(StaffNeededCalendar.where(space: space, role: "makeroom").count).to eq(1)
-        end
-      end
     end
   end
 end

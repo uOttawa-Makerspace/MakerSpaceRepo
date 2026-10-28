@@ -140,7 +140,6 @@ class User < ApplicationRecord
   
   has_and_belongs_to_many :repositories
   has_and_belongs_to_many :proficient_projects
-  has_and_belongs_to_many :shifts, dependent: :destroy
   
   accepts_nested_attributes_for :repositories
 
