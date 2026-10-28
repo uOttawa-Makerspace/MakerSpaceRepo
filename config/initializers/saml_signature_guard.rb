@@ -25,6 +25,9 @@ module SamlSignatureGuard
   # (//*[@ID='...']), so any other root ID could smuggle XPath syntax in.
   VALID_ID = /\A[A-Za-z_][A-Za-z0-9_.-]*\z/
 
+  SAML_PROTOCOL = "urn:oasis:names:tc:SAML:2.0:protocol"
+  SAML_ASSERTION = "urn:oasis:names:tc:SAML:2.0:assertion"
+
   DSIG = { "ds" => "http://www.w3.org/2000/09/xmldsig#" }.freeze
 
   def valid_signature?
@@ -80,10 +83,22 @@ module SamlSignatureGuard
     false
   end
 
+  # What the gem will act on must be exactly what the (single) signature covers:
+  #  * the root is the SAML-protocol AuthnRequest/LogoutRequest, and is the very node the
+  #    gem's own `//samlp:...` XPath returns (a foreign-namespace root of the same name
+  #    could otherwise wrap a nested, different request);
+  #  * the Issuer the gem reads (the first `//saml:Issuer`) is a direct child of that
+  #    root, so it is covered by the digest (not inside ds:Signature/ds:Object/ds:KeyInfo,
+  #    which the digest does not cover).
   def covers_root_request?
-    doc = Nokogiri::XML(raw_xml.to_s)
+    doc = document
     root = doc.root
-    return false unless root && %w[AuthnRequest LogoutRequest].include?(root.name) && root["ID"].to_s.match?(VALID_ID)
+    return false unless root && root.namespace&.href == SAML_PROTOCOL && %w[AuthnRequest LogoutRequest].include?(root.name)
+    return false unless root["ID"].to_s.match?(VALID_ID)
+    return false unless request == root
+
+    first_issuer = doc.at_xpath("//saml:Issuer", "saml" => SAML_ASSERTION)
+    return false unless first_issuer && first_issuer.parent == root
     return false unless doc.xpath("//ds:Signature", DSIG).size == 1
 
     references = doc.xpath("//ds:Reference", DSIG)

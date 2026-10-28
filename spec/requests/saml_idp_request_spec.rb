@@ -611,9 +611,9 @@ RSpec.describe "SAML IdP", type: :request do
           %(<ds:Signature xmlns:ds="#{ds}">#{signed_info}<ds:SignatureValue>#{sig}</ds:SignatureValue></ds:Signature>)
         end
 
-        def logout_xml(inner, id: "_lo1", lead: "")
+        def logout_xml(inner, id: "_lo1", lead: "", issuer: "rooms.makerepo.com")
           %(<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ) +
-            %(ID="#{id}" Version="2.0" IssueInstant="2026-03-10T15:00:00Z">#{lead}<saml:Issuer>rooms.makerepo.com</saml:Issuer>) +
+            %(ID="#{id}" Version="2.0" IssueInstant="2026-03-10T15:00:00Z">#{lead}<saml:Issuer>#{issuer}</saml:Issuer>) +
             %(<saml:NameID>x</saml:NameID>#{inner}</samlp:LogoutRequest>)
         end
 
@@ -644,6 +644,30 @@ RSpec.describe "SAML IdP", type: :request do
             wrapped = logout_xml(extra + signature_for(logout_xml(extra, id: root_id), "s1", reference_uri: "##{root_id}"), id: root_id)
             # control: the gem itself accepts this unsigned-root document
             expect(Saml::XML::Document.parse(wrapped).valid_signature?(cert_b64, "")).to be(true)
+            post_logout(c18_deflate(wrapped))
+            expect(response).to have_http_status(:forbidden)
+          end
+        end
+
+        it "refuses a foreign-namespace root named LogoutRequest wrapping a nested samlp:LogoutRequest (403)" do
+          c18_with_signing_sps(cert_pem: cert_b64) do
+            foreign = lambda do |inner|
+              %(<LogoutRequest xmlns="urn:example:foreign" ID="_lo1">#{logout_xml('', id: '_nested')}#{inner}</LogoutRequest>)
+            end
+            wrapped = foreign.call(signature_for(foreign.call(""), "_lo1"))
+            expect(Saml::XML::Document.parse(wrapped).valid_signature?(cert_b64, "")).to be(true)
+            post_logout(c18_deflate(wrapped))
+            expect(response).to have_http_status(:forbidden)
+          end
+        end
+
+        it "refuses an Issuer smuggled into ds:Object ahead of the real one (403)" do
+          c18_with_signing_sps(cert_pem: cert_b64) do
+            sig = signature_for(logout_xml("", issuer: "wikijs.makerepo.com"), "_lo1")
+            evil = sig.sub("</ds:Signature>", %(<ds:Object><saml:Issuer>rooms.makerepo.com</saml:Issuer></ds:Object></ds:Signature>))
+            wrapped = logout_xml("", lead: evil, issuer: "wikijs.makerepo.com")
+            expect(Saml::XML::Document.parse(wrapped).valid_signature?(cert_b64, "")).to be(true)
+            expect(Saml::XML::Document.parse(wrapped).at_xpath("//saml:Issuer", saml: "urn:oasis:names:tc:SAML:2.0:assertion").text).to eq("rooms.makerepo.com")
             post_logout(c18_deflate(wrapped))
             expect(response).to have_http_status(:forbidden)
           end
