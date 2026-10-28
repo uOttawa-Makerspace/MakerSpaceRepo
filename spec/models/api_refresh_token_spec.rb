@@ -1,0 +1,152 @@
+# frozen_string_literal: true
+
+require "rails_helper"
+
+RSpec.describe ApiRefreshToken, type: :model do
+  let(:user) { create(:user) }
+
+  describe ".issue!" do
+    it "stores only the SHA-256 digest of a 32-byte token and exposes the raw value once" do
+      token = described_class.issue!(user, user_agent: "Mozilla")
+      raw = token.raw_token
+      expect(Base64.urlsafe_decode64(raw).bytesize).to eq(32)
+      expect(token.token_digest).to eq(Digest::SHA256.hexdigest(raw))
+      expect(described_class.find(token.id).raw_token).to be_nil
+      expect(token.token_digest).not_to include(raw)
+      expect(token).to have_attributes(user_id: user.id, token_version: user.token_version, user_agent: "Mozilla")
+      expect(token.family_id).to match(/\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/)
+    end
+
+    it "expires in 30 days" do
+      now = Time.current
+      expect(described_class.issue!(user, now: now).expires_at).to be_within(1.second).of(now + 30.days)
+    end
+
+    it "has a unique digest index" do
+      token = described_class.issue!(user)
+      expect { described_class.create!(token.attributes.except("id")) }.to raise_error(ActiveRecord::RecordNotUnique)
+    end
+  end
+
+  describe ".authenticate" do
+    it "returns the record for a live token" do
+      token = described_class.issue!(user)
+      expect(described_class.authenticate(token.raw_token)).to eq(token)
+    end
+
+    it "refuses blank, unknown and non-string input" do
+      expect(described_class.authenticate(nil)).to be_nil
+      expect(described_class.authenticate("")).to be_nil
+      expect(described_class.authenticate("nope")).to be_nil
+      expect(described_class.authenticate(["x"])).to be_nil
+    end
+
+    it "refuses an expired token" do
+      token = described_class.issue!(user, now: 31.days.ago)
+      expect(described_class.authenticate(token.raw_token)).to be_nil
+    end
+
+    it "refuses a revoked token without a successor, and does not touch the family" do
+      first = described_class.issue!(user)
+      sibling = described_class.issue!(user, family: first.family_id)
+      first.update!(revoked_at: Time.current)
+      expect(described_class.authenticate(first.raw_token)).to be_nil
+      expect(sibling.reload.revoked_at).to be_nil
+    end
+
+    it "refuses a stale token_version" do
+      token = described_class.issue!(user)
+      user.update_columns(token_version: user.token_version + 1)
+      expect(described_class.authenticate(token.raw_token)).to be_nil
+    end
+
+    it "refuses soft-deleted and inactive users" do
+      token = described_class.issue!(user)
+      user.update_columns(active: false)
+      expect(described_class.authenticate(token.raw_token)).to be_nil
+      user.update_columns(active: true, deleted: true)
+      expect(described_class.authenticate(token.raw_token)).to be_nil
+    end
+
+    it "revokes the family when a rotated token is replayed" do
+      first = described_class.issue!(user)
+      second = first.rotate!
+      other_family = described_class.issue!(user)
+
+      expect(described_class.authenticate(first.raw_token)).to be_nil
+      expect(second.reload.revoked_at).to be_present
+      expect(described_class.authenticate(second.raw_token)).to be_nil
+      expect(other_family.reload.revoked_at).to be_nil
+    end
+  end
+
+  describe "#rotate!" do
+    it "revokes itself and issues a successor in the same family" do
+      first = described_class.issue!(user)
+      second = first.rotate!(user_agent: "UA")
+      expect(first.reload).to have_attributes(replaced_by_id: second.id)
+      expect(first.revoked_at).to be_present
+      expect(second.family_id).to eq(first.family_id)
+      expect(second.raw_token).to be_present
+      expect(second.raw_token).not_to eq(first.raw_token)
+      expect(second.user_agent).to eq("UA")
+      expect(described_class.authenticate(second.raw_token)).to eq(second)
+    end
+
+    it "slides the expiry but never past 90 days from the family's first login" do
+      first = described_class.issue!(user, now: 80.days.ago)
+      first.update!(expires_at: 10.days.from_now) # as if renewed by earlier rotations
+      second = first.rotate!
+      expect(second.expires_at).to be_within(1.second).of(first.created_at + 90.days)
+      expect(second.expires_at).to be < 11.days.from_now
+    end
+
+    it "slides by 30 days when the cap is far away" do
+      first = described_class.issue!(user, now: 10.days.ago)
+      expect(first.rotate!.expires_at).to be_within(2.seconds).of(30.days.from_now)
+    end
+
+    it "returns nil for a token past the family cap" do
+      first = described_class.issue!(user, now: 100.days.ago)
+      expect(first.rotate!).to be_nil
+    end
+
+    it "returns nil for a revoked token without a successor" do
+      first = described_class.issue!(user)
+      first.update!(revoked_at: Time.current)
+      expect(first.rotate!).to be_nil
+    end
+
+    it "treats a second rotation of the same token as a replay and revokes the family" do
+      first = described_class.issue!(user)
+      stale = described_class.find(first.id)
+      successor = first.rotate!
+      expect(stale.rotate!).to be_nil
+      expect(successor.reload.revoked_at).to be_present
+    end
+
+    it "returns nil when the token_version moved on" do
+      first = described_class.issue!(user)
+      user.update_columns(token_version: 5)
+      expect(first.rotate!).to be_nil
+    end
+  end
+
+  describe "revocation helpers" do
+    it ".revoke_family! revokes only that family's live tokens" do
+      a = described_class.issue!(user)
+      b = described_class.issue!(user, family: a.family_id)
+      c = described_class.issue!(user)
+      described_class.revoke_family!(a.family_id)
+      expect([a, b, c].map { |t| t.reload.revoked_at.present? }).to eq([true, true, false])
+    end
+
+    it ".revoke_all_for! revokes every token of the user only" do
+      mine = [described_class.issue!(user), described_class.issue!(user)]
+      theirs = described_class.issue!(create(:user))
+      described_class.revoke_all_for!(user.id)
+      expect(mine.map { |t| t.reload.revoked_at }).to all(be_present)
+      expect(theirs.reload.revoked_at).to be_nil
+    end
+  end
+end

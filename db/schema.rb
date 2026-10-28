@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_26_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_28_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -79,6 +79,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_26_000001) do
     t.datetime "created_at", precision: nil, null: false
     t.integer "question_id"
     t.datetime "updated_at", precision: nil, null: false
+  end
+
+  create_table "api_refresh_tokens", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "expires_at", null: false
+    t.uuid "family_id", null: false
+    t.datetime "last_used_at"
+    t.bigint "replaced_by_id"
+    t.datetime "revoked_at"
+    t.string "token_digest", null: false
+    t.integer "token_version", default: 0, null: false
+    t.string "user_agent"
+    t.integer "user_id", null: false
+    t.index ["family_id"], name: "index_api_refresh_tokens_on_family_id"
+    t.index ["token_digest"], name: "index_api_refresh_tokens_on_token_digest", unique: true
+    t.index ["user_id"], name: "index_api_refresh_tokens_on_user_id"
   end
 
   create_table "area_options", id: :serial, force: :cascade do |t|
@@ -1573,6 +1589,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_26_000001) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "announcement_dismisses", "announcements"
   add_foreign_key "announcement_dismisses", "users"
+  add_foreign_key "api_refresh_tokens", "users", on_delete: :cascade
   add_foreign_key "categories", "category_options"
   add_foreign_key "categories", "repositories"
   add_foreign_key "cc_moneys", "discount_codes"
