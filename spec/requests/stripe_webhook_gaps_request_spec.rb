@@ -3,8 +3,7 @@
 require "rails_helper"
 
 # Chunk 18: gaps in the Stripe engine mount coverage. Unsigned and mis-signed
-# events are pinned in shop_orders_paid_webhook_spec.rb, the job-order/locker
-# handlers in stripe_job_order_handlers_spec.rb. Here: verbs, replay tolerance,
+# events are pinned in shop_orders_paid_webhook_spec.rb. Here: verbs, replay tolerance,
 # tampered bodies, and that no session/CSRF is involved.
 RSpec.describe "Stripe webhook mount (gaps)", type: :request do
   let(:secret) { StripeEvent.signing_secret }

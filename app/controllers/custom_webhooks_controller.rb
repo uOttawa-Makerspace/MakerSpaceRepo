@@ -18,11 +18,6 @@ class CustomWebhooksController < ApplicationController
       process_membership_hook(order_hook)
     end
     
-    # handle job orders
-    if JobOrder.draft_order_processable?(order_hook["tags"])
-      process_job_orders_hook(order_hook)
-    end
-
     # CC Money credit handling
     customer_email = order_hook.dig("customer", "email")
     if order_hook["line_items"].present? && customer_email.present?
@@ -110,25 +105,6 @@ class CustomWebhooksController < ApplicationController
     end
   end
   
-  def process_job_orders_hook(order_hook)
-    return unless order_hook["line_items"].present?
-
-    gid = draft_order_gid_from_hook(order_hook)
-
-    job_order_id_metafield = order_hook['metafields']&.find do |m|
-      m['namespace'] == 'makerepo' && m['key'] == 'job_order_db_reference'
-    end
-
-    job_order_id_metafield ||= draft_order_metafields(gid)&.find do |field|
-      field["key"] == "job_order_db_reference"
-    end
-
-    return unless job_order_id_metafield&.[]("value").present?
-      
-    job_order = JobOrder.find_by(id: job_order_id_metafield["value"])
-    job_order&.update_status(true, JobStatus::COMPLETED, JobStatus::PAID, false)
-  end
-
   def increment_cc_money(product_params, email)
     return unless email.present?
     return unless product_params["product_id"].to_i == 4_359_597_129_784

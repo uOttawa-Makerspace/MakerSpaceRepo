@@ -153,29 +153,18 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
   # ------------------------------------------------------------- job orders
 
   describe "job order path" do
-    let(:job_order) { create(:job_order, user: user) }
-    let(:payload) do
-      {
+    # Chunk 20a: automatic job-order payment recording was removed (it never recorded a payment,
+    # D-S27). Staff set "Paid" by hand; the payment-link draft orders are still created.
+    it "ignores a paid job-order draft order: 200 and no status is recorded" do
+      job_order = create(:job_order, user: user)
+      seed_job_statuses! if respond_to?(:seed_job_statuses!)
+      payload = {
         tags: [job_order_tag],
         line_items: [{ title: "Print", quantity: 1 }],
         metafields: [{ namespace: "makerepo", key: "job_order_db_reference", value: job_order.id.to_s }]
       }
-    end
-
-    it "does nothing without line_items or for an unknown / missing reference" do
-      hook(payload.except(:line_items))
-      expect(response).to have_http_status(:ok)
-      hook(payload.merge(metafields: [{ namespace: "makerepo", key: "job_order_db_reference", value: "999999999" }]))
-      expect(response).to have_http_status(:ok)
-      hook(payload.except(:metafields))
-      expect(response).to have_http_status(:ok)
-    end
-
-    it "500s for a real job order and records no PAID status" do
-      seed_job_statuses! if respond_to?(:seed_job_statuses!)
-      # WART(D-S27): the hook calls JobOrder#update_status, which does not exist (the method is a private JobOrdersController helper), so a paid Shopify job-order payment raises NoMethodError and is never recorded; Shopify will retry the webhook forever
       expect { hook(payload) }.not_to change(JobOrderStatus, :count)
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:ok)
     end
   end
 
