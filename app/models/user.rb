@@ -49,6 +49,9 @@ class User < ApplicationRecord
 
   ROLES = %w[regular_user admin staff volunteer].freeze
 
+  # Raised by User.change_roles! when the change would leave no usable admin.
+  class LastAdminError < StandardError; end
+
   IDENTITIES = %w[
     grad
     undergrad
@@ -336,6 +339,44 @@ class User < ApplicationRecord
       .order(sanitize_sql_for_order([Arel.sql('similarity(name, ?) DESC'), query]))
       .limit(10)
   }
+
+  # Staff-facing substring search over name, email and username (accent- and
+  # case-insensitive). The caller escapes LIKE wildcards if it wants literal matching.
+  scope :text_search, ->(query) {
+    pattern = "%#{query}%"
+    where(
+      "LOWER(UNACCENT(name)) like LOWER(UNACCENT(?)) OR
+                           LOWER(UNACCENT(email)) like LOWER(UNACCENT(?)) OR
+                           LOWER(UNACCENT(username)) like LOWER(UNACCENT(?))",
+      pattern, pattern, pattern
+    )
+  }
+
+  # Admins who can still sign in. A locked admin (admin lock, or too many failed
+  # attempts) cannot sign in (CredentialAuthenticator), so does not count.
+  scope :usable_admins, -> {
+    where(role: "admin").where("users.locked IS NOT TRUE OR users.locked_until < ?", Time.current)
+  }
+
+  # Role change for several users in ONE transaction (all-or-nothing; the cable
+  # disconnects fire after commit). Refuses, with LastAdminError, a change that
+  # would leave no usable admin; the admin rows are locked first so two concurrent
+  # demotions cannot both pass the check.
+  def self.change_roles!(user_ids, new_role, actor: nil)
+    user_ids = Array(user_ids).map(&:to_i).reject(&:zero?)
+    transaction do
+      if new_role != "admin"
+        where(role: "admin").order(:id).lock.pluck(:id)
+        if where(role: "admin", id: user_ids).any? && usable_admins.where.not(id: user_ids).none?
+          raise LastAdminError, "You cannot remove the last admin."
+        end
+      end
+      where(id: user_ids).find_each do |user|
+        Rails.logger.info "[ROLE_CHANGE] User##{user.id} role changed from '#{user.role}' to '#{new_role}' by Admin##{actor&.id}"
+        user.change_role!(new_role)
+      end
+    end
+  end
 
   # ============================================
   # Class Methods
@@ -645,6 +686,21 @@ class User < ApplicationRecord
 
   def teams_program?
     programs.exists?(program_type: Program::TEAMS)
+  end
+
+  # Sets the development / volunteer / teams memberships. Each argument is true
+  # (join), false (leave) or nil (leave as is; only meaningful for teams).
+  def sync_programs!(development:, volunteer:, teams: nil)
+    { Program::DEV_PROGRAM => development, Program::VOLUNTEER => volunteer, Program::TEAMS => teams }.each do |type, wanted|
+      next if wanted.nil?
+
+      if wanted
+        programs.find_or_create_by(program_type: type)
+      else
+        programs.find_by(program_type: type)&.destroy
+      end
+    end
+    programs.reload.pluck(:program_type)
   end
 
   def staff_in_space?

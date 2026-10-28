@@ -119,15 +119,17 @@ class Admin::UsersController < AdminAreaController
   end
 
   def set_role
-    if valid_role_update_params? && removes_last_admin?
-      respond_to do |format|
-        format.json { render json: { error: LAST_ADMIN_MESSAGE }, status: :unprocessable_content }
-        format.any { redirect_back(fallback_location: root_path, alert: LAST_ADMIN_MESSAGE) }
+    if valid_role_update_params?
+      begin
+        update_user_roles
+      rescue User::LastAdminError
+        respond_to do |format|
+          format.json { render json: { error: LAST_ADMIN_MESSAGE }, status: :unprocessable_content }
+          format.any { redirect_back(fallback_location: root_path, alert: LAST_ADMIN_MESSAGE) }
+        end
+        return
       end
-      return
     end
-
-    update_user_roles if valid_role_update_params?
     update_user_staff_spaces if params[:spaces].present?
 
     respond_to do |format|
@@ -388,40 +390,17 @@ class Admin::UsersController < AdminAreaController
   # `locked` is nullable, and an expired lockout is cleared at the next login
   # (SessionsController#login_authentication), so both count as usable.
   def usable_admins
-    User.where(role: "admin").where(
-      "users.locked IS NOT TRUE OR users.locked_until < ?", Time.current
-    )
+    User.usable_admins
   end
 
   def last_admin?(user)
     user.admin? && usable_admins.where.not(id: user.id).none?
   end
 
-  # True when the requested role change would leave no admin at all.
-  def removes_last_admin?
-    return false if params[:role] == "admin"
-
-    user_ids = params[:user_ids].map(&:to_i)
-    User.where(role: "admin", id: user_ids).any? &&
-      usable_admins.where.not(id: user_ids).none?
-  end
-
   def update_user_roles
-    # SECURITY: Validate role before assignment
-    return unless ASSIGNABLE_ROLES.include?(params[:role])
-    
-    # SECURITY: Validate user_ids are integers
-    user_ids = params[:user_ids].map(&:to_i).reject(&:zero?)
-    
-    # One transaction: a bulk change is all-or-nothing, and the cable disconnects
-    # (commit callback) fire only after it commits.
-    User.transaction do
-      User.where(id: user_ids).find_each do |user|
-        # Audit log for role changes
-        Rails.logger.info "[ROLE_CHANGE] User##{user.id} role changed from '#{user.role}' to '#{params[:role]}' by Admin##{@user.id}"
-        user.change_role!(params[:role])
-      end
-    end
+    # ASSIGNABLE_ROLES and the integer ids were validated by valid_role_update_params?;
+    # the last-admin guard, transaction and audit log live in User.change_roles!.
+    User.change_roles!(params[:user_ids], params[:role], actor: @user)
   end
 
   def update_user_staff_spaces

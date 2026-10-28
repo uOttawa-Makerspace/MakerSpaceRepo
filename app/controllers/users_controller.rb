@@ -298,24 +298,12 @@ class UsersController < SessionsController
   def change_programs
     user = User.find(params[:user_id])
     if user.present? && (@user.staff? || @user.admin?)
-      if params[:dev_program].present?
-        user.programs.find_or_create_by(program_type: Program::DEV_PROGRAM)
-      elsif user.programs.find_by(program_type: Program::DEV_PROGRAM).present?
-        user.programs.find_by(program_type: Program::DEV_PROGRAM).destroy
-      end
-
-      if params[:volunteer].present?
-        user.programs.find_or_create_by(program_type: Program::VOLUNTEER)
-      elsif user.programs.find_by(program_type: Program::VOLUNTEER).present?
-        user.programs.find_by(program_type: Program::VOLUNTEER).destroy
-      end
-
-      if params[:teams].present?
-        user.programs.find_or_create_by(program_type: Program::TEAMS)
-      elsif !json_request? &&
-            user.programs.find_by(program_type: Program::TEAMS).present?
-        user.programs.find_by(program_type: Program::TEAMS).destroy
-      end
+      user.sync_programs!(
+        development: params[:dev_program].present?,
+        volunteer: params[:volunteer].present?,
+        # JSON never removes teams (the React app does not send it)
+        teams: params[:teams].present? || (json_request? ? nil : false)
+      )
       if json_request?
         render json: { programs: user.programs.reload.pluck(:program_type) }
         return

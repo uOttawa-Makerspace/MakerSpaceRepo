@@ -13,6 +13,10 @@ Rails.application.routes.draw do
       resource :session, only: %i[create show destroy] do
         post :refresh
       end
+      get "users", to: "users#index"
+      get "users/:username", to: "users#show", constraints: { username: %r{[^/]+} }
+      patch "users/:id/role", to: "users#role"
+      put "users/:id/programs", to: "users#programs"
       # keep last: unknown /api/v1 paths answer with the JSON 404, not the HTML one
       match "*path", to: "base#route_not_found", via: :all
     end
