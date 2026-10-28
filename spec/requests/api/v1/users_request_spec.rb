@@ -146,6 +146,14 @@ RSpec.describe "/api/v1/users", type: :request do
       expect(body["certifications"].size).to eq(2)
     end
 
+    it "answers a username containing a NUL byte like any unknown name (404 staff, 403 others), never a 500" do
+      api_get "/api/v1/users/ab%00cd", as: staff
+      expect(response).to have_http_status(:not_found)
+      expect(error["code"]).to eq("not_found")
+      api_get "/api/v1/users/ab%00cd", as: regular
+      expect(response).to have_http_status(:forbidden)
+    end
+
     it "404s an unknown username for staff" do
       api_get "/api/v1/users/nobodyhere", as: staff
       expect(response).to have_http_status(:not_found)

@@ -24,7 +24,12 @@ module Api
       def show
         staff = current_user.staff?
         # Staff may open soft-deleted accounts, like the legacy profile.
-        user = staff ? User.unscoped { User.find_by_username(params[:username].to_s) } : User.find_by_username(params[:username].to_s)
+        name = params[:username].to_s
+        # A NUL byte cannot be in any username (and makes Postgres raise): no such user.
+        user = if name.include?("\0") then nil
+               elsif staff then User.unscoped { User.find_by_username(name) }
+               else User.find_by_username(name)
+               end
         return render_error(:forbidden, "Not allowed", status: :forbidden) unless staff || user&.id == current_user.id
 
         raise ActiveRecord::RecordNotFound if user.nil?
