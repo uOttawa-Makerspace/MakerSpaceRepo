@@ -2,7 +2,10 @@
 
 # Shopify webhooks
 class CustomWebhooksController < ApplicationController
-  include ShopifyApp::WebhookVerification unless Rails.env.test? || Rails.env.development?
+  # HMAC verification (X-Shopify-Hmac-Sha256) is on in every environment, test included,
+  # so specs sign their payloads and can detect its removal. Only development is exempt
+  # so unsigned webhooks can be replayed locally (e.g. with curl) without the secret.
+  include ShopifyApp::WebhookVerification unless Rails.env.development?
   include ShopifyConcern
 
   def orders_paid

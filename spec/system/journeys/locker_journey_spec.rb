@@ -80,7 +80,8 @@ RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
     ActionMailer::Base.deliveries.clear
     res = post_json_to_app(orders_paid_custom_webhooks_path,
                            { tags: [LockerRental.draft_order_operating_tag],
-                             metafields: [{ namespace: "makerepo", key: "locker_db_reference", value: rental.id.to_s }] })
+                             metafields: [{ namespace: "makerepo", key: "locker_db_reference", value: rental.id.to_s }] },
+                           shopify_signed: true)
     expect(res.code).to eq("200")
 
     as_actor(:user) do

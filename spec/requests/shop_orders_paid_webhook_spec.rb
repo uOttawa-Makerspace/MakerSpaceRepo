@@ -7,8 +7,9 @@ require "rails_helper"
 # memberships, job orders, legacy discount-code usage and cc-money credit.
 # Locker activation lives in locker_orders_paid_webhook_spec.rb.
 #
-# * ShopifyApp::WebhookVerification is only included outside test/development,
-#   so these POSTs are unsigned and still accepted (D-S24).
+# * ShopifyApp::WebhookVerification is active in the test env: every `hook` POST is
+#   signed with the test secret (spec/support/shopify_webhook_helpers.rb); forged or
+#   unsigned POSTs are rejected with 401 (HMAC examples below).
 # * The Shopify metafield fallback (`draft_order_metafields`) is stubbed; no
 #   network. The Stripe endpoint IS signed here with the configured secret.
 RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
@@ -19,7 +20,7 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
   let!(:tier) { create(:membership_tier, title_en: "1 Day Membership", title_fr: "Adhesion 1 jour", duration: 1) }
 
   def hook(path_params = {})
-    post orders_paid_custom_webhooks_path, params: path_params, as: :json
+    signed_orders_paid(path_params)
   end
 
   def membership_payload(membership_id, **extra)
@@ -36,13 +37,95 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
     allow_any_instance_of(CustomWebhooksController).to receive(:draft_order_metafields).and_return(nil)
   end
 
-  it "needs no authentication or signature in the test env and answers an empty 200 to anything" do
-    # WART(D-S24): ShopifyApp::WebhookVerification is included only outside test/development (an env switch, not a security control), so HMAC verification cannot be characterized here and any non-production environment accepts forged orders_paid calls
+  it "answers an empty 200 to any validly signed body, even garbage" do
     hook({})
     expect(response).to have_http_status(:ok)
     expect(response.body).to be_blank
     hook(tags: "garbage", line_items: "nope")
     expect(response).to have_http_status(:ok)
+  end
+
+  # --------------------------------------------------------- HMAC verification
+  # ShopifyApp::WebhookVerification: X-Shopify-Hmac-Sha256 must equal
+  # Base64(HMAC-SHA256(ShopifyApp.configuration.secret, raw body)); otherwise 401
+  # and the action never runs. One payload would grant money in every handler.
+
+  describe "HMAC verification" do
+    let!(:pending) { create(:membership, user: user, membership_tier: tier, status: "pending") }
+    let!(:rental) { create(:locker_rental, :await_payment) }
+    let(:forged) do
+      {
+        tags: [membership_tag, LockerRental.draft_order_operating_tag],
+        line_items: [{ title: "1 Day Membership", quantity: 3, product_id: cc_product_id }],
+        customer: { email: user.email },
+        metafields: [
+          { namespace: "makerepo", key: "membership_db_reference", value: pending.id.to_s },
+          { namespace: "makerepo", key: "locker_db_reference", value: rental.id.to_s }
+        ]
+      }
+    end
+
+    def money_state
+      [pending.reload.status, rental.reload.state, rental.paid_at, CcMoney.count, Membership.count, deliveries.size]
+    end
+
+    def expect_rejected
+      expect(response).to have_http_status(:unauthorized)
+      expect(response.body).to be_blank
+    end
+
+    it "rejects a request with no signature header and changes no membership, CC money or locker" do
+      # WART(D-S34-nil-header, new): with no X-Shopify-Hmac-Sha256 header, shopify_app's hmac_valid? runs
+      # secure_compare(nil, ...) which raises, so the response is a 500 (not a 401). Still
+      # fail-closed (the action never runs), but noisy: every unsigned probe is an error report.
+      expect { unsigned_orders_paid(forged) }.not_to change { money_state }
+      expect(response).to have_http_status(:internal_server_error)
+      expect(pending.status).to eq("pending")
+      expect(rental.state).to eq("await_payment")
+      expect(CcMoney.count).to eq(0)
+    end
+
+    it "rejects a signature made with the wrong secret (401) and changes nothing" do
+      body = forged.to_json
+      bad = shopify_hmac_for(body, secret: "not-the-secret")
+      expect { unsigned_orders_paid(forged, hmac: bad) }.not_to change { money_state }
+      expect_rejected
+    end
+
+    it "rejects a valid signature of a different body (tampered payload) and changes nothing" do
+      signature_of_benign = shopify_hmac_for({ tags: [] }.to_json)
+      expect { unsigned_orders_paid(forged, hmac: signature_of_benign) }.not_to change { money_state }
+      expect_rejected
+    end
+
+    it "rejects a hex digest and a blank header (wrong encoding) and changes nothing" do
+      body = forged.to_json
+      hex = OpenSSL::HMAC.hexdigest("sha256", shopify_webhook_secret, body)
+      expect { unsigned_orders_paid(forged, hmac: hex) }.not_to change { money_state }
+      expect_rejected
+      expect { unsigned_orders_paid(forged, hmac: "") }.not_to change { money_state }
+      expect_rejected
+    end
+
+    it "uses the configured secret (ShopifyApp.configuration.secret), not a hardcoded one" do
+      expect(shopify_webhook_secret).to be_present
+      body = forged.to_json
+      allow(ShopifyApp.configuration).to receive(:secret).and_return("rotated-secret")
+      post orders_paid_custom_webhooks_path, params: body,
+           headers: shopify_webhook_headers(body, secret: "test_secret")
+      expect(response).to have_http_status(:unauthorized)
+      post orders_paid_custom_webhooks_path, params: body,
+           headers: shopify_webhook_headers(body, secret: "rotated-secret")
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "processes a correctly signed request: membership paid, locker active, CC money credited" do
+      signed_orders_paid(forged)
+      expect(response).to have_http_status(:ok)
+      expect(pending.reload.status).to eq("paid")
+      expect(rental.reload.state).to eq("active")
+      expect(user.cc_moneys.pluck(:cc)).to eq([30])
+    end
   end
 
   it "uses the env-specific tag names (production tags are not honored in test)" do

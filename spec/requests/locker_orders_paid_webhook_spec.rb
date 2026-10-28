@@ -4,8 +4,8 @@ require "rails_helper"
 
 # Characterization of the Shopify `orders_paid` webhook locker path
 # (CustomWebhooksController#process_locker_hook -> LockerRental#auto_assign).
-# Signature verification is not mixed in under the test env, so the POST is
-# unsigned. No network: payloads carry the metafield inline; the Shopify
+# Every POST is signed with the test secret (see spec/support/shopify_webhook_helpers.rb);
+# unsigned/forged ones are rejected, see the HMAC examples below. No network: payloads carry the metafield inline; the Shopify
 # fallback lookup (`draft_order_metafields`) is stubbed.
 RSpec.describe "Shopify orders_paid webhook (locker path)", type: :request do
   include ActiveSupport::Testing::TimeHelpers
@@ -35,7 +35,7 @@ RSpec.describe "Shopify orders_paid webhook (locker path)", type: :request do
 
     freeze = Time.utc(2026, 10, 20, 12)
     travel_to(freeze) do
-      perform_enqueued_jobs { post orders_paid_custom_webhooks_path, params: payload(rental.id), as: :json }
+      perform_enqueued_jobs { signed_orders_paid(payload(rental.id)) }
     end
 
     expect(response).to have_http_status(:ok)
@@ -56,20 +56,20 @@ RSpec.describe "Shopify orders_paid webhook (locker path)", type: :request do
   it "keeps a pre-set owned_until" do
     rental = create(:locker_rental, :await_payment, owned_until: 20.days.from_now)
     owned = rental.owned_until
-    post orders_paid_custom_webhooks_path, params: payload(rental.id), as: :json
+    signed_orders_paid(payload(rental.id))
     expect(rental.reload.owned_until).to be_within(1.second).of(owned)
     expect(rental.state).to eq("active")
   end
 
   it "is replay-safe for the state/mail: a second delivery only re-stamps paid_at and sends nothing" do
     rental = create(:locker_rental, :await_payment)
-    perform_enqueued_jobs { post orders_paid_custom_webhooks_path, params: payload(rental.id), as: :json }
+    perform_enqueued_jobs { signed_orders_paid(payload(rental.id)) }
     expect(ActionMailer::Base.deliveries.size).to eq(1)
 
     ActionMailer::Base.deliveries.clear
     first_paid = rental.reload.paid_at
     travel_to(1.hour.from_now) do
-      perform_enqueued_jobs { post orders_paid_custom_webhooks_path, params: payload(rental.id), as: :json }
+      perform_enqueued_jobs { signed_orders_paid(payload(rental.id)) }
     end
     expect(response).to have_http_status(:ok)
     expect(ActionMailer::Base.deliveries).to be_empty
@@ -80,7 +80,7 @@ RSpec.describe "Shopify orders_paid webhook (locker path)", type: :request do
   it "ignores other tags (production tag in test env): nothing changes, no mail" do
     rental = create(:locker_rental, :await_payment)
     perform_enqueued_jobs do
-      post orders_paid_custom_webhooks_path, params: payload(rental.id, tags: ["makerepo_locker"]), as: :json
+      signed_orders_paid(payload(rental.id, tags: ["makerepo_locker"]))
     end
     expect(response).to have_http_status(:ok)
     expect(rental.reload.state).to eq("await_payment")
@@ -90,9 +90,9 @@ RSpec.describe "Shopify orders_paid webhook (locker path)", type: :request do
 
   it "answers 200 and does nothing for an unknown rental id or missing metafield" do
     perform_enqueued_jobs do
-      post orders_paid_custom_webhooks_path, params: payload(999_999_999), as: :json
+      signed_orders_paid(payload(999_999_999))
       expect(response).to have_http_status(:ok)
-      post orders_paid_custom_webhooks_path, params: { tags: [tag] }, as: :json
+      signed_orders_paid({ tags: [tag] })
       expect(response).to have_http_status(:ok)
     end
     expect(ActionMailer::Base.deliveries).to be_empty
@@ -105,9 +105,7 @@ RSpec.describe "Shopify orders_paid webhook (locker path)", type: :request do
       .and_return([{ "key" => "locker_db_reference", "value" => rental.id.to_s }])
 
     perform_enqueued_jobs do
-      post orders_paid_custom_webhooks_path,
-           params: { tags: [tag], admin_graphql_api_id: "gid://shopify/Order/1" },
-           as: :json
+      signed_orders_paid({ tags: [tag], admin_graphql_api_id: "gid://shopify/Order/1" })
     end
     expect(rental.reload.state).to eq("active")
     expect(ActionMailer::Base.deliveries.size).to eq(1)
@@ -115,7 +113,7 @@ RSpec.describe "Shopify orders_paid webhook (locker path)", type: :request do
 
   it "answers 422 when the rental cannot be activated, e.g. a reviewing rental with no locker" do
     rental = create(:locker_rental, :reviewing)
-    post orders_paid_custom_webhooks_path, params: payload(rental.id), as: :json
+    signed_orders_paid(payload(rental.id))
     # WART(D-L04): auto_assign uses update!, so validation
     # failure surfaces as a 422 (RecordInvalid rescued by the app) rather than a 200.
     expect(response).to have_http_status(:unprocessable_content)
