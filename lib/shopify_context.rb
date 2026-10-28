@@ -16,9 +16,14 @@ require Rails.root.join("lib/report_throttle")
 module ShopifyContext
   class MissingConfig < StandardError; end
 
+  # Stands in for whatever Context.setup raised. sorbet's TypeErrors echo the offending VALUE
+  # (an all-digit token, say), so the original message is never logged, reported or put in
+  # NotConfigured: only its class name.
+  class SetupFailed < StandardError; end
+
   # Raised by start_session! when the Context could not be set up (missing credentials keys, or
-  # Context.setup raised). Message names the missing keys or the setup error class and message,
-  # never the credentials. Callers that already rescue Shopify errors rescue this the same way.
+  # Context.setup raised). Message names the missing keys or the setup error class,
+  # never the credentials or a Context.setup error message. Callers that already rescue Shopify errors rescue this the same way.
   class NotConfigured < StandardError; end
 
   # What a caller that can live without Shopify (a model callback, say) rescues: our own
@@ -45,12 +50,13 @@ module ShopifyContext
     end
 
     args = {
-      api_key: config[:api_key],
-      api_secret_key: config[:password],
+      # to_s: sorbet type-checks these as String, and a YAML token of only digits parses as an Integer
+      api_key: config[:api_key].to_s,
+      api_secret_key: config[:password].to_s,
       host: "#{config[:shop_name]}.myshopify.com",
       is_embedded: false, # Not embedded in the Shopify admin UI
       is_private: true,
-      api_version: config[:api_version]
+      api_version: config[:api_version].to_s
     }
     # Context.setup unloads and reloads the REST resource loader, so two Puma threads must never
     # both run it: check and setup are one critical section.
@@ -59,7 +65,7 @@ module ShopifyContext
     end
     true
   rescue StandardError => e
-    failed(e)
+    failed(SetupFailed.new("ShopifyAPI::Context.setup failed with #{e.class.name}"))
   end
 
   # The ONE way to start a Shopify Admin/Storefront session: dig the credentials, make sure the
@@ -75,7 +81,7 @@ module ShopifyContext
 
     session = ShopifyAPI::Auth::Session.new(
       shop: "#{config[:shop_name]}.myshopify.com",
-      access_token: config[:password]
+      access_token: config[:password].to_s
     )
     ShopifyAPI::Context.activate_session(session)
     session

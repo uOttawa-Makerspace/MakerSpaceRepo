@@ -113,8 +113,55 @@ RSpec.describe ShopifyContext, :shopify_context do
     blank_context!
     allow(ShopifyAPI::Context).to receive(:setup).and_raise(ShopifyAPI::Errors::UnsupportedVersionError, "nope")
     expect(described_class.ensure_setup!).to be(false)
-    expect(reports.first.first).to be_a(ShopifyAPI::Errors::UnsupportedVersionError)
+    expect(reports.first.first).to be_a(ShopifyContext::SetupFailed)
+    expect(reports.first.first.message).to include("UnsupportedVersionError")
+    expect(reports.first.first.message).not_to include("nope")
     expect(Rails.logger).to have_received(:warn).with(/UnsupportedVersionError/)
+  end
+
+  describe "never echoing a Context.setup error message (it can carry a secret)" do
+    let(:digits) { 1_234_567_890_123_456 }
+    let(:logged) { [] }
+
+    before do
+      allow(Rails.logger).to receive(:warn) { |m| logged << m.to_s }
+      allow(Rails.logger).to receive(:info) { |m| logged << m.to_s }
+      blank_context!
+    end
+
+    def everything_emitted
+      logged + reports.flat_map { |e, opts| [e.message, e.class.name, opts.to_s] }
+    end
+
+    it "an Integer password (sorbet TypeError would echo it) is coerced to a String and sets up fine" do
+      cfg = ShopifyHttpHelpers::FAKE_SHOPIFY_CONFIG.merge(password: digits, api_key: digits + 1)
+      allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify).and_return(cfg)
+      expect(ShopifyAPI::Context).to receive(:setup).with(hash_including(api_secret_key: digits.to_s, api_key: (digits + 1).to_s)).and_call_original
+      session = described_class.start_session!
+      expect(session.access_token == digits.to_s).to be(true)
+      expect(everything_emitted.join).not_to include(digits.to_s)
+    end
+
+    it "when Context.setup raises with a secret in its message, logs, reports and NotConfigured carry the class only" do
+      allow(ShopifyAPI::Context).to receive(:setup).and_raise(TypeError, "Parameter 'api_secret_key': Expected type String, got #{digits}")
+      expect { described_class.start_session! }.to raise_error(ShopifyContext::NotConfigured) { |e|
+        expect(e.message).to include("TypeError")
+        expect(e.message).not_to include(digits.to_s)
+      }
+      expect(reports.size).to eq(1)
+      expect(logged).not_to be_empty
+      expect(everything_emitted.join).to include("TypeError")
+      expect(everything_emitted.join).not_to include(digits.to_s)
+    end
+
+    it "the missing-config message names only key names" do
+      cfg = ShopifyHttpHelpers::FAKE_SHOPIFY_CONFIG.merge(password: digits, api_key: nil)
+      allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify).and_return(cfg)
+      expect { described_class.start_session! }.to raise_error(ShopifyContext::NotConfigured, /api_key/) { |e|
+        expect(e.message).not_to include(digits.to_s)
+      }
+      expect(everything_emitted.join).not_to include(digits.to_s)
+    end
   end
 
   describe "failure report throttle" do
@@ -146,7 +193,7 @@ RSpec.describe ShopifyContext, :shopify_context do
       blank_context!
       allow(ShopifyAPI::Context).to receive(:setup).and_raise(ShopifyAPI::Errors::UnsupportedVersionError, "nope")
       expect(described_class.ensure_setup!).to be(false)
-      expect(reports.map { |e, _| e.class }).to eq([ShopifyContext::MissingConfig, ShopifyAPI::Errors::UnsupportedVersionError])
+      expect(reports.map { |e, _| e.class }).to eq([ShopifyContext::MissingConfig, ShopifyContext::SetupFailed])
     end
 
     it "shares ReportThrottle with the webhook-secret report" do
@@ -202,11 +249,11 @@ RSpec.describe ShopifyContext, :shopify_context do
         end
       end
 
-      it "raises NotConfigured with the setup error class and message when Context.setup raises" do
+      it "raises NotConfigured with the setup error class (never its message) when Context.setup raises" do
         blank_context!
         allow(ShopifyAPI::Context).to receive(:setup).and_raise(ShopifyAPI::Errors::UnsupportedVersionError, "nope")
         expect { described_class.start_session! }
-          .to raise_error(ShopifyContext::NotConfigured, /UnsupportedVersionError: nope/)
+          .to raise_error(ShopifyContext::NotConfigured, /UnsupportedVersionError/) { |e| expect(e.message).not_to include("nope") }
       end
 
       it "with no shopify section at all raises NotConfigured, not NoMethodError" do
