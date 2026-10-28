@@ -184,10 +184,7 @@ RSpec.describe Api::V1::BaseController, type: :controller do
       "ActionController::UnknownFormat" => [:not_acceptable, "not_acceptable"],
       "ActionDispatch::Http::MimeNegotiation::InvalidType" => [:bad_request, "bad_request"],
       "ActionController::BadRequest" => [:bad_request, "bad_request"],
-      "ActionDispatch::Http::Parameters::ParseError" => [:bad_request, "bad_request"],
-      "ActionController::MethodNotAllowed" => [:method_not_allowed, "method_not_allowed"],
-      "ActionController::UnknownHttpMethod" => [:method_not_allowed, "method_not_allowed"],
-      "ActionController::RoutingError" => [:not_found, "not_found"]
+      "ActionDispatch::Http::Parameters::ParseError" => [:bad_request, "bad_request"]
     }.each do |klass, (status, code)|
       it "maps #{klass} to #{status} #{code} without reporting it" do
         expect(Rails.error).not_to receive(:report)

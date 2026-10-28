@@ -12,7 +12,7 @@ module Api
     # session is never read or written.
     #
     # Errors are always `{error: {code:, message:, fields?:}}` with a real status:
-    # 400 bad_request, 406 not_acceptable, 405 method_not_allowed, 401 unauthenticated, 403 forbidden, 404 not_found,
+    # 400 bad_request, 406 not_acceptable, 401 unauthenticated, 403 forbidden, 404 not_found,
     # 422 validation_failed / parameter_missing, 423 account_locked, 429 rate_limited,
     # 500 internal_error (see json_internal_errors).
     class BaseController < ActionController::API
@@ -51,12 +51,10 @@ module Api
       rescue_from ActionController::UnknownFormat do |_e|
         render_error(:not_acceptable, "Not acceptable", status: :not_acceptable)
       end
-      rescue_from ActionController::MethodNotAllowed, ActionController::UnknownHttpMethod do |_e|
-        render_error(:method_not_allowed, "Method not allowed", status: :method_not_allowed)
-      end
-      rescue_from ActionController::RoutingError do |_e|
-        render_error(:not_found, "Not found", status: :not_found)
-      end
+      # (No handlers for MethodNotAllowed / UnknownHttpMethod / RoutingError: they are
+      # raised by the router or middleware, before any controller runs. Unknown paths
+      # reach #route_not_found through the catch-all route; an unknown HTTP verb gets
+      # Rails' default response.)
 
       # Unknown /api/v1 paths (the catch-all route at the end of the namespace).
       def route_not_found

@@ -28,7 +28,7 @@ Always JSON, always a real status:
 | 400 | Malformed request | `bad_request` |
 | 401 | Missing/invalid/expired credentials | `unauthenticated`, `invalid_credentials`, `invalid_refresh_token` |
 | 403 | Authenticated but not allowed | `forbidden`, `account_inactive`, `account_unconfirmed` |
-| 404 | No such record or route | `not_found` |
+| 404 | No such record or route (any unknown `/api/v1/...` path, any verb) | `not_found` |
 | 409 | Retry with the newest stored refresh token | `refresh_in_progress` |
 | 422 | Validation or missing parameter | `validation_failed`, `parameter_missing` |
 | 423 | Account locked | `account_locked` |
@@ -41,3 +41,5 @@ TBD. It will be defined with the first list endpoint (`GET /api/v1/users?query=`
 
 ## Versioning
 The version is in the path. Within `v1`, changes are additive only (new fields, new endpoints); clients must ignore unknown fields. Anything breaking becomes `/api/v2`, and `v1` is kept until the frontends have moved.
+
+An unknown HTTP verb (for example `FOO /api/v1/session`) is rejected by Rails before any API code runs and gets Rails' default response, not the JSON error body.
