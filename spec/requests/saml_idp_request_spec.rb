@@ -510,6 +510,8 @@ RSpec.describe "SAML IdP", type: :request do
     context "signature verification failures are refused (403), never a 500" do
       def ds = "http://www.w3.org/2000/09/xmldsig#"
 
+      before { SamlSignatureGuard.reset_certificate_checks! }
+
       def signed_logout(signature_xml, extra: "", id: "_lo1")
         c18_deflate(%(<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ) +
                     %(xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="#{id}" Version="2.0" ) +
@@ -702,9 +704,21 @@ RSpec.describe "SAML IdP", type: :request do
         end
       end
 
+      it "reports a broken SP certificate once, however often the request is replayed" do
+        c18_with_signing_sps(cert_pem: "not a certificate") do
+          expect(Rails.error).to receive(:report).once
+          c18_sign_in(:regular)
+          3.times do
+            post "/saml/auth", params: { SAMLRequest: c18_authn_request, submit: "current_user", Signature: Base64.strict_encode64("sig"),
+                                         SigAlg: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256" }
+            expect(response).to have_http_status(:forbidden)
+          end
+        end
+      end
+
       it "a broken SP certificate refuses the request (403) and is reported at error level" do
         c18_with_signing_sps(cert_pem: "not a certificate") do
-          expect(Rails.error).to receive(:report).with(instance_of(OpenSSL::X509::CertificateError), hash_including(severity: :error)).at_least(:once)
+          expect(Rails.error).to receive(:report).with(instance_of(OpenSSL::X509::CertificateError), hash_including(severity: :error)).once
           c18_sign_in(:regular)
           post "/saml/auth", params: { SAMLRequest: c18_authn_request, submit: "current_user", Signature: Base64.strict_encode64("sig"),
                                        SigAlg: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256" }
