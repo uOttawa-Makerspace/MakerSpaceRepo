@@ -380,6 +380,23 @@ RSpec.describe "Exams", type: :request do
       expect(deliveries.map { |m| [m.to, m.subject] }).to eq([[[student.email], "You finished your exam"]])
     end
 
+    context "at the Advanced level" do
+      let(:fixture) { build_exam_fixture(level: "Advanced") }
+
+      it "an Advanced pass shows the Advanced certification on the trainee's profile" do
+        exam = new_exam
+        log_in!(student)
+        answer_all(exam, correct_count: 3)
+        expect { finish(exam) }.to change(Certification, :count).by(1)
+        cert = Certification.last
+        expect([cert.user, cert.training_session, cert.level]).to eq([student, session_record, "Advanced"])
+        get user_path(student.username)
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include(fixture[:training].localized_name)
+        expect(response.body).to include("/badges/#{cert.id}")
+      end
+    end
+
     it "fails at 67 % (2 of 3): status failed, no certification, one retake exam is created" do
       exam = new_exam
       log_in!(student)
