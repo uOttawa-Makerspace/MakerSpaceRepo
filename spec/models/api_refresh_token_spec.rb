@@ -207,6 +207,28 @@ RSpec.describe ApiRefreshToken, type: :model do
       expect(successor.reload.revoked_at).to be_present
     end
 
+    it "treats a grace-window replay as theft when the user was deactivated" do
+      first = described_class.issue!(user)
+      stale = described_class.find(first.id)
+      successor = first.rotate!
+      user.update_columns(active: false)
+      expect(stale.rotate!).to be_nil
+      expect(successor.reload.revoked_at).to be_present
+    end
+
+    it "decides the grace outcome in SQL without instantiating the family's rows" do
+      first = described_class.issue!(user)
+      successor = first.rotate!
+      stale = described_class.find(first.id)
+      loaded = []
+      callback = ->(*, payload) { loaded << payload[:class_name] if payload[:class_name] == "ApiRefreshToken" }
+      ActiveSupport::Notifications.subscribed(callback, "instantiation.active_record") do
+        expect(stale.send(:replay_outcome)).to eq(:in_progress)
+      end
+      expect(loaded).to be_empty
+      expect(successor).to be_present
+    end
+
     it "returns nil when the token_version moved on" do
       first = described_class.issue!(user)
       user.update_columns(token_version: 5)

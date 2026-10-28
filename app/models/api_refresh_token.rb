@@ -165,10 +165,16 @@ class ApiRefreshToken < ApplicationRecord
 
   private
 
+  # In-window and the family still has a usable row: one EXISTS (the user is the
+  # same for every row of the family, so eligibility is judged once on the user).
   def replay_outcome
-    in_window = revoked_at > GRACE.ago
-    family_live = self.class.where(family_id: family_id, revoked_at: nil).any?(&:usable?)
-    in_window && family_live ? :in_progress : :theft
+    return :theft unless revoked_at > GRACE.ago
+    return :theft unless AuthEligibility.allowed?(user)
+
+    now = Time.current
+    live = self.class.where(family_id: family_id, revoked_at: nil, token_version: user.token_version)
+                     .where("expires_at > :now AND family_expires_at > :now", now: now).exists?
+    live ? :in_progress : :theft
   end
 
   def expires_within_family_cap
