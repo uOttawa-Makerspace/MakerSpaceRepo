@@ -154,6 +154,52 @@ RSpec.describe ShopifyContext, :shopify_context do
       expect(everything_emitted.join).not_to include(digits.to_s)
     end
 
+    describe "what Airbrake receives for a Context.setup failure" do
+      let(:secret) { "shpat_#{digits}" }
+      let(:original) do
+        raise TypeError, "Parameter 'api_secret_key': got #{secret}"
+      rescue TypeError => e
+        e
+      end
+
+      def chain(error)
+        [error, *(error.cause ? chain(error.cause) : [])]
+      end
+
+      def expect_clean(error)
+        expect(chain(error).flat_map { |e| [e.class.name, e.message, *e.backtrace.to_a] }.join("\n")).not_to include(secret)
+        expect(error.cause).to be_nil
+      end
+
+      before { allow(ShopifyAPI::Context).to receive(:setup).and_raise(original) }
+
+      it "reports a SetupFailed with the original backtrace, no cause, and no trace of the secret anywhere" do
+        described_class.ensure_setup!
+        reported, opts = reports.first
+        expect(reported).to be_a(ShopifyContext::SetupFailed)
+        expect(reported.backtrace).to be_present
+        expect(reported.backtrace).to eq(original.backtrace)
+        expect_clean(reported)
+        expect(opts.to_s).not_to include(secret)
+        expect(everything_emitted.join).not_to include(secret)
+      end
+
+      it "raises a NotConfigured without a cause, even from inside a caller's rescue block" do
+        raised = begin
+          begin
+            raise ArgumentError, "caller's own failure #{secret}"
+          rescue ArgumentError
+            described_class.start_session!
+          end
+        rescue ShopifyContext::NotConfigured => e
+          e
+        end
+        expect(raised).to be_a(ShopifyContext::NotConfigured)
+        expect_clean(raised)
+        expect(raised.message).to include("TypeError")
+      end
+    end
+
     it "the missing-config message names only key names" do
       cfg = ShopifyHttpHelpers::FAKE_SHOPIFY_CONFIG.merge(password: digits, api_key: nil)
       allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify).and_return(cfg)

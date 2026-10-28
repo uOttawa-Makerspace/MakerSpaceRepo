@@ -66,7 +66,9 @@ module ShopifyContext
     config, error = setup_context
     if error
       failed(error)
-      raise NotConfigured, "Shopify is not configured, not contacting the Admin API: #{error.class}: #{error.message}"
+      # cause: nil, so a caller's own `rescue` block cannot chain its exception (message and all) onto this one.
+      raise NotConfigured.new("Shopify is not configured, not contacting the Admin API: #{error.class}: #{error.message}"),
+            cause: nil
     end
 
     session = ShopifyAPI::Auth::Session.new(
@@ -101,7 +103,11 @@ module ShopifyContext
     end
     [config, nil]
   rescue StandardError => e
-    [config || {}, SetupFailed.new(e.class.name)]
+    # The backtrace shows Airbrake where setup failed. The original exception is NOT kept as `cause`
+    # (Airbrake reports causes, and its message can echo a credential): SetupFailed is built, never raised here.
+    failure = SetupFailed.new(e.class.name)
+    failure.set_backtrace(e.backtrace)
+    [config || {}, failure]
   end
   private_class_method :setup_context
 
