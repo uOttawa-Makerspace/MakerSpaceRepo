@@ -57,7 +57,7 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
 
   describe "PUT /staff_dashboard/remove_users (sign_out_users)" do
     it "ends the active session now and answers {status: ok}" do
-      session_row = sign_in_session(visitor)
+      session_row = sign_in_session(visitor, space)
       freeze_time do
         put "/staff_dashboard/remove_users", params: { dropped_users: [visitor.username] }, as: :json
 
@@ -69,7 +69,7 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
     end
 
     it "html: redirects to the dashboard" do
-      sign_in_session(visitor)
+      sign_in_session(visitor, space)
       put "/staff_dashboard/remove_users", params: { dropped_users: [visitor.username] }
       expect(response).to redirect_to(staff_dashboard_index_path)
     end
@@ -81,7 +81,7 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
     end
 
     it "no dropped_users is a no-op {status: ok}" do
-      session_row = sign_in_session(visitor)
+      session_row = sign_in_session(visitor, space)
       put "/staff_dashboard/remove_users", as: :json
       expect(json).to eq("status" => "ok")
       expect(session_row.reload.sign_out_time).to be > Time.zone.now
@@ -110,7 +110,7 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
     end
 
     it "refuses a regular user" do
-      session_row = sign_in_session(visitor)
+      session_row = sign_in_session(visitor, space)
       sign_in_as(:regular)
       put "/staff_dashboard/remove_users", params: { dropped_users: [visitor.username] }, as: :json
       expect(response).to redirect_to(root_path)

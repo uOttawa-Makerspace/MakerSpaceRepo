@@ -3,20 +3,22 @@
 # Shared by the spec/requests/staff_dashboard_* request specs. Opt-in: include
 # StaffDashboardSpecHelpers in the describe block.
 module StaffDashboardSpecHelpers
-  # Parsed JSON body of the last response (Hash/Array for application/json).
+  # Parsed JSON body of the last response (string keys). Raises on a non-JSON
+  # response (HTML 500, redirect) so a wrong status fails loudly.
   def json
-    response.parsed_body
+    JSON.parse(response.body)
   end
-  alias_method :body, :json
+
+  def body = json
 
   # Exception class name from the dev-style error page (<h1>NoMethodError in ...</h1>).
   def exception_class
     response.body[/<h1>\s*(\S+)\s+in /, 1]
   end
 
-  # An active lab session (signed in an hour ago, out in 2 hours) for the user.
-  # `sp` defaults to the including spec's `space`.
-  def sign_in_session(user, sp = space)
-    create(:lab_session, user: user, space: sp, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
+  # A lab session signed in an hour ago and signing out `sign_out_in` from now.
+  # The space is explicit so a missing one fails clearly.
+  def sign_in_session(user, space, sign_out_in: 2.hours)
+    create(:lab_session, user: user, space: space, sign_in_time: 1.hour.ago, sign_out_time: sign_out_in.from_now)
   end
 end
