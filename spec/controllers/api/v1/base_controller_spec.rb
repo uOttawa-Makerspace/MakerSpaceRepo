@@ -13,6 +13,7 @@ RSpec.describe Api::V1::BaseController, type: :controller do
     def update = render(json: { ok: true })
     def create = raise(ActiveRecord::RecordNotFound)
     def destroy = params.require(:thing)
+    def new = raise(params[:kind].constantize, "client error")
     def edit
       u = User.new
       u.valid?
@@ -28,6 +29,7 @@ RSpec.describe Api::V1::BaseController, type: :controller do
       post "anonymous/create" => "api/v1/base#create"
       delete "anonymous/destroy" => "api/v1/base#destroy"
       get "anonymous/edit" => "api/v1/base#edit"
+      get "anonymous/new" => "api/v1/base#new"
     end
   end
 
@@ -166,6 +168,39 @@ RSpec.describe Api::V1::BaseController, type: :controller do
       expect(response).to have_http_status(:unprocessable_content)
       expect(error["code"]).to eq("validation_failed")
       expect(error["fields"]).to be_a(Hash).and include("email")
+    end
+  end
+
+  describe "framework client errors are 4xx, not a reported 500" do
+    around do |example|
+      previous = described_class.json_internal_errors
+      described_class.json_internal_errors = true
+      example.run
+    ensure
+      described_class.json_internal_errors = previous
+    end
+
+    {
+      "ActionController::UnknownFormat" => [:not_acceptable, "not_acceptable"],
+      "ActionDispatch::Http::MimeNegotiation::InvalidType" => [:bad_request, "bad_request"],
+      "ActionController::BadRequest" => [:bad_request, "bad_request"],
+      "ActionDispatch::Http::Parameters::ParseError" => [:bad_request, "bad_request"],
+      "ActionController::MethodNotAllowed" => [:method_not_allowed, "method_not_allowed"],
+      "ActionController::UnknownHttpMethod" => [:method_not_allowed, "method_not_allowed"],
+      "ActionController::RoutingError" => [:not_found, "not_found"]
+    }.each do |klass, (status, code)|
+      it "maps #{klass} to #{status} #{code} without reporting it" do
+        expect(Rails.error).not_to receive(:report)
+        get :new, params: { kind: klass }
+        expect(response).to have_http_status(status)
+        expect(response.parsed_body.dig("error", "code")).to eq(code)
+      end
+    end
+
+    it "still turns an unexpected error into a reported 500" do
+      expect(Rails.error).to receive(:report).with(an_instance_of(ArgumentError), hash_including(handled: true))
+      get :new, params: { kind: "ArgumentError" }
+      expect(response).to have_http_status(:internal_server_error)
     end
   end
 end

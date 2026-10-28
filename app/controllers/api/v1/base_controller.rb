@@ -12,7 +12,7 @@ module Api
     # session is never read or written.
     #
     # Errors are always `{error: {code:, message:, fields?:}}` with a real status:
-    # 400 bad_request, 401 unauthenticated, 403 forbidden, 404 not_found,
+    # 400 bad_request, 406 not_acceptable, 405 method_not_allowed, 401 unauthenticated, 403 forbidden, 404 not_found,
     # 422 validation_failed / parameter_missing, 423 account_locked, 429 rate_limited,
     # 500 internal_error (see json_internal_errors).
     class BaseController < ActionController::API
@@ -44,8 +44,18 @@ module Api
       rescue_from ActiveRecord::RecordInvalid do |e|
         render_validation_errors(e.record)
       end
-      rescue_from ActionController::BadRequest, ActionDispatch::Http::Parameters::ParseError do |_e|
+      rescue_from ActionController::BadRequest, ActionDispatch::Http::Parameters::ParseError,
+                  ActionDispatch::Http::MimeNegotiation::InvalidType do |_e|
         render_error(:bad_request, "Malformed request", status: :bad_request)
+      end
+      rescue_from ActionController::UnknownFormat do |_e|
+        render_error(:not_acceptable, "Not acceptable", status: :not_acceptable)
+      end
+      rescue_from ActionController::MethodNotAllowed, ActionController::UnknownHttpMethod do |_e|
+        render_error(:method_not_allowed, "Method not allowed", status: :method_not_allowed)
+      end
+      rescue_from ActionController::RoutingError do |_e|
+        render_error(:not_found, "Not found", status: :not_found)
       end
 
       # Unknown /api/v1 paths (the catch-all route at the end of the namespace).
