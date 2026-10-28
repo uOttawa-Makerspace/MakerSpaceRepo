@@ -9,15 +9,7 @@ module ShopifyConcern
 
   class_methods do
     def start_shopify_session
-      shopify_config = Rails.application.credentials.dig(Rails.env.to_sym, :shopify) || {}
-
-      session = ShopifyAPI::Auth::Session.new(
-        shop: "#{shopify_config[:shop_name]}.myshopify.com",
-        access_token: shopify_config[:password]
-      )
-
-      ShopifyAPI::Context.activate_session(session)
-      session
+      ShopifyContext.start_session!
     end
 
     def draft_order_processable?(tag)
@@ -145,7 +137,8 @@ module ShopifyConcern
       QUERY
 
       resp = admin_client.query(query: delete_draft_order, variables: { input: { id: shopify_draft_order_id } })
-      return false unless resp.code == 200
+      # Fail closed (as on master): anything but 200 raises, so the cancel that triggered this rolls back.
+      raise "Received HTTP #{resp.code} when deleting shopify draft order" unless resp.code == 200
 
       update_column(:shopify_draft_order_id, nil)
       resp.body&.dig("data", "draftOrderDelete", "deletedId").present?

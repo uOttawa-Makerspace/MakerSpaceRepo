@@ -184,7 +184,8 @@ class LockerRental < ApplicationRecord
     return unless saved_change_to_state?
     case state.to_sym
     when :cancelled
-      # When a locker is cancelled, cancel draft_order too
+      # When a locker is cancelled, cancel draft_order too. Fail closed: a Shopify failure raises out of
+      # this after_save and rolls the cancellation back, so "cancelled" never coexists with a payable invoice.
       destroy_shopify_draft_order
     end
   end

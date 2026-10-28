@@ -300,6 +300,47 @@ RSpec.describe LockerRental, type: :model do
       rental.update!(notes: "x")
       rental.update!(state: :cancelled)
     end
+
+    # Fail closed (master behaviour): if the cancel committed while the draft order survived, the customer
+    # could still pay the old invoice and orders_paid's auto_assign would reactivate the cancelled locker.
+    describe "when the draft order cannot be deleted" do
+      let(:draft_id) { "gid://shopify/DraftOrder/1" }
+      let(:rental) { create(:locker_rental, :await_payment).tap { |r| r.update_column(:shopify_draft_order_id, draft_id) } }
+
+      def expect_not_cancelled(error_class)
+        expect { rental.update!(state: :cancelled) }.to raise_error(error_class)
+        expect(rental.reload).to be_await_payment
+        expect(rental.shopify_draft_order_id).to eq(draft_id)
+      end
+
+      it "raises and does not cancel when the Shopify API answers 500" do
+        stub_request(:post, shopify_graphql_url).to_return(status: 500, body: "boom")
+        expect_not_cancelled(ShopifyAPI::Errors::HttpResponseError)
+      end
+
+      it "raises and does not cancel on a transport error" do
+        stub_request(:post, shopify_graphql_url).to_raise(Net::OpenTimeout)
+        expect_not_cancelled(Net::OpenTimeout)
+      end
+
+      it "raises and does not cancel on a non-200 success status" do
+        stub_request(:post, shopify_graphql_url).to_return(status: 202, body: "{}", headers: ShopifyHttpHelpers::JSON_HEADERS)
+        expect_not_cancelled(StandardError)
+      end
+
+      it "raises NotConfigured and does not cancel with incomplete Shopify config" do
+        allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify).and_return({})
+        expect_not_cancelled(ShopifyContext::NotConfigured)
+      end
+
+      it "cancels without touching Shopify when there is no draft order id" do
+        blank = create(:locker_rental, :await_payment)
+        expect(blank.shopify_draft_order_id).to be_blank
+        expect(ShopifyAPI::Clients::Graphql::Admin).not_to receive(:new)
+        blank.update!(state: :cancelled)
+        expect(blank.reload).to be_cancelled
+      end
+    end
   end
 
   describe "#state_icon / .state_icon" do

@@ -74,10 +74,12 @@ module JourneyHelpers
 
   # Plain HTTP call to the running Capybara server (no browser): used for
   # machine-to-machine callbacks such as the Shopify webhooks.
-  def post_json_to_app(path, body)
+  # `shopify_signed: true` adds the X-Shopify-Hmac-Sha256 header over the raw body.
+  def post_json_to_app(path, body, shopify_signed: false)
     uri = URI("#{app_url}#{path}")
     req = Net::HTTP::Post.new(uri, "Content-Type" => "application/json")
     req.body = body.to_json
+    req[ShopifyWebhookHelpers::SHOPIFY_HMAC_HEADER] = shopify_hmac_for(req.body) if shopify_signed
     Net::HTTP.start(uri.host, uri.port) { |http| http.request(req) }
   end
 

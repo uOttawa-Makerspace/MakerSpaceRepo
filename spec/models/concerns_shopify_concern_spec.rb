@@ -49,9 +49,9 @@ RSpec.describe ShopifyConcern do
 
   describe ".start_shopify_session" do
     it "activates a session for <shop_name>.myshopify.com from the env credentials" do
-      cfg = Rails.application.credentials.dig(:test, :shopify) || {}
       session = Membership.start_shopify_session
-      expect(session.shop).to eq("#{cfg[:shop_name]}.myshopify.com")
+      expect(session.shop).to eq("fake-shop.myshopify.com")
+      expect(session.access_token == "shpat_test_fake").to be(true)
       expect(ShopifyAPI::Context.active_session).to eq(session)
     end
   end
@@ -97,10 +97,10 @@ RSpec.describe ShopifyConcern do
       expect(membership.reload.shopify_draft_order_id).to be_nil
     end
 
-    it "destroy keeps the id and returns false on a non-200 response" do
+    it "destroy keeps the id and raises on a non-200 response (master behaviour; fail closed)" do
       membership.update_column(:shopify_draft_order_id, fake.draft_id)
       fake.status = 500
-      expect(membership.send(:destroy_shopify_draft_order)).to be(false)
+      expect { membership.send(:destroy_shopify_draft_order) }.to raise_error(RuntimeError, /Received HTTP 500/)
       expect(membership.reload.shopify_draft_order_id).to eq(fake.draft_id)
     end
 

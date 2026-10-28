@@ -229,6 +229,8 @@ class StaticPagesController < SessionsController
 
   private
 
+  MAKERSTORE_SHOP = 'uottawa-makerspace.myshopify.com'
+
   def fetch_simpli_events
     uri = URI('https://simpli.events/api/organizer/44d09ce5-5999-4bd9-82eb-8a9772963223')
     http = Net::HTTP.new(uri.host, uri.port)
@@ -252,13 +254,18 @@ class StaticPagesController < SessionsController
   end
 
   def home_makerstore_links
-    credentials = Rails.application.credentials[Rails.env.to_sym] || {}
-    shopify_creds = credentials[:shopify] || {}
-    access_token = shopify_creds[:password]
+    # Always the makerspace's own store, with only the access token (as before ShopifyContext
+    # existed): no dependency on credentials shop_name/api_key/api_version. ensure_setup! only
+    # primes Context.api_version for the client; it never raises and its result is ignored,
+    # so an incomplete config behaves as it always did (boot priming, or the client's default).
+    access_token = (Rails.application.credentials[Rails.env.to_sym] || {}).dig(:shopify, :password)
     return [] if access_token.blank?
 
-    shop_url = 'uottawa-makerspace.myshopify.com'
-    sess = ShopifyAPI::Auth::Session.new(shop: shop_url, access_token: access_token)
+    # to_s: sorbet type-checks access_token as String, and a YAML token of only digits parses as an Integer.
+    access_token = access_token.to_s
+
+    ShopifyContext.ensure_setup!
+    sess = ShopifyAPI::Auth::Session.new(shop: MAKERSTORE_SHOP, access_token: access_token)
     client = ShopifyAPI::Clients::Graphql::Admin.new(session: sess)
 
     query = <<~QUERY
@@ -290,7 +297,8 @@ class StaticPagesController < SessionsController
       []
     end
   rescue StandardError => e
-    Rails.logger.error("Failed to fetch Shopify collections: #{e.message}")
+    # Class only: a sorbet TypeError (or an HTTP error) message can echo the access token.
+    Rails.logger.error("Failed to fetch Shopify collections: #{e.class}")
     []
   end
 end
