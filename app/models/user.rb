@@ -605,6 +605,9 @@ class User < ApplicationRecord
   after_update_commit :disconnect_cable!, if: :cable_access_lost?
   # A block, not the method symbol: Rails de-duplicates commit callbacks by method name.
   after_destroy_commit { disconnect_cable! }
+  # Deactivation also ends /api/v1 refresh tokens for good: reactivating the account
+  # must not revive them (the other token_version bumps revoke in bump_token_version!).
+  after_update_commit :revoke_api_refresh_tokens, if: -> { saved_change_to_active? && active == false }
 
   def staff?
     role.in?(%w[staff admin])
@@ -771,6 +774,10 @@ class User < ApplicationRecord
 
   def translate_faculty
     self.faculty = FACULTY_TRANSLATIONS[faculty] if FACULTY_TRANSLATIONS.key?(faculty)
+  end
+
+  def revoke_api_refresh_tokens
+    ApiRefreshToken.revoke_all_for!(id)
   end
 
   def cable_access_lost?
