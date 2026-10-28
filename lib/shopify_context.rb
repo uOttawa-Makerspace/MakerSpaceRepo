@@ -21,6 +21,12 @@ module ShopifyContext
   # never the credentials. Callers that already rescue Shopify errors rescue this the same way.
   class NotConfigured < StandardError; end
 
+  # What a caller that can live without Shopify (a model callback, say) rescues: our own
+  # "not configured" plus the Admin client's HTTP and retry errors.
+  BEST_EFFORT_ERRORS = [
+    NotConfigured, ShopifyAPI::Errors::HttpResponseError, ShopifyAPI::Errors::MaxHttpRetriesExceededError
+  ].freeze
+
   # At most one failure report per kind (error class) per 10 minutes per process; every failure is still logged.
   REPORT_THROTTLE = ReportThrottle.new(interval: 10.minutes)
 

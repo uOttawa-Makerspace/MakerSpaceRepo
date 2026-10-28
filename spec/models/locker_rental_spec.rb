@@ -300,6 +300,34 @@ RSpec.describe LockerRental, type: :model do
       rental.update!(notes: "x")
       rental.update!(state: :cancelled)
     end
+
+    # The draft-order cleanup is best-effort: a Shopify outage or missing config must not roll back (500) the cancel.
+    describe "when Shopify cannot be reached" do
+      let(:reports) { [] }
+      let(:rental) { create(:locker_rental, :await_payment).tap { |r| r.update_column(:shopify_draft_order_id, "gid://shopify/DraftOrder/1") } }
+
+      before do
+        allow(Rails.error).to receive(:report) { |e, **opts| reports << [e, opts] }
+        allow(Rails.logger).to receive(:warn)
+      end
+
+      it "cancels the rental with incomplete Shopify config, and reports the NotConfigured" do
+        allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify).and_return({})
+        expect { rental.update!(state: :cancelled) }.not_to raise_error
+        expect(rental.reload).to be_cancelled
+        expect(rental.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/1") # nothing was deleted on Shopify's side
+        expect(reports.map { |e, _| e.class }).to eq([ShopifyContext::NotConfigured])
+        expect(reports.first.last).to include(handled: true)
+      end
+
+      it "cancels the rental when the Shopify API answers 500, and reports the API error" do
+        stub_request(:post, shopify_graphql_url).to_return(status: 500, body: "boom")
+        expect { rental.update!(state: :cancelled) }.not_to raise_error
+        expect(rental.reload).to be_cancelled
+        expect(reports.size).to eq(1)
+        expect(reports.first.first).to be_a(ShopifyAPI::Errors::HttpResponseError)
+      end
+    end
   end
 
   describe "#state_icon / .state_icon" do
