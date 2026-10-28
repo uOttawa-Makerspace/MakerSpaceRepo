@@ -110,9 +110,14 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
 
     it "a user whose only session already ended is also a 500" do
       # WART(D-STAFF-SIGNOUT-NIL-NEW): same nil dereference.
-      create(:lab_session, user: visitor, space: space, sign_in_time: 3.hours.ago, sign_out_time: 1.hour.ago)
-      put "/staff_dashboard/remove_users", params: { dropped_users: [visitor.username] }, as: :json
+      ended = create(:lab_session, user: visitor, space: space, sign_in_time: 3.hours.ago, sign_out_time: 1.hour.ago)
+      ended_at = ended.reload.sign_out_time
+      expect do
+        put "/staff_dashboard/remove_users", params: { dropped_users: [visitor.username] }, as: :json
+      end.not_to change(LabSession, :count)
       expect(response).to have_http_status(:internal_server_error)
+      expect(exception_class).to eq("NoMethodError")
+      expect(ended.reload.sign_out_time).to eq(ended_at)
     end
 
     it "refuses a regular user" do
