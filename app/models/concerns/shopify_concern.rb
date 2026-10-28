@@ -137,7 +137,8 @@ module ShopifyConcern
       QUERY
 
       resp = admin_client.query(query: delete_draft_order, variables: { input: { id: shopify_draft_order_id } })
-      return false unless resp.code == 200
+      # Fail closed (as on master): anything but 200 raises, so the cancel that triggered this rolls back.
+      raise "Received HTTP #{resp.code} when deleting shopify draft order" unless resp.code == 200
 
       update_column(:shopify_draft_order_id, nil)
       resp.body&.dig("data", "draftOrderDelete", "deletedId").present?

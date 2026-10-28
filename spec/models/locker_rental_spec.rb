@@ -301,31 +301,44 @@ RSpec.describe LockerRental, type: :model do
       rental.update!(state: :cancelled)
     end
 
-    # The draft-order cleanup is best-effort: a Shopify outage or missing config must not roll back (500) the cancel.
-    describe "when Shopify cannot be reached" do
-      let(:reports) { [] }
-      let(:rental) { create(:locker_rental, :await_payment).tap { |r| r.update_column(:shopify_draft_order_id, "gid://shopify/DraftOrder/1") } }
+    # Fail closed (master behaviour): if the cancel committed while the draft order survived, the customer
+    # could still pay the old invoice and orders_paid's auto_assign would reactivate the cancelled locker.
+    describe "when the draft order cannot be deleted" do
+      let(:draft_id) { "gid://shopify/DraftOrder/1" }
+      let(:rental) { create(:locker_rental, :await_payment).tap { |r| r.update_column(:shopify_draft_order_id, draft_id) } }
 
-      before do
-        allow(Rails.error).to receive(:report) { |e, **opts| reports << [e, opts] }
-        allow(Rails.logger).to receive(:warn)
+      def expect_not_cancelled(error_class)
+        expect { rental.update!(state: :cancelled) }.to raise_error(error_class)
+        expect(rental.reload).to be_await_payment
+        expect(rental.shopify_draft_order_id).to eq(draft_id)
       end
 
-      it "cancels the rental with incomplete Shopify config, and reports the NotConfigured" do
-        allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify).and_return({})
-        expect { rental.update!(state: :cancelled) }.not_to raise_error
-        expect(rental.reload).to be_cancelled
-        expect(rental.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/1") # nothing was deleted on Shopify's side
-        expect(reports.map { |e, _| e.class }).to eq([ShopifyContext::NotConfigured])
-        expect(reports.first.last).to include(handled: true)
-      end
-
-      it "cancels the rental when the Shopify API answers 500, and reports the API error" do
+      it "raises and does not cancel when the Shopify API answers 500" do
         stub_request(:post, shopify_graphql_url).to_return(status: 500, body: "boom")
-        expect { rental.update!(state: :cancelled) }.not_to raise_error
-        expect(rental.reload).to be_cancelled
-        expect(reports.size).to eq(1)
-        expect(reports.first.first).to be_a(ShopifyAPI::Errors::HttpResponseError)
+        expect_not_cancelled(ShopifyAPI::Errors::HttpResponseError)
+      end
+
+      it "raises and does not cancel on a transport error" do
+        stub_request(:post, shopify_graphql_url).to_raise(Net::OpenTimeout)
+        expect_not_cancelled(Net::OpenTimeout)
+      end
+
+      it "raises and does not cancel on a non-200 success status" do
+        stub_request(:post, shopify_graphql_url).to_return(status: 202, body: "{}", headers: ShopifyHttpHelpers::JSON_HEADERS)
+        expect_not_cancelled(StandardError)
+      end
+
+      it "raises NotConfigured and does not cancel with incomplete Shopify config" do
+        allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify).and_return({})
+        expect_not_cancelled(ShopifyContext::NotConfigured)
+      end
+
+      it "cancels without touching Shopify when there is no draft order id" do
+        blank = create(:locker_rental, :await_payment)
+        expect(blank.shopify_draft_order_id).to be_blank
+        expect(ShopifyAPI::Clients::Graphql::Admin).not_to receive(:new)
+        blank.update!(state: :cancelled)
+        expect(blank.reload).to be_cancelled
       end
     end
   end

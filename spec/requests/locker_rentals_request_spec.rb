@@ -840,6 +840,21 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         expect(rental.shopify_draft_order_id).to be_nil
       end
 
+      # Master behaviour: the controller does not rescue a Shopify failure (the request errors with a 500) and the
+      # cancellation is rolled back, so no cancelled rental keeps a payable invoice.
+      it "answers 500 and cancels nothing when deleting the draft order fails" do
+        rental = create(:locker_rental, :active)
+        rental.update_column(:shopify_draft_order_id, "gid://shopify/DraftOrder/1")
+        log_in!(staff)
+        stub_request(:post, shopify_graphql_url).to_return(status: 500, body: "boom")
+
+        patch locker_rental_path(rental), params: { locker_rental: { state: "cancelled" } }
+
+        expect(response).to have_http_status(:internal_server_error)
+        expect(rental.reload.state).to eq("active")
+        expect(rental.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/1")
+      end
+
       it "subscriber fires only on a saved state change (no mail/sync on unrelated updates)" do
         rental = create(:locker_rental, :active)
         log_in!(staff)

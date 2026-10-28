@@ -184,15 +184,9 @@ class LockerRental < ApplicationRecord
     return unless saved_change_to_state?
     case state.to_sym
     when :cancelled
-      # When a locker is cancelled, cancel draft_order too. Best-effort: this runs inside the save's
-      # transaction, so a Shopify outage or missing config must not roll the cancellation back (a 500);
-      # the stale draft order is reported and can be deleted by hand.
-      begin
-        destroy_shopify_draft_order
-      rescue *ShopifyContext::BEST_EFFORT_ERRORS => e
-        Rails.error.report(e, handled: true, severity: :error,
-                              context: { source: "locker_rental_draft_order_cleanup", locker_rental_id: id })
-      end
+      # When a locker is cancelled, cancel draft_order too. Fail closed: a Shopify failure raises out of
+      # this after_save and rolls the cancellation back, so "cancelled" never coexists with a payable invoice.
+      destroy_shopify_draft_order
     end
   end
 
