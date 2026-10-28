@@ -90,6 +90,18 @@ RSpec.describe "/api/v1 token revocation on token_version bumps", type: :request
       expect(ApiRefreshToken.where(user_id: user.id, revoked_at: nil)).to be_empty
     end
 
+    it "rolls the version bump back when revoking the refresh tokens fails" do
+      token = ApiRefreshToken.issue!(user)
+      allow(ApiRefreshToken).to receive(:revoke_all_for!).and_raise(ActiveRecord::StatementInvalid, "boom")
+      u = User.find(user.id)
+      u.deleted = true
+      expect { u.bump_token_version!(:deleted) }.to raise_error(ActiveRecord::StatementInvalid)
+      row = User.unscoped.find(user.id)
+      expect(row.token_version).to eq(user.token_version)
+      expect(row.deleted).to be(false)
+      expect(token.reload.revoked_at).to be_nil
+    end
+
     it "is the path used by store_new_password!, admin_lock! and soft_delete!" do
       [->(u) { u.store_new_password!("Brand-new-pw-123!") }, :admin_lock!, :soft_delete!].each do |action|
         u = create(:user)

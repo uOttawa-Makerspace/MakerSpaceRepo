@@ -435,15 +435,21 @@ class User < ApplicationRecord
   # refresh tokens and closes their websocket connections. The access JWTs, legacy
   # JWTs and cookie sessions die through the new token_version.
   def bump_token_version!(*columns)
+    conn = self.class.connection
     values = columns.index_with { |column| self[column] }.merge(updated_at: Time.current)
-    assignments = values.keys.map { |column| "#{self.class.connection.quote_column_name(column)} = ?" }
-    self.class.unscoped.where(id: id).update_all(
-      ["token_version = token_version + 1, #{assignments.join(', ')}", *values.values]
+    assignments = values.keys.map { |column| "#{conn.quote_column_name(column)} = ?" }
+    sql = self.class.sanitize_sql_array(
+      ["UPDATE #{conn.quote_table_name(self.class.table_name)} SET token_version = token_version + 1, " \
+       "#{assignments.join(', ')} WHERE id = ? RETURNING token_version", *values.values, id]
     )
-    self.token_version = self.class.unscoped.where(id: id).pick(:token_version)
+    # One transaction: a failure to revoke the refresh tokens rolls the bump (and the
+    # lock/delete columns) back, so a deleted user can never keep live refresh tokens.
+    new_version = self.class.transaction(requires_new: true) do
+      conn.select_value(sql).tap { ApiRefreshToken.revoke_all_for!(id) }
+    end
+    self.token_version = new_version
     self.updated_at = values[:updated_at]
     clear_attribute_changes(columns + %i[token_version updated_at])
-    ApiRefreshToken.revoke_all_for!(id)
     # After the real commit when called inside a caller's transaction (a rolled-back
     # change must not drop connections, and a reconnect must see the new state).
     ActiveRecord.after_all_transactions_commit { disconnect_cable! }
