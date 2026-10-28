@@ -2,20 +2,21 @@
 
 # Shopify webhooks
 class CustomWebhooksController < ApplicationController
-  # HMAC verification (X-Shopify-Hmac-Sha256) is on in every environment, test included,
-  # so specs sign their payloads and can detect its removal. Only development is exempt
-  # so unsigned webhooks can be replayed locally (e.g. with curl) without the secret.
-  #
-  # Fail closed when no webhook secret is configured (production/staging without the
-  # credential): the app boots, but every request is refused with 503 and reported.
-  # 503 (not 401) because it is OUR misconfiguration, and Shopify retries non-2xx
-  # webhooks, so deliveries are processed once the secret is set. This runs before the
-  # gem's HMAC check (declared first).
-  before_action :require_webhook_secret!, unless: -> { Rails.env.development? }
-  # A request with no X-Shopify-Hmac-Sha256 header would make the gem's secure_compare(nil, ..)
-  # raise (500); answer 401 before the gem's check instead.
-  before_action :require_hmac_header!, unless: -> { Rails.env.development? }
-  include ShopifyApp::WebhookVerification unless Rails.env.development?
+  # Webhook verification is on in every environment, test included, so specs sign their
+  # payloads and can detect its removal. Only development is exempt (decided once, at load
+  # time) so unsigned webhooks can be replayed locally (e.g. with curl) without the secret.
+  unless Rails.env.development?
+    # 1. Fail closed when no webhook secret is configured (production/staging without the
+    #    credential): the app boots, but every request is refused with 503 and reported.
+    #    503 (not 401) because it is OUR misconfiguration, and Shopify retries non-2xx
+    #    webhooks, so deliveries are processed once the secret is set.
+    before_action :require_webhook_secret!
+    # 2. A request with no X-Shopify-Hmac-Sha256 header would make the gem's
+    #    secure_compare(nil, ..) raise (500); answer 401 before the gem's check instead.
+    before_action :require_hmac_header!
+    # 3. The gem's HMAC check (X-Shopify-Hmac-Sha256), added after the two above so they run first.
+    include ShopifyApp::WebhookVerification
+  end
   include ShopifyConcern
 
   def orders_paid

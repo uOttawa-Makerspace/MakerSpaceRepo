@@ -1,6 +1,17 @@
 require "rails_helper"
 
 RSpec.describe CustomWebhooksController, type: :controller do
+  # Order matters: the secret guard (503) and the header guard (401) must run before the gem's
+  # HMAC check, which raises on a missing header. Declared at load time, not per request.
+  it "runs the secret guard, then the header guard, then the gem's HMAC check, as plain (unconditional) callbacks" do
+    callbacks = described_class._process_action_callbacks.select { |c| c.kind == :before }
+    names = callbacks.map(&:filter) & %i[require_webhook_secret! require_hmac_header! verify_request]
+    expect(names).to eq(%i[require_webhook_secret! require_hmac_header! verify_request])
+    guards = callbacks.select { |c| %i[require_webhook_secret! require_hmac_header!].include?(c.filter) }
+    expect(guards.map { |c| c.instance_variable_get(:@if) }).to all(be_empty)
+    expect(guards.map { |c| c.instance_variable_get(:@unless) }).to all(be_empty)
+  end
+
   describe "POST /orders_paid" do
     context "webhook from shopify when user pays an order" do
       it "should mark a locker as paid" do
