@@ -88,13 +88,15 @@ class ApiRefreshToken < ApplicationRecord
 
   PRUNE_AFTER = 7.days
 
-  # Deletes rows that can no longer matter: past their own expiry or the family cap
-  # by more than PRUNE_AFTER, or revoked more than PRUNE_AFTER ago. Safe for the cap
-  # because every row carries family_expires_at. Returns the number of rows deleted.
-  # A pruned rotated token is simply unknown if replayed (401), same as a live replay minus the family revoke.
+  # Deletes rows that can no longer matter. A ROTATED token (revoked with a
+  # successor) is kept until its family cap plus PRUNE_AFTER: replaying it must
+  # still be detected as theft, and a stolen token stays dangerous as long as the
+  # family could be alive. Every other row (logged out, or never used) goes
+  # PRUNE_AFTER after its own expiry, the family cap or its revocation. Safe for the
+  # cap because every row carries family_expires_at. Returns the number deleted.
   def self.prune!(now: Time.current)
     cutoff = now - PRUNE_AFTER
-    where("expires_at < :c OR family_expires_at < :c OR revoked_at < :c", c: cutoff).delete_all
+    where("family_expires_at < :c OR (replaced_by_id IS NULL AND (expires_at < :c OR revoked_at < :c))", c: cutoff).delete_all
   end
 
   # Every refresh token of a user (token_version bumps, deactivation). Locks every

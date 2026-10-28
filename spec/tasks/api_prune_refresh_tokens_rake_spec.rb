@@ -4,6 +4,8 @@ require "rails_helper"
 require "rake"
 
 RSpec.describe "api:prune_refresh_tokens" do
+  include ActiveSupport::Testing::TimeHelpers
+
   let(:user) { create(:user) }
 
   before do
@@ -29,6 +31,27 @@ RSpec.describe "api:prune_refresh_tokens" do
 
     expect(ApiRefreshToken.where(id: [old_expiry, old_cap, old_revoked].map(&:id))).to be_empty
     expect(ApiRefreshToken.where(id: [recently_expired, recently_revoked, live].map(&:id)).count).to eq(3)
+  end
+
+  it "keeps a rotated token past 7 days so a replay of it is still detected as theft" do
+    first = issue(now: Time.current)
+    successor = first.rotate!
+    travel_to(8.days.from_now) do
+      ApiRefreshToken.prune!
+      expect(ApiRefreshToken.exists?(first.id)).to be(true)
+      expect(ApiRefreshToken.find_by_raw(first.raw_token).rotate!).to be_nil
+      expect(successor.reload.revoked_at).to be_present
+    end
+  end
+
+  it "prunes rotated tokens only once the family cap plus 7 days has passed" do
+    first = issue(now: 100.days.ago) # cap passed 10 days ago
+    first.update_columns(revoked_at: 50.days.ago, replaced_by_id: 1)
+    young = issue(now: 20.days.ago)
+    young.update_columns(revoked_at: 15.days.ago, replaced_by_id: 1) # family cap still 70 days away
+    ApiRefreshToken.prune!
+    expect(ApiRefreshToken.exists?(first.id)).to be(false)
+    expect(ApiRefreshToken.exists?(young.id)).to be(true)
   end
 
   it "does not let a row deleted by the prune between lookup and rotation raise" do
