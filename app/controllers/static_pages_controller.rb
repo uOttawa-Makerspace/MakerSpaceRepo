@@ -261,6 +261,9 @@ class StaticPagesController < SessionsController
     access_token = (Rails.application.credentials[Rails.env.to_sym] || {}).dig(:shopify, :password)
     return [] if access_token.blank?
 
+    # to_s: sorbet type-checks access_token as String, and a YAML token of only digits parses as an Integer.
+    access_token = access_token.to_s
+
     ShopifyContext.ensure_setup!
     sess = ShopifyAPI::Auth::Session.new(shop: MAKERSTORE_SHOP, access_token: access_token)
     client = ShopifyAPI::Clients::Graphql::Admin.new(session: sess)
@@ -294,7 +297,8 @@ class StaticPagesController < SessionsController
       []
     end
   rescue StandardError => e
-    Rails.logger.error("Failed to fetch Shopify collections: #{e.message}")
+    # Class only: a sorbet TypeError (or an HTTP error) message can echo the access token.
+    Rails.logger.error("Failed to fetch Shopify collections: #{e.class}")
     []
   end
 end
