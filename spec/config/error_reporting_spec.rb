@@ -31,13 +31,18 @@ RSpec.describe AirbrakeErrorSubscriber do
     # retry_on/discard_on (report: true) rescue the error before Airbrake's
     # job-level handler runs, so nothing else reports it.
     it "forwards application.active_job reports (retry_on/discard_on with report: true)" do
-      expect(Airbrake).to receive(:notify).with(error, hash_including(handled: true))
+      expect(Airbrake).to receive(:notify).with(error, hash_including(handled: true, rails_source: "application.active_job"))
       Rails.error.report(error, handled: true, source: "application.active_job")
     end
 
     it "forwards unhandled errors from other sources" do
       expect(Airbrake).to receive(:notify).with(error, hash_including(handled: false))
       Rails.error.report(error, handled: false, source: "application.some_thread")
+    end
+
+    it "keeps the caller's context[:source] and puts the Rails source under :rails_source" do
+      expect(Airbrake).to receive(:notify).with(error, hash_including(source: "api_v1", rails_source: "application.x"))
+      Rails.error.report(error, handled: true, source: "application.x", context: { source: "api_v1" })
     end
 
     it "never raises into the caller" do

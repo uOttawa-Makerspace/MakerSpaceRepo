@@ -22,7 +22,8 @@ class AirbrakeErrorSubscriber
     return unless Airbrake.configured?
     return if !handled && ALREADY_COVERED_SOURCES.include?(source.to_s)
 
-    Airbrake.notify(error, context.to_h.merge(handled: handled, severity: severity, source: source))
+    # The caller's own context[:source] (e.g. "api_v1") is kept; Rails' source goes under :rails_source.
+    Airbrake.notify(error, context.to_h.merge(handled: handled, severity: severity, rails_source: source))
   rescue StandardError => e
     Rails.logger.warn("AirbrakeErrorSubscriber failed: #{e.class}: #{e.message}")
   end
