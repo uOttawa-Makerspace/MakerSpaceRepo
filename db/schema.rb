@@ -84,6 +84,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_28_120000) do
   create_table "api_refresh_tokens", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "expires_at", null: false
+    t.datetime "family_expires_at", null: false
     t.uuid "family_id", null: false
     t.datetime "last_used_at"
     t.bigint "replaced_by_id"

@@ -8,7 +8,7 @@ require Rails.root.join("lib/jwt_authenticator")
 # Only the SHA-256 digest of the 32-byte random token is stored; the raw value
 # exists once, in the response that issued it (#raw_token on the issued record).
 # Lifetime: 30 days, sliding on each rotation, but never past 90 days from the
-# first login of the family (FAMILY_CAP). A family is the chain of tokens
+# first login of the family (FAMILY_CAP; stored as family_expires_at on every token). A family is the chain of tokens
 # descending from one login (one device/session).
 #
 # A token is usable only if it is not revoked, not expired, carries the user's
@@ -33,15 +33,19 @@ class ApiRefreshToken < ApplicationRecord
 
   # Issues a token for `user`. With `family:` it continues that family (rotation).
   # The raw value is on the returned record's #raw_token.
-  def self.issue!(user, family: nil, user_agent: nil, now: Time.current)
+  # A new family's absolute cap is now + FAMILY_CAP; a continued family must pass
+  # the cap it already has (family_expires_at:), copied from the token it replaces.
+  def self.issue!(user, family: nil, family_expires_at: nil, user_agent: nil, now: Time.current)
+    raise ArgumentError, "family_expires_at is required with family" if family && family_expires_at.nil?
+
     family_id = family || SecureRandom.uuid
-    started = family && where(family_id: family).minimum(:created_at)
-    cap = (started || now) + FAMILY_CAP
+    cap = family_expires_at || (now + FAMILY_CAP)
     raw = SecureRandom.urlsafe_base64(32)
     record = create!(
       user: user,
       token_digest: digest(raw),
       family_id: family_id,
+      family_expires_at: cap,
       token_version: user.token_version,
       expires_at: [now + TTL, cap].min,
       user_agent: user_agent.to_s.truncate(255).presence,
@@ -94,7 +98,7 @@ class ApiRefreshToken < ApplicationRecord
   def expired?(now = Time.current) = expires_at <= now
 
   def usable?(now = Time.current)
-    !revoked? && !expired?(now) && AuthEligibility.allowed?(user) && token_version == user.token_version
+    !revoked? && !expired?(now) && family_expires_at > now && AuthEligibility.allowed?(user) && token_version == user.token_version
   end
 
   # Revokes this token and issues its successor in the same family, under a row
@@ -114,7 +118,7 @@ class ApiRefreshToken < ApplicationRecord
       next nil unless usable?
 
       now = Time.current
-      fresh = self.class.issue!(user, family: family_id, user_agent: user_agent, now: now)
+      fresh = self.class.issue!(user, family: family_id, family_expires_at: family_expires_at, user_agent: user_agent, now: now)
       update!(revoked_at: now, replaced_by_id: fresh.id, last_used_at: now)
       fresh
     end

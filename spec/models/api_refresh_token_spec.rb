@@ -48,7 +48,7 @@ RSpec.describe ApiRefreshToken, type: :model do
 
     it "refuses a revoked token without a successor, and does not touch the family" do
       first = described_class.issue!(user)
-      sibling = described_class.issue!(user, family: first.family_id)
+      sibling = described_class.issue!(user, family: first.family_id, family_expires_at: first.family_expires_at)
       first.update!(revoked_at: Time.current)
       expect(described_class.authenticate(first.raw_token)).to be_nil
       expect(sibling.reload.revoked_at).to be_nil
@@ -97,8 +97,25 @@ RSpec.describe ApiRefreshToken, type: :model do
       first = described_class.issue!(user, now: 80.days.ago)
       first.update!(expires_at: 10.days.from_now) # as if renewed by earlier rotations
       second = first.rotate!
-      expect(second.expires_at).to be_within(1.second).of(first.created_at + 90.days)
+      expect(second.expires_at).to be_within(1.second).of(first.family_expires_at)
+      expect(second.family_expires_at).to eq(first.family_expires_at)
       expect(second.expires_at).to be < 11.days.from_now
+    end
+
+    it "sets the cap once, at the first login, and keeps it when older rows are pruned" do
+      first = described_class.issue!(user, now: 80.days.ago)
+      expect(first.family_expires_at).to be_within(1.second).of(first.created_at + 90.days)
+      first.update!(expires_at: 10.days.from_now)
+      second = first.rotate!
+      described_class.where(id: first.id).delete_all # a prune removed the oldest row
+      third = second.rotate!
+      expect(third.family_expires_at).to eq(first.family_expires_at)
+      expect(third.expires_at).to be <= first.family_expires_at
+    end
+
+    it "refuses to continue a family without its cap" do
+      first = described_class.issue!(user)
+      expect { described_class.issue!(user, family: first.family_id) }.to raise_error(ArgumentError)
     end
 
     it "slides by 30 days when the cap is far away" do
@@ -106,8 +123,9 @@ RSpec.describe ApiRefreshToken, type: :model do
       expect(first.rotate!.expires_at).to be_within(2.seconds).of(30.days.from_now)
     end
 
-    it "returns nil for a token past the family cap" do
+    it "returns nil for a token past the family cap, even if its own expiry is later" do
       first = described_class.issue!(user, now: 100.days.ago)
+      first.update!(expires_at: 5.days.from_now)
       expect(first.rotate!).to be_nil
     end
 
@@ -135,7 +153,7 @@ RSpec.describe ApiRefreshToken, type: :model do
   describe "revocation helpers" do
     it ".revoke_family! revokes only that family's live tokens" do
       a = described_class.issue!(user)
-      b = described_class.issue!(user, family: a.family_id)
+      b = described_class.issue!(user, family: a.family_id, family_expires_at: a.family_expires_at)
       c = described_class.issue!(user)
       described_class.revoke_family!(a.family_id)
       expect([a, b, c].map { |t| t.reload.revoked_at.present? }).to eq([true, true, false])

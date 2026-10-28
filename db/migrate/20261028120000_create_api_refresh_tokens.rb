@@ -12,6 +12,9 @@ class CreateApiRefreshTokens < ActiveRecord::Migration[8.1]
       t.uuid :family_id, null: false
       t.integer :token_version, null: false, default: 0
       t.datetime :expires_at, null: false
+      # Absolute cap, fixed at the first login of the family and copied on every
+      # rotation (so pruning old rows cannot extend it).
+      t.datetime :family_expires_at, null: false
       t.datetime :revoked_at
       t.bigint :replaced_by_id
       t.string :user_agent
