@@ -17,6 +17,7 @@ module JourneyHelpers
           shot = Capybara.save_path.join("actor_#{name}_#{Time.now.to_i}")
           page.save_screenshot("#{shot}.png")
           page.save_page("#{shot}.html")
+          SystemDiagnostics.write("actor_#{name}_#{Time.now.to_i}", page, label: name.to_s)
         rescue StandardError
           nil
         end
