@@ -39,21 +39,27 @@ module SystemDiagnostics
 
       @installed = true
       ActiveSupport::Notifications.subscribe("start_processing.action_controller") do |_name, _start, _finish, id, payload|
-        @mutex.synchronize { @in_flight[id] = [monotonic, payload[:method], payload[:path]] }
+        @mutex.synchronize { @in_flight[id] = [monotonic, payload[:method], strip_query(payload[:path])] }
       end
       ActiveSupport::Notifications.subscribe("process_action.action_controller") do |_name, start, finish, id, payload|
         now = monotonic
         duration = (finish - start) * 1000.0
         status = payload[:status] || payload[:response]&.status
-        location = payload[:response]&.location if payload.key?(:response)
+        location = strip_query(payload[:response]&.location) if payload.key?(:response)
         @mutex.synchronize do
           @in_flight.delete(id)
           @requests << Request.new(started: now - duration / 1000.0, finished: now, method: payload[:method],
-                                   path: payload[:path], status: status, location: location,
+                                   path: strip_query(payload[:path]), status: status, location: location,
                                    duration_ms: duration, thread: Thread.current.object_id.to_s(16))
           @requests.shift while @requests.size > REQUEST_LIMIT * 4
         end
       end
+    end
+
+    # CI uploads tmp/capybara on failure: never record query strings, which
+    # can carry magic-link, pay and reset tokens.
+    def strip_query(url)
+      url&.split("?", 2)&.first
     end
 
     def reset!
@@ -95,7 +101,7 @@ module SystemDiagnostics
       origin = @example_started || now
       out = []
       out << "== session: #{label}"
-      out << "current URL: #{safe { page.current_url }}"
+      out << "current URL: #{safe { strip_query(page.current_url) }}"
       out << "example running for: #{format('%.0f', (now - origin) * 1000)} ms"
       out << ""
       out << "== last request"
@@ -128,7 +134,8 @@ module SystemDiagnostics
       out << ""
       out << "== tail of #{log_path.relative_path_from(Rails.root)} written during the example"
       out.concat(log_tail)
-      out.join("\n") << "\n"
+      # console messages and log lines embed full URLs as well
+      out.join("\n").gsub(/\?[^\s"'<>]+/, "?[FILTERED]") << "\n"
     end
 
     def log_tail
