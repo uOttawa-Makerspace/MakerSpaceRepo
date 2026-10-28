@@ -204,12 +204,30 @@ RSpec.describe ShopifyContext, :shopify_context do
 
   describe ".start_session!" do
     it "ensures the Context is set up, then builds and activates a session for the configured shop" do
-      expect(described_class).to receive(:ensure_setup!).and_call_original
+      blank_context!
       session = described_class.start_session!
+      expect(ShopifyAPI::Context.api_version).to eq("2025-01")
       expect(session).to be_a(ShopifyAPI::Auth::Session)
       expect(session.shop).to eq("fake-shop.myshopify.com")
       expect(session.access_token == "shpat_test_fake").to be(true)
       expect(ShopifyAPI::Context.active_session).to equal(session)
+    end
+
+    it "reads the credentials once per call and builds the session from that same validated config" do
+      first = ShopifyHttpHelpers::FAKE_SHOPIFY_CONFIG
+      second = first.merge(shop_name: "other-shop", password: "shpat_second")
+      allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify).and_return(first, second)
+      session = described_class.start_session!
+      expect(session.shop).to eq("fake-shop.myshopify.com")
+      expect(session.access_token == "shpat_test_fake").to be(true)
+      expect(Rails.application.credentials).to have_received(:dig).with(:test, :shopify).once
+    end
+
+    it "keeps no failure in thread-local state" do
+      allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify).and_return({})
+      allow(Rails.logger).to receive(:warn)
+      expect { described_class.start_session! }.to raise_error(ShopifyContext::NotConfigured)
+      expect(Thread.current.key?(:shopify_context_failure)).to be(false)
     end
 
     it "primes a cold Context before the session is used" do

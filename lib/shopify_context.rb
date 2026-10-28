@@ -8,18 +8,32 @@
 # ShopifyService call that staff lockers pages happened to trigger (D-S36).
 #
 # Called at boot (config/initializers/shopify_api.rb) AND before every Shopify session
-# (via start_session!: ShopifyConcern, ShopifyService, ShopifyCartConcern, StaticPagesController), so a failed boot setup heals on the
+# (via start_session!: ShopifyConcern, ShopifyService, ShopifyCartConcern; the homepage calls ensure_setup!), so a failed boot setup heals on the
 # next draft order. Idempotent and cheap, and it never raises: failures are logged and
 # reported in production/staging only (Rails.error, which Airbrake subscribes to) and ensure_setup! returns false.
 require Rails.root.join("lib/report_throttle")
 
 module ShopifyContext
-  class MissingConfig < StandardError; end
+  class MissingConfig < StandardError
+    attr_reader :keys
+
+    def initialize(keys)
+      @keys = keys.map(&:to_sym).sort
+      super("credentials.#{Rails.env}.shopify is missing #{@keys.join(', ')}; ShopifyAPI::Context.setup skipped")
+    end
+  end
 
   # Stands in for whatever Context.setup raised. sorbet's TypeErrors echo the offending VALUE
   # (an all-digit token, say), so the original message is never logged, reported or put in
   # NotConfigured: only its class name.
-  class SetupFailed < StandardError; end
+  class SetupFailed < StandardError
+    attr_reader :error_class_name
+
+    def initialize(error_class_name)
+      @error_class_name = error_class_name
+      super("ShopifyAPI::Context.setup failed with #{error_class_name}")
+    end
+  end
 
   # Raised by start_session! when the Context could not be set up (missing credentials keys, or
   # Context.setup raised). Message names the missing keys or the setup error class,
@@ -39,15 +53,41 @@ module ShopifyContext
 
   REQUIRED_KEYS = %i[api_key password shop_name api_version].freeze
 
+  # Makes sure the Context is set up. Never raises: a failure is logged (and reported in
+  # production/staging) and this returns false.
   def self.ensure_setup!
-    Thread.current[:shopify_context_failure] = nil
+    _config, error = setup_context
+    return true unless error
+
+    failed(error)
+  end
+
+  # The ONE way to start a Shopify Admin/Storefront session: reads the credentials ONCE, makes sure
+  # the Context is set up for them (raising NotConfigured when it cannot be), then builds the
+  # session from that same validated config and activates it. ShopifyConcern, ShopifyCartConcern
+  # and ShopifyService all call this.
+  def self.start_session!
+    config, error = setup_context
+    if error
+      failed(error)
+      raise NotConfigured, "Shopify is not configured, not contacting the Admin API: #{error.class}: #{error.message}"
+    end
+
+    session = ShopifyAPI::Auth::Session.new(
+      shop: "#{config[:shop_name]}.myshopify.com",
+      access_token: config[:password].to_s
+    )
+    ShopifyAPI::Context.activate_session(session)
+    session
+  end
+
+  # Reads the credentials once, validates them and runs Context.setup when needed.
+  # Returns [config, nil] on success and [config, error] on failure; the error is MissingConfig
+  # or SetupFailed, whose messages hold key names / an error class and never a value.
+  def self.setup_context
     config = Rails.application.credentials.dig(Rails.env.to_sym, :shopify) || {}
     missing = REQUIRED_KEYS.reject { |key| config[key].present? }
-    unless missing.empty?
-      return failed(MissingConfig.new(
-        "credentials.#{Rails.env}.shopify is missing #{missing.join(', ')}; ShopifyAPI::Context.setup skipped"
-      ))
-    end
+    return [config, MissingConfig.new(missing)] unless missing.empty?
 
     args = {
       # to_s: sorbet type-checks these as String, and a YAML token of only digits parses as an Integer
@@ -63,29 +103,11 @@ module ShopifyContext
     SETUP_MUTEX.synchronize do
       ShopifyAPI::Context.setup(**args) unless current?(args)
     end
-    true
+    [config, nil]
   rescue StandardError => e
-    failed(SetupFailed.new("ShopifyAPI::Context.setup failed with #{e.class.name}"))
+    [config || {}, SetupFailed.new(e.class.name)]
   end
-
-  # The ONE way to start a Shopify Admin/Storefront session: dig the credentials, make sure the
-  # Context is set up (raising NotConfigured when it cannot be), build the session for them and activate it. ShopifyConcern,
-  # ShopifyCartConcern, ShopifyService and StaticPagesController all call this.
-  def self.start_session!
-    config = Rails.application.credentials.dig(Rails.env.to_sym, :shopify) || {}
-    unless ensure_setup!
-      failure = Thread.current[:shopify_context_failure]
-      raise NotConfigured, "Shopify is not configured, not contacting the Admin API: " \
-                           "#{failure ? "#{failure.class}: #{failure.message}" : 'ShopifyContext.ensure_setup! failed'}"
-    end
-
-    session = ShopifyAPI::Auth::Session.new(
-      shop: "#{config[:shop_name]}.myshopify.com",
-      access_token: config[:password].to_s
-    )
-    ShopifyAPI::Context.activate_session(session)
-    session
-  end
+  private_class_method :setup_context
 
   def self.current?(args)
     ShopifyAPI::Context.api_key == args[:api_key] &&
@@ -103,7 +125,6 @@ module ShopifyContext
   end
 
   def self.failed(error)
-    Thread.current[:shopify_context_failure] = error
     message = "[shopify_context] #{error.class}: #{error.message}"
     if !report_to_tracker?
       Rails.logger.warn(message)
