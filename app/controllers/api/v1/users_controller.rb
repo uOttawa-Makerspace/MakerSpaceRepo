@@ -108,7 +108,7 @@ module Api
         from_sessions = user.certifications.includes(training_session: :training).highest_level
         held = from_sessions.to_set { |c| c.training_session.training_id }
         via_projects = user.certifications.where(training_session_id: nil)
-                           .includes(proficient_project_session: { proficient_project: :training }).to_a
+                           .includes(:training_session, proficient_project_session: { proficient_project: :training }).to_a
                            .select { |c| c.proficient_project_session&.proficient_project }
                            .group_by { |c| c.proficient_project_session.proficient_project.training_id }
                            .reject { |training_id, _| held.include?(training_id) }
