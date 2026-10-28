@@ -422,6 +422,8 @@ class User < ApplicationRecord
     columns = { password: password, token_version: token_version, updated_at: Time.current }
     columns.merge!(locked: false, auth_attempts: 0, locked_until: nil) if clear_lock
     update_columns(columns)
+    # /api/v1 refresh tokens die with the bump (they also fail their own token_version check)
+    ApiRefreshToken.revoke_all_for!(id)
     disconnect_cable!
   end
 
@@ -538,6 +540,7 @@ class User < ApplicationRecord
         true, 99.years.from_now, MAX_AUTH_ATTEMPTS, Time.current
       ]
     )
+    ApiRefreshToken.revoke_all_for!(id)
     reload
     disconnect_cable!
     self
@@ -585,6 +588,7 @@ class User < ApplicationRecord
       self.deleted = true
       save!(validate: false)
       increment!(:token_version)
+      ApiRefreshToken.revoke_all_for!(id)
     end
     self
   end
