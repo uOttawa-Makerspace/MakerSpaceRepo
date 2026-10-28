@@ -117,6 +117,10 @@ SamlIdp.configure do |config|
     }
   }
 
+  # Every attribute is sent (and advertised in the metadata) under a Name equal
+  # to its key; the assertion already fell back to the key, the metadata did not.
+  config.attributes = config.attributes.to_h { |key, opts| [key, opts.merge(name: key.to_s)] }
+
   config.service_provider.finder = ->(issuer_or_entity_id) do
     service_providers[issuer_or_entity_id]
   end
