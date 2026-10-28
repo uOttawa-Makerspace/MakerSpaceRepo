@@ -62,10 +62,4 @@ class BadgesController < DevelopmentProgramsController
 
     certifications.order(user_id: :asc)
   end
-
-  def only_admin_access
-    return if current_user.admin?
-    redirect_to development_programs_path
-    flash[:alert] = "Only admin members can access this area."
-  end
 end
