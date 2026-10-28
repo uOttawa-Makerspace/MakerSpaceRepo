@@ -29,7 +29,7 @@ module Api
 
         raise ActiveRecord::RecordNotFound if user.nil?
 
-        certifications = user.certifications.includes(training_session: :training).highest_level
+        certifications = profile_certifications(user)
         render json: UserProfileSerializer.call(
           user,
           avatar_url: avatar_url_for(user),
@@ -93,6 +93,23 @@ module Api
       end
 
       private
+
+      LEVEL_RANK = { "Beginner" => 0, "Intermediate" => 1, "Advanced" => 2 }.freeze
+
+      # Highest-level certification per training, whether earned in a training session
+      # or only through a proficient project (the same trainings remaining_trainings
+      # counts as held).
+      def profile_certifications(user)
+        from_sessions = user.certifications.includes(training_session: :training).highest_level
+        held = from_sessions.to_set { |c| c.training_session.training_id }
+        via_projects = user.certifications.where(training_session_id: nil)
+                           .includes(proficient_project_session: { proficient_project: :training }).to_a
+                           .select { |c| c.proficient_project_session&.proficient_project }
+                           .group_by { |c| c.proficient_project_session.proficient_project.training_id }
+                           .reject { |training_id, _| held.include?(training_id) }
+                           .map { |_, certs| certs.max_by { |c| LEVEL_RANK.fetch(c.level, -1) } }
+        from_sessions + via_projects
+      end
 
       # Strict integer id: `find("12abc")` would silently mean 12.
       def find_user!

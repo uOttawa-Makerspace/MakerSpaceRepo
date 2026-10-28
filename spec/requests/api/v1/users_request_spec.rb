@@ -123,6 +123,20 @@ RSpec.describe "/api/v1/users", type: :request do
       expect(ids).not_to include(pp.training_id)
     end
 
+    it "lists a training held only through a proficient project as a certification, not as remaining" do
+      pp = create(:proficient_project)
+      pp_cert = create(:certification, user: target, training_session: nil, level: "Beginner")
+      create(:proficient_project_session, certification: pp_cert, user: target, proficient_project: pp, level: "Beginner")
+      api_get "/api/v1/users/#{target.username}", as: staff
+      expect(response).to have_http_status(:ok)
+      held = body["certifications"].map { |c| c["training"]["id"] }
+      expect(held).to include(pp.training_id)
+      listed = body["certifications"].find { |c| c["training"]["id"] == pp.training_id }
+      expect(listed["id"]).to eq(pp_cert.id)
+      expect(listed["training"]["name_en"]).to eq(pp.training.name_en)
+      expect(body["remaining_trainings"].map { |t| t["id"] }).not_to include(pp.training_id)
+    end
+
     it "loads several certifications without N+1 queries (Bullet is on)" do
       create(:certification, :"3d_printing", user: target)
       create(:certification, :basic_training, user: target)

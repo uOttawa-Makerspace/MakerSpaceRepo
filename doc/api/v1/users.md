@@ -27,7 +27,7 @@ Staff/admin: any user (soft-deleted accounts included, as in the legacy profile)
 }
 ```
 - `rfid` is `null` when no card is linked.
-- `certifications`: active certifications, highest level per training (same selection as the HTML profile).
+- `certifications`: active certifications, highest level per training, including trainings held only through a proficient project.
 - `remaining_trainings`: every training the user has no active certification for. Before this endpoint the field was always empty (never sent); it now holds `User#remaining_trainings`.
 - Never returned: `password`, `access_token`, `student_id`, `wallet`, `mac_address`, or any other column.
 
