@@ -176,8 +176,7 @@ RSpec.describe "Static pages", type: :request do
       end
 
       it "returns no links without calling Shopify when no access token is configured" do
-        allow(Rails.application.credentials).to receive(:[]).and_call_original
-        allow(Rails.application.credentials).to receive(:[]).with(:test).and_return({})
+        allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify, :password).and_return(nil)
         get root_path
         expect(response).to have_http_status(:ok)
         expect(controller_links).to eq([])

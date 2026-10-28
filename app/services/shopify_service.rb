@@ -6,24 +6,7 @@
 
 class ShopifyService
   def self.start_shopify_session
-    shopify_password =
-      Rails.application.credentials[Rails.env.to_sym][:shopify][:password]
-    shopify_shop_name =
-      Rails.application.credentials[Rails.env.to_sym][:shopify][:shop_name]
-
-    session =
-      ShopifyAPI::Auth::Session.new(
-        shop: "#{shopify_shop_name}.myshopify.com",
-        access_token: shopify_password
-      )
-
-    ShopifyContext.ensure_setup!
-
-    # Activate session to be used in all API calls
-    # session must be type `ShopifyAPI::Auth::Session`
-    ShopifyAPI::Context.activate_session(session)
-
-    session
+    ShopifyContext.start_session!
   end
 
   def self.admin_client

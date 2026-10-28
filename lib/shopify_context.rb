@@ -8,7 +8,7 @@
 # ShopifyService call that staff lockers pages happened to trigger (D-S36).
 #
 # Called at boot (config/initializers/shopify_api.rb) AND before every Shopify session
-# (ShopifyConcern, ShopifyService, ShopifyCartConcern), so a failed boot setup heals on the
+# (via start_session!: ShopifyConcern, ShopifyService, ShopifyCartConcern, StaticPagesController), so a failed boot setup heals on the
 # next draft order. Idempotent and cheap, and it never raises: failures are logged and
 # reported (Rails.error, which Airbrake subscribes to) and ensure_setup! returns false.
 module ShopifyContext
@@ -39,6 +39,20 @@ module ShopifyContext
     true
   rescue StandardError => e
     failed(e)
+  end
+
+  # The ONE way to start a Shopify Admin/Storefront session: dig the credentials, make sure the
+  # Context is set up, build the session for them and activate it. ShopifyConcern,
+  # ShopifyCartConcern, ShopifyService and StaticPagesController all call this.
+  def self.start_session!
+    config = Rails.application.credentials.dig(Rails.env.to_sym, :shopify) || {}
+    ensure_setup!
+    session = ShopifyAPI::Auth::Session.new(
+      shop: "#{config[:shop_name]}.myshopify.com",
+      access_token: config[:password]
+    )
+    ShopifyAPI::Context.activate_session(session)
+    session
   end
 
   def self.current?(args)

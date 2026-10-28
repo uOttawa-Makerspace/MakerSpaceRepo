@@ -252,14 +252,9 @@ class StaticPagesController < SessionsController
   end
 
   def home_makerstore_links
-    credentials = Rails.application.credentials[Rails.env.to_sym] || {}
-    shopify_creds = credentials[:shopify] || {}
-    access_token = shopify_creds[:password]
-    return [] if access_token.blank?
+    return [] if Rails.application.credentials.dig(Rails.env.to_sym, :shopify, :password).blank?
 
-    shop_url = 'uottawa-makerspace.myshopify.com'
-    sess = ShopifyAPI::Auth::Session.new(shop: shop_url, access_token: access_token)
-    client = ShopifyAPI::Clients::Graphql::Admin.new(session: sess)
+    client = ShopifyAPI::Clients::Graphql::Admin.new(session: ShopifyContext.start_session!)
 
     query = <<~QUERY
       query {

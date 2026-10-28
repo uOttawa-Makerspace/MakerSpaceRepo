@@ -193,11 +193,14 @@ RSpec.describe "Shopify Admin GraphQL over real HTTP (WebMock)", type: :request 
     expect(callers).to eq(["lib/shopify_context.rb"])
   end
 
-  it "every Shopify session start and the boot initializer go through ShopifyContext.ensure_setup!" do
+  it "every Shopify session start goes through ShopifyContext.start_session!, and the boot initializer through ensure_setup!" do
     %w[app/services/shopify_service.rb app/models/concerns/shopify_concern.rb
-       app/models/concerns/shopify_cart_concern.rb config/initializers/shopify_api.rb].each do |file|
-      expect(File.read(Rails.root.join(file))).to include("ShopifyContext.ensure_setup!"), file
+       app/models/concerns/shopify_cart_concern.rb app/controllers/static_pages_controller.rb].each do |file|
+      src = File.read(Rails.root.join(file))
+      expect(src).to include("ShopifyContext.start_session!"), file
+      expect(src).not_to include("ShopifyAPI::Auth::Session.new"), "#{file} builds its own session"
     end
+    expect(File.read(Rails.root.join("config/initializers/shopify_api.rb"))).to include("ShopifyContext.ensure_setup!")
   end
 
   describe "in a fresh process (nothing but the boot initializer ran Context.setup)" do

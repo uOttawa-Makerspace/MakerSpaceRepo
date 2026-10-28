@@ -77,4 +77,35 @@ RSpec.describe ShopifyContext, :shopify_context do
     expect(reports.first.first).to be_a(ShopifyAPI::Errors::UnsupportedVersionError)
     expect(Rails.logger).to have_received(:warn).with(/UnsupportedVersionError/)
   end
+
+  describe ".start_session!" do
+    it "ensures the Context is set up, then builds and activates a session for the configured shop" do
+      expect(described_class).to receive(:ensure_setup!).and_call_original
+      session = described_class.start_session!
+      expect(session).to be_a(ShopifyAPI::Auth::Session)
+      expect(session.shop).to eq("fake-shop.myshopify.com")
+      expect(session.access_token == "shpat_test_fake").to be(true)
+      expect(ShopifyAPI::Context.active_session).to equal(session)
+    end
+
+    it "primes a cold Context before the session is used" do
+      blank_context!
+      described_class.start_session!
+      expect(ShopifyAPI::Context.api_version).to eq("2025-01")
+    end
+
+    it "is what ShopifyService, ShopifyConcern and ShopifyCartConcern delegate to" do
+      sentinel = Object.new
+      allow(described_class).to receive(:start_session!).and_return(sentinel)
+      expect(ShopifyService.start_shopify_session).to equal(sentinel)
+      expect(Membership.start_shopify_session).to equal(sentinel)
+      expect(Class.new { include ShopifyCartConcern }.start_shopify_session).to equal(sentinel)
+    end
+
+    it "ShopifyService digs: a missing shopify section does not raise NoMethodError" do
+      allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify).and_return(nil)
+      allow(Rails.application.credentials).to receive(:[]).with(:test).and_return({})
+      expect { ShopifyService.start_shopify_session }.not_to raise_error
+    end
+  end
 end

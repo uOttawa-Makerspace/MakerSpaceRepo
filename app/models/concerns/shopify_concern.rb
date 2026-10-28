@@ -9,16 +9,7 @@ module ShopifyConcern
 
   class_methods do
     def start_shopify_session
-      shopify_config = Rails.application.credentials.dig(Rails.env.to_sym, :shopify) || {}
-
-      session = ShopifyAPI::Auth::Session.new(
-        shop: "#{shopify_config[:shop_name]}.myshopify.com",
-        access_token: shopify_config[:password]
-      )
-
-      ShopifyContext.ensure_setup!
-      ShopifyAPI::Context.activate_session(session)
-      session
+      ShopifyContext.start_session!
     end
 
     def draft_order_processable?(tag)
