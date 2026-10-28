@@ -427,6 +427,14 @@ RSpec.describe "/api/v1/users", type: :request do
     expect(target.programs).to be_empty
   end
 
+  it "does not route a non-integer id at all (404 before any authentication), for role and programs" do
+    api_send :patch, "/api/v1/users/12abc/role", { role: "staff" }
+    expect(response).to have_http_status(:not_found)
+    api_send :put, "/api/v1/users/12abc/programs", { development: true, volunteer: true }
+    expect(response).to have_http_status(:not_found)
+    expect(Rails.application.routes.recognize_path("/api/v1/users/12abc/role", method: :patch)[:action]).to eq("route_not_found")
+  end
+
   it "answers every response with Cache-Control no-store and no cookie" do
     api_get "/api/v1/users/#{target.username}", as: staff
     expect(response.headers["Cache-Control"]).to eq("no-store")

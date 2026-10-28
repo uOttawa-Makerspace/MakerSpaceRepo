@@ -15,8 +15,9 @@ Rails.application.routes.draw do
       end
       get "users", to: "users#index"
       get "users/:username", to: "users#show", constraints: { username: %r{[^/]+} }
-      patch "users/:id/role", to: "users#role"
-      put "users/:id/programs", to: "users#programs"
+      # Strict integer ids at the router (UsersController#find_user! checks again).
+      patch "users/:id/role", to: "users#role", constraints: { id: /\d+/ }
+      put "users/:id/programs", to: "users#programs", constraints: { id: /\d+/ }
       # keep last: unknown /api/v1 paths answer with the JSON 404, not the HTML one
       match "*path", to: "base#route_not_found", via: :all
     end
