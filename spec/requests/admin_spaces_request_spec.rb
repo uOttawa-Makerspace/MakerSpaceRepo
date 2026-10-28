@@ -357,11 +357,12 @@ RSpec.describe "Admin spaces", type: :request do
         expect(flash[:notice]).to eq("Calendars updated successfully.")
       end
 
-      # WART(D-SP25): a calendar with an unknown role fails validation, is silently dropped (create, not create!), and the save still reports success.
-      it "silently drops a calendar with an invalid role but flashes success" do
+      it "saves nothing and flashes an error when a calendar has an invalid role" do
+        keep = StaffNeededCalendar.create!(space: space, calendar_url: "https://old.test/x.ics")
         save_calendars(staff_needed_calendar: [url], staff_needed_calendar_role: ["bogus"])
-        expect(flash[:notice]).to eq("Calendars updated successfully.")
-        expect(StaffNeededCalendar.where(space: space)).to be_empty
+        expect(flash[:notice]).to be_nil
+        expect(flash[:alert]).to include("Calendars were not saved").and include("Role")
+        expect(StaffNeededCalendar.where(space: space)).to eq([keep])
       end
 
       it "allows only one open_hours calendar and keeps existing rows when refused" do

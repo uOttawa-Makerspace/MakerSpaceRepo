@@ -277,18 +277,25 @@ class Admin::SpacesController < AdminAreaController
       return redirect_back(fallback_location: root_path)
     end
 
-    StaffNeededCalendar.where(space_id: params[:space_id]).destroy_all
+    begin
+      StaffNeededCalendar.transaction do
+        StaffNeededCalendar.where(space_id: params[:space_id]).destroy_all
 
-    calendar_urls.each_with_index do |url, i|
-      next if url.blank?
+        calendar_urls.each_with_index do |url, i|
+          next if url.blank?
 
-      StaffNeededCalendar.create(
-        name: calendar_names[i],
-        color: calendar_colors[i],
-        role: calendar_roles[i].presence,
-        space_id: params[:space_id],
-        calendar_url: url
-      )
+          StaffNeededCalendar.create!(
+            name: calendar_names[i],
+            color: calendar_colors[i],
+            role: calendar_roles[i].presence,
+            space_id: params[:space_id],
+            calendar_url: url
+          )
+        end
+      end
+    rescue ActiveRecord::RecordInvalid => e
+      flash[:alert] = "Calendars were not saved (nothing changed): #{e.record.errors.full_messages.join(', ')}"
+      return redirect_back(fallback_location: root_path)
     end
 
     flash[:notice] = "Calendars updated successfully."
