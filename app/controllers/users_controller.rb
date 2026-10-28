@@ -298,14 +298,14 @@ class UsersController < SessionsController
   def change_programs
     user = User.find(params[:user_id])
     if user.present? && (@user.staff? || @user.admin?)
-      user.sync_programs!(
+      programs = user.sync_programs!(
         development: params[:dev_program].present?,
         volunteer: params[:volunteer].present?,
         # JSON never removes teams (the React app does not send it)
         teams: params[:teams].present? || (json_request? ? nil : false)
       )
       if json_request?
-        render json: { programs: user.programs.reload.pluck(:program_type) }
+        render json: { programs: programs }
         return
       end
       flash[:notice] = "The programs for #{user.name} has been updated!"

@@ -36,6 +36,17 @@ RSpec.describe User do
     end
   end
 
+  describe "#sync_programs! atomicity" do
+    it "rolls back the earlier changes when a later one fails" do
+      user = create(:user)
+      user.programs.create!(program_type: Program::VOLUNTEER)
+      allow_any_instance_of(Program).to receive(:destroy).and_raise(ActiveRecord::StatementInvalid, "boom")
+      # development is joined first, then leaving volunteer raises
+      expect { user.sync_programs!(development: true, volunteer: false) }.to raise_error(ActiveRecord::StatementInvalid)
+      expect(user.programs.reload.pluck(:program_type)).to eq([Program::VOLUNTEER])
+    end
+  end
+
   describe ".text_search" do
     it "does not escape wildcards (legacy staff dashboard behaviour)" do
       u = create(:user, name: "Wild Card")

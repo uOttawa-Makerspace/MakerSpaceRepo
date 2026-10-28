@@ -707,14 +707,17 @@ class User < ApplicationRecord
 
   # Sets the development / volunteer / teams memberships. Each argument is true
   # (join), false (leave) or nil (leave as is; only meaningful for teams).
+  # All-or-nothing. Returns the user's program types afterwards.
   def sync_programs!(development:, volunteer:, teams: nil)
-    { Program::DEV_PROGRAM => development, Program::VOLUNTEER => volunteer, Program::TEAMS => teams }.each do |type, wanted|
-      next if wanted.nil?
+    transaction do
+      { Program::DEV_PROGRAM => development, Program::VOLUNTEER => volunteer, Program::TEAMS => teams }.each do |type, wanted|
+        next if wanted.nil?
 
-      if wanted
-        programs.find_or_create_by(program_type: type)
-      else
-        programs.find_by(program_type: type)&.destroy
+        if wanted
+          programs.find_or_create_by(program_type: type)
+        else
+          programs.find_by(program_type: type)&.destroy
+        end
       end
     end
     programs.reload.pluck(:program_type)
