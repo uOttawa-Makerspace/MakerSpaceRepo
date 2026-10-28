@@ -46,6 +46,55 @@ module JwtAuthenticator
   end
 end
 
+# Access tokens for /api/v1 (Api::V1::BaseController). Short-lived (15 min),
+# HS256, claims user_id / exp / ver (= users.token_version) / typ ("access").
+# Differences from the legacy 14-day token (User#token) that JwtAuthenticator
+# accepts: the "Bearer" scheme word is checked, `typ` must be "access", and the
+# signing secret is dedicated when credentials define one.
+# A token_version bump (password change/reset, admin lock, soft delete) kills
+# every access token through `ver`, same as the legacy one.
+module ApiAccessToken
+  TTL = 15.minutes
+  TYPE = "access"
+
+  module_function
+
+  # credentials.jwt.secret when configured (add it to the credentials to split the
+  # API signing key from secret_key_base); secret_key_base otherwise, so nothing
+  # needs to be deployed for this to work.
+  def secret
+    Rails.application.credentials.dig(:jwt, :secret).presence || Rails.application.credentials.secret_key_base
+  end
+
+  # Returns [jwt, expires_at].
+  def issue(user, now: Time.current)
+    expires_at = now + TTL
+    jwt = JWT.encode(
+      { user_id: user.id, ver: user.token_version, typ: TYPE, iat: now.to_i, exp: expires_at.to_i },
+      secret,
+      "HS256"
+    )
+    [jwt, expires_at]
+  end
+
+  # The User an `Authorization: Bearer <access>` header authenticates, or nil.
+  def user_for(authorization_header)
+    scheme, token, extra = authorization_header.to_s.split(" ")
+    return nil unless scheme.to_s.casecmp?("Bearer") && token.present? && extra.nil?
+
+    payload, = JWT.decode(token, secret, true, { algorithm: "HS256", verify_expiration: true })
+    return nil unless payload["typ"] == TYPE
+
+    user = User.find_by(id: payload["user_id"])
+    return nil unless AuthEligibility.allowed?(user)
+    return nil unless payload["ver"] == user.token_version
+
+    user
+  rescue JWT::DecodeError
+    nil
+  end
+end
+
 # The matching rule for cookie sessions: the session's stored token_version
 # (absent = 0, a session from before the column existed) must equal the user's,
 # and the user must be eligible (AuthEligibility). Used by
