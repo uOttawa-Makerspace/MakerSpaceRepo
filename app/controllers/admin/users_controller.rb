@@ -20,8 +20,6 @@ class Admin::UsersController < AdminAreaController
 
   ASSIGNABLE_ROLES = %w[admin staff regular_user volunteer].freeze
 
-  LAST_ADMIN_MESSAGE = "You cannot remove the last admin."
-  LAST_ADMIN_LOCK_MESSAGE = "You cannot lock the last admin."
 
   def index
     unless valid_sort_params?
@@ -91,12 +89,13 @@ class Admin::UsersController < AdminAreaController
     end
 
     delete_user = User.find(params[:id])
-    if last_admin?(delete_user)
-      redirect_to user_path(delete_user.username), alert: LAST_ADMIN_MESSAGE
+    begin
+      User.guarding_last_admin!([delete_user.id]) { soft_delete_user(delete_user) }
+    rescue User::LastAdminError => e
+      redirect_to user_path(delete_user.username), alert: e.message
       return
     end
 
-    soft_delete_user(delete_user)
     redirect_to root_path, notice: "User flagged as deleted"
   end
 
@@ -108,12 +107,12 @@ class Admin::UsersController < AdminAreaController
 
   def toggle_lock_user
     user_to_toggle = User.find(params[:id])
-    if !user_to_toggle.locked && last_admin?(user_to_toggle)
-      redirect_to user_path(user_to_toggle.username), alert: LAST_ADMIN_LOCK_MESSAGE
+    begin
+      toggle_user_lock_status(user_to_toggle)
+    rescue User::LastAdminError => e
+      redirect_to user_path(user_to_toggle.username), alert: e.message
       return
     end
-
-    toggle_user_lock_status(user_to_toggle)
     redirect_to user_path(user_to_toggle.username),
                 notice: "User #{user_to_toggle.locked ? 'locked' : 'unlocked'}!"
   end
@@ -124,8 +123,8 @@ class Admin::UsersController < AdminAreaController
         update_user_roles
       rescue User::LastAdminError
         respond_to do |format|
-          format.json { render json: { error: LAST_ADMIN_MESSAGE }, status: :unprocessable_content }
-          format.any { redirect_back(fallback_location: root_path, alert: LAST_ADMIN_MESSAGE) }
+          format.json { render json: { error: User::LAST_ADMIN_MESSAGE }, status: :unprocessable_content }
+          format.any { redirect_back(fallback_location: root_path, alert: User::LAST_ADMIN_MESSAGE) }
         end
         return
       end
@@ -378,24 +377,18 @@ class Admin::UsersController < AdminAreaController
     end
   end
 
+  # Locking is guarded (it removes a usable admin); unlocking never is.
   def toggle_user_lock_status(user)
-    user.locked ? user.admin_unlock! : user.admin_lock!
+    if user.locked
+      user.admin_unlock!
+    else
+      User.guarding_last_admin!([user.id], message: User::LAST_ADMIN_LOCK_MESSAGE) { user.admin_lock! }
+    end
   end
 
   # ============================================
   # Role Management
   # ============================================
-
-  # Admins who can actually sign in (soft-deleted ones are excluded by the default scope).
-  # `locked` is nullable, and an expired lockout is cleared at the next login
-  # (SessionsController#login_authentication), so both count as usable.
-  def usable_admins
-    User.usable_admins
-  end
-
-  def last_admin?(user)
-    user.admin? && usable_admins.where.not(id: user.id).none?
-  end
 
   def update_user_roles
     # ASSIGNABLE_ROLES and the integer ids were validated by valid_role_update_params?;

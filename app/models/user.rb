@@ -52,6 +52,10 @@ class User < ApplicationRecord
   # Raised by User.change_roles! when the change would leave no usable admin.
   class LastAdminError < StandardError; end
 
+  # The one wording, used by the admin UI and the API.
+  LAST_ADMIN_MESSAGE = "You cannot remove the last admin."
+  LAST_ADMIN_LOCK_MESSAGE = "You cannot lock the last admin."
+
   IDENTITIES = %w[
     grad
     undergrad
@@ -358,24 +362,37 @@ class User < ApplicationRecord
     where(role: "admin").where("users.locked IS NOT TRUE OR users.locked_until < ?", Time.current)
   }
 
+  # Runs the block (a demotion, admin lock or soft delete of `affected_ids`) only if
+  # at least one usable admin remains outside them; otherwise raises LastAdminError
+  # and the block never runs. Every such change must go through here: the admin rows
+  # are locked (in id order, so two callers cannot deadlock) before the check and
+  # held until the transaction ends, so two concurrent changes cannot each see "the
+  # other admin is still usable" and leave none.
+  def self.guarding_last_admin!(affected_ids, message: LAST_ADMIN_MESSAGE)
+    affected_ids = Array(affected_ids)
+    transaction do
+      where(role: "admin").order(:id).lock.pluck(:id)
+      if where(role: "admin", id: affected_ids).any? && usable_admins.where.not(id: affected_ids).none?
+        raise LastAdminError, message
+      end
+
+      yield
+    end
+  end
+
   # Role change for several users in ONE transaction (all-or-nothing; the cable
   # disconnects fire after commit). Refuses, with LastAdminError, a change that
-  # would leave no usable admin; the admin rows are locked first so two concurrent
-  # demotions cannot both pass the check.
+  # would leave no usable admin (see guarding_last_admin!).
   def self.change_roles!(user_ids, new_role, actor: nil)
     user_ids = Array(user_ids).map(&:to_i).reject(&:zero?)
-    transaction do
-      if new_role != "admin"
-        where(role: "admin").order(:id).lock.pluck(:id)
-        if where(role: "admin", id: user_ids).any? && usable_admins.where.not(id: user_ids).none?
-          raise LastAdminError, "You cannot remove the last admin."
-        end
-      end
+    apply = lambda do
       where(id: user_ids).find_each do |user|
         Rails.logger.info "[ROLE_CHANGE] User##{user.id} role changed from '#{user.role}' to '#{new_role}' by Admin##{actor&.id}"
         user.change_role!(new_role)
       end
     end
+    # Promoting to admin can never remove one.
+    new_role == "admin" ? transaction { apply.call } : guarding_last_admin!(user_ids) { apply.call }
   end
 
   # ============================================
