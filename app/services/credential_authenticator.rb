@@ -29,8 +29,19 @@ class CredentialAuthenticator
     return Result.new(user: user, candidate: user) if user
 
     # Bad credentials: User.authenticate counted the failure on its own instance.
-    Result.new(candidate: candidate && User.find_by(id: candidate.id)) # nil if deleted meanwhile
+    Result.new(candidate: refetch(candidate))
   end
+
+  # The failed attempt was counted on another instance: re-read the row, bypassing the
+  # query cache. A user deleted (hard or soft) since the lookup is no candidate at all,
+  # so the caller answers plain invalid credentials.
+  def self.refetch(candidate)
+    return nil unless candidate
+
+    fresh = User.uncached { User.unscoped.find_by(id: candidate.id) }
+    fresh unless fresh.nil? || fresh.deleted
+  end
+  private_class_method :refetch
 
   # " or wait 5 minutes" for a timed (brute-force) lockout; nothing for an admin
   # lock, which has no meaningful wait (99 years, or no end).

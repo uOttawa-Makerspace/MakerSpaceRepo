@@ -24,6 +24,17 @@ RSpec.describe CredentialAuthenticator do
     expect(result).to have_attributes(user: nil, refusal: nil, candidate: nil)
   end
 
+  it "answers bad credentials with no candidate when the user is soft-deleted mid-login, even inside a query-cache block" do
+    allow(User).to receive(:authenticate).and_wrap_original do |original, *args|
+      original.call(*args).tap { User.unscoped.where(id: user.id).update_all(deleted: true) }
+    end
+    result = User.cache do
+      User.unscoped.find_by(id: user.id) # primes the cache with the live row
+      described_class.call(user.username, "wrong")
+    end
+    expect(result).to have_attributes(user: nil, refusal: nil, candidate: nil)
+  end
+
   it "refuses a lock in effect before checking the password (no attempt counted)" do
     user.update_columns(locked: true, locked_until: 5.minutes.from_now, auth_attempts: 5)
     expect(described_class.call(user.username, "x").refusal).to eq(:locked)
