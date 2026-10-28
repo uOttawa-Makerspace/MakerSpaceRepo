@@ -58,6 +58,7 @@ RSpec.describe ShopifyContext, :shopify_context do
   end
 
   it "sets the Context up with exactly master's start_shopify_session arguments, and returns true" do
+    blank_context! # a Context already holding these values (left by an earlier example) would skip setup
     expect(ShopifyAPI::Context).to receive(:setup).with(
       api_key: "fake_api_key", api_secret_key: "shpat_test_fake", host: "fake-shop.myshopify.com",
       is_embedded: false, is_private: true, api_version: "2025-01"
