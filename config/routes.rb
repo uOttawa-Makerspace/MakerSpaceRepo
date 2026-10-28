@@ -76,8 +76,6 @@ Rails.application.routes.draw do
       get :settings
       get :user_magic_approval
       get :pay
-      get :stripe_success
-      get :stripe_cancelled
       get :landing
       patch :user_magic_approval_confirmation
       post "/new" => "job_orders#new"

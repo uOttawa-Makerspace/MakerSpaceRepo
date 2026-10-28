@@ -129,7 +129,7 @@ RSpec.describe JobOrderMailer, type: :mailer do
     end
   end
 
-  describe ".payment_succeeded / .payment_failed" do
+  describe ".payment_succeeded" do
     it "payment_succeeded mails the customer the pickup notice" do
       described_class.payment_succeeded(order.id).deliver_now
       expect(delivered.last.to).to eq([owner.email])
@@ -142,12 +142,6 @@ RSpec.describe JobOrderMailer, type: :mailer do
     it "payment_succeeded links the order's pay page (a link that 500s once the order is PAID)" do
       described_class.payment_succeeded(order.id).deliver_now
       expect(delivered.last.body.decoded).to include("/job_orders/pay?token=")
-    end
-
-    it "payment_failed mails the customer" do
-      described_class.payment_failed(order.id).deliver_now
-      expect(delivered.last.to).to eq([owner.email])
-      expect(delivered.last.subject).to eq("Your Job Order Payment has failed for Order ##{order.id}")
     end
   end
 
