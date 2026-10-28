@@ -80,8 +80,10 @@ class ApiRefreshToken < ApplicationRecord
     end
   end
 
+  # Always ORDER BY family_id, id: the one global lock order (revoke_all_for! locks
+  # many families, rotate!/revoke_family! one), so no two lockers can deadlock.
   def self.lock_family!(family_id)
-    where(family_id: family_id).order(:id).lock.pluck(:id)
+    where(family_id: family_id).order(:family_id, :id).lock.pluck(:id)
   end
 
   PRUNE_AFTER = 7.days
@@ -95,9 +97,15 @@ class ApiRefreshToken < ApplicationRecord
     where("expires_at < :c OR family_expires_at < :c OR revoked_at < :c", c: cutoff).delete_all
   end
 
-  # Every refresh token of a user (token_version bumps).
+  # Every refresh token of a user (token_version bumps, deactivation). Locks every
+  # family of the user first (one statement, ORDER BY family_id, id, the same order as
+  # lock_family!), so a rotation in flight finishes first and its successor is seen
+  # by the UPDATE, which is a new statement.
   def self.revoke_all_for!(user_id, now: Time.current)
-    where(user_id: user_id, revoked_at: nil).update_all(revoked_at: now)
+    transaction do
+      where(user_id: user_id).order(:family_id, :id).lock.pluck(:id)
+      where(user_id: user_id, revoked_at: nil).update_all(revoked_at: now)
+    end
   end
 
   def revoked? = revoked_at.present?

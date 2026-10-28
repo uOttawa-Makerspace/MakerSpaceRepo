@@ -55,4 +55,36 @@ RSpec.describe ApiRefreshToken, "concurrency", type: :model do
     [rotation, logout].each { |t| expect(t.value).not_to be_a(StandardError) }
     expect(described_class.where(family_id: token.family_id, revoked_at: nil)).to be_empty
   end
+
+  it "revoke_all_for! racing a rotation cannot leave the successor live (deactivation, password change)" do
+    token = described_class.issue!(user)
+    other = described_class.issue!(user) # a second family of the same user
+    paused = Queue.new
+    resume = Queue.new
+    allow(described_class).to receive(:issue!).and_wrap_original do |original, *args, **kwargs|
+      paused << true
+      resume.pop
+      original.call(*args, **kwargs)
+    end
+
+    rotation = in_thread { described_class.find(token.id).rotate! }
+    paused.pop
+    revoke = in_thread { described_class.revoke_all_for!(user.id) }
+    wait_until_blocked_on_lock
+    resume << true
+
+    [rotation, revoke].each { |t| expect(t.value).not_to be_a(StandardError) }
+    expect(described_class.where(user_id: user.id, revoked_at: nil)).to be_empty
+    expect(other.reload.revoked_at).to be_present
+  end
+
+  it "revoke_all_for! and revoke_family! on overlapping families do not deadlock" do
+    a = described_class.issue!(user)
+    b = described_class.issue!(user)
+    threads = Array.new(6) do |i|
+      in_thread { i.even? ? described_class.revoke_all_for!(user.id) : described_class.revoke_family!([a, b][i % 2].family_id) }
+    end
+    threads.each { |t| expect(t.value).not_to be_a(StandardError) }
+    expect(described_class.where(user_id: user.id, revoked_at: nil)).to be_empty
+  end
 end
