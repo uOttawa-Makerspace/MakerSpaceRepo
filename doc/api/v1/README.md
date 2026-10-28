@@ -29,6 +29,7 @@ Always JSON, always a real status:
 | 401 | Missing/invalid/expired credentials | `unauthenticated`, `invalid_credentials`, `invalid_refresh_token` |
 | 403 | Authenticated but not allowed | `forbidden`, `account_inactive`, `account_unconfirmed` |
 | 404 | No such record or route | `not_found` |
+| 409 | Retry with the newest stored refresh token | `refresh_in_progress` |
 | 422 | Validation or missing parameter | `validation_failed`, `parameter_missing` |
 | 423 | Account locked | `account_locked` |
 | 429 | Rate limited | `rate_limited` |

@@ -228,12 +228,26 @@ RSpec.describe "/api/v1/session", type: :request do
       expect(old_access).to be_present
     end
 
-    it "treats reuse of a rotated token as theft: 401 and the whole family is revoked" do
+    it "answers a replay within 30 seconds with 409 refresh_in_progress and revokes nothing" do
       old = first_refresh
       refresh(old)
       newest = body["refresh_token"]
 
+      travel_to(29.seconds.from_now) { refresh(old) }
+      expect(response).to have_http_status(:conflict)
+      expect(error["code"]).to eq("refresh_in_progress")
+      expect(response.body).not_to include("refresh_token\":")
+
+      refresh(newest) # the retry with the newly stored token works
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "treats reuse of a rotated token after 30 seconds as theft: 401 and the whole family is revoked" do
+      old = first_refresh
       refresh(old)
+      newest = body["refresh_token"]
+
+      travel_to(31.seconds.from_now) { refresh(old) }
       expect(response).to have_http_status(:unauthorized)
       expect(error["code"]).to eq("invalid_refresh_token")
 
@@ -245,7 +259,7 @@ RSpec.describe "/api/v1/session", type: :request do
       other = user.then { |u| ApiRefreshToken.issue!(u) }
       old = first_refresh
       refresh(old)
-      refresh(old)
+      travel_to(31.seconds.from_now) { refresh(old) }
       refresh(other.raw_token)
       expect(response).to have_http_status(:ok)
     end

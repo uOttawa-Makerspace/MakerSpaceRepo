@@ -33,11 +33,15 @@ module Api
       end
 
       def refresh
-        presented = ApiRefreshToken.authenticate(refresh_token_param)
+        presented = ApiRefreshToken.find_by_raw(refresh_token_param)
         successor = presented&.rotate!(user_agent: request.user_agent)
         return render_invalid_refresh_token unless successor
 
         render json: token_pair(presented.user, successor), status: :ok
+      rescue ApiRefreshToken::RefreshInProgress
+        render_error(:refresh_in_progress,
+                     "This refresh token was just used by another request; retry with the newest stored token",
+                     status: :conflict)
       end
 
       def show

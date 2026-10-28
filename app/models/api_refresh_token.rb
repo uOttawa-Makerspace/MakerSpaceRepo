@@ -23,6 +23,12 @@ class ApiRefreshToken < ApplicationRecord
   belongs_to :user, -> { unscope(where: :deleted) }, inverse_of: false
   belongs_to :replaced_by, class_name: "ApiRefreshToken", optional: true
 
+  # A rotated token was presented again within GRACE of its rotation: almost
+  # certainly a second tab racing the first, not theft. See #rotate!.
+  class RefreshInProgress < StandardError; end
+
+  GRACE = 30.seconds
+
   attr_reader :raw_token
 
   scope :live, -> { where(revoked_at: nil).where("expires_at > ?", Time.current) }
@@ -56,21 +62,12 @@ class ApiRefreshToken < ApplicationRecord
     record
   end
 
-  # The usable record for a raw token, or nil. Side effect: replaying a rotated
-  # token revokes its family.
-  def self.authenticate(raw)
-    return nil if raw.blank? || !raw.is_a?(String)
+  # The record for a presented raw token (any state), or nil. The rules for what
+  # may be done with it live in #rotate!.
+  def self.find_by_raw(raw)
+    return nil unless raw.is_a?(String) && raw.present?
 
-    record = find_by(token_digest: digest(raw))
-    return nil unless record
-
-    if record.revoked?
-      revoke_family!(record.family_id) if record.replaced_by_id
-      return nil
-    end
-    return nil unless record.usable?
-
-    record
+    find_by(token_digest: digest(raw))
   end
 
   # Rotation and family revocation serialize on the FAMILY: both first lock every
@@ -101,18 +98,25 @@ class ApiRefreshToken < ApplicationRecord
     !revoked? && !expired?(now) && family_expires_at > now && AuthEligibility.allowed?(user) && token_version == user.token_version
   end
 
-  # Revokes this token and issues its successor in the same family, under a row
-  # lock. Returns the successor (raw value on #raw_token), or nil when this token
-  # is no longer usable. If a concurrent request rotated it first, that is a
-  # replay of a rotated token: the family is revoked (after the transaction, so
-  # the revoke is not rolled back).
+  # Revokes this token and issues its successor in the same family, under the
+  # family lock. Returns the successor (raw value on #raw_token), or nil when this
+  # token is not usable (unknown state, expired, stale token_version, ineligible
+  # user, revoked by logout).
+  #
+  # The one place the replay rules live. A token that was already rotated
+  # (revoked WITH a successor) and is presented again:
+  # * within GRACE of its rotation, while the family is still live: raises
+  #   RefreshInProgress and revokes nothing. The caller should retry with the token
+  #   the winning request received (several browser tabs refreshing at once);
+  # * later (or once the family is dead): theft. The family is revoked (after the
+  #   transaction, so the revoke is not rolled back) and nil is returned.
   def rotate!(user_agent: nil)
-    replay = false
+    outcome = nil
     successor = transaction do
       self.class.lock_family!(family_id)
       lock! # reloads the row AND drops the cached user, so usable? below sees the CURRENT token_version/state
       if revoked?
-        replay = replaced_by_id.present?
+        outcome = replay_outcome if replaced_by_id.present?
         next nil
       end
       next nil unless usable?
@@ -122,9 +126,19 @@ class ApiRefreshToken < ApplicationRecord
       update!(revoked_at: now, replaced_by_id: fresh.id, last_used_at: now)
       fresh
     end
-    self.class.revoke_family!(family_id) if replay
+    raise RefreshInProgress if outcome == :in_progress
+
+    self.class.revoke_family!(family_id) if outcome == :theft
     successor
   end
 
   def revoke_family! = self.class.revoke_family!(family_id)
+
+  private
+
+  def replay_outcome
+    in_window = revoked_at > GRACE.ago
+    family_live = self.class.where(family_id: family_id, revoked_at: nil).exists?
+    in_window && family_live ? :in_progress : :theft
+  end
 end

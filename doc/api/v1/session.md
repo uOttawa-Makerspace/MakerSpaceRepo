@@ -9,7 +9,9 @@ Login, token refresh, "who am I" and logout. Replaces `POST /login_authenticatio
 | Access | HS256 JWT (`user_id`, `ver`, `typ: "access"`, `iat`, `exp`) | 15 minutes | memory; sent as `Authorization: Bearer` |
 | Refresh | 32 random bytes, base64url (43 chars). Stored only as a SHA-256 digest | 30 days, sliding on each rotation, never beyond 90 days from the first login | the client's persistent storage |
 
-A refresh token is single-use: refreshing returns a NEW refresh token and revokes the old one. All tokens descending from one login form a "family" (one per device/browser). Replaying an already-used refresh token revokes the whole family (theft detection); the user has to log in again on that device.
+A refresh token is single-use: refreshing returns a NEW refresh token and revokes the old one. All tokens descending from one login form a "family" (one per device/browser). Replaying an already-used refresh token is handled in two ways:
+- **within 30 seconds of its rotation** (typically a second browser tab refreshing at the same moment): `409 refresh_in_progress`. Nothing is revoked and no token is returned. The client must wait briefly, re-read the refresh token the other tab stored, and retry with it.
+- **after 30 seconds**: treated as theft. The whole family is revoked and the answer is `401 invalid_refresh_token`; the user has to log in again on that device.
 
 A password change/reset, an admin lock or deletion of the account ends every access token and every refresh token of the user.
 
@@ -51,7 +53,8 @@ Request: `{ "refresh_token": "Hq3..." }`
 
 | Status | `error.code` | When |
 |---|---|---|
-| 401 | `invalid_refresh_token` | Unknown, expired, revoked, already used (family is revoked), or its user can no longer sign in |
+| 401 | `invalid_refresh_token` | Unknown, expired, revoked, used more than 30 seconds ago (family is revoked), or its user can no longer sign in |
+| 409 | `refresh_in_progress` | Used less than 30 seconds ago and the family is still live. Not a failure: retry with the newest stored token |
 | 422 | `parameter_missing` | `refresh_token` absent |
 
 ## GET /api/v1/session
@@ -64,7 +67,7 @@ Body `{ "refresh_token": "..." }` or header `X-Refresh-Token: ...`. Revokes that
 1. Login -> keep the access token in memory, the refresh token in storage; remember `access_token_expires_at`.
 2. Send `Authorization: Bearer <access>` on every API call.
 3. On a 401 `unauthenticated` (or shortly before `access_token_expires_at`): call refresh ONCE, store the new pair, retry the failed request once.
-4. **Single-flight the refresh.** If several requests get a 401 at the same time, they must wait on one shared refresh call. Two concurrent refreshes with the same token look like a replay and revoke the family.
+4. **Single-flight the refresh.** Within one tab, requests that get a 401 at the same time must wait on one shared refresh call. Across tabs, use a lock (for example the Web Locks API or a `storage` event) and re-read the stored refresh token before refreshing. If you still get `409 refresh_in_progress`, wait 200 to 500 ms, re-read the stored token (the other tab saved a new one) and retry, at most a few times; if none is stored, treat it as logged out. The 30-second window is a safety net, not a substitute for single-flight.
 5. If refresh answers 401 `invalid_refresh_token`: clear storage and send the user to the login screen. Do not retry.
 6. On app start, if a refresh token is stored, call refresh (or `GET /session` if the access token is still valid) to restore the session instead of the legacy `check_signed_in`.
 7. Logout: `DELETE /api/v1/session` with the refresh token, then clear storage whatever the answer.

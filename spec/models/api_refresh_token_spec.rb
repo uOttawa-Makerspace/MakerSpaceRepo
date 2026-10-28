@@ -3,6 +3,8 @@
 require "rails_helper"
 
 RSpec.describe ApiRefreshToken, type: :model do
+  include ActiveSupport::Testing::TimeHelpers
+
   let(:user) { create(:user) }
 
   describe ".issue!" do
@@ -28,55 +30,81 @@ RSpec.describe ApiRefreshToken, type: :model do
     end
   end
 
-  describe ".authenticate" do
-    it "returns the record for a live token" do
+  describe ".find_by_raw" do
+    it "finds by digest" do
       token = described_class.issue!(user)
-      expect(described_class.authenticate(token.raw_token)).to eq(token)
+      expect(described_class.find_by_raw(token.raw_token)).to eq(token)
     end
 
-    it "refuses blank, unknown and non-string input" do
-      expect(described_class.authenticate(nil)).to be_nil
-      expect(described_class.authenticate("")).to be_nil
-      expect(described_class.authenticate("nope")).to be_nil
-      expect(described_class.authenticate(["x"])).to be_nil
+    it "returns nil for blank, unknown and non-string input" do
+      [nil, "", "nope", ["x"], { a: 1 }].each { |raw| expect(described_class.find_by_raw(raw)).to be_nil }
+    end
+  end
+
+  # What the refresh endpoint does with a presented token: find, then rotate!.
+  describe "presenting a token (find_by_raw + rotate!)" do
+    def present(raw) = described_class.find_by_raw(raw)&.rotate!
+
+    it "rotates a live token" do
+      token = described_class.issue!(user)
+      expect(present(token.raw_token)).to be_a(described_class)
     end
 
     it "refuses an expired token" do
       token = described_class.issue!(user, now: 31.days.ago)
-      expect(described_class.authenticate(token.raw_token)).to be_nil
+      expect(present(token.raw_token)).to be_nil
     end
 
     it "refuses a revoked token without a successor, and does not touch the family" do
       first = described_class.issue!(user)
       sibling = described_class.issue!(user, family: first.family_id, family_expires_at: first.family_expires_at)
       first.update!(revoked_at: Time.current)
-      expect(described_class.authenticate(first.raw_token)).to be_nil
+      expect(present(first.raw_token)).to be_nil
       expect(sibling.reload.revoked_at).to be_nil
     end
 
     it "refuses a stale token_version" do
       token = described_class.issue!(user)
       user.update_columns(token_version: user.token_version + 1)
-      expect(described_class.authenticate(token.raw_token)).to be_nil
+      expect(present(token.raw_token)).to be_nil
     end
 
     it "refuses soft-deleted and inactive users" do
       token = described_class.issue!(user)
       user.update_columns(active: false)
-      expect(described_class.authenticate(token.raw_token)).to be_nil
+      expect(present(token.raw_token)).to be_nil
       user.update_columns(active: true, deleted: true)
-      expect(described_class.authenticate(token.raw_token)).to be_nil
+      expect(present(token.raw_token)).to be_nil
     end
 
-    it "revokes the family when a rotated token is replayed" do
-      first = described_class.issue!(user)
-      second = first.rotate!
-      other_family = described_class.issue!(user)
+    context "replay of an already rotated token" do
+      include ActiveSupport::Testing::TimeHelpers
 
-      expect(described_class.authenticate(first.raw_token)).to be_nil
-      expect(second.reload.revoked_at).to be_present
-      expect(described_class.authenticate(second.raw_token)).to be_nil
-      expect(other_family.reload.revoked_at).to be_nil
+      let!(:first) { described_class.issue!(user) }
+      let!(:second) { first.rotate! }
+      let!(:other_family) { described_class.issue!(user) }
+
+      it "within 30 seconds raises RefreshInProgress and revokes nothing" do
+        travel_to(29.seconds.from_now) do
+          expect { present(first.raw_token) }.to raise_error(described_class::RefreshInProgress)
+        end
+        expect(second.reload.revoked_at).to be_nil
+        expect(described_class.find_by_raw(second.raw_token).rotate!).to be_present
+      end
+
+      it "after 30 seconds is theft: nil, and the whole family is revoked" do
+        travel_to(31.seconds.from_now) do
+          expect(present(first.raw_token)).to be_nil
+        end
+        expect(second.reload.revoked_at).to be_present
+        expect(present(second.raw_token)).to be_nil
+        expect(other_family.reload.revoked_at).to be_nil
+      end
+
+      it "inside the window but after the family was logged out is just refused (no 409)" do
+        second.revoke_family!
+        expect(present(first.raw_token)).to be_nil
+      end
     end
   end
 
@@ -90,7 +118,7 @@ RSpec.describe ApiRefreshToken, type: :model do
       expect(second.raw_token).to be_present
       expect(second.raw_token).not_to eq(first.raw_token)
       expect(second.user_agent).to eq("UA")
-      expect(described_class.authenticate(second.raw_token)).to eq(second)
+      expect(described_class.find_by_raw(second.raw_token)).to eq(second)
     end
 
     it "slides the expiry but never past 90 days from the family's first login" do
@@ -135,11 +163,11 @@ RSpec.describe ApiRefreshToken, type: :model do
       expect(first.rotate!).to be_nil
     end
 
-    it "treats a second rotation of the same token as a replay and revokes the family" do
+    it "treats a second rotation of the same token, after the grace window, as a replay and revokes the family" do
       first = described_class.issue!(user)
       stale = described_class.find(first.id)
       successor = first.rotate!
-      expect(stale.rotate!).to be_nil
+      travel_to(31.seconds.from_now) { expect(stale.rotate!).to be_nil }
       expect(successor.reload.revoked_at).to be_present
     end
 
@@ -172,7 +200,7 @@ RSpec.describe ApiRefreshToken, type: :model do
     let(:token) { described_class.issue!(user) }
 
     it "does not mint tokens when a password change lands in between (revoked by the change)" do
-      found = described_class.authenticate(token.raw_token)
+      found = described_class.find_by_raw(token.raw_token)
       found.user # association loaded and cached before the change
       User.find(user.id).store_new_password!("Brand-new-pw-123!")
       expect(found.rotate!).to be_nil
@@ -180,7 +208,7 @@ RSpec.describe ApiRefreshToken, type: :model do
     end
 
     it "uses the CURRENT token_version even when nothing revoked the row (bump without revocation)" do
-      found = described_class.authenticate(token.raw_token)
+      found = described_class.find_by_raw(token.raw_token)
       found.user
       User.where(id: user.id).update_all("token_version = token_version + 1")
       expect(found.rotate!).to be_nil
@@ -188,7 +216,7 @@ RSpec.describe ApiRefreshToken, type: :model do
     end
 
     it "sees a deactivation that lands in between" do
-      found = described_class.authenticate(token.raw_token)
+      found = described_class.find_by_raw(token.raw_token)
       found.user
       User.where(id: user.id).update_all(active: false)
       expect(found.rotate!).to be_nil
