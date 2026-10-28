@@ -69,8 +69,20 @@ class ApiRefreshToken < ApplicationRecord
     record
   end
 
+  # Rotation and family revocation serialize on the FAMILY: both first lock every
+  # row of the family (ORDER BY id, so two lockers cannot deadlock). The UPDATE
+  # below is a new statement, so it sees a successor that a rotation inserted while
+  # this call waited for the lock; without the lock it would only touch the rows of
+  # its own snapshot and miss it (logout racing a refresh would leave a live token).
   def self.revoke_family!(family_id, now: Time.current)
-    where(family_id: family_id, revoked_at: nil).update_all(revoked_at: now)
+    transaction do
+      lock_family!(family_id)
+      where(family_id: family_id, revoked_at: nil).update_all(revoked_at: now)
+    end
+  end
+
+  def self.lock_family!(family_id)
+    where(family_id: family_id).order(:id).lock.pluck(:id)
   end
 
   # Every refresh token of a user (token_version bumps).
@@ -93,6 +105,7 @@ class ApiRefreshToken < ApplicationRecord
   def rotate!(user_agent: nil)
     replay = false
     successor = transaction do
+      self.class.lock_family!(family_id)
       lock!
       if revoked?
         replay = replaced_by_id.present?
