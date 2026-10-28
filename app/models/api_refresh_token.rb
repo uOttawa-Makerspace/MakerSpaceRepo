@@ -73,8 +73,10 @@ class ApiRefreshToken < ApplicationRecord
     find_by(token_digest: digest(raw))
   end
 
-  # Rotation and family revocation serialize on the FAMILY: both first lock every
-  # row of the family (ORDER BY id, so two lockers cannot deadlock). The UPDATE
+  # Rotation and family revocation serialize on the FAMILY: both first lock the
+  # family's LIVE rows via lock_family! (a rotation always holds the live row it
+  # rotates, so the two always meet on that row). The lock set may be empty if the
+  # row was revoked while we waited; that is fine, because the UPDATE
   # below is a new statement, so it sees a successor that a rotation inserted while
   # this call waited for the lock; without the lock it would only touch the rows of
   # its own snapshot and miss it (logout racing a refresh would leave a live token).
@@ -107,8 +109,8 @@ class ApiRefreshToken < ApplicationRecord
     where("family_expires_at < :c OR (replaced_by_id IS NULL AND (expires_at < :c OR revoked_at < :c))", c: cutoff).delete_all
   end
 
-  # Every refresh token of a user (token_version bumps, deactivation). Locks every
-  # family of the user first (one statement, ORDER BY family_id, id, the same order as
+  # Every refresh token of a user (token_version bumps, deactivation). Locks the LIVE
+  # rows of every family of the user first (one statement, ORDER BY family_id, id, the same order as
   # lock_family!), so a rotation in flight finishes first and its successor is seen
   # by the UPDATE, which is a new statement.
   def self.revoke_all_for!(user_id, now: Time.current)
