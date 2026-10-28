@@ -85,10 +85,13 @@ class ApiRefreshToken < ApplicationRecord
     end
   end
 
+  # Locks only the LIVE rows (revoked_at IS NULL): a rotation and a revocation conflict
+  # only on a live row (the one being rotated/revoked), and the many rotated rows kept
+  # for theft detection must not be locked on every refresh.
   # Always ORDER BY family_id, id: the one global lock order (revoke_all_for! locks
   # many families, rotate!/revoke_family! one), so no two lockers can deadlock.
   def self.lock_family!(family_id)
-    where(family_id: family_id).order(:family_id, :id).lock.pluck(:id)
+    where(family_id: family_id, revoked_at: nil).order(:family_id, :id).lock.pluck(:id)
   end
 
   PRUNE_AFTER = 7.days
@@ -110,7 +113,7 @@ class ApiRefreshToken < ApplicationRecord
   # by the UPDATE, which is a new statement.
   def self.revoke_all_for!(user_id, now: Time.current)
     transaction do
-      where(user_id: user_id).order(:family_id, :id).lock.pluck(:id)
+      where(user_id: user_id, revoked_at: nil).order(:family_id, :id).lock.pluck(:id)
       where(user_id: user_id, revoked_at: nil).update_all(revoked_at: now)
     end
   end

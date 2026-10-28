@@ -204,6 +204,12 @@ RSpec.describe ApiRefreshToken, type: :model do
   end
 
   describe "revocation helpers" do
+    it ".lock_family! locks only live rows, not the rotated ones kept for theft detection" do
+      first = described_class.issue!(user)
+      second = first.rotate!
+      expect(described_class.lock_family!(first.family_id)).to eq([second.id])
+    end
+
     it ".revoke_family! revokes only that family's live tokens" do
       a = described_class.issue!(user)
       b = described_class.issue!(user, family: a.family_id, family_expires_at: a.family_expires_at)
