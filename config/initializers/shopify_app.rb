@@ -1,8 +1,14 @@
 # frozen_string_literal: true
 
+require Rails.root.join("lib/shopify_webhook_secret")
+
 ShopifyApp.configure do |config|
-  # Safely fetch the secret without throwing undefined method '[]' for nil in test/CI
-  config.secret = Rails.application.credentials.dig(Rails.env.to_sym, :shopify, :webhook) || "test_secret"
+  # Fails closed (raises at boot) in production/staging when the credential is missing;
+  # the "test_secret" fallback applies to test/development only.
+  config.secret = ShopifyWebhookSecret.resolve(
+    env: Rails.env,
+    credential: Rails.application.credentials.dig(Rails.env.to_sym, :shopify, :webhook)
+  )
 
   # NOTE: We intentionally do NOT set config.api_key here. 
   # If api_key is present, shopify_app treats this as a public OAuth app and tries to 
