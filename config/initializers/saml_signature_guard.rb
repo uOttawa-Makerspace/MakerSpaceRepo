@@ -37,6 +37,11 @@ module SamlSignatureGuard
     CERTIFICATE_CHECKS.clear
   end
 
+  # SAML forbids DTDs; refusing them up front removes the entity-expansion paths.
+  def doctype?
+    raw_xml.to_s.match?(/<!DOCTYPE/i) || !document.internal_subset.nil?
+  end
+
   def valid_signature?
     return super unless verifying_signature?
     return false unless covers_root_request?

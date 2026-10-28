@@ -500,6 +500,16 @@ RSpec.describe "SAML IdP", type: :request do
       expect(response).to have_http_status(:internal_server_error)
     end
 
+    it "answers 400 for any SAMLRequest carrying a DOCTYPE" do
+      c18_sign_in(:regular)
+      xml = %(<!DOCTYPE samlp:AuthnRequest [<!ENTITY a "aaaa">]><samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ) +
+            %(xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="_req1" Version="2.0" IssueInstant="2026-03-10T15:00:00Z" ) +
+            %(AssertionConsumerServiceURL="#{WIKIJS_ACS}"><saml:Issuer>wikijs.makerepo.com</saml:Issuer></samlp:AuthnRequest>)
+      post "/saml/auth", params: { submit: "current_user", SAMLRequest: c18_deflate(xml) }
+      expect(response).to have_http_status(:bad_request)
+      expect(c18_saml_response_xml).to be_nil
+    end
+
     it "answers 400 when the gem raises its SignedDocument::ValidationError outside the guard" do
       allow_any_instance_of(SamlIdp::Request).to receive(:valid?).and_raise(SamlIdp::XMLSecurity::SignedDocument::ValidationError, "Digest mismatch")
       c18_sign_in(:regular)

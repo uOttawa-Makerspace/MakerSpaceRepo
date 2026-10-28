@@ -148,6 +148,8 @@ class SamlIdpController < ApplicationController
 
     begin
       decode_request(raw, params[:Signature], params[:SigAlg], params[:RelayState])
+      return head :bad_request if saml_request.doctype?
+
       valid = valid_saml_request?
       malformed = saml_request.issuer.blank? || saml_request.errors.include?(:unaccepted_request)
     rescue *MALFORMED_REQUEST_ERRORS => e # undecodable payload, bad XML, unparseable ACS URL
