@@ -187,13 +187,27 @@ RSpec.describe "Shopify Admin GraphQL over real HTTP (WebMock)", type: :request 
     end
   end
 
+  it "WART(D-S36-new): ShopifyAPI::Context.setup is only called from ShopifyService (reached via LockerOption) and the unused ShopifyCartConcern" do
+    callers = Dir[Rails.root.join("{app,lib,config}/**/*.rb")].select { |f| File.read(f).include?("ShopifyAPI::Context.setup") }
+                  .map { |f| Pathname(f).relative_path_from(Rails.root).to_s }
+    expect(callers).to contain_exactly("app/services/shopify_service.rb", "app/models/concerns/shopify_cart_concern.rb")
+    users = Dir[Rails.root.join("{app,lib,config}/**/*.rb")].select { |f| File.read(f) =~ /include ShopifyCartConcern|ShopifyCartConcern\.start|ShopifyService\./ }
+                .map { |f| Pathname(f).relative_path_from(Rails.root).to_s }
+    expect(users).to contain_exactly("app/models/locker_option.rb")
+  end
+
   describe "when ShopifyConcern runs in a process where nothing called ShopifyAPI::Context.setup" do
     it "sends the request to /admin/api//graphql.json (empty API version)" do
       # WART(D-S36-new): ShopifyConcern.start_shopify_session only activates a session;
-      # it never calls ShopifyAPI::Context.setup (ShopifyService / ShopifyCartConcern do).
-      # In a process where neither ran first, the client builds a URL with an empty API
-      # version. Production likely primes the Context via the homepage's makerstore links
-      # (UNVERIFIED), so this is an order dependency, not a proven outage.
+      # it never calls ShopifyAPI::Context.setup. The ONLY live caller of Context.setup is
+      # ShopifyService.start_shopify_session (app/services/shopify_service.rb:24), reached only via
+      # LockerOption.locker_product_info (app/models/locker_option.rb:32, the staff lockers
+      # pages). ShopifyCartConcern also calls it but no model includes it (dead). Nothing in
+      # an initializer, Puma boot or solid_queue boot calls it, and the homepage's Shopify
+      # call (StaticPagesController#home_user_widgets) builds its own Session without setup.
+      # So a fresh Puma worker or job process that creates a draft order before any staff
+      # lockers page was served in that process posts to /admin/api//graphql.json.
+      # NOT guaranteed (order dependency); not fixed here.
       original = ShopifyAPI::Context.instance_variable_get(:@api_version)
       ShopifyAPI::Context.instance_variable_set(:@api_version, "")
       cfg = shopify_test_config
