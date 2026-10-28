@@ -14,6 +14,42 @@ RSpec.describe ShopifyContext, :shopify_context do
   before do
     allow(Rails.error).to receive(:report) { |e, **opts| reports << [e, opts] }
     allow(Rails.logger).to receive(:warn)
+    allow(described_class).to receive(:report_to_tracker?).and_return(true) # the reporting path; see "report environments"
+  end
+
+  describe "report environments" do
+    def as_env(name)
+      allow(described_class).to receive(:report_to_tracker?).and_wrap_original do |original, *|
+        original.call(ActiveSupport::EnvironmentInquirer.new(name))
+      end
+    end
+
+    before { allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify).and_return({}) }
+
+    it "reports to the tracker only in production and staging" do
+      allow(described_class).to receive(:report_to_tracker?).and_call_original
+      states = %w[production staging test development].to_h { |e| [e, described_class.report_to_tracker?(ActiveSupport::EnvironmentInquirer.new(e))] }
+      expect(states).to eq("production" => true, "staging" => true, "test" => false, "development" => false)
+      expect(described_class.report_to_tracker?).to be(false) # defaults to Rails.env (test)
+    end
+
+    %w[test development].each do |env|
+      it "in #{env}: missing config is a log warning only, no Rails.error report" do
+        as_env(env)
+        2.times { expect(described_class.ensure_setup!).to be(false) }
+        expect(reports).to be_empty
+        expect(Rails.logger).to have_received(:warn).with(/MissingConfig/).twice
+      end
+    end
+
+    %w[production staging].each do |env|
+      it "in #{env}: the failure is reported (and logged)" do
+        as_env(env)
+        described_class.ensure_setup!
+        expect(reports.size).to eq(1)
+        expect(Rails.logger).to have_received(:warn).with(/MissingConfig/)
+      end
+    end
   end
 
   def blank_context!

@@ -257,6 +257,7 @@ RSpec.describe "Shopify Admin GraphQL over real HTTP (WebMock)", type: :request 
 
     it "a missing api_key reports and does not raise at boot" do
       reported = []
+      allow(ShopifyContext).to receive(:report_to_tracker?).and_return(true)
       allow(Rails.error).to receive(:report) { |e, **| reported << e }
       allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify)
                                                             .and_return(ShopifyHttpHelpers::FAKE_SHOPIFY_CONFIG.merge(api_key: nil))

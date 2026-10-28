@@ -10,7 +10,7 @@
 # Called at boot (config/initializers/shopify_api.rb) AND before every Shopify session
 # (via start_session!: ShopifyConcern, ShopifyService, ShopifyCartConcern, StaticPagesController), so a failed boot setup heals on the
 # next draft order. Idempotent and cheap, and it never raises: failures are logged and
-# reported (Rails.error, which Airbrake subscribes to) and ensure_setup! returns false.
+# reported in production/staging only (Rails.error, which Airbrake subscribes to) and ensure_setup! returns false.
 require Rails.root.join("lib/report_throttle")
 
 module ShopifyContext
@@ -80,13 +80,22 @@ module ShopifyContext
   end
   private_class_method :current?
 
+  # Only production and staging page anyone about missing Shopify config. In test, development and
+  # assets:precompile (no credentials) it is a log warning. A predicate so specs can stub it narrowly.
+  def self.report_to_tracker?(env = Rails.env)
+    %w[production staging].include?(env.to_s)
+  end
+
   def self.failed(error)
     Thread.current[:shopify_context_failure] = error
-    if REPORT_THROTTLE.allow?(error.class.name)
-      Rails.logger.warn("[shopify_context] #{error.class}: #{error.message}")
+    message = "[shopify_context] #{error.class}: #{error.message}"
+    if !report_to_tracker?
+      Rails.logger.warn(message)
+    elsif REPORT_THROTTLE.allow?(error.class.name)
+      Rails.logger.warn(message)
       Rails.error.report(error, handled: true, severity: :error, context: { source: "shopify_context" })
     else
-      Rails.logger.info("[shopify_context] #{error.class}: #{error.message} (report throttled)")
+      Rails.logger.info("#{message} (report throttled)")
     end
     false
   end
