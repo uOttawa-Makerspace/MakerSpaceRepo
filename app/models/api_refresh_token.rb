@@ -157,7 +157,7 @@ class ApiRefreshToken < ApplicationRecord
 
   def replay_outcome
     in_window = revoked_at > GRACE.ago
-    family_live = self.class.where(family_id: family_id, revoked_at: nil).exists?
+    family_live = self.class.where(family_id: family_id, revoked_at: nil).any?(&:usable?)
     in_window && family_live ? :in_progress : :theft
   end
 end

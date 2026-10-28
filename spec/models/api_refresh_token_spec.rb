@@ -171,6 +171,24 @@ RSpec.describe ApiRefreshToken, type: :model do
       expect(successor.reload.revoked_at).to be_present
     end
 
+    it "treats a replay inside the grace window as theft when the family cap has passed (no live token left)" do
+      first = described_class.issue!(user)
+      stale = described_class.find(first.id)
+      successor = first.rotate!
+      described_class.where(family_id: first.family_id).update_all(family_expires_at: 1.second.ago, expires_at: 1.second.ago)
+      expect(stale.rotate!).to be_nil # not RefreshInProgress: nothing is usable any more
+      expect(successor.reload.revoked_at).to be_present
+    end
+
+    it "treats a replay inside the grace window as theft when the only live row is stale on token_version" do
+      first = described_class.issue!(user)
+      stale = described_class.find(first.id)
+      successor = first.rotate!
+      user.update_columns(token_version: 9)
+      expect(stale.rotate!).to be_nil
+      expect(successor.reload.revoked_at).to be_present
+    end
+
     it "returns nil when the token_version moved on" do
       first = described_class.issue!(user)
       user.update_columns(token_version: 5)
