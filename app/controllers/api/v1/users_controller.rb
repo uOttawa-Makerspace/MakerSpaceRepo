@@ -15,17 +15,19 @@ module Api
       rate_limit to: 60, within: 1.minute, only: :index, scope: "api-user-search",
                  by: -> { current_user.id }, with: :rate_limited
 
-      # Self or staff. A non-staff caller is refused for every other username
-      # before any lookup, so the answer never reveals whether that user exists.
+      # Self or staff. The record is resolved FIRST (the same case-insensitive lookup
+      # as everywhere else) and authorization compares ids, never name strings: Ruby's
+      # casecmp? folds Unicode ("maßen" == "massen") while the SQL lower() lookup does
+      # not. A non-staff caller is refused for every other username, existing or not,
+      # so the answer never reveals whether that user exists.
       def show
-        username = params[:username].to_s
-        unless current_user.staff? || current_user.username.casecmp?(username)
-          return render_error(:forbidden, "Not allowed", status: :forbidden)
-        end
-
+        staff = current_user.staff?
         # Staff may open soft-deleted accounts, like the legacy profile.
-        scope = current_user.staff? ? User.unscoped : User
-        user = scope.find_by("lower(username) = ?", username.downcase) or raise ActiveRecord::RecordNotFound
+        user = staff ? User.unscoped { User.find_by_username(params[:username].to_s) } : User.find_by_username(params[:username].to_s)
+        return render_error(:forbidden, "Not allowed", status: :forbidden) unless staff || user&.id == current_user.id
+
+        raise ActiveRecord::RecordNotFound if user.nil?
+
         certifications = user.certifications.highest_level
         render json: UserProfileSerializer.call(
           user,

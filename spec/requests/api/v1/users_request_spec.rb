@@ -45,6 +45,17 @@ RSpec.describe "/api/v1/users", type: :request do
       expect(body["user"]["id"]).to eq(regular.id)
     end
 
+    it "does not let a user read another account whose name only matches under Unicode case folding (maßen vs massen)" do
+      folded = create(:user, username: "maßen")
+      victim = create(:user, username: "massen")
+      api_get "/api/v1/users/massen", as: folded
+      expect(response).to have_http_status(:forbidden)
+      expect(response.body).not_to include(victim.email)
+      api_get "/api/v1/users/#{ERB::Util.url_encode("maßen")}", as: folded
+      expect(response).to have_http_status(:ok)
+      expect(body["user"]["id"]).to eq(folded.id)
+    end
+
     it "lets staff and admin read anyone" do
       api_get "/api/v1/users/#{target.username}", as: staff
       expect(response).to have_http_status(:ok)
