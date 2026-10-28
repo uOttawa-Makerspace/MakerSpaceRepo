@@ -96,6 +96,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_28_120000) do
     t.index ["family_id"], name: "index_api_refresh_tokens_on_family_id"
     t.index ["token_digest"], name: "index_api_refresh_tokens_on_token_digest", unique: true
     t.index ["user_id"], name: "index_api_refresh_tokens_on_user_id"
+    t.check_constraint "expires_at <= family_expires_at", name: "api_refresh_tokens_expires_within_cap"
   end
 
   create_table "area_options", id: :serial, force: :cascade do |t|

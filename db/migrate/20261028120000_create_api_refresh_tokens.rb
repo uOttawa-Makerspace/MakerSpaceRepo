@@ -20,6 +20,9 @@ class CreateApiRefreshTokens < ActiveRecord::Migration[8.1]
       t.string :user_agent
       t.datetime :created_at, null: false
       t.datetime :last_used_at
+      # A token never outlives its family cap (also enforced by a model validation;
+      # this holds for update_columns / update_all / insert_all too).
+      t.check_constraint "expires_at <= family_expires_at", name: "api_refresh_tokens_expires_within_cap"
     end
     add_index :api_refresh_tokens, :token_digest, unique: true
     add_index :api_refresh_tokens, :family_id

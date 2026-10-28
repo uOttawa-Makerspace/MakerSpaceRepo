@@ -29,9 +29,9 @@ class ApiRefreshToken < ApplicationRecord
 
   GRACE = 30.seconds
 
-  # Invariant (issue! sets it): a token never outlives its family cap, so
-  # `expired?` alone covers the cap and no query needs a separate family_expires_at test
-  # (except pruning rotated rows, which is about the cap itself).
+  # Invariant (issue! sets it; a DB CHECK constraint backs it): a token never outlives
+  # its family cap, so `expired?` already covers the cap. usable? still tests
+  # family_expires_at as cheap defence in depth.
   validate :expires_within_family_cap
 
   attr_reader :raw_token
@@ -122,7 +122,7 @@ class ApiRefreshToken < ApplicationRecord
   def expired?(now = Time.current) = expires_at <= now
 
   def usable?(now = Time.current)
-    !revoked? && !expired?(now) && AuthEligibility.allowed?(user) && token_version == user.token_version
+    !revoked? && !expired?(now) && family_expires_at > now && AuthEligibility.allowed?(user) && token_version == user.token_version
   end
 
   # Revokes this token and issues its successor in the same family, under the

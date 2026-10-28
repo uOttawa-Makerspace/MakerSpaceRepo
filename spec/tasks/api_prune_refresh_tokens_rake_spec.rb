@@ -21,7 +21,7 @@ RSpec.describe "api:prune_refresh_tokens" do
 
   it "deletes rows expired, past the cap, or revoked more than 7 days ago, and keeps the rest" do
     old_expiry = issue(now: 40.days.ago) # expired 10 days ago
-    old_cap = issue(now: 100.days.ago, expires_at: 2.days.from_now) # family cap passed 10 days ago
+    old_cap = issue(now: 100.days.ago) # family cap (and so expiry) passed 10 days ago
     old_revoked = issue(now: 20.days.ago, revoked_at: 8.days.ago, expires_at: 10.days.from_now)
     recently_expired = issue(now: 36.days.ago) # expired 6 days ago
     recently_revoked = issue(now: 5.days.ago, revoked_at: 6.days.ago)

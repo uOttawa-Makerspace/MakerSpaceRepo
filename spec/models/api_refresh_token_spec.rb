@@ -157,6 +157,16 @@ RSpec.describe ApiRefreshToken, type: :model do
       expect(first.rotate!).to be_nil
     end
 
+    it "has the database refuse a token past its family cap even when validations are skipped" do
+      first = described_class.issue!(user)
+      expect do
+        described_class.transaction(requires_new: true) { first.update_columns(expires_at: first.family_expires_at + 1.day) }
+      end.to raise_error(ActiveRecord::StatementInvalid, /check/i)
+      expect do
+        described_class.transaction(requires_new: true) { described_class.where(id: first.id).update_all(family_expires_at: 1.day.ago) }
+      end.to raise_error(ActiveRecord::StatementInvalid, /check/i)
+    end
+
     it "refuses to persist a token that outlives its family cap" do
       first = described_class.issue!(user)
       first.expires_at = first.family_expires_at + 1.day
@@ -182,7 +192,8 @@ RSpec.describe ApiRefreshToken, type: :model do
       first = described_class.issue!(user)
       stale = described_class.find(first.id)
       successor = first.rotate!
-      described_class.where(family_id: first.family_id).update_all(family_expires_at: 1.second.ago, expires_at: 1.second.ago)
+      past = 1.second.ago
+      described_class.where(family_id: first.family_id).update_all(family_expires_at: past, expires_at: past)
       expect(stale.rotate!).to be_nil # not RefreshInProgress: nothing is usable any more
       expect(successor.reload.revoked_at).to be_present
     end
