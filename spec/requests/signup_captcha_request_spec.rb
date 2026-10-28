@@ -4,10 +4,11 @@ require "rails_helper"
 
 # Signup (POST /new) behind the Cloudflare Turnstile captcha.
 #
-# TurnstileHelper#verify_turnstile short-circuits to true under Rails.env.test?,
+# TurnstileHelper#verify_turnstile short-circuits to true unless
+# TurnstileHelper.verification_enabled? (false under Rails.env.test?),
 # so every other signup spec skips the captcha. Here the helper's own
-# `Rails.env.test?` guard is switched off for the example (only that predicate,
-# the rest of the env stays "test") and Cloudflare's siteverify endpoint is
+# verification_enabled? predicate is stubbed on for the example (Rails.env itself
+# stays untouched) and Cloudflare's siteverify endpoint is
 # stubbed with WebMock, so the real verification code (Excon call, JSON parse,
 # rescue) runs.
 RSpec.describe "Signup captcha (Turnstile siteverify)", type: :request do
@@ -17,7 +18,7 @@ RSpec.describe "Signup captcha (Turnstile siteverify)", type: :request do
   let(:captcha_error) { "Captcha error, try again." }
 
   before do
-    allow(Rails.env).to receive(:test?).and_return(false)
+    allow(TurnstileHelper).to receive(:verification_enabled?).and_return(true)
     ActionMailer::Base.deliveries.clear
   end
 
