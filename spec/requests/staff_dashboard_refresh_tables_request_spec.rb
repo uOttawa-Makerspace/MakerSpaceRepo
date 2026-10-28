@@ -111,16 +111,18 @@ RSpec.describe "Staff dashboard refresh_tables", type: :request, skip_bullet: tr
   end
 
   # WART(D-EQ37): the token is `signed_in_user_ids.join("")`, with no separator, so different
-  # signed-in sets can produce the same token (ids [7001, 2301] and [70012, 301] are both
-  # "70012301"). The client holding the first set's token gets a 304 for the second set and
+  # signed-in sets can produce the same token (ids [9_000_001, 7_777_777] and [90_000_017, 777_777]
+  # are both "90000017777777"). The client holding the first set's token gets a 304 for the second set and
   # keeps showing stale people. A separator-joined token would not collide.
   it "WART(D-EQ37): answers 304 for a different signed-in set whose ids concatenate to the same token" do
     third_space = create(:space)
     staff.update!(space: third_space)
-    a = create(:user, :regular_user, id: 7001)
-    b = create(:user, :regular_user, id: 2301)
-    c = create(:user, :regular_user, id: 70012)
-    d = create(:user, :regular_user, id: 301)
+    # explicit ids far above any users_id_seq value (the sequence is not rolled back between examples)
+    a = create(:user, :regular_user, id: 9_000_001)
+    b = create(:user, :regular_user, id: 7_777_777)
+    c = create(:user, :regular_user, id: 90_000_017)
+    d = create(:user, :regular_user, id: 777_777)
+    expect("#{a.id}#{b.id}").to eq("#{c.id}#{d.id}") # precondition: the two sets collide
     create(:lab_session, space: third_space, user: a, sign_in_time: 1.hour.ago, sign_out_time: 3.hours.from_now)
     create(:lab_session, space: third_space, user: b, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
     refresh
@@ -176,7 +178,7 @@ RSpec.describe "Staff dashboard refresh_tables", type: :request, skip_bullet: tr
       refresh
 
       expect(response).to have_http_status(:internal_server_error)
-      expect(response.body[/<h1>\s*(\S+)\s+in (\S+)/, 1]).to eq("NoMethodError")
+      expect(exception_class).to eq("NoMethodError")
       expect(response.body[/<h1>\s*(\S+)\s+in (\S+)/, 2]).to eq("StaffDashboardController#refresh_tables")
     end
   end
