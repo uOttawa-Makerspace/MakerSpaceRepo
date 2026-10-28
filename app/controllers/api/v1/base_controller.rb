@@ -13,8 +13,22 @@ module Api
     #
     # Errors are always `{error: {code:, message:, fields?:}}` with a real status:
     # 400 bad_request, 401 unauthenticated, 403 forbidden, 404 not_found,
-    # 422 validation_failed / parameter_missing, 423 account_locked, 429 rate_limited.
+    # 422 validation_failed / parameter_missing, 423 account_locked, 429 rate_limited,
+    # 500 internal_error (see json_internal_errors).
     class BaseController < ActionController::API
+      # Unhandled errors answer with a JSON 500 (and are reported) everywhere except
+      # test, where they must stay visible to specs. A request spec turns it on with
+      # `Api::V1::BaseController.json_internal_errors = true`. Declared first: the
+      # handlers declared later (below) win for their own classes.
+      class_attribute :json_internal_errors, default: !Rails.env.test?
+      rescue_from StandardError do |e|
+        raise e unless json_internal_errors
+
+        Rails.logger.error("#{e.class}: #{e.message}\n#{e.backtrace&.first(15)&.join("\n")}")
+        Rails.error.report(e, handled: true, severity: :error, context: { source: "api_v1" })
+        render_error(:internal_error, "Something went wrong", status: :internal_server_error)
+      end
+
       before_action :disable_session
       before_action :no_store
       # Parse the body up front so malformed JSON is a rescued 400 even for actions that never read params.
