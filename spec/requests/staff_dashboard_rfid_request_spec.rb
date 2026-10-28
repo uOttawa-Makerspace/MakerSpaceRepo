@@ -48,9 +48,11 @@ RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
 
     it "without card_number (user_id present) changes nothing and still says ok" do
       staff
-      put staff_dashboard_link_rfid_path, params: { user_id: owner.id }, as: :json
+      other = create(:user, :regular_user)
+      put staff_dashboard_link_rfid_path, params: { user_id: other.id }, as: :json
       expect(response).to have_http_status(:ok)
       expect(body).to eq("status" => "ok")
+      expect(Rfid.where(user_id: other.id)).to be_empty
       expect(unlinked.reload.user_id).to be_nil
       expect(card.reload.user_id).to eq(owner.id)
     end
@@ -109,8 +111,8 @@ RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
       # WART(D-RFID-UNLINK-NEW): the source of the new mac is @user.location, i.e. the signed-in
       # STAFF member's last lab session's space (User#location), not the card owner's. The
       # owner here was last in space B, yet the card is re-homed to space A's first reader.
-      sign_in_session(owner, space_b)
-      sign_in_session(staff, space_a)
+      sign_in_session(owner, space_b, sign_out_in: 1.hour)
+      sign_in_session(staff, space_a, sign_out_in: 1.hour)
 
       put staff_dashboard_unlink_rfid_path, params: { card_number: card.card_number }, as: :json
 
@@ -132,7 +134,7 @@ RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
 
     it "keeps the mac when the staff member's last-session space has no reader" do
       empty_space = create(:space)
-      sign_in_session(staff, empty_space)
+      sign_in_session(staff, empty_space, sign_out_in: 1.hour)
 
       put staff_dashboard_unlink_rfid_path, params: { card_number: card.card_number }, as: :json
 
@@ -145,7 +147,7 @@ RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
       # unlink_rfid re-homes by @user.location (last lab session). Staff assigned to B who last
       # signed in at A unlinks a card, and it does not appear in staff B's unset list.
       staff.update!(space: space_b)
-      sign_in_session(staff, space_a)
+      sign_in_session(staff, space_a, sign_out_in: 1.hour)
 
       put staff_dashboard_unlink_rfid_path, params: { card_number: card.card_number }, as: :json
       expect(card.reload.mac_address).to eq(reader_a.pi_mac_address)
@@ -155,7 +157,7 @@ RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
     end
 
     it "makes the unlinked card show up in the staff member's own space's unset list when both agree" do
-      sign_in_session(staff, space_a)
+      sign_in_session(staff, space_a, sign_out_in: 1.hour)
 
       put staff_dashboard_unlink_rfid_path, params: { card_number: card.card_number }, as: :json
 
