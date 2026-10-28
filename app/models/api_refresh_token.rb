@@ -110,7 +110,7 @@ class ApiRefreshToken < ApplicationRecord
     replay = false
     successor = transaction do
       self.class.lock_family!(family_id)
-      lock!
+      lock! # reloads the row AND drops the cached user, so usable? below sees the CURRENT token_version/state
       if revoked?
         replay = replaced_by_id.present?
         next nil

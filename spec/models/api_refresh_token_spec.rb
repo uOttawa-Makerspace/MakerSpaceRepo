@@ -167,4 +167,31 @@ RSpec.describe ApiRefreshToken, type: :model do
       expect(theirs.reload.revoked_at).to be_nil
     end
   end
+
+  describe "state changing between authenticate and rotate!" do
+    let(:token) { described_class.issue!(user) }
+
+    it "does not mint tokens when a password change lands in between (revoked by the change)" do
+      found = described_class.authenticate(token.raw_token)
+      found.user # association loaded and cached before the change
+      User.find(user.id).store_new_password!("Brand-new-pw-123!")
+      expect(found.rotate!).to be_nil
+      expect(described_class.where(user_id: user.id).live).to be_empty
+    end
+
+    it "uses the CURRENT token_version even when nothing revoked the row (bump without revocation)" do
+      found = described_class.authenticate(token.raw_token)
+      found.user
+      User.where(id: user.id).update_all("token_version = token_version + 1")
+      expect(found.rotate!).to be_nil
+      expect(described_class.where(user_id: user.id).count).to eq(1)
+    end
+
+    it "sees a deactivation that lands in between" do
+      found = described_class.authenticate(token.raw_token)
+      found.user
+      User.where(id: user.id).update_all(active: false)
+      expect(found.rotate!).to be_nil
+    end
+  end
 end
