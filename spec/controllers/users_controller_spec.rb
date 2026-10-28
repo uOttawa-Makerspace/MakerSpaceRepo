@@ -533,3 +533,47 @@ RSpec.describe UsersController, type: :controller do
     end
   end
 end
+
+# UsersController#destroy has no route today (see users_profile_request_spec); the
+# action is exercised through a temporary route so it cannot become a way to delete
+# the last usable admin if it is ever routed.
+RSpec.describe UsersController, "#destroy", type: :controller do
+  before do
+    routes.draw do
+      delete "/users_destroy_probe" => "users#destroy"
+      get "/u/:username" => "users#show", as: :user
+      root to: "users#new"
+    end
+  end
+
+  def sign_in_as(user)
+    session[:user_id] = user.id
+    session[:token_version] = user.token_version
+    session[:expires_at] = Time.zone.now + 10_000
+  end
+
+  it "refuses the last usable admin deleting their own account" do
+    admin = create(:user, :admin)
+    sign_in_as(admin)
+    delete :destroy
+    expect(flash[:alert]).to eq(User::LAST_ADMIN_MESSAGE)
+    expect(User.unscoped.exists?(admin.id)).to be(true)
+  end
+
+  it "lets an admin delete their own account while another usable admin remains" do
+    admin = create(:user, :admin)
+    create(:user, :admin)
+    sign_in_as(admin)
+    delete :destroy
+    expect(response).to redirect_to(root_path)
+    expect(User.unscoped.exists?(admin.id)).to be(false)
+  end
+
+  it "lets a regular user delete their own account" do
+    create(:user, :admin)
+    user = create(:user)
+    sign_in_as(user)
+    delete :destroy
+    expect(User.unscoped.exists?(user.id)).to be(false)
+  end
+end
