@@ -195,12 +195,21 @@ RSpec.describe "Shopify Admin GraphQL over real HTTP (WebMock)", type: :request 
 
   it "every Shopify session start goes through ShopifyContext.start_session!, and the boot initializer through ensure_setup!" do
     %w[app/services/shopify_service.rb app/models/concerns/shopify_concern.rb
-       app/models/concerns/shopify_cart_concern.rb app/controllers/static_pages_controller.rb].each do |file|
+       app/models/concerns/shopify_cart_concern.rb].each do |file|
       src = File.read(Rails.root.join(file))
       expect(src).to include("ShopifyContext.start_session!"), file
       expect(src).not_to include("ShopifyAPI::Auth::Session.new"), "#{file} builds its own session"
     end
     expect(File.read(Rails.root.join("config/initializers/shopify_api.rb"))).to include("ShopifyContext.ensure_setup!")
+  end
+
+  # The homepage makerstore query is the one deliberate exception: it uses the hard-coded store and
+  # only the access token (original behaviour), priming the Context through ensure_setup!, whose result it ignores.
+  it "the homepage makerstore query builds its own hard-coded-shop session and only primes via ensure_setup!" do
+    src = File.read(Rails.root.join("app/controllers/static_pages_controller.rb"))
+    expect(src).to include("uottawa-makerspace.myshopify.com")
+    expect(src).to include("ShopifyContext.ensure_setup!")
+    expect(src).not_to include("start_session!")
   end
 
   describe "in a fresh process (nothing but the boot initializer ran Context.setup)" do

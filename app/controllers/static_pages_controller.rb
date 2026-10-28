@@ -229,6 +229,8 @@ class StaticPagesController < SessionsController
 
   private
 
+  MAKERSTORE_SHOP = 'uottawa-makerspace.myshopify.com'
+
   def fetch_simpli_events
     uri = URI('https://simpli.events/api/organizer/44d09ce5-5999-4bd9-82eb-8a9772963223')
     http = Net::HTTP.new(uri.host, uri.port)
@@ -252,7 +254,16 @@ class StaticPagesController < SessionsController
   end
 
   def home_makerstore_links
-    client = ShopifyAPI::Clients::Graphql::Admin.new(session: ShopifyContext.start_session!)
+    # Always the makerspace's own store, with only the access token (as before ShopifyContext
+    # existed): no dependency on credentials shop_name/api_key/api_version. ensure_setup! only
+    # primes Context.api_version for the client; it never raises and its result is ignored,
+    # so an incomplete config behaves as it always did (boot priming, or the client's default).
+    access_token = (Rails.application.credentials[Rails.env.to_sym] || {}).dig(:shopify, :password)
+    return [] if access_token.blank?
+
+    ShopifyContext.ensure_setup!
+    sess = ShopifyAPI::Auth::Session.new(shop: MAKERSTORE_SHOP, access_token: access_token)
+    client = ShopifyAPI::Clients::Graphql::Admin.new(session: sess)
 
     query = <<~QUERY
       query {
@@ -282,9 +293,6 @@ class StaticPagesController < SessionsController
     else
       []
     end
-  rescue ShopifyContext::NotConfigured => e
-    Rails.logger.warn("Shopify collections skipped: #{e.message}")
-    []
   rescue StandardError => e
     Rails.logger.error("Failed to fetch Shopify collections: #{e.message}")
     []

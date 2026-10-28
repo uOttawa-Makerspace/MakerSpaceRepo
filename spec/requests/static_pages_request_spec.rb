@@ -175,13 +175,47 @@ RSpec.describe "Static pages", type: :request do
         expect(controller_links).to eq([])
       end
 
-      it "returns no links without calling Shopify when Shopify is not configured (NotConfigured is rescued)" do
+      # REGRESSION guard: the homepage always queried the hard-coded store, needing only the access token.
+      describe "store host and credentials (as before the ShopifyContext refactor)" do
+        let(:makerspace_url) { %r{\Ahttps://uottawa-makerspace\.myshopify\.com/admin/api/} }
+
+        def stub_makerspace
+          stub_request(:post, makerspace_url).with(body: /collections\(first: 8\)/)
+                                             .to_return(status: 200, body: shopify_body([node]), headers: { "Content-Type" => "application/json" })
+        end
+
+        def stub_only_access_token!(token)
+          creds = Rails.application.credentials
+          allow(creds).to receive(:dig).with(:test, :shopify).and_return({ password: token })
+          allow(creds).to receive(:[]).with(:test).and_return({ shopify: { password: token } })
+        end
+
+        it "queries uottawa-makerspace.myshopify.com whatever credentials shop_name says" do
+          stub = stub_makerspace
+          get root_path
+          expect(stub).to have_been_requested
+          expect(controller_links.size).to eq(1)
+          expect(a_request(:post, /fake-shop/)).not_to have_been_made
+        end
+
+        it "works with only the access token present (no shop_name, api_key or api_version)" do
+          stub_only_access_token!("shpat_only_token")
+          allow(Rails.logger).to receive(:warn)
+          stub = stub_makerspace
+          get root_path
+          expect(response).to have_http_status(:ok)
+          expect(stub).to have_been_requested
+          expect(a_request(:post, makerspace_url).with(headers: { "X-Shopify-Access-Token" => "shpat_only_token" })).to have_been_made
+          expect(controller_links.size).to eq(1)
+        end
+      end
+
+      it "returns no links without calling Shopify when there is no access token" do
         allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify).and_return({})
-        allow(Rails.logger).to receive(:warn)
+        allow(Rails.application.credentials).to receive(:[]).with(:test).and_return({ shopify: {} })
         get root_path
         expect(response).to have_http_status(:ok)
         expect(controller_links).to eq([])
-        expect(Rails.logger).to have_received(:warn).with(/Shopify collections skipped: .*not configured/)
         expect(a_request(:post, /myshopify/)).not_to have_been_made
       end
     end
