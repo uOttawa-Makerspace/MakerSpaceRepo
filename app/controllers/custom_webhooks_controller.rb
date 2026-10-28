@@ -5,6 +5,13 @@ class CustomWebhooksController < ApplicationController
   # HMAC verification (X-Shopify-Hmac-Sha256) is on in every environment, test included,
   # so specs sign their payloads and can detect its removal. Only development is exempt
   # so unsigned webhooks can be replayed locally (e.g. with curl) without the secret.
+  #
+  # Fail closed when no webhook secret is configured (production/staging without the
+  # credential): the app boots, but every request is refused with 503 and reported.
+  # 503 (not 401) because it is OUR misconfiguration, and Shopify retries non-2xx
+  # webhooks, so deliveries are processed once the secret is set. This runs before the
+  # gem's HMAC check (declared first).
+  before_action :require_webhook_secret!, unless: -> { Rails.env.development? }
   include ShopifyApp::WebhookVerification unless Rails.env.development?
   include ShopifyConcern
 
@@ -43,6 +50,17 @@ class CustomWebhooksController < ApplicationController
   end
 
   private
+
+  def require_webhook_secret!
+    return if ShopifyWebhookSecret.configured?(ShopifyApp.configuration.secret)
+
+    error = ShopifyWebhookSecret::MissingSecret.new(
+      "Shopify webhook secret is not configured (credentials.#{Rails.env}.shopify.webhook); refusing webhook"
+    )
+    Rails.error.report(error, handled: true, severity: :error, context: { path: request.path })
+    Airbrake.notify(error) if defined?(Airbrake) && Airbrake.configured?
+    head :service_unavailable
+  end
 
   def webhook_params
     params.permit!

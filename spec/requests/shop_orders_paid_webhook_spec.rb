@@ -85,6 +85,41 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
       expect(CcMoney.count).to eq(0)
     end
 
+    # Production/staging with credentials.<env>.shopify.webhook absent: the secret is nil
+    # (ShopifyWebhookSecret), the app boots, and every webhook is refused with 503
+    # (retryable by Shopify) and reported, even one signed with the public "test_secret".
+    describe "when no webhook secret is configured" do
+      before { allow(ShopifyApp.configuration).to receive(:secret).and_return(nil) }
+
+      it "refuses a request signed with the public test_secret (503), changes nothing, and reports each refusal" do
+        reported = []
+        allow(Rails.error).to receive(:report) { |e, **opts| reported << [e, opts] }
+        allow(Airbrake).to receive(:configured?).and_return(true)
+        allow(Airbrake).to receive(:notify)
+
+        2.times do
+          expect { signed_orders_paid(forged, secret: "test_secret") }.not_to change { money_state }
+          expect(response).to have_http_status(:service_unavailable)
+          expect(response.body).to be_blank
+        end
+        expect(pending.reload.status).to eq("pending")
+        expect(rental.reload.state).to eq("await_payment")
+        expect(CcMoney.count).to eq(0)
+        expect(reported.size).to eq(2)
+        expect(reported.first.first).to be_a(ShopifyWebhookSecret::MissingSecret)
+        expect(reported.first.last).to include(severity: :error)
+        expect(Airbrake).to have_received(:notify).with(an_instance_of(ShopifyWebhookSecret::MissingSecret)).twice
+      end
+
+      it "also refuses an unsigned request (503) and a blank secret" do
+        expect { unsigned_orders_paid(forged) }.not_to change { money_state }
+        expect(response).to have_http_status(:service_unavailable)
+        allow(ShopifyApp.configuration).to receive(:secret).and_return("")
+        expect { signed_orders_paid(forged, secret: "") }.not_to change { money_state }
+        expect(response).to have_http_status(:service_unavailable)
+      end
+    end
+
     it "rejects a signature made with the wrong secret (401) and changes nothing" do
       body = forged.to_json
       bad = shopify_hmac_for(body, secret: "not-the-secret")
