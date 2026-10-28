@@ -10,7 +10,7 @@ class SamlIdpController < ApplicationController
 
   # What the gem raises for a malformed (as opposed to refused) request. Anything
   # else (SP metadata getter, DB, network) is a server failure and must surface.
-  MALFORMED_REQUEST_ERRORS = SamlSignatureGuard::PARSE_ERRORS
+  MALFORMED_REQUEST_ERRORS = (SamlSignatureGuard::PARSE_ERRORS + [SamlIdp::XMLSecurity::SignedDocument::ValidationError]).freeze
 
   # The wiki-server SP's metadata. No copy of it exists in the repository or its
   # history, so placing it at config/saml/wiki_metadata.xml is a deploy step. The
