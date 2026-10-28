@@ -527,8 +527,6 @@ RSpec.describe "SAML IdP", type: :request do
     context "signature verification failures are refused (403), never a 500" do
       def ds = "http://www.w3.org/2000/09/xmldsig#"
 
-      before { SamlSignatureGuard.reset_certificate_checks! }
-
       def signed_logout(signature_xml, extra: "", id: "_lo1")
         c18_deflate(%(<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ) +
                     %(xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="#{id}" Version="2.0" ) +
