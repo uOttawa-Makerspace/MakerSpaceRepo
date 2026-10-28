@@ -15,6 +15,15 @@ RSpec.describe CredentialAuthenticator do
     expect(user.reload.auth_attempts).to eq(1)
   end
 
+  it "answers bad credentials (not RecordNotFound) when the user is deleted between lookup and the post-failure re-fetch" do
+    allow(User).to receive(:authenticate).and_wrap_original do |original, *args|
+      original.call(*args).tap { User.unscoped.where(id: user.id).delete_all }
+    end
+    result = nil
+    expect { result = described_class.call(user.username, "wrong") }.not_to raise_error
+    expect(result).to have_attributes(user: nil, refusal: nil, candidate: nil)
+  end
+
   it "refuses a lock in effect before checking the password (no attempt counted)" do
     user.update_columns(locked: true, locked_until: 5.minutes.from_now, auth_attempts: 5)
     expect(described_class.call(user.username, "x").refusal).to eq(:locked)

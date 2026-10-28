@@ -29,7 +29,7 @@ class CredentialAuthenticator
     return Result.new(user: user, candidate: user) if user
 
     # Bad credentials: User.authenticate counted the failure on its own instance.
-    Result.new(candidate: candidate&.reload)
+    Result.new(candidate: candidate && User.find_by(id: candidate.id)) # nil if deleted meanwhile
   end
 
   # " or wait 5 minutes" for a timed (brute-force) lockout; nothing for an admin
