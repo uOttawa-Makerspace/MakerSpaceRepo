@@ -100,6 +100,24 @@ module JobOrderSpecHelpers
     order
   end
 
+  # Quote with money in every place the customer/staff see it: two quoted
+  # tasks (base fee + parts fee + an option price), plus two line items.
+  #   Print A: 20.00 base + 4 x 3.00 parts + 7.25 option = 39.25
+  #   Print B: 15.50 base
+  #   line items: 2.50 + 1.25
+  # Grand total 58.50. Returns the order.
+  def add_quoted_tasks!(order)
+    polish = JobOption.create!(name: "Polish", fee: 1)
+    print_a = order.job_tasks.create!(title: "Print A")
+    print_a.build_job_task_quote(price: 20, service_price: 3, service_quantity: 4).save!
+    print_a.job_task_options.create!(job_option: polish)
+    print_a.job_task_quote.job_task_quote_options.create!(job_option: polish, price: 7.25)
+    order.job_tasks.create!(title: "Print B").build_job_task_quote(price: 15.5, service_price: 0, service_quantity: 0).save!
+    order.job_quote_line_items.create!(description: "Rush", price: 2.5)
+    order.job_quote_line_items.create!(description: "Setup", price: 1.25)
+    order.reload
+  end
+
   # Real login POST (the AuthzTestHelper session shim recurses infinitely in
   # type: :request specs; repo precedent: sub_space_booking_request_spec.rb
   # drives login_authentication_path for the same reason).

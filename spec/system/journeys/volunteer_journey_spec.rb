@@ -21,6 +21,9 @@ RSpec.describe "Journey: volunteer task", type: :system, skip_bullet: true do
       expect(page).to have_css("h1", text: "Edit Volunteer Task")
       select volunteer.name, from: "volunteer_id"
       find("button[type=submit].btn-lg").click
+      # wait for the PATCH to redirect off the edit form before asserting on its
+      # outcome (a text wait alone can not tell "still submitting" from "failed")
+      expect(page).to have_current_path(volunteer_tasks_path)
       expect(page).to have_text("Volunteer task updated")
     end
     join = VolunteerTaskJoin.find_by!(volunteer_task: task, user: volunteer)

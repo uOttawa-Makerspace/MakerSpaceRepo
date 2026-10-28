@@ -55,6 +55,7 @@ RSpec.describe "Journey: identity", type: :system, skip_bullet: true do
     expect(page).to have_css("input#user_name[value='Jess Journey']")
     fill_in "user_name", with: "Jess Renamed"
     click_button "Save Changes"
+    expect(page).to have_text("Profile updated successfully.")
     expect(page).to have_css("input#user_name[value='Jess Renamed']")
     expect(created.reload.name).to eq("Jess Renamed")
 

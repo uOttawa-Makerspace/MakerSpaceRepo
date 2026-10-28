@@ -17,6 +17,7 @@ module JourneyHelpers
           shot = Capybara.save_path.join("actor_#{name}_#{Time.now.to_i}")
           page.save_screenshot("#{shot}.png")
           page.save_page("#{shot}.html")
+          SystemDiagnostics.write("actor_#{name}_#{Time.now.to_i}", page, label: name.to_s)
         rescue StandardError
           nil
         end
@@ -42,6 +43,29 @@ module JourneyHelpers
   # (retries until Capybara.default_max_wait_time, never sleeps blindly).
   def wait_until(message = "condition not met")
     page.document.synchronize { raise Capybara::ExpectationNotMet, message unless yield }
+  end
+
+  # Wait until a Bootstrap modal has FINISHED opening, not just got `.show`.
+  # Bootstrap adds `.show` (and aria-modal) at the START of the 300 ms fade, and
+  # `shown.bs.modal` fires at its end; the only DOM-observable signal of the end
+  # is the transition itself: the modal is fully opaque and its dialog has
+  # reached its resting transform. Use before typing/clicking inside a modal.
+  def wait_for_modal_ready(selector)
+    expect(page).to have_css("#{selector}.show", visible: :all)
+    page.document.synchronize do
+      done = page.evaluate_script(<<~JS, selector)
+        (function (sel) {
+          var m = document.querySelector(sel);
+          if (!m || !m.classList.contains("show")) return false;
+          var d = m.querySelector(".modal-dialog");
+          var t = getComputedStyle(d).transform;
+          var still = t !== "none" && t !== "matrix(1, 0, 0, 1, 0, 0)";
+          return getComputedStyle(m).opacity === "1" && !still &&
+            document.querySelectorAll(".modal-backdrop.fade:not(.show)").length === 0;
+        })(arguments[0])
+      JS
+      raise Capybara::ExpectationNotMet, "modal #{selector} still opening" unless done
+    end
   end
 
   def app_url

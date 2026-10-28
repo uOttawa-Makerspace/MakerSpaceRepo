@@ -81,7 +81,7 @@ RSpec.describe "Journey: job order", type: :system, skip_bullet: true do
       visit job_order_path(order)
       expect(page).to have_content("Waiting for Staff Approval")
       click_button "Approve", match: :first
-      expect(page).to have_css("#quote-modal.show")
+      wait_for_modal_ready("#quote-modal")
       within("#quote-modal") do
         expect(page).to have_field("job_task_quote_price_#{task.id}", visible: true)
         fill_in "job_task_quote_price_#{task.id}", with: "12.50"
@@ -105,6 +105,7 @@ RSpec.describe "Journey: job order", type: :system, skip_bullet: true do
       visit magic_path
       expect(page).to have_content("Thank You for ordering a Job Order!")
       expect(page).to have_content("Total Quote")
+      expect(page).to have_content("$15.00") # 12.50 quote + 2.50 option
       accept_confirm { click_button "Approve the Quote" }
       expect(page).to have_content("Thank You for Approving/Denying the Job Order!")
     end
@@ -115,6 +116,7 @@ RSpec.describe "Journey: job order", type: :system, skip_bullet: true do
       accept_confirm { click_button "Start Processing" }
       expect(page).to have_content("Currently being Processed")
       click_button "Completed"
+      wait_for_modal_ready("#completed-email-modal")
       within("#completed-email-modal") do
         click_button "Do not send email and mark completed"
       end
@@ -139,6 +141,7 @@ RSpec.describe "Journey: job order", type: :system, skip_bullet: true do
       fill_in "chat_message[message]", with: "Thanks, when can I collect?"
       click_button "Send"
       expect(page).to have_field("chat_message[message]", with: "")
+      within("#chat-messages") { expect(page).to have_content("Thanks, when can I collect?") }
     end
     expect(ChatMessage.where(job_order: order, sender: user).order(:id).pluck(:message).last).to eq("Thanks, when can I collect?")
     as_actor(:staff) do
@@ -147,6 +150,7 @@ RSpec.describe "Journey: job order", type: :system, skip_bullet: true do
       fill_in "chat_message[message]", with: "Tomorrow after 10"
       click_button "Send"
       expect(page).to have_field("chat_message[message]", with: "")
+      within("#chat-messages") { expect(page).to have_content("Tomorrow after 10") }
     end
     as_actor(:user) do
       visit job_order_path(order)

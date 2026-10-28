@@ -82,8 +82,13 @@ function initEventListeners() {
   }
 }
 
+// The modal DOM is static, so wire it up as soon as the script runs rather
+// than at the end of Bootstrap's fade ("shown.bs.modal"); otherwise input
+// typed during the 300 ms transition is never recomputed.
+// Guard so a re-evaluated script (Turbo) cannot attach handlers twice.
 const modal = document.getElementById("quote-modal");
-modal.addEventListener("shown.bs.modal", () => {
+if (modal && !modal.dataset.quoteModalReady) {
+  modal.dataset.quoteModalReady = "true";
   initEventListeners();
   calculateTotal();
-});
+}

@@ -33,7 +33,7 @@ RSpec.describe "Journey: space booking", type: :system, skip_bullet: true do
     visit sub_space_booking_index_path(room: subspace.id, start: date.iso8601)
     expect(page).to have_css("#booked-calendar .fc-toolbar")
     find(".fc-book-button").click
-    expect(page).to have_css("#bookModal.show", visible: :all)
+    wait_for_modal_ready("#bookModal")
     expect(page).to have_css("#bookingModalLabel", text: "New Booking")
   end
 
