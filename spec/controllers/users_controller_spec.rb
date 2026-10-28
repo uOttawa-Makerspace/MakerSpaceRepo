@@ -538,11 +538,14 @@ end
 # action is exercised through a temporary route so it cannot become a way to delete
 # the last usable admin if it is ever routed.
 RSpec.describe UsersController, "#destroy", type: :controller do
-  before do
-    routes.draw do
-      delete "/users_destroy_probe" => "users#destroy"
-      get "/u/:username" => "users#show", as: :user
-      root to: "users#new"
+  # A separate route set: drawing on the app's own set would leak into other examples.
+  routes do
+    ActionDispatch::Routing::RouteSet.new.tap do |set|
+      set.draw do
+        delete "/users_destroy_probe" => "users#destroy"
+        get "/u/:username" => "users#show", as: :user
+        root to: "users#new"
+      end
     end
   end
 
