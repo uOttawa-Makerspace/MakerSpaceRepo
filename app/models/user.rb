@@ -358,6 +358,7 @@ class User < ApplicationRecord
 
   # Admins who can still sign in. A locked admin (admin lock, or too many failed
   # attempts) cannot sign in (CredentialAuthenticator), so does not count.
+  # Latent: `active` = false is ignored here (nothing sets it today).
   scope :usable_admins, -> {
     where(role: "admin").where("users.locked IS NOT TRUE OR users.locked_until < ?", Time.current)
   }
