@@ -24,6 +24,39 @@ RSpec.describe "Training emails", type: :mailer do
     expect(delivered.map { |m| [m.to, m.subject] }).to eq([[[student.email], "You finished your exam"]])
   end
 
+  def bodies(mail)
+    mail.parts.empty? ? [mail.body.decoded] : mail.parts.map { |part| part.body.decoded }
+  end
+
+  it "send_exam body links to the exams page and states the 3 day deadline" do
+    mail = MsrMailer.send_exam(student, fixture[:session])
+    bodies(mail).each do |body|
+      expect(body).to include("3 days to complete the exam")
+    end
+    html = Nokogiri::HTML(mail.html_part ? mail.html_part.body.decoded : mail.body.decoded)
+    expect(html.css("a").map { |a| a["href"] }).to include("http://makerepo.com/exams")
+  end
+
+  it "finishing_exam body gives the exact score and the passed wording" do
+    exam.update!(status: "passed", score: 83)
+    bodies(MsrMailer.finishing_exam(student, exam)).each do |body|
+      expect(body).to include("Your score was 83.")
+      expect(body).to include("You passed the exam.")
+      expect(body).to include("Congratulations. Your certification is already available in your profile.")
+      expect(body).not_to include("try one more time")
+    end
+  end
+
+  it "finishing_exam body gives the exact score and the failed/retry wording" do
+    exam.update!(status: "failed", score: 61)
+    bodies(MsrMailer.finishing_exam(student, exam)).each do |body|
+      expect(body).to include("Your score was 61.")
+      expect(body).to include("You failed the exam.")
+      expect(body).to include("you will be able to try one more time")
+      expect(body).not_to include("Congratulations")
+    end
+  end
+
   it "exam_results_staff goes to the session's trainer with the trainee's capitalised first name" do
     student.update!(name: "ada lovelace")
     perform_enqueued_jobs { MsrMailer.exam_results_staff(student, exam).deliver_later }

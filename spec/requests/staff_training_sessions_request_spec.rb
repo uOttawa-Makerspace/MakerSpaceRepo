@@ -278,6 +278,14 @@ RSpec.describe "Staff training sessions", type: :request do
         expect(student.certifications.map { |c| [c.training_session, c.level] }).to eq([[record, "Beginner"]])
       end
 
+      %w[Intermediate Advanced].each do |level|
+        it "certifies at the session level #{level}, not a fixed one" do
+          record.update!(level: level)
+          post certify_trainees_staff_training_session_path(record)
+          expect(Certification.where(training_session: record).pluck(:level)).to eq([level, level])
+        end
+      end
+
       it "skips users who already hold that training at that level and counts the duplicates" do
         create(:certification, user: student, training_session: create(:training_session, training: training, user: trainer, space: space, level: "Beginner"), training: training, level: "Beginner")
         expect { post certify_trainees_staff_training_session_path(record) }.to change(Certification, :count).by(1)
