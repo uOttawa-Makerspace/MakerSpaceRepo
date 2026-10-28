@@ -8,15 +8,19 @@
 #
 # * Does nothing when Airbrake is not configured (no credentials: test, dev).
 # * Never raises: reporting must not turn a handled error into a failure.
-# * Errors that Airbrake's own Rack and ActiveJob integrations already catch
-#   (unhandled ones re-raised through the framework) are skipped, not sent twice.
+# * Unhandled errors that Airbrake's own integrations already catch are skipped, not
+#   sent twice: "application.action_dispatch" (the Executor middleware; Airbrake's Rack
+#   middleware has the error) and "application.active_support" (the Executor.wrap that
+#   runs jobs; Airbrake's ActiveJob rescue_from(Exception) has the error). Reports
+#   from retry_on/discard_on ("application.active_job", report: true) are forwarded:
+#   those handlers run before Airbrake's, so nothing else sends them.
 # * Values still pass through the Airbrake blocklist (config/initializers/airbrake.rb).
 class AirbrakeErrorSubscriber
-  ALREADY_COVERED_SOURCES = %w[application.action_dispatch active_job.].freeze
+  ALREADY_COVERED_SOURCES = %w[application.action_dispatch application.active_support].freeze
 
   def report(error, handled:, severity:, context:, source: nil)
     return unless Airbrake.configured?
-    return if !handled && ALREADY_COVERED_SOURCES.any? { |prefix| source.to_s.start_with?(prefix) }
+    return if !handled && ALREADY_COVERED_SOURCES.include?(source.to_s)
 
     Airbrake.notify(error, context.to_h.merge(handled: handled, severity: severity, source: source))
   rescue StandardError => e

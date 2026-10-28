@@ -18,9 +18,26 @@ RSpec.describe AirbrakeErrorSubscriber do
       Rails.error.report(error, handled: true, severity: :warning, context: { blob_id: 5 })
     end
 
-    it "does not send unhandled errors the Rack/ActiveJob integrations already catch" do
-      expect(Airbrake).not_to receive(:notify)
-      Rails.error.report(error, handled: false, source: "application.action_dispatch")
+    # Airbrake's Rack middleware catches the unhandled request error the Executor
+    # also reports, and its ActiveJob rescue_from(Exception) notifies the unhandled job
+    # error that the reloader wrap (application.active_support) also reports.
+    %w[application.action_dispatch application.active_support].each do |source|
+      it "skips the unhandled #{source} report (Airbrake already has it)" do
+        expect(Airbrake).not_to receive(:notify)
+        Rails.error.report(error, handled: false, source: source)
+      end
+    end
+
+    # retry_on/discard_on (report: true) rescue the error before Airbrake's
+    # job-level handler runs, so nothing else reports it.
+    it "forwards application.active_job reports (retry_on/discard_on with report: true)" do
+      expect(Airbrake).to receive(:notify).with(error, hash_including(handled: true))
+      Rails.error.report(error, handled: true, source: "application.active_job")
+    end
+
+    it "forwards unhandled errors from other sources" do
+      expect(Airbrake).to receive(:notify).with(error, hash_including(handled: false))
+      Rails.error.report(error, handled: false, source: "application.some_thread")
     end
 
     it "never raises into the caller" do
