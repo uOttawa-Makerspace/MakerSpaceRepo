@@ -8,8 +8,6 @@ class Certification < ApplicationRecord
   has_one :space, through: :training_session
   has_one :training, through: :training_session
   has_one :proficient_project, through: :proficient_project_session
-  has_many :badges
-  has_many :badge_templates, through: :training
 
   validates :user, presence: { message: "A user is required." }
   validates :level, inclusion: { in: %w[Beginner Intermediate Advanced], message: "A level is required."}

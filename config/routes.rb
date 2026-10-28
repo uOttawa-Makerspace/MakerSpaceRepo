@@ -7,7 +7,6 @@ Rails.application.routes.draw do
     mount LetterOpenerWeb::Engine, at: "/letter_opener"
   end
 
-  resources :price_rules, only: %i[index new create destroy edit update]
   resources :discount_codes, only: %i[new index create]
   resources :coupon_codes, only: %i[index new create destroy edit update]
 
@@ -77,8 +76,6 @@ Rails.application.routes.draw do
       get :settings
       get :user_magic_approval
       get :pay
-      get :stripe_success
-      get :stripe_cancelled
       get :landing
       patch :user_magic_approval_confirmation
       post "/new" => "job_orders#new"
@@ -227,14 +224,6 @@ Rails.application.routes.draw do
     get "check_signed_in"
   end
 
-  # GITHUB
-  namespace :github do
-    get "authorize"
-    get "callback"
-    get "unauthorize"
-    get "repositories"
-  end
-
   # SETTING
   namespace :settings do
     get "profile"
@@ -277,8 +266,6 @@ Rails.application.routes.draw do
     resources :job_services, only: %i[index new create edit update destroy]
     resources :job_options, only: %i[index new create edit update destroy]
     resources :job_types, only: %i[index new create edit update]
-
-    get "manage_badges"
 
     namespace :report_generator do
       get "/", as: "index", action: "index"

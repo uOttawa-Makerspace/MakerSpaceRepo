@@ -153,62 +153,20 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
   # ------------------------------------------------------------- job orders
 
   describe "job order path" do
-    let(:job_order) { create(:job_order, user: user) }
-    let(:payload) do
-      {
+    # Chunk 20a: automatic job-order payment recording was removed (it never recorded a payment,
+    # D-S27). Staff set "Paid" by hand; the payment-link draft orders are still created.
+    it "ignores a paid job-order draft order: 200 and no status is recorded" do
+      job_order = create(:job_order, user: user)
+      seed_job_statuses! if respond_to?(:seed_job_statuses!)
+      payload = {
         tags: [job_order_tag],
         line_items: [{ title: "Print", quantity: 1 }],
         metafields: [{ namespace: "makerepo", key: "job_order_db_reference", value: job_order.id.to_s }]
       }
-    end
-
-    it "does nothing without line_items or for an unknown / missing reference" do
-      hook(payload.except(:line_items))
+      allow(Rails.logger).to receive(:info).and_call_original
+      expect { hook(payload.merge(id: 9001, name: "#1042")) }.not_to change(JobOrderStatus, :count)
       expect(response).to have_http_status(:ok)
-      hook(payload.merge(metafields: [{ namespace: "makerepo", key: "job_order_db_reference", value: "999999999" }]))
-      expect(response).to have_http_status(:ok)
-      hook(payload.except(:metafields))
-      expect(response).to have_http_status(:ok)
-    end
-
-    it "500s for a real job order and records no PAID status" do
-      seed_job_statuses! if respond_to?(:seed_job_statuses!)
-      # WART(D-S27): the hook calls JobOrder#update_status, which does not exist (the method is a private JobOrdersController helper), so a paid Shopify job-order payment raises NoMethodError and is never recorded; Shopify will retry the webhook forever
-      expect { hook(payload) }.not_to change(JobOrderStatus, :count)
-      expect(response).to have_http_status(:internal_server_error)
-    end
-  end
-
-  # ---------------------------------------------------------- discount codes
-
-  describe "discount code usage" do
-    let!(:code) { create(:discount_code, usage_count: 0) }
-
-    it "bumps usage_count of the FIRST discount code that matches a stored code" do
-      other_code = create(:discount_code, usage_count: 0)
-      hook(discount_codes: [{ code: code.code }, { code: other_code.code }])
-      expect(code.reload.usage_count).to eq(1)
-      expect(other_code.reload.usage_count).to eq(0)
-    end
-
-    it "treats a NULL usage_count as zero" do
-      code.update_column(:usage_count, nil)
-      hook(discount_codes: [{ code: code.code }])
-      expect(code.reload.usage_count).to eq(1)
-    end
-
-    it "ignores unknown codes, and never touches CouponCode (the codes users actually buy now)" do
-      coupon = create(:coupon_code, :claimed, user: user)
-      expect { hook(discount_codes: [{ code: coupon.code }]) }.not_to change { coupon.reload.attributes }
-      expect(response).to have_http_status(:ok)
-      # WART(D-S28): coupons bought with cc (CouponCode) have no usage tracking; only the retired DiscountCode rows are ever counted
-    end
-
-    it "counts the same order twice when the webhook is replayed" do
-      hook(discount_codes: [{ code: code.code }])
-      hook(discount_codes: [{ code: code.code }])
-      # WART(D-S29): replayed orders_paid double-counts discount usage (no order-id dedupe)
-      expect(code.reload.usage_count).to eq(2)
+      expect(Rails.logger).to have_received(:info).with(/paid job-order draft order ignored.*id=9001.*name="#1042"/)
     end
   end
 
@@ -287,18 +245,15 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
 
   # ---------------------------------------------------- combined payloads
 
-  it "handles membership, discount and cc effects of one payload in the same request" do
+  it "handles membership and cc effects of one payload in the same request" do
     m = create(:membership, user: user, membership_tier: tier, status: "pending")
-    code = create(:discount_code, usage_count: 0)
     hook(
       tags: [membership_tag],
       customer: { email: user.email },
       line_items: [{ title: "1 Day Membership", product_id: cc_product_id, quantity: 1 }],
-      discount_codes: [{ code: code.code }],
       metafields: [{ namespace: "makerepo", key: "membership_db_reference", value: m.id.to_s }]
     )
     expect(m.reload.status).to eq("paid")
-    expect(code.reload.usage_count).to eq(1)
     expect(user.cc_moneys.pluck(:cc)).to eq([10])
   end
 end

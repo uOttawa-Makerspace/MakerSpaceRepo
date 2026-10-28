@@ -5,10 +5,9 @@ require "rails_helper"
 # Characterization of the cc-points economy outside checkout:
 # * CouponCode claims through DiscountCodesController (cc points -> coupon),
 # * CouponCodesController (admin CRUD),
-# * PriceRulesController (admin CRUD, Shopify REST stubbed at the model seam),
 # * CcMoneysController (wallet page, link/redeem a mailed cc token).
 # Auth is the custom session driven by a real login POST. No external HTTP.
-RSpec.describe "Shop coupons, price rules and cc money (HTTP contract)", type: :request do
+RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
   let(:user) { create(:user, :regular_user) }
   let(:other) { create(:user, :regular_user) }
   let(:staff) { create(:user, :staff) }
@@ -255,140 +254,6 @@ RSpec.describe "Shop coupons, price rules and cc money (HTTP contract)", type: :
 
       it "404s for an unknown id" do
         get edit_coupon_code_path(999_999_999)
-        expect(response).to have_http_status(:not_found)
-      end
-    end
-  end
-
-  # ================================================ price rules (admin CRUD)
-
-  describe "PriceRulesController" do
-    let!(:rule) { create(:price_rule, title: "5$ coupon", value: 5, cc: 50, shopify_price_rule_id: "111") }
-    let(:valid_params) { { price_rule: { title: "10$ coupon", value: 10, cc: 90 } } }
-
-    it "redirects guests to login on every action" do
-      get price_rules_path
-      expect(response).to redirect_to(login_path(back_to: "/price_rules"))
-      post price_rules_path, params: valid_params
-      expect(response).to redirect_to(login_path)
-      expect(PriceRule.count).to eq(1)
-    end
-
-    it "bounces regular users and staff to root with 'Forbbiden Area'" do
-      expect(PriceRule).not_to receive(:create_price_rule)
-      expect(PriceRule).not_to receive(:delete_price_rule_from_shopify)
-      [user, staff].each do |u|
-        get logout_path
-        shop_log_in!(u)
-        get price_rules_path
-        expect(response).to redirect_to(root_path)
-        expect(flash[:alert]).to eq("Forbbiden Area")
-        post price_rules_path, params: valid_params
-        expect(response).to redirect_to(root_path)
-        delete price_rule_path(rule)
-        expect(response).to redirect_to(root_path)
-      end
-      expect(PriceRule.count).to eq(1)
-    end
-
-    context "as admin" do
-      before { shop_log_in!(admin) }
-
-      it "lists and renders new/edit" do
-        get price_rules_path
-        expect(response).to have_http_status(:ok)
-        expect(response.body).to include("5$ coupon")
-        get new_price_rule_path
-        expect(response).to have_http_status(:ok)
-        get edit_price_rule_path(rule)
-        expect(response).to have_http_status(:ok)
-      end
-
-      it "create: registers the rule at Shopify first, stores the returned id" do
-        expect(PriceRule).to receive(:create_price_rule).with("10$ coupon", 10).and_return(987_654)
-        expect { post price_rules_path, params: valid_params }.to change(PriceRule, :count).by(1)
-        expect(response).to redirect_to(price_rules_path)
-        expect(flash[:notice]).to eq("Price rule was successfully created.")
-        created = PriceRule.last
-        expect(created.shopify_price_rule_id).to eq("987654")
-        expect([created.title, created.value, created.cc]).to eq(["10$ coupon", 10, 90])
-      end
-
-      it "create: json responds 201 (renders index) and 422 + errors when Shopify gives no id" do
-        allow(PriceRule).to receive(:create_price_rule).and_return(1)
-        post price_rules_path, params: valid_params, as: :json
-        expect(response).to have_http_status(:created)
-
-        allow(PriceRule).to receive(:create_price_rule).and_return(nil)
-        post price_rules_path, params: valid_params, as: :json
-        expect(response).to have_http_status(:unprocessable_content)
-        expect(JSON.parse(response.body)).to eq("shopify_price_rule_id" => ["This field is required."])
-      end
-
-      it "create: html re-renders the form with 200 when invalid, after already calling Shopify" do
-        # WART(D-S12): the Shopify rule is created BEFORE local validation, so invalid input (blank cc) orphans a live Shopify price rule
-        expect(PriceRule).to receive(:create_price_rule).with("Bad", 5).and_return(42)
-        expect do
-          post price_rules_path, params: { price_rule: { title: "Bad", value: 5, cc: "" } }
-        end.not_to change(PriceRule, :count)
-        expect(response).to have_http_status(:ok)
-        expect(response.body).to include("cc")
-      end
-
-      it "update: saves locally then pushes title/value to Shopify" do
-        expect(PriceRule).to receive(:update_price_rule).with("111", "New title", 7)
-        patch price_rule_path(rule), params: { price_rule: { title: "New title", value: 7, cc: 70 } }
-        expect(response).to redirect_to(price_rules_url)
-        expect(flash[:notice]).to eq("Price rule was successfully updated.")
-        expect([rule.reload.title, rule.value, rule.cc]).to eq(["New title", 7, 70])
-      end
-
-      it "update: invalid input re-renders edit and does not call Shopify" do
-        expect(PriceRule).not_to receive(:update_price_rule)
-        patch price_rule_path(rule), params: { price_rule: { title: "" } }
-        expect(response).to have_http_status(:ok)
-        expect(rule.reload.title).to eq("5$ coupon")
-      end
-
-      it "edit/update refuse a rule that already has discount codes; destroy does NOT" do
-        create(:discount_code, price_rule: rule, user: other)
-        expect(PriceRule).not_to receive(:update_price_rule)
-        get edit_price_rule_path(rule)
-        expect(response).to redirect_to(price_rules_path)
-        expect(flash[:alert]).to eq("This price rule cannot be edited/deleted because it has already discount codes")
-        patch price_rule_path(rule), params: { price_rule: { title: "X" } }
-        expect(response).to redirect_to(price_rules_path)
-        expect(rule.reload.title).to eq("5$ coupon")
-
-        # WART(D-S13): the guard message says "edited/deleted" but destroy is not guarded, it deletes the rule and cascades its discount codes
-        expect(PriceRule).to receive(:delete_price_rule_from_shopify).with("111")
-        expect { delete price_rule_path(rule) }
-          .to change(PriceRule, :count).by(-1).and change(DiscountCode, :count).by(-1)
-        expect(response).to redirect_to(price_rules_url)
-        expect(flash[:notice]).to eq("Price rule was successfully destroyed.")
-      end
-
-      it "destroy: deletes at Shopify and locally; json gives 204" do
-        expect(PriceRule).to receive(:delete_price_rule_from_shopify).with("111")
-        delete price_rule_path(rule), as: :json
-        expect(response).to have_http_status(:no_content)
-        expect(PriceRule.exists?(rule.id)).to be(false)
-      end
-
-      it "without the model stubs every Shopify-backed write is a 500 and nothing is persisted" do
-        # see D-S32: the Shopify REST resources are never loaded, so this admin screen cannot work
-        expect { post price_rules_path, params: valid_params }.not_to change(PriceRule, :count)
-        expect(response).to have_http_status(:internal_server_error)
-
-        patch price_rule_path(rule), params: { price_rule: { title: "Changed" } }
-        expect(response).to have_http_status(:internal_server_error)
-
-        expect { delete price_rule_path(rule) }.not_to change(PriceRule, :count)
-        expect(response).to have_http_status(:internal_server_error)
-      end
-
-      it "has no show route (the show views are orphaned)" do
-        get "/price_rules/#{rule.id}"
         expect(response).to have_http_status(:not_found)
       end
     end

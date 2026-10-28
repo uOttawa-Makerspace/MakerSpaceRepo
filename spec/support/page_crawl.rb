@@ -36,11 +36,10 @@ module PageCrawl
     [%r{\A/confirm_edited_email\z}, "needs a signed token"],
     [%r{\A/resend_confirmation\z}, "sends mail, mutates"],
     [%r{\A/resend_email_confirmation\z}, "sends mail"],
-    [%r{\A/github/}, "OAuth redirect to an external provider"],
     [%r{\A/saml/}, "SAML IdP, needs a SAML request"],
     [%r{\A/admin/cdel_reports/generate_output\z}, "heavy report generation"],
     [%r{\A/admin/report_generator/generate_spreadsheet\z}, "heavy spreadsheet generation"],
-    [%r{\A/job_orders/(pay|stripe_success|stripe_cancelled|user_magic_approval)\z}, "needs a signed token / Stripe"],
+    [%r{\A/job_orders/(pay|user_magic_approval)\z}, "needs a signed token"],
     [%r{\A/videos/:id/download/:filename\z}, "streams a stored file"],
     [%r{/download_files\z}, "streams a zip"],
     [%r{\A/learning_area/:id/scorm_launch\z}, "SCORM package launch"],
@@ -209,9 +208,7 @@ module PageCrawl
       make(:contact_info) { create(:contact_info) }
       make(:drop_off_location) { create(:drop_off_location) }
       make(:time_period) { create(:time_period) }
-      make(:price_rule) { create(:price_rule) }
       make(:coupon_code) { create(:coupon_code) }
-      make(:discount_code) { create(:discount_code) }
       make(:video) { create(:video) }
       make(:design_day) { create(:design_day) }
       make(:uni_program) { create(:uni_program) }

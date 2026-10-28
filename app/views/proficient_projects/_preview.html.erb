@@ -14,24 +14,6 @@
   <div class="modal-footer">
     <div class="mx-auto">
 
-      Required Badges:
-      <% badge_requirements = proficient_project.badge_requirements %>
-      <% if badge_requirements.present? %>
-        <% badge_requirements.each do |badge_requirement| %>
-          <%= image_tag(badge_requirement.badge_template.image_url, style: 'width: 80px;', alt: 'Badge Image') %>
-        <% end %>
-      <% else %>
-        None
-      <% end %>
-      <br />
-      Badge being Awarded:
-      <% badge_template = proficient_project.badge_template %>
-      <% if badge_template.present? %>
-        <%= image_tag(badge_template.image_url, style: 'width: 80px;', alt: 'Badge image') %>
-      <% else %>
-        None
-      <% end %>
-
       <%= render 'proficient_project_row', proficient_project: proficient_project, order_item: order_item, user_order_items: user_order_items %>
     </div>
   </div>

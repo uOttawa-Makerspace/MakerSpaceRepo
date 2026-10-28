@@ -11,7 +11,6 @@ RSpec.describe "Journey: key request", type: :system, skip_bullet: true do
   let!(:admin) { create(:user, :admin, name: "Alex Admin") }
 
   before do
-    allow_any_instance_of(Octokit::Client).to receive(:login).and_raise(Octokit::Unauthorized)
     ActionMailer::Base.deliveries.clear
   end
 

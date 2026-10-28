@@ -150,6 +150,12 @@ RSpec.describe Space, type: :model do
         .and change(StaffNeededCalendar, :count).by(-1).and change(SpaceManagerJoin, :count).by(-1)
     end
 
+    it "destroys a space that still has retired shift rows (FK shifts.space_id)" do
+      space = create(:space)
+      Shift.create!(space_id: space.id, start_datetime: 1.day.ago, end_datetime: 1.day.ago + 1.hour)
+      expect { space.destroy }.to change(Shift, :count).by(-1)
+    end
+
     it "does not create popular hours in the test environment (callback is skipped)" do
       expect { create(:space) }.not_to change(PopularHour, :count)
     end
@@ -166,7 +172,7 @@ RSpec.describe Space, type: :model do
       end
 
       it "is empty without an open_hours calendar" do
-        StaffNeededCalendar.create!(space: space, calendar_url: url, role: "makeroom")
+        StaffNeededCalendar.create!(space: space, calendar_url: url)
         expect(space.weekly_open_hours).to eq([])
       end
 

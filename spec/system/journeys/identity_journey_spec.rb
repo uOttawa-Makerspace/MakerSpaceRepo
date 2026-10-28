@@ -9,7 +9,6 @@ RSpec.describe "Journey: identity", type: :system, skip_bullet: true do
   let(:password) { "Str0ng!Passw0rd#41" }
 
   before do
-    allow_any_instance_of(Octokit::Client).to receive(:login).and_raise(Octokit::Unauthorized)
     ActionMailer::Base.deliveries.clear
   end
 

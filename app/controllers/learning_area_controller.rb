@@ -181,7 +181,6 @@ class LearningAreaController < DevelopmentProgramsController
       :level,
       :cc,
       :subskill,
-      :badge_template_id,
       :scorm_package,
       :scorm_enabled,
       photos: [],

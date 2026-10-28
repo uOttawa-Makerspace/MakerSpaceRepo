@@ -195,16 +195,6 @@ class JobOrder < ApplicationRecord
   end
 
   def checkout_link
-    # @stripe_session =
-      #   Stripe::Checkout::Session.create(
-      #     success_url: stripe_success_job_orders_url,
-      #     cancel_url: stripe_cancelled_job_orders_url,
-      #     mode: "payment",
-      #     line_items: @job_order.generate_line_items,
-      #     billing_address_collection: "required",
-      #     client_reference_id: "job-order-#{@job_order.id}"
-      #   )
-
     shopify_draft_order['invoiceUrl']
   end
 

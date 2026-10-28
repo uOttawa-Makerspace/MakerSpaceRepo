@@ -112,10 +112,11 @@ class User < ApplicationRecord
   has_many :print_orders
   has_many :volunteer_task_requests
   has_many :cc_moneys, dependent: :destroy
+  # Cleanup only: legacy discount_codes rows (feature removed) have a FK to users.
+  has_many :discount_codes, dependent: :destroy
   has_many :programs, dependent: :destroy
   has_many :orders, dependent: :destroy
   has_many :order_items, through: :orders
-  has_many :discount_codes, dependent: :destroy
   has_many :project_kits, dependent: :destroy
   has_many :learning_module_tracks
   has_many :shadowing_hours
@@ -141,7 +142,8 @@ class User < ApplicationRecord
   
   has_and_belongs_to_many :repositories
   has_and_belongs_to_many :proficient_projects
-  has_and_belongs_to_many :shifts, dependent: :destroy
+  # Cleanup only: removes shifts_users join rows on destroy (Shift is retired).
+  has_and_belongs_to_many :shifts
   
   accepts_nested_attributes_for :repositories
 

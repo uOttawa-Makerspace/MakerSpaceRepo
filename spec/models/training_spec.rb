@@ -103,7 +103,9 @@ RSpec.describe Training, type: :model do
     it "destroy cascades to learning modules and shifts are nullified" do
       t = create(:training)
       create(:learning_module, training: t)
+      shift = Shift.create!(training_id: t.id, start_datetime: 1.day.ago, end_datetime: 1.day.ago + 1.hour)
       expect { t.destroy }.to change(LearningModule, :count).by(-1)
+      expect(shift.reload.training_id).to be_nil
     end
   end
 end

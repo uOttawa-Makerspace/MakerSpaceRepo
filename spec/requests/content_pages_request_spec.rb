@@ -614,7 +614,7 @@ RSpec.describe "Content pages (part 2)", type: :request do
       login_redirect?("/settings/admin")
     end
 
-    # WART(D-P15): /settings/admin is open to every signed-in role (it is the user's own password/GitHub page, but the name and the Admin::* family suggest an admin gate)
+    # WART(D-P15): /settings/admin is open to every signed-in role (it is the user's own password page, but the name and the Admin::* family suggest an admin gate)
     it "serves both pages to any signed-in role, not just admins" do
       %i[regular staff admin].each do |role|
         sign_in_as(role)

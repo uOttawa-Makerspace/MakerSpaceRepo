@@ -11,7 +11,6 @@ RSpec.describe "Journey: volunteer task", type: :system, skip_bullet: true do
   let!(:task) { create(:volunteer_task, title: "stocktake", cc: 10, hours: 5.0, joins: 1, user_id: staff.id) }
 
   before do
-    allow_any_instance_of(Octokit::Client).to receive(:login).and_raise(Octokit::Unauthorized)
     ActionMailer::Base.deliveries.clear
   end
 

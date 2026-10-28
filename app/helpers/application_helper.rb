@@ -3,8 +3,6 @@
 require Rails.root.join("lib/jwt_authenticator")
 
 module ApplicationHelper
-  attr_accessor :github
-
   # Keys that are not about who is signed in and must survive the session
   # reset done on sign-in (sign-out keeps only the locale).
   SESSION_KEYS_KEPT_ON_SIGN_IN = %w[locale expires_at authorized_repo_ids selected_dates order_id].freeze
@@ -85,11 +83,6 @@ module ApplicationHelper
     @session_user
   end
 
-  def github_client
-    @github_client ||=
-      Octokit::Client.new(access_token: @user.access_token) if github?
-  end
-
   def signed_in?
     session_user.present? || has_valid_jwt?
   end
@@ -104,10 +97,6 @@ module ApplicationHelper
     return @jwt_user if defined?(@jwt_user)
 
     @jwt_user = JwtAuthenticator.user_for(request.headers["Authorization"])
-  end
-
-  def github?
-    current_user.access_token.present?
   end
 
   def locales_change

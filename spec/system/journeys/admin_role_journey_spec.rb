@@ -9,9 +9,6 @@ RSpec.describe "Journey: admin changes a role", type: :system, skip_bullet: true
   let!(:space) { create(:space, name: "Role Space") }
   let!(:member) { create(:user, :regular_user, name: "Morgan Member") }
 
-  before do
-    allow_any_instance_of(Octokit::Client).to receive(:login).and_raise(Octokit::Unauthorized)
-  end
 
   def open_roles_tab
     visit user_path(member.username)

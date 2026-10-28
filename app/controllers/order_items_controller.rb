@@ -64,7 +64,7 @@ class OrderItemsController < DevelopmentProgramsController
     else
       flash[:alert] = "There was an error trying to revoke the badge, please try again later."
     end
-    redirect_to admin_manage_badges_path
+    redirect_to admin_index_path
   end
 
   def order_item_modal

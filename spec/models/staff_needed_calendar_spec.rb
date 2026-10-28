@@ -20,13 +20,13 @@ RSpec.describe StaffNeededCalendar, type: :model do
       expect(second).not_to be_valid
       expect(second.errors[:space_id]).to eq(["can only have one open_hours calendar"])
       expect(described_class.create!(space: create(:space), calendar_url: "https://x.test/c.ics", role: "open_hours")).to be_persisted
-      expect(described_class.create!(space: space, calendar_url: "https://x.test/d.ics", role: "makeroom")).to be_persisted
       expect { second.save!(validate: false) }.to raise_error(ActiveRecord::RecordNotUnique)
     end
 
-    it "accepts only the roles nil, blank, open_hours and makeroom" do
+    it "accepts only the roles nil, blank and open_hours (makeroom was removed in chunk 20a)" do
       expect(described_class.new(space: space, calendar_url: "u", role: "x")).not_to be_valid
-      [nil, "", "makeroom", "open_hours"].each do |role|
+      expect(described_class.new(space: space, calendar_url: "u", role: "makeroom")).not_to be_valid
+      [nil, "", "open_hours"].each do |role|
         expect(described_class.new(space: space, calendar_url: "u", role: role)).to be_valid
       end
     end

@@ -7,8 +7,6 @@ class JobOrdersController < SessionsController
                   user_magic_approval
                   user_magic_approval_confirmation
                   pay
-                  stripe_success
-                  stripe_cancelled
                   landing
                 ]
   before_action :grant_access,
@@ -458,12 +456,6 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
       flash[:alert] = t("job_orders.alerts.pay_magic_link_expired")
       redirect_to job_order_path(@job_order.id)
     end
-  end
-
-  def stripe_success
-  end
-
-  def stripe_cancelled
   end
 
   def landing

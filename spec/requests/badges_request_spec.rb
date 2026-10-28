@@ -2,11 +2,8 @@ require "rails_helper"
 
 # Chunk 12: the "badge" surface of the training subsystem.
 #
-# What a badge is TODAY: a Certification of a training with has_badge=true. The
-# Credly-backed `badges` / `badge_templates` tables were dropped by migration
-# 20250613150014 (rework_development_program) but the Badge / BadgeTemplate
-# models, CredlyConcern, lib/tasks/badges.rake and admin#manage_badges still
-# exist (see spec/models/credly_spec.rb for the HTTP boundary).
+# What a badge is: a Certification of a training with has_badge=true. (The
+# Credly integration was removed in chunk 20a.)
 #
 # BadgesController < DevelopmentProgramsController: sign-in required (any role,
 # no dev-program membership needed) except #show, which is public.
@@ -160,33 +157,6 @@ RSpec.describe "Badges, licenses and the development-program pages", type: :requ
       expect(response).to redirect_to(root_path)
       expect(flash[:alert]).to eq("You already joined the Program. You can already access it!")
       expect(user.dev_program?).to be(true)
-    end
-  end
-
-  describe "GET /admin/manage_badges" do
-    %i[guest regular staff].each do |role|
-      it "redirects a #{role} to /" do
-        sign_in_as(role)
-        get admin_manage_badges_path
-        expect(response).to redirect_to("/")
-      end
-    end
-
-    it "renders the page for an admin" do
-      sign_in_as(:admin)
-      get admin_manage_badges_path
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include("Refresh Badge Data").and include("Refresh Badge Templates")
-    end
-
-    # WART(D-T28): the Credly refresh links call update_badge_*_helper methods that do not exist (and the tables are gone)
-    %w[templates badges].each do |what|
-      it "refresh=#{what} answers 500 (NameError)" do
-        sign_in_as(:admin)
-        get admin_manage_badges_path(refresh: what)
-        expect(response).to have_http_status(:internal_server_error)
-        expect(error_text).to include("NameError")
-      end
     end
   end
 end

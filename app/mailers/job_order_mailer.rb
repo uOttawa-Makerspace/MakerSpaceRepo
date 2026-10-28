@@ -108,18 +108,6 @@ class JobOrderMailer < ApplicationMailer
     )
   end
 
-  def payment_failed(job_order_id)
-    return unless JobOrder.where(id: job_order_id).present?
-    @job_order = JobOrder.find(job_order_id)
-
-    mail(
-      to: @job_order.user.email,
-      reply_to: "makerspace@uottawa.ca",
-      bcc: "uottawa.makerepo@gmail.com",
-      subject: "Your Job Order Payment has failed for Order ##{@job_order.id}"
-    )
-  end
-
   def staff_assigned(job_order_id, staff_member_id)
     return if JobOrder.where(id: job_order_id).blank?
     @job_order = JobOrder.find(job_order_id)

@@ -7,7 +7,6 @@ RSpec.describe CcMoney, type: :model do
       it { should belong_to(:volunteer_task).without_validating_presence }
       it { should belong_to(:proficient_project).without_validating_presence }
       it { should belong_to(:order).without_validating_presence }
-      it { should belong_to(:discount_code).without_validating_presence }
     end
   end
 

@@ -21,8 +21,7 @@ require "rails_helper"
 # * Rails 8.1 maps `config.action_dispatch.show_exceptions = false` to
 #   "resilient": raised app errors are reported and turned into a 500 (with a
 #   debug page body, which we pin) instead of re-raising in the test.
-# * Stripe is UNTOUCHED in this controller: `stripe_success`/`stripe_cancelled`
-#   render static "thank you" pages. `pay` renders a link from
+# * `pay` renders a link from
 #   JobOrder#checkout_link (a Shopify draft-order invoice URL); the examples
 #   stub the Shopify GraphQL client boundary (`stub_shopify_admin!`, see
 #   spec/support/shop_spec_helpers.rb), never the model.
@@ -1003,59 +1002,6 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       order = order_with_task!(owner: owner)
       put job_order_path(order), params: { job_order: { comments: "x" } }
       expect(response).to have_http_status(:not_found)
-    end
-  end
-
-  # ------------------------------------------------------- Stripe callbacks
-
-  describe "GET /job_orders/stripe_success" do
-    it "renders the static success page for guests, with no state change" do
-      order = order_with_task!(owner: owner, status_key: :completed)
-      statuses_before = JobOrderStatus.count
-      mails_before = ActionMailer::Base.deliveries.size
-
-      get stripe_success_job_orders_path
-      expect(response).to have_http_status(:ok)
-      expect(response.body)
-        .to include("You have successfully completed the payment your Job Order!")
-      expect(response.body).to include("Back to Job Orders")
-      expect(JobOrderStatus.count).to eq(statuses_before)
-      expect(ActionMailer::Base.deliveries.size).to eq(mails_before)
-      expect(order.reload.job_order_statuses.last.job_status.name)
-        .to eq("Completed (Waiting for Payment)")
-    end
-
-    it "renders identically on repeated visits (no duplicate-visit side effects)" do
-      get stripe_success_job_orders_path
-      expect(response).to have_http_status(:ok)
-      statuses_before = JobOrderStatus.count
-      ActionMailer::Base.deliveries.clear
-
-      get stripe_success_job_orders_path
-      expect(response).to have_http_status(:ok)
-      expect(JobOrderStatus.count).to eq(statuses_before)
-      expect(ActionMailer::Base.deliveries).to be_empty
-    end
-  end
-
-  describe "GET /job_orders/stripe_cancelled" do
-    it "renders the static cancellation page for guests with no state change" do
-      order = order_with_task!(owner: owner, status_key: :completed)
-      get stripe_cancelled_job_orders_path
-      expect(response).to have_http_status(:ok)
-      expect(response.body)
-        .to include("The payment for this Job Order has failed. You will <b>NOT</b> be charged.")
-      expect(order.reload.job_order_statuses.last.job_status.name)
-        .to eq("Completed (Waiting for Payment)")
-      expect(ActionMailer::Base.deliveries).to be_empty
-    end
-
-    it "is also re-renderable (duplicate visit is inert)" do
-      get stripe_cancelled_job_orders_path
-      statuses_before = JobOrderStatus.count
-      get stripe_cancelled_job_orders_path
-      expect(JobOrderStatus.count).to eq(statuses_before)
-      expect(response).to have_http_status(:ok)
     end
   end
 

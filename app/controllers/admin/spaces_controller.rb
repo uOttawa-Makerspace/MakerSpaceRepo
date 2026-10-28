@@ -277,22 +277,26 @@ class Admin::SpacesController < AdminAreaController
       return redirect_back(fallback_location: root_path)
     end
 
-    StaffNeededCalendar.where(space_id: params[:space_id]).destroy_all
+    begin
+      StaffNeededCalendar.transaction do
+        StaffNeededCalendar.where(space_id: params[:space_id]).destroy_all
 
-    calendar_urls.each_with_index do |url, i|
-      next if url.blank?
+        calendar_urls.each_with_index do |url, i|
+          next if url.blank?
 
-      snc = StaffNeededCalendar.create(
-        name: calendar_names[i],
-        color: calendar_colors[i],
-        role: calendar_roles[i].presence,
-        space_id: params[:space_id],
-        calendar_url: url
-      )
-      # Copy over to MakerRoom
-      space = Space.find(params[:space_id])
-      helpers.create_makeroom_bookings_from_ics(snc, current_user.id, space) if calendar_roles[i] == "makeroom"
-    end    
+          StaffNeededCalendar.create!(
+            name: calendar_names[i],
+            color: calendar_colors[i],
+            role: calendar_roles[i].presence,
+            space_id: params[:space_id],
+            calendar_url: url
+          )
+        end
+      end
+    rescue ActiveRecord::RecordInvalid => e
+      flash[:alert] = "Calendars were not saved (nothing changed): #{e.record.errors.full_messages.join(', ')}"
+      return redirect_back(fallback_location: root_path)
+    end
 
     flash[:notice] = "Calendars updated successfully."
     redirect_back(fallback_location: root_path)

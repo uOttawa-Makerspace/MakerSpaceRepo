@@ -349,11 +349,11 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       end
     end
 
-    it "lets an admin revoke the order item and redirects to the manage-badges page (the old admin_badges_path helper does not exist)" do
+    it "lets an admin revoke the order item and redirects to the admin index" do
       item = cart_for(other, 10).order_items.first
       shop_log_in!(admin)
       post order_item_revoke_path(item)
-      expect(response).to redirect_to(admin_manage_badges_path)
+      expect(response).to redirect_to(admin_index_path)
       expect(flash[:notice]).to eq("The badge has been revoked.")
       expect(item.reload.status).to eq("Revoked")
     end
@@ -495,9 +495,8 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(user.reload.wallet).to eq(90)
     end
 
-    it "is NOT affected by owned discount/coupon codes or price rules (they do not enter checkout math)" do
+    it "is NOT affected by owned coupon codes (they do not enter checkout math)" do
       credit_cc!(user, 100)
-      create(:discount_code, user: user, price_rule: create(:price_rule, value: 5, cc: 50))
       create(:coupon_code, :claimed, user: user, dollar_cost: 5, cc_cost: 50)
       add_to_cart(pp_with_cc(40))
       post orders_path

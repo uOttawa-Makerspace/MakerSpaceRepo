@@ -16,9 +16,6 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
 
   before do
     block_external_http!
-    # GET /:username builds an Octokit client for the repo owner; stub the seam
-    # so no HTTP is attempted (unauthenticated => no GitHub login).
-    allow_any_instance_of(Octokit::Client).to receive(:login).and_raise(Octokit::Unauthorized)
   end
 
   def login!(u, pw: password)

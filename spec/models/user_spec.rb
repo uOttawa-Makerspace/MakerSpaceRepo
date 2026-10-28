@@ -21,7 +21,6 @@ RSpec.describe User, type: :model do
       it { should have_and_belong_to_many(:repositories) }
       it { should have_and_belong_to_many(:training_sessions) }
       it { should have_and_belong_to_many(:proficient_projects) }
-      it { should have_and_belong_to_many(:shifts) }
     end
 
     context "has_many" do
@@ -44,7 +43,6 @@ RSpec.describe User, type: :model do
       it { should have_many(:programs) }
       it { should have_many(:orders) }
       it { should have_many(:order_items) }
-      it { should have_many(:discount_codes) }
       it { should have_many(:project_kits) }
       it { should have_many(:learning_module_tracks) }
       it { should have_many(:shadowing_hours) }
