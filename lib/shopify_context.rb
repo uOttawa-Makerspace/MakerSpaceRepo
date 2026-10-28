@@ -14,9 +14,15 @@
 module ShopifyContext
   class MissingConfig < StandardError; end
 
+  # Raised by start_session! when the Context could not be set up (missing credentials keys, or
+  # Context.setup raised). Message names the missing keys or the setup error class and message,
+  # never the credentials. Callers that already rescue Shopify errors rescue this the same way.
+  class NotConfigured < StandardError; end
+
   REQUIRED_KEYS = %i[api_key password shop_name api_version].freeze
 
   def self.ensure_setup!
+    Thread.current[:shopify_context_failure] = nil
     config = Rails.application.credentials.dig(Rails.env.to_sym, :shopify) || {}
     missing = REQUIRED_KEYS.reject { |key| config[key].present? }
     unless missing.empty?
@@ -42,11 +48,16 @@ module ShopifyContext
   end
 
   # The ONE way to start a Shopify Admin/Storefront session: dig the credentials, make sure the
-  # Context is set up, build the session for them and activate it. ShopifyConcern,
+  # Context is set up (raising NotConfigured when it cannot be), build the session for them and activate it. ShopifyConcern,
   # ShopifyCartConcern, ShopifyService and StaticPagesController all call this.
   def self.start_session!
     config = Rails.application.credentials.dig(Rails.env.to_sym, :shopify) || {}
-    ensure_setup!
+    unless ensure_setup!
+      failure = Thread.current[:shopify_context_failure]
+      raise NotConfigured, "Shopify is not configured, not contacting the Admin API: " \
+                           "#{failure ? "#{failure.class}: #{failure.message}" : 'ShopifyContext.ensure_setup! failed'}"
+    end
+
     session = ShopifyAPI::Auth::Session.new(
       shop: "#{config[:shop_name]}.myshopify.com",
       access_token: config[:password]
@@ -65,6 +76,7 @@ module ShopifyContext
   private_class_method :current?
 
   def self.failed(error)
+    Thread.current[:shopify_context_failure] = error
     Rails.logger.warn("[shopify_context] #{error.class}: #{error.message}")
     Rails.error.report(error, handled: true, severity: :error, context: { source: "shopify_context" })
     false

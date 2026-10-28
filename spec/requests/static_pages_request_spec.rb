@@ -175,12 +175,14 @@ RSpec.describe "Static pages", type: :request do
         expect(controller_links).to eq([])
       end
 
-      it "returns no links without calling Shopify when no access token is configured" do
-        allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify, :password).and_return(nil)
+      it "returns no links without calling Shopify when Shopify is not configured (NotConfigured is rescued)" do
+        allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify).and_return({})
+        allow(Rails.logger).to receive(:warn)
         get root_path
         expect(response).to have_http_status(:ok)
         expect(controller_links).to eq([])
-        expect(a_request(:post, shopify_url)).not_to have_been_made
+        expect(Rails.logger).to have_received(:warn).with(/Shopify collections skipped: .*not configured/)
+        expect(a_request(:post, /myshopify/)).not_to have_been_made
       end
     end
 

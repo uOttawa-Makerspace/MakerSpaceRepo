@@ -102,10 +102,47 @@ RSpec.describe ShopifyContext, :shopify_context do
       expect(Class.new { include ShopifyCartConcern }.start_shopify_session).to equal(sentinel)
     end
 
-    it "ShopifyService digs: a missing shopify section does not raise NoMethodError" do
+    it "ShopifyService digs: a missing shopify section raises NotConfigured, not NoMethodError" do
       allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify).and_return(nil)
       allow(Rails.application.credentials).to receive(:[]).with(:test).and_return({})
-      expect { ShopifyService.start_shopify_session }.not_to raise_error
+      expect { ShopifyService.start_shopify_session }.to raise_error(ShopifyContext::NotConfigured)
+    end
+
+    describe "when the Context cannot be set up" do
+      before { allow(Rails.logger).to receive(:warn) }
+
+      %i[api_key password shop_name api_version].each do |key|
+        it "raises NotConfigured naming the missing #{key} and makes no HTTP request" do
+          cfg = ShopifyHttpHelpers::FAKE_SHOPIFY_CONFIG.merge(key => nil)
+          allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify).and_return(cfg)
+          expect(ShopifyAPI::Clients::Graphql::Admin).not_to receive(:new)
+
+          expect { described_class.start_session! }.to raise_error(ShopifyContext::NotConfigured, /missing .*#{key}/) { |e|
+            expect(e.message).not_to include("shpat_test_fake")
+            expect(e.message).not_to include("fake_api_key")
+          }
+          expect(a_request(:any, /myshopify/)).not_to have_been_made
+        end
+      end
+
+      it "raises NotConfigured with the setup error class and message when Context.setup raises" do
+        blank_context!
+        allow(ShopifyAPI::Context).to receive(:setup).and_raise(ShopifyAPI::Errors::UnsupportedVersionError, "nope")
+        expect { described_class.start_session! }
+          .to raise_error(ShopifyContext::NotConfigured, /UnsupportedVersionError: nope/)
+      end
+
+      it "with no shopify section at all raises NotConfigured, not NoMethodError" do
+        allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify).and_return(nil)
+        expect { described_class.start_session! }.to raise_error(ShopifyContext::NotConfigured)
+      end
+
+      it "a draft order creation surfaces the error and posts nothing to /admin/api//graphql.json" do
+        allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify).and_return({})
+        membership = create(:membership, user: create(:user, :regular_user), membership_tier: create(:membership_tier, duration: 30, internal_price: 1, external_price: 2), status: "pending")
+        expect { membership.checkout_link }.to raise_error(ShopifyContext::NotConfigured)
+        expect(a_request(:any, /graphql/)).not_to have_been_made
+      end
     end
   end
 end

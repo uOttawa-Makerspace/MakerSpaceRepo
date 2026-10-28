@@ -252,8 +252,6 @@ class StaticPagesController < SessionsController
   end
 
   def home_makerstore_links
-    return [] if Rails.application.credentials.dig(Rails.env.to_sym, :shopify, :password).blank?
-
     client = ShopifyAPI::Clients::Graphql::Admin.new(session: ShopifyContext.start_session!)
 
     query = <<~QUERY
@@ -284,6 +282,9 @@ class StaticPagesController < SessionsController
     else
       []
     end
+  rescue ShopifyContext::NotConfigured => e
+    Rails.logger.warn("Shopify collections skipped: #{e.message}")
+    []
   rescue StandardError => e
     Rails.logger.error("Failed to fetch Shopify collections: #{e.message}")
     []
