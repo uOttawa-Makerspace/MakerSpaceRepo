@@ -112,6 +112,8 @@ class User < ApplicationRecord
   has_many :print_orders
   has_many :volunteer_task_requests
   has_many :cc_moneys, dependent: :destroy
+  # Cleanup only: legacy discount_codes rows (feature removed) have a FK to users.
+  has_many :discount_codes, dependent: :destroy
   has_many :programs, dependent: :destroy
   has_many :orders, dependent: :destroy
   has_many :order_items, through: :orders
