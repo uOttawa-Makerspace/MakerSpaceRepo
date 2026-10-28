@@ -368,11 +368,16 @@ class User < ApplicationRecord
   # are locked (in id order, so two callers cannot deadlock) before the check and
   # held until the transaction ends, so two concurrent changes cannot each see "the
   # other admin is still usable" and leave none.
-  def self.guarding_last_admin!(affected_ids, message: LAST_ADMIN_MESSAGE)
+  #
+  # only_if: optional lambda run AFTER the locks are taken (so on fresh state); when
+  # it returns false the last-admin check is skipped (the change is not a removal,
+  # e.g. an unlock). It may also lock and re-read the target row.
+  def self.guarding_last_admin!(affected_ids, message: LAST_ADMIN_MESSAGE, only_if: nil)
     affected_ids = Array(affected_ids)
     transaction do
       where(role: "admin").order(:id).lock.pluck(:id)
-      if where(role: "admin", id: affected_ids).any? && usable_admins.where.not(id: affected_ids).none?
+      enforce = only_if.nil? || only_if.call
+      if enforce && where(role: "admin", id: affected_ids).any? && usable_admins.where.not(id: affected_ids).none?
         raise LastAdminError, message
       end
 

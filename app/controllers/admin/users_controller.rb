@@ -20,7 +20,6 @@ class Admin::UsersController < AdminAreaController
 
   ASSIGNABLE_ROLES = %w[admin staff regular_user volunteer].freeze
 
-
   def index
     unless valid_sort_params?
       redirect_to admin_users_path, alert: "Invalid parameters!"
@@ -377,12 +376,14 @@ class Admin::UsersController < AdminAreaController
     end
   end
 
-  # Locking is guarded (it removes a usable admin); unlocking never is.
+  # Locking is guarded (it removes a usable admin); unlocking never is. Which of the
+  # two to do is decided from the row re-read under the guard's locks (lock! reloads
+  # `user`), never from the state read before them: a lock or unlock by another admin
+  # in between must not be overwritten with a stale decision.
   def toggle_user_lock_status(user)
-    if user.locked
-      user.admin_unlock!
-    else
-      User.guarding_last_admin!([user.id], message: User::LAST_ADMIN_LOCK_MESSAGE) { user.admin_lock! }
+    User.guarding_last_admin!([user.id], message: User::LAST_ADMIN_LOCK_MESSAGE,
+                                         only_if: -> { !user.lock!.locked }) do
+      user.locked ? user.admin_unlock! : user.admin_lock!
     end
   end
 
