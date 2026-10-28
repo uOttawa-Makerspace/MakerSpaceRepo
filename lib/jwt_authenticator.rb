@@ -23,7 +23,7 @@ end
 # can be required by non-reloadable engine controllers).
 # Returns the User the token authenticates, or nil.
 #
-# Rejected: bad signature / expired token, a `ver` that differs from the
+# Rejected: bad signature / expired token, any token with a `typ` claim, a `ver` that differs from the
 # user's token_version (a token without `ver` counts as version 0), and users
 # that are gone, soft-deleted or inactive (AuthEligibility). Locks are not looked
 # at: an admin lock revokes tokens by bumping token_version; a timed lockout
@@ -36,6 +36,10 @@ module JwtAuthenticator
     return nil if token.blank?
 
     payload, = JWT.decode(token, Rails.application.credentials.secret_key_base, true, { algorithm: "HS256" })
+    # Legacy tokens (User#token) never carry `typ`. Any typed token (the /api/v1
+    # access token) is API-only, even when both are signed with the same key.
+    return nil if payload.key?("typ")
+
     user = User.find_by(id: payload["user_id"])
     return nil unless AuthEligibility.allowed?(user)
     return nil unless payload.fetch("ver", 0) == user.token_version
