@@ -364,20 +364,35 @@ class User < ApplicationRecord
 
   # Runs the block (a demotion, admin lock or soft delete of `affected_ids`) only if
   # at least one usable admin remains outside them; otherwise raises LastAdminError
-  # and the block never runs. Every such change must go through here: the admin rows
-  # are locked (in id order, so two callers cannot deadlock) before the check and
-  # held until the transaction ends, so two concurrent changes cannot each see "the
-  # other admin is still usable" and leave none.
+  # and the block never runs. Every such change must go through here.
+  #
+  # When an affected user is an admin, ALL admin rows are locked (FOR UPDATE, in id
+  # order) before the check and held until the transaction ends, so two concurrent
+  # changes cannot each see "the other admin is still usable" and leave none. When
+  # none is, there is nothing to protect and nothing is locked. (A user promoted to
+  # admin between that look and the block is not covered: promoting is never a
+  # removal and the window is a single statement.)
+  #
+  # Global lock order, for every caller: admin rows, then the target rows, each
+  # ORDER BY id. change_roles! follows it, so two of them cannot deadlock.
+  #
+  # Known, intentional gap: the automatic failed-login lockout (record_failed_attempt!)
+  # does NOT go through here. It is a timed 5-minute lock bounded by the login rate
+  # limit, an existing lockout-DoS trade-off logged for later.
+  #
+  # usable_admins ignores `active` = false (latent: nothing sets it today).
   #
   # only_if: optional lambda run AFTER the locks are taken (so on fresh state); when
   # it returns false the last-admin check is skipped (the change is not a removal,
-  # e.g. an unlock). It may also lock and re-read the target row.
+  # e.g. an unlock or a promotion). It may also lock and re-read the target row.
   def self.guarding_last_admin!(affected_ids, message: LAST_ADMIN_MESSAGE, only_if: nil)
     affected_ids = Array(affected_ids)
     transaction do
-      where(role: "admin").order(:id).lock.pluck(:id)
+      affects_admin = where(role: "admin", id: affected_ids).exists?
+      where(role: "admin").order(:id).lock.pluck(:id) if affects_admin
       enforce = only_if.nil? || only_if.call
-      if enforce && where(role: "admin", id: affected_ids).any? && usable_admins.where.not(id: affected_ids).none?
+      if enforce && affects_admin && where(role: "admin", id: affected_ids).exists? &&
+         usable_admins.where.not(id: affected_ids).none?
         raise LastAdminError, message
       end
 
@@ -387,17 +402,16 @@ class User < ApplicationRecord
 
   # Role change for several users in ONE transaction (all-or-nothing; the cable
   # disconnects fire after commit). Refuses, with LastAdminError, a change that
-  # would leave no usable admin (see guarding_last_admin!).
+  # would leave no usable admin (see guarding_last_admin!). Promoting never removes
+  # an admin, so it is not checked, but it takes the same locks in the same order.
   def self.change_roles!(user_ids, new_role, actor: nil)
     user_ids = Array(user_ids).map(&:to_i).reject(&:zero?)
-    apply = lambda do
-      where(id: user_ids).find_each do |user|
+    guarding_last_admin!(user_ids, only_if: -> { new_role != "admin" }) do
+      where(id: user_ids).order(:id).lock.each do |user|
         Rails.logger.info "[ROLE_CHANGE] User##{user.id} role changed from '#{user.role}' to '#{new_role}' by Admin##{actor&.id}"
         user.change_role!(new_role)
       end
     end
-    # Promoting to admin can never remove one.
-    new_role == "admin" ? transaction { apply.call } : guarding_last_admin!(user_ids) { apply.call }
   end
 
   # ============================================
