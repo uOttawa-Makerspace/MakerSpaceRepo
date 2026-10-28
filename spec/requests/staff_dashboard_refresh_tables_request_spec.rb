@@ -112,6 +112,35 @@ RSpec.describe "Staff dashboard refresh_tables", type: :request, skip_bullet: tr
     expect(response.body).to be_empty
   end
 
+  # WART(D-EQ37): the token is `signed_in_user_ids.join("")`, with no separator, so different
+  # signed-in sets can produce the same token (ids [7001, 2301] and [70012, 301] are both
+  # "70012301"). The client holding the first set's token gets a 304 for the second set and
+  # keeps showing stale people. A separator-joined token would not collide.
+  it "WART(D-EQ37): answers 304 for a different signed-in set whose ids concatenate to the same token" do
+    third_space = create(:space)
+    staff.update!(space: third_space)
+    a = create(:user, :regular_user, id: 7001)
+    b = create(:user, :regular_user, id: 2301)
+    c = create(:user, :regular_user, id: 70012)
+    d = create(:user, :regular_user, id: 301)
+    create(:lab_session, space: third_space, user: a, sign_in_time: 1.hour.ago, sign_out_time: 3.hours.from_now)
+    create(:lab_session, space: third_space, user: b, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
+    refresh
+    stale_token = "#{a.id}#{b.id}"
+    expect(json["users"].map(&:last)).to eq([a.username, b.username])
+
+    # the room changes completely: a and b leave, c and d arrive
+    LabSession.where(user: [a, b]).update_all(sign_out_time: 1.minute.ago)
+    create(:lab_session, space: third_space, user: c, sign_in_time: 30.minutes.ago, sign_out_time: 3.hours.from_now)
+    create(:lab_session, space: third_space, user: d, sign_in_time: 30.minutes.ago, sign_out_time: 2.hours.from_now)
+
+    refresh(token: stale_token)
+
+    expect(stale_token).to eq("#{c.id}#{d.id}")
+    expect(response).to have_http_status(:not_modified) # should be 200 with c and d
+    expect(response.body).to be_empty
+  end
+
   it "answers the full payload when the token is stale" do
     refresh(token: "#{earlier.id}#{latest.id}") # same ids, wrong order
 
