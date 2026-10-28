@@ -13,25 +13,9 @@ module ApplicationHelper
   # deactivated account (D-I03) and an unconfirmed one. The caller words the
   # refusal from @sign_in_refusal (:locked, :inactive, :unconfirmed).
   def sign_in(username_email, password)
-    @sign_in_refusal = nil
-    candidate = User.username_or_email(username_email)
-    if candidate&.locked?
-      if candidate.lock_in_effect?
-        @sign_in_refusal = :locked
-        return nil
-      end
-      candidate.update_columns(locked: false, auth_attempts: 0) # the timed lockout has lapsed
-    end
-
-    user = User.authenticate(username_email, password)
-    if user&.active == false
-      @sign_in_refusal = :inactive
-      return nil
-    end
-    if user && !user.confirmed?
-      @sign_in_refusal = :unconfirmed
-      return nil
-    end
+    result = CredentialAuthenticator.call(username_email, password)
+    @sign_in_refusal = result.refusal
+    user = result.user
     unless user.nil?
       kept = session.to_hash.slice(*SESSION_KEYS_KEPT_ON_SIGN_IN)
       reset_session # new session id on privilege change (session fixation)
@@ -43,12 +27,9 @@ module ApplicationHelper
     user
   end
 
-  # " or wait 5 minutes" for a timed (brute-force) lockout; nothing for an admin
-  # lock, which has no meaningful wait (99 years, or no end).
+  # " or wait 5 minutes" for a timed (brute-force) lockout (see CredentialAuthenticator).
   def lock_wait_suffix(user, verb = "wait")
-    return "" unless user&.timed_lockout?
-
-    " or #{verb} #{ActionController::Base.helpers.distance_of_time_in_words(user.locked_until, Time.current)}"
+    CredentialAuthenticator.lock_wait_suffix(user, verb)
   end
 
   def sign_out
