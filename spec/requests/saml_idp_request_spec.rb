@@ -19,20 +19,7 @@ require "zlib"
 #    POST /saml/auth when forgery protection is enabled.
 RSpec.describe "SAML IdP", type: :request do
   include Chunk18Helpers
-
-  WIKIJS_ACS = "https://wikijs.makerepo.com/login/258365f7-0b23-403c-817a-5d1ca2be771f/callback"
-
-  # A deflated + base64 AuthnRequest, as an SP's HTTP-Redirect binding sends it.
-  def c18_authn_request(issuer: "wikijs.makerepo.com", acs: WIKIJS_ACS, id: "_req1")
-    xml = %(<samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ) +
-          %(xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="#{id}" Version="2.0" ) +
-          %(IssueInstant="2026-03-10T15:00:00Z" AssertionConsumerServiceURL="#{acs}">) +
-          %(<saml:Issuer>#{issuer}</saml:Issuer></samlp:AuthnRequest>)
-    deflater = Zlib::Deflate.new(Zlib::DEFAULT_COMPRESSION, -Zlib::MAX_WBITS)
-    deflated = deflater.deflate(xml, Zlib::FINISH)
-    deflater.close
-    Base64.strict_encode64(deflated)
-  end
+  include SamlAuthnRequestHelper
 
   def c18_logout_request(issuer: "rooms.makerepo.com", id: "_logout1")
     xml = %(<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ) +
@@ -40,13 +27,6 @@ RSpec.describe "SAML IdP", type: :request do
           %(IssueInstant="2026-03-10T15:00:00Z"><saml:Issuer>#{issuer}</saml:Issuer>) +
           %(<saml:NameID>x</saml:NameID></samlp:LogoutRequest>)
     c18_deflate(xml)
-  end
-
-  def c18_deflate(xml)
-    deflater = Zlib::Deflate.new(Zlib::DEFAULT_COMPRESSION, -Zlib::MAX_WBITS)
-    deflated = deflater.deflate(xml, Zlib::FINISH)
-    deflater.close
-    Base64.strict_encode64(deflated)
   end
 
   # Registers a certificate + fingerprint for every SP, requires signed AuthnRequests
@@ -283,7 +263,7 @@ RSpec.describe "SAML IdP", type: :request do
       it "with valid credentials answers the auto-submitting form to the SP's ACS URL carrying a signed SAMLResponse and the RelayState" do
         post_auth(submit: "sign_in", username: user.username, password: password)
         expect(response).to have_http_status(:ok)
-        expect(c18_form_action).to eq(WIKIJS_ACS)
+        expect(c18_form_action).to eq(wikijs_acs)
         expect(response.body).to include('name="RelayState"', 'value="rs1"')
         expect(session[:user_id]).to eq(user.id) # the app session is also established
 
@@ -291,7 +271,7 @@ RSpec.describe "SAML IdP", type: :request do
         doc = Nokogiri::XML(xml)
         doc.remove_namespaces!
         expect(doc.root.name).to eq("Response")
-        expect(doc.root["Destination"]).to eq(WIKIJS_ACS)
+        expect(doc.root["Destination"]).to eq(wikijs_acs)
         expect(doc.root["InResponseTo"]).to eq("_req1")
         expect(doc.at_xpath("//Assertion/Signature")).to be_present
         expect(doc.at_xpath("//Assertion/Conditions/AudienceRestriction/Audience").text).to eq("wikijs.makerepo.com")
@@ -437,7 +417,7 @@ RSpec.describe "SAML IdP", type: :request do
         signed_in = c18_sign_in(:staff)
         post_auth(submit: "current_user")
         expect(response).to have_http_status(:ok)
-        expect(c18_form_action).to eq(WIKIJS_ACS)
+        expect(c18_form_action).to eq(wikijs_acs)
         doc = Nokogiri::XML(c18_saml_response_xml)
         doc.remove_namespaces!
         expect(doc.at_xpath("//Assertion/Subject/NameID").text).to eq(signed_in.id.to_s)
@@ -504,7 +484,7 @@ RSpec.describe "SAML IdP", type: :request do
       c18_sign_in(:regular)
       xml = %(<!DOCTYPE samlp:AuthnRequest [<!ENTITY a "aaaa">]><samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ) +
             %(xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="_req1" Version="2.0" IssueInstant="2026-03-10T15:00:00Z" ) +
-            %(AssertionConsumerServiceURL="#{WIKIJS_ACS}"><saml:Issuer>wikijs.makerepo.com</saml:Issuer></samlp:AuthnRequest>)
+            %(AssertionConsumerServiceURL="#{wikijs_acs}"><saml:Issuer>wikijs.makerepo.com</saml:Issuer></samlp:AuthnRequest>)
       post "/saml/auth", params: { submit: "current_user", SAMLRequest: c18_deflate(xml) }
       expect(response).to have_http_status(:bad_request)
       expect(c18_saml_response_xml).to be_nil
@@ -605,7 +585,7 @@ RSpec.describe "SAML IdP", type: :request do
       it "an SP that does not require signatures still gets its assertion with an odd ds:Signature in the request" do
         odd = full_signature(reference_uri: "")
         xml = %(<samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ) +
-              %(ID="_req1" Version="2.0" IssueInstant="2026-03-10T15:00:00Z" AssertionConsumerServiceURL="#{WIKIJS_ACS}">) +
+              %(ID="_req1" Version="2.0" IssueInstant="2026-03-10T15:00:00Z" AssertionConsumerServiceURL="#{wikijs_acs}">) +
               %(<saml:Issuer>wikijs.makerepo.com</saml:Issuer>#{odd}</samlp:AuthnRequest>)
         c18_sign_in(:regular)
         post "/saml/auth", params: { SAMLRequest: c18_deflate(xml), submit: "current_user" }
@@ -873,7 +853,7 @@ RSpec.describe "SAML IdP", type: :request do
         c18_sign_in(:regular)
         spoofed = c18_authn_request(issuer: "wikijs.makerepo.com", acs: "https://evil.example.com/steal")
         post "/saml/auth", params: { SAMLRequest: spoofed, submit: "current_user" }
-        expect(c18_form_action).to eq(WIKIJS_ACS)
+        expect(c18_form_action).to eq(wikijs_acs)
       end
 
       it "refuses with 403 when the SP config requires a signed request and the request is not signed" do

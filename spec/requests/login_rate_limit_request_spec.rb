@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "rails_helper"
-require "zlib"
 
 # The password-guess budget (10 per 3 minutes per IP) shared by
 # SessionsController#login_authentication (HTML + JSON) and
@@ -16,8 +15,7 @@ require "zlib"
 # restores the original afterwards.
 RSpec.describe "Login rate limit (real cache store)", type: :request do
   include ActiveSupport::Testing::TimeHelpers
-
-  LOGIN_RL_ACS = "https://wikijs.makerepo.com/login/258365f7-0b23-403c-817a-5d1ca2be771f/callback"
+  include SamlAuthnRequestHelper
 
   let(:password) { "asa32A353#" }
   let!(:user) { create(:user, :regular_user, password: BCrypt::Password.create(password)) }
@@ -30,17 +28,6 @@ RSpec.describe "Login rate limit (real cache store)", type: :request do
     end
   end
 
-  def saml_request
-    xml = %(<samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ) +
-          %(xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="_req1" Version="2.0" ) +
-          %(IssueInstant="2026-03-10T15:00:00Z" AssertionConsumerServiceURL="#{LOGIN_RL_ACS}">) +
-          %(<saml:Issuer>wikijs.makerepo.com</saml:Issuer></samlp:AuthnRequest>)
-    deflater = Zlib::Deflate.new(Zlib::DEFAULT_COMPRESSION, -Zlib::MAX_WBITS)
-    deflated = deflater.deflate(xml, Zlib::FINISH)
-    deflater.close
-    Base64.strict_encode64(deflated)
-  end
-
   # Unknown usernames: every failure is the plain refusal and never locks an account.
   def failed_html_login(n = 0, ip: nil, as: nil)
     post login_authentication_path,
@@ -51,7 +38,7 @@ RSpec.describe "Login rate limit (real cache store)", type: :request do
 
   def failed_saml_login(n = 0, ip: nil, username: "nobody-#{n}", pw: "wrong")
     post "/saml/auth",
-         params: { SAMLRequest: saml_request, RelayState: "rs1", submit: "sign_in", username: username, password: pw },
+         params: { SAMLRequest: c18_authn_request, RelayState: "rs1", submit: "sign_in", username: username, password: pw },
          env: ip ? { "REMOTE_ADDR" => ip } : {}
   end
 
