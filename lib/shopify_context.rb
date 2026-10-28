@@ -11,6 +11,8 @@
 # (via start_session!: ShopifyConcern, ShopifyService, ShopifyCartConcern, StaticPagesController), so a failed boot setup heals on the
 # next draft order. Idempotent and cheap, and it never raises: failures are logged and
 # reported (Rails.error, which Airbrake subscribes to) and ensure_setup! returns false.
+require Rails.root.join("lib/report_throttle")
+
 module ShopifyContext
   class MissingConfig < StandardError; end
 
@@ -18,6 +20,9 @@ module ShopifyContext
   # Context.setup raised). Message names the missing keys or the setup error class and message,
   # never the credentials. Callers that already rescue Shopify errors rescue this the same way.
   class NotConfigured < StandardError; end
+
+  # At most one failure report per kind (error class) per 10 minutes per process; every failure is still logged.
+  REPORT_THROTTLE = ReportThrottle.new(interval: 10.minutes)
 
   REQUIRED_KEYS = %i[api_key password shop_name api_version].freeze
 
@@ -77,8 +82,12 @@ module ShopifyContext
 
   def self.failed(error)
     Thread.current[:shopify_context_failure] = error
-    Rails.logger.warn("[shopify_context] #{error.class}: #{error.message}")
-    Rails.error.report(error, handled: true, severity: :error, context: { source: "shopify_context" })
+    if REPORT_THROTTLE.allow?(error.class.name)
+      Rails.logger.warn("[shopify_context] #{error.class}: #{error.message}")
+      Rails.error.report(error, handled: true, severity: :error, context: { source: "shopify_context" })
+    else
+      Rails.logger.info("[shopify_context] #{error.class}: #{error.message} (report throttled)")
+    end
     false
   end
   private_class_method :failed

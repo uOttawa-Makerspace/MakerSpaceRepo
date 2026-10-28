@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require Rails.root.join("lib/report_throttle")
+
 # Shopify webhooks
 class CustomWebhooksController < ApplicationController
   # Webhook verification is on in every environment, test included, so specs sign their
@@ -59,25 +61,17 @@ class CustomWebhooksController < ApplicationController
     head :unauthorized if request.headers["HTTP_X_SHOPIFY_HMAC_SHA256"].blank?
   end
 
-  MISSING_SECRET_REPORT_INTERVAL = 10.minutes
-  MISSING_SECRET_REPORT_MUTEX = Mutex.new
-  @last_missing_secret_report_at = nil
+  MISSING_SECRET_REPORT_THROTTLE = ReportThrottle.new(interval: 10.minutes)
 
   class << self
-    # True at most once per MISSING_SECRET_REPORT_INTERVAL per process, so a Shopify retry
-    # storm cannot flood the error tracker. The requests themselves are always refused.
+    # True at most once per 10 minutes per process, so a Shopify retry storm cannot flood the
+    # error tracker. The requests themselves are always refused.
     def report_missing_secret?
-      MISSING_SECRET_REPORT_MUTEX.synchronize do
-        now = Time.current
-        return false if @last_missing_secret_report_at && now - @last_missing_secret_report_at < MISSING_SECRET_REPORT_INTERVAL
-
-        @last_missing_secret_report_at = now
-        true
-      end
+      MISSING_SECRET_REPORT_THROTTLE.allow?(:missing_secret)
     end
 
     def reset_missing_secret_report_throttle!
-      MISSING_SECRET_REPORT_MUTEX.synchronize { @last_missing_secret_report_at = nil }
+      MISSING_SECRET_REPORT_THROTTLE.reset!
     end
   end
 

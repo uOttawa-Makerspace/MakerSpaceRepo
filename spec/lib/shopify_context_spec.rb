@@ -7,6 +7,8 @@ require Rails.root.join("lib/shopify_context")
 # (boot initializer, ShopifyConcern, ShopifyService, ShopifyCartConcern). Credentials come
 # from spec/support/shopify_http_helpers.rb's fake config (shpat_test_fake, fake-shop, 2025-01).
 RSpec.describe ShopifyContext, :shopify_context do
+  include ActiveSupport::Testing::TimeHelpers
+
   let(:reports) { [] }
 
   before do
@@ -76,6 +78,44 @@ RSpec.describe ShopifyContext, :shopify_context do
     expect(described_class.ensure_setup!).to be(false)
     expect(reports.first.first).to be_a(ShopifyAPI::Errors::UnsupportedVersionError)
     expect(Rails.logger).to have_received(:warn).with(/UnsupportedVersionError/)
+  end
+
+  describe "failure report throttle" do
+    before do
+      allow(Rails.logger).to receive(:info)
+      allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify).and_return({})
+    end
+
+    it "reports a failure kind once per 10 minutes, logs every call, and reports again after the window" do
+      travel_to(Time.zone.local(2026, 1, 1, 12, 0, 0)) do
+        3.times { expect(described_class.ensure_setup!).to be(false) }
+        expect(reports.size).to eq(1)
+        expect(Rails.logger).to have_received(:warn).with(/MissingConfig/).once
+        expect(Rails.logger).to have_received(:info).with(/MissingConfig.*throttled/).twice
+
+        travel 9.minutes
+        described_class.ensure_setup!
+        expect(reports.size).to eq(1)
+
+        travel 2.minutes
+        described_class.ensure_setup!
+        expect(reports.size).to eq(2)
+      end
+    end
+
+    it "throttles each failure kind separately" do
+      expect(described_class.ensure_setup!).to be(false)
+      allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify).and_call_original
+      blank_context!
+      allow(ShopifyAPI::Context).to receive(:setup).and_raise(ShopifyAPI::Errors::UnsupportedVersionError, "nope")
+      expect(described_class.ensure_setup!).to be(false)
+      expect(reports.map { |e, _| e.class }).to eq([ShopifyContext::MissingConfig, ShopifyAPI::Errors::UnsupportedVersionError])
+    end
+
+    it "shares ReportThrottle with the webhook-secret report" do
+      expect(ShopifyContext::REPORT_THROTTLE).to be_a(ReportThrottle)
+      expect(CustomWebhooksController::MISSING_SECRET_REPORT_THROTTLE).to be_a(ReportThrottle)
+    end
   end
 
   describe ".start_session!" do

@@ -92,5 +92,8 @@ RSpec.configure do |config|
   # test section holds a real shppa_ token, and any untagged spec that reaches Shopify (the
   # homepage makerstore query, a WebMock failure diff) would otherwise print or send it.
   # The :shopify_context tag (shopify_context_isolation.rb) only snapshots/restores the Context.
-  config.before(:each) { stub_shopify_credentials! }
+  config.before(:each) do
+    stub_shopify_credentials!
+    ShopifyContext::REPORT_THROTTLE.reset! # failure reports are throttled per process; keep examples independent
+  end
 end
