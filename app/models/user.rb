@@ -363,12 +363,14 @@ class User < ApplicationRecord
     where(role: "admin").where("users.locked IS NOT TRUE OR users.locked_until < ?", Time.current)
   }
 
+  GUARD_LOCK_MODE = "FOR NO KEY UPDATE"
+
   # Runs the block (a demotion, admin lock or soft delete of `affected_ids`) only if
   # at least one usable admin remains outside them; otherwise raises LastAdminError
   # and the block never runs. Every such change must go through here.
   #
-  # ALWAYS, before anything is decided, ALL admin rows are locked (FOR UPDATE, in id
-  # order) and then the affected rows (also in id order), and the locks are held until
+  # ALWAYS, before anything is decided, ALL admin rows are locked (FOR NO KEY UPDATE, in
+  # id order) and then the affected rows (also in id order), and the locks are held until
   # the transaction ends. Whether the change touches an admin, only_if, and the
   # usable-admin check are all evaluated from state read under those locks, and the
   # block runs on rows that cannot change role meanwhile. Deciding first and locking
@@ -377,6 +379,14 @@ class User < ApplicationRecord
   # an admin that nothing protected. Every role change takes the admin locks, so they
   # are serialized with each other; a promotion takes the same locks, in the same
   # order, and is never refused.
+  #
+  # Lock mode: FOR NO KEY UPDATE, not FOR UPDATE. It conflicts with itself, so guard
+  # callers still serialize, but not with KEY SHARE, which Postgres takes on a user
+  # row whenever a row referencing it is inserted (api_refresh_tokens.user_id).
+  # FOR UPDATE would deadlock with ApiRefreshToken#rotate!: the guard holds the user
+  # row and waits (via bump_token_version! -> revoke_all_for!) for the token rows
+  # that rotate! holds while its successor INSERT waits for the user row. Any other
+  # lock on a users row inside a guarded block must use the same mode.
   #
   # Global lock order, for every caller: admin rows, then the target rows, each
   # ORDER BY id. change_roles! follows it, so two of them cannot deadlock.
@@ -393,8 +403,8 @@ class User < ApplicationRecord
   def self.guarding_last_admin!(affected_ids, message: LAST_ADMIN_MESSAGE, only_if: nil)
     affected_ids = Array(affected_ids)
     transaction do
-      where(role: "admin").order(:id).lock.pluck(:id)
-      where(id: affected_ids).order(:id).lock.pluck(:id)
+      where(role: "admin").order(:id).lock(GUARD_LOCK_MODE).pluck(:id)
+      where(id: affected_ids).order(:id).lock(GUARD_LOCK_MODE).pluck(:id)
       enforce = only_if.nil? || only_if.call
       if enforce && where(role: "admin", id: affected_ids).exists? &&
          usable_admins.where.not(id: affected_ids).none?

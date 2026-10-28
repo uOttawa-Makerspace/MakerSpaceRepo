@@ -382,7 +382,7 @@ class Admin::UsersController < AdminAreaController
   # in between must not be overwritten with a stale decision.
   def toggle_user_lock_status(user)
     User.guarding_last_admin!([user.id], message: User::LAST_ADMIN_LOCK_MESSAGE,
-                                         only_if: -> { !user.lock!.locked }) do
+                                         only_if: -> { !user.lock!(User::GUARD_LOCK_MODE).locked }) do
       user.locked ? user.admin_unlock! : user.admin_lock!
     end
   end
