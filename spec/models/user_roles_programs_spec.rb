@@ -47,6 +47,24 @@ RSpec.describe User do
     end
   end
 
+  describe "#sync_programs! failures that do not raise by themselves" do
+    it "rolls back a join when the following leave is refused (destroy returns false)" do
+      user = create(:user)
+      user.programs.create!(program_type: Program::VOLUNTEER)
+      allow_any_instance_of(Program).to receive(:destroy).and_return(false)
+      expect { user.sync_programs!(development: true, volunteer: false) }.to raise_error(ActiveRecord::RecordNotDestroyed)
+      expect(user.programs.reload.pluck(:program_type)).to eq([Program::VOLUNTEER])
+    end
+
+    it "rolls back an earlier leave when a later join is invalid" do
+      user = create(:user)
+      user.programs.create!(program_type: Program::DEV_PROGRAM)
+      allow_any_instance_of(Program).to receive(:valid?).and_return(false)
+      expect { user.sync_programs!(development: false, volunteer: true) }.to raise_error(ActiveRecord::RecordInvalid)
+      expect(user.programs.reload.pluck(:program_type)).to eq([Program::DEV_PROGRAM])
+    end
+  end
+
   describe ".text_search" do
     it "does not escape wildcards (legacy staff dashboard behaviour)" do
       u = create(:user, name: "Wild Card")

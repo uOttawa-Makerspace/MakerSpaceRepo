@@ -552,6 +552,16 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       expect(user.programs.reload.pluck(:program_type)).to eq([Program::TEAMS])
     end
 
+    it "flashes an alert and changes nothing when a membership cannot be saved" do
+      login!(staff)
+      user.programs.create!(program_type: Program::DEV_PROGRAM)
+      allow_any_instance_of(Program).to receive(:valid?).and_return(false)
+      post change_programs_users_path, params: { user_id: user.id, volunteer: "1" }
+      expect(response).to redirect_to(user_path(user.username))
+      expect(flash[:alert]).to start_with("The programs could not be updated")
+      expect(user.programs.reload.pluck(:program_type)).to eq([Program::DEV_PROGRAM])
+    end
+
     it "unknown user id: 404" do
       login!(staff)
       post change_programs_users_path, params: { user_id: 0 }

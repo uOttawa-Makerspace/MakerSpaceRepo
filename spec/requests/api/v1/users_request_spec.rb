@@ -375,6 +375,16 @@ RSpec.describe "/api/v1/users", type: :request do
       expect(target.programs).to be_empty
     end
 
+    it "422s, changing nothing, when a membership cannot be saved" do
+      target.programs.create!(program_type: Program::DEV_PROGRAM)
+      allow_any_instance_of(Program).to receive(:valid?).and_return(false)
+      api_send :put, "/api/v1/users/#{target.id}/programs", { development: false, volunteer: true }, as: staff
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(error["code"]).to eq("validation_failed")
+      expect(error["fields"]).to have_key("programs")
+      expect(target.programs.pluck(:program_type)).to eq([Program::DEV_PROGRAM])
+    end
+
     it "404s an unknown or soft-deleted user" do
       api_send :put, "/api/v1/users/0/programs", { development: true, volunteer: true }, as: staff
       expect(response).to have_http_status(:not_found)

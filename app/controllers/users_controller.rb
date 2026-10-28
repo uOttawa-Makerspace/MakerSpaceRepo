@@ -298,12 +298,20 @@ class UsersController < SessionsController
   def change_programs
     user = User.find(params[:user_id])
     if user.present? && (@user.staff? || @user.admin?)
-      programs = user.sync_programs!(
-        development: params[:dev_program].present?,
-        volunteer: params[:volunteer].present?,
-        # JSON never removes teams (the React app does not send it)
-        teams: params[:teams].present? || (json_request? ? nil : false)
-      )
+      begin
+        programs = user.sync_programs!(
+          development: params[:dev_program].present?,
+          volunteer: params[:volunteer].present?,
+          # JSON never removes teams (the React app does not send it)
+          teams: params[:teams].present? || (json_request? ? nil : false)
+        )
+      rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotDestroyed => e
+        message = e.record.errors.full_messages.to_sentence.presence || e.message
+        return render json: { error: message }, status: :unprocessable_content if json_request?
+
+        flash[:alert] = "The programs could not be updated: #{message}"
+        return redirect_to user_path(user.username)
+      end
       if json_request?
         render json: { programs: programs }
         return

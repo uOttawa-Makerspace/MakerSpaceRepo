@@ -86,6 +86,10 @@ module Api
         end
 
         render json: { programs: user.sync_programs!(**flags) }
+      rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotDestroyed => e
+        messages = e.record.errors.full_messages.presence || [e.message]
+        render_error(:validation_failed, "Validation failed", status: :unprocessable_content,
+                     fields: { programs: messages })
       end
 
       private
