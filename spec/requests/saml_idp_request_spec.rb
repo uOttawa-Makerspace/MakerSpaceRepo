@@ -579,6 +579,24 @@ RSpec.describe "SAML IdP", type: :request do
         end
       end
 
+      it "a signed root whose canonicalization fails (relative namespace URI) is a 403, not a 500" do
+        c18_with_signing_sps do
+          xml = %(<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ) +
+                %(xmlns:rel="relative" ID="_lo1" Version="2.0" IssueInstant="2026-03-10T15:00:00Z"><saml:Issuer>rooms.makerepo.com</saml:Issuer>) +
+                %(<saml:NameID>x</saml:NameID>#{full_signature}</samlp:LogoutRequest>)
+          post_logout(c18_deflate(xml))
+          expect(response).to have_http_status(:forbidden)
+        end
+      end
+
+      it "a crash inside the guard's own XML checks is a 403, not a 500" do
+        c18_with_signing_sps do
+          allow(REXML::Document).to receive(:new).and_raise(RuntimeError, "entity expansion limit")
+          post_logout(signed_logout(full_signature))
+          expect(response).to have_http_status(:forbidden)
+        end
+      end
+
       it "XML REXML cannot parse but Nokogiri recovers is a 400 (malformed input)" do
         c18_with_signing_sps do
           post_logout(signed_logout(full_signature, extra: "<junk a='1' a='2'/>"))

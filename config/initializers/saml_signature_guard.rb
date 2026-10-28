@@ -44,19 +44,28 @@ module SamlSignatureGuard
 
   def valid_signature?
     return super unless verifying_signature?
-    return false unless covers_root_request?
 
-    guarded("embedded") { super }
+    load_service_provider_credentials
+    guarded("embedded") { covers_root_request? && super }
   end
 
   def valid_external_signature?
     return super unless verifying_signature?
     return false unless sp_certificate_parses?
 
+    load_service_provider_credentials
     guarded("external") { super }
   end
 
   private
+
+  # Resolve the SP's configured credentials (finder / metadata getters, possibly DB or
+  # network) BEFORE entering `guarded`, so their failures are never mistaken for a bad
+  # signature.
+  def load_service_provider_credentials
+    service_provider.cert
+    service_provider.fingerprint
+  end
 
   def verifying_signature?
     logout_request? || (authn_request? && validate_auth_request_signature?)
@@ -68,11 +77,14 @@ module SamlSignatureGuard
   # failures (and real bugs of other kinds) propagate as 500s and reach Rails.error.
   VERIFICATION_FAILURES = [
     NoMethodError, TypeError, ArgumentError, OpenSSL::OpenSSLError,
+    RuntimeError, # Nokogiri "canonicalization failed", REXML entity limits
     SamlIdp::XMLSecurity::SignedDocument::ValidationError
   ].freeze
 
   def guarded(kind)
     yield
+  rescue *PARSE_ERRORS, Timeout::Error, FrozenError
+    raise # malformed input (400; REXML::ParseException is a RuntimeError), a network timeout or a bug: never a bad signature
   rescue *VERIFICATION_FAILURES => e
     log("#{kind} signature check failed for issuer #{issuer.to_s.truncate(200).inspect}: #{e.class}")
     if sp_config_fault?(e)
