@@ -910,98 +910,29 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
     end
   end
 
-  # ------------------------------------------------------- dead modal & steps
+  # ------------------------------------------------------- removed dead routes
 
-  # WART(D-J17): dead action, no template
-  describe "GET /job_orders/:id/quote_modal" do
-    it "renders 500 for staff (the route has no shipped template)" do
-      order = order_with_task!(owner: owner)
-      http_login!(staff)
-      get job_order_quote_modal_path(order)
-      expect(response).to have_http_status(:internal_server_error)
-      expect(response.body).to include("Action Controller: Exception caught")
-      expect(response.body).to include("ActionView::MissingTemplate")
-    end
-
-    it "redirects a regular owner to root first (grant_access)" do
-      order = order_with_task!(owner: owner)
-      http_login!(owner)
-      get job_order_quote_modal_path(order)
-      expect(response).to redirect_to(root_path)
-    end
-  end
-
-  # WART(D-J17): dead action, no template
-  describe "GET /job_orders/:id/decline_modal" do
-    it "renders 500 for staff (template removed, action remains)" do
-      order = order_with_task!(owner: owner)
-      http_login!(staff)
-      get job_order_decline_modal_path(order)
-      expect(response).to have_http_status(:internal_server_error)
-      expect(response.body).to include("ActionView::MissingTemplate")
-    end
-  end
-
-  # WART(D-J17): dead action, no template
-  describe "GET /job_orders/:id/comments_modal" do
-    it "renders 500 for staff (template removed, action remains)" do
-      order = order_with_task!(owner: owner)
-      http_login!(staff)
-      get job_order_comments_modal_path(order)
-      expect(response).to have_http_status(:internal_server_error)
-      expect(response.body).to include("ActionView::MissingTemplate")
-    end
-  end
-
-  # WART(D-J17): routed to an action the controller does not define
-  describe "GET /job_orders/:id/completed_email_modal" do
-    it "renders 404 for staff: the route points at an action the controller does not define" do
-      order = order_with_task!(owner: owner)
-      http_login!(staff)
-      get job_order_completed_email_modal_path(order)
-      expect(response).to have_http_status(:not_found)
-    end
-  end
-
-  # WART(D-J17): routed to an action the controller does not define
-  describe "GET/PATCH /job_orders/:job_order_id/steps" do
-    it "renders 404 for both guests and staff (the action is not implemented; no auth gate runs first)" do
-      order = order_with_task!(owner: owner)
-      get job_order_steps_path(order)
-      expect(response).to have_http_status(:not_found)
-      patch job_order_steps_path(order), params: { whatever: "x" }
-      expect(response).to have_http_status(:not_found)
-    end
-
-    it "also sends signed-in regular users to 404" do
-      order = order_with_task!(owner: owner)
-      http_login!(owner)
-      get job_order_steps_path(order)
-      expect(response).to have_http_status(:not_found)
-    end
-  end
-
-  # No GET /job_orders/:id/edit route exists at all (only PATCH/PUT update).
-  # WART(D-J17): update/edit are unrouted
-  describe "PATCH /job_orders/:id (update => 404; edit is unrouted)" do
-    before { http_login!(staff) }
-
-    it "renders 404 for a direct /edit URL (no route, no path helper)" do
-      order = order_with_task!(owner: owner)
-      get "/job_orders/#{order.id}/edit"
-      expect(response).to have_http_status(:not_found)
-    end
-
-    it "renders 404 for PATCH update" do
-      order = order_with_task!(owner: owner)
-      patch job_order_path(order), params: { job_order: { comments: "x" } }
-      expect(response).to have_http_status(:not_found)
-    end
-
-    it "renders 404 for PUT update too" do
-      order = order_with_task!(owner: owner)
-      put job_order_path(order), params: { job_order: { comments: "x" } }
-      expect(response).to have_http_status(:not_found)
+  # D-J17 / D-CRAWL04: these routes pointed at missing templates or actions and
+  # were removed. Every verb now answers 404 for every role.
+  describe "removed dead routes" do
+    {
+      "GET quote_modal" => ->(id) { [:get, "/job_orders/#{id}/quote_modal"] },
+      "GET decline_modal" => ->(id) { [:get, "/job_orders/#{id}/decline_modal"] },
+      "GET comments_modal" => ->(id) { [:get, "/job_orders/#{id}/comments_modal"] },
+      "GET completed_email_modal" => ->(id) { [:get, "/job_orders/#{id}/completed_email_modal"] },
+      "GET steps" => ->(id) { [:get, "/job_orders/#{id}/steps"] },
+      "PATCH steps" => ->(id) { [:patch, "/job_orders/#{id}/steps"] },
+      "GET edit" => ->(id) { [:get, "/job_orders/#{id}/edit"] },
+      "PATCH update" => ->(id) { [:patch, "/job_orders/#{id}"] },
+      "PUT update" => ->(id) { [:put, "/job_orders/#{id}"] }
+    }.each do |name, build|
+      it "answers 404 for #{name} as staff" do
+        order = order_with_task!(owner: owner)
+        http_login!(staff)
+        verb, path = build.call(order.id)
+        public_send(verb, path, params: { job_order: { comments: "x" } })
+        expect(response).to have_http_status(:not_found)
+      end
     end
   end
 

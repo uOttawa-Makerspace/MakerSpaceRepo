@@ -100,9 +100,7 @@ RSpec.describe "JobOrders gaps", type: :request do
 
     {
       "processed" => -> { patch job_order_processed_path(order), params: { completed: "true" } },
-      "resend_quote_email" => -> { patch job_order_resend_quote_email_path(order) },
-      "decline_modal" => -> { get job_order_decline_modal_path(order) },
-      "comments_modal" => -> { get job_order_comments_modal_path(order) }
+      "resend_quote_email" => -> { patch job_order_resend_quote_email_path(order) }
     }.each do |name, request|
       it "bounces a regular user from #{name}" do
         session_login!(owner)

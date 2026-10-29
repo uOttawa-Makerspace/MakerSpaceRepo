@@ -67,16 +67,10 @@ Rails.application.routes.draw do
   get "/saml/wiki_metadata" => "saml_idp#wiki_metadata"
   post "/saml/auth" => "saml_idp#auth"
     
-  resources :job_orders, only: %i[index show create update new destroy] do
-    get :steps
-    get :quote_modal
+  resources :job_orders, only: %i[index show create new destroy] do
     get :timeline_modal
-    get :completed_email_modal
-    get :decline_modal
-    get :comments_modal
     get :invoice
     patch :quote
-    patch :steps
     patch :user_approval
     patch :start_processing
     patch :processed

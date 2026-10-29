@@ -18,11 +18,7 @@ class JobOrdersController < SessionsController
                   processed
                   paid
                   picked_up
-                  quote_modal
                   timeline_modal
-                  decline_modal
-                  completed_email_modal
-                  comments_modal
                   quote
                   resend_quote_email
                   comments
@@ -35,11 +31,7 @@ class JobOrdersController < SessionsController
                   processed
                   paid
                   picked_up
-                  quote_modal
                   timeline_modal
-                  decline_modal
-                  completed_email_modal
-                  comments_modal
                   quote
                   invoice
                   resend_quote_email
@@ -182,19 +174,7 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
     end
   end
 
-  def quote_modal
-    render layout: false
-  end
-
   def timeline_modal
-    render layout: false
-  end
-
-  def decline_modal
-    render layout: false
-  end
-
-  def comments_modal
     render layout: false
   end
 
