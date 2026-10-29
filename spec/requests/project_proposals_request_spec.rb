@@ -850,4 +850,46 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect([joined, done]).to all(be_persisted)
     end
   end
+
+  describe "JSON contact details (D-C58)" do
+    let(:public_keys) do
+      %w[id user_id admin_id approved title description youtube_link created_at updated_at area client_type url]
+    end
+    let(:contact_keys) { %w[username email client] }
+
+    it "omits username, email and client for guests and unrelated users" do
+      # index.json is not routable in practice: the action only responds to js/html (406).
+      get project_proposals_path(format: :json)
+      expect(response).to have_http_status(:not_acceptable)
+
+      get project_proposal_path(approved.slug, format: :json)
+      expect(response).to have_http_status(:ok)
+      expect(JSON.parse(response.body).keys).to match_array(public_keys)
+
+      content_login!(other)
+      get project_proposal_path(approved.slug, format: :json)
+      expect(JSON.parse(response.body).keys).to match_array(public_keys)
+      expect(response.body).not_to include(approved.email, approved.client)
+    end
+
+    it "includes them for the owner and for admins" do
+      content_login!(owner)
+      get project_proposal_path(approved.slug, format: :json)
+      body = JSON.parse(response.body)
+      expect(body.keys).to match_array(public_keys + contact_keys)
+      expect(body.values_at(*contact_keys)).to eq([approved.username, approved.email, approved.client])
+
+      content_sign_in_as(:admin)
+      get project_proposal_path(approved.slug, format: :json)
+      expect(JSON.parse(response.body).keys).to match_array(public_keys + contact_keys)
+    end
+
+    it "leaves the HTML pages unaffected" do
+      get project_proposal_path(approved.slug)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Approved One")
+      get project_proposals_path
+      expect(response).to have_http_status(:ok)
+    end
+  end
 end

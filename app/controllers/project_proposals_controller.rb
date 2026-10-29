@@ -8,6 +8,7 @@ class ProjectProposalsController < SessionsController
   before_action :signed_in, only: %i[edit update approve decline create_revision join_project_proposal unjoin_project_proposal]
   before_action :require_admin, only: %i[approve decline]
   before_action :require_owner_or_admin, only: %i[edit update]
+  helper_method :owner_or_admin?
 
   # GET /project_proposals
   def index
