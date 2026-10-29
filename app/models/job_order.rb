@@ -178,7 +178,12 @@ class JobOrder < ApplicationRecord
     end
 
     # destroy clears the id before the outcome is known; the caller's transaction rolls that back on refusal
-    raise StaleDraftOrderError, "Shopify did not delete the draft order" unless destroy_shopify_draft_order
+    old_id = shopify_draft_order_id
+    return if destroy_shopify_draft_order
+
+    # No deletedId: either the draft no longer exists (dead id: treat as deleted, the id is already cleared)
+    # or it exists but cannot be deleted (completed/paid): refuse. Unknown (non-200/raise) refuses too.
+    raise StaleDraftOrderError, "Shopify did not delete the draft order" unless shopify_draft_order_gone?(old_id)
   rescue StaleDraftOrderError
     raise
   rescue StandardError => e

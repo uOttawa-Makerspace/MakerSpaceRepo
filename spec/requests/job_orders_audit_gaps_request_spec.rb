@@ -311,6 +311,32 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       it_behaves_like "a refused re-quote"
     end
 
+    context "when the draft no longer exists on Shopify (delete returns no id, fetch says null)" do
+      it "proceeds, clears the dead id and commits the re-quote" do
+        order, task = order_with_draft!
+        shopify.delete_user_errors = [{ "field" => "id", "message" => "not found" }]
+        shopify.draft_missing = true
+        requote!(order, task, 55)
+
+        expect(status_names(order).last).to eq("Waiting for User Approval")
+        expect(order.reload.total_price).to eq(BigDecimal("55"))
+        expect(order.shopify_draft_order_id).to be_nil
+      end
+
+      it "refuses when the existence check itself fails (fail closed)" do
+        order, task = order_with_draft!
+        shopify.delete_user_errors = [{ "field" => "id", "message" => "x" }]
+        allow(shopify).to receive(:query).and_wrap_original do |m, **kw|
+          kw[:query].include?("draftOrderDelete") ? m.call(**kw) : (raise "boom")
+        end
+        requote!(order, task, 55)
+
+        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.requote_draft_order_failed"))
+        expect(order.reload.total_price).to eq(BigDecimal("29.99"))
+        expect(order.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
+      end
+    end
+
     context "when Shopify is not configured / the session raises" do
       let(:status_key) { :completed }
       def break_shopify = allow(ShopifyAPI::Clients::Graphql::Admin).to(receive(:new).and_raise("not configured"))
