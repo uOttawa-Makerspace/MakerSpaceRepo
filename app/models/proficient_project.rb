@@ -54,10 +54,6 @@ class ProficientProject < ApplicationRecord
         "%#{sanitized}%",
         "%#{sanitized}%"
       )
-    elsif attribute == "price"
-      bool = true if value.eql?("Paid")
-      bool = false if value.eql?("Free")
-      where(proficient: bool)
     else
       self
     end

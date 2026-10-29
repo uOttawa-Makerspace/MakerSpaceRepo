@@ -333,8 +333,8 @@ RSpec.describe "Content models (part 1 characterization)" do
       expect(pp.extract_valid_urls).to eq(%w[https://wiki.makerepo.com/a https://x.wiki.makerepo.com/c])
     end
 
-    it "filter_by_attribute price: the 'proficient' column does not exist, so the filter raises (D-C32)" do
-      expect { ProficientProject.filter_by_attribute("price", "Paid").to_a }.to raise_error(ActiveRecord::StatementInvalid)
+    it "filter_by_attribute price is no longer a filter (the proficient column is gone): it returns the class unchanged" do
+      expect(ProficientProject.filter_by_attribute("price", "Paid")).to eq(ProficientProject)
     end
 
     it "filter_by_attribute with an unknown attribute returns the class unchanged" do
