@@ -292,6 +292,33 @@ RSpec.describe "/api/v1 RFID", type: :request do
       expect(LabSession.count).to eq(0)
     end
 
+    describe "card_number validation" do
+      [
+        ["a blank string", "   "],
+        ["an over-long string (65 chars)", "A" * 65],
+        ["a NUL character", "ABC\u0000DEF"],
+        ["a newline", "ABC\nDEF"],
+        ["a tab", "ABC\tDEF"],
+        ["a DEL character", "ABC\u007fDEF"],
+        ["an array", ["ABC"]],
+        ["a number", 12_345]
+      ].each do |label, value|
+        it "422s #{label} and stores and logs nothing" do
+          expect { tap({ card_number: value, space_id: space_a.id }) }.not_to change { [Rfid.count, TapBoxLog.count, LabSession.count] }
+          expect(response).to have_http_status(:unprocessable_content)
+          # (a blank value is already refused by params.require as parameter_missing)
+          expect(error["code"]).to eq(label == "a blank string" ? "parameter_missing" : "validation_failed")
+          expect(error["fields"]).to have_key("card_number")
+        end
+      end
+
+      it "accepts a 64 character card number" do
+        tap({ card_number: "A" * 64, space_id: space_a.id })
+        expect(error["code"]).to eq("card_not_linked")
+        expect(Rfid.where(card_number: "A" * 64)).to exist
+      end
+    end
+
     it "logs the tap like the legacy endpoint" do
       expect { tap }.to change(TapBoxLog, :count)
     end

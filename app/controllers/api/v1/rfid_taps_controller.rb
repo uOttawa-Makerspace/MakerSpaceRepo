@@ -20,6 +20,7 @@ module Api
         tap_start = Time.current
         card = params.require(:card_number)
         return invalid(:card_number, "must be a string") unless card.is_a?(String)
+        return invalid(:card_number, "is invalid") unless valid_card_number?(card)
 
         raw_space = params.require(:space_id)
         return invalid(:space_id, "must be a space id") unless raw_space.is_a?(Integer) || (raw_space.is_a?(String) && raw_space.match?(/\A\d{1,18}\z/))
@@ -36,6 +37,14 @@ module Api
       end
 
       private
+
+      # Nothing defines a card number format (any string the reader sends is
+      # stored), so this is a sanity bound: printable, non-blank, at most 64 chars.
+      MAX_CARD_NUMBER_LENGTH = 64
+
+      def valid_card_number?(card)
+        card.valid_encoding? && card.strip.present? && card.length <= MAX_CARD_NUMBER_LENGTH && !card.match?(/[[:cntrl:]]/)
+      end
 
       def invalid(field, message)
         render_error(:validation_failed, "Validation failed", status: :unprocessable_content, fields: { field => [message] })
