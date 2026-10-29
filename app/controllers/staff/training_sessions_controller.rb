@@ -117,33 +117,11 @@ class Staff::TrainingSessionsController < StaffDashboardController
   end
 
   def certify_trainees
-    error = false
-    duplicates = 0
-    # Count users that already have a certification
-    @current_training_session.users.each do |graduate|
-      # Skip if user already has a certifications that match the training id and training level
-      if Certification.held_by(
-           graduate.id,
-           @current_training_session.training_id,
-           @current_training_session.level
-         ).exists?
-        duplicates += 1
-        next
-      end
-
-      # Else make a certification
-      certification =
-        Certification.new(
-          user_id: graduate.id,
-          training_session_id: @current_training_session.id,
-          level: @current_training_session.level
-        )
-        
-      next if certification.save
-      error = true
-      flash[
-        :alert
-      ] = "#{graduate.username}'s certification has not saved properly!"
+    result = @current_training_session.certify_trainees!
+    error = !result.certified?
+    duplicates = result.duplicates
+    if error
+      flash[:alert] = "#{result.failed.last.username}'s certification has not saved properly!"
     end
 
     respond_to do |format|
