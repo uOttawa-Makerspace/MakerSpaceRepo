@@ -616,10 +616,6 @@ Rails.application.routes.draw do
     member { delete "answers/:answer_id", action: :remove_answer, as: :remove_answer }
   end
 
-  resources :staff_availabilities, except: :show do
-    collection { get :get_availabilities }
-  end
-
   resources :exams, only: %i[index create show destroy] do
     collection do
       post :finish_exam
