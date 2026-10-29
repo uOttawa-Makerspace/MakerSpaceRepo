@@ -84,7 +84,7 @@ class ProjectProposalsController < SessionsController
 
     @categories = @project_proposal.categories
     @pagy, @repositories =
-      pagy(viewable_linked_repositories.order([sort_order].to_h), limit: 9)
+      pagy(viewable_linked_repositories.includes(:owner, :photos).order([sort_order].to_h), limit: 9)
 
     @project_files = @project_proposal.project_files
     @linked_pp = @project_proposal.linked_project_proposal
