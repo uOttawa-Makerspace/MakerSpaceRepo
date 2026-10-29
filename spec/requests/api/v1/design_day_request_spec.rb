@@ -83,6 +83,17 @@ RSpec.describe "GET /api/v1/design_day", type: :request do
       expect(response.headers).not_to have_key("Access-Control-Allow-Credentials")
     end
 
+    # Development/test only (Rails.env.local?): the Create React App dev server on :3000/:3001.
+    it "answers the local Design Day dev server origins, without credentials" do
+      %w[http://localhost:3000 http://localhost:3001].each do |origin|
+        get "/api/v1/design_day", headers: { "Origin" => origin }
+        expect(response.headers["Access-Control-Allow-Origin"]).to eq(origin), origin
+        expect(response.headers).not_to have_key("Access-Control-Allow-Credentials"), origin
+      end
+      get "/api/v1/design_day", headers: { "Origin" => "http://localhost:3002" }
+      expect(response.headers).not_to have_key("Access-Control-Allow-Origin")
+    end
+
     it "sends no CORS headers to any other origin, including the staff app and localhost" do
       refused.each do |origin|
         get "/api/v1/design_day", headers: { "Origin" => origin }
