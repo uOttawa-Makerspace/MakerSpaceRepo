@@ -17,7 +17,7 @@ module Api
 
       # Legacy DesignDay.instance creates a row when none exists; a public GET must not write.
       def design_day
-        DesignDay.includes(:design_day_schedules).with_attached_floorplans.first ||
+        DesignDay.includes(:design_day_schedules, floorplans_attachments: :blob).first ||
           DesignDay.new(day: Time.zone.today, sheet_key: "", is_live: false, show_floorplans: false)
       end
     end
