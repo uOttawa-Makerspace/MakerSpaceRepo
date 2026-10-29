@@ -378,18 +378,31 @@ RSpec.describe "JobOrders audit gaps", type: :request do
     context "when the draft no longer exists on Shopify (delete returns no id, fetch says null)" do
       it "proceeds, clears the dead id and commits the re-quote" do
         order, task = order_with_draft!
-        shopify.delete_user_errors = [{ "field" => "id", "message" => "not found" }]
+        shopify.delete_returns_nothing = true
         shopify.draft_missing = true
         requote!(order, task, 55)
+        expect(shopify_ops).to eq(%w[draftOrderDelete getDraftOrder])
 
         expect(status_names(order).last).to eq("Waiting for User Approval")
         expect(order.reload.total_price).to eq(BigDecimal("55"))
         expect(order.shopify_draft_order_id).to be_nil
       end
 
+      it "refuses when the delete returned userErrors, even if a follow-up fetch would say gone" do
+        order, task = order_with_draft!
+        shopify.delete_user_errors = [{ "field" => "id", "message" => "cannot delete a completed draft order" }]
+        shopify.draft_missing = true
+        requote!(order, task, 55)
+
+        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.requote_draft_order_failed"))
+        expect(shopify_ops).to eq(["draftOrderDelete"])
+        expect(order.reload.total_price).to eq(BigDecimal("29.99"))
+        expect(order.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
+      end
+
       it "refuses when the existence check itself fails (fail closed)" do
         order, task = order_with_draft!
-        shopify.delete_user_errors = [{ "field" => "id", "message" => "x" }]
+        shopify.delete_returns_nothing = true
         allow(shopify).to receive(:query).and_wrap_original do |m, **kw|
           kw[:query].include?("draftOrderDelete") ? m.call(**kw) : (raise "boom")
         end
