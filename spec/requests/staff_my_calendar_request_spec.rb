@@ -155,10 +155,14 @@ RSpec.describe "Staff my calendar", type: :request do
 
     it "falls back to the raw event when the recurrence rule is malformed (inside the window only)" do
       # D-SP28: the model now refuses an unparseable rule, so store it the way legacy rows exist
-      create(:event, space: space, title: "Bad", start_time: Time.zone.local(2027, 3, 13, 9), end_time: Time.zone.local(2027, 3, 13, 10))
-        .update_column(:recurrence_rule, "NOT A RULE")
+      bad = create(:event, space: space, title: "Bad", start_time: Time.zone.local(2027, 3, 13, 9), end_time: Time.zone.local(2027, 3, 13, 10))
+      bad.update_column(:recurrence_rule, "NOT A RULE")
+      allow(Rails.error).to receive(:report).and_call_original
       get feed, params: window
       expect(response.parsed_body.map { |e| e["title"] }).to eq(["Bad"])
+      # D-SP29 follow-up: the fallback is reported (event id only), not silent
+      expect(Rails.error).to have_received(:report)
+        .with(kind_of(StandardError), handled: true, context: { event_id: bad.id }).once
     end
   end
 

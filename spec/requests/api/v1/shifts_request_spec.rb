@@ -184,6 +184,16 @@ RSpec.describe "GET /api/v1/spaces/:id/shifts", type: :request do
       expect(response.headers["X-Truncated"]).to eq("true")
     end
 
+    it "reports a rule it cannot expand (event id only) and falls back to the event once" do
+      ev = stored_shift("NOT A RULE")
+      allow(Rails.error).to receive(:report).and_call_original
+      shifts(window)
+      expect(response).to have_http_status(:ok)
+      expect(body.map { |r| r["id"] }).to eq(["event-#{ev.id}"])
+      expect(Rails.error).to have_received(:report)
+        .with(kind_of(StandardError), handled: true, context: { event_id: ev.id }).once
+    end
+
     it "sends no X-Truncated header and keeps all weekly/daily occurrences otherwise" do
       shift(recurrence_rule: "RRULE:FREQ=WEEKLY;BYDAY=MO", start_time: t0, end_time: t0 + 1.hour)
       shift(recurrence_rule: "RRULE:FREQ=DAILY;COUNT=3", start_time: t0, end_time: t0 + 1.hour)

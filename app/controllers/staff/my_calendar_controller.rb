@@ -74,7 +74,9 @@ class Staff::MyCalendarController < StaffAreaController
       end
 
     rescue => e
-      # Fallback: return the original event if within date range
+      # Report it (event id only, D-SP29 follow-up), then fall back: return the
+      # original event if within date range
+      Rails.error.report(e, handled: true, context: { event_id: event.id })
       if event.start_time >= start_date && event.end_time <= end_date
         expanded_events << format_event(event)
       end
