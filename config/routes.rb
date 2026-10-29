@@ -14,6 +14,7 @@ Rails.application.routes.draw do
   resources :custom_webhooks do
     collection do
       post :orders_paid
+      post :orders_fulfilled
     end
   end
 
