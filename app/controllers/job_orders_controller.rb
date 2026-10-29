@@ -185,6 +185,9 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
 
     if params[:approved].present? && params[:approved] == "true"
       # ACCEPT JOB
+      old_total = @job_order.total_price
+      status_before = @job_order.job_order_statuses.last&.job_status
+      begin
       JobOrder.transaction do
         @job_order.job_tasks.each do |task|
           price_key = "job_task_quote_price_#{task.id}"
@@ -249,11 +252,22 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
           user: @user
         )
 
+        # D-J38: a price change invalidates the Shopify draft order (stale line items + payable link). Fail
+        # closed: if it cannot be deleted the whole quote rolls back (no price, status or email).
+        if JobOrder.find(@job_order.id).total_price != old_total
+          @job_order.discard_stale_draft_order!(status_before)
+        end
+
         if @job_order.save
           JobOrderMailer.send_job_quote(@job_order.id).deliver_now
         else
           error = true
         end
+      end
+      rescue JobOrder::StaleDraftOrderError => e
+        Rails.logger.error("[job_orders#quote] re-quote of ##{@job_order.id} refused: #{e.message}")
+        flash[:alert] = t("job_orders.alerts.requote_draft_order_failed")
+        return redirect_to job_order_path(@job_order.id)
       end
     elsif params[:approved] == "false"
       # DELCINE JOB
