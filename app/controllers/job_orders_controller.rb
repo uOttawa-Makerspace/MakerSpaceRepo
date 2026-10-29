@@ -180,6 +180,7 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
 
   def quote
     error = false
+    mail_failed = false
 
     return flash[:alert] = t("job_orders.alerts.error_while_updating") if params[:approved].blank?
 
@@ -270,7 +271,14 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
         end
         # After the commit: a mail failure must not roll back a quote whose old Shopify draft is already
         # deleted (the restored id would point at a deleted draft). Staff can use resend_quote_email.
-        JobOrderMailer.send_job_quote(@job_order.id).deliver_now unless error
+        unless error
+          begin
+            JobOrderMailer.send_job_quote(@job_order.id).deliver_now
+          rescue StandardError => e
+            Rails.logger.error("[job_orders#quote] quote email for ##{@job_order.id} failed: #{e.class}: #{e.message}")
+            mail_failed = true
+          end
+        end
       rescue JobOrder::StaleDraftOrderError => e
         Rails.logger.error("[job_orders#quote] re-quote of ##{@job_order.id} refused: #{e.message}")
         flash[:alert] = t("job_orders.alerts.requote_draft_order_failed")
@@ -300,7 +308,9 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
       error = true
     end
 
-    if !error
+    if mail_failed
+      flash[:alert] = t("job_orders.alerts.quote_saved_email_failed")
+    elsif !error
       flash[:notice] = t(
         "job_orders.alerts.updated_job_status_to_x",
         status: @job_order.job_order_statuses.last.job_status.t_name

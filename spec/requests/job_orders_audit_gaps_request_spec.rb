@@ -272,7 +272,8 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       allow(JobOrderMailer).to receive(:send_job_quote).and_raise(Net::SMTPFatalError, "smtp down")
 
       requote!(order, task, 55)
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to redirect_to(job_order_path(order.id))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.quote_saved_email_failed"))
 
       expect(shopify_ops).to eq(["draftOrderDelete"])
       order.reload

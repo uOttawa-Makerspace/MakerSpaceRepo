@@ -324,6 +324,7 @@ fr:
       approval_magic_link_expired: "Le lien d'approbation de la commande suivante n'est pas valide ou a expiré. Veuillez vous connecter pour consulter la page des commandes."
       error_accept_deny_order: "Une erreur s'est produite lors de la tentative d'acceptation ou de refus de la commande. Veuillez réessayer."
       updated_job_status_to_x: "Vous avez mis a jour le status de la commande à : %{status} !"
+      quote_saved_email_failed: "Devis enregistré, mais le courriel n'a pas pu être envoyé. Utilisez « Renvoyer le courriel du devis »."
       requote_draft_order_failed: "Le devis de cette commande n'a pas pu être mis à jour car son lien de paiement existant n'a pas pu être annulé. Rien n'a été modifié. Veuillez réessayer plus tard."
       error_while_updating: "Une erreur s'est produite lors de la mise à jour du statut de la commande. Veuillez réessayer plus tard."
       pay_magic_link_expired: "Le lien suivant vers le paiement de la commande est invalide ou a expiré. Veuillez vous connecter pour accéder à la page de commande."
