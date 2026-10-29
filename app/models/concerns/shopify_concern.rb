@@ -179,6 +179,21 @@ module ShopifyConcern
       resp.body&.dig("data", "draftOrder")
     end
 
+    # True only when Shopify ANSWERED 200 that the draft order does not exist (`draftOrder: null`, no GraphQL
+    # errors). A non-200, an error payload or an exception is "unknown" (false / raises), never "gone".
+    def shopify_draft_order_gone?(gid = shopify_draft_order_id)
+      return false if gid.blank?
+
+      start_shopify_session
+      admin_client = ShopifyAPI::Clients::Graphql::Admin.new(session: ShopifyAPI::Context.active_session)
+      resp = admin_client.query(query: "query getDraftOrder($id: ID!) { draftOrder(id: $id) { id } }",
+                                variables: { id: gid })
+      return false unless resp.code == 200
+
+      body = resp.body
+      body.is_a?(Hash) && body["errors"].blank? && body["data"].is_a?(Hash) && body["data"]["draftOrder"].nil?
+    end
+
     def create_shopify_draft_order
       create_draft_order = <<~QUERY
         mutation draftOrderCreate($input: DraftOrderInput!) {

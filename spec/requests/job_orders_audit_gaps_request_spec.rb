@@ -254,6 +254,34 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       expect(shopify_ops).to include("draftOrderCreate")
     end
 
+    describe "pay path with a dangling draft id" do
+      it "clears the id of a draft that no longer exists on Shopify and creates a fresh one" do
+        order, = order_with_draft!
+        shopify.draft_missing = true
+        shopify.calls.clear
+        # the fake keeps answering "draftOrder: null" for fetches; creation answers with the new id
+        allow(shopify).to receive(:query).and_wrap_original do |m, **kw|
+          shopify.draft_missing = false if kw[:query].include?("draftOrderCreate")
+          m.call(**kw)
+        end
+        shopify.draft_id = "gid://shopify/DraftOrder/9003"
+
+        get pay_job_orders_path, params: { token: order.pay_token }
+
+        expect(response).to have_http_status(:ok)
+        expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9003")
+        expect(shopify_ops).to include("draftOrderCreate")
+      end
+
+      it "keeps the id on a transient Shopify error" do
+        order, = order_with_draft!
+        shopify.status = 502
+        expect { get pay_job_orders_path, params: { token: order.pay_token } }.not_to raise_error
+        expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
+        expect(shopify_ops).not_to include("draftOrderCreate")
+      end
+    end
+
     shared_examples "a refused re-quote" do
       it "changes nothing and tells staff" do
         order, task = order_with_draft!(status_key: status_key)

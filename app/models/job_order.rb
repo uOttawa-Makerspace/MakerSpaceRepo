@@ -151,7 +151,16 @@ class JobOrder < ApplicationRecord
   end
 
   def checkout_link
-    shopify_draft_order['invoiceUrl']
+    draft = shopify_draft_order
+    if draft.nil? && shopify_draft_order_id.present? && shopify_draft_order_gone?
+      # D-J38: the stored draft no longer exists on Shopify (confirmed by a 200 `draftOrder: null`): drop the
+      # dangling id and create a fresh draft. A transient error never clears the id. Kept in JobOrder (not the
+      # shared concern) so locker rentals/memberships keep their behaviour: a cancelled locker must never get a
+      # fresh payable invoice from a self-heal.
+      update_column(:shopify_draft_order_id, nil)
+      draft = shopify_draft_order
+    end
+    draft['invoiceUrl']
   end
 
   class StaleDraftOrderError < StandardError; end
