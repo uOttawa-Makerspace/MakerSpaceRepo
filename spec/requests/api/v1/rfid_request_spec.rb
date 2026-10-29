@@ -226,16 +226,22 @@ RSpec.describe "/api/v1 RFID", type: :request do
       end.not_to change { [LabSession.count, Rfid.count, TapBoxLog.count] }
     end
 
-    it "signs the card's owner in with exactly {success: 'RFID sign in'} (staff and admin), then out" do
-      [staff, admin].each do |caller|
-        tap(as: caller)
-        expect(response).to have_http_status(:ok)
-        expect(body).to eq("success" => "RFID sign in")
-        expect(LabSession.where(user: owner, space: space_a).active.count).to eq(1)
-        tap(as: caller)
-        expect(body).to eq("success" => "RFID sign out")
-        expect(LabSession.where(user: owner).active).to be_empty
-      end
+    it "signs the card's owner in with exactly {success: 'RFID sign in'}, then out (staff)" do
+      tap
+      expect(response).to have_http_status(:ok)
+      expect(body).to eq("success" => "RFID sign in")
+      expect(LabSession.where(user: owner, space: space_a).active.count).to eq(1)
+      tap
+      expect(response).to have_http_status(:ok)
+      expect(body).to eq("success" => "RFID sign out")
+      expect(LabSession.where(user: owner).active).to be_empty
+    end
+
+    it "lets an admin tap too" do
+      other = create(:rfid, user: create(:user, :regular_user), mac_address: nil)
+      tap({ card_number: other.card_number, space_id: space_a.id }, as: admin)
+      expect(response).to have_http_status(:ok)
+      expect(body).to eq("success" => "RFID sign in")
     end
 
     it "writes the same lab session a Pi tap does (6 hours, no mac) and queues the membership check" do
@@ -297,18 +303,22 @@ RSpec.describe "/api/v1 RFID", type: :request do
     end
 
     describe "rate limit" do
+      # (An unlinked card keeps the 60 taps cheap: no lab sessions or broadcasts.)
+      let(:loose) { create(:rfid, user: nil, mac_address: nil) }
+
       it "429s the 61st tap in a minute, per staff user, and does not count guests" do
         counts = Hash.new(0)
         allow(Api::V1::RfidTapsController.cache_store).to receive(:increment) { |key, *| counts[key] += 1 }
-        61.times { tap(as: nil) }
+        payload = { card_number: loose.card_number, space_id: space_a.id }
+        61.times { tap(payload, as: nil) }
         expect(counts).to be_empty
-        60.times { tap }
-        expect(response).to have_http_status(:ok)
-        tap
+        60.times { tap(payload) }
+        expect(response).to have_http_status(:unprocessable_content)
+        tap(payload)
         expect(response).to have_http_status(:too_many_requests)
         expect(error["code"]).to eq("rate_limited")
-        tap(as: admin)
-        expect(response).to have_http_status(:ok)
+        tap(payload, as: admin)
+        expect(response).to have_http_status(:unprocessable_content)
       end
     end
   end
