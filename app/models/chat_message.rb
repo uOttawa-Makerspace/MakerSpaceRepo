@@ -44,7 +44,6 @@ class ChatMessage < ApplicationRecord
     all_recipients = (recipients + additional_recipients).uniq - [sender]
 
     ChatMessageMailer.new_message(self, all_recipients).deliver_later if all_recipients.any?
-    # ChatNotificationJob.set(wait: 1.hour).perform_later(id)
   end
 
   def recent_message_by_sender?
