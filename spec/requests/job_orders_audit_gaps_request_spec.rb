@@ -233,6 +233,27 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       expect(order.shopify_draft_order_id).to be_nil
     end
 
+    it "keeps the quote committed (and no dangling draft id) when the email fails after the draft was deleted" do
+      order, task = order_with_draft!
+      allow(JobOrderMailer).to receive(:send_job_quote).and_raise(Net::SMTPFatalError, "smtp down")
+
+      requote!(order, task, 55)
+      expect(response).to have_http_status(:internal_server_error)
+
+      expect(shopify_ops).to eq(["draftOrderDelete"])
+      order.reload
+      # committed, and the id of the (deleted) draft is not restored
+      expect(status_names(order).last).to eq("Waiting for User Approval")
+      expect(order.total_price).to eq(BigDecimal("55"))
+      expect(order.shopify_draft_order_id).to be_nil
+
+      order.job_order_statuses.create!(job_status: JobStatus::COMPLETED, user: staff)
+      shopify.calls.clear
+      get pay_job_orders_path, params: { token: order.pay_token }
+      expect(response).to have_http_status(:ok)
+      expect(shopify_ops).to include("draftOrderCreate")
+    end
+
     shared_examples "a refused re-quote" do
       it "changes nothing and tells staff" do
         order, task = order_with_draft!(status_key: status_key)
