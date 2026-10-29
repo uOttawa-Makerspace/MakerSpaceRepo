@@ -63,8 +63,11 @@ module Api
           format(event, colors, occ, occ + duration).merge(id: "event-#{event.id}-#{occ.to_i}")
         end
         Result.new(items, found.truncated)
-      rescue StandardError
-        # A rule IceCube cannot parse: show the event once if it is inside the window (legacy behaviour).
+      rescue StandardError => e
+        # A rule IceCube cannot parse (or any other expansion error): report it, with
+        # the event id only, then show the event once if it is inside the window
+        # (legacy behaviour).
+        Rails.error.report(e, handled: true, context: { event_id: event.id })
         Result.new(event.start_time >= from && event.end_time <= to ? [format(event, colors)] : [], false)
       end
 

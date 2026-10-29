@@ -37,7 +37,9 @@ module RecurrenceExpansion
   # 03:30 daylight time), but on a fall-back day it yields a time in the repeated
   # hour twice (01:30 daylight AND 01:30 standard) and counts both against COUNT.
   # Here the second one is dropped, so the time is listed once, at its first
-  # (daylight) instant, and COUNT is applied after that by this method.
+  # (daylight) instant, and COUNT is applied after that by this method. The
+  # window is tested against that kept instant only, so a window opening inside
+  # the repeated hour after it (e.g. 01:45 daylight) excludes that day's 01:30.
   def occurrences(rule_string, start_time, from, to, limit)
     rule = IceCube::Rule.from_ical(rule_body(rule_string))
     # enumerate_occurrences is private in IceCube but is the only variant taking a
@@ -57,21 +59,24 @@ module RecurrenceExpansion
 
   # Lazy occurrences of a wall-clock rule, the repeated-hour duplicates removed.
   # With a COUNT, enumeration starts at the series start (as IceCube itself does
-  # for COUNT) so the count is taken over the de-duplicated series.
+  # for COUNT) so the count is taken over the de-duplicated series. Everything
+  # stays lazy: the caller's first(limit + 1) stops the walk inside the window.
   def wall_clock_occurrences(rule, start_time, from, to)
     count = rule.occurrence_count
-    rule.count(nil) if count
+    # A copy without the COUNT: the parsed rule itself is left untouched.
+    rule = IceCube::Rule.from_hash(rule.to_hash.except(:count)) if count
     times = enumerate(rule, start_time, count ? start_time : from, to)
             .reject { |time| repeated_hour_duplicate?(time, start_time) }
-    times = times.first(count).lazy if count
+    times = times.take(count) if count
     times.select { |time| time >= from }
   end
 
   # True for the second (standard-time) instant of a local time that occurs twice,
   # unless it is the series start itself. TimeZone#local resolves an ambiguous
-  # local time to its first (daylight) instant.
+  # local time to its first (daylight) instant. A daylight-time instant is never
+  # the second one, so it skips the lookup.
   def repeated_hour_duplicate?(time, start_time)
-    return false if time == start_time
+    return false if time.dst? || time == start_time
 
     first = start_time.time_zone.local(time.year, time.month, time.day, time.hour, time.min, time.sec)
     first.to_i != time.to_i
