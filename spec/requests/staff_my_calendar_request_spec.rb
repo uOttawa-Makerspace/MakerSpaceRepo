@@ -90,7 +90,7 @@ RSpec.describe "Staff my calendar", type: :request do
     end
 
     it "keeps wall-clock time across the spring-forward jump for recurring events" do
-      create(:event, space: space, title: "Weekly", recurrence_rule: "FREQ=WEEKLY;BYDAY=SU;COUNT=4",
+      create(:event, space: space, title: "Weekly", recurrence_rule: "RRULE:FREQ=WEEKLY;BYDAY=SU;COUNT=4",
                      start_time: Time.zone.local(2027, 3, 7, 10), end_time: Time.zone.local(2027, 3, 7, 11))
       get feed, params: { start: "2027-03-01T00:00:00-05:00", end: "2027-04-01T00:00:00-04:00" }
       starts = response.parsed_body.map { |e| e["start"] }
@@ -154,9 +154,45 @@ RSpec.describe "Staff my calendar", type: :request do
     end
 
     it "falls back to the raw event when the recurrence rule is malformed (inside the window only)" do
-      create(:event, space: space, title: "Bad", recurrence_rule: "NOT A RULE", start_time: Time.zone.local(2027, 3, 13, 9), end_time: Time.zone.local(2027, 3, 13, 10))
+      # D-SP28: the model now refuses an unparseable rule, so store it the way legacy rows exist
+      create(:event, space: space, title: "Bad", start_time: Time.zone.local(2027, 3, 13, 9), end_time: Time.zone.local(2027, 3, 13, 10))
+        .update_column(:recurrence_rule, "NOT A RULE")
       get feed, params: window
       expect(response.parsed_body.map { |e| e["title"] }).to eq(["Bad"])
+    end
+  end
+
+  # D-SP28: rules stored before validation existed must not pin a worker.
+  describe "a stored sub-daily recurrence rule" do
+    before { sign_in_as(:staff) }
+
+    def stored_event(rule, title: "Legacy")
+      create(:event, space: space, title: title, start_time: Time.utc(2027, 1, 1, 9), end_time: Time.utc(2027, 1, 1, 9, 5))
+        .tap { |e| e.update_column(:recurrence_rule, rule) }
+    end
+
+    it "is expanded within the per-event cap, quickly (MINUTELY over 100 days)" do
+      stored_event("DTSTART:20270101T090000Z\nRRULE:FREQ=MINUTELY")
+      started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      get feed, params: { start: "2027-01-01T00:00:00Z", end: "2027-04-11T00:00:00Z" }
+      elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body.size).to eq(Api::V1::ShiftEventSerializer::MAX_OCCURRENCES_PER_EVENT)
+      expect(elapsed).to be < 2
+    end
+
+    it "returns SECONDLY quickly too" do
+      stored_event("FREQ=SECONDLY")
+      started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      get feed, params: { start: "2027-01-01T00:00:00Z", end: "2027-04-11T00:00:00Z" }
+      expect(Process.clock_gettime(Process::CLOCK_MONOTONIC) - started).to be < 2
+      expect(response.parsed_body.size).to eq(Api::V1::ShiftEventSerializer::MAX_OCCURRENCES_PER_EVENT)
+    end
+
+    it "leaves a normal rule with fewer occurrences than the cap untouched" do
+      create(:event, space: space, title: "Daily", recurrence_rule: "RRULE:FREQ=DAILY;COUNT=3", start_time: Time.utc(2027, 3, 8, 14), end_time: Time.utc(2027, 3, 8, 15))
+      get feed, params: window
+      expect(response.parsed_body.map { |e| e["start"] }.size).to eq(3)
     end
   end
 end

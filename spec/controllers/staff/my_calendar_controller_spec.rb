@@ -180,7 +180,7 @@ RSpec.describe Staff::MyCalendarController, type: :controller do
           draft: false,
           start_time: 1.day.from_now.beginning_of_week,
           end_time: 1.day.from_now.beginning_of_week + 2.hours,
-          recurrence_rule: 'FREQ=WEEKLY;BYDAY=MO;COUNT=4'
+          recurrence_rule: 'RRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=4'
         )
         
         @daily_event = create(:event,
@@ -188,7 +188,7 @@ RSpec.describe Staff::MyCalendarController, type: :controller do
           draft: false,
           start_time: 2.hours.from_now,
           end_time: 3.hours.from_now,
-          recurrence_rule: 'FREQ=DAILY;COUNT=3'
+          recurrence_rule: 'RRULE:FREQ=DAILY;COUNT=3'
         )
       end
 
@@ -223,7 +223,9 @@ RSpec.describe Staff::MyCalendarController, type: :controller do
 
       it 'handles RRULE with and without prefix' do
         event_with_prefix = create(:event, space: @space, draft: false, start_time: 1.hour.from_now, end_time: 2.hours.from_now, recurrence_rule: "RRULE:FREQ=DAILY;COUNT=2")
-        event_without_prefix = create(:event, space: @space, draft: false, start_time: 1.hour.from_now, end_time: 2.hours.from_now, recurrence_rule: "FREQ=DAILY;COUNT=2")
+        event_without_prefix = create(:event, space: @space, draft: false, start_time: 1.hour.from_now, end_time: 2.hours.from_now, recurrence_rule: "RRULE:FREQ=DAILY;COUNT=2")
+        # a legacy row stored before the validator required the RRULE: prefix
+        event_without_prefix.update_column(:recurrence_rule, "FREQ=DAILY;COUNT=2")
 
         get :json, params: { id: @space.id }, format: :json
         json_response = JSON.parse(response.body)
@@ -233,7 +235,9 @@ RSpec.describe Staff::MyCalendarController, type: :controller do
       end
 
       it 'handles malformed and empty recurrence rules' do
-        invalid = create(:event, space: @space, draft: false, start_time: 1.hour.from_now, end_time: 2.hours.from_now, recurrence_rule: 'INVALID_RULE')
+        invalid = create(:event, space: @space, draft: false, start_time: 1.hour.from_now, end_time: 2.hours.from_now)
+        # D-SP28: the model now refuses an unparseable rule, so store it the way legacy rows exist
+        invalid.update_column(:recurrence_rule, 'INVALID_RULE')
         empty = create(:event, space: @space, draft: false, start_time: 1.hour.from_now, end_time: 2.hours.from_now, recurrence_rule: '')
 
         get :json, params: { id: @space.id }, format: :json

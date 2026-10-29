@@ -13,6 +13,7 @@ class Event < ApplicationRecord
   validates :training_id, presence: true, if: -> { event_type == 'training' && !draft? }
 
   validate :start_time_must_be_before_end_time
+  validates :recurrence_rule, recurrence_rule: true
   validate :weekly_frequency_must_contain_days
 
   before_save :upsert_google_event
