@@ -126,19 +126,82 @@ RSpec.describe "/api/v1 RFID", type: :request do
       expect(Rfid.where(user_id: owner.id).count).to eq(1)
     end
 
-    it "404s an unknown card (it has to be tapped first), an unknown, deleted or non-numeric user" do
-      api_send :put, "/api/v1/users/#{owner.id}/rfid", { card_number: "no-such-card" }, as: staff
-      expect(response).to have_http_status(:not_found)
-      expect(error["code"]).to eq("not_found")
-      api_send :put, "/api/v1/users/99999999/rfid", { card_number: card.card_number }, as: staff
-      expect(response).to have_http_status(:not_found)
-      gone = create(:user, :regular_user)
-      gone.update_columns(deleted: true)
-      api_send :put, "/api/v1/users/#{gone.id}/rfid", { card_number: card.card_number }, as: staff
-      expect(response).to have_http_status(:not_found)
-      api_send :put, "/api/v1/users/abc/rfid", { card_number: card.card_number }, as: staff
-      expect(response).to have_http_status(:not_found)
+    it "404s an unknown, deleted or non-numeric user, creating no card" do
+      expect do
+        api_send :put, "/api/v1/users/99999999/rfid", { card_number: "NEWCARD01" }, as: staff
+        expect(response).to have_http_status(:not_found)
+        gone = create(:user, :regular_user)
+        gone.update_columns(deleted: true)
+        api_send :put, "/api/v1/users/#{gone.id}/rfid", { card_number: "NEWCARD01" }, as: staff
+        expect(response).to have_http_status(:not_found)
+        api_send :put, "/api/v1/users/abc/rfid", { card_number: "NEWCARD01" }, as: staff
+        expect(response).to have_http_status(:not_found)
+        expect(error["code"]).to eq("not_found")
+      end.not_to change(Rfid, :count)
       expect(card.reload.user_id).to be_nil
+    end
+
+    context "with a card no reader has seen (scanned on the phone)" do
+      it "creates it and links it to the user: 204, one row, owned by the user, no reader" do
+        expect { api_send :put, "/api/v1/users/#{owner.id}/rfid", { card_number: "04A1B2C3D4E5F6" }, as: staff }
+          .to change(Rfid, :count).by(1)
+        expect(response).to have_http_status(:no_content)
+        expect(response.body).to be_empty
+        rows = Rfid.where(card_number: "04A1B2C3D4E5F6")
+        expect(rows.count).to eq(1)
+        expect(rows.first.user_id).to eq(owner.id)
+        expect(rows.first.mac_address).to be_nil
+      end
+
+      it "is then a no-op 204 when sent again" do
+        api_send :put, "/api/v1/users/#{owner.id}/rfid", { card_number: "04A1B2C3D4E5F6" }, as: admin
+        expect { api_send :put, "/api/v1/users/#{owner.id}/rfid", { card_number: "04A1B2C3D4E5F6" }, as: admin }
+          .not_to change(Rfid, :count)
+        expect(response).to have_http_status(:no_content)
+      end
+
+      it "refuses a user who already holds another card, creating nothing" do
+        create(:rfid, user: owner)
+        expect { api_send :put, "/api/v1/users/#{owner.id}/rfid", { card_number: "04A1B2C3D4E5F6" }, as: staff }
+          .not_to change(Rfid, :count)
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(error["fields"]["card_number"]).to eq(["user already has a card; unlink it first"])
+      end
+
+      it "refuses a card another user holds, nothing changed" do
+        taken = create(:rfid, user: owner)
+        thief = create(:user, :regular_user)
+        expect { api_send :put, "/api/v1/users/#{thief.id}/rfid", { card_number: taken.card_number }, as: staff }
+          .not_to change { Rfid.order(:id).pluck(:id, :user_id) }
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(error["fields"]["card_number"]).to eq(["is already linked to another user"])
+      end
+
+      it "422s an invalid card number, creating nothing" do
+        bad = ["", "   ", "A" * 65, "AB\u0000CD", "AB\nCD"]
+        expect do
+          bad.each do |value|
+            api_send :put, "/api/v1/users/#{owner.id}/rfid", { card_number: value }, as: staff
+            expect(response).to have_http_status(:unprocessable_content), "expected 422 for #{value.inspect}"
+            # a blank string is "missing" to params.require; the rest are invalid values
+            expect(error["code"]).to eq(value.strip.empty? ? "parameter_missing" : "validation_failed")
+          end
+        end.not_to change(Rfid, :count)
+        expect(Rfid.where(user_id: owner.id)).to be_empty
+      end
+
+      it "accepts a 64 character card number" do
+        api_send :put, "/api/v1/users/#{owner.id}/rfid", { card_number: "A" * 64 }, as: staff
+        expect(response).to have_http_status(:no_content)
+        expect(Rfid.find_by(card_number: "A" * 64).user_id).to eq(owner.id)
+      end
+
+      it "does not list the card among the unlinked taps (it has no reader)" do
+        api_send :put, "/api/v1/users/#{owner.id}/rfid", { card_number: "04A1B2C3D4E5F6" }, as: staff
+        api_send :delete, "/api/v1/users/#{owner.id}/rfid", as: staff
+        api_get "/api/v1/rfid_cards", as: staff, params: { linked: "false" }
+        expect(body.map { |c| c["card_number"] }).not_to include("04A1B2C3D4E5F6")
+      end
     end
 
     it "422s a missing or non-string card_number" do
