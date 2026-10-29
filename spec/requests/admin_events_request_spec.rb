@@ -108,6 +108,27 @@ RSpec.describe "Admin events contract", type: :request do
     end
   end
 
+  # M61: the batch publish is scoped to the admin's space.
+  it "batch publish leaves drafts of another space as drafts and does not push them" do
+    travel_to(Time.zone.local(2027, 4, 1, 18, 0)) do
+      allow(Event).to receive(:upsert_event)
+      other_space = create(:space)
+      mine = create(:event, :draft, space: space)
+      foreign = create(:event, :draft, space: other_space)
+
+      log_in!(admin)
+      patch publish_admin_events_path, params: {
+        space_id: space.id,
+        view_start_date: "2027-03-31", view_end_date: "2027-04-02"
+      }
+      expect(flash[:notice]).to eq("1 event(s) published.")
+      expect(mine.reload.draft).to be(false)
+      expect(foreign.reload.draft).to be(true)
+      expect(Event).to have_received(:upsert_event).with(mine).at_least(:once)
+      expect(Event).not_to have_received(:upsert_event).with(foreign)
+    end
+  end
+
   it "delete_drafts only removes non-recurring drafts" do
     travel_to(Time.zone.local(2027, 4, 1, 18, 0)) do
       draft = create(:event, :draft, space: space)
