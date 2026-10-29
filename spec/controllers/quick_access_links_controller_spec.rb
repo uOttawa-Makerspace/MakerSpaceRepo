@@ -26,10 +26,18 @@ RSpec.describe QuickAccessLinksController, type: :controller do
       end
 
       it "should reject invalid links" do
-        # TODO: Disabled because of route.rb respository
-        # post :create, params: attributes_for(:quick_access_link, :invalid)
-        # expect(response).not_to have_http_status :success
-        # expect(flash[:alert]).not_to be_nil
+        # The :invalid trait's "admin/invalid" now routes to repositories#show
+        # (/:username/:id), which is why this was once disabled; use paths that
+        # really fail: no route, and a user's profile page.
+        user = create(:user, :regular_user)
+        ["/no/such/route/at/all/xyz", "/#{user.username}"].each do |path|
+          expect {
+            post :create, params: { name: "Bad", path: path }
+          }.not_to change(QuickAccessLink, :count)
+          expect(response).not_to have_http_status :success
+          expect(flash[:alert]).to start_with("Quick access link not created")
+        end
+        expect(flash[:alert]).to include("cannot point to a user")
       end
 
       it "should reject duplicate links" do

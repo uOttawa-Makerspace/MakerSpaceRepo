@@ -667,4 +667,45 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       expect(User.exists?(user.id)).to be(true)
     end
   end
+
+  describe "makes tab privacy (D-C59)" do
+    let!(:original) { create(:repository, user_id: other.id, title: "Original Thing", share_type: "public") }
+    let!(:public_make) do
+      create(:repository, owner: user, users: [user], title: "Public Make", share_type: "public", make_id: original.id)
+    end
+    let!(:private_make) do
+      create(:repository, owner: user, users: [user], title: "Secret Make Title", description: "secret make words",
+                          share_type: "private", password: "secret1", make_id: original.id)
+    end
+
+    def makes_count
+      response.body[%r{show=makes#user-show-links">\s*<span class="number">(\d+)</span>}, 1]
+    end
+
+    it "hides a private make and excludes it from the count for guests and unrelated users" do
+      get user_path(user.username, show: :makes)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Public Make")
+      expect(response.body).not_to include("Secret Make Title", "secret make words")
+      expect(makes_count).to eq("1")
+
+      login!(other)
+      get user_path(user.username, show: :makes)
+      expect(response.body).to include("Public Make")
+      expect(response.body).not_to include("Secret Make Title", "secret make words")
+      expect(makes_count).to eq("1")
+    end
+
+    it "shows the private make to its owner and to admins" do
+      login!(user)
+      get user_path(user.username, show: :makes)
+      expect(response.body).to include("Public Make", "Secret Make Title")
+      expect(makes_count).to eq("2")
+
+      login!(admin)
+      get user_path(user.username, show: :makes)
+      expect(response.body).to include("Public Make", "Secret Make Title")
+      expect(makes_count).to eq("2")
+    end
+  end
 end

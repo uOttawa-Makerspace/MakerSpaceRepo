@@ -489,6 +489,22 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(deliveries.last.body.encoded).to include("http://evil.example.test")
     end
 
+    # M50: with Turnstile enabled (the seam is off in test) a failed verification
+    # must stop the submission. Only the Cloudflare HTTP call is stubbed.
+    it "refuses the submission and sends no mail when the Turnstile verification fails" do
+      allow(TurnstileHelper).to receive(:verification_enabled?).and_return(true)
+      siteverify = stub_request(:post, TurnstileHelper::TURNSTILE_SITEVERIFY_ENDPOINT)
+                   .to_return(status: 200, body: { success: false, "error-codes" => ["invalid-input-response"] }.to_json)
+      deliveries.clear
+      expect {
+        perform_enqueued_jobs { post help_path, params: params.merge("cf-turnstile-response" => "bad-token") }
+      }.not_to change(Help, :count)
+      expect(siteverify).to have_been_requested.once
+      expect(response).to have_http_status(422)
+      expect(flash[:alert]).to eq("Captcha check failed, please try again.")
+      expect(deliveries).to be_empty
+    end
+
     it "rejects invalid input with 422 and sends nothing" do
       deliveries.clear
       bad = { help: { name: "P", email: "not-an-email", subject: "short", comments: "" } }

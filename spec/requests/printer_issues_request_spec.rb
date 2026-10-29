@@ -105,6 +105,13 @@ RSpec.describe "Printer issues", type: :request do
         mail = ActionMailer::Base.deliveries.last
         expect(mail.to).to eq(["maint@example.com"])
         expect(mail.subject).to eq("New Printer Issue: Bed issue: warped")
+        # M72/M73: the body carries the printer name, summary and description.
+        # Plain text only, so this holds whether or not the view escapes (D-EQ38).
+        body = mail.body.encoded
+        expect(body).to include(printer.name)
+        expect(body).to include("Bed issue: warped")
+        expect(body).to include("Corner lifts")
+        expect(body).to include("/printer_issues/#{PrinterIssue.last.id}")
       end
 
       # WART(D-EQ22): the failed-create branch calls `sanitize`, which the controller does not include, so any validation failure is a NoMethodError (500) and the user never sees the error

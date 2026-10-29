@@ -272,6 +272,23 @@ RSpec.describe "Printers", type: :request do
       expect(mail.subject).to eq("Your 3D print on #{um2p.number} has failed")
     end
 
+    # M74: the body is the print_failed template with its placeholders filled in
+    it "puts the formatted print_failed template (owner, printer, staff notes) in the mail body" do
+      JobOrderMessage.create!(name: "print_failed",
+                              message: "Hi [PRINT_OWNER_NAME], your print on [PRINTER_NUMBER] failed. Staff notes: [STAFF_NOTES]")
+      ActionMailer::Base.deliveries.clear
+      send_msg
+      body = ActionMailer::Base.deliveries.last.body.encoded
+      expect(body).to include("Hi #{owner.name}, your print on #{um2p.name} failed.")
+      expect(body).to include("Staff notes: Spaghetti")
+    end
+
+    it "uses the default print_failed text in the body when no template was customised" do
+      ActionMailer::Base.deliveries.clear
+      send_msg
+      expect(ActionMailer::Base.deliveries.last.body.encoded).to include("Print failed")
+    end
+
     it "redirects to the updates page when sent from there" do
       send_msg(from: "updates")
       expect(response).to redirect_to(staff_printers_updates_printers_url)
