@@ -167,10 +167,9 @@ RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
       expect(other.reload.video).to be_attached
     end
 
-    it "the download route has no action: 404 (D-C50)" do
+    it "has no download route: 404 (D-C50, route removed)" do
       video = create(:video, :with_video, proficient_project: project)
-      get download_video_path(video, filename: "1sec.mp4")
-      # WART(D-C50): routes.rb maps videos#download but VideosController defines no #download
+      get "/videos/#{video.id}/download/1sec.mp4"
       expect(response).to have_http_status(:not_found)
     end
   end

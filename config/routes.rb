@@ -33,13 +33,6 @@ Rails.application.routes.draw do
   end
 
   resources :videos, only: %i[index new create destroy]
-  get "videos/:id/download/:filename",
-      to: "videos#download",
-      constraints: {
-        filename: /.+/
-      },
-      as: "download_video"
-
   resources :project_kits, only: %i[index new create destroy] do
     get :mark_delivered
     collection { get :populate_kit_users }
