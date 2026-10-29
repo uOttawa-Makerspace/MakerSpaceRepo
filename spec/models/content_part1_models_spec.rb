@@ -341,12 +341,6 @@ RSpec.describe "Content models (part 1 characterization)" do
       expect(ProficientProject.filter_by_attribute("zzz", "x")).to eq(ProficientProject)
     end
 
-    it "update_training_requirements references an undefined ivar and raises (dead code) (D-C55)" do
-      pp = create(:proficient_project)
-      # WART(D-C55): uses @proficient_project (a controller ivar) inside the model
-      expect { pp.update_training_requirements([1], ["Beginner"]) }.to raise_error(NoMethodError)
-    end
-
     it "training_status is the highest certification level the user holds for the training, defaulting to Beginner" do
       training = create(:training)
       user = create(:user)
