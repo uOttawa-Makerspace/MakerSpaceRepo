@@ -57,18 +57,12 @@ module Api
       end
 
       def expand(event, from, to, colors, limit = MAX_OCCURRENCES_PER_EVENT)
-        rule_line = event.recurrence_rule.lines.find { |l| l.start_with?("RRULE:") } ||
-                    (event.recurrence_rule.include?("RRULE:") ? event.recurrence_rule : "RRULE:#{event.recurrence_rule}")
-        schedule = IceCube::Schedule.new(event.start_time)
-        schedule.add_recurrence_rule(IceCube::Rule.from_ical(rule_line.gsub("RRULE:", "").strip))
+        found = RecurrenceExpansion.occurrences(event.recurrence_rule, event.start_time, from, to, limit)
         duration = event.end_time - event.start_time
-        # Lazy: stops after limit + 1 occurrences (the extra one only detects truncation).
-        # (enumerate_occurrences is private in IceCube but is the only variant taking a closing time.)
-        occs = schedule.send(:enumerate_occurrences, from, to).lazy.first(limit + 1)
-        items = occs.first(limit).map do |occ|
+        items = found.occurrences.map do |occ|
           format(event, colors, occ, occ + duration).merge(id: "event-#{event.id}-#{occ.to_i}")
         end
-        Result.new(items, occs.size > limit)
+        Result.new(items, found.truncated)
       rescue StandardError
         # A rule IceCube cannot parse: show the event once if it is inside the window (legacy behaviour).
         Result.new(event.start_time >= from && event.end_time <= to ? [format(event, colors)] : [], false)

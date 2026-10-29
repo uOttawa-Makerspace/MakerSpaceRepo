@@ -165,7 +165,10 @@ class Admin::EventsController < AdminAreaController
 
       updated_rule = helpers.add_exdate_to_rrule(@event.recurrence_rule, exclusion_start_time)
 
-      @event.update(recurrence_rule: updated_rule)
+      unless @event.update(recurrence_rule: updated_rule)
+        flash[:alert] = "Failed to update event: #{@event.errors.full_messages.to_sentence}"
+        return redirect_back(fallback_location: admin_calendar_index_path)
+      end
 
       @new_event = Event.create!(
         title: title,
@@ -259,6 +262,9 @@ class Admin::EventsController < AdminAreaController
     else
       redirect_back(fallback_location: admin_calendar_index_path, alert: "Invalid delete scope: #{scope}")
     end
+  rescue ActiveRecord::RecordInvalid => e
+    # A series stored before D-SP28 with a sub-daily rule no longer validates.
+    redirect_back(fallback_location: admin_calendar_index_path, alert: "Failed to update event: #{e.record.errors.full_messages.to_sentence}")
   end
 
   def json

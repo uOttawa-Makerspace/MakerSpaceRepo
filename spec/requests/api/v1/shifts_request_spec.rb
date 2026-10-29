@@ -139,6 +139,11 @@ RSpec.describe "GET /api/v1/spaces/:id/shifts", type: :request do
   describe "runaway recurrence rules" do
     let(:wide) { { start: t0.iso8601, end: (t0 + 100.days).iso8601 } }
 
+    # D-SP28: the model refuses these rules now; insert them as legacy rows exist
+    def stored_shift(rule, attrs = {})
+      shift(attrs).tap { |e| e.update_column(:recurrence_rule, rule) }
+    end
+
     def timed
       t = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       yield
@@ -147,7 +152,7 @@ RSpec.describe "GET /api/v1/spaces/:id/shifts", type: :request do
 
     %w[MINUTELY SECONDLY].each do |freq|
       it "caps a FREQ=#{freq} event per event, quickly, and flags the truncation" do
-        shift(recurrence_rule: "FREQ=#{freq}")
+        stored_shift("FREQ=#{freq}")
         elapsed = timed { shifts(wide) }
         expect(response).to have_http_status(:ok)
         expect(body.size).to eq(500)
@@ -158,7 +163,7 @@ RSpec.describe "GET /api/v1/spaces/:id/shifts", type: :request do
     end
 
     it "bounds the cost of a sub-hourly rule whose DTSTART is far in the past" do
-      shift(recurrence_rule: "FREQ=MINUTELY", start_time: t0 - 2.years, end_time: t0 - 2.years + 1.hour)
+      stored_shift("FREQ=MINUTELY", start_time: t0 - 2.years, end_time: t0 - 2.years + 1.hour)
       elapsed = timed { shifts({ start: t0.iso8601, end: (t0 + 1.day).iso8601 }) }
       expect(body.size).to eq(500)
       expect(elapsed).to be < 2
@@ -167,7 +172,7 @@ RSpec.describe "GET /api/v1/spaces/:id/shifts", type: :request do
     it "caps the whole response across events and keeps the earliest first" do
       stub_const("Api::V1::ShiftEventSerializer::MAX_ITEMS", 12)
       stub_const("Api::V1::ShiftEventSerializer::MAX_OCCURRENCES_PER_EVENT", 5)
-      3.times { |i| shift(recurrence_rule: "FREQ=HOURLY", start_time: t0 + i.minutes) }
+      3.times { |i| stored_shift("FREQ=HOURLY", start_time: t0 + i.minutes) }
       shifts(wide)
       expect(body.size).to eq(12)
       expect(response.headers["X-Truncated"]).to eq("true")

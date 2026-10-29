@@ -285,7 +285,10 @@ class Staff::UnavailabilitiesController < StaffAreaController
 
     updated_rule = helpers.add_exdate_to_rrule(@staff_unavailability.recurrence_rule, exclusion_start_time)
 
-    @staff_unavailability.update(recurrence_rule: updated_rule)
+    unless @staff_unavailability.update(recurrence_rule: updated_rule)
+      flash[:alert] = "Failed to update unavailability: #{@staff_unavailability.errors.full_messages.to_sentence}"
+      return
+    end
 
     StaffUnavailability.create!(
       title: staff_params[:title].presence || "Unavailable",
@@ -316,6 +319,8 @@ class Staff::UnavailabilitiesController < StaffAreaController
 
     @unavailability.update!(recurrence_rule: (recurrence_lines + rest_of_lines).join("\n"))
     redirect_to after_action_path, notice: "This occurrence deleted."
+  rescue ActiveRecord::RecordInvalid => e
+    redirect_to after_action_path, alert: "Failed to update unavailability: #{e.record.errors.full_messages.to_sentence}"
   end
 
   def delete_following_occurrences
@@ -335,6 +340,8 @@ class Staff::UnavailabilitiesController < StaffAreaController
 
     @unavailability.update!(recurrence_rule: (recurrence_lines + rest_of_lines).join("\n"))
     redirect_to after_action_path, notice: "This and following deleted."
+  rescue ActiveRecord::RecordInvalid => e
+    redirect_to after_action_path, alert: "Failed to update unavailability: #{e.record.errors.full_messages.to_sentence}"
   end
 
   def parse_time(time_string)

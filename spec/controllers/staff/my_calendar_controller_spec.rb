@@ -233,7 +233,9 @@ RSpec.describe Staff::MyCalendarController, type: :controller do
       end
 
       it 'handles malformed and empty recurrence rules' do
-        invalid = create(:event, space: @space, draft: false, start_time: 1.hour.from_now, end_time: 2.hours.from_now, recurrence_rule: 'INVALID_RULE')
+        invalid = create(:event, space: @space, draft: false, start_time: 1.hour.from_now, end_time: 2.hours.from_now)
+        # D-SP28: the model now refuses an unparseable rule, so store it the way legacy rows exist
+        invalid.update_column(:recurrence_rule, 'INVALID_RULE')
         empty = create(:event, space: @space, draft: false, start_time: 1.hour.from_now, end_time: 2.hours.from_now, recurrence_rule: '')
 
         get :json, params: { id: @space.id }, format: :json
