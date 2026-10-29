@@ -669,7 +669,7 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
     end
 
     def makes_count
-      response.body[%r{<span class="number">(\d+)</span>\s*#{Regexp.escape(I18n.t("users.show.makes"))}}, 1]
+      response.body[%r{show=makes#user-show-links">\s*<span class="number">(\d+)</span>}, 1]
     end
 
     it "hides a private make and excludes it from the count for guests and unrelated users" do
