@@ -482,9 +482,7 @@ Rails.application.routes.draw do
         get "training_report"
       end
     end
-    resources :proficient_project_sessions, only: [:show] do
-      post "certify_participant"
-    end
+    resources :proficient_project_sessions, only: [:show]
 
     resources :my_calendar do
       collection do
