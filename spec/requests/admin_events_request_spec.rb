@@ -78,6 +78,33 @@ RSpec.describe "Admin events contract", type: :request do
     expect(event.reload.draft).to be(false)
   end
 
+  it "single publish of a legacy draft with an invalid rule reports the failure" do
+    event = create(:event, :draft, space: space)
+    event.update_column(:recurrence_rule, "DTSTART:20270301T150000Z\nRRULE:FREQ=MINUTELY")
+    log_in!(admin)
+    patch publish_admin_event_path(event)
+    expect(flash[:notice]).to be_nil
+    expect(flash[:alert]).to start_with("Failed to publish event:")
+    expect(flash[:alert]).to include("repeating more often than daily")
+    expect(event.reload.draft).to be(true)
+  end
+
+  it "batch publish reports a legacy draft with an invalid rule instead of ignoring it" do
+    travel_to(Time.zone.local(2027, 4, 1, 18, 0)) do
+      good = create(:event, :draft, space: space)
+      bad = create(:event, :draft, space: space, title: "Legacy minutely")
+      bad.update_column(:recurrence_rule, "DTSTART:20270301T150000Z\nRRULE:FREQ=MINUTELY")
+      log_in!(admin)
+      patch publish_admin_events_path, params: {
+        space_id: space.id, view_start_date: "2027-03-31", view_end_date: "2027-04-02"
+      }
+      expect(flash[:notice]).to eq("1 event(s) published.")
+      expect(flash[:alert]).to include("Failed to publish 1 event(s)", "Legacy minutely", "repeating more often than daily")
+      expect(good.reload.draft).to be(false)
+      expect(bad.reload.draft).to be(true)
+    end
+  end
+
   # The view range is built from literal dates and the clock is pinned to the
   # Eastern evening (18:00 EDT = 22:00 UTC on 2027-04-01), the slot where the
   # factory's `Time.zone.now` and the controller's UTC `Time.parse` of the

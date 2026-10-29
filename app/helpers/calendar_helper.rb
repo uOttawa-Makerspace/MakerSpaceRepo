@@ -213,7 +213,7 @@ module CalendarHelper
   end
   
   def parse_rrule_and_dtstart(rule_string)
-    lines = rule_string.strip.split("\n")
+    lines = RecurrenceExpansion.lines(rule_string)
     rrule_line = lines.find { |l| l.start_with?("RRULE:") }&.sub("RRULE:", "")
     dtstart_line = lines.find { |l| l.start_with?("DTSTART:") }&.sub("DTSTART:", "")
 

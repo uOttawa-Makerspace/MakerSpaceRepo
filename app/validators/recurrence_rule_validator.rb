@@ -6,9 +6,11 @@ require "ice_cube"
 # MONTHLY or YEARLY. Sub-daily rules (SECONDLY/MINUTELY/HOURLY) are refused
 # because the calendars expand them on every load.
 #
-# Accepts what the forms produce (rrule.js toString: an optional
-# "DTSTART:...\n" line, then "RRULE:FREQ=...;BYDAY=..;UNTIL=..;COUNT=..", plus
-# EXDATE lines added by the occurrence editors) and a bare "FREQ=..." body.
+# Requires the "RRULE:" line format the forms produce (rrule.js toString: an
+# optional "DTSTART:...\n" line, then "RRULE:FREQ=...;BYDAY=..;UNTIL=..;COUNT=..",
+# plus EXDATE lines added by the occurrence editors). A bare "FREQ=..." is
+# rejected because the controllers' parse_rrule_and_dtstart cannot read it.
+# BYHOUR/BYMINUTE/BYSECOND/BYSETPOS are rejected (they multiply daily occurrences).
 #
 #   validates :recurrence_rule, recurrence_rule: true
 class RecurrenceRuleValidator < ActiveModel::EachValidator
@@ -23,32 +25,40 @@ class RecurrenceRuleValidator < ActiveModel::EachValidator
     record.errors.add(attribute, error) if error
   end
 
-  # nil when valid, else the message.
+  MAX_LENGTH = 2000
+  TOO_LONG = "is too long (maximum is #{MAX_LENGTH} characters)"
+  FORBIDDEN_PARTS = %w[BYHOUR BYMINUTE BYSECOND BYSETPOS].freeze
+  ALLOWED_CLASSES = [IceCube::DailyRule, IceCube::WeeklyRule, IceCube::MonthlyRule, IceCube::YearlyRule].freeze
+
+  # nil when valid, else the message. The frequency is taken from the PARSED rule
+  # (IceCube applies the last FREQ), never from a regex over the text.
   def self.error_for(value)
-    bodies = rule_bodies(value.to_s)
+    value = value.to_s
+    return TOO_LONG if value.length > MAX_LENGTH
+
+    bodies = rule_bodies(value)
     return UNPARSEABLE if bodies.empty?
 
     bodies.each do |body|
-      freq = body[/(?:\A|;)\s*FREQ=([A-Za-z]+)/i, 1]&.upcase
-      return UNPARSEABLE if freq.nil?
-      return MESSAGE unless ALLOWED_FREQUENCIES.include?(freq)
+      keys = body.split(";").map { |part| part.split("=", 2).first.to_s.strip.upcase }
+      return UNPARSEABLE unless keys.include?("FREQ")
+      return UNPARSEABLE if keys.count("FREQ") > 1
+      return MESSAGE if keys.intersect?(FORBIDDEN_PARTS)
 
       begin
-        IceCube::Rule.from_ical(body)
+        rule = IceCube::Rule.from_ical(body)
       rescue StandardError
         return UNPARSEABLE
       end
+      return MESSAGE unless ALLOWED_CLASSES.include?(rule.class)
     end
     nil
   end
 
+  # The RRULE: lines (what the forms produce), stripped like the controllers' parser.
+  # A value with no RRULE: line yields no bodies, so it is rejected.
   def self.rule_bodies(value)
-    lines = value.lines.map(&:strip).reject(&:empty?)
-    prefixed = lines.select { |l| l.start_with?("RRULE:") }
-    return prefixed.map { |l| l.delete_prefix("RRULE:").strip } if prefixed.any?
-
-    # No RRULE: prefix: the bare body (what the existing readers assume), ignoring
-    # DTSTART/EXDATE-style property lines.
-    lines.reject { |l| l.match?(/\A(DTSTART|EXDATE|RDATE|EXRULE)[:;]/i) }.first(1)
+    RecurrenceExpansion.lines(value).select { |l| l.start_with?("RRULE:") }
+                       .map { |l| l.delete_prefix("RRULE:").strip }
   end
 end

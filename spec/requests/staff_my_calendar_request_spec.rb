@@ -90,7 +90,7 @@ RSpec.describe "Staff my calendar", type: :request do
     end
 
     it "keeps wall-clock time across the spring-forward jump for recurring events" do
-      create(:event, space: space, title: "Weekly", recurrence_rule: "FREQ=WEEKLY;BYDAY=SU;COUNT=4",
+      create(:event, space: space, title: "Weekly", recurrence_rule: "RRULE:FREQ=WEEKLY;BYDAY=SU;COUNT=4",
                      start_time: Time.zone.local(2027, 3, 7, 10), end_time: Time.zone.local(2027, 3, 7, 11))
       get feed, params: { start: "2027-03-01T00:00:00-05:00", end: "2027-04-01T00:00:00-04:00" }
       starts = response.parsed_body.map { |e| e["start"] }
@@ -190,7 +190,7 @@ RSpec.describe "Staff my calendar", type: :request do
     end
 
     it "leaves a normal rule with fewer occurrences than the cap untouched" do
-      create(:event, space: space, title: "Daily", recurrence_rule: "FREQ=DAILY;COUNT=3", start_time: Time.utc(2027, 3, 8, 14), end_time: Time.utc(2027, 3, 8, 15))
+      create(:event, space: space, title: "Daily", recurrence_rule: "RRULE:FREQ=DAILY;COUNT=3", start_time: Time.utc(2027, 3, 8, 14), end_time: Time.utc(2027, 3, 8, 15))
       get feed, params: window
       expect(response.parsed_body.map { |e| e["start"] }.size).to eq(3)
     end

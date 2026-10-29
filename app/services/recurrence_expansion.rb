@@ -15,9 +15,15 @@ module RecurrenceExpansion
   # RRULE: prefix and DTSTART/EXDATE lines.
   def rule_body(rule_string)
     rule_string = rule_string.to_s
-    line = rule_string.lines.find { |l| l.start_with?("RRULE:") } ||
+    line = lines(rule_string).find { |l| l.start_with?("RRULE:") } ||
            (rule_string.include?("RRULE:") ? rule_string : "RRULE:#{rule_string}")
     line.gsub("RRULE:", "").strip
+  end
+
+  # Non-blank lines, each stripped (CRLF and leading whitespace tolerated). The
+  # validator, rule_body and the controllers' parser all read lines this way.
+  def lines(value)
+    value.to_s.lines.map(&:strip).reject(&:empty?)
   end
 
   # Occurrences starting in from..to, at most `limit`. Raises what IceCube raises

@@ -22,17 +22,17 @@ RSpec.describe StaffUnavailability, type: :model do
   end
 
   it "requires BYDAY for a weekly rule" do
-    record = build_one(recurrence_rule: "FREQ=WEEKLY;INTERVAL=1")
+    record = build_one(recurrence_rule: "RRULE:FREQ=WEEKLY;INTERVAL=1")
     expect(record).not_to be_valid
     expect(record.errors[:recurrence_rule]).to eq(["must include days of the week when using weekly frequency"])
-    expect(build_one(recurrence_rule: "FREQ=WEEKLY;BYDAY=MO")).to be_valid
-    expect(build_one(recurrence_rule: "FREQ=DAILY")).to be_valid
+    expect(build_one(recurrence_rule: "RRULE:FREQ=WEEKLY;BYDAY=MO")).to be_valid
+    expect(build_one(recurrence_rule: "RRULE:FREQ=DAILY")).to be_valid
     expect(build_one(recurrence_rule: nil)).to be_valid
   end
 
   it "refuses an unparseable or sub-daily rule (D-SP28)" do
     expect(build_one(recurrence_rule: "garbage")).not_to be_valid
-    record = build_one(recurrence_rule: "FREQ=MINUTELY")
+    record = build_one(recurrence_rule: "RRULE:FREQ=MINUTELY")
     expect(record).not_to be_valid
     expect(record.errors[:recurrence_rule].first).to start_with("must repeat daily")
   end

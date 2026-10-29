@@ -93,7 +93,7 @@ RSpec.describe "Staff unavailabilities", type: :request do
         expect { post staff_unavailabilities_path, params: payload(utc_start_time: "2027-03-01T17:00:00Z") }.not_to change(StaffUnavailability, :count)
         expect(response).to redirect_to(staff_unavailabilities_path)
         expect(flash[:alert]).to eq("Failed to create unavailability: Start time must be before the end time")
-        expect { post staff_unavailabilities_path, params: payload(recurrence_rule: "FREQ=WEEKLY") }.not_to change(StaffUnavailability, :count)
+        expect { post staff_unavailabilities_path, params: payload(recurrence_rule: "RRULE:FREQ=WEEKLY") }.not_to change(StaffUnavailability, :count)
         expect(flash[:alert]).to eq("Failed to create unavailability: Recurrence rule must include days of the week when using weekly frequency")
       end
 

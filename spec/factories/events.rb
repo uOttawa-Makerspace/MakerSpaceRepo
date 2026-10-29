@@ -29,11 +29,11 @@ FactoryBot.define do
     end
 
     trait :recurring_weekly do
-      recurrence_rule { 'FREQ=WEEKLY;BYDAY=MO;COUNT=4' }
+      recurrence_rule { 'RRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=4' }
     end
 
     trait :recurring_daily do
-      recurrence_rule { 'FREQ=DAILY;COUNT=7' }
+      recurrence_rule { 'RRULE:FREQ=DAILY;COUNT=7' }
     end
 
     trait :draft do

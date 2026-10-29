@@ -338,11 +338,17 @@ class Admin::EventsController < AdminAreaController
       return redirect_back(fallback_location: admin_calendar_index_path, alert: "Space ID is required.") if space_id.blank?
 
       updated_count = 0
+      failures = []
 
       Event.where(space_id: space_id, start_time: start_date..end_date, draft: true).find_each do |event|
-        updated_count += 1 if event.update(draft: false)
+        if event.update(draft: false)
+          updated_count += 1
+        else
+          failures << "#{event.title.presence || "Event ##{event.id}"} (#{event.errors.full_messages.to_sentence})"
+        end
       end
 
+      flash[:alert] = "Failed to publish #{failures.size} event(s): #{failures.to_sentence}" if failures.any?
       return redirect_back(fallback_location: admin_calendar_index_path, notice: "#{updated_count} event(s) published.")
     else
       @event = Event.find(params[:id])

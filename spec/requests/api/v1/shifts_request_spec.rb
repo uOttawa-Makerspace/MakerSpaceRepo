@@ -85,7 +85,7 @@ RSpec.describe "GET /api/v1/spaces/:id/shifts", type: :request do
   end
 
   it "expands a recurring shift into its occurrences in the window" do
-    ev = shift(recurrence_rule: "FREQ=WEEKLY;BYDAY=MO;COUNT=4")
+    ev = shift(recurrence_rule: "RRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=4")
     shifts({ start: t0.iso8601, end: (t0 + 15.days).iso8601 })
     expect(body.map { |r| r["id"] }).to eq([t0, t0 + 7.days, t0 + 14.days].map { |t| "event-#{ev.id}-#{t.to_i}" })
     expect(body.map { |r| r["start"] }).to eq([t0, t0 + 7.days, t0 + 14.days].map { |t| t.in_time_zone.iso8601 })
@@ -179,8 +179,8 @@ RSpec.describe "GET /api/v1/spaces/:id/shifts", type: :request do
     end
 
     it "sends no X-Truncated header and keeps all weekly/daily occurrences otherwise" do
-      shift(recurrence_rule: "FREQ=WEEKLY;BYDAY=MO", start_time: t0, end_time: t0 + 1.hour)
-      shift(recurrence_rule: "FREQ=DAILY;COUNT=3", start_time: t0, end_time: t0 + 1.hour)
+      shift(recurrence_rule: "RRULE:FREQ=WEEKLY;BYDAY=MO", start_time: t0, end_time: t0 + 1.hour)
+      shift(recurrence_rule: "RRULE:FREQ=DAILY;COUNT=3", start_time: t0, end_time: t0 + 1.hour)
       shifts(window.merge(end: (t0 + 27.days).iso8601))
       expect(response.headers).not_to have_key("X-Truncated")
       expect(body.size).to eq(4 + 3)
