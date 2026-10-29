@@ -180,15 +180,21 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
 
   def quote
     error = false
+    mail_failed = false
 
     return flash[:alert] = t("job_orders.alerts.error_while_updating") if params[:approved].blank?
 
     if params[:approved].present? && params[:approved] == "true"
       # ACCEPT JOB
-      old_total = @job_order.total_price
-      status_before = @job_order.job_order_statuses.last&.job_status
       begin
         JobOrder.transaction do
+          # Row lock first (FOR UPDATE; no other row is locked in this flow, so there is no lock-order issue):
+          # concurrent re-quotes serialize, and the status / "before" draft line items are read under the lock.
+          @job_order.lock!
+          status_before = @job_order.job_order_statuses.reorder(:id).last&.job_status
+          # (only needed when a draft exists: discard is a no-op otherwise)
+          items_before = @job_order.shopify_draft_order_id.present? ? @job_order.shopify_draft_order_line_items : nil
+
           @job_order.job_tasks.each do |task|
             price_key = "job_task_quote_price_#{task.id}"
             job_task_quote = task.job_task_quote || task.build_job_task_quote
@@ -252,17 +258,29 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
             user: @user
           )
 
-          # D-J38: a price change invalidates the Shopify draft order (stale line items + payable link). Fail
-          # closed: if it cannot be deleted the whole quote rolls back (no price, status or email). The email goes out only after the commit.
-          if JobOrder.find(@job_order.id).total_price != old_total
-            @job_order.discard_stale_draft_order!(status_before)
+          # Save first: a failed save rolls everything back and Shopify is never touched.
+          unless @job_order.save
+            error = true
+            raise ActiveRecord::Rollback
           end
 
-          error = true unless @job_order.save
+          # D-J38: a change to any draft line item invalidates the Shopify draft order (stale items + payable
+          # link). Fail closed: if it cannot be deleted the whole quote rolls back (no price, status or email).
+          # Each side is computed once.
+          if items_before && JobOrder.find(@job_order.id).shopify_draft_order_line_items != items_before
+            @job_order.discard_stale_draft_order!(status_before)
+          end
         end
         # After the commit: a mail failure must not roll back a quote whose old Shopify draft is already
         # deleted (the restored id would point at a deleted draft). Staff can use resend_quote_email.
-        JobOrderMailer.send_job_quote(@job_order.id).deliver_now unless error
+        unless error
+          begin
+            JobOrderMailer.send_job_quote(@job_order.id).deliver_now
+          rescue StandardError => e
+            Rails.logger.error("[job_orders#quote] quote email for ##{@job_order.id} failed: #{e.class}: #{e.message}")
+            mail_failed = true
+          end
+        end
       rescue JobOrder::StaleDraftOrderError => e
         Rails.logger.error("[job_orders#quote] re-quote of ##{@job_order.id} refused: #{e.message}")
         flash[:alert] = t("job_orders.alerts.requote_draft_order_failed")
@@ -292,7 +310,9 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
       error = true
     end
 
-    if !error
+    if mail_failed
+      flash[:alert] = t("job_orders.alerts.quote_saved_email_failed")
+    elsif !error
       flash[:notice] = t(
         "job_orders.alerts.updated_job_status_to_x",
         status: @job_order.job_order_statuses.last.job_status.t_name

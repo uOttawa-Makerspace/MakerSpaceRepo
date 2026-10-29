@@ -150,8 +150,31 @@ class JobOrder < ApplicationRecord
     end
   end
 
+  # Invoice URL of the Shopify draft order, creating (or re-creating) the draft when needed. Returns nil when
+  # Shopify cannot be reached right now (non-200 / error payload): the stored id is then left untouched.
+  # D-J38: a stored id that Shopify says no longer exists (200, `draftOrder: null`) is dropped and a fresh draft
+  # is created. Kept in JobOrder (not the shared concern) so locker rentals/memberships keep their behaviour: a
+  # cancelled locker must never self-heal into a fresh payable invoice.
   def checkout_link
-    shopify_draft_order['invoiceUrl']
+    state, url = probe_draft_order
+    return url unless state == :gone
+
+    # Missing or confirmed-gone draft: (re)create it under a row lock so two /pay requests cannot both create
+    # one. with_lock reloads the id, so the probe is repeated under the lock (the safety re-check). The Shopify
+    # create runs inside the lock; this path is rare, so that is accepted.
+    with_lock do
+      state, url = probe_draft_order
+      if state == :gone
+        update_column(:shopify_draft_order_id, nil) if shopify_draft_order_id.present?
+        url = create_draft_order_keeping_id
+      end
+    end
+    url
+  rescue StandardError => e
+    # Timeouts, resets, session errors, create failures: the pay page shows "temporarily unavailable" (no 500).
+    # The stored id is only ever cleared for a confirmed-gone draft, so a transient error never loses it.
+    Rails.error.report(e, handled: true, context: { job_order_id: id, where: "JobOrder#checkout_link" })
+    nil
   end
 
   class StaleDraftOrderError < StandardError; end
@@ -169,7 +192,17 @@ class JobOrder < ApplicationRecord
     end
 
     # destroy clears the id before the outcome is known; the caller's transaction rolls that back on refusal
-    raise StaleDraftOrderError, "Shopify did not delete the draft order" unless destroy_shopify_draft_order
+    old_id = shopify_draft_order_id
+    user_errors = []
+    return if destroy_shopify_draft_order(user_errors_out: user_errors)
+
+    # No deletedId (with or without userErrors; Shopify may report a vanished draft as "not found"): one fetch
+    # decides. Proceed ONLY when Shopify confirms the draft is gone (200, no errors, draftOrder null; the id is
+    # already cleared). A found (completed/paid) draft or a failed/raising fetch refuses, fail closed.
+    return if shopify_draft_order_gone?(old_id)
+
+    detail = user_errors.map { |e| e['message'] }.join(', ')
+    raise StaleDraftOrderError, "Shopify did not delete the draft order#{": #{detail}" if detail.present?}"
   rescue StaleDraftOrderError
     raise
   rescue StandardError => e
@@ -199,9 +232,9 @@ class JobOrder < ApplicationRecord
       next unless task.job_task_quote.present?
 
       price_data << generate_line_item("#{task.title} Service Fee", task.job_task_quote.price)
-      price_data << generate_line_item("#{task.title} Parts Fee", 
-task.job_task_quote.service_price * task.job_task_quote.service_quantity) if task.job_task_quote.service_price.positive? && task.job_task_quote.service_quantity.positive?
-      
+      parts = (task.job_task_quote.service_price || 0) * (task.job_task_quote.service_quantity || 0)
+      price_data << generate_line_item("#{task.title} Parts Fee", parts) if (task.job_task_quote.service_price || 0).positive? && (task.job_task_quote.service_quantity || 0).positive?
+
       next unless task.job_task_quote.job_task_quote_options.any?
       task.job_task_quote.job_task_quote_options.each do |opt|
         price_data << generate_line_item("#{task.title} #{opt.job_option.name}", opt.price)
@@ -222,7 +255,30 @@ task.job_task_quote.service_price * task.job_task_quote.service_quantity) if tas
 
   private
 
+  # [:found, invoice_url] | [:gone, nil] (blank id or Shopify says it no longer exists) | [:error, nil]
+  def probe_draft_order
+    return [:gone, nil] if shopify_draft_order_id.blank?
+
+    state, draft = fetch_shopify_draft_order_result
+    [state, state == :found ? draft['invoiceUrl'] : nil]
+  end
+
+  # Creates the draft. The id is stored (update_column) right after Shopify accepts the create; if the follow-up
+  # fetch then raises, swallow that so the surrounding with_lock transaction COMMITS the id (a rolled-back id
+  # would orphan a payable draft and the next /pay would create a second one). A failure BEFORE the id is
+  # stored propagates.
+  def create_draft_order_keeping_id
+    shopify_draft_order&.dig('invoiceUrl')
+  rescue StandardError => e
+    raise if shopify_draft_order_id.blank?
+
+    Rails.error.report(e, handled: true, context: { job_order_id: id, where: "JobOrder#create follow-up fetch" })
+    nil
+  end
+
+  # Amounts are normalized to BigDecimal (nil => 0) so nil/0.0 and Float/BigDecimal compare equal.
   def generate_line_item(name, unit_amount)
+    unit_amount = BigDecimal((unit_amount || 0).to_s)
     {
       quantity: 1,
       title: name,

@@ -115,7 +115,8 @@ module ShopifyConcern
       end
     end
 
-    def destroy_shopify_draft_order
+    # `user_errors_out`: optional Array that receives Shopify's userErrors (the boolean contract is unchanged).
+    def destroy_shopify_draft_order(user_errors_out: nil)
       ensure_can_use_draft_order
       return false if shopify_draft_order_id.blank?
 
@@ -141,10 +142,18 @@ module ShopifyConcern
       raise "Received HTTP #{resp.code} when deleting shopify draft order" unless resp.code == 200
 
       update_column(:shopify_draft_order_id, nil)
+      user_errors_out&.concat(Array(resp.body&.dig("data", "draftOrderDelete", "userErrors")))
       resp.body&.dig("data", "draftOrderDelete", "deletedId").present?
     end
 
     def fetch_shopify_draft_order
+      fetch_shopify_draft_order_result.last
+    end
+
+    # One getDraftOrder query that tells three outcomes apart: [:found, draft], [:gone, nil] (HTTP 200 with
+    # `draftOrder: null` and no GraphQL errors) and [:error, nil] (non-200 or an error payload). Exceptions
+    # propagate (unknown, never "gone").
+    def fetch_shopify_draft_order_result(gid = shopify_draft_order_id)
       start_shopify_session
       admin_client = ShopifyAPI::Clients::Graphql::Admin.new(
         session: ShopifyAPI::Context.active_session
@@ -173,10 +182,21 @@ module ShopifyConcern
         }
       QUERY
 
-      resp = admin_client.query(query: query_draft_order, variables: { id: shopify_draft_order_id })
-      return nil unless resp.code == 200
+      resp = admin_client.query(query: query_draft_order, variables: { id: gid })
+      return [:error, nil] unless resp.code == 200
 
-      resp.body&.dig("data", "draftOrder")
+      body = resp.body
+      draft = body&.dig("data", "draftOrder")
+      return [:found, draft] unless draft.nil?
+
+      gone = body.is_a?(Hash) && body["errors"].blank? && body["data"].is_a?(Hash) && body["data"].key?("draftOrder")
+      [gone ? :gone : :error, nil]
+    end
+
+    def shopify_draft_order_gone?(gid = shopify_draft_order_id)
+      return false if gid.blank?
+
+      fetch_shopify_draft_order_result(gid).first == :gone
     end
 
     def create_shopify_draft_order

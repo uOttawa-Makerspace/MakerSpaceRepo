@@ -1160,11 +1160,10 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(response.body).to include("Total Quote:")
       # WART(D-J38): the draft order is created on a GET and only fetched later
       expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
-      # WART(D-J50): the controller assigns @payment_link, but pay.html.erb
-      # calls checkout_link AGAIN, so every visit does a redundant fetch
-      # (create, fetch inside create, then the view's own fetch).
+      # FIXED(D-J50): the view reuses the controller's @payment_link, so a visit
+      # is just create + the fetch inside create (no redundant second fetch).
       expect(shopify.calls.map { |c| c[:query][/\b(draftOrderCreate|getDraftOrder)\b/] })
-        .to eq(%w[draftOrderCreate getDraftOrder getDraftOrder])
+        .to eq(%w[draftOrderCreate getDraftOrder])
       line_items = shopify.calls.first[:variables][:input][:lineItems]
       expect(line_items.map { |li| li[:title] })
         .to eq(["Task #1 Service Fee", "Line Items Total"])

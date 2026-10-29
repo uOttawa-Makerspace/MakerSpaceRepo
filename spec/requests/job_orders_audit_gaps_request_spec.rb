@@ -223,6 +223,69 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
     end
 
+    it "replaces the draft when money moves between line items without changing the total" do
+      order, task = order_with_draft!
+      session_login!(staff)
+      # 29.99 base before; after: 19.99 base + 10 x 1.00 parts = the same 29.99 total
+      patch job_order_quote_path(order), params: { approved: "true", "job_task_quote_price_#{task.id}" => "19.99",
+                                                   "task_#{task.id}_service_qty" => "10",
+                                                   "task_#{task.id}_service_price" => "1",
+                                                   job_order: { staff_comments: "" } }
+      expect(order.reload.total_price).to eq(BigDecimal("29.99"))
+      expect(shopify_ops).to eq(["draftOrderDelete"])
+      expect(order.shopify_draft_order_id).to be_nil
+    end
+
+    it "re-quotes an order whose quote has NULL service_price / service_quantity (no 500)" do
+      order, task = order_with_draft!
+      task.job_task_quote.update_columns(service_price: nil, service_quantity: nil)
+      requote!(order, task, 55)
+
+      expect(response).to redirect_to(job_order_path(order.id))
+      expect(status_names(order).last).to eq("Waiting for User Approval")
+      expect(order.reload.total_price).to eq(BigDecimal("55"))
+      expect(shopify_ops).to eq(["draftOrderDelete"])
+    end
+
+    it "leaves the draft alone when the quote is resubmitted unchanged (NULL parts columns, 29.99 vs 29.99)" do
+      order, task = order_with_draft!
+      task.job_task_quote.update_columns(service_price: nil, service_quantity: nil)
+      requote!(order, task, "29.990")
+
+      expect(status_names(order).last).to eq("Waiting for User Approval")
+      expect(shopify.calls).to be_empty
+      expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
+    end
+
+    it "does not build draft line items when the order has no draft (first quote)" do
+      order = make_job_order!(owner: owner, status_key: :staff_approval)
+      task = order.job_tasks.create!(title: "Task #1")
+      expect_any_instance_of(JobOrder).not_to receive(:shopify_draft_order_line_items)
+      requote!(order, task, 40)
+      expect(status_names(order).last).to eq("Waiting for User Approval")
+    end
+
+    it "takes a row lock on the order before reading the status and line items" do
+      order, task = order_with_draft!
+      expect_any_instance_of(JobOrder).to receive(:lock!).at_least(:once).and_call_original
+      requote!(order, task, 55)
+      expect(shopify_ops).to eq(["draftOrderDelete"])
+    end
+
+    it "commits nothing and never touches Shopify when the save fails" do
+      order, task = order_with_draft!
+      statuses_before = status_names(order)
+      allow_any_instance_of(JobOrder).to receive(:save).and_return(false)
+      requote!(order, task, 55)
+
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
+      expect(shopify.calls).to be_empty
+      expect(order.reload.total_price).to eq(BigDecimal("29.99"))
+      expect(status_names(order)).to eq(statuses_before)
+      expect(order.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
+      expect(ActionMailer::Base.deliveries).to be_empty
+    end
+
     it "does not touch Shopify on a first quote (no draft order yet)" do
       order = make_job_order!(owner: owner, status_key: :staff_approval)
       task = order.job_tasks.create!(title: "Task #1")
@@ -238,7 +301,8 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       allow(JobOrderMailer).to receive(:send_job_quote).and_raise(Net::SMTPFatalError, "smtp down")
 
       requote!(order, task, 55)
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to redirect_to(job_order_path(order.id))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.quote_saved_email_failed"))
 
       expect(shopify_ops).to eq(["draftOrderDelete"])
       order.reload
@@ -252,6 +316,109 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       get pay_job_orders_path, params: { token: order.pay_token }
       expect(response).to have_http_status(:ok)
       expect(shopify_ops).to include("draftOrderCreate")
+    end
+
+    describe "pay path with a dangling draft id" do
+      it "clears the id of a draft that no longer exists on Shopify and creates a fresh one" do
+        order, = order_with_draft!
+        shopify.draft_missing = true
+        shopify.calls.clear
+        # the fake keeps answering "draftOrder: null" for fetches; creation answers with the new id
+        allow(shopify).to receive(:query).and_wrap_original do |m, **kw|
+          shopify.draft_missing = false if kw[:query].include?("draftOrderCreate")
+          m.call(**kw)
+        end
+        shopify.draft_id = "gid://shopify/DraftOrder/9003"
+
+        get pay_job_orders_path, params: { token: order.pay_token }
+
+        expect(response).to have_http_status(:ok)
+        expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9003")
+        expect(shopify_ops).to include("draftOrderCreate")
+      end
+
+      it "keeps the id and shows a try-again message (no 500) on a transient Shopify error" do
+        order, = order_with_draft!
+        shopify.status = 502
+        get pay_job_orders_path, params: { token: order.pay_token }
+
+        expect(response).to have_http_status(:ok)
+        expect(page_text).to include(I18n.t("job_orders.alerts.payment_link_unavailable"))
+        expect(response.body).not_to include("Proceed to the payment page")
+        expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
+        expect(shopify_ops).not_to include("draftOrderCreate")
+      end
+
+      it "shows the try-again message (no 500) when the fetch raises a timeout; the id is kept" do
+        order, = order_with_draft!
+        allow(shopify).to receive(:query).and_raise(Net::ReadTimeout)
+        get pay_job_orders_path, params: { token: order.pay_token }
+
+        expect(response).to have_http_status(:ok)
+        expect(page_text).to include(I18n.t("job_orders.alerts.payment_link_unavailable"))
+        expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
+      end
+
+      it "shows the try-again message (no 500) when creating the first draft answers 502" do
+        order = make_job_order!(owner: owner, status_key: :completed)
+        order.job_tasks.create!(title: "Task #1").build_job_task_quote(price: 5, service_price: 0, service_quantity: 0).save!
+        shopify.status = 502
+        get pay_job_orders_path, params: { token: order.pay_token }
+
+        expect(response).to have_http_status(:ok)
+        expect(page_text).to include(I18n.t("job_orders.alerts.payment_link_unavailable"))
+        expect(order.reload.shopify_draft_order_id).to be_nil
+      end
+
+      it "keeps a successfully created draft id when the follow-up fetch times out, and reuses it next time" do
+        order = make_job_order!(owner: owner, status_key: :completed)
+        order.job_tasks.create!(title: "Task #1").build_job_task_quote(price: 5, service_price: 0, service_quantity: 0).save!
+        created = false
+        timed_out = false
+        allow(shopify).to receive(:query).and_wrap_original do |m, **kw|
+          if kw[:query].include?("getDraftOrder") && created && !timed_out
+            timed_out = true
+            raise Net::ReadTimeout
+          end
+          created = true if kw[:query].include?("draftOrderCreate")
+          m.call(**kw)
+        end
+
+        get pay_job_orders_path, params: { token: order.pay_token }
+        expect(page_text).to include(I18n.t("job_orders.alerts.payment_link_unavailable"))
+        expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
+
+        shopify.calls.clear
+        get pay_job_orders_path, params: { token: order.pay_token }
+        expect(response.body).to include("https://pay.example/old-invoice")
+        expect(shopify_ops).to eq(["getDraftOrder"])
+      end
+
+      it "decides gone from a fetch, re-checks once under the lock, creates one draft; the view reuses the link" do
+        order, = order_with_draft!
+        shopify.missing_ids = ["gid://shopify/DraftOrder/9001"]
+        shopify.draft_id = "gid://shopify/DraftOrder/9004"
+        get pay_job_orders_path, params: { token: order.pay_token }
+
+        expect(shopify_ops).to eq(%w[getDraftOrder getDraftOrder draftOrderCreate getDraftOrder])
+        expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9004")
+      end
+
+      it "uses the draft another concurrent request already created instead of creating a second one" do
+        order, = order_with_draft!
+        shopify.missing_ids = ["gid://shopify/DraftOrder/9001"]
+        allow_any_instance_of(JobOrder).to receive(:with_lock).and_wrap_original do |m, *args, &blk|
+          # the other request replaces the dead id just before we take the lock
+          JobOrder.where(id: order.id).update_all(shopify_draft_order_id: "gid://shopify/DraftOrder/9777")
+          m.call(*args, &blk)
+        end
+        get pay_job_orders_path, params: { token: order.pay_token }
+
+        expect(response).to have_http_status(:ok)
+        expect(shopify_ops).not_to include("draftOrderCreate")
+        expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9777")
+        expect(response.body).to include("https://pay.example/old-invoice")
+      end
     end
 
     shared_examples "a refused re-quote" do
@@ -281,6 +448,55 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       let(:status_key) { :completed }
       def break_shopify = (shopify.delete_user_errors = [{ "field" => "id", "message" => "completed" }])
       it_behaves_like "a refused re-quote"
+    end
+
+    context "when the draft no longer exists on Shopify (delete returns no id, fetch says null)" do
+      it "proceeds, clears the dead id and commits the re-quote" do
+        order, task = order_with_draft!
+        shopify.delete_returns_nothing = true
+        shopify.draft_missing = true
+        requote!(order, task, 55)
+        expect(shopify_ops).to eq(%w[draftOrderDelete getDraftOrder])
+
+        expect(status_names(order).last).to eq("Waiting for User Approval")
+        expect(order.reload.total_price).to eq(BigDecimal("55"))
+        expect(order.shopify_draft_order_id).to be_nil
+      end
+
+      it "proceeds when the delete reports a userError (not found) and the fetch confirms the draft is gone" do
+        order, task = order_with_draft!
+        shopify.delete_user_errors = [{ "field" => "id", "message" => "Draft order not found" }]
+        shopify.missing_ids = ["gid://shopify/DraftOrder/9001"]
+        requote!(order, task, 55)
+
+        expect(shopify_ops).to eq(%w[draftOrderDelete getDraftOrder])
+        expect(status_names(order).last).to eq("Waiting for User Approval")
+        expect(order.reload.shopify_draft_order_id).to be_nil
+      end
+
+      it "refuses when the delete reports userErrors and the fetch finds the draft (completed/paid)" do
+        order, task = order_with_draft!
+        shopify.delete_user_errors = [{ "field" => "id", "message" => "cannot delete a completed draft order" }]
+        requote!(order, task, 55)
+
+        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.requote_draft_order_failed"))
+        expect(shopify_ops).to eq(%w[draftOrderDelete getDraftOrder])
+        expect(order.reload.total_price).to eq(BigDecimal("29.99"))
+        expect(order.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
+      end
+
+      it "refuses when the existence check itself fails (fail closed)" do
+        order, task = order_with_draft!
+        shopify.delete_returns_nothing = true
+        allow(shopify).to receive(:query).and_wrap_original do |m, **kw|
+          kw[:query].include?("draftOrderDelete") ? m.call(**kw) : (raise "boom")
+        end
+        requote!(order, task, 55)
+
+        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.requote_draft_order_failed"))
+        expect(order.reload.total_price).to eq(BigDecimal("29.99"))
+        expect(order.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
+      end
     end
 
     context "when Shopify is not configured / the session raises" do
