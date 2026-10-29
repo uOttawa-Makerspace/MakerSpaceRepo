@@ -40,8 +40,6 @@ Rails.application.routes.draw do
       },
       as: "download_video"
 
-  mount StripeEvent::Engine, at: "/stripe/webhooks"
-
   resources :project_kits, only: %i[index new create destroy] do
     get :mark_delivered
     collection { get :populate_kit_users }

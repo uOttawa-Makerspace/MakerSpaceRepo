@@ -270,16 +270,6 @@ class MsrMailerPreview < ActionMailer::Preview
     )
   end
 
-  def send_email_for_stripe_transfer
-    MsrMailer.send_email_for_stripe_transfer(
-      "tr_1234567890",           # transfer_id
-      Date.today.to_s,           # date
-      50000,                     # amount in cents ($500.00)
-      "TD Bank",                 # bank
-      "12345"                    # routing_number
-    )
-  end
-
   def unlock_account
     MsrMailer.unlock_account(User.first, "sample_unlock_hash")
   end
