@@ -73,9 +73,10 @@ module RecurrenceExpansion
 
   # True for the second (standard-time) instant of a local time that occurs twice,
   # unless it is the series start itself. TimeZone#local resolves an ambiguous
-  # local time to its first (daylight) instant.
+  # local time to its first (daylight) instant. A daylight-time instant is never
+  # the second one, so it skips the lookup.
   def repeated_hour_duplicate?(time, start_time)
-    return false if time == start_time
+    return false if time.dst? || time == start_time
 
     first = start_time.time_zone.local(time.year, time.month, time.day, time.hour, time.min, time.sec)
     first.to_i != time.to_i

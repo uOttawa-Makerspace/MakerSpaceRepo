@@ -121,6 +121,22 @@ RSpec.describe RecurrenceExpansion do
     end
   end
 
+  it "looks up the repeated-hour check only for standard-time occurrences (daylight ones are never the duplicate)" do
+    summer = [local(2027, 6, 1, 1, 30), local(2027, 6, 1), local(2027, 8, 1)]
+    winter = [local(2027, 1, 4, 1, 30), local(2027, 1, 1), local(2027, 2, 1)]
+    lookups = 0
+    # count only the lookups made by RecurrenceExpansion itself (IceCube builds times with #local too)
+    allow(zone).to receive(:local).and_wrap_original do |m, *a|
+      direct = caller_locations.find { |l| !l.path.include?("/rspec-") && !l.path.end_with?(__FILE__) }
+      lookups += 1 if direct.path.end_with?("app/services/recurrence_expansion.rb")
+      m.call(*a)
+    end
+    expect(starts("RRULE:FREQ=DAILY;COUNT=30", *summer).size).to eq(30)
+    expect(lookups).to eq(0)
+    expect(starts("RRULE:FREQ=DAILY;COUNT=5", *winter).size).to eq(5)
+    expect(lookups).to eq(4) # every standard-time occurrence but the series start
+  end
+
   it "does not modify the parsed rule (a cached rule keeps its COUNT)" do
     cached = IceCube::Rule.from_ical("FREQ=DAILY;COUNT=3")
     allow(IceCube::Rule).to receive(:from_ical).and_return(cached)
