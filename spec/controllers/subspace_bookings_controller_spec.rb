@@ -1,6 +1,6 @@
 require "rails_helper"
 require "rspec/mocks/standalone"
-RSpec.describe SubSpaceBookingController, type: :controller do
+RSpec.describe SubSpaceBookingController, :booking_clock, type: :controller do
   before(:each) do
     stub_const("BookingStatus::PENDING", create(:booking_status, :pending))
     stub_const("BookingStatus::APPROVED", create(:booking_status, :approved))
@@ -360,7 +360,7 @@ RSpec.describe SubSpaceBookingController, type: :controller do
       end
 
       it "should return 422 and notify the user they need to enter a name" do
-        post :create,
+        post :create, format: :json,
              params: {
                sub_space_booking: {
                  sub_space_id: @subspace.id,
@@ -369,11 +369,12 @@ RSpec.describe SubSpaceBookingController, type: :controller do
                  description: Faker::Lorem.sentence
                }
              }
+        expect(response).to have_http_status(:unprocessable_content)
         expect(JSON.parse(response.body)["errors"].length).to eq(1)
       end
 
       it "should return 422 and notify the user they need to enter a description" do
-        post :create,
+        post :create, format: :json,
              params: {
                sub_space_booking: {
                  sub_space_id: @subspace.id,
@@ -382,11 +383,12 @@ RSpec.describe SubSpaceBookingController, type: :controller do
                  name: Faker::Lorem.word
                }
              }
+        expect(response).to have_http_status(:unprocessable_content)
         expect(JSON.parse(response.body)["errors"].length).to eq(1)
       end
 
       it "should return 422 and notify the user they need to enter a start time" do
-        post :create,
+        post :create, format: :json,
              params: {
                sub_space_booking: {
                  sub_space_id: @subspace.id,
@@ -395,11 +397,12 @@ RSpec.describe SubSpaceBookingController, type: :controller do
                  description: Faker::Lorem.sentence
                }
              }
+        expect(response).to have_http_status(:unprocessable_content)
         expect(JSON.parse(response.body)["errors"].length).to eq(1)
       end
 
       it "should return 422 and notify the user they need to enter a end time" do
-        post :create,
+        post :create, format: :json,
              params: {
                sub_space_booking: {
                  sub_space_id: @subspace.id,
@@ -408,6 +411,7 @@ RSpec.describe SubSpaceBookingController, type: :controller do
                  description: Faker::Lorem.sentence
                }
              }
+        expect(response).to have_http_status(:unprocessable_content)
         expect(JSON.parse(response.body)["errors"].length).to eq(1)
       end
 
@@ -415,7 +419,7 @@ RSpec.describe SubSpaceBookingController, type: :controller do
         subspace = create(:sub_space, space: @space)
         subspace.maximum_booking_duration = 4
         subspace.save
-        post :create,
+        post :create, format: :json,
              params: {
                sub_space_booking: {
                  sub_space_id: subspace.id,
@@ -425,6 +429,7 @@ RSpec.describe SubSpaceBookingController, type: :controller do
                  description: Faker::Lorem.sentence
                }
              }
+        expect(response).to have_http_status(:unprocessable_content)
         expect(JSON.parse(response.body)["errors"].length).to eq(1)
       end
 
@@ -433,7 +438,7 @@ RSpec.describe SubSpaceBookingController, type: :controller do
         subspace.maximum_booking_hours_per_week = 4
         subspace.save
         1..2.times do
-          post :create,
+          post :create, format: :json,
                params: {
                  sub_space_booking: {
                    sub_space_id: subspace.id,
@@ -444,6 +449,7 @@ RSpec.describe SubSpaceBookingController, type: :controller do
                  }
                }
         end
+        expect(response).to have_http_status(:unprocessable_content)
         expect(JSON.parse(response.body)["errors"].length).to eq(1)
       end
 

@@ -279,9 +279,9 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
     end
 
     it "stores string params shifted to the Eastern DST offset in UTC" do
-      # WART(D-B06): controller create parses the string by the app zone (March →
-      # EST = -05:00 → UTC wall 15:00) while the overlap binds use the
-      # literal wall. Factory rows with offset-0 DateTimes store the
+      # Controller create parses the string in the app zone (March →
+      # EST = -05:00 → UTC 15:00). FIXED(D-B06): the overlap check uses
+      # those same zoned instants. Factory rows with offset-0 DateTimes store the
       # literal. Probe5/probe6 verified both directions (Mar: +5, Jul: +4).
       json_create
       booking = SubSpaceBooking.find_by!(name: "Fresh")
@@ -376,14 +376,13 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
         end
       end
 
-      it "destroys the booking and reports TimeSlot when a literal-wall blocking row overlaps" do
-        # Overlap detection compares the new booking's wall (parsed at offset
-        # 0) against stored rows; factory rows store the literal wall, so
-        # factory-vs-controller overlaps are detected.
+      it "books nothing and reports TimeSlot when a blocking row overlaps" do
+        # FIXED(D-B06): the overlap check compares the zoned instants the model
+        # stores, so a block at 09:00-12:00 Toronto catches a 10:00 booking.
         set_booking_status!(
           create(:sub_space_booking, sub_space: subspace, user: user,
-                                     start_time: DateTime.parse("2027-03-03 09:00"),
-                                     end_time: DateTime.parse("2027-03-03 12:00"),
+                                     start_time: Time.zone.parse("2027-03-03 09:00"),
+                                     end_time: Time.zone.parse("2027-03-03 12:00"),
                                      name: "Taker", blocking: true),
           @approved_status
         )
@@ -396,10 +395,10 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
         expect(SubSpaceBooking.exists?(name: "Taker")).to be(true)
       end
 
-      it "misses overlaps between two controller-created bookings" do
-        # WART(D-B06): controller-created rows store the EDT/EST-shifted wall while
-        # the overlap binds use the literal wall, so JSON booking 11:00-12:00
-        # never collides with the 10:00-12:00 block stored at 15:00-17:00.
+      # FIXED(D-B06). Flips the pin "misses overlaps between two
+      # controller-created bookings": both are now compared as the zoned
+      # instants they are stored as, so they collide.
+      it "catches an overlap between two controller-created bookings" do
         admin = create(:user, :admin, booking_approval: true)
         log_in!(admin)
         post sub_space_booking_index_path, as: :json,
@@ -414,10 +413,9 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
                sub_space_id: subspace.id, start_time: "2027-03-03 11:00",
                end_time: "2027-03-03 12:00", name: "Sneak", description: "D"
              } }
-        expect(response.status).to eq(204)
-        sneak = SubSpaceBooking.find_by!(name: "Sneak")
-        # stored wall was shifted +5h (March → EST)
-        expect(raw_utc_wall(sneak)).to eq("2027-03-03 16:00:00")
+        expect(response.status).to eq(422)
+        expect(response.parsed_body).to eq("errors" => ["TimeSlot This time slot is already booked."])
+        expect(SubSpaceBooking.exists?(name: "Sneak")).to be(false)
       end
     end
   end
@@ -490,11 +488,12 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       expect(SubSpaceBooking.where(name: "OneOnly").count).to eq(1)
     end
 
-    it "broken mid-series conflicts leave 422 + partial series" do
+    # D-B30 kept (partial series); the 422 now also says what was booked.
+    it "broken mid-series conflicts leave 422 + partial series, with booked and failed" do
       set_booking_status!(
         create(:sub_space_booking, sub_space: subspace, user: user,
-               start_time: DateTime.parse("2027-02-17 10:30"),
-               end_time: DateTime.parse("2027-02-17 11:30"),
+               start_time: Time.zone.parse("2027-02-17 10:30"),
+               end_time: Time.zone.parse("2027-02-17 11:30"),
                name: "Grabber", blocking: true),
         @approved_status
       )
@@ -507,7 +506,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
            } }
       expect(response.status).to eq(422)
       expect(response.parsed_body)
-        .to eq("errors" => ["TimeSlot This time slot is already booked."])
+        .to eq("errors" => ["TimeSlot This time slot is already booked."], "booked" => 2, "failed" => ["2027-02-17"])
       walls = SubSpaceBooking.where(name: "Weekly").order(:start_time)
                              .map { |b| raw_utc_wall(b)[0..9] }
       expect(walls).to eq(["2027-02-03", "2027-02-10"])
@@ -521,15 +520,15 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
     it "two mid-series conflicts answer one 422, leaving the first booking" do
       set_booking_status!(
         create(:sub_space_booking, sub_space: subspace, user: user,
-               start_time: DateTime.parse("2027-02-10 10:30"),
-               end_time: DateTime.parse("2027-02-10 11:30"),
+               start_time: Time.zone.parse("2027-02-10 10:30"),
+               end_time: Time.zone.parse("2027-02-10 11:30"),
                name: "Grabber1", blocking: true),
         @approved_status
       )
       set_booking_status!(
         create(:sub_space_booking, sub_space: subspace, user: user,
-               start_time: DateTime.parse("2027-02-17 10:30"),
-               end_time: DateTime.parse("2027-02-17 11:30"),
+               start_time: Time.zone.parse("2027-02-17 10:30"),
+               end_time: Time.zone.parse("2027-02-17 11:30"),
                name: "Grabber2", blocking: true),
         @approved_status
       )
@@ -542,7 +541,8 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
            } }
       expect(response.status).to eq(422)
       expect(response.parsed_body)
-        .to eq("errors" => ["TimeSlot This time slot is already booked."])
+        .to eq("errors" => ["TimeSlot This time slot is already booked."], "booked" => 1,
+             "failed" => %w[2027-02-10 2027-02-17])
       expect(SubSpaceBooking.where(name: "Weekly").count).to eq(1)
     end
   end

@@ -134,13 +134,12 @@ RSpec.describe "Journey: space booking", type: :system, skip_bullet: true do
   end
 
   it "rejects a booking that overlaps a blocking booking (server 422; the UI shows no toast, D-E2E04)" do
-    # The overlap check compares the literal wall clock against stored rows, so
-    # it only fires for rows that store the literal wall (legacy/factory rows,
-    # offset 0); see the D-B06 example below for the UI-created case.
+    # The overlap check compares the zoned instants the model stores (D-B06),
+    # so a block stored at 09:00-12:00 Toronto catches the 10:00 UI booking.
     blocker = create(:sub_space_booking, sub_space: subspace, user: admin, name: "Maintenance",
                                          description: "closed", blocking: true,
-                                         start_time: DateTime.parse(stamp(day, 9)),
-                                         end_time: DateTime.parse(stamp(day, 12)))
+                                         start_time: Time.zone.parse(stamp(day, 9)),
+                                         end_time: Time.zone.parse(stamp(day, 12)))
     blocker.sub_space_booking_status.update!(booking_status: @approved_status)
 
     as_actor(:user, allow_console: [%r{/sub_space_booking - Failed to load resource: .* 422}]) do
@@ -161,7 +160,10 @@ RSpec.describe "Journey: space booking", type: :system, skip_bullet: true do
     expect(SubSpaceBooking.where(sub_space: subspace)).to contain_exactly(blocker)
   end
 
-  it "pinned: a blocking booking made through the UI does not stop an overlapping UI booking (D-B06)" do
+  # FIXED(D-B06). Flips the pin "a blocking booking made through the UI does
+  # not stop an overlapping UI booking": both rows are compared as the zoned
+  # instants they are stored as, so the second booking is refused.
+  it "a blocking booking made through the UI stops an overlapping UI booking (D-B06)" do
     as_actor(:admin) do
       log_in_as(admin)
       open_booking_modal(day)
@@ -175,16 +177,15 @@ RSpec.describe "Journey: space booking", type: :system, skip_bullet: true do
     expect(blocker.blocking).to be(true)
     expect(blocker.sub_space_booking_status.booking_status).to eq(@approved_status)
 
-    as_actor(:user) do
+    as_actor(:user, allow_console: [%r{/sub_space_booking - Failed to load resource: .* 422}]) do
       log_in_as(user)
       open_booking_modal(day)
       fill_booking_modal(name: "Sneaky", description: "overlap")
       click_button "bookSave"
-      expect(page).to have_no_css("#bookModal.show", visible: :all)
-      expect(page).to have_css(".fc-event", text: "Sneaky - overlap (Pending)")
+      # 422 TimeSlot; the modal stays open (no toast, D-E2E04 above).
+      expect(page).to have_css("#bookSave:not([disabled])")
+      expect(page).to have_css("#bookModal.show", visible: :all)
     end
-    # WART(D-B06): both rows are stored shifted by the app zone offset while
-    # the overlap query uses the literal wall, so the conflict is missed.
-    expect(SubSpaceBooking.where(name: "Sneaky").count).to eq(1)
+    expect(SubSpaceBooking.where(name: "Sneaky")).to be_empty
   end
 end

@@ -237,9 +237,14 @@ en:
               in_the_past: "cannot be in the past. Pick a start time from now on."
             end_time:
               in_the_past: "cannot be in the past for a booking that has already started. Pick an end time after now."
+              booking_ended: "cannot be changed: this booking has already ended."
       messages:
         blank: "This field is required."
         inclusion: "Selection is not valid."
+  sub_space_booking:
+    series:
+      too_long: "A recurring booking can span at most %{days} days and %{count} occurrences."
+      partial: "Booked %{booked} of %{total} occurrences. Not booked: %{failed}."
   saml:
     login:
       sign_in: "Sign In"

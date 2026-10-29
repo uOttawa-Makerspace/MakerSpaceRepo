@@ -222,9 +222,14 @@ fr:
               in_the_past: "ne peut pas être dans le passé. Choisissez une heure de début à partir de maintenant."
             end_time:
               in_the_past: "ne peut pas être dans le passé pour une réservation déjà commencée. Choisissez une heure de fin après maintenant."
+              booking_ended: "ne peut plus être modifiée : cette réservation est déjà terminée."
       messages:
         blank: "Ce champ est requis."
         inclusion: "Sélection non valide."
+  sub_space_booking:
+    series:
+      too_long: "Une réservation récurrente peut couvrir au plus %{days} jours et %{count} occurrences."
+      partial: "%{booked} occurrences sur %{total} réservées. Non réservées : %{failed}."
   saml:
     login:
       sign_in: "Connexion"

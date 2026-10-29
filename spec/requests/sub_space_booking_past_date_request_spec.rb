@@ -200,12 +200,13 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
       managed = create(:space, :with_space_managers)
       room = create(:sub_space, space: managed, approval_required: true, max_automatic_approval_hour: nil)
       create(:sub_space_booking, sub_space: room, user: admin, name: "Grabber", blocking: true,
-                                 start_time: DateTime.parse("2026-12-08 10:30"), # literal wall, like the gaps spec
-                                 end_time: DateTime.parse("2026-12-08 11:30"))
+                                 start_time: Time.zone.parse("2026-12-08 10:30"),
+                                 end_time: Time.zone.parse("2026-12-08 11:30"))
       log_in!(user)
       post_series(start_on: "2026-11-17", end_on: "2026-12-15", name: "Mailed", room: room)
       expect(response).to have_http_status(:unprocessable_content)
-      expect(response.parsed_body).to eq("errors" => ["TimeSlot This time slot is already booked."])
+      expect(response.parsed_body).to eq("errors" => ["TimeSlot This time slot is already booked."],
+                                         "booked" => 1, "failed" => ["2026-12-08"])
       expect(walls_of("Mailed")).to eq(["2026-12-15 10:00"])
       expect(ActionMailer::Base.deliveries.map(&:subject)).to eq(["Booking needs approval"])
     end
@@ -301,12 +302,50 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
       end
     end
 
-    it "lets a past booking move to the future" do
+    # D-B18 follow-up (coordinator): a booking that has already ended can't have
+    # its times changed. Flips the pin "lets a past booking move to the future".
+    it "refuses moving an ended booking, even to the future, or giving it a new end" do
       log_in!(user)
-      booking = booking_of(user, start_time: "2026-11-30 10:00", end_time: "2026-11-30 11:00")
+      booking = booking_of(user, start_time: "2026-11-20 10:00", end_time: "2026-11-20 11:00")
+      ended_error = "End time cannot be changed: this booking has already ended."
+
       patch_times(booking, "2026-12-04 10:00", "2026-12-04 11:00", name: "Rescheduled")
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body).to eq("errors" => [ended_error])
+
+      patch_times(booking, "2026-11-20 10:00", "2026-12-05 11:00", name: "Revived")
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body).to eq("errors" => [ended_error])
+
+      booking.reload
+      expect(booking.name).to eq("Existing")
+      expect(booking.end_time).to eq(Time.zone.parse("2026-11-20 11:00"))
+    end
+
+    it "has a French message for an ended booking" do
+      log_in!(user)
+      booking = booking_of(user, start_time: "2026-11-20 10:00", end_time: "2026-11-20 11:00")
+      patch sub_space_booking_update_path(sub_space_booking_id: booking.id, locale: "fr"), as: :json, params: {
+        sub_space_booking: { start_time: "2026-11-20 10:00", end_time: "2026-12-05 11:00", name: "R", description: "D" }
+      }
+      expect(response.parsed_body["errors"])
+        .to eq(["End time ne peut plus être modifiée : cette réservation est déjà terminée."])
+    end
+
+    # The duration/week limits use the model's minute-precision test, so
+    # resubmitting a stored 09:00:30 as "09:00" is a rename, not a move.
+    it "renames a booking stored with seconds even when its room's limits were lowered since" do
+      capped = create(:sub_space, space: space, maximum_booking_duration: 1)
+      stored = Time.zone.parse("2026-12-03 09:00:30")
+      row = create(:sub_space_booking, sub_space: capped, user: user, name: "Mirror",
+                                       start_time: stored, end_time: stored + 3.hours)
+      log_in!(user)
+      patch sub_space_booking_update_path(sub_space_booking_id: row.id), as: :json, params: {
+        sub_space_booking: { start_time: "2026-12-03 09:00", end_time: "2026-12-03 12:00",
+                             name: "Renamed", description: "D" }
+      }
       expect(response).to have_http_status(:ok)
-      expect(booking.reload.start_time).to eq(Time.zone.parse("2026-12-04 10:00"))
+      expect(row.reload.name).to eq("Renamed")
     end
   end
 
@@ -349,6 +388,145 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
       put sub_space_booking_publish_path(sub_space_booking_id: past.id)
       expect(flash[:notice]).to eq("Booking made public successfully.")
       expect(past.reload.public).to be(true)
+    end
+  end
+
+  # Review fixes (c21b18c): DST and zoned series, the cap, the truthful
+  # partial answer, the transaction, and HTML failures.
+  describe "series and failure handling" do
+    def post_json_series(start_time:, end_time:, recurring_end:, name:, frequency: "weekly")
+      post sub_space_booking_index_path, as: :json,
+           params: { sub_space_booking: {
+             sub_space_id: subspace.id, start_time: start_time, end_time: end_time,
+             name: name, description: "D", recurring: true,
+             recurring_frequency: frequency, recurring_end: recurring_end
+           } }
+    end
+
+    def toronto_walls(name)
+      SubSpaceBooking.where(name: name).order(:start_time)
+                     .map { |b| b.start_time.in_time_zone.strftime("%Y-%m-%d %H:%M") }
+    end
+
+    def block!(from, to)
+      create(:sub_space_booking, sub_space: subspace, user: admin, name: "Block", blocking: true,
+                                 start_time: Time.zone.parse(from), end_time: Time.zone.parse(to))
+    end
+
+    # D-B06 / DST: the overlap check uses the zoned instants, so a series that
+    # crosses the 2026-11-01 fall-back is checked against blocks at the right
+    # hour on both sides of the change.
+    it "checks a series across the November DST change against blocks at their real hour" do
+      travel_to(Time.zone.local(2026, 10, 20, 12, 0))
+      block!("2026-11-04 09:00", "2026-11-04 10:00") # touches 10:00 EST: no conflict
+      block!("2026-11-11 10:30", "2026-11-11 11:30") # overlaps 10:00-11:00 EST
+      log_in!(user)
+      post_json_series(start_time: "2026-10-21 10:00", end_time: "2026-10-21 11:00",
+                       recurring_end: "2026-11-11", name: "Fall")
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body).to eq("errors" => ["TimeSlot This time slot is already booked."],
+                                         "booked" => 3, "failed" => ["2026-11-11"])
+      expect(toronto_walls("Fall")).to eq(["2026-10-21 10:00", "2026-10-28 10:00", "2026-11-04 10:00"])
+    end
+
+    # Every occurrence derives from the first one's zoned start, so a start
+    # with an explicit offset keeps one Toronto wall clock, across DST too.
+    it "keeps the first occurrence's Toronto time for a start given with an offset, across the March DST change" do
+      log_in!(user)
+      post_json_series(start_time: "2027-03-03T15:00:00Z", end_time: "2027-03-03T16:00:00Z",
+                       recurring_end: "2027-03-17", name: "Offset")
+      expect(response).to have_http_status(:no_content)
+      expect(toronto_walls("Offset")).to eq(["2027-03-03 10:00", "2027-03-10 10:00", "2027-03-17 10:00"])
+      expect(SubSpaceBooking.where(name: "Offset").order(:start_time).map { |b| b.end_time - b.start_time })
+        .to all(eq(1.hour))
+    end
+
+    it "refuses a series over the occurrence cap before booking anything" do
+      stub_const("SubSpaceBookingController::SERIES_MAX_OCCURRENCES", 3)
+      log_in!(user)
+      post_json_series(start_time: "2026-12-02 10:00", end_time: "2026-12-02 11:00",
+                       recurring_end: "2026-12-23", name: "Capped") # 4 occurrences
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body).to eq(
+        "errors" => ["Recurring A recurring booking can span at most 365 days and 3 occurrences."]
+      )
+      expect(SubSpaceBooking.where(name: "Capped")).to be_empty
+      post_json_series(start_time: "2026-12-02 10:00", end_time: "2026-12-02 11:00",
+                       recurring_end: "2026-12-16", name: "Capped") # 3 occurrences
+      expect(response).to have_http_status(:no_content)
+      expect(SubSpaceBooking.where(name: "Capped").count).to eq(3)
+    end
+
+    it "answers a partial series truthfully: no success notice, the count and the failed dates" do
+      block!("2026-12-09 10:30", "2026-12-09 11:30")
+      log_in!(user)
+      post_json_series(start_time: "2026-12-02 10:00", end_time: "2026-12-02 11:00",
+                       recurring_end: "2026-12-16", name: "Partial")
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body["booked"]).to eq(2)
+      expect(response.parsed_body["failed"]).to eq(["2026-12-09"])
+      expect(flash[:notice]).to be_nil
+      expect(flash[:alert]).to eq("Booked 2 of 3 occurrences. Not booked: 2026-12-09.")
+      expect(toronto_walls("Partial")).to eq(["2026-12-02 10:00", "2026-12-16 10:00"])
+    end
+
+    it "answers a partial series with an HTML redirect and the summary alert when HTML is asked for" do
+      block!("2026-12-09 10:30", "2026-12-09 11:30")
+      log_in!(user)
+      post sub_space_booking_index_path,
+           params: { sub_space_booking: {
+             sub_space_id: subspace.id, start_time: "2026-12-02 10:00", end_time: "2026-12-02 11:00",
+             name: "PartialHtml", description: "D", recurring: true,
+             recurring_frequency: "weekly", recurring_end: "2026-12-16"
+           } }.to_json,
+           headers: { "CONTENT_TYPE" => "application/json", "ACCEPT" => "text/html" }
+      expect(response).to redirect_to(
+        sub_space_booking_index_path(anchor: "booking-calendar-tab", room: subspace.id)
+      )
+      expect(flash[:alert]).to eq("Booked 2 of 3 occurrences. Not booked: 2026-12-09.")
+      expect(flash[:notice]).to be_nil
+    end
+
+    it "sets the success notice once a whole series is booked" do
+      log_in!(user)
+      post_json_series(start_time: "2026-12-02 10:00", end_time: "2026-12-02 11:00",
+                       recurring_end: "2026-12-16", name: "Whole")
+      expect(response).to have_http_status(:no_content)
+      expect(flash[:notice]).to eq("Booking for #{subspace.name} created successfully.")
+    end
+
+    # The booking, its status and the link are one transaction: a failure in
+    # the middle (here the status, whose booking status does not exist, fails
+    # to save) rolls the booking back: no booking is left without a status.
+    it "leaves no booking behind when its status cannot be saved" do
+      stub_const("BookingStatus::APPROVED", BookingStatus.new(id: -1, name: "Ghost"))
+      log_in!(user)
+      create_booking(start_time: "2026-12-02 10:00", end_time: "2026-12-02 11:00", name: "Orphan")
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(SubSpaceBooking.where(name: "Orphan")).to be_empty
+    end
+
+    it "redirects an HTML create that fails validation or a limit back to the calendar with the alert" do
+      log_in!(user)
+      post sub_space_booking_index_path, params: { sub_space_booking: {
+        sub_space_id: subspace.id, start_time: "2026-12-02 10:00", end_time: "2026-12-02 11:00",
+        name: "", description: "D"
+      } }
+      expect(response).to redirect_to(
+        sub_space_booking_index_path(anchor: "booking-calendar-tab", room: subspace.id)
+      )
+      expect(flash[:alert]).to eq("Name This field is required.")
+
+      capped = create(:sub_space, space: space, maximum_booking_duration: 1)
+      post sub_space_booking_index_path, params: { sub_space_booking: {
+        sub_space_id: capped.id, start_time: "2026-12-02 10:00", end_time: "2026-12-02 13:00",
+        name: "Long", description: "D"
+      } }
+      expect(response).to redirect_to(
+        sub_space_booking_index_path(anchor: "booking-calendar-tab", room: capped.id)
+      )
+      expect(flash[:alert]).to eq("You cannot book #{capped.name} for more than 1 hours.")
+      expect(SubSpaceBooking.where(name: "Long")).to be_empty
     end
   end
 end
