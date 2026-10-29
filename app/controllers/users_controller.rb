@@ -360,7 +360,7 @@ class UsersController < SessionsController
 
     @acclaim_data = @repo_user.certifications
     
-    makes_scope = @repo_user.repositories.where.not(make_id: nil).order(created_at: :desc)
+    makes_scope = @repo_user.repositories.includes(:owner, :photos).where.not(make_id: nil).order(created_at: :desc)
     makes_scope = makes_scope.public_repos unless sees_private_repos?(@repo_user)
     @pagy_makes, @makes = pagy(makes_scope, page_key: 'page_makes', limit: 18)
 
