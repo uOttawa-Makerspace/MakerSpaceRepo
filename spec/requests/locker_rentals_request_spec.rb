@@ -576,21 +576,19 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
     end
 
     describe "broken edges pinned as-is" do
-      it "pinned today: edit requests end in a 406-class error response, not a rendered form (missing template — wart)" do
-        # WART(D-L10): edit has no template (missing template error)
+      it "has no edit route (D-L10): 404" do
         rental = reviewing_rental!
         log_in!(owner)
-        get edit_locker_rental_path(rental)
+        get "/locker_rentals/#{rental.id}/edit"
 
-        expect(response).to have_http_status(:not_acceptable) # :not_acceptable (Rails 8.1 resilient missing-template)
+        expect(response).to have_http_status(:not_found)
         expect(LockerRental.exists?(rental.id)).to be(true)
       end
 
-      it "pinned today: DELETE destroy renders 404 (no #destroy action — the route is a wart)" do
-        # WART(D-L11): destroy route exists without an action
+      it "has no destroy route (D-L11): DELETE answers 404 and nothing is destroyed" do
         rental = reviewing_rental!
         log_in!(admin)
-        delete locker_rental_path(rental)
+        delete "/locker_rentals/#{rental.id}"
 
         expect(response).to have_http_status(:not_found)
         expect(LockerRental.exists?(rental.id)).to be(true) # nothing destroyed

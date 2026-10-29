@@ -151,7 +151,7 @@ Rails.application.routes.draw do
   
   resources :locker_sizes, only: [:create, :update, :destroy]
 
-  resources :locker_rentals do
+  resources :locker_rentals, except: %i[edit destroy] do
     member do
       patch :renew
       patch :toggle_contacted

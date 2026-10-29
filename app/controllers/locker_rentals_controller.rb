@@ -59,11 +59,6 @@ class LockerRentalsController < SessionsController
     end
   end
 
-  def edit
-    @locker_rental = LockerRental.find(params[:id])
-    new_instance_attributes
-  end
-
   def new
     @locker_rental = LockerRental.new
     # Only locker types enabled by admin
