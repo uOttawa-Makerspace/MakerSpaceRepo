@@ -369,7 +369,7 @@ Rails.application.routes.draw do
 
     resources :drop_off_locations
 
-    resources :contact_infos
+    resources :contact_infos, except: :show
 
     resources :time_periods, except: [:show]
 

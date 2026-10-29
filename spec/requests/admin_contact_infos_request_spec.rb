@@ -67,9 +67,8 @@ RSpec.describe "Admin::ContactInfos (HTTP contract)", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
-    it "show 404s (the route exists but the controller defines no show)" do
-      # WART(D-I26): routes expose GET /admin/contact_infos/:id but the controller has no show action or view
-      get admin_contact_info_path(info)
+    it "has no show route (D-I26): 404" do
+      get "/admin/contact_infos/#{info.id}"
       expect(response).to have_http_status(:not_found)
     end
 
