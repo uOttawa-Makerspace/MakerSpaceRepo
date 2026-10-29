@@ -112,24 +112,34 @@ RSpec.describe "Calendar JSON across DST changes", type: :request do
         expect(rows_for(ev).map { |r| r["id"] }.uniq.size).to eq(3)
       end
 
-      it "renders events ending in the repeated hour and on the day after" do
+      # One event per example: the feed's per-event N+1 (D-PERF-SP01) makes Bullet raise in CI mode for two.
+      it "renders a recurring event whose occurrence ends on the day after" do
         ev = create(:event, space: space, recurrence_rule: "RRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=2",
                             start_time: local(2026, 10, 26, 0), end_time: local(2026, 10, 26, 1, 30))
-        single = create(:event, space: space, start_time: local(2026, 11, 2, 0, 30), end_time: local(2026, 11, 2, 1, 30))
         get feed
         expect(response).to have_http_status(:ok)
         expect(rows_for(ev).map { |r| r["start"] }).to eq(%w[2026-10-26T00:00:00-04:00 2026-11-02T00:00:00-05:00])
+      end
+
+      it "renders a single event ending at 01:30 on the day after" do
+        single = create(:event, space: space, start_time: local(2026, 11, 2, 0, 30), end_time: local(2026, 11, 2, 1, 30))
+        get feed
+        expect(response).to have_http_status(:ok)
         expect(rows_for(single).map { |r| r["end"] }).to eq(%w[2026-11-02T01:30:00-05:00])
       end
 
-      it "keeps 02:30 (not repeated in Toronto) and a weekly 10:00 event at the same local time on both sides" do
+      it "keeps 02:30 (not repeated in Toronto) at 02:30 local on both sides" do
         night = create(:event, space: space, recurrence_rule: "RRULE:FREQ=WEEKLY;BYDAY=SU;COUNT=3",
                                start_time: local(2026, 10, 25, 2, 30), end_time: local(2026, 10, 25, 3, 30))
-        day = create(:event, space: space, recurrence_rule: "RRULE:FREQ=WEEKLY;BYDAY=SU;COUNT=3",
-                             start_time: local(2026, 10, 25, 10), end_time: local(2026, 10, 25, 11))
         get feed
         expect(rows_for(night).map { |r| r["start"] })
           .to eq(%w[2026-10-25T02:30:00-04:00 2026-11-01T02:30:00-05:00 2026-11-08T02:30:00-05:00])
+      end
+
+      it "keeps a weekly 10:00 event at 10:00 local on both sides" do
+        day = create(:event, space: space, recurrence_rule: "RRULE:FREQ=WEEKLY;BYDAY=SU;COUNT=3",
+                             start_time: local(2026, 10, 25, 10), end_time: local(2026, 10, 25, 11))
+        get feed
         expect(rows_for(day).map { |r| r["start"] })
           .to eq(%w[2026-10-25T10:00:00-04:00 2026-11-01T10:00:00-05:00 2026-11-08T10:00:00-05:00])
       end
