@@ -6,30 +6,16 @@ module Api
     class UserRfidsController < BaseController
       before_action :require_staff!
 
-      # The card must already have been tapped (it exists as an unlinked Rfid).
-      # Refused, with nothing changed: a card another user holds, or a user who
-      # already holds a different card (unlink it first). Linking the same pair
-      # again is a no-op.
+      # Links the card to the user. A card no reader ever saw is created (the staff
+      # app scans new cards on the phone). Refused, with nothing changed: a card
+      # another user holds, or a user who already holds a different card (unlink it
+      # first). Linking the same pair again is a no-op.
       def update
         card_number = params.require(:card_number)
         return invalid_card("must be a string") unless card_number.is_a?(String)
+        return invalid_card("is invalid") unless Rfid.valid_card_number?(card_number)
 
-        user = find_user!
-        error = nil
-        Rfid.transaction do
-          # Lock order: user, then card.
-          User.where(id: user.id).lock("FOR NO KEY UPDATE").take
-          rfid = Rfid.lock("FOR NO KEY UPDATE").find_by!(card_number: card_number)
-          if rfid.user_id == user.id
-            # already linked to this user
-          elsif rfid.user_id.present?
-            error = "is already linked to another user"
-          elsif Rfid.where(user_id: user.id).exists?
-            error = "user already has a card; unlink it first"
-          else
-            rfid.update!(user_id: user.id)
-          end
-        end
+        error = Rfid.link_to_user!(card_number, find_user!)
         return invalid_card(error) if error
 
         head :no_content
