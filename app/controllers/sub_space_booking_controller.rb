@@ -323,14 +323,9 @@ class SubSpaceBookingController < SessionsController
     # So we receive time with no timezone, replace the time offset with the default one
     # Then convert to utc when doing comparaisons
     # This may explode once daylight savings are over...
-    start_datetime =
-      DateTime.parse(params[:sub_space_booking][:start_time]).change(
-        offset: DateTime.now.offset
-      ) # Rewrite timezone
-    end_datetime =
-      DateTime.parse(params[:sub_space_booking][:end_time]).change(
-        offset: DateTime.now.offset
-      )
+    start_datetime = Time.zone.parse(params[:sub_space_booking][:start_time])
+    # Rewrite timezone
+    end_datetime = Time.zone.parse(params[:sub_space_booking][:end_time])
 
     if params[:sub_space_booking][:blocking] != "true" &&
         SubSpaceBooking
@@ -495,14 +490,8 @@ class SubSpaceBookingController < SessionsController
       return
     end
 
-    start_datetime =
-      DateTime.parse(params[:sub_space_booking][:start_time]).change(
-        offset: DateTime.now.offset
-      ) # Rewrite timezone
-    end_datetime =
-      DateTime.parse(params[:sub_space_booking][:end_time]).change(
-        offset: DateTime.now.offset
-      )
+    start_datetime = Time.zone.parse(params[:sub_space_booking][:start_time])
+    end_datetime = Time.zone.parse(params[:sub_space_booking][:end_time])
 
     if SubSpaceBooking
          .where(sub_space_id: @sub_space_booking.sub_space.id)
