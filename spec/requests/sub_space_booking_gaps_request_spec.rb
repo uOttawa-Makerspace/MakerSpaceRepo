@@ -377,8 +377,8 @@ RSpec.describe "Sub space booking gaps", type: :request do
   describe "POST create boundaries (touching intervals, duration cap, weekly quota)" do
     before { log_in!(user) }
 
-    # The overlap check shifts the new interval inward by one minute, so
-    # back-to-back bookings are fine and an overlap must exceed one minute to count.
+    # D-B54: the overlap is exact on half-open intervals [start, end): back-to-back
+    # bookings are fine, any positive overlap (even one minute) is refused.
     it "accepts bookings that touch a blocking booking at either end and rejects a real overlap" do
       blocking_row(subspace, "2027-03-03 09:00", "2027-03-03 12:00")
 
@@ -388,10 +388,10 @@ RSpec.describe "Sub space booking gaps", type: :request do
       expect(response).to have_http_status(:no_content)
       expect(SubSpaceBooking.where(name: %w[After Before]).count).to eq(2)
 
-      create_booking(subspace, name: "Overlap", start_time: "2027-03-03 11:58", end_time: "2027-03-03 12:58")
+      create_booking(subspace, name: "Overlap", start_time: "2027-03-03 11:59", end_time: "2027-03-03 12:59")
       expect(response).to have_http_status(:unprocessable_content)
       expect(response.parsed_body).to eq("errors" => ["TimeSlot This time slot is already booked."])
-      create_booking(subspace, name: "OverlapEarly", start_time: "2027-03-03 08:02", end_time: "2027-03-03 09:02")
+      create_booking(subspace, name: "OverlapEarly", start_time: "2027-03-03 08:01", end_time: "2027-03-03 09:01")
       expect(response).to have_http_status(:unprocessable_content)
       expect(SubSpaceBooking.where(name: %w[Overlap OverlapEarly])).to be_empty
     end
@@ -471,6 +471,18 @@ RSpec.describe "Sub space booking gaps", type: :request do
       expect(response.parsed_body).to eq("errors" => ["TimeSlot This time slot is already booked."])
       expect(flash[:alert]).to eq("This time slot is already booked.")
       expect(booking.reload.name).not_to eq("Moved")
+    end
+
+    it "refuses an update that overlaps a blocking booking by one minute, on either edge, and accepts touching" do
+      blocking_row(subspace, "2027-04-03 12:00", "2027-04-03 14:00")
+      { ["11:00", "12:01"] => :unprocessable_content, ["13:59", "15:00"] => :unprocessable_content,
+        ["11:00", "12:00"] => :ok, ["14:00", "15:00"] => :ok }.each do |(from, to), status|
+        patch update_path_for(booking), as: :json, params: {
+          sub_space_booking: { start_time: "2027-04-03 #{from}", end_time: "2027-04-03 #{to}",
+                               name: "Moved", description: "D" }
+        }
+        expect(response).to have_http_status(status), "#{from}-#{to} gave #{response.status}"
+      end
     end
 
     it "redirects an HTML conflict back to the edit form" do

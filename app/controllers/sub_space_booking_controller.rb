@@ -355,11 +355,7 @@ class SubSpaceBookingController < SessionsController
           .where(sub_space_id: params[:sub_space_booking][:sub_space_id])
           .where(blocking: true)
           .where.not(id: booking.id)
-          .where(
-            "(start_time, end_time) OVERLAPS (?,?)",
-            start_datetime.utc + 1.minute, # OVERLAPS performs half-open intersection
-            end_datetime.utc - 1.minute
-          )
+          .overlapping(start_datetime.utc, end_datetime.utc)
           .any?
       booking.destroy
       flash[:alert] = "This time slot is already booked."
@@ -515,11 +511,7 @@ class SubSpaceBookingController < SessionsController
          .where(sub_space_id: @sub_space_booking.sub_space.id)
          .where(blocking: true)
          .where.not(id: @sub_space_booking.id)
-         .where(
-           "(start_time, end_time) OVERLAPS (?,?)",
-           start_datetime.utc + 1.minute,
-           end_datetime.utc - 1.minute
-         )
+         .overlapping(start_datetime.utc, end_datetime.utc)
          .any?
       flash[:alert] = "This time slot is already booked."
       respond_to do |format|
