@@ -182,10 +182,11 @@ RSpec.describe "Admin training area", type: :request do
         end
       end
 
-      # WART(D-T24): the skill_search / add_skill / skills routes have no controller action
-      %i[skill_search_admin_trainings_path add_skill_admin_trainings_path skills_admin_trainings_path].each do |helper|
-        it "#{helper} answers 404 (ActionNotFound)" do
-          get public_send(helper)
+      # D-T24: the skill_search / add_skill / skills routes were removed; the paths now fall to
+      # the resource's show route, which the controller does not implement.
+      %w[skill_search add_skill skills].each do |name|
+        it "/admin/trainings/#{name} answers 404 (no route of its own)" do
+          get "/admin/trainings/#{name}"
           expect(response).to have_http_status(:not_found)
           expect(error_text).to include("AbstractController::ActionNotFound")
         end
@@ -317,20 +318,17 @@ RSpec.describe "Admin training area", type: :request do
         end
       end
 
-      it "has no edit/create/show actions (routes exist, actions do not)" do
-        get edit_admin_training_session_path(session_record)
+      # D-T26: only index, update and destroy are routed; the nested "index" route that
+      # shadowed /new and /:id was removed.
+      it "has no new/edit/create/show routes (404)" do
+        get "/admin/training_sessions/new"
         expect(response).to have_http_status(:not_found)
-        post admin_training_sessions_path
+        get "/admin/training_sessions/#{session_record.id}/edit"
+        expect(response).to have_http_status(:not_found)
+        post "/admin/training_sessions"
         expect(response).to have_http_status(:not_found)
         get session_path(session_record)
-        expect(response).to have_http_status(:ok) # shadowed by the index route /:training_session_id
-      end
-
-      # WART(D-T26): GET /admin/training_sessions/:training_session_id is the index route and shadows /new and /:id
-      it "serves the index page for /new and for /:id" do
-        get new_admin_training_session_path
-        expect(response).to have_http_status(:ok)
-        expect(listed_ids).to eq([session_record.id])
+        expect(response).to have_http_status(:not_found)
       end
     end
   end

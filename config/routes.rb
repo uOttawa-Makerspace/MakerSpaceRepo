@@ -351,13 +351,7 @@ Rails.application.routes.draw do
     
     resources :pi_readers, only: %i[create update]
 
-    resources :trainings do
-      collection do
-        get "skill_search"
-        get "add_skill"
-        get "skills"
-      end
-    end
+    resources :trainings
 
     resources :skills
 
@@ -367,9 +361,7 @@ Rails.application.routes.draw do
 
     resources :time_periods, except: [:show]
 
-    resources :training_sessions do
-      get "/", as: "index", action: "index"
-
+    resources :training_sessions, only: %i[index update destroy] do
       member { patch "update" }
     end
 
@@ -582,7 +574,6 @@ Rails.application.routes.draw do
   get '/learning_area/s/:shortcut', to: 'learning_area#show', as: :shortcut_learning_area
   resources :learning_area do
     collection do
-      get :open_modal
       put :reorder
       get 'subskill/:subskill', to: 'learning_area#subskill', as: :subskill
     end
