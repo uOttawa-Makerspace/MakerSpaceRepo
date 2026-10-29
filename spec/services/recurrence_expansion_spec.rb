@@ -94,6 +94,16 @@ RSpec.describe RecurrenceExpansion do
     end
   end
 
+  it "does not modify the parsed rule (a cached rule keeps its COUNT)" do
+    cached = IceCube::Rule.from_ical("FREQ=DAILY;COUNT=3")
+    allow(IceCube::Rule).to receive(:from_ical).and_return(cached)
+    expected = %w[2026-10-31T01:30:00-04:00 2026-11-01T01:30:00-04:00 2026-11-02T01:30:00-05:00]
+    2.times do
+      expect(starts("RRULE:FREQ=DAILY;COUNT=3", local(2026, 10, 31, 1, 30), local(2026, 10, 1), local(2026, 12, 1))).to eq(expected)
+    end
+    expect(cached.occurrence_count).to eq(3)
+  end
+
   it "still stops at the limit and reports truncation" do
     result = described_class.occurrences("RRULE:FREQ=DAILY", local(2026, 10, 25, 1, 30), local(2026, 10, 25), local(2026, 12, 1), 3)
     expect(result.occurrences.map(&:iso8601)).to eq(%w[2026-10-25T01:30:00-04:00 2026-10-26T01:30:00-04:00 2026-10-27T01:30:00-04:00])

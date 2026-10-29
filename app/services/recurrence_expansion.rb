@@ -61,7 +61,8 @@ module RecurrenceExpansion
   # stays lazy: the caller's first(limit + 1) stops the walk inside the window.
   def wall_clock_occurrences(rule, start_time, from, to)
     count = rule.occurrence_count
-    rule.count(nil) if count
+    # A copy without the COUNT: the parsed rule itself is left untouched.
+    rule = IceCube::Rule.from_hash(rule.to_hash.except(:count)) if count
     times = enumerate(rule, start_time, count ? start_time : from, to)
             .reject { |time| repeated_hour_duplicate?(time, start_time) }
     times = times.take(count) if count
