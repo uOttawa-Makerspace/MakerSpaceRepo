@@ -25,7 +25,7 @@ require "rails_helper"
 #   - color: one of the SubSpaceBooking::COLOR_LEGEND hexes
 #   - only APPROVED + PENDING rows appear (DECLINED filtered out)
 
-RSpec.describe "Bookings feed JSON contract", type: :request do
+RSpec.describe "Bookings feed JSON contract", :booking_clock, type: :request do
   before do
     @pending_status = create(:booking_status, :pending)
     @approved_status = create(:booking_status, :approved)

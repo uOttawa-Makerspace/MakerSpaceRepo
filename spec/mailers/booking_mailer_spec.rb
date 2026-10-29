@@ -6,7 +6,7 @@ require "rails_helper"
 # the mailer returns without calling `mail` (a silent no-op) when it has no
 # recipient, which is pinned as an empty delivery list.
 
-RSpec.describe BookingMailer, type: :mailer do
+RSpec.describe BookingMailer, :booking_clock, type: :mailer do
   let(:managed_space) { create(:space, :with_space_managers) }
   let(:booker) { create(:user, :regular_user, name: "Pat Booker") }
   let(:room) { create(:sub_space, space: managed_space, approval_required: true, name: "Laser Room") }

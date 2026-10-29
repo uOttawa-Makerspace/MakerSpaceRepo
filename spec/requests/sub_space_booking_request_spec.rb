@@ -17,7 +17,7 @@ require "rails_helper"
 #    pinned via raw SQL (::text) to avoid TZ re-normalization.
 #  - Known warts are PINNED, not fixed (see doc/architecture.md §5.3.1 plan).
 
-RSpec.describe "Sub Space Bookings (HTTP contract)", type: :request do
+RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :request do
   before do
     @pending_status = create(:booking_status, :pending)
     @approved_status = create(:booking_status, :approved)

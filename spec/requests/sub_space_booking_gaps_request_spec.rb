@@ -9,7 +9,7 @@ require "rails_helper"
 #
 # All mails are asserted by DELIVERED outcome (recipient + subject).
 
-RSpec.describe "Sub space booking gaps", type: :request do
+RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
   before do
     @pending_status = create(:booking_status, :pending)
     @approved_status = create(:booking_status, :approved)
@@ -584,8 +584,9 @@ RSpec.describe "Sub space booking gaps", type: :request do
     end
 
     describe "weekly quota" do
-      # Wednesday 2027-04-07; the quota window is the server's current week.
-      let(:wednesday) { Time.zone.local(2027, 4, 7, 12, 0) }
+      # Wednesday 2027-04-07, 08:00 Toronto (12:00 UTC, the same date): early
+      # enough that the 10:00-14:00 moves below do not start in the past (D-B18).
+      let(:wednesday) { Time.zone.local(2027, 4, 7, 8, 0) }
       let(:capped) { create(:sub_space, space: space, maximum_booking_hours_per_week: 3) }
 
       def week_booking(owner, day, from, to, **attrs)

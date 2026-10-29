@@ -231,6 +231,10 @@ en:
               too_long: "Maximum of %{count} characters."
             read_and_accepted_waiver_form:
               inclusion: "You must accept the terms of the waiver."
+        sub_space_booking:
+          attributes:
+            start_time:
+              in_the_past: "cannot be in the past. Pick a start time from now on."
       messages:
         blank: "This field is required."
         inclusion: "Selection is not valid."

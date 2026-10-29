@@ -5,7 +5,7 @@ require "rails_helper"
 # Chunk 18 (carried over from chunk 11): GoogleCalendar::EventProcessor, the
 # per-event half of the Google Calendar -> SubSpaceBooking sync. Events are real
 # Google::Apis::CalendarV3::Event objects; there is nothing to stub (no I/O).
-RSpec.describe GoogleCalendar::EventProcessor do
+RSpec.describe GoogleCalendar::EventProcessor, :booking_clock do
   include Chunk18GoogleHelpers
 
   let!(:approved) { create(:booking_status, :approved) }
@@ -44,6 +44,15 @@ RSpec.describe GoogleCalendar::EventProcessor do
       )
       expect(booking.sub_space_booking_status.booking_status).to eq(approved)
       expect(booking.sub_space_booking_status_id).to eq(booking.sub_space_booking_status.id)
+    end
+
+    # D-B18: the past-date rule is for bookings made in the app. A full sync
+    # lists past events too, and the mirror keeps them.
+    it "mirrors an event that is already in the past" do
+      described_class.process(c18_gcal_event(start_at: 1.week.ago.utc, end_at: 1.week.ago.utc + 1.hour))
+      booking = booking_for("evt-1")
+      expect(booking).to be_persisted
+      expect(booking.sub_space_booking_status.booking_status).to eq(approved)
     end
 
     it "defaults a blank summary/description to 'Google Calendar Event' / 'No description'" do
