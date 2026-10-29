@@ -131,7 +131,7 @@ RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
         # WART(D-E2E02): the "Indefinite" box starts checked for a request with
         # no end date, so a plain "Assign Now" makes an indefinite rental.
         expect(page).to have_checked_field("Indefinite")
-        uncheck "Indefinite"
+        uncheck_and_confirm "Indefinite"
         accept_confirm { click_button "Assign Now" }
       end
       expect(page).to have_text("Locker rental updated")
