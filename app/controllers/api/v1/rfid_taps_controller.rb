@@ -6,11 +6,14 @@ module Api
     # the legacy device endpoint (POST /rfid/card_number with a registered MAC).
     class RfidTapsController < BaseController
       before_action :require_staff!
-      # Same budgets as RfidController (D-EQ03): 60 taps/min per staff user and a
-      # coarse 600/min per IP. After the auth filter, so guests do not count.
-      rate_limit to: 60, within: 1.minute, only: :create, scope: "api-rfid-tap", name: "user",
-                 by: -> { current_user.id }, with: :rate_limited
-      rate_limit to: 600, within: 1.minute, only: :create, scope: "api-rfid-tap", name: "ip",
+      # The SAME budgets as RfidController#card_number (D-EQ03), counted under the
+      # same cache keys (scope "rfid", names "tap" / "tap-ip"; keep in step with
+      # RfidController): 60 taps/min per staff user and 600/min per IP, shared with
+      # the legacy staff tap so a user cannot get 60 on each. After the auth filter,
+      # so guests do not count.
+      rate_limit to: 60, within: 1.minute, only: :create, scope: "rfid", name: "tap",
+                 by: -> { "staff:#{current_user.id}" }, with: :rate_limited
+      rate_limit to: 600, within: 1.minute, only: :create, scope: "rfid", name: "tap-ip",
                  by: -> { request.remote_ip }, with: :rate_limited
 
       def create

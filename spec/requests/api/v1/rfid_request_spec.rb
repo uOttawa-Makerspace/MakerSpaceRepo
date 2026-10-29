@@ -297,6 +297,9 @@ RSpec.describe "/api/v1 RFID", type: :request do
     end
 
     describe "rate limit" do
+      # (An unlinked card keeps the taps cheap: no lab sessions or broadcasts.)
+      let(:loose) { create(:rfid, user: nil, mac_address: nil) }
+
       it "429s the 61st tap in a minute, per staff user, and does not count guests" do
         counts = Hash.new(0)
         allow(Api::V1::RfidTapsController.cache_store).to receive(:increment) { |key, *| counts[key] += 1 }
@@ -309,6 +312,31 @@ RSpec.describe "/api/v1 RFID", type: :request do
         expect(error["code"]).to eq("rate_limited")
         tap(as: admin)
         expect(response).to have_http_status(:ok)
+      end
+
+      it "shares the per-user budget with the legacy staff tap on /rfid/card_number" do
+        counts = Hash.new(0)
+        allow(Api::V1::RfidTapsController.cache_store).to receive(:increment) { |key, *| counts[key] += 1 }
+        payload = { card_number: loose.card_number, space_id: space_a.id }
+        legacy = -> { post "/rfid/card_number", params: { rfid: loose.card_number, space_id: space_a.id }.to_json, headers: json_headers.merge("Authorization" => "Bearer #{staff.token}") }
+        40.times { legacy.call }
+        expect(response).not_to have_http_status(:too_many_requests)
+        20.times { tap(payload) }
+        expect(response).to have_http_status(:unprocessable_content)
+        tap(payload)
+        expect(response).to have_http_status(:too_many_requests)
+        expect(error["code"]).to eq("rate_limited")
+        legacy.call
+        expect(response).to have_http_status(:too_many_requests)
+        expect(counts.keys).to include("rate-limit:rfid:tap:staff:#{staff.id}", "rate-limit:rfid:tap-ip:127.0.0.1")
+      end
+
+      it "shares the per-IP budget with the legacy endpoint" do
+        counts = Hash.new(0)
+        allow(Api::V1::RfidTapsController.cache_store).to receive(:increment) { |key, *| counts[key] += 1 }
+        counts["rate-limit:rfid:tap-ip:127.0.0.1"] = 600
+        tap({ card_number: loose.card_number, space_id: space_a.id })
+        expect(response).to have_http_status(:too_many_requests)
       end
     end
   end
