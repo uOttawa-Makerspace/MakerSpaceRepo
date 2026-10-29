@@ -135,4 +135,50 @@ RSpec.describe "GET /api/v1/spaces/:id/shifts", type: :request do
     expect(response).to have_http_status(:unprocessable_content)
     expect(error["fields"]).to have_key("user_id")
   end
+
+  describe "runaway recurrence rules" do
+    let(:wide) { { start: t0.iso8601, end: (t0 + 100.days).iso8601 } }
+
+    def timed
+      t = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      yield
+      Process.clock_gettime(Process::CLOCK_MONOTONIC) - t
+    end
+
+    %w[MINUTELY SECONDLY].each do |freq|
+      it "caps a FREQ=#{freq} event per event, quickly, and flags the truncation" do
+        shift(recurrence_rule: "FREQ=#{freq}")
+        elapsed = timed { shifts(wide) }
+        expect(response).to have_http_status(:ok)
+        expect(body.size).to eq(500)
+        expect(response.headers["X-Truncated"]).to eq("true")
+        expect(body.first.keys).to eq(%w[id title start end allDay extendedProps])
+        expect(elapsed).to be < 2
+      end
+    end
+
+    it "bounds the cost of a sub-hourly rule whose DTSTART is far in the past" do
+      shift(recurrence_rule: "FREQ=MINUTELY", start_time: t0 - 2.years, end_time: t0 - 2.years + 1.hour)
+      elapsed = timed { shifts({ start: t0.iso8601, end: (t0 + 1.day).iso8601 }) }
+      expect(body.size).to eq(500)
+      expect(elapsed).to be < 2
+    end
+
+    it "caps the whole response across events and keeps the earliest first" do
+      stub_const("Api::V1::ShiftEventSerializer::MAX_ITEMS", 12)
+      stub_const("Api::V1::ShiftEventSerializer::MAX_OCCURRENCES_PER_EVENT", 5)
+      3.times { |i| shift(recurrence_rule: "FREQ=HOURLY", start_time: t0 + i.minutes) }
+      shifts(wide)
+      expect(body.size).to eq(12)
+      expect(response.headers["X-Truncated"]).to eq("true")
+    end
+
+    it "sends no X-Truncated header and keeps all weekly/daily occurrences otherwise" do
+      shift(recurrence_rule: "FREQ=WEEKLY;BYDAY=MO", start_time: t0, end_time: t0 + 1.hour)
+      shift(recurrence_rule: "FREQ=DAILY;COUNT=3", start_time: t0, end_time: t0 + 1.hour)
+      shifts(window.merge(end: (t0 + 27.days).iso8601))
+      expect(response.headers).not_to have_key("X-Truncated")
+      expect(body.size).to eq(4 + 3)
+    end
+  end
 end

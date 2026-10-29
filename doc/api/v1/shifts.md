@@ -17,6 +17,7 @@ The data is the published (non-draft) `events` of `event_type = "shift"` that ad
                        "background": "linear-gradient(to right, #ff0000 0.0%, #ff0000 50.0%, #3788d8 50.0%, #3788d8 100.0%);" } } ]
 ```
 - A one-off event is listed only when it lies fully inside `[start, end]`. A recurring event (`recurrence_rule`) is expanded to the occurrences that start in the window, with ids `event-<id>-<unix start>`.
+- Work is capped: at most 500 occurrences per recurring event and 2000 items per response (recurrence rules are admin-entered and unvalidated, e.g. `FREQ=MINUTELY`). Past a cap the occurrences found so far are returned (earliest first) and the response carries the header `X-Truncated: true`; the body shape does not change. The header is absent when nothing was cut.
 - `background` is `#3788d8` for an unassigned shift, otherwise a gradient of the assignees' space colours (`staff_spaces.color`, default `#3788d8`).
 - Only the fields the app reads are sent: no `name`, `draft`, `hasCurrentUser`, and no email or other user column (assignee display names appear in `title`).
 

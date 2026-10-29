@@ -14,10 +14,22 @@ module Api
     # in the legacy; no email or other user column is sent.
     module ShiftEventSerializer
       DEFAULT_COLOR = "#3788d8"
+      # A recurrence rule is admin-entered and unvalidated (FREQ=MINUTELY gives
+      # 144k occurrences in 100 days), so the work is bounded: occurrences are
+      # enumerated lazily and enumeration stops at these caps.
+      MAX_OCCURRENCES_PER_EVENT = 500
+      MAX_ITEMS = 2000
+
+      Result = Struct.new(:items, :truncated)
 
       module_function
 
-      def call(space:, from:, to:, user_id: nil)
+      def call(**)
+        result(**).items
+      end
+
+      # Same as `call`, but also says whether a cap cut the response short.
+      def result(space:, from:, to:, user_id: nil)
         events = Event.where(space_id: space.id, draft: false, event_type: "shift")
                       .where("((events.recurrence_rule IS NULL OR events.recurrence_rule = '') AND events.start_time >= :from AND events.end_time <= :to) " \
                              "OR (events.recurrence_rule <> '' AND events.start_time < :to)", from: from, to: to)
@@ -25,27 +37,41 @@ module Api
         events = events.includes(event_assignments: :user).order(:start_time, :id)
         colors = StaffSpace.where(space_id: space.id).pluck(:user_id, :color).to_h
 
-        events.flat_map do |event|
+        items = []
+        truncated = false
+        events.each do |event|
+          if items.size >= MAX_ITEMS
+            truncated = true
+            break
+          end
           if event.recurrence_rule.present?
-            expand(event, from, to, colors)
+            room = MAX_ITEMS - items.size
+            found = expand(event, from, to, colors, [room, MAX_OCCURRENCES_PER_EVENT].min)
+            truncated ||= found.truncated
+            items.concat(found.items)
           else
-            [format(event, colors)]
+            items << format(event, colors)
           end
         end
+        Result.new(items, truncated)
       end
 
-      def expand(event, from, to, colors)
+      def expand(event, from, to, colors, limit = MAX_OCCURRENCES_PER_EVENT)
         rule_line = event.recurrence_rule.lines.find { |l| l.start_with?("RRULE:") } ||
                     (event.recurrence_rule.include?("RRULE:") ? event.recurrence_rule : "RRULE:#{event.recurrence_rule}")
         schedule = IceCube::Schedule.new(event.start_time)
         schedule.add_recurrence_rule(IceCube::Rule.from_ical(rule_line.gsub("RRULE:", "").strip))
         duration = event.end_time - event.start_time
-        schedule.occurrences_between(from, to).map do |occ|
+        # Lazy: stops after limit + 1 occurrences (the extra one only detects truncation).
+        # (enumerate_occurrences is private in IceCube but is the only variant taking a closing time.)
+        occs = schedule.send(:enumerate_occurrences, from, to).lazy.first(limit + 1)
+        items = occs.first(limit).map do |occ|
           format(event, colors, occ, occ + duration).merge(id: "event-#{event.id}-#{occ.to_i}")
         end
+        Result.new(items, occs.size > limit)
       rescue StandardError
         # A rule IceCube cannot parse: show the event once if it is inside the window (legacy behaviour).
-        event.start_time >= from && event.end_time <= to ? [format(event, colors)] : []
+        Result.new(event.start_time >= from && event.end_time <= to ? [format(event, colors)] : [], false)
       end
 
       def format(event, colors, start_time = event.start_time, end_time = event.end_time)

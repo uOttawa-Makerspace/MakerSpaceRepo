@@ -25,7 +25,9 @@ module Api
         end
         return render_error(:validation_failed, "Validation failed", status: :unprocessable_content, fields: errors) if errors.any?
 
-        render json: ShiftEventSerializer.call(space: space, from: from, to: to, user_id: user_id)
+        result = ShiftEventSerializer.result(space: space, from: from, to: to, user_id: user_id)
+        response.set_header("X-Truncated", "true") if result.truncated
+        render json: result.items
       end
 
       private
