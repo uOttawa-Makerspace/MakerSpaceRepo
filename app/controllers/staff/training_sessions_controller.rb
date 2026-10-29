@@ -135,7 +135,8 @@ class Staff::TrainingSessionsController < StaffDashboardController
                           else
                             ""
                           end
-                        )
+                        ) +
+                        (result.self_skipped ? " (you can't certify yourself)" : "")
       end
       format.json { render json: { certified: !error } }
     end

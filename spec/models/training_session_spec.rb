@@ -179,4 +179,41 @@ RSpec.describe TrainingSession, type: :model do
       expect(TrainingSession.joins(:training).filter_by_attribute("search=#{a.training.name_en.tr(' ', '+')}")).to eq([a])
     end
   end
+
+  describe "#certify_trainees! and the instructor" do
+    let(:instructor) { create(:user, :staff) }
+    let(:space) { create(:space) }
+    let(:training) { create(:training, spaces: [space]) }
+    let(:student) { create(:user, :regular_user) }
+    let(:session) { create(:training_session, user: instructor, training: training, space: space, level: "Advanced") }
+
+    it "never certifies the instructor, certifies the other trainees and flags self_skipped" do
+      session.users << [instructor, student]
+      result = nil
+      expect { result = session.certify_trainees! }.to change(Certification, :count).by(1)
+      expect(instructor.certifications.count).to eq(0)
+      expect(student.certifications.pluck(:training_session_id, :level)).to eq([[session.id, "Advanced"]])
+      expect(result.self_skipped).to be(true)
+      expect(result.failed).to be_empty
+      expect(result.duplicates).to eq(0)
+      expect(result.certified?).to be(true)
+    end
+
+    it "applies to an admin instructor too" do
+      admin = create(:user, :admin)
+      s = create(:training_session, user: admin, training: training, space: space, level: "Beginner")
+      s.users << [admin, student]
+      result = s.certify_trainees!
+      expect(admin.certifications.count).to eq(0)
+      expect(student.certifications.count).to eq(1)
+      expect(result.self_skipped).to be(true)
+    end
+
+    it "does not flag self_skipped when the instructor is not a trainee" do
+      session.users << student
+      result = session.certify_trainees!
+      expect(result.self_skipped).to be(false)
+      expect(student.certifications.count).to eq(1)
+    end
+  end
 end

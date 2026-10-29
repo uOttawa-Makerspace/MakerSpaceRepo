@@ -45,6 +45,8 @@ No body. Certifies every enrolled trainee at the session's level, exactly as leg
 
 200: `{ "certified": true }`. `false` when any certification failed to save (the others are kept; legacy behaviour).
 
+The session's instructor is never certified by their own session (admins included): if the instructor is among the trainees they are skipped, the other trainees are certified as usual, and the response gains `"self_skipped": true` (e.g. `{ "certified": true, "self_skipped": true }`). The key is absent otherwise. Skipping the instructor is not a failure and does not make `certified` false.
+
 | Status | `error.code` | When |
 |---|---|---|
 | 401 / 403 | `unauthenticated` / `forbidden` | No token / not staff; or staff who is not the session's instructor (admins may certify any session) |

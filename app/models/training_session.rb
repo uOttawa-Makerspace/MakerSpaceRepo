@@ -80,7 +80,7 @@ class TrainingSession < ApplicationRecord
     certifications.any?
   end
 
-  CertifyResult = Struct.new(:duplicates, :failed, keyword_init: true) do
+  CertifyResult = Struct.new(:duplicates, :failed, :self_skipped, keyword_init: true) do
     def certified? = failed.empty?
   end
 
@@ -95,12 +95,22 @@ class TrainingSession < ApplicationRecord
   # NOT all-or-nothing, as legacy: a trainee whose certification fails validation is
   # collected in `failed` and the loop carries on; everyone else stays certified. (Only an
   # exception, e.g. a database error, rolls the whole call back, because of the lock's
-  # transaction.) Who may be a trainee, and self-certification, are deliberately unrestricted.
+  # transaction.) Who may be a trainee is otherwise unrestricted (no attendance or space check).
+  #
+  # The instructor (user_id, admins included) is never certified by their own session: if they
+  # are among the trainees they are skipped and `self_skipped` is true. That is neither a
+  # failure nor a duplicate, so `certified?` is unaffected.
   def certify_trainees!
     duplicates = 0
     failed = []
+    self_skipped = false
     with_lock do
       users.each do |graduate|
+        if graduate.id == user_id
+          self_skipped = true
+          next
+        end
+
         if Certification.held_by(graduate.id, training_id, level).exists?
           duplicates += 1
           next
@@ -109,7 +119,7 @@ class TrainingSession < ApplicationRecord
         failed << graduate unless Certification.new(user_id: graduate.id, training_session_id: id, level: level).save
       end
     end
-    CertifyResult.new(duplicates: duplicates, failed: failed)
+    CertifyResult.new(duplicates: duplicates, failed: failed, self_skipped: self_skipped)
   end
 
   def levels
