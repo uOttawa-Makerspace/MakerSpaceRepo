@@ -13,8 +13,8 @@ RSpec.describe BookingMailer, type: :mailer do
   let(:booking) do
     create(:sub_space_booking, sub_space: room, user: booker, name: "Robot Club",
                                description: "Weekly build",
-                               start_time: DateTime.parse("2027-03-03 10:00"),
-                               end_time: DateTime.parse("2027-03-03 11:30"))
+                               start_time: Time.find_zone("America/Toronto").local(2027, 3, 3, 10, 0),
+                               end_time: Time.find_zone("America/Toronto").local(2027, 3, 3, 11, 30))
   end
 
   before do
@@ -41,7 +41,7 @@ RSpec.describe BookingMailer, type: :mailer do
       # WART(D-B34): the text names the BOOKING title, not the booker
       expect(mail.body.encoded).to include(
         "A booking has been made in Laser Room by Robot Club for Weekly build on " \
-        "#{booking.start_time.to_formatted_s(:long)} to #{booking.end_time.to_formatted_s(:long)}. " \
+        "March 03, 2027 10:00 to March 03, 2027 11:30. " \
         "Please check the Booking Admin Panel to approve or decline this booking."
       )
       expect(mail.body.encoded).not_to include("Pat Booker")
@@ -79,6 +79,7 @@ RSpec.describe BookingMailer, type: :mailer do
         "A booking has been made and automatically approved in Laser Room by Robot Club for Weekly build"
       )
       expect(mail.body.encoded).to include("go to the admin space page")
+      expect(mail.body.encoded).to include("on March 03, 2027 10:00 to March 03, 2027 11:30")
     end
 
     it "sends nothing when the space has no managers" do
@@ -97,7 +98,7 @@ RSpec.describe BookingMailer, type: :mailer do
       expect(mail.subject).to eq("Booking approved")
       expect(mail.body.encoded).to include(
         "Your booking in Laser Room for Weekly build on " \
-        "#{booking.start_time.to_formatted_s(:long)} to #{booking.end_time.to_formatted_s(:long)} has been approved."
+        "March 03, 2027 10:00 to March 03, 2027 11:30 has been approved."
       )
     end
 
