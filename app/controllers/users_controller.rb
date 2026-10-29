@@ -331,9 +331,9 @@ class UsersController < SessionsController
   end
 
   # Private repositories/makes on a profile are visible only to the profile
-  # owner and admins (D-C59).
+  # owner, staff and admins (D-C59, D-C60; staff? includes admin).
   def sees_private_repos?(repo_user)
-    @user == repo_user || (@user && @user.admin?)
+    @user == repo_user || (@user && @user.staff?)
   end
   private :sees_private_repos?
 
