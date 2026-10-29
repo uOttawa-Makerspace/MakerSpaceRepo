@@ -131,7 +131,7 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       end
     end
 
-    it "private repos are hidden from non-owners and shown to the owner and admin" do
+    it "private repos are hidden from non-owners and shown to the owner, staff and admin" do
       repo = create(:repository, :private)
       repo.users << user
       repos = -> { controller.instance_variable_get(:@repositories).to_a }
@@ -143,16 +143,20 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       login!(user)
       get user_path(user.username)
       expect(repos.call).to eq([repo])
+      login!(staff)
+      get user_path(user.username)
+      expect(repos.call).to eq([repo])
       login!(admin)
       get user_path(user.username)
       expect(repos.call).to eq([repo])
     end
 
-    it "staff (non-admin) does not see another user's private repos" do
-      create(:repository, :private).users << user
+    it "staff (non-admin) sees another user's private repos (D-C60)" do
+      repo = create(:repository, :private)
+      repo.users << user
       login!(staff)
       get user_path(user.username)
-      expect(controller.instance_variable_get(:@repositories).to_a).to eq([])
+      expect(controller.instance_variable_get(:@repositories).to_a).to eq([repo])
     end
   end
 
@@ -696,7 +700,12 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       expect(makes_count).to eq("1")
     end
 
-    it "shows the private make to its owner and to admins" do
+    it "shows the private make to its owner, staff and admins" do
+      login!(staff)
+      get user_path(user.username, show: :makes)
+      expect(response.body).to include("Public Make", "Secret Make Title")
+      expect(makes_count).to eq("2")
+
       login!(user)
       get user_path(user.username, show: :makes)
       expect(response.body).to include("Public Make", "Secret Make Title")

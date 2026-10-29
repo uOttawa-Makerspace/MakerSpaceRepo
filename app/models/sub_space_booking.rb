@@ -11,6 +11,15 @@ class SubSpaceBooking < ApplicationRecord
   validates :end_time, presence: true
   validate :end_time_after_start_time
 
+  # D-B54: the one overlap rule. Exact half-open intersection of [start, end):
+  # back-to-back bookings do not overlap, any positive overlap does. Every
+  # conflict check goes through here so the paths cannot diverge.
+  scope :overlapping,
+        lambda { |start_time, end_time|
+          where("(sub_space_bookings.start_time, sub_space_bookings.end_time) OVERLAPS (?, ?)",
+                start_time, end_time)
+        }
+
   # FIXME: THIS DOESNT REALLY WORK FOR ICS TO MAKERROOM AND BREAKS THE GCAL INTEGRATION
   # before_save :upsert_google_booking,
   #   if: ->(sub_space_booking) {[10, 11].include?(sub_space_booking.sub_space_id)}
