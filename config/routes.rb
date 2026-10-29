@@ -38,6 +38,9 @@ Rails.application.routes.draw do
       get "printer_issues", to: "printer_issues#index"
       patch "printer_issues/:id", to: "printer_issues#update", constraints: { id: /\d+/ }
       get "spaces/:id/shifts", to: "shifts#index", constraints: { id: /\d+/ }
+      get "design_day", to: "design_days#show", format: false
+      post "support_requests", to: "support_requests#create", format: false
+      get "contact_infos", to: "contact_infos#index", format: false
       # keep last: unknown /api/v1 paths answer with the JSON 404, not the HTML one
       match "*path", to: "base#route_not_found", via: :all
     end

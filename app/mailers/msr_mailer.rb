@@ -370,6 +370,22 @@ class MsrMailer < ApplicationMailer
     )
   end
 
+  # Anonymous /api/v1 support requests: goes to the team only. The reporter's (unverified)
+  # address is in Reply-To and the body, never To/Cc/Bcc, so this cannot relay mail to third parties.
+  def issue_email_to_team(name, email, subject, comments, app_version = nil)
+    @name = name
+    @email = email
+    @subject = subject
+    @comments = comments
+    @app_version = app_version
+
+    mail(
+      to: "uottawa.makerepo@gmail.com",
+      reply_to: @email,
+      subject: "Issue Report | #{@subject}"
+    )
+  end
+
   def send_exam(user, training_session)
     @user = user
     @training_session = training_session

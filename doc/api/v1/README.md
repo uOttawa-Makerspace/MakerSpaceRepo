@@ -1,6 +1,6 @@
 # /api/v1 conventions
 
-JSON API for the React frontends (app.makerepo.com, designday.makerepo.com). Contracts live next to this file, one per resource (`session.md`, `users.md`, `spaces.md`, `presence.md`, `rfid.md`, `training_sessions.md`, `printers.md`, `shifts.md`). The legacy HTML/JSON routes keep working until both frontends switch.
+JSON API for the React frontends (app.makerepo.com, designday.makerepo.com). Contracts live next to this file, one per resource (`session.md`, `users.md`, `spaces.md`, `presence.md`, `rfid.md`, `training_sessions.md`, `printers.md`, `shifts.md`, `design_day.md`, `support_requests.md`, `contact_infos.md`). The legacy HTML/JSON routes keep working until both frontends switch.
 
 ## Auth
 
@@ -42,6 +42,7 @@ Always JSON, always a real status:
 | 422    | Validation or missing parameter                                    | `validation_failed`, `parameter_missing`, `last_admin`            |
 | 423    | Account locked                                                     | `account_locked`                                                  |
 | 429    | Rate limited                                                       | `rate_limited`                                                    |
+| 503    | Upstream unavailable, nothing saved                                | `service_unavailable`                                             |
 
 401 responses carry `WWW-Authenticate: Bearer realm="makerepo"`.
 
