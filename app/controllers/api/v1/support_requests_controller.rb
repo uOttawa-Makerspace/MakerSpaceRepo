@@ -4,7 +4,8 @@ module Api
   module V1
     # Help form for the React app (replaces the old PUT /send_email). Public or signed in.
     # Same persistence and mail path as HelpController: a Help record (which opens the GitHub
-    # issue) and MsrMailer.issue_email (to the reporter, bcc the MakerRepo team).
+    # issue, text defanged) and MsrMailer.issue_email (signed in: to the account, bcc the MakerRepo
+    # team) or MsrMailer.issue_email_to_team (anonymous: team only, reporter in Reply-To).
     # No Turnstile (the React app cannot render it): the rate limits below are the abuse
     # control. A signed-in caller's name and email always come from the account.
     # Contract: doc/api/v1/support_requests.md.
@@ -23,6 +24,7 @@ module Api
       def create
         attrs = support_params
         help = Help.new(attrs.slice(:subject, :comments))
+        help.defang_github_text = true
         help.name = current_user&.name || attrs[:name]
         help.email = current_user&.email || attrs[:email]
 
@@ -33,8 +35,14 @@ module Api
         return render_error(:validation_failed, "Validation failed", status: :unprocessable_content, fields: errors) if errors.any?
 
         if help.save
-          MsrMailer.issue_email(help.name, help.email, help.subject, help.comments.to_plain_text,
-                                nil, attrs[:app_version].presence).deliver_later
+          version = attrs[:app_version].presence
+          text = help.comments.to_plain_text
+          if current_user
+            MsrMailer.issue_email(help.name, help.email, help.subject, text, nil, version).deliver_later
+          else
+            # Anonymous: never mail the caller-supplied address (mail relay). Team only, reporter in Reply-To.
+            MsrMailer.issue_email_to_team(help.name, help.email, help.subject, text, version).deliver_later
+          end
           render json: { status: "accepted" }, status: :accepted
         else
           # The GitHub issue could not be opened: nothing was saved or sent.

@@ -1,0 +1,25 @@
+<% content_for :preheader do %>
+    Makerepo - Issue Report Received
+<% end %>
+
+<% content_for :team_name do %>
+    The MakerRepo Team
+<% end %>
+
+<% content_for :why_received do %>
+    This report was submitted through the MakerRepo app. The reporter's address is unverified; reply to this email to answer them.
+<% end %>
+
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
+    New issue reported by <b><%= @name %></b>
+    <br />
+    <b>Contact email: </b> <%= @email %>
+    <br />
+    Subject: <b><%= @subject %></b> <br>
+    <%= @comments %>
+
+    <% if @app_version.present? %>
+        <br>
+        App Version: <%= @app_version %>
+    <% end %>
+</p>

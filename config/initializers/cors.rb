@@ -16,8 +16,8 @@ design_day_origins = [
   "https://designday.makerepo.com",
   %r{\Ahttps://([a-z0-9-]+\.)+design-day-react\.pages\.dev\z}
 ].freeze
-design_day_path = %r{\A/api/v1/design_day}
-not_design_day_path = %r{\A(?!/api/v1/design_day)}
+design_day_path = %r{\A/api/v1/design_day/?\z}
+not_design_day_path = %r{\A(?!/api/v1/design_day/?\z)}
 
 Rails.application.config.middleware.insert_before 0, Rack::Cors do
   allow do
@@ -36,7 +36,7 @@ Rails.application.config.middleware.insert_before 0, Rack::Cors do
   allow do
     origins(*cors_origins)
 
-    resource %r{\A/api/(?!v1/design_day)},
+    resource %r{\A/api/(?!v1/design_day/?\z)},
              headers: %w[Authorization Content-Type X-Refresh-Token],
              methods: %i[get post put patch delete options],
              credentials: false,

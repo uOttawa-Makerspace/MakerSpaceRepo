@@ -97,3 +97,39 @@ RSpec.describe "CORS for /api/*", type: :request do
     expect(response.headers["Access-Control-Allow-Credentials"]).to eq("true")
   end
 end
+
+# The Design Day resource matches exactly /api/v1/design_day (optional trailing slash): a
+# look-alike path such as /api/v1/design_day_x is an ordinary /api path.
+RSpec.describe "CORS Design Day path anchoring", type: :request do
+  let(:dd) { "https://designday.makerepo.com" }
+  let(:staff) { "https://app.makerepo.com" }
+
+  def acao = response.headers["Access-Control-Allow-Origin"]
+
+  ["/api/v1/design_day", "/api/v1/design_day/"].each do |path|
+    it "answers the Design Day origin on #{path}" do
+      get path, headers: { "Origin" => dd }
+      expect(acao).to eq(dd)
+      expect(response.headers).not_to have_key("Access-Control-Allow-Credentials")
+    end
+
+    it "does not answer the staff app on #{path}" do
+      get path, headers: { "Origin" => staff }
+      expect(acao).to be_nil
+    end
+  end
+
+  ["/api/v1/design_day_x", "/api/v1/design_dayx", "/api/v1/design_day/x"].each do |path|
+    it "treats #{path} as a normal /api path (staff app gets the /api headers, no credentials)" do
+      get path, headers: { "Origin" => staff }
+      expect(acao).to eq(staff)
+      expect(response.headers).not_to have_key("Access-Control-Allow-Credentials")
+      expect(response.headers["Access-Control-Expose-Headers"].to_s).to eq("")
+    end
+  end
+
+  it "gives an origin outside the allow-list nothing on /api/v1/design_day_x" do
+    get "/api/v1/design_day_x", headers: { "Origin" => "https://evil.example" }
+    expect(acao).to be_nil
+  end
+end

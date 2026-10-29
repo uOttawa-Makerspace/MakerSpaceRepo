@@ -29,7 +29,7 @@ RSpec.describe "POST /api/v1/support_requests", type: :request do
 
   after { Help.find_each(&:destroy) }
 
-  it "accepts an anonymous request: 202, a Help row, and the legacy support email" do
+  it "accepts an anonymous request: 202, a Help row, and one mail to the team only" do
     expect do
       perform_enqueued_jobs { post_request }
     end.to change(Help, :count).by(1).and change { deliveries.size }.by(1)
@@ -40,10 +40,36 @@ RSpec.describe "POST /api/v1/support_requests", type: :request do
     expect(Help.last.gh_issue_number).to eq("42")
 
     mail = deliveries.last
-    expect(mail.to).to eq(["seeker@example.com"])
-    expect(mail.bcc).to eq(["uottawa.makerepo@gmail.com"])
+    expect(mail.to).to eq(["uottawa.makerepo@gmail.com"])
+    expect(mail.cc).to be_blank
+    expect(mail.bcc).to be_blank
+    expect(mail.reply_to).to eq(["seeker@example.com"])
     expect(mail.subject).to eq("Issue Report | Printer will not start")
-    expect(mail.body.encoded).to include("Hello Help Seeker", "Printer will not start", "It beeps three times", "App Version: 2.4.1")
+    expect(mail.body.encoded).to include("Help Seeker", "seeker@example.com", "Printer will not start", "It beeps three times", "App Version: 2.4.1")
+  end
+
+  it "never puts an anonymous caller's address in To/Cc/Bcc (no mail relay)" do
+    perform_enqueued_jobs { post_request(payload.merge(email: "victim@example.org")) }
+    expect(deliveries.size).to eq(1)
+    mail = deliveries.last
+    expect([mail.to, mail.cc, mail.bcc].flatten.compact).to eq(["uottawa.makerepo@gmail.com"])
+    expect(mail.reply_to).to eq(["victim@example.org"])
+  end
+
+  it "defangs mentions, cross-references and HTML in the public GitHub issue (anonymous)" do
+    posted = nil
+    allow_any_instance_of(GithubIssuesService).to receive(:create_issue) do |_svc, **kw|
+      posted = kw
+      { number: 9 }
+    end
+    post_request(payload.merge(name: "Hi @org/team", subject: "See @someone and #123 now",
+                               comments: "ping @someone, fixes #123, GH-5 1 < 2 > 0 a&b"))
+    expect(response).to have_http_status(:accepted)
+    zwj = "\u200D"
+    expect(posted[:reporter]).to eq("Hi @#{zwj}org/team")
+    expect(posted[:title]).to eq("See @#{zwj}someone and ##{zwj}123 now")
+    expect(posted[:body]).to eq("ping @#{zwj}someone, fixes ##{zwj}123, GH-#{zwj}5 1 &lt; 2 &gt; 0 a&amp;b")
+    expect([posted[:reporter], posted[:title], posted[:body]].join).not_to match(/@\w|#\d|GH-\d|</)
   end
 
   it "opens the GitHub issue exactly as the legacy path does" do
@@ -74,7 +100,7 @@ RSpec.describe "POST /api/v1/support_requests", type: :request do
     perform_enqueued_jobs { post_request(payload.except(:app_version).merge(gh_issue_number: "999", share_email: true, role: "admin")) }
     expect(response).to have_http_status(:accepted)
     expect(Help.last.gh_issue_number).to eq("42")
-    expect(deliveries.last.body.encoded).not_to include("App Version", "Contact email")
+    expect(deliveries.last.body.encoded).not_to include("App Version")
   end
 
   it "ignores a bad Bearer token (public endpoint)" do

@@ -17,9 +17,9 @@ Request:
 
 Unknown fields are ignored. Values must be strings (an object or array counts as missing). Fields are trimmed.
 
-When the caller is signed in, `name` and `email` are taken from the account and the posted values are ignored (they may be omitted). Anonymous callers' `email` is used as given.
+When the caller is signed in, `name` and `email` are taken from the account and the posted values are ignored (they may be omitted). Anonymous callers' `email` is used as given, but only as Reply-To and in the email body (never as a recipient).
 
-Same path as the web Help form (`HelpController#create`): a `Help` record is saved (which opens the GitHub issue) and `MsrMailer.issue_email` is queued: To the reporter's email, Bcc `uottawa.makerepo@gmail.com`, subject `Issue Report | <subject>`.
+Same path as the web Help form (`HelpController#create`): a `Help` record is saved (which opens the GitHub issue) and `MsrMailer.issue_email` is queued. Signed in: To the account email, Bcc `uottawa.makerepo@gmail.com`. Anonymous (`MsrMailer.issue_email_to_team`): To `uottawa.makerepo@gmail.com` only, Reply-To the posted email. Subject `Issue Report | <subject>`. The public GitHub issue text of API requests has `@`, `#<n>`/`GH-<n>` neutralised with a zero-width joiner and `< > &` escaped.
 
 202: `{ "status": "accepted" }`. The email is queued, not yet delivered; the body is never echoed back.
 
