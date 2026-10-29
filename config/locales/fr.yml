@@ -228,7 +228,7 @@ fr:
         inclusion: "Sélection non valide."
   sub_space_booking:
     series:
-      too_long: "Une réservation récurrente peut couvrir au plus %{days} jours et %{count} occurrences."
+      too_long: "Une réservation récurrente peut couvrir au plus %{days} jours."
       partial: "%{booked} occurrences sur %{total} réservées. Non réservées : %{failed}."
   saml:
     login:

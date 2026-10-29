@@ -506,7 +506,8 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
            } }
       expect(response.status).to eq(422)
       expect(response.parsed_body)
-        .to eq("errors" => ["TimeSlot This time slot is already booked."], "booked" => 2, "failed" => ["2027-02-17"])
+        .to eq("errors" => ["TimeSlot This time slot is already booked."], "booked" => 2, "failed" => ["2027-02-17"],
+               "summary" => "Booked 2 of 3 occurrences. Not booked: 2027-02-17.")
       walls = SubSpaceBooking.where(name: "Weekly").order(:start_time)
                              .map { |b| raw_utc_wall(b)[0..9] }
       expect(walls).to eq(["2027-02-03", "2027-02-10"])
@@ -542,7 +543,8 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       expect(response.status).to eq(422)
       expect(response.parsed_body)
         .to eq("errors" => ["TimeSlot This time slot is already booked."], "booked" => 1,
-             "failed" => %w[2027-02-10 2027-02-17])
+             "failed" => %w[2027-02-10 2027-02-17],
+             "summary" => "Booked 1 of 3 occurrences. Not booked: 2027-02-10, 2027-02-17.")
       expect(SubSpaceBooking.where(name: "Weekly").count).to eq(1)
     end
   end

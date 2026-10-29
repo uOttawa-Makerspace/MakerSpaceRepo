@@ -151,9 +151,15 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(SubSpaceBooking.where(name: %w[First Second]).count).to eq(2)
     end
 
-    it "answers an HTML-format create with an empty 204 as well" do
+    # Round 3: an HTML create has no template for the implicit render (the
+    # coordinator reports a 500 in a browser), so it redirects to the room's calendar with the notice.
+    # Flips the pin "answers an HTML-format create with an empty 204 as well".
+    it "redirects an HTML-format create to the room's calendar with the notice" do
       create_booking(subspace, as: :html)
-      expect(response).to have_http_status(:no_content)
+      expect(response).to redirect_to(
+        sub_space_booking_index_path(anchor: "booking-calendar-tab", room: subspace.id)
+      )
+      expect(flash[:notice]).to eq("Booking for #{subspace.name} created successfully.")
       expect(SubSpaceBooking.find_by!(name: "Fresh").user_id).to eq(user.id)
     end
 
@@ -287,9 +293,9 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(walls_of("Over")).to eq(%w[2027-02-03 2027-02-10 2027-02-17])
     end
 
-    # FIXED(D-B29, cap half): a series may span at most 365 days (and 60
-    # occurrences). Flips the pin "has no cap". A full year is still allowed
-    # (with the overshoot, 54 weekly occurrences).
+    # FIXED(D-B29, cap half): a series may span at most 365 days (with
+    # weekly the densest, at most 54 occurrences). Flips the pin "has no cap".
+    # A full year is still allowed (with the overshoot, 54 weekly occurrences).
     it "allows a series of exactly a year, and refuses one day more with a 422 (en and fr)" do
       post_series(name: "Year", end_on: "2028-02-03")
       expect(response).to have_http_status(:no_content)
@@ -298,7 +304,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       post_series(name: "TooLong", end_on: "2028-02-04")
       expect(response).to have_http_status(:unprocessable_content)
       expect(response.parsed_body).to eq(
-        "errors" => ["Recurring A recurring booking can span at most 365 days and 60 occurrences."]
+        "errors" => ["Recurring A recurring booking can span at most 365 days."]
       )
       expect(SubSpaceBooking.where(name: "TooLong")).to be_empty
 
@@ -309,7 +315,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
              recurring_end: "2030-02-03"
            } }
       expect(response.parsed_body["errors"]).to eq(
-        ["Recurring Une réservation récurrente peut couvrir au plus 365 jours et 60 occurrences."]
+        ["Recurring Une réservation récurrente peut couvrir au plus 365 jours."]
       )
       expect(RecurringBooking.count).to eq(1)
     end
@@ -344,7 +350,8 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       post_series(name: "NoFirst")
       expect(response).to have_http_status(:unprocessable_content)
       expect(response.parsed_body).to eq("errors" => ["TimeSlot This time slot is already booked."],
-                                         "booked" => 2, "failed" => ["2027-02-03"])
+                                         "booked" => 2, "failed" => ["2027-02-03"],
+                                         "summary" => "Booked 2 of 3 occurrences. Not booked: 2027-02-03.")
       expect(flash[:notice]).to be_nil
       expect(flash[:alert]).to eq("Booked 2 of 3 occurrences. Not booked: 2027-02-03.")
       expect(walls_of("NoFirst")).to eq(%w[2027-02-10 2027-02-17])

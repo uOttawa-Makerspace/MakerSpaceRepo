@@ -188,4 +188,30 @@ RSpec.describe "Journey: space booking", type: :system, skip_bullet: true do
     end
     expect(SubSpaceBooking.where(name: "Sneaky")).to be_empty
   end
+
+  # Round 3: a partly booked series answers 422 with booked/failed/summary.
+  # The page shows the calendar and the summary instead of a plain failure,
+  # so the user does not rebook the occurrences that exist.
+  it "a partly booked series closes the modal, refreshes the calendar and toasts the summary" do
+    second = day + 7
+    blocker = create(:sub_space_booking, sub_space: subspace, user: admin, name: "Maintenance",
+                                         description: "closed", blocking: true,
+                                         start_time: Time.zone.parse(stamp(second, 10)) + 30.minutes,
+                                         end_time: Time.zone.parse(stamp(second, 11)) + 30.minutes)
+    blocker.sub_space_booking_status.update!(booking_status: @approved_status)
+
+    as_actor(:user, allow_console: [%r{/sub_space_booking - Failed to load resource: .* 422}]) do
+      log_in_as(user)
+      open_booking_modal(day)
+      fill_booking_modal(name: "Series", description: "weekly", recurring_until: day + 14)
+      click_button "bookSave"
+      expect(page).to have_no_css("#bookModal.show", visible: :all)
+      expect(page).to have_css("#booking_toast.show")
+      expect(page).to have_css("#toast_title", text: "Booking partly done")
+      expect(page).to have_css("#toast_text",
+                               text: "Booked 2 of 3 occurrences. Not booked: #{second.iso8601}.")
+      expect(page).to have_css(".fc-event", text: "Series - weekly")
+    end
+    expect(SubSpaceBooking.where(name: "Series").count).to eq(2)
+  end
 end

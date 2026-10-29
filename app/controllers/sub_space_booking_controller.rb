@@ -251,28 +251,26 @@ class SubSpaceBookingController < SessionsController
     end
 
     if recurring
-      unless params[:sub_space_booking][:recurring_end].present? &&
-               params[:sub_space_booking][:recurring_frequency].present?
+      end_date = series_end_date # nil when missing or malformed
+      unless end_date && params[:sub_space_booking][:recurring_frequency].present?
         render json: {
                  errors: "Invalid recurring parameters"
                },
                status: :unprocessable_content
         return
       end
-      occurrences = series_occurrences(booking)
-      if series_too_long?(booking, occurrences)
-        message = I18n.t("sub_space_booking.series.too_long",
-                         days: SERIES_MAX_DAYS, count: SERIES_MAX_OCCURRENCES)
+      if end_date > booking.start_time.to_date + SERIES_MAX_DAYS.days
+        message = I18n.t("sub_space_booking.series.too_long", days: SERIES_MAX_DAYS)
         render_booking_failure(errors: ["Recurring #{message}"], alert: message)
         return
       end
-      book_series(attrs, occurrences, now)
+      book_series(attrs, series_occurrences(booking, end_date), now)
     else
       failure = book_occurrence(booking)
       if failure
         render_booking_failure(failure)
       else
-        flash[:notice] = "Booking for #{booking.sub_space.name} created successfully."
+        render_booking_success(booking.sub_space)
       end
     end
   end
@@ -307,17 +305,23 @@ class SubSpaceBookingController < SessionsController
 
     # Check the overlap and the limits against the values the model will store
     # (zoned, the user's own offsets included), not against a re-parsed copy of
-    # the raw params (D-B06). The overlap is checked in the booking's current
-    # room, as before.
-    room_id = @sub_space_booking.sub_space_id
+    # the raw params (D-B06). A blank start/end is not sent on (the stored
+    # times stay); an unparseable one leaves the time nil, and the model's
+    # presence check answers it.
     @sub_space_booking.assign_attributes(sub_space_booking_update_params)
+    times_present = @sub_space_booking.start_time.present? && @sub_space_booking.end_time.present?
 
-    if SubSpaceBooking
-         .where(sub_space_id: room_id)
-         .where(blocking: true)
-         .where.not(id: @sub_space_booking.id)
-         .overlapping(@sub_space_booking.start_time.utc, @sub_space_booking.end_time.utc)
-         .any?
+    # The overlap is checked in the room the booking ends up in, and only when
+    # the booking moves (in time or to another room): a rename must not be
+    # refused because an admin blocked the slot afterwards.
+    if times_present &&
+         (@sub_space_booking.times_changing? || @sub_space_booking.will_save_change_to_sub_space_id?) &&
+         SubSpaceBooking
+           .where(sub_space_id: @sub_space_booking.sub_space_id)
+           .where(blocking: true)
+           .where.not(id: @sub_space_booking.id)
+           .overlapping(@sub_space_booking.start_time.utc, @sub_space_booking.end_time.utc)
+           .any?
       flash[:alert] = "This time slot is already booked."
       respond_to do |format|
         format.json do
@@ -333,12 +337,12 @@ class SubSpaceBookingController < SessionsController
     end
 
     sub_space = @sub_space_booking.sub_space
-    duration = (@sub_space_booking.end_time - @sub_space_booking.start_time) / 1.hour
+    duration = times_present ? (@sub_space_booking.end_time - @sub_space_booking.start_time) / 1.hour : 0
 
     # The limits only matter when the booking's times move; renaming a booking
     # must not be blocked because a room's limits were lowered since. Minute
     # precision, the same test as the model's past-date rule.
-    times_changed = @sub_space_booking.times_changing?
+    times_changed = times_present && @sub_space_booking.times_changing?
 
     max_duration = sub_space.maximum_booking_duration
     if !max_duration.nil? && !@user.admin? && times_changed && duration > max_duration
@@ -529,42 +533,39 @@ class SubSpaceBookingController < SessionsController
     booking
   end
 
-  # A series may span at most a year and SERIES_MAX_OCCURRENCES occurrences
-  # (D-B29 cap; nothing in the UI or the code limited it before). Weekly is the
-  # densest frequency, so in practice the year is the bound that bites.
+  # A series may span at most 365 days from its first start to recurring_end
+  # (D-B29 cap; nothing in the UI or the code limited it before). With weekly
+  # as the densest frequency that is at most 54 occurrences.
   SERIES_MAX_DAYS = 365
-  SERIES_MAX_OCCURRENCES = 60
 
+  # recurring_end as a Date, or nil when it is missing or malformed.
   def series_end_date
-    Date.parse(params[:sub_space_booking][:recurring_end].to_s)
+    raw = params[:sub_space_booking][:recurring_end]
+    Date.parse(raw.to_s) if raw.present?
+  rescue Date::Error
+    nil
   end
 
-  def series_too_long?(first, occurrences)
-    series_end_date > first.start_time.to_date + SERIES_MAX_DAYS.days ||
-      occurrences.take(SERIES_MAX_OCCURRENCES + 1).size > SERIES_MAX_OCCURRENCES
-  end
-
-  # The [start, end] of every occurrence of the series, generated lazily. All
-  # derive from the first occurrence's zoned start and end and advance in
-  # Time.zone, so every occurrence keeps the first one's Toronto wall clock,
-  # across DST too. Each one advances the previous one (so a monthly series
-  # drifts after a clamped day, D-B08), and the loop runs while the previous
-  # start is before recurring_end, so a series ending mid-period overshoots it
-  # by one occurrence (D-B29).
-  def series_occurrences(first)
+  # The [start, end] of every occurrence of the series, generated lazily, once.
+  # Every start derives from the first occurrence's zoned start and advances in
+  # Time.zone, so it keeps the first one's Toronto wall clock, across DST too.
+  # Each start advances the previous one (so a monthly series drifts after a
+  # clamped day, D-B08, kept), and the loop runs while the previous start is
+  # before recurring_end, so a series ending mid-period overshoots it by one
+  # occurrence (D-B29). Each end is its start plus the first occurrence's
+  # duration, so a clamped month can never put an end before its start.
+  def series_occurrences(first, end_date)
     recurrence =
       params[:sub_space_booking][:recurring_frequency] == "weekly" ? 7.days : 1.month
-    end_date = series_end_date
     series_end = Time.zone.local(end_date.year, end_date.month, end_date.day)
+    duration = first.end_time - first.start_time
 
     Enumerator.new do |yielder|
       start_time = first.start_time
-      end_time = first.end_time
-      yielder << [start_time, end_time]
+      yielder << [start_time, start_time + duration]
       while start_time < series_end
         start_time += recurrence
-        end_time += recurrence
-        yielder << [start_time, end_time]
+        yielder << [start_time, start_time + duration]
       end
     end
   end
@@ -597,7 +598,7 @@ class SubSpaceBookingController < SessionsController
       message = SubSpaceBooking.past_start_message
       render_booking_failure(errors: [message], alert: message)
     else
-      flash[:notice] = "Booking for #{last_booked.sub_space.name} created successfully."
+      render_booking_success(last_booked.sub_space)
     end
   end
 
@@ -725,10 +726,21 @@ class SubSpaceBookingController < SessionsController
     respond_to do |format|
       format.json do
         flash[:alert] = summary
-        render json: { errors: failures.first.last[:errors], booked: booked, failed: failed_dates },
+        render json: { errors: failures.first.last[:errors], booked: booked, failed: failed_dates,
+                       summary: summary },
                status: :unprocessable_content
       end
       format.html { redirect_to booking_calendar_path, alert: summary }
+    end
+  end
+
+  # JSON: an empty 204, as before (the page refetches the calendar). HTML:
+  # back to the room's calendar with the notice (there is no create template).
+  def render_booking_success(sub_space)
+    flash[:notice] = "Booking for #{sub_space.name} created successfully."
+    respond_to do |format|
+      format.json { head :no_content }
+      format.html { redirect_to booking_calendar_path }
     end
   end
 
@@ -874,6 +886,8 @@ class SubSpaceBookingController < SessionsController
   def sub_space_booking_update_params
     permitted = %i[start_time end_time name description]
     permitted += %i[sub_space_id blocking] if current_user.admin?
+    # A blank start/end means "unchanged": the stored times stay.
     params.require(:sub_space_booking).permit(*permitted)
+          .reject { |key, value| %w[start_time end_time].include?(key) && value.blank? }
   end
 end
