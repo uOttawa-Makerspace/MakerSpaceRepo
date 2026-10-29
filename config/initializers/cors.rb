@@ -15,7 +15,11 @@ cors_origins = [
 design_day_origins = [
   "https://designday.makerepo.com",
   %r{\Ahttps://([a-z0-9-]+\.)+design-day-react\.pages\.dev\z}
-].freeze
+]
+# Local development only (never production): the Design Day app runs on Create React App,
+# which uses :3000, or :3001 when this Rails server already holds :3000.
+design_day_origins += ["http://localhost:3000", "http://localhost:3001"] if Rails.env.local?
+design_day_origins.freeze
 design_day_path = %r{\A/api/v1/design_day/?\z}
 not_design_day_path = %r{\A(?!/api/v1/design_day/?\z)}
 
