@@ -210,7 +210,6 @@ Rails.application.routes.draw do
     get "category"
     get "equipment"
     get "certification"
-    get "comment"
   end
 
   # SESSION

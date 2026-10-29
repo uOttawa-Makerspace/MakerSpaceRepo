@@ -15,7 +15,6 @@ RSpec.describe "Page crawl (request level)", type: :request, skip_bullet: true d
   ALL = PageCrawl::ROLES
   KNOWN_500 = {
     "/memberships" => ALL.index_with { "D-S22" }, # no day-pass membership tier row in the world
-    "/template/comment" => ALL.index_with { "D-CRAWL01" },
     "/printers/last_user_assigned_to_printer" => %i[staff admin].index_with { "D-CRAWL05" },
     "/staff/my_calendar" => %i[staff admin].index_with { "D-CRAWL06" },
     "/staff_dashboard/refresh_tables" => %i[staff admin].index_with { "D-CRAWL07" },
