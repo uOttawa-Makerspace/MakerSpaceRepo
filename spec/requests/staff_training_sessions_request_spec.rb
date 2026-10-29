@@ -326,6 +326,29 @@ RSpec.describe "Staff training sessions", type: :request do
         expect(Exam.where(user: student)).to be_empty
         expect { post certify_trainees_staff_training_session_path(record) }.to change { student.certifications.count }.by(1)
       end
+
+      context "when the instructor is among the trainees" do
+        before { record.users << trainer }
+
+        it "certifies the others but not the instructor, and says so in the notice" do
+          expect { post certify_trainees_staff_training_session_path(record) }.to change(Certification, :count).by(2)
+          expect(trainer.certifications.count).to eq(0)
+          expect(student.certifications.count).to eq(1)
+          expect(flash[:notice]).to eq("Training Session Completed Successfully (you can't certify yourself)")
+          expect(flash[:alert]).to be_nil
+        end
+
+        it "combines the duplicate and self-skip notes" do
+          post certify_trainees_staff_training_session_path(record)
+          post certify_trainees_staff_training_session_path(record)
+          expect(flash[:notice]).to eq("Training Session Completed Successfully (2 duplicates skipped) (you can't certify yourself)")
+        end
+
+        it "answers JSON certified true" do
+          post certify_trainees_staff_training_session_path(record, format: :json)
+          expect(JSON.parse(response.body)).to eq("certified" => true)
+        end
+      end
     end
 
     describe "DELETE revoke_certification" do

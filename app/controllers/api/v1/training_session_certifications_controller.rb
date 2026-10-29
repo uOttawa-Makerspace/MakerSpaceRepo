@@ -13,8 +13,10 @@ module Api
           return render_error(:forbidden, "Not allowed", status: :forbidden)
         end
 
-        certified = session.certify_trainees!.certified?
-        render json: { certified: certified }
+        result = session.certify_trainees!
+        payload = { certified: result.certified? }
+        payload[:self_skipped] = true if result.self_skipped
+        render json: payload
       end
     end
   end

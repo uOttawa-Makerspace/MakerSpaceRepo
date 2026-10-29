@@ -234,6 +234,27 @@ RSpec.describe "/api/v1 training sessions", type: :request do
       expect(body).to eq("certified" => true)
     end
 
+    it "never certifies the instructor, adds self_skipped and keeps certified true" do
+      record.users << staff
+      expect { api_post path, as: staff }.to change(Certification, :count).by(2)
+      expect(body).to eq("certified" => true, "self_skipped" => true)
+      expect(staff.certifications.count).to eq(0)
+      expect(student.certifications.count).to eq(1)
+    end
+
+    it "does not let an admin certify themselves in a session they instruct" do
+      mine = create(:training_session, user: admin, training: training, space: space, level: "Beginner")
+      mine.users << [admin, student]
+      expect { api_post "/api/v1/training_sessions/#{mine.id}/certifications", as: admin }.to change(Certification, :count).by(1)
+      expect(body).to eq("certified" => true, "self_skipped" => true)
+      expect(admin.certifications.count).to eq(0)
+    end
+
+    it "omits self_skipped when the instructor is not a trainee" do
+      api_post path, as: staff
+      expect(body.keys).to eq(["certified"])
+    end
+
     it "answers certified false when a certification fails to save" do
       allow_any_instance_of(Certification).to receive(:save).and_return(false)
       api_post path, as: staff
