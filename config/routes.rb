@@ -33,15 +33,6 @@ Rails.application.routes.draw do
   end
 
   resources :videos, only: %i[index new create destroy]
-  get "videos/:id/download/:filename",
-      to: "videos#download",
-      constraints: {
-        filename: /.+/
-      },
-      as: "download_video"
-
-  mount StripeEvent::Engine, at: "/stripe/webhooks"
-
   resources :project_kits, only: %i[index new create destroy] do
     get :mark_delivered
     collection { get :populate_kit_users }
@@ -69,16 +60,10 @@ Rails.application.routes.draw do
   get "/saml/wiki_metadata" => "saml_idp#wiki_metadata"
   post "/saml/auth" => "saml_idp#auth"
     
-  resources :job_orders, only: %i[index show create update new destroy] do
-    get :steps
-    get :quote_modal
+  resources :job_orders, only: %i[index show create new destroy] do
     get :timeline_modal
-    get :completed_email_modal
-    get :decline_modal
-    get :comments_modal
     get :invoice
     patch :quote
-    patch :steps
     patch :user_approval
     patch :start_processing
     patch :processed
@@ -151,9 +136,9 @@ Rails.application.routes.draw do
     end
   end
   
-  resources :locker_sizes, only: [:create, :show, :update, :destroy]
+  resources :locker_sizes, only: [:create, :update, :destroy]
 
-  resources :locker_rentals do
+  resources :locker_rentals, except: %i[edit destroy] do
     member do
       patch :renew
       patch :toggle_contacted
@@ -225,7 +210,6 @@ Rails.application.routes.draw do
     get "category"
     get "equipment"
     get "certification"
-    get "comment"
   end
 
   # SESSION
@@ -359,25 +343,17 @@ Rails.application.routes.draw do
     
     resources :pi_readers, only: %i[create update]
 
-    resources :trainings do
-      collection do
-        get "skill_search"
-        get "add_skill"
-        get "skills"
-      end
-    end
+    resources :trainings
 
     resources :skills
 
     resources :drop_off_locations
 
-    resources :contact_infos
+    resources :contact_infos, except: :show
 
     resources :time_periods, except: [:show]
 
-    resources :training_sessions do
-      get "/", as: "index", action: "index"
-
+    resources :training_sessions, only: %i[index update destroy] do
       member { patch "update" }
     end
 
@@ -455,7 +431,6 @@ Rails.application.routes.draw do
         get 'utc_unavailabilities_json/:id', to: 'calendar#utc_unavailabilities_json', as: :utc_unavailabilities_json
         get 'unavailabilities_json/:id', to: 'calendar#unavailabilities_json', as: :unavailabilities_json
         get 'imported_calendars_json/:id', to: 'calendar#imported_calendars_json', as: :imported_calendars_json
-        get 'ics_to_json', to: 'calendar#ics_to_json', as: :ics_to_json 
         post :update_color
       end
     end
@@ -499,9 +474,7 @@ Rails.application.routes.draw do
         get "training_report"
       end
     end
-    resources :proficient_project_sessions, only: [:show] do
-      post "certify_participant"
-    end
+    resources :proficient_project_sessions, only: [:show]
 
     resources :my_calendar do
       collection do
@@ -591,7 +564,6 @@ Rails.application.routes.draw do
   get '/learning_area/s/:shortcut', to: 'learning_area#show', as: :shortcut_learning_area
   resources :learning_area do
     collection do
-      get :open_modal
       put :reorder
       get 'subskill/:subskill', to: 'learning_area#subskill', as: :subskill
     end
@@ -632,10 +604,6 @@ Rails.application.routes.draw do
   resources :questions do
     collection { delete :delete_individually }
     member { delete "answers/:answer_id", action: :remove_answer, as: :remove_answer }
-  end
-
-  resources :staff_availabilities, except: :show do
-    collection { get :get_availabilities }
   end
 
   resources :exams, only: %i[index create show destroy] do
@@ -689,7 +657,7 @@ Rails.application.routes.draw do
   end
 
   # :show and :update would take a space ID and use the logged in session user ID
-  resources :walk_in_safety_sheets, except: :destroy
+  resources :walk_in_safety_sheets, except: %i[new destroy]
 
   # namespace :help do
   #   get 'main', path: '/'

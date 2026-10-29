@@ -726,12 +726,6 @@ GEM
     stimulus-rails (1.3.4)
       railties (>= 6.0.0)
     stringio (3.2.0)
-    stripe (19.6.1)
-      bigdecimal
-      logger
-    stripe_event (2.15.0)
-      activesupport (>= 3.1)
-      stripe (>= 2.8, < 20)
     syntax_tree (6.3.0)
       prettier_print (>= 1.2.0)
     syntax_tree-haml (4.0.3)
@@ -896,8 +890,6 @@ DEPENDENCIES
   solargraph-rails
   solid_cable
   solid_queue (~> 1.2)
-  stripe
-  stripe_event (~> 2.3, >= 2.3.1)
   syntax_tree
   syntax_tree-haml
   syntax_tree-rbs

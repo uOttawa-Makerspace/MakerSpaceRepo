@@ -11,12 +11,6 @@ class WalkInSafetySheetsController < SessionsController
     #@signed_spaces = current_user.walk_in_safety_sheets.pluck(:space_id)
   end
 
-  def new
-    #@space = Space.find(params[:id]) # Space to sign entry for
-    @walk_in_safety_sheet =
-      WalkInSafetySheet.find_or_initialize_by(user: current_user)
-  end
-
   # This also doubles as :new because this used to be a singular route...
   def show
     # FIXME: add spaces later

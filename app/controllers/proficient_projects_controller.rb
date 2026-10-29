@@ -325,7 +325,6 @@ class ProficientProjectsController < DevelopmentProgramsController
       :description,
       :training_id,
       :level,
-      :proficient,
       :cc,
       :has_project_kit,
       :drop_off_location_id,

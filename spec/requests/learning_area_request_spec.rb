@@ -136,13 +136,12 @@ RSpec.describe "Learning area", type: :request do
     end
   end
 
-  # WART(D-T42): the open_modal route points at an action that does not exist
+  # D-T42: the open_modal route was removed; the path now falls to show with an unknown id.
   describe "GET /learning_area/open_modal" do
-    it "answers 404 (ActionNotFound) for a signed-in admin" do
+    it "answers 404 for a signed-in admin" do
       sign_in_as(:admin)
-      get open_modal_learning_area_index_path
+      get "/learning_area/open_modal"
       expect(response).to have_http_status(:not_found)
-      expect(error_text).to include("AbstractController::ActionNotFound")
     end
   end
 

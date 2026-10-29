@@ -157,20 +157,9 @@ RSpec.describe JobOrder, type: :model do
     end
   end
 
-  describe "scope .order_by_expedited" do
-    # WART(D-J21): two stacked warts (dead code):
-    #  1) the SQL interpolates `JobOption.find_by(name: "Expedited").id`
-    #     without the reference row → nil dereference;
-    #  2) even with the row, the scope joins the job_order_options association,
-    #     whose backing model class was never shipped.
-    it "raises NoMethodError on a missing 'Expedited' JobOption row" do
-      expect(JobOption.find_by(name: "Expedited")).to be_nil
-      expect { JobOrder.order_by_expedited.to_a }
-        .to raise_error(NoMethodError, /undefined method 'id' for nil/)
-    end
-
-    # WART(D-J36): the has_many :job_order_options association has no model
-    it "would still break: the joined association has no backing model class" do
+  # WART(D-J36): the has_many :job_order_options association has no model
+  describe "job_order_options association" do
+    it "has no backing model class" do
       expect { create(:job_order).job_order_options.to_a }
         .to raise_error(NameError, /Missing model class JobOrderOption/)
     end

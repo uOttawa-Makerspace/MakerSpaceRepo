@@ -15,18 +15,9 @@ RSpec.describe "Page crawl (request level)", type: :request, skip_bullet: true d
   ALL = PageCrawl::ROLES
   KNOWN_500 = {
     "/memberships" => ALL.index_with { "D-S22" }, # no day-pass membership tier row in the world
-    "/template/comment" => ALL.index_with { "D-CRAWL01" },
-    "/staff_availabilities" => ALL.index_with { "D-CRAWL02" },
-    "/staff_availabilities/get_availabilities" => ALL.index_with { "D-CRAWL02" },
-    "/staff_availabilities/new" => ALL.index_with { "D-CRAWL02" },
-    "/staff_availabilities/:id/edit" => ALL.index_with { "D-CRAWL02" },
-    "/job_orders/:job_order_id/quote_modal" => %i[staff admin].index_with { "D-CRAWL04" },
-    "/job_orders/:job_order_id/decline_modal" => %i[staff admin].index_with { "D-CRAWL04" },
-    "/job_orders/:job_order_id/comments_modal" => %i[staff admin].index_with { "D-CRAWL04" },
     "/printers/last_user_assigned_to_printer" => %i[staff admin].index_with { "D-CRAWL05" },
     "/staff/my_calendar" => %i[staff admin].index_with { "D-CRAWL06" },
     "/staff_dashboard/refresh_tables" => %i[staff admin].index_with { "D-CRAWL07" },
-    "/locker_sizes/:id" => { admin: "D-CRAWL08" },
     "/admin/uni_programs/current_programs" => { admin: "D-CRAWL09" }
   }.freeze
 

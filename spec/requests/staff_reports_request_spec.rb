@@ -45,8 +45,8 @@ RSpec.describe "Staff xlsx reports", type: :request do
       end
     end
 
-    it "has no html template: the .html variant is a 406 even for staff" do
-      # WART(D-R12): both report actions declare format.html but no present_users_report/training_report template exists, so the html request answers 406 (the page is only reachable as .xlsx)
+    it "serves only xlsx: the .html variant is a 406 even for staff" do
+      # D-R12: both report actions serve only .xlsx (the dead format.html branch was removed), so the html request answers 406
       c18_sign_in(:staff)
       get "/staff_dashboard/present_users_report"
       expect(response).to have_http_status(:not_acceptable)

@@ -4,8 +4,7 @@ require "rails_helper"
 
 # Staff::ProficientProjectSessionsController#show. StaffAreaController gates on
 # staff/admin before the action runs, so the action's own `staff?` redirect to
-# development_programs_path is unreachable. Only show exists; the nested
-# certify_participant route has no action.
+# development_programs_path is unreachable. Only show exists.
 
 RSpec.describe "Staff proficient project sessions", type: :request do
   include SpacesSpecHelpers
@@ -40,10 +39,10 @@ RSpec.describe "Staff proficient project sessions", type: :request do
     expect(response).to have_http_status(:not_found)
   end
 
-  # WART(D-SP18): the certify_participant route has no controller action: 404 for staff (a dead route).
-  it "answers 404 on the dead certify_participant route" do
+  # D-SP18: the dead certify_participant route was removed.
+  it "answers 404 on the removed certify_participant path" do
     sign_in_as(:staff)
-    post staff_proficient_project_session_certify_participant_path(pps)
+    post "/staff/proficient_project_sessions/#{pps.id}/certify_participant"
     expect(response).to have_http_status(:not_found)
   end
 end

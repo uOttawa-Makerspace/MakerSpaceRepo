@@ -54,10 +54,6 @@ class ProficientProject < ApplicationRecord
         "%#{sanitized}%",
         "%#{sanitized}%"
       )
-    elsif attribute == "price"
-      bool = true if value.eql?("Paid")
-      bool = false if value.eql?("Free")
-      where(proficient: bool)
     else
       self
     end
@@ -68,13 +64,6 @@ class ProficientProject < ApplicationRecord
     training_requirements.create(training: Training.find(training_requirements_id), level: training_requirements_level)
   end
 
-  def update_training_requirements(training_requirements_id, training_requirements_level)
-    treqs = @proficient_project.training_requirements
-    treqs.each_with_index do |treq, i|
-      treq.update(training_id: training_requirements_id[i], level: training_requirements_level[i])
-    end
-  end
-  
   def extract_urls
     URI.extract(description)
   end

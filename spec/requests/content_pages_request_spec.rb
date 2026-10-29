@@ -668,13 +668,10 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(response.body).not_to include("<html")
     end
 
-    # WART(D-P17): the comment fragment calls vote_path, which no longer exists, so GET /template/comment always answers 500
-    it "answers 500 for the comment fragment, with or without params (dead vote_path helper)" do
-      get template_comment_path(comment_id: 5, username: "pat", rep: "3", content: "<b>ok</b>",
-                                user_url: "http://example.test", created_at: 2.hours.ago.iso8601)
-      expect(response).to have_http_status(:internal_server_error)
-      get template_comment_path
-      expect(response).to have_http_status(:internal_server_error)
+    # D-P17 / D-CRAWL01: the comment fragment called the removed vote_path helper (always 500); route and view removed.
+    it "has no comment fragment route (404)" do
+      get "/template/comment"
+      expect(response).to have_http_status(:not_found)
     end
   end
 end

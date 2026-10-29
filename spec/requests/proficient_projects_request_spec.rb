@@ -191,11 +191,9 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
         expect(pp.id).not_to eq(999_999)
       end
 
-      it "500s when the permitted-but-nonexistent :proficient attribute is sent (D-C32)" do
-        # WART(D-C32): :proficient is in proficient_project_params but the column no longer exists
+      it "ignores the retired :proficient key (the column is gone and the key is no longer permitted) (D-C32)" do
         expect { post proficient_projects_path, params: project_params(proficient: true) }
-          .not_to change(ProficientProject, :count)
-        expect(response).to have_http_status(:internal_server_error)
+          .to change(ProficientProject, :count).by(1)
       end
     end
 

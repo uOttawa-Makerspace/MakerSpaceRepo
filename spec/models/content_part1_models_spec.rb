@@ -333,18 +333,12 @@ RSpec.describe "Content models (part 1 characterization)" do
       expect(pp.extract_valid_urls).to eq(%w[https://wiki.makerepo.com/a https://x.wiki.makerepo.com/c])
     end
 
-    it "filter_by_attribute price: the 'proficient' column does not exist, so the filter raises (D-C32)" do
-      expect { ProficientProject.filter_by_attribute("price", "Paid").to_a }.to raise_error(ActiveRecord::StatementInvalid)
+    it "filter_by_attribute price is no longer a filter (the proficient column is gone): it returns the class unchanged" do
+      expect(ProficientProject.filter_by_attribute("price", "Paid")).to eq(ProficientProject)
     end
 
     it "filter_by_attribute with an unknown attribute returns the class unchanged" do
       expect(ProficientProject.filter_by_attribute("zzz", "x")).to eq(ProficientProject)
-    end
-
-    it "update_training_requirements references an undefined ivar and raises (dead code) (D-C55)" do
-      pp = create(:proficient_project)
-      # WART(D-C55): uses @proficient_project (a controller ivar) inside the model
-      expect { pp.update_training_requirements([1], ["Beginner"]) }.to raise_error(NoMethodError)
     end
 
     it "training_status is the highest certification level the user holds for the training, defaulting to Beginner" do

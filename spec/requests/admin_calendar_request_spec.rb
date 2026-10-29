@@ -15,7 +15,7 @@ require "rails_helper"
 #     readback is evaluated as UTC then re-zoned)
 #   - update_color only flashes (no render/redirect) → the response collapses
 #     to 204 No Content even when data changed (wart)
-#   - ics_to_json has a route but NO action → 404 (wart)
+#   - ics_to_json route was removed (D-B13) → 404
 
 RSpec.describe "Admin calendar contract", type: :request do
   before do
@@ -187,11 +187,11 @@ RSpec.describe "Admin calendar contract", type: :request do
     end
   end
 
-  # WART(D-B13): the route exists, the controller action does not — any request
-  # raises AbstractController::ActionNotFound → 404.
-  it "ics_to_json 404s (route without controller action)" do
+  # D-B13: the dead ics_to_json route was removed; the path now falls to the
+  # resource's show route, which has no action → 404.
+  it "ics_to_json 404s (no route, no action)" do
     log_in!(admin)
-    get ics_to_json_admin_calendar_index_path
+    get "/admin/calendar/ics_to_json"
     expect(response.status).to eq(404)
   end
 

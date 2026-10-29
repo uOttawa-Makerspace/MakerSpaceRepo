@@ -26,17 +26,6 @@ class JobOrder < ApplicationRecord
             .group("job_orders.id")
         }
 
-  scope :order_by_expedited,
-        -> {
-          left_joins(:job_order_options).order(
-            Arel.sql(
-              "
-        job_option_id = '#{JobOption.find_by(name: "Expedited").id}'
-      "
-            )
-          ).group("job_order_options.job_option_id")
-        }
-
   scope :not_deleted, -> { where(is_deleted: false) }
 
   # D-J11: emailed approve / pay links. Purpose-scoped (generates_token_for),
@@ -144,39 +133,6 @@ class JobOrder < ApplicationRecord
 
   def allow_edit?
     [JobStatus::DRAFT, JobStatus::STAFF_APPROVAL].include?(job_order_statuses.last.job_status)
-  end
-
-  def add_options(params)
-    success = true
-
-    params.permit!
-
-    ids = []
-
-    params.to_h.each do |key, value|
-      next unless key.include?("options_id_")
-      ids << value
-      if job_order_options.where(job_option_id: value).present?
-        if JobOption.find(value).need_files? && !params["options_keep_file_" + value].present?
-            job_order_options
-              .where(job_option_id: value)
-              .first
-              .option_file
-              .purge
-          end
-      else
-        option = JobOrderOption.create(job_order_id: id, job_option_id: value)
-        if params["options_file_" + value].present?
-          option.option_file.attach(params["options_file_" + value])
-          success = true unless save
-        end
-        job_order_options << option
-        success = true unless save
-      end
-    end
-    job_order_options.where.not(job_option_id: ids).destroy_all
-
-    success
   end
 
   def max_step

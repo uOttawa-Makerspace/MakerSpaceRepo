@@ -24,7 +24,7 @@ RSpec.describe "Walk-in safety sheets", type: :request do
   it "sends a guest to login (with back_to) for every action, creating nothing" do
     sheet = create(:walk_in_safety_sheet, :is_adult, user: create(:user, :regular_user), space: space)
     [
-      -> { get walk_in_safety_sheets_path }, -> { get new_walk_in_safety_sheet_path },
+      -> { get walk_in_safety_sheets_path }, -> { get "/walk_in_safety_sheets/new" },
       -> { get walk_in_safety_sheet_path(space.id) },
       -> { post walk_in_safety_sheets_path, params: { walk_in_safety_sheet: sheet_params, agreement: agreements } },
       -> { patch walk_in_safety_sheet_path(sheet), params: { walk_in_safety_sheet: { emergency_contact_name: "x" } } }
@@ -37,11 +37,12 @@ RSpec.describe "Walk-in safety sheets", type: :request do
     expect(sheet.reload.emergency_contact_name).not_to eq("x")
   end
 
-  # WART(D-P04): GET /walk_in_safety_sheets/new has an action but no template (the form lives in show), so every signed-in user gets 406
-  it "answers 406 on /new for a signed-in user" do
+  # D-P04: the new action/route (always 406, no template) was removed; /new now falls to show,
+  # which renders the form.
+  it "renders the form on /new for a signed-in user (served by show)" do
     sign_in_as(:regular)
-    get new_walk_in_safety_sheet_path
-    expect(response).to have_http_status(:not_acceptable)
+    get "/walk_in_safety_sheets/new"
+    expect(response).to have_http_status(:ok)
   end
 
   it "renders the (unsigned) form for a signed-in user on index and show" do

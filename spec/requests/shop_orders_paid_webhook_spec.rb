@@ -3,7 +3,7 @@
 require "rails_helper"
 
 # Characterization of the NON-locker paths of the Shopify `orders_paid` webhook
-# (CustomWebhooksController#orders_paid) plus the Stripe webhook endpoint:
+# (CustomWebhooksController#orders_paid):
 # memberships, job orders, legacy discount-code usage and cc-money credit.
 # Locker activation lives in locker_orders_paid_webhook_spec.rb.
 #
@@ -11,7 +11,7 @@ require "rails_helper"
 #   signed with the test secret (spec/support/shopify_webhook_helpers.rb); forged or
 #   unsigned POSTs are rejected with 401 (HMAC examples below).
 # * The Shopify metafield fallback (`draft_order_metafields`) is stubbed; no
-#   network. The Stripe endpoint IS signed here with the configured secret.
+#   network.
 RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
   include ActiveSupport::Testing::TimeHelpers
 
@@ -515,68 +515,5 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
     )
     expect(m.reload.status).to eq("paid")
     expect(user.cc_moneys.pluck(:cc)).to eq([10])
-  end
-end
-
-# The Stripe endpoint (StripeEvent engine). Shop checkout is cc-points/Shopify
-# only: no shop code listens to Stripe, only job orders, lockers and payout
-# notification mails do (the job-order/locker handlers are pinned elsewhere).
-RSpec.describe "Stripe webhook endpoint (shop-relevant behavior)", type: :request do
-  def stripe_post(type, object, signed: true, secret: StripeEvent.signing_secret)
-    payload = { id: "evt_#{SecureRandom.hex(4)}", object: "event", type: type, data: { object: object } }.to_json
-    headers = { "CONTENT_TYPE" => "application/json" }
-    if signed
-      ts = Time.now
-      sig = Stripe::Webhook::Signature.compute_signature(ts, payload, secret)
-      headers["Stripe-Signature"] = "t=#{ts.to_i},v1=#{sig}"
-    end
-    post "/stripe/webhooks", params: payload, headers: headers
-  end
-
-  before do
-    block_external_http!
-    ActionMailer::Base.deliveries.clear
-  end
-
-  it "rejects unsigned and wrongly signed events with 400 and runs no handler" do
-    expect(MsrMailer).not_to receive(:send_email_for_stripe_transfer)
-    stripe_post("payout.paid", { id: "po_1" }, signed: false)
-    expect(response).to have_http_status(:bad_request)
-    stripe_post("payout.paid", { id: "po_1" }, secret: "whsec_wrong")
-    expect(response).to have_http_status(:bad_request)
-  end
-
-  it "accepts a correctly signed event nobody subscribes to with 200" do
-    stripe_post("customer.created", { id: "cus_1" })
-    expect(response).to have_http_status(:ok)
-  end
-
-  it "checkout.session.completed with an unrelated reference id changes nothing (no shop handler)" do
-    expect { stripe_post("checkout.session.completed", { id: "cs_1", payment_status: "paid", client_reference_id: "order-77" }) }
-      .not_to change { [Order.count, CcMoney.count, Membership.count] }
-    expect(response).to have_http_status(:ok)
-  end
-
-  it "ignores unpaid checkout sessions" do
-    stripe_post("checkout.session.completed", { id: "cs_1", payment_status: "unpaid", client_reference_id: "job-order-1" })
-    expect(response).to have_http_status(:ok)
-  end
-
-  it "checkout.session.completed without client_reference_id is a handler crash (500)" do
-    # WART(D-S31): the handler calls client_reference_id.include? with no nil guard, so a payment link / session without a reference id raises and Stripe retries
-    stripe_post("checkout.session.completed", { id: "cs_1", payment_status: "paid" })
-    expect(response).to have_http_status(:internal_server_error)
-  end
-
-  it "payout.paid retrieves the payout (stubbed) and delivers the transfer notification" do
-    destination = Struct.new(:bank_name, :routing_number).new("Bank of Test", "123456789")
-    payout = Struct.new(:id, :arrival_date, :amount, :destination).new("po_1", Time.utc(2026, 5, 4).to_i, 12_345, destination)
-    allow(Stripe::Payout).to receive(:retrieve).with(hash_including(id: "po_1")).and_return(payout)
-
-    perform_enqueued_jobs { stripe_post("payout.paid", { id: "po_1" }) }
-    expect(response).to have_http_status(:ok)
-    expect(deliveries.size).to eq(1)
-    expect(deliveries.first.body.encoded).to include("po_1")
-    expect(deliveries.first.body.encoded).to include("123.45")
   end
 end

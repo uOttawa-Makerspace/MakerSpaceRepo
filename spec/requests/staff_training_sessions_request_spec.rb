@@ -365,8 +365,8 @@ RSpec.describe "Staff training sessions", type: :request do
     end
 
     describe "GET training_report" do
-      # WART(D-T37): the action declares format.html but there is no template: the HTML report is a 406
-      it "answers 406 for the html report (no template)" do
+      # D-T37: the action serves only .xlsx (the dead format.html branch was removed); any other format is a 406
+      it "answers 406 for the html report (xlsx only)" do
         get training_report_staff_training_session_path(record)
         expect(response).to have_http_status(:not_acceptable)
       end
