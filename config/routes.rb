@@ -28,6 +28,11 @@ Rails.application.routes.draw do
       put "users/:id/rfid", to: "user_rfids#update", constraints: { id: /\d+/ }
       delete "users/:id/rfid", to: "user_rfids#destroy", constraints: { id: /\d+/ }
       post "rfid_taps", to: "rfid_taps#create"
+      get "training_sessions", to: "training_sessions#index"
+      post "training_sessions", to: "training_sessions#create"
+      get "training_session_options", to: "training_session_options#show"
+      post "training_sessions/:training_session_id/certifications", to: "training_session_certifications#create",
+                                                                    constraints: { training_session_id: /\d+/ }
       # keep last: unknown /api/v1 paths answer with the JSON 404, not the HTML one
       match "*path", to: "base#route_not_found", via: :all
     end
