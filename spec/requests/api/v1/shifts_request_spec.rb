@@ -144,29 +144,35 @@ RSpec.describe "GET /api/v1/spaces/:id/shifts", type: :request do
       shift(attrs).tap { |e| e.update_column(:recurrence_rule, rule) }
     end
 
-    def timed
-      t = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    # IceCube rule steps (one per candidate occurrence) taken while the block runs. A
+    # deterministic bound on expansion work: wall-clock limits failed under gate load.
+    def rule_steps
+      steps = 0
+      allow_any_instance_of(IceCube::ValidatedRule).to receive(:next_time).and_wrap_original do |m, *args|
+        steps += 1
+        m.call(*args)
+      end
       yield
-      Process.clock_gettime(Process::CLOCK_MONOTONIC) - t
+      steps
     end
 
     %w[MINUTELY SECONDLY].each do |freq|
       it "caps a FREQ=#{freq} event per event, quickly, and flags the truncation" do
         stored_shift("FREQ=#{freq}")
-        elapsed = timed { shifts(wide) }
+        steps = rule_steps { shifts(wide) }
         expect(response).to have_http_status(:ok)
         expect(body.size).to eq(500)
         expect(response.headers["X-Truncated"]).to eq("true")
         expect(body.first.keys).to eq(%w[id title start end allDay extendedProps])
-        expect(elapsed).to be < 2
+        expect(steps).to be <= 501 # an unbounded expansion of the window takes 144k (MINUTELY)
       end
     end
 
     it "bounds the cost of a sub-hourly rule whose DTSTART is far in the past" do
       stored_shift("FREQ=MINUTELY", start_time: t0 - 2.years, end_time: t0 - 2.years + 1.hour)
-      elapsed = timed { shifts({ start: t0.iso8601, end: (t0 + 1.day).iso8601 }) }
+      steps = rule_steps { shifts({ start: t0.iso8601, end: (t0 + 1.day).iso8601 }) }
       expect(body.size).to eq(500)
-      expect(elapsed).to be < 2
+      expect(steps).to be <= 501 # unbounded: 1440 for the day, ~1M walking from DTSTART
     end
 
     it "caps the whole response across events and keeps the earliest first" do
