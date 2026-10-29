@@ -19,6 +19,8 @@ RSpec.describe TrainingSession, "#certify_trainees! under concurrency", type: :m
     session.users.clear
     TrainingSession.unscoped.where(id: session.id).delete_all
     [training, space].each { |r| r.class.unscoped.where(id: r.id).delete_all }
+    # the training factory creates a skill; a leftover committed row breaks later specs
+    Skill.where(id: training.skill_id).delete_all
     User.unscoped.where(id: trainees.map(&:id) + [trainer.id]).delete_all
   end
 
