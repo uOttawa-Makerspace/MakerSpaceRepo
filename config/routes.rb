@@ -18,6 +18,16 @@ Rails.application.routes.draw do
       # Strict integer ids at the router (UsersController#find_user! checks again).
       patch "users/:id/role", to: "users#role", constraints: { id: /\d+/ }
       put "users/:id/programs", to: "users#programs", constraints: { id: /\d+/ }
+      get "spaces", to: "spaces#index"
+      get "me/space", to: "my_spaces#show"
+      put "me/space", to: "my_spaces#update"
+      get "spaces/:id/presence", to: "presence#show", constraints: { id: /\d+/ }
+      post "spaces/:id/presence", to: "presence#create", constraints: { id: /\d+/ }
+      delete "spaces/:id/presence/:username", to: "presence#destroy", constraints: { id: /\d+/, username: %r{[^/]+} }
+      get "rfid_cards", to: "rfid_cards#index"
+      put "users/:id/rfid", to: "user_rfids#update", constraints: { id: /\d+/ }
+      delete "users/:id/rfid", to: "user_rfids#destroy", constraints: { id: /\d+/ }
+      post "rfid_taps", to: "rfid_taps#create"
       # keep last: unknown /api/v1 paths answer with the JSON 404, not the HTML one
       match "*path", to: "base#route_not_found", via: :all
     end

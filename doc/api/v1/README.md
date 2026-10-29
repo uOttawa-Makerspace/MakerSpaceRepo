@@ -1,6 +1,6 @@
 # /api/v1 conventions
 
-JSON API for the React frontends (app.makerepo.com, designday.makerepo.com). Contracts live next to this file, one per resource (`session.md`, `users.md`). The legacy HTML/JSON routes keep working until both frontends switch.
+JSON API for the React frontends (app.makerepo.com, designday.makerepo.com). Contracts live next to this file, one per resource (`session.md`, `users.md`, `spaces.md`, `presence.md`, `rfid.md`). The legacy HTML/JSON routes keep working until both frontends switch.
 
 ## Auth
 - `Authorization: Bearer <access_token>` on every authenticated request. The scheme word is required. No cookies are read or set, and there is no CSRF token.

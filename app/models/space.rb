@@ -46,6 +46,7 @@ class Space < ApplicationRecord
       lab_sessions
         .where("sign_out_time < ?", Time.zone.now)
         .where.not(user: signed_in_users)
+        .includes(:user)
         .order(sign_out_time: :asc)
         .last(20)
         .map(&:user)
