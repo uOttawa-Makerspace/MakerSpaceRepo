@@ -99,6 +99,19 @@ RSpec.describe "Calendar JSON across DST changes", type: :request do
     context "in the week of the fall-back change (clock 2026-11-02)" do
       before { at(november_now) }
 
+      it "lists a recurring 01:30 event once on 2026-11-01 (at 01:30 EDT) and keeps its COUNT" do
+        ev = create(:event, space: space, recurrence_rule: "RRULE:FREQ=WEEKLY;BYDAY=SU;COUNT=3",
+                            start_time: local(2026, 10, 25, 1, 30), end_time: local(2026, 10, 25, 2, 30))
+        get feed
+        expect(response).to have_http_status(:ok)
+        expect(rows_for(ev).map { |r| [r["start"], r["end"]] }).to eq([
+          %w[2026-10-25T01:30:00-04:00 2026-10-25T02:30:00-04:00],
+          %w[2026-11-01T01:30:00-04:00 2026-11-01T01:30:00-05:00],
+          %w[2026-11-08T01:30:00-05:00 2026-11-08T02:30:00-05:00]
+        ])
+        expect(rows_for(ev).map { |r| r["id"] }.uniq.size).to eq(3)
+      end
+
       it "renders events ending in the repeated hour and on the day after" do
         ev = create(:event, space: space, recurrence_rule: "RRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=2",
                             start_time: local(2026, 10, 26, 0), end_time: local(2026, 10, 26, 1, 30))
@@ -177,6 +190,16 @@ RSpec.describe "Calendar JSON across DST changes", type: :request do
 
     context "in the week of the fall-back change" do
       before { travel_to(november_now) }
+
+      it "lists a daily 01:30 shift once on 2026-11-01 (at 01:30 EDT) and keeps its COUNT" do
+        ev = shift(recurrence_rule: "RRULE:FREQ=DAILY;COUNT=4",
+                   start_time: local(2026, 10, 31, 1, 30), end_time: local(2026, 10, 31, 3))
+        shifts("2026-10-25T00:00:00-04:00", "2026-11-10T00:00:00-05:00")
+        expect(response).to have_http_status(:ok)
+        expect(rows_for(ev).map { |r| r["start"] }).to eq(%w[
+          2026-10-31T01:30:00-04:00 2026-11-01T01:30:00-04:00 2026-11-02T01:30:00-05:00 2026-11-03T01:30:00-05:00
+        ])
+      end
 
       it "renders shifts ending in the repeated hour, and keeps 02:30 and 10:00 at the same local time" do
         single = shift(start_time: local(2026, 11, 2, 0, 30), end_time: local(2026, 11, 2, 1, 30))

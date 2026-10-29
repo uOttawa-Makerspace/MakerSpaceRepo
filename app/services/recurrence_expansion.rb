@@ -26,15 +26,60 @@ module RecurrenceExpansion
     value.to_s.lines.map(&:strip).reject(&:empty?)
   end
 
+  # Rules that repeat a wall-clock time (the only ones the validator accepts).
+  WALL_CLOCK_RULES = [IceCube::DailyRule, IceCube::WeeklyRule, IceCube::MonthlyRule, IceCube::YearlyRule].freeze
+
   # Occurrences starting in from..to, at most `limit`. Raises what IceCube raises
   # for a rule it cannot parse.
+  #
+  # DST (D-SP29), for a wall-clock rule on a zoned start time: IceCube already
+  # moves a nonexistent local time forward (02:30 on a spring-forward day becomes
+  # 03:30 daylight time), but on a fall-back day it yields a time in the repeated
+  # hour twice (01:30 daylight AND 01:30 standard) and counts both against COUNT.
+  # Here the second one is dropped, so the time is listed once, at its first
+  # (daylight) instant, and COUNT is applied after that by this method.
   def occurrences(rule_string, start_time, from, to, limit)
-    schedule = IceCube::Schedule.new(start_time)
-    schedule.add_recurrence_rule(IceCube::Rule.from_ical(rule_body(rule_string)))
+    rule = IceCube::Rule.from_ical(rule_body(rule_string))
     # enumerate_occurrences is private in IceCube but is the only variant taking a
     # closing time; lazy.first(limit + 1) stops enumeration early (the extra one
     # only detects truncation).
-    found = schedule.send(:enumerate_occurrences, from, to).lazy.first(limit + 1)
+    found = if wall_clock?(rule, start_time)
+              wall_clock_occurrences(rule, start_time, from, to)
+            else
+              enumerate(rule, start_time, from, to)
+            end.first(limit + 1)
     Result.new(found.first(limit), found.size > limit)
+  end
+
+  def wall_clock?(rule, start_time)
+    WALL_CLOCK_RULES.any? { |klass| rule.is_a?(klass) } && start_time.respond_to?(:time_zone)
+  end
+
+  # Lazy occurrences of a wall-clock rule, the repeated-hour duplicates removed.
+  # With a COUNT, enumeration starts at the series start (as IceCube itself does
+  # for COUNT) so the count is taken over the de-duplicated series.
+  def wall_clock_occurrences(rule, start_time, from, to)
+    count = rule.occurrence_count
+    rule.count(nil) if count
+    times = enumerate(rule, start_time, count ? start_time : from, to)
+            .reject { |time| repeated_hour_duplicate?(time, start_time) }
+    times = times.first(count).lazy if count
+    times.select { |time| time >= from }
+  end
+
+  # True for the second (standard-time) instant of a local time that occurs twice,
+  # unless it is the series start itself. TimeZone#local resolves an ambiguous
+  # local time to its first (daylight) instant.
+  def repeated_hour_duplicate?(time, start_time)
+    return false if time == start_time
+
+    first = start_time.time_zone.local(time.year, time.month, time.day, time.hour, time.min, time.sec)
+    first.to_i != time.to_i
+  end
+
+  def enumerate(rule, start_time, from, to)
+    schedule = IceCube::Schedule.new(start_time)
+    schedule.add_recurrence_rule(rule)
+    schedule.send(:enumerate_occurrences, from, to).lazy
   end
 end
