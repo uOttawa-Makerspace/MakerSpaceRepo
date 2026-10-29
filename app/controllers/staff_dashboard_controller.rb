@@ -373,7 +373,6 @@ end
 
   def present_users_report
     respond_to do |format|
-      format.html
       format.xlsx do
         send_data ReportGenerator
                     .generate_space_present_users_report(@space.id)

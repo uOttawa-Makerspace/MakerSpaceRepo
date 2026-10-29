@@ -185,7 +185,6 @@ class Staff::TrainingSessionsController < StaffDashboardController
 
   def training_report
     respond_to do |format|
-      format.html
       format.xlsx do
         send_data ReportGenerator
                     .generate_training_session_report(params[:id])
