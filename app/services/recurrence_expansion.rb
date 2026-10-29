@@ -57,13 +57,14 @@ module RecurrenceExpansion
 
   # Lazy occurrences of a wall-clock rule, the repeated-hour duplicates removed.
   # With a COUNT, enumeration starts at the series start (as IceCube itself does
-  # for COUNT) so the count is taken over the de-duplicated series.
+  # for COUNT) so the count is taken over the de-duplicated series. Everything
+  # stays lazy: the caller's first(limit + 1) stops the walk inside the window.
   def wall_clock_occurrences(rule, start_time, from, to)
     count = rule.occurrence_count
     rule.count(nil) if count
     times = enumerate(rule, start_time, count ? start_time : from, to)
             .reject { |time| repeated_hour_duplicate?(time, start_time) }
-    times = times.first(count).lazy if count
+    times = times.take(count) if count
     times.select { |time| time >= from }
   end
 

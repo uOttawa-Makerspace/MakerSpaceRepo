@@ -66,6 +66,34 @@ RSpec.describe RecurrenceExpansion do
     end
   end
 
+  describe "cost of a COUNT rule (D-SP28 bound)" do
+    # IceCube calls ValidatedRule#next_time once per candidate occurrence.
+    def rule_steps
+      steps = 0
+      allow_any_instance_of(IceCube::ValidatedRule).to receive(:next_time).and_wrap_original do |m, *args|
+        steps += 1
+        m.call(*args)
+      end
+      yield
+      steps
+    end
+
+    # COUNT is counted from the series start, so the walk from DTSTART to the
+    # window is unavoidable (IceCube does the same for COUNT). Inside the window
+    # it must stop after limit + 1, however far the window and the COUNT reach.
+    it "walks to the window and then stops after limit + 1 for a legacy DAILY;COUNT=100000 started years ago" do
+      start = local(2023, 11, 2, 9)
+      from = local(2026, 11, 2)
+      days_before = ((from - start) / 1.day).ceil # 1096
+      result = nil
+      steps = rule_steps { result = described_class.occurrences("RRULE:FREQ=DAILY;COUNT=100000", start, from, from + 300.years, 500) }
+      expect(result.occurrences.size).to eq(500)
+      expect(result.truncated).to be(true)
+      expect(result.occurrences.first.iso8601).to eq("2026-11-02T09:00:00-05:00")
+      expect(steps).to be <= days_before + 501 + 2 # eager: ~100000
+    end
+  end
+
   it "still stops at the limit and reports truncation" do
     result = described_class.occurrences("RRULE:FREQ=DAILY", local(2026, 10, 25, 1, 30), local(2026, 10, 25), local(2026, 12, 1), 3)
     expect(result.occurrences.map(&:iso8601)).to eq(%w[2026-10-25T01:30:00-04:00 2026-10-26T01:30:00-04:00 2026-10-27T01:30:00-04:00])
