@@ -337,12 +337,42 @@ RSpec.describe "JobOrders audit gaps", type: :request do
         expect(shopify_ops).to include("draftOrderCreate")
       end
 
-      it "keeps the id on a transient Shopify error" do
+      it "keeps the id and shows a try-again message (no 500) on a transient Shopify error" do
         order, = order_with_draft!
         shopify.status = 502
-        expect { get pay_job_orders_path, params: { token: order.pay_token } }.not_to raise_error
+        get pay_job_orders_path, params: { token: order.pay_token }
+
+        expect(response).to have_http_status(:ok)
+        expect(page_text).to include(I18n.t("job_orders.alerts.payment_link_unavailable"))
+        expect(response.body).not_to include("Proceed to the payment page")
         expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
         expect(shopify_ops).not_to include("draftOrderCreate")
+      end
+
+      it "decides gone from a fetch, re-checks once under the lock, creates one draft; the view reuses the link" do
+        order, = order_with_draft!
+        shopify.missing_ids = ["gid://shopify/DraftOrder/9001"]
+        shopify.draft_id = "gid://shopify/DraftOrder/9004"
+        get pay_job_orders_path, params: { token: order.pay_token }
+
+        expect(shopify_ops).to eq(%w[getDraftOrder getDraftOrder draftOrderCreate getDraftOrder])
+        expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9004")
+      end
+
+      it "uses the draft another concurrent request already created instead of creating a second one" do
+        order, = order_with_draft!
+        shopify.missing_ids = ["gid://shopify/DraftOrder/9001"]
+        allow_any_instance_of(JobOrder).to receive(:with_lock).and_wrap_original do |m, *args, &blk|
+          # the other request replaces the dead id just before we take the lock
+          JobOrder.where(id: order.id).update_all(shopify_draft_order_id: "gid://shopify/DraftOrder/9777")
+          m.call(*args, &blk)
+        end
+        get pay_job_orders_path, params: { token: order.pay_token }
+
+        expect(response).to have_http_status(:ok)
+        expect(shopify_ops).not_to include("draftOrderCreate")
+        expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9777")
+        expect(response.body).to include("https://pay.example/old-invoice")
       end
     end
 

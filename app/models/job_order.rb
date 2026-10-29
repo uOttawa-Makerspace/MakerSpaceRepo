@@ -150,17 +150,19 @@ class JobOrder < ApplicationRecord
     end
   end
 
+  # Invoice URL of the Shopify draft order, creating (or re-creating) the draft when needed. Returns nil when
+  # Shopify cannot be reached right now (non-200 / error payload): the stored id is then left untouched.
+  # D-J38: a stored id that Shopify says no longer exists (200, `draftOrder: null`) is dropped and a fresh draft
+  # is created. Kept in JobOrder (not the shared concern) so locker rentals/memberships keep their behaviour: a
+  # cancelled locker must never self-heal into a fresh payable invoice.
   def checkout_link
-    draft = shopify_draft_order
-    if draft.nil? && shopify_draft_order_id.present? && shopify_draft_order_gone?
-      # D-J38: the stored draft no longer exists on Shopify (confirmed by a 200 `draftOrder: null`): drop the
-      # dangling id and create a fresh draft. A transient error never clears the id. Kept in JobOrder (not the
-      # shared concern) so locker rentals/memberships keep their behaviour: a cancelled locker must never get a
-      # fresh payable invoice from a self-heal.
-      update_column(:shopify_draft_order_id, nil)
-      draft = shopify_draft_order
+    if shopify_draft_order_id.present?
+      state, draft = fetch_shopify_draft_order_result
+      return draft['invoiceUrl'] if state == :found
+      return nil if state == :error
     end
-    draft['invoiceUrl']
+
+    heal_draft_order_under_lock
   end
 
   class StaleDraftOrderError < StandardError; end
@@ -240,6 +242,26 @@ class JobOrder < ApplicationRecord
   end
 
   private
+
+  # Row lock so two concurrent /pay requests cannot both create a draft (one would be an orphaned payable
+  # invoice). After taking the lock the id is re-read: if another request already replaced it, use that draft.
+  def heal_draft_order_under_lock
+    url = nil
+    with_lock do
+      if shopify_draft_order_id.present?
+        state, draft = fetch_shopify_draft_order_result
+        if state == :found
+          url = draft['invoiceUrl']
+          next
+        elsif state == :error
+          next
+        end
+        update_column(:shopify_draft_order_id, nil) # confirmed gone
+      end
+      url = shopify_draft_order&.dig('invoiceUrl') # creates (Shopify call inside the lock: rare, acceptable)
+    end
+    url
+  end
 
   # Amounts are normalized to BigDecimal (nil => 0) so nil/0.0 and Float/BigDecimal compare equal.
   def generate_line_item(name, unit_amount)

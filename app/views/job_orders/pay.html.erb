@@ -6,7 +6,11 @@
   <p class="lead">
     Total Quote: <%= number_to_currency(@job_order.total_price) %>
   <div class="mt-3">
-    <%= link_to 'Proceed to the payment page', @job_order.checkout_link, class: 'btn btn-primary' %>
+    <% if @payment_link.present? %>
+      <%= link_to 'Proceed to the payment page', @payment_link, class: 'btn btn-primary' %>
+    <% else %>
+      <div class="alert alert-warning"><%= t("job_orders.alerts.payment_link_unavailable") %></div>
+    <% end %>
   </div>
   </p>
   <hr>
