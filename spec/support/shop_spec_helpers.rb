@@ -20,7 +20,7 @@ module ShopSpecHelpers
   class FakeShopifyAdmin
     Response = Struct.new(:code, :body)
     attr_reader :calls
-    attr_accessor :invoice_url, :draft_id, :fully_paid, :user_errors, :metafields, :status
+    attr_accessor :delete_user_errors, :invoice_url, :draft_id, :fully_paid, :user_errors, :metafields, :status
 
     def initialize
       @calls = []
@@ -30,6 +30,7 @@ module ShopSpecHelpers
       @user_errors = []
       @metafields = []
       @status = 200
+      @delete_user_errors = []
     end
 
     def query(query:, variables: nil)
@@ -43,7 +44,9 @@ module ShopSpecHelpers
           "draftOrder" => (@user_errors.empty? ? { "id" => @draft_id } : nil), "userErrors" => @user_errors
         } } })
       elsif query.include?("draftOrderDelete")
-        Response.new(200, { "data" => { "draftOrderDelete" => { "deletedId" => @draft_id, "userErrors" => [] } } })
+        Response.new(200, { "data" => { "draftOrderDelete" => {
+          "deletedId" => (@delete_user_errors.empty? ? @draft_id : nil), "userErrors" => @delete_user_errors
+        } } })
       else
         Response.new(200, { "data" => { "draftOrder" => {
           "id" => @draft_id, "invoiceUrl" => @invoice_url,

@@ -154,6 +154,28 @@ class JobOrder < ApplicationRecord
     shopify_draft_order['invoiceUrl']
   end
 
+  class StaleDraftOrderError < StandardError; end
+
+  # D-J38: called by a re-quote that changed the price. An existing Shopify draft order still carries the
+  # OLD line items (and a payable invoice link), so it is deleted and the id cleared; the next /pay creates a
+  # fresh draft with the new total. Fails closed (raises StaleDraftOrderError) so the caller rolls the re-quote
+  # back: on a PAID/PICKED_UP order (the draft is, or is about to be, a real paid order), on any Shopify/config
+  # error, and when Shopify deletes nothing (already completed/paid draft, userErrors, unknown id).
+  def discard_stale_draft_order!(status_before_requote)
+    return if shopify_draft_order_id.blank?
+
+    if [JobStatus::PAID, JobStatus::PICKED_UP].include?(status_before_requote)
+      raise StaleDraftOrderError, "order is already paid"
+    end
+
+    # destroy clears the id before the outcome is known; the caller's transaction rolls that back on refusal
+    raise StaleDraftOrderError, "Shopify did not delete the draft order" unless destroy_shopify_draft_order
+  rescue StaleDraftOrderError
+    raise
+  rescue StandardError => e
+    raise StaleDraftOrderError, e.message
+  end
+
   def total_price
     total = 0
     job_tasks.each do |task|

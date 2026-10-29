@@ -185,75 +185,88 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
 
     if params[:approved].present? && params[:approved] == "true"
       # ACCEPT JOB
-      JobOrder.transaction do
-        @job_order.job_tasks.each do |task|
-          price_key = "job_task_quote_price_#{task.id}"
-          job_task_quote = task.job_task_quote || task.build_job_task_quote
-          job_task_quote.price = params[price_key].presence || 0.0
+      old_total = @job_order.total_price
+      status_before = @job_order.job_order_statuses.last&.job_status
+      begin
+        JobOrder.transaction do
+          @job_order.job_tasks.each do |task|
+            price_key = "job_task_quote_price_#{task.id}"
+            job_task_quote = task.job_task_quote || task.build_job_task_quote
+            job_task_quote.price = params[price_key].presence || 0.0
           
-          # Service
-          qty_key   = "task_#{task.id}_service_qty"
-          svc_price_key = "task_#{task.id}_service_price"
+            # Service
+            qty_key   = "task_#{task.id}_service_qty"
+            svc_price_key = "task_#{task.id}_service_price"
           
-          job_task_quote.service_quantity = params[qty_key].presence || 0.0
-          job_task_quote.service_price = params[svc_price_key].presence || 0.0
+            job_task_quote.service_quantity = params[qty_key].presence || 0.0
+            job_task_quote.service_price = params[svc_price_key].presence || 0.0
 
-          job_task_quote.save!
+            job_task_quote.save!
 
-          # Options
-          task.job_task_options.each do |option|
-            opt_key = "task_#{task.id}_option_price_#{option.job_option_id}"
-            next if params[opt_key].blank?
+            # Options
+            task.job_task_options.each do |option|
+              opt_key = "task_#{task.id}_option_price_#{option.job_option_id}"
+              next if params[opt_key].blank?
 
-            qt_option = job_task_quote.job_task_quote_options.find_or_initialize_by(job_option_id: option.job_option_id)
-            qt_option.price = params[opt_key]
-            qt_option.save!
+              qt_option = job_task_quote.job_task_quote_options.find_or_initialize_by(job_option_id: option.job_option_id)
+              qt_option.price = params[opt_key]
+              qt_option.save!
+            end
+
+            file_key = "task_#{task.id}_staff_files"
+            next if params[file_key].blank?
+            params[file_key].each do |file|
+              task.staff_files.attach(file)
+            end
           end
 
-          file_key = "task_#{task.id}_staff_files"
-          next if params[file_key].blank?
-          params[file_key].each do |file|
-            task.staff_files.attach(file)
+          # line items
+          if params[:job_quote_line_items].present?
+            @job_order.job_quote_line_items.destroy_all
+
+            params[:job_quote_line_items].each_value do |item_params|
+              desc = item_params[:description].to_s.strip
+              price = item_params[:price].to_s.strip
+
+              next if desc.blank? && price.blank?
+
+              @job_order.job_quote_line_items.create!(
+                description: desc,
+                price: price.presence || 0.0
+              )
+            end
           end
-        end
 
-        # line items
-        if params[:job_quote_line_items].present?
-          @job_order.job_quote_line_items.destroy_all
-
-          params[:job_quote_line_items].each_value do |item_params|
-            desc = item_params[:description].to_s.strip
-            price = item_params[:price].to_s.strip
-
-            next if desc.blank? && price.blank?
-
-            @job_order.job_quote_line_items.create!(
-              description: desc,
-              price: price.presence || 0.0
+          if params[:user_comments].present?
+            @job_order.chat_messages.create(
+              message: params[:user_comments],
+              sender: current_user
             )
           end
-        end
 
-        if params[:user_comments].present?
-          @job_order.chat_messages.create(
-            message: params[:user_comments],
-            sender: current_user
+          @job_order.staff_comments = params[:job_order][:staff_comments] if params[:job_order][:staff_comments].present?
+
+          @job_order.job_order_statuses << JobOrderStatus.create(
+            job_order: @job_order,
+            job_status: JobStatus::USER_APPROVAL,
+            user: @user
           )
+
+          # D-J38: a price change invalidates the Shopify draft order (stale line items + payable link). Fail
+          # closed: if it cannot be deleted the whole quote rolls back (no price, status or email). The email goes out only after the commit.
+          if JobOrder.find(@job_order.id).total_price != old_total
+            @job_order.discard_stale_draft_order!(status_before)
+          end
+
+          error = true unless @job_order.save
         end
-
-        @job_order.staff_comments = params[:job_order][:staff_comments] if params[:job_order][:staff_comments].present?
-
-        @job_order.job_order_statuses << JobOrderStatus.create(
-          job_order: @job_order,
-          job_status: JobStatus::USER_APPROVAL,
-          user: @user
-        )
-
-        if @job_order.save
-          JobOrderMailer.send_job_quote(@job_order.id).deliver_now
-        else
-          error = true
-        end
+        # After the commit: a mail failure must not roll back a quote whose old Shopify draft is already
+        # deleted (the restored id would point at a deleted draft). Staff can use resend_quote_email.
+        JobOrderMailer.send_job_quote(@job_order.id).deliver_now unless error
+      rescue JobOrder::StaleDraftOrderError => e
+        Rails.logger.error("[job_orders#quote] re-quote of ##{@job_order.id} refused: #{e.message}")
+        flash[:alert] = t("job_orders.alerts.requote_draft_order_failed")
+        return redirect_to job_order_path(@job_order.id)
       end
     elsif params[:approved] == "false"
       # DELCINE JOB
