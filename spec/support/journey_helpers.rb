@@ -68,6 +68,20 @@ module JourneyHelpers
     end
   end
 
+  # Uncheck a checkbox and CONFIRM it took. Capybara's `uncheck` is a native
+  # click and never verifies the result: if the layout moves between
+  # chromedriver's hit-test and the mouse press (smooth scroll-into-view, the
+  # sticky header shrinking on scroll, Tom Select swapping in its control), the
+  # press lands beside the box, the click is silently lost and the form later
+  # submits the box as still checked. Re-click until the box is observed
+  # unchecked (retries only while it is not; never a blind sleep).
+  def uncheck_and_confirm(locator, **options)
+    page.document.synchronize do
+      uncheck(locator, **options)
+      raise Capybara::ExpectationNotMet, "#{locator.inspect} is still checked after uncheck" if has_checked_field?(locator, wait: 0, **options)
+    end
+  end
+
   def app_url
     "http://#{page.server.host}:#{page.server.port}"
   end
