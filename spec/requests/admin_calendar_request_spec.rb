@@ -131,16 +131,23 @@ RSpec.describe "Admin calendar contract", type: :request do
       )
     end
 
-    it "allDay goes true when end == start + 1 day" do
+    # D-SP29 follow-up: allDay means local midnight to the next local midnight;
+    # a 24h span from 09:00 is no longer flagged (it used to be).
+    it "allDay goes true for local midnight to the next midnight, not for any 24h span" do
       staff_space!
-      StaffUnavailability.create!(
+      whole = StaffUnavailability.create!(
+        user: staff,
+        start_time: Time.zone.parse("2027-05-05 00:00"),
+        end_time: Time.zone.parse("2027-05-06 00:00")
+      )
+      span = StaffUnavailability.create!(
         user: staff,
         start_time: Time.zone.parse("2027-05-05 09:00"),
         end_time: Time.zone.parse("2027-05-06 09:00")
       )
       get unavailabilities_json_admin_calendar_index_path(id: space.id)
-      expect(response.parsed_body.first["unavailabilities"].first["allDay"])
-        .to be(true)
+      flags = response.parsed_body.first["unavailabilities"].to_h { |u| [u["id"], u["allDay"]] }
+      expect(flags).to eq(whole.id => true, span.id => false)
     end
 
     it "UTC variant keeps the full iso8601 string with milliseconds and zone offset" do
