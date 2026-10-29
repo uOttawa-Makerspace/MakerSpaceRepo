@@ -43,7 +43,6 @@ module PageCrawl
     [%r{\A/videos/:id/download/:filename\z}, "streams a stored file"],
     [%r{/download_files\z}, "streams a zip"],
     [%r{\A/learning_area/:id/scorm_launch\z}, "SCORM package launch"],
-    [%r{\A/admin/calendar/ics_to_json\z}, "fetches an external ICS feed"],
     [%r{\A/open_hours\z}, "fetches external ICS calendars"],
     [%r{\A/rfid/get_unset_rfids\z}, "consumes RFID reader state"],
     [%r{\A/kiosk}, "kiosk screens (device-bound)"]

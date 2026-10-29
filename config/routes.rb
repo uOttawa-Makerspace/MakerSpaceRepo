@@ -453,7 +453,6 @@ Rails.application.routes.draw do
         get 'utc_unavailabilities_json/:id', to: 'calendar#utc_unavailabilities_json', as: :utc_unavailabilities_json
         get 'unavailabilities_json/:id', to: 'calendar#unavailabilities_json', as: :unavailabilities_json
         get 'imported_calendars_json/:id', to: 'calendar#imported_calendars_json', as: :imported_calendars_json
-        get 'ics_to_json', to: 'calendar#ics_to_json', as: :ics_to_json 
         post :update_color
       end
     end
