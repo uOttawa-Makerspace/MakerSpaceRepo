@@ -334,6 +334,13 @@ class UsersController < SessionsController
     end
   end
 
+  # Private repositories/makes on a profile are visible only to the profile
+  # owner and admins (D-C59).
+  def sees_private_repos?(repo_user)
+    @user == repo_user || (@user && @user.admin?)
+  end
+  private :sees_private_repos?
+
   def show
     @repo_user =
       if @user.admin? || @user.staff?
@@ -348,12 +355,13 @@ class UsersController < SessionsController
 
     # Get repositories owned by user
     repo_scope = @repo_user.repositories.where(make_id: nil).order(created_at: :desc)
-    repo_scope = repo_scope.public_repos unless @user == @repo_user || (@user && @user.admin?)
+    repo_scope = repo_scope.public_repos unless sees_private_repos?(@repo_user)
     @pagy, @repositories = pagy(repo_scope, limit: 18)
 
     @acclaim_data = @repo_user.certifications
     
     makes_scope = @repo_user.repositories.where.not(make_id: nil).order(created_at: :desc)
+    makes_scope = makes_scope.public_repos unless sees_private_repos?(@repo_user)
     @pagy_makes, @makes = pagy(makes_scope, page_key: 'page_makes', limit: 18)
 
     @joined_projects = @repo_user.project_joins
