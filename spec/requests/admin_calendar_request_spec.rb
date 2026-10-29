@@ -213,6 +213,42 @@ RSpec.describe "Admin calendar contract", type: :request do
     expect(response.status).to eq(204) # alert branch is ALSO flash-only
   end
 
+  it "update_color only touches the staff colour in the admin's own space" do
+    other_space = create(:space)
+    log_in!(admin)
+    admin.update_column(:space_id, space.id)
+    # the other space's row is created first so an unscoped `.first` would pick it
+    other_row = StaffSpace.create!(user: staff, space: other_space)
+    own_row = StaffSpace.create!(user: staff, space: space)
+    unrelated = StaffSpace.create!(user: admin, space: other_space)
+    # the model assigns a palette colour on create; pin known values
+    own_row.update_column(:color, "#3788d8")
+    other_row.update_column(:color, "#00ff00")
+    unrelated.update_column(:color, "#0000ff")
+
+    post update_color_admin_calendar_index_path,
+         params: { user_id: staff.id, color: "#ff0000" }
+
+    expect(response.status).to eq(204)
+    expect(own_row.reload.color).to eq("#ff0000")
+    expect(other_row.reload.color).to eq("#00ff00")
+    expect(unrelated.reload.color).to eq("#0000ff")
+  end
+
+  it "update_color changes nothing for a user who is only staff in another space" do
+    other_space = create(:space)
+    log_in!(admin)
+    admin.update_column(:space_id, space.id)
+    other_row = StaffSpace.create!(user: staff, space: other_space)
+    other_row.update_column(:color, "#00ff00")
+
+    post update_color_admin_calendar_index_path,
+         params: { user_id: staff.id, color: "#ff0000" }
+
+    expect(response.status).to eq(204)
+    expect(other_row.reload.color).to eq("#00ff00")
+  end
+
   # --------------------------------------------------------- chunk 11 additions
 
   describe "role matrix" do

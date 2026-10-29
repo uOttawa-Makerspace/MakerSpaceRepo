@@ -237,10 +237,19 @@ RSpec.describe "Sub space booking role matrix", type: :request do
         end
 
         it "users returns the JSON user list" do
-          sign_in_as(role)
+          signed_in = sign_in_as(role)
+          other = create(:user, :regular_user, name: "Listed Person", booking_approval: false)
           get users_sub_space_booking_index_path
           expect(response).to have_http_status(:ok)
-          expect(response.parsed_body).to be_an(Array)
+          json = response.parsed_body
+          expect(json).to be_an(Array)
+          expect(json.map { |u| u["id"] }).to match_array(User.pluck(:id))
+          expect(json.map { |u| u["id"] }).to include(signed_in.id, other.id)
+          listed = json.find { |u| u["id"] == other.id }
+          expect(listed).to include(
+            "name" => "Listed Person", "email" => other.email, "username" => other.username
+          )
+          expect(json.flat_map(&:keys)).not_to include("password", "access_token")
         end
       end
     end

@@ -339,6 +339,115 @@ RSpec.describe "Sub space booking gaps", type: :request do
       expect(ActionMailer::Base.deliveries.size).to eq(1)
       expect(ActionMailer::Base.deliveries.last.subject).to eq("Booking needs approval")
     end
+
+    # The series is built from wall-clock strings that the model parses in the
+    # app zone (America/Toronto), so every occurrence keeps its Toronto time and
+    # the stored UTC instant moves by one hour across the DST change.
+    it "keeps 10:00 Toronto for every occurrence of a weekly series across the March 2027 DST start" do
+      post_series(name: "SpringSeries", start_on: "2027-03-10", end_on: "2027-03-24")
+      expect(response).to have_http_status(:no_content)
+      rows = SubSpaceBooking.where(name: "SpringSeries").order(:start_time)
+      expect(rows.map { |b| raw_wall(b) }).to eq(
+        ["2027-03-10 15:00:00", "2027-03-17 14:00:00", "2027-03-24 14:00:00"]
+      )
+      expect(rows.map { |b| raw_wall(b, "end_time") }).to eq(
+        ["2027-03-10 16:00:00", "2027-03-17 15:00:00", "2027-03-24 15:00:00"]
+      )
+      expect(rows.map { |b| b.start_time.in_time_zone("America/Toronto").strftime("%F %H:%M %Z") }).to eq(
+        ["2027-03-10 10:00 EST", "2027-03-17 10:00 EDT", "2027-03-24 10:00 EDT"]
+      )
+    end
+
+    it "keeps 10:00 Toronto for every occurrence of a weekly series across the November 2027 DST end" do
+      post_series(name: "FallSeries", start_on: "2027-10-31", end_on: "2027-11-14")
+      expect(response).to have_http_status(:no_content)
+      rows = SubSpaceBooking.where(name: "FallSeries").order(:start_time)
+      expect(rows.map { |b| raw_wall(b) }).to eq(
+        ["2027-10-31 14:00:00", "2027-11-07 15:00:00", "2027-11-14 15:00:00"]
+      )
+      expect(rows.map { |b| b.start_time.in_time_zone("America/Toronto").strftime("%F %H:%M %Z") }).to eq(
+        ["2027-10-31 10:00 EDT", "2027-11-07 10:00 EST", "2027-11-14 10:00 EST"]
+      )
+    end
+
+  end
+
+  # ------------------------------------------------------------ create: limit boundaries
+
+  describe "POST create boundaries (touching intervals, duration cap, weekly quota)" do
+    before { log_in!(user) }
+
+    # The overlap check shifts the new interval inward by one minute, so
+    # back-to-back bookings are fine and an overlap must exceed one minute to count.
+    it "accepts bookings that touch a blocking booking at either end and rejects a real overlap" do
+      blocking_row(subspace, "2027-03-03 09:00", "2027-03-03 12:00")
+
+      create_booking(subspace, name: "After", start_time: "2027-03-03 12:00", end_time: "2027-03-03 13:00")
+      expect(response).to have_http_status(:no_content)
+      create_booking(subspace, name: "Before", start_time: "2027-03-03 08:00", end_time: "2027-03-03 09:00")
+      expect(response).to have_http_status(:no_content)
+      expect(SubSpaceBooking.where(name: %w[After Before]).count).to eq(2)
+
+      create_booking(subspace, name: "Overlap", start_time: "2027-03-03 11:58", end_time: "2027-03-03 12:58")
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body).to eq("errors" => ["TimeSlot This time slot is already booked."])
+      create_booking(subspace, name: "OverlapEarly", start_time: "2027-03-03 08:02", end_time: "2027-03-03 09:02")
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(SubSpaceBooking.where(name: %w[Overlap OverlapEarly])).to be_empty
+    end
+
+    it "accepts a booking of exactly maximum_booking_duration and rejects one minute more" do
+      capped = create(:sub_space, space: space, maximum_booking_duration: 4)
+
+      create_booking(capped, name: "Exact", start_time: "2027-03-03 10:00", end_time: "2027-03-03 14:00")
+      expect(response).to have_http_status(:no_content)
+      expect(SubSpaceBooking.exists?(name: "Exact")).to be(true)
+
+      create_booking(capped, name: "OneMore", start_time: "2027-03-04 10:00", end_time: "2027-03-04 14:01")
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body).to eq(
+        "errors" => ["DurationHour You cannot book #{capped.name} for more than 4 hours."]
+      )
+      expect(SubSpaceBooking.exists?(name: "OneMore")).to be(false)
+    end
+
+    it "accepts a booking that lands exactly on the weekly quota and rejects one minute over" do
+      travel_to(Time.zone.local(2027, 4, 7, 8, 0)) do
+        log_in!(user)
+        capped = create(:sub_space, space: space, maximum_booking_hours_per_week: 4)
+        create(:sub_space_booking, sub_space: capped, user: user, name: "Earlier",
+                                   start_time: DateTime.parse("2027-04-07 10:00"),
+                                   end_time: DateTime.parse("2027-04-07 12:00"))
+
+        create_booking(capped, name: "OneOver", start_time: "2027-04-08 10:00", end_time: "2027-04-08 12:01")
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.parsed_body).to eq(
+          "errors" => ["DurationWeek You cannot book #{capped.name} for more than 4 hours per week."]
+        )
+        expect(SubSpaceBooking.exists?(name: "OneOver")).to be(false)
+
+        create_booking(capped, name: "Exact", start_time: "2027-04-08 10:00", end_time: "2027-04-08 12:00")
+        expect(response).to have_http_status(:no_content)
+        expect(SubSpaceBooking.exists?(name: "Exact")).to be(true)
+      end
+    end
+
+    # 2027-04-11 21:00 Toronto (EDT) is Monday 2027-04-12 01:00 UTC: the Toronto
+    # week (Mon 04-05 .. Sun 04-11) holds the Tuesday booking, the UTC week does not.
+    it "counts the weekly quota in the Toronto week, not the UTC week (Sunday evening Toronto)" do
+      travel_to(Time.zone.local(2027, 4, 7, 8, 0)) do
+        log_in!(user)
+        capped = create(:sub_space, space: space, maximum_booking_hours_per_week: 2)
+        create(:sub_space_booking, sub_space: capped, user: user, name: "Tuesday",
+                                   start_time: DateTime.parse("2027-04-06 10:00"),
+                                   end_time: DateTime.parse("2027-04-06 12:00"))
+
+        create_booking(capped, name: "SundayEvening", start_time: "2027-04-11 21:00", end_time: "2027-04-11 22:00")
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.parsed_body["errors"].first).to start_with("DurationWeek")
+        expect(SubSpaceBooking.exists?(name: "SundayEvening")).to be(false)
+      end
+    end
   end
 
   # ------------------------------------------------------------ update
