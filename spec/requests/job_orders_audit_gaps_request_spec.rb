@@ -236,6 +236,35 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       expect(order.shopify_draft_order_id).to be_nil
     end
 
+    it "re-quotes an order whose quote has NULL service_price / service_quantity (no 500)" do
+      order, task = order_with_draft!
+      task.job_task_quote.update_columns(service_price: nil, service_quantity: nil)
+      requote!(order, task, 55)
+
+      expect(response).to redirect_to(job_order_path(order.id))
+      expect(status_names(order).last).to eq("Waiting for User Approval")
+      expect(order.reload.total_price).to eq(BigDecimal("55"))
+      expect(shopify_ops).to eq(["draftOrderDelete"])
+    end
+
+    it "leaves the draft alone when the quote is resubmitted unchanged (NULL parts columns, 29.99 vs 29.99)" do
+      order, task = order_with_draft!
+      task.job_task_quote.update_columns(service_price: nil, service_quantity: nil)
+      requote!(order, task, "29.990")
+
+      expect(status_names(order).last).to eq("Waiting for User Approval")
+      expect(shopify.calls).to be_empty
+      expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
+    end
+
+    it "does not build draft line items when the order has no draft (first quote)" do
+      order = make_job_order!(owner: owner, status_key: :staff_approval)
+      task = order.job_tasks.create!(title: "Task #1")
+      expect_any_instance_of(JobOrder).not_to receive(:shopify_draft_order_line_items)
+      requote!(order, task, 40)
+      expect(status_names(order).last).to eq("Waiting for User Approval")
+    end
+
     it "takes a row lock on the order before reading the status and line items" do
       order, task = order_with_draft!
       expect_any_instance_of(JobOrder).to receive(:lock!).at_least(:once).and_call_original

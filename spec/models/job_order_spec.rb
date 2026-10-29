@@ -262,12 +262,11 @@ RSpec.describe JobOrder, type: :model do
         expect(order.send(:shopify_draft_order_line_items).map { |l| l[:title] }).to eq(["Line Items Total"])
       end
 
-      # WART(D-J49): the guards call .positive? on service_price / service_quantity
-      # without a nil check, so a quote that never got a service price crashes.
-      it "raises NoMethodError for a quote with a nil service_price" do
+      # FIXED(D-J49, with the D-J38 follow-up): nil service_price / quantity count as 0 (no parts line).
+      it "treats a nil service_price as 0 (no parts fee line) instead of raising" do
         order.job_tasks.create!(title: "Task #1").build_job_task_quote(price: 10).save!
-        expect { order.reload.send(:shopify_draft_order_line_items) }
-          .to raise_error(NoMethodError, /positive\?/)
+        titles = order.reload.shopify_draft_order_line_items.map { |l| l[:title] }
+        expect(titles).to eq(["Task #1 Service Fee", "Line Items Total"])
       end
     end
 

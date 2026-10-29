@@ -213,9 +213,9 @@ class JobOrder < ApplicationRecord
       next unless task.job_task_quote.present?
 
       price_data << generate_line_item("#{task.title} Service Fee", task.job_task_quote.price)
-      price_data << generate_line_item("#{task.title} Parts Fee", 
-task.job_task_quote.service_price * task.job_task_quote.service_quantity) if task.job_task_quote.service_price.positive? && task.job_task_quote.service_quantity.positive?
-      
+      parts = (task.job_task_quote.service_price || 0) * (task.job_task_quote.service_quantity || 0)
+      price_data << generate_line_item("#{task.title} Parts Fee", parts) if (task.job_task_quote.service_price || 0).positive? && (task.job_task_quote.service_quantity || 0).positive?
+
       next unless task.job_task_quote.job_task_quote_options.any?
       task.job_task_quote.job_task_quote_options.each do |opt|
         price_data << generate_line_item("#{task.title} #{opt.job_option.name}", opt.price)
@@ -236,7 +236,9 @@ task.job_task_quote.service_price * task.job_task_quote.service_quantity) if tas
 
   private
 
+  # Amounts are normalized to BigDecimal (nil => 0) so nil/0.0 and Float/BigDecimal compare equal.
   def generate_line_item(name, unit_amount)
+    unit_amount = BigDecimal((unit_amount || 0).to_s)
     {
       quantity: 1,
       title: name,

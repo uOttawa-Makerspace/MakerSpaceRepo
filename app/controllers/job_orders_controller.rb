@@ -192,7 +192,8 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
           # concurrent re-quotes serialize, and the status / "before" draft line items are read under the lock.
           @job_order.lock!
           status_before = @job_order.job_order_statuses.reorder(:id).last&.job_status
-          items_before = @job_order.send(:shopify_draft_order_line_items)
+          # (only needed when a draft exists: discard is a no-op otherwise)
+          items_before = @job_order.shopify_draft_order_id.present? ? @job_order.shopify_draft_order_line_items : nil
 
           @job_order.job_tasks.each do |task|
             price_key = "job_task_quote_price_#{task.id}"
@@ -266,8 +267,9 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
           # D-J38: a change to any draft line item invalidates the Shopify draft order (stale items + payable
           # link). Fail closed: if it cannot be deleted the whole quote rolls back (no price, status or email).
           # Each side is computed once.
-          items_after = JobOrder.find(@job_order.id).send(:shopify_draft_order_line_items)
-          @job_order.discard_stale_draft_order!(status_before) if items_after != items_before
+          if items_before && JobOrder.find(@job_order.id).shopify_draft_order_line_items != items_before
+            @job_order.discard_stale_draft_order!(status_before)
+          end
         end
         # After the commit: a mail failure must not roll back a quote whose old Shopify draft is already
         # deleted (the restored id would point at a deleted draft). Staff can use resend_quote_email.
