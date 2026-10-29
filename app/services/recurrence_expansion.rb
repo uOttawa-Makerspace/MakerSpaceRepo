@@ -37,7 +37,9 @@ module RecurrenceExpansion
   # 03:30 daylight time), but on a fall-back day it yields a time in the repeated
   # hour twice (01:30 daylight AND 01:30 standard) and counts both against COUNT.
   # Here the second one is dropped, so the time is listed once, at its first
-  # (daylight) instant, and COUNT is applied after that by this method.
+  # (daylight) instant, and COUNT is applied after that by this method. The
+  # window is tested against that kept instant only, so a window opening inside
+  # the repeated hour after it (e.g. 01:45 daylight) excludes that day's 01:30.
   def occurrences(rule_string, start_time, from, to, limit)
     rule = IceCube::Rule.from_ical(rule_body(rule_string))
     # enumerate_occurrences is private in IceCube but is the only variant taking a

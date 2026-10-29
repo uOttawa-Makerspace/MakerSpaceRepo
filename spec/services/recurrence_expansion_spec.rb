@@ -60,6 +60,33 @@ RSpec.describe RecurrenceExpansion do
         .to eq(%w[2026-11-01T01:30:00-05:00 2026-11-02T01:30:00-05:00])
     end
 
+    # The rule for a window edge inside the repeated hour: an occurrence at a
+    # repeated local time IS its first (EDT) instant, and the window is tested
+    # against that instant only. So a window opening between the two 01:30s
+    # (01:45 EDT .. 01:29 EST) excludes that day's 01:30, with or without COUNT.
+    describe "a window edge inside the repeated hour" do
+      let(:start) { local(2026, 10, 31, 1, 30) }
+      let(:edt_0130) { local(2026, 11, 1, 1, 30) }
+      let(:to) { local(2026, 11, 3) }
+
+      %w[RRULE:FREQ=DAILY RRULE:FREQ=DAILY;COUNT=10].each do |rule|
+        it "excludes that day's 01:30 when the window opens at 01:45 EDT or 01:15 EST (#{rule})" do
+          [edt_0130 + 15.minutes, edt_0130 + 45.minutes].each do |from|
+            expect(starts(rule, start, from, to)).to eq(%w[2026-11-02T01:30:00-05:00])
+          end
+        end
+
+        it "includes it, once, at 01:30 EDT when the window opens at 01:15 EDT (#{rule})" do
+          expect(starts(rule, start, edt_0130 - 15.minutes, to))
+            .to eq(%w[2026-11-01T01:30:00-04:00 2026-11-02T01:30:00-05:00])
+        end
+
+        it "includes it at 01:30 EDT when the window closes at 01:15 EST (#{rule})" do
+          expect(starts(rule, start, local(2026, 11, 1), edt_0130 + 45.minutes)).to eq(%w[2026-11-01T01:30:00-04:00])
+        end
+      end
+    end
+
     it "leaves an HOURLY legacy rule's elapsed hours alone (both 01:00 hours are real)" do
       expect(starts("RRULE:FREQ=HOURLY;COUNT=3", local(2026, 11, 1, 0, 0), local(2026, 10, 1), local(2026, 12, 1)))
         .to eq(%w[2026-11-01T00:00:00-04:00 2026-11-01T01:00:00-04:00 2026-11-01T01:00:00-05:00])
