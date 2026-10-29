@@ -114,7 +114,13 @@ RSpec.describe VolunteerTaskRequest, "status, join lookup and search", type: :mo
     let!(:user) { create(:user, :volunteer_with_volunteer_program, name: "Ada Lovelace", username: "adal") }
     let!(:task) { create(:volunteer_task, title: "Laser Night", space: space) }
     let!(:hit) { create(:volunteer_task_request, user: user, volunteer_task: task) }
-    let!(:miss) { create(:volunteer_task_request) }
+    # Every searched field of the miss is fixed: random factory names (e.g. a username
+    # containing "adal", or a space name containing "alpha") made it match the terms below.
+    let!(:miss) do
+      other_user = create(:user, :volunteer_with_volunteer_program, name: "Grace Hopper", username: "ghopper")
+      other_task = create(:volunteer_task, title: "Wood Shop", space: create(:space, name: "Room Beta"))
+      create(:volunteer_task_request, user: other_user, volunteer_task: other_task)
+    end
 
     it "returns everything for blank input" do
       expect(described_class.filter_by_attribute(nil)).to include(hit, miss)

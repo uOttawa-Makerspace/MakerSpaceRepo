@@ -66,6 +66,11 @@ RSpec.describe "CORS for /api/*", type: :request do
     end
   end
 
+  it "exposes X-Truncated to the apps on /api responses" do
+    get "/api/v1/session", headers: { "Origin" => "https://app.makerepo.com" }
+    expect(response.headers["Access-Control-Expose-Headers"]).to include("X-Truncated")
+  end
+
   it "echoes the origin on an actual request, with no credentials header" do
     get "/api/v1/session", headers: { "Origin" => "https://app.makerepo.com" }
     expect(response.headers["Access-Control-Allow-Origin"]).to eq("https://app.makerepo.com")
@@ -124,7 +129,8 @@ RSpec.describe "CORS Design Day path anchoring", type: :request do
       get path, headers: { "Origin" => staff }
       expect(acao).to eq(staff)
       expect(response.headers).not_to have_key("Access-Control-Allow-Credentials")
-      expect(response.headers["Access-Control-Expose-Headers"].to_s).to eq("")
+      # the /api block exposes exactly X-Truncated (the Design Day block exposes nothing)
+      expect(response.headers["Access-Control-Expose-Headers"].to_s).to eq("X-Truncated")
     end
   end
 

@@ -43,6 +43,8 @@ Rails.application.config.middleware.insert_before 0, Rack::Cors do
     resource %r{\A/api/(?!v1/design_day/?\z)},
              headers: %w[Authorization Content-Type X-Refresh-Token],
              methods: %i[get post put patch delete options],
+             # Response headers the apps may read cross-origin (GET /api/v1/spaces/:id/shifts).
+             expose: %w[X-Truncated],
              credentials: false,
              max_age: 600
   end
