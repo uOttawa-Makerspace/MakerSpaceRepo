@@ -33,6 +33,9 @@ Rails.application.routes.draw do
       get "training_session_options", to: "training_session_options#show"
       post "training_sessions/:training_session_id/certifications", to: "training_session_certifications#create",
                                                                     constraints: { training_session_id: /\d+/ }
+      get "design_day", to: "design_days#show", format: false
+      post "support_requests", to: "support_requests#create", format: false
+      get "contact_infos", to: "contact_infos#index", format: false
       # keep last: unknown /api/v1 paths answer with the JSON 404, not the HTML one
       match "*path", to: "base#route_not_found", via: :all
     end
