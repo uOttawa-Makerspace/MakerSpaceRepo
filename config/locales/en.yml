@@ -235,6 +235,8 @@ en:
           attributes:
             start_time:
               in_the_past: "cannot be in the past. Pick a start time from now on."
+            end_time:
+              in_the_past: "cannot be in the past for a booking that has already started. Pick an end time after now."
       messages:
         blank: "This field is required."
         inclusion: "Selection is not valid."

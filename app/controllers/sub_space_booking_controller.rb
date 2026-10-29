@@ -216,21 +216,16 @@ class SubSpaceBookingController < SessionsController
   end
 
   def create
+    attrs = sub_space_booking_params # a body without sub_space_booking is a 400
     recurring = params[:sub_space_booking][:recurring] == true
-    booking = SubSpaceBooking.new(sub_space_booking_params)
-    booking.valid?
-    # D-B18: a recurring series skips its past occurrences instead of failing,
-    # so a past first occurrence is not an error yet (see the series loop below).
-    past_error = booking.errors.where(:start_time, :in_the_past).first&.full_message
-    booking.errors.delete(:start_time, :in_the_past) if recurring
-    if booking.errors.any?
-      render json: {
-               errors: booking.errors.full_messages
-             },
-             status: :unprocessable_content
-      return
-    end
-    if ActiveModel::Type::Boolean.new.cast(params[:sub_space_booking][:blocking]) &&
+    # D-B18: one clock read for the whole request. Every occurrence is judged
+    # past or not once, against this instant, and its save validates against
+    # the same instant, so the two can never disagree.
+    now = Time.current
+
+    # Permission first: a non-admin asking to block gets the forbidden answer,
+    # whatever else is wrong with the request (D-B18 follow-up).
+    if ActiveModel::Type::Boolean.new.cast(attrs[:blocking]) &&
          !current_user.admin?
       message = "You do not have permission to block a space."
       respond_to do |format|
@@ -245,6 +240,19 @@ class SubSpaceBookingController < SessionsController
       return
     end
 
+    booking = new_occurrence(attrs, now)
+    booking.valid?
+    # A recurring series skips its past occurrences instead of failing, so a
+    # past first occurrence is not an error yet (see book_series).
+    booking.errors.delete(:start_time, :in_the_past) if recurring
+    if booking.errors.any?
+      render json: {
+               errors: booking.errors.full_messages
+             },
+             status: :unprocessable_content
+      return
+    end
+
     if recurring
       unless params[:sub_space_booking][:recurring_end].present? &&
                params[:sub_space_booking][:recurring_frequency].present?
@@ -254,238 +262,11 @@ class SubSpaceBookingController < SessionsController
                status: :unprocessable_content
         return
       end
-      recurrence =
-        (
-          if params[:sub_space_booking][:recurring_frequency] == "weekly"
-            7.days
-          else
-            1.month
-          end
-        )
-      start_date = Date.parse(params[:sub_space_booking][:start_time])
-      end_date = Date.parse(params[:sub_space_booking][:end_time])
-
-      start_time_str = Time.parse(params[:sub_space_booking][:start_time])
-      end_time_str = Time.parse(params[:sub_space_booking][:end_time])
-
-      end_date_r = Date.parse(params[:sub_space_booking][:recurring_end])
-
-      start_time =
-        DateTime.new(
-          start_date.year,
-          start_date.month,
-          start_date.day,
-          start_time_str.hour,
-          start_time_str.min
-        )
-      end_time =
-        DateTime.new(
-          end_date.year,
-          end_date.month,
-          end_date.day,
-          end_time_str.hour,
-          end_time_str.min
-        )
-      end_date_recurring =
-        DateTime.new(
-          end_date_r.year,
-          end_date_r.month,
-          end_date_r.day
-        ).beginning_of_day
-
-      # D-B18: occurrences that start in the past are skipped. Only the first
-      # occurrence that is booked sends the mail.
-      recurring_booking = RecurringBooking.new
-      attempted = 0
-      unless occurrence_in_past?
-        book(params, recurring_booking) # book first one
-        attempted += 1
-      end
-
-      while start_time < end_date_recurring
-        params[:sub_space_booking][:start_time] = (
-          start_time + recurrence
-        ).strftime("%Y-%m-%d %H:%M")
-        params[:sub_space_booking][:end_time] = (
-          end_time + recurrence
-        ).strftime("%Y-%m-%d %H:%M")
-
-        start_date = Date.parse(params[:sub_space_booking][:start_time])
-        end_date = Date.parse(params[:sub_space_booking][:end_time])
-
-        start_time =
-          DateTime.new(
-            start_date.year,
-            start_date.month,
-            start_date.day,
-            start_time_str.hour,
-            start_time_str.min
-          )
-        end_time =
-          DateTime.new(
-            end_date.year,
-            end_date.month,
-            end_date.day,
-            end_time_str.hour,
-            end_time_str.min
-          )
-        next if occurrence_in_past?
-
-        # book rest of recurring, don't send email for those
-        book(params, recurring_booking, attempted.zero?)
-        attempted += 1
-      end
-      if attempted.zero?
-        render json: { errors: [past_error] }, status: :unprocessable_content
-      end
+      book_series(attrs, series_occurrences(attrs), now)
     else
-      book(params) # book single
+      failure = book_occurrence(booking)
+      render_booking_failure(failure) if failure
     end
-  end
-
-  def book(params, recurring_booking = nil, send_email = true)
-    booking = SubSpaceBooking.new(sub_space_booking_params)
-    booking.sub_space = SubSpace.find(params[:sub_space_booking][:sub_space_id])
-    booking.user_id = current_user.id
-    unless booking.save
-      render json: {
-              errors: booking.errors.full_messages
-            },
-            status: :unprocessable_content
-      return
-    end
-
-    # NOTE: postgres stores these without a timezone
-    # So we receive time with no timezone, replace the time offset with the default one
-    # Then convert to utc when doing comparaisons
-    # This may explode once daylight savings are over...
-    start_datetime =
-      DateTime.parse(params[:sub_space_booking][:start_time]).change(
-        offset: DateTime.now.offset
-      ) # Rewrite timezone
-    end_datetime =
-      DateTime.parse(params[:sub_space_booking][:end_time]).change(
-        offset: DateTime.now.offset
-      )
-
-    if !ActiveModel::Type::Boolean.new.cast(params[:sub_space_booking][:blocking]) &&
-        SubSpaceBooking
-          .where(sub_space_id: params[:sub_space_booking][:sub_space_id])
-          .where(blocking: true)
-          .where.not(id: booking.id)
-          .overlapping(start_datetime.utc, end_datetime.utc)
-          .any?
-      booking.destroy
-      flash[:alert] = "This time slot is already booked."
-      respond_to do |format|
-        format.json do
-          render json: {
-                  errors: ["TimeSlot This time slot is already booked."]
-                },
-                status: :unprocessable_content
-        end
-        format.html do
-          redirect_to sub_space_booking_index_path(
-                        anchor: "booking-calendar-tab",
-                        room: params[:sub_space_booking][:sub_space_id]
-                      )
-        end
-      end
-      return
-    end
-
-    # Check time violations
-    duration = (booking.end_time - booking.start_time) / 1.hour
-    if !SubSpace
-        .find(params[:sub_space_booking][:sub_space_id])
-        .maximum_booking_duration
-        .nil? && !current_user.admin? && (duration > booking.sub_space.maximum_booking_duration)
-        render json: {
-                errors: [
-                  "DurationHour You cannot book #{booking.sub_space.name} for more than #{booking.sub_space.maximum_booking_duration} hours."
-                ]
-              },
-              status: :unprocessable_content
-        booking.destroy
-        return
-      end
-
-    if !SubSpace
-        .find(params[:sub_space_booking][:sub_space_id])
-        .maximum_booking_hours_per_week
-        .nil? && !current_user.admin?
-      if weekly_booked_hours(booking) + duration > booking.sub_space.maximum_booking_hours_per_week
-        render json: {
-                errors: [
-                  "DurationWeek You cannot book #{booking.sub_space.name} for more than #{booking.sub_space.maximum_booking_hours_per_week} hours per week."
-                ]
-              },
-              status: :unprocessable_content
-        booking.destroy
-        return
-      end
-    end
-
-    status =
-      SubSpaceBookingStatus.new(
-        sub_space_booking_id: booking.id,
-        booking_status_id:
-          (
-            # Auto-approve bookings made by admins
-            if current_user.admin?
-              BookingStatus::APPROVED.id
-            elsif SubSpace.find(
-                params[:sub_space_booking][:sub_space_id]
-              ).approval_required
-              if SubSpace
-                  .find(params[:sub_space_booking][:sub_space_id])
-                  .max_automatic_approval_hour
-                  .nil?
-                BookingStatus::PENDING.id
-              elsif duration <=
-                    SubSpace.find(
-                      params[:sub_space_booking][:sub_space_id]
-                    ).max_automatic_approval_hour
-                BookingStatus::APPROVED.id
-              elsif duration >
-                    SubSpace.find(
-                      params[:sub_space_booking][:sub_space_id]
-                    ).max_automatic_approval_hour
-                BookingStatus::PENDING.id
-              end
-            else
-              BookingStatus::APPROVED.id
-            end
-          )
-      )
-    status.save
-    booking.sub_space_booking_status_id = status.id
-    booking.public =
-      SubSpace.find(params[:sub_space_booking][:sub_space_id]).default_public
-    booking.recurring_booking = recurring_booking # Attach the RecurringBooking handle, is saved with the booking itself
-    
-    # Set approved_at and approved_by for admin bookings
-    if current_user.admin? && status.booking_status_id == BookingStatus::APPROVED.id
-      booking.approved_at = DateTime.now
-      booking.approved_by_id = current_user.id
-    end
-    
-    booking.save
-    flash[
-      :notice
-    ] = "Booking for #{booking.sub_space.name} created successfully."
-    return unless send_email
-      if booking.sub_space_booking_status.booking_status_id == BookingStatus::PENDING.id
-        BookingMailer.send_booking_needs_approval(booking.id).deliver_now
-      elsif booking.sub_space_booking_status.booking_status_id == BookingStatus::APPROVED.id
-        # Send appropriate confirmation for approved bookings
-        if current_user.admin?
-          BookingMailer.send_booking_approved(booking.id).deliver_now
-        else
-          BookingMailer.send_booking_automatically_approved(booking.id).deliver_now
-          BookingMailer.send_booking_approved(booking.id).deliver_now
-        end
-      end
   end
 
   def edit
@@ -735,11 +516,195 @@ class SubSpaceBookingController < SessionsController
 
   private
 
-  # The series occurrence currently in params starts in the past (D-B18). The
-  # model parses the same string in the app zone, so this is the instant the
-  # model's past-date rule would check.
-  def occurrence_in_past?
-    SubSpaceBooking.start_in_past?(Time.zone.parse(params[:sub_space_booking][:start_time].to_s))
+  # A booking for one occurrence, owned by the current user, whose past-date
+  # check uses the request's single clock read (D-B18).
+  def new_occurrence(attrs, now)
+    booking = SubSpaceBooking.new(attrs)
+    booking.user_id = current_user.id
+    booking.reference_time = now
+    booking
+  end
+
+  # The [start, end] strings of every occurrence of the series, generated once.
+  # The first is the request's own pair; each later one advances the previous
+  # one by the recurrence and keeps the first one's time of day. The loop runs
+  # while the previous start is before recurring_end, so a series ending
+  # mid-period overshoots it by one occurrence (D-B29) and a monthly series
+  # drifts after a clamped day (D-B08); there is no cap.
+  def series_occurrences(attrs)
+    recurrence =
+      params[:sub_space_booking][:recurring_frequency] == "weekly" ? 7.days : 1.month
+    start_time_str = Time.parse(attrs[:start_time])
+    end_time_str = Time.parse(attrs[:end_time])
+    end_date_r = Date.parse(params[:sub_space_booking][:recurring_end])
+    end_date_recurring =
+      DateTime.new(end_date_r.year, end_date_r.month, end_date_r.day).beginning_of_day
+
+    wall = lambda do |date_source, clock|
+      date = Date.parse(date_source)
+      DateTime.new(date.year, date.month, date.day, clock.hour, clock.min)
+    end
+
+    occurrences = [[attrs[:start_time], attrs[:end_time]]]
+    start_time = wall.call(attrs[:start_time], start_time_str)
+    end_time = wall.call(attrs[:end_time], end_time_str)
+    while start_time < end_date_recurring
+      next_start = (start_time + recurrence).strftime("%Y-%m-%d %H:%M")
+      next_end = (end_time + recurrence).strftime("%Y-%m-%d %H:%M")
+      occurrences << [next_start, next_end]
+      start_time = wall.call(next_start, start_time_str)
+      end_time = wall.call(next_end, end_time_str)
+    end
+    occurrences
+  end
+
+  # Books every occurrence that does not start in the past, all in one
+  # RecurringBooking group, and renders once at the end. A failed occurrence
+  # does not stop the rest (D-B30); the first failure is the answer (422).
+  # The mail goes out for the first occurrence actually booked.
+  def book_series(attrs, occurrences, now)
+    recurring_booking = RecurringBooking.new
+    booked = 0
+    failure = nil
+    occurrences.each do |start_time, end_time|
+      booking = new_occurrence(attrs.merge(start_time: start_time, end_time: end_time), now)
+      next if SubSpaceBooking.start_in_past?(booking.start_time, now)
+
+      result = book_occurrence(booking, recurring_booking: recurring_booking, send_email: booked.zero?)
+      if result
+        failure ||= result
+      else
+        booked += 1
+      end
+    end
+
+    if failure
+      render_booking_failure(failure)
+    elsif booked.zero? # every occurrence was in the past
+      render json: { errors: [SubSpaceBooking.past_start_message] },
+             status: :unprocessable_content
+    end
+  end
+
+  # Saves one occurrence and gives it its status. Renders nothing: returns nil
+  # when booked, or a failure ({ errors:, timeslot: }) for the caller to render.
+  def book_occurrence(booking, recurring_booking: nil, send_email: true)
+    # NOTE: postgres stores these without a timezone
+    # So we receive time with no timezone, replace the time offset with the default one
+    # Then convert to utc when doing comparaisons
+    # This may explode once daylight savings are over...
+    raw_start = booking.read_attribute_before_type_cast(:start_time).to_s
+    raw_end = booking.read_attribute_before_type_cast(:end_time).to_s
+
+    return { errors: booking.errors.full_messages } unless booking.save
+
+    sub_space = booking.sub_space
+    start_datetime = DateTime.parse(raw_start).change(offset: DateTime.now.offset) # Rewrite timezone
+    end_datetime = DateTime.parse(raw_end).change(offset: DateTime.now.offset)
+
+    if !booking.blocking &&
+        SubSpaceBooking
+          .where(sub_space_id: sub_space.id)
+          .where(blocking: true)
+          .where.not(id: booking.id)
+          .overlapping(start_datetime.utc, end_datetime.utc)
+          .any?
+      booking.destroy
+      return { errors: ["TimeSlot This time slot is already booked."], timeslot: true }
+    end
+
+    # Check time violations
+    duration = (booking.end_time - booking.start_time) / 1.hour
+    if !sub_space.maximum_booking_duration.nil? && !current_user.admin? &&
+         duration > sub_space.maximum_booking_duration
+      booking.destroy
+      return {
+        errors: [
+          "DurationHour You cannot book #{sub_space.name} for more than #{sub_space.maximum_booking_duration} hours."
+        ]
+      }
+    end
+
+    if !sub_space.maximum_booking_hours_per_week.nil? && !current_user.admin? &&
+         weekly_booked_hours(booking) + duration > sub_space.maximum_booking_hours_per_week
+      booking.destroy
+      return {
+        errors: [
+          "DurationWeek You cannot book #{sub_space.name} for more than #{sub_space.maximum_booking_hours_per_week} hours per week."
+        ]
+      }
+    end
+
+    status =
+      SubSpaceBookingStatus.new(
+        sub_space_booking_id: booking.id,
+        booking_status_id:
+          (
+            # Auto-approve bookings made by admins
+            if current_user.admin?
+              BookingStatus::APPROVED.id
+            elsif sub_space.approval_required
+              if sub_space.max_automatic_approval_hour.nil?
+                BookingStatus::PENDING.id
+              elsif duration <= sub_space.max_automatic_approval_hour
+                BookingStatus::APPROVED.id
+              else
+                BookingStatus::PENDING.id
+              end
+            else
+              BookingStatus::APPROVED.id
+            end
+          )
+      )
+    status.save
+    booking.sub_space_booking_status_id = status.id
+    booking.public = sub_space.default_public
+    booking.recurring_booking = recurring_booking # Attach the RecurringBooking handle, is saved with the booking itself
+
+    # Set approved_at and approved_by for admin bookings
+    if current_user.admin? && status.booking_status_id == BookingStatus::APPROVED.id
+      booking.approved_at = DateTime.now
+      booking.approved_by_id = current_user.id
+    end
+
+    booking.save
+    flash[:notice] = "Booking for #{sub_space.name} created successfully."
+    send_booking_created_mail(booking) if send_email
+    nil
+  end
+
+  def send_booking_created_mail(booking)
+    if booking.sub_space_booking_status.booking_status_id == BookingStatus::PENDING.id
+      BookingMailer.send_booking_needs_approval(booking.id).deliver_now
+    elsif booking.sub_space_booking_status.booking_status_id == BookingStatus::APPROVED.id
+      # Send appropriate confirmation for approved bookings
+      if current_user.admin?
+        BookingMailer.send_booking_approved(booking.id).deliver_now
+      else
+        BookingMailer.send_booking_automatically_approved(booking.id).deliver_now
+        BookingMailer.send_booking_approved(booking.id).deliver_now
+      end
+    end
+  end
+
+  def render_booking_failure(failure)
+    unless failure[:timeslot]
+      render json: { errors: failure[:errors] }, status: :unprocessable_content
+      return
+    end
+
+    flash[:alert] = "This time slot is already booked."
+    respond_to do |format|
+      format.json do
+        render json: { errors: failure[:errors] }, status: :unprocessable_content
+      end
+      format.html do
+        redirect_to sub_space_booking_index_path(
+                      anchor: "booking-calendar-tab",
+                      room: params[:sub_space_booking][:sub_space_id]
+                    )
+      end
+    end
   end
 
   # Hours the booking's owner already has in the booking's sub space, in the week

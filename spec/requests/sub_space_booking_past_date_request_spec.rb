@@ -94,6 +94,30 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
       expect(SubSpaceBooking.where(name: "PastBlock")).to be_empty
     end
 
+    # A form-encoded body is not param-wrapped, so sub_space_booking is really
+    # missing; ApplicationController#parameter_missing answers (it used to 500).
+    it "answers a missing sub_space_booking with the ParameterMissing handler (JSON 400, HTML redirect)" do
+      log_in!(user)
+      post sub_space_booking_index_path, params: { unrelated: "x" },
+                                         headers: { "Accept" => "application/json" }
+      expect(response).to have_http_status(:bad_request)
+      expect(response.parsed_body["error"]).to include("sub_space_booking")
+
+      post sub_space_booking_index_path, params: { unrelated: "x" }
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to include("sub_space_booking")
+      expect(SubSpaceBooking.count).to eq(0)
+    end
+
+    it "gives a non-admin past block the forbidden answer, not the past-date error" do
+      log_in!(user)
+      create_booking(start_time: "2026-11-30 10:00", end_time: "2026-11-30 11:00",
+                     name: "PastBlock", blocking: true)
+      expect(response).to have_http_status(:forbidden)
+      expect(response.parsed_body).to eq("errors" => ["You do not have permission to block a space."])
+      expect(SubSpaceBooking.where(name: "PastBlock")).to be_empty
+    end
+
     it "uses the French message under the fr locale" do
       log_in!(user)
       post sub_space_booking_index_path(locale: "fr"), as: :json,
@@ -150,6 +174,41 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
       expect(SubSpaceBooking.where(name: "AllPast")).to be_empty
       expect(RecurringBooking.count).to eq(0)
     end
+
+    # One clock read per request: the past check of an occurrence and its save
+    # cannot disagree. Simulated by moving the clock 61 s on after every past
+    # check, so any second clock read lands in a later minute.
+    it "judges every occurrence against one clock read, even when the minute turns mid-request" do
+      log_in!(user)
+      allow(SubSpaceBooking).to receive(:start_in_past?).and_wrap_original do |original, *args|
+        original.call(*args).tap { travel(61.seconds) }
+      end
+      post sub_space_booking_index_path, as: :json,
+           params: { sub_space_booking: {
+             sub_space_id: subspace.id, start_time: "2026-12-01 12:00", # this minute
+             end_time: "2026-12-01 13:00", name: "Edge", description: "D",
+             recurring: true, recurring_frequency: "weekly", recurring_end: "2026-12-15"
+           } }
+      expect(response).to have_http_status(:no_content)
+      expect(walls_of("Edge")).to eq(["2026-12-01 12:00", "2026-12-08 12:00", "2026-12-15 12:00"])
+    end
+
+    # D-B30 kept: a failed occurrence does not stop the series and the answer is
+    # 422. Changed: the mail now goes out for the first occurrence actually
+    # booked (before, a failed first attempt meant no mail at all).
+    it "mails for the first booked occurrence when an earlier one conflicts" do
+      managed = create(:space, :with_space_managers)
+      room = create(:sub_space, space: managed, approval_required: true, max_automatic_approval_hour: nil)
+      create(:sub_space_booking, sub_space: room, user: admin, name: "Grabber", blocking: true,
+                                 start_time: DateTime.parse("2026-12-08 10:30"), # literal wall, like the gaps spec
+                                 end_time: DateTime.parse("2026-12-08 11:30"))
+      log_in!(user)
+      post_series(start_on: "2026-11-17", end_on: "2026-12-15", name: "Mailed", room: room)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body).to eq("errors" => ["TimeSlot This time slot is already booked."])
+      expect(walls_of("Mailed")).to eq(["2026-12-15 10:00"])
+      expect(ActionMailer::Base.deliveries.map(&:subject)).to eq(["Booking needs approval"])
+    end
   end
 
   describe "PATCH update" do
@@ -205,6 +264,41 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
       patch_times(booking, "2026-11-29 10:00", "2026-11-29 11:00", name: "Shuffled")
       expect(response).to have_http_status(:unprocessable_content)
       expect(booking.reload.name).to eq("Existing")
+    end
+
+    # Coordinator decision (D-B18 follow-up): a booking in progress may change
+    # its end only, to an end after now.
+    describe "a booking in progress (11:00-13:00, now 12:00)" do
+      let(:running) { booking_of(user, start_time: "2026-12-01 11:00", end_time: "2026-12-01 13:00") }
+
+      it "may be extended or shortened to an end after now" do
+        log_in!(user)
+        patch_times(running, "2026-12-01 11:00", "2026-12-01 15:00", name: "Longer")
+        expect(response).to have_http_status(:ok)
+        expect(running.reload.end_time).to eq(Time.zone.parse("2026-12-01 15:00"))
+        patch_times(running, "2026-12-01 11:00", "2026-12-01 12:30", name: "Shorter")
+        expect(response).to have_http_status(:ok)
+        expect(running.reload.end_time).to eq(Time.zone.parse("2026-12-01 12:30"))
+      end
+
+      it "may not end in the past: 422 with the end-time error" do
+        log_in!(user)
+        patch_times(running, "2026-12-01 11:00", "2026-12-01 11:30", name: "Cut")
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.parsed_body).to eq(
+          "errors" => ["End time cannot be in the past for a booking that has already started. " \
+                       "Pick an end time after now."]
+        )
+        expect(running.reload.end_time).to eq(Time.zone.parse("2026-12-01 13:00"))
+      end
+
+      it "may not move its start" do
+        log_in!(user)
+        patch_times(running, "2026-12-01 11:30", "2026-12-01 15:00", name: "Shifted")
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.parsed_body).to eq("errors" => [past_error])
+        expect(running.reload.start_time).to eq(Time.zone.parse("2026-12-01 11:00"))
+      end
     end
 
     it "lets a past booking move to the future" do

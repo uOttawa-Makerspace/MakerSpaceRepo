@@ -513,10 +513,12 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       expect(walls).to eq(["2027-02-03", "2027-02-10"])
     end
 
-    it "two mid-series conflicts explode with 500 (DoubleRenderError) leaving the first booking" do
-      # WART(D-B07): book()'s conflict branch calls booking.destroy + render for each
-      # conflicting occurrence; the second render raises
-      # ActionView::DoubleRenderError → Rails 500 error page.
+    # PARTLY FIXED(D-B07, D-B18 follow-up): the series renders once, so two
+    # conflicts answer 422 with the first failure instead of a 500
+    # DoubleRenderError. Flips the pin "two mid-series conflicts explode with
+    # 500 (DoubleRenderError) leaving the first booking".
+    # WART(D-B07): the series is still not all-or-nothing: the first booking stays.
+    it "two mid-series conflicts answer one 422, leaving the first booking" do
       set_booking_status!(
         create(:sub_space_booking, sub_space: subspace, user: user,
                start_time: DateTime.parse("2027-02-10 10:30"),
@@ -538,7 +540,9 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
              recurring: true, recurring_frequency: "weekly",
              recurring_end: "2027-02-17"
            } }
-      expect(response.status).to eq(500)
+      expect(response.status).to eq(422)
+      expect(response.parsed_body)
+        .to eq("errors" => ["TimeSlot This time slot is already booked."])
       expect(SubSpaceBooking.where(name: "Weekly").count).to eq(1)
     end
   end
