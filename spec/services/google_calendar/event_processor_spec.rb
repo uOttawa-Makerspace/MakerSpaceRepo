@@ -46,6 +46,15 @@ RSpec.describe GoogleCalendar::EventProcessor, :booking_clock do
       expect(booking.sub_space_booking_status_id).to eq(booking.sub_space_booking_status.id)
     end
 
+    # D-B18: the past-date rule is for bookings made in the app. A full sync
+    # lists past events too, and the mirror keeps them.
+    it "mirrors an event that is already in the past" do
+      described_class.process(c18_gcal_event(start_at: 1.week.ago.utc, end_at: 1.week.ago.utc + 1.hour))
+      booking = booking_for("evt-1")
+      expect(booking).to be_persisted
+      expect(booking.sub_space_booking_status.booking_status).to eq(approved)
+    end
+
     it "defaults a blank summary/description to 'Google Calendar Event' / 'No description'" do
       described_class.process(c18_gcal_event(summary: "", description: nil))
       expect(booking_for("evt-1")).to have_attributes(name: "Google Calendar Event", description: "No description")

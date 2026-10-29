@@ -216,8 +216,14 @@ class SubSpaceBookingController < SessionsController
   end
 
   def create
+    recurring = params[:sub_space_booking][:recurring] == true
     booking = SubSpaceBooking.new(sub_space_booking_params)
-    unless booking.valid?
+    booking.valid?
+    # D-B18: a recurring series skips its past occurrences instead of failing,
+    # so a past first occurrence is not an error yet (see the series loop below).
+    past_error = booking.errors.where(:start_time, :in_the_past).first&.full_message
+    booking.errors.delete(:start_time, :in_the_past) if recurring
+    if booking.errors.any?
       render json: {
                errors: booking.errors.full_messages
              },
@@ -239,7 +245,7 @@ class SubSpaceBookingController < SessionsController
       return
     end
 
-    if params[:sub_space_booking][:recurring] == true
+    if recurring
       unless params[:sub_space_booking][:recurring_end].present? &&
                params[:sub_space_booking][:recurring_frequency].present?
         render json: {
@@ -287,9 +293,14 @@ class SubSpaceBookingController < SessionsController
           end_date_r.day
         ).beginning_of_day
 
-      # book first one
+      # D-B18: occurrences that start in the past are skipped. Only the first
+      # occurrence that is booked sends the mail.
       recurring_booking = RecurringBooking.new
-      book(params, recurring_booking)
+      attempted = 0
+      unless occurrence_in_past?
+        book(params, recurring_booking) # book first one
+        attempted += 1
+      end
 
       while start_time < end_date_recurring
         params[:sub_space_booking][:start_time] = (
@@ -318,7 +329,14 @@ class SubSpaceBookingController < SessionsController
             end_time_str.hour,
             end_time_str.min
           )
-        book(params, recurring_booking, false) # book rest of recurring, don't send email for those
+        next if occurrence_in_past?
+
+        # book rest of recurring, don't send email for those
+        book(params, recurring_booking, attempted.zero?)
+        attempted += 1
+      end
+      if attempted.zero?
+        render json: { errors: [past_error] }, status: :unprocessable_content
       end
     else
       book(params) # book single
@@ -568,7 +586,16 @@ class SubSpaceBookingController < SessionsController
         end
       end
     else
-      render "edit"
+      respond_to do |format|
+        format.json do
+          render json: { errors: @sub_space_booking.errors.full_messages },
+                 status: :unprocessable_content
+        end
+        format.html do
+          flash.now[:alert] = @sub_space_booking.errors.full_messages.join(", ")
+          render "edit"
+        end
+      end
     end
   end
 
@@ -579,8 +606,10 @@ class SubSpaceBookingController < SessionsController
     status = SubSpaceBookingStatus.find(sub_space_booking.sub_space_booking_status_id)
     status.update!(booking_status_id: BookingStatus::APPROVED.id)
     
-    # 2. Use update_columns to bypass model validations (like time slot overlaps/past dates)
-    # which makes admin approvals intermittent if a booking triggered a model constraint
+    # 2. Stamp the approval with update_columns, so a row that no longer passes
+    # some validation can still be approved. It writes only the approval
+    # columns, never the times, so the past-date rule (D-B18: it checks only
+    # saves that set or move the times) allows approving a past pending booking.
     sub_space_booking.update_columns(
       approved_at: DateTime.now,
       approved_by_id: current_user.id
@@ -705,6 +734,13 @@ class SubSpaceBookingController < SessionsController
   end
 
   private
+
+  # The series occurrence currently in params starts in the past (D-B18). The
+  # model parses the same string in the app zone, so this is the instant the
+  # model's past-date rule would check.
+  def occurrence_in_past?
+    SubSpaceBooking.start_in_past?(Time.zone.parse(params[:sub_space_booking][:start_time].to_s))
+  end
 
   # Hours the booking's owner already has in the booking's sub space, in the week
   # (Time.zone) containing the booking's start_time, not counting the booking itself.

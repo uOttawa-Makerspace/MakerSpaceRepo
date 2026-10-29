@@ -33,6 +33,9 @@ module GoogleCalendar
               User.find_by(email: "avend029@uottawa.ca")
       )
 
+      # A mirror of an event that already exists in Google, so the past-date
+      # rule for bookings made in the app does not apply (D-B18).
+      booking.allow_past_start = true
       booking.save
 
       return if booking.sub_space_booking_status_id.present?
