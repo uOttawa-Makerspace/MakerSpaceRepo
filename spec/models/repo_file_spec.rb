@@ -21,9 +21,11 @@ RSpec.describe RepoFile, type: :model do
         expect(file.valid?).to be_truthy
       end
 
-      it "has invalid file attached" do
+      # The trait is called "invalid", but an STL is on the proficient-project allow-list,
+      # so this pins that it is ACCEPTED there (refusals are pinned further down).
+      it "accepts an STL file in a proficient project (allow-listed, despite the trait name)" do
         file = build(:repo_file, :in_proficient_project, :with_invalid_file)
-        expect(file.valid?).to be_truthy
+        expect(file.valid?).to be(true), file.errors.full_messages.to_sentence
       end
     end
   end
