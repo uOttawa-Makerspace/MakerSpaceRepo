@@ -191,8 +191,8 @@ RSpec.describe TrainingSession, type: :model do
       session.users << [instructor, student]
       result = nil
       expect { result = session.certify_trainees! }.to change(Certification, :count).by(1)
-      expect(instructor.certifications.count).to eq(0)
-      expect(student.certifications.pluck(:training_session_id, :level)).to eq([[session.id, "Advanced"]])
+      expect(Certification.where(user_id: instructor.id).count).to eq(0)
+      expect(Certification.where(user_id: student.id).pluck(:training_session_id, :level)).to eq([[session.id, "Advanced"]])
       expect(result.self_skipped).to be(true)
       expect(result.failed).to be_empty
       expect(result.duplicates).to eq(0)
@@ -204,8 +204,8 @@ RSpec.describe TrainingSession, type: :model do
       s = create(:training_session, user: admin, training: training, space: space, level: "Beginner")
       s.users << [admin, student]
       result = s.certify_trainees!
-      expect(admin.certifications.count).to eq(0)
-      expect(student.certifications.count).to eq(1)
+      expect(Certification.where(user_id: admin.id).count).to eq(0)
+      expect(Certification.where(user_id: student.id).count).to eq(1)
       expect(result.self_skipped).to be(true)
     end
 
@@ -213,7 +213,7 @@ RSpec.describe TrainingSession, type: :model do
       session.users << student
       result = session.certify_trainees!
       expect(result.self_skipped).to be(false)
-      expect(student.certifications.count).to eq(1)
+      expect(Certification.where(user_id: student.id).count).to eq(1)
     end
   end
 end
