@@ -84,7 +84,7 @@ class ProjectProposalsController < SessionsController
 
     @categories = @project_proposal.categories
     @pagy, @repositories =
-      pagy(@project_proposal.repositories.order([sort_order].to_h), limit: 9)
+      pagy(viewable_linked_repositories.order([sort_order].to_h), limit: 9)
 
     @project_files = @project_proposal.project_files
     @linked_pp = @project_proposal.linked_project_proposal
@@ -522,6 +522,17 @@ class ProjectProposalsController < SessionsController
 
   def project_join_params
     params.permit(:project_proposal_id)
+  end
+
+  # Linked repositories the viewer may see: every public one, plus private ones
+  # that pass the private-repository gate (repository_unlocked?: admin, staff,
+  # owner/member, or a password entered this session). Same predicate as the
+  # repository page, so the two cannot drift (D-C57).
+  def viewable_linked_repositories
+    linked = @project_proposal.repositories
+    unlocked_private_ids =
+      linked.where(share_type: 'private').select { |repo| repository_unlocked?(repo) }.map(&:id)
+    linked.where(share_type: 'public').or(linked.where(id: unlocked_private_ids))
   end
 
   def sort_order

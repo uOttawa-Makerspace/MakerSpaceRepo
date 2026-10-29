@@ -169,6 +169,68 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     end
   end
 
+  describe "GET show: linked repositories (D-C57)" do
+    let(:repo_owner) { create(:user, :regular_user) }
+    let!(:public_repo) do
+      create(:repository, owner: repo_owner, title: "Open Linked Repo", project_proposal_id: approved.id)
+    end
+    let!(:private_repo) do
+      create(:repository, :private, owner: repo_owner, title: "Secret Linked Repo", project_proposal_id: approved.id)
+    end
+
+    def expect_cards(visible:, hidden: [])
+      get project_proposal_path(approved.slug)
+      expect(response).to have_http_status(:ok)
+      visible.each { |t| expect(response.body).to include(t) }
+      hidden.each { |t| expect(response.body).not_to include(t) }
+    end
+
+    it "lists only the public repository to a guest" do
+      expect_cards(visible: ["Open Linked Repo"], hidden: ["Secret Linked Repo"])
+    end
+
+    it "lists only the public repository to an unrelated signed-in user" do
+      content_login!(other)
+      expect_cards(visible: ["Open Linked Repo"], hidden: ["Secret Linked Repo"])
+    end
+
+    it "lists both to the private repository's owner" do
+      content_login!(repo_owner)
+      expect_cards(visible: ["Open Linked Repo", "Secret Linked Repo"])
+    end
+
+    it "lists both to a member of the private repository" do
+      private_repo.users << other
+      content_login!(other)
+      expect_cards(visible: ["Open Linked Repo", "Secret Linked Repo"])
+    end
+
+    it "lists both to staff (the A7 gate)" do
+      content_login!(create(:user, :staff))
+      expect_cards(visible: ["Open Linked Repo", "Secret Linked Repo"])
+    end
+
+    it "lists both to an admin" do
+      content_login!(create(:user, :admin))
+      expect_cards(visible: ["Open Linked Repo", "Secret Linked Repo"])
+    end
+
+    it "lists the private repository after its password was entered in this session" do
+      private_repo.update_columns(password: BCrypt::Password.create("pw1234"))
+      post pass_authenticate_repository_path(private_repo.user_username, private_repo.id), params: { password: "pw1234" }
+      expect_cards(visible: ["Open Linked Repo", "Secret Linked Repo"])
+    end
+
+    it "still paginates the filtered scope" do
+      10.times { |i| create(:repository, owner: repo_owner, title: "Bulk Repo #{i}", project_proposal_id: approved.id) }
+      get project_proposal_path(approved.slug)
+      expect(response.body).not_to include("Secret Linked Repo")
+      get project_proposal_path(approved.slug, page: 2)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include("Secret Linked Repo")
+    end
+  end
+
   describe "GET new / edit" do
     it "renders new for a guest" do
       get new_project_proposal_path
