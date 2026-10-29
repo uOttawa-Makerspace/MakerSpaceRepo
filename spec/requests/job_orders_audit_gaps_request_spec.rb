@@ -223,6 +223,40 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
     end
 
+    it "replaces the draft when money moves between line items without changing the total" do
+      order, task = order_with_draft!
+      session_login!(staff)
+      # 29.99 base before; after: 19.99 base + 10 x 1.00 parts = the same 29.99 total
+      patch job_order_quote_path(order), params: { approved: "true", "job_task_quote_price_#{task.id}" => "19.99",
+                                                   "task_#{task.id}_service_qty" => "10",
+                                                   "task_#{task.id}_service_price" => "1",
+                                                   job_order: { staff_comments: "" } }
+      expect(order.reload.total_price).to eq(BigDecimal("29.99"))
+      expect(shopify_ops).to eq(["draftOrderDelete"])
+      expect(order.shopify_draft_order_id).to be_nil
+    end
+
+    it "takes a row lock on the order before reading the status and line items" do
+      order, task = order_with_draft!
+      expect_any_instance_of(JobOrder).to receive(:lock!).at_least(:once).and_call_original
+      requote!(order, task, 55)
+      expect(shopify_ops).to eq(["draftOrderDelete"])
+    end
+
+    it "commits nothing and never touches Shopify when the save fails" do
+      order, task = order_with_draft!
+      statuses_before = status_names(order)
+      allow_any_instance_of(JobOrder).to receive(:save).and_return(false)
+      requote!(order, task, 55)
+
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
+      expect(shopify.calls).to be_empty
+      expect(order.reload.total_price).to eq(BigDecimal("29.99"))
+      expect(status_names(order)).to eq(statuses_before)
+      expect(order.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
+      expect(ActionMailer::Base.deliveries).to be_empty
+    end
+
     it "does not touch Shopify on a first quote (no draft order yet)" do
       order = make_job_order!(owner: owner, status_key: :staff_approval)
       task = order.job_tasks.create!(title: "Task #1")
