@@ -9,7 +9,7 @@ require "rails_helper"
 #
 # All mails are asserted by DELIVERED outcome (recipient + subject).
 
-RSpec.describe "Sub space booking gaps", type: :request do
+RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
   before do
     @pending_status = create(:booking_status, :pending)
     @approved_status = create(:booking_status, :approved)

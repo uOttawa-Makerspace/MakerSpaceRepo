@@ -18,7 +18,7 @@ require "rails_helper"
 # `current_user` never returns nil (it falls back to User.new), so a guest
 # always reaches the role gates, never `user_account`.
 
-RSpec.describe "Sub space booking role matrix", type: :request do
+RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request do
   before do
     @pending_status = create(:booking_status, :pending)
     @approved_status = create(:booking_status, :approved)

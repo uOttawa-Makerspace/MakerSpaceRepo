@@ -5,7 +5,7 @@ require "rails_helper"
 # Chunk 18 (carried over from chunk 11): GoogleCalendar::EventProcessor, the
 # per-event half of the Google Calendar -> SubSpaceBooking sync. Events are real
 # Google::Apis::CalendarV3::Event objects; there is nothing to stub (no I/O).
-RSpec.describe GoogleCalendar::EventProcessor do
+RSpec.describe GoogleCalendar::EventProcessor, :booking_clock do
   include Chunk18GoogleHelpers
 
   let!(:approved) { create(:booking_status, :approved) }

@@ -8,7 +8,7 @@ require "rails_helper"
 # overlap rule and NO past-date rule (probes through controller flows pinned
 # those consequences separately).
 
-RSpec.describe SubSpaceBooking, type: :model do
+RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
   before do
     @pending_status = create(:booking_status, :pending)
     @approved_status = create(:booking_status, :approved)

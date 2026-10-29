@@ -6,7 +6,7 @@ require "rails_helper"
 # sub space bookings point at it via recurring_booking_id. Its has_many
 # dependent: :destroy cascade never actually completes (FK wart, see below).
 
-RSpec.describe RecurringBooking, type: :model do
+RSpec.describe RecurringBooking, :booking_clock, type: :model do
   before do
     @pending_status = create(:booking_status, :pending)
     @approved_status = create(:booking_status, :approved)
