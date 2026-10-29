@@ -26,7 +26,6 @@ RSpec.describe "Page crawl (request level)", type: :request, skip_bullet: true d
     "/printers/last_user_assigned_to_printer" => %i[staff admin].index_with { "D-CRAWL05" },
     "/staff/my_calendar" => %i[staff admin].index_with { "D-CRAWL06" },
     "/staff_dashboard/refresh_tables" => %i[staff admin].index_with { "D-CRAWL07" },
-    "/locker_sizes/:id" => { admin: "D-CRAWL08" },
     "/admin/uni_programs/current_programs" => { admin: "D-CRAWL09" }
   }.freeze
 

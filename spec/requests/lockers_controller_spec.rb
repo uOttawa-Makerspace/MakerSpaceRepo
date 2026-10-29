@@ -192,10 +192,9 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
       expect(response).to redirect_to(lockers_path)
     end
 
-    it "has a show route but no show action: 500 (missing template)" do
-      # WART(D-L08): route exists without a show action/template
-      get locker_size_path(create(:locker_size))
-      expect(response).to have_http_status(:internal_server_error)
+    it "has no show route (D-L08)" do
+      get "/locker_sizes/#{create(:locker_size).id}"
+      expect(response).to have_http_status(:not_found)
     end
   end
 
