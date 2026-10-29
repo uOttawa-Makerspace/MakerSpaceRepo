@@ -75,7 +75,7 @@ module Api
           title: event.display_title,
           start: start_time.iso8601,
           end: end_time.iso8601,
-          allDay: start_time.to_time == end_time.to_time - 1.day,
+          allDay: CalendarTime.all_day?(start_time, end_time),
           extendedProps: {
             eventType: event.event_type,
             description: event.description,
