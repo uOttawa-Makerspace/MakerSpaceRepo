@@ -349,6 +349,51 @@ RSpec.describe "JobOrders audit gaps", type: :request do
         expect(shopify_ops).not_to include("draftOrderCreate")
       end
 
+      it "shows the try-again message (no 500) when the fetch raises a timeout; the id is kept" do
+        order, = order_with_draft!
+        allow(shopify).to receive(:query).and_raise(Net::ReadTimeout)
+        get pay_job_orders_path, params: { token: order.pay_token }
+
+        expect(response).to have_http_status(:ok)
+        expect(page_text).to include(I18n.t("job_orders.alerts.payment_link_unavailable"))
+        expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
+      end
+
+      it "shows the try-again message (no 500) when creating the first draft answers 502" do
+        order = make_job_order!(owner: owner, status_key: :completed)
+        order.job_tasks.create!(title: "Task #1").build_job_task_quote(price: 5, service_price: 0, service_quantity: 0).save!
+        shopify.status = 502
+        get pay_job_orders_path, params: { token: order.pay_token }
+
+        expect(response).to have_http_status(:ok)
+        expect(page_text).to include(I18n.t("job_orders.alerts.payment_link_unavailable"))
+        expect(order.reload.shopify_draft_order_id).to be_nil
+      end
+
+      it "keeps a successfully created draft id when the follow-up fetch times out, and reuses it next time" do
+        order = make_job_order!(owner: owner, status_key: :completed)
+        order.job_tasks.create!(title: "Task #1").build_job_task_quote(price: 5, service_price: 0, service_quantity: 0).save!
+        created = false
+        timed_out = false
+        allow(shopify).to receive(:query).and_wrap_original do |m, **kw|
+          if kw[:query].include?("getDraftOrder") && created && !timed_out
+            timed_out = true
+            raise Net::ReadTimeout
+          end
+          created = true if kw[:query].include?("draftOrderCreate")
+          m.call(**kw)
+        end
+
+        get pay_job_orders_path, params: { token: order.pay_token }
+        expect(page_text).to include(I18n.t("job_orders.alerts.payment_link_unavailable"))
+        expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
+
+        shopify.calls.clear
+        get pay_job_orders_path, params: { token: order.pay_token }
+        expect(response.body).to include("https://pay.example/old-invoice")
+        expect(shopify_ops).to eq(["getDraftOrder"])
+      end
+
       it "decides gone from a fetch, re-checks once under the lock, creates one draft; the view reuses the link" do
         order, = order_with_draft!
         shopify.missing_ids = ["gid://shopify/DraftOrder/9001"]
@@ -418,14 +463,24 @@ RSpec.describe "JobOrders audit gaps", type: :request do
         expect(order.shopify_draft_order_id).to be_nil
       end
 
-      it "refuses when the delete returned userErrors, even if a follow-up fetch would say gone" do
+      it "proceeds when the delete reports a userError (not found) and the fetch confirms the draft is gone" do
+        order, task = order_with_draft!
+        shopify.delete_user_errors = [{ "field" => "id", "message" => "Draft order not found" }]
+        shopify.missing_ids = ["gid://shopify/DraftOrder/9001"]
+        requote!(order, task, 55)
+
+        expect(shopify_ops).to eq(%w[draftOrderDelete getDraftOrder])
+        expect(status_names(order).last).to eq("Waiting for User Approval")
+        expect(order.reload.shopify_draft_order_id).to be_nil
+      end
+
+      it "refuses when the delete reports userErrors and the fetch finds the draft (completed/paid)" do
         order, task = order_with_draft!
         shopify.delete_user_errors = [{ "field" => "id", "message" => "cannot delete a completed draft order" }]
-        shopify.draft_missing = true
         requote!(order, task, 55)
 
         expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.requote_draft_order_failed"))
-        expect(shopify_ops).to eq(["draftOrderDelete"])
+        expect(shopify_ops).to eq(%w[draftOrderDelete getDraftOrder])
         expect(order.reload.total_price).to eq(BigDecimal("29.99"))
         expect(order.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
       end

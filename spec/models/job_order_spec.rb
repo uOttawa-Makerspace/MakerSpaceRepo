@@ -296,14 +296,28 @@ RSpec.describe JobOrder, type: :model do
         expect(shopify.calls.map { |c| c[:query][/\b(draftOrderCreate|getDraftOrder)\b/] }).to eq(%w[getDraftOrder])
       end
 
-      it "raises a network error when Shopify answers with a non-200 while creating" do
+      it "raises a network error from the concern when Shopify answers with a non-200 while creating" do
         shopify.status = 502
-        expect { order.checkout_link }.to raise_error(RuntimeError, /Network error: Received HTTP 502/)
+        expect { order.send(:shopify_draft_order) }.to raise_error(RuntimeError, /Network error: Received HTTP 502/)
       end
 
-      it "raises when Shopify returns user errors" do
+      it "raises from the concern when Shopify returns user errors" do
         shopify.user_errors = [{ "field" => "x", "message" => "Bad line item" }]
-        expect { order.checkout_link }.to raise_error(RuntimeError, /Shopify Draft Order Creation Failed: Bad line item/)
+        expect { order.send(:shopify_draft_order) }.to raise_error(RuntimeError, /Shopify Draft Order Creation Failed: Bad line item/)
+      end
+
+      it "checkout_link reports and returns nil instead of raising when creation fails" do
+        shopify.status = 502
+        expect(Rails.error).to receive(:report).with(an_instance_of(RuntimeError), hash_including(handled: true))
+        expect(order.checkout_link).to be_nil
+      end
+
+      it "treats an empty (but non-null) draftOrder as found, not gone: no re-create" do
+        order.update_column(:shopify_draft_order_id, "gid://shopify/DraftOrder/9001")
+        allow(shopify).to receive(:query).and_return(ShopSpecHelpers::FakeShopifyAdmin::Response.new(200, { "data" => { "draftOrder" => {} } }))
+        expect(order.checkout_link).to be_nil
+        expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
+        expect(shopify).to have_received(:query).once
       end
     end
   end

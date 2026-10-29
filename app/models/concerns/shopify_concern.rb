@@ -187,7 +187,7 @@ module ShopifyConcern
 
       body = resp.body
       draft = body&.dig("data", "draftOrder")
-      return [:found, draft] if draft.present?
+      return [:found, draft] unless draft.nil?
 
       gone = body.is_a?(Hash) && body["errors"].blank? && body["data"].is_a?(Hash) && body["data"].key?("draftOrder")
       [gone ? :gone : :error, nil]
