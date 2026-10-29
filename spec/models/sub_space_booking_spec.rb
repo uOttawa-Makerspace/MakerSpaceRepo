@@ -117,11 +117,117 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
         expect(future.errors.of_kind?(:start_time, :in_the_past)).to be(true)
       end
 
-      it "refuses to move only the end of a booking that already started" do
-        started = described_class.find(create(:sub_space_booking, sub_space: room,
+      # D-B18 follow-up (coordinator decision): a booking in progress may move
+      # its END, if the start stays put and the new end is after now. This
+      # flips the earlier pin "refuses to move only the end of a booking that
+      # already started".
+      describe "a booking already in progress" do
+        def in_progress
+          described_class.find(create(:sub_space_booking, sub_space: room,
+                                                          start_time: 1.hour.ago,
+                                                          end_time: 1.hour.from_now).id)
+        end
+
+        it "may be extended" do
+          booking = in_progress
+          expect(booking.update(end_time: 2.hours.from_now)).to be(true)
+        end
+
+        it "may be shortened to an end after now" do
+          booking = in_progress
+          expect(booking.update(end_time: 1.minute.from_now)).to be(true)
+        end
+
+        it "may not end in the past (or right now): the error is on end_time, en and fr" do
+          booking = in_progress
+          expect(booking.update(end_time: Time.current)).to be(false)
+          expect(booking.update(end_time: 10.minutes.ago)).to be(false)
+          expect(booking.errors.of_kind?(:end_time, :in_the_past)).to be(true)
+          expect(booking.errors.full_messages).to eq(
+            ["End time cannot be in the past for a booking that has already started. Pick an end time after now."]
+          )
+          expect(I18n.with_locale(:fr) { booking.errors.full_messages }).to eq(
+            ["End time ne peut pas être dans le passé pour une réservation déjà commencée. " \
+             "Choisissez une heure de fin après maintenant."]
+          )
+        end
+
+        it "may not move its start, even with the end in the future" do
+          booking = in_progress
+          expect(booking.update(start_time: 30.minutes.ago, end_time: 2.hours.from_now)).to be(false)
+          expect(booking.errors.of_kind?(:start_time, :in_the_past)).to be(true)
+        end
+
+        it "a booking that has not started may move only its end" do
+          booking = described_class.find(create(:sub_space_booking, sub_space: room,
+                                                                    start_time: 1.hour.from_now,
+                                                                    end_time: 2.hours.from_now).id)
+          expect(booking.update(end_time: 3.hours.from_now)).to be(true)
+        end
+
+        it "a booking that already ended may not have its times changed at all" do
+          ended = described_class.find(create(:sub_space_booking, sub_space: room,
+                                                                  start_time: 3.hours.ago,
+                                                                  end_time: 1.hour.ago).id)
+          expect(ended.update(end_time: 2.hours.ago)).to be(false)
+          expect(ended.errors.of_kind?(:end_time, :booking_ended)).to be(true)
+        end
+      end
+
+      it "compares the times at minute precision: resubmitting 09:00 for a stored 09:00:30 is not a move" do
+        stored = Time.zone.parse("2026-11-30 09:00:30") # past at BookingClock::NOW
+        row = create(:sub_space_booking, sub_space: room, start_time: stored, end_time: stored + 1.hour)
+        row = described_class.find(row.id)
+        expect(row.start_time.sec).to eq(30)
+        row.assign_attributes(name: "Renamed", start_time: "2026-11-30 09:00", end_time: "2026-11-30 10:00")
+        expect(row.save).to be(true)
+        expect(row.reload.name).to eq("Renamed")
+      end
+
+      it "judges against reference_time when it is set (one clock read per request)" do
+        b = fresh(10.minutes.ago)
+        b.reference_time = 1.hour.ago
+        expect(b).to be_valid
+        b.reference_time = Time.current
+        expect(b).not_to be_valid
+      end
+
+      it "past_start_message is the full start-time error, built without a record (en and fr)" do
+        expect(described_class).not_to receive(:new)
+        expect(described_class.past_start_message)
+          .to eq("Start time cannot be in the past. Pick a start time from now on.")
+        expect(I18n.with_locale(:fr) { described_class.past_start_message })
+          .to eq("Start time ne peut pas être dans le passé. Choisissez une heure de début à partir de maintenant.")
+      end
+
+      # The start and the end are both judged against the current minute.
+      it "rounds now to the minute for the end check too" do
+        booking = described_class.find(create(:sub_space_booking, sub_space: room,
                                                                   start_time: 1.hour.ago,
                                                                   end_time: 1.hour.from_now).id)
-        expect(started.update(end_time: 2.hours.from_now)).to be(false)
+        travel_to(BookingClock::NOW + 30.seconds)
+        expect(booking.update(end_time: BookingClock::NOW + 20.seconds)).to be(true) # this minute
+        expect(booking.update(end_time: BookingClock::NOW - 1.second)).to be(false)  # the minute before
+        expect(booking.errors.of_kind?(:end_time, :in_the_past)).to be(true)
+      end
+
+      it "times_changing? compares at minute precision" do
+        stored = Time.zone.parse("2026-12-03 09:00:30")
+        row = described_class.find(create(:sub_space_booking, sub_space: room,
+                                                              start_time: stored, end_time: stored + 1.hour).id)
+        row.start_time = "2026-12-03 09:00"
+        expect(row.times_changing?).to be(false)
+        row.start_time = "2026-12-03 09:01"
+        expect(row.times_changing?).to be(true)
+      end
+
+      # The factory's bypass covers only its own INSERT.
+      it "checks a factory-built record like any other" do
+        expect(build(:sub_space_booking, sub_space: room, start_time: 1.day.ago, end_time: 1.day.ago + 1.hour))
+          .not_to be_valid
+        created = create(:sub_space_booking, sub_space: room, start_time: 1.day.ago, end_time: 1.day.ago + 1.hour)
+        expect(created.allow_past_start).to be_nil
+        expect(created.update(start_time: 2.days.ago)).to be(false)
       end
 
       it "lets the Google Calendar mirror (allow_past_start) save a past event" do

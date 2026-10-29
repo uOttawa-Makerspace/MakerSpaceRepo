@@ -59,10 +59,12 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
     booking
   end
 
+  # A blocking row at the given Toronto wall times (D-B06: the overlap check
+  # compares zoned instants).
   def blocking_row(target, start_wall, end_wall)
     row = create(:sub_space_booking, sub_space: target, user: user, name: "Block",
-                                     start_time: DateTime.parse(start_wall),
-                                     end_time: DateTime.parse(end_wall), blocking: true)
+                                     start_time: Time.zone.parse(start_wall),
+                                     end_time: Time.zone.parse(end_wall), blocking: true)
     row.sub_space_booking_status.update!(booking_status_id: @approved_status.id)
     row
   end
@@ -149,9 +151,15 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(SubSpaceBooking.where(name: %w[First Second]).count).to eq(2)
     end
 
-    it "answers an HTML-format create with an empty 204 as well" do
+    # Round 3: an HTML create has no template for the implicit render (the
+    # coordinator reports a 500 in a browser), so it redirects to the room's calendar with the notice.
+    # Flips the pin "answers an HTML-format create with an empty 204 as well".
+    it "redirects an HTML-format create to the room's calendar with the notice" do
       create_booking(subspace, as: :html)
-      expect(response).to have_http_status(:no_content)
+      expect(response).to redirect_to(
+        sub_space_booking_index_path(anchor: "booking-calendar-tab", room: subspace.id)
+      )
+      expect(flash[:notice]).to eq("Booking for #{subspace.name} created successfully.")
       expect(SubSpaceBooking.find_by!(name: "Fresh").user_id).to eq(user.id)
     end
 
@@ -285,11 +293,31 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(walls_of("Over")).to eq(%w[2027-02-03 2027-02-10 2027-02-17])
     end
 
-    # WART(D-B29): there is no cap on the number of occurrences.
-    it "has no cap: a one-year weekly series creates every occurrence in one request" do
+    # FIXED(D-B29, cap half): a series may span at most 365 days (with
+    # weekly the densest, at most 54 occurrences). Flips the pin "has no cap".
+    # A full year is still allowed (with the overshoot, 54 weekly occurrences).
+    it "allows a series of exactly a year, and refuses one day more with a 422 (en and fr)" do
       post_series(name: "Year", end_on: "2028-02-03")
       expect(response).to have_http_status(:no_content)
       expect(SubSpaceBooking.where(name: "Year").count).to eq(54)
+
+      post_series(name: "TooLong", end_on: "2028-02-04")
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body).to eq(
+        "errors" => ["Recurring A recurring booking can span at most 365 days."]
+      )
+      expect(SubSpaceBooking.where(name: "TooLong")).to be_empty
+
+      post sub_space_booking_index_path(locale: "fr"), as: :json,
+           params: { sub_space_booking: {
+             sub_space_id: subspace.id, start_time: "2027-02-03 10:00", end_time: "2027-02-03 11:00",
+             name: "TooLong", description: "D", recurring: true, recurring_frequency: "monthly",
+             recurring_end: "2030-02-03"
+           } }
+      expect(response.parsed_body["errors"]).to eq(
+        ["Recurring Une réservation récurrente peut couvrir au plus 365 jours."]
+      )
+      expect(RecurringBooking.count).to eq(1)
     end
 
     it "treats any frequency other than 'weekly' as monthly" do
@@ -314,13 +342,18 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(SubSpaceBooking.find_by!(name: "FormString").recurring_booking_id).to be_nil
     end
 
-    # WART(D-B30): when the FIRST occurrence conflicts the request already
-    # rendered 422, yet the loop carries on and books the rest of the series.
+    # WART(D-B30): when the FIRST occurrence conflicts, the series carries on
+    # and books the rest. The 422 now says so: how many were booked and the
+    # dates that were not, and no success notice is set.
     it "still creates the later occurrences when the first one conflicts (422 with a partial series)" do
       blocking_row(subspace, "2027-02-03 10:30", "2027-02-03 11:30")
       post_series(name: "NoFirst")
       expect(response).to have_http_status(:unprocessable_content)
-      expect(response.parsed_body).to eq("errors" => ["TimeSlot This time slot is already booked."])
+      expect(response.parsed_body).to eq("errors" => ["TimeSlot This time slot is already booked."],
+                                         "booked" => 2, "failed" => ["2027-02-03"],
+                                         "summary" => "Booked 2 of 3 occurrences. Not booked: 2027-02-03.")
+      expect(flash[:notice]).to be_nil
+      expect(flash[:alert]).to eq("Booked 2 of 3 occurrences. Not booked: 2027-02-03.")
       expect(walls_of("NoFirst")).to eq(%w[2027-02-10 2027-02-17])
     end
 
@@ -592,8 +625,8 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       def week_booking(owner, day, from, to, **attrs)
         create(:sub_space_booking,
                { sub_space: capped, user: owner,
-                 start_time: DateTime.parse("2027-04-#{day} #{from}"),
-                 end_time: DateTime.parse("2027-04-#{day} #{to}") }.merge(attrs))
+                 start_time: Time.zone.parse("2027-04-#{day} #{from}"),
+                 end_time: Time.zone.parse("2027-04-#{day} #{to}") }.merge(attrs))
       end
 
       def update_times(target, from, to, as: :json, name: "Quota")
@@ -647,7 +680,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
           own.sub_space_booking_status.update!(booking_status_id: @pending_status.id)
 
           patch update_path_for(own), as: :json, params: {
-            sub_space_booking: { start_time: "2027-04-07T10:00:00Z", end_time: "2027-04-07T13:00:00Z",
+            sub_space_booking: { start_time: "2027-04-07 10:00", end_time: "2027-04-07 13:00",
                                  name: "Renamed", description: "D" }
           }
           expect(response).to have_http_status(:ok)
@@ -708,10 +741,18 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(booking.end_time - booking.start_time).to eq(24.hours)
     end
 
-    it "raises (500) when start_time or end_time is missing" do
+    # The overlap check now uses the booking's own (zoned) times instead of
+    # re-parsing the raw params (D-B06), so an update without start_time or
+    # end_time keeps the stored times. Flips the pin "raises (500) when
+    # start_time or end_time is missing".
+    it "keeps the stored times when start_time and end_time are missing" do
+      start_before = booking.start_time
       patch update_path_for(booking), params: { sub_space_booking: { name: "NoTimes" } }
-      expect(response).to have_http_status(:internal_server_error)
-      expect(booking.reload.name).not_to eq("NoTimes")
+      expect(response).to redirect_to(
+        sub_space_booking_index_path(anchor: "booking-calendar-tab", room: subspace.id)
+      )
+      expect(booking.reload.name).to eq("NoTimes")
+      expect(booking.start_time).to eq(start_before)
     end
   end
 

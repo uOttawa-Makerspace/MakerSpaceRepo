@@ -563,7 +563,8 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
                         "Referer" => "https://evil.example/forged-form.html" }
       end.to change { SubSpaceBooking.where(name: "ForgedByAttacker").count }.by(1)
 
-      expect(response).to have_http_status(:no_content)
+      # accepted: an HTML create now redirects to the calendar (round 3; was an empty 204)
+      expect(response).to redirect_to(sub_space_booking_index_path(anchor: "booking-calendar-tab", room: subspace.id))
       expect(SubSpaceBooking.find_by!(name: "ForgedByAttacker").user_id).to eq(user.id)
     end
   end

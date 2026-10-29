@@ -4,6 +4,7 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import listPlugin from "@fullcalendar/list";
 import TomSelect from "tom-select";
 import "flatpickr";
+import { Toast } from "bootstrap";
 
 // ─── Small helpers ────────────────────────────────────────────────────────────
 
@@ -436,6 +437,16 @@ document.addEventListener("turbo:load", function () {
     );
   }
 
+  // Uses the imported Toast: the global `bootstrap` the error path below
+  // relies on is not defined on this page (D-JS02 / D-E2E04, not fixed here).
+  function showToast(title, text) {
+    const toastEl = document.getElementById("booking_toast");
+    if (!toastEl) return;
+    document.getElementById("toast_title").innerText = title;
+    document.getElementById("toast_text").innerText = text;
+    Toast.getOrCreateInstance(toastEl).show();
+  }
+
   // ---- Shared fetch handler -----------------------------------------------
   function makeRequest(request, triggerBtn) {
     fetch(request)
@@ -446,6 +457,18 @@ document.addEventListener("turbo:load", function () {
           parsed = JSON.parse(text);
         } catch {
           parsed = null;
+        }
+
+        // A partly booked recurring series (422 with booked > 0): some
+        // occurrences exist now, so show the calendar and say what happened
+        // rather than reporting a plain failure (the user would rebook and
+        // create duplicates).
+        if (parsed?.errors && parsed.booked > 0) {
+          closeModal();
+          bookedCalendar.refetchEvents();
+          showToast("Booking partly done", parsed.summary);
+          window.scrollTo(0, 0);
+          return;
         }
 
         if (parsed?.errors) {

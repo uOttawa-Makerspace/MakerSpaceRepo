@@ -10,18 +10,35 @@ class SubSpaceBooking < ApplicationRecord
   validates :start_time, presence: true
   validates :end_time, presence: true
   validate :end_time_after_start_time
-  validate :start_time_not_in_past, if: :booking_times_changing?
+  validate :times_not_in_past
 
   # D-B18: the Google Calendar sync mirrors events that already exist in Google,
   # past ones included (a full sync lists every event). Only that mirror sets
   # this; a booking made in the app may never start in the past.
   attr_accessor :allow_past_start
 
+  # D-B18: the instant "now" means for this record's past-date check. The
+  # booking controller sets it once per request, so a whole recurring series is
+  # judged against one clock read; otherwise it is read at validation.
+  attr_writer :reference_time
+
+  def reference_time
+    @reference_time || Time.current
+  end
+
   # D-B18: the one past-date rule, for every role (admins and admin blocks
   # included). A booking may not start before now; the current minute counts
   # as now, since the booking form picks whole minutes.
-  def self.start_in_past?(start_time)
-    start_time.present? && start_time < Time.current.beginning_of_minute
+  def self.start_in_past?(start_time, now = Time.current)
+    start_time.present? && start_time < now.beginning_of_minute
+  end
+
+  # The full past-start error, for a response that has no record to carry it
+  # (a recurring series whose occurrences are all in the past).
+  def self.past_start_message
+    message = I18n.t(:"activerecord.errors.models.sub_space_booking.attributes.start_time.in_the_past")
+    I18n.t(:"errors.format", default: "%{attribute} %{message}",
+                             attribute: human_attribute_name(:start_time), message: message)
   end
 
   # D-B54: the one overlap rule. Exact half-open intersection of [start, end):
@@ -99,17 +116,47 @@ class SubSpaceBooking < ApplicationRecord
     { id: "blocking_booking", name: "Blocking Bookings", color: "#ABABABFF" }
   ]
 
-  # The past-date rule applies only while the times are being set: a new
-  # booking, or an edit that moves it. Saves that leave the times alone (status
-  # changes, approvals, renames) keep working on bookings that are now past.
-  def booking_times_changing?
-    return false if allow_past_start
+  # The past-date rule (D-B18) applies only while the times are being set. It
+  # compares at minute precision, like the form: resubmitting "09:00" for a
+  # stored 09:00:30 (a Google-mirrored row) is not a move.
+  # - A new booking, or an edit that moves the start: the start may not be in
+  #   the past.
+  # - A booking in progress (start <= now < its stored end) may move only its
+  #   end, to an end after now (extending or shortening it).
+  # - A booking that has already ended (stored end <= now) may not have its
+  #   times changed at all.
+  # A booking that has not started may move its end freely. "Now" is the
+  # current minute for every comparison. Saves that leave the times alone
+  # (status changes, approvals, renames) keep working on bookings that are now
+  # past.
+  def times_not_in_past
+    return if allow_past_start
 
-    new_record? || will_save_change_to_start_time? || will_save_change_to_end_time?
+    now = reference_time.beginning_of_minute
+    if new_record?
+      errors.add(:start_time, :in_the_past) if self.class.start_in_past?(start_time, now)
+    elsif times_changing?
+      stored_end = attribute_in_database(:end_time)
+      if stored_end.present? && stored_end <= now
+        errors.add(:end_time, :booking_ended)
+      elsif minute_changed?(:start_time)
+        errors.add(:start_time, :in_the_past) if self.class.start_in_past?(start_time, now)
+      elsif self.class.start_in_past?(start_time, now) && end_time.present? && end_time <= now
+        errors.add(:end_time, :in_the_past)
+      end
+    end
   end
 
-  def start_time_not_in_past
-    errors.add(:start_time, :in_the_past) if self.class.start_in_past?(start_time)
+  # Whether this save moves the booking, at minute precision (the form picks
+  # whole minutes, so "09:00" resubmitted for a stored 09:00:30 is no move).
+  # The past-date rule and the controller's duration/week limits share it.
+  def times_changing?
+    minute_changed?(:start_time) || minute_changed?(:end_time)
+  end
+
+  def minute_changed?(attribute)
+    to_minute = ->(time) { time&.change(sec: 0) }
+    to_minute.call(attribute_in_database(attribute)) != to_minute.call(public_send(attribute))
   end
 
   def end_time_after_start_time
