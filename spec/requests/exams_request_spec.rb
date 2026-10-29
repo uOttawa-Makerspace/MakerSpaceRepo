@@ -410,7 +410,9 @@ RSpec.describe "Exams", type: :request do
       expect(retake.training_session).to eq(session_record)
       expect(retake.status).to eq("not started")
       expect(retake.category).to eq(fixture[:training].name_en)
-      expect(retake.expired_at).to be_within(1.minute).of(3.days.from_now)
+      # The app sets expired_at = DateTime.now + 3.days (a fixed 72 h); 3.days.from_now counts
+      # Toronto calendar days and is 71/73 h across a DST change, so compare with the app's formula.
+      expect(retake.expired_at).to be_within(1.minute).of(DateTime.now + 3.days)
       expect(retake.exam_questions.count).to eq($n_exams_question)
     end
 
@@ -646,7 +648,9 @@ RSpec.describe "Exams", type: :request do
       exam = Exam.find_by!(user: student)
       expect(exam).to have_attributes(status: "not started", category: fixture[:training].name_en,
                                       training_session_id: session_record.id)
-      expect(exam.expired_at).to be_within(1.minute).of(3.days.from_now)
+      # The app sets expired_at = DateTime.now + 3.days (a fixed 72 h); 3.days.from_now counts
+      # Toronto calendar days and is 71/73 h across a DST change, so compare with the app's formula.
+      expect(exam.expired_at).to be_within(1.minute).of(DateTime.now + 3.days)
     end
 
     it "only draws questions of the session's level and trainings" do
