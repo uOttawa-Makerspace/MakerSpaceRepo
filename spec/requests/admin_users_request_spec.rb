@@ -500,6 +500,22 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
     end
   end
 
+  describe "PUT /admin/users/toggle_lock_user deciding under the lock" do
+    before { login!(admin) }
+
+    it "decides lock vs unlock from the row as it is under the guard, not from the earlier read" do
+      expect(target.reload.locked).to be_falsey
+      # another admin's lock lands after the controller read the (unlocked) row and before the guarded block
+      allow(User).to receive(:guarding_last_admin!).and_wrap_original do |original, *args, **kwargs, &block|
+        User.where(id: target.id).update_all(locked: true, locked_until: 99.years.from_now, auth_attempts: User::MAX_AUTH_ATTEMPTS)
+        original.call(*args, **kwargs, &block)
+      end
+      put toggle_lock_user_admin_users_path, params: { id: target.id }
+      expect(flash[:notice]).to eq("User unlocked!")
+      expect(target.reload.locked).to be(false)
+    end
+  end
+
   describe "PUT /admin/users/toggle_lock_user and token_version" do
     before { login!(admin) }
 

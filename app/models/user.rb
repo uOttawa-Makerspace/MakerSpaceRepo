@@ -49,6 +49,13 @@ class User < ApplicationRecord
 
   ROLES = %w[regular_user admin staff volunteer].freeze
 
+  # Raised by User.change_roles! when the change would leave no usable admin.
+  class LastAdminError < StandardError; end
+
+  # The one wording, used by the admin UI and the API.
+  LAST_ADMIN_MESSAGE = "You cannot remove the last admin."
+  LAST_ADMIN_LOCK_MESSAGE = "You cannot lock the last admin."
+
   IDENTITIES = %w[
     grad
     undergrad
@@ -336,6 +343,92 @@ class User < ApplicationRecord
       .order(sanitize_sql_for_order([Arel.sql('similarity(name, ?) DESC'), query]))
       .limit(10)
   }
+
+  # Staff-facing substring search over name, email and username (accent- and
+  # case-insensitive). The caller escapes LIKE wildcards if it wants literal matching.
+  scope :text_search, ->(query) {
+    pattern = "%#{query}%"
+    where(
+      "LOWER(UNACCENT(name)) like LOWER(UNACCENT(?)) OR
+                           LOWER(UNACCENT(email)) like LOWER(UNACCENT(?)) OR
+                           LOWER(UNACCENT(username)) like LOWER(UNACCENT(?))",
+      pattern, pattern, pattern
+    )
+  }
+
+  # Admins who can still sign in. A locked admin (admin lock, or too many failed
+  # attempts) cannot sign in (CredentialAuthenticator), so does not count.
+  # Latent: `active` = false is ignored here (nothing sets it today).
+  scope :usable_admins, -> {
+    where(role: "admin").where("users.locked IS NOT TRUE OR users.locked_until < ?", Time.current)
+  }
+
+  GUARD_LOCK_MODE = "FOR NO KEY UPDATE"
+
+  # Runs the block (a demotion, admin lock or soft delete of `affected_ids`) only if
+  # at least one usable admin remains outside them; otherwise raises LastAdminError
+  # and the block never runs. Every such change must go through here.
+  #
+  # ALWAYS, before anything is decided, ALL admin rows are locked (FOR NO KEY UPDATE, in
+  # id order) and then the affected rows (also in id order), and the locks are held until
+  # the transaction ends. Whether the change touches an admin, only_if, and the
+  # usable-admin check are all evaluated from state read under those locks, and the
+  # block runs on rows that cannot change role meanwhile. Deciding first and locking
+  # after (e.g. "no admin is affected, so lock nothing") is a race: another
+  # transaction can promote the target in between, and the block would then demote
+  # an admin that nothing protected. Every role change takes the admin locks, so they
+  # are serialized with each other; a promotion takes the same locks, in the same
+  # order, and is never refused.
+  #
+  # Lock mode: FOR NO KEY UPDATE, not FOR UPDATE. It conflicts with itself, so guard
+  # callers still serialize, but not with KEY SHARE, which Postgres takes on a user
+  # row whenever a row referencing it is inserted (api_refresh_tokens.user_id).
+  # FOR UPDATE would deadlock with ApiRefreshToken#rotate!: the guard holds the user
+  # row and waits (via bump_token_version! -> revoke_all_for!) for the token rows
+  # that rotate! holds while its successor INSERT waits for the user row. Any other
+  # lock on a users row inside a guarded block must use the same mode.
+  #
+  # Global lock order, for every caller: admin rows, then the target rows, each
+  # ORDER BY id. change_roles! follows it, so two of them cannot deadlock.
+  #
+  # Known, intentional gap: the automatic failed-login lockout (record_failed_attempt!)
+  # does NOT go through here. It is a timed 5-minute lock bounded by the login rate
+  # limit, an existing lockout-DoS trade-off logged for later.
+  #
+  # usable_admins ignores `active` = false (latent: nothing sets it today).
+  #
+  # only_if: optional lambda run AFTER the locks are taken (so on fresh state); when
+  # it returns false the last-admin check is skipped (the change is not a removal,
+  # e.g. an unlock or a promotion). It may re-read the (already locked) target row.
+  def self.guarding_last_admin!(affected_ids, message: LAST_ADMIN_MESSAGE, only_if: nil)
+    affected_ids = Array(affected_ids)
+    transaction do
+      where(role: "admin").order(:id).lock(GUARD_LOCK_MODE).pluck(:id)
+      where(id: affected_ids).order(:id).lock(GUARD_LOCK_MODE).pluck(:id)
+      enforce = only_if.nil? || only_if.call
+      if enforce && where(role: "admin", id: affected_ids).exists? &&
+         usable_admins.where.not(id: affected_ids).none?
+        raise LastAdminError, message
+      end
+
+      yield
+    end
+  end
+
+  # Role change for several users in ONE transaction (all-or-nothing; the cable
+  # disconnects fire after commit). Refuses, with LastAdminError, a change that
+  # would leave no usable admin (see guarding_last_admin!). Promoting never removes
+  # an admin, so it is not checked, but it takes the same locks in the same order.
+  def self.change_roles!(user_ids, new_role, actor: nil)
+    user_ids = Array(user_ids).map(&:to_i).reject(&:zero?)
+    guarding_last_admin!(user_ids, only_if: -> { new_role != "admin" }) do
+      # rows already locked (in id order) by the guard
+      where(id: user_ids).order(:id).each do |user|
+        Rails.logger.info "[ROLE_CHANGE] User##{user.id} role changed from '#{user.role}' to '#{new_role}' by Admin##{actor&.id}"
+        user.change_role!(new_role)
+      end
+    end
+  end
 
   # ============================================
   # Class Methods
@@ -647,6 +740,25 @@ class User < ApplicationRecord
     programs.exists?(program_type: Program::TEAMS)
   end
 
+  # Sets the development / volunteer / teams memberships. Each argument is true
+  # (join), false (leave) or nil (leave as is; only meaningful for teams).
+  # All-or-nothing: raises ActiveRecord::RecordInvalid / RecordNotDestroyed (and
+  # rolls everything back) when a step fails. Returns the user's program types afterwards.
+  def sync_programs!(development:, volunteer:, teams: nil)
+    transaction do
+      { Program::DEV_PROGRAM => development, Program::VOLUNTEER => volunteer, Program::TEAMS => teams }.each do |type, wanted|
+        next if wanted.nil?
+
+        if wanted
+          programs.find_or_create_by!(program_type: type)
+        else
+          programs.find_by(program_type: type)&.destroy!
+        end
+      end
+    end
+    programs.reload.pluck(:program_type)
+  end
+
   def staff_in_space?
     staff_spaces.exists?
   end
@@ -691,10 +803,15 @@ class User < ApplicationRecord
     certifications.map(&:get_name_en)
   end
 
+  # Trainings with no active certification, whether it was earned in a training
+  # session or through a proficient project. One query; a certification with
+  # neither (legacy/orphaned rows) simply holds no training.
   def remaining_trainings
-    trainings = []
-    certifications.each { |cert| trainings << cert.training.id }
-    Training.all.where.not(id: trainings)
+    held = certifications
+           .left_joins(:training_session, proficient_project_session: :proficient_project)
+           .pluck("training_sessions.training_id", "proficient_projects.training_id")
+           .flatten.compact
+    Training.all.where.not(id: held)
   end
 
   def has_requirements?(training_reqs)

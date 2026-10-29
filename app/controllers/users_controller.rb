@@ -298,26 +298,22 @@ class UsersController < SessionsController
   def change_programs
     user = User.find(params[:user_id])
     if user.present? && (@user.staff? || @user.admin?)
-      if params[:dev_program].present?
-        user.programs.find_or_create_by(program_type: Program::DEV_PROGRAM)
-      elsif user.programs.find_by(program_type: Program::DEV_PROGRAM).present?
-        user.programs.find_by(program_type: Program::DEV_PROGRAM).destroy
-      end
+      begin
+        programs = user.sync_programs!(
+          development: params[:dev_program].present?,
+          volunteer: params[:volunteer].present?,
+          # JSON never removes teams (the React app does not send it)
+          teams: params[:teams].present? || (json_request? ? nil : false)
+        )
+      rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotDestroyed => e
+        message = e.record.errors.full_messages.to_sentence.presence || e.message
+        return render json: { error: message }, status: :unprocessable_content if json_request?
 
-      if params[:volunteer].present?
-        user.programs.find_or_create_by(program_type: Program::VOLUNTEER)
-      elsif user.programs.find_by(program_type: Program::VOLUNTEER).present?
-        user.programs.find_by(program_type: Program::VOLUNTEER).destroy
-      end
-
-      if params[:teams].present?
-        user.programs.find_or_create_by(program_type: Program::TEAMS)
-      elsif !json_request? &&
-            user.programs.find_by(program_type: Program::TEAMS).present?
-        user.programs.find_by(program_type: Program::TEAMS).destroy
+        flash[:alert] = "The programs could not be updated: #{message}"
+        return redirect_to user_path(user.username)
       end
       if json_request?
-        render json: { programs: user.programs.reload.pluck(:program_type) }
+        render json: { programs: programs }
         return
       end
       flash[:notice] = "The programs for #{user.name} has been updated!"
@@ -428,11 +424,21 @@ class UsersController < SessionsController
     @photos = photo_hash
   end
 
+  # Hard delete of the signed-in user's own account. Goes through the last-admin
+  # guard: the last usable admin cannot delete themself.
   def destroy
+    account = @user
+    begin
+      User.guarding_last_admin!([account.id]) do
+        account.repositories.each(&:destroy)
+        LabSession.where(user_id: account.id).destroy_all
+        account.destroy!
+      end
+    rescue User::LastAdminError => e
+      redirect_to user_path(account.username), alert: e.message
+      return
+    end
     sign_out
-    @user.repositories.each { |repo| repo.destroy }
-    LabSession.where(user_id: @user.id).destroy_all
-    @user.destroy
     redirect_to root_path
   end
 

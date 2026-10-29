@@ -1,0 +1,75 @@
+# frozen_string_literal: true
+
+require "rails_helper"
+
+# Shared by the legacy controllers and /api/v1/users.
+RSpec.describe User do
+  describe ".change_roles!" do
+    it "changes all roles in one go and is all-or-nothing on the last-admin guard" do
+      only_admin = create(:user, :admin)
+      other = create(:user)
+      expect { User.change_roles!([only_admin.id, other.id], "staff") }.to raise_error(User::LastAdminError)
+      expect(only_admin.reload.role).to eq("admin")
+      expect(other.reload.role).to eq("regular_user")
+    end
+
+    it "allows promoting to admin and demoting when another usable admin remains" do
+      a = create(:user, :admin)
+      create(:user, :admin)
+      User.change_roles!([a.id], "regular_user")
+      expect(a.reload.role).to eq("regular_user")
+    end
+
+    it "rejects an unknown role" do
+      u = create(:user)
+      expect { User.change_roles!([u.id], "root") }.to raise_error(ArgumentError)
+    end
+  end
+
+  describe "#sync_programs!" do
+    let(:user) { create(:user) }
+
+    it "joins, leaves and keeps (nil) memberships" do
+      user.programs.create!(program_type: Program::TEAMS)
+      expect(user.sync_programs!(development: true, volunteer: true)).to match_array([Program::DEV_PROGRAM, Program::VOLUNTEER, Program::TEAMS])
+      expect(user.sync_programs!(development: false, volunteer: true, teams: false)).to eq([Program::VOLUNTEER])
+    end
+  end
+
+  describe "#sync_programs! atomicity" do
+    it "rolls back the earlier changes when a later one fails" do
+      user = create(:user)
+      user.programs.create!(program_type: Program::VOLUNTEER)
+      allow_any_instance_of(Program).to receive(:destroy).and_raise(ActiveRecord::StatementInvalid, "boom")
+      # development is joined first, then leaving volunteer raises
+      expect { user.sync_programs!(development: true, volunteer: false) }.to raise_error(ActiveRecord::StatementInvalid)
+      expect(user.programs.reload.pluck(:program_type)).to eq([Program::VOLUNTEER])
+    end
+  end
+
+  describe "#sync_programs! failures that do not raise by themselves" do
+    it "rolls back a join when the following leave is refused (destroy returns false)" do
+      user = create(:user)
+      user.programs.create!(program_type: Program::VOLUNTEER)
+      allow_any_instance_of(Program).to receive(:destroy).and_return(false)
+      expect { user.sync_programs!(development: true, volunteer: false) }.to raise_error(ActiveRecord::RecordNotDestroyed)
+      expect(user.programs.reload.pluck(:program_type)).to eq([Program::VOLUNTEER])
+    end
+
+    it "rolls back an earlier leave when a later join is invalid" do
+      user = create(:user)
+      user.programs.create!(program_type: Program::DEV_PROGRAM)
+      allow_any_instance_of(Program).to receive(:valid?).and_return(false)
+      expect { user.sync_programs!(development: false, volunteer: true) }.to raise_error(ActiveRecord::RecordInvalid)
+      expect(user.programs.reload.pluck(:program_type)).to eq([Program::DEV_PROGRAM])
+    end
+  end
+
+  describe ".text_search" do
+    it "does not escape wildcards (legacy staff dashboard behaviour)" do
+      u = create(:user, name: "Wild Card")
+      expect(User.text_search("%")).to include(u)
+      expect(User.text_search(User.sanitize_sql_like("%"))).not_to include(u)
+    end
+  end
+end

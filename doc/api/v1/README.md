@@ -1,6 +1,6 @@
 # /api/v1 conventions
 
-JSON API for the React frontends (app.makerepo.com, designday.makerepo.com). Contracts live next to this file, one per resource (`session.md` so far). The legacy HTML/JSON routes keep working until both frontends switch.
+JSON API for the React frontends (app.makerepo.com, designday.makerepo.com). Contracts live next to this file, one per resource (`session.md`, `users.md`). The legacy HTML/JSON routes keep working until both frontends switch.
 
 ## Auth
 - `Authorization: Bearer <access_token>` on every authenticated request. The scheme word is required. No cookies are read or set, and there is no CSRF token.
@@ -30,14 +30,14 @@ Always JSON, always a real status:
 | 403 | Authenticated but not allowed | `forbidden`, `account_inactive`, `account_unconfirmed` |
 | 404 | No such record or route (any unknown `/api/v1/...` path, any verb) | `not_found` |
 | 409 | Retry with the newest stored refresh token | `refresh_in_progress` |
-| 422 | Validation or missing parameter | `validation_failed`, `parameter_missing` |
+| 422 | Validation or missing parameter | `validation_failed`, `parameter_missing`, `last_admin` |
 | 423 | Account locked | `account_locked` |
 | 429 | Rate limited | `rate_limited` |
 
 401 responses carry `WWW-Authenticate: Bearer realm="makerepo"`.
 
 ## Pagination
-TBD. It will be defined with the first list endpoint (`GET /api/v1/users?query=`). Until then no endpoint returns an unbounded list.
+No endpoint returns an unbounded list. `GET /api/v1/users?query=` caps at 50 and reports `meta.truncated`; cursor pagination will be added additively when an endpoint needs it.
 
 ## Versioning
 The version is in the path. Within `v1`, changes are additive only (new fields, new endpoints); clients must ignore unknown fields. Anything breaking becomes `/api/v2`, and `v1` is kept until the frontends have moved.

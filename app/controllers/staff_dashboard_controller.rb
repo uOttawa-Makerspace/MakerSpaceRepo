@@ -357,14 +357,7 @@ end
         @query = params[:query]
         @users =
           User
-            .where(
-              "LOWER(UNACCENT(name)) like LOWER(UNACCENT(?)) OR
-                           LOWER(UNACCENT(email)) like LOWER(UNACCENT(?)) OR
-                           LOWER(UNACCENT(username)) like LOWER(UNACCENT(?))",
-              "%#{@query}%",
-              "%#{@query}%",
-              "%#{@query}%"
-            )
+            .text_search(@query)
             .includes(lab_sessions: :space)
             .order(:updated_at)
       end
