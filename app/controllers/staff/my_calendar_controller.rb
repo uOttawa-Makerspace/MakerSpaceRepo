@@ -109,7 +109,7 @@ class Staff::MyCalendarController < StaffAreaController
       title: title,
       start: start_time.iso8601,
       end: end_time.iso8601,
-      allDay: start_time.to_time == end_time.to_time - 1.day,
+      allDay: CalendarTime.all_day?(start_time, end_time),
       extendedProps: {
         name: event.event_type.capitalize,
         draft: event.draft,

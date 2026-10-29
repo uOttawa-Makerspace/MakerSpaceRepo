@@ -105,7 +105,7 @@ class Staff::UnavailabilitiesController < StaffAreaController
         start: u.start_time.iso8601,
         end: u.end_time.iso8601,
         **(u.recurrence_rule.present? ? { rrule: rrule_data, duration: duration } : {}),
-        allDay: u.start_time.to_time == u.end_time.to_time - 1.day,
+        allDay: CalendarTime.all_day?(u.start_time, u.end_time),
         extendedProps: {
           description: u.description,
           eventType: "unavailability",

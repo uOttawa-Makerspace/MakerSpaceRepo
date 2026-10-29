@@ -43,7 +43,7 @@ class Admin::CalendarController < AdminAreaController
           start: u.start_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S"),
           end: u.end_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S"),
           **(u.recurrence_rule.present? ? { rrule: rrule_data, duration: duration } : {}),
-          allDay: u.start_time.to_time == u.end_time.to_time - 1.day,
+          allDay: CalendarTime.all_day?(u.start_time, u.end_time),
           extendedProps: {
             name: staff.name,
             description: u.description
@@ -95,7 +95,7 @@ class Admin::CalendarController < AdminAreaController
           start: u.start_time,
           end: u.end_time,
           **(u.recurrence_rule.present? ? { rrule: u.recurrence_rule, duration: duration } : {}),
-          allDay: u.start_time.to_time == u.end_time.to_time - 1.day,
+          allDay: CalendarTime.all_day?(u.start_time, u.end_time),
           extendedProps: {
             name: staff.name,
             description: u.description

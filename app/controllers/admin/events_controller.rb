@@ -306,7 +306,7 @@ class Admin::EventsController < AdminAreaController
             start: event.start_time.iso8601,
             end: event.end_time.iso8601,
             **(event.recurrence_rule.present? ? { rrule: rrule_data, duration: duration } : {}),
-            allDay: event.start_time.to_time == event.end_time.to_time - 1.day,
+            allDay: CalendarTime.all_day?(event.start_time, event.end_time),
             extendedProps: {
               name: event.event_type.capitalize,
               draft: event.draft,
