@@ -3,7 +3,10 @@
 require "rails_helper"
 
 # FIXED(G01 / CORS): origins are exact strings or fully anchored regexps. The
-# credentialed allow-list is the React staff app, Design Day and their previews.
+# credentialed allow-list (lib/cors_origins.rb) is per environment: the staff app
+# and Design Day everywhere, the Pages previews on staging only, localhost:5173 in
+# development/test only (spec/lib/cors_origins_spec.rb covers each environment).
+# This is the test env.
 RSpec.describe "CORS origin allow-list", type: :request do
   def acao(origin)
     get "/admin/design_day/data", headers: { "Origin" => origin }
@@ -13,14 +16,22 @@ RSpec.describe "CORS origin allow-list", type: :request do
   [
     "https://app.makerepo.com",
     "https://designday.makerepo.com",
-    "https://uottawa-makerspace.github.io",
-    "http://localhost:5173",
-    "https://abc123.makerepo-app.pages.dev",
-    "https://feature-x.design-day-react.pages.dev"
+    "http://localhost:5173"
   ].each do |origin|
     it "allows #{origin} (echoed, with credentials)" do
       expect(acao(origin)).to eq(origin)
       expect(response.headers["Access-Control-Allow-Credentials"]).to eq("true")
+    end
+  end
+
+  # previews are staging-only; github.io is used by no frontend
+  [
+    "https://abc123.makerepo-app.pages.dev",
+    "https://feature-x.design-day-react.pages.dev",
+    "https://uottawa-makerspace.github.io"
+  ].each do |origin|
+    it "does not allow #{origin} outside staging" do
+      expect(acao(origin)).to be_nil
     end
   end
 
@@ -55,7 +66,7 @@ RSpec.describe "CORS for /api/*", type: :request do
     }
   end
 
-  ["https://app.makerepo.com", "http://localhost:5173", "https://abc.makerepo-app.pages.dev"].each do |origin|
+  ["https://app.makerepo.com", "http://localhost:5173"].each do |origin|
     it "answers the preflight for #{origin} without credentials" do
       preflight(origin)
       expect(response.headers["Access-Control-Allow-Origin"]).to eq(origin)

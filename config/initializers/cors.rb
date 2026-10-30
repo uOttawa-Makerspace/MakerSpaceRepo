@@ -1,14 +1,7 @@
-# Every origin is either an exact string (scheme included) or a fully anchored
-# regexp (\A...\z), so look-alikes such as app.makerepo.com.attacker.io cannot match.
-cors_origins = [
-  "http://localhost:5173",
-  "https://localhost:5173",
-  "https://uottawa-makerspace.github.io",
-  "https://designday.makerepo.com",
-  %r{\Ahttps://([a-z0-9-]+\.)+design-day-react\.pages\.dev\z},
-  "https://app.makerepo.com",
-  %r{\Ahttps://([a-z0-9-]+\.)+makerepo-app\.pages\.dev\z}
-].freeze
+require Rails.root.join("lib/cors_origins")
+
+# Per environment: see lib/cors_origins.rb (no localhost or preview origins in production).
+cors_origins = CorsOrigins.app_origins
 
 # GET /api/v1/design_day is public data for the Design Day app only: it answers just these
 # origins (not the staff app, not localhost), and no other CORS block may answer that path.
