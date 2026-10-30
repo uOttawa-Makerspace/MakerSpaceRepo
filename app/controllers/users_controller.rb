@@ -25,20 +25,21 @@ class UsersController < SessionsController
                 ]
 
   # Re-authentication (the current password on change_password / change_email) is
-  # throttled per signed-in user on Rails.cache (Solid Cache in production: an
-  # atomic, cross-process increment). Only a WRONG current password is counted: a
-  # correct one clears the counter, a blank one is a validation error and is not a
-  # guess, and a bad NEW password after a correct current one never counts. One
-  # budget for both actions. The count is read before the password is verified; at
-  # the limit this session is signed out (a hijacked session is killed, the account
-  # is not) and the counter is cleared, since signing in again takes the real
-  # password. It never touches the login lockout (auth_attempts/locked).
-  REAUTH_MAX_FAILURES = 5
+  # throttled per signed-in user and per credential generation (token_version), one
+  # budget for both actions. Every submitted current password is counted ATOMICALLY
+  # (RateLimitCounter) BEFORE it is verified, so parallel guesses cannot all slip
+  # under the limit; a correct one clears the count. A blank one is a validation
+  # error, not a guess, and is not counted. Going over ends every credential of the
+  # user (cookie session, JWT, refresh tokens: token_version bump) without running
+  # bcrypt: a hijacked session is killed, the account is not, and signing in again
+  # starts a fresh budget (a new token_version is a new key). It never touches the
+  # login lockout (auth_attempts/locked).
+  REAUTH_MAX_ATTEMPTS = 5
   REAUTH_WINDOW = 15.minutes
   REAUTH_LIMIT_ALERT =
     'Too many incorrect current-password attempts. You have been signed out for your security; ' \
     'please sign in again to continue.'
-  before_action :sign_out_when_reauth_exhausted, only: %i[change_password change_email]
+  before_action :limit_reauth_attempts, only: %i[change_password change_email], if: :current_password_submitted?
 
   LINK_EXPIRED_ALERT =
     'This link has expired or has already been used. Please request a new one.'
@@ -259,7 +260,7 @@ class UsersController < SessionsController
   end
 
   # POST only, and it needs the account's current password (the same check as
-  # change_password, throttled by REAUTH_RATE_LIMIT): the token it mails lets
+  # change_password, throttled by limit_reauth_attempts): the token it mails lets
   # whoever reads the new address take the account over (INF-02).
   def change_email
     if (alert = current_password_alert)
@@ -497,30 +498,30 @@ class UsersController < SessionsController
     submitted_current_password.present?
   end
 
-  # nil when the submitted current password is right; the alert otherwise. A wrong
-  # one is counted for the throttle (see REAUTH_MAX_FAILURES), a right one clears it.
+  # nil when the submitted current password is right (which clears the attempt
+  # count); the alert otherwise. The attempt was counted by limit_reauth_attempts.
   def current_password_alert
     return 'Please enter your current password.' unless current_password_submitted?
 
     if @user.authenticate_password(submitted_current_password)
-      Rails.cache.delete(reauth_failures_key)
+      RateLimitCounter.reset(reauth_attempts_key)
       nil
     else
-      Rails.cache.increment(reauth_failures_key, 1, expires_in: REAUTH_WINDOW)
       'Incorrect current password.'
     end
   end
 
-  def sign_out_when_reauth_exhausted
-    return if Rails.cache.read(reauth_failures_key).to_i < REAUTH_MAX_FAILURES
+  def limit_reauth_attempts
+    return if RateLimitCounter.increment(reauth_attempts_key, 1, expires_in: REAUTH_WINDOW) <= REAUTH_MAX_ATTEMPTS
 
-    Rails.cache.delete(reauth_failures_key)
+    # The cookie session AND every token: a Bearer caller must not keep its token.
+    @user.bump_token_version!
     sign_out
     redirect_to login_path, alert: REAUTH_LIMIT_ALERT
   end
 
-  def reauth_failures_key
-    "reauth-failures/#{@user.id}"
+  def reauth_attempts_key
+    "reauth/#{@user.id}/#{@user.token_version}"
   end
 
   # A live email-change token whose user is the signed-in user; sets the alert

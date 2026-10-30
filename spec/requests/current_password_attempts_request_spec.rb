@@ -3,28 +3,19 @@
 require "rails_helper"
 
 # change_password and change_email re-authenticate the signed-in user with the
-# current password. Guessing it is throttled per signed-in user on Rails.cache
-# (UsersController::REAUTH_MAX_FAILURES wrong guesses, shared by both actions;
-# an atomic increment under Solid Cache). Only WRONG current passwords count: a
-# correct one clears the counter, a blank one and a bad new value do not count.
-# The count is read before the password is verified; at the limit the session is
-# signed out (a hijacked session is killed, the account is not) and the owner can
-# sign in again and carry on. Re-authentication never touches the login lockout
-# (auth_attempts, locked): a stranger's failed logins cannot stop the owner from
-# changing their password, and changing it clears a timed lockout.
+# current password. Guessing it is throttled per signed-in user and credential
+# generation (UsersController::REAUTH_MAX_ATTEMPTS, shared by both actions). Each
+# submitted current password is counted atomically (RateLimitCounter) BEFORE it is
+# verified; a correct one clears the count; a blank one and a bad new value are
+# not guesses. Over the limit every credential of the user ends (cookie session,
+# Bearer JWT, refresh tokens) and bcrypt is not run; the owner can sign in again
+# and carry on. Re-authentication never touches the login lockout (auth_attempts,
+# locked): a stranger's failed logins cannot stop the owner from changing their
+# password, and changing it clears a timed lockout.
 RSpec.describe "Current-password re-authentication", type: :request do
   let(:password) { "asa32A353#" }
   let(:new_password) { "NewPassw0rd!x#9" }
   let!(:user) { create(:user, :regular_user) }
-  # The test environment's cache is a null store (no counting); this spec needs real counts.
-  around do |example|
-    original = Rails.cache
-    Rails.cache = ActiveSupport::Cache::MemoryStore.new
-    example.run
-  ensure
-    Rails.cache = original
-  end
-
   let(:limit_message) { "Too many incorrect current-password attempts. You have been signed out for your security; please sign in again to continue." }
 
   def log_in!(u = user, pw: password)
@@ -142,6 +133,72 @@ RSpec.describe "Current-password re-authentication", type: :request do
     change_password!(password)
     expect(response).to redirect_to(settings_admin_path)
     expect(user.reload.authenticate_password(new_password)).to be(true)
+  end
+
+  it "counts the attempt BEFORE the password is verified, so parallel guesses cannot all pass" do
+    log_in!
+    counted_while_verifying = []
+    allow_any_instance_of(User).to receive(:authenticate_password).and_wrap_original do |m, *args|
+      counted_while_verifying << RateLimitCounter.where("key LIKE 'reauth/%'").pluck(:count)
+      m.call(*args)
+    end
+    change_password!("wrong-password")
+    expect(counted_while_verifying).to eq([[1]])
+  end
+
+  it "runs no password check once the budget is spent" do
+    log_in!
+    5.times { change_password!("wrong-password") }
+    expect_any_instance_of(User).not_to receive(:authenticate_password)
+    change_password!(password)
+    expect(response).to redirect_to(login_path)
+  end
+
+  describe "exhaustion ends every credential, not just the cookie session" do
+    let(:pair) do
+      post "/api/v1/session", params: { login: user.username, password: password }.to_json,
+                              headers: { "CONTENT_TYPE" => "application/json" }
+      response.parsed_body
+    end
+
+    def bearer_change_email(token, current)
+      post change_email_users_path,
+           params: { new_email: "new.addr@example.com", confirm_new_email: "new.addr@example.com",
+                     current_password: current }.to_json,
+           headers: { "CONTENT_TYPE" => "application/json", "ACCEPT" => "application/json",
+                      "Authorization" => "Bearer #{token}" }
+    end
+
+    it "a legacy Bearer JWT reaches the endpoint, and exhausting it kills that JWT" do
+      token = user.token
+      bearer_change_email(token, "wrong-password")
+      expect(response).to have_http_status(:redirect).or have_http_status(:ok)
+      expect(response).not_to redirect_to(login_path)
+      5.times { bearer_change_email(token, "wrong-password") }
+      expect(response).to redirect_to(login_path)
+      get check_signed_in_path, headers: { "Authorization" => "Bearer #{token}" }
+      expect(response.parsed_body["signed_in"]).not_to eq("true")
+    end
+
+    it "revokes the user's /api/v1 access and refresh tokens, and a cookie session" do
+      log_in!
+      access, refresh = pair.values_at("access_token", "refresh_token")
+      6.times { change_password!("wrong-password") }
+      expect(signed_in?).to be(false)
+
+      get "/api/v1/session", headers: { "Authorization" => "Bearer #{access}" }
+      expect(response).to have_http_status(:unauthorized)
+      post "/api/v1/session/refresh", params: { refresh_token: refresh }.to_json,
+                                      headers: { "CONTENT_TYPE" => "application/json" }
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it "signing in again starts a fresh budget" do
+      6.times { change_password!("wrong-password") } # a hijacked cookie session is killed
+      log_in!
+      5.times { change_password!("wrong-password") }
+      expect(signed_in?).to be(true)
+    end
   end
 
   describe "while the account is locked by a stranger's failed logins" do
