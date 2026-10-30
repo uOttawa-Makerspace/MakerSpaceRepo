@@ -140,6 +140,28 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         expect(response).to have_http_status(:internal_server_error)
       end
 
+      it "a claim whose save fails changes nothing and answers the 'not created properly' alert (no 500)" do
+        credit_cc!(user, 100)
+        coupon = create(:coupon_code, :unclaimed, dollar_cost: 5, cc_cost: 40)
+        allow_any_instance_of(CouponCode).to receive(:update!).and_raise(ActiveRecord::RecordInvalid.new(coupon))
+        expect { post discount_codes_path, params: { dollar_cost: 5 } }.not_to change(CcMoney, :count)
+        expect(response).to redirect_to(discount_codes_path)
+        expect(flash[:alert]).to eq("Discount Code not created properly!")
+        expect(coupon.reload.user_id).to be_nil
+        expect(user.reload.wallet).to eq(100)
+      end
+
+      it "a debit that is not saved changes nothing and answers the same alert" do
+        credit_cc!(user, 100)
+        coupon = create(:coupon_code, :unclaimed, dollar_cost: 5, cc_cost: 40)
+        allow(CcMoney).to receive(:make_new_payment).and_return(CcMoney.new(user: user, cc: -40))
+        post discount_codes_path, params: { dollar_cost: 5 }
+        expect(response).to redirect_to(discount_codes_path)
+        expect(flash[:alert]).to eq("Discount Code not created properly!")
+        expect(coupon.reload.user_id).to be_nil
+        expect(user.cc_moneys.where("cc < 0")).to be_empty
+      end
+
       it "is available to staff and admin with the same economics" do
         [staff, admin].each do |u|
           get logout_path

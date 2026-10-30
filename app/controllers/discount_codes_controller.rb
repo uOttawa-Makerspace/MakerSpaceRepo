@@ -16,19 +16,26 @@ class DiscountCodesController < DevelopmentProgramsController
     @price_rules = CouponCode.unclaimed.distinct.pluck(:dollar_cost, :cc_cost)
   end
 
+  # The before_actions are only early, friendly refusals; CouponCode.claim! re-decides both
+  # (coupon still unclaimed, enough CC) under locks, so a lost race neither charges nor assigns
+  # (D-S33).
   def create
-    cc_money_payment =
-      CcMoney.make_new_payment(current_user, @price_rule.cc_cost)
-    if cc_money_payment.present? && cc_money_payment.save
-      if @price_rule.update(user: current_user)
-        flash[:notice] = "Discount Code created"
-      else
-        cc_money_payment.destroy
-        flash[:alert] = "Discount Code not created properly!"
-      end
+    outcome, = CouponCode.claim!(current_user, params[:dollar_cost])
+    case outcome
+    when :claimed
+      flash[:notice] = "Discount Code created"
+      redirect_to discount_codes_path
+    when :no_coupon
+      flash[:alert] = "This coupon is already claimed"
+      redirect_to new_discount_code_path
     else
-      flash[:alert] = "Payment not processed"
+      flash[:alert] = "Not enough CC points"
+      redirect_back(fallback_location: root_path)
     end
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved => e
+    # claim!'s transaction has rolled back: nothing was charged or assigned
+    Rails.logger.warn("[discount_codes#create] coupon claim not saved: #{e.class}: #{e.message}")
+    flash[:alert] = "Discount Code not created properly!"
     redirect_to discount_codes_path
   end
 
