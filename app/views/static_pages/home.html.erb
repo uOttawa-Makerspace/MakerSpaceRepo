@@ -4,7 +4,9 @@
     so a cached copy would go stale after a new sign-in or on another device. %>
 <%# Digests, not Ruby #hash values (seeded per process), so every server worker
     reads and writes the same fragments. %>
-<% home_cache_key = ["v4_home_page", current_user&.id || "anonymous", I18n.locale,
+<%# The role flags are in the key: the cards branch on staff?, admin?, volunteer?
+    and dev_program?, so a promotion or a program join shows at once. %>
+<% home_cache_key = ["v5_home_page", current_user&.id || "anonymous", I18n.locale, *current_role_flags,
                      ActiveSupport::Digest.hexdigest(@recent_projects.map(&:cache_key_with_version).join(",")),
                      ActiveSupport::Digest.hexdigest(@workshops.to_json)] %>
 <section id="home">
@@ -55,8 +57,8 @@
           </div>
 
           <%= render 'static_pages/home_shortcuts' %>
-          <%= render 'static_pages/home_volunteer' if signed_in? && current_user.volunteer? %>
-          <%= render 'static_pages/home_development' if signed_in? && current_user.dev_program? %>
+          <%= render 'static_pages/home_volunteer' if signed_in? && current_user_volunteer? %>
+          <%= render 'static_pages/home_development' if signed_in? && current_user_dev_program? %>
         </div>
       </div>
 

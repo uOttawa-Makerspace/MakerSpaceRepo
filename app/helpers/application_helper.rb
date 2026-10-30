@@ -67,6 +67,27 @@ module ApplicationHelper
     @session_user
   end
 
+  # [admin?, staff?, volunteer?, dev_program?] of the current user, read once per
+  # request (volunteer? and dev_program? are queries). The per-user caches (the
+  # home page fragments, the announcements bar) key on them, so a promotion,
+  # demotion or program join changes what is rendered at once, not after the
+  # fragment's expiry.
+  def current_role_flags
+    @current_role_flags ||= begin
+      user = current_user
+      [user.admin?, user.staff?, user.volunteer?, user.dev_program?].freeze
+    end
+  end
+
+  # The two program flags from the same per-request read.
+  def current_user_volunteer?
+    current_role_flags[2]
+  end
+
+  def current_user_dev_program?
+    current_role_flags[3]
+  end
+
   def signed_in?
     session_user.present? || has_valid_jwt?
   end
@@ -105,7 +126,7 @@ module ApplicationHelper
   # Forget who was resolved earlier in this request (cookie user, current user,
   # Bearer user) so the next call looks again. Used when the session changes.
   def reset_auth_memo
-    %i[@session_user @user @jwt_user].each do |ivar|
+    %i[@session_user @user @jwt_user @current_role_flags].each do |ivar|
       remove_instance_variable(ivar) if instance_variable_defined?(ivar)
     end
   end
