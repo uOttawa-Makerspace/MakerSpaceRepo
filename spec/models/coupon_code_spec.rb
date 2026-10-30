@@ -12,6 +12,14 @@ RSpec.describe CouponCode, type: :model do
     expect(CouponCode.new(cc_cost: 0)).to be_valid
   end
 
+  it "the database refuses a negative price too (CHECK coupon_codes_cc_cost_non_negative); NULL passes" do
+    coupon = create(:coupon_code, :unclaimed, cc_cost: 10)
+    expect { coupon.update_column(:cc_cost, nil) }.not_to raise_error
+    expect do
+      CouponCode.transaction(requires_new: true) { coupon.update_column(:cc_cost, -1) }
+    end.to raise_error(ActiveRecord::CheckViolation, /coupon_codes_cc_cost_non_negative/)
+  end
+
   it "accepts a blank code and blank prices (D-S10)" do
     expect(CouponCode.new).to be_valid
     expect { CouponCode.create! }.not_to raise_error

@@ -201,11 +201,11 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         expect(response.body).to include(discount_codes_path(dollar_cost: 10, cc_cost: 1000).gsub("&", "&amp;"))
       end
 
-      it "a legacy negative-price coupon answers 'not created properly', not a 500 (nothing charged)" do
+      it "a negative price reaching the claim (defence in depth: validated and DB-checked) answers 'not created properly'" do
         credit_cc!(user, 100)
         coupon = create(:coupon_code, :unclaimed, dollar_cost: 5, cc_cost: 10)
-        coupon.update_column(:cc_cost, -10)
-        post discount_codes_path, params: { dollar_cost: 5, cc_cost: -10 }
+        allow_any_instance_of(CouponCode).to receive(:cc_cost).and_return(-10)
+        post discount_codes_path, params: { dollar_cost: 5, cc_cost: 10 }
         expect(response).to redirect_to(discount_codes_path)
         expect(flash[:alert]).to eq("Discount Code not created properly!")
         expect(coupon.reload.user_id).to be_nil

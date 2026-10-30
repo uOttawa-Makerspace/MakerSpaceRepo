@@ -6,6 +6,11 @@ RSpec.describe ProficientProject, type: :model do
     expect(build(:proficient_project, cc: 0)).to be_valid
   end
 
+  it "the database refuses a negative CC price too (CHECK proficient_projects_cc_non_negative)" do
+    project = create(:proficient_project, cc: 10)
+    expect { project.update_column(:cc, -1) }.to raise_error(ActiveRecord::CheckViolation, /proficient_projects_cc_non_negative/)
+  end
+
   describe "Association" do
     context "has_many" do
       it { should have_many(:photos) }
