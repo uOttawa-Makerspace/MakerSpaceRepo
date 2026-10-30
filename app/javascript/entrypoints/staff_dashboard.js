@@ -50,13 +50,12 @@ async function refreshCapacity() {
   const el = document.querySelector(".max_capacity_alert");
   if (!el) return;
 
-  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
   try {
+    // A GET: no CSRF token (tokens go on non-GET requests only, src/csrf.js).
     const response = await fetch("/staff_dashboard/refresh_capacity", {
       headers: {
         "X-Requested-With": "XMLHttpRequest",
         Accept: "text/html",
-        "X-CSRF-Token": csrfToken || "",
       },
     });
     if (response.ok) {

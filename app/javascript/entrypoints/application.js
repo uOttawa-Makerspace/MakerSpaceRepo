@@ -10,6 +10,7 @@ import "../src/forms";
 import "../src/header";
 import "../src/photo_gallery";
 import "../src/requests";
+import { csrfHeaders } from "../src/csrf";
 import "../src/settings";
 import "../src/sorting";
 import "../src/tabledata";
@@ -134,19 +135,15 @@ window.setSpace = async function () {
 
   const space_id = spaceIdInput.value;
   const url = "/staff_dashboard/change_space";
-  const csrfToken = document
-    .querySelector('meta[name="csrf-token"]')
-    ?.getAttribute("content");
 
   try {
     const response = await fetch(url, {
       method: "PUT",
       credentials: "include",
-      headers: {
+      headers: csrfHeaders({
         "Content-Type": "application/json",
         Accept: "application/json",
-        "X-CSRF-Token": csrfToken || "",
-      },
+      }),
       body: JSON.stringify({
         space_id: space_id,
         training: window.location.href.includes("training_sessions"),
@@ -179,16 +176,10 @@ window.debounce = function (func, wait, immediate) {
 };
 
 window.examResponse = async function (exam_id, answer_id) {
-  const csrfToken = document
-    .querySelector('meta[name="csrf-token"]')
-    ?.getAttribute("content");
   try {
     await fetch("/exam_responses#create", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": csrfToken || "",
-      },
+      headers: csrfHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({
         exam_id: exam_id,
         answer_id: answer_id,
