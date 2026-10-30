@@ -623,6 +623,77 @@ RSpec.describe "Job order locked operations", type: :request do
       expect(order.reload.is_deleted).to be(true)
     end
 
+    {
+      "DRAFT" => :draft,
+      "STAFF_APPROVAL" => :staff_approval
+    }.each do |label, status_key|
+      it "staff who do not own a customer's #{label} order cannot delete it" do
+        order = quoted_order!(status_key, draft: true)
+        session_login!(staff)
+
+        delete job_order_path(order)
+
+        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.delete_refused.not_deletable"))
+        expect(order.reload.is_deleted).to be(false)
+        expect(shopify.calls).to be_empty
+      end
+
+      it "another customer cannot delete someone else's #{label} order" do
+        order = quoted_order!(status_key)
+        session_login!(create(:user, :regular_user))
+
+        delete job_order_path(order)
+
+        expect(order.reload.is_deleted).to be(false)
+      end
+
+      it "an admin can delete a customer's #{label} order" do
+        order = quoted_order!(status_key)
+        session_login!(admin)
+
+        delete job_order_path(order)
+
+        expect(order.reload.is_deleted).to be(true)
+      end
+    end
+
+    describe "the order page offers Delete exactly when the server would accept it" do
+      def delete_button?(order)
+        get job_order_path(order)
+        expect(response).to have_http_status(:ok)
+        Nokogiri::HTML(response.body).css("form[action='#{job_order_path(order)}'] input[name='_method'][value='delete']").any?
+      end
+
+      # [who, status] => shown
+      {
+        [:owner, :draft] => true,
+        [:owner, :staff_approval] => true,
+        [:owner, :user_approval] => false,
+        [:owner, :paid] => false,
+        [:staff, :draft] => false,
+        [:staff, :user_approval] => false,
+        [:admin, :draft] => true,
+        [:admin, :user_approval] => true,
+        [:admin, :paid] => true
+      }.each do |(who, status_key), shown|
+        it "#{who} on a #{status_key} order: #{shown ? 'shown' : 'hidden'}" do
+          order = quoted_order!(status_key)
+          session_login!(send(who))
+
+          expect(delete_button?(order)).to be(shown)
+        end
+      end
+    end
+
+    it "staff who own an editable order can delete it" do
+      order = make_job_order!(owner: staff, status_key: :draft)
+      session_login!(staff)
+
+      delete job_order_path(order)
+
+      expect(order.reload.is_deleted).to be(true)
+    end
+
     it "staff who are not admins are held to the same rule" do
       order = quoted_order!(:being_processed)
       session_login!(staff)
@@ -645,48 +716,10 @@ RSpec.describe "Job order locked operations", type: :request do
     end
   end
 
-  # ------------------------------------------------ a lock error after an irreversible Shopify call
+  # ------------------------------------------------ what is reported
 
-  describe "a lock error after a Shopify mutation" do
-    it "after a draft was created: refused as busy, and reported with the order and the new draft id" do
-      order = quoted_order!(:completed)
-      allow(order).to receive(:update_columns).and_wrap_original do |m, *args|
-        m.call(*args)
-        raise ActiveRecord::LockWaitTimeout
-      end
-      expect(Rails.error).to receive(:report).with(
-        an_instance_of(ActiveRecord::LockWaitTimeout),
-        handled: true,
-        context: hash_including(job_order_id: order.id, shopify_mutation: :created,
-                                shopify_draft_order_id: be_present)
-      ).once
-
-      result = order.checkout_link
-
-      expect(result.reason).to eq(:busy)
-      expect(shopify_ops).to include("draftOrderCreate")
-    end
-
-    it "after a draft was deleted: refused as deadlock, and reported with the deleted draft id" do
-      order = quoted_order!(:draft, draft: true)
-      allow(order).to receive(:update_columns).and_wrap_original do |m, attrs|
-        raise ActiveRecord::Deadlocked if attrs.key?(:is_deleted) # the delete's own write, after the Shopify call
-
-        m.call(attrs)
-      end
-      expect(Rails.error).to receive(:report).with(
-        an_instance_of(ActiveRecord::Deadlocked),
-        handled: true,
-        context: hash_including(job_order_id: order.id, shopify_mutation: :deleted, shopify_draft_order_id: draft_id)
-      ).once
-
-      result = order.soft_delete!(actor: admin)
-
-      expect(result.reason).to eq(:deadlock)
-      expect(shopify_ops).to eq(%w[draftOrderDelete])
-    end
-
-    it "with no Shopify mutation, a busy refusal is not reported" do
+  describe "a refusal that is only a lost race" do
+    it "a busy refusal is logged, not reported as an error" do
       order = quoted_order!(:draft)
       expect(Rails.error).not_to receive(:report)
 

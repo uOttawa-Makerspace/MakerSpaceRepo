@@ -376,11 +376,11 @@ RSpec.describe "JobOrders gaps", type: :request do
   # ------------------------------------------------------------- destroy
 
   describe "DELETE /job_orders/:id (destroy) corners" do
-    it "lets staff soft-delete another user's order (and sends them to the client index)" do
+    it "lets an admin soft-delete another user's order (and sends them to the admin list)" do
       order = order_with_task!
-      session_login!(staff)
+      session_login!(admin)
       delete job_order_path(order)
-      expect(response).to redirect_to(job_orders_path)
+      expect(response).to redirect_to(admin_job_orders_path)
       expect(order.reload.is_deleted).to be(true)
     end
 

@@ -27,10 +27,10 @@ RSpec.describe "Quoting a paid job order (JOB-04)", type: :request do
     [order.reload, task]
   end
 
-  def quote!(order, task, price, approved: "true")
+  def quote!(order, task, price, approved: "true", job_order: { staff_comments: "" })
     session_login!(staff)
     patch job_order_quote_path(order), params: { approved: approved, "job_task_quote_price_#{task.id}" => price.to_s,
-                                                 job_order: { staff_comments: "" } }
+                                                 job_order: job_order }
   end
 
   # ------------------------------------------------------------------ JOB-04
@@ -66,9 +66,7 @@ RSpec.describe "Quoting a paid job order (JOB-04)", type: :request do
       logger = ActiveSupport::Logger.new(io)
       Rails.logger.broadcast_to(logger)
       begin
-          session_login!(staff)
-        patch job_order_quote_path(order), params: { approved: "true", "job_task_quote_price_#{task.id}" => "40",
-                                                     job_order: { staff_comments: "see notes", comments: "x" } }
+        quote!(order, task, 40, job_order: { staff_comments: "see notes", comments: "x" })
       ensure
         Rails.logger.stop_broadcasting_to(logger)
       end
@@ -76,6 +74,29 @@ RSpec.describe "Quoting a paid job order (JOB-04)", type: :request do
       expect(order.reload.total_price).to eq(BigDecimal("40"))
       expect(order.staff_comments).to eq("see notes")
       expect(io.string).not_to include("Unpermitted parameter")
+    end
+  end
+
+  describe "staff_comments is one scalar" do
+    it "ignores an array: nothing is stringified into the comments" do
+      order, task = quoted_order!(:user_approval)
+      order.update!(staff_comments: "kept")
+      session_login!(staff)
+
+      patch job_order_quote_path(order), params: { approved: "true", "job_task_quote_price_#{task.id}" => "40",
+                                                   "job_order[staff_comments][]" => "a" }
+
+      expect(order.reload.total_price).to eq(BigDecimal("40"))
+      expect(order.staff_comments).to eq("kept")
+    end
+
+    it "ignores a hash" do
+      order, task = quoted_order!(:user_approval)
+      order.update!(staff_comments: "kept")
+
+      quote!(order, task, 40, job_order: { staff_comments: { a: "b" } })
+
+      expect(order.reload.staff_comments).to eq("kept")
     end
   end
 end

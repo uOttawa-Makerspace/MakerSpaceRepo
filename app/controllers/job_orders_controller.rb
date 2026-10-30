@@ -521,7 +521,7 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
     # one scalar read from job_order; its other keys are not this action's to permit, so none is logged unpermitted
     fields = params[:job_order]
     staff_comments = fields[:staff_comments] if fields.is_a?(ActionController::Parameters)
-    @job_order.staff_comments = staff_comments if staff_comments.present?
+    @job_order.staff_comments = staff_comments if staff_comments.is_a?(String) && staff_comments.present?
     @job_order.save!
   end
 

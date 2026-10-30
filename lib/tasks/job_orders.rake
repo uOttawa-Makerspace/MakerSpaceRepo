@@ -28,4 +28,20 @@ namespace :job_orders do
     puts "unresolved: #{unresolved.size}#{" (#{unresolved.join(', ')})" if unresolved.any?}"
     exit(1) if unresolved.any?
   end
+
+  desc "Delete the Shopify drafts no job order points at (orphans of a rollback after a Shopify create); exits 1 while any is unresolved"
+  task sweep_orphan_drafts: :environment do
+    # Shopify mutations cannot be rolled back: a database or lock error after a draft create leaves a payable draft
+    # that no order row points at (JobOrder#locked_operation). Every job-order draft carries the tag
+    # "job_order:<id>" beside the environment's operating tag, and JobOrder::DraftSweep reconciles this
+    # environment's OPEN marked drafts against the database: kept only for a live COMPLETED order whose stored
+    # draft id is this draft, else deleted (never a COMPLETED/paid one; never a draft without the marker, e.g.
+    # lockers, memberships, other environments). Fail closed: an error is listed as unresolved. Idempotent.
+    # JobOrderDraftSweepJob runs the same code hourly (config/recurring.yml).
+    report = JobOrder::DraftSweep.run
+    report.counts.each { |outcome, n| puts "#{outcome}: #{n}" }
+    report.unresolved.each { |line| warn "not resolved: #{line}" }
+    puts "unresolved: #{report.unresolved.size}"
+    exit(1) unless report.ok?
+  end
 end
