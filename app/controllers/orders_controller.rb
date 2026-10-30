@@ -66,12 +66,11 @@ class OrdersController < DevelopmentProgramsController
     end
   end
 
-  # Early, friendly refusal (checkout! re-checks under the wallet lock). Only a refusal refreshes
-  # the cached wallet (update_wallet, read under the wallet lock); a passing check writes nothing.
+  # Early, friendly refusal (checkout! re-checks under the wallet lock). A read: no lock, no
+  # cache write.
   def check_wallet
     return if current_user.get_total_cc >= current_order.subtotal.to_i
 
-    current_user.update_wallet
     flash[:alert] = "Not enough Cc Points."
     redirect_back(fallback_location: root_path)
   end

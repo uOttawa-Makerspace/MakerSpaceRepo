@@ -124,13 +124,13 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         expect(coupon.reload.user_id).to be_nil
       end
 
-      it "a refusal refreshes a stale cached wallet" do
+      it "a refusal is decided on the ledger balance, not the stale cache, and writes nothing" do
         CcMoney.create!(user: user, cc: 39)
         user.update_column(:wallet, 1000)
         create(:coupon_code, :unclaimed, dollar_cost: 5, cc_cost: 40)
         post discount_codes_path, params: { dollar_cost: 5, cc_cost: 40 }
         expect(flash[:alert]).to eq("Not enough CC points")
-        expect(user.reload.wallet).to eq(39)
+        expect(user.reload.wallet).to eq(1000)
       end
 
       it "does not touch coupons already claimed by someone else (same dollar value)" do
@@ -360,15 +360,20 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         expect(response.body).to match(/0\s*<small/)
       end
 
-      it "shows signed-in users their refreshed wallet and last 10 activities" do
+      it "shows signed-in users their ledger balance (not the stale cache) and last 10 activities, without locking or writing" do
         CcMoney.create!(user: user, cc: 30)
         user.update_column(:wallet, 0)
         shop_log_in!(user)
+        sqls = []
+        sub = ActiveSupport::Notifications.subscribe("sql.active_record") { |*, p| sqls << p[:sql] }
         get cc_moneys_path
+        ActiveSupport::Notifications.unsubscribe(sub)
         expect(response).to have_http_status(:ok)
         expect(response.body).to include("Your CC Balance")
-        expect(user.reload.wallet).to eq(30)
         expect(response.body).to match(/30\s*<small/)
+        expect(sqls.grep(/FOR (NO KEY )?UPDATE/)).to be_empty
+        expect(sqls.grep(/\AUPDATE "users"/).grep(/wallet/)).to be_empty
+        expect(user.reload.wallet).to eq(0) # the cache is not written by a page view
       end
 
       it "caps the activity list at 10" do

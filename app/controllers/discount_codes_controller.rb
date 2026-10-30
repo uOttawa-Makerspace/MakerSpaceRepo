@@ -56,11 +56,10 @@ class DiscountCodesController < DevelopmentProgramsController
     redirect_to new_discount_code_path
   end
 
-  # Early, friendly refusal (claim! re-checks under the wallet lock). Only a refusal refreshes the
-  # cached wallet (update_wallet, read under the wallet lock); a passing check writes nothing.
+  # Early, friendly refusal (claim! re-checks under the wallet lock). A read: no lock, no cache
+  # write.
   def check_user_wallet
     unless current_user.get_total_cc >= @price_rule.cc_cost.to_i
-      current_user.update_wallet
       flash[:alert] = "Not enough CC points"
       redirect_back(fallback_location: root_path)
     end
