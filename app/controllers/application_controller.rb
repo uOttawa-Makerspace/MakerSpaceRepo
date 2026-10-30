@@ -21,6 +21,9 @@ class ApplicationController < ActionController::Base
   # GoogleCalendarController, RfidController#card_number).
   protect_from_forgery with: :exception
   skip_forgery_protection if: :legacy_json_request?
+  rescue_from ActionController::InvalidAuthenticityToken, with: :stale_form
+
+  STALE_FORM_MESSAGE = "Your session changed; please try again."
   include ApplicationHelper
   require "zip"
   include Pagy::Method
@@ -68,6 +71,38 @@ class ApplicationController < ActionController::Base
 
   def legacy_json_request?
     request.media_type == Mime[:json].to_s && request.format.json?
+  end
+
+  # A refused CSRF check is usually a stale tab (signed in or out elsewhere, idle
+  # expiry, a new session after sign-in), sometimes a forged form: either way
+  # nothing ran. Browsers are sent back where they came from (same host only), or
+  # to sign in; XHR/JS/JSON get a 422 with the message. Only the class is logged,
+  # never the submitted token or params.
+  def stale_form(exception)
+    Rails.logger.warn("CSRF check failed: #{exception.class}")
+    if request.xhr? || request.format.json? || request.format.js?
+      respond_to_stale_form_xhr
+    else
+      redirect_to stale_form_target, alert: STALE_FORM_MESSAGE
+    end
+  end
+
+  def respond_to_stale_form_xhr
+    if request.format.json?
+      render json: { error: STALE_FORM_MESSAGE }, status: :unprocessable_content
+    else
+      render plain: STALE_FORM_MESSAGE, status: :unprocessable_content
+    end
+  end
+
+  def stale_form_target
+    back = url_from(request.referer)
+    return back || root_path if signed_in?
+
+    back_path = URI.parse(back).request_uri if back
+    login_path(back_to: back_path.presence)
+  rescue URI::InvalidURIError
+    signed_in? ? root_path : login_path
   end
 
   def set_last_seen_at

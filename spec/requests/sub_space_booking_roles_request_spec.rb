@@ -547,7 +547,7 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
                         "Referer" => "https://evil.example/forged-form.html" },
              without_csrf_token: true
       end.not_to change(SubSpaceBooking, :count)
-      expect(response).to have_http_status(:unprocessable_content)
+      expect(flash[:alert]).to eq("Your session changed; please try again.")
     end
   end
 end

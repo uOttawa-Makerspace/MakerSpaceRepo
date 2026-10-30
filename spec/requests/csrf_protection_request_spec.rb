@@ -40,15 +40,29 @@ RSpec.describe "CSRF protection", type: :request do
     response.parsed_body["signed_in"] == "true"
   end
 
+  let(:stale_form_message) { "Your session changed; please try again." }
+
+  # A refused HTML form (a stale tab, or a forged form) is sent back with a flash,
+  # not a bare 422 page.
+  def expect_stale_form_redirect(target)
+    expect(response).to redirect_to(target)
+    expect(flash[:alert]).to eq(stale_form_message)
+  end
+
+  def expect_stale_form_json_refusal
+    expect(response).to have_http_status(:unprocessable_content)
+    expect(response.parsed_body).to eq("error" => stale_form_message)
+  end
+
   it "is on in the test env, as in production" do
     expect(ActionController::Base.allow_forgery_protection).to be(true)
   end
 
   describe "HTML requests" do
-    it "an HTML POST without a token is refused with 422 and changes nothing (sign out)" do
+    it "an HTML POST without a token is refused and changes nothing (sign out)" do
       log_in!
       post perform_logout_path, without_csrf_token: true
-      expect(response).to have_http_status(:unprocessable_content)
+      expect_stale_form_redirect(root_path)
       expect(signed_in?).to be(true)
     end
 
@@ -70,29 +84,29 @@ RSpec.describe "CSRF protection", type: :request do
       other_token = page_token
       log_in! # sign-in resets the session, so the token above is stale
       post perform_logout_path, params: { authenticity_token: other_token }
-      expect(response).to have_http_status(:unprocessable_content)
+      expect_stale_form_redirect(root_path)
       expect(signed_in?).to be(true)
     end
 
     it "the login form itself needs the token (login CSRF)" do
       post login_authentication_path, params: { username_email: user.username, password: password }, without_csrf_token: true
-      expect(response).to have_http_status(:unprocessable_content)
+      expect_stale_form_redirect(login_path)
       expect(signed_in?).to be(false)
     end
 
     it "an HTML form POST to a .json path without a token is refused" do
       log_in!
       post "/logout.json", params: { foo: "bar" }, without_csrf_token: true # urlencoded, as a form sends it
-      expect(response).to have_http_status(:unprocessable_content)
+      expect_stale_form_json_refusal
       expect(signed_in?).to be(true)
     end
 
     it "an HTML form POST with ?format=json, or a text/plain body to a .json path, is refused" do
       log_in!
       post "/logout?format=json", params: { foo: "bar" }, without_csrf_token: true
-      expect(response).to have_http_status(:unprocessable_content)
+      expect_stale_form_json_refusal
       post "/logout.json", params: '{"foo":"bar"}', headers: { "CONTENT_TYPE" => "text/plain" }, without_csrf_token: true
-      expect(response).to have_http_status(:unprocessable_content)
+      expect_stale_form_json_refusal
       expect(signed_in?).to be(true)
     end
 
@@ -100,8 +114,41 @@ RSpec.describe "CSRF protection", type: :request do
       log_in!
       post perform_logout_path, params: "{}", headers: { "CONTENT_TYPE" => "application/json", "ACCEPT" => "text/html" },
                                 without_csrf_token: true
-      expect(response).to have_http_status(:unprocessable_content)
+      expect_stale_form_redirect(root_path)
       expect(signed_in?).to be(true)
+    end
+
+    it "a refused form goes back to the page it came from (same host only)" do
+      log_in!
+      post perform_logout_path, headers: { "Referer" => "http://www.example.com/settings/profile" }, without_csrf_token: true
+      expect_stale_form_redirect("http://www.example.com/settings/profile")
+      post perform_logout_path, headers: { "Referer" => "https://evil.example/forged.html" }, without_csrf_token: true
+      expect_stale_form_redirect(root_path)
+    end
+
+    it "a signed-out stale tab is sent to sign in, keeping its page as back_to" do
+      post perform_logout_path, headers: { "Referer" => "http://www.example.com/settings/profile" }, without_csrf_token: true
+      expect_stale_form_redirect(login_path(back_to: "/settings/profile"))
+    end
+
+    it "an XHR or JS request is answered 422 with the message" do
+      log_in!
+      post perform_logout_path, headers: { "X-Requested-With" => "XMLHttpRequest" }, without_csrf_token: true
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(stale_form_message)
+      post perform_logout_path, headers: { "ACCEPT" => "text/javascript" }, without_csrf_token: true
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(stale_form_message)
+      expect(signed_in?).to be(true)
+    end
+
+    it "logs only the exception class, never the submitted token or params" do
+      log_in!
+      logged = []
+      allow(Rails.logger).to receive(:warn).and_wrap_original { |m, *args, &blk| logged << args.first.to_s; m.call(*args, &blk) }
+      post perform_logout_path, params: { authenticity_token: "forged-token-value", secret_field: "s3cr3t" }
+      expect(logged).to include("CSRF check failed: ActionController::InvalidAuthenticityToken")
+      expect(logged.join).not_to include("forged-token-value", "s3cr3t")
     end
 
     it "a GET answered with JavaScript is only served to same-origin XHR (cross-origin JS guard)" do
@@ -224,7 +271,7 @@ RSpec.describe "CSRF protection", type: :request do
         log_in!(create(:user, :staff))
         post rfid_card_number_path, params: { rfid: rfid.card_number, space_id: pi_reader.space_id },
                                     without_csrf_token: true
-        expect(response).to have_http_status(:unprocessable_content)
+        expect_stale_form_redirect(root_path)
         expect(LabSession.where(user: user).count).to eq(0)
       end
     end
