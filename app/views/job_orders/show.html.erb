@@ -62,7 +62,7 @@
                     <%= task.title.presence || t("job_orders.order.unnamed_task", default: "Unnamed Task") %>
                   </h6>
 
-                  <% if (@job_order.allow_edit? && current_user.id == @job_order.user_id) || current_user.admin? %>
+                  <% if @job_order.task_edits_offered_to?(current_user) %>
                     <div class="d-flex gap-1 flex-row align-items-center">
                       <%= link_to t('job_orders.public_page.edit'), edit_job_order_job_task_path(@job_order, task, step: 1), class: 'btn btn-secondary py-0 px-2' %>
                       <% if @job_order.job_tasks.count > 1 %>
@@ -178,7 +178,7 @@
               </div>
             <% end %>
 
-            <% if (@job_order.allow_edit? && current_user.id == @job_order.user_id) || current_user.admin? %>
+            <% if @job_order.task_edits_offered_to?(current_user) %>
               <%= button_to t('job_orders.order.add_another_task', default: "Add Another Task"), job_order_job_tasks_path(@job_order), method: :post, class: "btn btn-outline-primary" %>
             <% end %>
           </div>

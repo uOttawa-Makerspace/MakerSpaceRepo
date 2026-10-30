@@ -516,7 +516,8 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
   # ------------------------------------------------------------- DELETE destroy
 
   # FIXED(D-J02): destroy requires sign-in and owner/admin (staff: retro of A2). (No Draft-only
-  # state guard: owner edits/deletes after submit are INTENDED, D-J35.)
+  # state guard: owner edits/deletes after submit are INTENDED, D-J35; after the quote they send
+  # the order back to staff and after payment they are refused, JOB-01.)
   describe "DELETE /job_orders/:job_order_id/task/:id (destroy)" do
     it "lets the owner delete and redirects back to the order page with the flash" do
       order = order_with_task!

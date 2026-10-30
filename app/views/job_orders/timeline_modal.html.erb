@@ -8,6 +8,9 @@
         <p class="float-right"><%= jos.created_at.strftime('%b %e %Y at %H:%M') %></p>
       </div>
       <p><%= sanitize(jos.job_status.description) %></p>
+      <% if jos.reason.present? %>
+        <p><em><%= t("job_orders.status_reasons.#{jos.reason}") %> (By: <%= jos.user.name %>)</em></p>
+      <% end %>
     </li>
   <% end %>
 </ul>

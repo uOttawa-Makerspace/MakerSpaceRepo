@@ -90,8 +90,45 @@ class JobOrder < ApplicationRecord
      JobStatus::WAITING_PROCESSED, JobStatus::BEING_PROCESSED, JobStatus::COMPLETED, JobStatus::DECLINED]
   end
 
+  # The approve link is bound to the latest quote boundary: the newest "Waiting for User Approval" row (a re-quote
+  # retires older links) or "Waiting for Staff Approval" row (an order sent back for a new quote, JOB-01, retires
+  # the link of the quote it replaced). A reminder moves neither, so it keeps the link.
   def approval_status_marker
-    job_order_statuses.where(job_status: JobStatus::USER_APPROVAL).maximum(:id)
+    job_order_statuses.where(job_status: [JobStatus::USER_APPROVAL, JobStatus::STAFF_APPROVAL]).maximum(:id)
+  end
+
+  # Statuses in which the order carries a staff quote the customer may approve or pay.
+  def self.quoted_status?(status)
+    [JobStatus::USER_APPROVAL, JobStatus::SENT_REMINDER, JobStatus::WAITING_PROCESSED, JobStatus::BEING_PROCESSED,
+     JobStatus::COMPLETED].include?(status)
+  end
+
+  class OwnerChangeRefused < StandardError; end
+
+  # JOB-01 (owner decision 2026-10-30): the one way the order's tasks, task options, files, services and wizard
+  # comments are changed from the customer side (JobTasksController; an admin using the same wizard goes through it
+  # too). The block makes the change. Under the row lock (the same FOR UPDATE as #quote and #transition!), by the
+  # status read under that lock:
+  # - DRAFT, STAFF_APPROVAL, DECLINED: the change is applied; the status is unchanged.
+  # - a quoted status: the change is applied and, in the same transaction, the order goes back to staff
+  #   (#send_back_for_requote!). If the Shopify draft cannot be deleted, StaleDraftOrderError is raised and nothing
+  #   is committed. Staff are mailed after the commit.
+  # - PAID, PICKED_UP: OwnerChangeRefused, before the block runs.
+  # Anything the block raises rolls the whole change back. Returns true when the order was sent back to staff.
+  def apply_owner_change!(actor:)
+    sent_back = transaction do
+      lock!
+      status = job_order_statuses.last&.job_status
+      raise OwnerChangeRefused if self.class.money_taken_status?(status)
+
+      yield
+      next false unless self.class.quoted_status?(status)
+
+      send_back_for_requote!(actor: actor, reason: "owner_change")
+      true
+    end
+    JobOrderMailer.send_job_requote_needed(id, "owner_change").deliver_later if sent_back
+    sent_back
   end
 
   has_many_attached :user_files
@@ -162,6 +199,14 @@ class JobOrder < ApplicationRecord
 
   def allow_edit?
     [JobStatus::DRAFT, JobStatus::STAFF_APPROVAL].include?(job_order_statuses.last.job_status)
+  end
+
+  # Whether the order page offers `user` the wizard's Edit / Delete task / Add task buttons: the owner while the
+  # order is not yet quoted, an admin until it is paid (#apply_owner_change! refuses a paid order either way).
+  def task_edits_offered_to?(user)
+    return !self.class.money_taken_status?(job_order_statuses.last&.job_status) if user.admin?
+
+    allow_edit? && user.id == user_id
   end
 
   def max_step
@@ -279,6 +324,15 @@ class JobOrder < ApplicationRecord
   end
 
   private
+
+  # Inside a transaction holding the row lock: the order's quote no longer describes it. A "Waiting for Staff
+  # Approval" row records who and why (which also retires the approve link, see #approval_status_marker), and the
+  # Shopify draft (its payable invoice) is deleted, failing closed with StaleDraftOrderError so the caller's
+  # transaction rolls back. Callers mail staff after the commit.
+  def send_back_for_requote!(actor:, reason:)
+    job_order_statuses.create!(job_status: JobStatus::STAFF_APPROVAL, user: actor, reason: reason)
+    discard_stale_draft_order!
+  end
 
   # [:found, invoice_url] | [:gone, nil] (blank id or Shopify says it no longer exists) | [:error, nil]
   def probe_draft_order
