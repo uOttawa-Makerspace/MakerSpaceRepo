@@ -194,7 +194,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_30_120000) do
   end
 
   create_table "coupon_codes", force: :cascade do |t|
-    t.integer "cc_cost"
+    t.integer "cc_cost", null: false
     t.string "code"
     t.datetime "created_at", null: false
     t.integer "dollar_cost"
