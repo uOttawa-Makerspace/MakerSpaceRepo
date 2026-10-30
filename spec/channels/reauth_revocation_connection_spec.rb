@@ -3,7 +3,7 @@
 require "rails_helper"
 
 # The websocket handshake resolves its user through the same authenticators as the
-# controllers, so the one token_version bump made by RateLimitCounter.increment_revoking
+# controllers, so the one token_version bump made by User#bump_token_version!
 # (re-auth exhaustion) refuses a reconnect with the old cookie session or JWT.
 RSpec.describe ApplicationCable::Connection do
   include ActionCable::Connection::TestCase::Behavior
@@ -14,11 +14,14 @@ RSpec.describe ApplicationCable::Connection do
   let(:session_data) { { user_id: user.id, token_version: user.token_version, expires_at: 1.hour.from_now } }
 
   def exhaust!(version)
-    results = Array.new(6) do
-      RateLimitCounter.increment_revoking("reauth/#{user.id}/#{version}", user_id: user.id, token_version: version,
-                                                                          max: 5, expires_in: 15.minutes)
+    # What UsersController#limit_reauth_attempts does for each attempt.
+    bumps = Array.new(6) do
+      RateLimitCounter.transaction do
+        count = RateLimitCounter.increment("reauth/#{user.id}/#{version}", 1, expires_in: 15.minutes)
+        count > 5 && User.find(user.id).bump_token_version!(from_version: version)
+      end
     end
-    expect(results.map(&:last).compact.size).to eq(1)
+    expect(bumps.count(&:itself)).to eq(1)
   end
 
   it "accepts the cookie session and the JWT before, and refuses both after the revocation" do

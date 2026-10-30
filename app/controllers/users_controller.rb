@@ -247,10 +247,10 @@ class UsersController < SessionsController
       @user.store_new_password!(new_password, clear_timed_lock: true)
     rescue ActiveRecord::ActiveRecordError => e
       Rails.error.report(e, handled: true)
-      begin
-        @user.reload
-      rescue ActiveRecord::RecordNotFound
-        # Hard-deleted meanwhile: there is no account to retry on, nothing is kept.
+      # @user.reload is unscoped, so look the account up through the default scope: a
+      # hard-deleted or soft-deleted account has nothing to retry on.
+      @user = User.find_by(id: @user.id)
+      if @user.nil?
         sign_out
         redirect_to login_path, alert: 'This account no longer exists. Please sign in again.' and return
       end
@@ -517,35 +517,31 @@ class UsersController < SessionsController
     end
   end
 
+  # Counts the attempt and, when it is over the limit, ends every credential of the
+  # user, in ONE transaction: User#bump_token_version! (the one bump implementation)
+  # increments token_version, which every cookie session, access/refresh token and
+  # websocket handshake is checked against, revokes the refresh-token rows in its own
+  # nested transaction, and closes the websockets after the real commit. If anything
+  # raises, the whole transaction rolls back (the attempt is not counted, nothing is
+  # bumped) and the error propagates BEFORE any password is checked: fail closed.
+  # The bump is compare-and-set on the version the key was built from, so of any
+  # number of racing over-limit requests exactly one bumps; the others just sign out.
+  #
+  # Lock order: the counter row (the upsert), then the user row (the bump). No path
+  # takes a users lock and then a rate_limit_counters row, and prune! locks counters
+  # only, so the two cannot deadlock. Keep it that way.
   def limit_reauth_attempts
-    # Counted and, when over the limit, revoked in ONE statement (see
-    # RateLimitCounter.increment_revoking): it bumps token_version, which every
-    # cookie session, access/refresh token and websocket handshake is checked
-    # against, so the cookie session AND every token die together. If the statement
-    # fails the error propagates: no password is checked and nothing was counted.
-    # Of any number of racing requests exactly one bumps (new_version present).
-    count, new_version = RateLimitCounter.increment_revoking(
-      reauth_attempts_key, user_id: @user.id, token_version: @user.token_version,
-      max: REAUTH_MAX_ATTEMPTS, expires_in: REAUTH_WINDOW
-    )
+    user = @user # sign_out clears @user
+    key = reauth_attempts_key
+    count = RateLimitCounter.transaction do
+      RateLimitCounter.increment(key, 1, expires_in: REAUTH_WINDOW).tap do |attempts|
+        user.bump_token_version!(from_version: user.token_version) if attempts > REAUTH_MAX_ATTEMPTS
+      end
+    end
     return if count <= REAUTH_MAX_ATTEMPTS
 
-    user = @user # sign_out clears @user
     sign_out
-    revoke_leftovers(user) if new_version
     redirect_to login_path, alert: REAUTH_LIMIT_ALERT
-  end
-
-  # Housekeeping after the bump has committed (the credentials are already dead):
-  # mark the refresh-token rows revoked and close the open websockets, which are
-  # refused on reconnect. A failure here has no security effect, so it is reported.
-  def revoke_leftovers(user)
-    begin
-      ApiRefreshToken.revoke_all_for!(user.id)
-    rescue StandardError => e
-      Rails.error.report(e, handled: true, severity: :error, context: { user_id: user.id, action: 'reauth_revocation_cleanup' })
-    end
-    user.disconnect_cable!
   end
 
   def reauth_attempts_key

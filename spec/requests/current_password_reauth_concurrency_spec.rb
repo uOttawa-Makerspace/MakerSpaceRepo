@@ -37,10 +37,10 @@ RSpec.describe "Current-password exhaustion under concurrency", type: :request d
     before = user.reload.token_version
     5.times { wrong_guess(sessions.first) }
 
-    # Every request has loaded @user, and all of them reach the statement together.
+    # Every request has loaded @user, and all of them reach the counter together.
     barrier = Queue.new
     deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 10
-    allow(RateLimitCounter).to receive(:increment_revoking).and_wrap_original do |m, *args, **opts|
+    allow(RateLimitCounter).to receive(:increment).and_wrap_original do |m, *args, **opts|
       barrier << true
       until barrier.size >= threads
         raise "barrier: not every request arrived within 10s" if Process.clock_gettime(Process::CLOCK_MONOTONIC) > deadline
@@ -49,6 +49,9 @@ RSpec.describe "Current-password exhaustion under concurrency", type: :request d
       end
       m.call(*args, **opts)
     end
+
+    disconnects = []
+    allow_any_instance_of(User).to receive(:disconnect_cable!) { disconnects << true }
 
     results = sessions.map do |sess|
       Thread.new do
@@ -60,6 +63,7 @@ RSpec.describe "Current-password exhaustion under concurrency", type: :request d
 
     expect(results).to all(eq(["http://www.example.com#{login_path}", UsersController::REAUTH_LIMIT_ALERT]))
     expect(User.find(user.id).token_version).to eq(before + 1)
+    expect(disconnects.size).to eq(1) # the websockets are closed by the one request that bumped
     get "/api/v1/session", headers: { "Authorization" => "Bearer #{tokens['access_token']}" }
     expect(response).to have_http_status(:unauthorized)
     expect(ApiRefreshToken.where(user_id: user.id, revoked_at: nil)).to be_empty

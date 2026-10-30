@@ -48,34 +48,6 @@ RSpec.describe RateLimitCounter do
     expect(described_class.increment("k", 1, expires_in: 1.minute)).to eq(1)
   end
 
-  describe ".increment_revoking" do
-    let!(:user) { create(:user, :regular_user) }
-
-    def call(version = user.token_version)
-      described_class.increment_revoking("k", user_id: user.id, token_version: version, max: 2, expires_in: 1.hour)
-    end
-
-    it "counts like increment and bumps only on the attempt over max, once" do
-      v = user.token_version
-      expect(call).to eq([1, nil])
-      expect(call).to eq([2, nil])
-      expect(call(v)).to eq([3, v + 1])
-      expect(call(v)).to eq([4, nil]) # the compare-and-set matches nothing now
-      expect(user.reload.token_version).to eq(v + 1)
-    end
-
-    it "restarts an expired window like increment" do
-      2.times { call }
-      travel 2.hours do
-        expect(call).to eq([1, nil])
-      end
-    end
-
-    it "does nothing for a user that does not exist" do
-      expect(described_class.increment_revoking("z", user_id: 0, token_version: 0, max: 0, expires_in: 1.hour)).to eq([1, nil])
-    end
-  end
-
   describe ".prune!" do
     it "deletes only rows whose window has ended, in batches" do
       stub_const("RateLimitCounter::PRUNE_BATCH", 2)

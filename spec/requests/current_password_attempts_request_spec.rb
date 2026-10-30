@@ -162,52 +162,38 @@ RSpec.describe "Current-password re-authentication", type: :request do
       expect(user.reload.token_version).to eq(before + 1)
     end
 
-    it "a cleanup failure (refresh-token rows) still leaves every credential dead, and is reported as handled" do
-      log_in!
-      tokens = api_token_pair(user, password)
-      before = user.reload.token_version
-      5.times { change_password!("wrong-password") }
-
-      allow(ApiRefreshToken).to receive(:revoke_all_for!).and_raise(ActiveRecord::StatementInvalid, "killed")
-      allow(Rails.error).to receive(:report).and_call_original
-      change_password!("wrong-password")
-      expect(Rails.error).to have_received(:report)
-        .with(an_instance_of(ActiveRecord::StatementInvalid), hash_including(handled: true))
-      expect(response).to redirect_to(login_path)
-      expect(flash[:alert]).to eq(limit_message)
-      expect(signed_in?).to be(false)
-      expect(user.reload.token_version).to eq(before + 1)
-      get "/api/v1/session", headers: { "Authorization" => "Bearer #{tokens['access_token']}" }
-      expect(response).to have_http_status(:unauthorized)
-      post "/api/v1/session/refresh", params: { refresh_token: tokens["refresh_token"] }.to_json,
-                                      headers: { "CONTENT_TYPE" => "application/json" }
-      expect(response).to have_http_status(:unauthorized)
+    # Count and bump are one transaction; any failure rolls both back and the request
+    # fails BEFORE the password is checked (fail closed). No adapter SQL is stubbed.
+    shared_examples "a fail-closed re-authentication" do |failing_call|
+      it "answers with an error, runs no password check, and leaves the counter and token_version unchanged" do
+        log_in!
+        limit = UsersController::REAUTH_MAX_ATTEMPTS
+        limit.times { change_password!("wrong-password") }
+        before = user.reload.token_version
+        key = "reauth/#{user.id}/#{before}"
+        counted = RateLimitCounter.find_by!(key: key).count
+        instance_exec(&failing_call)
+        expect_any_instance_of(User).not_to receive(:authenticate_password)
+        change_password!(password)
+        expect(response).to have_http_status(:internal_server_error)
+        expect(RateLimitCounter.find_by!(key: key).count).to eq(counted)
+        expect(user.reload.token_version).to eq(before)
+      end
     end
 
-    it "closes the user's websockets after the bump, and only for the request that bumped" do
-      log_in!
-      5.times { change_password!("wrong-password") }
-      expect_any_instance_of(User).to receive(:disconnect_cable!).once
-      2.times { change_password!("wrong-password") }
+    describe "when counting fails" do
+      it_behaves_like "a fail-closed re-authentication",
+                      -> { allow(RateLimitCounter).to receive(:increment).and_raise(ActiveRecord::StatementInvalid, "killed") }
     end
 
-    it "fails closed when the counting-and-revoking statement fails: error, no password check, nothing counted or bumped" do
-      log_in!
-      4.times { change_password!("wrong-password") }
-      before = user.reload.token_version
-      key = "reauth/#{user.id}/#{before}"
-      counted = RateLimitCounter.find_by!(key: key).count
-      allow_any_instance_of(ActiveRecord::ConnectionAdapters::PostgreSQLAdapter)
-        .to receive(:select_one).and_wrap_original do |m, sql, *rest|
-          raise ActiveRecord::StatementInvalid, "killed" if sql.to_s.include?("WITH c AS")
+    describe "when the bump fails" do
+      it_behaves_like "a fail-closed re-authentication",
+                      -> { allow_any_instance_of(User).to receive(:bump_token_version!).and_raise(ActiveRecord::StatementInvalid, "killed") }
+    end
 
-          m.call(sql, *rest)
-        end
-      expect_any_instance_of(User).not_to receive(:authenticate_password)
-      change_password!(password)
-      expect(response).to have_http_status(:internal_server_error)
-      expect(RateLimitCounter.find_by!(key: key).count).to eq(counted)
-      expect(user.reload.token_version).to eq(before)
+    describe "when revoking the refresh tokens fails after the bump and the increment (atomicity)" do
+      it_behaves_like "a fail-closed re-authentication",
+                      -> { allow(ApiRefreshToken).to receive(:revoke_all_for!).and_raise(ActiveRecord::StatementInvalid, "killed") }
     end
   end
 
@@ -216,6 +202,18 @@ RSpec.describe "Current-password re-authentication", type: :request do
     allow_any_instance_of(User).to receive(:store_new_password!) do |u|
       User.where(id: u.id).delete_all
       raise ActiveRecord::StatementInvalid, "row gone"
+    end
+    change_password!(password)
+    expect(response).to redirect_to(login_path)
+    expect(flash[:alert]).to eq("This account no longer exists. Please sign in again.")
+    expect(signed_in?).to be(false)
+  end
+
+  it "a password change that fails because the account was soft-deleted meanwhile signs out with the neutral message" do
+    log_in!
+    allow_any_instance_of(User).to receive(:store_new_password!) do |u|
+      User.unscoped.where(id: u.id).update_all(deleted: true)
+      raise ActiveRecord::StatementInvalid, "row changed"
     end
     change_password!(password)
     expect(response).to redirect_to(login_path)
