@@ -102,7 +102,7 @@ class Order < ApplicationRecord
   # case (D-S04): nothing to lock, it is saved as a Completed zero-value order as before.
   def self.checkout!(order, user)
     own_transaction("Order.checkout!") do
-      wallet = CcMoney.lock_wallet!(user)
+      payer = CcMoney.lock_wallet!(user) # the user row first (house lock order)
       if order.persisted?
         order = lock(CART_LOCK_MODE).find(order.id)
         next [:already_completed, order, []] if order.order_status&.name == COMPLETED
@@ -112,12 +112,12 @@ class Order < ApplicationRecord
       lines = order.checkout_lines # the one preload + validation, under the lock
       next [:invalid_items, order, []] if lines.nil?
 
-      order.user = wallet.user
+      order.user = payer
       order.price_from!(lines)
       order.order_status = OrderStatus.find_by(name: COMPLETED)
       next [:invalid, order, []] unless order.save
 
-      CcMoney.debit_all!(wallet, lines.map do |item, amount|
+      CcMoney.debit_all!(payer, lines.map do |item, amount|
         [amount, { order: order, proficient_project: item.proficient_project }]
       end)
       items = lines.map(&:first)

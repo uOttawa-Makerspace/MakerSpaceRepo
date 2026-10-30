@@ -97,17 +97,29 @@ RSpec.describe CcMoney, type: :model do
 
     def user_locks(sqls) = sqls.count { |q| q.include?('FROM "users"') && q.include?("FOR NO KEY UPDATE") }
 
-    it "a Wallet from lock_wallet! in this transaction is not locked again" do
+    it "debit! after lock_wallet! (re-locking the row this transaction holds) and repeated debits all succeed" do
       CcMoney.create!(user: user, cc: 10)
-      sqls = sql_during do
-        in_caller_transaction do
-          wallet = CcMoney.lock_wallet!(user)
-          CcMoney.debit!(wallet, 1)
-          CcMoney.debit!(wallet, 2)
-        end
+      in_caller_transaction do
+        locked = CcMoney.lock_wallet!(user)
+        CcMoney.debit!(locked, 1)
+        CcMoney.debit!(user, 2)
       end
-      expect(user_locks(sqls)).to eq(1)
+      expect(user.cc_moneys.order(:id).pluck(:cc)).to eq([10, -1, -2])
       expect(user.reload.wallet).to eq(7)
+    end
+
+    it "debits inside a released requires_new block and after a rolled-back one hold the lock and stay correct" do
+      CcMoney.create!(user: user, cc: 10)
+      in_caller_transaction do
+        ActiveRecord::Base.transaction(requires_new: true) { CcMoney.debit!(user, 1) }
+        ActiveRecord::Base.transaction(requires_new: true) do
+          CcMoney.debit!(user, 2)
+          raise ActiveRecord::Rollback
+        end
+        CcMoney.debit!(user, 3)
+      end
+      expect(user.cc_moneys.order(:id).pluck(:cc)).to eq([10, -1, -3])
+      expect(user.reload.wallet).to eq(6)
     end
 
     it "lock_wallet!/debit! inside a caller transaction leave its lock_timeout unchanged (no session setting)" do
@@ -115,7 +127,7 @@ RSpec.describe CcMoney, type: :model do
       in_caller_transaction do
         CcMoney.connection.execute("SET LOCAL lock_timeout = '7s'")
         CcMoney.debit!(user, 1)
-        CcMoney.debit!(CcMoney.lock_wallet!(user), 1)
+        CcMoney.debit_all!(CcMoney.lock_wallet!(user), [[1, {}]])
         expect(CcMoney.connection.select_value("SELECT current_setting('lock_timeout')")).to eq("7s")
       end
     end
@@ -123,7 +135,7 @@ RSpec.describe CcMoney, type: :model do
     it "debit_all! checks the TOTAL once, writes every row and refreshes the cached wallet once" do
       CcMoney.create!(user: user, cc: 30)
       sqls = sql_during do
-        in_caller_transaction { CcMoney.debit_all!(CcMoney.lock_wallet!(user), [[10, {}], [15, {}]]) }
+        in_caller_transaction { CcMoney.debit_all!(user, [[10, {}], [15, {}]]) }
       end
       expect(user.cc_moneys.order(:id).pluck(:cc)).to eq([30, -10, -15])
       expect(user.reload.wallet).to eq(5)
@@ -132,51 +144,16 @@ RSpec.describe CcMoney, type: :model do
       expect(user_locks(sqls)).to eq(1)
     end
 
-    it "debit_all! requires a held Wallet (a User is refused; for stale wallets see Wallet#held?)" do
+    it "debit_all! refuses to run outside a caller transaction" do
       CcMoney.create!(user: user, cc: 30)
-      in_caller_transaction do
-        expect { CcMoney.debit_all!(user, [[1, {}]]) }.to raise_error(ArgumentError, /needs a Wallet held/)
-      end
+      expect { CcMoney.debit_all!(user, [[1, {}]]) }
+        .to raise_error(ArgumentError, "CcMoney.debit! must run inside the caller's transaction")
       expect(user.cc_moneys.pluck(:cc)).to eq([30])
-    end
-
-    describe "Wallet#held? (the lock must still be held by this connection)" do
-      before { CcMoney.create!(user: user, cc: 30) }
-
-      it "a wallet locked in a released requires_new savepoint is still held by the enclosing transaction" do
-        in_caller_transaction do
-          wallet = ActiveRecord::Base.transaction(requires_new: true) { CcMoney.lock_wallet!(user) }
-          expect(wallet.held?).to be(true)
-          expect { CcMoney.debit_all!(wallet, [[5, {}]]) }.not_to raise_error
-        end
-        expect(user.cc_moneys.pluck(:cc)).to eq([30, -5])
-      end
-
-      it "a wallet locked in a rolled-back savepoint is not held (the lock went with it)" do
-        in_caller_transaction do
-          wallet = nil
-          ActiveRecord::Base.transaction(requires_new: true) do
-            wallet = CcMoney.lock_wallet!(user)
-            raise ActiveRecord::Rollback
-          end
-          expect(wallet.held?).to be(false)
-          expect { CcMoney.debit_all!(wallet, [[5, {}]]) }.to raise_error(ArgumentError, /needs a Wallet held/)
-        end
-      end
-
-      it "a wallet locked in a real savepoint (the outer transaction already wrote) that was released is still held" do
-        in_caller_transaction do
-          CcMoney.create!(user: user, cc: 1) # materializes the outer transaction: the inner one is a real SAVEPOINT
-          wallet = ActiveRecord::Base.transaction(requires_new: true) { CcMoney.lock_wallet!(user) }
-          expect(wallet.transaction).to be_a(ActiveRecord::ConnectionAdapters::SavepointTransaction)
-          expect(wallet.held?).to be(true)
-        end
-      end
     end
 
     it "debit_all! refuses when the total exceeds the balance even though each item fits" do
       CcMoney.create!(user: user, cc: 20)
-      expect { in_caller_transaction { CcMoney.debit_all!(CcMoney.lock_wallet!(user), [[15, {}], [15, {}]]) } }
+      expect { in_caller_transaction { CcMoney.debit_all!(user, [[15, {}], [15, {}]]) } }
         .to raise_error(CcMoney::InsufficientBalance, "CC balance 20 does not cover 30")
       expect(user.cc_moneys.pluck(:cc)).to eq([20])
     end
@@ -243,29 +220,5 @@ RSpec.describe Order, ".checkout! transaction boundary", type: :model do
       expect { Order.checkout!(order, user) }.to raise_error(ArgumentError, "Order.checkout! must run as its own transaction")
     end
     expect(order.reload.order_status.name).to eq("In progress")
-  end
-end
-
-RSpec.describe CcMoney::Wallet, "#held? across connections", type: :model do
-  self.use_transactional_tests = false # a fixture transaction shares one connection across threads
-
-  let!(:user) { create(:user, :regular_user) }
-  after { User.unscoped.where(id: user.id).delete_all }
-
-  it "a wallet whose transaction belongs to another connection is not held here" do
-    opened = Queue.new
-    done = Queue.new
-    other = Thread.new do
-      ActiveRecord::Base.connection_pool.with_connection do |conn|
-        conn.transaction do
-          opened << conn.current_transaction
-          done.pop(timeout: 5)
-        end
-      end
-    end
-    foreign = CcMoney::Wallet.new(user, opened.pop)
-    ActiveRecord::Base.transaction { expect(foreign.held?).to be(false) }
-    done << true
-    other.join
   end
 end

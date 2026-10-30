@@ -41,13 +41,13 @@ class CouponCode < ApplicationRecord
     coupon = nil
     uncached do
       own_transaction("claim!") do
-        wallet = CcMoney.lock_wallet!(user) # the user row first (house lock order)
+        payer = CcMoney.lock_wallet!(user) # the user row first (house lock order)
         coupon = cc_cost.blank? ? nil : unclaimed.where(dollar_cost: dollar_cost, cc_cost: cc_cost)
                                                   .order(:id).lock(User::GUARD_LOCK_MODE).first
         next [:no_coupon, nil] if coupon.nil? || !coupon.user_id.nil? # guard, re-checked on the locked row
 
-        CcMoney.debit!(wallet, coupon.cc_cost.to_i)
-        coupon.update!(user: wallet.user)
+        CcMoney.debit!(payer, coupon.cc_cost.to_i)
+        coupon.update!(user: payer)
         [:claimed, coupon]
       end
     end
