@@ -57,6 +57,7 @@ class Order < ApplicationRecord
   # status re-checked under it. Returns [outcome, order, kit_project_ids]:
   #   :completed          completed and paid now
   #   :already_completed  a concurrent submit of the same cart completed it (nothing debited)
+  #   :not_open           any other status: an error, nothing written
   #   :invalid            the order did not save (nothing written)
   # Raises CcMoney::InsufficientBalance (or CcMoney::InvalidAmount for a negative price
   # snapshot) with everything rolled back. Kit mails are NOT sent here: the caller sends them
@@ -67,7 +68,8 @@ class Order < ApplicationRecord
       wallet = CcMoney.lock_wallet!(user)
       if order.persisted?
         order = lock(CART_LOCK_MODE).find(order.id)
-        next [:already_completed, order, []] unless order.order_status&.name == IN_PROGRESS
+        next [:already_completed, order, []] if order.order_status&.name == COMPLETED
+        next [:not_open, order, []] unless order.order_status&.name == IN_PROGRESS
       end
 
       order.user = wallet.user

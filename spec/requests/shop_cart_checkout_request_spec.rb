@@ -578,6 +578,22 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(user.reload.wallet).to eq(40)
     end
 
+    it "an order neither in progress nor completed is an error: no success flash, nothing debited, cart session kept" do
+      credit_cc!(user, 50)
+      add_to_cart(pp_with_cc(10))
+      order = user.orders.last
+      allow(Order).to receive(:checkout!).and_wrap_original do |original, _order, payer|
+        order.update_column(:order_status_id, OrderStatus.find_or_create_by!(name: "Cancelled").id)
+        original.call(order.reload, payer)
+      end
+      post orders_path
+      expect(flash[:alert]).to eq("Something went wrong")
+      expect(flash[:notice]).not_to eq("Your Order was successfully processed.")
+      expect(session[:order_id]).to eq(order.id)
+      expect(CcMoney.where(order_id: order.id)).to be_empty
+      expect(user.reload.wallet).to eq(50)
+    end
+
     it "lets staff and admin check out the same way" do
       [staff, admin].each do |u|
         get logout_path

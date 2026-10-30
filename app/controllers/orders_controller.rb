@@ -21,7 +21,8 @@ class OrdersController < DevelopmentProgramsController
   # cannot overdraw the wallet (D-S42).
   def create
     outcome, order, kit_project_ids = Order.checkout!(current_order, current_user)
-    if outcome == :invalid
+    unless %i[completed already_completed].include?(outcome)
+      # :invalid or :not_open: nothing was written; the cart (session[:order_id]) is kept
       flash[:alert] = "Something went wrong"
       redirect_back(fallback_location: root_path)
       return
