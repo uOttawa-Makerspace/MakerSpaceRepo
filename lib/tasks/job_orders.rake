@@ -31,7 +31,7 @@ namespace :job_orders do
 
   desc "Delete the Shopify drafts no job order points at (orphans of a rollback after a Shopify create). " \
        "Exit codes: 0 all resolved, 1 some unresolved, 2 skipped because another sweep is running, 64 usage (invalid CONFIRM_MAX_DELETES). " \
-       "CONFIRM_MAX_DELETES=n lifts the cap of #{JobOrder::DraftSweep::MAX_DELETES} deletes (over it nothing is deleted)"
+       "CONFIRM_MAX_DELETES=n lifts the cap of deletes per run, JobOrder::DraftSweep::MAX_DELETES (over it nothing is deleted)"
   task sweep_orphan_drafts: :environment do
     # Shopify mutations cannot be rolled back: a database or lock error after a draft create leaves a payable draft
     # that no order row points at (JobOrder#locked_operation). Every job-order draft carries the tag
@@ -40,10 +40,12 @@ namespace :job_orders do
     # draft id is this draft, else deleted (decided and deleted under the order's row lock) (never a COMPLETED/paid one; never a draft without the marker, e.g.
     # lockers, memberships, other environments). Fail closed: an error is listed as unresolved. Idempotent.
     # JobOrderDraftSweepJob runs the same code hourly (config/recurring.yml).
+    # The desc names the cap rather than its value: the task definitions load before the models can be autoloaded, so the
+    # value is read here, at run time, and printed below.
     # More orphans than the cap (JobOrder::DraftSweep::MAX_DELETES) delete NOTHING and exit 1: check the database, then CONFIRM_MAX_DELETES=<n>.
     cap = ENV["CONFIRM_MAX_DELETES"]
     if cap && !cap.match?(/\A\d+\z/)
-      warn "CONFIRM_MAX_DELETES must be a whole number"
+      warn "CONFIRM_MAX_DELETES must be a whole number (the default cap is #{JobOrder::DraftSweep::MAX_DELETES})"
       exit(64) # EX_USAGE: not 1 (unresolved) or 2 (skipped), the sweep did not run
     end
     report = cap ? JobOrder::DraftSweep.run(max_deletes: cap.to_i) : JobOrder::DraftSweep.run

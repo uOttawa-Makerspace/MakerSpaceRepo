@@ -67,7 +67,7 @@ RSpec.describe "job_orders:sweep_orphan_drafts", type: :model do
     comment = Rake::Task["job_orders:sweep_orphan_drafts"].full_comment
 
     expect(comment).to include("0 all resolved", "1 some unresolved", "2 skipped", "64 usage")
-    expect(comment).to include("cap of #{JobOrder::DraftSweep::MAX_DELETES} deletes")
+    expect(comment).to include("JobOrder::DraftSweep::MAX_DELETES").and(satisfy { |c| c.exclude?("200") })
   end
 
   it "exits 64 (usage), not 1 or 2, for an invalid CONFIRM_MAX_DELETES, and sweeps nothing" do
@@ -75,7 +75,7 @@ RSpec.describe "job_orders:sweep_orphan_drafts", type: :model do
     expect(JobOrder::DraftSweep).not_to receive(:run)
     _out, err, status = run_task
 
-    expect(err).to include("CONFIRM_MAX_DELETES must be a whole number")
+    expect(err).to include("CONFIRM_MAX_DELETES must be a whole number", "default cap is #{JobOrder::DraftSweep::MAX_DELETES}")
     expect(status).to eq(64)
   end
 
