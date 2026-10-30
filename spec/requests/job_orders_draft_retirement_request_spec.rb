@@ -124,6 +124,42 @@ RSpec.describe "Job order drafts on status changes", type: :request do
       expect(order.reload.shopify_draft_order_id).to eq(draft_id)
     end
 
+    # Round 2 review 4: PAID -> PICKED_UP is money-taken to money-taken; the move into PAID already decided the
+    # draft, so pick-up never calls Shopify (no HTTP under the row lock), even while Shopify is down.
+    it "records a pick-up without calling Shopify, even when Shopify is down" do
+      order, = order_with_draft!(:paid)
+      shopify.status = 502
+      session_login!(staff)
+      patch job_order_picked_up_path(order), params: { picked_up: "true" }
+
+      expect(status_names(order).last).to eq("Picked-Up")
+      expect(shopify.calls).to be_empty
+      expect(order.reload.shopify_draft_order_id).to eq(draft_id)
+    end
+
+    # Round 2 review 8: one fail-closed conversion (JobOrder#shopify_fail_closed) for every Shopify call behind a
+    # status decision: a raised timeout refuses the change with the draft message, never a 500.
+    it "refuses to record the payment when the draft check times out" do
+      order, = order_with_draft!(:completed)
+      allow(shopify).to receive(:query).and_raise(Net::ReadTimeout)
+      session_login!(staff)
+      patch job_order_paid_path(order), params: { paid: "true" }
+
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change_draft_order_failed"))
+      expect(status_names(order).last).to eq("Completed (Waiting for Payment)")
+    end
+
+    it "refuses a decline when the delete times out" do
+      order, = order_with_draft!(:completed)
+      allow(shopify).to receive(:query).and_raise(Net::ReadTimeout)
+      session_login!(staff)
+      patch job_order_quote_path(order), params: { approved: "false", job_order: { staff_comments: "" } }
+
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change_draft_order_failed"))
+      expect(status_names(order).last).to eq("Completed (Waiting for Payment)")
+      expect(order.reload.shopify_draft_order_id).to eq(draft_id)
+    end
+
     it "keeps a COMPLETED draft on pick-up" do
       order, = order_with_draft!(:paid)
       shopify.draft_status = "COMPLETED"

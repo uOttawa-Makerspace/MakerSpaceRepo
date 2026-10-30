@@ -378,23 +378,9 @@ class JobOrder < ApplicationRecord
   def discard_stale_draft_order!
     return if shopify_draft_order_id.blank?
 
-    # destroy clears the id before the outcome is known; the caller's transaction rolls that back on refusal
-    old_id = shopify_draft_order_id
-    user_errors = []
-    return if destroy_shopify_draft_order(user_errors_out: user_errors)
-
-    # No deletedId (with or without userErrors; Shopify may report a vanished draft as "not found"): one fetch
-    # decides. Proceed ONLY when Shopify confirms the draft is gone (200, no errors, draftOrder null; the id is
-    # already cleared). A found (completed/paid) draft or a failed/raising fetch refuses, fail closed.
-    return if shopify_draft_order_gone?(old_id)
-
-    detail = user_errors.map { |e| e['message'] }.join(', ')
-    raise StaleDraftOrderError, "Shopify did not delete the draft order#{": #{detail}" if detail.present?}"
-  rescue StaleDraftOrderError
-    raise
-  rescue StandardError => e
-    raise StaleDraftOrderError, e.message
+    shopify_fail_closed { delete_draft_order_confirmed! }
   end
+
 
   def total_price
     snapshot = quote_snapshot
@@ -421,6 +407,32 @@ class JobOrder < ApplicationRecord
   end
 
   private
+
+  # #discard_stale_draft_order!'s Shopify work: delete, and when Shopify deletes nothing, confirm it is gone.
+  def delete_draft_order_confirmed!
+    # destroy clears the id before the outcome is known; the caller's transaction rolls that back on refusal
+    old_id = shopify_draft_order_id
+    user_errors = []
+    return if destroy_shopify_draft_order(user_errors_out: user_errors)
+
+    # No deletedId (with or without userErrors; Shopify may report a vanished draft as "not found"): one fetch
+    # decides. Proceed ONLY when Shopify confirms the draft is gone (200, no errors, draftOrder null; the id is
+    # already cleared). A found (completed/paid) draft or a failed/raising fetch refuses, fail closed.
+    return if shopify_draft_order_gone?(old_id)
+
+    detail = user_errors.map { |e| e['message'] }.join(', ')
+    raise StaleDraftOrderError, "Shopify did not delete the draft order#{": #{detail}" if detail.present?}"
+  end
+
+  # The one fail-closed conversion for Shopify work behind a status decision: any error (HTTP, timeout, session,
+  # configuration) becomes StaleDraftOrderError, so the caller refuses and its transaction rolls back.
+  def shopify_fail_closed
+    yield
+  rescue StaleDraftOrderError
+    raise
+  rescue StandardError => e
+    raise StaleDraftOrderError, "#{e.class}: #{e.message}"
+  end
 
   # JOB-03: the draft id and the fingerprint of the quote it was created from are written in one UPDATE. The line
   # items the concern sent were built from the same #quote_snapshot as #quote_fingerprint.
@@ -496,29 +508,28 @@ class JobOrder < ApplicationRecord
   # and /pay). Caller holds the row lock. JOB-03 review 3: a live Shopify draft is a payable invoice whose URL the
   # customer may already have, whatever the order's status. So the destination decides what happens to it:
   # - COMPLETED (waiting for payment): kept; /pay serves it while it is current.
-  # - PAID / PICKED_UP: kept only when Shopify reports it COMPLETED (paid through it: it is the payment record);
-  #   an open draft (paid in store) is deleted so it cannot be paid a second time.
+  # - PAID (from an unpaid status): kept only when Shopify reports it COMPLETED (paid through it: it is the payment
+  #   record); an open draft (paid in store) is deleted so it cannot be paid a second time.
+  # - PICKED_UP from PAID (money-taken to money-taken): kept untouched, no Shopify call; the move into PAID decided.
   # - every other status (re-quoted, back to staff, approved, processing, declined, reminded): deleted.
   # Deleting fails closed (StaleDraftOrderError), so a status that would leave a payable invoice behind is refused.
   def enter_status!(to, actor:, reason: nil, from: nil)
     job_order_statuses.create!(job_status: to, user: actor, reason: reason)
     return if shopify_draft_order_id.blank? || to == JobStatus::COMPLETED
+    return if self.class.money_taken_status?(to) && self.class.money_taken_status?(from)
     return if self.class.money_taken_status?(to) && draft_order_completed_on_shopify?
 
     discard_stale_draft_order!
   end
 
-  # Whether Shopify reports the stored draft COMPLETED. Fails closed: an unanswered check raises
-  # StaleDraftOrderError (the same conversion as #discard_stale_draft_order!).
+  # Whether Shopify reports the stored draft COMPLETED. Fails closed (#shopify_fail_closed).
   def draft_order_completed_on_shopify?
-    state, draft = fetch_shopify_draft_order_result
-    raise StaleDraftOrderError, "Shopify did not answer the draft order check" if state == :error
+    shopify_fail_closed do
+      state, draft = fetch_shopify_draft_order_result
+      raise StaleDraftOrderError, "Shopify did not answer the draft order check" if state == :error
 
-    state == :found && draft["status"] == "COMPLETED"
-  rescue StaleDraftOrderError
-    raise
-  rescue StandardError => e
-    raise StaleDraftOrderError, e.message
+      state == :found && draft["status"] == "COMPLETED"
+    end
   end
 
   # [:found, invoice_url] | [:gone, nil] (blank id or Shopify says it no longer exists) | [:error, nil]
