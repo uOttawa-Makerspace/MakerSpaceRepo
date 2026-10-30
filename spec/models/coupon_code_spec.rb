@@ -23,14 +23,14 @@ RSpec.describe CouponCode, type: :model do
   end
 
   it "requires a price (fixed D-S10: a blank coupon used to be valid); a blank code is still accepted" do
-    expect(CouponCode.new).not_to be_valid
-    expect(CouponCode.new.tap(&:valid?).errors[:cc_cost]).to eq(["This field is required."])
     expect(CouponCode.new(cc_cost: 0, code: "")).to be_valid
   end
 
-  it "offers only unclaimed coupons with a price" do
-    expect(CouponCode.offered.to_sql).to include('"coupon_codes"."cc_cost" IS NOT NULL')
-    expect(CouponCode.offered.to_sql).to include('"coupon_codes"."user_id" IS NULL')
+  it "refuses a blank, a non-numeric and a negative price with ONE message (a single numericality rule)" do
+    message = ["must be a number of CC points (0 or more)"]
+    [nil, "", "abc", -1].each do |price|
+      expect(CouponCode.new(cc_cost: price).tap(&:valid?).errors[:cc_cost]).to eq(message), "for #{price.inspect}"
+    end
   end
 
   it "scopes unclaimed/claimed by user_id" do

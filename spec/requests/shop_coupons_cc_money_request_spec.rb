@@ -295,7 +295,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
           post coupon_codes_path, params: { coupon_code: { code: "NEG", cc_cost: -5, dollar_cost: 3 } }
         end.not_to change(CouponCode, :count)
         expect(response).to have_http_status(:unprocessable_content)
-        expect(response.body).to include("Cc cost must be greater than or equal to 0")
+        expect(response.body).to include("Cc cost must be a number of CC points (0 or more)")
 
         patch coupon_code_path(coupon), params: { coupon_code: { cc_cost: -1 } }
         expect(response).to have_http_status(:unprocessable_content)
@@ -310,7 +310,14 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
       it "refuses a coupon without a price (fixed D-S10: a blank, free coupon used to be created)" do
         expect { post coupon_codes_path, params: { coupon_code: { code: "" } } }.not_to change(CouponCode, :count)
         expect(response).to have_http_status(:unprocessable_content)
-        expect(response.body).to include("Cc cost This field is required.")
+        expect(response.body).to include("Cc cost must be a number of CC points (0 or more)")
+      end
+
+      it "refuses a non-numeric price on create with the same message" do
+        expect { post coupon_codes_path, params: { coupon_code: { code: "X", cc_cost: "abc", dollar_cost: 3 } } }
+          .not_to change(CouponCode, :count)
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.body).to include("Cc cost must be a number of CC points (0 or more)")
       end
 
       it "renders the admin form again with the error and still creates a priced coupon afterwards" do
