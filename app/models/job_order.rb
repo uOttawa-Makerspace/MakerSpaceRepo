@@ -165,8 +165,9 @@ class JobOrder < ApplicationRecord
   # (and the service's name: a custom service can be renamed), options with their files, and its user and staff
   # files. A blank task (no type, service, options or files) is left out: it neither bills nor asks for anything.
   def work_fingerprint
-    tasks = job_tasks.reorder(:id).includes(:job_service, { job_task_options: :option_file_attachment },
-                                            :user_files_attachments, :staff_files_attachments)
+    tasks = job_tasks.reorder(:id).includes({ job_task_options: :option_file_attachment },
+                                            :user_files_attachments, :staff_files_attachments).to_a
+    service_names = JobService.where(id: tasks.filter_map(&:job_service_id)).pluck(:id, :name).to_h
     rows = tasks.filter_map do |task|
       options = task.job_task_options.map { |o| [o.job_option_id, o.option_file_attachment&.blob_id] }
                     .sort_by { |o| o.map(&:to_i) }
@@ -174,7 +175,7 @@ class JobOrder < ApplicationRecord
       staff_files = task.staff_files_attachments.map(&:blob_id).sort
       next if task.job_type_id.nil? && task.job_service_id.nil? && options.empty? && files.empty? && staff_files.empty?
 
-      [task.id, task.job_type_id, task.job_service_id, task.job_service&.name, options, files, staff_files]
+      [task.id, task.job_type_id, task.job_service_id, service_names[task.job_service_id], options, files, staff_files]
     end
     Digest::SHA256.hexdigest(rows.to_json)
   end
@@ -327,14 +328,15 @@ class JobOrder < ApplicationRecord
     format("%.2f", BigDecimal((amount || 0).to_s).round(2))
   end
 
-  # Everything the quote is made of, loaded once and ordered by id: the tasks with their quotes, quote options and
-  # options, and the order's line items. total_price, the draft's line items and #quote_fingerprint all read it,
-  # so a request builds it once. reload (and so lock! / with_lock) drops it.
+  # Everything the quote is made of, loaded once and ordered by id: the tasks with their quotes and quote options,
+  # and the order's line items. total_price, the draft's line items and #quote_fingerprint all read it, so a
+  # request builds it once. reload (and so lock! / with_lock) drops it. The options themselves (only their names
+  # are needed, for draft titles) are preloaded by #quote_lines, once per snapshot.
   QuoteSnapshot = Data.define(:tasks, :line_items)
 
   def quote_snapshot
     @quote_snapshot ||= QuoteSnapshot.new(
-      tasks: job_tasks.includes(job_task_quote: { job_task_quote_options: :job_option }).reorder(:id).to_a,
+      tasks: job_tasks.includes(job_task_quote: :job_task_quote_options).reorder(:id).to_a,
       line_items: job_quote_line_items.reorder(:id).to_a
     )
   end
@@ -406,7 +408,13 @@ class JobOrder < ApplicationRecord
   # The task components of the quote, from #quote_snapshot, in (task id, component) order:
   # { key: [task id, component], title: draft line title, amount: BigDecimal }.
   def quote_lines
-    quote_snapshot.tasks.flat_map do |task|
+    snapshot = quote_snapshot
+    unless snapshot.equal?(@quote_options_preloaded_for)
+      options = snapshot.tasks.filter_map(&:job_task_quote).flat_map(&:job_task_quote_options)
+      ActiveRecord::Associations::Preloader.new(records: options, associations: :job_option).call
+      @quote_options_preloaded_for = snapshot
+    end
+    snapshot.tasks.flat_map do |task|
       quote = task.job_task_quote
       next [] if quote.nil?
 
