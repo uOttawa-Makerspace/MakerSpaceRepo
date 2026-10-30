@@ -446,7 +446,7 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       login!(user)
       change!(old: "wrong")
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include("Incorrect old password.")
+      expect(response.body).to include("Incorrect current password.")
       expect(user.reload.authenticate_password(password)).to be(true)
       expect(deliveries).to be_empty
     end

@@ -32,6 +32,37 @@ class CredentialAuthenticator
     Result.new(candidate: refetch(candidate))
   end
 
+  # Re-authentication of a signed-in user before a credential change (change
+  # password, change email): the login's rules and bookkeeping for that account.
+  # A lock in effect refuses before the password is looked at (a lapsed timed
+  # lockout is cleared); a wrong password counts on auth_attempts and locks the
+  # account at User::MAX_AUTH_ATTEMPTS (timed lockout + unlock email), exactly as
+  # failed logins do and on the same counter; the right one resets the counter.
+  # Returns :ok, :invalid or :locked.
+  def self.verify_current_password(user, password)
+    if user.locked?
+      return :locked if user.lock_in_effect?
+
+      user.update_columns(locked: false, auth_attempts: 0) # the timed lockout has lapsed
+    end
+
+    if user.authenticate_password(password.to_s)
+      user.reset_auth_attempts!
+      :ok
+    else
+      user.record_failed_attempt!
+      user.lock_in_effect? ? :locked : :invalid
+    end
+  end
+
+  # The message for a refused current-password check.
+  def self.current_password_alert(user, verdict)
+    return "Incorrect current password." unless verdict == :locked
+
+    "Your account is locked after too many incorrect passwords. Use the link we emailed you to unlock it" \
+      "#{lock_wait_suffix(user)}."
+  end
+
   # The failed attempt was counted on another instance: re-read the row, bypassing the
   # query cache. A user deleted (hard or soft) since the lookup is no candidate at all,
   # so the caller answers plain invalid credentials.

@@ -344,7 +344,7 @@ RSpec.describe UsersController, type: :controller do
               }
         expect(ActionMailer::Base.deliveries.count).to eq(0)
         expect(response).to have_http_status(:success)
-        expect(flash[:alert]).to eq("Incorrect old password.")
+        expect(flash[:alert]).to eq("Incorrect current password.")
       end
 
       it 'shouldn\'t change password (Confirmation doesn\'t match)' do

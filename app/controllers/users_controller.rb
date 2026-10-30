@@ -203,8 +203,9 @@ class UsersController < SessionsController
   end
 
   def change_password
-    if @user.pword != params[:user][:old_password]
-      flash.now[:alert] = 'Incorrect old password.'
+    verdict = CredentialAuthenticator.verify_current_password(@user, params.dig(:user, :old_password))
+    unless verdict == :ok
+      flash.now[:alert] = CredentialAuthenticator.current_password_alert(@user, verdict)
       render 'settings/admin', layout: 'setting' and return
     end
 
@@ -242,11 +243,12 @@ class UsersController < SessionsController
   end
 
   # POST only, and it needs the account's current password (the same check as
-  # change_password): the token it mails lets whoever reads the new address take
-  # the account over (INF-02).
+  # change_password, counted like a login attempt): the token it mails lets
+  # whoever reads the new address take the account over (INF-02).
   def change_email
-    unless @user.authenticate_password(params[:current_password].to_s)
-      redirect_to settings_admin_path, alert: 'Incorrect current password.'
+    verdict = CredentialAuthenticator.verify_current_password(@user, params[:current_password])
+    unless verdict == :ok
+      redirect_to settings_admin_path, alert: CredentialAuthenticator.current_password_alert(@user, verdict)
       return
     end
 
