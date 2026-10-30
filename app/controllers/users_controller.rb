@@ -25,18 +25,20 @@ class UsersController < SessionsController
                 ]
 
   # Re-authentication (the current password on change_password / change_email) is
-  # throttled per signed-in user with rate_limit: 5 attempts (right or wrong) per
-  # 15 minutes, one budget for both actions. The counter is RateLimitCounter (one
-  # atomic SQL upsert per attempt, shared by every worker), not the cache store:
-  # production has none configured, and the default FileStore loses concurrent
-  # increments. Going over signs this session out: a hijacked session is killed,
-  # the account is not. It never touches the login lockout (auth_attempts/locked).
-  # A blank current password is a validation error and is not counted.
-  REAUTH_RATE_LIMIT = { to: 5, within: 15.minutes }.freeze
-  REAUTH_LIMIT_ALERT = 'Too many current-password attempts. You have been signed out; please sign in again.'
-  rate_limit(**REAUTH_RATE_LIMIT, only: %i[change_password change_email], name: 'reauth',
-             by: -> { current_user.id }, if: :current_password_submitted?, store: RateLimitCounter,
-             with: -> { sign_out; redirect_to login_path, alert: REAUTH_LIMIT_ALERT })
+  # throttled per signed-in user on Rails.cache (Solid Cache in production: an
+  # atomic, cross-process increment). Only a WRONG current password is counted: a
+  # correct one clears the counter, a blank one is a validation error and is not a
+  # guess, and a bad NEW password after a correct current one never counts. One
+  # budget for both actions. The count is read before the password is verified; at
+  # the limit this session is signed out (a hijacked session is killed, the account
+  # is not) and the counter is cleared, since signing in again takes the real
+  # password. It never touches the login lockout (auth_attempts/locked).
+  REAUTH_MAX_FAILURES = 5
+  REAUTH_WINDOW = 15.minutes
+  REAUTH_LIMIT_ALERT =
+    'Too many incorrect current-password attempts. You have been signed out for your security; ' \
+    'please sign in again to continue.'
+  before_action :sign_out_when_reauth_exhausted, only: %i[change_password change_email]
 
   LINK_EXPIRED_ALERT =
     'This link has expired or has already been used. Please request a new one.'
@@ -495,13 +497,30 @@ class UsersController < SessionsController
     submitted_current_password.present?
   end
 
-  # nil when the submitted current password is right; the alert otherwise. A plain
-  # check with no bookkeeping: throttling is REAUTH_RATE_LIMIT, and the login
-  # lockout is not involved (a stranger's failed logins must not stop the owner).
+  # nil when the submitted current password is right; the alert otherwise. A wrong
+  # one is counted for the throttle (see REAUTH_MAX_FAILURES), a right one clears it.
   def current_password_alert
     return 'Please enter your current password.' unless current_password_submitted?
 
-    'Incorrect current password.' unless @user.authenticate_password(submitted_current_password)
+    if @user.authenticate_password(submitted_current_password)
+      Rails.cache.delete(reauth_failures_key)
+      nil
+    else
+      Rails.cache.increment(reauth_failures_key, 1, expires_in: REAUTH_WINDOW)
+      'Incorrect current password.'
+    end
+  end
+
+  def sign_out_when_reauth_exhausted
+    return if Rails.cache.read(reauth_failures_key).to_i < REAUTH_MAX_FAILURES
+
+    Rails.cache.delete(reauth_failures_key)
+    sign_out
+    redirect_to login_path, alert: REAUTH_LIMIT_ALERT
+  end
+
+  def reauth_failures_key
+    "reauth-failures/#{@user.id}"
   end
 
   # A live email-change token whose user is the signed-in user; sets the alert
