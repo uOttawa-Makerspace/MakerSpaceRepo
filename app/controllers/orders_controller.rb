@@ -21,6 +21,11 @@ class OrdersController < DevelopmentProgramsController
   # cannot overdraw the wallet (D-S42).
   def create
     outcome, order, kit_project_ids = Order.checkout!(current_order, current_user)
+    if outcome == :invalid_items
+      flash[:alert] = INVALID_CART_MESSAGE
+      redirect_back(fallback_location: root_path)
+      return
+    end
     unless %i[completed already_completed].include?(outcome)
       # :invalid or :not_open: nothing was written; the cart (session[:order_id]) is kept
       flash[:alert] = "Something went wrong"
@@ -66,10 +71,18 @@ class OrdersController < DevelopmentProgramsController
     end
   end
 
-  # Early, friendly refusal (checkout! re-checks under the wallet lock). A read: no lock, no
-  # cache write.
+  INVALID_CART_MESSAGE = "An item in your cart can no longer be bought; remove it and try again."
+
+  # Early, friendly refusal (checkout! re-checks under the wallet lock), on the SAME total the
+  # charge uses (Order#checkout_total). A read: no lock, no cache write.
   def check_wallet
-    return if current_user.get_total_cc >= current_order.subtotal.to_i
+    total = current_order.checkout_total
+    if total.nil?
+      flash[:alert] = INVALID_CART_MESSAGE
+      redirect_back(fallback_location: root_path)
+      return
+    end
+    return if current_user.get_total_cc >= total
 
     flash[:alert] = "Not enough Cc Points."
     redirect_back(fallback_location: root_path)

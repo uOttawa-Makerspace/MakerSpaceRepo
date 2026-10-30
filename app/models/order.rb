@@ -28,6 +28,32 @@ class Order < ApplicationRecord
     order_status.name == "Completed"
   end
 
+  # What each cart item's validation and charge read: loaded once for the whole cart.
+  CART_ITEM_PRELOADS = [:proficient_project, { files_attachments: :blob }].freeze
+
+  # The cart's items with their associations preloaded (no per-item queries).
+  def cart_items
+    return order_items.to_a if new_record?
+
+    ActiveRecord::Associations::Preloader.new(records: [self], associations: { order_items: CART_ITEM_PRELOADS }).call
+    order_items.to_a
+  end
+
+  # THE checkout total, used by both the friendly pre-check (OrdersController#check_wallet) and
+  # the charge (checkout!): every item is charged its total_price (its price snapshot x quantity,
+  # what the cart shows). [[item, amount], ...], or nil when an item can no longer be bought
+  # (fails validation): such a cart is refused, never charged for something it did not show.
+  def checkout_lines
+    items = cart_items
+    return nil unless items.all?(&:valid?)
+
+    items.map { |item| [item, item.total_price.to_i] }
+  end
+
+  def checkout_total
+    checkout_lines&.sum(&:last)
+  end
+
   # The cart is no longer in progress (checked out meanwhile): its items cannot change.
   class CartClosed < StandardError; end
 
@@ -57,6 +83,7 @@ class Order < ApplicationRecord
   #   :completed          completed and paid now
   #   :already_completed  a concurrent submit of the same cart completed it (nothing debited)
   #   :not_open           any other status: an error, nothing written
+  #   :invalid_items      an item can no longer be bought (checkout_lines nil): nothing written
   #   :invalid            the order did not save (nothing written)
   # Raises CcMoney::InsufficientBalance (or CcMoney::InvalidAmount for a negative price
   # snapshot) with everything rolled back. Kit mails are NOT sent here: the caller sends them
@@ -71,15 +98,18 @@ class Order < ApplicationRecord
         next [:not_open, order, []] unless order.order_status&.name == IN_PROGRESS
       end
 
+      lines = order.checkout_lines
+      next [:invalid_items, order, []] if lines.nil?
+
       order.user = wallet.user
-      order.total = order.subtotal
+      order.total = lines.sum(&:last)
       order.order_status = OrderStatus.find_by(name: COMPLETED)
       next [:invalid, order, []] unless order.save
 
-      items = order.order_items.to_a
-      CcMoney.debit_all!(wallet, items.map do |item|
-        [item.total_price.to_i, { order: order, proficient_project: item.proficient_project }]
+      CcMoney.debit_all!(wallet, lines.map do |item, amount|
+        [amount, { order: order, proficient_project: item.proficient_project }]
       end)
+      items = lines.map(&:first)
       kit_project_ids = items.select { |item| item.proficient_project.has_project_kit? }.map do |item|
         ProjectKit.create!(user_id: order.user_id, proficient_project_id: item.proficient_project_id, delivered: false)
         item.proficient_project_id

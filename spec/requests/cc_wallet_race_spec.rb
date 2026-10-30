@@ -57,8 +57,10 @@ RSpec.describe "CC wallet races (D-S42)", type: :request do
   end
 
   # session_one's request pauses at `pause_at` ([class, method, nth call by that thread]: by
-  # default its first item's price, read right before the debit); second_request runs meanwhile.
-  def race(session_one, second_request, pause_at: [OrderItem, :total_price, 1])
+  # default the 2nd read of its (single) item's price: the 1st is the check_wallet pre-check,
+  # the 2nd is inside checkout!, under the wallet and order locks, right before the debit);
+  # second_request runs meanwhile.
+  def race(session_one, second_request, pause_at: [OrderItem, :total_price, 2])
     first = nil
     calls = 0
     paused = Queue.new
@@ -77,7 +79,8 @@ RSpec.describe "CC wallet races (D-S42)", type: :request do
       first = Thread.current
       session_one.post orders_path
     end
-    paused.pop
+    raise "session_one never reached #{klass}##{method} call #{nth}" unless paused.pop(timeout: 15)
+
     two = in_thread { second_request.call }
     deadline = Time.current + 5
     Thread.pass until blocked_backends.positive? || !two.alive? || Time.current > deadline
@@ -115,9 +118,7 @@ RSpec.describe "CC wallet races (D-S42)", type: :request do
     session_one = login_session
     session_two = login_session
 
-    # pause after the checkout loaded the cart, before it completes it: the 2nd Order#subtotal
-    # call of the request (the 1st is the check_wallet before_action)
-    race(session_one, -> { session_two.post orders_path }, pause_at: [Order, :subtotal, 2])
+    race(session_one, -> { session_two.post orders_path })
 
     expect(debits).to eq([-40])
     expect(cart.reload.order_status.name).to eq("Completed")

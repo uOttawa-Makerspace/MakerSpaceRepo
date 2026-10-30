@@ -607,8 +607,7 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       end
     end
 
-    # two items: the cart's N+1 (Order#subtotal) is pinned, see defects.md D-PERF06
-    it "a legacy negative price snapshot in the cart rolls the checkout back: 'Something went wrong', nothing debited", skip_bullet: true do
+    it "a legacy negative price snapshot in the cart rolls the checkout back: 'Something went wrong', nothing debited" do
       credit_cc!(user, 50)
       add_to_cart(pp_with_cc(10))
       add_to_cart(pp_with_cc(5))
@@ -620,6 +619,40 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(order.reload.order_status.name).to eq("In progress")
       expect(CcMoney.where(order_id: order.id)).to be_empty
       expect(user.reload.wallet).to eq(50)
+    end
+
+    it "an item that can no longer be bought (fails validation) refuses the checkout with a message; nothing charged" do
+      credit_cc!(user, 50)
+      add_to_cart(pp_with_cc(10))
+      add_to_cart(pp_with_cc(15))
+      order = user.orders.last
+      order.order_items.last.update_column(:quantity, 0) # invalid: the cart showed it at 0
+      post orders_path
+      expect(flash[:alert]).to eq("An item in your cart can no longer be bought; remove it and try again.")
+      expect(order.reload.order_status.name).to eq("In progress")
+      expect(CcMoney.where(order_id: order.id)).to be_empty
+      expect(session[:order_id]).to eq(order.id)
+    end
+
+    it "checkout! refuses an invalid item under the lock too (even past the pre-check)" do
+      credit_cc!(user, 50)
+      add_to_cart(pp_with_cc(10))
+      order = user.orders.last
+      order.order_items.first.update_column(:quantity, 0)
+      expect(Order.checkout!(order, user).first).to eq(:invalid_items)
+      expect(order.reload.order_status.name).to eq("In progress")
+      expect(CcMoney.where(order_id: order.id)).to be_empty
+    end
+
+    it "the pre-check and the charge use one total (Order#checkout_total = the sum of item total_price)" do
+      credit_cc!(user, 100)
+      add_to_cart(pp_with_cc(10), quantity: 2)
+      add_to_cart(pp_with_cc(15))
+      order = user.orders.last
+      expect(order.checkout_total).to eq(35)
+      post orders_path
+      expect(order.reload.total).to eq(35)
+      expect(order.cc_moneys.sum(:cc)).to eq(-35)
     end
 
     it "lets staff and admin check out the same way" do
