@@ -444,7 +444,7 @@ class JobOrder < ApplicationRecord
 
   # [:found | :gone, draft]; Shopify not answering raises (fail closed).
   def self.fetch_draft_or_raise(gid)
-    state, draft = fetch_shopify_draft_order_result(gid)
+    state, draft = ShopifyConcern::DraftOrders.fetch_result(gid)
     stale_draft!("Shopify did not answer the draft order check") if state == :error
 
     [state, draft]
@@ -455,35 +455,51 @@ class JobOrder < ApplicationRecord
 
   def self.draft_marker_tag(order_id) = "job_order:#{order_id}"
 
-  # Deletes the draft `gid` unless it is paid, whoever (if anyone) points at it: [:cleared] Shopify no longer has
-  # it, [:kept] it is COMPLETED (paid: the payment record is never deleted), [:deleted]. Fail closed
-  # (StaleDraftOrderError). Used by #reconcile_shopify_draft! and, for a draft whose order row is gone, by
+  # Shopify's DraftOrderStatus: OPEN and INVOICE_SENT drafts are unpaid and payable (the invoice link works);
+  # COMPLETED is paid (it became an order). Every place that decides whether a draft is paid or payable asks here.
+  PAYABLE_DRAFT_STATUSES = %w[OPEN INVOICE_SENT].freeze
+  PAID_DRAFT_STATUS = "COMPLETED"
+
+  def self.draft_paid?(draft) = draft["status"] == PAID_DRAFT_STATUS
+
+  # THE paid-settle rule for a draft `gid`, whoever (if anyone) points at it: [:cleared] Shopify no longer has it,
+  # [:kept] it is paid (the payment record is never deleted), [:deleted]. Fetch first; a delete Shopify refuses is
+  # asked why, so a draft that vanished or was paid since the fetch (a concurrent sweep, a payment) is :cleared or
+  # :kept, not an error. Fail closed (StaleDraftOrderError) for anything else. Used by #settle_for_paid_order and
   # JobOrder::DraftSweep.
   def self.delete_draft_unless_completed!(gid)
     state, draft = fetch_draft_or_raise(gid)
     return :cleared if state == :gone
-    return :kept if draft["status"] == "COMPLETED"
+    return :kept if draft_paid?(draft)
+    stale_draft!("the draft order has the unknown status #{draft['status'].inspect}") unless PAYABLE_DRAFT_STATUSES.include?(draft["status"])
 
     user_errors = []
-    return :deleted if delete_shopify_draft_order(gid, user_errors_out: user_errors)
+    return :deleted if ShopifyConcern::DraftOrders.delete(gid, user_errors_out: user_errors)
+
+    state, draft = fetch_draft_or_raise(gid)
+    return :cleared if state == :gone
+    return :kept if draft_paid?(draft)
 
     not_deleted_by_shopify!(user_errors)
   end
 
-  # One open Shopify draft `gid` that carries this order's marker, reconciled against the database (see
-  # JobOrder::DraftSweep): kept only when the order is live, waiting for payment (COMPLETED) and its stored
-  # shopify_draft_order_id is this draft; anything else is an orphan (a create whose transaction rolled back, a draft
-  # replaced by a re-quote, an order deleted or no longer payable) and is deleted unless Shopify reports it paid.
-  # One locked operation, so a create still in flight (it holds this row's lock until it commits the id) is waited
-  # for and then found current, never deleted from under its transaction. TransitionResult value: :kept, :deleted
-  # or :cleared.
-  def reconcile_shopify_draft!(gid)
-    locked_operation("reconcile_shopify_draft!", live_only: false) do |status|
-      next TransitionResult.done(:kept) if !is_deleted && status == JobStatus::COMPLETED && shopify_draft_order_id == gid
+  # Whether the database backs the Shopify draft `gid` of this order: the order is live, waiting for payment
+  # (COMPLETED) and its stored shopify_draft_order_id is this draft. One short locked operation and no Shopify call,
+  # so the row lock is never held over the network. A create in flight holds this row's lock until it commits the
+  # id, so it is waited for and then found current. TransitionResult value: true (keep it) or false (an orphan:
+  # a create whose transaction rolled back, a draft replaced by a re-quote, an order deleted or no longer payable).
+  # A missing JobStatus (unseeded: the constants are nil) never matches.
+  def shopify_draft_backed?(gid)
+    locked_operation("shopify_draft_backed?", live_only: false, report: false) do |status|
+      TransitionResult.done(!is_deleted && !status.nil? && status == JobStatus::COMPLETED && shopify_draft_order_id == gid)
+    end
+  end
 
-      outcome = shopify_fail_closed { self.class.delete_draft_unless_completed!(gid) }
-      update_column(:shopify_draft_order_id, nil) if shopify_draft_order_id == gid && outcome != :kept
-      TransitionResult.done(outcome)
+  # After the draft `gid` was deleted (or found gone) outside the lock: drops the id if this order still stores it.
+  def release_shopify_draft!(gid)
+    locked_operation("release_shopify_draft!", live_only: false, report: false) do |_status|
+      update_column(:shopify_draft_order_id, nil) if shopify_draft_order_id == gid
+      TransitionResult.done
     end
   end
 
@@ -607,7 +623,7 @@ class JobOrder < ApplicationRecord
   # JobOrder::DraftSweep (rake job_orders:sweep_orphan_drafts, run regularly by JobOrderDraftSweepJob) deletes the
   # open drafts the database does not point at.
   # On any refusal made from an exception the record is reloaded (unsaved in-memory changes do not survive it).
-  def locked_operation(label, live_only: true)
+  def locked_operation(label, live_only: true, report: true)
     status = nil
     result = self.class.own_transaction("JobOrder##{label}") do
       lock_row!
@@ -618,17 +634,17 @@ class JobOrder < ApplicationRecord
     end
     result.with(status: status)
   rescue OrderMissing => e
-    refuse_from(e.cause, :order_missing, label)
+    refuse_from(e.cause, :order_missing, label, report: report)
   rescue ActiveRecord::LockWaitTimeout => e
-    refuse_from(e, :busy, label)
+    refuse_from(e, :busy, label, report: report)
   rescue ActiveRecord::Deadlocked => e
-    refuse_from(e, :deadlock, label)
+    refuse_from(e, :deadlock, label, report: report)
   rescue StaleDraftOrderError => e
-    refuse_from(e, :draft_not_voidable, label)
+    refuse_from(e, :draft_not_voidable, label, report: report)
   rescue ChangeInvalid => e
-    refuse_from(e, :change_invalid, label)
+    refuse_from(e, :change_invalid, label, report: report)
   rescue StatusRowInvalid => e
-    refuse_from(e, :invalid_status_row, label)
+    refuse_from(e, :invalid_status_row, label, report: report)
   end
 
   # FOR UPDATE on the order's row, re-reading it (so the snapshots and associations are dropped). The only place
@@ -647,9 +663,9 @@ class JobOrder < ApplicationRecord
   # :draft_not_voidable, a status row that did not validate, the messages of :change_invalid ...). The
   # transaction has rolled back; the record is re-read so it does not keep the draft id or status row the failed
   # attempt changed in memory.
-  def refuse_from(error, reason, label)
+  def refuse_from(error, reason, label, report: true)
     line = "[JobOrder##{label}] ##{id} refused (#{reason}): #{error.class}: #{error.message}"
-    if REPORTED_REFUSALS.include?(reason)
+    if report && REPORTED_REFUSALS.include?(reason)
       context = { job_order_id: id, operation: label, reason: reason, where: "JobOrder##{label.split.first}" }
       Rails.error.report(error, handled: true, context: context)
       Rails.logger.error(line)
@@ -677,18 +693,12 @@ class JobOrder < ApplicationRecord
     self.class.not_deleted_by_shopify!(user_errors)
   end
 
-  # A destination where the customer may already have paid through the draft: ask first (one getDraftOrder), then
-  # keep a COMPLETED one, clear a vanished one, delete an open one.
+  # A destination where the customer may already have paid through the draft: the one paid-settle rule
+  # (.delete_draft_unless_completed!), then the id is dropped unless the draft is kept as the payment record.
   def settle_for_paid_order
-    state, draft = fetch_draft_or_raise
-    if state == :gone
-      update_column(:shopify_draft_order_id, nil)
-      :cleared
-    elsif draft["status"] == "COMPLETED"
-      :kept
-    else
-      delete_found_draft!
-    end
+    outcome = self.class.delete_draft_unless_completed!(shopify_draft_order_id)
+    update_column(:shopify_draft_order_id, nil) unless outcome == :kept
+    outcome
   end
 
   # An unpaid destination: delete the draft (one Shopify call). When Shopify deleted nothing it is asked why
@@ -700,7 +710,7 @@ class JobOrder < ApplicationRecord
 
     state, draft = fetch_draft_or_raise(gid)
     return :cleared if state == :gone
-    self.class.stale_draft!("the draft order is already paid (COMPLETED)") if draft["status"] == "COMPLETED"
+    self.class.stale_draft!("the draft order is already paid (COMPLETED)") if self.class.draft_paid?(draft)
 
     self.class.not_deleted_by_shopify!(user_errors)
   end

@@ -3,35 +3,19 @@
 module ShopifyConcern
   extend ActiveSupport::Concern
 
-  def self.target_tag
-    Rails.env.production? ? "makerepo" : "makerepo_#{Rails.env}"
-  end
-
-  class_methods do
-    def start_shopify_session
+  # The gid-level Shopify calls (a draft order id, no record). Deliberately not class methods of the models that
+  # include the concern: they skip #ensure_can_use_draft_order, so lockers and memberships must not gain them.
+  # Used by the concern's instance methods and by JobOrder (its draft rule, JobOrder::DraftSweep).
+  module DraftOrders
+    def self.client
       ShopifyContext.start_session!
-    end
-
-    def draft_order_processable?(tag)
-      tags = if tag.is_a?(String)
-               tag.split(',').map(&:strip)
-             elsif tag.is_a?(Array)
-               tag.map(&:to_s).map(&:strip)
-             else
-               []
-             end
-
-      tags.include?(draft_order_operating_tag)
-    end
-
-    def draft_order_operating_tag
-      "#{ShopifyConcern.target_tag}_#{shopify_draft_order_key_name}"
+      ShopifyAPI::Clients::Graphql::Admin.new(session: ShopifyAPI::Context.active_session)
     end
 
     # One getDraftOrder query that tells three outcomes apart: [:found, draft], [:gone, nil] (HTTP 200 with
     # `draftOrder: null` and no GraphQL errors) and [:error, nil] (non-200 or an error payload). Exceptions
     # propagate (unknown, never "gone").
-    def fetch_shopify_draft_order_result(gid)
+    def self.fetch_result(gid)
       query_draft_order = <<~QUERY
         query getDraftOrder($id: ID!) {
           draftOrder(id: $id) {
@@ -55,7 +39,7 @@ module ShopifyConcern
         }
       QUERY
 
-      resp = shopify_admin_client.query(query: query_draft_order, variables: { id: gid })
+      resp = client.query(query: query_draft_order, variables: { id: gid })
       return [:error, nil] unless resp.code == 200
 
       body = resp.body
@@ -68,7 +52,7 @@ module ShopifyConcern
 
     # draftOrderDelete for the draft `gid`. `user_errors_out`: optional Array that receives Shopify's userErrors.
     # True when Shopify reports it deleted the draft. Fail closed: anything but HTTP 200 raises.
-    def delete_shopify_draft_order(gid, user_errors_out: nil)
+    def self.delete(gid, user_errors_out: nil)
       delete_draft_order = <<~QUERY
         mutation draftOrderDelete($input: DraftOrderDeleteInput!) {
           draftOrderDelete(input: $input) {
@@ -81,16 +65,37 @@ module ShopifyConcern
         }
       QUERY
 
-      resp = shopify_admin_client.query(query: delete_draft_order, variables: { input: { id: gid } })
+      resp = client.query(query: delete_draft_order, variables: { input: { id: gid } })
       raise "Received HTTP #{resp.code} when deleting shopify draft order" unless resp.code == 200
 
       user_errors_out&.concat(Array(resp.body&.dig("data", "draftOrderDelete", "userErrors")))
       resp.body&.dig("data", "draftOrderDelete", "deletedId").present?
     end
+  end
 
-    def shopify_admin_client
-      start_shopify_session
-      ShopifyAPI::Clients::Graphql::Admin.new(session: ShopifyAPI::Context.active_session)
+  def self.target_tag
+    Rails.env.production? ? "makerepo" : "makerepo_#{Rails.env}"
+  end
+
+  class_methods do
+    def start_shopify_session
+      ShopifyContext.start_session!
+    end
+
+    def draft_order_processable?(tag)
+      tags = if tag.is_a?(String)
+               tag.split(',').map(&:strip)
+             elsif tag.is_a?(Array)
+               tag.map(&:to_s).map(&:strip)
+             else
+               []
+             end
+
+      tags.include?(draft_order_operating_tag)
+    end
+
+    def draft_order_operating_tag
+      "#{ShopifyConcern.target_tag}_#{shopify_draft_order_key_name}"
     end
 
     def shopify_draft_order_key_name
@@ -124,8 +129,6 @@ module ShopifyConcern
       end
       return [] if gid.blank?
 
-      start_shopify_session
-
       query = <<~QUERY
         query NodeMetafields($ownerId: ID!) {
           node(id: $ownerId) {
@@ -155,15 +158,13 @@ module ShopifyConcern
         }
       QUERY
 
-      resp = ShopifyAPI::Clients::Graphql::Admin
-        .new(session: ShopifyAPI::Context.active_session)
-        .query(query: query, variables: { ownerId: gid })
+      resp = shopify_admin_client.query(query: query, variables: { ownerId: gid })
 
       resp.body&.dig("data", "node", "metafields", "edges")&.map { |n| n["node"] } || []
     end
 
-    def start_shopify_session
-      self.class.start_shopify_session
+    def shopify_admin_client
+      ShopifyConcern::DraftOrders.client
     end
 
     def ensure_can_use_draft_order
@@ -193,7 +194,7 @@ module ShopifyConcern
       ensure_can_use_draft_order
       return false if shopify_draft_order_id.blank?
 
-      deleted = self.class.delete_shopify_draft_order(shopify_draft_order_id, user_errors_out: user_errors_out)
+      deleted = ShopifyConcern::DraftOrders.delete(shopify_draft_order_id, user_errors_out: user_errors_out)
       update_column(:shopify_draft_order_id, nil)
       deleted
     end
@@ -206,7 +207,7 @@ module ShopifyConcern
     # `draftOrder: null` and no GraphQL errors) and [:error, nil] (non-200 or an error payload). Exceptions
     # propagate (unknown, never "gone").
     def fetch_shopify_draft_order_result(gid = shopify_draft_order_id)
-      self.class.fetch_shopify_draft_order_result(gid)
+      ShopifyConcern::DraftOrders.fetch_result(gid)
     end
 
     def create_shopify_draft_order
@@ -224,13 +225,8 @@ module ShopifyConcern
         }
       QUERY
 
-      start_shopify_session
-      admin_client = ShopifyAPI::Clients::Graphql::Admin.new(
-        session: ShopifyAPI::Context.active_session
-      )
-
       variables = shopify_draft_order_input
-      resp = admin_client.query(
+      resp = shopify_admin_client.query(
         query: create_draft_order,
         variables: variables
       )

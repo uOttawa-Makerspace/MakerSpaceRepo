@@ -34,11 +34,12 @@ namespace :job_orders do
     # Shopify mutations cannot be rolled back: a database or lock error after a draft create leaves a payable draft
     # that no order row points at (JobOrder#locked_operation). Every job-order draft carries the tag
     # "job_order:<id>" beside the environment's operating tag, and JobOrder::DraftSweep reconciles this
-    # environment's OPEN marked drafts against the database: kept only for a live COMPLETED order whose stored
+    # environment's payable (OPEN, INVOICE_SENT) marked drafts against the database: kept only for a live COMPLETED order whose stored
     # draft id is this draft, else deleted (never a COMPLETED/paid one; never a draft without the marker, e.g.
     # lockers, memberships, other environments). Fail closed: an error is listed as unresolved. Idempotent.
     # JobOrderDraftSweepJob runs the same code hourly (config/recurring.yml).
     report = JobOrder::DraftSweep.run
+    puts "skipped: another sweep is running" if report.skipped
     report.counts.each { |outcome, n| puts "#{outcome}: #{n}" }
     report.unresolved.each { |line| warn "not resolved: #{line}" }
     puts "unresolved: #{report.unresolved.size}"

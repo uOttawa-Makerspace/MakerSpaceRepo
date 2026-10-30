@@ -45,6 +45,7 @@ RSpec.describe "job_orders:sweep_orphan_drafts", type: :model do
 
   it "lists the unresolved and exits 1" do
     shopify.status = 502
+    expect(Rails.error).to receive(:report).once
     out, err, status = run_task
 
     expect(out).to include("unresolved: 1")
