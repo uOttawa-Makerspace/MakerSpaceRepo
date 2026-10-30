@@ -47,6 +47,12 @@ Rails.application.configure do
   config.i18n.fallbacks = true
   config.active_support.deprecation = :notify
 
+  # Rails.cache is Solid Cache (the solid_cache_entries table in the primary
+  # database; config/cache.yml). The shared cache gives every rate_limit atomic,
+  # cross-process counting (SELECT ... FOR UPDATE inside the increment), unlike
+  # the FileStore default, whose increment loses updates between Puma workers.
+  config.cache_store = :solid_cache_store
+
   # Schema migrations
   config.active_record.dump_schema_after_migration = false
 

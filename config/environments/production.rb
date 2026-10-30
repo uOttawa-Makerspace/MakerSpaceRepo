@@ -50,6 +50,12 @@ Rails.application.configure do
     config.logger = ActiveSupport::TaggedLogging.new(logger)
   end
 
+  # Rails.cache is Solid Cache (the solid_cache_entries table in the primary
+  # database; config/cache.yml). The shared cache gives every rate_limit atomic,
+  # cross-process counting (SELECT ... FOR UPDATE inside the increment), unlike
+  # the FileStore default, whose increment loses updates between Puma workers.
+  config.cache_store = :solid_cache_store
+
   # Do not dump schema after migrations.
   config.active_record.dump_schema_after_migration = false
 end
