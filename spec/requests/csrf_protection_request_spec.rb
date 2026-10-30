@@ -44,7 +44,9 @@ RSpec.describe "CSRF protection", type: :request do
 
   # A refused HTML form (a stale tab, or a forged form) is sent back with a flash,
   # not a bare 422 page.
+  # 303, not 302: fetch() keeps PATCH/PUT/DELETE across a 302 and would replay the refused write.
   def expect_stale_form_redirect(target)
+    expect(response).to have_http_status(:see_other)
     expect(response).to redirect_to(target)
     expect(flash[:alert]).to eq(stale_form_message)
   end

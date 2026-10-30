@@ -85,7 +85,8 @@ class ApplicationController < ActionController::Base
         if request.xhr?
           render plain: STALE_FORM_MESSAGE, status: :unprocessable_content
         else
-          redirect_to stale_form_target, alert: STALE_FORM_MESSAGE
+          # 303: fetch() keeps PATCH/PUT/DELETE across a 302, and would replay the refused write.
+          redirect_to stale_form_target, alert: STALE_FORM_MESSAGE, status: :see_other
         end
       end
       format.json { render json: { error: STALE_FORM_MESSAGE }, status: :unprocessable_content }
@@ -98,16 +99,21 @@ class ApplicationController < ActionController::Base
   # login page with ITS back_to, so the original destination survives and
   # back_to never nests (/login?back_to=/login?back_to=...).
   def stale_form_target
-    back = url_from(request.referer)
-    referer = URI.parse(back) if back
+    referer = same_host_referer
     if referer && login_page_path?(referer.path)
       return login_path(back_to: Array(Rack::Utils.parse_query(referer.query)["back_to"]).first.presence)
     end
-    return back || root_path if signed_in?
+    return referer&.request_uri || root_path if signed_in?
 
     login_path(back_to: referer&.request_uri)
+  end
+
+  # The referring page as a URI when it is on this host, else nil.
+  def same_host_referer
+    referer = URI.parse(request.referer.to_s)
+    referer if referer.is_a?(URI::HTTP) && referer.host.present? && referer.host == request.host
   rescue URI::InvalidURIError
-    signed_in? ? root_path : login_path
+    nil
   end
 
   def set_last_seen_at
@@ -137,13 +143,8 @@ class ApplicationController < ActionController::Base
     # A failed login re-renders the login view at POST /login_authentication.
     return safe_back_to if login_page_path?(request.path)
 
-    referer = URI.parse(request.referer.to_s)
-    return unless referer.is_a?(URI::HTTP) && referer.host.present? && referer.host == request.host
-
-    path = referer.request_uri
-    path unless login_page_path?(URI.parse(path).path)
-  rescue URI::InvalidURIError
-    nil
+    referer = same_host_referer
+    referer.request_uri if referer && !login_page_path?(referer.path)
   end
 
   LOGIN_PAGE_PATHS = %w[/login /login_authentication].freeze
