@@ -112,10 +112,12 @@ class ApplicationController < ActionController::Base
   # A path that must not be redirected to: browsers read a backslash as a slash and
   # drop tabs, newlines and leading spaces, so "\\evil.com", "/\\evil.com" and
   # "/\t/evil.com" all name a host, as does "//evil.com". Rather than imitate the
-  # browser's URL parser, refuse any backslash, any C0 control character or DEL, and
-  # a leading "//" (after spaces). Real paths have none of them (a literal one is
-  # percent-encoded).
-  UNSAFE_REDIRECT_PATH = %r{[\\\x00-\x1F\x7F]|\A *//}n
+  # browser's URL parser, refuse any C0 control character or DEL anywhere, and a
+  # backslash or a leading "//" (after spaces) in the PATH part, before the first
+  # "?" or "#". A backslash in a query or fragment names no host (browsers send it
+  # literally), so "/search?q=a\\b" is fine.
+  UNSAFE_REDIRECT_PATH = %r{[\x00-\x1F\x7F]|\A *//|\A[^?#]*\\}n
+  private_constant :UNSAFE_REDIRECT_PATH
 
   def unsafe_redirect_path?(path)
     UNSAFE_REDIRECT_PATH.match?(path.to_s.b)
@@ -124,9 +126,8 @@ class ApplicationController < ActionController::Base
   # The referring page as a URI when it is on this host, else nil. Its request_uri
   # is redirected to, so a protocol-relative path is refused:
   # http://this.host//evil.example would otherwise send the visitor to evil.example.
-  # A backslash form (http://this.host/\\evil.example) never gets that far: URI.parse
-  # refuses it (the rescue below), so it is that parse, not unsafe_redirect_path?,
-  # that protects the redirect for it.
+  # (URI.parse happens to reject a backslash in the path, but accepts one in the
+  # query; the redirect does not rely on that, unsafe_redirect_path? is the rule.)
   def same_host_referer
     referer = URI.parse(request.referer.to_s)
     return unless referer.is_a?(URI::HTTP) && referer.host.present? && referer.host == request.host

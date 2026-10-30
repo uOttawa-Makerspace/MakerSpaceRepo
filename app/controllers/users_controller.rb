@@ -247,7 +247,12 @@ class UsersController < SessionsController
       @user.store_new_password!(new_password, clear_timed_lock: true)
     rescue ActiveRecord::ActiveRecordError => e
       Rails.error.report(e, handled: true)
-      @user.reload
+      # The row may be gone (hard-deleted meanwhile): nothing to reload then.
+      begin
+        @user.reload
+      rescue ActiveRecord::RecordNotFound
+        nil
+      end
       flash.now[:alert] = 'Your password could not be changed. Please try again.'
       render 'settings/admin', layout: 'setting' and return
     end
@@ -519,17 +524,31 @@ class UsersController < SessionsController
     # Every over-limit request tries the bump, from the version its attempts key was
     # counted under: exactly one changes the row (and revokes the refresh tokens and
     # closes the cable in the same unit); the rest match nothing. A request that
-    # failed part-way rolled back, so the next one retries. The cookie session ends
-    # whatever happens to the bump: the error is reported, not raised, because the
-    # cookie store writes the signed-out session only on a response that is returned.
-    user = @user
-    begin
-      user.bump_token_version!(from_version: user.token_version)
+    # failed part-way rolled back, so the next one retries, and so does a job (the
+    # attacker may never come back). The cookie session ends whatever happens to the
+    # bump: the error is reported, not raised, because the cookie store writes the
+    # signed-out session only on a response that is returned.
+    user = @user # sign_out clears @user
+    from_version = user.token_version
+    revoked = begin
+      user.bump_token_version!(from_version: from_version)
+      true
     rescue StandardError => e
-      Rails.error.report(e, handled: false, severity: :error, context: { user_id: user.id, action: 'reauth_revocation' })
+      Rails.error.report(e, handled: true, severity: :error, context: { user_id: user.id, action: 'reauth_revocation' })
+      false
     end
     sign_out
+    revoke_later(user, from_version) unless revoked
     redirect_to login_path, alert: REAUTH_LIMIT_ALERT
+  end
+
+  # The inline bump failed: the job repeats the same compare-and-set (a no-op if
+  # a later request got there first), and the websocket is closed now, as logout does.
+  def revoke_later(user, from_version)
+    user.disconnect_cable!
+    RevokeCredentialsJob.perform_later(user.id, from_version)
+  rescue StandardError => e
+    Rails.error.report(e, handled: true, severity: :error, context: { user_id: user.id, action: 'reauth_revocation_enqueue' })
   end
 
   def reauth_attempts_key

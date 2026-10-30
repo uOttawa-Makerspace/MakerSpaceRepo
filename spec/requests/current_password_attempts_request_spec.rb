@@ -169,9 +169,10 @@ RSpec.describe "Current-password re-authentication", type: :request do
       5.times { change_password!("wrong-password") }
 
       allow(ApiRefreshToken).to receive(:revoke_all_for!).and_raise(ActiveRecord::StatementInvalid, "killed")
-      expect(Rails.error).to receive(:report)
-        .with(an_instance_of(ActiveRecord::StatementInvalid), hash_including(handled: false, severity: :error))
+      allow(Rails.error).to receive(:report).and_call_original
       change_password!("wrong-password")
+      expect(Rails.error).to have_received(:report)
+        .with(an_instance_of(ActiveRecord::StatementInvalid), hash_including(handled: true, severity: :error))
       expect(response).to redirect_to(login_path)
       expect(flash[:alert]).to eq(limit_message)
       expect(signed_in?).to be(false)                 # the cookie session is gone whatever happened to the bump
@@ -184,6 +185,46 @@ RSpec.describe "Current-password re-authentication", type: :request do
       expect(user.reload.token_version).to eq(before + 1)
       get "/api/v1/session", headers: { "Authorization" => "Bearer #{access}" }
       expect(response).to have_http_status(:unauthorized)
+    end
+  end
+
+  it "a password change that fails because the row is gone reports 'could not be changed' without a second raise" do
+    log_in!
+    allow_any_instance_of(User).to receive(:store_new_password!) do |u|
+      User.where(id: u.id).delete_all
+      raise ActiveRecord::StatementInvalid, "row gone"
+    end
+    change_password!(password)
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Your password could not be changed")
+  end
+
+  describe "a failed revocation is made durable" do
+    include ActiveJob::TestHelper
+
+    before do
+      log_in!
+      5.times { change_password!("wrong-password") }
+      allow(ApiRefreshToken).to receive(:revoke_all_for!).and_raise(ActiveRecord::StatementInvalid, "killed")
+    end
+
+    it "enqueues RevokeCredentialsJob with the counted version" do
+      version = user.reload.token_version
+      expect { change_password!("wrong-password") }
+        .to have_enqueued_job(RevokeCredentialsJob).with(user.id, version)
+      expect(response).to redirect_to(login_path)
+      expect(signed_in?).to be(false)
+    end
+
+    it "closes the user's cable connections after signing out" do
+      expect_any_instance_of(User).to receive(:disconnect_cable!).once
+      change_password!("wrong-password")
+      expect(response).to redirect_to(login_path)
+    end
+
+    it "does not enqueue when the inline bump succeeded" do
+      allow(ApiRefreshToken).to receive(:revoke_all_for!).and_call_original
+      expect { change_password!("wrong-password") }.not_to have_enqueued_job(RevokeCredentialsJob)
     end
   end
 
