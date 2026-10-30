@@ -28,7 +28,7 @@ RSpec.describe CouponCode, type: :model do
 
   it "refuses a blank, a non-numeric and a negative price with ONE message (a single numericality rule)" do
     message = ["must be a number of CC points (0 or more)"]
-    [nil, "", "abc", -1].each do |price|
+    [nil, "", "abc", -1, "2.9", 2.9].each do |price|
       expect(CouponCode.new(cc_cost: price).tap(&:valid?).errors[:cc_cost]).to eq(message), "for #{price.inspect}"
     end
   end
@@ -45,8 +45,9 @@ RSpec.describe CouponCode, type: :model do
     expect(CouponCode.new.title).to eq("$ off MakerStore")
   end
 
-  it "stores integer dollar/cc costs (decimal input is truncated)" do
-    c = CouponCode.create!(dollar_cost: 7.9, cc_cost: 49.9)
+  it "stores an integer price (a fractional price is refused, never truncated; dollar_cost still truncates)" do
+    expect(CouponCode.new(cc_cost: 49.9)).not_to be_valid
+    c = CouponCode.create!(dollar_cost: 7.9, cc_cost: 49)
     expect([c.reload.dollar_cost, c.cc_cost]).to eq([7, 49])
   end
 

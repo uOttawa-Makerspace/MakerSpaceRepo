@@ -320,6 +320,13 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         expect(response.body).to include("Cc cost must be a number of CC points (0 or more)")
       end
 
+      it "refuses a fractional price on create with the same message (not truncated to 2)" do
+        expect { post coupon_codes_path, params: { coupon_code: { code: "FRAC", cc_cost: "2.9", dollar_cost: 3 } } }
+          .not_to change(CouponCode, :count)
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.body).to include("Cc cost must be a number of CC points (0 or more)")
+      end
+
       it "renders the admin form again with the error and still creates a priced coupon afterwards" do
         post coupon_codes_path, params: { coupon_code: { code: "X", dollar_cost: 3 } }
         expect(response).to have_http_status(:unprocessable_content)

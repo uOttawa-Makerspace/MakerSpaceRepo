@@ -6,8 +6,8 @@ class CouponCode < ApplicationRecord
 
   # Every coupon has a price, never negative (D-S10: a NULL-price coupon was offered but could
   # never be claimed; a negative one made claim! fail). DB: NOT NULL + CHECK (cc_cost >= 0).
-  # One rule: blank, non-numeric and negative are all refused with the same message.
-  validates :cc_cost, numericality: { greater_than_or_equal_to: 0, message: "must be a number of CC points (0 or more)" }
+  # One rule: blank, non-numeric, fractional and negative are all refused with the same message.
+  validates :cc_cost, numericality: { only_integer: true, greater_than_or_equal_to: 0, message: "must be a number of CC points (0 or more)" }
 
   # Trades `user`'s CC points for one unclaimed coupon worth `dollar_cost` AT `cc_cost`, the
   # price the user confirmed (a same-dollar coupon at another price is never picked; a blank

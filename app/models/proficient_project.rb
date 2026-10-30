@@ -23,8 +23,9 @@ class ProficientProject < ApplicationRecord
   has_many :proficient_project_sessions, dependent: :destroy
   belongs_to :drop_off_location, optional: true
 
-  # The CC price is never negative (a negative cc made checkout fail; DB CHECK too).
-  validates :cc, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
+  # The CC price is a whole number, never negative (a negative cc made checkout fail; DB CHECK
+  # too; the column is an integer, so a fraction would be silently truncated).
+  validates :cc, numericality: { only_integer: true, greater_than_or_equal_to: 0 }, allow_nil: true
 
   validates :title,
             presence: {
