@@ -162,44 +162,33 @@ RSpec.describe "Current-password re-authentication", type: :request do
       expect(user.reload.token_version).to eq(before + 1)
     end
 
-    it "retries: when the first revocation attempt fails, the next over-limit request revokes" do
+    it "a revocation that fails still ends the cookie session, reports the error, and the next request retries" do
       log_in!
-      access = pair_tokens["access_token"]
+      access = api_token_pair(user, password)["access_token"]
       before = user.reload.token_version
       5.times { change_password!("wrong-password") }
 
       allow(ApiRefreshToken).to receive(:revoke_all_for!).and_raise(ActiveRecord::StatementInvalid, "killed")
+      expect(Rails.error).to receive(:report)
+        .with(an_instance_of(ActiveRecord::StatementInvalid), hash_including(handled: false, severity: :error))
       change_password!("wrong-password")
-      expect(response).not_to redirect_to(login_path) # the request failed (500), nothing was revoked
+      expect(response).to redirect_to(login_path)
+      expect(flash[:alert]).to eq(limit_message)
+      expect(signed_in?).to be(false)                 # the cookie session is gone whatever happened to the bump
       expect(user.reload.token_version).to eq(before) # the failed attempt rolled back whole
 
       allow(ApiRefreshToken).to receive(:revoke_all_for!).and_call_original
-      log_in_again_cookie
+      log_in!
       change_password!("wrong-password")
       expect(response).to redirect_to(login_path)
       expect(user.reload.token_version).to eq(before + 1)
       get "/api/v1/session", headers: { "Authorization" => "Bearer #{access}" }
       expect(response).to have_http_status(:unauthorized)
     end
-
-    def pair_tokens
-      post "/api/v1/session", params: { login: user.username, password: password }.to_json,
-                              headers: { "CONTENT_TYPE" => "application/json" }
-      response.parsed_body
-    end
-
-    def log_in_again_cookie
-      # the failed request did not sign this session out: it is still the same cookie session
-      expect(signed_in?).to be(true)
-    end
   end
 
   describe "exhaustion ends every credential, not just the cookie session" do
-    let(:pair) do
-      post "/api/v1/session", params: { login: user.username, password: password }.to_json,
-                              headers: { "CONTENT_TYPE" => "application/json" }
-      response.parsed_body
-    end
+    let(:pair) { api_token_pair(user, password) }
 
     def bearer_change_email(token, current)
       post change_email_users_path,

@@ -532,6 +532,8 @@ class User < ApplicationRecord
   # UPDATE only matches while token_version still equals it, and when it matches no
   # row nothing else runs (no revocation, no disconnect) and false is returned. Any
   # number of callers holding the same version race safely; exactly one bumps.
+  # Without it the bump is unconditional, and a row that is gone raises
+  # ActiveRecord::RecordNotFound (never a silent no-op).
   def bump_token_version!(*columns, from_version: nil)
     conn = self.class.connection
     values = columns.index_with { |column| self[column] }.merge(updated_at: Time.current)
@@ -548,7 +550,11 @@ class User < ApplicationRecord
       # (Rails 8.1 already clears the cache on write SQL; this is belt and braces.)
       self.class.uncached { conn.select_value(sql) }.tap { |version| ApiRefreshToken.revoke_all_for!(id) if version }
     end
-    return false unless new_version
+    unless new_version
+      return false if from_version
+
+      raise ActiveRecord::RecordNotFound, "#{self.class.name} #{id} no longer exists"
+    end
 
     self.token_version = new_version
     self.updated_at = values[:updated_at]

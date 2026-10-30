@@ -519,8 +519,15 @@ class UsersController < SessionsController
     # Every over-limit request tries the bump, from the version its attempts key was
     # counted under: exactly one changes the row (and revokes the refresh tokens and
     # closes the cable in the same unit); the rest match nothing. A request that
-    # failed part-way rolled back, so the next one retries.
-    @user.bump_token_version!(from_version: @user.token_version)
+    # failed part-way rolled back, so the next one retries. The cookie session ends
+    # whatever happens to the bump: the error is reported, not raised, because the
+    # cookie store writes the signed-out session only on a response that is returned.
+    user = @user
+    begin
+      user.bump_token_version!(from_version: user.token_version)
+    rescue StandardError => e
+      Rails.error.report(e, handled: false, severity: :error, context: { user_id: user.id, action: 'reauth_revocation' })
+    end
     sign_out
     redirect_to login_path, alert: REAUTH_LIMIT_ALERT
   end

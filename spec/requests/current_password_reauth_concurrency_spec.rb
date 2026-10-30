@@ -33,29 +33,33 @@ RSpec.describe "Current-password exhaustion under concurrency", type: :request d
 
   it "bumps token_version exactly once and ends the cookie sessions and the tokens" do
     sessions = Array.new(threads) { session_for_user }
-    tokens = (post "/api/v1/session", params: { login: user.username, password: password }.to_json,
-                                       headers: { "CONTENT_TYPE" => "application/json" }) && response.parsed_body
+    tokens = api_token_pair(user, password)
     before = user.reload.token_version
     5.times { wrong_guess(sessions.first) }
 
     # Every request has loaded @user and counted its attempt before any bumps.
     barrier = Queue.new
+    deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 10
     allow(RateLimitCounter).to receive(:increment).and_wrap_original do |m, *args, **opts|
       m.call(*args, **opts).tap do
         barrier << true
-        sleep 0.01 until barrier.size >= threads
+        until barrier.size >= threads
+          raise "barrier: not every request arrived within 10s" if Process.clock_gettime(Process::CLOCK_MONOTONIC) > deadline
+
+          sleep 0.01
+        end
       end
     end
 
     results = sessions.map do |sess|
       Thread.new do
-        ActiveRecord::Base.connection_pool.with_connection { wrong_guess(sess) && sess.response.status }
+        ActiveRecord::Base.connection_pool.with_connection { wrong_guess(sess) && [sess.response.location, sess.flash[:alert]] }
       rescue StandardError => e
         e
       end
     end.map(&:value)
 
-    expect(results).to all(eq(302))
+    expect(results).to all(eq(["http://www.example.com#{login_path}", UsersController::REAUTH_LIMIT_ALERT]))
     expect(User.find(user.id).token_version).to eq(before + 1)
     get "/api/v1/session", headers: { "Authorization" => "Bearer #{tokens['access_token']}" }
     expect(response).to have_http_status(:unauthorized)

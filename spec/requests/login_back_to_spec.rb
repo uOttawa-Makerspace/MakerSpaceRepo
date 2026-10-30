@@ -79,6 +79,11 @@ RSpec.describe "Login back_to for guests", type: :request do
       expect(response).to redirect_to("/carts")
     end
 
+    it "follows a same-site path with a query" do
+      login_with("/carts?tab=1&q=a%5Cb")
+      expect(response).to redirect_to("/carts?tab=1&q=a%5Cb")
+    end
+
     ["https://evil.com", "//evil.com", "/\\evil.com", "///evil.com", "\\evil.com", "\\/evil.com", "/\t/evil.com", " //evil.com"].each do |bad|
       it "lands on root for #{bad}" do
         login_with(bad)
@@ -87,20 +92,20 @@ RSpec.describe "Login back_to for guests", type: :request do
     end
   end
 
-  describe "protocol_relative_path? (the one rule behind back_to and the stale-form referer)" do
+  describe "unsafe_redirect_path? (the one rule behind back_to and the stale-form referer)" do
     let(:controller) { ApplicationController.new }
 
-    ["//evil.com", "/\\evil.com", "\\/evil.com", "\\\\evil.com", "/\t/evil.com", "\t//evil.com",
+    ["//evil.com", "\\evil.com", "/\\evil.com", "/a\\b", "/a/b?x=\\", "\\/evil.com", "\\\\evil.com", "/\t/evil.com", "\t//evil.com",
      " //evil.com", "\n\\\\evil.com", "/\r\n/evil.com", "\x00//evil.com"].each do |bad|
-      it("refuses #{bad.inspect}") { expect(controller.send(:protocol_relative_path?, bad)).to be(true) }
+      it("refuses #{bad.inspect}") { expect(controller.send(:unsafe_redirect_path?, bad)).to be(true) }
     end
 
-    ["/carts", "/", "/a//b", "/a\\b", "/search?q=//x", ""].each do |ok|
-      it("allows #{ok.inspect}") { expect(controller.send(:protocol_relative_path?, ok)).to be(false) }
+    ["/carts", "/", "/a//b", "/search?q=//x", "/carts?tab=1&q=a%5Cb", ""].each do |ok|
+      it("allows #{ok.inspect}") { expect(controller.send(:unsafe_redirect_path?, ok)).to be(false) }
     end
 
     it "does not raise on invalid UTF-8" do
-      expect(controller.send(:protocol_relative_path?, "/\xFF//x".dup.force_encoding("UTF-8"))).to be(false)
+      expect(controller.send(:unsafe_redirect_path?, "/\xFF//x".dup.force_encoding("UTF-8"))).to be(false)
     end
   end
 
