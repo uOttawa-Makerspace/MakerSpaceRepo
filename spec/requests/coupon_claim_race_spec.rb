@@ -178,7 +178,7 @@ RSpec.describe "Coupon claim race (D-S33)", type: :request do
   end
 
   it "a coupon row held elsewhere past the lock timeout: the claim gives up, changes nothing, 'not created properly'" do
-    stub_const("CouponCode::CLAIM_LOCK_TIMEOUT", "200ms")
+    stub_const("ApplicationRecord::LOCK_TIMEOUT", "200ms")
     coupon = create(:coupon_code, :unclaimed, dollar_cost: 5, cc_cost: 40)
     credit_cc!(user_a, 100)
     session_a = login_session(user_a)

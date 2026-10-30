@@ -18,43 +18,65 @@ class CcMoney < ApplicationRecord
     end
   end
 
+  # A negative debit amount (e.g. a legacy negative price snapshot). Nothing is written.
+  class InvalidAmount < ArgumentError; end
+
+  # A user's wallet, locked in `transaction` (see lock_wallet!).
+  Wallet = Struct.new(:user, :transaction) do
+    def held?
+      !transaction.state.finalized? && CcMoney.connection.transaction_open?
+    end
+  end
+
   def self.create_cc_money_from_approval(volunteer_task_id, volunteer_id, cc)
     create(volunteer_task_id: volunteer_task_id, user_id: volunteer_id, cc: cc)
   end
 
-  # Wallet lock: the user row, FOR NO KEY UPDATE (User::GUARD_LOCK_MODE). Every CC spend takes it
-  # (debit! does), so spends of one user are serialised and the balance read under it is current.
-  # House lock order: the user row FIRST, then the rows the caller spends on (coupon, order), so
-  # a caller that must lock both calls this before locking its own rows. Returns the locked user.
+  # Wallet lock, the shared start of every CC spend. Inside the caller's transaction (raises
+  # ArgumentError if none is open): bounds the transaction's lock waits (bound_lock_waits!:
+  # this also covers the locks the caller takes next, e.g. the coupon or the order), then locks
+  # the user row FOR NO KEY UPDATE (User::GUARD_LOCK_MODE). House lock order: the user row
+  # FIRST, then the rows the caller spends on. Spends of one user are thereby serialised.
+  # Returns a Wallet to hand to debit!/debit_all! (which then do not lock again).
   def self.lock_wallet!(user)
     require_caller_transaction!(:lock_wallet!)
-    User.where(id: user.id).lock(User::GUARD_LOCK_MODE).take!
+    bound_lock_waits!
+    locked = User.where(id: user.id).lock(User::GUARD_LOCK_MODE).take!
+    Wallet.new(locked, connection.current_transaction)
   end
 
-  # THE wallet-debit operation: every CC spend goes through here (coupon claim, cart checkout).
-  # Runs inside the caller's transaction (raises ArgumentError if none is open), so the caller's
-  # own writes (assign the coupon, complete the order) commit or roll back with the debit.
-  # Locks the wallet (lock_wallet!), re-reads the balance uncached under that lock (the request's
-  # query cache may hold a SUM read before the lock wait), raises InsufficientBalance if it does
-  # not cover `amount`, else writes one row of -amount (with `attrs`, e.g. order: /
-  # proficient_project:) and refreshes the cached users.wallet. amount 0 writes a 0 row (free items).
-  def self.debit!(user, amount, **attrs)
+  # THE wallet-debit operation (coupon claim, cart checkout). `payer` is a Wallet from
+  # lock_wallet! in this transaction, or a User (then the wallet is locked here). Writes one
+  # -amount row with `attrs` (e.g. order:, proficient_project:); see debit_all!.
+  def self.debit!(payer, amount, **attrs)
+    debit_all!(payer, [[amount, attrs]]).first
+  end
+
+  # Several debit rows (one per cart item) with ONE balance check and ONE cache refresh:
+  # inside the caller's transaction, reads the balance uncached under the wallet lock (the
+  # request's query cache may hold a SUM from before the lock wait), raises InsufficientBalance
+  # if it does not cover the total, else writes the rows and sets the cached users.wallet with
+  # update_columns. entries: [[amount, attrs], ...]; amounts are integers >= 0 (0 writes a 0 row,
+  # free items).
+  def self.debit_all!(payer, entries)
     require_caller_transaction!(:debit!)
-    amount = Integer(amount)
-    raise ArgumentError, "debit amount must not be negative (#{amount})" if amount.negative?
+    amounts = entries.map { |amount, _| Integer(amount) }
+    negative = amounts.find(&:negative?)
+    raise InvalidAmount, "debit amount must not be negative (#{negative})" if negative
 
-    locked_user = lock_wallet!(user)
-    balance = uncached { where(user_id: locked_user.id).sum(:cc) }
-    raise InsufficientBalance.new(balance: balance, amount: amount) if balance < amount
+    wallet = payer.is_a?(Wallet) && payer.held? ? payer : lock_wallet!(payer.is_a?(Wallet) ? payer.user : payer)
+    user = wallet.user
+    balance = uncached { where(user_id: user.id).sum(:cc) }
+    total = amounts.sum
+    raise InsufficientBalance.new(balance: balance, amount: total) if balance < total
 
-    row = create!(**attrs, user: locked_user, cc: -amount)
-    locked_user.update_wallet
-    row
+    rows = entries.zip(amounts).map { |(_, attrs), amount| create!(**(attrs || {}), user: user, cc: -amount) }
+    user.update_columns(wallet: balance - total)
+    rows
   end
 
-  # A caller transaction is a joinable one; the spec suite's fixture transaction is not.
   def self.require_caller_transaction!(name)
-    return if connection.transaction_open? && connection.current_transaction.joinable?
+    return if caller_transaction_open?
 
     raise ArgumentError, "CcMoney.#{name} must run inside the caller's transaction"
   end

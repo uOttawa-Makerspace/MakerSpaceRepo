@@ -74,7 +74,7 @@ RSpec.describe CcMoney, type: :model do
     end
 
     it "refuses a negative amount" do
-      expect { in_caller_transaction { CcMoney.debit!(user, -4) } }.to raise_error(ArgumentError, /must not be negative/)
+      expect { in_caller_transaction { CcMoney.debit!(user, -4) } }.to raise_error(CcMoney::InvalidAmount, /must not be negative/)
     end
 
     it "refuses to run outside a caller transaction" do
@@ -84,6 +84,52 @@ RSpec.describe CcMoney, type: :model do
       expect { CcMoney.lock_wallet!(user) }
         .to raise_error(ArgumentError, "CcMoney.lock_wallet! must run inside the caller's transaction")
       expect(user.cc_moneys.pluck(:cc)).to eq([100])
+    end
+
+    def sql_during
+      sqls = []
+      sub = ActiveSupport::Notifications.subscribe("sql.active_record") { |*, p| sqls << p[:sql] }
+      yield
+      sqls
+    ensure
+      ActiveSupport::Notifications.unsubscribe(sub)
+    end
+
+    def user_locks(sqls) = sqls.count { |q| q.include?('FROM "users"') && q.include?("FOR NO KEY UPDATE") }
+
+    it "a Wallet from lock_wallet! in this transaction is not locked again; lock_wallet! bounds the lock waits" do
+      CcMoney.create!(user: user, cc: 10)
+      timeout = nil
+      sqls = sql_during do
+        in_caller_transaction do
+          wallet = CcMoney.lock_wallet!(user)
+          timeout = CcMoney.connection.select_value("SELECT current_setting('lock_timeout')")
+          CcMoney.debit!(wallet, 1)
+          CcMoney.debit!(wallet, 2)
+        end
+      end
+      expect(user_locks(sqls)).to eq(1)
+      expect(timeout).to eq("5s")
+      expect(user.reload.wallet).to eq(7)
+    end
+
+    it "debit_all! checks the TOTAL once, writes every row and refreshes the cached wallet once" do
+      CcMoney.create!(user: user, cc: 30)
+      sqls = sql_during do
+        in_caller_transaction { CcMoney.debit_all!(user, [[10, {}], [15, {}]]) }
+      end
+      expect(user.cc_moneys.order(:id).pluck(:cc)).to eq([30, -10, -15])
+      expect(user.reload.wallet).to eq(5)
+      expect(sqls.count { |q| q.include?('SUM("cc_moneys"."cc")') }).to eq(1)
+      expect(sqls.count { |q| q.start_with?('UPDATE "users"') }).to eq(1)
+      expect(user_locks(sqls)).to eq(1)
+    end
+
+    it "debit_all! refuses when the total exceeds the balance even though each item fits" do
+      CcMoney.create!(user: user, cc: 20)
+      expect { in_caller_transaction { CcMoney.debit_all!(user, [[15, {}], [15, {}]]) } }
+        .to raise_error(CcMoney::InsufficientBalance, "CC balance 20 does not cover 30")
+      expect(user.cc_moneys.pluck(:cc)).to eq([20])
     end
 
     it "locks the user row (FOR NO KEY UPDATE) before writing" do
@@ -136,5 +182,17 @@ RSpec.describe CcMoney, type: :model do
       CcMoney.create!(user: user, cc: 10)
       expect { user.destroy }.to change(CcMoney, :count).by(-1)
     end
+  end
+end
+
+RSpec.describe Order, ".checkout! transaction boundary", type: :model do
+  let(:user) { create(:user, :regular_user) }
+
+  it "refuses to run inside an already-open transaction (shared own_transaction rule)" do
+    order = Order.create!(user: user)
+    ActiveRecord::Base.transaction do
+      expect { Order.checkout!(order, user) }.to raise_error(ArgumentError, "Order.checkout! must run as its own transaction")
+    end
+    expect(order.reload.order_status.name).to eq("In progress")
   end
 end

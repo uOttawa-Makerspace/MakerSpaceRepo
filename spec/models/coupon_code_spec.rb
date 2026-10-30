@@ -50,7 +50,7 @@ RSpec.describe CouponCode, type: :model do
     it "sets lock_timeout = 5s for its own transaction" do
       create(:coupon_code, :unclaimed, dollar_cost: 5, cc_cost: 40)
       seen = nil
-      allow(CcMoney).to receive(:debit!).and_wrap_original do |original, *args, **kw|
+      allow(CcMoney).to receive(:debit_all!).and_wrap_original do |original, *args, **kw|
         seen = CouponCode.connection.select_value("SELECT current_setting('lock_timeout')")
         original.call(*args, **kw)
       end

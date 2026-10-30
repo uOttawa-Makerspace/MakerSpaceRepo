@@ -1,6 +1,10 @@
 # frozen_string_literal: true
 
 class Order < ApplicationRecord
+  IN_PROGRESS = "In progress"
+  COMPLETED = "Completed"
+  # The order-row lock shared by checkout and every cart change.
+  CART_LOCK_MODE = User::GUARD_LOCK_MODE
   before_validation :set_order_status, on: :create
   before_save :update_subtotal
 
@@ -24,37 +28,39 @@ class Order < ApplicationRecord
     order_status.name == "Completed"
   end
 
-  # Cart checkout (OrdersController#create; D-S42): completes `order` for `user` and debits one
-  # CcMoney row per item through CcMoney.debit!, all in ONE transaction. Lock order (house
-  # rule): the wallet (user row) first, then the order row (FOR NO KEY UPDATE), whose status is
-  # re-checked under the lock so two submits of one cart cannot both complete and debit it.
-  # Returns [:completed, order, kit_project_ids], [:already_completed, order, []] or
-  # [:invalid, order, []]; raises CcMoney::InsufficientBalance (everything rolled back) when the
-  # wallet does not cover an item. Kit mails are NOT sent here: the caller sends them after the
-  # commit, for the returned kit_project_ids. A new (unsaved) order is the empty-cart case
-  # (D-S04): nothing to lock, it is saved as a Completed zero-value order as before.
+  # Cart checkout (OrdersController#create; D-S42). Its own top-level transaction
+  # (own_transaction): completes `order` for `user` and debits one CcMoney row per item through
+  # CcMoney.debit_all! (one balance check for the order total, one wallet refresh). Lock order
+  # (house rule): the wallet (user row; lock_wallet! also bounds the lock waits) first, then the
+  # order row, FOR NO KEY UPDATE, the same lock every cart change takes (change_items!), with the
+  # status re-checked under it. Returns [outcome, order, kit_project_ids]:
+  #   :completed          completed and paid now
+  #   :already_completed  a concurrent submit of the same cart completed it (nothing debited)
+  #   :invalid            the order did not save (nothing written)
+  # Raises CcMoney::InsufficientBalance (or CcMoney::InvalidAmount for a negative price
+  # snapshot) with everything rolled back. Kit mails are NOT sent here: the caller sends them
+  # after the commit, for the returned kit_project_ids. A new (unsaved) order is the empty-cart
+  # case (D-S04): nothing to lock, it is saved as a Completed zero-value order as before.
   def self.checkout!(order, user)
-    transaction do
-      locked_user = CcMoney.lock_wallet!(user)
+    own_transaction("Order.checkout!") do
+      wallet = CcMoney.lock_wallet!(user)
       if order.persisted?
-        order = lock(User::GUARD_LOCK_MODE).find(order.id)
-        next [:already_completed, order, []] unless order.order_status&.name == "In progress"
+        order = lock(CART_LOCK_MODE).find(order.id)
+        next [:already_completed, order, []] unless order.order_status&.name == IN_PROGRESS
       end
 
-      order.user = locked_user
+      order.user = wallet.user
       order.total = order.subtotal
-      order.order_status = OrderStatus.find_by(name: "Completed")
+      order.order_status = OrderStatus.find_by(name: COMPLETED)
       next [:invalid, order, []] unless order.save
 
-      kit_project_ids = []
-      order.order_items.each do |order_item|
-        CcMoney.debit!(locked_user, order_item.total_price.to_i,
-                       order: order, proficient_project: order_item.proficient_project)
-        next unless order_item.proficient_project.has_project_kit?
-
-        ProjectKit.create!(user_id: order.user_id, proficient_project_id: order_item.proficient_project_id,
-                           delivered: false)
-        kit_project_ids << order_item.proficient_project_id
+      items = order.order_items.to_a
+      CcMoney.debit_all!(wallet, items.map do |item|
+        [item.total_price.to_i, { order: order, proficient_project: item.proficient_project }]
+      end)
+      kit_project_ids = items.select { |item| item.proficient_project.has_project_kit? }.map do |item|
+        ProjectKit.create!(user_id: order.user_id, proficient_project_id: item.proficient_project_id, delivered: false)
+        item.proficient_project_id
       end
       [:completed, order, kit_project_ids]
     end

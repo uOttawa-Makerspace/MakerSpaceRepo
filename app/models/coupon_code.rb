@@ -26,29 +26,20 @@ class CouponCode < ApplicationRecord
   #
   # The debit is CcMoney.debit! (balance re-read uncached under the wallet lock).
   #
-  # Always its own top-level transaction (the only caller is DiscountCodesController#create):
-  # SET LOCAL lock_timeout bounds its lock waits, so a coupon or user row held long elsewhere
-  # cannot pin a web thread (LockWaitTimeout -> rollback -> "not created properly"); as its own
-  # transaction, COMMIT/ROLLBACK ends the setting. Called inside an open (joinable) transaction
-  # it raises ArgumentError instead of joining it, so no caller can silently inherit the
-  # timeout. (The spec suite's non-joinable fixture transaction is not a caller transaction.)
-  CLAIM_LOCK_TIMEOUT = "5s"
-
+  # Always its own top-level transaction (own_transaction; the only caller is
+  # DiscountCodesController#create): lock_wallet! bounds its lock waits with SET LOCAL
+  # lock_timeout (LockWaitTimeout -> rollback -> "not created properly"), which COMMIT/ROLLBACK
+  # then ends; inside a caller's transaction it raises ArgumentError instead.
   def self.claim!(user, dollar_cost)
-    if connection.transaction_open? && connection.current_transaction.joinable?
-      raise ArgumentError, "claim! must run as its own transaction"
-    end
-
     coupon = nil
     uncached do
-      transaction do
-        connection.execute("SET LOCAL lock_timeout = #{connection.quote(CLAIM_LOCK_TIMEOUT)}")
-        locked_user = CcMoney.lock_wallet!(user) # the user row first (house lock order)
+      own_transaction("claim!") do
+        wallet = CcMoney.lock_wallet!(user) # the user row first (house lock order)
         coupon = unclaimed.where(dollar_cost: dollar_cost).order(:id).lock(User::GUARD_LOCK_MODE).first
         next [:no_coupon, nil] if coupon.nil? || !coupon.user_id.nil? # guard, re-checked on the locked row
 
-        CcMoney.debit!(locked_user, coupon.cc_cost.to_i)
-        coupon.update!(user: locked_user)
+        CcMoney.debit!(wallet, coupon.cc_cost.to_i)
+        coupon.update!(user: wallet.user)
         [:claimed, coupon]
       end
     end

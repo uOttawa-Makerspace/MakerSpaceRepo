@@ -142,4 +142,28 @@ RSpec.describe "CC wallet races (D-S42)", type: :request do
     expect(session_two.flash[:alert]).to eq("Not enough CC points")
     expect(@second_waited).to be(true)
   end
+
+  it "checkout's lock waits are bounded too: a wallet held elsewhere past the timeout raises LockWaitTimeout fast" do
+    stub_const("ApplicationRecord::LOCK_TIMEOUT", "200ms")
+    credit_cc!(user, 100)
+    cart = in_progress_order(project_one)
+    locked = Queue.new
+    release = Queue.new
+    holder = in_thread do
+      User.transaction do
+        User.where(id: user.id).lock(User::GUARD_LOCK_MODE).take
+        locked << true
+        release.pop(timeout: 3)
+      end
+    end
+    locked.pop
+    started = Time.current
+    expect { Order.checkout!(cart, user) }.to raise_error(ActiveRecord::LockWaitTimeout)
+    waited = Time.current - started
+    release << true
+    expect(holder.value).not_to be_a(StandardError)
+    expect(waited).to be < 2
+    expect(cart.reload.order_status.name).to eq("In progress")
+    expect(debits).to be_empty
+  end
 end
