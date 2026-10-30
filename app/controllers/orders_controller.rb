@@ -36,6 +36,12 @@ class OrdersController < DevelopmentProgramsController
   rescue CcMoney::InsufficientBalance
     flash[:alert] = "Not enough Cc Points."
     redirect_back(fallback_location: root_path)
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved, ActiveRecord::RecordNotFound,
+         ActiveRecord::LockWaitTimeout, ActiveRecord::Deadlocked, CcMoney::InvalidAmount => e
+    # checkout!'s transaction has rolled back: nothing was completed or debited
+    Rails.logger.warn("[orders#create] checkout not completed: #{e.class}")
+    flash[:alert] = "Something went wrong"
+    redirect_back(fallback_location: root_path)
   end
 
   def destroy

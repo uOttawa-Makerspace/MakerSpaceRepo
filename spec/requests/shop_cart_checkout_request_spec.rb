@@ -594,6 +594,33 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(user.reload.wallet).to eq(50)
     end
 
+    [ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved, ActiveRecord::RecordNotFound,
+     ActiveRecord::LockWaitTimeout, ActiveRecord::Deadlocked].each do |error_class|
+      it "a #{error_class.name.demodulize} from checkout answers 'Something went wrong', not a 500" do
+        credit_cc!(user, 50)
+        add_to_cart(pp_with_cc(10))
+        allow(Order).to receive(:checkout!).and_raise(error_class)
+        post orders_path
+        expect(response).to have_http_status(:redirect)
+        expect(flash[:alert]).to eq("Something went wrong")
+        expect(user.orders.last.order_status.name).to eq("In progress")
+      end
+    end
+
+    it "a legacy negative price snapshot in the cart rolls the checkout back: 'Something went wrong', nothing debited" do
+      credit_cc!(user, 50)
+      add_to_cart(pp_with_cc(10))
+      add_to_cart(pp_with_cc(5))
+      order = user.orders.last
+      order.order_items.last.update_columns(unit_price: -5, total_price: -5)
+      post orders_path
+      expect(response).to have_http_status(:redirect)
+      expect(flash[:alert]).to eq("Something went wrong")
+      expect(order.reload.order_status.name).to eq("In progress")
+      expect(CcMoney.where(order_id: order.id)).to be_empty
+      expect(user.reload.wallet).to eq(50)
+    end
+
     it "lets staff and admin check out the same way" do
       [staff, admin].each do |u|
         get logout_path
