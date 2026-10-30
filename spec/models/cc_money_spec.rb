@@ -26,22 +26,6 @@ RSpec.describe CcMoney, type: :model do
         expect(CcMoney.find(cc_money.id).volunteer_task).to eq(volunteer_task)
       end
     end
-
-    context "#make_new_payment" do
-      it "cc money should be created (with negative cc) after a payment" do
-        user = create(:user, :regular_user)
-        cc_money = CcMoney.make_new_payment(user, 13)
-        expect(CcMoney.find(cc_money.id).cc).to eq(-13)
-        expect(CcMoney.find(cc_money.id).user).to eq(user)
-      end
-
-      it "cc money should be created (with negative cc) after a payment" do
-        user = create(:user, :regular_user)
-        cc_money = CcMoney.make_new_payment(user, -17)
-        expect(CcMoney.find(cc_money.id).cc).to eq(-17)
-        expect(CcMoney.find(cc_money.id).user).to eq(user)
-      end
-    end
   end
 end
 
@@ -58,22 +42,58 @@ RSpec.describe CcMoney, type: :model do
     expect { CcMoney.create! }.not_to raise_error
   end
 
-  describe ".make_new_payment" do
-    it "stores a negative amount, refreshes the cached wallet and returns the row" do
+  describe ".debit! (the one wallet-debit operation)" do
+    # A joinable caller transaction (the fixture transaction is not one).
+    def in_caller_transaction(&block)
+      ActiveRecord::Base.transaction(&block)
+    end
+
+    it "stores -amount, refreshes the cached wallet and returns the row" do
       CcMoney.create!(user: user, cc: 100)
-      payment = CcMoney.make_new_payment(user, 30)
+      payment = in_caller_transaction { CcMoney.debit!(user, 30) }
       expect(payment.cc).to eq(-30)
       expect(user.reload.wallet).to eq(70)
     end
 
-    it "keeps zero at zero and already-negative amounts unchanged" do
-      expect(CcMoney.make_new_payment(user, 0).cc).to eq(0)
-      expect(CcMoney.make_new_payment(user, -4).cc).to eq(-4)
+    it "writes a 0 row for 0 (free items) and passes order/proficient_project through" do
+      order = Order.create!(user: user)
+      row = in_caller_transaction { CcMoney.debit!(user, 0, order: order) }
+      expect([row.cc, row.order_id, row.user_id]).to eq([0, order.id, user.id])
     end
 
-    it "lets the wallet go negative (no balance check at the model)" do
-      CcMoney.make_new_payment(user, 25)
-      expect(user.reload.wallet).to eq(-25)
+    it "refuses an insufficient balance (no row; the caller's transaction rolls back)" do
+      CcMoney.create!(user: user, cc: 20)
+      expect do
+        in_caller_transaction do
+          Order.create!(user: user) # a caller write in the same transaction
+          CcMoney.debit!(user, 25)
+        end
+      end.to raise_error(CcMoney::InsufficientBalance, "CC balance 20 does not cover 25")
+      expect(user.cc_moneys.pluck(:cc)).to eq([20])
+      expect(user.orders).to be_empty
+    end
+
+    it "refuses a negative amount" do
+      expect { in_caller_transaction { CcMoney.debit!(user, -4) } }.to raise_error(ArgumentError, /must not be negative/)
+    end
+
+    it "refuses to run outside a caller transaction" do
+      CcMoney.create!(user: user, cc: 100)
+      expect { CcMoney.debit!(user, 10) }
+        .to raise_error(ArgumentError, "CcMoney.debit! must run inside the caller's transaction")
+      expect { CcMoney.lock_wallet!(user) }
+        .to raise_error(ArgumentError, "CcMoney.lock_wallet! must run inside the caller's transaction")
+      expect(user.cc_moneys.pluck(:cc)).to eq([100])
+    end
+
+    it "locks the user row (FOR NO KEY UPDATE) before writing" do
+      sqls = []
+      sub = ActiveSupport::Notifications.subscribe("sql.active_record") { |*, p| sqls << p[:sql] }
+      in_caller_transaction { CcMoney.debit!(user, 0) }
+      ActiveSupport::Notifications.unsubscribe(sub)
+      lock_at = sqls.index { |q| q.include?('FROM "users"') && q.include?("FOR NO KEY UPDATE") }
+      insert_at = sqls.index { |q| q.start_with?('INSERT INTO "cc_moneys"') }
+      expect(lock_at).to be < insert_at
     end
   end
 

@@ -4,7 +4,7 @@ require "rails_helper"
 
 # D-S33: two concurrent POST /discount_codes, on real second connections (see
 # rfid_link_concurrency_spec for the pattern). Thread 1 pauses inside its claim, at the
-# CC debit (CcMoney.make_new_payment), after it has picked its coupon. Thread 2 then runs
+# CC debit (CcMoney.debit!), after it has picked its coupon. Thread 2 then runs
 # its whole request; the main thread waits until thread 2 either finished or is blocked on a
 # row lock, then lets thread 1 go on.
 #
@@ -58,14 +58,14 @@ RSpec.describe "Coupon claim race (D-S33)", type: :request do
     first = nil
     paused = Queue.new
     resume = Queue.new
-    allow(CcMoney).to receive(:make_new_payment).and_wrap_original do |original, *args|
+    allow(CcMoney).to receive(:debit!).and_wrap_original do |original, *args, **kw|
       if Thread.current == first
         first = nil
         paused << true
         resume.pop
         raise ActiveRecord::RecordNotSaved, "simulated" if first_fails
       end
-      original.call(*args)
+      original.call(*args, **kw)
     end
 
     one = in_thread do

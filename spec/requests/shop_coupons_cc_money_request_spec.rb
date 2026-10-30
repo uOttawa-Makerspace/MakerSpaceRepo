@@ -154,7 +154,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
       it "a debit that is not saved changes nothing and answers the same alert" do
         credit_cc!(user, 100)
         coupon = create(:coupon_code, :unclaimed, dollar_cost: 5, cc_cost: 40)
-        allow(CcMoney).to receive(:make_new_payment).and_return(CcMoney.new(user: user, cc: -40))
+        allow(CcMoney).to receive(:create!).and_raise(ActiveRecord::RecordNotSaved, "simulated")
         post discount_codes_path, params: { dollar_cost: 5 }
         expect(response).to redirect_to(discount_codes_path)
         expect(flash[:alert]).to eq("Discount Code not created properly!")

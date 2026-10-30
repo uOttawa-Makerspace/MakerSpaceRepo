@@ -11,9 +11,9 @@ class CouponCode < ApplicationRecord
   # (RecordInvalid / RecordNotSaved) after the transaction has rolled back.
   #
   # Lock order (house rule: the user row first, then other rows):
-  #   1. the user row, FOR NO KEY UPDATE (User::GUARD_LOCK_MODE). Serialises every claim by
-  #      the same user, so the balance read under it is current and two claims cannot both
-  #      spend it (no negative wallet, no paying twice).
+  #   1. the wallet: the user row (CcMoney.lock_wallet!, FOR NO KEY UPDATE). Serialises this
+  #      claim with every other CC spend of the user (claims, cart checkouts), so the balance
+  #      CcMoney.debit! reads under it is current: no negative wallet, no paying twice.
   #   2. the lowest-id unclaimed coupon row, plain FOR NO KEY UPDATE: a second claimant WAITS
   #      for the holder to commit or roll back (no SKIP LOCKED, which would answer "already
   #      claimed" while the holder could still roll back and free it). When the wait ends on a
@@ -24,9 +24,7 @@ class CouponCode < ApplicationRecord
   # Only the claimant's own user row is locked before a coupon, so two claimants never hold
   # locks the other needs in the opposite order: no deadlock.
   #
-  # uncached: the request's query cache would otherwise answer the balance SUM with the value
-  # the before_action read BEFORE this claim waited on the user lock (a SELECT ... FOR UPDATE
-  # does not clear the cache), letting a second claim spend the same points again.
+  # The debit is CcMoney.debit! (balance re-read uncached under the wallet lock).
   #
   # Always its own top-level transaction (the only caller is DiscountCodesController#create):
   # SET LOCAL lock_timeout bounds its lock waits, so a coupon or user row held long elsewhere
@@ -41,24 +39,21 @@ class CouponCode < ApplicationRecord
       raise ArgumentError, "claim! must run as its own transaction"
     end
 
+    coupon = nil
     uncached do
       transaction do
         connection.execute("SET LOCAL lock_timeout = #{connection.quote(CLAIM_LOCK_TIMEOUT)}")
-        locked_user = User.where(id: user.id).lock(User::GUARD_LOCK_MODE).take!
+        locked_user = CcMoney.lock_wallet!(user) # the user row first (house lock order)
         coupon = unclaimed.where(dollar_cost: dollar_cost).order(:id).lock(User::GUARD_LOCK_MODE).first
-        if coupon.nil? || !coupon.user_id.nil? # guard, re-checked on the locked row version
-          [:no_coupon, nil]
-        elsif locked_user.get_total_cc < coupon.cc_cost.to_i
-          [:insufficient_cc, coupon]
-        else
-          payment = CcMoney.make_new_payment(locked_user, coupon.cc_cost.to_i)
-          raise ActiveRecord::RecordNotSaved, "coupon payment not saved" unless payment.persisted?
+        next [:no_coupon, nil] if coupon.nil? || !coupon.user_id.nil? # guard, re-checked on the locked row
 
-          coupon.update!(user: locked_user)
-          [:claimed, coupon]
-        end
+        CcMoney.debit!(locked_user, coupon.cc_cost.to_i)
+        coupon.update!(user: locked_user)
+        [:claimed, coupon]
       end
     end
+  rescue CcMoney::InsufficientBalance
+    [:insufficient_cc, coupon] # the transaction has rolled back: nothing written
   end
 
   def title
