@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_30_000002) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_30_000003) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -1496,7 +1496,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_30_000002) do
     t.boolean "booking_approval", default: false
     t.boolean "confirmed", default: false
     t.datetime "created_at", precision: nil, null: false
-    t.boolean "deleted"
+    t.boolean "deleted", default: false, null: false
     t.text "description"
     t.citext "email"
     t.string "faculty"
