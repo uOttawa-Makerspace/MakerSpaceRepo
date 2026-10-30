@@ -5,24 +5,33 @@ module AnnouncementsHelper
   # [[group, announcement_id, description], ...] in display order, group being
   # :admins, :staff, :all_users, :all_visitors or :volunteers. Cached per user;
   # the key carries the user's roles, today's date (the active scope depends on
-  # it) and the versions of the announcements and of the user's dismissals, so a
-  # new, edited or dismissed announcement shows at once. The dismiss forms are
-  # NOT cached: their CSRF tokens belong to the current session.
+  # it) and the newest change (and the count, for deletions) of the announcements
+  # and of the user's dismissals, so a new, edited, deleted or dismissed
+  # announcement shows at once. A hit costs those two aggregate queries. The
+  # dismiss forms are NOT cached: their CSRF tokens belong to the current session.
   def visible_announcements
     user = current_user
+    admin, staff, volunteer, = current_role_flags
     dismissed = AnnouncementDismiss.where(user_id: user.id)
-    key = ["announcements-bar/v1", user.id || "guest", user.admin?, user.staff?, user.volunteer?, signed_in?,
-           Time.zone.today, Announcement.all.cache_key_with_version, dismissed.cache_key_with_version]
+    key = ["announcements-bar/v2", user.id || "guest", admin, staff, volunteer, signed_in?, Time.zone.today,
+           *change_stamp(Announcement), *change_stamp(dismissed)]
     Rails.cache.fetch(key, expires_in: 10.minutes) do
       visible = Announcement.active.where.not(id: dismissed.select(:announcement_id))
       groups = []
-      groups << [:admins, visible.admins] if user.admin?
-      groups << [:staff, visible.staff] if user.staff?
+      groups << [:admins, visible.admins] if admin
+      groups << [:staff, visible.staff] if staff
       groups << [:all_users, visible.all_users] if signed_in? && Announcement.active.regular_user.exists?
       groups << [:all_visitors, visible.all_users]
-      groups << [:volunteers, visible.volunteers] if user.volunteer? || user.staff?
+      groups << [:volunteers, visible.volunteers] if volunteer || staff
       groups.flat_map { |group, scope| scope.order(:id).pluck(:id, :description).map { |id, text| [group, id, text] } }
     end
+  end
+
+  # Newest updated_at (to the microsecond: a Time in a cache key is only to the
+  # second) and the row count (a deletion leaves the newest timestamp alone).
+  def change_stamp(scope)
+    newest, count = scope.pick(Arel.sql("MAX(updated_at)"), Arel.sql("COUNT(*)"))
+    [newest&.utc&.to_fs(:usec), count]
   end
 
   ANNOUNCEMENT_BAR_STYLES = {

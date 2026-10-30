@@ -76,4 +76,37 @@ RSpec.describe "Announcements bar caching", type: :request do
     expect(response.body).not_to include("Staff meeting")
     expect(dismiss_forms).to be_empty
   end
+
+  # A cache hit is the key alone: one aggregate query for the announcements, one for
+  # the user's dismissals, and no announcement rows. The role flags (volunteer? is a
+  # query) are read once per request, not once per consumer.
+  describe "the cost of a hit" do
+    def sql_during
+      queries = []
+      callback = ->(*, payload) { queries << payload[:sql].to_s unless payload[:name] == "SCHEMA" }
+      ActiveSupport::Notifications.subscribed(callback, "sql.active_record") { yield }
+      queries
+    end
+
+    it "is one aggregate query per table, and the flags are read once" do
+      log_in!
+      get root_path
+      sql = sql_during { get root_path }
+      expect(sql.grep(/FROM "announcements"/).size).to eq(1)
+      expect(sql.grep(/FROM "announcement_dismisses"/).size).to eq(1)
+      expect(sql.grep(/FROM "announcements"/).first).to include("MAX(updated_at)")
+      expect(sql.grep(/FROM "programs"/).size).to eq(2) # volunteer? and dev_program?, once each
+    end
+
+    it "a deleted announcement disappears at once (the newest timestamp alone would not change)" do
+      newer = create(:announcement, public_goal: "all", description: "Newest")
+      log_in!
+      get root_path
+      expect(response.body).to include("Hello everyone")
+      for_all.destroy!
+      get root_path
+      expect(response.body).not_to include("Hello everyone")
+      expect(response.body).to include(newer.description)
+    end
+  end
 end
