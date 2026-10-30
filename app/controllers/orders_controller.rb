@@ -16,40 +16,25 @@ class OrdersController < DevelopmentProgramsController
     end
   end
 
+  # The before_action check_wallet is only an early, friendly refusal: Order.checkout! re-decides
+  # under the wallet lock (CcMoney.debit!), so two checkouts, or a checkout racing a coupon claim,
+  # cannot overdraw the wallet (D-S42).
   def create
-    @order = current_order
-    @order.user = current_user
-    @order.total = @order.subtotal
-    @order.order_status = OrderStatus.find_by(name: "Completed")
-    if @order.save
-      user = @order.user
-      @order.order_items.each do |order_item|
-        cc = order_item.total_price.to_i
-        cc *= -1 if cc >= 0
-        @order.cc_moneys.create(
-          proficient_project: order_item.proficient_project,
-          user: user,
-          cc: cc
-        )
-        next unless order_item.proficient_project.has_project_kit?
-        ProjectKit.create(
-          user_id: @order.user_id,
-          proficient_project_id: order_item.proficient_project_id,
-          delivered: false
-        )
-        MsrMailer.send_kit_email(
-          @order.user,
-          order_item.proficient_project_id
-        ).deliver_now
-      end
-      current_user.update_wallet
-      session[:order_id] = nil
-      flash[:notice] = "Your Order was successfully processed."
-      redirect_to orders_path
-    else
+    outcome, order, kit_project_ids = Order.checkout!(current_order, current_user)
+    if outcome == :invalid
       flash[:alert] = "Something went wrong"
       redirect_back(fallback_location: root_path)
+      return
     end
+
+    # :completed, or :already_completed (a concurrent submit of the same cart completed it)
+    send_kit_emails(order.user, kit_project_ids)
+    session[:order_id] = nil
+    flash[:notice] = "Your Order was successfully processed."
+    redirect_to orders_path
+  rescue CcMoney::InsufficientBalance
+    flash[:alert] = "Not enough Cc Points."
+    redirect_back(fallback_location: root_path)
   end
 
   def destroy
@@ -62,6 +47,17 @@ class OrdersController < DevelopmentProgramsController
   end
 
   private
+
+  # After the commit: an SMTP failure cannot undo a completed, paid order (it used to raise mid-loop,
+  # a 500 with the order half-debited). Reported; the error class only is logged.
+  def send_kit_emails(user, kit_project_ids)
+    kit_project_ids.each do |project_id|
+      MsrMailer.send_kit_email(user, project_id).deliver_now
+    rescue StandardError => e
+      Rails.logger.error("[orders#create] kit email NOT sent: user id=#{user.id} proficient_project id=#{project_id} #{e.class}")
+      Rails.error.report(e, handled: true, severity: :error, context: { user_id: user.id, proficient_project_id: project_id })
+    end
+  end
 
   def check_wallet
     current_user.update_wallet

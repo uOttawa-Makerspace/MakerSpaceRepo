@@ -532,6 +532,35 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(deliveries.first.subject).to eq("Your proficient project kit order")
     end
 
+    it "sends the kit email after the checkout transaction commits" do
+      credit_cc!(user, 50)
+      add_to_cart(pp_with_cc(10, has_project_kit: true))
+      baseline = ActiveRecord::Base.connection.open_transactions # the spec's fixture transaction
+      seen = nil
+      allow(MsrMailer).to receive(:send_kit_email).and_wrap_original do |original, *args|
+        seen = ActiveRecord::Base.connection.open_transactions
+        original.call(*args)
+      end
+      post orders_path
+      expect(seen).to eq(baseline)
+    end
+
+    it "a kit email that fails after the commit keeps the paid order and is reported (no 500)" do
+      credit_cc!(user, 50)
+      pp = pp_with_cc(10, has_project_kit: true)
+      add_to_cart(pp)
+      allow(MsrMailer).to receive(:send_kit_email).and_raise(Net::SMTPFatalError.new("550 user@example.com"))
+      allow(Rails.error).to receive(:report).and_call_original
+      post orders_path
+      expect(response).to redirect_to(orders_path)
+      expect(flash[:notice]).to eq("Your Order was successfully processed.")
+      expect(user.orders.last.order_status.name).to eq("Completed")
+      expect(user.reload.wallet).to eq(40)
+      expect(ProjectKit.where(user_id: user.id, proficient_project_id: pp.id).count).to eq(1)
+      expect(Rails.error).to have_received(:report)
+        .with(an_instance_of(Net::SMTPFatalError), hash_including(context: { user_id: user.id, proficient_project_id: pp.id }))
+    end
+
     it "no kit email for projects without a kit" do
       credit_cc!(user, 50)
       add_to_cart(pp_with_cc(10))
