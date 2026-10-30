@@ -38,7 +38,7 @@ class CouponCode < ApplicationRecord
   # The debit is CcMoney.debit! (balance re-read uncached under the wallet lock).
   #
   # Always its own top-level transaction (own_transaction; the only caller is
-  # DiscountCodesController#create): lock_wallet! bounds its lock waits with SET LOCAL
+  # DiscountCodesController#create): own_transaction bounds its lock waits with SET LOCAL
   # lock_timeout (LockWaitTimeout -> rollback -> "not created properly"), which COMMIT/ROLLBACK
   # then ends; inside a caller's transaction it raises ArgumentError instead.
   def self.claim!(user, dollar_cost, cc_cost)

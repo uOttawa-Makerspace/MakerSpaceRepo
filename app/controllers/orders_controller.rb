@@ -17,7 +17,7 @@ class OrdersController < DevelopmentProgramsController
   end
 
   # The before_action check_wallet is only an early, friendly refusal: Order.checkout! re-decides
-  # under the wallet lock (CcMoney.debit!), so two checkouts, or a checkout racing a coupon claim,
+  # under the wallet lock (CcMoney.debit_all!), so two checkouts, or a checkout racing a coupon claim,
   # cannot overdraw the wallet (D-S42).
   def create
     outcome, order, kit_project_ids = Order.checkout!(current_order, current_user)
