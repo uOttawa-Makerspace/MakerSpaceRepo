@@ -1101,6 +1101,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_30_000002) do
     t.index ["user_id"], name: "index_quick_access_links_on_user_id"
   end
 
+  create_table "rate_limit_counters", primary_key: "key", id: :string, force: :cascade do |t|
+    t.integer "count", default: 0, null: false
+    t.datetime "expires_at", null: false
+    t.index ["expires_at"], name: "index_rate_limit_counters_on_expires_at"
+  end
+
   create_table "recurring_bookings", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
