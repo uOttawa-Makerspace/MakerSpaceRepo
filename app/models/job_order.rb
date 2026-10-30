@@ -452,7 +452,7 @@ class JobOrder < ApplicationRecord
 
   # The order id a draft's tags name: the one job-order marker, nil when there is none or two different ones.
   def self.draft_marker_order_id(tags)
-    ids = Array(tags).filter_map { |t| DRAFT_MARKER.match(t.to_s.strip)&.captures&.first&.to_i }.uniq
+    ids = draft_tag_list(tags).filter_map { |t| DRAFT_MARKER.match(t)&.captures&.first&.to_i }.uniq
     ids.first if ids.one?
   end
 
@@ -469,10 +469,18 @@ class JobOrder < ApplicationRecord
 
   # Whether this order's stored Shopify draft `gid` is the invoice the database backs: the order is live, waiting for
   # payment (COMPLETED) and its stored shopify_draft_order_id is this draft. A missing JobStatus (unseeded: the
-  # constants are nil) never matches. `status` is the latest status; pass the one read under the row lock.
-  def backs_draft?(gid, status = job_order_statuses.last&.job_status)
-    self.class.backs_draft?(gid, deleted: is_deleted, stored_gid: shopify_draft_order_id, status_id: status&.id)
+  # constants are nil) never matches. `status_id` is the latest status id (#latest_status_id); pass the one read under
+  # the row lock.
+  def backs_draft?(gid, status_id = latest_status_id)
+    self.class.backs_draft?(gid, deleted: is_deleted, stored_gid: shopify_draft_order_id, status_id: status_id)
   end
+
+  # THE definition of an order's latest status: the status row with the highest id. SQL, so a whole batch of orders
+  # (DraftSweep) and one order (#latest_status_id, which #locked_operation reads under the lock) read it the same way.
+  LATEST_STATUS_ID_SQL = "(SELECT s.job_status_id FROM job_order_statuses s WHERE s.job_order_id = job_orders.id " \
+                         "ORDER BY s.id DESC LIMIT 1)"
+
+  def latest_status_id = self.class.where(id: id).pick(Arel.sql(LATEST_STATUS_ID_SQL))
 
   # The same rule on plain values (the sweep decides it for many orders from one query): `deleted` the is_deleted
   # flag, `stored_gid` the stored shopify_draft_order_id, `status_id` the latest JobStatus id.
@@ -488,18 +496,46 @@ class JobOrder < ApplicationRecord
   # back a moment ago can become the live invoice. It is a Shopify call under the row lock, accepted here: the sweep
   # is hourly and only touches orphans.
   #
-  # A class method, with the instance work private, so nothing holds an order and a free gid to delete: the draft is
-  # fetched before it is deleted and must carry this environment's tag and exactly this order's marker
+  # The real guard against deleting an arbitrary gid is the marker re-check, not the visibility of a method: the
+  # draft is fetched before it is deleted and must carry this environment's tag and exactly this order's marker
   # (DraftDeletion.delete_unless_completed!(marker:)), so only a draft made for this order here can go.
+  #
+  # An order whose row is gone has no lock to take and nothing to keep the draft for (never there, or hard-deleted
+  # mid-sweep): the draft is settled the same way without a lock. A draft cannot exist for an order that was never
+  # committed: a job-order draft is only created by /pay (#checkout_link) on an order that already exists as a
+  # committed row, inside that order's own locked transaction, and the marker names that row's id. So a marker whose
+  # row is missing means the row was hard-deleted, or this is the wrong database, never an order still being created
+  # (the sweep's kill switch covers the second case).
+  #
   # TransitionResult value: :kept (the database backs it, or it is paid), :deleted or :cleared; refused
-  # :order_missing when the row is gone (the caller settles the draft without a lock: DraftDeletion).
-  # `may_delete: false` (the sweep has used up its cap) keeps a backed draft as :kept but refuses to delete any other,
-  # :delete_cap, decided under the lock.
-  def self.reconcile_orphan_draft!(order_id, gid, may_delete: true)
-    order = find_by(id: order_id)
-    return TransitionResult.refused(:order_missing) unless order
+  # :draft_not_voidable (Shopify or the marker said no), :busy, :deadlock. `may_delete: false` (the sweep has used up
+  # its cap) keeps a backed draft as :kept but refuses to delete any other, :delete_cap, decided under the lock.
+  def self.reconcile_orphan_draft!(order_id, gid, may_delete:)
+    result = find_by(id: order_id)&.reconcile_draft_under_lock!(gid, may_delete)
+    return result unless result.nil? || result.reason == :order_missing
 
-    order.__send__(:reconcile_orphan_draft_under_lock!, gid, may_delete)
+    reconcile_draft_of_missing_order(gid, order_id, may_delete)
+  end
+
+  def self.reconcile_draft_of_missing_order(gid, order_id, may_delete)
+    return TransitionResult.refused(:delete_cap) unless may_delete
+
+    TransitionResult.done(DraftDeletion.delete_unless_completed!(gid, marker: order_id))
+  rescue StaleDraftOrderError => e
+    TransitionResult.refused(:draft_not_voidable, e)
+  end
+  private_class_method :reconcile_draft_of_missing_order
+
+  # The locked half of .reconcile_orphan_draft! (public only for it; the marker re-check is the guard).
+  def reconcile_draft_under_lock!(gid, may_delete)
+    locked_operation("reconcile_orphan_draft!", live_only: false, report: false) do |status|
+      next TransitionResult.done(:kept) if backs_draft?(gid, status&.id)
+      next TransitionResult.refused(:delete_cap) unless may_delete
+
+      outcome = DraftDeletion.delete_unless_completed!(gid, marker: id)
+      update_column(:shopify_draft_order_id, nil) if outcome != :kept && shopify_draft_order_id == gid
+      TransitionResult.done(outcome)
+    end
   end
 
   # THE settle rule: which path settles the Shopify draft of an order going from status `from` (nil when there is
@@ -628,7 +664,7 @@ class JobOrder < ApplicationRecord
       lock_row!
       next TransitionResult.refused(:order_missing) if live_only && is_deleted
 
-      status = job_order_statuses.last&.job_status
+      status = JobStatus.find_by(id: latest_status_id)
       yield status
     end
     result.with(status: status)
@@ -679,22 +715,12 @@ class JobOrder < ApplicationRecord
     TransitionResult.refused(reason, error)
   end
 
-  # The instance half of .reconcile_orphan_draft!, private so it cannot be called with an arbitrary gid.
-  def reconcile_orphan_draft_under_lock!(gid, may_delete)
-    locked_operation("reconcile_orphan_draft!", live_only: false, report: false) do |status|
-      next TransitionResult.done(:kept) if backs_draft?(gid, status)
-      next TransitionResult.refused(:delete_cap) unless may_delete
-
-      outcome = DraftDeletion.delete_unless_completed!(gid, marker: id)
-      update_column(:shopify_draft_order_id, nil) if outcome != :kept && shopify_draft_order_id == gid
-      TransitionResult.done(outcome)
-    end
-  end
-
   # A destination where the customer may already have paid through the draft: the one paid-settle rule
   # (DraftDeletion.delete_unless_completed!), then the id is dropped unless the draft is kept as the payment record.
+  # `marker: nil` on purpose: this is the order's OWN stored draft, which may predate the marker (rake
+  # job_orders:retire_stale_drafts exists for those), so no marker can be demanded of it.
   def settle_for_paid_order
-    outcome = DraftDeletion.delete_unless_completed!(shopify_draft_order_id)
+    outcome = DraftDeletion.delete_unless_completed!(shopify_draft_order_id, marker: nil)
     update_column(:shopify_draft_order_id, nil) unless outcome == :kept
     outcome
   end

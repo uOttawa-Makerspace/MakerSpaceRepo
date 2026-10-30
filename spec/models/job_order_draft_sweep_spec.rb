@@ -371,7 +371,7 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
         shopify.draft_pages = [Array.new(2) { |i| draft_node("gid://shopify/DraftOrder/#{i + 1}", order_with_draft!) }]
         sqls = queries_during { described_class.run(max_deletes: 2) }
 
-        expect(sqls.grep(/ORDER BY s\.id DESC/)).to be_empty
+        expect(latest_status_reads.call(sqls)).to eq(0)
         expect(shopify.deleted_ids.size).to eq(2)
       end
 
@@ -468,7 +468,7 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
       expect(reports.first.last[:context][:occurrences]).to eq(2)
     end
 
-    [ActiveRecord::ConnectionNotEstablished, ActiveRecord::StatementInvalid].each do |klass|
+    [ActiveRecord::ConnectionNotEstablished, ActiveRecord::ConnectionFailed].each do |klass|
       it "stops the run at a database-level #{klass.name.demodulize} after one report, the rest unresolved" do
         order = order_with_draft!
         allow(JobOrder).to receive(:reconcile_orphan_draft!).and_raise(klass, "database down")
@@ -479,7 +479,77 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
         expect(reports.size).to eq(2)
         expect(reports.first.first).to be_a(klass)
         expect(report.unresolved_gids.size).to eq(5)
-        expect(report.unresolved.last).to include("4 draft(s) not examined", "database error")
+        expect(report.unresolved.first).to include("4 draft(s) not examined", "database error")
+      end
+    end
+
+    [ActiveRecord::QueryCanceled, ActiveRecord::NotNullViolation, ActiveRecord::RecordNotUnique, ActiveRecord::ValueTooLong,
+     ActiveRecord::StatementInvalid].each do |klass|
+      it "treats #{klass.name.demodulize} as the draft's own failure: the run goes on, reported once per class" do
+        order = order_with_draft!
+        allow(JobOrder).to receive(:reconcile_orphan_draft!).and_raise(klass, "row failed")
+        report = sweep(*Array.new(3) { |i| draft_node("gid://shopify/DraftOrder/#{i + 1}", order) })
+
+        expect(JobOrder).to have_received(:reconcile_orphan_draft!).exactly(3).times
+        expect(reports.map { |r| r.first.class }).to eq([klass, described_class::Unresolved])
+        expect(reports.first.last[:context]).to include(occurrences: 3)
+        expect(report.unresolved.grep(/not examined/)).to be_empty
+        expect(report.unresolved_gids.size).to eq(3)
+      end
+    end
+
+    it "sends the collected error report and the summary even when the advisory unlock raises" do
+      order = order_with_draft!
+      allow(JobOrder).to receive(:reconcile_orphan_draft!).and_raise(ArgumentError, "boom")
+      allow_any_instance_of(ActiveRecord::ConnectionAdapters::PostgreSQLAdapter).to receive(:select_value).and_wrap_original do |orig, sql, *args|
+        sql.to_s.include?("pg_advisory_unlock") ? raise(ActiveRecord::ConnectionFailed, "connection gone") : orig.call(sql, *args)
+      end
+      shopify.draft_pages = [[draft_node("gid://shopify/DraftOrder/1", order)]]
+
+      begin
+        expect { described_class.run }.to raise_error(ActiveRecord::ConnectionFailed, "connection gone")
+      ensure
+        RSpec::Mocks.space.proxy_for(ActiveRecord::Base.connection).reset rescue nil # rubocop:disable Style/RescueModifier
+        ActiveRecord::Base.connection.exec_query("SELECT pg_advisory_unlock(#{described_class::LOCK_KEY})")
+      end
+
+      expect(reports.map { |r| r.first.class }).to eq([ArgumentError, described_class::Unresolved])
+    end
+
+    describe "run-level lines" do
+      let(:order) { order_with_draft! }
+
+      def nodes(count) = Array.new(count) { |i| draft_node("gid://shopify/DraftOrder/#{i + 1}", order) }
+
+      # The up-front count is not what is tested here: every draft counts as backed, the stub plays the per-draft results.
+      def play(results)
+        allow(JobOrder).to receive(:backs_draft?).and_return(true)
+        allow(JobOrder).to receive(:reconcile_orphan_draft!) do
+          result = results.shift
+          result.is_a?(Exception) ? raise(result) : result
+        end
+      end
+
+      it "puts the cap line before 25 per-draft lines, inside the reported limit" do
+        play([JobOrder::TransitionResult.done(:deleted)] + Array.new(25) { JobOrder::TransitionResult.refused(:busy) } +
+             [JobOrder::TransitionResult.refused(:delete_cap)])
+        shopify.draft_pages = [nodes(27)]
+        report = described_class.run(max_deletes: 1)
+
+        expect(report.unresolved.size).to eq(26)
+        expect(report.unresolved.first).to include("1 orphan draft(s)", "cap of 1", "CONFIRM_MAX_DELETES=2")
+        expect(reports.first.last[:context][:unresolved].first).to include("CONFIRM_MAX_DELETES=2")
+        expect(reports.first.last[:context][:unresolved].size).to eq(20)
+      end
+
+      it "writes both the cap line and the stop line when a database error stops a capped run" do
+        play([JobOrder::TransitionResult.done(:deleted), JobOrder::TransitionResult.refused(:delete_cap),
+              ActiveRecord::ConnectionFailed.new("gone")])
+        shopify.draft_pages = [nodes(5)]
+        report = described_class.run(max_deletes: 1)
+
+        expect(report.unresolved.first(2)).to match([a_string_including("1 orphan draft(s)", "cap of 1", "CONFIRM_MAX_DELETES=2"),
+                                                     a_string_including("2 draft(s) not examined", "ConnectionFailed")])
       end
     end
 
@@ -566,7 +636,7 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
 
     it "settles a paid-destination order through the one paid-settle rule, dropping the id" do
       order = order_with_draft!(:paid, stored: "gid://shopify/DraftOrder/1")
-      expect(JobOrder.const_get(:DraftDeletion)).to receive(:delete_unless_completed!).with("gid://shopify/DraftOrder/1").and_call_original
+      expect(JobOrder.const_get(:DraftDeletion)).to receive(:delete_unless_completed!).with("gid://shopify/DraftOrder/1", marker: nil).and_call_original
 
       expect(order.send(:settle_for_paid_order)).to eq(:deleted)
       expect(order.reload.shopify_draft_order_id).to be_nil
@@ -601,16 +671,15 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
       end
     end
 
-    it "does not let an order delete an arbitrary gid: the instance method is private, the class method re-verifies the marker" do
+    it "does not let an order delete an arbitrary gid: the marker re-check is the guard" do
       order = order_with_draft!
       other = order_with_draft!
-      expect(order).not_to respond_to(:reconcile_orphan_draft!)
 
       shopify.draft_pages = [[draft_node("gid://shopify/DraftOrder/1", other),
                               draft_node("gid://shopify/DraftOrder/2", order, tags: ["makerepo_production_job_order", "job_order:#{order.id}"]),
                               draft_node("gid://shopify/DraftOrder/3", order, tags: [])]]
       %w[1 2 3].each do |n|
-        result = JobOrder.reconcile_orphan_draft!(order.id, "gid://shopify/DraftOrder/#{n}")
+        result = JobOrder.reconcile_orphan_draft!(order.id, "gid://shopify/DraftOrder/#{n}", may_delete: true)
         expect(result.reason).to eq(:draft_not_voidable)
       end
       expect(shopify.deleted_ids).to be_empty
@@ -620,7 +689,69 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
       order = order_with_draft!
       shopify.draft_pages = [[draft_node("gid://shopify/DraftOrder/1", order)]]
 
-      expect(JobOrder.reconcile_orphan_draft!(order.id, "gid://shopify/DraftOrder/1").value).to eq(:deleted)
+      expect(JobOrder.reconcile_orphan_draft!(order.id, "gid://shopify/DraftOrder/1", may_delete: true).value).to eq(:deleted)
+    end
+
+    describe "an order whose row is gone, through the one entry point" do
+      let(:order) { order_with_draft! }
+      let(:gid) { "gid://shopify/DraftOrder/1" }
+
+      before do
+        shopify.draft_pages = [[draft_node(gid, order)]]
+        id = order.id
+        order.job_order_statuses.delete_all
+        order.delete
+        @order_id = id
+      end
+
+      it "deletes a draft marked for it" do
+        result = JobOrder.reconcile_orphan_draft!(@order_id, gid, may_delete: true)
+
+        expect(result.value).to eq(:deleted)
+        expect(shopify.deleted_ids).to eq([gid])
+      end
+
+      it "refuses a draft marked for another order" do
+        result = JobOrder.reconcile_orphan_draft!(@order_id + 1, gid, may_delete: true)
+
+        expect(result.reason).to eq(:draft_not_voidable)
+        expect(shopify.deleted_ids).to be_empty
+      end
+
+      it "refuses with :delete_cap, touching nothing, when it may not delete" do
+        result = JobOrder.reconcile_orphan_draft!(@order_id, gid, may_delete: false)
+
+        expect(result.reason).to eq(:delete_cap)
+        expect(shopify.deleted_ids).to be_empty
+      end
+
+      it "keeps a paid draft" do
+        shopify.draft_statuses[gid] = "COMPLETED"
+
+        expect(JobOrder.reconcile_orphan_draft!(@order_id, gid, may_delete: true).value).to eq(:kept)
+        expect(shopify.deleted_ids).to be_empty
+      end
+    end
+
+    it "gives the same latest status to the batch query and to the instance, with the highest status row winning" do
+      order = order_with_draft!(:staff_approval)
+      order.job_order_statuses.create!(job_status: JobStatus::COMPLETED, user: owner)
+      order.job_order_statuses.first.update_columns(created_at: 1.day.from_now) # created_at must not decide
+
+      batch = JobOrder.where(id: order.id).pick(Arel.sql(JobOrder::LATEST_STATUS_ID_SQL))
+      expect(order.latest_status_id).to eq(batch)
+      expect(batch).to eq(JobStatus::COMPLETED.id)
+      expect(order.job_order_statuses.last.job_status_id).to eq(batch)
+    end
+
+    it "requires the marker of a deletion, and reads comma-string tags the same way for the marker and the environment" do
+      order = order_with_draft!
+      expect { JobOrder.const_get(:DraftDeletion).delete_unless_completed!("gid://shopify/DraftOrder/1") }.to raise_error(ArgumentError, /marker/)
+
+      tags = "#{operating_tag}, job_order:#{order.id}"
+      expect(JobOrder.draft_marker_order_id(tags)).to eq(order.id)
+      expect(JobOrder.marked_for?(tags, order.id)).to be(true)
+      expect(JobOrder.marked_for?("#{operating_tag}, job_order:#{order.id}, job_order:#{order.id + 1}", order.id)).to be(false)
     end
 
     it "keeps the deletion helper out of reach of everything but JobOrder" do
