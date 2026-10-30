@@ -918,6 +918,32 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(text).to include("#{I18n.t('job_orders.status_reasons.owner_change')} (By: Unknown)")
     end
 
+    # Round 2 review 9: no N+1 (runs with Bullet on): statuses and their JobStatus in one query, users only for the
+    # rows that name their actor, in one query
+    it "loads the history with a fixed number of queries, users only for rows that show them" do
+      order = order_with_task!(owner: owner)
+      %i[staff_approval user_approval waiting_processed being_processed completed].each { |k| advance_to!(order, k) }
+      order.job_order_statuses.create!(job_status: JobStatus::STAFF_APPROVAL, user: owner, reason: "owner_change")
+      http_login!(staff)
+      tables = Hash.new(0)
+      subscriber = ActiveSupport::Notifications.subscribe("sql.active_record") do |*, payload|
+        %w[job_order_statuses job_statuses users].each { |t| tables[t] += 1 if payload[:sql].match?(/FROM "#{t}"/) }
+      end
+      begin
+        get job_order_timeline_modal_path(order)
+      ensure
+        ActiveSupport::Notifications.unsubscribe(subscriber)
+      end
+
+      expect(response).to have_http_status(:ok)
+      text = Nokogiri::HTML(response.body).text.squish
+      expect(text).to include("Currently being Processed (By: #{owner.name})")
+      expect(text).to include("#{I18n.t('job_orders.status_reasons.owner_change')} (By: #{owner.name})")
+      expect(tables["job_order_statuses"]).to eq(1)
+      expect(tables["job_statuses"]).to eq(1)
+      expect(tables["users"]).to be <= 2 # the signed-in staff user, and the actors of the rows that show them
+    end
+
     it "is staff/admin only — the owner gets bounced to root" do
       order = order_with_task!(owner: owner)
       http_login!(owner)

@@ -175,7 +175,11 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
     end
   end
 
+  # One query for the rows and their statuses, one for the users of the rows that name their actor
+  # (JobOrderStatus#actor_shown?); no per-row lookups.
   def timeline_modal
+    @statuses = @job_order.job_order_statuses.includes(:job_status).order(created_at: :desc).to_a
+    ActiveRecord::Associations::Preloader.new(records: @statuses.select(&:actor_shown?), associations: :user).call
     render layout: false
   end
 
