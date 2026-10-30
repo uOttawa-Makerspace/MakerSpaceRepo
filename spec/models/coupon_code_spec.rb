@@ -33,4 +33,29 @@ RSpec.describe CouponCode, type: :model do
     create(:coupon_code, :claimed, user: user)
     expect { user.destroy }.to change(CouponCode, :count).by(-1)
   end
+
+  describe ".claim! transaction boundary" do
+    before { credit_cc!(user, 100) }
+
+    it "refuses to run inside an already-open transaction (it must be its own: no inherited lock_timeout)" do
+      coupon = create(:coupon_code, :unclaimed, dollar_cost: 5, cc_cost: 40)
+      ActiveRecord::Base.transaction do
+        expect { CouponCode.claim!(user, 5) }
+          .to raise_error(ArgumentError, "claim! must run as its own transaction")
+      end
+      expect(coupon.reload.user_id).to be_nil
+      expect(user.cc_moneys.where("cc < 0")).to be_empty
+    end
+
+    it "sets lock_timeout = 5s for its own transaction" do
+      create(:coupon_code, :unclaimed, dollar_cost: 5, cc_cost: 40)
+      seen = nil
+      allow(CcMoney).to receive(:make_new_payment).and_wrap_original do |original, *args|
+        seen = CouponCode.connection.select_value("SELECT current_setting('lock_timeout')")
+        original.call(*args)
+      end
+      expect(CouponCode.claim!(user, 5).first).to eq(:claimed)
+      expect(seen).to eq("5s")
+    end
+  end
 end

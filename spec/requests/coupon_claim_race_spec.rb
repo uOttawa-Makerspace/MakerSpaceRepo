@@ -176,4 +176,34 @@ RSpec.describe "Coupon claim race (D-S33)", type: :request do
     expect(session_a.flash[:alert]).to eq("Discount Code not created properly!")
     expect(session_b.flash[:notice]).to eq("Discount Code created")
   end
+
+  it "a coupon row held elsewhere past the lock timeout: the claim gives up, changes nothing, 'not created properly'" do
+    stub_const("CouponCode::CLAIM_LOCK_TIMEOUT", "200ms")
+    coupon = create(:coupon_code, :unclaimed, dollar_cost: 5, cc_cost: 40)
+    credit_cc!(user_a, 100)
+    session_a = login_session(user_a)
+
+    locked = Queue.new
+    release = Queue.new
+    holder = in_thread do
+      CouponCode.transaction do
+        CouponCode.lock(User::GUARD_LOCK_MODE).find(coupon.id)
+        locked << true
+        release.pop(timeout: 3) # without a lock timeout the claim would wait this long, then succeed
+      end
+    end
+    locked.pop
+    started = Time.current
+    claim(session_a)
+    waited = Time.current - started
+    release << true
+    expect(holder.value).not_to be_a(StandardError)
+
+    expect(waited).to be < 2
+    expect(coupon.reload.user_id).to be_nil
+    expect(debits(user_a)).to be_empty
+    expect(user_a.reload.wallet).to eq(100)
+    expect(session_a.response.location).to end_with(discount_codes_path)
+    expect(session_a.flash[:alert]).to eq("Discount Code not created properly!")
+  end
 end

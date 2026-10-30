@@ -27,9 +27,23 @@ class CouponCode < ApplicationRecord
   # uncached: the request's query cache would otherwise answer the balance SUM with the value
   # the before_action read BEFORE this claim waited on the user lock (a SELECT ... FOR UPDATE
   # does not clear the cache), letting a second claim spend the same points again.
+  #
+  # Always its own top-level transaction (the only caller is DiscountCodesController#create):
+  # SET LOCAL lock_timeout bounds its lock waits, so a coupon or user row held long elsewhere
+  # cannot pin a web thread (LockWaitTimeout -> rollback -> "not created properly"); as its own
+  # transaction, COMMIT/ROLLBACK ends the setting. Called inside an open (joinable) transaction
+  # it raises ArgumentError instead of joining it, so no caller can silently inherit the
+  # timeout. (The spec suite's non-joinable fixture transaction is not a caller transaction.)
+  CLAIM_LOCK_TIMEOUT = "5s"
+
   def self.claim!(user, dollar_cost)
+    if connection.transaction_open? && connection.current_transaction.joinable?
+      raise ArgumentError, "claim! must run as its own transaction"
+    end
+
     uncached do
       transaction do
+        connection.execute("SET LOCAL lock_timeout = #{connection.quote(CLAIM_LOCK_TIMEOUT)}")
         locked_user = User.where(id: user.id).lock(User::GUARD_LOCK_MODE).take!
         coupon = unclaimed.where(dollar_cost: dollar_cost).order(:id).lock(User::GUARD_LOCK_MODE).first
         if coupon.nil? || !coupon.user_id.nil? # guard, re-checked on the locked row version

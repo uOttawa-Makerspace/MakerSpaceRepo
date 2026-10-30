@@ -32,7 +32,7 @@ class DiscountCodesController < DevelopmentProgramsController
       flash[:alert] = "Not enough CC points"
       redirect_back(fallback_location: root_path)
     end
-  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved => e
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved, ActiveRecord::LockWaitTimeout => e
     # claim!'s transaction has rolled back: nothing was charged or assigned
     Rails.logger.warn("[discount_codes#create] coupon claim not saved: #{e.class}: #{e.message}")
     flash[:alert] = "Discount Code not created properly!"
