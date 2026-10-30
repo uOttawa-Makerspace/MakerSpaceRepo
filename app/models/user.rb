@@ -527,21 +527,29 @@ class User < ApplicationRecord
   # updated_at), no validations or callbacks; then revokes the user's /api/v1
   # refresh tokens and closes their websocket connections. The access JWTs, legacy
   # JWTs and cookie sessions die through the new token_version.
-  def bump_token_version!(*columns)
+  #
+  # from_version: makes the bump conditional and idempotent (compare-and-set): the
+  # UPDATE only matches while token_version still equals it, and when it matches no
+  # row nothing else runs (no revocation, no disconnect) and false is returned. Any
+  # number of callers holding the same version race safely; exactly one bumps.
+  def bump_token_version!(*columns, from_version: nil)
     conn = self.class.connection
     values = columns.index_with { |column| self[column] }.merge(updated_at: Time.current)
     assignments = values.keys.map { |column| "#{conn.quote_column_name(column)} = ?" }
     sql = self.class.sanitize_sql_array(
       ["UPDATE #{conn.quote_table_name(self.class.table_name)} SET token_version = token_version + 1, " \
-       "#{assignments.join(', ')} WHERE id = ? RETURNING token_version", *values.values, id]
+       "#{assignments.join(', ')} WHERE id = ?#{' AND token_version = ?' if from_version} RETURNING token_version",
+       *values.values, id, *from_version]
     )
     # One transaction: a failure to revoke the refresh tokens rolls the bump (and the
     # lock/delete columns) back, so a deleted user can never keep live refresh tokens.
     new_version = self.class.transaction(requires_new: true) do
       # select_value is a read API: never let the query cache answer this write.
       # (Rails 8.1 already clears the cache on write SQL; this is belt and braces.)
-      self.class.uncached { conn.select_value(sql) }.tap { ApiRefreshToken.revoke_all_for!(id) }
+      self.class.uncached { conn.select_value(sql) }.tap { |version| ApiRefreshToken.revoke_all_for!(id) if version }
     end
+    return false unless new_version
+
     self.token_version = new_version
     self.updated_at = values[:updated_at]
     clear_attribute_changes(columns + %i[token_version updated_at])

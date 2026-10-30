@@ -79,11 +79,28 @@ RSpec.describe "Login back_to for guests", type: :request do
       expect(response).to redirect_to("/carts")
     end
 
-    ["https://evil.com", "//evil.com", "/\\evil.com", "///evil.com"].each do |bad|
+    ["https://evil.com", "//evil.com", "/\\evil.com", "///evil.com", "\\evil.com", "\\/evil.com", "/\t/evil.com", " //evil.com"].each do |bad|
       it "lands on root for #{bad}" do
         login_with(bad)
         expect(response).to redirect_to(root_path)
       end
+    end
+  end
+
+  describe "protocol_relative_path? (the one rule behind back_to and the stale-form referer)" do
+    let(:controller) { ApplicationController.new }
+
+    ["//evil.com", "/\\evil.com", "\\/evil.com", "\\\\evil.com", "/\t/evil.com", "\t//evil.com",
+     " //evil.com", "\n\\\\evil.com", "/\r\n/evil.com", "\x00//evil.com"].each do |bad|
+      it("refuses #{bad.inspect}") { expect(controller.send(:protocol_relative_path?, bad)).to be(true) }
+    end
+
+    ["/carts", "/", "/a//b", "/a\\b", "/search?q=//x", ""].each do |ok|
+      it("allows #{ok.inspect}") { expect(controller.send(:protocol_relative_path?, ok)).to be(false) }
+    end
+
+    it "does not raise on invalid UTF-8" do
+      expect(controller.send(:protocol_relative_path?, "/\xFF//x".dup.force_encoding("UTF-8"))).to be(false)
     end
   end
 

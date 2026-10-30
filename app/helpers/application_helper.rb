@@ -74,27 +74,22 @@ module ApplicationHelper
   # is "navigate" for a page navigation and "cors"/"same-origin" for fetch() and
   # XHR, whatever Accept or X-Requested-With the script sends. Turbo Drive visits
   # are fetches too, so they are recognised by Turbo's own headers (not a frame
-  # load, not a prefetch). A client that sends no Sec-Fetch-Mode (old browsers)
+  # load, which is a partial page). A speculative load (prefetch/prerender) counts: it
+  # happens while the person types an address or hovers a link, and activating it
+  # sends no new request. A client that sends no Sec-Fetch-Mode (old browsers)
   # falls back to: not an XHR and answered with HTML.
   def user_activity?
     return true unless request.get? || request.head?
 
     mode = request.headers["Sec-Fetch-Mode"]
-    return (mode == "navigate" && !speculative_load?) || turbo_visit? if mode.present?
+    return mode == "navigate" || turbo_visit? if mode.present?
 
     !request.xhr? && request.format.html?
   end
 
-  # The browser loading a page ahead of the person (Sec-Purpose: prefetch /
-  # prefetch;prerender) is a navigate-mode GET nobody has asked for yet.
-  def speculative_load?
-    request.headers["Sec-Purpose"].present?
-  end
-
   def turbo_visit?
     request.headers["X-Turbo-Request-Id"].present? &&
-      request.headers["Turbo-Frame"].blank? &&
-      request.headers["X-Sec-Purpose"] != "prefetch"
+      request.headers["Turbo-Frame"].blank?
   end
 
   ROLE_FLAGS = %i[admin? staff? volunteer? dev_program?].freeze

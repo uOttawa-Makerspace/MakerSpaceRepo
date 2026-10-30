@@ -162,16 +162,35 @@ RSpec.describe "Current-password re-authentication", type: :request do
       expect(user.reload.token_version).to eq(before + 1)
     end
 
-    it "a request over the limit that did not cross it refuses and signs out without another bump" do
+    it "retries: when the first revocation attempt fails, the next over-limit request revokes" do
       log_in!
+      access = pair_tokens["access_token"]
       before = user.reload.token_version
-      allow(RateLimitCounter).to receive(:increment).and_wrap_original do |m, key, *rest, **opts|
-        key.start_with?("reauth/") ? UsersController::REAUTH_MAX_ATTEMPTS + 2 : m.call(key, *rest, **opts)
-      end
+      5.times { change_password!("wrong-password") }
+
+      allow(ApiRefreshToken).to receive(:revoke_all_for!).and_raise(ActiveRecord::StatementInvalid, "killed")
+      change_password!("wrong-password")
+      expect(response).not_to redirect_to(login_path) # the request failed (500), nothing was revoked
+      expect(user.reload.token_version).to eq(before) # the failed attempt rolled back whole
+
+      allow(ApiRefreshToken).to receive(:revoke_all_for!).and_call_original
+      log_in_again_cookie
       change_password!("wrong-password")
       expect(response).to redirect_to(login_path)
-      expect(signed_in?).to be(false)
-      expect(user.reload.token_version).to eq(before)
+      expect(user.reload.token_version).to eq(before + 1)
+      get "/api/v1/session", headers: { "Authorization" => "Bearer #{access}" }
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    def pair_tokens
+      post "/api/v1/session", params: { login: user.username, password: password }.to_json,
+                              headers: { "CONTENT_TYPE" => "application/json" }
+      response.parsed_body
+    end
+
+    def log_in_again_cookie
+      # the failed request did not sign this session out: it is still the same cookie session
+      expect(signed_in?).to be(true)
     end
   end
 

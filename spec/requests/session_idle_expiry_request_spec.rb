@@ -171,16 +171,16 @@ RSpec.describe "Cookie session idle expiry", type: :request do
         expect(extends?("Sec-Fetch-Mode" => "same-origin", "Accept" => "*/*")).to be(false)
       end
 
-      it "a prefetched or prerendered navigation does not" do
-        expect(extends?("Sec-Fetch-Mode" => "navigate", "Sec-Purpose" => "prefetch")).to be(false)
-        expect(extends?("Sec-Fetch-Mode" => "navigate", "Sec-Purpose" => "prefetch;prerender")).to be(false)
+      it "a prefetched or prerendered navigation does too (the person is typing or hovering; activating it sends no request)" do
+        expect(extends?("Sec-Fetch-Mode" => "navigate", "Sec-Purpose" => "prefetch")).to be(true)
+        expect(extends?("Sec-Fetch-Mode" => "navigate", "Sec-Purpose" => "prefetch;prerender")).to be(true)
       end
 
-      it "a Turbo Drive visit does; a Turbo frame load and a prefetch do not" do
+      it "a Turbo Drive visit does; a Turbo frame load does not, a Turbo prefetch does" do
         visit = { "Sec-Fetch-Mode" => "cors", "Accept" => "text/html, application/xhtml+xml", "X-Turbo-Request-Id" => "abc" }
         expect(extends?(visit)).to be(true)
         expect(extends?(visit.merge("Turbo-Frame" => "list"))).to be(false)
-        expect(extends?(visit.merge("X-Sec-Purpose" => "prefetch"))).to be(false)
+        expect(extends?(visit.merge("X-Sec-Purpose" => "prefetch"))).to be(true)
       end
 
       it "from a client without Sec-Fetch-Mode keeps the HTML-and-not-XHR rule" do

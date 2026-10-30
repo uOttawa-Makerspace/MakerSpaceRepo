@@ -109,15 +109,20 @@ class ApplicationController < ActionController::Base
     login_path(back_to: referer&.request_uri)
   end
 
-  # A path browsers read as a host ("//evil.com", and "/\\evil.com": they treat a
-  # backslash as a slash).
+  # A path browsers read as a host. The URL parser drops tabs and newlines anywhere
+  # and leading control characters and spaces, and reads a backslash as a slash, so
+  # "//evil.com", "/\\evil.com", "\\evil.com", "\\/evil.com" and "/\t/evil.com" all
+  # name evil.com. Normalised the way browsers do, then checked for a leading "//".
   def protocol_relative_path?(path)
-    path.start_with?("//", "/\\")
+    path.to_s.b.delete("\t\n\r").sub(/\A[\x00-\x20]+/n, "").tr("\\", "/").start_with?("//")
   end
 
   # The referring page as a URI when it is on this host, else nil. Its request_uri
   # is redirected to, so a protocol-relative path is refused:
   # http://this.host//evil.example would otherwise send the visitor to evil.example.
+  # A backslash form (http://this.host/\\evil.example) never gets that far: URI.parse
+  # refuses it (the rescue below), so it is that parse, not protocol_relative_path?,
+  # that protects the redirect for it.
   def same_host_referer
     referer = URI.parse(request.referer.to_s)
     return unless referer.is_a?(URI::HTTP) && referer.host.present? && referer.host == request.host
