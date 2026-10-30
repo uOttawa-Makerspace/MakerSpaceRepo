@@ -67,7 +67,8 @@ class OrderItemsController < DevelopmentProgramsController
         @cart_closed = e.is_a?(Order::CartClosed)
         @order = e.order if @cart_closed && e.order
         @order_item = nil
-        @order_items = @order.cart_items
+        # a checked-out order is shown read-only (no pricing: only the project titles are read)
+        @order_items = @cart_closed ? @order.order_items.includes(:proficient_project).to_a : @order.cart_items
         render :update_refused, status: :conflict
       end
       format.html { redirect_to carts_path, alert: @refusal_message }
