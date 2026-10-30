@@ -1,0 +1,8 @@
+<div class="alert alert-warning" role="alert"><%= @refusal_message %></div>
+<p>This order was checked out with:</p>
+<ul class="list-unstyled">
+  <% @order_items.each do |order_item| %>
+    <li><%= order_item.proficient_project&.title %> &times; <%= order_item.quantity.to_i %> (<%= order_item.total_price.to_i %> CC)</li>
+  <% end %>
+</ul>
+<p><%= link_to 'View your orders', orders_path %></p>

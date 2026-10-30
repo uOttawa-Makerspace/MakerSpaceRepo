@@ -58,11 +58,21 @@ class OrderItemsController < DevelopmentProgramsController
       @order_items = cart.cart_items
     end
   rescue *CART_CHANGE_REFUSED => e
-    # nothing was written: re-render the cart as it really is (the quantity is reverted on screen)
+    # Nothing was written. Answer from the order we already had (not current_order, which
+    # would drop a checked-out cart from the session first and show an empty one): the order as
+    # found under the lock when it was checked out, else the cart the lock wait gave up on.
     @refusal_message = cart_change_refused_message(e)
-    @order_item = nil
-    @order_items = current_order.order_items
-    render :update_refused, status: :conflict
+    respond_to do |format|
+      format.js do
+        @cart_closed = e.is_a?(Order::CartClosed)
+        @order = e.order if @cart_closed && e.order
+        @order_item = nil
+        @order_items = @order.cart_items
+        render :update_refused, status: :conflict
+      end
+      format.html { redirect_to carts_path, alert: @refusal_message }
+      format.any { head :conflict }
+    end
   end
 
   def destroy

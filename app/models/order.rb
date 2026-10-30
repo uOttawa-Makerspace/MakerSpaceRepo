@@ -57,8 +57,16 @@ class Order < ApplicationRecord
     self.class.total_of(priced) ? priced : nil
   end
 
-  # The cart is no longer in progress (checked out meanwhile): its items cannot change.
-  class CartClosed < StandardError; end
+  # The cart is no longer in progress (checked out meanwhile): its items cannot change. Carries
+  # the order as found under the lock.
+  class CartClosed < StandardError
+    attr_reader :order
+
+    def initialize(order = nil)
+      @order = order
+      super("order #{order&.id.inspect} is no longer in progress")
+    end
+  end
 
   # THE way to change a cart's items (add, re-quantify, remove; OrderItemsController). Its own
   # transaction: bounds lock waits, locks the order row with CART_LOCK_MODE, the lock checkout!
@@ -71,7 +79,7 @@ class Order < ApplicationRecord
 
     self.class.own_transaction("Order#change_items!") do
       cart = self.class.lock(CART_LOCK_MODE).find(id)
-      raise CartClosed unless cart.order_status&.name == IN_PROGRESS
+      raise CartClosed.new(cart) unless cart.order_status&.name == IN_PROGRESS
 
       yield cart
     end

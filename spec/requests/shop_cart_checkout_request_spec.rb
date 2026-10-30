@@ -315,6 +315,31 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(item.reload.quantity).to eq(1)
     end
 
+    it "the refused XHR update answers from the checked-out order itself: its items as paid, not an empty cart" do
+      close_cart_before_the_lock
+      patch order_item_path(item), params: { order_item: { quantity: 3 } }, xhr: true
+      expect(response).to have_http_status(:conflict)
+      expect(response.body).to include("This order was checked out with")
+      expect(response.body).to include(ERB::Util.html_escape(item.proficient_project.title))
+      expect(response.body).not_to include("There are no items in your shopping cart")
+    end
+
+    it "a refused non-XHR (HTML) update redirects to the cart with the alert; nothing changed" do
+      close_cart_before_the_lock
+      patch order_item_path(item), params: { order_item: { quantity: 3 } }
+      expect(response).to redirect_to(carts_path)
+      expect(flash[:alert]).to eq(closed_message)
+      expect(item.reload.quantity).to eq(1)
+    end
+
+    it "a refused update in any other format answers a bare 409" do
+      fail_the_lock_with(ActiveRecord::LockWaitTimeout)
+      patch order_item_path(item, format: :json), params: { order_item: { quantity: 3 } }
+      expect(response).to have_http_status(:conflict)
+      expect(response.body).to be_blank
+      expect(item.reload.quantity).to eq(1)
+    end
+
     it "destroy on a checked-out cart is refused: alert, the item stays" do
       close_cart_before_the_lock
       delete order_item_path(item)

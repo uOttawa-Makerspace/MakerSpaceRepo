@@ -1,2 +1,8 @@
+<%# A refused cart change (Order#change_items!): the message, then the order as it really is.
+    Checked out: its items as paid, read-only. Busy: the unchanged cart (the edit is reverted). %>
 document.getElementsByClassName("cart-text")[0].innerHTML = "<%= escape_javascript(render 'layouts/cart_text') %>"
+<% if @cart_closed %>
+document.getElementsByClassName("shopping-cart")[0].innerHTML = "<%= escape_javascript(render 'order_items/checked_out_cart') %>"
+<% else %>
 document.getElementsByClassName("shopping-cart")[0].innerHTML = "<%= escape_javascript(tag.div(@refusal_message, class: 'alert alert-warning', role: 'alert')) %>" + "<%= escape_javascript(render 'carts/shopping_cart') %>"
+<% end %>
