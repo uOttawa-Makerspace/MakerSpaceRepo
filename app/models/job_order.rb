@@ -52,13 +52,15 @@ class JobOrder < ApplicationRecord
   end
 
   # The (not soft-deleted) order a live approval / pay token was issued for,
-  # else nil.
+  # else nil. Only an order with an owner has live links: the owner is the one
+  # the link acts for (the approval's actor, and the actor when /pay sends the
+  # order back to staff).
   def self.from_approval_token(token)
-    not_deleted.find_by_token_for(:approval, token)
+    not_deleted.where.not(user_id: nil).find_by_token_for(:approval, token)
   end
 
   def self.from_pay_token(token)
-    not_deleted.find_by_token_for(:pay, token)
+    not_deleted.where.not(user_id: nil).find_by_token_for(:pay, token)
   end
 
   # JOB-02: one status transition. The row is locked (the same FOR UPDATE as JobOrdersController#quote and
@@ -109,30 +111,72 @@ class JobOrder < ApplicationRecord
 
   class OwnerChangeRefused < StandardError; end
 
+  # The owner change's own writes did not validate (a task, an option, a custom service) or a destroy was aborted.
+  # Carries the record's messages. Nothing was committed.
+  class ChangeInvalid < StandardError
+    def initialize(error)
+      messages = error.record&.errors&.full_messages.presence
+      super(messages ? messages.to_sentence : error.message)
+    end
+  end
+
+  # The order could not be sent back to staff (its status row could not be written). Nothing was committed.
+  class SendBackFailed < StandardError; end
+
   # JOB-01 (owner decision 2026-10-30): the one way the order's tasks, task options, files, services and wizard
   # comments are changed from the customer side (JobTasksController; an admin using the same wizard goes through it
   # too). The block makes the change. Under the row lock (the same FOR UPDATE as #quote and #transition!), by the
   # status read under that lock:
-  # - DRAFT, STAFF_APPROVAL, DECLINED: the change is applied; the status is unchanged.
-  # - a quoted status: the change is applied and, in the same transaction, the order goes back to staff
-  #   (#send_back_for_requote!). If the Shopify draft cannot be deleted, StaleDraftOrderError is raised and nothing
-  #   is committed. Staff are mailed after the commit.
   # - PAID, PICKED_UP: OwnerChangeRefused, before the block runs.
-  # Anything the block raises rolls the whole change back. Returns true when the order was sent back to staff.
+  # - DRAFT, STAFF_APPROVAL, DECLINED: the change is applied; the status is unchanged.
+  # - a quoted status: the change is applied and, only when it changed what is billed (#quote_fingerprint) or what
+  #   is made (#work_fingerprint), the order goes back to staff in the same transaction (#send_back_for_requote!,
+  #   which voids the Shopify draft, failing closed with StaleDraftOrderError) and staff are mailed after the
+  #   commit. A save without changes, a blank task (no type, service, files or options: it bills nothing) and
+  #   comments (posted by the caller after the commit) change neither, so they do not send the order back.
+  # The block's own validation failures raise ChangeInvalid; a send-back that cannot be written raises
+  # SendBackFailed. Either way nothing is committed. Returns true when the order was sent back to staff.
   def apply_owner_change!(actor:)
     sent_back = transaction do
       lock!
       status = job_order_statuses.last&.job_status
       raise OwnerChangeRefused if self.class.money_taken_status?(status)
 
-      yield
-      next false unless self.class.quoted_status?(status)
+      quoted = self.class.quoted_status?(status)
+      before = change_fingerprints if quoted
+      begin
+        yield
+      rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotDestroyed => e
+        raise ChangeInvalid, e
+      end
+      next false unless quoted
+
+      @quote_snapshot = nil # the block changed the rows the snapshot was loaded from
+      next false if change_fingerprints == before
 
       send_back_for_requote!(actor: actor, reason: "owner_change")
       true
     end
     JobOrderMailer.send_job_requote_needed(id, "owner_change").deliver_later if sent_back
     sent_back
+  end
+
+  # Digest of what the order's tasks ask to be made, read fresh: per non-blank task (id order) its job type, service
+  # (and the service's name: a custom service can be renamed), options with their files, and its user and staff
+  # files. A blank task (no type, service, options or files) is left out: it neither bills nor asks for anything.
+  def work_fingerprint
+    tasks = job_tasks.reorder(:id).includes(:job_service, { job_task_options: :option_file_attachment },
+                                            :user_files_attachments, :staff_files_attachments)
+    rows = tasks.filter_map do |task|
+      options = task.job_task_options.map { |o| [o.job_option_id, o.option_file_attachment&.blob_id] }
+                    .sort_by { |o| o.map(&:to_i) }
+      files = task.user_files_attachments.map(&:blob_id).sort
+      staff_files = task.staff_files_attachments.map(&:blob_id).sort
+      next if task.job_type_id.nil? && task.job_service_id.nil? && options.empty? && files.empty? && staff_files.empty?
+
+      [task.id, task.job_type_id, task.job_service_id, task.job_service&.name, options, files, staff_files]
+    end
+    Digest::SHA256.hexdigest(rows.to_json)
   end
 
   has_many_attached :user_files
@@ -249,6 +293,8 @@ class JobOrder < ApplicationRecord
     url, sent_back = with_lock { checkout_link_under_lock }
     JobOrderMailer.send_job_requote_needed(id, "invoice_mismatch").deliver_later if sent_back
     url
+  rescue SendBackFailed
+    raise # not a Shopify hiccup: the caller reports it and says so
   rescue StandardError => e
     # Timeouts, resets, session errors, create failures, a draft Shopify will not delete: the pay page shows
     # "temporarily unavailable" (no 500) and the lock's transaction has rolled back. The stored id is only ever
@@ -404,8 +450,15 @@ class JobOrder < ApplicationRecord
   # Approval" row records who and why (which also retires the approve link, see #approval_status_marker), and the
   # Shopify draft (its payable invoice) is deleted, failing closed with StaleDraftOrderError so the caller's
   # transaction rolls back. Callers mail staff after the commit.
+  # A status row that cannot be written (e.g. no actor) raises SendBackFailed, not a task or pay-page error.
   def send_back_for_requote!(actor:, reason:)
     enter_status!(JobStatus::STAFF_APPROVAL, actor: actor, reason: reason)
+  rescue ActiveRecord::ActiveRecordError => e
+    raise SendBackFailed, "job order ##{id} could not be sent back to staff (#{reason}): #{e.message}"
+  end
+
+  def change_fingerprints
+    [quote_fingerprint, work_fingerprint]
   end
 
   # The one place a status row is added (#transition!, #send_back_for_requote!, and so the quote, the owner change

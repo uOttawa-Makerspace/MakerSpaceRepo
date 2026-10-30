@@ -2,10 +2,11 @@
 
 require "rails_helper"
 
-# JOB-01 (owner decision 2026-10-30): any change through the task wizard
+# JOB-01 (owner decision 2026-10-30): a change through the task wizard
 # (JobTasksController create / update / destroy) to an order that has already
-# been quoted sends the order back to staff for a new quote and voids the
-# existing invoice. One domain operation, JobOrder#apply_owner_change!, holds
+# been quoted, which changes what is billed or made, sends the order back to
+# staff for a new quote and voids the existing invoice (see also
+# job_orders_owner_change_detection_request_spec). One domain operation, JobOrder#apply_owner_change!, holds
 # the rule:
 #   DRAFT, STAFF_APPROVAL        applied, status unchanged
 #   USER_APPROVAL .. COMPLETED   applied + a STAFF_APPROVAL row (who + why), the
@@ -84,7 +85,8 @@ RSpec.describe "Owner changes after the quote (JOB-01)", type: :request do
   def self.wizard_paths = {
     "create a task" => {
       act: ->(o) { post job_order_job_tasks_path(o) },
-      applied?: ->(o) { o.job_tasks.count == 3 }
+      applied?: ->(o) { o.job_tasks.count == 3 },
+      sends_back: false # a blank task bills and asks for nothing
     },
     "change a task's job type (step 1)" => {
       act: lambda do |o|
@@ -115,11 +117,13 @@ RSpec.describe "Owner changes after the quote (JOB-01)", type: :request do
       act: lambda do |o|
         patch job_order_job_task_path(o, task1(o)), params: { step: "4", comments: "make it blue", save_draft: "true" }
       end,
-      applied?: ->(o) { o.chat_messages.exists?(message: "make it blue") }
+      applied?: ->(o) { o.chat_messages.exists?(message: "make it blue") },
+      sends_back: false # comments change neither the bill nor the work
     },
     "add another task (step 4)" => {
       act: ->(o) { patch job_order_job_task_path(o, task1(o)), params: { step: "4", add_another: "true" } },
-      applied?: ->(o) { o.job_tasks.count == 3 }
+      applied?: ->(o) { o.job_tasks.count == 3 },
+      sends_back: false # a blank task bills and asks for nothing
     },
     "delete a task" => {
       act: ->(o) { delete job_order_job_task_path(o, task2(o)) },
@@ -236,17 +240,25 @@ RSpec.describe "Owner changes after the quote (JOB-01)", type: :request do
 
   describe "every wizard write on a quoted order with a live invoice" do
     wizard_paths.each_key do |name|
-      it "#{name}: applied, back to staff, invoice voided, staff mailed" do
+      sends_back = wizard_paths.fetch(name).fetch(:sends_back, true)
+      it "#{name}: applied, #{sends_back ? 'back to staff, invoice voided, staff mailed' : 'quote and invoice kept'}" do
         order = order_in!(:completed, draft: true)
         session_login!(owner)
         run_path(name, order)
 
         expect(applied?(name, order)).to be(true)
-        expect(status_rows(order).last)
-          .to have_attributes(job_status: JobStatus::STAFF_APPROVAL, user: owner, reason: "owner_change")
-        expect(shopify_ops).to eq(["draftOrderDelete"])
-        expect(order.reload.shopify_draft_order_id).to be_nil
-        expect_requote_mail(order)
+        if sends_back
+          expect(status_rows(order).last)
+            .to have_attributes(job_status: JobStatus::STAFF_APPROVAL, user: owner, reason: "owner_change")
+          expect(shopify_ops).to eq(["draftOrderDelete"])
+          expect(order.reload.shopify_draft_order_id).to be_nil
+          expect_requote_mail(order)
+        else
+          expect(status_rows(order).last.job_status).to eq(JobStatus::COMPLETED)
+          expect(shopify.calls).to be_empty
+          expect(order.reload.shopify_draft_order_id).to be_present
+          expect_no_requote_mail
+        end
       end
     end
 

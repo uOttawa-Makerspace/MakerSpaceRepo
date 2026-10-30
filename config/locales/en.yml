@@ -308,6 +308,8 @@ en:
       paid_order_cannot_change: "This order has already been paid, so it can no longer be changed here. Please contact makerspace@uottawa.ca to change it."
       order_sent_back_for_requote: "Your change has been saved. Because this order had already been quoted, it has been sent back to staff for a new quote. The previous quote and payment link no longer work."
       owner_change_draft_order_failed: "Your change could not be saved because this order's existing payment link could not be cancelled. Nothing was changed. Please try again later."
+      send_back_failed: "Your change could not be saved because the order could not be sent back to staff for a new quote. Nothing was changed. The problem has been reported; please try again later or contact makerspace@uottawa.ca."
+      pay_send_back_failed: "This order's invoice no longer matches its quote, and the order could not be sent back to staff for a new quote. Nothing was charged. The problem has been reported; please contact makerspace@uottawa.ca."
       pay_quote_changed: "This order changed after its invoice was prepared, so it has been sent back to staff for a new quote. You will receive an email when the new quote is ready."
       error_while_updating: "An error occurred while updating the Job Order Status. Please try again later."
       pay_magic_link_expired: "The following Job Order Payment link is invalid or has expired. Please Sign In to look at the Job Order Page."

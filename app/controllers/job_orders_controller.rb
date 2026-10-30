@@ -473,7 +473,13 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
       flash[:alert] = t("job_orders.alerts.pay_magic_link_expired")
       redirect_to job_orders_path
     elsif JobStatus::COMPLETED == @job_order.job_order_statuses.last.job_status
-      @payment_link = @job_order.checkout_link
+      begin
+        @payment_link = @job_order.checkout_link
+      rescue JobOrder::SendBackFailed => e
+        Rails.error.report(e, handled: true, context: { job_order_id: @job_order.id, where: "JobOrdersController#pay" })
+        flash[:alert] = t("job_orders.alerts.pay_send_back_failed")
+        return redirect_to job_order_path(@job_order.id)
+      end
       if @job_order.job_order_statuses.reload.last&.job_status == JobStatus::COMPLETED
         render "job_orders/pay"
       else

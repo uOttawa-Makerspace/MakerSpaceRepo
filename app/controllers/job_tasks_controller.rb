@@ -25,9 +25,6 @@ class JobTasksController < SessionsController
     return unless apply_change { @job_task = create_next_task! }
 
     redirect_to edit_job_order_job_task_path(@job_order, @job_task, step: 1)
-  rescue ActiveRecord::RecordInvalid => e
-    flash[:alert] = "Failed to create task: #{e.message}"
-    redirect_to job_order_path(@job_order)
   end
 
   def edit
@@ -63,7 +60,8 @@ class JobTasksController < SessionsController
   def update
     return unless apply_change { apply_task_update! }
 
-    # The wizard's comments are posted to the order chat once the change has committed.
+    # The wizard's comments are posted to the order chat once the change has committed. They change neither the bill
+    # nor the work, so they never send a quoted order back to staff.
     @job_order.chat_messages.create(message: params[:comments], sender: current_user) if params[:comments].present?
 
     # Don't do default next step behaviour for oddball cases
@@ -82,25 +80,42 @@ class JobTasksController < SessionsController
     else
       redirect_to edit_job_order_job_task_path(@job_order, @job_task, step: next_step)
     end
-  rescue ActiveRecord::RecordInvalid => e
-    flash[:alert] = e.record.errors.full_messages.to_sentence
-    redirect_back(fallback_location: edit_job_order_job_task_path(@job_order, @job_task, step: params[:step]))
   end
 
   private
 
   # Runs the block through JobOrder#apply_owner_change!. Returns :applied or :sent_back (with the "sent back for a
-  # new quote" notice) when the change committed; otherwise redirects with the reason and returns false.
+  # new quote" notice) when the change committed; otherwise nothing was committed: redirects with the reason and
+  # returns false.
   def apply_change(&)
     return :applied unless @job_order.apply_owner_change!(actor: current_user, &)
 
     flash[:notice] = t("job_orders.alerts.order_sent_back_for_requote")
     :sent_back
+  rescue JobOrder::ChangeInvalid => e
+    invalid_change(e.message)
   rescue JobOrder::OwnerChangeRefused
     refuse_change(t("job_orders.alerts.paid_order_cannot_change"))
   rescue JobOrder::StaleDraftOrderError => e
     Rails.logger.error("[job_tasks] change to job order ##{@job_order.id} refused: #{e.message}")
     refuse_change(t("job_orders.alerts.owner_change_draft_order_failed"))
+  rescue JobOrder::SendBackFailed => e
+    Rails.error.report(e, handled: true, context: { job_order_id: @job_order.id, where: "JobTasksController" })
+    refuse_change(t("job_orders.alerts.send_back_failed"))
+  end
+
+  # The change's own writes did not validate: the task errors, back to the step (update) or the order page.
+  def invalid_change(message)
+    if action_name == "update"
+      flash[:alert] = message
+      redirect_back(fallback_location: edit_job_order_job_task_path(@job_order, @job_task, step: params[:step]))
+    elsif action_name == "create"
+      flash[:alert] = "Failed to create task: #{message}"
+      redirect_to job_order_path(@job_order)
+    else
+      refuse_change(message)
+    end
+    false
   end
 
   def refuse_change(message)
@@ -120,8 +135,8 @@ class JobTasksController < SessionsController
     @job_order.job_tasks.create!(title: "Task ##{next_task_number}")
   end
 
-  # The wizard step's writes. Raises ActiveRecord::RecordInvalid (rolling the whole step back) when the task or a
-  # custom service does not validate.
+  # The wizard step's writes. Raises ActiveRecord::RecordInvalid (rolling the whole step back) when the task, an
+  # option or a custom service does not validate.
   def apply_task_update!
     use_custom_service! if params[:job_task] && params[:job_task][:job_service_id] == "custom"
 
@@ -138,7 +153,7 @@ class JobTasksController < SessionsController
     submitted_options.each do |job_option_id, attrs|
       @job_task.job_task_options
               .find_or_initialize_by(job_option_id: job_option_id)
-              .update(attrs.except(:_destroy, :id))
+              .update!(attrs.except(:_destroy, :id))
     end
 
     # Remove options that weren't submitted (if on that step of form)
