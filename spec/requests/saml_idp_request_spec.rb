@@ -909,7 +909,7 @@ RSpec.describe "SAML IdP", type: :request do
       it "rejects a POST without an authenticity token" do
         c18_sign_in(:regular)
         post "/saml/auth", params: { SAMLRequest: authn_request, submit: "current_user" }, without_csrf_token: true
-        expect(response).to have_http_status(:found)
+        expect(response).to have_http_status(:see_other)
         expect(flash[:alert]).to eq("Your session changed; please try again.")
         expect(c18_saml_response_xml).to be_nil
       end

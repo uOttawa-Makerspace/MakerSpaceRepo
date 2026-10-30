@@ -24,7 +24,13 @@ RSpec.describe ApplicationHelper do
       attr_writer :headers
 
       def request
-        Struct.new(:headers).new(@headers || {})
+        # A page view (user_activity? looks at the verb, XHR and format).
+        Struct.new(:headers) do
+          def get? = true
+          def head? = false
+          def xhr? = false
+          def format = Mime[:html]
+        end.new(@headers || {})
       end
     end
   end
