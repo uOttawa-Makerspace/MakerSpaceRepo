@@ -72,4 +72,51 @@ RSpec.describe "Current-password exhaustion under concurrency", type: :request d
       expect(sess.response.parsed_body["signed_in"]).not_to eq("true")
     end
   end
+
+  describe "a password change racing a change on another connection" do
+    let(:new_password) { "NewPassw0rd!x#9" }
+
+    def change_password!(sess)
+      sess.patch Rails.application.routes.url_helpers.change_password_user_path(user.username),
+                 params: { user: { old_password: password, password: new_password, password_confirmation: new_password } }
+    end
+
+    # Runs the block on another connection (committed) between the request's load and its store.
+    def between_load_and_store(&block)
+      allow_any_instance_of(User).to receive(:plaintext_password_problems).and_wrap_original do |m, *args|
+        Thread.new { ActiveRecord::Base.connection_pool.with_connection(&block) }.value
+        m.call(*args)
+      end
+    end
+
+    it "an admin soft-delete: the password is not changed, no email is sent, the request signs out" do
+      sess = session_for_user
+      digest = User.find(user.id).password
+      between_load_and_store { User.find(user.id).soft_delete! }
+      expect(MsrMailer).not_to receive(:confirm_password_change)
+
+      change_password!(sess)
+
+      expect(sess.response.location).to eq("http://www.example.com#{login_path}")
+      expect(User.unscoped.find(user.id).password).to eq(digest)
+      sess.get "/check_signed_in"
+      expect(sess.response.parsed_body["signed_in"]).not_to eq("true")
+    end
+
+    it "a revocation committed since the load: the password is not changed, no email, signed out, not re-synced" do
+      sess = session_for_user
+      digest = User.find(user.id).password
+      version = User.find(user.id).token_version
+      between_load_and_store { User.find(user.id).bump_token_version! }
+      expect(MsrMailer).not_to receive(:confirm_password_change)
+
+      change_password!(sess)
+
+      expect(sess.response.location).to eq("http://www.example.com#{login_path}")
+      row = User.find(user.id)
+      expect([row.password, row.token_version]).to eq([digest, version + 1])
+      sess.get "/check_signed_in"
+      expect(sess.response.parsed_body["signed_in"]).not_to eq("true")
+    end
+  end
 end

@@ -384,9 +384,10 @@ class User < ApplicationRecord
   # callers still serialize, but not with KEY SHARE, which Postgres takes on a user
   # row whenever a row referencing it is inserted (api_refresh_tokens.user_id).
   # FOR UPDATE would deadlock with ApiRefreshToken#rotate!: the guard holds the user
-  # row and waits (via bump_token_version! -> revoke_all_for!) for the token rows
-  # that rotate! holds while its successor INSERT waits for the user row. Any other
-  # lock on a users row inside a guarded block must use the same mode.
+  # row and waits for the token rows that rotate! holds while its successor INSERT
+  # waits for the user row (bump_token_version! no longer waits on token rows, but a
+  # guarded block can). Any other lock on a users row inside a guarded block must use
+  # the same mode.
   #
   # Global lock order, for every caller: admin rows, then the target rows, each
   # ORDER BY id. change_roles! follows it, so two of them cannot deadlock.
@@ -509,7 +510,14 @@ class User < ApplicationRecord
   # again would block users whose row fails an unrelated, legacy validation
   # (old usernames, a stale gender, a student without a program ...).
   # Callers must have checked plaintext_password_problems(plain) first (one UPDATE, no transaction needed).
+  #
+  # Compare-and-set from the token_version this instance was LOADED with (the version
+  # the session or token authenticated with): if a revocation committed meanwhile, or
+  # the account was soft-deleted or removed, nothing is written and
+  # ActiveRecord::StaleObjectError is raised. The caller's credential is dead; it is
+  # never re-synced to the new version.
   def store_new_password!(plain, clear_timed_lock: false)
+    loaded_version = token_version_in_database
     clear_lock = clear_timed_lock && timed_lockout?
     self.pword = plain
     columns = [:password]
@@ -517,39 +525,42 @@ class User < ApplicationRecord
       assign_attributes(locked: false, auth_attempts: 0, locked_until: nil)
       columns += %i[locked auth_attempts locked_until]
     end
-    bump_token_version!(*columns)
+    bump_token_version!(*columns, from_version: loaded_version) or
+      raise ActiveRecord::StaleObjectError.new(self, "store a new password for")
   end
 
   # The one way to end every credential of a user (password change/reset, admin
   # lock, soft delete): increments token_version IN SQL (never from a possibly
   # stale in-memory value, so concurrent bumps cannot overwrite each other) in the
   # same UPDATE that writes the given columns' current in-memory values (and
-  # updated_at), no validations or callbacks; then revokes the user's /api/v1
-  # refresh tokens and closes their websocket connections. The access JWTs, legacy
-  # JWTs and cookie sessions die through the new token_version.
+  # updated_at), no validations or callbacks. That ONE UPDATE is the revocation: the
+  # access JWTs, legacy JWTs, cookie sessions, websocket handshakes and /api/v1
+  # refresh tokens (ApiRefreshToken#usable?) are all checked against token_version.
+  # After the real commit (also inside a caller's transaction) the refresh-token
+  # rows are marked revoked (bookkeeping, best effort: a failure is reported, never
+  # raised, and cannot undo the bump) and the websockets are closed.
   #
   # from_version: makes the bump conditional and idempotent (compare-and-set): the
   # UPDATE only matches while token_version still equals it, and when it matches no
-  # row nothing else runs (no revocation, no disconnect) and false is returned. Any
-  # number of callers holding the same version race safely; exactly one bumps.
-  # Without it the bump is unconditional, and a row that is gone raises
-  # ActiveRecord::RecordNotFound (never a silent no-op).
+  # row nothing else runs and false is returned. Any number of callers holding the
+  # same version race safely; exactly one bumps.
+  # The UPDATE also requires deleted = false (the column list may set it: the
+  # condition is on the row as it was): a soft-deleted or missing row returns false
+  # with from_version, and without it raises ActiveRecord::RecordNotFound (never a
+  # silent no-op).
   def bump_token_version!(*columns, from_version: nil)
     conn = self.class.connection
     values = columns.index_with { |column| self[column] }.merge(updated_at: Time.current)
     assignments = values.keys.map { |column| "#{conn.quote_column_name(column)} = ?" }
     sql = self.class.sanitize_sql_array(
       ["UPDATE #{conn.quote_table_name(self.class.table_name)} SET token_version = token_version + 1, " \
-       "#{assignments.join(', ')} WHERE id = ?#{' AND token_version = ?' if from_version} RETURNING token_version",
+       "#{assignments.join(', ')} WHERE id = ? AND deleted = false#{' AND token_version = ?' if from_version} " \
+       "RETURNING token_version",
        *values.values, id, *from_version]
     )
-    # One transaction: a failure to revoke the refresh tokens rolls the bump (and the
-    # lock/delete columns) back, so a deleted user can never keep live refresh tokens.
-    new_version = self.class.transaction(requires_new: true) do
-      # select_value is a read API: never let the query cache answer this write.
-      # (Rails 8.1 already clears the cache on write SQL; this is belt and braces.)
-      self.class.uncached { conn.select_value(sql) }.tap { |version| ApiRefreshToken.revoke_all_for!(id) if version }
-    end
+    # select_value is a read API: never let the query cache answer this write.
+    # (Rails 8.1 already clears the cache on write SQL; this is belt and braces.)
+    new_version = self.class.uncached { conn.select_value(sql) }
     unless new_version
       return false if from_version
 
@@ -561,8 +572,40 @@ class User < ApplicationRecord
     clear_attribute_changes(columns + %i[token_version updated_at])
     # After the real commit when called inside a caller's transaction (a rolled-back
     # change must not drop connections, and a reconnect must see the new state).
-    ActiveRecord.after_all_transactions_commit { disconnect_cable! }
+    ActiveRecord.after_all_transactions_commit do
+      begin
+        ApiRefreshToken.revoke_all_for!(id)
+      rescue StandardError => e
+        Rails.error.report(e, handled: true)
+      end
+      disconnect_cable!
+    end
     self
+  end
+
+  # The key of the re-authentication attempt counter: per user AND token_version, so
+  # signing in again (or any bump) starts a fresh budget.
+  def reauth_attempts_key
+    "reauth/#{id}/#{token_version}"
+  end
+
+  # Counts one failed/attempted re-authentication and, when that is over `max`, ends
+  # every credential of the user, in ONE transaction: the counter upsert, then (over
+  # the limit) the compare-and-set bump from the version the key was built from. Of
+  # any number of racing over-limit callers exactly one bumps. Returns
+  # [count, bumped]; bumped is false when another caller bumped first or the row is
+  # gone or soft-deleted (the credential is dead either way). Anything that raises
+  # rolls the count back and propagates (fail closed).
+  #
+  # Lock order: the counter row (the upsert), then the user row (the bump). No path
+  # takes a users lock and then a rate_limit_counters row, and no token-row lock is
+  # taken inside. Keep it that way.
+  def count_reauth_attempt!(max:, window:)
+    version = token_version
+    RateLimitCounter.transaction do
+      count = RateLimitCounter.increment(reauth_attempts_key, 1, expires_in: window)
+      [count, count > max && bump_token_version!(from_version: version).present?]
+    end
   end
 
   def pword=(new_password)
@@ -733,7 +776,7 @@ class User < ApplicationRecord
   # A block, not the method symbol: Rails de-duplicates commit callbacks by method name.
   after_destroy_commit { disconnect_cable! }
   # Deactivation also ends /api/v1 refresh tokens for good: reactivating the account
-  # must not revive them (the other token_version bumps revoke in bump_token_version!).
+  # must not revive them (the token_version bumps revoke after commit in bump_token_version!).
   after_update_commit :revoke_api_refresh_tokens, if: -> { saved_change_to_active? && active == false }
 
   def staff?

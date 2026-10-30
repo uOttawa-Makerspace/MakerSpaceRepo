@@ -90,16 +90,16 @@ RSpec.describe "/api/v1 token revocation on token_version bumps", type: :request
       expect(ApiRefreshToken.where(user_id: user.id, revoked_at: nil)).to be_empty
     end
 
-    it "rolls the version bump back when revoking the refresh tokens fails" do
+    it "keeps the bump when revoking the refresh-token rows fails afterwards: dead by token_version, error reported" do
       token = ApiRefreshToken.issue!(user)
       allow(ApiRefreshToken).to receive(:revoke_all_for!).and_raise(ActiveRecord::StatementInvalid, "boom")
+      expect(Rails.error).to receive(:report).with(instance_of(ActiveRecord::StatementInvalid), handled: true)
       u = User.find(user.id)
-      u.deleted = true
-      expect { u.bump_token_version!(:deleted) }.to raise_error(ActiveRecord::StatementInvalid)
-      row = User.unscoped.find(user.id)
-      expect(row.token_version).to eq(user.token_version)
-      expect(row.deleted).to be(false)
-      expect(token.reload.revoked_at).to be_nil
+      expect(u).to receive(:disconnect_cable!) # still runs after the failed bookkeeping
+      u.bump_token_version!
+      expect(User.find(user.id).token_version).to eq(user.token_version + 1)
+      expect(token.reload.revoked_at).to be_nil # bookkeeping failed ...
+      expect(token.usable?).to be(false)        # ... and the token is dead anyway
     end
 
     it "is not answered from, and does not leave stale entries in, the query cache" do

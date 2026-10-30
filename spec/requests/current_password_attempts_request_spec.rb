@@ -191,10 +191,43 @@ RSpec.describe "Current-password re-authentication", type: :request do
                       -> { allow_any_instance_of(User).to receive(:bump_token_version!).and_raise(ActiveRecord::StatementInvalid, "killed") }
     end
 
-    describe "when revoking the refresh tokens fails after the bump and the increment (atomicity)" do
-      it_behaves_like "a fail-closed re-authentication",
-                      -> { allow(ApiRefreshToken).to receive(:revoke_all_for!).and_raise(ActiveRecord::StatementInvalid, "killed") }
+    describe "when the refresh-token bookkeeping fails after the commit" do
+      it "keeps the bump: the session ends, every credential is dead, the error is reported" do
+        log_in!
+        pair = api_token_pair(user, password)
+        legacy = user.token
+        refresh = ApiRefreshToken.find_by_raw(pair["refresh_token"])
+        5.times { change_password!("wrong-password") }
+        before = user.reload.token_version
+        allow(ApiRefreshToken).to receive(:revoke_all_for!).and_raise(ActiveRecord::StatementInvalid, "killed")
+        expect(Rails.error).to receive(:report).with(instance_of(ActiveRecord::StatementInvalid), handled: true)
+
+        change_password!("wrong-password")
+
+        expect(response).to redirect_to(login_path)
+        expect(flash[:alert]).to eq(limit_message)
+        expect(user.reload.token_version).to eq(before + 1)
+        expect(signed_in?).to be(false)
+        expect(JwtAuthenticator.user_for("Bearer #{legacy}")).to be_nil
+        expect(ApiAccessToken.user_for("Bearer #{pair['access_token']}")).to be_nil
+        expect(refresh.reload.revoked_at).to be_nil # the rows were not marked ...
+        expect(refresh.usable?).to be(false)        # ... and are dead by token_version
+      end
     end
+  end
+
+  it "signs out, without a 500, when the account vanished before the exhausting bump (compare-and-set false)" do
+    log_in!
+    5.times { change_password!("wrong-password") }
+    allow(RateLimitCounter).to receive(:increment).and_wrap_original do |m, *args, **opts|
+      User.unscoped.where(id: user.id).update_all(deleted: true)
+      m.call(*args, **opts)
+    end
+    expect_any_instance_of(User).not_to receive(:authenticate_password)
+    change_password!("wrong-password")
+    expect(response).to redirect_to(login_path)
+    expect(flash[:alert]).to eq(limit_message)
+    expect(signed_in?).to be(false)
   end
 
   it "a password change that fails because the row is gone signs out and redirects to login without a second raise" do

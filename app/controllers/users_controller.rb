@@ -242,6 +242,7 @@ class UsersController < SessionsController
       render 'settings/admin', layout: 'setting' and return
     end
 
+    loaded_version = @user.token_version
     begin
       # A timed (brute-force) lockout is cleared: the owner just proved the password.
       @user.store_new_password!(new_password, clear_timed_lock: true)
@@ -249,11 +250,17 @@ class UsersController < SessionsController
       Rails.error.report(e, handled: true)
       # @user.reload is unscoped, so look the account up through the default scope: a
       # hard-deleted or soft-deleted account has nothing to retry on.
-      @user = User.find_by(id: @user.id)
-      if @user.nil?
+      current = User.find_by(id: @user.id)
+      if current.nil?
         sign_out
         redirect_to login_path, alert: 'This account no longer exists. Please sign in again.' and return
       end
+      if current.token_version != loaded_version
+        # Revoked while this request ran: this session is dead, never re-synced.
+        sign_out
+        redirect_to login_path, alert: 'Your session has ended. Please sign in again.' and return
+      end
+      @user = current
       flash.now[:alert] = 'Your password could not be changed. Please try again.'
       render 'settings/admin', layout: 'setting' and return
     end
@@ -510,7 +517,7 @@ class UsersController < SessionsController
     return 'Please enter your current password.' unless current_password_submitted?
 
     if @user.authenticate_password(submitted_current_password)
-      RateLimitCounter.reset(reauth_attempts_key)
+      RateLimitCounter.reset(@user.reauth_attempts_key)
       nil
     else
       'Incorrect current password.'
@@ -518,34 +525,16 @@ class UsersController < SessionsController
   end
 
   # Counts the attempt and, when it is over the limit, ends every credential of the
-  # user, in ONE transaction: User#bump_token_version! (the one bump implementation)
-  # increments token_version, which every cookie session, access/refresh token and
-  # websocket handshake is checked against, revokes the refresh-token rows in its own
-  # nested transaction, and closes the websockets after the real commit. If anything
-  # raises, the whole transaction rolls back (the attempt is not counted, nothing is
-  # bumped) and the error propagates BEFORE any password is checked: fail closed.
-  # The bump is compare-and-set on the version the key was built from, so of any
-  # number of racing over-limit requests exactly one bumps; the others just sign out.
-  #
-  # Lock order: the counter row (the upsert), then the user row (the bump). No path
-  # takes a users lock and then a rate_limit_counters row, and prune! locks counters
-  # only, so the two cannot deadlock. Keep it that way.
+  # user (User#count_reauth_attempt!: one transaction, fail closed: if anything raises
+  # the attempt is not counted, nothing is bumped, and the error propagates BEFORE any
+  # password is checked). Over the limit the request is signed out whether or not it
+  # was the one that bumped (a racing request, or a vanished account, just signs out).
   def limit_reauth_attempts
-    user = @user # sign_out clears @user
-    key = reauth_attempts_key
-    count = RateLimitCounter.transaction do
-      RateLimitCounter.increment(key, 1, expires_in: REAUTH_WINDOW).tap do |attempts|
-        user.bump_token_version!(from_version: user.token_version) if attempts > REAUTH_MAX_ATTEMPTS
-      end
-    end
+    count, = @user.count_reauth_attempt!(max: REAUTH_MAX_ATTEMPTS, window: REAUTH_WINDOW)
     return if count <= REAUTH_MAX_ATTEMPTS
 
     sign_out
     redirect_to login_path, alert: REAUTH_LIMIT_ALERT
-  end
-
-  def reauth_attempts_key
-    "reauth/#{@user.id}/#{@user.token_version}"
   end
 
   # A live email-change token whose user is the signed-in user; sets the alert
