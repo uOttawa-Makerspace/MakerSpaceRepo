@@ -133,7 +133,7 @@ RSpec.describe "CC wallet races (D-S42)", type: :request do
     session_one = login_session
     session_two = login_session
 
-    race(session_one, -> { session_two.post discount_codes_path, params: { dollar_cost: 5 } })
+    race(session_one, -> { session_two.post discount_codes_path, params: { dollar_cost: 5, cc_cost: 40 } })
 
     expect(debits).to eq([-40])
     expect(user.reload.wallet).to eq(10)

@@ -4,7 +4,9 @@ class CouponCode < ApplicationRecord
   scope :unclaimed, -> { where(user_id: nil) }
   scope :claimed, -> { where.not(user_id: nil) }
 
-  # Trades `user`'s CC points for one unclaimed coupon worth `dollar_cost`. Atomic (D-S33): the
+  # Trades `user`'s CC points for one unclaimed coupon worth `dollar_cost` AT `cc_cost`, the
+  # price the user confirmed (a same-dollar coupon at another price is never picked; a blank
+  # cc_cost matches nothing). Atomic (D-S33): the
   # wallet check, the debit and the assignment happen in ONE transaction, so a claim that loses
   # a race neither charges nor assigns. Returns [:claimed, coupon], [:no_coupon, nil] or
   # [:insufficient_cc, coupon]; only :claimed writes anything. A failed save raises
@@ -30,12 +32,13 @@ class CouponCode < ApplicationRecord
   # DiscountCodesController#create): lock_wallet! bounds its lock waits with SET LOCAL
   # lock_timeout (LockWaitTimeout -> rollback -> "not created properly"), which COMMIT/ROLLBACK
   # then ends; inside a caller's transaction it raises ArgumentError instead.
-  def self.claim!(user, dollar_cost)
+  def self.claim!(user, dollar_cost, cc_cost)
     coupon = nil
     uncached do
       own_transaction("claim!") do
         wallet = CcMoney.lock_wallet!(user) # the user row first (house lock order)
-        coupon = unclaimed.where(dollar_cost: dollar_cost).order(:id).lock(User::GUARD_LOCK_MODE).first
+        coupon = cc_cost.blank? ? nil : unclaimed.where(dollar_cost: dollar_cost, cc_cost: cc_cost)
+                                                  .order(:id).lock(User::GUARD_LOCK_MODE).first
         next [:no_coupon, nil] if coupon.nil? || !coupon.user_id.nil? # guard, re-checked on the locked row
 
         CcMoney.debit!(wallet, coupon.cc_cost.to_i)

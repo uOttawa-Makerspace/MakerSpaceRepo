@@ -20,7 +20,7 @@ class DiscountCodesController < DevelopmentProgramsController
   # (coupon still unclaimed, enough CC) under locks, so a lost race neither charges nor assigns
   # (D-S33).
   def create
-    outcome, = CouponCode.claim!(current_user, params[:dollar_cost])
+    outcome, = CouponCode.claim!(current_user, params[:dollar_cost], params[:cc_cost])
     case outcome
     when :claimed
       flash[:notice] = "Discount Code created"
@@ -41,9 +41,13 @@ class DiscountCodesController < DevelopmentProgramsController
 
   private
 
+  # The offer the user confirmed is the (dollar_cost, cc_cost) pair shown on the page; both are
+  # posted and both must match, so a same-dollar coupon at another price is never charged.
   def check_and_set_price_rule_expiration
     @price_rule =
-      CouponCode.unclaimed.find_by(dollar_cost: params[:dollar_cost])
+      if params[:cc_cost].present?
+        CouponCode.unclaimed.find_by(dollar_cost: params[:dollar_cost], cc_cost: params[:cc_cost])
+      end
     return if @price_rule # an unclaimed coupon, so never one already claimed
 
     # D-S09: return after the redirect (the filter used to go on and dereference nil: a 500)

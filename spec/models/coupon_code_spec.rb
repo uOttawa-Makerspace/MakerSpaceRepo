@@ -40,7 +40,7 @@ RSpec.describe CouponCode, type: :model do
     it "refuses to run inside an already-open transaction (it must be its own: no inherited lock_timeout)" do
       coupon = create(:coupon_code, :unclaimed, dollar_cost: 5, cc_cost: 40)
       ActiveRecord::Base.transaction do
-        expect { CouponCode.claim!(user, 5) }
+        expect { CouponCode.claim!(user, 5, 40) }
           .to raise_error(ArgumentError, "claim! must run as its own transaction")
       end
       expect(coupon.reload.user_id).to be_nil
@@ -54,7 +54,7 @@ RSpec.describe CouponCode, type: :model do
         seen = CouponCode.connection.select_value("SELECT current_setting('lock_timeout')")
         original.call(*args, **kw)
       end
-      expect(CouponCode.claim!(user, 5).first).to eq(:claimed)
+      expect(CouponCode.claim!(user, 5, 40).first).to eq(:claimed)
       expect(seen).to eq("5s")
     end
   end

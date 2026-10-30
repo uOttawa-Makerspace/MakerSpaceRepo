@@ -48,7 +48,7 @@ RSpec.describe "Coupon claim race (D-S33)", type: :request do
   end
 
   def claim(session)
-    session.post discount_codes_path, params: { dollar_cost: 5 }
+    session.post discount_codes_path, params: { dollar_cost: 5, cc_cost: 40 }
     session.response
   end
 
