@@ -307,6 +307,7 @@ en:
       paid_order_cannot_change: "This order has already been paid, so it can no longer be changed here. Please contact makerspace@uottawa.ca to change it."
       order_sent_back_for_requote: "Your change has been saved. Because this order had already been quoted, it has been sent back to staff for a new quote. The previous quote and payment link no longer work."
       owner_change_draft_order_failed: "Your change could not be saved because this order's existing payment link could not be cancelled. Nothing was changed. Please try again later."
+      pay_quote_changed: "This order changed after its invoice was prepared, so it has been sent back to staff for a new quote. You will receive an email when the new quote is ready."
       error_while_updating: "An error occurred while updating the Job Order Status. Please try again later."
       pay_magic_link_expired: "The following Job Order Payment link is invalid or has expired. Please Sign In to look at the Job Order Page."
       no_permission: "You do not have permission to view this job order."
@@ -317,6 +318,7 @@ en:
       missing_info: "Your job order is not submitted! The following tasks are missing required information:"
     status_reasons:
       owner_change: "The order was changed after it had been quoted."
+      invoice_mismatch: "The payment link no longer matched the order's quote."
     public_page:
       my_job_orders: "My Job Orders"
       create_a_new_job_order: "Create a new Job Order"

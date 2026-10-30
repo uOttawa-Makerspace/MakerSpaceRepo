@@ -224,31 +224,43 @@ class JobOrder < ApplicationRecord
     end
   end
 
-  # Invoice URL of the Shopify draft order, creating (or re-creating) the draft when needed. Returns nil when
-  # Shopify cannot be reached right now (non-200 / error payload): the stored id is then left untouched.
+  # Invoice URL of the Shopify draft order, creating (or re-creating) the draft when needed. Returns nil when no
+  # link can be served right now: Shopify cannot be reached (non-200 / error payload; the stored id is then left
+  # untouched), the order is no longer COMPLETED, or the order was just sent back to staff (below).
   # D-J38: a stored id that Shopify says no longer exists (200, `draftOrder: null`) is dropped and a fresh draft
   # is created. Kept in JobOrder (not the shared concern) so locker rentals/memberships keep their behaviour: a
   # cancelled locker must never self-heal into a fresh payable invoice.
+  # JOB-03: a stored draft is served only while it was built from the current line items
+  # (shopify_draft_order_fingerprint, stored with the id). Otherwise, under the row lock:
+  # - legacy draft (stored before fingerprints existed, fingerprint NULL): nothing says whether it is stale, so it
+  #   is replaced once by a draft built from the current line items, which are the ones the pay page shows. The
+  #   delete fails closed: if Shopify will not delete it (e.g. already paid there) nothing is served.
+  # - fingerprint mismatch: the line items changed after the draft was made without a re-quote or an owner change
+  #   (both replace the draft themselves), so the customer never approved the current items. Neither the old nor a
+  #   new draft is served: the order goes back to staff (#send_back_for_requote!, reason "invoice_mismatch") and
+  #   staff are mailed after the commit. If the draft cannot be deleted nothing changes and nothing is served.
   def checkout_link
     state, url = probe_draft_order
-    return url unless state == :gone
+    return url if state == :found && draft_order_built_from_current_line_items?
+    return nil if state == :error
 
-    # Missing or confirmed-gone draft: (re)create it under a row lock so two /pay requests cannot both create
-    # one. with_lock reloads the id, so the probe is repeated under the lock (the safety re-check). The Shopify
-    # create runs inside the lock; this path is rare, so that is accepted.
-    with_lock do
-      state, url = probe_draft_order
-      if state == :gone
-        update_column(:shopify_draft_order_id, nil) if shopify_draft_order_id.present?
-        url = create_draft_order_keeping_id
-      end
-    end
+    # with_lock reloads the row, so the status and the probe are repeated under the lock (the safety re-check).
+    # The Shopify create runs inside the lock; this path is rare, so that is accepted.
+    url, sent_back = with_lock { checkout_link_under_lock }
+    JobOrderMailer.send_job_requote_needed(id, "invoice_mismatch").deliver_later if sent_back
     url
   rescue StandardError => e
-    # Timeouts, resets, session errors, create failures: the pay page shows "temporarily unavailable" (no 500).
-    # The stored id is only ever cleared for a confirmed-gone draft, so a transient error never loses it.
+    # Timeouts, resets, session errors, create failures, a draft Shopify will not delete: the pay page shows
+    # "temporarily unavailable" (no 500) and the lock's transaction has rolled back. The stored id is only ever
+    # cleared for a confirmed-gone or deleted draft, so a transient error never loses it.
     Rails.error.report(e, handled: true, context: { job_order_id: id, where: "JobOrder#checkout_link" })
     nil
+  end
+
+  # Digest of draft order line items (shopify_draft_order_line_items shape). Amounts are BigDecimal, so 29.99 and
+  # 29.990 give the same digest.
+  def self.line_items_fingerprint(line_items)
+    Digest::SHA256.hexdigest(line_items.to_json)
   end
 
   class StaleDraftOrderError < StandardError; end
@@ -324,6 +336,39 @@ class JobOrder < ApplicationRecord
   end
 
   private
+
+  # JOB-03: the draft id and the fingerprint of the items it was created with are written in one UPDATE.
+  def store_shopify_draft_order_id(new_id, line_items)
+    update_columns(shopify_draft_order_id: new_id,
+                   shopify_draft_order_fingerprint: self.class.line_items_fingerprint(line_items))
+  end
+
+  def draft_order_built_from_current_line_items?
+    shopify_draft_order_fingerprint.present? &&
+      shopify_draft_order_fingerprint == self.class.line_items_fingerprint(shopify_draft_order_line_items)
+  end
+
+  # checkout_link's decision under the row lock: [invoice_url or nil, whether the order was sent back to staff].
+  def checkout_link_under_lock
+    return [nil, false] unless job_order_statuses.last&.job_status == JobStatus::COMPLETED
+
+    state, url = probe_draft_order
+    return [nil, false] if state == :error
+    return [url, false] if state == :found && draft_order_built_from_current_line_items?
+
+    if state == :found && shopify_draft_order_fingerprint.present?
+      send_back_for_requote!(actor: user, reason: "invoice_mismatch")
+      return [nil, true]
+    end
+
+    # a legacy draft is deleted (fail closed); a confirmed-gone id is dropped
+    if state == :found
+      discard_stale_draft_order!
+    elsif shopify_draft_order_id.present?
+      update_column(:shopify_draft_order_id, nil)
+    end
+    [create_draft_order_keeping_id, false]
+  end
 
   # Inside a transaction holding the row lock: the order's quote no longer describes it. A "Waiting for Staff
   # Approval" row records who and why (which also retires the approve link, see #approval_status_marker), and the

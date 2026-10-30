@@ -41,6 +41,14 @@ module ShopifyConcern
     self.class.shopify_draft_order_key_name
   end
 
+  private
+
+  # Stores the id of a draft Shopify just created from `line_items` (the exact items sent). A model that needs to
+  # remember what the draft was built from overrides this (JobOrder stores a fingerprint in the same UPDATE).
+  def store_shopify_draft_order_id(new_id, _line_items)
+    update_column(:shopify_draft_order_id, new_id)
+  end
+
   included do
     private
 
@@ -219,9 +227,10 @@ module ShopifyConcern
         session: ShopifyAPI::Context.active_session
       )
 
+      variables = shopify_draft_order_input
       resp = admin_client.query(
         query: create_draft_order,
-        variables: shopify_draft_order_input
+        variables: variables
       )
 
       unless resp.code == 200
@@ -239,8 +248,7 @@ module ShopifyConcern
         raise "No draft order data received: #{resp.body}"
       end
 
-      new_id = draft_order_data["id"]
-      update_column(:shopify_draft_order_id, new_id)
+      store_shopify_draft_order_id(draft_order_data["id"], variables.dig(:input, :lineItems))
       fetch_shopify_draft_order
     end
 

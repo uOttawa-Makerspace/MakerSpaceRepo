@@ -7,6 +7,6 @@ class JobOrderStatus < ApplicationRecord
   validates :user_id, presence: true
 
   # Why a row was added outside the normal flow (see JobOrder#send_back_for_requote!); nil for ordinary transitions.
-  REASONS = %w[owner_change].freeze
+  REASONS = %w[owner_change invoice_mismatch].freeze
   validates :reason, inclusion: { in: REASONS }, allow_nil: true
 end

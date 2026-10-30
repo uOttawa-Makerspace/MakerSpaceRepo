@@ -232,7 +232,8 @@ RSpec.describe JobOrder, type: :model do
     before { seed_job_types! }
 
     let!(:shopify) { stub_shopify_admin!.tap { |fake| fake.invoice_url = "https://pay.example/inv-1" } }
-    let(:order) { create(:job_order, user: create(:user, :regular_user)) }
+    # /pay only serves COMPLETED orders, and checkout_link re-checks that under the row lock (JOB-03)
+    let(:order) { make_job_order!(owner: create(:user, :regular_user), status_key: :completed) }
 
     def quoted_task!(title, price:, service_price:, service_quantity:)
       order.job_tasks.create!(title: title).tap do |task|
@@ -284,16 +285,38 @@ RSpec.describe JobOrder, type: :model do
                                               value: order.id.to_s, type: "number_integer" }])
       end
 
-      # WART(D-J38): after the first visit the draft order is only fetched, never
-      # refreshed, so a later re-quote keeps the old Shopify line items.
-      it "only fetches the existing draft order on later calls (no refresh of the line items)" do
+      # FIXED(D-J38 / JOB-03): the draft remembers the line items it was built from. While they match it is only
+      # fetched; once they change it is never served again (the order goes back to staff, see
+      # spec/requests/job_orders_pay_fingerprint_request_spec.rb).
+      it "stores a fingerprint with the id, then only fetches the draft while the line items still match" do
         quoted_task!("Task #1", price: 20, service_price: 0, service_quantity: 0)
         order.reload.checkout_link
+        expect(order.reload.shopify_draft_order_fingerprint)
+          .to eq(described_class.line_items_fingerprint(order.shopify_draft_order_line_items))
         shopify.calls.clear
+
+        expect(order.reload.checkout_link).to eq("https://pay.example/inv-1")
+        expect(shopify.calls.map { |c| c[:query][/\b(draftOrderCreate|getDraftOrder)\b/] }).to eq(%w[getDraftOrder])
+      end
+
+      it "does not serve the draft once the line items changed behind it" do
+        quoted_task!("Task #1", price: 20, service_price: 0, service_quantity: 0)
+        order.reload.checkout_link
         order.reload.job_tasks.first.job_task_quote.update!(price: 99)
 
-        order.reload.checkout_link
-        expect(shopify.calls.map { |c| c[:query][/\b(draftOrderCreate|getDraftOrder)\b/] }).to eq(%w[getDraftOrder])
+        expect(order.reload.checkout_link).to be_nil
+        expect(order.reload.shopify_draft_order_id).to be_nil
+        expect(order.job_order_statuses.last.reason).to eq("invoice_mismatch")
+      end
+
+      it "fingerprints amounts by value: 29.99 and 29.990 match" do
+        line = lambda do |amount|
+          [{ quantity: 1, title: "x", originalUnitPriceWithCurrency: { amount: BigDecimal(amount), currencyCode: "CAD" } }]
+        end
+        expect(described_class.line_items_fingerprint(line.call("29.99")))
+          .to eq(described_class.line_items_fingerprint(line.call("29.990")))
+        expect(described_class.line_items_fingerprint(line.call("29.99")))
+          .not_to eq(described_class.line_items_fingerprint(line.call("29.98")))
       end
 
       it "raises a network error from the concern when Shopify answers with a non-200 while creating" do
@@ -313,7 +336,8 @@ RSpec.describe JobOrder, type: :model do
       end
 
       it "treats an empty (but non-null) draftOrder as found, not gone: no re-create" do
-        order.update_column(:shopify_draft_order_id, "gid://shopify/DraftOrder/9001")
+        fingerprint = described_class.line_items_fingerprint(order.shopify_draft_order_line_items)
+        order.update_columns(shopify_draft_order_id: "gid://shopify/DraftOrder/9001", shopify_draft_order_fingerprint: fingerprint)
         allow(shopify).to receive(:query).and_return(ShopSpecHelpers::FakeShopifyAdmin::Response.new(200, { "data" => { "draftOrder" => {} } }))
         expect(order.checkout_link).to be_nil
         expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")

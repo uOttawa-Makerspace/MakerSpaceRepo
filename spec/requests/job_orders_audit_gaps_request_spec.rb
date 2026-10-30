@@ -409,8 +409,12 @@ RSpec.describe "JobOrders audit gaps", type: :request do
         order, = order_with_draft!
         shopify.missing_ids = ["gid://shopify/DraftOrder/9001"]
         allow_any_instance_of(JobOrder).to receive(:with_lock).and_wrap_original do |m, *args, &blk|
-          # the other request replaces the dead id just before we take the lock
-          JobOrder.where(id: order.id).update_all(shopify_draft_order_id: "gid://shopify/DraftOrder/9777")
+          # the other request replaces the dead id just before we take the lock (it stores the id together with
+          # the fingerprint of the items it built the draft from, as JobOrder#store_shopify_draft_order_id does)
+          JobOrder.where(id: order.id).update_all(
+            shopify_draft_order_id: "gid://shopify/DraftOrder/9777",
+            shopify_draft_order_fingerprint: JobOrder.line_items_fingerprint(order.shopify_draft_order_line_items)
+          )
           m.call(*args, &blk)
         end
         get pay_job_orders_path, params: { token: order.pay_token }

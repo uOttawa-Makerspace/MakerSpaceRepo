@@ -152,7 +152,8 @@ RSpec.describe "Shopify Admin GraphQL over real HTTP (WebMock)", type: :request 
 
     before { seed_job_types! }
 
-    let(:order) { create(:job_order, user: create(:user, :regular_user)) }
+    # checkout_link only creates a draft for a COMPLETED order (re-checked under the row lock)
+    let(:order) { make_job_order!(owner: create(:user, :regular_user), status_key: :completed) }
 
     it "creates the draft order with the fee line items and returns the fetched invoice URL" do
       order.job_tasks.create!(title: "Task #1").tap do |task|

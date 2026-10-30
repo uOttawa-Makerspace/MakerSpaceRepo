@@ -473,7 +473,13 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
       redirect_to job_orders_path
     elsif JobStatus::COMPLETED == @job_order.job_order_statuses.last.job_status
       @payment_link = @job_order.checkout_link
-      render "job_orders/pay"
+      if @job_order.job_order_statuses.reload.last&.job_status == JobStatus::COMPLETED
+        render "job_orders/pay"
+      else
+        # checkout_link found the invoice out of date and sent the order back to staff (or an owner change did)
+        flash[:alert] = t("job_orders.alerts.pay_quote_changed")
+        redirect_to job_order_path(@job_order.id)
+      end
     else
       flash[:alert] = t("job_orders.alerts.pay_magic_link_expired")
       redirect_to job_order_path(@job_order.id)
