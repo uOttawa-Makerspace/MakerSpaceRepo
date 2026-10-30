@@ -854,8 +854,13 @@ class User < ApplicationRecord
     volunteer_hours.approved.sum(:total_time)
   end
 
+  # users.wallet is a CACHE of SUM(cc_moneys.cc). Written with update_columns, never a validated
+  # update: a user failing any validation (legacy data) used to keep a stale wallet forever.
+  # A guest (unsaved User.new) has nothing to cache.
   def update_wallet
-    update(wallet: get_total_cc)
+    return unless persisted?
+
+    update_columns(wallet: get_total_cc)
   end
 
   # ============================================

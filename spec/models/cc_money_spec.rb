@@ -116,6 +116,16 @@ RSpec.describe CcMoney, type: :model do
       expect(user.reload.wallet).to eq(25)
     end
 
+    it "refreshes the cache even for a user that fails validation (legacy data), and no-ops for a guest" do
+      CcMoney.create!(user: user, cc: 40)
+      user.update_column(:wallet, 0)
+      user.update_column(:name, "") # now invalid (name presence)
+      expect(user.reload).not_to be_valid
+      user.update_wallet
+      expect(user.reload.wallet).to eq(40)
+      expect { User.new.update_wallet }.not_to raise_error
+    end
+
     it "ignores the linked flag and other users' rows" do
       CcMoney.create!(user: user, cc: 10, linked: false)
       CcMoney.create!(user: create(:user, :regular_user), cc: 99)
