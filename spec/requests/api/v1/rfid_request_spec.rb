@@ -392,7 +392,7 @@ RSpec.describe "/api/v1 RFID", type: :request do
 
       it "429s the 61st tap in a minute, per staff user, and does not count guests" do
         counts = Hash.new(0)
-        allow(Api::V1::RfidTapsController.cache_store).to receive(:increment) { |key, *| counts[key] += 1 }
+        allow(RateLimitCounter).to receive(:increment) { |key, *| counts[key] += 1 }
         61.times { tap(as: nil) }
         expect(counts).to be_empty
         60.times { tap }
@@ -406,7 +406,7 @@ RSpec.describe "/api/v1 RFID", type: :request do
 
       it "shares the per-user budget with the legacy staff tap on /rfid/card_number" do
         counts = Hash.new(0)
-        allow(Api::V1::RfidTapsController.cache_store).to receive(:increment) { |key, *| counts[key] += 1 }
+        allow(RateLimitCounter).to receive(:increment) { |key, *| counts[key] += 1 }
         payload = { card_number: loose.card_number, space_id: space_a.id }
         legacy = -> { post "/rfid/card_number", params: { rfid: loose.card_number, space_id: space_a.id }.to_json, headers: json_headers.merge("Authorization" => "Bearer #{staff.token}") }
         40.times { legacy.call }
@@ -423,7 +423,7 @@ RSpec.describe "/api/v1 RFID", type: :request do
 
       it "shares the per-IP budget with the legacy endpoint" do
         counts = Hash.new(0)
-        allow(Api::V1::RfidTapsController.cache_store).to receive(:increment) { |key, *| counts[key] += 1 }
+        allow(RateLimitCounter).to receive(:increment) { |key, *| counts[key] += 1 }
         counts["rate-limit:rfid:tap-ip:127.0.0.1"] = 600
         tap({ card_number: loose.card_number, space_id: space_a.id })
         expect(response).to have_http_status(:too_many_requests)

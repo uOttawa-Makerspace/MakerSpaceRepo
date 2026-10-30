@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class ApplicationController < ActionController::Base
+  include RateLimitStore
   rescue_from ActionController::ParameterMissing, with: :parameter_missing
 
   # CSRF (INF-01): every non-GET request must carry the session's token (Rails

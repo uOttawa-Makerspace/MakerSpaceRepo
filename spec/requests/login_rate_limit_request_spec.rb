@@ -6,27 +6,14 @@ require "rails_helper"
 # SessionsController#login_authentication (HTML + JSON) and
 # SamlIdpController#auth (submit=sign_in).
 #
-# The test env cache is :null_store, which never counts, so the other specs
-# stub `increment`. Here the limiter's store is backed by a REAL
-# ActiveSupport::Cache::MemoryStore for the example (counting and expiry are the
-# real store's; the limiter's key, scope, limit and window are the app's own).
-# `rate_limit` binds the store object when the controller class is loaded, so the
-# example forwards that object's `increment` to the MemoryStore and RSpec
-# restores the original afterwards.
-RSpec.describe "Login rate limit (real cache store)", type: :request do
+# Counts are the real RateLimitCounter (a database table): the limiter's key,
+# scope, limit and window are the app's own.
+RSpec.describe "Login rate limit (real counter)", type: :request do
   include ActiveSupport::Testing::TimeHelpers
   include SamlAuthnRequestHelper
 
   let(:password) { "asa32A353#" }
   let!(:user) { create(:user, :regular_user, password: BCrypt::Password.create(password)) }
-  let(:memory_store) { ActiveSupport::Cache::MemoryStore.new }
-
-  before do
-    expect(SessionsController.cache_store).to equal(SamlIdpController.cache_store)
-    allow(SessionsController.cache_store).to receive(:increment) do |*args, **opts|
-      memory_store.increment(*args, **opts)
-    end
-  end
 
   # Unknown usernames: every failure is the plain refusal and never locks an account.
   def failed_html_login(n = 0, ip: nil, as: nil)

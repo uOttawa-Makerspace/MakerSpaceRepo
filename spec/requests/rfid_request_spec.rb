@@ -407,7 +407,7 @@ RSpec.describe "RFID endpoints", type: :request do
 
     it "writes nothing once the tight per-IP rejected-tap limit is hit" do
       counts = Hash.new(0)
-      allow(RfidController.cache_store).to receive(:increment) { |key, *| counts[key] += 1 }
+      allow(RateLimitCounter).to receive(:increment) { |key, *| counts[key] += 1 }
       11.times { |i| tap_card_with(mac: "de:ad:be:ef:00:%02x" % i) }
       expect(response).to have_http_status(:too_many_requests)
       expect(trace_rows.count).to eq(10)
@@ -509,7 +509,7 @@ RSpec.describe "RFID endpoints", type: :request do
     let(:counts) { Hash.new(0) }
 
     before do
-      allow(RfidController.cache_store).to receive(:increment) { |key, *| counts[key] += 1 }
+      allow(RateLimitCounter).to receive(:increment) { |key, *| counts[key] += 1 }
     end
 
     it "allows 60 taps a minute per reader mac, then answers 429 and taps nothing" do

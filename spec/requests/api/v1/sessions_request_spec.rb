@@ -142,7 +142,7 @@ RSpec.describe "/api/v1/session", type: :request do
     describe "rate limit" do
       let(:counts) { Hash.new(0) }
 
-      before { allow(Api::V1::SessionsController.cache_store).to receive(:increment) { |key, *| counts[key] += 1 } }
+      before { allow(RateLimitCounter).to receive(:increment) { |key, *| counts[key] += 1 } }
 
       it "429s after 10 attempts in the shared password-sign-in budget" do
         10.times { api_post "/api/v1/session", { login: "nobody-here", password: "x" } }

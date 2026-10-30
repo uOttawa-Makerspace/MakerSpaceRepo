@@ -377,7 +377,7 @@ RSpec.describe "SAML IdP", type: :request do
     context "rate limit (D-R14)" do
       let(:counts) { Hash.new(0) }
 
-      before { allow(SamlIdpController.cache_store).to receive(:increment) { |key, *| counts[key] += 1 } }
+      before { allow(RateLimitCounter).to receive(:increment) { |key, *| counts[key] += 1 } }
 
       it "allows 10 password submissions, then refuses even the correct password with 429 and no assertion" do
         10.times do

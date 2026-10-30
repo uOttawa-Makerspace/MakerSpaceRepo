@@ -11,10 +11,6 @@ RSpec.describe "Home page fragment cache and roles", type: :request do
   let!(:user) { create(:user, :regular_user) }
 
   around do |example|
-    # rate_limit captures the controller's cache_store when the class is loaded;
-    # load the login controllers before the store is swapped, or they would keep
-    # this example's MemoryStore (and its counts) for the rest of the process.
-    [SessionsController, SamlIdpController, Api::V1::SessionsController]
     store, caching = ActionController::Base.cache_store, ActionController::Base.perform_caching
     ActionController::Base.cache_store = ActiveSupport::Cache::MemoryStore.new
     ActionController::Base.perform_caching = true

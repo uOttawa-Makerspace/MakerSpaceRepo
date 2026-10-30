@@ -51,9 +51,9 @@ Rails.application.configure do
   end
 
   # Rails.cache is Solid Cache (the solid_cache_entries table in the primary
-  # database; config/cache.yml). The shared cache gives every rate_limit atomic,
-  # cross-process counting (SELECT ... FOR UPDATE inside the increment), unlike
-  # the FileStore default, whose increment loses updates between Puma workers.
+  # database; config/cache.yml): fragments and other cached values shared by every
+  # worker. Not for counting: rate limits use RateLimitCounter (an atomic upsert),
+  # because Solid Cache's increment cannot serialize a key that has no row yet.
   config.cache_store = :solid_cache_store
 
   # Do not dump schema after migrations.

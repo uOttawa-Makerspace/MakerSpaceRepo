@@ -150,7 +150,7 @@ class RfidController < SessionsController
   end
 
   def rejected_taps_exceeded?
-    count = self.class.cache_store.increment("rate-limit:rfid:rejected:#{request.remote_ip}", 1, expires_in: 1.minute)
+    count = RateLimitCounter.increment("rate-limit:rfid:rejected:#{request.remote_ip}", 1, expires_in: 1.minute)
     count.present? && count > REJECTED_TAPS_PER_MINUTE
   end
 
