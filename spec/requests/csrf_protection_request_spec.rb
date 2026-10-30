@@ -156,6 +156,20 @@ RSpec.describe "CSRF protection", type: :request do
       expect(signed_in?).to be(true)
     end
 
+    it "a Turbo form submission (turbo-stream first in Accept) is redirected like a browser form" do
+      log_in!
+      post perform_logout_path, headers: { "ACCEPT" => "text/vnd.turbo-stream.html, text/html, application/xhtml+xml" },
+                                without_csrf_token: true
+      expect_stale_form_redirect(root_path)
+    end
+
+    it "a request for another format (XML) gets a 422 with the message, not a redirect to an HTML page" do
+      log_in!
+      post perform_logout_path, headers: { "ACCEPT" => "application/xml" }, without_csrf_token: true
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(stale_form_message)
+    end
+
     it "logs only the exception class, never the submitted token or params" do
       log_in!
       logged = []

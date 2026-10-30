@@ -75,23 +75,21 @@ class ApplicationController < ActionController::Base
 
   # A refused CSRF check is usually a stale tab (signed in or out elsewhere, idle
   # expiry, a new session after sign-in), sometimes a forged form: either way
-  # nothing ran. Browsers are sent back where they came from (same host only), or
-  # to sign in; XHR/JS/JSON get a 422 with the message. Only the class is logged,
-  # never the submitted token or params.
+  # nothing ran. A browser form (HTML, Turbo) is sent back where it came from, or
+  # to sign in; XHR, JSON, JS and any other format get a 422 with the message.
+  # Only the class is logged, never the submitted token or params.
   def stale_form(exception)
     Rails.logger.warn("CSRF check failed: #{exception.class}")
-    if request.xhr? || request.format.json? || request.format.js?
-      respond_to_stale_form_xhr
-    else
-      redirect_to stale_form_target, alert: STALE_FORM_MESSAGE
-    end
-  end
-
-  def respond_to_stale_form_xhr
-    if request.format.json?
-      render json: { error: STALE_FORM_MESSAGE }, status: :unprocessable_content
-    else
-      render plain: STALE_FORM_MESSAGE, status: :unprocessable_content
+    respond_to do |format|
+      format.html do
+        if request.xhr?
+          render plain: STALE_FORM_MESSAGE, status: :unprocessable_content
+        else
+          redirect_to stale_form_target, alert: STALE_FORM_MESSAGE
+        end
+      end
+      format.json { render json: { error: STALE_FORM_MESSAGE }, status: :unprocessable_content }
+      format.any { render plain: STALE_FORM_MESSAGE, status: :unprocessable_content, content_type: "text/plain" }
     end
   end
 
