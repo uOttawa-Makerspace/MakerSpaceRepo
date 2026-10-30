@@ -124,6 +124,15 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         expect(coupon.reload.user_id).to be_nil
       end
 
+      it "a refusal refreshes a stale cached wallet" do
+        CcMoney.create!(user: user, cc: 39)
+        user.update_column(:wallet, 1000)
+        create(:coupon_code, :unclaimed, dollar_cost: 5, cc_cost: 40)
+        post discount_codes_path, params: { dollar_cost: 5, cc_cost: 40 }
+        expect(flash[:alert]).to eq("Not enough CC points")
+        expect(user.reload.wallet).to eq(39)
+      end
+
       it "does not touch coupons already claimed by someone else (same dollar value)" do
         credit_cc!(user, 100)
         taken = create(:coupon_code, :claimed, user: other, dollar_cost: 5, cc_cost: 10)

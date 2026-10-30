@@ -857,15 +857,23 @@ class User < ApplicationRecord
   # users.wallet is a CACHE of SUM(cc_moneys.cc). Written with update_columns, never a validated
   # update: a user failing any validation (legacy data) used to keep a stale wallet forever.
   # The sum is read under the user-row lock (the wallet lock every CC spend takes, same mode), so
-  # a refresh racing a spend cannot write back a sum read before that spend committed.
+  # a refresh racing a spend cannot write back a sum read before that spend committed. As its own
+  # transaction its lock wait is bounded and, being only a cache refresh, a timeout skips it
+  # (logged); inside a caller's transaction it joins it and a timeout propagates.
   # A guest (unsaved User.new) has nothing to cache.
   def update_wallet
     return unless persisted?
 
+    own = !self.class.caller_transaction_open?
     self.class.transaction do
+      self.class.bound_lock_waits! if own
       self.class.unscoped.where(id: id).lock(GUARD_LOCK_MODE).take
       update_columns(wallet: CcMoney.uncached { cc_moneys.sum(:cc) })
     end
+  rescue ActiveRecord::LockWaitTimeout
+    raise unless own
+
+    Rails.logger.warn("[User#update_wallet] wallet cache refresh skipped (lock timeout): user id=#{id}")
   end
 
   # ============================================
