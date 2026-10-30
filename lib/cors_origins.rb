@@ -8,18 +8,18 @@
 # app_origins is used for the credentialed catch-all (cookie session; with the
 # legacy JSON CSRF exemption an allowed origin can act as the signed-in user) and
 # for /api (Bearer tokens). So it is as narrow as each environment allows:
-# - production: the staff app and Design Day only;
-# - staging: those plus the Cloudflare Pages previews (previews point to staging);
-# - development/test: those plus the Vite dev server on localhost:5173.
+# - production: the staff app (MakerRepoApp) only;
+# - staging: plus its Cloudflare Pages previews (previews point to staging);
+# - development/test: plus the Vite dev server on localhost:5173.
+# Design Day sends no cookies and calls only GET /api/v1/design_day, which has
+# its own non-credentialed block in config/initializers/cors.rb.
 module CorsOrigins
   PRODUCTION = [
-    "https://app.makerepo.com",
-    "https://designday.makerepo.com"
+    "https://app.makerepo.com"
   ].freeze
 
   PREVIEWS = [
-    %r{\Ahttps://([a-z0-9-]+\.)+makerepo-app\.pages\.dev\z},
-    %r{\Ahttps://([a-z0-9-]+\.)+design-day-react\.pages\.dev\z}
+    %r{\Ahttps://([a-z0-9-]+\.)+makerepo-app\.pages\.dev\z}
   ].freeze
 
   LOCAL_DEV_SERVERS = [

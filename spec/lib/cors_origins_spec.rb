@@ -5,18 +5,23 @@ require Rails.root.join("lib/cors_origins")
 
 # The credentialed CORS allow-list per environment (config/initializers/cors.rb).
 # With cookie sessions and the legacy JSON CSRF exemption, an allowed origin can
-# act as the signed-in user, so production allows only the two real apps.
+# act as the signed-in user, so production allows only the staff app.
 RSpec.describe CorsOrigins do
   def allowed?(origins, origin)
     origins.any? { |o| o.is_a?(Regexp) ? o.match?(origin) : o == origin }
   end
 
-  let(:apps) { ["https://app.makerepo.com", "https://designday.makerepo.com"] }
+  let(:apps) { ["https://app.makerepo.com"] }
   let(:locals) { ["http://localhost:5173", "https://localhost:5173"] }
-  let(:previews) { ["https://abc123.makerepo-app.pages.dev", "https://feature-x.design-day-react.pages.dev"] }
-  let(:never) { ["https://uottawa-makerspace.github.io", "https://app.makerepo.com.attacker.io", "http://app.makerepo.com"] }
+  let(:previews) { ["https://abc123.makerepo-app.pages.dev"] }
+  # Design Day never sends cookies (any branch): it is answered only by the
+  # non-credentialed /api/v1/design_day block, as are its previews.
+  let(:never) do
+    ["https://designday.makerepo.com", "https://feature-x.design-day-react.pages.dev",
+     "https://uottawa-makerspace.github.io", "https://app.makerepo.com.attacker.io", "http://app.makerepo.com"]
+  end
 
-  it "production: the staff app and Design Day only" do
+  it "production: the staff app only" do
     origins = described_class.app_origins("production")
     expect(apps).to all(satisfy { |o| allowed?(origins, o) })
     (locals + previews + never).each { |o| expect(allowed?(origins, o)).to be(false), o }

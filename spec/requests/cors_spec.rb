@@ -15,7 +15,6 @@ RSpec.describe "CORS origin allow-list", type: :request do
 
   [
     "https://app.makerepo.com",
-    "https://designday.makerepo.com",
     "http://localhost:5173"
   ].each do |origin|
     it "allows #{origin} (echoed, with credentials)" do
@@ -24,8 +23,10 @@ RSpec.describe "CORS origin allow-list", type: :request do
     end
   end
 
-  # previews are staging-only; github.io is used by no frontend
+  # previews are staging-only; github.io is used by no frontend; Design Day sends
+  # no cookies and has its own non-credentialed block (/api/v1/design_day)
   [
+    "https://designday.makerepo.com",
     "https://abc123.makerepo-app.pages.dev",
     "https://feature-x.design-day-react.pages.dev",
     "https://uottawa-makerspace.github.io"
