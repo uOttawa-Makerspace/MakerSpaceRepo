@@ -510,10 +510,6 @@ fr:
         <a href='mailto:volunteer@makerepo.com'>volunteer@makerepo.com</a>."
   development_program:
     header: "Bienvenue dans la section du programme de Développement"
-    not_in_dev_program:
-      header: "Congratulations! <br>You can now join the Development Program!"
-      content: "You can join the program through the button below or learn more by reading this page!"
-      link: "<a href='/development_programs/join_development_program' class='btn btn-primary'>Join Development Program</a>"
     overview:
       header: "Vue d’ensemble"
       paragraph: "Vue d’ensemble
