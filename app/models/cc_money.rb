@@ -21,10 +21,39 @@ class CcMoney < ApplicationRecord
   # A negative debit amount (e.g. a legacy negative price snapshot). Nothing is written.
   class InvalidAmount < ArgumentError; end
 
-  # A user's wallet, locked in `transaction` (see lock_wallet!); held while that transaction is open.
+  # A user's wallet, locked in `transaction` (see lock_wallet!).
   Wallet = Struct.new(:user, :transaction) do
+    # Whether the row lock is still held by THIS connection's open transactions: the locking
+    # transaction is open here (so it is the current transaction or one enclosing it), or it
+    # was a savepoint that was released (its locks then belong to its parent, checked the same
+    # way). A rolled-back savepoint released its locks; a committed top-level transaction too;
+    # another connection's transaction never counts.
     def held?
-      !transaction.state.finalized?
+      connection = CcMoney.connection
+      tx = transaction
+      while tx
+        return false unless tx.connection.equal?(connection)
+
+        state = tx.state
+        return true unless state.finalized?
+        return false unless state.committed?
+
+        tx = released_into(tx)
+      end
+      false
+    end
+
+    private
+
+    # The transaction a released nested transaction handed its locks to: a savepoint's parent,
+    # or the parent a lazily-opened requires_new block ran inside (RestartParentTransaction).
+    # nil for a top-level transaction (committed: its locks are gone). Rails keeps no public
+    # reader for the parent.
+    def released_into(tx)
+      case tx
+      when ActiveRecord::ConnectionAdapters::SavepointTransaction then tx.instance_variable_get(:@parent_transaction)
+      when ActiveRecord::ConnectionAdapters::RestartParentTransaction then tx.instance_variable_get(:@parent)
+      end
     end
   end
 
