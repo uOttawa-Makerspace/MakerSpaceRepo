@@ -861,8 +861,9 @@ class User < ApplicationRecord
   # transaction its lock wait is bounded and, being only a cache refresh, a timeout skips it
   # (logged); inside a caller's transaction it joins it and a timeout propagates.
   # A guest (unsaved User.new) has nothing to cache.
+  # Returns true when the cache was written, false for a guest or a skipped refresh.
   def update_wallet
-    return unless persisted?
+    return false unless persisted?
 
     own = !self.class.caller_transaction_open?
     self.class.transaction do
@@ -874,6 +875,7 @@ class User < ApplicationRecord
     raise unless own
 
     Rails.logger.warn("[User#update_wallet] wallet cache refresh skipped (lock timeout): user id=#{id}")
+    false
   end
 
   # ============================================
