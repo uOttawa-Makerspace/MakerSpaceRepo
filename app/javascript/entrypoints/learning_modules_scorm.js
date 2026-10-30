@@ -1,5 +1,5 @@
 import { Scorm12API, Scorm2004API } from "scorm-again";
-import { csrfHeaders } from "../src/csrf";
+import { ScormCommitService } from "../src/scorm_commit_service";
 
 function initScorm() {
   const iframes = document.querySelectorAll("iframe[data-learning-module-id]");
@@ -22,8 +22,8 @@ function initScorm() {
       autocommit: true,
       autocommitSeconds: 15,
       lmsCommitUrl: `/learning_area/${learningModuleId}/scorm_commit`,
-      // Commits are POSTs to this app: they carry the CSRF token.
-      xhrHeaders: csrfHeaders(),
+      // Commits (the final one too) are parsed and CSRF-checked by Rails.
+      httpService: new ScormCommitService(),
       logLevel: "WARN", // Change to "DEBUG" if you need verbose LMS logs in console
     };
 

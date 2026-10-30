@@ -546,6 +546,28 @@ RSpec.describe "Learning area", type: :request do
       expect(track.scorm_state).to eq(state)
     end
 
+    # The terminate commit is a beacon (src/scorm_commit_service.js): an urlencoded
+    # body with the CSRF token, parsed and checked like a form. scorm-again's own
+    # text/plain beacon was neither parsed nor checked, so the final state was lost.
+    it "stores the final (beacon) commit sent as an urlencoded body with the CSRF token" do
+      log_in!(user)
+      post scorm_commit_learning_area_path(learning_module.id),
+           params: URI.encode_www_form(state.merge("authenticity_token" => csrf_token)),
+           headers: { "CONTENT_TYPE" => "application/x-www-form-urlencoded" }, without_csrf_token: true
+      expect(response).to have_http_status(:ok)
+      expect(user.learning_module_tracks.last.scorm_state).to eq(state)
+    end
+
+    it "refuses an urlencoded commit without the token, storing nothing" do
+      log_in!(user)
+      expect do
+        post scorm_commit_learning_area_path(learning_module.id),
+             params: URI.encode_www_form(state), headers: { "CONTENT_TYPE" => "application/x-www-form-urlencoded" },
+             without_csrf_token: true
+      end.not_to change(LearningModuleTrack, :count)
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
     it "updates the same track on every later commit (one row per user and module)" do
       log_in!(user)
       commit(learning_module.id)
