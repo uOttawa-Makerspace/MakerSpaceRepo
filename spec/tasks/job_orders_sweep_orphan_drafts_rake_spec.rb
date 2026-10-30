@@ -61,7 +61,22 @@ RSpec.describe "job_orders:sweep_orphan_drafts", type: :model do
 
     expect(out).to include("skipped: another sweep is running")
     expect(status).to eq(2)
-    expect(Rake::Task["job_orders:sweep_orphan_drafts"].full_comment).to include("2 when skipped")
+  end
+
+  it "documents its exit codes and the cap it reads from the sweep" do
+    comment = Rake::Task["job_orders:sweep_orphan_drafts"].full_comment
+
+    expect(comment).to include("0 all resolved", "1 some unresolved", "2 skipped", "64 usage")
+    expect(comment).to include("cap of #{JobOrder::DraftSweep::MAX_DELETES} deletes")
+  end
+
+  it "exits 64 (usage), not 1 or 2, for an invalid CONFIRM_MAX_DELETES, and sweeps nothing" do
+    stub_const("ENV", ENV.to_h.merge("CONFIRM_MAX_DELETES" => "lots"))
+    expect(JobOrder::DraftSweep).not_to receive(:run)
+    _out, err, status = run_task
+
+    expect(err).to include("CONFIRM_MAX_DELETES must be a whole number")
+    expect(status).to eq(64)
   end
 
   it "deletes nothing over the cap and exits 1, until CONFIRM_MAX_DELETES allows it" do

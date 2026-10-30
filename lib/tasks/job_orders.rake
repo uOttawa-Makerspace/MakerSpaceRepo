@@ -29,7 +29,9 @@ namespace :job_orders do
     exit(1) if unresolved.any?
   end
 
-  desc "Delete the Shopify drafts no job order points at (orphans of a rollback after a Shopify create); exits 1 while any is unresolved, 2 when skipped because another sweep is running; CONFIRM_MAX_DELETES=n lifts the cap of 200 orphans (over it nothing is deleted)"
+  desc "Delete the Shopify drafts no job order points at (orphans of a rollback after a Shopify create). " \
+       "Exit codes: 0 all resolved, 1 some unresolved, 2 skipped because another sweep is running, 64 usage (invalid CONFIRM_MAX_DELETES). " \
+       "CONFIRM_MAX_DELETES=n lifts the cap of #{JobOrder::DraftSweep::MAX_DELETES} deletes (over it nothing is deleted)"
   task sweep_orphan_drafts: :environment do
     # Shopify mutations cannot be rolled back: a database or lock error after a draft create leaves a payable draft
     # that no order row points at (JobOrder#locked_operation). Every job-order draft carries the tag
@@ -38,9 +40,12 @@ namespace :job_orders do
     # draft id is this draft, else deleted (decided and deleted under the order's row lock) (never a COMPLETED/paid one; never a draft without the marker, e.g.
     # lockers, memberships, other environments). Fail closed: an error is listed as unresolved. Idempotent.
     # JobOrderDraftSweepJob runs the same code hourly (config/recurring.yml).
-    # More orphans than the cap (200) delete NOTHING and exit 1: check the database, then CONFIRM_MAX_DELETES=<n>.
+    # More orphans than the cap (JobOrder::DraftSweep::MAX_DELETES) delete NOTHING and exit 1: check the database, then CONFIRM_MAX_DELETES=<n>.
     cap = ENV["CONFIRM_MAX_DELETES"]
-    abort "CONFIRM_MAX_DELETES must be a whole number" if cap && !cap.match?(/\A\d+\z/)
+    if cap && !cap.match?(/\A\d+\z/)
+      warn "CONFIRM_MAX_DELETES must be a whole number"
+      exit(64) # EX_USAGE: not 1 (unresolved) or 2 (skipped), the sweep did not run
+    end
     report = cap ? JobOrder::DraftSweep.run(max_deletes: cap.to_i) : JobOrder::DraftSweep.run
     if report.skipped
       puts "skipped: another sweep is running"

@@ -24,6 +24,7 @@ module ShopifyConcern
             name
             invoiceUrl
             status
+            tags
             order {
               id
               fullyPaid

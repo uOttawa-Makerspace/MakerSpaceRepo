@@ -157,6 +157,30 @@ RSpec.describe "Job order pay link fingerprint (JOB-03)", type: :request do
         expect(shopify_ops).to eq(["getDraftOrder"])
       end
 
+      it "carries on and creates a new draft when the legacy draft vanished between the probe and the delete" do
+        order = legacy_order!
+        shopify.lose_delete_race = :gone
+        shopify.on_query = ->(query, _variables) { shopify.draft_id = "gid://shopify/DraftOrder/7001" if query.include?("draftOrderCreate") }
+
+        pay!(order)
+
+        expect(response).to have_http_status(:ok)
+        expect(shopify_ops).to include("draftOrderDelete", "draftOrderCreate")
+        expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/7001")
+        expect(Nokogiri::HTML(response.body).text).not_to include(I18n.t("job_orders.alerts.payment_link_unavailable"))
+      end
+
+      it "refuses, keeping the id, when the legacy draft was paid in the meantime" do
+        order = legacy_order!
+        shopify.lose_delete_race = :paid
+
+        pay!(order)
+
+        expect(Nokogiri::HTML(response.body).text).to include(I18n.t("job_orders.alerts.payment_link_unavailable"))
+        expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/7000")
+        expect(shopify_ops).not_to include("draftOrderCreate")
+      end
+
       it "shows the try-again message and keeps the id when the legacy draft cannot be deleted" do
         order = legacy_order!
         shopify.delete_user_errors = [{ "field" => "id", "message" => "cannot delete a completed draft order" }]

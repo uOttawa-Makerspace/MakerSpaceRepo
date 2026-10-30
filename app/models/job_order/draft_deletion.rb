@@ -48,10 +48,17 @@ class JobOrder
 
     # The paid-settle rule for a draft `gid`, whoever (if anyone) points at it: [:cleared] Shopify no longer has it,
     # [:kept] it is paid, [:deleted]. Fetch first, so a paid draft is never sent a delete. Fail closed.
-    def delete_unless_completed!(gid)
+    # `marker`: an order id, for a caller that deletes a draft it did not create (the sweep): the fetched draft must
+    # carry THIS environment's operating tag and exactly that order's marker (JobOrder.draft_marker_order_id), else
+    # it is refused and nothing is deleted.
+    def delete_unless_completed!(gid, marker: nil)
       fail_closed do
         state, draft = fetch_or_raise(gid)
         next :cleared if state == :gone
+
+        if marker && !JobOrder.marked_for?(draft["tags"], marker)
+          JobOrder.stale_draft!("the draft order is not marked for job order ##{marker} of this environment")
+        end
         next :kept if JobOrder.draft_paid?(draft)
 
         unless JobOrder::PAYABLE_DRAFT_STATUSES.include?(draft["status"])

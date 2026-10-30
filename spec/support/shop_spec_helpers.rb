@@ -74,6 +74,7 @@ module ShopSpecHelpers
       else
         Response.new(200, { "data" => { "draftOrder" => {
           "id" => @draft_id, "invoiceUrl" => @invoice_url, "status" => @draft_statuses.fetch(variables[:id], @draft_status),
+          "tags" => @draft_pages.flatten.find { |n| n["id"] == variables[:id] }&.fetch("tags", nil) || [],
           "order" => { "id" => "gid://shopify/Order/1", "fullyPaid" => @fully_paid }
         } } })
       end

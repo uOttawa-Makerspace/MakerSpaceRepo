@@ -450,6 +450,16 @@ class JobOrder < ApplicationRecord
 
   def self.draft_marker_tag(order_id) = "job_order:#{order_id}"
 
+  # The order id a draft's tags name: the one job-order marker, nil when there is none or two different ones.
+  def self.draft_marker_order_id(tags)
+    ids = Array(tags).filter_map { |t| DRAFT_MARKER.match(t.to_s.strip)&.captures&.first&.to_i }.uniq
+    ids.first if ids.one?
+  end
+
+  # Whether a draft with these tags is THIS environment's draft of order `order_id` (the one rule the sweep lists by
+  # and re-verifies before it deletes).
+  def self.marked_for?(tags, order_id) = draft_order_processable?(tags) && draft_marker_order_id(tags) == order_id
+
   # Shopify's DraftOrderStatus: OPEN and INVOICE_SENT drafts are unpaid and payable (the invoice link works);
   # COMPLETED is paid (it became an order). Every place that decides whether a draft is paid or payable asks here.
   PAYABLE_DRAFT_STATUSES = %w[OPEN INVOICE_SENT].freeze
@@ -461,25 +471,35 @@ class JobOrder < ApplicationRecord
   # payment (COMPLETED) and its stored shopify_draft_order_id is this draft. A missing JobStatus (unseeded: the
   # constants are nil) never matches. `status` is the latest status; pass the one read under the row lock.
   def backs_draft?(gid, status = job_order_statuses.last&.job_status)
-    !is_deleted && !status.nil? && status == JobStatus::COMPLETED && shopify_draft_order_id == gid
+    self.class.backs_draft?(gid, deleted: is_deleted, stored_gid: shopify_draft_order_id, status_id: status&.id)
   end
 
-  # JobOrder::DraftSweep's decision about the listed draft `gid` marked for this order, made AND carried out under
+  # The same rule on plain values (the sweep decides it for many orders from one query): `deleted` the is_deleted
+  # flag, `stored_gid` the stored shopify_draft_order_id, `status_id` the latest JobStatus id.
+  def self.backs_draft?(gid, deleted:, stored_gid:, status_id:)
+    completed = JobStatus::COMPLETED
+    !deleted && !completed.nil? && status_id == completed.id && stored_gid == gid
+  end
+
+  # JobOrder::DraftSweep's decision about the listed draft `gid` marked for order `order_id`, made AND carried out under
   # ONE row lock: the order is re-read, and only a draft it does not back is deleted (unless Shopify reports it
   # paid), then the stored id is dropped when it is this draft. The check and the delete are one locked operation
   # because a transition into COMPLETED keeps the stored id (.draft_settlement :none), so a draft the database did not
   # back a moment ago can become the live invoice. It is a Shopify call under the row lock, accepted here: the sweep
-  # is hourly and only touches orphans. Not for any other caller: it deletes `gid` without a tag check, the sweep
-  # having checked the marker. TransitionResult value: :kept (the database backs it, or it is paid), :deleted or
-  # :cleared.
-  def reconcile_orphan_draft!(gid)
-    locked_operation("reconcile_orphan_draft!", live_only: false, report: false) do |status|
-      next TransitionResult.done(:kept) if backs_draft?(gid, status)
+  # is hourly and only touches orphans.
+  #
+  # A class method, with the instance work private, so nothing holds an order and a free gid to delete: the draft is
+  # fetched before it is deleted and must carry this environment's tag and exactly this order's marker
+  # (DraftDeletion.delete_unless_completed!(marker:)), so only a draft made for this order here can go.
+  # TransitionResult value: :kept (the database backs it, or it is paid), :deleted or :cleared; refused
+  # :order_missing when the row is gone (the caller settles the draft without a lock: DraftDeletion).
+  # `may_delete: false` (the sweep has used up its cap) keeps a backed draft as :kept but refuses to delete any other,
+  # :delete_cap, decided under the lock.
+  def self.reconcile_orphan_draft!(order_id, gid, may_delete: true)
+    order = find_by(id: order_id)
+    return TransitionResult.refused(:order_missing) unless order
 
-      outcome = DraftDeletion.delete_unless_completed!(gid)
-      update_column(:shopify_draft_order_id, nil) if outcome != :kept && shopify_draft_order_id == gid
-      TransitionResult.done(outcome)
-    end
+    order.__send__(:reconcile_orphan_draft_under_lock!, gid, may_delete)
   end
 
   # THE settle rule: which path settles the Shopify draft of an order going from status `from` (nil when there is
@@ -659,13 +679,16 @@ class JobOrder < ApplicationRecord
     TransitionResult.refused(reason, error)
   end
 
-  # Deletes the draft Shopify just reported (found, not completed-and-kept). The id is cleared with the delete;
-  # the caller's transaction rolls that back on refusal. Shopify deleting nothing raises.
-  def delete_found_draft!
-    user_errors = []
-    return :deleted if destroy_shopify_draft_order(user_errors_out: user_errors)
+  # The instance half of .reconcile_orphan_draft!, private so it cannot be called with an arbitrary gid.
+  def reconcile_orphan_draft_under_lock!(gid, may_delete)
+    locked_operation("reconcile_orphan_draft!", live_only: false, report: false) do |status|
+      next TransitionResult.done(:kept) if backs_draft?(gid, status)
+      next TransitionResult.refused(:delete_cap) unless may_delete
 
-    self.class.not_deleted_by_shopify!(user_errors)
+      outcome = DraftDeletion.delete_unless_completed!(gid, marker: id)
+      update_column(:shopify_draft_order_id, nil) if outcome != :kept && shopify_draft_order_id == gid
+      TransitionResult.done(outcome)
+    end
   end
 
   # A destination where the customer may already have paid through the draft: the one paid-settle rule
@@ -747,9 +770,10 @@ class JobOrder < ApplicationRecord
       return TransitionResult.done([nil, true])
     end
 
-    # a legacy draft is deleted (fail closed); a confirmed-gone id is dropped
+    # a legacy draft is deleted by the one refused-delete rule (a vanished one is :cleared, a paid one refuses; fail closed);
+    # a confirmed-gone id is dropped
     if state == :found
-      shopify_fail_closed { delete_found_draft! }
+      shopify_fail_closed { delete_draft_unless_paid }
     elsif shopify_draft_order_id.present?
       update_column(:shopify_draft_order_id, nil)
     end
