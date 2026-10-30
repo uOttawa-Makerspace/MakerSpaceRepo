@@ -5,7 +5,7 @@ require Rails.root.join("lib/jwt_authenticator")
 module ApplicationHelper
   # Keys that are not about who is signed in and must survive the session
   # reset done on sign-in (sign-out keeps only the locale).
-  SESSION_KEYS_KEPT_ON_SIGN_IN = %w[locale expires_at authorized_repo_ids selected_dates order_id].freeze
+  SESSION_KEYS_KEPT_ON_SIGN_IN = %w[locale authorized_repo_ids selected_dates order_id].freeze
 
   # Every login path (HTML, JSON, SAML) goes through here, so the refusals live
   # here: a lock still in effect (checked BEFORE the password so a locked account
@@ -22,6 +22,7 @@ module ApplicationHelper
       kept.each { |key, value| session[key] = value }
       session[:user_id] = user.id
       session[:token_version] = user.token_version
+      SessionAuthenticator.touch(session) # a new session gets a full idle window
       reset_auth_memo # a user memoized earlier in this request (set_last_seen_at) is stale now
     end
     user
@@ -45,10 +46,10 @@ module ApplicationHelper
     @user ||= User.new
   end
 
-  # The cookie-session user, or nil. A session whose stored token_version no
-  # longer matches the user's (password changed/reset elsewhere; a session
-  # without the key is version 0), or whose user was deactivated (D-I03), is
-  # ended like an expired session.
+  # The cookie-session user, or nil. A session that is idle-expired (72h), whose
+  # stored token_version no longer matches the user's (password changed/reset
+  # elsewhere; a session without the key is version 0), or whose user was
+  # deactivated (D-I03) is ended (SessionAuthenticator.valid_for?).
   def session_user
     return @session_user if defined?(@session_user)
 

@@ -3,7 +3,6 @@
 class UsersController < SessionsController
   include TurnstileHelper
   
-  skip_before_action :session_expiry, only: [:create]
   before_action :current_user,
                 except: %i[
                   create

@@ -3,7 +3,6 @@
 class SessionsController < ApplicationController
   include ActionView::Helpers::DateHelper
 
-  before_action :session_expiry, except: [:login_authentication]
   before_action :update_activity_time
   before_action :current_user, only: [:login]
   before_action :authorized_repo_ids
@@ -134,13 +133,11 @@ class SessionsController < ApplicationController
     end
   end
 
-  def session_expiry
-    get_session_time_left
-    sign_out if @session_time_left <= 0
-  end
-
+  # Extends the idle window of a session that is still valid. session_user
+  # applies the expiry first (and ends an expired session), so this can never
+  # revive one.
   def update_activity_time
-    session[:expires_at] = 72.hours.from_now
+    SessionAuthenticator.touch(session) if session_user
   end
 
   def authorized_repo_ids
@@ -170,9 +167,5 @@ class SessionsController < ApplicationController
     return if repository.nil? || !repository.private? || repository_unlocked?(repository)
 
     redirect_to password_entry_repository_path(repository.user_username, repository.id)
-  end
-
-  def get_session_time_left
-    @session_time_left = SessionAuthenticator.seconds_left(session)
   end
 end

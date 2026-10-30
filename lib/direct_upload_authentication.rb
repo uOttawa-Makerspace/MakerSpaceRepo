@@ -38,7 +38,7 @@ module DirectUploadAuthentication
   end
 
   def session_user?
-    return false if session[:user_id].blank? || SessionAuthenticator.expired?(session)
+    return false if session[:user_id].blank?
 
     SessionAuthenticator.valid_for?(session, User.find_by(id: session[:user_id]))
   end

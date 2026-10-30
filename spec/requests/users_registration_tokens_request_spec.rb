@@ -145,7 +145,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(response).to redirect_to(root_path)
     end
 
-    it "still works with an expired cookie session (session_expiry skipped on create)" do
+    it "works for a guest (no session)" do
       post users_path, params: { user: registration_params }
       expect(response).to redirect_to(root_path)
     end

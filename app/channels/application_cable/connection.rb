@@ -19,7 +19,7 @@ module ApplicationCable
 
     def session_user
       session = request.session
-      return nil if session[:user_id].blank? || SessionAuthenticator.expired?(session)
+      return nil if session[:user_id].blank?
 
       user = User.find_by(id: session[:user_id])
       user if SessionAuthenticator.valid_for?(session, user)

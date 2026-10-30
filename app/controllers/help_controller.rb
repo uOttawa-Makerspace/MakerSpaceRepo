@@ -1,6 +1,5 @@
 class HelpController < SessionsController
   include TurnstileHelper
-  skip_before_action :session_expiry
   before_action :current_user
 
   # send_email opens a public GitHub issue per call and has no captcha (React app)

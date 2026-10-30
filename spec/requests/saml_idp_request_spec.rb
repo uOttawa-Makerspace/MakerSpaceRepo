@@ -10,7 +10,7 @@ require "rails_helper"
 #
 # Gate facts (verified in the controller, not assumed):
 #  * SamlIdpController < ApplicationController (NOT SessionsController): no
-#    session_expiry/activity hooks.
+#    activity hook; the idle expiry applies through session_user (INF-04).
 #  * `enforce_saml_request` halts on the gem's validity verdict (D-R13): 400
 #    for a missing/garbage request, 403 for an unknown issuer / foreign ACS.
 #  * `protect_from_forgery with: :exception` is declared here, unlike the
