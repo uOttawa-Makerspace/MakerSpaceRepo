@@ -108,11 +108,27 @@ RSpec.describe Order, type: :model do
       expect(order.reload[:subtotal]).to eq(10)
     end
 
-    it "treats invalid items as 0" do
+    it "has no total while an item can no longer be bought (never counts it as 0), stored as NULL" do
       order = Order.create!(user: user)
+      add_item(order, 15)
       item = add_item(order, 10)
       item.update_column(:quantity, 0)
-      expect(order.reload.subtotal).to eq(0)
+      expect(order.reload.subtotal).to be_nil
+      expect(order.checkout_total).to be_nil
+      order.save!
+      expect(order.reload[:subtotal]).to be_nil
+    end
+
+    it "is ONE pricing: the stored subtotal, the cart total, the pre-check total and the charge agree" do
+      order = Order.create!(user: user)
+      add_item(order, 10, quantity: 2)
+      add_item(order, 15)
+      order.save!
+      expect(order.reload[:subtotal]).to eq(35)
+      expect(order.subtotal).to eq(35)
+      expect(order.checkout_total).to eq(35)
+      expect(order.checkout_lines.map(&:last).sum).to eq(35)
+      expect(order.priced_items.map { |i, c| [i.total_price.to_i, c] }).to all(satisfy { |a, b| a == b })
     end
 
     it "uses the item's frozen unit_price, not the project's live cc" do

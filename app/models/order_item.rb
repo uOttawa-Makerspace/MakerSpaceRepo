@@ -65,6 +65,13 @@ class OrderItem < ApplicationRecord
     unit_price * quantity
   end
 
+  # THE price of this item (Order#priced_items): its price snapshot x quantity in whole CC, what
+  # the cart shows, what is stored and what checkout charges; nil when the item can no longer be
+  # bought (fails validation), shown as needing removal and never charged.
+  def charge
+    valid? ? total_price.to_i : nil
+  end
+
   private
 
   def product_present

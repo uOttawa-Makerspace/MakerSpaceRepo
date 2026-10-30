@@ -55,7 +55,7 @@ class OrderItemsController < DevelopmentProgramsController
       @order = cart
       @order_item = cart.order_items.find(params[:id])
       @order_item.update(order_item_update_params)
-      @order_items = cart.order_items
+      @order_items = cart.cart_items
     end
   rescue *CART_CHANGE_REFUSED => e
     # nothing was written: re-render the cart as it really is (the quantity is reverted on screen)

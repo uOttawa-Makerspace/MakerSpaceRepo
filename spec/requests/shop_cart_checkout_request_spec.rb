@@ -393,6 +393,26 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
     end
   end
 
+  describe "GET /carts with an item that can no longer be bought" do
+    before { shop_log_in!(user) }
+
+    it "shows the item as needing removal (not 0) and no total or Confirm button" do
+      add_to_cart(pp_with_cc(10))
+      add_to_cart(pp_with_cc(15))
+      user.orders.last.order_items.last.update_column(:quantity, 0)
+      get carts_path
+      expect(response.body).to include("No longer available: please remove this item")
+      expect(response.body).to include("Remove the items marked as no longer available to see your total and check out.")
+      expect(response.body).not_to include("Confirm order")
+    end
+
+    it "shows the same total the checkout charges when every item is valid" do
+      add_to_cart(pp_with_cc(10), quantity: 2)
+      get carts_path
+      expect(response.body).to include("Confirm order, the total is 20 CC")
+    end
+  end
+
   describe "PATCH /order_items/:id" do
     before { shop_log_in!(user) }
 
@@ -795,6 +815,26 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       post orders_path
       expect(order.reload.total).to eq(35)
       expect(order.cc_moneys.sum(:cc)).to eq(-35)
+    end
+
+    it "checkout! builds the priced lines once under the lock: one item load, one validation per item" do
+      credit_cc!(user, 100)
+      add_to_cart(pp_with_cc(10))
+      add_to_cart(pp_with_cc(15))
+      order = user.orders.last
+      validations = 0
+      allow_any_instance_of(OrderItem).to receive(:valid?).and_wrap_original do |m, *args|
+        validations += 1
+        m.call(*args)
+      end
+      sqls = []
+      sub = ActiveSupport::Notifications.subscribe("sql.active_record") { |*, p| sqls << p[:sql] }
+      expect(Order.checkout!(order, user).first).to eq(:completed)
+      ActiveSupport::Notifications.unsubscribe(sub)
+      expect(validations).to eq(2)
+      expect(sqls.count { |q| q.start_with?('SELECT "order_items".*') }).to eq(1)
+      expect(order.reload[:subtotal]).to eq(25)
+      expect(order.total).to eq(25)
     end
 
     it "lets staff and admin check out the same way" do

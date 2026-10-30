@@ -18,12 +18,6 @@ class Order < ApplicationRecord
   scope :completed,
         -> { joins(:order_status).where(order_statuses: { name: "Completed" }) }
 
-  def subtotal
-    order_items
-      .collect { |oi| oi.valid? ? (oi.quantity * oi.unit_price) : 0 }
-      .sum
-  end
-
   def completed?
     order_status.name == "Completed"
   end
@@ -39,19 +33,28 @@ class Order < ApplicationRecord
     order_items.to_a
   end
 
-  # THE checkout total, used by both the friendly pre-check (OrdersController#check_wallet) and
-  # the charge (checkout!): every item is charged its total_price (its price snapshot x quantity,
-  # what the cart shows). [[item, amount], ...], or nil when an item can no longer be bought
-  # (fails validation): such a cart is refused, never charged for something it did not show.
-  def checkout_lines
-    items = cart_items
-    return nil unless items.all?(&:valid?)
-
-    items.map { |item| [item, item.total_price.to_i] }
+  # THE pricing of a cart, the one definition behind the cart display, the stored
+  # orders.subtotal, the checkout pre-check and the charge: [[item, OrderItem#charge], ...].
+  # A nil charge is an item that can no longer be bought (shown as needing removal).
+  def priced_items(items = cart_items)
+    items.map { |item| [item, item.charge] }
   end
 
-  def checkout_total
-    checkout_lines&.sum(&:last)
+  # The total of priced items, or nil while any item needs removal (never counted as 0).
+  def self.total_of(priced)
+    priced.all? { |_, charge| charge } ? priced.sum { |_, charge| charge } : nil
+  end
+
+  # The cart total: what the cart shows, what is stored and what checkout charges.
+  def subtotal
+    self.class.total_of(priced_items)
+  end
+  alias checkout_total subtotal
+
+  # The priced items checkout charges, or nil when an item needs removal (the cart is refused).
+  def checkout_lines
+    priced = priced_items
+    self.class.total_of(priced) ? priced : nil
   end
 
   # The cart is no longer in progress (checked out meanwhile): its items cannot change.
@@ -98,11 +101,11 @@ class Order < ApplicationRecord
         next [:not_open, order, []] unless order.order_status&.name == IN_PROGRESS
       end
 
-      lines = order.checkout_lines
+      lines = order.checkout_lines # the one preload + validation, under the lock
       next [:invalid_items, order, []] if lines.nil?
 
       order.user = wallet.user
-      order.total = lines.sum(&:last)
+      order.price_from!(lines)
       order.order_status = OrderStatus.find_by(name: COMPLETED)
       next [:invalid, order, []] unless order.save
 
@@ -118,6 +121,15 @@ class Order < ApplicationRecord
     end
   end
 
+  # Sets subtotal and total from priced lines already built (checkout!), so the save does not
+  # preload and validate the items again.
+  def price_from!(lines)
+    total = self.class.total_of(lines)
+    self[:subtotal] = total
+    self.total = total
+    @priced_from_lines = true
+  end
+
   private
 
   def set_order_status
@@ -125,6 +137,8 @@ class Order < ApplicationRecord
   end
 
   def update_subtotal
+    return if @priced_from_lines # checkout! set it from the very lines it charges
+
     self[:subtotal] = subtotal
   end
 end
