@@ -694,7 +694,11 @@ Rails.application.routes.draw do
   resources :users, path: "/", param: :username, except: %i[edit destroy] do
     collection do
       get :resend_confirmation
+      # INF-02: the emailed link (GET) only shows a confirmation page; the
+      # change is applied by its POST, and requesting one needs a POST with
+      # the current password.
       get :confirm_edited_email
+      post :confirm_edited_email, action: :apply_edited_email
       get :reset_password_form
       patch :reset_password_confirmation
       get :confirm
@@ -703,7 +707,7 @@ Rails.application.routes.draw do
       delete :remove_avatar
       post :flag
       post :unflag
-      get :change_email
+      post :change_email
       put :remove_flag
       get :unlock_account
       get :search, path: "/users/search"

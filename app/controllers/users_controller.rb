@@ -26,6 +26,8 @@ class UsersController < SessionsController
 
   LINK_EXPIRED_ALERT =
     'This link has expired or has already been used. Please request a new one.'
+  EMAIL_CHANGE_OTHER_ACCOUNT_ALERT =
+    'This link was requested by a different account. Please sign in as the account that requested the change.'
 
   def create
     @new_user = User.new(user_params)
@@ -92,13 +94,23 @@ class UsersController < SessionsController
     redirect_to root_path
   end
 
+  # GET, the link in the confirmation email: shows what would change and a button
+  # that POSTs the token to apply_edited_email. A GET never changes anything, so
+  # a cross-site navigation to the link cannot apply it (INF-02).
   def confirm_edited_email
+    user, @new_email = User.email_change_from_token(params[:token])
+    return redirect_to(root_path) unless email_change_token_for_current_user?(user)
+
+    @token = params[:token]
+  end
+
+  # POST /confirm_edited_email: applies the change for the signed-in owner of the
+  # token. The token is bound to the address it was issued for (and the account's
+  # token_version), so it is refused once the address has changed.
+  def apply_edited_email
     user, new_email = User.email_change_from_token(params[:token])
-    if user.nil?
-      flash[:alert] = LINK_EXPIRED_ALERT
-    elsif user != @user
-      flash[:alert] =
-        'This link was requested by a different account. Please sign in as the account that requested the change.'
+    if !email_change_token_for_current_user?(user)
+      nil # the alert is set
     elsif change_email_to(user, new_email)
       MsrMailer.email_changed_email(user, @old_email).deliver_now
       flash[:notice] = "The email has been updated to #{user.email} !"
@@ -229,7 +241,15 @@ class UsersController < SessionsController
                   'Password changed successfully, an email will be sent to confirm.'
   end
 
+  # POST only, and it needs the account's current password (the same check as
+  # change_password): the token it mails lets whoever reads the new address take
+  # the account over (INF-02).
   def change_email
+    unless @user.authenticate_password(params[:current_password].to_s)
+      redirect_to settings_admin_path, alert: 'Incorrect current password.'
+      return
+    end
+
     if params[:new_email].present? and params[:confirm_new_email].present?
       if params[:new_email] == params[:confirm_new_email]
         if !User.find_by_email(params[:new_email]).present?
@@ -450,6 +470,18 @@ class UsersController < SessionsController
   end
 
   private
+
+  # A live email-change token whose user is the signed-in user; sets the alert
+  # otherwise.
+  def email_change_token_for_current_user?(user)
+    alert = if user.nil?
+              LINK_EXPIRED_ALERT
+            elsif user != @user
+              EMAIL_CHANGE_OTHER_ACCOUNT_ALERT
+            end
+    flash[:alert] = alert if alert
+    alert.nil?
+  end
 
   # Applies the address; false (nothing changed) when it is rejected, e.g. taken
   # by another account in the meantime. Remembers the previous address.

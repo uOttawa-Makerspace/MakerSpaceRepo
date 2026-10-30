@@ -622,17 +622,19 @@ class User < ApplicationRecord
     )
   end
 
-  # D-I12: bound to this user, the target address and the current address (so
-  # it dies once the address changes), purpose-scoped, valid for 24 hours.
+  # D-I12/INF-02: bound to this user, the target address, the current address
+  # (so it is single-use: it dies once the address changes) and the
+  # token_version (so a password change/reset or an admin lock ends a pending
+  # change too); purpose-scoped, valid for 24 hours.
   def generate_email_change_token(new_email)
-    EMAIL_CHANGE_VERIFIER.call.generate([id, new_email, email], purpose: :email_change, expires_in: 24.hours)
+    EMAIL_CHANGE_VERIFIER.call.generate([id, new_email, email, token_version], purpose: :email_change, expires_in: 24.hours)
   end
 
   # Returns [user, new_email] for a live token, nil otherwise.
   def self.email_change_from_token(token)
-    id, new_email, old_email = EMAIL_CHANGE_VERIFIER.call.verified(token.to_s, purpose: :email_change)
+    id, new_email, old_email, version = EMAIL_CHANGE_VERIFIER.call.verified(token.to_s, purpose: :email_change)
     user = find_by(id: id) if id
-    [user, new_email] if user && user.email == old_email
+    [user, new_email] if user && user.email == old_email && user.token_version == version
   end
 
   def send_password_reset

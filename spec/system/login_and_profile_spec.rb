@@ -46,6 +46,28 @@ RSpec.describe "Login and profile", type: :system do
     expect(user.reload.name).to eq("Pat Example")
   end
 
+  # INF-02: the settings form POSTs with the current password; the emailed link
+  # opens a confirmation page whose button POSTs the token.
+  it "changes the email: settings form with the current password, then the emailed link's confirm page" do
+    log_in_as(user)
+    visit settings_admin_path
+    fill_in "new_email", with: "pat.new@example.com"
+    fill_in "confirm_new_email", with: "pat.new@example.com"
+    fill_in "current_password", with: "asa32A353#"
+    click_button "Update Email"
+    expect(page).to have_text("A confirmation email has been sent to the new email")
+
+    mail = ActionMailer::Base.deliveries.find { |m| m.to == ["pat.new@example.com"] }
+    token = CGI.unescape(mail.body.to_s[/confirm_edited_email\?token=([^"'&\s<]+)/, 1])
+    visit confirm_edited_email_users_path(token: token)
+    expect(page).to have_text("Confirm your new email address")
+    expect(user.reload.email).not_to eq("pat.new@example.com")
+
+    click_button "Confirm email change"
+    expect(page).to have_text("The email has been updated to pat.new@example.com !")
+    expect(user.reload.email).to eq("pat.new@example.com")
+  end
+
   it "redirects a guest from settings to the login form with back_to" do
     visit settings_profile_path
     expect(page).to have_current_path(/\/login\?back_to=%2Fsettings%2Fprofile/)

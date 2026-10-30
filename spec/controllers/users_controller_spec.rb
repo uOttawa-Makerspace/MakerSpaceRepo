@@ -56,15 +56,15 @@ RSpec.describe UsersController, type: :controller do
     end
   end
 
-  describe "GET /confirm_edited_email" do
+  describe "POST /confirm_edited_email" do
     context "confirm_edited_email" do
       it "should confirm the email" do
         user = create(:user, :regular_user)
         old_email = user.email
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
-        get :confirm_edited_email,
-            params: { token: user.generate_email_change_token("bob@bob.ca") }
+        post :apply_edited_email,
+             params: { token: user.generate_email_change_token("bob@bob.ca") }
         expect(response).to redirect_to root_path
         expect(ActionMailer::Base.deliveries.count).to eq(1)
         expect(ActionMailer::Base.deliveries.first.to.first).to eq(old_email)
@@ -79,7 +79,7 @@ RSpec.describe UsersController, type: :controller do
         old_email = user.email
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
-        get :confirm_edited_email, params: { token: "" }
+        post :apply_edited_email, params: { token: "" }
         expect(response).to redirect_to root_path
         expect(flash[:alert]).to eq(
           "This link has expired or has already been used. Please request a new one."
@@ -366,7 +366,7 @@ RSpec.describe UsersController, type: :controller do
     end
   end
 
-  describe "GET /change_email" do
+  describe "POST /change_email" do
     context 'change user\'s email' do
       before(:each) do
         user = create(:user, :regular_user)
@@ -375,11 +375,12 @@ RSpec.describe UsersController, type: :controller do
       end
 
       it "should send confirmation email" do
-        get :change_email,
-            params: {
-              new_email: "bobbb@bobbb.ca",
-              confirm_new_email: "bobbb@bobbb.ca"
-            }
+        post :change_email,
+             params: {
+               new_email: "bobbb@bobbb.ca",
+               confirm_new_email: "bobbb@bobbb.ca",
+               current_password: "asa32A353#"
+             }
         expect(response).to redirect_to settings_admin_path
         expect(flash[:notice]).to eq(
           "A confirmation email has been sent to the new email"
@@ -391,11 +392,12 @@ RSpec.describe UsersController, type: :controller do
       end
 
       it 'shouldn\'t change password (email already used)' do
-        get :change_email,
-            params: {
-              new_email: User.last.email,
-              confirm_new_email: User.last.email
-            }
+        post :change_email,
+             params: {
+               new_email: User.last.email,
+               confirm_new_email: User.last.email,
+               current_password: "asa32A353#"
+             }
         expect(response).to redirect_to settings_admin_path
         expect(flash[:alert]).to eq(
           "This email is already used by a MakerRepo Account."
@@ -403,11 +405,12 @@ RSpec.describe UsersController, type: :controller do
       end
 
       it 'shouldn\'t change password (Confirmation doesn\'t match)' do
-        get :change_email,
-            params: {
-              new_email: "bobbb@bobbb.ca",
-              confirm_new_email: "bobbb1@bobbb.ca"
-            }
+        post :change_email,
+             params: {
+               new_email: "bobbb@bobbb.ca",
+               confirm_new_email: "bobbb1@bobbb.ca",
+               current_password: "asa32A353#"
+             }
         expect(response).to redirect_to settings_admin_path
         expect(flash[:alert]).to eq(
           "This confirmation email isn't matching the new email"
