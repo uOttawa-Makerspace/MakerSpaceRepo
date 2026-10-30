@@ -93,6 +93,25 @@ RSpec.describe "Job order pay link fingerprint (JOB-03)", type: :request do
       expect(requote_mails).to be_empty
     end
 
+    it "lets staff clear a mismatch with a same-price re-quote: the stale draft is replaced, not kept" do
+      order, task = quoted_order!(:completed)
+      pay!(order)
+      task.job_task_quote.update_column(:price, 5) # changed behind the draft
+      pay!(order)                                  # sent back to staff, draft voided
+      # the draft is voided by the send-back; model one that survived (e.g. Shopify kept it) to pin the re-quote rule
+      order.update_columns(shopify_draft_order_id: "gid://shopify/DraftOrder/9001",
+                           shopify_draft_order_fingerprint: JobOrder.line_items_fingerprint([{ stale: true }]))
+      shopify.calls.clear
+
+      session_login!(staff)
+      patch job_order_quote_path(order), params: { approved: "true", "job_task_quote_price_#{task.id}" => "5",
+                                                   job_order: { staff_comments: "" } }
+
+      expect(status_names(order).last).to eq("Waiting for User Approval")
+      expect(shopify_ops).to eq(["draftOrderDelete"])
+      expect(order.reload.shopify_draft_order_id).to be_nil
+    end
+
     describe "a legacy draft (stored before fingerprints existed)" do
       def legacy_order!
         order, = quoted_order!(:completed, price: 42)

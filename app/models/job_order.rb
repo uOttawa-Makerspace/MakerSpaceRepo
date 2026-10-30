@@ -260,6 +260,17 @@ class JobOrder < ApplicationRecord
     nil
   end
 
+  # Whether the stored draft does not carry the current line items. JOB-03: judged by the draft's fingerprint, so a
+  # draft that went stale earlier (and that /pay refuses) is replaced by a re-quote at the same prices instead of
+  # surviving it. A legacy draft (no fingerprint) is judged against `legacy_baseline`, the line items before this
+  # change (/pay replaces legacy drafts anyway).
+  def draft_order_stale?(legacy_baseline)
+    return false if shopify_draft_order_id.blank?
+    return shopify_draft_order_line_items != legacy_baseline if shopify_draft_order_fingerprint.blank?
+
+    !draft_order_built_from_current_line_items?
+  end
+
   # Digest of draft order line items (shopify_draft_order_line_items shape). Amounts are BigDecimal, so 29.99 and
   # 29.990 give the same digest.
   def self.line_items_fingerprint(line_items)

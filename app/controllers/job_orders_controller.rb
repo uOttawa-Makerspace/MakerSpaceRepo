@@ -271,10 +271,9 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
             raise ActiveRecord::Rollback
           end
 
-          # D-J38: a change to any draft line item invalidates the Shopify draft order (stale items + payable
+          # D-J38: a draft that does not carry the new quote's line items is invalidated (stale items + payable
           # link). Fail closed: if it cannot be deleted the whole quote rolls back (no price, status or email).
-          # Each side is computed once.
-          if items_before && JobOrder.find(@job_order.id).shopify_draft_order_line_items != items_before
+          if items_before && JobOrder.find(@job_order.id).draft_order_stale?(items_before)
             @job_order.discard_stale_draft_order!
           end
         end
