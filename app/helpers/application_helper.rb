@@ -50,7 +50,9 @@ module ApplicationHelper
   # stored token_version no longer matches the user's (password changed/reset
   # elsewhere; a session without the key is version 0), or whose user was
   # deactivated (D-I03) is ended (SessionAuthenticator.valid_for?). A valid
-  # session's idle window is extended here, whatever the controller.
+  # session's idle window is extended here, whatever the controller, but only by
+  # real user activity (user_activity?): background polling must not keep an
+  # abandoned tab signed in forever.
   def session_user
     return @session_user if defined?(@session_user)
 
@@ -59,12 +61,21 @@ module ApplicationHelper
 
     user = User.find_by(id: session[:user_id])
     if SessionAuthenticator.valid_for?(session, user)
-      SessionAuthenticator.touch(session) # activity on any controller extends the idle window
+      SessionAuthenticator.touch(session) if user_activity?
       @session_user = user
     else
       sign_out
     end
     @session_user
+  end
+
+  # A person using the app: opening a page (an HTML navigation) or submitting
+  # something (any non-GET request). Not a background XHR/fetch poll, nor a JSON or
+  # JS GET.
+  def user_activity?
+    return true unless request.get? || request.head?
+
+    !request.xhr? && request.format.html?
   end
 
   # [admin?, staff?, volunteer?, dev_program?] of the current user, read once per

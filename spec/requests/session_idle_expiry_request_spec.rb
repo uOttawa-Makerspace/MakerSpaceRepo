@@ -118,6 +118,45 @@ RSpec.describe "Cookie session idle expiry", type: :request do
     end
   end
 
+  # Review follow-up: only real user activity extends the window. A background
+  # poll (XHR, JSON/JS GET) must not keep an abandoned tab signed in forever.
+  describe "which requests extend the window" do
+    let(:xhr) { { "X-Requested-With" => "XMLHttpRequest", "Accept" => "application/json" } }
+
+    def expires_at
+      Time.zone.parse(session[:expires_at].to_s)
+    end
+
+    it "an XHR GET and a JSON GET do not extend it; a page view and a POST do" do
+      log_in!
+      get settings_profile_path
+      stamp = expires_at
+      travel 10.minutes do
+        get check_signed_in_path, headers: xhr
+        expect(expires_at).to eq(stamp)
+        get check_signed_in_path, headers: { "Accept" => "application/json" }
+        expect(expires_at).to eq(stamp)
+        get settings_profile_path
+        expect(expires_at).to be > stamp
+      end
+      stamp = expires_at
+      travel 20.minutes do
+        post change_email_users_path, params: {}
+        expect(expires_at).to be > stamp
+      end
+    end
+
+    it "an abandoned tab that only polls idles out after 72 hours" do
+      log_in!
+      start = Time.current
+      (1..80).each do |hour|
+        travel_to(start + hour.hours)
+        get check_signed_in_path, headers: xhr
+      end
+      expect(signed_in_page_reachable?).to be(false)
+    end
+  end
+
   it "a fresh sign-in gets a full window even if the previous session's window had lapsed" do
     start = Time.current
     log_in!
