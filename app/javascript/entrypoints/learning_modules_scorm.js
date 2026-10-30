@@ -22,7 +22,8 @@ function initScorm() {
       autocommit: true,
       autocommitSeconds: 15,
       lmsCommitUrl: `/learning_area/${learningModuleId}/scorm_commit`,
-      // Commits (the final one too) are parsed and CSRF-checked by Rails.
+      // Regular commits are JSON (protected by the media type + CORS); the final
+      // one is a form-encoded beacon with the token, parsed and CSRF-checked.
       httpService: new ScormCommitService(),
       logLevel: "WARN", // Change to "DEBUG" if you need verbose LMS logs in console
     };

@@ -5,8 +5,13 @@ const FAILURE = { result: "false", errorCode: 101 };
 
 // scorm-again's HTTP service for commits to this app (settings.httpService).
 // - Regular commits: a synchronous XHR, as scorm-again's own SCORM-compliant
-//   service does (the SCO learns whether the commit worked): a JSON body with
-//   the CSRF header (csrfHeaders).
+//   service does (the SCO learns whether the commit worked), with an
+//   application/json body. Rails does NOT check their token: a JSON request
+//   asking for JSON (scorm_commit's route defaults to it) is the legacy JSON
+//   exemption (ApplicationController#legacy_json_request?). What protects them
+//   is that media type: another site can only send application/json after a
+//   CORS preflight, which only the origins in lib/cors_origins.rb pass. The
+//   header (csrfHeaders) is sent anyway, for when that exemption goes.
 // - The terminate commit (immediate: the page is closing): a beacon. scorm-again
 //   sends it as text/plain, which Rails neither parses nor CSRF-checks, so the
 //   final state was lost. Here it is an application/x-www-form-urlencoded body

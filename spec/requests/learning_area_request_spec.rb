@@ -558,6 +558,22 @@ RSpec.describe "Learning area", type: :request do
       expect(user.learning_module_tracks.last.scorm_state).to eq(state)
     end
 
+    # What protects the regular (JSON) commits is the media type plus CORS, not a
+    # token check (src/scorm_commit_service.js says so): a JSON commit without a
+    # token is accepted, and a foreign origin's preflight for it is not answered.
+    it "a regular JSON commit is the legacy JSON exemption (no token checked), and CORS keeps other sites out" do
+      log_in!(user)
+      post scorm_commit_learning_area_path(learning_module.id), params: state.to_json,
+           headers: { "CONTENT_TYPE" => "application/json", "ACCEPT" => "application/json" }, without_csrf_token: true
+      expect(response).to have_http_status(:ok)
+      expect(user.learning_module_tracks.last.scorm_state).to eq(state)
+
+      process :options, scorm_commit_learning_area_path(learning_module.id),
+              headers: { "Origin" => "https://evil.example", "Access-Control-Request-Method" => "POST",
+                         "Access-Control-Request-Headers" => "content-type" }
+      expect(response.headers["Access-Control-Allow-Origin"]).to be_nil
+    end
+
     it "refuses an urlencoded commit without the token, storing nothing" do
       log_in!(user)
       expect do
