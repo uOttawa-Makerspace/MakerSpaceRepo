@@ -94,8 +94,15 @@ RSpec.describe "Announcements bar caching", type: :request do
       sql = sql_during { get root_path }
       expect(sql.grep(/FROM "announcements"/).size).to eq(1)
       expect(sql.grep(/FROM "announcement_dismisses"/).size).to eq(1)
-      expect(sql.grep(/FROM "announcements"/).first).to include("MAX(updated_at)")
+      expect(sql.grep(/FROM "announcements"/).first).to include('MAX("announcements"."updated_at")')
       expect(sql.grep(/FROM "programs"/).size).to eq(2) # volunteer? and dev_program?, once each
+    end
+
+    it "a page that does not read dev_program? does not query it" do
+      log_in!
+      get settings_profile_path
+      programs = sql_during { get settings_profile_path }.grep(/FROM "programs"/)
+      expect(programs.size).to be <= 1 # volunteer? only; dev_program? is the other query
     end
 
     it "a deleted announcement disappears at once (the newest timestamp alone would not change)" do

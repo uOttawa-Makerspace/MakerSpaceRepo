@@ -146,6 +146,44 @@ RSpec.describe "Cookie session idle expiry", type: :request do
       end
     end
 
+    # The browser's own signal: Sec-Fetch-Mode. fetch() polls that ask for HTML and
+    # send no X-Requested-With (the chat poll, badges.js ...) are not activity.
+    describe "a GET" do
+      def extends?(headers)
+        log_in!
+        get settings_profile_path, headers: { "Sec-Fetch-Mode" => "navigate" }
+        stamp = expires_at
+        extended = false
+        travel 10.minutes do
+          get settings_profile_path, headers: headers
+          extended = expires_at > stamp
+        end
+        extended
+      end
+
+      it("navigating (Sec-Fetch-Mode: navigate) extends it") { expect(extends?("Sec-Fetch-Mode" => "navigate")).to be(true) }
+
+      it "the chat poll (fetch, Accept text/html) does not" do
+        expect(extends?("Sec-Fetch-Mode" => "cors", "Accept" => "text/html")).to be(false)
+      end
+
+      it "a plain same-origin fetch (Accept */*) does not" do
+        expect(extends?("Sec-Fetch-Mode" => "same-origin", "Accept" => "*/*")).to be(false)
+      end
+
+      it "a Turbo Drive visit does; a Turbo frame load and a prefetch do not" do
+        visit = { "Sec-Fetch-Mode" => "cors", "Accept" => "text/html, application/xhtml+xml", "X-Turbo-Request-Id" => "abc" }
+        expect(extends?(visit)).to be(true)
+        expect(extends?(visit.merge("Turbo-Frame" => "list"))).to be(false)
+        expect(extends?(visit.merge("X-Sec-Purpose" => "prefetch"))).to be(false)
+      end
+
+      it "from a client without Sec-Fetch-Mode keeps the HTML-and-not-XHR rule" do
+        expect(extends?("Accept" => "text/html")).to be(true)
+        expect(extends?("Accept" => "text/html", "X-Requested-With" => "XMLHttpRequest")).to be(false)
+      end
+    end
+
     it "an abandoned tab that only polls idles out after 72 hours" do
       log_in!
       start = Time.current

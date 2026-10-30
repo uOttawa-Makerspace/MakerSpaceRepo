@@ -69,34 +69,53 @@ module ApplicationHelper
     @session_user
   end
 
-  # A person using the app: opening a page (an HTML navigation) or submitting
-  # something (any non-GET request). Not a background XHR/fetch poll, nor a JSON or
-  # JS GET.
+  # A person using the app: opening a page or submitting something (any non-GET
+  # request). Not a background poll. The browser says which a GET is: Sec-Fetch-Mode
+  # is "navigate" for a page navigation and "cors"/"same-origin" for fetch() and
+  # XHR, whatever Accept or X-Requested-With the script sends. Turbo Drive visits
+  # are fetches too, so they are recognised by Turbo's own headers (not a frame
+  # load, not a prefetch). A client that sends no Sec-Fetch-Mode (old browsers)
+  # falls back to: not an XHR and answered with HTML.
   def user_activity?
     return true unless request.get? || request.head?
+
+    mode = request.headers["Sec-Fetch-Mode"]
+    return mode == "navigate" || turbo_visit? if mode.present?
 
     !request.xhr? && request.format.html?
   end
 
-  # [admin?, staff?, volunteer?, dev_program?] of the current user, read once per
-  # request (volunteer? and dev_program? are queries). The per-user caches (the
+  def turbo_visit?
+    request.headers["X-Turbo-Request-Id"].present? &&
+      request.headers["Turbo-Frame"].blank? &&
+      request.headers["X-Sec-Purpose"] != "prefetch"
+  end
+
+  ROLE_FLAGS = %i[admin? staff? volunteer? dev_program?].freeze
+
+  # One of the current user's role flags, read at most once per request and only if
+  # asked for (volunteer? and dev_program? are queries). The per-user caches (the
   # home page fragments, the announcements bar) key on them, so a promotion,
   # demotion or program join changes what is rendered at once, not after the
   # fragment's expiry.
-  def current_role_flags
-    @current_role_flags ||= begin
-      user = current_user
-      [user.admin?, user.staff?, user.volunteer?, user.dev_program?].freeze
-    end
+  def role_flag(name)
+    @role_flags ||= {}
+    return @role_flags[name] if @role_flags.key?(name)
+
+    @role_flags[name] = current_user.public_send(name)
   end
 
-  # The two program flags from the same per-request read.
+  # [admin?, staff?, volunteer?, dev_program?] of the current user.
+  def current_role_flags
+    ROLE_FLAGS.map { |name| role_flag(name) }
+  end
+
   def current_user_volunteer?
-    current_role_flags[2]
+    role_flag(:volunteer?)
   end
 
   def current_user_dev_program?
-    current_role_flags[3]
+    role_flag(:dev_program?)
   end
 
   def signed_in?
@@ -137,7 +156,7 @@ module ApplicationHelper
   # Forget who was resolved earlier in this request (cookie user, current user,
   # Bearer user) so the next call looks again. Used when the session changes.
   def reset_auth_memo
-    %i[@session_user @user @jwt_user @current_role_flags].each do |ivar|
+    %i[@session_user @user @jwt_user @role_flags].each do |ivar|
       remove_instance_variable(ivar) if instance_variable_defined?(ivar)
     end
   end

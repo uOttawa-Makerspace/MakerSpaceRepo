@@ -109,10 +109,15 @@ class ApplicationController < ActionController::Base
     login_path(back_to: referer&.request_uri)
   end
 
-  # The referring page as a URI when it is on this host, else nil.
+  # The referring page as a URI when it is on this host, else nil. Its request_uri
+  # is redirected to, so a path that browsers read as protocol-relative ("//host",
+  # "/\host") is refused: http://this.host//evil.example would otherwise send the
+  # visitor to evil.example.
   def same_host_referer
     referer = URI.parse(request.referer.to_s)
-    referer if referer.is_a?(URI::HTTP) && referer.host.present? && referer.host == request.host
+    return unless referer.is_a?(URI::HTTP) && referer.host.present? && referer.host == request.host
+
+    referer unless referer.request_uri.match?(%r{\A/[/\\]})
   rescue URI::InvalidURIError
     nil
   end

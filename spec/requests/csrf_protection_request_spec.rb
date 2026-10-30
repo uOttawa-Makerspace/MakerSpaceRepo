@@ -128,6 +128,15 @@ RSpec.describe "CSRF protection", type: :request do
       expect_stale_form_redirect(root_path)
     end
 
+    it "a referer whose path is protocol-relative (//host) is not redirected to, signed in or out" do
+      log_in!
+      post perform_logout_path, headers: { "Referer" => "http://www.example.com//evil.example/x" }, without_csrf_token: true
+      expect_stale_form_redirect(root_path)
+      reset!
+      post perform_logout_path, headers: { "Referer" => "http://www.example.com//evil.example/x" }, without_csrf_token: true
+      expect_stale_form_redirect(login_path)
+    end
+
     it "a signed-out stale tab is sent to sign in, keeping its page as back_to" do
       post perform_logout_path, headers: { "Referer" => "http://www.example.com/settings/profile" }, without_csrf_token: true
       expect_stale_form_redirect(login_path(back_to: "/settings/profile"))
