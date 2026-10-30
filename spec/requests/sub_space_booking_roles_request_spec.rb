@@ -529,28 +529,12 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
   end
 
   describe "CSRF" do
-    around do |example|
-      original = ActionController::Base.allow_forgery_protection
-      ActionController::Base.allow_forgery_protection = true
-      example.run
-    ensure
-      ActionController::Base.allow_forgery_protection = original
-    end
-
-    # WART(D-B26/D-J27): application_controller.rb:7-8 declares
-    # `protect_from_forgery with: :null_session, only: proc { ... }`. ActionFilter
-    # stringifies `only:` (`Array(proc).map(&:to_s)`), so the proc becomes a
-    # string that never equals an action name and the verification callback
-    # never runs for ANY action of ANY controller (and the declaration replaces
-    # the default exception-raising one). The test env disables forgery
-    # protection, so this example switches it on for the framework and shows a
-    # cross-site-style POST (foreign Origin/Referer, no authenticity token) is
-    # still accepted on an ordinary HTML form action. The login POST itself is
-    # token-less too.
-    it "accepts a token-less cross-site POST on an HTML form action (app-wide)" do
-      expect(ActionController::Base.allow_forgery_protection).to be(true)
+    # FIXED(D-B26/D-J27, INF-01): the app-wide declaration used `only: proc`,
+    # which never matched an action, so no request was ever CSRF-checked.
+    # Forgery protection now runs (and is on in the test env).
+    it "refuses a token-less cross-site POST on an HTML form action, creating nothing" do
       user = create(:user, :regular_user, booking_approval: true)
-      log_in!(user) # token-less login POST is accepted as well
+      log_in!(user)
 
       expect do
         post sub_space_booking_index_path,
@@ -560,12 +544,10 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
                                             name: "ForgedByAttacker",
                                             description: "no csrf token sent" } },
              headers: { "Origin" => "https://evil.example",
-                        "Referer" => "https://evil.example/forged-form.html" }
-      end.to change { SubSpaceBooking.where(name: "ForgedByAttacker").count }.by(1)
-
-      # accepted: an HTML create now redirects to the calendar (round 3; was an empty 204)
-      expect(response).to redirect_to(sub_space_booking_index_path(anchor: "booking-calendar-tab", room: subspace.id))
-      expect(SubSpaceBooking.find_by!(name: "ForgedByAttacker").user_id).to eq(user.id)
+                        "Referer" => "https://evil.example/forged-form.html" },
+             without_csrf_token: true
+      end.not_to change(SubSpaceBooking, :count)
+      expect(response).to have_http_status(:unprocessable_content)
     end
   end
 end

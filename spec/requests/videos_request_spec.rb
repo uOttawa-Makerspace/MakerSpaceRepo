@@ -198,8 +198,9 @@ RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
     end
 
     it "does not use ApplicationHelper#signed_in? for the sign-in check" do
+      token = csrf_token # from a page, before signed_in? is made to raise
       allow_any_instance_of(ApplicationHelper).to receive(:signed_in?).and_raise("ApplicationHelper#signed_in? must not be used here")
-      post rails_direct_uploads_path, params: payload, as: :json
+      post rails_direct_uploads_path, params: payload, as: :json, headers: { "X-CSRF-Token" => token }
       expect(response).to have_http_status(:unauthorized)
     end
 

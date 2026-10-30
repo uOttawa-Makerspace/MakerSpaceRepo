@@ -40,8 +40,11 @@ Rails.application.configure do
   # Raise exceptions instead of rendering exception templates.
   config.action_dispatch.show_exceptions = false
 
-  # Disable request forgery protection in test environment.
-  config.action_controller.allow_forgery_protection = false
+  # Request forgery protection is ON, as in production: with it off, the dead
+  # app-wide declaration (INF-01) went unnoticed for years. Request and
+  # controller specs send the session's token like a browser does
+  # (spec/support/csrf_helpers.rb); system specs get it from the real pages.
+  config.action_controller.allow_forgery_protection = true
 
   # Store uploaded files on the local file system in a temporary directory.
   config.active_storage.service = :test

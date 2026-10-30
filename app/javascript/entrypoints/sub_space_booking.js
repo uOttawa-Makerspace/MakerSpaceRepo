@@ -5,6 +5,7 @@ import listPlugin from "@fullcalendar/list";
 import TomSelect from "tom-select";
 import "flatpickr";
 import { Toast } from "bootstrap";
+import { csrfHeaders } from "../src/csrf";
 
 // ─── Small helpers ────────────────────────────────────────────────────────────
 
@@ -365,10 +366,10 @@ document.addEventListener("turbo:load", function () {
     makeRequest(
       new Request("/sub_space_booking", {
         method: "POST",
-        headers: {
+        headers: csrfHeaders({
           "Content-Type": "application/json",
           Accept: "application/json",
-        },
+        }),
         body: JSON.stringify(data),
       }),
       e.target,
@@ -396,10 +397,10 @@ document.addEventListener("turbo:load", function () {
     makeRequest(
       new Request(`/sub_space_booking/${id}/update`, {
         method: "PATCH",
-        headers: {
+        headers: csrfHeaders({
           "Content-Type": "application/json",
           Accept: "application/json",
-        },
+        }),
         body: JSON.stringify(data),
       }),
       btn,
@@ -413,10 +414,10 @@ document.addEventListener("turbo:load", function () {
     makeRequest(
       new Request(`/sub_space_booking/${id}/delete/${id}`, {
         method: "DELETE",
-        headers: {
+        headers: csrfHeaders({
           "Content-Type": "application/json",
           Accept: "application/json",
-        },
+        }),
       }),
       document.getElementById("bookDelete"),
     );
@@ -428,10 +429,10 @@ document.addEventListener("turbo:load", function () {
     makeRequest(
       new Request(`/sub_space_booking/${id}/delete_remaining_recurring`, {
         method: "DELETE",
-        headers: {
+        headers: csrfHeaders({
           "Content-Type": "application/json",
           Accept: "application/json",
-        },
+        }),
       }),
       document.getElementById("bookRecurringDeleteRest"),
     );
@@ -552,11 +553,6 @@ document.addEventListener("turbo:load", function () {
         url: `/sub_space_booking/bookings?room=${new URLSearchParams(
           window.location.search,
         ).get("room")}`,
-        // Attach CSRF token so Rails doesn't reject the JSON request
-        extraParams: () => ({
-          authenticity_token:
-            document.querySelector('meta[name="csrf-token"]')?.content ?? "",
-        }),
         // Surface fetch errors in the console rather than silently failing
         failure: () => {
           console.error("FullCalendar failed to fetch bookings.");

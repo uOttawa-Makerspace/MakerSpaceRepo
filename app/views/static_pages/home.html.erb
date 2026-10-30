@@ -1,4 +1,8 @@
-<% cache ["v1_home_page", current_user&.id || "anonymous", I18n.locale, @recent_projects.hash, @workshops.hash], expires_in: 10.minutes do %>
+<%# The signed-in page holds button_to forms (sign out, dismiss announcement) whose
+    CSRF tokens belong to the session that rendered them, so it is cached per
+    session, not per user: a new sign-in (new session, new token) or another
+    device must not get forms with a stale token. The guest page has none. %>
+<% cache ["v2_home_page", signed_in? ? [current_user.id, session.id.to_s] : "anonymous", I18n.locale, @recent_projects.hash, @workshops.hash], expires_in: 10.minutes do %>
 <section id="home">
   <button class="d-xl-none" id="ShortcutButton" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas-shortcuts" aria-controls="offcanvas-shortcuts">
     Shortcuts

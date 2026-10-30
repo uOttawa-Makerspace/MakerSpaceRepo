@@ -16,6 +16,19 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
   let(:visitor) { create(:user, :regular_user) }
 
   describe "PUT /staff_dashboard/add_users (sign_in_users)" do
+    # The dashboard's search form is a raw <form> (not a Rails helper); its Sign In
+    # button submits it natively (PUT via _method), so the form must carry the token.
+    it "the dashboard's Sign In form carries a valid CSRF token and signs the user in" do
+      get staff_dashboard_index_path
+      form = Nokogiri::HTML(response.body).css("form").find { |f| f.at_css("button[formaction='#{staff_dashboard_sign_in_users_path}']") }
+      fields = form.css("input[type='hidden']").to_h { |input| [input["name"], input["value"]] }
+      expect(fields["authenticity_token"]).to be_present
+
+      post staff_dashboard_sign_in_users_path, params: fields.merge("_method" => "put", "username" => visitor.username)
+      expect(response).to redirect_to(staff_dashboard_index_path(space_id: space.id))
+      expect(LabSession.where(user: visitor, space: space).active.count).to eq(1)
+    end
+
     it "signs the user in to the staff member's space for 6 hours and answers {status: ok}" do
       freeze_time do
         put "/staff_dashboard/add_users", params: { added_users: visitor.username }, as: :json

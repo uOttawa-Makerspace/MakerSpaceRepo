@@ -6,6 +6,13 @@ class RfidController < SessionsController
   # tap's params under :rfid and a tap without an rfid key made params[:rfid] a hash.
   wrap_parameters false
 
+  # The tap boxes (frozen firmware) send no CSRF token and no session cookie; they are
+  # authenticated by a registered reader's MAC (tap_reader). A tap that comes with a
+  # cookie session (the React app's staff path) is authenticated by that cookie, so
+  # it stays CSRF-checked (or goes through the legacy JSON exemption).
+  # One condition, not `only:` + `if:`: a skip with both is applied when EITHER holds.
+  skip_forgery_protection if: :tap_without_session?
+
   before_action :signed_in, only: %i[get_unset_rfids]
   before_action :grant_access, only: %i[get_unset_rfids]
 
@@ -118,6 +125,10 @@ class RfidController < SessionsController
     return @tap_mac_address if defined?(@tap_mac_address)
 
     @tap_mac_address = PiReader.normalize_mac(params[:mac_address])
+  end
+
+  def tap_without_session?
+    action_name == "card_number" && session_user.nil?
   end
 
   def tap_reader

@@ -133,12 +133,10 @@ RSpec.describe "/api/v1/session", type: :request do
       expect(error["fields"]).to eq("password" => ["is required"])
     end
 
-    it "does not need or touch a CSRF token or cookies" do
-      ActionController::Base.allow_forgery_protection = true
+    it "does not need or touch a CSRF token or cookies (forgery protection is on in the test env)" do
+      expect(ActionController::Base.allow_forgery_protection).to be(true)
       login
       expect(response).to have_http_status(:created)
-    ensure
-      ActionController::Base.allow_forgery_protection = false
     end
 
     describe "rate limit" do

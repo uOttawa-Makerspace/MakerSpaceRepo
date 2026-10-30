@@ -6,6 +6,8 @@ class SamlIdpController < ApplicationController
   include SamlIdp::Controller
   include ApplicationHelper
 
+  # Re-declared so this controller has no legacy JSON exemption
+  # (ApplicationController#legacy_json_request?): SAML is form posts only.
   protect_from_forgery with: :exception
 
   # What the gem raises for a malformed (as opposed to refused) request. Anything

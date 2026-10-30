@@ -1,4 +1,6 @@
 <form class="input-group mb-3">
+    <%# Raw form: the Sign In button POSTs (PUT via _method), so it needs the token. %>
+    <%= hidden_field_tag :authenticity_token, form_authenticity_token, id: nil %>
     <%= select_tag(:username, '', prompt: " Search for users to sign them in or out of #{@space.name.titleize}",
                    class: 'form-select',
                    id: 'user_dashboard_select',

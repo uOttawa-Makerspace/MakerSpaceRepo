@@ -1,11 +1,26 @@
 # frozen_string_literal: true
 
 class ApplicationController < ActionController::Base
-  # Prevent CSRF attacks by raising an exception.
-  # For APIs, use :null_session instead.
   rescue_from ActionController::ParameterMissing, with: :parameter_missing
-  protect_from_forgery with: :null_session,
-                       only: proc { |c| c.request.format == "application/json" }
+
+  # CSRF (INF-01): every non-GET request must carry the session's token (Rails
+  # helpers and Turbo add it; fetch() calls use src/csrf.js). A GET answered
+  # with JavaScript is only served to same-origin XHR (the cross-origin JS guard
+  # that comes with this check).
+  #
+  # The one exemption, legacy_json_request?, is for the React apps that still
+  # call these HTML-side endpoints with the cookie session (MakerRepoApp's
+  # src/utils/HTTPRequests.tsx, until it moves to /api/v1, which is Bearer-only
+  # and has no CSRF module). A request qualifies only when its body is
+  # declared application/json AND it asks for JSON. A cross-site page cannot
+  # send that Content-Type without a CORS preflight, which only the origins in
+  # config/initializers/cors.rb pass; a plain HTML form (urlencoded, multipart
+  # or text/plain) posting to /foo.json or ?format=json is still checked.
+  # Endpoints called by external systems skip the check in their own
+  # controller and authenticate the caller themselves (CustomWebhooksController,
+  # GoogleCalendarController, RfidController#card_number).
+  protect_from_forgery with: :exception
+  skip_forgery_protection if: :legacy_json_request?
   include ApplicationHelper
   require "zip"
   include Pagy::Method
@@ -50,6 +65,10 @@ class ApplicationController < ActionController::Base
   end
 
   private
+
+  def legacy_json_request?
+    request.media_type == Mime[:json].to_s && request.format.json?
+  end
 
   def set_last_seen_at
     current_user.update_attribute(:last_seen_at, Time.current)

@@ -13,9 +13,8 @@ require "rails_helper"
 #    activity hook; the idle expiry applies through session_user (INF-04).
 #  * `enforce_saml_request` halts on the gem's validity verdict (D-R13): 400
 #    for a missing/garbage request, 403 for an unknown issuer / foreign ACS.
-#  * `protect_from_forgery with: :exception` is declared here, unlike the
-#    app-wide (ineffective, D-B26) declaration, so CSRF is enforced for
-#    POST /saml/auth when forgery protection is enabled.
+#  * `protect_from_forgery with: :exception` is re-declared here, so CSRF is
+#    enforced for POST /saml/auth without the app-wide legacy JSON exemption.
 RSpec.describe "SAML IdP", type: :request do
   include Chunk18Helpers
   include SamlAuthnRequestHelper
@@ -907,17 +906,9 @@ RSpec.describe "SAML IdP", type: :request do
     end
 
     context "CSRF" do
-      around do |example|
-        original = ActionController::Base.allow_forgery_protection
-        ActionController::Base.allow_forgery_protection = true
-        example.run
-      ensure
-        ActionController::Base.allow_forgery_protection = original
-      end
-
-      it "rejects a POST without an authenticity token (this controller enforces CSRF, unlike the app-wide declaration)" do
+      it "rejects a POST without an authenticity token" do
         c18_sign_in(:regular)
-        post "/saml/auth", params: { SAMLRequest: authn_request, submit: "current_user" }
+        post "/saml/auth", params: { SAMLRequest: authn_request, submit: "current_user" }, without_csrf_token: true
         expect(response).to have_http_status(:unprocessable_content)
         expect(c18_saml_response_xml).to be_nil
       end
