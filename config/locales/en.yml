@@ -303,6 +303,7 @@ en:
       quote_saved_email_failed: "Quote saved, but the email could not be sent. Use Resend quote email."
       payment_link_unavailable: "The payment link is temporarily unavailable. Please try again in a few minutes."
       requote_draft_order_failed: "This order's quote could not be updated because its existing payment link could not be cancelled. Nothing was changed. Please try again later."
+      status_change_draft_order_failed: "The status could not be changed because this order's payment link could not be cancelled. Nothing was changed. Please try again later."
       quote_refused_paid: "This order has already been paid, so its quote can no longer be changed or declined."
       paid_order_cannot_change: "This order has already been paid, so it can no longer be changed here. Please contact makerspace@uottawa.ca to change it."
       order_sent_back_for_requote: "Your change has been saved. Because this order had already been quoted, it has been sent back to staff for a new quote. The previous quote and payment link no longer work."

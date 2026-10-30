@@ -257,23 +257,18 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
 
           @job_order.staff_comments = params[:job_order][:staff_comments] if params[:job_order][:staff_comments].present?
 
-          @job_order.job_order_statuses << JobOrderStatus.create(
-            job_order: @job_order,
-            job_status: JobStatus::USER_APPROVAL,
-            user: @user
-          )
-
           # Save first: a failed save rolls everything back and Shopify is never touched.
           unless @job_order.save
             error = true
             raise ActiveRecord::Rollback
           end
 
-          # D-J38 / JOB-03: a draft that is not current for the new quote (JobOrder#draft_order_current?) is
-          # invalidated (stale items + payable link). Fail closed: if it cannot be deleted the whole quote rolls back
-          # (no price, status or email). A fresh copy of the order reads the quote as saved.
-          if @job_order.shopify_draft_order_id.present? && !JobOrder.find(@job_order.id).draft_order_current?
-            @job_order.discard_stale_draft_order!
+          # The new quote's status. Its draft rule (JobOrder#enter_status!) voids any live Shopify draft: the customer
+          # approves the new quote and /pay builds a draft from it. Fails closed: if the draft cannot be deleted the
+          # whole quote rolls back (no price, status or email).
+          unless @job_order.transition!(from: JobOrder.quotable_statuses, to: JobStatus::USER_APPROVAL, actor: @user)
+            error = true
+            raise ActiveRecord::Rollback
           end
         end
         if refused_paid
@@ -297,7 +292,15 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
       end
     elsif params[:approved] == "false"
       # DECLINE JOB. JOB-04: never once paid (transition! reads the status under the row lock).
-      if @job_order.transition!(from: JobOrder.quotable_statuses, to: JobStatus::DECLINED, actor: @user)
+      declined = begin
+        @job_order.transition!(from: JobOrder.quotable_statuses, to: JobStatus::DECLINED, actor: @user)
+      rescue JobOrder::StaleDraftOrderError => e
+        Rails.logger.error("[job_orders#quote] decline of ##{@job_order.id} refused: #{e.message}")
+        flash[:alert] = t("job_orders.alerts.status_change_draft_order_failed")
+        return redirect_to job_order_path(@job_order.id)
+      end
+
+      if declined
         if params[:user_comments].present?
           @job_order.chat_messages.create(
             message: params[:user_comments],
@@ -361,14 +364,11 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
          nil,
          nil
        ) && params[:completed] == "true"
-      # Bypass Payment if order is 0$
-      if @job_order.total_price === 0
-        @job_order.job_order_statuses << JobOrderStatus.create(
-          job_order: @job_order,
-          job_status: JobStatus::PAID,
-          user: @user
-        )
-        JobOrderMailer.payment_succeeded(@job_order.id).deliver_now
+      # Bypass Payment if order is 0$ (through the same transition rule as any other payment)
+      if @job_order.total_price.zero?
+        if status_change_or_flash { @job_order.transition!(from: JobStatus::COMPLETED, to: JobStatus::PAID, actor: @user) }
+          JobOrderMailer.payment_succeeded(@job_order.id).deliver_now
+        end
       elsif params[:send_email].present? && params[:send_email] == "true"
         JobOrderMailer.send_job_completed(
           @job_order.id,
@@ -399,10 +399,13 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
   # Only while the customer has a live quote: a reminder re-issues the approve link, so one for an order that went
   # back to staff (or moved on) would make an unquoted or spent quote approvable again.
   def resend_quote_email
-    if @job_order.transition!(from: [JobStatus::USER_APPROVAL, JobStatus::SENT_REMINDER], to: JobStatus::SENT_REMINDER,
-                              actor: @user)
+    sent = status_change_or_flash do
+      @job_order.transition!(from: [JobStatus::USER_APPROVAL, JobStatus::SENT_REMINDER], to: JobStatus::SENT_REMINDER,
+                             actor: @user)
+    end
+    if sent
       JobOrderMailer.send_job_quote(@job_order.id, true).deliver_now
-    else
+    elsif flash[:alert].blank?
       flash[:alert] = t("job_orders.alerts.error_while_updating")
     end
     respond_to do |format|
@@ -541,6 +544,16 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
     
   end
 
+  # Runs a JobOrder#transition! (the block). When the destination's draft rule could not void the Shopify draft,
+  # nothing was committed: flash why and return false.
+  def status_change_or_flash
+    yield
+  rescue JobOrder::StaleDraftOrderError => e
+    Rails.logger.error("[job_orders] status change of ##{@job_order.id} refused: #{e.message}")
+    flash[:alert] = t("job_orders.alerts.status_change_draft_order_failed")
+    false
+  end
+
   # One status transition through JobOrder#transition! (row lock, source state and approve link checked under it).
   def update_status(
     param,
@@ -555,15 +568,16 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
     next_status = if param == "true" then true_status
                   elsif param == "false" && need_false_status then false_status
                   end
-    error = next_status.nil? ||
-            !@job_order.transition!(from: current_status, to: next_status, actor: actor, approval_token: approval_token)
+    error = next_status.nil? || !status_change_or_flash do
+      @job_order.transition!(from: current_status, to: next_status, actor: actor, approval_token: approval_token)
+    end
 
     if !error
       flash[:notice] = t(
         "job_orders.alerts.updated_job_status_to_x",
         status: @job_order.job_order_statuses.last.job_status.t_name
       )
-    else
+    elsif flash[:alert].blank?
       flash[:alert] = t("job_orders.alerts.error_while_updating")
     end
 

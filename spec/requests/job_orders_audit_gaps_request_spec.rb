@@ -157,9 +157,9 @@ RSpec.describe "JobOrders audit gaps", type: :request do
 
   # ------------------------------------------------ D-J38
 
-  # FIXED(D-J38): a re-quote that changes the price deletes the Shopify draft order
-  # (stale line items, payable old invoice) and clears the id, so the next GET /pay
-  # creates a fresh draft with the new total. Fail closed: if the old draft cannot be
+  # FIXED(D-J38): a re-quote deletes the Shopify draft order (its invoice is payable,
+  # and the customer approves the new quote first; JobOrder#enter_status!) and clears
+  # the id, so the next GET /pay creates a fresh draft with the new total. Fail closed: if the old draft cannot be
   # deleted (error, not configured, already paid/completed on Shopify) the re-quote is
   # refused and nothing changes. A PAID or later order is refused earlier, by the
   # quote's own status rule (JOB-04). A first quote (no draft) is unchanged. The pay
@@ -218,12 +218,13 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       expect(response.body).not_to include("old-invoice")
     end
 
-    it "does not touch Shopify when the re-quote leaves the price unchanged" do
+    # JOB-03 review 3: a re-quote always voids the draft, unchanged prices included
+    it "deletes the draft when the re-quote leaves the price unchanged too" do
       order, task = order_with_draft!
       requote!(order, task, 29.99)
       expect(status_names(order).last).to eq("Waiting for User Approval")
-      expect(shopify.calls).to be_empty
-      expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
+      expect(shopify_ops).to eq(["draftOrderDelete"])
+      expect(order.reload.shopify_draft_order_id).to be_nil
     end
 
     it "replaces the draft when money moves between line items without changing the total" do
@@ -250,14 +251,14 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       expect(shopify_ops).to eq(["draftOrderDelete"])
     end
 
-    it "leaves the draft alone when the quote is resubmitted unchanged (NULL parts columns, 29.99 vs 29.99)" do
+    it "re-quotes an unchanged quote with NULL parts columns (29.99 vs 29.990): the draft is voided, no 500" do
       order, task = order_with_draft!
       task.job_task_quote.update_columns(service_price: nil, service_quantity: nil)
       requote!(order, task, "29.990")
 
       expect(status_names(order).last).to eq("Waiting for User Approval")
-      expect(shopify.calls).to be_empty
-      expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
+      expect(shopify_ops).to eq(["draftOrderDelete"])
+      expect(order.reload.shopify_draft_order_id).to be_nil
     end
 
     it "does not build draft line items when the order has no draft (first quote)" do

@@ -64,16 +64,17 @@ class JobOrder < ApplicationRecord
   # JOB-02: one status transition. The row is locked (the same FOR UPDATE as JobOrdersController#quote and
   # #apply_owner_change!) and the latest status is read under the lock, so a transition cannot interleave with a
   # re-quote or an owner change. `approval_token` (an emailed approve link) is re-checked under the lock as well: a
-  # re-quote or an owner change that committed after the link was looked up has retired it. Returns true when the
-  # status row was added, false when the order is not in one of `from` (or the link is spent).
+  # re-quote or an owner change that committed after the link was looked up has retired it. The destination's
+  # draft rule (#enter_status!) runs in the same transaction: raises StaleDraftOrderError, with nothing committed,
+  # when the Shopify draft it must void cannot be voided. Returns true when the status row was added, false when
+  # the order is not in one of `from` (or the link is spent).
   def transition!(from:, to:, actor:, approval_token: nil)
     added = transaction do
       lock!
       latest = job_order_statuses.last&.job_status
       next false if latest.nil? || !Array.wrap(from).include?(latest)
       next false if approval_token && self.class.from_approval_token(approval_token)&.id != id
-      raise ActiveRecord::Rollback unless job_order_statuses.create(job_status: to, user: actor).persisted?
-
+      enter_status!(to, actor: actor)
       true
     end
     added == true
@@ -299,11 +300,10 @@ class JobOrder < ApplicationRecord
 
   class StaleDraftOrderError < StandardError; end
 
-  # D-J38: called by a re-quote that changed the price. An existing Shopify draft order still carries the
-  # OLD line items (and a payable invoice link), so it is deleted and the id cleared; the next /pay creates a
-  # fresh draft with the new total. Fails closed (raises StaleDraftOrderError) so the caller rolls the re-quote
-  # back: on any Shopify/config error, and when Shopify deletes nothing (already completed/paid draft,
-  # userErrors, unknown id). Callers refuse a paid order (JobOrder.money_taken_status?) before calling this.
+  # D-J38: deletes the stored Shopify draft order (stale line items and a payable invoice link) and clears the
+  # id; the next /pay creates a fresh draft. Fails closed (raises StaleDraftOrderError) so the caller rolls back:
+  # on any Shopify/config error, and when Shopify deletes nothing (already completed/paid draft, userErrors,
+  # unknown id). Called by #enter_status! and by /pay for a legacy draft.
   def discard_stale_draft_order!
     return if shopify_draft_order_id.blank?
 
@@ -405,8 +405,36 @@ class JobOrder < ApplicationRecord
   # Shopify draft (its payable invoice) is deleted, failing closed with StaleDraftOrderError so the caller's
   # transaction rolls back. Callers mail staff after the commit.
   def send_back_for_requote!(actor:, reason:)
-    job_order_statuses.create!(job_status: JobStatus::STAFF_APPROVAL, user: actor, reason: reason)
+    enter_status!(JobStatus::STAFF_APPROVAL, actor: actor, reason: reason)
+  end
+
+  # The one place a status row is added (#transition!, #send_back_for_requote!, and so the quote, the owner change
+  # and /pay). Caller holds the row lock. JOB-03 review 3: a live Shopify draft is a payable invoice whose URL the
+  # customer may already have, whatever the order's status. So the destination decides what happens to it:
+  # - COMPLETED (waiting for payment): kept; /pay serves it while it is current.
+  # - PAID / PICKED_UP: kept only when Shopify reports it COMPLETED (paid through it: it is the payment record);
+  #   an open draft (paid in store) is deleted so it cannot be paid a second time.
+  # - every other status (re-quoted, back to staff, approved, processing, declined, reminded): deleted.
+  # Deleting fails closed (StaleDraftOrderError), so a status that would leave a payable invoice behind is refused.
+  def enter_status!(to, actor:, reason: nil)
+    job_order_statuses.create!(job_status: to, user: actor, reason: reason)
+    return if shopify_draft_order_id.blank? || to == JobStatus::COMPLETED
+    return if self.class.money_taken_status?(to) && draft_order_completed_on_shopify?
+
     discard_stale_draft_order!
+  end
+
+  # Whether Shopify reports the stored draft COMPLETED. Fails closed: an unanswered check raises
+  # StaleDraftOrderError (the same conversion as #discard_stale_draft_order!).
+  def draft_order_completed_on_shopify?
+    state, draft = fetch_shopify_draft_order_result
+    raise StaleDraftOrderError, "Shopify did not answer the draft order check" if state == :error
+
+    state == :found && draft["status"] == "COMPLETED"
+  rescue StaleDraftOrderError
+    raise
+  rescue StandardError => e
+    raise StaleDraftOrderError, e.message
   end
 
   # [:found, invoice_url] | [:gone, nil] (blank id or Shopify says it no longer exists) | [:error, nil]
