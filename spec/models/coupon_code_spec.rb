@@ -7,7 +7,12 @@ RSpec.describe CouponCode, type: :model do
 
   it { should belong_to(:user).optional }
 
-  it "has no validations (blank code and prices are accepted)" do
+  it "refuses a negative price, accepts 0" do
+    expect(CouponCode.new(cc_cost: -1)).not_to be_valid
+    expect(CouponCode.new(cc_cost: 0)).to be_valid
+  end
+
+  it "accepts a blank code and blank prices (D-S10)" do
     expect(CouponCode.new).to be_valid
     expect { CouponCode.create! }.not_to raise_error
   end

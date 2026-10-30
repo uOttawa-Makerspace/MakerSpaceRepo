@@ -192,6 +192,17 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         expect(response.body).to include(discount_codes_path(dollar_cost: 10, cc_cost: 1000).gsub("&", "&amp;"))
       end
 
+      it "a legacy negative-price coupon answers 'not created properly', not a 500 (nothing charged)" do
+        credit_cc!(user, 100)
+        coupon = create(:coupon_code, :unclaimed, dollar_cost: 5, cc_cost: 10)
+        coupon.update_column(:cc_cost, -10)
+        post discount_codes_path, params: { dollar_cost: 5, cc_cost: -10 }
+        expect(response).to redirect_to(discount_codes_path)
+        expect(flash[:alert]).to eq("Discount Code not created properly!")
+        expect(coupon.reload.user_id).to be_nil
+        expect(user.reload.wallet).to eq(100)
+      end
+
       it "is available to staff and admin with the same economics" do
         [staff, admin].each do |u|
           get logout_path
@@ -268,6 +279,18 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         expect(created.cc_cost).to eq(25)
         expect(created.dollar_cost).to eq(3)
         expect(created.user_id).to be_nil
+      end
+
+      it "refuses a negative price on create (422, nothing saved) and on update (422, unchanged)" do
+        expect do
+          post coupon_codes_path, params: { coupon_code: { code: "NEG", cc_cost: -5, dollar_cost: 3 } }
+        end.not_to change(CouponCode, :count)
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.body).to include("Cc cost must be greater than or equal to 0")
+
+        patch coupon_code_path(coupon), params: { coupon_code: { cc_cost: -1 } }
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(coupon.reload.cc_cost).not_to eq(-1)
       end
 
       it "ignores user_id in mass assignment (not permitted)" do

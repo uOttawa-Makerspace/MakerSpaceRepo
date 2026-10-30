@@ -1,6 +1,11 @@
 require "rails_helper"
 
 RSpec.describe ProficientProject, type: :model do
+  it "refuses a negative CC price, accepts 0" do
+    expect(build(:proficient_project, cc: -1)).not_to be_valid
+    expect(build(:proficient_project, cc: 0)).to be_valid
+  end
+
   describe "Association" do
     context "has_many" do
       it { should have_many(:photos) }

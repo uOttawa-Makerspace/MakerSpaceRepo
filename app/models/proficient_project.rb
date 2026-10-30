@@ -23,6 +23,9 @@ class ProficientProject < ApplicationRecord
   has_many :proficient_project_sessions, dependent: :destroy
   belongs_to :drop_off_location, optional: true
 
+  # The CC price is never negative (a negative cc made checkout fail; DB CHECK too).
+  validates :cc, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
+
   validates :title,
             presence: {
               message: "A title is required."

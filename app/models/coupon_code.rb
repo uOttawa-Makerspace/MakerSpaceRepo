@@ -4,6 +4,10 @@ class CouponCode < ApplicationRecord
   scope :unclaimed, -> { where(user_id: nil) }
   scope :claimed, -> { where.not(user_id: nil) }
 
+  # A price is never negative (a negative cc_cost made claim! fail; DB CHECK too). A blank price
+  # stays accepted (D-S10) and such a coupon cannot be claimed (claim! needs the price).
+  validates :cc_cost, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
+
   # Trades `user`'s CC points for one unclaimed coupon worth `dollar_cost` AT `cc_cost`, the
   # price the user confirmed (a same-dollar coupon at another price is never picked; a blank
   # cc_cost matches nothing). Atomic (D-S33): the
