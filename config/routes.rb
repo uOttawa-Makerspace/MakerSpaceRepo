@@ -57,7 +57,7 @@ Rails.application.routes.draw do
 
   resources :videos, only: %i[index new create destroy]
   resources :project_kits, only: %i[index new create destroy] do
-    get :mark_delivered
+    patch :mark_delivered
     collection { get :populate_kit_users }
   end
 
@@ -559,7 +559,7 @@ Rails.application.routes.draw do
 
   resources :development_programs, only: [:index] do
     collection do
-      get :join_development_program
+      post :join_development_program
       get :skills
       get :all_badges
     end
@@ -574,7 +574,6 @@ Rails.application.routes.draw do
   resources :proficient_projects do
     get :proficient_project_modal
     collection do
-      get :join_development_program
       get :requests
       put :complete_project
       post :approve_project

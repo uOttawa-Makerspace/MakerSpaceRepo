@@ -20,7 +20,7 @@ RSpec.describe "Project kits (HTTP contract)", type: :request do
       expect { post project_kits_path, params: { project_kit: { user_id: recipient.id, proficient_project_id: project.id } } }
         .not_to change(ProjectKit, :count)
       expect { delete project_kit_path(kit) }.not_to change(ProjectKit, :count)
-      get project_kit_mark_delivered_path(kit)
+      patch project_kit_mark_delivered_path(kit)
       expect(kit.reload.delivered).to be_falsey
       expect(response.location).to include("/login")
     end
@@ -52,7 +52,7 @@ RSpec.describe "Project kits (HTTP contract)", type: :request do
       expect { post project_kits_path, params: { project_kit: { user_id: recipient.id, proficient_project_id: project.id } } }
         .not_to change(ProjectKit, :count)
       expect { delete project_kit_path(kit) }.not_to change(ProjectKit, :count)
-      get project_kit_mark_delivered_path(kit)
+      patch project_kit_mark_delivered_path(kit)
       expect(kit.reload.delivered).to be_falsey
     end
 
@@ -107,11 +107,17 @@ RSpec.describe "Project kits (HTTP contract)", type: :request do
           expect(ActionMailer::Base.deliveries).to be_empty
         end
 
-        it "marks delivered (state change on a GET) and alerts for an unknown id" do
-          get project_kit_mark_delivered_path(kit)
+        it "a GET (e.g. a cross-site link) does not mark the kit delivered" do
+          get "/project_kits/#{kit.id}/mark_delivered"
+          expect(response).to have_http_status(:not_found)
+          expect(kit.reload.delivered).to be_falsey
+        end
+
+        it "marks delivered (PATCH) and alerts for an unknown id" do
+          patch project_kit_mark_delivered_path(kit)
           expect(kit.reload.delivered).to be(true)
           expect(flash[:notice]).to eq("The kit has been marked as delivered.")
-          get project_kit_mark_delivered_path(0)
+          patch project_kit_mark_delivered_path(0)
           expect(flash[:alert]).to eq("Project kit ID was not found.")
         end
 
