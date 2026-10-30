@@ -578,7 +578,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       login!(user)
       post change_email_users_path, params: change_params.except(:current_password)
       expect(response).to redirect_to(settings_admin_path)
-      expect(flash[:alert]).to eq("Incorrect current password.")
+      expect(flash[:alert]).to eq("Please enter your current password.")
       expect(deliveries).to be_empty
     end
 

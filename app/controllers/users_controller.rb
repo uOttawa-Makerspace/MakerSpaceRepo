@@ -24,6 +24,20 @@ class UsersController < SessionsController
                   unlock_account
                 ]
 
+  # Re-authentication (the current password on change_password / change_email) is
+  # throttled per signed-in user with rate_limit: 5 attempts (right or wrong) per
+  # 15 minutes, one budget for both actions. The counter is RateLimitCounter (one
+  # atomic SQL upsert per attempt, shared by every worker), not the cache store:
+  # production has none configured, and the default FileStore loses concurrent
+  # increments. Going over signs this session out: a hijacked session is killed,
+  # the account is not. It never touches the login lockout (auth_attempts/locked).
+  # A blank current password is a validation error and is not counted.
+  REAUTH_RATE_LIMIT = { to: 5, within: 15.minutes }.freeze
+  REAUTH_LIMIT_ALERT = 'Too many current-password attempts. You have been signed out; please sign in again.'
+  rate_limit(**REAUTH_RATE_LIMIT, only: %i[change_password change_email], name: 'reauth',
+             by: -> { current_user.id }, if: :current_password_submitted?, store: RateLimitCounter,
+             with: -> { sign_out; redirect_to login_path, alert: REAUTH_LIMIT_ALERT })
+
   LINK_EXPIRED_ALERT =
     'This link has expired or has already been used. Please request a new one.'
   EMAIL_CHANGE_OTHER_ACCOUNT_ALERT =
@@ -203,9 +217,8 @@ class UsersController < SessionsController
   end
 
   def change_password
-    verdict = CredentialAuthenticator.verify_current_password(@user, params.dig(:user, :old_password))
-    unless verdict == :ok
-      flash.now[:alert] = CredentialAuthenticator.current_password_alert(@user, verdict)
+    if (alert = current_password_alert)
+      flash.now[:alert] = alert
       render 'settings/admin', layout: 'setting' and return
     end
 
@@ -227,7 +240,8 @@ class UsersController < SessionsController
     end
 
     begin
-      @user.store_new_password!(new_password)
+      # A timed (brute-force) lockout is cleared: the owner just proved the password.
+      @user.store_new_password!(new_password, clear_timed_lock: true)
     rescue ActiveRecord::ActiveRecordError => e
       Rails.error.report(e, handled: true)
       @user.reload
@@ -243,12 +257,11 @@ class UsersController < SessionsController
   end
 
   # POST only, and it needs the account's current password (the same check as
-  # change_password, counted like a login attempt): the token it mails lets
+  # change_password, throttled by REAUTH_RATE_LIMIT): the token it mails lets
   # whoever reads the new address take the account over (INF-02).
   def change_email
-    verdict = CredentialAuthenticator.verify_current_password(@user, params[:current_password])
-    unless verdict == :ok
-      redirect_to settings_admin_path, alert: CredentialAuthenticator.current_password_alert(@user, verdict)
+    if (alert = current_password_alert)
+      redirect_to settings_admin_path, alert: alert
       return
     end
 
@@ -472,6 +485,24 @@ class UsersController < SessionsController
   end
 
   private
+
+  # The current password the action was given (change_password nests it).
+  def submitted_current_password
+    (action_name == 'change_password' ? params.dig(:user, :old_password) : params[:current_password]).to_s
+  end
+
+  def current_password_submitted?
+    submitted_current_password.present?
+  end
+
+  # nil when the submitted current password is right; the alert otherwise. A plain
+  # check with no bookkeeping: throttling is REAUTH_RATE_LIMIT, and the login
+  # lockout is not involved (a stranger's failed logins must not stop the owner).
+  def current_password_alert
+    return 'Please enter your current password.' unless current_password_submitted?
+
+    'Incorrect current password.' unless @user.authenticate_password(submitted_current_password)
+  end
 
   # A live email-change token whose user is the signed-in user; sets the alert
   # otherwise.

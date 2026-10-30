@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_28_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_30_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -1099,6 +1099,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_28_120000) do
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.index ["user_id"], name: "index_quick_access_links_on_user_id"
+  end
+
+  create_table "rate_limit_counters", primary_key: "key", id: :string, force: :cascade do |t|
+    t.integer "count", default: 0, null: false
+    t.datetime "expires_at", null: false
   end
 
   create_table "recurring_bookings", force: :cascade do |t|
