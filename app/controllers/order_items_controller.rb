@@ -11,24 +11,29 @@ class OrderItemsController < DevelopmentProgramsController
 
   before_action :ensure_admin_revoke, only: :revoke
 
+  # Every cart change goes through Order#change_items!: it locks the order row (the lock checkout
+  # takes) and refuses a cart that is no longer in progress, so an item added, re-quantified or
+  # removed during a checkout can never land in (or vanish from) an order already paid for.
   def create
     @order = current_order
-    @order.user = current_user
     proficient_project =
       ProficientProject.find(params[:order_item][:proficient_project_id])
-    if @order.user.has_requirements?(proficient_project.training_requirements)
-      begin
-        @order_item = @order.order_items.new(order_item_params)
+    if current_user.has_requirements?(proficient_project.training_requirements)
+      @order.change_items! do |cart|
+        @order = cart
+        cart.user = current_user
+        @order_item = cart.order_items.new(order_item_params)
         existing_order =
-          @order.order_items.where(proficient_project: proficient_project)
+          cart.order_items.where(proficient_project: proficient_project)
         if existing_order.count < 1
-          @order.save
+          cart.save
           flash[:notice] = "Successfully added item to cart"
         else
           flash[:alert] = "You have already ordered this item"
         end
       end
     else
+      @order.user = current_user
       flash[:alert] = "You do not have the required badges to do this project"
     end
     # TODO: update when implementing coupons
@@ -40,23 +45,37 @@ class OrderItemsController < DevelopmentProgramsController
     session[:order_id] = @order.id
 
     redirect_to carts_path
+  rescue Order::CartClosed
+    flash[:alert] = CART_CLOSED_MESSAGE
+    redirect_to carts_path
   end
 
   def update
     @order = current_order
-    @order_item = @order.order_items.find(params[:id])
-    @order_item.update(order_item_params)
-    @order_items = @order.order_items
+    @order.change_items! do |cart|
+      @order = cart
+      @order_item = cart.order_items.find(params[:id])
+      @order_item.update(order_item_params)
+      @order_items = cart.order_items
+    end
+  rescue Order::CartClosed
+    head :conflict
   end
 
   def destroy
     @order = current_order
-    @order_item = @order.order_items.find(params[:id])
-    @order_item.destroy
-    @order_items = @order.order_items
+    @order.change_items! do |cart|
+      @order = cart
+      @order_item = cart.order_items.find(params[:id])
+      @order_item.destroy
+      @order_items = cart.order_items
+    end
     redirect_to carts_path, notice: "Successfully removed item from cart"
-    
+  rescue Order::CartClosed
+    redirect_to carts_path, alert: CART_CLOSED_MESSAGE
   end
+
+  CART_CLOSED_MESSAGE = "This cart was just checked out; it can no longer be changed."
 
   def revoke
     if OrderItem.find(params[:order_item_id]).update(status: "Revoked")

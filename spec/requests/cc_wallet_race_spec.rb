@@ -166,4 +166,60 @@ RSpec.describe "CC wallet races (D-S42)", type: :request do
     expect(cart.reload.order_status.name).to eq("In progress")
     expect(debits).to be_empty
   end
+
+  describe "a cart change racing its checkout is refused, never free" do
+    def charged_items(order)
+      order.reload.order_items.map { |i| [i.proficient_project_id, i.quantity] }.sort
+    end
+
+    it "an item added during checkout is refused: the paid order holds exactly what was charged" do
+      credit_cc!(user, 100)
+      cart = in_progress_order(project_one)
+      session_one = login_session
+      session_two = login_session
+
+      race(session_one, lambda {
+        session_two.post order_items_path, params: { order_item: { proficient_project_id: project_two.id, quantity: 1 } }
+      })
+
+      expect(cart.reload.order_status.name).to eq("Completed")
+      expect(charged_items(cart)).to eq([[project_one.id, 1]])
+      expect(debits).to eq([-40])
+      expect(OrderItem.where(proficient_project_id: project_two.id)).to be_empty
+      expect(session_two.flash[:alert]).to eq("This cart was just checked out; it can no longer be changed.")
+      expect(@second_waited).to be(true)
+    end
+
+    it "a quantity change during checkout is refused (409): the paid quantity stays" do
+      credit_cc!(user, 200)
+      cart = in_progress_order(project_one)
+      item = cart.order_items.first
+      session_one = login_session
+      session_two = login_session
+
+      race(session_one, lambda {
+        session_two.patch order_item_path(item), params: { order_item: { quantity: 3 } }, xhr: true
+      })
+
+      expect(session_two.response).to have_http_status(:conflict)
+      expect(charged_items(cart)).to eq([[project_one.id, 1]])
+      expect(debits).to eq([-40])
+      expect(@second_waited).to be(true)
+    end
+
+    it "a removal during checkout is refused: the paid item stays in the order" do
+      credit_cc!(user, 100)
+      cart = in_progress_order(project_one)
+      item = cart.order_items.first
+      session_one = login_session
+      session_two = login_session
+
+      race(session_one, -> { session_two.delete order_item_path(item) })
+
+      expect(charged_items(cart)).to eq([[project_one.id, 1]])
+      expect(debits).to eq([-40])
+      expect(session_two.flash[:alert]).to eq("This cart was just checked out; it can no longer be changed.")
+      expect(@second_waited).to be(true)
+    end
+  end
 end
