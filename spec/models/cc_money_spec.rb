@@ -116,7 +116,7 @@ RSpec.describe CcMoney, type: :model do
     it "debit_all! checks the TOTAL once, writes every row and refreshes the cached wallet once" do
       CcMoney.create!(user: user, cc: 30)
       sqls = sql_during do
-        in_caller_transaction { CcMoney.debit_all!(user, [[10, {}], [15, {}]]) }
+        in_caller_transaction { CcMoney.debit_all!(CcMoney.lock_wallet!(user), [[10, {}], [15, {}]]) }
       end
       expect(user.cc_moneys.order(:id).pluck(:cc)).to eq([30, -10, -15])
       expect(user.reload.wallet).to eq(5)
@@ -125,9 +125,19 @@ RSpec.describe CcMoney, type: :model do
       expect(user_locks(sqls)).to eq(1)
     end
 
+    it "debit_all! requires a Wallet held in this transaction (a User, or a Wallet of a finished transaction, is refused)" do
+      CcMoney.create!(user: user, cc: 30)
+      stale = in_caller_transaction { CcMoney.lock_wallet!(user) }
+      in_caller_transaction do
+        expect { CcMoney.debit_all!(user, [[1, {}]]) }.to raise_error(ArgumentError, /needs a Wallet held/)
+        expect { CcMoney.debit_all!(stale, [[1, {}]]) }.to raise_error(ArgumentError, /needs a Wallet held/)
+      end
+      expect(user.cc_moneys.pluck(:cc)).to eq([30])
+    end
+
     it "debit_all! refuses when the total exceeds the balance even though each item fits" do
       CcMoney.create!(user: user, cc: 20)
-      expect { in_caller_transaction { CcMoney.debit_all!(user, [[15, {}], [15, {}]]) } }
+      expect { in_caller_transaction { CcMoney.debit_all!(CcMoney.lock_wallet!(user), [[15, {}], [15, {}]]) } }
         .to raise_error(CcMoney::InsufficientBalance, "CC balance 20 does not cover 30")
       expect(user.cc_moneys.pluck(:cc)).to eq([20])
     end

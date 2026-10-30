@@ -21,10 +21,10 @@ class CcMoney < ApplicationRecord
   # A negative debit amount (e.g. a legacy negative price snapshot). Nothing is written.
   class InvalidAmount < ArgumentError; end
 
-  # A user's wallet, locked in `transaction` (see lock_wallet!).
+  # A user's wallet, locked in `transaction` (see lock_wallet!); held while that transaction is open.
   Wallet = Struct.new(:user, :transaction) do
     def held?
-      !transaction.state.finalized? && CcMoney.connection.transaction_open?
+      !transaction.state.finalized?
     end
   end
 
@@ -45,26 +45,31 @@ class CcMoney < ApplicationRecord
     Wallet.new(locked, connection.current_transaction)
   end
 
-  # THE wallet-debit operation (coupon claim, cart checkout). `payer` is a Wallet from
-  # lock_wallet! in this transaction, or a User (then the wallet is locked here). Writes one
-  # -amount row with `attrs` (e.g. order:, proficient_project:); see debit_all!.
+  # THE wallet-debit operation (coupon claim, cart checkout). `payer` is a held Wallet from
+  # lock_wallet!, or a User, whose wallet is then locked first. Writes one -amount row with
+  # `attrs` (e.g. order:, proficient_project:); see debit_all!.
   def self.debit!(payer, amount, **attrs)
-    debit_all!(payer, [[amount, attrs]]).first
+    require_caller_transaction!(:debit!)
+    wallet = payer.is_a?(Wallet) ? payer : lock_wallet!(payer)
+    debit_all!(wallet, [[amount, attrs]]).first
   end
 
-  # Several debit rows (one per cart item) with ONE balance check and ONE cache refresh:
-  # inside the caller's transaction, reads the balance uncached under the wallet lock (the
+  # Several debit rows (one per cart item) with ONE balance check and ONE cache refresh, on a
+  # HELD Wallet (lock_wallet! in this transaction; ArgumentError otherwise): reads the balance
+  # uncached under the wallet lock (the
   # request's query cache may hold a SUM from before the lock wait), raises InsufficientBalance
   # if it does not cover the total, else writes the rows and sets the cached users.wallet with
   # update_columns. entries: [[amount, attrs], ...]; amounts are integers >= 0 (0 writes a 0 row,
   # free items).
-  def self.debit_all!(payer, entries)
-    require_caller_transaction!(:debit!)
+  def self.debit_all!(wallet, entries)
+    unless wallet.is_a?(Wallet) && wallet.held?
+      raise ArgumentError, "CcMoney.debit_all! needs a Wallet held by lock_wallet! in this transaction"
+    end
+
     amounts = entries.map { |amount, _| Integer(amount) }
     negative = amounts.find(&:negative?)
     raise InvalidAmount, "debit amount must not be negative (#{negative})" if negative
 
-    wallet = payer.is_a?(Wallet) && payer.held? ? payer : lock_wallet!(payer.is_a?(Wallet) ? payer.user : payer)
     user = wallet.user
     balance = uncached { where(user_id: user.id).sum(:cc) }
     total = amounts.sum
