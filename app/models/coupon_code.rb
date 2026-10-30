@@ -4,9 +4,14 @@ class CouponCode < ApplicationRecord
   scope :unclaimed, -> { where(user_id: nil) }
   scope :claimed, -> { where.not(user_id: nil) }
 
-  # A price is never negative (a negative cc_cost made claim! fail; DB CHECK too). A blank price
-  # stays accepted (D-S10) and such a coupon cannot be claimed (claim! needs the price).
+  # Every coupon has a price, never negative (D-S10: a NULL-price coupon was offered but could
+  # never be claimed; a negative one made claim! fail). DB: NOT NULL + CHECK (cc_cost >= 0).
+  validates :cc_cost, presence: true
   validates :cc_cost, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
+
+  # What the offers page lists: unclaimed coupons that can be claimed (a price is required; the
+  # NOT NULL constraint makes the filter defence in depth).
+  scope :offered, -> { unclaimed.where.not(cc_cost: nil) }
 
   # Trades `user`'s CC points for one unclaimed coupon worth `dollar_cost` AT `cc_cost`, the
   # price the user confirmed (a same-dollar coupon at another price is never picked; a blank

@@ -307,11 +307,18 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         expect(CouponCode.find_by!(code: "NEW-2").user_id).to be_nil
       end
 
-      it "accepts a coupon with no code/prices at all" do
-        # WART(D-S10): CouponCode has no validations, so a blank, free coupon can be created
-        expect { post coupon_codes_path, params: { coupon_code: { code: "" } } }.to change(CouponCode, :count).by(1)
-        expect(CouponCode.last.code).to eq("")
-        expect(CouponCode.last.cc_cost).to be_nil
+      it "refuses a coupon without a price (fixed D-S10: a blank, free coupon used to be created)" do
+        expect { post coupon_codes_path, params: { coupon_code: { code: "" } } }.not_to change(CouponCode, :count)
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.body).to include("Cc cost This field is required.")
+      end
+
+      it "renders the admin form again with the error and still creates a priced coupon afterwards" do
+        post coupon_codes_path, params: { coupon_code: { code: "X", dollar_cost: 3 } }
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.body).to include("coupon_code[cc_cost]")
+        expect { post coupon_codes_path, params: { coupon_code: { code: "X", dollar_cost: 3, cc_cost: 0 } } }
+          .to change(CouponCode, :count).by(1)
       end
 
       it "renders the edit page" do

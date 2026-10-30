@@ -13,7 +13,7 @@ class DiscountCodesController < DevelopmentProgramsController
   end
 
   def new
-    @price_rules = CouponCode.unclaimed.distinct.pluck(:dollar_cost, :cc_cost)
+    @price_rules = CouponCode.offered.distinct.pluck(:dollar_cost, :cc_cost)
   end
 
   # The before_actions are only early, friendly refusals; CouponCode.claim! re-decides both

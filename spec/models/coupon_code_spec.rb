@@ -12,17 +12,25 @@ RSpec.describe CouponCode, type: :model do
     expect(CouponCode.new(cc_cost: 0)).to be_valid
   end
 
-  it "the database refuses a negative price too (CHECK coupon_codes_cc_cost_non_negative); NULL passes" do
+  it "the database refuses a negative or a NULL price too (CHECK coupon_codes_cc_cost_non_negative, NOT NULL)" do
     coupon = create(:coupon_code, :unclaimed, cc_cost: 10)
-    expect { coupon.update_column(:cc_cost, nil) }.not_to raise_error
     expect do
       CouponCode.transaction(requires_new: true) { coupon.update_column(:cc_cost, -1) }
     end.to raise_error(ActiveRecord::CheckViolation, /coupon_codes_cc_cost_non_negative/)
+    expect do
+      CouponCode.transaction(requires_new: true) { coupon.update_column(:cc_cost, nil) }
+    end.to raise_error(ActiveRecord::NotNullViolation)
   end
 
-  it "accepts a blank code and blank prices (D-S10)" do
-    expect(CouponCode.new).to be_valid
-    expect { CouponCode.create! }.not_to raise_error
+  it "requires a price (fixed D-S10: a blank coupon used to be valid); a blank code is still accepted" do
+    expect(CouponCode.new).not_to be_valid
+    expect(CouponCode.new.tap(&:valid?).errors[:cc_cost]).to eq(["This field is required."])
+    expect(CouponCode.new(cc_cost: 0, code: "")).to be_valid
+  end
+
+  it "offers only unclaimed coupons with a price" do
+    expect(CouponCode.offered.to_sql).to include('"coupon_codes"."cc_cost" IS NOT NULL')
+    expect(CouponCode.offered.to_sql).to include('"coupon_codes"."user_id" IS NULL')
   end
 
   it "scopes unclaimed/claimed by user_id" do
