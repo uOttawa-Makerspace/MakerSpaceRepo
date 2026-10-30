@@ -1,9 +1,28 @@
 class AddBatchesToSolidQueue < ActiveRecord::Migration[7.1]
+  # The batch_id index is built CONCURRENTLY so a large solid_queue_jobs keeps
+  # accepting inserts, which cannot run inside a transaction. Every statement
+  # below is therefore safe to re-run after a partial failure.
+  disable_ddl_transaction!
+
   def change
     # Fresh installs create all of this with the base schema, so skip
     # anything that already exists
     add_column :solid_queue_jobs, :batch_id, :bigint, if_not_exists: true
-    add_index :solid_queue_jobs, :batch_id, if_not_exists: true
+
+    # An interrupted concurrent build leaves an INVALID index that
+    # if_not_exists would skip; drop it so it is rebuilt.
+    reversible do |dir|
+      dir.up do
+        invalid = select_value(<<~SQL.squish)
+          SELECT 1 FROM pg_index i JOIN pg_class c ON c.oid = i.indexrelid
+          WHERE c.relname = 'index_solid_queue_jobs_on_batch_id'
+            AND c.relnamespace = current_schema()::regnamespace
+            AND NOT i.indisvalid
+        SQL
+        remove_index :solid_queue_jobs, name: "index_solid_queue_jobs_on_batch_id", algorithm: :concurrently if invalid
+      end
+    end
+    add_index :solid_queue_jobs, :batch_id, algorithm: :concurrently, if_not_exists: true
 
     create_table :solid_queue_batches, if_not_exists: true do |t|
       t.string :active_job_batch_id
