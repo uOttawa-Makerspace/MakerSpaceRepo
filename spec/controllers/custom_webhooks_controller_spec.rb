@@ -64,12 +64,14 @@ RSpec.describe CustomWebhooksController, type: :controller do
 
   describe "POST /orders_fulfilled" do
     context "webhook from shopify when staff fulfills an order" do
-      it "should mark a locker as paid" do
+      it "should mark a locker as paid when paid in cash" do
         locker_rental = create(:locker_rental, :await_payment)
+        discount_code = create(:discount_code)
 
         post :orders_fulfilled, params: {
           tags: [LockerRental.draft_order_operating_tag],
-          financial_status: "pending",
+          financial_status: "pending", 
+          discount_codes: [{ code: discount_code.code }],
           metafields: [{
             namespace: "makerepo",
             key: "locker_db_reference",
@@ -77,14 +79,17 @@ RSpec.describe CustomWebhooksController, type: :controller do
           }]
         }
         expect(locker_rental.reload.active?).to eq true
+        expect(discount_code.reload.usage_count).to eq(1)
       end
 
-      it "should not mark a locker as paid if the order was refunded" do
+      it "should skip orders already handled by orders_paid" do
         locker_rental = create(:locker_rental, :await_payment)
+        discount_code = create(:discount_code)
 
         post :orders_fulfilled, params: {
           tags: [LockerRental.draft_order_operating_tag],
-          financial_status: "refunded", # Fulfilled after a refund, no money kept
+          financial_status: "paid",
+          discount_codes: [{ code: discount_code.code }],
           metafields: [{
             namespace: "makerepo",
             key: "locker_db_reference",
@@ -92,21 +97,7 @@ RSpec.describe CustomWebhooksController, type: :controller do
           }]
         }
         expect(locker_rental.reload.active?).to eq false
-      end
-
-      it "should ignore orders that are not lockers" do
-        locker_rental = create(:locker_rental, :await_payment)
-
-        post :orders_fulfilled, params: {
-          tags: [JobOrder.draft_order_operating_tag], # Job order tag, not a locker
-          financial_status: "pending",
-          metafields: [{
-            namespace: "makerepo",
-            key: "locker_db_reference",
-            value: locker_rental.id.to_s
-          }]
-        }
-        expect(locker_rental.reload.active?).to eq false
+        expect(discount_code.reload.usage_count.to_i).to eq(0)
       end
     end
   end

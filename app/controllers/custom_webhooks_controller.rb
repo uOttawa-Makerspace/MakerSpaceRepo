@@ -41,17 +41,12 @@ class CustomWebhooksController < ApplicationController
     head :ok
   end
 
-  # Cash payments for lockers are recorded as fulfilled in Shopify, so treat
-  # them as paid. Only lockers, other order types are ignored.
+  # Cash payments are only recorded as fulfilled in Shopify, so they're treated as paid.
+  # Orders already paid were handled by orders_paid: skipped to avoid counting twice.
   def orders_fulfilled
-    order_hook = webhook_params.to_h
+    return head :ok if webhook_params["financial_status"] == "paid"
 
-    if LockerRental.draft_order_processable?(order_hook["tags"]) &&
-       order_hook["financial_status"].in?(%w[paid pending])
-      process_locker_hook(order_hook)
-    end
-
-    head :ok
+    orders_paid
   end
 
   private
