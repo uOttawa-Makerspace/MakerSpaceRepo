@@ -100,11 +100,12 @@ RSpec.describe "JobOrders workflow", type: :request do
       expect(status_names(order)).to end_with("Waiting for User Approval")
     end
 
-    # WART(D-J42): a negative price raises RecordInvalid; nothing is saved (rollback) and no mail goes out
-    it "raises (422 RecordInvalid) for a negative price and rolls the whole quote back" do
+    # a negative price fails validation inside the transition; nothing is saved (rollback) and no mail goes out
+    it "refuses a negative price with the update-error alert and rolls the whole quote back" do
       session_login!(staff)
       patch job_order_quote_path(order), params: quote_params(task, "job_task_quote_price_#{task.id}" => "-5")
-      expect(response).to have_http_status(:unprocessable_content)
+      expect(response).to redirect_to(job_order_path(order.id))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
       expect(task.reload.job_task_quote).to be_nil
       expect(status_names(order)).to eq(["Waiting for Staff Approval"])
       expect(deliveries).to be_empty

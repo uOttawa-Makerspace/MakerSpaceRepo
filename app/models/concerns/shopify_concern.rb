@@ -201,12 +201,6 @@ module ShopifyConcern
       [gone ? :gone : :error, nil]
     end
 
-    def shopify_draft_order_gone?(gid = shopify_draft_order_id)
-      return false if gid.blank?
-
-      fetch_shopify_draft_order_result(gid).first == :gone
-    end
-
     def create_shopify_draft_order
       create_draft_order = <<~QUERY
         mutation draftOrderCreate($input: DraftOrderInput!) {

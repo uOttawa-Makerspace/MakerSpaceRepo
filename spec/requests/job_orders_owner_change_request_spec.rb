@@ -199,7 +199,7 @@ RSpec.describe "Owner changes after the quote (JOB-01)", type: :request do
         expect(flash[:notice]).to eq(I18n.t("job_orders.alerts.order_sent_back_for_requote"))
         expect_requote_mail(order)
         if key == :completed
-          expect(shopify_ops).to eq(["draftOrderDelete"])
+          expect(shopify_ops).to eq(%w[getDraftOrder draftOrderDelete])
           expect(order.reload.shopify_draft_order_id).to be_nil
         end
       end
@@ -250,7 +250,7 @@ RSpec.describe "Owner changes after the quote (JOB-01)", type: :request do
         if sends_back
           expect(status_rows(order).last)
             .to have_attributes(job_status: JobStatus::STAFF_APPROVAL, user: owner, reason: "owner_change")
-          expect(shopify_ops).to eq(["draftOrderDelete"])
+          expect(shopify_ops).to eq(%w[getDraftOrder draftOrderDelete])
           expect(order.reload.shopify_draft_order_id).to be_nil
           expect_requote_mail(order)
         else

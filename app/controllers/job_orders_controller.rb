@@ -186,115 +186,32 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
   def quote
     error = false
     mail_failed = false
-    refused_paid = false
-    refusal = nil
 
     return flash[:alert] = t("job_orders.alerts.error_while_updating") if params[:approved].blank?
 
-    if params[:approved].present? && params[:approved] == "true"
-      # ACCEPT JOB
+    if params[:approved] == "true"
+      # ACCEPT JOB. The prices and the new status are one transition: its own transaction, row lock first
+      # (concurrent re-quotes serialize; the status is read under the lock, and a paid order is refused there,
+      # JOB-04), the new quote's draft rule voiding any live Shopify draft (fail closed: if it cannot be deleted
+      # nothing is written: no price, status or email). A refusal is reported by the model, once.
       begin
-        JobOrder.transaction do
-          # Row lock first (FOR UPDATE; no other row is locked in this flow, so there is no lock-order issue):
-          # concurrent re-quotes serialize, and the status / "before" draft line items are read under the lock.
-          @job_order.lock!
-          status_before = @job_order.job_order_statuses.reorder(:id).last&.job_status
-          # JOB-04: a paid order is never re-quoted, with or without a draft, whatever the prices
-          if JobOrder.money_taken_status?(status_before)
-            refused_paid = true
-            raise ActiveRecord::Rollback
-          end
-
-          @job_order.job_tasks.each do |task|
-            price_key = "job_task_quote_price_#{task.id}"
-            job_task_quote = task.job_task_quote || task.build_job_task_quote
-            job_task_quote.price = params[price_key].presence || 0.0
-          
-            # Service
-            qty_key   = "task_#{task.id}_service_qty"
-            svc_price_key = "task_#{task.id}_service_price"
-          
-            job_task_quote.service_quantity = params[qty_key].presence || 0.0
-            job_task_quote.service_price = params[svc_price_key].presence || 0.0
-
-            job_task_quote.save!
-
-            # Options
-            task.job_task_options.each do |option|
-              opt_key = "task_#{task.id}_option_price_#{option.job_option_id}"
-              next if params[opt_key].blank?
-
-              qt_option = job_task_quote.job_task_quote_options.find_or_initialize_by(job_option_id: option.job_option_id)
-              qt_option.price = params[opt_key]
-              qt_option.save!
-            end
-
-            file_key = "task_#{task.id}_staff_files"
-            next if params[file_key].blank?
-            params[file_key].each do |file|
-              task.staff_files.attach(file)
-            end
-          end
-
-          # line items
-          if params[:job_quote_line_items].present?
-            @job_order.job_quote_line_items.destroy_all
-
-            params[:job_quote_line_items].each_value do |item_params|
-              desc = item_params[:description].to_s.strip
-              price = item_params[:price].to_s.strip
-
-              next if desc.blank? && price.blank?
-
-              @job_order.job_quote_line_items.create!(
-                description: desc,
-                price: price.presence || 0.0
-              )
-            end
-          end
-
-          if params[:user_comments].present?
-            @job_order.chat_messages.create(
-              message: params[:user_comments],
-              sender: current_user
-            )
-          end
-
-          @job_order.staff_comments = params[:job_order][:staff_comments] if params[:job_order][:staff_comments].present?
-
-          # Save first: a failed save rolls everything back and Shopify is never touched.
-          unless @job_order.save
-            error = true
-            raise ActiveRecord::Rollback
-          end
-
-          # The new quote's status. Its draft rule (JobOrder#enter_status!) voids any live Shopify draft: the customer
-          # approves the new quote and /pay builds a draft from it. Fails closed: if the draft cannot be deleted the
-          # whole quote rolls back (no price, status or email).
-          refusal = @job_order.transition!(from: JobOrder.quotable_statuses, to: JobStatus::USER_APPROVAL, actor: @user)
-          raise ActiveRecord::Rollback unless refusal.ok?
-
-          refusal = nil
-        end
-        if refused_paid
-          flash[:alert] = t("job_orders.alerts.quote_refused_paid")
-          return redirect_to job_order_path(@job_order.id)
-        end
-        if refusal
-          Rails.logger.error("[job_orders#quote] re-quote of ##{@job_order.id} refused: #{refusal.reason}")
-          key = refusal.reason == :draft_not_voidable ? "job_orders.alerts.requote_draft_order_failed" : refusal.message_key
-          flash[:alert] = t(key)
-          return redirect_to job_order_path(@job_order.id)
-        end
-        # After the commit: a mail failure must not roll back a quote whose old Shopify draft is already
-        # deleted (the restored id would point at a deleted draft). Staff can use resend_quote_email.
-        unless error
-          begin
-            JobOrderMailer.send_job_quote(@job_order.id).deliver_now
-          rescue StandardError => e
-            Rails.logger.error("[job_orders#quote] quote email for ##{@job_order.id} failed: #{e.class}: #{e.message}")
-            mail_failed = true
-          end
+        result = @job_order.transition!(from: JobOrder.quotable_statuses, to: JobStatus::USER_APPROVAL,
+                                        actor: @user) { apply_quote_params! }
+      rescue JobOrder::ChangeInvalid
+        error = true
+      end
+      if result && !result.ok?
+        flash[:alert] = t(refusal_alert_key(result, requote: true))
+        return redirect_to job_order_path(@job_order.id)
+      end
+      # After the commit: a mail failure must not roll back a quote whose old Shopify draft is already
+      # deleted (the restored id would point at a deleted draft). Staff can use resend_quote_email.
+      unless error
+        begin
+          JobOrderMailer.send_job_quote(@job_order.id).deliver_now
+        rescue StandardError => e
+          Rails.logger.error("[job_orders#quote] quote email for ##{@job_order.id} failed: #{e.class}: #{e.message}")
+          mail_failed = true
         end
       end
     elsif params[:approved] == "false"
@@ -310,9 +227,7 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
         end
         JobOrderMailer.send_job_declined(@job_order.id).deliver_now
       else
-        paid = declined.reason == :wrong_state &&
-               JobOrder.money_taken_status?(@job_order.reload.job_order_statuses.last&.job_status)
-        flash[:alert] = t(paid ? "job_orders.alerts.quote_refused_paid" : declined.message_key)
+        flash[:alert] = t(refusal_alert_key(declined))
         return redirect_to job_order_path(@job_order.id)
       end
     else
@@ -553,6 +468,74 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
       flash[:alert] = t("job_orders.alerts.cannot_access_area")
       redirect_to root_path
     
+  end
+
+  # The quote form's writes, run by JobOrder#transition! under the order's row lock (the order was reloaded by
+  # lock!, so its tasks are read fresh). Validation failures raise, which rolls the transition back.
+  def apply_quote_params!
+    @job_order.job_tasks.each do |task|
+      price_key = "job_task_quote_price_#{task.id}"
+      job_task_quote = task.job_task_quote || task.build_job_task_quote
+      job_task_quote.price = params[price_key].presence || 0.0
+
+      # Service
+      qty_key   = "task_#{task.id}_service_qty"
+      svc_price_key = "task_#{task.id}_service_price"
+
+      job_task_quote.service_quantity = params[qty_key].presence || 0.0
+      job_task_quote.service_price = params[svc_price_key].presence || 0.0
+
+      job_task_quote.save!
+
+      # Options
+      task.job_task_options.each do |option|
+        opt_key = "task_#{task.id}_option_price_#{option.job_option_id}"
+        next if params[opt_key].blank?
+
+        qt_option = job_task_quote.job_task_quote_options.find_or_initialize_by(job_option_id: option.job_option_id)
+        qt_option.price = params[opt_key]
+        qt_option.save!
+      end
+
+      file_key = "task_#{task.id}_staff_files"
+      next if params[file_key].blank?
+      params[file_key].each do |file|
+        task.staff_files.attach(file)
+      end
+    end
+
+    # line items
+    if params[:job_quote_line_items].present?
+      @job_order.job_quote_line_items.destroy_all
+
+      params[:job_quote_line_items].each_value do |item_params|
+        desc = item_params[:description].to_s.strip
+        price = item_params[:price].to_s.strip
+
+        next if desc.blank? && price.blank?
+
+        @job_order.job_quote_line_items.create!(description: desc, price: price.presence || 0.0)
+      end
+    end
+
+    if params[:user_comments].present?
+      @job_order.chat_messages.create(message: params[:user_comments], sender: current_user)
+    end
+
+    @job_order.staff_comments = params[:job_order][:staff_comments] if params[:job_order][:staff_comments].present?
+    @job_order.save!
+  end
+
+  # The message for a refused quote / decline: a paid order says so (JOB-04); the order is as lock! left it.
+  def refusal_alert_key(result, requote: false)
+    if result.reason == :wrong_state &&
+       JobOrder.money_taken_status?(@job_order.job_order_statuses.last&.job_status)
+      "job_orders.alerts.quote_refused_paid"
+    elsif requote && result.reason == :draft_not_voidable
+      "job_orders.alerts.requote_draft_order_failed"
+    else
+      result.message_key
+    end
   end
 
   # One status transition through JobOrder#transition! (row lock, source state and approve link checked under it).

@@ -39,7 +39,7 @@ RSpec.describe "Job order transition failure contract", type: :request do
 
       expect(result).not_to be_ok
       expect(result.reason).to eq(:invalid_status_row)
-      expect(result.message_key).to eq("job_orders.alerts.status_change_not_recorded")
+      expect(result.message_key).to eq("job_orders.alerts.status_change.invalid_status_row")
       expect(status_names(order)).to eq(["Waiting to be Processed"])
     end
 
@@ -50,7 +50,7 @@ RSpec.describe "Job order transition failure contract", type: :request do
       patch job_order_start_processing_path(order), params: { start_processing: "true" }
 
       expect(response).to redirect_to(job_order_path(order.id))
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change_not_recorded"))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.invalid_status_row"))
       expect(status_names(order)).to eq(["Waiting to be Processed"])
     end
 
@@ -71,7 +71,7 @@ RSpec.describe "Job order transition failure contract", type: :request do
       patch job_order_quote_path(order), params: { approved: "true", "job_task_quote_price_#{task.id}" => "77",
                                                    job_order: { staff_comments: "" } }
 
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change_not_recorded"))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.invalid_status_row"))
       expect(order.reload.total_price).to eq(BigDecimal("29.99"))
       expect(status_names(order)).to eq(["Waiting for Staff Approval"])
       expect(ActionMailer::Base.deliveries).to be_empty
@@ -83,7 +83,7 @@ RSpec.describe "Job order transition failure contract", type: :request do
       session_login!(staff)
       patch job_order_quote_path(order), params: { approved: "false", job_order: { staff_comments: "" } }
 
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change_not_recorded"))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.invalid_status_row"))
       expect(status_names(order)).to eq(["Waiting for Staff Approval"])
     end
   end
@@ -155,7 +155,8 @@ RSpec.describe "Job order transition failure contract", type: :request do
       expect(Rails.error).to receive(:report)
         .with(an_instance_of(JobOrder::StaleDraftOrderError),
               handled: true, context: { job_order_id: order.id, from: ["Completed (Waiting for Payment)"],
-                                        to: "Paid (Waiting for Pick-Up)" }).once
+                                        to: "Paid (Waiting for Pick-Up)",
+                                        where: "JobOrder#transition!" }).once
       allow(Rails.logger).to receive(:error)
 
       result = order.transition!(from: JobStatus::COMPLETED, to: JobStatus::PAID, actor: staff)
@@ -173,7 +174,7 @@ RSpec.describe "Job order transition failure contract", type: :request do
       result = order.transition!(from: JobStatus::BEING_PROCESSED, to: JobStatus::COMPLETED, actor: staff)
 
       expect(result.reason).to eq(:order_missing)
-      expect(result.message_key).to eq("job_orders.alerts.status_change_order_missing")
+      expect(result.message_key).to eq("job_orders.alerts.status_change.order_missing")
     end
 
     it "a lock wait timeout is a refusal with a retry message" do
@@ -183,7 +184,7 @@ RSpec.describe "Job order transition failure contract", type: :request do
       result = order.transition!(from: JobStatus::BEING_PROCESSED, to: JobStatus::COMPLETED, actor: staff)
 
       expect(result.reason).to eq(:busy)
-      expect(result.message_key).to eq("job_orders.alerts.status_change_busy")
+      expect(result.message_key).to eq("job_orders.alerts.status_change.busy")
       expect(status_names(order)).to eq(["Currently being Processed"])
     end
 
@@ -203,32 +204,96 @@ RSpec.describe "Job order transition failure contract", type: :request do
       expect(result.reason).to eq(:invalid_status_row)
     end
 
-    it "has en and fr messages for every refusal message key" do
-      %i[wrong_state link_spent draft_not_voidable invalid_status_row order_missing busy].each do |reason|
+    it "has en and fr messages for every reason with its own message, and the generic ones for the rest" do
+      (JobOrder::TransitionResult::REASONS_WITH_MESSAGE + %i[wrong_state link_spent]).each do |reason|
         result = JobOrder::TransitionResult.refused(reason)
         %i[en fr].each do |locale|
           expect(I18n.t(result.message_key, locale: locale, raise: true)).to be_present
           expect(I18n.t(result.zero_order_message_key, locale: locale, raise: true)).to be_present
         end
       end
+      expect(JobOrder::TransitionResult.refused(:wrong_state).message_key).to eq("job_orders.alerts.error_while_updating")
+      expect(JobOrder::TransitionResult.refused(:wrong_state).zero_order_message_key)
+        .to eq("job_orders.alerts.zero_order_not_marked_paid.other")
     end
 
-    it "a refused transition inside a caller's transaction leaves no status row and keeps the draft id" do
+    # A race lost is not a failure: nothing goes to the error reporter, no error-level log.
+    it "does not report or error-log an order deleted before the lock" do
+      order = make_job_order!(owner: owner, status_key: :being_processed)
+      JobOrderStatus.where(job_order_id: order.id).delete_all
+      JobOrder.where(id: order.id).delete_all
+      expect(Rails.error).not_to receive(:report)
+      allow(Rails.logger).to receive(:error)
+      allow(Rails.logger).to receive(:info)
+
+      order.transition!(from: JobStatus::BEING_PROCESSED, to: JobStatus::COMPLETED, actor: staff)
+
+      expect(Rails.logger).not_to have_received(:error)
+      expect(Rails.logger).to have_received(:info).with(/order_missing/)
+    end
+
+    it "does not report or error-log a lock wait timeout" do
+      order = quoted_order!(:being_processed)
+      allow(order).to receive(:lock!).and_raise(ActiveRecord::LockWaitTimeout)
+      expect(Rails.error).not_to receive(:report)
+      allow(Rails.logger).to receive(:error)
+      allow(Rails.logger).to receive(:info)
+
+      expect(order.transition!(from: JobStatus::BEING_PROCESSED, to: JobStatus::COMPLETED, actor: staff).reason).to eq(:busy)
+
+      expect(Rails.logger).not_to have_received(:error)
+      expect(Rails.logger).to have_received(:info).with(/busy/)
+    end
+
+    it "a transition is its own transaction: inside a caller's transaction it refuses to run" do
+      order = quoted_order!(:being_processed)
+
+      expect do
+        ActiveRecord::Base.transaction do
+          order.transition!(from: JobStatus::BEING_PROCESSED, to: JobStatus::COMPLETED, actor: staff)
+        end
+      end.to raise_error(ArgumentError, /must run as its own transaction/)
+    end
+
+    it "bounds the lock wait of its own transaction" do
+      order = quoted_order!(:being_processed)
+      seen = nil
+      allow(order).to receive(:lock!).and_wrap_original do |m, *args|
+        seen = JobOrder.connection.select_value("SELECT current_setting('lock_timeout')")
+        m.call(*args)
+      end
+
+      order.transition!(from: JobStatus::BEING_PROCESSED, to: JobStatus::COMPLETED, actor: staff)
+
+      expect(seen).to eq(ApplicationRecord::LOCK_TIMEOUT)
+    end
+
+    it "a refusal rolls back everything: the block's writes, the status row and the draft id" do
       order = quoted_order!(:completed)
       draft = "gid://shopify/DraftOrder/9001"
       order.update_column(:shopify_draft_order_id, draft)
       shopify.delete_user_errors = [{ "field" => "id", "message" => "cannot delete" }]
-      result = nil
 
-      ActiveRecord::Base.transaction do
-        result = order.transition!(from: JobStatus::COMPLETED, to: JobStatus::DECLINED, actor: staff)
-        # the caller does NOT raise Rollback: the outer transaction commits
+      result = order.transition!(from: JobStatus::COMPLETED, to: JobStatus::DECLINED, actor: staff) do
+        order.job_quote_line_items.create!(description: "Rush", price: 5)
       end
 
       expect(result.reason).to eq(:draft_not_voidable)
       expect(status_names(order)).to eq(["Completed (Waiting for Payment)"])
+      expect(order.job_quote_line_items.count).to eq(0)
       expect(reload_free(order).shopify_draft_order_id).to eq(draft)
-      expect(order.shopify_draft_order_id).to eq(draft) # and the record in memory agrees
+      expect(order.shopify_draft_order_id).to eq(draft) # and the record in memory agrees (reloaded)
+    end
+
+    it "the block's validation failure raises ChangeInvalid, not an invalid-status-row refusal, and commits nothing" do
+      order = quoted_order!(:being_processed)
+
+      expect do
+        order.transition!(from: JobStatus::BEING_PROCESSED, to: JobStatus::COMPLETED, actor: staff) do
+          order.job_quote_line_items.create!(description: "x", price: -1)
+        end
+      end.to raise_error(JobOrder::ChangeInvalid)
+      expect(status_names(order)).to eq(["Currently being Processed"])
     end
   end
 end

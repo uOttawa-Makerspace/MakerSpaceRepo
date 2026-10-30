@@ -117,7 +117,7 @@ RSpec.describe "Job order pay link fingerprint (JOB-03)", type: :request do
                                                    job_order: { staff_comments: "" } }
 
       expect(status_names(order).last).to eq("Waiting for User Approval")
-      expect(shopify_ops).to eq(["draftOrderDelete"])
+      expect(shopify_ops).to eq(%w[getDraftOrder draftOrderDelete])
       expect(order.reload.shopify_draft_order_id).to be_nil
     end
 
