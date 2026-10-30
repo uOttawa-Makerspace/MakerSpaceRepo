@@ -63,70 +63,88 @@ class JobOrder < ApplicationRecord
     not_deleted.where.not(user_id: nil).find_by_token_for(:pay, token)
   end
 
-  # The outcome of #transition!: ok?, or refused with a reason and the message to show for it.
-  #   :wrong_state         the order is not in one of `from`
+  # The outcome of a locked operation on an order (#transition!, #apply_owner_change!, #checkout_link,
+  # #soft_delete!, #retire_stale_draft!): ok?, or refused with a reason. Nothing is committed on a refusal.
+  #   :wrong_state         the order is not in one of `from` (or, for an owner change, money was taken)
   #   :link_spent          the emailed approve link was retired (re-quote / owner change) before the lock
-  #   :draft_not_voidable  the destination's draft rule could not settle the Shopify draft (StaleDraftOrderError)
+  #   :draft_not_voidable  the Shopify draft could not be settled (StaleDraftOrderError; any Shopify error)
   #   :invalid_status_row  the status row did not validate or could not be written (no actor, unseeded status)
-  #   :order_missing       the order was deleted between the caller's lookup and the lock
-  #   :busy                the row lock could not be had (lock wait timeout, deadlock); nothing was changed, retry
-  # `error` is the exception behind a refusal made from one (#transition! reports and logs it, once).
-  class TransitionResult < Data.define(:reason, :error)
+  #   :change_invalid      the caller's own writes did not validate; `error.message` holds the messages
+  #   :order_missing       the order was deleted (hard, or soft) before the lock
+  #   :busy                the row lock was not granted within the lock timeout; nothing was changed, retry
+  #   :deadlock            the database chose this operation as the deadlock victim; nothing was changed, retry
+  # `status` is the order's latest status as read under the lock (nil when the lock was not had), so a caller
+  # decides "already paid" from what the operation saw, not from a later re-read. `value` is what a successful
+  # operation returns (the invoice url, whether the order was sent back, the draft outcome).
+  # `error` is the exception behind a refusal made from one (reported and logged once, by JobOrder#refuse_from).
+  class TransitionResult < Data.define(:reason, :error, :status, :value)
     # The reasons that have their own message (job_orders.alerts.status_change.<reason>, and for the $0 bypass
     # job_orders.alerts.zero_order_not_marked_paid.<reason>). Every other reason falls back to a generic one.
     REASONS_WITH_MESSAGE = %i[draft_not_voidable invalid_status_row order_missing busy].freeze
+    # A deadlock is shown as the same "try again" as a busy row.
+    MESSAGE_REASON = { deadlock: :busy }.freeze
+    GENERIC_MESSAGE = "job_orders.alerts.error_while_updating"
+    # The reasons a delete can be refused for (job_orders.alerts.delete_refused.<reason>).
+    DELETE_REASONS = %i[draft_not_voidable order_missing busy].freeze
 
-    def self.done = new(reason: nil, error: nil)
-    def self.refused(reason, error = nil) = new(reason: reason, error: error)
+    def self.done(value = nil) = new(reason: nil, error: nil, status: nil, value: value)
+    def self.refused(reason, error = nil) = new(reason: reason, error: error, status: nil, value: nil)
     def ok? = reason.nil?
 
     # The $0 bypass in #processed: the order was already moved to Completed, so "nothing was changed" would be
     # false. Its own messages say the order is Completed and why it could not be marked Paid.
     def zero_order_message_key
-      "job_orders.alerts.zero_order_not_marked_paid.#{REASONS_WITH_MESSAGE.include?(reason) ? reason : 'other'}"
+      message_key("job_orders.alerts.zero_order_not_marked_paid",
+                  fallback: "job_orders.alerts.zero_order_not_marked_paid.other")
     end
 
-    def message_key
-      return "job_orders.alerts.error_while_updating" unless REASONS_WITH_MESSAGE.include?(reason)
-
-      "job_orders.alerts.status_change.#{reason}"
+    # `scope` holds a message per reason in `reasons`; any other reason gets `fallback`.
+    def message_key(scope = "job_orders.alerts.status_change", reasons: REASONS_WITH_MESSAGE, fallback: GENERIC_MESSAGE)
+      key = MESSAGE_REASON.fetch(reason, reason)
+      reasons.include?(key) ? "#{scope}.#{key}" : fallback
     end
   end
 
+  # The lock on the order row could not be taken (see #lock_row!); carries the TransitionResult reason.
+  class RowLockFailed < StandardError
+    attr_reader :reason
+
+    def initialize(reason)
+      @reason = reason
+      super("job order row lock failed (#{reason})")
+    end
+  end
+
+  # The status row could not be written (it did not validate, or the database rejected it).
+  class StatusRowInvalid < StandardError
+    def initialize(error)
+      super("#{error.class}: #{error.message}")
+    end
+  end
+
+  # The destination of an order that is being deleted: no status, but the same draft rule as a non-payable one.
+  DELETED = :deleted
+
   # JOB-02: one status transition, with one failure contract: it always returns a TransitionResult, and every
-  # refusal is a result, never an exception, with nothing committed. The transaction is the method's own
-  # (ApplicationRecord.own_transaction: every lock wait is bounded, and it refuses to run inside a caller's
-  # transaction), so a caller never wraps it. The row is locked (the same FOR UPDATE as #apply_owner_change!) and
-  # the latest status is read under the lock, so a transition cannot interleave with a re-quote or an owner change.
-  # `approval_token` (an emailed approve link) is re-checked under the lock as well.
+  # refusal is a result, never an exception, with nothing committed (#locked_operation). The caller never wraps it
+  # in a transaction. The latest status is read under the row lock, so a transition cannot interleave with a
+  # re-quote or an owner change. `approval_token` (an emailed approve link) is re-checked under the lock as well.
   # The optional block holds the writes that must be atomic with the transition (a quote's prices): it runs under
-  # the lock after the source state is checked and before the status row is written; its validation failures raise
-  # ChangeInvalid. The destination's draft rule (#enter_status!) runs in the same transaction, so a refusal undoes
+  # the lock after the source state is checked and before the status row is written; its validation failures are
+  # :change_invalid. The destination's draft rule (#enter_status!) runs in the same transaction, so a refusal undoes
   # everything: the block's writes, the status row, the draft id.
-  # Every refusal made from an exception is reported in one place (#refuse_from), so callers do not log. On such a
-  # refusal the record is reloaded (unsaved in-memory changes do not survive it); after :wrong_state / :link_spent
-  # it is as lock! left it, fresh from the database.
   def transition!(from:, to:, actor:, approval_token: nil, &changes)
-    self.class.own_transaction("JobOrder#transition!") do
-      lock!
-      latest = job_order_statuses.last&.job_status
+    label = "transition! #{Array.wrap(from).map { |s| s&.name }} -> #{to&.name}"
+    locked_operation(label) do |latest|
       next TransitionResult.refused(:wrong_state) if latest.nil? || !Array.wrap(from).include?(latest)
       if approval_token && self.class.from_approval_token(approval_token)&.id != id
         next TransitionResult.refused(:link_spent)
       end
 
       apply_change(&changes) if changes
-      enter_status!(to, actor: actor)
+      enter_status!(to, from: latest, actor: actor)
       TransitionResult.done
     end
-  rescue StaleDraftOrderError => e
-    refuse_from(e, :draft_not_voidable, from, to)
-  rescue ActiveRecord::RecordNotFound => e
-    refuse_from(e, :order_missing, from, to)
-  rescue ActiveRecord::LockWaitTimeout, ActiveRecord::Deadlocked => e
-    refuse_from(e, :busy, from, to)
-  rescue ActiveRecord::RecordInvalid, ActiveRecord::NotNullViolation => e
-    refuse_from(e, :invalid_status_row, from, to)
   end
 
   # JOB-04: once money has been taken the quote is final. Nothing on the customer or quoting side may change the
@@ -156,10 +174,8 @@ class JobOrder < ApplicationRecord
        JobStatus::COMPLETED].include?(status)
   end
 
-  class OwnerChangeRefused < StandardError; end
-
-  # The owner change's own writes did not validate (a task, an option, a custom service) or a destroy was aborted.
-  # Carries the record's messages. Nothing was committed.
+  # The caller's own writes did not validate (a task, an option, a custom service, a quote price) or a destroy was
+  # aborted. Carries the record's messages. Nothing was committed.
   class ChangeInvalid < StandardError
     def initialize(error)
       messages = error.record&.errors&.full_messages.presence
@@ -167,41 +183,35 @@ class JobOrder < ApplicationRecord
     end
   end
 
-  # The order could not be sent back to staff (its status row could not be written). Nothing was committed.
-  class SendBackFailed < StandardError; end
-
   # JOB-01 (owner decision 2026-10-30): the one way the order's tasks, task options, files, services and wizard
   # comments are changed from the customer side (JobTasksController; an admin using the same wizard goes through it
-  # too). The block makes the change. Under the row lock (the same FOR UPDATE as #quote and #transition!), by the
-  # status read under that lock:
-  # - PAID, PICKED_UP: OwnerChangeRefused, before the block runs.
+  # too). The block makes the change. Under the row lock (#locked_operation, the one lock of #transition! and
+  # #checkout_link too), by the status read under that lock:
+  # - PAID, PICKED_UP: refused as :wrong_state, before the block runs.
   # - DRAFT, STAFF_APPROVAL, DECLINED: the change is applied; the status is unchanged.
   # - a quoted status: the change is applied and, only when it changed what is billed (#quote_fingerprint) or what
-  #   is made (#work_fingerprint), the order goes back to staff in the same transaction (#send_back_for_requote!,
-  #   which voids the Shopify draft, failing closed with StaleDraftOrderError) and staff are mailed after the
-  #   commit. A save without changes, a blank task (no type, service, files or options: it bills nothing) and
-  #   comments (posted by the caller after the commit) change neither, so they do not send the order back.
-  # The block's own validation failures raise ChangeInvalid; a send-back that cannot be written raises
-  # SendBackFailed. Either way nothing is committed. Returns true when the order was sent back to staff.
-  def apply_owner_change!(actor:)
-    sent_back = transaction do
-      lock!
-      status = job_order_statuses.last&.job_status
-      raise OwnerChangeRefused if self.class.money_taken_status?(status)
+  #   is made (#work_fingerprint), the order goes back to staff in the same transaction (#enter_status!, which
+  #   voids the Shopify draft, failing closed) and staff are mailed after the commit. A save without changes, a
+  #   blank task (no type, service, files or options: it bills nothing) and comments (posted by the caller after the
+  #   commit) change neither, so they do not send the order back.
+  # Returns a TransitionResult whose value is true when the order was sent back to staff.
+  def apply_owner_change!(actor:, &changes)
+    result = locked_operation("apply_owner_change!") do |status|
+      next TransitionResult.refused(:wrong_state) if self.class.money_taken_status?(status)
 
       quoted = self.class.quoted_status?(status)
       before = change_fingerprints if quoted
-      apply_change { yield }
-      next false unless quoted
+      apply_change(&changes)
+      next TransitionResult.done(false) unless quoted
 
       @quote_snapshot = nil # the block changed the rows the snapshot was loaded from
-      next false if change_fingerprints == before
+      next TransitionResult.done(false) if change_fingerprints == before
 
-      send_back_for_requote!(actor: actor, reason: "owner_change")
-      true
+      enter_status!(JobStatus::STAFF_APPROVAL, from: status, actor: actor, reason: "owner_change")
+      TransitionResult.done(true)
     end
-    JobOrderMailer.send_job_requote_needed(id, "owner_change").deliver_later if sent_back
-    sent_back
+    JobOrderMailer.send_job_requote_needed(id, "owner_change").deliver_later if result.ok? && result.value
+    result
   end
 
   # Digest of what the order's tasks ask to be made, read fresh: per non-blank task (id order) its job type, service
@@ -328,11 +338,13 @@ class JobOrder < ApplicationRecord
   #   delete fails closed: if Shopify will not delete it (e.g. already paid there) nothing is served.
   # - fingerprint mismatch: the quote changed after the draft was made without a re-quote or an owner change
   #   (both void the draft themselves), so the customer never approved the current items. Neither the old nor a
-  #   new draft is served: the order goes back to staff (#send_back_for_requote!, reason "invoice_mismatch") and
+  #   new draft is served: the order goes back to staff (#enter_status!, reason "invoice_mismatch") and
   #   staff are mailed after the commit. If the draft cannot be deleted nothing changes and nothing is served.
-  # A current draft is served without a lock (one fetch). Anything else is re-decided under the row lock: with_lock
+  # A current draft is served without a lock (one fetch). Anything else is re-decided under the row lock: the lock
   # reloads the row (dropping the snapshots), then the status, the probe, the fingerprint check and any create read
   # fresh data; the Shopify calls on that path run inside the lock.
+  # Returns a TransitionResult whose value is the invoice url or nil (see above); a refusal (Shopify unreachable,
+  # busy row, order deleted, the send-back's status row not written) has already been reported by #refuse_from.
   def checkout_link
     # Lock-free fast path: a COMPLETED order whose stored draft is current (read without a lock) is served by one
     # fetch. A race with a change that voids the draft is safe: the void deletes it on Shopify, the fetch then finds
@@ -341,23 +353,20 @@ class JobOrder < ApplicationRecord
     # transaction deletes the draft fail closed, so the link is dead as soon as the transition commits and a
     # refused transition leaves the order, and so the link, as it was.
     if job_order_statuses.last&.job_status == JobStatus::COMPLETED && draft_order_current?
-      state, url = probe_draft_order
-      return url if state == :found
-      return nil if state == :error
+      state, url = shopify_fail_closed { probe_draft_order }
+      return TransitionResult.done(url) if state == :found
+      return TransitionResult.done(nil) if state == :error
     end
 
     # mismatch, legacy draft, or no (live) draft: re-decide everything under the row lock
-    url, sent_back = with_lock { checkout_link_under_lock }
+    result = locked_operation("checkout_link") { |status| checkout_link_under_lock(status) }
+    return result unless result.ok?
+
+    url, sent_back = result.value
     JobOrderMailer.send_job_requote_needed(id, "invoice_mismatch").deliver_later if sent_back
-    url
-  rescue SendBackFailed
-    raise # not a Shopify hiccup: the caller reports it and says so
-  rescue StandardError => e
-    # Timeouts, resets, session errors, create failures, a draft Shopify will not delete: the pay page shows
-    # "temporarily unavailable" (no 500) and the lock's transaction has rolled back. The stored id is only ever
-    # cleared for a confirmed-gone or deleted draft, so a transient error never loses it.
-    Rails.error.report(e, handled: true, context: { job_order_id: id, where: "JobOrder#checkout_link" })
-    nil
+    result.with(value: url)
+  rescue StaleDraftOrderError => e # the fast path's fetch (the locked path maps its own)
+    refuse_from(e, :draft_not_voidable, "checkout_link")
   end
 
   # JOB-03, the one staleness rule: the stored draft is current only when its fingerprint equals the fingerprint
@@ -387,7 +396,7 @@ class JobOrder < ApplicationRecord
   # quote options, and the order's line items. ONE snapshot is read by #total_price, #quote_fingerprint and the
   # draft's line items, so they cannot disagree within a request. The options' names (JobOption) are only needed
   # for the draft's line titles, so they are preloaded onto the same rows when those are built
-  # (#shopify_draft_order_line_items), not for readers that never show them. reload (and so lock! / with_lock)
+  # (#shopify_draft_order_line_items), not for readers that never show them. reload (and so lock!)
   # drops it.
   QuoteSnapshot = Data.define(:tasks, :line_items)
 
@@ -405,49 +414,55 @@ class JobOrder < ApplicationRecord
 
   class StaleDraftOrderError < StandardError; end
 
-  # The draft rule for an order that is (being put) in `status`. A live Shopify draft is a payable invoice whose URL
-  # the customer may already have, whatever the order's status. The caller holds the row lock; returns :kept,
-  # :deleted, :cleared, or nil when there was nothing to do. One getDraftOrder decides:
-  # - status COMPLETED (waiting for payment): untouched; /pay serves the draft while it is current.
-  # - Shopify says the draft is gone (200, `draftOrder: null`): the stored id is cleared (:cleared).
-  # - PAID, PICKED_UP: a draft Shopify reports COMPLETED is kept (:kept; the customer paid through it, it is the
-  #   payment record); an open one (paid in store) is deleted, so it cannot be paid a second time.
-  # - every other status (re-quoted, back to staff, approved, processing, declined, reminded): deleted.
-  # Fails closed (StaleDraftOrderError, any Shopify/config error included), so a status that would leave a payable
-  # invoice behind is refused, and the caller's transaction rolls back.
-  # Used by #enter_status! and by JobOrder.retire_stale_draft! (legacy rows).
-  def settle_draft_order!(status)
-    return if shopify_draft_order_id.blank? || status == JobStatus::COMPLETED
+  # The draft rule for an order that is (being put) in `destination`: a JobStatus, or DELETED. A live Shopify draft
+  # is a payable invoice whose URL the customer may already have, whatever the order's status. The caller holds the
+  # row lock; returns :kept, :deleted, :cleared, or nil when there was nothing to do.
+  # - destination COMPLETED (waiting for payment): untouched; /pay serves the draft while it is current.
+  # - PAID, PICKED_UP: getDraftOrder first, because a draft Shopify reports COMPLETED is kept (:kept; the customer
+  #   paid through it, it is the payment record), a vanished one is cleared (:cleared), an open one (paid in store)
+  #   is deleted, so it cannot be paid a second time.
+  # - every other destination (re-quoted, back to staff, approved, processing, declined, reminded, DELETED): the
+  #   draft is deleted first, one Shopify call. Only when Shopify deleted nothing is it asked why: gone (:cleared),
+  #   COMPLETED (paid: refused), anything else refused.
+  # Fails closed (StaleDraftOrderError, any Shopify/config error included; database errors are not Shopify's and
+  # propagate), so a destination that would leave a payable invoice behind is refused, and the caller's
+  # transaction rolls back. Used by #enter_status!, #soft_delete! and #retire_stale_draft! (legacy rows).
+  def settle_draft_order!(destination)
+    return if shopify_draft_order_id.blank? || destination == JobStatus::COMPLETED
 
     shopify_fail_closed do
-      state, draft = fetch_shopify_draft_order_result
-      raise StaleDraftOrderError, "Shopify did not answer the draft order check" if state == :error
-
-      if state == :gone
-        update_column(:shopify_draft_order_id, nil)
-        :cleared
-      elsif self.class.money_taken_status?(status) && draft["status"] == "COMPLETED"
-        :kept
-      else
-        delete_found_draft!
-      end
+      self.class.money_taken_status?(destination) ? settle_for_paid_order : delete_draft_unless_paid
     end
   end
 
-  # Applies the draft rule to the order's current status, under its row lock and as its own transaction, for a row
-  # written before transitions settled drafts (rake job_orders:retire_stale_drafts). Returns the outcome of
-  # #settle_draft_order! or :skipped (no draft, no status, or waiting for payment, where the draft is the invoice).
-  # Raises StaleDraftOrderError when Shopify cannot confirm, ActiveRecord::LockWaitTimeout when the row is busy.
+  # Applies the draft rule to the order as it stands (rake job_orders:retire_stale_drafts), for a row written
+  # before transitions and deletes settled drafts: DELETED when the order is soft-deleted, else its current status.
+  # A TransitionResult whose value is the outcome of #settle_draft_order! or :skipped (no draft, no status, or
+  # waiting for payment, where the draft is the invoice).
+  def retire_stale_draft!
+    locked_operation("retire_stale_draft!", live_only: false) do |status|
+      destination = is_deleted ? DELETED : status
+      next TransitionResult.done(:skipped) if destination.nil?
+
+      TransitionResult.done(settle_draft_order!(destination) || :skipped)
+    end
+  end
+
   def self.retire_stale_draft!(id)
-    own_transaction("JobOrder.retire_stale_draft!") do
-      order = lock.find(id)
-      status = order.job_order_statuses.last&.job_status
-      next :skipped if status.nil?
-
-      order.settle_draft_order!(status) || :skipped
-    end
+    find_by(id: id)&.retire_stale_draft! || TransitionResult.refused(:order_missing)
   end
 
+  # The one way an order is deleted (JobOrdersController#destroy): soft delete under the row lock, with the order's
+  # Shopify draft settled in the same transaction (DELETED: deleted, fail closed), so a deleted order leaves no
+  # payable invoice behind and a refused settle leaves the order as it was. Deleting an already deleted order is
+  # :order_missing (the same as for every other operation).
+  def soft_delete!
+    locked_operation("soft_delete!") do |_status|
+      settle_draft_order!(DELETED)
+      update_columns(is_deleted: true, updated_at: Time.current) # rubocop:disable Rails/SkipsModelValidations
+      TransitionResult.done
+    end
+  end
 
   def total_price
     snapshot = quote_snapshot
@@ -477,22 +492,67 @@ class JobOrder < ApplicationRecord
 
   private
 
-  # Refusals that are a race lost, not a failure: nothing to report.
-  BENIGN_REFUSALS = %i[order_missing busy].freeze
+  # The one operation on a locked order (#transition!, #apply_owner_change!, #checkout_link, #soft_delete!,
+  # #retire_stale_draft!): its own transaction (ApplicationRecord.own_transaction: every lock wait is bounded, and it
+  # refuses to run inside a caller's transaction), the order row locked and reloaded, the latest status read under
+  # the lock and yielded. The block returns a TransitionResult (done, or a refusal it decided itself).
+  # Only these are turned into results, and each by its own class, never by where it happened to be raised:
+  # - taking the lock (#lock_row!): the order gone, the wait timed out, a deadlock;
+  # - the domain errors the work raises on purpose: StaleDraftOrderError (the draft could not be settled),
+  #   ChangeInvalid (#apply_change), StatusRowInvalid (#write_status_row!).
+  # Anything else the work raises (a bad blob id, a NOT NULL violation in a price column, a lock timeout on a child
+  # row) is not a lock failure and not a refusal: it rolls the transaction back and propagates.
+  # A soft-deleted order is refused as :order_missing unless the operation works on deleted orders (`live_only:
+  # false`): nothing may be changed on, or collect money for, a deleted order.
+  # On any refusal made from an exception the record is reloaded (unsaved in-memory changes do not survive it).
+  def locked_operation(label, live_only: true)
+    status = nil
+    result = self.class.own_transaction("JobOrder##{label}") do
+      lock_row!
+      next TransitionResult.refused(:order_missing) if live_only && is_deleted
+
+      status = job_order_statuses.last&.job_status
+      yield status
+    end
+    result.with(status: status)
+  rescue RowLockFailed => e
+    refuse_from(e.cause, e.reason, label)
+  rescue StaleDraftOrderError => e
+    refuse_from(e, :draft_not_voidable, label)
+  rescue ChangeInvalid => e
+    refuse_from(e, :change_invalid, label)
+  rescue StatusRowInvalid => e
+    refuse_from(e, :invalid_status_row, label)
+  end
+
+  # FOR UPDATE on the order's row, re-reading it (so the snapshots and associations are dropped). The only place
+  # lock acquisition errors are told apart.
+  def lock_row!
+    lock!
+  rescue ActiveRecord::RecordNotFound
+    raise RowLockFailed, :order_missing
+  rescue ActiveRecord::LockWaitTimeout
+    raise RowLockFailed, :busy
+  rescue ActiveRecord::Deadlocked
+    raise RowLockFailed, :deadlock
+  end
+
+  # What is reported: a refusal that is a bug or an outage is an error; a race lost or the caller's invalid input is
+  # an info line only. A deadlock is not benign: the lock order is wrong somewhere.
+  REPORTED_REFUSALS = %i[draft_not_voidable invalid_status_row deadlock].freeze
 
   # The one place a refusal made from an exception is reported and logged (the Shopify error behind
-  # :draft_not_voidable, a status row that did not validate ...). A race lost is not an error: the order deleted
-  # before the lock, or a lock that could not be had, is an info line only. The transaction has rolled back; the
-  # record is re-read so it does not keep the draft id or status row the failed attempt changed in memory.
-  def refuse_from(error, reason, from, to)
-    context = { job_order_id: id, from: Array.wrap(from).map { |s| s&.name }, to: to&.name }
-    line = "[JobOrder#transition!] ##{id} #{context[:from]} -> #{context[:to]} refused (#{reason}): " \
-           "#{error.class}: #{error.message}"
-    if BENIGN_REFUSALS.include?(reason)
-      Rails.logger.info(line)
-    else
-      Rails.error.report(error, handled: true, context: context.merge(where: "JobOrder#transition!"))
+  # :draft_not_voidable, a status row that did not validate, the messages of :change_invalid ...). The
+  # transaction has rolled back; the record is re-read so it does not keep the draft id or status row the failed
+  # attempt changed in memory.
+  def refuse_from(error, reason, label)
+    line = "[JobOrder##{label}] ##{id} refused (#{reason}): #{error.class}: #{error.message}"
+    if REPORTED_REFUSALS.include?(reason)
+      Rails.error.report(error, handled: true, context: { job_order_id: id, operation: label, reason: reason,
+                                                          where: "JobOrder##{label.split.first}" })
       Rails.logger.error(line)
+    else
+      Rails.logger.info(line)
     end
     begin
       reload
@@ -508,11 +568,47 @@ class JobOrder < ApplicationRecord
     user_errors = []
     return :deleted if destroy_shopify_draft_order(user_errors_out: user_errors)
 
-    detail = user_errors.map { |e| e['message'] }.join(', ')
-    raise StaleDraftOrderError, "Shopify did not delete the draft order#{": #{detail}" if detail.present?}"
+    raise StaleDraftOrderError, "Shopify did not delete the draft order#{user_error_detail(user_errors)}"
   end
 
-  # A change made inside the row lock: its validation failures are ChangeInvalid (nothing is committed).
+  def user_error_detail(user_errors)
+    detail = user_errors.map { |e| e['message'] }.join(', ')
+    ": #{detail}" if detail.present?
+  end
+
+  # A destination where the customer may already have paid through the draft: ask first (one getDraftOrder), then
+  # keep a COMPLETED one, clear a vanished one, delete an open one.
+  def settle_for_paid_order
+    state, draft = fetch_shopify_draft_order_result
+    raise StaleDraftOrderError, "Shopify did not answer the draft order check" if state == :error
+
+    if state == :gone
+      update_column(:shopify_draft_order_id, nil)
+      :cleared
+    elsif draft["status"] == "COMPLETED"
+      :kept
+    else
+      delete_found_draft!
+    end
+  end
+
+  # Any other destination: delete the draft (one Shopify call). When Shopify deleted nothing it is asked why
+  # (the id is cleared by the delete; the caller's transaction rolls that back on refusal).
+  def delete_draft_unless_paid
+    gid = shopify_draft_order_id
+    user_errors = []
+    return :deleted if destroy_shopify_draft_order(user_errors_out: user_errors)
+
+    state, draft = fetch_shopify_draft_order_result(gid)
+    raise StaleDraftOrderError, "Shopify did not answer the draft order check" if state == :error
+    return :cleared if state == :gone
+    raise StaleDraftOrderError, "the draft order is already paid (COMPLETED)" if draft["status"] == "COMPLETED"
+
+    raise StaleDraftOrderError, "Shopify did not delete the draft order#{user_error_detail(user_errors)}"
+  end
+
+  # The caller's own writes, made inside the row lock: their validation failures are ChangeInvalid (nothing is
+  # committed). Anything else propagates.
   def apply_change
     yield
   rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotDestroyed => e
@@ -520,10 +616,11 @@ class JobOrder < ApplicationRecord
   end
 
   # The one fail-closed conversion for Shopify work behind a status decision: any error (HTTP, timeout, session,
-  # configuration) becomes StaleDraftOrderError, so the caller refuses and its transaction rolls back.
+  # configuration) becomes StaleDraftOrderError, so the caller refuses and its transaction rolls back. A database
+  # error is not Shopify's: it propagates as itself.
   def shopify_fail_closed
     yield
-  rescue StaleDraftOrderError
+  rescue StaleDraftOrderError, ActiveRecord::ActiveRecordError
     raise
   rescue StandardError => e
     raise StaleDraftOrderError, "#{e.class}: #{e.message}"
@@ -562,17 +659,19 @@ class JobOrder < ApplicationRecord
   end
 
   # checkout_link's decision under the row lock: [invoice_url or nil, whether the order was sent back to staff].
-  def checkout_link_under_lock
-    latest = job_order_statuses.last&.job_status
-    return [nil, false] if latest.nil? || latest != JobStatus::COMPLETED
+  # Every Shopify call is fail closed (StaleDraftOrderError), so the pay page shows "temporarily unavailable" with
+  # the transaction rolled back; the stored id is only ever cleared for a confirmed-gone or deleted draft, so a
+  # transient error never loses it.
+  def checkout_link_under_lock(latest)
+    return TransitionResult.done([nil, false]) if latest.nil? || latest != JobStatus::COMPLETED
 
-    state, url = probe_draft_order
-    return [nil, false] if state == :error
-    return [url, false] if state == :found && draft_order_current?
+    state, url = shopify_fail_closed { probe_draft_order }
+    return TransitionResult.done([nil, false]) if state == :error
+    return TransitionResult.done([url, false]) if state == :found && draft_order_current?
 
     if state == :found && shopify_draft_order_fingerprint.present?
-      send_back_for_requote!(actor: user, reason: "invoice_mismatch")
-      return [nil, true]
+      enter_status!(JobStatus::STAFF_APPROVAL, from: latest, actor: user, reason: "invoice_mismatch")
+      return TransitionResult.done([nil, true])
     end
 
     # a legacy draft is deleted (fail closed); a confirmed-gone id is dropped
@@ -581,31 +680,26 @@ class JobOrder < ApplicationRecord
     elsif shopify_draft_order_id.present?
       update_column(:shopify_draft_order_id, nil)
     end
-    [create_draft_order_keeping_id, false]
-  end
-
-  # Inside a transaction holding the row lock: the order's quote no longer describes it. A "Waiting for Staff
-  # Approval" row records who and why (which also retires the approve link, see #approval_status_marker), and the
-  # Shopify draft (its payable invoice) is deleted, failing closed with StaleDraftOrderError so the caller's
-  # transaction rolls back. Callers mail staff after the commit.
-  # A status row that cannot be written (e.g. no actor) raises SendBackFailed, not a task or pay-page error.
-  def send_back_for_requote!(actor:, reason:)
-    enter_status!(JobStatus::STAFF_APPROVAL, actor: actor, reason: reason)
-  rescue ActiveRecord::ActiveRecordError => e
-    raise SendBackFailed, "job order ##{id} could not be sent back to staff (#{reason}): #{e.message}"
+    TransitionResult.done([shopify_fail_closed { create_draft_order_keeping_id }, false])
   end
 
   def change_fingerprints
     [quote_fingerprint, work_fingerprint]
   end
 
-  # The one place a status row is added (#transition!, #send_back_for_requote!, and so the quote, the owner change
-  # and /pay). Caller holds the row lock. The draft is settled in the same transaction (#settle_draft_order!).
-  # PICKED_UP is entered from PAID only, and entering PAID already confirmed the draft COMPLETED or removed it, so
-  # it needs no Shopify call (and staff can record pick-ups during a Shopify outage).
-  def enter_status!(to, actor:, reason: nil)
+  # The one place a status row is added (#transition!, the owner change, /pay's send-back). Caller holds the row
+  # lock. The draft is settled in the same transaction (#settle_draft_order!), except for an order leaving PAID:
+  # entering PAID already confirmed the draft COMPLETED or removed it, so leaving it needs no Shopify call (staff
+  # can record pick-ups during a Shopify outage). Keyed on the source, not the destination.
+  def enter_status!(to, from:, actor:, reason: nil)
+    write_status_row!(to, actor, reason)
+    settle_draft_order!(to) unless !from.nil? && from == JobStatus::PAID
+  end
+
+  def write_status_row!(to, actor, reason)
     job_order_statuses.create!(job_status: to, user: actor, reason: reason)
-    settle_draft_order!(to) unless to == JobStatus::PICKED_UP
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::NotNullViolation => e
+    raise StatusRowInvalid, e
   end
 
   # [:found, invoice_url] | [:gone, nil] (blank id or Shopify says it no longer exists) | [:error, nil]
@@ -617,7 +711,7 @@ class JobOrder < ApplicationRecord
   end
 
   # Creates the draft. The id is stored (update_column) right after Shopify accepts the create; if the follow-up
-  # fetch then raises, swallow that so the surrounding with_lock transaction COMMITS the id (a rolled-back id
+  # fetch then raises, swallow that so the surrounding locked operation COMMITS the id (a rolled-back id
   # would orphan a payable draft and the next /pay would create a second one). A failure BEFORE the id is
   # stored propagates.
   def create_draft_order_keeping_id

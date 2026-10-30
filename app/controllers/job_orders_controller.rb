@@ -194,40 +194,31 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
       # (concurrent re-quotes serialize; the status is read under the lock, and a paid order is refused there,
       # JOB-04), the new quote's draft rule voiding any live Shopify draft (fail closed: if it cannot be deleted
       # nothing is written: no price, status or email). A refusal is reported by the model, once.
-      begin
-        result = @job_order.transition!(from: JobOrder.quotable_statuses, to: JobStatus::USER_APPROVAL,
-                                        actor: @user) { apply_quote_params! }
-      rescue JobOrder::ChangeInvalid
-        error = true
-      end
-      if result && !result.ok?
-        flash[:alert] = t(refusal_alert_key(result, requote: true))
+      result = @job_order.transition!(from: JobOrder.quotable_statuses, to: JobStatus::USER_APPROVAL,
+                                      actor: @user) { apply_quote_params! }
+      unless result.ok?
+        flash[:alert] = refusal_alert(result, requote: true)
         return redirect_to job_order_path(@job_order.id)
       end
-      # After the commit: a mail failure must not roll back a quote whose old Shopify draft is already
-      # deleted (the restored id would point at a deleted draft). Staff can use resend_quote_email.
-      unless error
-        begin
-          JobOrderMailer.send_job_quote(@job_order.id).deliver_now
-        rescue StandardError => e
-          Rails.logger.error("[job_orders#quote] quote email for ##{@job_order.id} failed: #{e.class}: #{e.message}")
-          mail_failed = true
-        end
+      # After the commit: the chat message's notification must not be enqueued by a quote that is rolled back, and
+      # a mail failure must not roll back a quote whose old Shopify draft is already deleted (the restored id would
+      # point at a deleted draft). Staff can use resend_quote_email.
+      post_user_comment
+      begin
+        JobOrderMailer.send_job_quote(@job_order.id).deliver_now
+      rescue StandardError => e
+        Rails.logger.error("[job_orders#quote] quote email for ##{@job_order.id} failed: #{e.class}: #{e.message}")
+        mail_failed = true
       end
     elsif params[:approved] == "false"
       # DECLINE JOB. JOB-04: never once paid (transition! reads the status under the row lock).
       declined = @job_order.transition!(from: JobOrder.quotable_statuses, to: JobStatus::DECLINED, actor: @user)
 
       if declined.ok?
-        if params[:user_comments].present?
-          @job_order.chat_messages.create(
-            message: params[:user_comments],
-            sender: current_user
-          )
-        end
+        post_user_comment
         JobOrderMailer.send_job_declined(@job_order.id).deliver_now
       else
-        flash[:alert] = t(refusal_alert_key(declined))
+        flash[:alert] = refusal_alert(declined)
         return redirect_to job_order_path(@job_order.id)
       end
     else
@@ -335,14 +326,15 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
   end
 
   def destroy
-    @job_order.update(is_deleted: true)
-    if @user.admin?
-      redirect_to admin_job_orders_path
+    # One locked operation: the order's Shopify draft (a payable invoice) is settled with the delete, fail closed.
+    result = @job_order.soft_delete!
+    if result.ok?
+      flash[:notice] = "Job order deleted successfully."
+      redirect_to(@user.admin? ? admin_job_orders_path : job_orders_path)
     else
-      redirect_to job_orders_path
+      flash[:alert] = t(result.message_key("job_orders.alerts.delete_refused", reasons: JobOrder::TransitionResult::DELETE_REASONS))
+      redirect_to job_order_path(@job_order.id)
     end
-
-    flash[:notice] = "Job order deleted successfully."
   end
 
   def assign_staff
@@ -393,13 +385,15 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
       flash[:alert] = t("job_orders.alerts.pay_magic_link_expired")
       redirect_to job_orders_path
     elsif JobStatus::COMPLETED == @job_order.job_order_statuses.last.job_status
-      begin
-        @payment_link = @job_order.checkout_link
-      rescue JobOrder::SendBackFailed => e
-        Rails.error.report(e, handled: true, context: { job_order_id: @job_order.id, where: "JobOrdersController#pay" })
+      link = @job_order.checkout_link # a refusal is already reported; the page says the link is unavailable
+      if link.reason == :order_missing
+        flash[:alert] = t("job_orders.alerts.pay_magic_link_expired")
+        return redirect_to job_orders_path
+      elsif link.reason == :invalid_status_row # the send-back to staff could not be written
         flash[:alert] = t("job_orders.alerts.pay_send_back_failed")
         return redirect_to job_order_path(@job_order.id)
       end
+      @payment_link = link.value
       if @job_order.job_order_statuses.reload.last&.job_status == JobStatus::COMPLETED
         render "job_orders/pay"
       else
@@ -518,24 +512,31 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
       end
     end
 
-    if params[:user_comments].present?
-      @job_order.chat_messages.create(message: params[:user_comments], sender: current_user)
-    end
-
-    @job_order.staff_comments = params[:job_order][:staff_comments] if params[:job_order][:staff_comments].present?
+    staff_comments = params.permit(job_order: [:staff_comments]).dig(:job_order, :staff_comments)
+    @job_order.staff_comments = staff_comments if staff_comments.present?
     @job_order.save!
   end
 
-  # The message for a refused quote / decline: a paid order says so (JOB-04); the order is as lock! left it.
-  def refusal_alert_key(result, requote: false)
-    if result.reason == :wrong_state &&
-       JobOrder.money_taken_status?(@job_order.job_order_statuses.last&.job_status)
-      "job_orders.alerts.quote_refused_paid"
-    elsif requote && result.reason == :draft_not_voidable
-      "job_orders.alerts.requote_draft_order_failed"
-    else
-      result.message_key
+  # The customer's comment on a quote or a decline, posted to the order chat. Only after the transition committed:
+  # the chat message's after_save notification enqueues a mail that a rolled-back transition must not send.
+  def post_user_comment
+    return if params[:user_comments].blank?
+
+    @job_order.chat_messages.create(message: params[:user_comments], sender: current_user)
+  end
+
+  # The flash for a refused quote / decline. A paid order says so (JOB-04), decided from the status the operation read
+  # under its lock (result.status), not from a re-read after the commit; invalid input says what was wrong.
+  def refusal_alert(result, requote: false)
+    case result.reason
+    when :wrong_state
+      return t("job_orders.alerts.quote_refused_paid") if JobOrder.money_taken_status?(result.status)
+    when :change_invalid
+      return "#{t('job_orders.alerts.error_while_updating')} #{ERB::Util.html_escape(result.error.message)}"
+    when :draft_not_voidable
+      return t("job_orders.alerts.requote_draft_order_failed") if requote
     end
+    t(result.message_key)
   end
 
   # One status transition through JobOrder#transition! (row lock, source state and approve link checked under it).

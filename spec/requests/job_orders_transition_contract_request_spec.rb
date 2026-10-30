@@ -33,7 +33,7 @@ RSpec.describe "Job order transition failure contract", type: :request do
   describe "an invalid status row is a refused result, reported, nothing committed" do
     it "nil actor" do
       order = quoted_order!(:waiting_processed)
-      expect(Rails.error).to receive(:report).with(an_instance_of(ActiveRecord::RecordInvalid), hash_including(handled: true))
+      expect(Rails.error).to receive(:report).with(an_instance_of(JobOrder::StatusRowInvalid), hash_including(handled: true))
 
       result = order.transition!(from: JobStatus::WAITING_PROCESSED, to: JobStatus::BEING_PROCESSED, actor: nil)
 
@@ -154,9 +154,9 @@ RSpec.describe "Job order transition failure contract", type: :request do
       shopify.status = 502
       expect(Rails.error).to receive(:report)
         .with(an_instance_of(JobOrder::StaleDraftOrderError),
-              handled: true, context: { job_order_id: order.id, from: ["Completed (Waiting for Payment)"],
-                                        to: "Paid (Waiting for Pick-Up)",
-                                        where: "JobOrder#transition!" }).once
+              handled: true, context: hash_including(job_order_id: order.id, where: "JobOrder#transition!",
+                                                     operation: /Completed \(Waiting for Payment\).*Paid \(Waiting for Pick-Up\)/,
+                                                     reason: :draft_not_voidable)).once
       allow(Rails.logger).to receive(:error)
 
       result = order.transition!(from: JobStatus::COMPLETED, to: JobStatus::PAID, actor: staff)
@@ -188,11 +188,20 @@ RSpec.describe "Job order transition failure contract", type: :request do
       expect(status_names(order)).to eq(["Currently being Processed"])
     end
 
-    it "a deadlock is the same refusal" do
+    # Round 4 review 10: a deadlock is a lock-order bug, not a race lost: it is reported (the user still sees "try
+    # again"); only a lock wait timeout and a vanished order are benign.
+    it "a deadlock is its own refusal with the retry message, and it is reported" do
       order = quoted_order!(:being_processed)
       allow(order).to receive(:lock!).and_raise(ActiveRecord::Deadlocked)
+      expect(Rails.error).to receive(:report)
+        .with(an_instance_of(ActiveRecord::Deadlocked),
+              handled: true, context: hash_including(job_order_id: order.id, where: "JobOrder#transition!")).once
 
-      expect(order.transition!(from: JobStatus::BEING_PROCESSED, to: JobStatus::COMPLETED, actor: staff).reason).to eq(:busy)
+      result = order.transition!(from: JobStatus::BEING_PROCESSED, to: JobStatus::COMPLETED, actor: staff)
+
+      expect(result.reason).to eq(:deadlock)
+      expect(result.message_key).to eq("job_orders.alerts.status_change.busy")
+      expect(status_names(order)).to eq(["Currently being Processed"])
     end
 
     it "a status row the database rejects (NOT NULL) is an invalid-row refusal" do
@@ -285,14 +294,16 @@ RSpec.describe "Job order transition failure contract", type: :request do
       expect(order.shopify_draft_order_id).to eq(draft) # and the record in memory agrees (reloaded)
     end
 
-    it "the block's validation failure raises ChangeInvalid, not an invalid-status-row refusal, and commits nothing" do
+    it "the block's validation failure is a :change_invalid refusal with its messages, not an invalid-status-row one" do
       order = quoted_order!(:being_processed)
 
-      expect do
-        order.transition!(from: JobStatus::BEING_PROCESSED, to: JobStatus::COMPLETED, actor: staff) do
-          order.job_quote_line_items.create!(description: "x", price: -1)
-        end
-      end.to raise_error(JobOrder::ChangeInvalid)
+      result = order.transition!(from: JobStatus::BEING_PROCESSED, to: JobStatus::COMPLETED, actor: staff) do
+        order.job_quote_line_items.create!(description: "x", price: -1)
+      end
+
+      expect(result.reason).to eq(:change_invalid)
+      expect(result.error).to be_a(JobOrder::ChangeInvalid)
+      expect(result.error.message).to match(/price/i)
       expect(status_names(order)).to eq(["Currently being Processed"])
     end
   end

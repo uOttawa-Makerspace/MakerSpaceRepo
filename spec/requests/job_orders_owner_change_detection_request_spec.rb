@@ -138,14 +138,14 @@ RSpec.describe "Owner changes: what counts, and how failures surface", type: :re
 
   describe "a send-back that cannot be written" do
     def break_send_back!
-      allow_any_instance_of(JobOrder).to receive(:enter_status!).and_raise(ActiveRecord::RecordInvalid.new(JobOrderStatus.new))
+      allow_any_instance_of(JobOrderStatus).to receive(:save!).and_raise(ActiveRecord::RecordInvalid.new(JobOrderStatus.new))
     end
 
     it "wizard: says the order could not be sent back, reports it, commits nothing (not a task error)" do
       order = quoted_order!
       break_send_back!
       expect(Rails.error).to receive(:report)
-        .with(an_instance_of(JobOrder::SendBackFailed), hash_including(handled: true))
+        .with(an_instance_of(JobOrder::StatusRowInvalid), hash_including(handled: true))
       session_login!(owner)
       delete job_order_job_task_path(order, order.job_tasks.find_by!(title: "Task #2"))
 
@@ -159,7 +159,7 @@ RSpec.describe "Owner changes: what counts, and how failures surface", type: :re
       task1(order).job_task_quote.update_column(:price, 5) # the invoice no longer matches
       break_send_back!
       expect(Rails.error).to receive(:report)
-        .with(an_instance_of(JobOrder::SendBackFailed), hash_including(handled: true))
+        .with(an_instance_of(JobOrder::StatusRowInvalid), hash_including(handled: true))
 
       get pay_job_orders_path, params: { token: order.pay_token }
 

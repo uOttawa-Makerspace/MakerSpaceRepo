@@ -86,22 +86,25 @@ class JobTasksController < SessionsController
 
   # Runs the block through JobOrder#apply_owner_change!. Returns :applied or :sent_back (with the "sent back for a
   # new quote" notice) when the change committed; otherwise nothing was committed: redirects with the reason and
-  # returns false.
+  # returns false. The refusal has already been reported and logged by the model.
   def apply_change(&)
-    return :applied unless @job_order.apply_owner_change!(actor: current_user, &)
+    result = @job_order.apply_owner_change!(actor: current_user, &)
+    return refused_change(result) unless result.ok?
+    return :applied unless result.value
 
     flash[:notice] = t("job_orders.alerts.order_sent_back_for_requote")
     :sent_back
-  rescue JobOrder::ChangeInvalid => e
-    invalid_change(e.message)
-  rescue JobOrder::OwnerChangeRefused
-    refuse_change(t("job_orders.alerts.paid_order_cannot_change"))
-  rescue JobOrder::StaleDraftOrderError => e
-    Rails.logger.error("[job_tasks] change to job order ##{@job_order.id} refused: #{e.message}")
-    refuse_change(t("job_orders.alerts.owner_change_draft_order_failed"))
-  rescue JobOrder::SendBackFailed => e
-    Rails.error.report(e, handled: true, context: { job_order_id: @job_order.id, where: "JobTasksController" })
-    refuse_change(t("job_orders.alerts.send_back_failed"))
+  end
+
+  def refused_change(result)
+    case result.reason
+    when :change_invalid then invalid_change(result.error.message)
+    when :wrong_state then refuse_change(t("job_orders.alerts.paid_order_cannot_change"))
+    when :draft_not_voidable then refuse_change(t("job_orders.alerts.owner_change_draft_order_failed"))
+    when :invalid_status_row then refuse_change(t("job_orders.alerts.send_back_failed"))
+    when :order_missing then refuse_change(t("job_orders.alerts.owner_change_order_missing"), to: job_orders_path)
+    else refuse_change(t("job_orders.alerts.owner_change_busy")) # busy, deadlock: nothing was changed, retry
+    end
   end
 
   # The change's own writes did not validate: the task errors, back to the step (update) or the order page.
@@ -118,11 +121,11 @@ class JobTasksController < SessionsController
     false
   end
 
-  def refuse_change(message)
+  def refuse_change(message, to: job_order_path(@job_order))
     respond_to do |format|
       format.html do
         flash[:alert] = message
-        redirect_to job_order_path(@job_order)
+        redirect_to to
       end
       format.any { head :conflict }
     end

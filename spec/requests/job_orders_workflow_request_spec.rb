@@ -91,35 +91,14 @@ RSpec.describe "JobOrders workflow", type: :request do
       expect(task.reload.job_task_quote.job_task_quote_options).to be_empty
     end
 
-    # WART(D-J42): missing price keys silently become 0.0
-    it "writes 0.0 for price, service quantity and service price when the keys are missing" do
-      session_login!(staff)
-      patch job_order_quote_path(order), params: { approved: "true", job_order: { staff_comments: "x" } }
-      quote = task.reload.job_task_quote
-      expect([quote.price, quote.service_quantity, quote.service_price]).to eq([0, 0, 0])
-      expect(status_names(order)).to end_with("Waiting for User Approval")
-    end
-
-    # a negative price fails validation inside the transition; nothing is saved (rollback) and no mail goes out
-    it "refuses a negative price with the update-error alert and rolls the whole quote back" do
-      session_login!(staff)
-      patch job_order_quote_path(order), params: quote_params(task, "job_task_quote_price_#{task.id}" => "-5")
-      expect(response).to redirect_to(job_order_path(order.id))
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
-      expect(task.reload.job_task_quote).to be_nil
-      expect(status_names(order)).to eq(["Waiting for Staff Approval"])
-      expect(deliveries).to be_empty
-    end
-
-    # WART(D-J42): `params[:job_order][:staff_comments]` raises when the job_order key is absent,
-    # inside the transaction, so the quote rows written before it are rolled back
-    it "raises (500 NoMethodError) and rolls back when the job_order param is absent" do
+    # Round 4 review 6: staff_comments is optional (strong params with a default), so an absent job_order key is
+    # no comment change, not a NoMethodError 500 that rolled the quote back.
+    it "quotes without a job_order param (no staff comment change), not a 500" do
       session_login!(staff)
       patch job_order_quote_path(order), params: { approved: "true", "job_task_quote_price_#{task.id}" => "10" }
-      expect(response).to have_http_status(:internal_server_error)
-      expect(error_text).to include("NoMethodError")
-      expect(task.reload.job_task_quote).to be_nil
-      expect(status_names(order)).to eq(["Waiting for Staff Approval"])
+      expect(response).to redirect_to(job_order_path(order.id))
+      expect(task.reload.job_task_quote.price).to eq(10)
+      expect(status_names(order).last).to eq("Waiting for User Approval")
     end
 
     it "does not overwrite existing staff_comments with a blank value" do

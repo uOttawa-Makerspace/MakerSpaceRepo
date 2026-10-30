@@ -334,6 +334,12 @@ fr:
       quote_saved_email_failed: "Devis enregistré, mais le courriel n'a pas pu être envoyé. Utilisez « Renvoyer le courriel du devis »."
       payment_link_unavailable: "Le lien de paiement est temporairement indisponible. Veuillez réessayer dans quelques minutes."
       requote_draft_order_failed: "Le devis de cette commande n'a pas pu être mis à jour car son lien de paiement existant n'a pas pu être annulé. Rien n'a été modifié. Veuillez réessayer plus tard."
+      delete_refused:
+        draft_not_voidable: "Cette commande n'a pas été supprimée car son lien de paiement n'a pas pu être annulé. Rien n'a été modifié. Veuillez réessayer plus tard."
+        order_missing: "Cette commande n'existe plus."
+        busy: "Cette commande n'a pas été supprimée car elle est en cours de modification par quelqu'un d'autre. Rien n'a été modifié. Veuillez réessayer dans un instant."
+      owner_change_busy: "Votre modification n'a pas pu être enregistrée car la commande est en cours de modification par quelqu'un d'autre. Rien n'a été modifié. Veuillez réessayer dans un instant."
+      owner_change_order_missing: "Votre modification n'a pas pu être enregistrée car cette commande n'existe plus."
       status_change:
         draft_not_voidable: "Le statut n'a pas pu être modifié car le lien de paiement de cette commande n'a pas pu être annulé. Rien n'a été modifié. Veuillez réessayer plus tard."
         invalid_status_row: "Le statut n'a pas pu être modifié car le changement n'a pas pu être enregistré. Rien n'a été modifié. Le problème a été signalé."

@@ -117,7 +117,7 @@ RSpec.describe "Job order pay link fingerprint (JOB-03)", type: :request do
                                                    job_order: { staff_comments: "" } }
 
       expect(status_names(order).last).to eq("Waiting for User Approval")
-      expect(shopify_ops).to eq(%w[getDraftOrder draftOrderDelete])
+      expect(shopify_ops).to eq(%w[draftOrderDelete])
       expect(order.reload.shopify_draft_order_id).to be_nil
     end
 
@@ -173,7 +173,7 @@ RSpec.describe "Job order pay link fingerprint (JOB-03)", type: :request do
 
     it "creates no draft when the order left COMPLETED before the lock was taken" do
       order, = quoted_order!(:completed)
-      allow_any_instance_of(JobOrder).to receive(:with_lock).and_wrap_original do |m, *args, &blk|
+      allow_any_instance_of(JobOrder).to receive(:lock!).and_wrap_original do |m, *args, &blk|
         # an owner change sends the order back to staff just before /pay locks it
         unless JobOrderStatus.exists?(job_order_id: order.id, reason: "owner_change")
           JobOrderStatus.create!(job_order_id: order.id, job_status: JobStatus::STAFF_APPROVAL, user: owner,

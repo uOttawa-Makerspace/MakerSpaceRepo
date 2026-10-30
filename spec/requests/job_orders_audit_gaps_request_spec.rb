@@ -199,7 +199,7 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       requote!(order, task, 55)
       expect(status_names(order).last).to eq("Waiting for User Approval")
       expect(order.reload.total_price).to eq(BigDecimal("55"))
-      expect(shopify_ops).to eq(%w[getDraftOrder draftOrderDelete])
+      expect(shopify_ops).to eq(%w[draftOrderDelete])
       expect(shopify.calls.last[:variables]).to eq(input: { id: "gid://shopify/DraftOrder/9001" })
       expect(order.shopify_draft_order_id).to be_nil
       order.job_order_statuses.create!(job_status: JobStatus::COMPLETED, user: staff)
@@ -223,7 +223,7 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       order, task = order_with_draft!
       requote!(order, task, 29.99)
       expect(status_names(order).last).to eq("Waiting for User Approval")
-      expect(shopify_ops).to eq(%w[getDraftOrder draftOrderDelete])
+      expect(shopify_ops).to eq(%w[draftOrderDelete])
       expect(order.reload.shopify_draft_order_id).to be_nil
     end
 
@@ -236,7 +236,7 @@ RSpec.describe "JobOrders audit gaps", type: :request do
                                                    "task_#{task.id}_service_price" => "1",
                                                    job_order: { staff_comments: "" } }
       expect(order.reload.total_price).to eq(BigDecimal("29.99"))
-      expect(shopify_ops).to eq(%w[getDraftOrder draftOrderDelete])
+      expect(shopify_ops).to eq(%w[draftOrderDelete])
       expect(order.shopify_draft_order_id).to be_nil
     end
 
@@ -248,7 +248,7 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       expect(response).to redirect_to(job_order_path(order.id))
       expect(status_names(order).last).to eq("Waiting for User Approval")
       expect(order.reload.total_price).to eq(BigDecimal("55"))
-      expect(shopify_ops).to eq(%w[getDraftOrder draftOrderDelete])
+      expect(shopify_ops).to eq(%w[draftOrderDelete])
     end
 
     it "re-quotes an unchanged quote with NULL parts columns (29.99 vs 29.990): the draft is voided, no 500" do
@@ -257,7 +257,7 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       requote!(order, task, "29.990")
 
       expect(status_names(order).last).to eq("Waiting for User Approval")
-      expect(shopify_ops).to eq(%w[getDraftOrder draftOrderDelete])
+      expect(shopify_ops).to eq(%w[draftOrderDelete])
       expect(order.reload.shopify_draft_order_id).to be_nil
     end
 
@@ -273,7 +273,7 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       order, task = order_with_draft!
       expect_any_instance_of(JobOrder).to receive(:lock!).at_least(:once).and_call_original
       requote!(order, task, 55)
-      expect(shopify_ops).to eq(%w[getDraftOrder draftOrderDelete])
+      expect(shopify_ops).to eq(%w[draftOrderDelete])
     end
 
     it "commits nothing and never touches Shopify when the save fails" do
@@ -282,7 +282,7 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       allow_any_instance_of(JobOrder).to receive(:save!).and_raise(ActiveRecord::RecordInvalid)
       requote!(order, task, 55)
 
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
+      expect(flash[:alert]).to start_with(I18n.t("job_orders.alerts.error_while_updating"))
       expect(shopify.calls).to be_empty
       expect(order.reload.total_price).to eq(BigDecimal("29.99"))
       expect(status_names(order)).to eq(statuses_before)
@@ -308,7 +308,7 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       expect(response).to redirect_to(job_order_path(order.id))
       expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.quote_saved_email_failed"))
 
-      expect(shopify_ops).to eq(%w[getDraftOrder draftOrderDelete])
+      expect(shopify_ops).to eq(%w[draftOrderDelete])
       order.reload
       # committed, and the id of the (deleted) draft is not restored
       expect(status_names(order).last).to eq("Waiting for User Approval")
@@ -413,7 +413,7 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       it "uses the draft another concurrent request already created instead of creating a second one" do
         order, = order_with_draft!
         shopify.missing_ids = ["gid://shopify/DraftOrder/9001"]
-        allow_any_instance_of(JobOrder).to receive(:with_lock).and_wrap_original do |m, *args, &blk|
+        allow_any_instance_of(JobOrder).to receive(:lock!).and_wrap_original do |m, *args, &blk|
           # the other request replaces the dead id just before we take the lock (it stores the id together with
           # the fingerprint of the items it built the draft from, as JobOrder#store_shopify_draft_order_id does)
           JobOrder.where(id: order.id).update_all(
@@ -472,11 +472,12 @@ RSpec.describe "JobOrders audit gaps", type: :request do
     end
 
     context "when the draft no longer exists on Shopify (getDraftOrder says null)" do
-      it "proceeds, clears the dead id with that one call and commits the re-quote" do
+      it "proceeds, clears the dead id (delete found nothing, one fetch says gone) and commits the re-quote" do
         order, task = order_with_draft!
         shopify.draft_missing = true
+        shopify.delete_user_errors = [{ "field" => "id", "message" => "Draft order not found" }]
         requote!(order, task, 55)
-        expect(shopify_ops).to eq(%w[getDraftOrder])
+        expect(shopify_ops).to eq(%w[draftOrderDelete getDraftOrder])
 
         expect(status_names(order).last).to eq("Waiting for User Approval")
         expect(order.reload.total_price).to eq(BigDecimal("55"))
@@ -489,7 +490,7 @@ RSpec.describe "JobOrders audit gaps", type: :request do
         requote!(order, task, 55)
 
         expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.requote_draft_order_failed"))
-        expect(shopify_ops).to eq(%w[getDraftOrder draftOrderDelete])
+        expect(shopify_ops).to eq(%w[draftOrderDelete getDraftOrder])
         expect(order.reload.total_price).to eq(BigDecimal("29.99"))
         expect(order.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
       end

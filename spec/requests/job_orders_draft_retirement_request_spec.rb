@@ -7,8 +7,8 @@ require "rails_helper"
 # JobOrder#transition! / #enter_status!, whose destination rule decides what
 # happens to the draft, inside the same locked transaction:
 #   COMPLETED            kept (/pay serves it while current)
-#   PAID                 kept only if Shopify reports it COMPLETED (paid through
-#                        it); an open draft (paid in store) is deleted; PICKED_UP asks Shopify nothing
+#   PAID, PICKED_UP      kept only if Shopify reports it COMPLETED (paid through
+#                        it); an open draft (paid in store) is deleted; leaving PAID asks Shopify nothing
 #   everything else      deleted
 # A delete Shopify refuses refuses the status change; nothing is committed.
 RSpec.describe "Job order drafts on status changes", type: :request do
@@ -52,7 +52,7 @@ RSpec.describe "Job order drafts on status changes", type: :request do
       patch user_magic_approval_confirmation_job_orders_path, params: { token: order.approval_token, approved: "false" }
 
       expect(status_names(order).last).to eq("Declined")
-      expect(shopify_ops).to eq(%w[getDraftOrder draftOrderDelete])
+      expect(shopify_ops).to eq(%w[draftOrderDelete])
       expect(order.reload.shopify_draft_order_id).to be_nil
     end
 
@@ -62,7 +62,7 @@ RSpec.describe "Job order drafts on status changes", type: :request do
       patch job_order_quote_path(order), params: { approved: "false", job_order: { staff_comments: "" } }
 
       expect(status_names(order).last).to eq("Declined")
-      expect(shopify_ops).to eq(%w[getDraftOrder draftOrderDelete])
+      expect(shopify_ops).to eq(%w[draftOrderDelete])
       expect(order.reload.shopify_draft_order_id).to be_nil
     end
 
@@ -181,7 +181,7 @@ RSpec.describe "Job order drafts on status changes", type: :request do
                                                    job_order: { staff_comments: "" } }
 
       expect(status_names(order).last).to eq("Waiting for User Approval")
-      expect(shopify_ops).to eq(%w[getDraftOrder draftOrderDelete])
+      expect(shopify_ops).to eq(%w[draftOrderDelete])
       expect(order.reload.shopify_draft_order_id).to be_nil
     end
   end

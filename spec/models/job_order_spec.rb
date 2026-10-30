@@ -275,7 +275,7 @@ RSpec.describe JobOrder, type: :model do
       it "creates the draft order once, stores its id and returns the invoice url" do
         quoted_task!("Task #1", price: 20, service_price: 0, service_quantity: 0)
 
-        expect(order.reload.checkout_link).to eq("https://pay.example/inv-1")
+        expect(order.reload.checkout_link.value).to eq("https://pay.example/inv-1")
         expect(order.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
         expect(shopify.calls.map { |c| c[:query][/\b(draftOrderCreate|getDraftOrder)\b/] })
           .to eq(%w[draftOrderCreate getDraftOrder])
@@ -295,7 +295,7 @@ RSpec.describe JobOrder, type: :model do
           .to eq(described_class.find(order.id).quote_fingerprint)
         shopify.calls.clear
 
-        expect(order.reload.checkout_link).to eq("https://pay.example/inv-1")
+        expect(order.reload.checkout_link.value).to eq("https://pay.example/inv-1")
         expect(shopify.calls.map { |c| c[:query][/\b(draftOrderCreate|getDraftOrder)\b/] }).to eq(%w[getDraftOrder])
       end
 
@@ -304,7 +304,7 @@ RSpec.describe JobOrder, type: :model do
         order.reload.checkout_link
         order.reload.job_tasks.first.job_task_quote.update!(price: 99)
 
-        expect(order.reload.checkout_link).to be_nil
+        expect(order.reload.checkout_link.value).to be_nil
         expect(order.reload.shopify_draft_order_id).to be_nil
         expect(order.job_order_statuses.last.reason).to eq("invoice_mismatch")
       end
@@ -382,15 +382,15 @@ RSpec.describe JobOrder, type: :model do
 
       it "checkout_link reports and returns nil instead of raising when creation fails" do
         shopify.status = 502
-        expect(Rails.error).to receive(:report).with(an_instance_of(RuntimeError), hash_including(handled: true))
-        expect(order.checkout_link).to be_nil
+        expect(Rails.error).to receive(:report).with(an_instance_of(JobOrder::StaleDraftOrderError), hash_including(handled: true))
+        expect(order.checkout_link.value).to be_nil
       end
 
       it "treats an empty (but non-null) draftOrder as found, not gone: no re-create" do
         fingerprint = described_class.find(order.id).quote_fingerprint
         order.update_columns(shopify_draft_order_id: "gid://shopify/DraftOrder/9001", shopify_draft_order_fingerprint: fingerprint)
         allow(shopify).to receive(:query).and_return(ShopSpecHelpers::FakeShopifyAdmin::Response.new(200, { "data" => { "draftOrder" => {} } }))
-        expect(order.checkout_link).to be_nil
+        expect(order.checkout_link.value).to be_nil
         expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
         expect(shopify).to have_received(:query).once
       end
