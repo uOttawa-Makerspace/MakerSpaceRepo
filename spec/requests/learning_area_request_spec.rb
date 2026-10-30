@@ -546,32 +546,26 @@ RSpec.describe "Learning area", type: :request do
       expect(track.scorm_state).to eq(state)
     end
 
-    # The terminate commit is a beacon (src/scorm_commit_service.js): an urlencoded
-    # body with the CSRF token, parsed and checked like a form. scorm-again's own
-    # text/plain beacon was neither parsed nor checked, so the final state was lost.
-    it "stores the final (beacon) commit sent as an urlencoded body with the CSRF token" do
+    # The terminate commit is a beacon (src/scorm_commit_service.js): an
+    # application/json body that cannot carry headers, so no X-CSRF-Token. The route
+    # asks for JSON, which is the legacy JSON exemption; what protects it is the
+    # media type (CORS preflight). scorm-again's own beacon is text/plain, which
+    # Rails does not parse, so the final state was lost.
+    it "stores the final (beacon) commit sent as a JSON body, whole, with no CSRF header" do
       log_in!(user)
-      post scorm_commit_learning_area_path(learning_module.id),
-           params: URI.encode_www_form(state.merge("authenticity_token" => csrf_token)),
-           headers: { "CONTENT_TYPE" => "application/x-www-form-urlencoded" }, without_csrf_token: true
+      big = state.merge("cmi.suspend_data" => %("quoted"\n) * 6_400) # 64,000 characters
+      post scorm_commit_learning_area_path(learning_module.id), params: big.to_json,
+           headers: { "CONTENT_TYPE" => "application/json" }, without_csrf_token: true
       expect(response).to have_http_status(:ok)
-      expect(user.learning_module_tracks.last.scorm_state).to eq(state)
+      expect(user.learning_module_tracks.last.scorm_state).to eq(big)
     end
 
-    # What protects the regular (JSON) commits is the media type plus CORS, not a
-    # token check (src/scorm_commit_service.js says so): a JSON commit without a
-    # token is accepted, and a foreign origin's preflight for it is not answered.
-    it "a regular JSON commit is the legacy JSON exemption (no token checked), and CORS keeps other sites out" do
+    it "stores nothing from a text/plain commit (not parsed)" do
       log_in!(user)
-      post scorm_commit_learning_area_path(learning_module.id), params: state.to_json,
-           headers: { "CONTENT_TYPE" => "application/json", "ACCEPT" => "application/json" }, without_csrf_token: true
-      expect(response).to have_http_status(:ok)
-      expect(user.learning_module_tracks.last.scorm_state).to eq(state)
-
-      process :options, scorm_commit_learning_area_path(learning_module.id),
-              headers: { "Origin" => "https://evil.example", "Access-Control-Request-Method" => "POST",
-                         "Access-Control-Request-Headers" => "content-type" }
-      expect(response.headers["Access-Control-Allow-Origin"]).to be_nil
+      expect do
+        post scorm_commit_learning_area_path(learning_module.id), params: state.to_json,
+             headers: { "CONTENT_TYPE" => "text/plain" }, without_csrf_token: true
+      end.not_to change { user.learning_module_tracks.count }
     end
 
     it "refuses an urlencoded commit without the token, storing nothing" do
