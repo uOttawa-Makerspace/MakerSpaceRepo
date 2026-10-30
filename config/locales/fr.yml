@@ -335,6 +335,8 @@ fr:
       payment_link_unavailable: "Le lien de paiement est temporairement indisponible. Veuillez réessayer dans quelques minutes."
       requote_draft_order_failed: "Le devis de cette commande n'a pas pu être mis à jour car son lien de paiement existant n'a pas pu être annulé. Rien n'a été modifié. Veuillez réessayer plus tard."
       status_change_draft_order_failed: "Le statut n'a pas pu être modifié car le lien de paiement de cette commande n'a pas pu être annulé. Rien n'a été modifié. Veuillez réessayer plus tard."
+      status_change_not_recorded: "Le statut n'a pas pu être modifié car le changement n'a pas pu être enregistré. Rien n'a été modifié. Le problème a été signalé."
+      zero_order_not_marked_paid: "La commande est terminée, mais cette commande à 0 $ n'a pas pu être marquée comme payée : %{reason}"
       quote_refused_paid: "Cette commande a déjà été payée ; son devis ne peut plus être modifié ni refusé."
       paid_order_cannot_change: "Cette commande a déjà été payée et ne peut plus être modifiée ici. Veuillez contacter makerspace@uottawa.ca pour la modifier."
       order_sent_back_for_requote: "Votre modification a été enregistrée. Comme cette commande avait déjà reçu un devis, elle a été renvoyée au personnel pour un nouveau devis. Le devis et le lien de paiement précédents ne fonctionnent plus."

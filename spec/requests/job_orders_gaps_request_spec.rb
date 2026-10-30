@@ -330,15 +330,15 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(error_text).to include("NoMethodError")
     end
 
-    # WART(D-J40): flash (not flash.now) on a rendered page leaks into the next request
-    it "carries the missing-info alert over to the next request" do
+    # FIXED(D-J40): the missing-info alert is flash.now, shown on the page that computed it only
+    it "does not carry the missing-info alert over to the next request" do
       order = make_job_order!(owner: owner, status_key: :staff_approval)
       order.job_tasks.create!(title: "Task #1")
       session_login!(owner)
       get job_order_path(order)
-      expect(flash[:alert]).to start_with(I18n.t("job_orders.alerts.missing_info"))
-      get landing_job_orders_path
       expect(response.body).to include(I18n.t("job_orders.alerts.missing_info"))
+      get landing_job_orders_path
+      expect(response.body).not_to include(I18n.t("job_orders.alerts.missing_info"))
     end
   end
 

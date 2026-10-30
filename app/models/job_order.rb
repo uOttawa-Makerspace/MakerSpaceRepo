@@ -63,23 +63,46 @@ class JobOrder < ApplicationRecord
     not_deleted.where.not(user_id: nil).find_by_token_for(:pay, token)
   end
 
-  # JOB-02: one status transition. The row is locked (the same FOR UPDATE as JobOrdersController#quote and
-  # #apply_owner_change!) and the latest status is read under the lock, so a transition cannot interleave with a
-  # re-quote or an owner change. `approval_token` (an emailed approve link) is re-checked under the lock as well: a
-  # re-quote or an owner change that committed after the link was looked up has retired it. The destination's
-  # draft rule (#enter_status!) runs in the same transaction: raises StaleDraftOrderError, with nothing committed,
-  # when the Shopify draft it must void cannot be voided. Returns true when the status row was added, false when
-  # the order is not in one of `from` (or the link is spent).
+  # The outcome of #transition!: ok?, or refused with a reason and the message to show for it.
+  #   :wrong_state         the order is not in one of `from`
+  #   :link_spent          the emailed approve link was retired (re-quote / owner change) before the lock
+  #   :draft_not_voidable  the destination's draft rule could not void the Shopify draft (StaleDraftOrderError)
+  #   :invalid_status_row  the status row did not validate (no actor, unseeded status); reported
+  TransitionResult = Data.define(:reason, :error) do
+    def self.done = new(reason: nil, error: nil)
+    def self.refused(reason, error = nil) = new(reason: reason, error: error)
+    def ok? = reason.nil?
+
+    def message_key
+      case reason
+      when :draft_not_voidable then "job_orders.alerts.status_change_draft_order_failed"
+      when :invalid_status_row then "job_orders.alerts.status_change_not_recorded"
+      else "job_orders.alerts.error_while_updating"
+      end
+    end
+  end
+
+  # JOB-02: one status transition, with one failure contract: it always returns a TransitionResult, and every
+  # refusal is a result, never an exception, with nothing committed. The row is locked (the same FOR UPDATE as
+  # JobOrdersController#quote and #apply_owner_change!) and the latest status is read under the lock, so a
+  # transition cannot interleave with a re-quote or an owner change. `approval_token` (an emailed approve link) is
+  # re-checked under the lock as well. The destination's draft rule (#enter_status!) runs in the same transaction.
+  # Called inside an outer transaction (#quote), a refused result means the caller must roll back.
   def transition!(from:, to:, actor:, approval_token: nil)
-    added = transaction do
+    transaction do
       lock!
       latest = job_order_statuses.last&.job_status
-      next false if latest.nil? || !Array.wrap(from).include?(latest)
-      next false if approval_token && self.class.from_approval_token(approval_token)&.id != id
-      enter_status!(to, actor: actor)
-      true
+      next TransitionResult.refused(:wrong_state) if latest.nil? || !Array.wrap(from).include?(latest)
+      next TransitionResult.refused(:link_spent) if approval_token && self.class.from_approval_token(approval_token)&.id != id
+
+      enter_status!(to, actor: actor, from: latest)
+      TransitionResult.done
     end
-    added == true
+  rescue StaleDraftOrderError => e
+    TransitionResult.refused(:draft_not_voidable, e)
+  rescue ActiveRecord::RecordInvalid => e
+    Rails.error.report(e, handled: true, context: { job_order_id: id, where: "JobOrder#transition!", to: to&.name })
+    TransitionResult.refused(:invalid_status_row, e)
   end
 
   # JOB-04: once money has been taken the quote is final. Nothing on the customer or quoting side may change the
@@ -477,7 +500,7 @@ class JobOrder < ApplicationRecord
   #   an open draft (paid in store) is deleted so it cannot be paid a second time.
   # - every other status (re-quoted, back to staff, approved, processing, declined, reminded): deleted.
   # Deleting fails closed (StaleDraftOrderError), so a status that would leave a payable invoice behind is refused.
-  def enter_status!(to, actor:, reason: nil)
+  def enter_status!(to, actor:, reason: nil, from: nil)
     job_order_statuses.create!(job_status: to, user: actor, reason: reason)
     return if shopify_draft_order_id.blank? || to == JobStatus::COMPLETED
     return if self.class.money_taken_status?(to) && draft_order_completed_on_shopify?
