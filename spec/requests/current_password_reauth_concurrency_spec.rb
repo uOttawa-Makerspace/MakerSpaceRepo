@@ -37,18 +37,17 @@ RSpec.describe "Current-password exhaustion under concurrency", type: :request d
     before = user.reload.token_version
     5.times { wrong_guess(sessions.first) }
 
-    # Every request has loaded @user and counted its attempt before any bumps.
+    # Every request has loaded @user, and all of them reach the statement together.
     barrier = Queue.new
     deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 10
-    allow(RateLimitCounter).to receive(:increment).and_wrap_original do |m, *args, **opts|
-      m.call(*args, **opts).tap do
-        barrier << true
-        until barrier.size >= threads
-          raise "barrier: not every request arrived within 10s" if Process.clock_gettime(Process::CLOCK_MONOTONIC) > deadline
+    allow(RateLimitCounter).to receive(:increment_revoking).and_wrap_original do |m, *args, **opts|
+      barrier << true
+      until barrier.size >= threads
+        raise "barrier: not every request arrived within 10s" if Process.clock_gettime(Process::CLOCK_MONOTONIC) > deadline
 
-          sleep 0.01
-        end
+        sleep 0.01
       end
+      m.call(*args, **opts)
     end
 
     results = sessions.map do |sess|

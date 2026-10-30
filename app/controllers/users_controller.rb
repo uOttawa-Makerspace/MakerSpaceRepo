@@ -247,11 +247,12 @@ class UsersController < SessionsController
       @user.store_new_password!(new_password, clear_timed_lock: true)
     rescue ActiveRecord::ActiveRecordError => e
       Rails.error.report(e, handled: true)
-      # The row may be gone (hard-deleted meanwhile): nothing to reload then.
       begin
         @user.reload
       rescue ActiveRecord::RecordNotFound
-        nil
+        # Hard-deleted meanwhile: there is no account to retry on, nothing is kept.
+        sign_out
+        redirect_to login_path, alert: 'This account no longer exists. Please sign in again.' and return
       end
       flash.now[:alert] = 'Your password could not be changed. Please try again.'
       render 'settings/admin', layout: 'setting' and return
@@ -517,38 +518,34 @@ class UsersController < SessionsController
   end
 
   def limit_reauth_attempts
-    attempts = RateLimitCounter.increment(reauth_attempts_key, 1, expires_in: REAUTH_WINDOW)
-    return if attempts <= REAUTH_MAX_ATTEMPTS
+    # Counted and, when over the limit, revoked in ONE statement (see
+    # RateLimitCounter.increment_revoking): it bumps token_version, which every
+    # cookie session, access/refresh token and websocket handshake is checked
+    # against, so the cookie session AND every token die together. If the statement
+    # fails the error propagates: no password is checked and nothing was counted.
+    # Of any number of racing requests exactly one bumps (new_version present).
+    count, new_version = RateLimitCounter.increment_revoking(
+      reauth_attempts_key, user_id: @user.id, token_version: @user.token_version,
+      max: REAUTH_MAX_ATTEMPTS, expires_in: REAUTH_WINDOW
+    )
+    return if count <= REAUTH_MAX_ATTEMPTS
 
-    # The cookie session AND every token: a Bearer caller must not keep its token.
-    # Every over-limit request tries the bump, from the version its attempts key was
-    # counted under: exactly one changes the row (and revokes the refresh tokens and
-    # closes the cable in the same unit); the rest match nothing. A request that
-    # failed part-way rolled back, so the next one retries, and so does a job (the
-    # attacker may never come back). The cookie session ends whatever happens to the
-    # bump: the error is reported, not raised, because the cookie store writes the
-    # signed-out session only on a response that is returned.
     user = @user # sign_out clears @user
-    from_version = user.token_version
-    revoked = begin
-      user.bump_token_version!(from_version: from_version)
-      true
-    rescue StandardError => e
-      Rails.error.report(e, handled: true, severity: :error, context: { user_id: user.id, action: 'reauth_revocation' })
-      false
-    end
     sign_out
-    revoke_later(user, from_version) unless revoked
+    revoke_leftovers(user) if new_version
     redirect_to login_path, alert: REAUTH_LIMIT_ALERT
   end
 
-  # The inline bump failed: the job repeats the same compare-and-set (a no-op if
-  # a later request got there first), and the websocket is closed now, as logout does.
-  def revoke_later(user, from_version)
+  # Housekeeping after the bump has committed (the credentials are already dead):
+  # mark the refresh-token rows revoked and close the open websockets, which are
+  # refused on reconnect. A failure here has no security effect, so it is reported.
+  def revoke_leftovers(user)
+    begin
+      ApiRefreshToken.revoke_all_for!(user.id)
+    rescue StandardError => e
+      Rails.error.report(e, handled: true, severity: :error, context: { user_id: user.id, action: 'reauth_revocation_cleanup' })
+    end
     user.disconnect_cable!
-    RevokeCredentialsJob.perform_later(user.id, from_version)
-  rescue StandardError => e
-    Rails.error.report(e, handled: true, severity: :error, context: { user_id: user.id, action: 'reauth_revocation_enqueue' })
   end
 
   def reauth_attempts_key
