@@ -125,28 +125,6 @@ document.addEventListener("turbo:load", () => {
   setupModal();
   refreshCapacity();
 
-  const signinForm = document.getElementById("sign_in_user_fastsearch");
-  if (signinForm) {
-    signinForm.onsubmit = () => {
-      const selectVal = document.getElementById("user_dashboard_select")?.value;
-      const targetInput = document.getElementById(
-        "sign_in_user_fastsearch_username",
-      );
-      if (targetInput && selectVal) targetInput.value = selectVal;
-    };
-  }
-
-  const searchForm = document.getElementById("search_user_fastsearch");
-  if (searchForm) {
-    searchForm.onsubmit = () => {
-      const selectVal = document.getElementById("user_dashboard_select")?.value;
-      const targetInput = document.getElementById(
-        "search_user_fastsearch_username",
-      );
-      if (targetInput && selectVal) targetInput.value = selectVal;
-    };
-  }
-
   const excelInput = document.querySelector(".form-control-input-excel");
   if (excelInput) {
     excelInput.addEventListener("change", (e) => {

@@ -16,18 +16,40 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
   let(:visitor) { create(:user, :regular_user) }
 
   describe "PUT /staff_dashboard/add_users (sign_in_users)" do
-    # The dashboard's search form is a raw <form> (not a Rails helper); its Sign In
-    # button submits it natively (PUT via _method), so the form must carry the token.
-    it "the dashboard's Sign In form carries a valid CSRF token and signs the user in" do
+    # The dashboard's user picker feeds two forms: Sign In (PUT, carries the CSRF
+    # token) and View (GET, no token, so none ends up in its URL).
+    def search_form(id)
+      Nokogiri::HTML(response.body).at_css("form##{id}")
+    end
+
+    def hidden_fields(form)
+      form.css("input[type='hidden']").to_h { |input| [input["name"], input["value"]] }
+    end
+
+    it "the dashboard's Sign In form is a PUT carrying a valid CSRF token, and signs the user in" do
       get staff_dashboard_index_path
-      form = Nokogiri::HTML(response.body).css("form").find { |f| f.at_css("button[formaction='#{staff_dashboard_sign_in_users_path}']") }
-      fields = form.css("input[type='hidden']").to_h { |input| [input["name"], input["value"]] }
+      fields = hidden_fields(search_form("sign_in_user_fastsearch"))
+      expect(fields).to include("_method" => "put")
       expect(fields["authenticity_token"]).to be_present
 
-      post staff_dashboard_sign_in_users_path, params: fields.merge("_method" => "put", "username" => visitor.username)
+      post search_form("sign_in_user_fastsearch")["action"], params: fields.merge("username" => visitor.username)
       expect(response).to redirect_to(staff_dashboard_index_path(space_id: space.id))
       expect(LabSession.where(user: visitor, space: space).active.count).to eq(1)
     end
+
+    it "the dashboard's View form is a GET with no CSRF token, so its URL carries none" do
+      get staff_dashboard_index_path
+      form = search_form("search_user_fastsearch")
+      expect(form["method"]).to eq("get")
+      fields = hidden_fields(form)
+      expect(fields.keys).not_to include("authenticity_token")
+      expect(Nokogiri::HTML(response.body).css("button[formaction], button[formmethod]")).to be_empty
+
+      get form["action"], params: fields.merge("username" => visitor.username)
+      expect(response).to redirect_to(user_path(visitor.username))
+      expect(request.fullpath).not_to include("authenticity_token")
+    end
+
 
     it "signs the user in to the staff member's space for 6 hours and answers {status: ok}" do
       freeze_time do
