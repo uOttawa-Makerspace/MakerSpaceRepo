@@ -57,8 +57,20 @@ export class ScormCommitService {
     const body = new Blob([JSON.stringify({ ...params, [csrfParam()]: csrfToken() })], {
       type: "application/json",
     });
-    if (body.size <= BEACON_LIMIT_BYTES && navigator.sendBeacon(url, body)) return this.success;
+    if (body.size <= BEACON_LIMIT_BYTES && this.queueBeacon(url, body)) return this.success;
 
     return this.post(url, params);
+  }
+
+  // navigator.sendBeacon returns false when the data was not queued (quota) and
+  // THROWS for a payload the browser refuses (a SecurityError for a Blob type that
+  // is not CORS-safelisted, in some browsers). Both mean "not queued": the caller
+  // falls back to the synchronous XHR.
+  queueBeacon(url, body) {
+    try {
+      return navigator.sendBeacon(url, body);
+    } catch (e) {
+      return false;
+    }
   }
 }

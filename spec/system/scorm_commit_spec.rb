@@ -90,6 +90,17 @@ RSpec.describe "SCORM commits", type: :system, js_errors: :allow do
     expect(beacons.map { |b| b["type"] }).to eq(["application/json"])
   end
 
+  it "a sendBeacon that throws (SecurityError for the Blob type) falls back to the synchronous XHR" do
+    page.execute_script(<<~JS)
+      navigator.sendBeacon = () => { throw new DOMException("blocked", "SecurityError"); };
+      const api = window.API_1484_11;
+      api.Initialize("");
+      api.SetValue("cmi.location", "after-throw");
+      api.Terminate("");
+    JS
+    wait_for_state("cmi.location", "after-throw")
+  end
+
   it "a terminate commit too big for the beacon quota is sent as a synchronous XHR and stored in full" do
     spy_on_beacons
     big = %("quoted"\n) * 6_400 # 64,000 characters, ~88 KB once JSON-escaped
