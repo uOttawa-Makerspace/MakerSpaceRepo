@@ -5,9 +5,9 @@ require "rails_helper"
 # INF-04: the 72-hour idle window is part of "is this cookie session valid?"
 # (SessionAuthenticator.valid_for?), so it is enforced wherever the session user
 # is resolved (ApplicationHelper#session_user, the cable connection, direct
-# uploads). No controller can skip it, and refreshing the window
-# (SessionsController#update_activity_time) only extends a session that is still
-# alive.
+# uploads). No controller can skip it. session_user also extends the window of a
+# session it found valid (at most every few minutes), so any activity counts and
+# an expired session is never revived.
 RSpec.describe "Cookie session idle expiry", type: :request do
   include SamlAuthnRequestHelper
 
@@ -69,6 +69,52 @@ RSpec.describe "Cookie session idle expiry", type: :request do
     travel 71.hours do
       post "/saml/auth", params: { SAMLRequest: authn_request, submit: "current_user" }
       expect(saml_response_present?).to be(true)
+    end
+  end
+
+  # Review follow-up: the window is extended where the session user is resolved
+  # (ApplicationHelper#session_user), so activity on controllers outside
+  # SessionsController keeps the session alive too.
+  describe "activity outside SessionsController extends the window" do
+    let!(:user) { create(:user, :staff) }
+    let(:space) { create(:space) }
+
+    it "a staff kiosk in use for more than 72 hours stays signed in" do
+      start = Time.current
+      log_in!
+      [60, 120, 180].each do |hours|
+        travel_to(start + hours.hours)
+        get kiosk_path(space)
+        expect(response).to have_http_status(:ok)
+      end
+      expect(signed_in_page_reachable?).to be(true)
+    end
+
+    it "SAML logins keep the session alive" do
+      start = Time.current
+      log_in!
+      [60, 120].each do |hours|
+        travel_to(start + hours.hours)
+        get "/saml/auth", params: { SAMLRequest: authn_request }
+        expect(response.body).to include('value="current_user"')
+      end
+      travel_to(start + 180.hours)
+      post "/saml/auth", params: { SAMLRequest: authn_request, submit: "current_user" }
+      expect(saml_response_present?).to be(true)
+    end
+
+    it "the window is rewritten at most every few minutes, not on every request" do
+      log_in!
+      get settings_profile_path
+      stamp = session[:expires_at]
+      travel 1.minute do
+        get settings_profile_path
+        expect(session[:expires_at]).to eq(stamp)
+      end
+      travel 10.minutes do
+        get settings_profile_path
+        expect(Time.zone.parse(session[:expires_at].to_s)).to be > Time.zone.parse(stamp.to_s)
+      end
     end
   end
 

@@ -105,9 +105,13 @@ end
 # eligible (AuthEligibility). Every place that resolves a session user goes
 # through valid_for?: ApplicationHelper#session_user (every controller, SAML
 # included), ApplicationCable::Connection and DirectUploadAuthentication. So no
-# controller can skip the idle expiry (INF-04).
+# controller can skip the idle expiry (INF-04). session_user also extends the
+# window of a valid session (touch), so activity on any controller counts.
 module SessionAuthenticator
   IDLE_TIMEOUT = 72.hours
+  # The window is rewritten at most this often, not on every request (each
+  # rewrite is a session write, i.e. a new cookie).
+  TOUCH_INTERVAL = 5.minutes
 
   module_function
 
@@ -117,11 +121,17 @@ module SessionAuthenticator
     AuthEligibility.allowed?(user) && session.fetch(:token_version, 0) == user.token_version
   end
 
-  # Starts or extends the idle window. Called at sign-in, and on every
-  # SessionsController request whose session is still valid (never to revive an
-  # expired one).
-  def touch(session)
+  # Starts a full idle window (sign-in).
+  def start(session)
     session[:expires_at] = IDLE_TIMEOUT.from_now
+  end
+
+  # Extends the window of a session already found valid (ApplicationHelper#
+  # session_user; never called for an expired one), at most every TOUCH_INTERVAL.
+  def touch(session)
+    return if session[:expires_at] && seconds_left(session) > (IDLE_TIMEOUT - TOUCH_INTERVAL).to_i
+
+    start(session)
   end
 
   # A session without the key has a full window.

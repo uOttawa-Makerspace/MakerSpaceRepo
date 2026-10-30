@@ -22,7 +22,7 @@ module ApplicationHelper
       kept.each { |key, value| session[key] = value }
       session[:user_id] = user.id
       session[:token_version] = user.token_version
-      SessionAuthenticator.touch(session) # a new session gets a full idle window
+      SessionAuthenticator.start(session) # a new session gets a full idle window
       reset_auth_memo # a user memoized earlier in this request (set_last_seen_at) is stale now
     end
     user
@@ -49,7 +49,8 @@ module ApplicationHelper
   # The cookie-session user, or nil. A session that is idle-expired (72h), whose
   # stored token_version no longer matches the user's (password changed/reset
   # elsewhere; a session without the key is version 0), or whose user was
-  # deactivated (D-I03) is ended (SessionAuthenticator.valid_for?).
+  # deactivated (D-I03) is ended (SessionAuthenticator.valid_for?). A valid
+  # session's idle window is extended here, whatever the controller.
   def session_user
     return @session_user if defined?(@session_user)
 
@@ -58,6 +59,7 @@ module ApplicationHelper
 
     user = User.find_by(id: session[:user_id])
     if SessionAuthenticator.valid_for?(session, user)
+      SessionAuthenticator.touch(session) # activity on any controller extends the idle window
       @session_user = user
     else
       sign_out

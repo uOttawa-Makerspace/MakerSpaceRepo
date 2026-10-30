@@ -3,7 +3,6 @@
 class SessionsController < ApplicationController
   include ActionView::Helpers::DateHelper
 
-  before_action :update_activity_time
   before_action :current_user, only: [:login]
   before_action :authorized_repo_ids
   # Password-guess budget shared with SamlIdpController (same limit, window and
@@ -131,13 +130,6 @@ class SessionsController < ApplicationController
       format.html { redirect_to root_path }
       format.json { render json: { logout: "true" } }
     end
-  end
-
-  # Extends the idle window of a session that is still valid. session_user
-  # applies the expiry first (and ends an expired session), so this can never
-  # revive one.
-  def update_activity_time
-    SessionAuthenticator.touch(session) if session_user
   end
 
   def authorized_repo_ids
