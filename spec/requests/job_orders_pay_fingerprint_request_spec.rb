@@ -45,6 +45,15 @@ RSpec.describe "Job order pay link fingerprint (JOB-03)", type: :request do
       get pay_job_orders_path, params: { token: order.pay_token }
     end
 
+    # The first /pay of an example must have created and stored a fingerprinted draft; asserting it here makes a
+    # later failure name the request that went wrong.
+    def pay_creates_draft!(order)
+      pay!(order)
+      expect(response).to have_http_status(:ok)
+      expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
+      expect(order.shopify_draft_order_fingerprint).to be_present
+    end
+
     it "stores a fingerprint with the draft and serves that draft while the line items match" do
       order, = quoted_order!(:completed)
       pay!(order)
@@ -59,7 +68,7 @@ RSpec.describe "Job order pay link fingerprint (JOB-03)", type: :request do
 
     it "never serves a draft whose line items changed; the order goes back to staff and the draft is voided" do
       order, task = quoted_order!(:completed)
-      pay!(order)
+      pay_creates_draft!(order)
       # a price change that bypassed the quote (console, a path not yet routed through the rule)
       task.job_task_quote.update_column(:price, 5)
       shopify.calls.clear
@@ -79,7 +88,7 @@ RSpec.describe "Job order pay link fingerprint (JOB-03)", type: :request do
 
     it "serves nothing and changes nothing when the mismatched draft cannot be deleted" do
       order, task = quoted_order!(:completed)
-      pay!(order)
+      pay_creates_draft!(order)
       task.job_task_quote.update_column(:price, 5)
       shopify.delete_user_errors = [{ "field" => "id", "message" => "cannot delete a completed draft order" }]
       before = status_names(order)
