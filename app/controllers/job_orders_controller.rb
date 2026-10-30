@@ -182,6 +182,7 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
   def quote
     error = false
     mail_failed = false
+    refused_paid = false
 
     return flash[:alert] = t("job_orders.alerts.error_while_updating") if params[:approved].blank?
 
@@ -193,6 +194,11 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
           # concurrent re-quotes serialize, and the status / "before" draft line items are read under the lock.
           @job_order.lock!
           status_before = @job_order.job_order_statuses.reorder(:id).last&.job_status
+          # JOB-04: a paid order is never re-quoted, with or without a draft, whatever the prices
+          if JobOrder.money_taken_status?(status_before)
+            refused_paid = true
+            raise ActiveRecord::Rollback
+          end
           # (only needed when a draft exists: discard is a no-op otherwise)
           items_before = @job_order.shopify_draft_order_id.present? ? @job_order.shopify_draft_order_line_items : nil
 
@@ -269,8 +275,12 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
           # link). Fail closed: if it cannot be deleted the whole quote rolls back (no price, status or email).
           # Each side is computed once.
           if items_before && JobOrder.find(@job_order.id).shopify_draft_order_line_items != items_before
-            @job_order.discard_stale_draft_order!(status_before)
+            @job_order.discard_stale_draft_order!
           end
+        end
+        if refused_paid
+          flash[:alert] = t("job_orders.alerts.quote_refused_paid")
+          return redirect_to job_order_path(@job_order.id)
         end
         # After the commit: a mail failure must not roll back a quote whose old Shopify draft is already
         # deleted (the restored id would point at a deleted draft). Staff can use resend_quote_email.
@@ -288,22 +298,18 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
         return redirect_to job_order_path(@job_order.id)
       end
     elsif params[:approved] == "false"
-      # DELCINE JOB
-      if params[:user_comments].present?
-        @job_order.chat_messages.create(
-          message: params[:user_comments],
-          sender: current_user
-        )
-      end
-
-      @job_order.job_order_statuses << JobOrderStatus.create(
-        job_order: @job_order,
-        job_status: JobStatus::DECLINED,
-        user: @user
-      )
-
-      if @job_order.save
+      # DECLINE JOB. JOB-04: never once paid (transition! reads the status under the row lock).
+      if @job_order.transition!(from: JobOrder.quotable_statuses, to: JobStatus::DECLINED, actor: @user)
+        if params[:user_comments].present?
+          @job_order.chat_messages.create(
+            message: params[:user_comments],
+            sender: current_user
+          )
+        end
         JobOrderMailer.send_job_declined(@job_order.id).deliver_now
+      elsif JobOrder.money_taken_status?(@job_order.reload.job_order_statuses.last&.job_status)
+        flash[:alert] = t("job_orders.alerts.quote_refused_paid")
+        return redirect_to job_order_path(@job_order.id)
       else
         error = true
       end

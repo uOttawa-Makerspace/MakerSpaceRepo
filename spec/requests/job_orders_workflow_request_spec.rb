@@ -154,18 +154,20 @@ RSpec.describe "JobOrders workflow", type: :request do
       expect(status_names(order)).to end_with("Waiting for User Approval")
     end
 
-    # WART(D-J33): no state guard: a PAID or Draft order is re-quoted, reset to
-    # Waiting for User Approval and the customer is emailed.
-    it "re-quotes a PAID order back to Waiting for User Approval and emails the customer" do
+    # FIXED(D-J33 / JOB-04): a PAID order is never re-quoted (see
+    # job_orders_quote_paid_guard_request_spec). WART(D-J33) stays for Draft:
+    # a Draft order can still be quoted.
+    it "refuses to re-quote a PAID order: no status row, no customer email" do
       paid = order_with_task!(status_key: :paid)
       session_login!(staff)
       patch job_order_quote_path(paid), params: quote_params(paid.job_tasks.first)
 
-      expect(status_names(paid)).to eq(["Paid (Waiting for Pick-Up)", "Waiting for User Approval"])
-      expect(deliveries.last.to).to eq([owner.email])
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.quote_refused_paid"))
+      expect(status_names(paid)).to eq(["Paid (Waiting for Pick-Up)"])
+      expect(deliveries).to be_empty
     end
 
-    it "re-quotes a Draft order as well" do
+    it "re-quotes a Draft order" do
       draft = order_with_task!(status_key: :draft)
       session_login!(staff)
       patch job_order_quote_path(draft), params: quote_params(draft.job_tasks.first)

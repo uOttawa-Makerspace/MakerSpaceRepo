@@ -160,9 +160,10 @@ RSpec.describe "JobOrders audit gaps", type: :request do
   # FIXED(D-J38): a re-quote that changes the price deletes the Shopify draft order
   # (stale line items, payable old invoice) and clears the id, so the next GET /pay
   # creates a fresh draft with the new total. Fail closed: if the old draft cannot be
-  # deleted (error, not configured, already paid/completed on Shopify, order PAID or
-  # later) the re-quote is refused and nothing changes. A first quote (no draft) is
-  # unchanged. The pay path does NOT compare draft totals (taxes make that unsafe).
+  # deleted (error, not configured, already paid/completed on Shopify) the re-quote is
+  # refused and nothing changes. A PAID or later order is refused earlier, by the
+  # quote's own status rule (JOB-04). A first quote (no draft) is unchanged. The pay
+  # path does NOT compare draft totals (taxes make that unsafe).
   describe "Shopify payment link after a re-quote (D-J38)" do
     let!(:shopify) { stub_shopify_admin!.tap { |fake| fake.invoice_url = "https://pay.example/old-invoice" } }
 
@@ -505,10 +506,21 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       it_behaves_like "a refused re-quote"
     end
 
+    # JOB-04: refused before any write, by the quote's own status rule (not the Shopify helper)
     context "when the order is already PAID" do
-      let(:status_key) { :paid }
-      def break_shopify = nil
-      it_behaves_like "a refused re-quote"
+      it "changes nothing, never touches Shopify and tells staff the order is paid" do
+        order, task = order_with_draft!(status_key: :paid)
+        statuses_before = status_names(order)
+        requote!(order, task, 55)
+
+        expect(response).to redirect_to(job_order_path(order.id))
+        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.quote_refused_paid"))
+        expect(order.reload.total_price).to eq(BigDecimal("29.99"))
+        expect(status_names(order)).to eq(statuses_before)
+        expect(order.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
+        expect(shopify.calls).to be_empty
+        expect(ActionMailer::Base.deliveries).to be_empty
+      end
     end
   end
 end

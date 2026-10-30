@@ -78,6 +78,18 @@ class JobOrder < ApplicationRecord
     added == true
   end
 
+  # JOB-04: once money has been taken the quote is final. Nothing on the customer or quoting side may change the
+  # order, re-quote it or decline it; changes after payment go through staff by hand.
+  def self.money_taken_status?(status)
+    [JobStatus::PAID, JobStatus::PICKED_UP].include?(status)
+  end
+
+  # Every status a quote may be issued or declined from (all but the paid ones).
+  def self.quotable_statuses
+    [JobStatus::DRAFT, JobStatus::STAFF_APPROVAL, JobStatus::USER_APPROVAL, JobStatus::SENT_REMINDER,
+     JobStatus::WAITING_PROCESSED, JobStatus::BEING_PROCESSED, JobStatus::COMPLETED, JobStatus::DECLINED]
+  end
+
   def approval_status_marker
     job_order_statuses.where(job_status: JobStatus::USER_APPROVAL).maximum(:id)
   end
@@ -199,14 +211,10 @@ class JobOrder < ApplicationRecord
   # D-J38: called by a re-quote that changed the price. An existing Shopify draft order still carries the
   # OLD line items (and a payable invoice link), so it is deleted and the id cleared; the next /pay creates a
   # fresh draft with the new total. Fails closed (raises StaleDraftOrderError) so the caller rolls the re-quote
-  # back: on a PAID/PICKED_UP order (the draft is, or is about to be, a real paid order), on any Shopify/config
-  # error, and when Shopify deletes nothing (already completed/paid draft, userErrors, unknown id).
-  def discard_stale_draft_order!(status_before_requote)
+  # back: on any Shopify/config error, and when Shopify deletes nothing (already completed/paid draft,
+  # userErrors, unknown id). Callers refuse a paid order (JobOrder.money_taken_status?) before calling this.
+  def discard_stale_draft_order!
     return if shopify_draft_order_id.blank?
-
-    if [JobStatus::PAID, JobStatus::PICKED_UP].include?(status_before_requote)
-      raise StaleDraftOrderError, "order is already paid"
-    end
 
     # destroy clears the id before the outcome is known; the caller's transaction rolls that back on refusal
     old_id = shopify_draft_order_id
