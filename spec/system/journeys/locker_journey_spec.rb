@@ -39,6 +39,7 @@ RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
     expect(page).to have_text("Requests")
     within(:xpath, "//tr[.//a[normalize-space()='#{user.username}']]") { click_link "View" }
     expect(page).to have_current_path(locker_rental_path(rental))
+    wait_for_app_js # the confirms below are shown by the page's JS
   end
 
   it "request -> staff sends to checkout -> payment webhook -> active -> staff moves locker" do
@@ -102,6 +103,7 @@ RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
     ActionMailer::Base.deliveries.clear
     as_actor(:staff) do
       visit locker_rental_path(rental)
+      wait_for_app_js
       within(:xpath, "//form[.//button[contains(normalize-space(.),'Move Locker')]]") do
         select "JB-2", from: "locker_rental_locker_id"
         accept_confirm { click_button "Move Locker" }
@@ -153,6 +155,7 @@ RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
 
     ActionMailer::Base.deliveries.clear
     as_actor(:staff) do
+      wait_for_app_js
       within(:xpath, "//form[.//button[contains(normalize-space(.),'Move Locker')]]") do
         select "JB-2", from: "locker_rental_locker_id"
         accept_confirm { click_button "Move Locker" }

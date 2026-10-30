@@ -36,11 +36,7 @@ RSpec.describe AddMissingSpaceAndUnavailabilityIndexes do
   # Leave the DB as schema.rb defines it, however the example ended: even if
   # `down` raised partway, `up` is idempotent and converges on the schema's set.
   # The leftover idx_staff_unavail_user_times of one example is dropped by `up`.
-  around do |example|
-    example.run
-  ensure
-    run(:up)
-  end
+  after { run(:up) }
 
   it "up, down, up: exactly the schema.rb index set, then the single-column set, then again" do
     run(:up)

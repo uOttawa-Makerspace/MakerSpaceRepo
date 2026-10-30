@@ -900,7 +900,8 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
   end
 
   describe "GET /repositories/populate_users" do
-    let!(:zelda) { create(:user, :regular_user, name: "Zelda Searchable") }
+    # the search term is a token Faker names cannot produce
+    let!(:zelda) { create(:user, :regular_user, name: "Zeldaxqzv Searchable") }
 
     it "routes to repositories#populate_users instead of the show catch-all (D-C15)" do
       # FIXED(D-C15): declared above resources :repositories path '/:user_username'
@@ -909,16 +910,16 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
     end
 
     it "sends a guest to login" do
-      get "/repositories/populate_users", params: { search: "zelda" }
+      get "/repositories/populate_users", params: { search: "zeldaxqzv" }
       expect(response.location).to include("/login")
     end
 
     it "returns only id, name and username to any signed-in user" do
       content_login!(stranger)
-      get "/repositories/populate_users", params: { search: "zelda" }
+      get "/repositories/populate_users", params: { search: "zeldaxqzv" }
       expect(response).to have_http_status(:ok)
       users = JSON.parse(response.body)["users"]
-      expect(users).to eq([{ "id" => zelda.id, "name" => "Zelda Searchable", "username" => zelda.username }])
+      expect(users).to eq([{ "id" => zelda.id, "name" => "Zeldaxqzv Searchable", "username" => zelda.username }])
       expect(response.body).not_to include("password", "access_token", "email")
     end
 
@@ -928,7 +929,7 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(JSON.parse(response.body)["users"]).to be_empty
       get "/repositories/populate_users", params: { search: "Zel_a" }
       expect(JSON.parse(response.body)["users"]).to be_empty
-      get "/repositories/populate_users", params: { search: "zelda" }
+      get "/repositories/populate_users", params: { search: "zeldaxqzv" }
       expect(JSON.parse(response.body)["users"].size).to eq(1)
     end
 

@@ -9,11 +9,12 @@ class AddBatchesToSolidQueue < ActiveRecord::Migration[7.1]
   disable_ddl_transaction!
   include ConcurrentIndexBuilder
 
-  def change
-    # Fresh installs create all of this with the base schema, so skip
-    # anything that already exists
+  # On a fresh install the base schema already has the batch_id column and
+  # index and the batch tables, so `up` skips what exists and `down` is only
+  # meaningful for a database upgraded through this migration.
+  def up
     add_column :solid_queue_jobs, :batch_id, :bigint, if_not_exists: true
-    add_index_concurrently :solid_queue_jobs, :batch_id
+    add_index_concurrently :solid_queue_jobs, :batch_id, name: "index_solid_queue_jobs_on_batch_id"
 
     create_table :solid_queue_batches, if_not_exists: true do |t|
       t.string :active_job_batch_id
@@ -45,5 +46,12 @@ class AddBatchesToSolidQueue < ActiveRecord::Migration[7.1]
       t.foreign_key :solid_queue_batches, column: :batch_id, on_delete: :cascade
       t.foreign_key :solid_queue_jobs, column: :job_id, on_delete: :cascade
     end
+  end
+
+  def down
+    drop_table :solid_queue_batch_executions, if_exists: true
+    drop_table :solid_queue_batches, if_exists: true
+    remove_index :solid_queue_jobs, name: "index_solid_queue_jobs_on_batch_id", algorithm: :concurrently, if_exists: true
+    remove_column :solid_queue_jobs, :batch_id, if_exists: true
   end
 end

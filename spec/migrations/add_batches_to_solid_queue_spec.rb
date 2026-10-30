@@ -19,13 +19,12 @@ RSpec.describe AddBatchesToSolidQueue do
     conn.indexes(:solid_queue_jobs).map(&:name)
   end
 
-  around do |example|
+  before do
     tables.each { |t| conn.drop_table(t, if_exists: true) }
     conn.create_table(:solid_queue_jobs) { |t| t.string :class_name }
-    example.run
-  ensure
-    tables.each { |t| conn.drop_table(t, if_exists: true) }
   end
+
+  after { tables.each { |t| conn.drop_table(t, if_exists: true) } }
 
   it "up, up again, down: builds the batch_id index once, then removes everything it added" do
     run(:up)

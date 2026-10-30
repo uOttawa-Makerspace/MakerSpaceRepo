@@ -1,99 +1,93 @@
-# Build an index CONCURRENTLY (no write lock) and survive an interrupted
-# earlier attempt. A concurrent build that fails or is cancelled leaves an
-# INVALID index under the same name, which `if_not_exists: true` would then
-# skip forever. This drops such a leftover first, so the build always ends
-# with a valid index and is safe to re-run.
+# Builds a plain btree index on columns (optionally unique) CONCURRENTLY and
+# is safe to re-run. A concurrent build that fails or is cancelled leaves an
+# INVALID index, which `if_not_exists: true` would skip forever.
 #
-# The existing index is read with Rails' own `indexes(table)`
-# (ActiveRecord::ConnectionAdapters::IndexDefinition):
+#   add_index_concurrently(table, columns, name:, unique: false)
 #
-# - INVALID (`valid?` false): dropped concurrently, then rebuilt.
-# - VALID and `defined_for?` the request (columns or expression, unique,
-#   include, nulls_not_distinct), `where` and `using` equal: kept untouched.
-# - VALID but different: raises IndexDefinitionMismatch, never silently kept.
-# - The name is used by an index on ANOTHER table of the schema: raises
-#   (`CREATE INDEX IF NOT EXISTS` matches names schema-wide and would skip the
-#   build without a word).
+# - no index of that name on the table: built.
+# - a VALID, plain index with the same columns in the same order and the same
+#   uniqueness: kept as is. Plain means btree, no where, include, expression,
+#   order, opclass or nulls_not_distinct.
+# - a VALID index of that name that is anything else: raises
+#   IndexDefinitionMismatch.
+# - an INVALID index on the table: dropped concurrently, then rebuilt.
+# - the name used by any other relation in the table's schema: raises
+#   IndexDefinitionMismatch (`IF NOT EXISTS` matches names schema-wide and
+#   would skip the build silently).
 #
-# Rails 8.1's `defined_for?` does not compare `where`, `using`, `order` or
-# `opclass` (it swallows them), so the helper compares `where` and `using`
-# itself; `order`/`opclass` are passed on to the build but not compared. A
-# `where:` or expression is compared as PostgreSQL prints it back, ignoring
-# whitespace and parentheses; a spelling PostgreSQL rewrites (e.g. a cast it
-# adds to a string literal) is reported as a mismatch rather than accepted.
+# For a migration that calls `disable_ddl_transaction!`, from `up`/`down` or a
+# `reversible` block; calling it while reverting raises ArgumentError.
 #
-# Accepts the add_index options (unique:, where:, using:, include:, opclass:,
-# order:, nulls_not_distinct:, comment:). `algorithm:` and `if_not_exists:` are
-# owned by the helper and raise ArgumentError.
+# Any INVALID index of that name counts as a leftover, so a manual CREATE INDEX
+# CONCURRENTLY of the same name running at the same time would be dropped.
+# Migrations are serialised by Rails' advisory lock, so two migrators cannot
+# collide.
 #
-# Include in a migration that calls `disable_ddl_transaction!`. It works
-# directly in `change`: reverted, it removes the index concurrently
-# (`if_exists`), so a `reversible` wrapper is not needed. It can also be
-# called from up/down.
-#
-#   require Rails.root.join("lib/concurrent_index_builder")
 #   include ConcurrentIndexBuilder
 #   add_index_concurrently :events, %i[space_id draft], name: "idx_..."
-#
-# Concurrent runs: any INVALID index of that name is treated as a leftover, so
-# a manual CREATE INDEX CONCURRENTLY of the same name running at the same time
-# would be dropped under its feet. Two migrators cannot collide, because Rails
-# serialises migrations with an advisory lock.
 module ConcurrentIndexBuilder
   class IndexDefinitionMismatch < StandardError; end
 
-  OWNED_OPTIONS = %i[algorithm if_not_exists].freeze
+  def add_index_concurrently(table, columns, name:, unique: false)
+    raise ArgumentError, "add_index_concurrently cannot be reverted; write explicit up/down or use reversible" if reverting?
 
-  def add_index_concurrently(table, columns, name: nil, **options)
-    owned = options.keys & OWNED_OPTIONS
-    raise ArgumentError, "add_index_concurrently sets #{owned.join(', ')} itself" if owned.any?
+    columns = Array(columns).map(&:to_s)
+    raise_if_name_taken_by_other_relation(table, name)
 
-    name ||= index_name(table, column: columns)
-
-    if reverting?
-      # inside a reverted `change`, `revert` turns the removal back into a plain one
-      revert { remove_index table, name: name, algorithm: :concurrently, if_exists: true }
-      return
-    end
-
-    options[:unique] = options.fetch(:unique, false)
     existing = indexes(table).find { |i| i.name == name }
     if existing.nil?
-      raise_if_name_taken_elsewhere(table, name)
+      # build below
     elsif !existing.valid?
       remove_index table, name: name, algorithm: :concurrently
-    elsif !matches?(existing, columns, options)
+    elsif !plain_match?(existing, columns, unique)
       raise IndexDefinitionMismatch,
-            "index #{name} on #{table} exists as #{describe(existing.columns, existing.unique, existing.where, existing.using)}, " \
-            "not the requested #{describe(columns, options[:unique], options[:where], options[:using])}"
+            "index #{name} on #{table} exists as #{describe(existing)}, " \
+            "not the requested #{'unique ' if unique}plain btree (#{columns.join(', ')})"
     end
-    add_index table, columns, name: name, algorithm: :concurrently, if_not_exists: true, **options
+    add_index table, columns, name: name, unique: unique, algorithm: :concurrently, if_not_exists: true
   end
 
   private
 
-  def matches?(existing, columns, options)
-    existing.defined_for?(columns, **options.slice(:unique, :include, :nulls_not_distinct)) &&
-      same_sql?(existing.where, options[:where]) &&
-      (existing.using || :btree).to_s == (options[:using] || :btree).to_s
+  def plain_match?(index, columns, unique)
+    index.columns == columns && index.unique == unique && plain?(index)
   end
 
-  def same_sql?(found, wanted)
-    found.to_s.delete("() \n\t") == wanted.to_s.delete("() \n\t")
+  def plain?(index)
+    index.columns.is_a?(Array) &&
+      (index.using || :btree).to_s == "btree" &&
+      index.where.nil? &&
+      index.include.blank? &&
+      index.orders.blank? &&
+      index.opclasses.blank? &&
+      !index.nulls_not_distinct
   end
 
-  def describe(columns, unique, where, using)
-    text = "#{'unique ' if unique}#{using || :btree} (#{Array(columns).join(', ')})"
-    where.present? ? "#{text} where #{where}" : text
+  def describe(index)
+    columns = Array(index.columns).join(", ")
+    extras = []
+    extras << "where #{index.where}" if index.where
+    extras << "include (#{Array(index.include).join(', ')})" if index.include.present?
+    extras << "order #{index.orders}" if index.orders.present?
+    extras << "opclass #{index.opclasses}" if index.opclasses.present?
+    extras << "nulls not distinct" if index.nulls_not_distinct
+    extras << "expression" unless index.columns.is_a?(Array)
+    "#{'unique ' if index.unique}#{index.using || :btree} (#{columns})#{" #{extras.join(' ')}" if extras.any?}"
   end
 
-  def raise_if_name_taken_elsewhere(table, name)
-    other = select_value(<<~SQL.squish)
-      SELECT tablename FROM pg_indexes
-      WHERE schemaname = current_schema() AND indexname = #{connection.quote(name)}
+  # Any relation of that name in the table's schema, except an index on this table.
+  def raise_if_name_taken_by_other_relation(table, name)
+    row = connection.select_one(<<~SQL.squish)
+      SELECT c.relkind, t.relname AS table_name
+      FROM pg_class c
+      LEFT JOIN pg_index i ON i.indexrelid = c.oid
+      LEFT JOIN pg_class t ON t.oid = i.indrelid
+      WHERE c.relname = #{connection.quote(name)}
+        AND c.relnamespace = (SELECT relnamespace FROM pg_class WHERE oid = #{connection.quote(connection.quote_table_name(table))}::regclass)
     SQL
-    return if other.nil?
+    return if row.nil? || (row["relkind"] == "i" && row["table_name"] == table.to_s)
 
-    raise IndexDefinitionMismatch, "index name #{name} is already used on table #{other}, not #{table}"
+    raise IndexDefinitionMismatch,
+          "#{name} is already used by another relation (relkind #{row['relkind']}#{", on table #{row['table_name']}" if row['table_name']}), not an index on #{table}"
   end
 end

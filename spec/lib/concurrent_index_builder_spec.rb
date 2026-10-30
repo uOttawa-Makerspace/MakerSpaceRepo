@@ -20,6 +20,7 @@ RSpec.describe ConcurrentIndexBuilder do
     conn.create_table(:cib_scratch, force: true) do |t|
       t.integer :val
       t.text :txt
+      t.integer :num
     end
     conn.create_table(:cib_other, force: true) { |t| t.integer :val }
     conn.execute("INSERT INTO cib_scratch (val) VALUES (1), (1)")
@@ -32,7 +33,7 @@ RSpec.describe ConcurrentIndexBuilder do
   end
 
   def build(columns = :val, **options)
-    ActiveRecord::Migration.suppress_messages { builder.add_index_concurrently(:cib_scratch, columns, **options) }
+    ActiveRecord::Migration.suppress_messages { builder.add_index_concurrently(:cib_scratch, columns, name: index, **options) }
   end
 
   def found(table = :cib_scratch, name = index)
@@ -43,16 +44,28 @@ RSpec.describe ConcurrentIndexBuilder do
     conn.select_value("SELECT '#{name}'::regclass::oid")
   end
 
-  it "creates a missing index" do
+  def mismatch(pattern = nil)
+    raise_error(ConcurrentIndexBuilder::IndexDefinitionMismatch, *pattern)
+  end
+
+  it "builds a missing index" do
     expect(found).to be_nil
     build
     expect(found).to be_valid
+    expect(found.columns).to eq(["val"])
+    expect(found.unique).to be(false)
   end
 
-  it "leaves a valid index untouched" do
-    build
+  it "builds a unique index when asked" do
+    conn.execute("DELETE FROM cib_scratch")
+    build(:val, unique: true)
+    expect(found.unique).to be(true)
+  end
+
+  it "keeps a valid plain index that matches, same oid" do
+    build(%i[val num])
     before_oid = oid
-    build
+    build(%i[val num])
     expect(found).to be_valid
     expect(oid).to eq(before_oid)
   end
@@ -67,76 +80,83 @@ RSpec.describe ConcurrentIndexBuilder do
     expect(found.unique).to be(false)
   end
 
-  it "raises on a valid index of that name with different columns, leaving it alone" do
-    conn.add_index :cib_scratch, :id, name: index
-    expect { build }.to raise_error(ConcurrentIndexBuilder::IndexDefinitionMismatch, /index_cib_scratch_on_val.*\(id\).*\(val\)/)
-    expect(found.columns).to eq(["id"])
+  describe "a valid index of that name that is not the requested plain one" do
+    it "raises for a partial index" do
+      conn.add_index :cib_scratch, :val, name: index, where: "val > 0"
+      expect { build }.to mismatch(/where \(val > 0\)/)
+    end
+
+    it "raises for an index with include" do
+      conn.add_index :cib_scratch, :val, name: index, include: :txt
+      expect { build }.to mismatch(/include \(txt\)/)
+    end
+
+    it "raises for an expression index" do
+      conn.execute("CREATE INDEX #{index} ON cib_scratch (lower(txt))")
+      expect { build }.to mismatch(/expression/)
+    end
+
+    it "raises for a descending order" do
+      conn.add_index :cib_scratch, :val, name: index, order: { val: :desc }
+      expect { build }.to mismatch(/order/)
+    end
+
+    it "raises for an opclass" do
+      conn.add_index :cib_scratch, :txt, name: index, opclass: :text_pattern_ops
+      expect { build(:txt) }.to mismatch(/opclass/)
+    end
+
+    it "raises when it is unique and the request is not, and the reverse" do
+      conn.execute("DELETE FROM cib_scratch")
+      conn.add_index :cib_scratch, :val, name: index, unique: true
+      expect { build }.to mismatch(/unique/)
+      conn.remove_index :cib_scratch, name: index
+      conn.add_index :cib_scratch, :val, name: index
+      expect { build(:val, unique: true) }.to mismatch(/not the requested unique/)
+    end
+
+    it "raises for other columns, or the same columns in another order" do
+      conn.add_index :cib_scratch, :id, name: index
+      expect { build }.to mismatch(/\(id\).*\(val\)/)
+      conn.remove_index :cib_scratch, name: index
+      conn.add_index :cib_scratch, %i[num val], name: index
+      expect { build(%i[val num]) }.to mismatch
+    end
+
+    it "raises for another access method" do
+      conn.execute("CREATE INDEX #{index} ON cib_scratch USING hash (val)")
+      expect { build }.to mismatch(/hash/)
+    end
   end
 
-  it "raises on a valid index of that name with different uniqueness" do
-    conn.execute("DELETE FROM cib_scratch")
-    conn.add_index :cib_scratch, :val, name: index, unique: true
-    expect { build }.to raise_error(ConcurrentIndexBuilder::IndexDefinitionMismatch, /unique/)
-  end
-
-  it "builds a unique index when asked" do
-    conn.execute("DELETE FROM cib_scratch")
-    build(:val, unique: true)
-    expect(found.unique).to be(true)
-  end
-
-  it "keeps a matching partial index and raises when the predicate differs" do
-    build(:val, where: "val > 0")
-    before_oid = oid
-    build(:val, where: "val > 0")
-    expect(oid).to eq(before_oid)
-    expect { build(:val, where: "val > 5") }.to raise_error(ConcurrentIndexBuilder::IndexDefinitionMismatch, /where/)
-    expect { build(:val) }.to raise_error(ConcurrentIndexBuilder::IndexDefinitionMismatch)
-    expect(oid).to eq(before_oid)
-  end
-
-  it "raises when the access method differs" do
-    build(:val, using: :btree)
-    expect { build(:val, using: :hash) }.to raise_error(ConcurrentIndexBuilder::IndexDefinitionMismatch, /hash/)
-  end
-
-  it "keeps an expression index on re-run instead of failing on it" do
-    build("lower(txt)", name: index)
-    before_oid = oid
-    expect { build("lower(txt)", name: index) }.not_to raise_error
-    expect(oid).to eq(before_oid)
-    expect { build("upper(txt)", name: index) }.to raise_error(ConcurrentIndexBuilder::IndexDefinitionMismatch, /lower/)
-  end
-
-  it "raises when the name is already used by an index on another table, and builds nothing" do
+  it "raises when the name is used by an index on another table, and builds nothing" do
     conn.add_index :cib_other, :val, name: index
-    expect { build }.to raise_error(ConcurrentIndexBuilder::IndexDefinitionMismatch, /cib_other/)
+    expect { build }.to mismatch(/cib_other/)
     expect(found).to be_nil
   end
 
-  it "passes the other add_index options on" do
-    build(:val, include: :txt, comment: "scratch")
-    expect(found.include).to eq(["txt"])
-    expect(found.comment).to eq("scratch")
-    expect { build(:val, include: :txt) }.not_to raise_error
+  it "raises when the name is used by a sequence" do
+    conn.execute("CREATE SEQUENCE #{index}")
+    expect { build }.to mismatch(/relkind S/)
+    expect(found).to be_nil
+  ensure
+    conn.execute("DROP SEQUENCE IF EXISTS #{index}")
   end
 
-  it "refuses algorithm: and if_not_exists: from the caller" do
-    expect { builder.add_index_concurrently(:cib_scratch, :val, algorithm: :default) }.to raise_error(ArgumentError, /algorithm/)
-    expect { builder.add_index_concurrently(:cib_scratch, :val, if_not_exists: false) }.to raise_error(ArgumentError, /if_not_exists/)
+  it "raises ArgumentError for any other keyword" do
+    expect { builder.add_index_concurrently(:cib_scratch, :val, name: index, where: "val > 0") }.to raise_error(ArgumentError)
+    expect { builder.add_index_concurrently(:cib_scratch, :val, name: index, algorithm: :default) }.to raise_error(ArgumentError)
+    expect { builder.add_index_concurrently(:cib_scratch, :val, name: index, if_not_exists: false) }.to raise_error(ArgumentError)
+    expect { builder.add_index_concurrently(:cib_scratch, :val) }.to raise_error(ArgumentError)
   end
 
-  it "works directly in a `change`: builds on up, removes (if present) on down" do
+  it "raises ArgumentError when reverting" do
     migration = Class.new(ActiveRecord::Migration[8.1]) do
       include ConcurrentIndexBuilder
       disable_ddl_transaction!
-      def change = add_index_concurrently(:cib_scratch, :val)
+      def change = add_index_concurrently(:cib_scratch, :val, name: "index_cib_scratch_on_val")
     end
-    run = ->(direction) { ActiveRecord::Migration.suppress_messages { migration.new.migrate(direction) } }
-    run.call(:up)
-    expect(found).to be_valid
-    run.call(:down)
+    expect { ActiveRecord::Migration.suppress_messages { migration.new.migrate(:down) } }.to raise_error(ArgumentError, /reverted/)
     expect(found).to be_nil
-    expect { run.call(:down) }.not_to raise_error
   end
 end
