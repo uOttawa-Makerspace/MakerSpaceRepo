@@ -607,7 +607,8 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       end
     end
 
-    it "a legacy negative price snapshot in the cart rolls the checkout back: 'Something went wrong', nothing debited" do
+    # two items: the cart's N+1 (Order#subtotal) is pinned, see defects.md D-PERF06
+    it "a legacy negative price snapshot in the cart rolls the checkout back: 'Something went wrong', nothing debited", skip_bullet: true do
       credit_cc!(user, 50)
       add_to_cart(pp_with_cc(10))
       add_to_cart(pp_with_cc(5))
