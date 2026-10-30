@@ -95,12 +95,19 @@ class ApplicationController < ActionController::Base
     end
   end
 
+  # The referring page (same host only), or sign-in when signed out (with the
+  # page as back_to). A stale form on the login page itself goes back to the
+  # login page with ITS back_to, so the original destination survives and
+  # back_to never nests (/login?back_to=/login?back_to=...).
   def stale_form_target
     back = url_from(request.referer)
+    referer = URI.parse(back) if back
+    if referer && login_page_path?(referer.path)
+      return login_path(back_to: Array(Rack::Utils.parse_query(referer.query)["back_to"]).first.presence)
+    end
     return back || root_path if signed_in?
 
-    back_path = URI.parse(back).request_uri if back
-    login_path(back_to: back_path.presence)
+    login_path(back_to: referer&.request_uri)
   rescue URI::InvalidURIError
     signed_in? ? root_path : login_path
   end

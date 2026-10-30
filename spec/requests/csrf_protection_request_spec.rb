@@ -131,6 +131,20 @@ RSpec.describe "CSRF protection", type: :request do
       expect_stale_form_redirect(login_path(back_to: "/settings/profile"))
     end
 
+    it "a stale login form keeps the login page's own back_to (no nested /login?back_to=/login...), so sign-in lands there" do
+      get login_path(back_to: "/settings/profile")
+      login_page = "http://www.example.com#{login_path(back_to: "/settings/profile")}"
+      post login_authentication_path, params: { username_email: user.username, password: password },
+                                      headers: { "Referer" => login_page }, without_csrf_token: true
+      expect_stale_form_redirect(login_path(back_to: "/settings/profile"))
+
+      follow_redirect!
+      form = Nokogiri::HTML(response.body).at_css("form[action='#{login_authentication_path}']")
+      fields = form.css("input[type='hidden']").to_h { |input| [input["name"], input["value"]] }
+      post login_authentication_path, params: fields.merge("username_email" => user.username, "password" => password)
+      expect(response).to redirect_to("http://www.example.com/settings/profile")
+    end
+
     it "an XHR or JS request is answered 422 with the message" do
       log_in!
       post perform_logout_path, headers: { "X-Requested-With" => "XMLHttpRequest" }, without_csrf_token: true
