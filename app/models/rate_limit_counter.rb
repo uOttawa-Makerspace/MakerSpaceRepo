@@ -10,8 +10,6 @@
 # that has expired is restarted by the next increment; prune! (recurring) removes
 # the windows nobody came back to.
 class RateLimitCounter < ApplicationRecord
-  self.primary_key = "key"
-
   PRUNE_BATCH = 1_000
 
   def self.increment(key, amount = 1, expires_in:)

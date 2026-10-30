@@ -137,6 +137,13 @@ RSpec.describe "CSRF protection", type: :request do
       expect_stale_form_redirect(login_path)
     end
 
+    it "a backslash referer path never reaches the redirect: URI.parse rejects it" do
+      expect { URI.parse("http://www.example.com/\\evil.example") }.to raise_error(URI::InvalidURIError)
+      log_in!
+      post perform_logout_path, headers: { "Referer" => "http://www.example.com/\\evil.example" }, without_csrf_token: true
+      expect_stale_form_redirect(root_path)
+    end
+
     it "a signed-out stale tab is sent to sign in, keeping its page as back_to" do
       post perform_logout_path, headers: { "Referer" => "http://www.example.com/settings/profile" }, without_csrf_token: true
       expect_stale_form_redirect(login_path(back_to: "/settings/profile"))

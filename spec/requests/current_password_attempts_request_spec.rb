@@ -154,6 +154,27 @@ RSpec.describe "Current-password re-authentication", type: :request do
     expect(response).to redirect_to(login_path)
   end
 
+  describe "revoking on exhaustion" do
+    it "a burst of wrong guesses bumps token_version exactly once" do
+      log_in!
+      before = user.reload.token_version
+      9.times { change_password!("wrong-password") }
+      expect(user.reload.token_version).to eq(before + 1)
+    end
+
+    it "a request over the limit that did not cross it refuses and signs out without another bump" do
+      log_in!
+      before = user.reload.token_version
+      allow(RateLimitCounter).to receive(:increment).and_wrap_original do |m, key, *rest, **opts|
+        key.start_with?("reauth/") ? UsersController::REAUTH_MAX_ATTEMPTS + 2 : m.call(key, *rest, **opts)
+      end
+      change_password!("wrong-password")
+      expect(response).to redirect_to(login_path)
+      expect(signed_in?).to be(false)
+      expect(user.reload.token_version).to eq(before)
+    end
+  end
+
   describe "exhaustion ends every credential, not just the cookie session" do
     let(:pair) do
       post "/api/v1/session", params: { login: user.username, password: password }.to_json,

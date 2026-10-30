@@ -34,6 +34,14 @@ RSpec.describe RateLimitCounter do
     expect(described_class.increment("b", 1, expires_in: 1.minute)).to eq(1)
   end
 
+  it "infers its primary key from the schema (find, delete and the upsert all go by key)" do
+    expect(described_class.primary_key).to eq("key")
+    described_class.increment("k", 1, expires_in: 1.minute)
+    expect(described_class.find("k").count).to eq(1)
+    described_class.delete("k")
+    expect(described_class.exists?("k")).to be(false)
+  end
+
   it "reset forgets a key" do
     described_class.increment("k", 1, expires_in: 1.minute)
     described_class.reset("k")

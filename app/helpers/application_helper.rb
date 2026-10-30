@@ -80,9 +80,15 @@ module ApplicationHelper
     return true unless request.get? || request.head?
 
     mode = request.headers["Sec-Fetch-Mode"]
-    return mode == "navigate" || turbo_visit? if mode.present?
+    return (mode == "navigate" && !speculative_load?) || turbo_visit? if mode.present?
 
     !request.xhr? && request.format.html?
+  end
+
+  # The browser loading a page ahead of the person (Sec-Purpose: prefetch /
+  # prefetch;prerender) is a navigate-mode GET nobody has asked for yet.
+  def speculative_load?
+    request.headers["Sec-Purpose"].present?
   end
 
   def turbo_visit?

@@ -151,7 +151,7 @@ class RfidController < SessionsController
 
   def rejected_taps_exceeded?
     count = RateLimitCounter.increment("rate-limit:rfid:rejected:#{request.remote_ip}", 1, expires_in: 1.minute)
-    count.present? && count > REJECTED_TAPS_PER_MINUTE
+    count > REJECTED_TAPS_PER_MINUTE
   end
 
   def tap_rate_limit_key

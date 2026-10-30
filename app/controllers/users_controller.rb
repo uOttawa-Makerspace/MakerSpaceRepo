@@ -512,10 +512,13 @@ class UsersController < SessionsController
   end
 
   def limit_reauth_attempts
-    return if RateLimitCounter.increment(reauth_attempts_key, 1, expires_in: REAUTH_WINDOW) <= REAUTH_MAX_ATTEMPTS
+    attempts = RateLimitCounter.increment(reauth_attempts_key, 1, expires_in: REAUTH_WINDOW)
+    return if attempts <= REAUTH_MAX_ATTEMPTS
 
     # The cookie session AND every token: a Bearer caller must not keep its token.
-    @user.bump_token_version!
+    # Only the request that crosses the limit revokes (token_version bump); later ones
+    # in the same burst refuse, their credentials are already dead.
+    @user.bump_token_version! if attempts == REAUTH_MAX_ATTEMPTS + 1
     sign_out
     redirect_to login_path, alert: REAUTH_LIMIT_ALERT
   end

@@ -7,8 +7,11 @@ module AnnouncementsHelper
   # the key carries the user's roles, today's date (the active scope depends on
   # it) and the collection cache version (newest updated_at and count, so a
   # deletion counts) of the announcements and of the user's dismissals, so a new,
-  # edited, deleted or dismissed announcement shows at once. A hit costs those two aggregate queries. The
-  # dismiss forms are NOT cached: their CSRF tokens belong to the current session.
+  # edited, deleted or dismissed announcement shows at once. A hit costs those two
+  # aggregate queries, which holds only while cache_key_with_version is called on an
+  # unloaded, unlimited relation (one COUNT and MAX query each); the query-count spec
+  # (announcements_bar_cache_request_spec) guards it. The dismiss forms are NOT
+  # cached: their CSRF tokens belong to the current session.
   def visible_announcements
     user = current_user
     admin, staff, volunteer = role_flag(:admin?), role_flag(:staff?), role_flag(:volunteer?)
