@@ -358,9 +358,10 @@ class User < ApplicationRecord
 
   # Admins who can still sign in. A locked admin (admin lock, or too many failed
   # attempts) cannot sign in (CredentialAuthenticator), so does not count.
-  # Latent: `active` = false is ignored here (nothing sets it today).
+  # A deactivated admin (User#deactivate!) cannot either.
   scope :usable_admins, -> {
-    where(role: "admin").where("users.locked IS NOT TRUE OR users.locked_until < ?", Time.current)
+    where(role: "admin").where("users.active IS NOT FALSE")
+                        .where("users.locked IS NOT TRUE OR users.locked_until < ?", Time.current)
   }
 
   GUARD_LOCK_MODE = "FOR NO KEY UPDATE"
@@ -395,8 +396,6 @@ class User < ApplicationRecord
   # Known, intentional gap: the automatic failed-login lockout (record_failed_attempt!)
   # does NOT go through here. It is a timed 5-minute lock bounded by the login rate
   # limit, an existing lockout-DoS trade-off logged for later.
-  #
-  # usable_admins ignores `active` = false (latent: nothing sets it today).
   #
   # only_if: optional lambda run AFTER the locks are taken (so on fresh state); when
   # it returns false the last-admin check is skipped (the change is not a removal,
@@ -514,19 +513,28 @@ class User < ApplicationRecord
   # Compare-and-set from the token_version this instance was LOADED with (the version
   # the session or token authenticated with): if a revocation committed meanwhile, or
   # the account was soft-deleted or removed, nothing is written and
-  # ActiveRecord::StaleObjectError is raised. The caller's credential is dead; it is
-  # never re-synced to the new version.
+  # ActiveRecord::StaleObjectError is raised, and the instance is left as it was
+  # loaded (nothing assigned, not dirty). The caller's credential is dead; it is
+  # never re-synced to the new version. Only after the UPDATE succeeded does the
+  # instance take the new password and version.
   def store_new_password!(plain, clear_timed_lock: false)
     loaded_version = token_version_in_database
-    clear_lock = clear_timed_lock && timed_lockout?
-    self.pword = plain
+    hashed = Password.create(plain)
     columns = [:password]
-    if clear_lock
+    assign_attributes(password: hashed.to_s)
+    if clear_timed_lock && timed_lockout?
       assign_attributes(locked: false, auth_attempts: 0, locked_until: nil)
       columns += %i[locked auth_attempts locked_until]
     end
-    bump_token_version!(*columns, from_version: loaded_version) or
+    unless bump_token_version!(*columns, from_version: loaded_version)
+      restore_attributes(columns)
       raise ActiveRecord::StaleObjectError.new(self, "store a new password for")
+    end
+
+    @pword = hashed
+    @own_password_hash = hashed.to_s
+    self.password_confirmation = hashed
+    self
   end
 
   # The one way to end every credential of a user (password change/reset, admin
@@ -544,17 +552,19 @@ class User < ApplicationRecord
   # UPDATE only matches while token_version still equals it, and when it matches no
   # row nothing else runs and false is returned. Any number of callers holding the
   # same version race safely; exactly one bumps.
-  # The UPDATE also requires deleted = false (the column list may set it: the
-  # condition is on the row as it was): a soft-deleted or missing row returns false
-  # with from_version, and without it raises ActiveRecord::RecordNotFound (never a
-  # silent no-op).
+  # With from_version the UPDATE also requires deleted = false (the column list may
+  # set it: the condition is on the row as it was): a soft-deleted or missing row
+  # returns false. Without it (admin lock, soft delete, deactivation: the admin's
+  # decision stands whatever state the row is in) any existing row is bumped,
+  # soft-deleted or not, and only a missing row raises ActiveRecord::RecordNotFound
+  # (never a silent no-op).
   def bump_token_version!(*columns, from_version: nil)
     conn = self.class.connection
     values = columns.index_with { |column| self[column] }.merge(updated_at: Time.current)
     assignments = values.keys.map { |column| "#{conn.quote_column_name(column)} = ?" }
     sql = self.class.sanitize_sql_array(
       ["UPDATE #{conn.quote_table_name(self.class.table_name)} SET token_version = token_version + 1, " \
-       "#{assignments.join(', ')} WHERE id = ? AND deleted = false#{' AND token_version = ?' if from_version} " \
+       "#{assignments.join(', ')} WHERE id = ?#{' AND deleted = false AND token_version = ?' if from_version} " \
        "RETURNING token_version",
        *values.values, id, *from_version]
     )
@@ -572,13 +582,15 @@ class User < ApplicationRecord
     clear_attribute_changes(columns + %i[token_version updated_at])
     # After the real commit when called inside a caller's transaction (a rolled-back
     # change must not drop connections, and a reconnect must see the new state).
+    # The sockets are closed first (the access cut that matters), then the refresh
+    # token rows are marked revoked (bookkeeping).
     ActiveRecord.after_all_transactions_commit do
+      disconnect_cable!
       begin
         ApiRefreshToken.revoke_all_for!(id)
       rescue StandardError => e
         Rails.error.report(e, handled: true)
       end
-      disconnect_cable!
     end
     self
   end
@@ -592,19 +604,19 @@ class User < ApplicationRecord
   # Counts one failed/attempted re-authentication and, when that is over `max`, ends
   # every credential of the user, in ONE transaction: the counter upsert, then (over
   # the limit) the compare-and-set bump from the version the key was built from. Of
-  # any number of racing over-limit callers exactly one bumps. Returns
-  # [count, bumped]; bumped is false when another caller bumped first or the row is
-  # gone or soft-deleted (the credential is dead either way). Anything that raises
+  # any number of racing over-limit callers exactly one bumps. Returns the count; the
+  # bump is a no-op when another caller bumped first or the row is gone or
+  # soft-deleted (the credential is dead either way). Anything that raises
   # rolls the count back and propagates (fail closed).
   #
   # Lock order: the counter row (the upsert), then the user row (the bump). No path
   # takes a users lock and then a rate_limit_counters row, and no token-row lock is
   # taken inside. Keep it that way.
   def count_reauth_attempt!(max:, window:)
-    version = token_version
     RateLimitCounter.transaction do
       count = RateLimitCounter.increment(reauth_attempts_key, 1, expires_in: window)
-      [count, count > max && bump_token_version!(from_version: version).present?]
+      bump_token_version!(from_version: token_version) if count > max
+      count
     end
   end
 
@@ -769,15 +781,27 @@ class User < ApplicationRecord
     self
   end
 
+  # Deactivation and reactivation both end every credential issued so far (cookie
+  # sessions, access and legacy JWTs, websockets, /api/v1 refresh tokens): `active`
+  # is set and token_version bumped in ONE UPDATE, so reactivating an account never
+  # revives what was issued before. These are the only ways to change `active`.
+  # Deactivating an admin removes a usable admin: wrap it in User.guarding_last_admin!.
+  def deactivate!
+    self.active = false
+    bump_token_version!(:active)
+  end
+
+  def reactivate!
+    self.active = true
+    bump_token_version!(:active)
+  end
+
   # Demoted from staff/admin, soft-deleted or deactivated: such a connection must not
   # keep receiving broadcasts (StaffDashboardChannel authorizes at subscribe time
   # only; the handshake already refuses deleted/inactive users on reconnect).
   after_update_commit :disconnect_cable!, if: :cable_access_lost?
   # A block, not the method symbol: Rails de-duplicates commit callbacks by method name.
   after_destroy_commit { disconnect_cable! }
-  # Deactivation also ends /api/v1 refresh tokens for good: reactivating the account
-  # must not revive them (the token_version bumps revoke after commit in bump_token_version!).
-  after_update_commit :revoke_api_refresh_tokens, if: -> { saved_change_to_active? && active == false }
 
   def staff?
     role.in?(%w[staff admin])
@@ -968,10 +992,6 @@ class User < ApplicationRecord
 
   def translate_faculty
     self.faculty = FACULTY_TRANSLATIONS[faculty] if FACULTY_TRANSLATIONS.key?(faculty)
-  end
-
-  def revoke_api_refresh_tokens
-    ApiRefreshToken.revoke_all_for!(id)
   end
 
   def cable_access_lost?

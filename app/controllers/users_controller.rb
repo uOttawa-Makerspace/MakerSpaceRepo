@@ -242,25 +242,17 @@ class UsersController < SessionsController
       render 'settings/admin', layout: 'setting' and return
     end
 
-    loaded_version = @user.token_version
     begin
       # A timed (brute-force) lockout is cleared: the owner just proved the password.
       @user.store_new_password!(new_password, clear_timed_lock: true)
+    rescue ActiveRecord::StaleObjectError
+      # An expected race, not an error: the credentials were revoked while this request
+      # ran (or the account was soft-deleted or removed). This session is dead, never
+      # re-synced.
+      sign_out
+      redirect_to login_path, alert: 'Your session has ended. Please sign in again.' and return
     rescue ActiveRecord::ActiveRecordError => e
       Rails.error.report(e, handled: true)
-      # @user.reload is unscoped, so look the account up through the default scope: a
-      # hard-deleted or soft-deleted account has nothing to retry on.
-      current = User.find_by(id: @user.id)
-      if current.nil?
-        sign_out
-        redirect_to login_path, alert: 'This account no longer exists. Please sign in again.' and return
-      end
-      if current.token_version != loaded_version
-        # Revoked while this request ran: this session is dead, never re-synced.
-        sign_out
-        redirect_to login_path, alert: 'Your session has ended. Please sign in again.' and return
-      end
-      @user = current
       flash.now[:alert] = 'Your password could not be changed. Please try again.'
       render 'settings/admin', layout: 'setting' and return
     end
@@ -326,6 +318,11 @@ class UsersController < SessionsController
         begin
           user.store_new_password!(params[:password], clear_timed_lock: true)
           true
+        rescue ActiveRecord::StaleObjectError
+          # A concurrent bump (an expected race, not an error): the account changed
+          # under this request. The link is still valid.
+          flash[:alert] = 'Your account changed while resetting the password. Please use the link again.'
+          return redirect_to reset_password_form_users_path(token: params[:token])
         rescue ActiveRecord::ActiveRecordError => e
           Rails.error.report(e, handled: true)
           false
@@ -530,7 +527,7 @@ class UsersController < SessionsController
   # password is checked). Over the limit the request is signed out whether or not it
   # was the one that bumped (a racing request, or a vanished account, just signs out).
   def limit_reauth_attempts
-    count, = @user.count_reauth_attempt!(max: REAUTH_MAX_ATTEMPTS, window: REAUTH_WINDOW)
+    count = @user.count_reauth_attempt!(max: REAUTH_MAX_ATTEMPTS, window: REAUTH_WINDOW)
     return if count <= REAUTH_MAX_ATTEMPTS
 
     sign_out

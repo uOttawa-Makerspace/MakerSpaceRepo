@@ -230,28 +230,38 @@ RSpec.describe "Current-password re-authentication", type: :request do
     expect(signed_in?).to be(false)
   end
 
-  it "a password change that fails because the row is gone signs out and redirects to login without a second raise" do
-    log_in!
-    allow_any_instance_of(User).to receive(:store_new_password!) do |u|
-      User.where(id: u.id).delete_all
-      raise ActiveRecord::StatementInvalid, "row gone"
+  # A revocation (or a deletion) committing while the request runs is an expected
+  # race, not an error: sign out with the session-ended message, report nothing.
+  def race_during_store_new_password!
+    allow_any_instance_of(User).to receive(:store_new_password!).and_wrap_original do |m, *args, **opts|
+      yield m.receiver
+      m.call(*args, **opts)
     end
-    change_password!(password)
-    expect(response).to redirect_to(login_path)
-    expect(flash[:alert]).to eq("This account no longer exists. Please sign in again.")
-    expect(signed_in?).to be(false)
   end
 
-  it "a password change that fails because the account was soft-deleted meanwhile signs out with the neutral message" do
-    log_in!
-    allow_any_instance_of(User).to receive(:store_new_password!) do |u|
-      User.unscoped.where(id: u.id).update_all(deleted: true)
-      raise ActiveRecord::StatementInvalid, "row changed"
+  [
+    ["a concurrent token_version bump", ->(u) { User.where(id: u.id).update_all("token_version = token_version + 1") }],
+    ["the account being soft-deleted", ->(u) { User.unscoped.where(id: u.id).update_all(deleted: true) }],
+    ["the account being removed", ->(u) { User.unscoped.where(id: u.id).delete_all }]
+  ].each do |what, race|
+    it "signs out with the session-ended alert, without an error report or re-query, on #{what}" do
+      log_in!
+      race_during_store_new_password!(&race)
+      expect(Rails.error).not_to receive(:report)
+      change_password!(password)
+      expect(response).to redirect_to(login_path)
+      expect(flash[:alert]).to eq("Your session has ended. Please sign in again.")
+      expect(signed_in?).to be(false)
     end
+  end
+
+  it "reports a database error, keeps the session and asks to try again" do
+    log_in!
+    allow_any_instance_of(User).to receive(:bump_token_version!).and_raise(ActiveRecord::StatementInvalid, "boom")
+    expect(Rails.error).to receive(:report).with(an_instance_of(ActiveRecord::StatementInvalid), handled: true)
     change_password!(password)
-    expect(response).to redirect_to(login_path)
-    expect(flash[:alert]).to eq("This account no longer exists. Please sign in again.")
-    expect(signed_in?).to be(false)
+    expect(flash[:alert]).to eq("Your password could not be changed. Please try again.")
+    expect(signed_in?).to be(true)
   end
 
   describe "exhaustion ends every credential, not just the cookie session" do

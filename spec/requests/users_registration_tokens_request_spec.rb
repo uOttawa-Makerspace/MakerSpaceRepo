@@ -477,6 +477,22 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(deliveries).to be_empty
     end
 
+    it "a concurrent bump during the reset is an expected race: not reported, told to use the link again, link stays valid" do
+      allow_any_instance_of(User).to receive(:store_new_password!).and_wrap_original do |m, *args, **opts|
+        User.where(id: m.receiver.id).update_all("token_version = token_version + 1")
+        m.call(*args, **opts)
+      end
+      expect(Rails.error).not_to receive(:report)
+      params = reset_params(user)
+      patch reset_password_confirmation_users_path, params: params
+      expect(response).to redirect_to(reset_password_form_users_path(token: params[:token]))
+      expect(flash[:alert]).to eq("Your account changed while resetting the password. Please use the link again.")
+      expect(deliveries).to be_empty
+      allow_any_instance_of(User).to receive(:store_new_password!).and_call_original
+      patch reset_password_confirmation_users_path, params: params
+      expect(flash[:notice]).to start_with("Your password has been updated")
+    end
+
     it "a reset does not lift an admin lock: the new password is saved and the login is still refused" do
       # FIXED: only the timed brute-force lockout is cleared by a reset
       user.update_columns(locked: true, locked_until: 99.years.from_now, auth_attempts: 5)

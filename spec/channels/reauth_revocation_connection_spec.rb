@@ -16,8 +16,10 @@ RSpec.describe ApplicationCable::Connection do
   def exhaust!
     # Six requests of one user, all loaded before any of them bumps (as in production).
     loaded = Array.new(6) { User.find(user.id) }
-    results = loaded.map { |u| u.count_reauth_attempt!(max: 5, window: 15.minutes) }
-    expect(results.count { |_count, bumped| bumped }).to eq(1)
+    version = user.token_version
+    counts = loaded.map { |u| u.count_reauth_attempt!(max: 5, window: 15.minutes) }
+    expect(counts).to eq([1, 2, 3, 4, 5, 6])
+    expect(User.find(user.id).token_version).to eq(version + 1)
   end
 
   it "accepts the cookie session and the JWT before, and refuses both after the revocation" do
