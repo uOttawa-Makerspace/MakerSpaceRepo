@@ -97,10 +97,10 @@ RSpec.describe JobOrder, type: :model do
       expect(order.allow_edit?).to be(false)
     end
 
-    # WART(D-J20): allow_edit? has no nil guard on the status history
-    it "crashes on an order with no status rows" do
+    # D-J20, closed: JobOrder.editable_status? (also the delete rule) treats a missing status as not editable
+    it "is false for an order with no status rows" do
       order = create(:job_order, user: create(:user, :regular_user))
-      expect { order.allow_edit? }.to raise_error(NoMethodError)
+      expect(order.allow_edit?).to be(false)
     end
   end
 
