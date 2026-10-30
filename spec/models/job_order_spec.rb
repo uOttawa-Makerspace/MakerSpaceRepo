@@ -280,7 +280,7 @@ RSpec.describe JobOrder, type: :model do
         expect(shopify.calls.map { |c| c[:query][/\b(draftOrderCreate|getDraftOrder)\b/] })
           .to eq(%w[draftOrderCreate getDraftOrder])
         created = shopify.calls.first[:variables][:input]
-        expect(created[:tags]).to eq(["makerepo_test_job_order"])
+        expect(created[:tags]).to eq(["makerepo_test_job_order", "job_order:#{order.id}"])
         expect(created[:metafields]).to eq([{ namespace: "makerepo", key: "job_order_db_reference",
                                               value: order.id.to_s, type: "number_integer" }])
       end
