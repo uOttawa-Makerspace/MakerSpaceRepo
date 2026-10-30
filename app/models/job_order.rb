@@ -69,7 +69,8 @@ class JobOrder < ApplicationRecord
   def transition!(from:, to:, actor:, approval_token: nil)
     added = transaction do
       lock!
-      next false unless Array.wrap(from).include?(job_order_statuses.last&.job_status)
+      latest = job_order_statuses.last&.job_status
+      next false if latest.nil? || !Array.wrap(from).include?(latest)
       next false if approval_token && self.class.from_approval_token(approval_token)&.id != id
       raise ActiveRecord::Rollback unless job_order_statuses.create(job_status: to, user: actor).persisted?
 
@@ -80,8 +81,9 @@ class JobOrder < ApplicationRecord
 
   # JOB-04: once money has been taken the quote is final. Nothing on the customer or quoting side may change the
   # order, re-quote it or decline it; changes after payment go through staff by hand.
+  # (A missing status never matches: the JobStatus constants are nil where the status rows are not seeded.)
   def self.money_taken_status?(status)
-    [JobStatus::PAID, JobStatus::PICKED_UP].include?(status)
+    !status.nil? && [JobStatus::PAID, JobStatus::PICKED_UP].include?(status)
   end
 
   # Every status a quote may be issued or declined from (all but the paid ones).
@@ -99,8 +101,9 @@ class JobOrder < ApplicationRecord
 
   # Statuses in which the order carries a staff quote the customer may approve or pay.
   def self.quoted_status?(status)
-    [JobStatus::USER_APPROVAL, JobStatus::SENT_REMINDER, JobStatus::WAITING_PROCESSED, JobStatus::BEING_PROCESSED,
-     JobStatus::COMPLETED].include?(status)
+    !status.nil? &&
+      [JobStatus::USER_APPROVAL, JobStatus::SENT_REMINDER, JobStatus::WAITING_PROCESSED, JobStatus::BEING_PROCESSED,
+       JobStatus::COMPLETED].include?(status)
   end
 
   class OwnerChangeRefused < StandardError; end
@@ -350,7 +353,8 @@ class JobOrder < ApplicationRecord
 
   # checkout_link's decision under the row lock: [invoice_url or nil, whether the order was sent back to staff].
   def checkout_link_under_lock
-    return [nil, false] unless job_order_statuses.last&.job_status == JobStatus::COMPLETED
+    latest = job_order_statuses.last&.job_status
+    return [nil, false] if latest.nil? || latest != JobStatus::COMPLETED
 
     state, url = probe_draft_order
     return [nil, false] if state == :error
