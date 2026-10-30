@@ -128,16 +128,18 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         credit_cc!(user, 100)
         taken = create(:coupon_code, :claimed, user: other, dollar_cost: 5, cc_cost: 10)
         expect { post discount_codes_path, params: { dollar_cost: 5 } }.not_to change(CcMoney, :count)
-        # same nil-dereference crash as an unknown value (D-S09)
-        expect(response).to have_http_status(:internal_server_error)
+        # Fixed (was WART D-S09, a 500): redirect back to the offers with the alert
+        expect(response).to redirect_to(new_discount_code_path)
+        expect(flash[:alert]).to eq("Can not find coupon for $5 off")
         expect(taken.reload.user_id).to eq(other.id)
       end
 
-      it "answers with the 'Can not find coupon' alert flash and then 500s on the unknown dollar value" do
+      it "answers the 'Can not find coupon' alert and redirects to the offers on an unknown dollar value" do
         credit_cc!(user, 100)
-        # WART(D-S09): after redirecting for a missing coupon the filter keeps going and dereferences nil (@price_rule.user), so the user sees a 500 instead of the redirect
+        # Fixed (was WART D-S09): the filter now returns after its redirect instead of dereferencing nil (a 500)
         expect { post discount_codes_path, params: { dollar_cost: 777 } }.not_to change(CcMoney, :count)
-        expect(response).to have_http_status(:internal_server_error)
+        expect(response).to redirect_to(new_discount_code_path)
+        expect(flash[:alert]).to eq("Can not find coupon for $777 off")
       end
 
       it "a claim whose save fails changes nothing and answers the 'not created properly' alert (no 500)" do

@@ -44,14 +44,11 @@ class DiscountCodesController < DevelopmentProgramsController
   def check_and_set_price_rule_expiration
     @price_rule =
       CouponCode.unclaimed.find_by(dollar_cost: params[:dollar_cost])
-    unless @price_rule
-      flash[:alert] = "Can not find coupon for $#{params[:dollar_cost]} off"
-      redirect_to new_discount_code_path
-    end
-    unless @price_rule.user.nil?
-      flash[:alert] = "This coupon is already claimed"
-      redirect_to new_discount_code_path
-    end
+    return if @price_rule # an unclaimed coupon, so never one already claimed
+
+    # D-S09: return after the redirect (the filter used to go on and dereference nil: a 500)
+    flash[:alert] = "Can not find coupon for $#{params[:dollar_cost]} off"
+    redirect_to new_discount_code_path
   end
 
   # Read-only early refusal (claim! re-checks under the wallet lock); writes no cache.
