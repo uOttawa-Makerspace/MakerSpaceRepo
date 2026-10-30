@@ -333,7 +333,8 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
       redirect_to(@user.admin? ? admin_job_orders_path : job_orders_path)
     else
       flash[:alert] = t(result.message_key("job_orders.alerts.delete_refused", reasons: JobOrder::TransitionResult::DELETE_REASONS))
-      redirect_to job_order_path(@job_order.id)
+      # a deleted order has no page to show the message on (set_job_order would replace it)
+      redirect_to(result.reason == :order_missing ? job_orders_path : job_order_path(@job_order.id))
     end
   end
 
@@ -512,7 +513,8 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
       end
     end
 
-    staff_comments = params.permit(job_order: [:staff_comments]).dig(:job_order, :staff_comments)
+    fields = params[:job_order] # only its staff_comments; the quote's other keys are not unpermitted noise
+    staff_comments = fields.permit(:staff_comments)[:staff_comments] if fields.is_a?(ActionController::Parameters)
     @job_order.staff_comments = staff_comments if staff_comments.present?
     @job_order.save!
   end

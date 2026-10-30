@@ -19,7 +19,7 @@ class JobOrderMailer < ApplicationMailer
   end
 
   # JOB-01: an order went back to "Waiting for Staff Approval" because its quote no longer describes it
-  # (JobOrder#send_back_for_requote!). Same recipient and expedited handling as send_job_submitted.
+  # (JobOrder#apply_owner_change!, JobOrder#checkout_link). Same recipient and expedited handling as send_job_submitted.
   def send_job_requote_needed(job_order_id, reason)
     return unless JobOrder.exists?(id: job_order_id)
     @job_order = JobOrder.find(job_order_id)

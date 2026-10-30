@@ -148,6 +148,19 @@ RSpec.describe "job_orders:retire_stale_drafts", type: :model do
       expect(out).to include("deleted: 1")
     end
 
+    %i[paid picked_up].each do |status_key|
+      it "keeps a COMPLETED draft of a deleted #{status_key} order: resolved, exit 0" do
+        order = order_with_draft!(status_key)
+        order.update_column(:is_deleted, true)
+        shopify.draft_status = "COMPLETED"
+        out = run_task
+
+        expect(order.reload.shopify_draft_order_id).to eq(draft_id)
+        expect(out).to include("kept: 1").and include("unresolved: 0")
+        expect(exit_status).to be_nil
+      end
+    end
+
     it "refuses, and lists, a draft Shopify reports paid (COMPLETED): the delete would lose the payment record" do
       order = order_with_draft!(:completed)
       order.update_column(:is_deleted, true)

@@ -5,7 +5,7 @@ namespace :job_orders do
   task retire_stale_drafts: :environment do
     # Rows written before status transitions and deletes settled drafts: the same rule as a transition into the
     # order's current status, or a delete for a soft-deleted order (JobOrder#retire_stale_draft! ->
-    # #settle_draft_order!): a COMPLETED draft is kept, an open one deleted, a vanished one cleared. Orders waiting
+    # #settle_draft_order!, the rule JobOrder.draft_settlement): a COMPLETED draft is kept, an open one deleted, a vanished one cleared. Orders waiting
     # for payment are left alone. Each order runs as one locked operation (JobOrder#locked_operation), so a refusal
     # (busy, deadlock, order gone, Shopify could not confirm) is a result, listed as unresolved. An unexpected
     # exception is reported and listed the same way: it must not abort the run for the orders after it.

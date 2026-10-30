@@ -192,12 +192,14 @@ RSpec.describe "Job order transition failure contract", type: :request do
     # again"); only a lock wait timeout and a vanished order are benign.
     it "a deadlock is its own refusal with the retry message, and it is reported" do
       order = quoted_order!(:being_processed)
-      allow(order).to receive(:lock!).and_raise(ActiveRecord::Deadlocked)
       expect(Rails.error).to receive(:report)
         .with(an_instance_of(ActiveRecord::Deadlocked),
               handled: true, context: hash_including(job_order_id: order.id, where: "JobOrder#transition!")).once
 
-      result = order.transition!(from: JobStatus::BEING_PROCESSED, to: JobStatus::COMPLETED, actor: staff)
+      # raised from inside the work (the status row's insert), not from the row lock
+      result = order.transition!(from: JobStatus::BEING_PROCESSED, to: JobStatus::COMPLETED, actor: staff) do
+        raise ActiveRecord::Deadlocked
+      end
 
       expect(result.reason).to eq(:deadlock)
       expect(result.message_key).to eq("job_orders.alerts.status_change.busy")

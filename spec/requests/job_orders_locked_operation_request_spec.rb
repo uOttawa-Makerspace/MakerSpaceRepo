@@ -80,9 +80,7 @@ RSpec.describe "Job order locked operations", type: :request do
 
     {
       "RecordNotFound (a bad signed blob id in the quote)" => ActiveRecord::RecordNotFound,
-      "NotNullViolation (a price column)" => ActiveRecord::NotNullViolation,
-      "LockWaitTimeout (a child row lock)" => ActiveRecord::LockWaitTimeout,
-      "Deadlocked (a child row lock)" => ActiveRecord::Deadlocked
+      "NotNullViolation (a price column)" => ActiveRecord::NotNullViolation
     }.each do |label, error|
       it "#{label} propagates as itself; nothing is committed, nothing is reported as a refusal" do
         order = quoted_order!(:being_processed)
@@ -402,7 +400,7 @@ RSpec.describe "Job order locked operations", type: :request do
     it "a deadlock goes to the error reporter, with where:, and the user is told to try again" do
       order = quoted_order!(:being_processed)
       session_login!(staff)
-      allow_any_instance_of(JobOrder).to receive(:lock!).and_raise(ActiveRecord::Deadlocked)
+      allow_any_instance_of(JobOrderStatus).to receive(:save!).and_raise(ActiveRecord::Deadlocked) # inside the work
       expect(Rails.error).to receive(:report)
         .with(an_instance_of(ActiveRecord::Deadlocked),
               handled: true, context: hash_including(job_order_id: order.id, where: "JobOrder#transition!")).once
@@ -497,6 +495,103 @@ RSpec.describe "Job order locked operations", type: :request do
 
       expect(JobOrder.find(order.id).soft_delete!.reason).to eq(:order_missing)
       expect(shopify.calls).to be_empty
+    end
+  end
+
+  # ------------------------------------------------ deleting a paid order keeps the payment record
+
+  describe "deleting an order whose money was taken" do
+    %i[paid picked_up].each do |status_key|
+      it "#{status_key}: a COMPLETED draft is kept (the payment record) and the order is deleted" do
+        order = quoted_order!(status_key, draft: true)
+        shopify.draft_status = "COMPLETED"
+        session_login!(owner)
+
+        delete job_order_path(order)
+
+        expect(flash[:notice]).to eq("Job order deleted successfully.")
+        expect(order.reload.is_deleted).to be(true)
+        expect(order.shopify_draft_order_id).to eq(draft_id)
+        expect(shopify_ops).to eq(%w[getDraftOrder])
+      end
+
+      it "#{status_key}: a draft Shopify no longer knows is cleared" do
+        order = quoted_order!(status_key, draft: true)
+        shopify.draft_missing = true
+        session_login!(owner)
+
+        delete job_order_path(order)
+
+        expect(order.reload.is_deleted).to be(true)
+        expect(order.shopify_draft_order_id).to be_nil
+      end
+
+      it "#{status_key}: an open draft (paid in store) is deleted, so it cannot be paid again" do
+        order = quoted_order!(status_key, draft: true)
+        session_login!(owner)
+
+        delete job_order_path(order)
+
+        expect(order.reload.is_deleted).to be(true)
+        expect(order.shopify_draft_order_id).to be_nil
+        expect(shopify_ops).to eq(%w[getDraftOrder draftOrderDelete])
+      end
+    end
+
+    it "settles by (status, destination): one rule for transitions, deletes and the rake" do
+      paid = [JobStatus::PAID, JobStatus::PICKED_UP]
+      unpaid = [JobStatus::DRAFT, JobStatus::STAFF_APPROVAL, JobStatus::USER_APPROVAL, JobStatus::BEING_PROCESSED]
+      paid.each do |from|
+        expect(JobOrder.draft_settlement(from, JobOrder::DELETED)).to eq(:paid)
+        expect(JobOrder.draft_settlement(nil, from)).to eq(:paid)
+      end
+      unpaid.each do |from|
+        expect(JobOrder.draft_settlement(from, JobOrder::DELETED)).to eq(:unpaid)
+        expect(JobOrder.draft_settlement(from, JobStatus::PAID)).to eq(:paid)
+        expect(JobOrder.draft_settlement(from, JobStatus::DECLINED)).to eq(:unpaid)
+      end
+      expect(JobOrder.draft_settlement(JobStatus::PAID, JobStatus::PICKED_UP)).to eq(:none)
+      expect(JobOrder.draft_settlement(JobStatus::BEING_PROCESSED, JobStatus::COMPLETED)).to eq(:none)
+    end
+  end
+
+  # ------------------------------------------------ lock errors raised inside the work
+
+  describe "lock errors raised inside the work" do
+    it "a child-row lock timeout during an owner change is :busy with a message, nothing changed" do
+      order = quoted_order!(:draft)
+      result = order.apply_owner_change!(actor: owner) { raise ActiveRecord::LockWaitTimeout }
+
+      expect(result.reason).to eq(:busy)
+      expect(result.message_key).to eq("job_orders.alerts.status_change.busy")
+      expect(I18n.t(result.message_key)).to be_present
+    end
+
+    it "a deadlock in the work is :deadlock and reported" do
+      order = quoted_order!(:draft)
+      expect(Rails.error).to receive(:report).with(an_instance_of(ActiveRecord::Deadlocked), hash_including(handled: true)).once
+
+      expect(order.apply_owner_change!(actor: owner) { raise ActiveRecord::Deadlocked }.reason).to eq(:deadlock)
+    end
+
+    it "a RecordNotFound from the work still propagates (only the row lock means the order is gone)" do
+      order = quoted_order!(:draft)
+      expect { order.apply_owner_change!(actor: owner) { raise ActiveRecord::RecordNotFound } }
+        .to raise_error(ActiveRecord::RecordNotFound)
+    end
+  end
+
+  describe "DELETE of an order that no longer exists" do
+    it "redirects to the order list, where the message is shown" do
+      order = quoted_order!(:completed)
+      session_login!(owner)
+      allow_any_instance_of(JobOrder).to receive(:lock!).and_raise(ActiveRecord::RecordNotFound)
+
+      delete job_order_path(order)
+
+      expect(response).to redirect_to(job_orders_path)
+      follow_redirect!
+      expect(response.body).to include(I18n.t("job_orders.alerts.delete_refused.order_missing"))
     end
   end
 

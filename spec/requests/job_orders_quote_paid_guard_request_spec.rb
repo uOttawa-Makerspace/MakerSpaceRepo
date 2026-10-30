@@ -58,4 +58,21 @@ RSpec.describe "Quoting a paid job order (JOB-04)", type: :request do
       end
     end
   end
+
+  describe "a normal quote" do
+    it "writes no 'Unpermitted parameters' log line for its other keys" do
+      order, task = quoted_order!(:user_approval)
+      io = StringIO.new
+      logger = ActiveSupport::Logger.new(io)
+      Rails.logger.broadcast_to(logger)
+      begin
+        quote!(order, task, 40)
+      ensure
+        Rails.logger.stop_broadcasting_to(logger)
+      end
+
+      expect(order.reload.total_price).to eq(BigDecimal("40"))
+      expect(io.string).not_to include("Unpermitted parameter")
+    end
+  end
 end
