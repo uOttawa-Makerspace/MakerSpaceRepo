@@ -182,6 +182,25 @@ RSpec.describe "CSRF protection", type: :request do
       form.css("input[type='hidden']").to_h { |input| [input["name"], input["value"]] }
     end
 
+    it "is cached per user, not per session: a second session of the same user reuses the entries" do
+      log_in!
+      get root_path
+      entries = ActionController::Base.cache_store.instance_variable_get(:@data).keys
+      expect(entries).not_to be_empty
+      reset! # another browser: a new session for the same user
+      log_in!
+      get root_path
+      expect(ActionController::Base.cache_store.instance_variable_get(:@data).keys).to match_array(entries)
+    end
+
+    it "keeps the token-bearing forms (sign out, announcement dismiss) out of the cached fragments" do
+      create(:announcement, public_goal: "all", description: "Hello all")
+      log_in!
+      get root_path
+      cached = ActionController::Base.cache_store.instance_variable_get(:@data).values.map { |e| e.value.to_s }.join
+      expect(cached).not_to include("authenticity_token")
+    end
+
     it "does not hand a new session the sign-out form (and its token) cached for the previous one" do
       log_in!
       get root_path # cached for this session

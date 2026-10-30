@@ -1,8 +1,8 @@
-<%# The signed-in page holds button_to forms (sign out, dismiss announcement) whose
-    CSRF tokens belong to the session that rendered them, so it is cached per
-    session, not per user: a new sign-in (new session, new token) or another
-    device must not get forms with a stale token. The guest page has none. %>
-<% cache ["v2_home_page", signed_in? ? [current_user.id, session.id.to_s] : "anonymous", I18n.locale, @recent_projects.hash, @workshops.hash], expires_in: 10.minutes do %>
+<%# Cached per user (two fragments). The forms that carry a CSRF token (the
+    announcement dismiss buttons and the sign-out button in home_userinfo) are
+    rendered outside the fragments: their tokens belong to the current session,
+    so a cached copy would go stale after a new sign-in or on another device. %>
+<% home_cache_key = ["v3_home_page", current_user&.id || "anonymous", I18n.locale, @recent_projects.hash, @workshops.hash] %>
 <section id="home">
   <button class="d-xl-none" id="ShortcutButton" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas-shortcuts" aria-controls="offcanvas-shortcuts">
     Shortcuts
@@ -10,8 +10,9 @@
   
   <div class="container-fluid">
     <%= render 'partials/announcements' %>
-    
+
     <div class="row g-0">
+      <% cache [*home_cache_key, :left_and_middle], expires_in: 10.minutes do %>
       <!-- Left column -->
       <div class="col-xl-3 order-xl-0 order-1 offcanvas-xl offcanvas-start" id="offcanvas-shortcuts" aria-labelledby="shortcutsOffcanvasLabel">
         <div class="offcanvas-header pb-0">
@@ -62,10 +63,13 @@
         <%= render 'static_pages/home_makerstore' %>
       </div>
 
+      <% end %>
+
       <!-- Right column -->
       <div class="col-xl-3 order-xl-2 order-1">
+        <%= render partial: 'home_userinfo' if signed_in? %>
+        <% cache [*home_cache_key, :right], expires_in: 10.minutes do %>
         <% if signed_in? %>
-          <%= render partial: 'home_userinfo' %>
           <%= render partial: 'home_badges' %>
           <%= render partial: 'home_skills' %>
         <% end %>
@@ -105,8 +109,8 @@
             <% end %>
           </div>
         </div>
+        <% end %>
       </div>
     </div>
   </div>
 </section>
-<% end %>
