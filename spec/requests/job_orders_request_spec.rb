@@ -902,6 +902,22 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(response.body).not_to include("nav.navbar") # layout: false
     end
 
+    # JOB-01 review 7: JobOrderStatus#user is optional (rows from before its presence validation have none)
+    it "names a missing actor 'Unknown' instead of raising, on processing and sent-back rows", skip_bullet: true do
+      order = order_with_task!(owner: owner)
+      advance_to!(order, :being_processed)
+      sent_back = order.job_order_statuses.create!(job_status: JobStatus::STAFF_APPROVAL, user: owner, reason: "owner_change")
+      JobOrderStatus.where(id: [sent_back.id, order.job_order_statuses.find_by!(job_status: JobStatus::BEING_PROCESSED).id])
+                    .update_all(user_id: nil)
+      http_login!(staff)
+      get job_order_timeline_modal_path(order)
+
+      expect(response).to have_http_status(:ok)
+      text = Nokogiri::HTML(response.body).text.squish
+      expect(text).to include("Currently being Processed (By: Unknown)")
+      expect(text).to include("#{I18n.t('job_orders.status_reasons.owner_change')} (By: Unknown)")
+    end
+
     it "is staff/admin only — the owner gets bounced to root" do
       order = order_with_task!(owner: owner)
       http_login!(owner)

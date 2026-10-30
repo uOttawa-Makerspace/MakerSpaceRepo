@@ -350,6 +350,8 @@ fr:
       updated_successfully: "Mis à jour avec succès !"
       action_required_scroll_to_timeline: "Action Requise : Veuillez descendre jusqu'à la section « Chronologie » pour fournir votre contribution. Votre réponse est nécessaire pour continuer. Merci !"
       missing_info: "Votre commande n'est pas soumise ! Il manque des informations requises dans les tâches suivantes :"
+    timeline:
+      unknown_user: "Inconnu"
     status_reasons:
       owner_change: "La commande a été modifiée après avoir reçu un devis."
       invoice_mismatch: "Le lien de paiement ne correspondait plus au devis de la commande."
