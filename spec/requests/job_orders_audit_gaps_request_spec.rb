@@ -181,7 +181,9 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       order = make_job_order!(owner: owner, status_key: status_key)
       task = order.job_tasks.create!(title: "Task #1")
       task.build_job_task_quote(price: 29.99, service_price: 0, service_quantity: 0).save!
-      order.update_column(:shopify_draft_order_id, "gid://shopify/DraftOrder/9001")
+      # a draft this app created: the id with the fingerprint of the quote it was built from
+      order.update_columns(shopify_draft_order_id: "gid://shopify/DraftOrder/9001",
+                           shopify_draft_order_fingerprint: JobOrder.find(order.id).quote_fingerprint)
       [order, task]
     end
 
@@ -395,13 +397,14 @@ RSpec.describe "JobOrders audit gaps", type: :request do
         expect(shopify_ops).to eq(["getDraftOrder"])
       end
 
-      it "decides gone from a fetch, re-checks once under the lock, creates one draft; the view reuses the link" do
+      # JOB-03 follow-up: the probe runs once, under the lock (the quote snapshot is built once per request)
+      it "decides gone from one fetch under the lock, creates one draft; the view reuses the link" do
         order, = order_with_draft!
         shopify.missing_ids = ["gid://shopify/DraftOrder/9001"]
         shopify.draft_id = "gid://shopify/DraftOrder/9004"
         get pay_job_orders_path, params: { token: order.pay_token }
 
-        expect(shopify_ops).to eq(%w[getDraftOrder getDraftOrder draftOrderCreate getDraftOrder])
+        expect(shopify_ops).to eq(%w[getDraftOrder draftOrderCreate getDraftOrder])
         expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9004")
       end
 
@@ -413,7 +416,7 @@ RSpec.describe "JobOrders audit gaps", type: :request do
           # the fingerprint of the items it built the draft from, as JobOrder#store_shopify_draft_order_id does)
           JobOrder.where(id: order.id).update_all(
             shopify_draft_order_id: "gid://shopify/DraftOrder/9777",
-            shopify_draft_order_fingerprint: JobOrder.line_items_fingerprint(order.shopify_draft_order_line_items)
+            shopify_draft_order_fingerprint: JobOrder.find(order.id).quote_fingerprint
           )
           m.call(*args, &blk)
         end

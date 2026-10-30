@@ -233,22 +233,18 @@ class JobOrder < ApplicationRecord
   # D-J38: a stored id that Shopify says no longer exists (200, `draftOrder: null`) is dropped and a fresh draft
   # is created. Kept in JobOrder (not the shared concern) so locker rentals/memberships keep their behaviour: a
   # cancelled locker must never self-heal into a fresh payable invoice.
-  # JOB-03: a stored draft is served only while it was built from the current line items
-  # (shopify_draft_order_fingerprint, stored with the id). Otherwise, under the row lock:
+  # JOB-03: a stored draft is served only while it is current (#draft_order_current?). Otherwise:
   # - legacy draft (stored before fingerprints existed, fingerprint NULL): nothing says whether it is stale, so it
   #   is replaced once by a draft built from the current line items, which are the ones the pay page shows. The
   #   delete fails closed: if Shopify will not delete it (e.g. already paid there) nothing is served.
-  # - fingerprint mismatch: the line items changed after the draft was made without a re-quote or an owner change
-  #   (both replace the draft themselves), so the customer never approved the current items. Neither the old nor a
+  # - fingerprint mismatch: the quote changed after the draft was made without a re-quote or an owner change
+  #   (both void the draft themselves), so the customer never approved the current items. Neither the old nor a
   #   new draft is served: the order goes back to staff (#send_back_for_requote!, reason "invoice_mismatch") and
   #   staff are mailed after the commit. If the draft cannot be deleted nothing changes and nothing is served.
+  # Everything is decided under the row lock (with_lock reloads the row, then the status, the Shopify probe, the
+  # fingerprint check and any create all read one #quote_snapshot). The Shopify calls run inside the lock; /pay is
+  # low-traffic, so that is accepted.
   def checkout_link
-    state, url = probe_draft_order
-    return url if state == :found && draft_order_built_from_current_line_items?
-    return nil if state == :error
-
-    # with_lock reloads the row, so the status and the probe are repeated under the lock (the safety re-check).
-    # The Shopify create runs inside the lock; this path is rare, so that is accepted.
     url, sent_back = with_lock { checkout_link_under_lock }
     JobOrderMailer.send_job_requote_needed(id, "invoice_mismatch").deliver_later if sent_back
     url
@@ -260,21 +256,45 @@ class JobOrder < ApplicationRecord
     nil
   end
 
-  # Whether the stored draft does not carry the current line items. JOB-03: judged by the draft's fingerprint, so a
-  # draft that went stale earlier (and that /pay refuses) is replaced by a re-quote at the same prices instead of
-  # surviving it. A legacy draft (no fingerprint) is judged against `legacy_baseline`, the line items before this
-  # change (/pay replaces legacy drafts anyway).
-  def draft_order_stale?(legacy_baseline)
-    return false if shopify_draft_order_id.blank?
-    return shopify_draft_order_line_items != legacy_baseline if shopify_draft_order_fingerprint.blank?
-
-    !draft_order_built_from_current_line_items?
+  # JOB-03, the one staleness rule: the stored draft is current only when its fingerprint equals the fingerprint
+  # of the order's quote now. A draft without a fingerprint (legacy) is never current.
+  def draft_order_current?
+    shopify_draft_order_fingerprint.present? && shopify_draft_order_fingerprint == quote_fingerprint
   end
 
-  # Digest of draft order line items (shopify_draft_order_line_items shape). Amounts are BigDecimal, so 29.99 and
-  # 29.990 give the same digest.
-  def self.line_items_fingerprint(line_items)
-    Digest::SHA256.hexdigest(line_items.to_json)
+  # Canonical digest of what the order bills: one [task id, component, amount] triple per money component,
+  #   service fee   [task id, "service", amount]
+  #   parts fee     [task id, "parts", price x quantity]       (only when both are positive, as on the draft)
+  #   option fee    [task id, "option:<job_option id>", amount]
+  #   line item     [0, "line_item:<job_quote_line_item id>", amount]
+  # amounts as 2-decimal strings, sorted by (task id, component). Display titles (task titles, option names) are
+  # not part of it, so renaming a JobOption does not change it, and row order from the database does not matter.
+  def quote_fingerprint
+    snapshot = quote_snapshot
+    components = quote_lines.map { |line| [*line[:key], self.class.money_string(line[:amount])] }
+    components += snapshot.line_items.map { |li| [0, "line_item:#{li.id}", self.class.money_string(li.price)] }
+    Digest::SHA256.hexdigest(components.sort_by { |task_id, kind, _| [task_id, kind] }.to_json)
+  end
+
+  def self.money_string(amount)
+    format("%.2f", BigDecimal((amount || 0).to_s).round(2))
+  end
+
+  # Everything the quote is made of, loaded once and ordered by id: the tasks with their quotes, quote options and
+  # options, and the order's line items. total_price, the draft's line items and #quote_fingerprint all read it,
+  # so a request builds it once. reload (and so lock! / with_lock) drops it.
+  QuoteSnapshot = Data.define(:tasks, :line_items)
+
+  def quote_snapshot
+    @quote_snapshot ||= QuoteSnapshot.new(
+      tasks: job_tasks.includes(job_task_quote: { job_task_quote_options: :job_option }).reorder(:id).to_a,
+      line_items: job_quote_line_items.reorder(:id).to_a
+    )
+  end
+
+  def reload(*)
+    @quote_snapshot = nil
+    super
   end
 
   class StaleDraftOrderError < StandardError; end
@@ -306,40 +326,20 @@ class JobOrder < ApplicationRecord
   end
 
   def total_price
-    total = 0
-    job_tasks.each do |task|
-      next unless task.job_task_quote.present?
-      total += task.job_task_quote.price + ((task.job_task_quote.service_price || 0) * (task.job_task_quote.service_quantity || 0))
-      next unless task.job_task_quote.job_task_quote_options.any?
-      task.job_task_quote.job_task_quote_options.each do |opt|
-        total += opt.price || 0
-      end
+    snapshot = quote_snapshot
+    tasks_total = snapshot.tasks.sum do |task|
+      quote = task.job_task_quote
+      next 0 if quote.nil?
+
+      quote.price + ((quote.service_price || 0) * (quote.service_quantity || 0)) +
+        quote.job_task_quote_options.sum { |opt| opt.price || 0 }
     end
-
-    total += job_quote_line_items.sum(:price)
-
-    total
+    tasks_total + snapshot.line_items.sum { |li| li.price || 0 }
   end
 
   def shopify_draft_order_line_items
-    price_data = []
-
-    job_tasks.each do |task|
-      next unless task.job_task_quote.present?
-
-      price_data << generate_line_item("#{task.title} Service Fee", task.job_task_quote.price)
-      parts = (task.job_task_quote.service_price || 0) * (task.job_task_quote.service_quantity || 0)
-      price_data << generate_line_item("#{task.title} Parts Fee", parts) if (task.job_task_quote.service_price || 0).positive? && (task.job_task_quote.service_quantity || 0).positive?
-
-      next unless task.job_task_quote.job_task_quote_options.any?
-      task.job_task_quote.job_task_quote_options.each do |opt|
-        price_data << generate_line_item("#{task.title} #{opt.job_option.name}", opt.price)
-      end
-    end
-
-    price_data << generate_line_item("Line Items Total", job_quote_line_items.sum(:price))
-
-    price_data
+    quote_lines.map { |line| generate_line_item(line[:title], line[:amount]) } +
+      [generate_line_item("Line Items Total", quote_snapshot.line_items.sum { |li| li.price || 0 })]
   end
 
   def expedited?
@@ -351,15 +351,30 @@ class JobOrder < ApplicationRecord
 
   private
 
-  # JOB-03: the draft id and the fingerprint of the items it was created with are written in one UPDATE.
-  def store_shopify_draft_order_id(new_id, line_items)
-    update_columns(shopify_draft_order_id: new_id,
-                   shopify_draft_order_fingerprint: self.class.line_items_fingerprint(line_items))
+  # JOB-03: the draft id and the fingerprint of the quote it was created from are written in one UPDATE. The line
+  # items the concern sent were built from the same #quote_snapshot as #quote_fingerprint.
+  def store_shopify_draft_order_id(new_id, _line_items)
+    update_columns(shopify_draft_order_id: new_id, shopify_draft_order_fingerprint: quote_fingerprint)
   end
 
-  def draft_order_built_from_current_line_items?
-    shopify_draft_order_fingerprint.present? &&
-      shopify_draft_order_fingerprint == self.class.line_items_fingerprint(shopify_draft_order_line_items)
+  # The task components of the quote, from #quote_snapshot, in (task id, component) order:
+  # { key: [task id, component], title: draft line title, amount: BigDecimal }.
+  def quote_lines
+    quote_snapshot.tasks.flat_map do |task|
+      quote = task.job_task_quote
+      next [] if quote.nil?
+
+      lines = [{ key: [task.id, "service"], title: "#{task.title} Service Fee", amount: quote.price }]
+      if (quote.service_price || 0).positive? && (quote.service_quantity || 0).positive?
+        lines << { key: [task.id, "parts"], title: "#{task.title} Parts Fee",
+                   amount: quote.service_price * quote.service_quantity }
+      end
+      quote.job_task_quote_options.sort_by(&:job_option_id).each do |opt|
+        lines << { key: [task.id, "option:#{opt.job_option_id}"], title: "#{task.title} #{opt.job_option.name}",
+                   amount: opt.price }
+      end
+      lines
+    end
   end
 
   # checkout_link's decision under the row lock: [invoice_url or nil, whether the order was sent back to staff].
@@ -369,7 +384,7 @@ class JobOrder < ApplicationRecord
 
     state, url = probe_draft_order
     return [nil, false] if state == :error
-    return [url, false] if state == :found && draft_order_built_from_current_line_items?
+    return [url, false] if state == :found && draft_order_current?
 
     if state == :found && shopify_draft_order_fingerprint.present?
       send_back_for_requote!(actor: user, reason: "invoice_mismatch")

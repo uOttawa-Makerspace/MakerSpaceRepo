@@ -199,8 +199,6 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
             refused_paid = true
             raise ActiveRecord::Rollback
           end
-          # (only needed when a draft exists: discard is a no-op otherwise)
-          items_before = @job_order.shopify_draft_order_id.present? ? @job_order.shopify_draft_order_line_items : nil
 
           @job_order.job_tasks.each do |task|
             price_key = "job_task_quote_price_#{task.id}"
@@ -271,9 +269,10 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
             raise ActiveRecord::Rollback
           end
 
-          # D-J38: a draft that does not carry the new quote's line items is invalidated (stale items + payable
-          # link). Fail closed: if it cannot be deleted the whole quote rolls back (no price, status or email).
-          if items_before && JobOrder.find(@job_order.id).draft_order_stale?(items_before)
+          # D-J38 / JOB-03: a draft that is not current for the new quote (JobOrder#draft_order_current?) is
+          # invalidated (stale items + payable link). Fail closed: if it cannot be deleted the whole quote rolls back
+          # (no price, status or email). A fresh copy of the order reads the quote as saved.
+          if @job_order.shopify_draft_order_id.present? && !JobOrder.find(@job_order.id).draft_order_current?
             @job_order.discard_stale_draft_order!
           end
         end

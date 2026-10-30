@@ -100,7 +100,7 @@ RSpec.describe "Job order pay link fingerprint (JOB-03)", type: :request do
       pay!(order)                                  # sent back to staff, draft voided
       # the draft is voided by the send-back; model one that survived (e.g. Shopify kept it) to pin the re-quote rule
       order.update_columns(shopify_draft_order_id: "gid://shopify/DraftOrder/9001",
-                           shopify_draft_order_fingerprint: JobOrder.line_items_fingerprint([{ stale: true }]))
+                           shopify_draft_order_fingerprint: "stale-fingerprint")
       shopify.calls.clear
 
       session_login!(staff)

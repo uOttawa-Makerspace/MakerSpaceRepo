@@ -292,7 +292,7 @@ RSpec.describe JobOrder, type: :model do
         quoted_task!("Task #1", price: 20, service_price: 0, service_quantity: 0)
         order.reload.checkout_link
         expect(order.reload.shopify_draft_order_fingerprint)
-          .to eq(described_class.line_items_fingerprint(order.shopify_draft_order_line_items))
+          .to eq(described_class.find(order.id).quote_fingerprint)
         shopify.calls.clear
 
         expect(order.reload.checkout_link).to eq("https://pay.example/inv-1")
@@ -309,14 +309,24 @@ RSpec.describe JobOrder, type: :model do
         expect(order.job_order_statuses.last.reason).to eq("invoice_mismatch")
       end
 
-      it "fingerprints amounts by value: 29.99 and 29.990 match" do
-        line = lambda do |amount|
-          [{ quantity: 1, title: "x", originalUnitPriceWithCurrency: { amount: BigDecimal(amount), currencyCode: "CAD" } }]
-        end
-        expect(described_class.line_items_fingerprint(line.call("29.99")))
-          .to eq(described_class.line_items_fingerprint(line.call("29.990")))
-        expect(described_class.line_items_fingerprint(line.call("29.99")))
-          .not_to eq(described_class.line_items_fingerprint(line.call("29.98")))
+      it "fingerprints amounts by value at 2 decimals: 29.99 and 29.990 match, 29.98 does not" do
+        quote = quoted_task!("Task #1", price: 29.99, service_price: 0, service_quantity: 0).job_task_quote
+        before = described_class.find(order.id).quote_fingerprint
+        quote.update!(price: BigDecimal("29.990"))
+        expect(described_class.find(order.id).quote_fingerprint).to eq(before)
+        quote.update!(price: 29.98)
+        expect(described_class.find(order.id).quote_fingerprint).not_to eq(before)
+        expect(described_class.money_string(nil)).to eq("0.00")
+      end
+
+      it "does not fingerprint display titles: renaming a task or an option leaves it unchanged" do
+        option = JobOption.create!(name: "Polish", fee: 1)
+        quote = quoted_task!("Task #1", price: 10, service_price: 0, service_quantity: 0).job_task_quote
+        quote.job_task_quote_options.create!(job_option: option, price: 3)
+        before = described_class.find(order.id).quote_fingerprint
+        option.update!(name: "Polish (premium)")
+        order.job_tasks.first.update!(title: "Renamed")
+        expect(described_class.find(order.id).quote_fingerprint).to eq(before)
       end
 
       it "raises a network error from the concern when Shopify answers with a non-200 while creating" do
@@ -336,7 +346,7 @@ RSpec.describe JobOrder, type: :model do
       end
 
       it "treats an empty (but non-null) draftOrder as found, not gone: no re-create" do
-        fingerprint = described_class.line_items_fingerprint(order.shopify_draft_order_line_items)
+        fingerprint = described_class.find(order.id).quote_fingerprint
         order.update_columns(shopify_draft_order_id: "gid://shopify/DraftOrder/9001", shopify_draft_order_fingerprint: fingerprint)
         allow(shopify).to receive(:query).and_return(ShopSpecHelpers::FakeShopifyAdmin::Response.new(200, { "data" => { "draftOrder" => {} } }))
         expect(order.checkout_link).to be_nil
