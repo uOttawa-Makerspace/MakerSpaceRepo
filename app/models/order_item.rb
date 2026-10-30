@@ -38,6 +38,10 @@ class OrderItem < ApplicationRecord
               only_integer: true,
               greater_than: 0
             }
+  # The project is fixed once the item exists: its unit_price snapshot and the badge-requirement
+  # check (on add) belong to that project, so swapping it would buy another project at the old
+  # price. Assigning it on a persisted item raises ActiveRecord::ReadonlyAttributeError.
+  attr_readonly :proficient_project_id
   validate :product_present
   validate :order_present
   before_save :finalize

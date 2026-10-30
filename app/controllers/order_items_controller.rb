@@ -54,7 +54,7 @@ class OrderItemsController < DevelopmentProgramsController
     @order.change_items! do |cart|
       @order = cart
       @order_item = cart.order_items.find(params[:id])
-      @order_item.update(order_item_params)
+      @order_item.update(order_item_update_params)
       @order_items = cart.order_items
     end
   rescue *CART_CHANGE_REFUSED => e
@@ -123,5 +123,11 @@ class OrderItemsController < DevelopmentProgramsController
 
   def order_item_params
     params.require(:order_item).permit(:quantity, :proficient_project_id)
+  end
+
+  # An item's project is fixed at creation (its price snapshot and the badge check belong to
+  # it): an update may only change the quantity.
+  def order_item_update_params
+    params.require(:order_item).permit(:quantity)
   end
 end

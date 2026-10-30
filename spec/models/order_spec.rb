@@ -150,3 +150,14 @@ RSpec.describe Order, type: :model do
     end
   end
 end
+
+RSpec.describe OrderItem, "project is fixed once created", type: :model do
+  it "cannot change proficient_project_id on a persisted item, by any path" do
+    order = Order.create!(user: create(:user, :regular_user))
+    item = order.order_items.create!(proficient_project: create(:proficient_project, cc: 10), quantity: 1)
+    other = create(:proficient_project, cc: 400)
+    expect { item.update(proficient_project_id: other.id) }.to raise_error(ActiveRecord::ReadonlyAttributeError)
+    expect { item.update_column(:proficient_project_id, other.id) }.to raise_error(ActiveRecord::ActiveRecordError)
+    expect(item.reload.proficient_project_id).not_to eq(other.id)
+  end
+end

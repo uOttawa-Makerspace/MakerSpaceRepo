@@ -409,6 +409,20 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(item.order.reload.subtotal).to eq(30)
     end
 
+    it "refuses to swap the item's project (pay less): the project, price and charge stay the cheap one's" do
+      credit_cc!(user, 500)
+      cheap = pp_with_cc(10)
+      pricey = pp_with_cc(400)
+      add_to_cart(cheap)
+      item = user.orders.last.order_items.first
+      patch order_item_path(item), params: { order_item: { proficient_project_id: pricey.id, quantity: 1 } }, xhr: true
+      expect(item.reload.proficient_project_id).to eq(cheap.id)
+      post orders_path
+      order = user.orders.order(:id).last
+      expect(order.order_items.pluck(:proficient_project_id)).to eq([cheap.id])
+      expect(order.cc_moneys.pluck(:cc, :proficient_project_id)).to eq([[-10, cheap.id]])
+    end
+
     it "keeps the old quantity when the new one is invalid" do
       add_to_cart(pp_with_cc(10))
       item = user.orders.last.order_items.first
