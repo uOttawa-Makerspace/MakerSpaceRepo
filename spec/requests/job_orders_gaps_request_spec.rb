@@ -384,13 +384,14 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(order.reload.is_deleted).to be(true)
     end
 
-    # WART(D-J44): an owner can soft-delete an order that is already being processed or paid
-    it "lets the owner delete an in-progress and a paid order" do
+    # D-J44, closed: the server enforces what the page offers (JobOrder.deletable_by?)
+    it "lets the owner delete an editable order, not one in progress or paid" do
       session_login!(owner)
-      [:being_processed, :paid].each do |status_key|
+      [[:draft, true], [:being_processed, false], [:paid, false]].each do |status_key, deleted|
         order = order_with_task!(status_key: status_key)
         delete job_order_path(order)
-        expect(order.reload.is_deleted).to be(true)
+        expect(order.reload.is_deleted).to be(deleted)
+        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.delete_refused.not_deletable")) unless deleted
       end
     end
 

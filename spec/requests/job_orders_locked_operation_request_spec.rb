@@ -425,10 +425,10 @@ RSpec.describe "Job order locked operations", type: :request do
   describe "DELETE /job_orders/:id settles the Shopify draft with the delete" do
     it "deletes the open draft and soft-deletes the order, as one locked operation" do
       order = quoted_order!(:completed, draft: true)
-      session_login!(owner)
+      session_login!(admin)
       delete job_order_path(order)
 
-      expect(response).to redirect_to(job_orders_path)
+      expect(response).to redirect_to(admin_job_orders_path)
       expect(flash[:notice]).to eq("Job order deleted successfully.")
       expect(order.reload.is_deleted).to be(true)
       expect(order.shopify_draft_order_id).to be_nil
@@ -437,7 +437,7 @@ RSpec.describe "Job order locked operations", type: :request do
 
     it "does not ask Shopify about an order without a draft" do
       order = quoted_order!(:completed)
-      session_login!(owner)
+      session_login!(admin)
       delete job_order_path(order)
 
       expect(order.reload.is_deleted).to be(true)
@@ -447,7 +447,7 @@ RSpec.describe "Job order locked operations", type: :request do
     it "is refused, with the order untouched, when Shopify will not delete the draft (fail closed)" do
       order = quoted_order!(:completed, draft: true)
       shopify.status = 502
-      session_login!(owner)
+      session_login!(admin)
       delete job_order_path(order)
 
       expect(response).to redirect_to(job_order_path(order))
@@ -460,7 +460,7 @@ RSpec.describe "Job order locked operations", type: :request do
       order = quoted_order!(:completed, draft: true)
       shopify.delete_user_errors = [{ "field" => "id", "message" => "cannot delete" }]
       shopify.draft_status = "COMPLETED"
-      session_login!(owner)
+      session_login!(admin)
       delete job_order_path(order)
 
       expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.delete_refused.draft_not_voidable"))
@@ -469,7 +469,7 @@ RSpec.describe "Job order locked operations", type: :request do
 
     it "a lock timeout: a message, nothing deleted" do
       order = quoted_order!(:completed, draft: true)
-      session_login!(owner)
+      session_login!(admin)
       allow_any_instance_of(JobOrder).to receive(:lock!).and_raise(ActiveRecord::LockWaitTimeout)
       delete job_order_path(order)
 
@@ -490,10 +490,10 @@ RSpec.describe "Job order locked operations", type: :request do
 
     it "an order deleted twice (a race lost) is order_missing, and no second Shopify call" do
       order = quoted_order!(:completed, draft: true)
-      expect(order.soft_delete!).to be_ok
+      expect(order.soft_delete!(actor: admin)).to be_ok
       shopify.calls.clear
 
-      expect(JobOrder.find(order.id).soft_delete!.reason).to eq(:order_missing)
+      expect(JobOrder.find(order.id).soft_delete!(actor: admin).reason).to eq(:order_missing)
       expect(shopify.calls).to be_empty
     end
   end
@@ -505,7 +505,7 @@ RSpec.describe "Job order locked operations", type: :request do
       it "#{status_key}: a COMPLETED draft is kept (the payment record) and the order is deleted" do
         order = quoted_order!(status_key, draft: true)
         shopify.draft_status = "COMPLETED"
-        session_login!(owner)
+        session_login!(admin)
 
         delete job_order_path(order)
 
@@ -518,7 +518,7 @@ RSpec.describe "Job order locked operations", type: :request do
       it "#{status_key}: a draft Shopify no longer knows is cleared" do
         order = quoted_order!(status_key, draft: true)
         shopify.draft_missing = true
-        session_login!(owner)
+        session_login!(admin)
 
         delete job_order_path(order)
 
@@ -528,7 +528,7 @@ RSpec.describe "Job order locked operations", type: :request do
 
       it "#{status_key}: an open draft (paid in store) is deleted, so it cannot be paid again" do
         order = quoted_order!(status_key, draft: true)
-        session_login!(owner)
+        session_login!(admin)
 
         delete job_order_path(order)
 
@@ -582,16 +582,115 @@ RSpec.describe "Job order locked operations", type: :request do
   end
 
   describe "DELETE of an order that no longer exists" do
-    it "redirects to the order list, where the message is shown" do
-      order = quoted_order!(:completed)
+    {
+      "an owner" => [:owner, :job_orders_path],
+      "an admin" => [:admin, :admin_job_orders_path]
+    }.each do |label, (who, list)|
+      it "redirects #{label} to their order list, where the message is shown" do
+        order = quoted_order!(:draft)
+        session_login!(send(who))
+        allow_any_instance_of(JobOrder).to receive(:lock!).and_raise(ActiveRecord::RecordNotFound)
+
+        delete job_order_path(order)
+
+        expect(response).to redirect_to(send(list))
+        follow_redirect!
+        expect(response.body).to include(I18n.t("job_orders.alerts.delete_refused.order_missing"))
+      end
+    end
+  end
+
+  describe "who may delete (the server enforces what the page offers)" do
+    it "an owner deleting a PAID order is refused, with a message; nothing changes" do
+      order = quoted_order!(:paid, draft: true)
+      shopify.draft_status = "COMPLETED"
       session_login!(owner)
-      allow_any_instance_of(JobOrder).to receive(:lock!).and_raise(ActiveRecord::RecordNotFound)
 
       delete job_order_path(order)
 
-      expect(response).to redirect_to(job_orders_path)
-      follow_redirect!
-      expect(response.body).to include(I18n.t("job_orders.alerts.delete_refused.order_missing"))
+      expect(response).to redirect_to(job_order_path(order))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.delete_refused.not_deletable"))
+      expect(order.reload.is_deleted).to be(false)
+      expect(shopify.calls).to be_empty
+    end
+
+    it "an owner deleting a DRAFT order is allowed" do
+      order = quoted_order!(:draft)
+      session_login!(owner)
+
+      delete job_order_path(order)
+
+      expect(order.reload.is_deleted).to be(true)
+    end
+
+    it "staff who are not admins are held to the same rule" do
+      order = quoted_order!(:being_processed)
+      session_login!(staff)
+
+      delete job_order_path(order)
+
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.delete_refused.not_deletable"))
+      expect(order.reload.is_deleted).to be(false)
+    end
+
+    it "an admin deleting a PAID order is allowed and the COMPLETED draft is kept" do
+      order = quoted_order!(:paid, draft: true)
+      shopify.draft_status = "COMPLETED"
+      session_login!(admin)
+
+      delete job_order_path(order)
+
+      expect(order.reload.is_deleted).to be(true)
+      expect(order.shopify_draft_order_id).to eq(draft_id)
+    end
+  end
+
+  # ------------------------------------------------ a lock error after an irreversible Shopify call
+
+  describe "a lock error after a Shopify mutation" do
+    it "after a draft was created: refused as busy, and reported with the order and the new draft id" do
+      order = quoted_order!(:completed)
+      allow(order).to receive(:update_columns).and_wrap_original do |m, *args|
+        m.call(*args)
+        raise ActiveRecord::LockWaitTimeout
+      end
+      expect(Rails.error).to receive(:report).with(
+        an_instance_of(ActiveRecord::LockWaitTimeout),
+        handled: true,
+        context: hash_including(job_order_id: order.id, shopify_mutation: :created,
+                                shopify_draft_order_id: be_present)
+      ).once
+
+      result = order.checkout_link
+
+      expect(result.reason).to eq(:busy)
+      expect(shopify_ops).to include("draftOrderCreate")
+    end
+
+    it "after a draft was deleted: refused as deadlock, and reported with the deleted draft id" do
+      order = quoted_order!(:draft, draft: true)
+      allow(order).to receive(:update_columns).and_wrap_original do |m, attrs|
+        raise ActiveRecord::Deadlocked if attrs.key?(:is_deleted) # the delete's own write, after the Shopify call
+
+        m.call(attrs)
+      end
+      expect(Rails.error).to receive(:report).with(
+        an_instance_of(ActiveRecord::Deadlocked),
+        handled: true,
+        context: hash_including(job_order_id: order.id, shopify_mutation: :deleted, shopify_draft_order_id: draft_id)
+      ).once
+
+      result = order.soft_delete!(actor: admin)
+
+      expect(result.reason).to eq(:deadlock)
+      expect(shopify_ops).to eq(%w[draftOrderDelete])
+    end
+
+    it "with no Shopify mutation, a busy refusal is not reported" do
+      order = quoted_order!(:draft)
+      expect(Rails.error).not_to receive(:report)
+
+      expect(order.apply_owner_change!(actor: owner) { raise ActiveRecord::LockWaitTimeout }.reason).to eq(:busy)
     end
   end
 
@@ -616,7 +715,7 @@ RSpec.describe "Job order locked operations", type: :request do
     it "/pay with the token of an order already deleted is expired" do
       order = quoted_order!(:completed)
       token = order.pay_token
-      order.soft_delete!
+      order.soft_delete!(actor: admin)
 
       get pay_job_orders_path, params: { token: token }
       expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.pay_magic_link_expired"))

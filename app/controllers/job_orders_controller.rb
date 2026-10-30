@@ -327,14 +327,14 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
 
   def destroy
     # One locked operation: the order's Shopify draft (a payable invoice) is settled with the delete, fail closed.
-    result = @job_order.soft_delete!
+    result = @job_order.soft_delete!(actor: @user)
     if result.ok?
       flash[:notice] = "Job order deleted successfully."
-      redirect_to(@user.admin? ? admin_job_orders_path : job_orders_path)
+      redirect_to orders_list_path
     else
       flash[:alert] = t(result.message_key("job_orders.alerts.delete_refused", reasons: JobOrder::TransitionResult::DELETE_REASONS))
       # a deleted order has no page to show the message on (set_job_order would replace it)
-      redirect_to(result.reason == :order_missing ? job_orders_path : job_order_path(@job_order.id))
+      redirect_to(result.reason == :order_missing ? orders_list_path : job_order_path(@job_order.id))
     end
   end
 
@@ -458,6 +458,11 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
     )
   end
 
+  # Where the order list is for the current user (an admin's is the admin list).
+  def orders_list_path
+    @user.admin? ? admin_job_orders_path : job_orders_path
+  end
+
   def grant_access
     return if current_user.staff? || current_user.admin?
       flash[:alert] = t("job_orders.alerts.cannot_access_area")
@@ -513,8 +518,9 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
       end
     end
 
-    fields = params[:job_order] # only its staff_comments; the quote's other keys are not unpermitted noise
-    staff_comments = fields.permit(:staff_comments)[:staff_comments] if fields.is_a?(ActionController::Parameters)
+    # one scalar read from job_order; its other keys are not this action's to permit, so none is logged unpermitted
+    fields = params[:job_order]
+    staff_comments = fields[:staff_comments] if fields.is_a?(ActionController::Parameters)
     @job_order.staff_comments = staff_comments if staff_comments.present?
     @job_order.save!
   end

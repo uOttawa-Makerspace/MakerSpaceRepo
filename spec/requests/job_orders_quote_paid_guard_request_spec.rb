@@ -66,12 +66,15 @@ RSpec.describe "Quoting a paid job order (JOB-04)", type: :request do
       logger = ActiveSupport::Logger.new(io)
       Rails.logger.broadcast_to(logger)
       begin
-        quote!(order, task, 40)
+          session_login!(staff)
+        patch job_order_quote_path(order), params: { approved: "true", "job_task_quote_price_#{task.id}" => "40",
+                                                     job_order: { staff_comments: "see notes", comments: "x" } }
       ensure
         Rails.logger.stop_broadcasting_to(logger)
       end
 
       expect(order.reload.total_price).to eq(BigDecimal("40"))
+      expect(order.staff_comments).to eq("see notes")
       expect(io.string).not_to include("Unpermitted parameter")
     end
   end

@@ -307,6 +307,7 @@ en:
         draft_not_voidable: "This order was not deleted because its payment link could not be cancelled. Nothing was changed. Please try again later."
         order_missing: "This order no longer exists."
         busy: "This order was not deleted because it is being changed by someone else. Nothing was changed. Please try again in a moment."
+        not_deletable: "This order can no longer be deleted by you. Please contact the makerspace staff."
       owner_change_busy: "Your change could not be saved because the order is being changed by someone else. Nothing was changed. Please try again in a moment."
       owner_change_order_missing: "Your change could not be saved because this order no longer exists."
       status_change:

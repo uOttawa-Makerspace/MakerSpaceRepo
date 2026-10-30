@@ -338,6 +338,7 @@ fr:
         draft_not_voidable: "Cette commande n'a pas été supprimée car son lien de paiement n'a pas pu être annulé. Rien n'a été modifié. Veuillez réessayer plus tard."
         order_missing: "Cette commande n'existe plus."
         busy: "Cette commande n'a pas été supprimée car elle est en cours de modification par quelqu'un d'autre. Rien n'a été modifié. Veuillez réessayer dans un instant."
+        not_deletable: "Vous ne pouvez plus supprimer cette commande. Veuillez contacter le personnel du makerspace."
       owner_change_busy: "Votre modification n'a pas pu être enregistrée car la commande est en cours de modification par quelqu'un d'autre. Rien n'a été modifié. Veuillez réessayer dans un instant."
       owner_change_order_missing: "Votre modification n'a pas pu être enregistrée car cette commande n'existe plus."
       status_change:

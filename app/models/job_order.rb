@@ -71,8 +71,11 @@ class JobOrder < ApplicationRecord
   #   :invalid_status_row  the status row did not validate or could not be written (no actor, unseeded status)
   #   :change_invalid      the caller's own writes did not validate; `error.message` holds the messages
   #   :order_missing       the order was deleted (hard, or soft) before the lock
-  #   :busy                the row lock was not granted within the lock timeout; nothing was changed, retry
-  #   :deadlock            the database chose this operation as the deadlock victim; nothing was changed, retry
+  #   :busy                a lock wait in the operation timed out (the order's row or a row the work locks);
+  #                        nothing was changed, retry
+  #   :not_deletable       (soft_delete! only) the actor may not delete an order in this status
+  #   :deadlock            the database chose this operation as the deadlock victim (anywhere in it); nothing was
+  #                        changed in the database, retry
   # `status` is the order's latest status as read under the lock (nil when the lock was not had), so a caller
   # decides "already paid" from what the operation saw, not from a later re-read. `value` is what a successful
   # operation returns (the invoice url, whether the order was sent back, the draft outcome).
@@ -85,7 +88,7 @@ class JobOrder < ApplicationRecord
     MESSAGE_REASON = { deadlock: :busy }.freeze
     GENERIC_MESSAGE = "job_orders.alerts.error_while_updating"
     # The reasons a delete can be refused for (job_orders.alerts.delete_refused.<reason>).
-    DELETE_REASONS = %i[draft_not_voidable order_missing busy].freeze
+    DELETE_REASONS = %i[draft_not_voidable order_missing busy not_deletable].freeze
 
     def self.done(value = nil) = new(reason: nil, error: nil, status: nil, value: value)
     def self.refused(reason, error = nil) = new(reason: reason, error: error, status: nil, value: nil)
@@ -119,7 +122,8 @@ class JobOrder < ApplicationRecord
     end
   end
 
-  # The destination of an order that is being deleted: no status, but the same draft rule as a non-payable one.
+  # The destination of an order that is being deleted: not a status, but it has its own row in the draft rule
+  # (.draft_settlement): an unpaid order's draft is deleted, a paid one's COMPLETED draft (the payment record) is kept.
   DELETED = :deleted
 
   # JOB-02: one status transition, with one failure contract: it always returns a TransitionResult, and every
@@ -297,7 +301,18 @@ class JobOrder < ApplicationRecord
   end
 
   def allow_edit?
-    [JobStatus::DRAFT, JobStatus::STAFF_APPROVAL].include?(job_order_statuses.last.job_status)
+    self.class.editable_status?(job_order_statuses.last&.job_status)
+  end
+
+  # The statuses in which the owner may still change (and delete) the order: before it is quoted.
+  def self.editable_status?(status)
+    !status.nil? && [JobStatus::DRAFT, JobStatus::STAFF_APPROVAL].include?(status)
+  end
+
+  # Who may delete an order in `status` (what the order page offers, enforced by #soft_delete!): an admin in any
+  # status, everyone else only while the order is editable.
+  def self.deletable_by?(user, status)
+    user.admin? || editable_status?(status)
   end
 
   # Whether the order page offers `user` the wizard's Edit / Delete task / Add task buttons: the owner while the
@@ -452,9 +467,10 @@ class JobOrder < ApplicationRecord
   # waiting for payment, where the draft is the invoice).
   def retire_stale_draft!
     locked_operation("retire_stale_draft!", live_only: false) do |status|
-      next TransitionResult.done(:skipped) if status.nil?
+      # a deleted order always settles as a delete (an unpaid one when it has no status); a live order has no
+      # transition (from nil) and, with no status, nothing to settle
+      next TransitionResult.done(:skipped) if status.nil? && !is_deleted
 
-      # a live order has no transition: from nil
       outcome = is_deleted ? settle_draft_order!(status, DELETED) : settle_draft_order!(nil, status)
       TransitionResult.done(outcome || :skipped)
     end
@@ -465,11 +481,15 @@ class JobOrder < ApplicationRecord
   end
 
   # The one way an order is deleted (JobOrdersController#destroy): soft delete under the row lock, with the order's
-  # Shopify draft settled in the same transaction (DELETED: deleted, fail closed), so a deleted order leaves no
-  # payable invoice behind and a refused settle leaves the order as it was. Deleting an already deleted order is
-  # :order_missing (the same as for every other operation).
-  def soft_delete!
+  # Shopify draft settled in the same transaction by the draft rule for DELETED (.draft_settlement): an unpaid
+  # order's draft is deleted, fail closed; a paid order's (PAID, PICKED_UP) COMPLETED draft is kept as the payment
+  # record, an open one deleted, a gone one cleared. A deleted order leaves no payable invoice behind and a refused
+  # settle leaves it as it was. `actor` must be allowed to delete in the status read under the lock (.deletable_by?),
+  # else :not_deletable. Deleting an already deleted order is :order_missing (as for every other operation).
+  def soft_delete!(actor:)
     locked_operation("soft_delete!") do |status|
+      next TransitionResult.refused(:not_deletable) unless self.class.deletable_by?(actor, status)
+
       settle_draft_order!(status, DELETED)
       update_columns(is_deleted: true, updated_at: Time.current) # rubocop:disable Rails/SkipsModelValidations
       TransitionResult.done
@@ -518,9 +538,14 @@ class JobOrder < ApplicationRecord
   # rolls the transaction back and propagates.
   # A soft-deleted order is refused as :order_missing unless the operation works on deleted orders (`live_only:
   # false`): nothing may be changed on, or collect money for, a deleted order.
+  # Order of work: a Shopify call cannot be rolled back, so inside an operation it is the last step that touches rows
+  # other than the order's own locked row (the block's writes and the status row come first; after the Shopify call
+  # only the order row, already locked, is updated). A lock error after a Shopify mutation is still possible (the
+  # commit itself); it rolls back the stored draft id, so #refuse_from reports it with the draft id.
   # On any refusal made from an exception the record is reloaded (unsaved in-memory changes do not survive it).
   def locked_operation(label, live_only: true)
     status = nil
+    @shopify_mutation = nil
     result = self.class.own_transaction("JobOrder##{label}") do
       lock_row!
       next TransitionResult.refused(:order_missing) if live_only && is_deleted
@@ -551,6 +576,12 @@ class JobOrder < ApplicationRecord
     raise OrderMissing
   end
 
+  # A Shopify mutation made in this operation (set by #deleted_on_shopify and #store_shopify_draft_order_id,
+  # reset by #locked_operation). Shopify keeps the change when the transaction rolls back.
+  def note_shopify_mutation(kind, draft_id)
+    @shopify_mutation = { shopify_mutation: kind, shopify_draft_order_id: draft_id }
+  end
+
   # What is reported: a refusal that is a bug or an outage is an error; a race lost or the caller's invalid input is
   # an info line only. A deadlock is not benign: the lock order is wrong somewhere.
   REPORTED_REFUSALS = %i[draft_not_voidable invalid_status_row deadlock].freeze
@@ -561,9 +592,11 @@ class JobOrder < ApplicationRecord
   # attempt changed in memory.
   def refuse_from(error, reason, label)
     line = "[JobOrder##{label}] ##{id} refused (#{reason}): #{error.class}: #{error.message}"
-    if REPORTED_REFUSALS.include?(reason)
-      Rails.error.report(error, handled: true, context: { job_order_id: id, operation: label, reason: reason,
-                                                          where: "JobOrder##{label.split.first}" })
+    # A refusal after a Shopify mutation is always reported: the database rolled back but Shopify did not, so a
+    # payable draft may exist that no order row points at (created), or the id points at a deleted draft (deleted).
+    if REPORTED_REFUSALS.include?(reason) || @shopify_mutation
+      context = { job_order_id: id, operation: label, reason: reason, where: "JobOrder##{label.split.first}" }
+      Rails.error.report(error, handled: true, context: context.merge(@shopify_mutation || {}))
       Rails.logger.error(line)
     else
       Rails.logger.info(line)
@@ -576,19 +609,9 @@ class JobOrder < ApplicationRecord
     TransitionResult.refused(reason, error)
   end
 
-  # Deletes the draft (the id is cleared with the delete; the caller's transaction rolls that back on refusal).
-  # Returns :deleted, or false when Shopify deleted nothing, with the reason in `user_errors`.
-  def delete_draft!(user_errors)
-    :deleted if destroy_shopify_draft_order(user_errors_out: user_errors)
-  end
-
   def user_error_detail(user_errors)
     detail = user_errors.map { |e| e['message'] }.join(', ')
     ": #{detail}" if detail.present?
-  end
-
-  def refuse_undeleted!(user_errors)
-    raise StaleDraftOrderError, "Shopify did not delete the draft order#{user_error_detail(user_errors)}"
   end
 
   # [:found | :gone, draft]; Shopify not answering raises (fail closed).
@@ -599,10 +622,20 @@ class JobOrder < ApplicationRecord
     [state, draft]
   end
 
-  # Deletes the draft Shopify just reported (found, not completed-and-kept). Shopify deleting nothing raises.
+  # Shopify deleted the draft `gid`: noted for #report_orphan_risk. Returns the outcome.
+  def deleted_on_shopify(gid)
+    note_shopify_mutation(:deleted, gid)
+    :deleted
+  end
+
+  # Deletes the draft Shopify just reported (found, not completed-and-kept). The id is cleared with the delete;
+  # the caller's transaction rolls that back on refusal. Shopify deleting nothing raises.
   def delete_found_draft!
+    gid = shopify_draft_order_id
     user_errors = []
-    delete_draft!(user_errors) || refuse_undeleted!(user_errors)
+    return deleted_on_shopify(gid) if destroy_shopify_draft_order(user_errors_out: user_errors)
+
+    raise StaleDraftOrderError, "Shopify did not delete the draft order#{user_error_detail(user_errors)}"
   end
 
   # A destination where the customer may already have paid through the draft: ask first (one getDraftOrder), then
@@ -624,14 +657,13 @@ class JobOrder < ApplicationRecord
   def delete_draft_unless_paid
     gid = shopify_draft_order_id
     user_errors = []
-    deleted = delete_draft!(user_errors)
-    return deleted if deleted
+    return deleted_on_shopify(gid) if destroy_shopify_draft_order(user_errors_out: user_errors)
 
     state, draft = fetch_draft_or_raise(gid)
     return :cleared if state == :gone
     raise StaleDraftOrderError, "the draft order is already paid (COMPLETED)" if draft["status"] == "COMPLETED"
 
-    refuse_undeleted!(user_errors)
+    raise StaleDraftOrderError, "Shopify did not delete the draft order#{user_error_detail(user_errors)}"
   end
 
   # The caller's own writes, made inside the row lock: their validation failures are ChangeInvalid (nothing is
@@ -656,6 +688,7 @@ class JobOrder < ApplicationRecord
   # JOB-03: the draft id and the fingerprint of the quote it was created from are written in one UPDATE. The line
   # items the concern sent were built from the same #quote_snapshot as #quote_fingerprint.
   def store_shopify_draft_order_id(new_id, _line_items)
+    note_shopify_mutation(:created, new_id)
     update_columns(shopify_draft_order_id: new_id, shopify_draft_order_fingerprint: quote_fingerprint)
   end
 
@@ -737,11 +770,13 @@ class JobOrder < ApplicationRecord
   end
 
   # Creates the draft. The id is stored (update_column) right after Shopify accepts the create; if the follow-up
-  # fetch then raises, swallow that so the surrounding locked operation COMMITS the id (a rolled-back id
+  # fetch then raises (not a database error), swallow that so the surrounding locked operation COMMITS the id (a rolled-back id
   # would orphan a payable draft and the next /pay would create a second one). A failure BEFORE the id is
   # stored propagates.
   def create_draft_order_keeping_id
     shopify_draft_order&.dig('invoiceUrl')
+  rescue ActiveRecord::ActiveRecordError
+    raise # a database error (a lock wait, a deadlock) is not the follow-up fetch's: the operation maps or propagates it
   rescue StandardError => e
     raise if shopify_draft_order_id.blank?
 

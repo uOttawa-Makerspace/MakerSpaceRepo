@@ -148,6 +148,25 @@ RSpec.describe "job_orders:retire_stale_drafts", type: :model do
       expect(out).to include("deleted: 1")
     end
 
+    it "settles a deleted order that has no status rows as an unpaid delete: its live draft is deleted" do
+      order = order_with_draft!(:draft)
+      order.job_order_statuses.delete_all
+      order.update_column(:is_deleted, true)
+      out = run_task
+
+      expect(order.reload.shopify_draft_order_id).to be_nil
+      expect(out).to include("deleted: 1").and include("unresolved: 0")
+    end
+
+    it "still skips a LIVE order with no status rows" do
+      order = order_with_draft!(:draft)
+      order.job_order_statuses.delete_all
+      out = run_task
+
+      expect(order.reload.shopify_draft_order_id).to eq(draft_id)
+      expect(out).to include("skipped: 1")
+    end
+
     %i[paid picked_up].each do |status_key|
       it "keeps a COMPLETED draft of a deleted #{status_key} order: resolved, exit 0" do
         order = order_with_draft!(status_key)
