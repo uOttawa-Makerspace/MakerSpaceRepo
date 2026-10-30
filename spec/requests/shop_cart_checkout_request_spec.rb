@@ -265,6 +265,134 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
 
   # ------------------------------------------------- update / remove item
 
+  # Order#change_items! (the cart-change lock). The threaded races of a cart change against a
+  # real concurrent checkout are in spec/requests/cc_wallet_race_spec.rb.
+  describe "cart changes refused by Order#change_items!" do
+    before { shop_log_in!(user) }
+
+    let(:closed_message) { "This cart was just checked out; it can no longer be changed." }
+    let(:busy_message) { "Your cart is being updated elsewhere; please try again." }
+
+    # The cart is checked out between the request loading it and the change taking the lock.
+    def close_cart_before_the_lock
+      completed = OrderStatus.find_by!(name: "Completed")
+      allow_any_instance_of(Order).to receive(:change_items!).and_wrap_original do |m, *args, &block|
+        m.receiver.update_column(:order_status_id, completed.id)
+        m.call(*args, &block)
+      end
+    end
+
+    def fail_the_lock_with(error_class)
+      allow_any_instance_of(Order).to receive(:change_items!).and_raise(error_class)
+    end
+
+    let!(:item) do
+      add_to_cart(pp_with_cc(10))
+      user.orders.last.order_items.first
+    end
+    let(:order) { item.order }
+    let(:other_project) { pp_with_cc(5) }
+
+    def item_rows = OrderItem.where(order_id: order.id).pluck(:proficient_project_id, :quantity)
+
+    it "create on a checked-out cart is refused: alert, nothing added" do
+      close_cart_before_the_lock
+      before = item_rows
+      add_to_cart(other_project)
+      expect(response).to redirect_to(carts_path)
+      expect(flash[:alert]).to eq(closed_message)
+      expect(item_rows).to eq(before)
+      expect(OrderItem.where(proficient_project_id: other_project.id)).to be_empty
+    end
+
+    it "update on a checked-out cart is refused: 409 with a JS body showing the message and the real cart; quantity unchanged" do
+      close_cart_before_the_lock
+      patch order_item_path(item), params: { order_item: { quantity: 3 } }, xhr: true
+      expect(response).to have_http_status(:conflict)
+      expect(response.media_type).to eq("text/javascript")
+      expect(response.body).to include(closed_message)
+      expect(response.body).to include("shopping-cart")
+      expect(item.reload.quantity).to eq(1)
+    end
+
+    it "destroy on a checked-out cart is refused: alert, the item stays" do
+      close_cart_before_the_lock
+      delete order_item_path(item)
+      expect(response).to redirect_to(carts_path)
+      expect(flash[:alert]).to eq(closed_message)
+      expect(OrderItem.exists?(item.id)).to be(true)
+    end
+
+    [ActiveRecord::LockWaitTimeout, ActiveRecord::Deadlocked].each do |error_class|
+      it "a #{error_class.name.demodulize} on create, update and destroy is refused with the busy message (no 500), nothing written" do
+        fail_the_lock_with(error_class)
+        before = item_rows
+
+        add_to_cart(other_project)
+        expect(response).to redirect_to(carts_path)
+        expect(flash[:alert]).to eq(busy_message)
+
+        patch order_item_path(item), params: { order_item: { quantity: 3 } }, xhr: true
+        expect(response).to have_http_status(:conflict)
+        expect(response.body).to include(busy_message)
+
+        delete order_item_path(item)
+        expect(response).to redirect_to(carts_path)
+        expect(flash[:alert]).to eq(busy_message)
+
+        expect(item_rows).to eq(before)
+      end
+    end
+  end
+
+  describe "a cart change waiting on a lock held by a checkout (real second connection)" do
+    self.use_transactional_tests = false
+
+    let!(:buyer) { create(:user, :regular_user) }
+    let!(:project) { create(:proficient_project, cc: 10) }
+    let!(:other_project) { create(:proficient_project, cc: 5) }
+
+    after do
+      order_ids = Order.where(user_id: buyer.id).pluck(:id)
+      OrderItem.where(order_id: order_ids).delete_all
+      Order.where(id: order_ids).delete_all
+      projects = [project, other_project]
+      trainings = Training.where(id: projects.map(&:training_id))
+      skill_ids = trainings.pluck(:skill_id)
+      ProficientProject.where(id: projects.map(&:id)).delete_all
+      trainings.delete_all
+      Skill.where(id: skill_ids).delete_all
+      User.unscoped.where(id: buyer.id).delete_all
+    end
+
+    it "gives up after the lock timeout with the busy message; nothing added" do
+      stub_const("ApplicationRecord::LOCK_TIMEOUT", "200ms")
+      shop_log_in!(buyer)
+      add_to_cart(project)
+      cart = buyer.orders.last
+      locked = Queue.new
+      release = Queue.new
+      holder = Thread.new do
+        ActiveRecord::Base.connection_pool.with_connection do
+          Order.transaction do
+            Order.lock(Order::CART_LOCK_MODE).find(cart.id) # as checkout! holds it
+            locked << true
+            release.pop(timeout: 3)
+          end
+        end
+      end
+      locked.pop
+      started = Time.current
+      add_to_cart(other_project)
+      waited = Time.current - started
+      release << true
+      holder.join
+      expect(waited).to be < 2
+      expect(flash[:alert]).to eq("Your cart is being updated elsewhere; please try again.")
+      expect(cart.order_items.pluck(:proficient_project_id)).to eq([project.id])
+    end
+  end
+
   describe "PATCH /order_items/:id" do
     before { shop_log_in!(user) }
 

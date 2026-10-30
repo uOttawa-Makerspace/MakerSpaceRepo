@@ -1,0 +1,2 @@
+document.getElementsByClassName("cart-text")[0].innerHTML = "<%= escape_javascript(render 'layouts/cart_text') %>"
+document.getElementsByClassName("shopping-cart")[0].innerHTML = "<%= escape_javascript(tag.div(@refusal_message, class: 'alert alert-warning', role: 'alert')) %>" + "<%= escape_javascript(render 'carts/shopping_cart') %>"

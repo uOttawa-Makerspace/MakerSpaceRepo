@@ -45,9 +45,8 @@ class OrderItemsController < DevelopmentProgramsController
     session[:order_id] = @order.id
 
     redirect_to carts_path
-  rescue Order::CartClosed
-    flash[:alert] = CART_CLOSED_MESSAGE
-    redirect_to carts_path
+  rescue *CART_CHANGE_REFUSED => e
+    redirect_to carts_path, alert: cart_change_refused_message(e)
   end
 
   def update
@@ -58,8 +57,12 @@ class OrderItemsController < DevelopmentProgramsController
       @order_item.update(order_item_params)
       @order_items = cart.order_items
     end
-  rescue Order::CartClosed
-    head :conflict
+  rescue *CART_CHANGE_REFUSED => e
+    # nothing was written: re-render the cart as it really is (the quantity is reverted on screen)
+    @refusal_message = cart_change_refused_message(e)
+    @order_item = nil
+    @order_items = current_order.order_items
+    render :update_refused, status: :conflict
   end
 
   def destroy
@@ -71,11 +74,14 @@ class OrderItemsController < DevelopmentProgramsController
       @order_items = cart.order_items
     end
     redirect_to carts_path, notice: "Successfully removed item from cart"
-  rescue Order::CartClosed
-    redirect_to carts_path, alert: CART_CLOSED_MESSAGE
+  rescue *CART_CHANGE_REFUSED => e
+    redirect_to carts_path, alert: cart_change_refused_message(e)
   end
 
   CART_CLOSED_MESSAGE = "This cart was just checked out; it can no longer be changed."
+  CART_BUSY_MESSAGE = "Your cart is being updated elsewhere; please try again."
+  # change_items! refusals; its transaction has rolled back, nothing was written
+  CART_CHANGE_REFUSED = [Order::CartClosed, ActiveRecord::LockWaitTimeout, ActiveRecord::Deadlocked].freeze
 
   def revoke
     if OrderItem.find(params[:order_item_id]).update(status: "Revoked")
@@ -102,6 +108,10 @@ class OrderItemsController < DevelopmentProgramsController
   end
 
   private
+
+  def cart_change_refused_message(error)
+    error.is_a?(Order::CartClosed) ? CART_CLOSED_MESSAGE : CART_BUSY_MESSAGE
+  end
 
   def ensure_staff_modal
     head :forbidden unless current_user.staff?
