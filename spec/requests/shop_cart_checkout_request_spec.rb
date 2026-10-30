@@ -831,12 +831,12 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(CcMoney.where(order_id: order.id)).to be_empty
     end
 
-    it "the pre-check and the charge use one total (Order#checkout_total = the sum of item total_price)" do
+    it "the pre-check and the charge use one total (Order#subtotal of the open cart = the sum of item charges)" do
       credit_cc!(user, 100)
       add_to_cart(pp_with_cc(10), quantity: 2)
       add_to_cart(pp_with_cc(15))
       order = user.orders.last
-      expect(order.checkout_total).to eq(35)
+      expect(order.subtotal).to eq(35)
       post orders_path
       expect(order.reload.total).to eq(35)
       expect(order.cc_moneys.sum(:cc)).to eq(-35)
@@ -894,6 +894,33 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(response.body).to include(mine.order_items.first.proficient_project.title)
       expect(response.body).not_to include(pending.order_items.first.proficient_project.title)
       expect(response.body).not_to include(theirs.order_items.first.proficient_project.title)
+    end
+
+    it "a completed order shows what was charged even if an item is now invalid; no per-row queries" do
+      credit_cc!(user, 500)
+      paid = Array.new(3) do |i|
+        o = cart_for(user, 10 + i)
+        Order.checkout!(o, user)
+        o
+      end
+      paid.first.order_items.first.update_column(:quantity, 0) # now invalid
+      shop_log_in!(user)
+      count_for = lambda do |orders_shown|
+        Order.where(id: (paid - orders_shown).map(&:id)).update_all(user_id: other.id)
+        sqls = []
+        sub = ActiveSupport::Notifications.subscribe("sql.active_record") { |*, p| sqls << p[:sql] }
+        get orders_path
+        ActiveSupport::Notifications.unsubscribe(sub)
+        Order.where(id: paid.map(&:id)).update_all(user_id: user.id)
+        sqls.size
+      end
+      count_for.call(paid) # warm-up (first-request caches)
+      one = count_for.call([paid.first])
+      expect(response.body).to include("<td><p>10.0</p></td>")
+      three = count_for.call(paid)
+      expect(three).to eq(one)
+      expect(response.body).to include("<td><p>10.0</p></td>")
+      expect(response.body).to include("<td><p>12.0</p></td>")
     end
 
     it "shows admins a second table with every order of every user and status" do

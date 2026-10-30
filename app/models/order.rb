@@ -6,7 +6,6 @@ class Order < ApplicationRecord
   # The order-row lock shared by checkout and every cart change.
   CART_LOCK_MODE = User::GUARD_LOCK_MODE
   before_validation :set_order_status, on: :create
-  before_save :update_subtotal
 
   belongs_to :user, optional: true
   belongs_to :order_status, optional: true
@@ -33,9 +32,14 @@ class Order < ApplicationRecord
     order_items.to_a
   end
 
-  # THE pricing of a cart, the one definition behind the cart display, the stored
-  # orders.subtotal, the checkout pre-check and the charge: [[item, OrderItem#charge], ...].
-  # A nil charge is an item that can no longer be bought (shown as needing removal).
+  # An open cart (In progress, or not saved yet): the only kind of order that is priced live.
+  def in_progress?
+    new_record? || order_status&.name == IN_PROGRESS
+  end
+
+  # THE pricing of a cart, the one definition behind the cart display, the checkout pre-check
+  # and the charge: [[item, OrderItem#charge], ...]. A nil charge is an item that can no longer
+  # be bought (shown as needing removal).
   def priced_items(items = cart_items)
     items.map { |item| [item, item.charge] }
   end
@@ -45,16 +49,18 @@ class Order < ApplicationRecord
     priced.all? { |_, charge| charge } ? priced.sum { |_, charge| charge } : nil
   end
 
-  # The cart total: what the cart shows, what is stored and what checkout charges.
+  # THE order subtotal, in one place: an in-progress cart is priced live (what it would cost
+  # now); any other order shows the subtotal checkout stored, the amount actually charged,
+  # and is never re-priced (orders.subtotal is written only by checkout!).
   def subtotal
-    self.class.total_of(priced_items)
+    in_progress? ? self.class.total_of(priced_items) : self[:subtotal]
   end
-  alias checkout_total subtotal
 
-  # The priced items checkout charges, or nil when an item needs removal (the cart is refused).
+  # [priced lines, total] for checkout, or nil when an item needs removal (the cart is refused).
   def checkout_lines
     priced = priced_items
-    self.class.total_of(priced) ? priced : nil
+    total = self.class.total_of(priced)
+    total && [priced, total]
   end
 
   # The cart is no longer in progress (checked out meanwhile): its items cannot change. Carries
@@ -109,11 +115,12 @@ class Order < ApplicationRecord
         next [:not_open, order, []] unless order.order_status&.name == IN_PROGRESS
       end
 
-      lines = order.checkout_lines # the one preload + validation, under the lock
+      lines, total = order.checkout_lines # the one preload + validation, under the lock
       next [:invalid_items, order, []] if lines.nil?
 
       order.user = payer
-      order.price_from!(lines)
+      order[:subtotal] = total # the only writer of orders.subtotal: the amount charged
+      order.total = total
       order.order_status = OrderStatus.find_by(name: COMPLETED)
       next [:invalid, order, []] unless order.save
 
@@ -129,24 +136,9 @@ class Order < ApplicationRecord
     end
   end
 
-  # Sets subtotal and total from priced lines already built (checkout!), so the save does not
-  # preload and validate the items again.
-  def price_from!(lines)
-    total = self.class.total_of(lines)
-    self[:subtotal] = total
-    self.total = total
-    @priced_from_lines = true
-  end
-
   private
 
   def set_order_status
     self.order_status ||= OrderStatus.find_by(name: "In progress")
-  end
-
-  def update_subtotal
-    return if @priced_from_lines # checkout! set it from the very lines it charges
-
-    self[:subtotal] = subtotal
   end
 end

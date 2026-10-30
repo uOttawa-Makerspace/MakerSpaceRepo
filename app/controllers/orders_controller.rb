@@ -7,12 +7,17 @@ class OrdersController < DevelopmentProgramsController
 
   def index
     completed_status = OrderStatus.find_by(name: "Completed")
-    user_orders_scope = current_user.orders.where(order_status: completed_status).order(created_at: :desc)
+    # Listed orders show their stored subtotal (Order#subtotal of a completed order): no per-row
+    # pricing. Status, items and projects are loaded with the page.
+    user_orders_scope = current_user.orders.where(order_status: completed_status)
+                                    .includes(:order_status, order_items: :proficient_project)
+                                    .order(created_at: :desc)
     
     @pagy, @orders = pagy(user_orders_scope, limit: 20)
 
     if current_user.admin?
-      @pagy_all, @all_orders = pagy(Order.order(created_at: :desc), page_key: "page_all", limit: 20)
+      @pagy_all, @all_orders = pagy(Order.includes(:user, :order_status, order_items: :proficient_project)
+                                         .order(created_at: :desc), page_key: "page_all", limit: 20)
     end
   end
 
@@ -74,9 +79,9 @@ class OrdersController < DevelopmentProgramsController
   INVALID_CART_MESSAGE = "An item in your cart can no longer be bought; remove it and try again."
 
   # Early, friendly refusal (checkout! re-checks under the wallet lock), on the SAME total the
-  # charge uses (Order#checkout_total). A read: no lock, no cache write.
+  # charge uses (Order#subtotal of the open cart). A read: no lock, no cache write.
   def check_wallet
-    total = current_order.checkout_total
+    total = current_order.subtotal
     if total.nil?
       flash[:alert] = INVALID_CART_MESSAGE
       redirect_back(fallback_location: root_path)

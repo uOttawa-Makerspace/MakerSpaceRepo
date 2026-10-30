@@ -37,9 +37,9 @@ RSpec.describe Order, type: :model do
 
   describe "model methods" do
     context "#subtotal" do
-      it "should calculate the subtotal" do
-        order_item = create(:order_item)
-        expect(order_item.order.reload.subtotal).to eq(10)
+      it "returns a completed order's stored subtotal, not a re-pricing of its items" do
+        order_item = create(:order_item) # on a completed order whose stored subtotal is 50
+        expect(order_item.order.reload.subtotal).to eq(50)
       end
     end
 
@@ -86,13 +86,13 @@ RSpec.describe Order, type: :model do
       expect(Order.new).to be_valid
     end
 
-    it "is Order.new with nil subtotal before saving and a persisted subtotal of 0 for an empty order" do
+    it "prices an empty cart (new or saved) at 0" do
       expect(Order.new.subtotal).to eq(0)
       expect(Order.create!.reload.subtotal).to eq(0)
     end
   end
 
-  describe "#subtotal and the before_save snapshot" do
+  describe "#subtotal (live for an open cart, stored for any other order)" do
     it "sums quantity * unit_price over the items" do
       order = Order.create!(user: user)
       add_item(order, 10, quantity: 2)
@@ -100,35 +100,47 @@ RSpec.describe Order, type: :model do
       expect(order.reload.subtotal).to eq(35)
     end
 
-    it "is persisted to the subtotal column only when the ORDER is saved" do
+    it "never writes the subtotal column for an open cart (saving it writes nothing; only checkout! stores it)" do
       order = Order.create!(user: user)
       add_item(order, 10)
-      expect(order.reload[:subtotal]).to eq(0)
       order.save!
-      expect(order.reload[:subtotal]).to eq(10)
+      expect(order.reload[:subtotal]).to be_nil
+      expect(order.subtotal).to eq(10)
     end
 
-    it "has no total while an item can no longer be bought (never counts it as 0), stored as NULL" do
+    it "has no total while an item can no longer be bought (never counts it as 0)" do
       order = Order.create!(user: user)
       add_item(order, 15)
       item = add_item(order, 10)
       item.update_column(:quantity, 0)
       expect(order.reload.subtotal).to be_nil
-      expect(order.checkout_total).to be_nil
-      order.save!
-      expect(order.reload[:subtotal]).to be_nil
+      expect(order.checkout_lines).to be_nil
     end
 
-    it "is ONE pricing: the stored subtotal, the cart total, the pre-check total and the charge agree" do
+    it "is ONE pricing: the cart total, the pre-check total and the charge agree; checkout stores it once" do
       order = Order.create!(user: user)
       add_item(order, 10, quantity: 2)
       add_item(order, 15)
-      order.save!
-      expect(order.reload[:subtotal]).to eq(35)
+      lines, total = order.checkout_lines
+      expect(total).to eq(35)
+      expect(lines.sum(&:last)).to eq(35)
       expect(order.subtotal).to eq(35)
-      expect(order.checkout_total).to eq(35)
-      expect(order.checkout_lines.map(&:last).sum).to eq(35)
-      expect(order.priced_items.map { |i, c| [i.total_price.to_i, c] }).to all(satisfy { |a, b| a == b })
+      CcMoney.create!(user: user, cc: 100)
+      expect(Order.checkout!(order, user).first).to eq(:completed)
+      expect(order.reload[:subtotal]).to eq(35)
+      expect(order.total).to eq(35)
+    end
+
+    it "shows a completed order's stored subtotal (the amount charged), never re-priced" do
+      order = Order.create!(user: user)
+      item = add_item(order, 10)
+      CcMoney.create!(user: user, cc: 100)
+      Order.checkout!(order, user)
+      item.update_column(:quantity, 0) # now invalid: re-pricing would say nil
+      item.proficient_project.update!(cc: 99)
+      completed = Order.find(order.id)
+      expect(completed.subtotal).to eq(10)
+      expect(completed.total).to eq(10)
     end
 
     it "uses the item's frozen unit_price, not the project's live cc" do
