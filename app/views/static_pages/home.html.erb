@@ -2,7 +2,11 @@
     announcement dismiss buttons and the sign-out button in home_userinfo) are
     rendered outside the fragments: their tokens belong to the current session,
     so a cached copy would go stale after a new sign-in or on another device. %>
-<% home_cache_key = ["v3_home_page", current_user&.id || "anonymous", I18n.locale, @recent_projects.hash, @workshops.hash] %>
+<%# Digests, not Ruby #hash values (seeded per process), so every server worker
+    reads and writes the same fragments. %>
+<% home_cache_key = ["v4_home_page", current_user&.id || "anonymous", I18n.locale,
+                     ActiveSupport::Digest.hexdigest(@recent_projects.map(&:cache_key_with_version).join(",")),
+                     ActiveSupport::Digest.hexdigest(@workshops.to_json)] %>
 <section id="home">
   <button class="d-xl-none" id="ShortcutButton" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas-shortcuts" aria-controls="offcanvas-shortcuts">
     Shortcuts

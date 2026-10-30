@@ -210,6 +210,22 @@ RSpec.describe "CSRF protection", type: :request do
       form.css("input[type='hidden']").to_h { |input| [input["name"], input["value"]] }
     end
 
+    # Ruby seeds #hash per process, so a key built from Array#hash differs in every
+    # server worker. The key is a digest of the recent projects' cache versions
+    # and of the workshops' JSON instead.
+    it "uses a key that is the same in every process (digests, not Ruby #hash values)" do
+      repo = create(:repository)
+      log_in!
+      get root_path
+      projects = Repository.public_repos.order(created_at: :desc).limit(15).to_a
+      expect(projects).to include(repo)
+      projects_digest = ActiveSupport::Digest.hexdigest(projects.map(&:cache_key_with_version).join(","))
+      workshops_digest = ActiveSupport::Digest.hexdigest([].to_json)
+      keys = ActionController::Base.cache_store.instance_variable_get(:@data).keys.grep(%r{\Aviews/static_pages/home})
+      expect(keys.size).to eq(2)
+      expect(keys).to all(include("/#{projects_digest}/#{workshops_digest}/"))
+    end
+
     it "is cached per user, not per session: a second session of the same user reuses the entries" do
       log_in!
       get root_path
