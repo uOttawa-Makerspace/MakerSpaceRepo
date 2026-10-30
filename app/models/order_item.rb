@@ -72,6 +72,13 @@ class OrderItem < ApplicationRecord
     valid? ? total_price.to_i : nil
   end
 
+  # What a checked-out item was charged, as stored when it was checked out (a whole-CC amount),
+  # or nil for a legacy row that never stored one. Never raises, unlike total_price, which
+  # multiplies the nullable unit_price and quantity.
+  def paid_amount
+    self[:total_price]&.to_i
+  end
+
   private
 
   def product_present

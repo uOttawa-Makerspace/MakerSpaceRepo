@@ -67,7 +67,8 @@ class OrderItemsController < DevelopmentProgramsController
         @cart_closed = e.is_a?(Order::CartClosed)
         @order = e.order if @cart_closed && e.order
         @order_item = nil
-        # a checked-out order is shown read-only (no pricing: only the project titles are read)
+        # a checked-out order is shown read-only from what was stored when it was paid (no live
+        # pricing); the badge is drawn from the order in hand, so session[:order_id] is untouched
         @order_items = @cart_closed ? @order.order_items.includes(:proficient_project).to_a : @order.cart_items
         render :update_refused, status: :conflict
       end

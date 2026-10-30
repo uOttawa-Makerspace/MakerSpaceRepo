@@ -1,6 +1,8 @@
 <%# A refused cart change (Order#change_items!): the message, then the order as it really is.
-    Checked out: its items as paid, read-only. Busy: the unchanged cart (the edit is reverted). %>
-document.getElementsByClassName("cart-text")[0].innerHTML = "<%= escape_javascript(render 'layouts/cart_text') %>"
+    Checked out: its items as paid, read-only, and the badge shows no open cart (0).
+    Busy: the unchanged cart (the edit is reverted) and its badge. The badge is drawn from the order
+    in hand, so this response never touches session[:order_id]. %>
+document.getElementsByClassName("cart-text")[0].innerHTML = "<%= escape_javascript(render 'layouts/cart_text', order: (@cart_closed ? nil : @order)) %>"
 <% if @cart_closed %>
 document.getElementsByClassName("shopping-cart")[0].innerHTML = "<%= escape_javascript(render 'order_items/checked_out_cart') %>"
 <% else %>

@@ -7,7 +7,7 @@
       </ul>
     </div>
 <% end %>
-<% priced = @order_items.map { |item| [item, item.charge] } # Order#priced_items, computed once %>
+<% priced = @order.priced_items(@order_items) # computed once %>
 <% if @order_items.size == 0 %>
     <p class="text-center m-5">
       There are no items in your shopping cart. <br />

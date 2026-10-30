@@ -1,2 +1,2 @@
-document.getElementsByClassName("cart-text")[0].innerHTML = "<%= escape_javascript(render 'layouts/cart_text') %>"
+document.getElementsByClassName("cart-text")[0].innerHTML = "<%= escape_javascript(render 'layouts/cart_text', order: @order) %>"
 document.getElementsByClassName("shopping-cart")[0].innerHTML = "<%= escape_javascript(render 'carts/shopping_cart') %>"

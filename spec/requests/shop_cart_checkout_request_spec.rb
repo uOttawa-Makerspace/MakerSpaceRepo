@@ -324,6 +324,54 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(response.body).not_to include("There are no items in your shopping cart")
     end
 
+    it "the checked-out answer never raises on a legacy row with a NULL unit_price or quantity" do
+      close_cart_before_the_lock
+      item.update_columns(unit_price: nil, quantity: nil, total_price: nil)
+      patch order_item_path(item), params: { order_item: { quantity: 3 } }, xhr: true
+      expect(response).to have_http_status(:conflict)
+      expect(response.body).to include("This order was checked out with")
+      expect(response.body).to include(ERB::Util.html_escape(item.proficient_project.title))
+    end
+
+    it "the checked-out answer shows the amounts stored at checkout, and the order's stored total" do
+      close_cart_before_the_lock
+      item.update_columns(quantity: 2, unit_price: 10, total_price: 20)
+      order.update_columns(subtotal: 20)
+      patch order_item_path(item), params: { order_item: { quantity: 3 } }, xhr: true
+      expect(response.body).to include("&times; 2 (20 CC)")
+      expect(response.body).to include("Total charged: 20 CC")
+    end
+
+    it "a refused XHR update leaves session[:order_id] as the success path does, and the badge is drawn from the order in hand" do
+      patch order_item_path(item), params: { order_item: { quantity: 2 } }, xhr: true
+      expect(response).to have_http_status(:ok)
+      success_session_order = session[:order_id]
+      expect(success_session_order).to eq(order.id)
+
+      close_cart_before_the_lock
+      patch order_item_path(item), params: { order_item: { quantity: 3 } }, xhr: true
+      expect(response).to have_http_status(:conflict)
+      expect(session[:order_id]).to eq(success_session_order)
+      # checked out: no open cart, so the badge is 0 (not the count of a swapped-in cart)
+      expect(response.body).to match(/cart-text.*fs-4\\?">0</)
+    end
+
+    it "a busy refusal keeps the cart's own badge count and session" do
+      add_to_cart(other_project)
+      fail_the_lock_with(ActiveRecord::LockWaitTimeout)
+      patch order_item_path(item), params: { order_item: { quantity: 3 } }, xhr: true
+      expect(response).to have_http_status(:conflict)
+      expect(session[:order_id]).to eq(order.id)
+      expect(response.body).to match(/cart-text.*fs-4\\?">2</)
+    end
+
+    it "the cart page prices through Order#priced_items (the one pricing), not its own copy" do
+      expect_any_instance_of(Order).to receive(:priced_items).at_least(:once).and_call_original
+      get carts_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Order Subtotal")
+    end
+
     it "a refused non-XHR (HTML) update redirects to the cart with the alert; nothing changed" do
       close_cart_before_the_lock
       patch order_item_path(item), params: { order_item: { quantity: 3 } }
