@@ -1,6 +1,25 @@
 require "rails_helper"
 
 RSpec.describe ProficientProject, type: :model do
+  it "refuses a negative CC price, accepts 0" do
+    expect(build(:proficient_project, cc: -1)).not_to be_valid
+    expect(build(:proficient_project, cc: 0)).to be_valid
+  end
+
+  it "refuses a fractional CC price (the integer column would truncate 2.9 to 2)" do
+    ["2.9", 2.9].each do |price|
+      project = build(:proficient_project, cc: price)
+      expect(project).not_to be_valid
+      expect(project.errors[:cc]).to eq(["must be an integer"])
+    end
+    expect(build(:proficient_project, cc: "3")).to be_valid
+  end
+
+  it "the database refuses a negative CC price too (CHECK proficient_projects_cc_non_negative)" do
+    project = create(:proficient_project, cc: 10)
+    expect { project.update_column(:cc, -1) }.to raise_error(ActiveRecord::CheckViolation, /proficient_projects_cc_non_negative/)
+  end
+
   describe "Association" do
     context "has_many" do
       it { should have_many(:photos) }

@@ -16,40 +16,50 @@ class DiscountCodesController < DevelopmentProgramsController
     @price_rules = CouponCode.unclaimed.distinct.pluck(:dollar_cost, :cc_cost)
   end
 
+  # The before_actions are only early, friendly refusals; CouponCode.claim! re-decides both
+  # (coupon still unclaimed, enough CC) under locks, so a lost race neither charges nor assigns
+  # (D-S33).
   def create
-    cc_money_payment =
-      CcMoney.make_new_payment(current_user, @price_rule.cc_cost)
-    if cc_money_payment.present? && cc_money_payment.save
-      if @price_rule.update(user: current_user)
-        flash[:notice] = "Discount Code created"
-      else
-        cc_money_payment.destroy
-        flash[:alert] = "Discount Code not created properly!"
-      end
+    outcome, = CouponCode.claim!(current_user, params[:dollar_cost], params[:cc_cost])
+    case outcome
+    when :claimed
+      flash[:notice] = "Discount Code created"
+      redirect_to discount_codes_path
+    when :no_coupon
+      flash[:alert] = "This coupon is already claimed"
+      redirect_to new_discount_code_path
     else
-      flash[:alert] = "Payment not processed"
+      flash[:alert] = "Not enough CC points"
+      redirect_back(fallback_location: root_path)
     end
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved, ActiveRecord::RecordNotFound,
+         ActiveRecord::LockWaitTimeout, ActiveRecord::Deadlocked, CcMoney::InvalidAmount => e
+    # claim!'s transaction has rolled back: nothing was charged or assigned
+    Rails.logger.warn("[discount_codes#create] coupon claim not saved: #{e.class}")
+    flash[:alert] = "Discount Code not created properly!"
     redirect_to discount_codes_path
   end
 
   private
 
+  # The offer the user confirmed is the (dollar_cost, cc_cost) pair shown on the page; both are
+  # posted and both must match, so a same-dollar coupon at another price is never charged.
   def check_and_set_price_rule_expiration
     @price_rule =
-      CouponCode.unclaimed.find_by(dollar_cost: params[:dollar_cost])
-    unless @price_rule
-      flash[:alert] = "Can not find coupon for $#{params[:dollar_cost]} off"
-      redirect_to new_discount_code_path
-    end
-    unless @price_rule.user.nil?
-      flash[:alert] = "This coupon is already claimed"
-      redirect_to new_discount_code_path
-    end
+      if params[:cc_cost].present?
+        CouponCode.unclaimed.find_by(dollar_cost: params[:dollar_cost], cc_cost: params[:cc_cost])
+      end
+    return if @price_rule # an unclaimed coupon, so never one already claimed
+
+    # D-S09: return after the redirect (the filter used to go on and dereference nil: a 500)
+    flash[:alert] = "Can not find coupon for $#{params[:dollar_cost]} off"
+    redirect_to new_discount_code_path
   end
 
+  # Early, friendly refusal (claim! re-checks under the wallet lock). A read: no lock, no cache
+  # write.
   def check_user_wallet
-    current_user.update_wallet
-    unless current_user.wallet >= @price_rule.cc_cost
+    unless current_user.get_total_cc >= @price_rule.cc_cost.to_i
       flash[:alert] = "Not enough CC points"
       redirect_back(fallback_location: root_path)
     end

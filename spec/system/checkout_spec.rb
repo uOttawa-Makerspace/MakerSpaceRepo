@@ -95,7 +95,7 @@ RSpec.describe "Checkout", type: :system do
       expect(page).to have_text("Not enough Cc Points.")
       expect(user.orders.last.order_status.name).to eq("In progress")
       expect(user.orders.last.order_items.count).to eq(1)
-      expect(user.reload.wallet).to eq(20)
+      expect(user.get_total_cc).to eq(20) # a refusal writes no cache: the ledger balance is the truth
     end
 
     it "an empty cart shows the empty-state copy with a link back to the projects" do
