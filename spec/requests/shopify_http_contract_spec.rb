@@ -162,7 +162,7 @@ RSpec.describe "Shopify Admin GraphQL over real HTTP (WebMock)", type: :request 
       creates = stub_draft_order_create(draft_id)
       fetches = stub_draft_order_fetch(draft_id, invoice_url: invoice_url)
 
-      expect(order.reload.checkout_link).to eq(invoice_url)
+      expect(order.reload.checkout_link.value).to eq(invoice_url)
 
       expect(order.reload.shopify_draft_order_id).to eq(draft_id)
       expect_shopify_auth(creates.first)
