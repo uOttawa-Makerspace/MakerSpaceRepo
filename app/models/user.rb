@@ -856,11 +856,16 @@ class User < ApplicationRecord
 
   # users.wallet is a CACHE of SUM(cc_moneys.cc). Written with update_columns, never a validated
   # update: a user failing any validation (legacy data) used to keep a stale wallet forever.
+  # The sum is read under the user-row lock (the wallet lock every CC spend takes, same mode), so
+  # a refresh racing a spend cannot write back a sum read before that spend committed.
   # A guest (unsaved User.new) has nothing to cache.
   def update_wallet
     return unless persisted?
 
-    update_columns(wallet: get_total_cc)
+    self.class.transaction do
+      self.class.unscoped.where(id: id).lock(GUARD_LOCK_MODE).take
+      update_columns(wallet: CcMoney.uncached { cc_moneys.sum(:cc) })
+    end
   end
 
   # ============================================

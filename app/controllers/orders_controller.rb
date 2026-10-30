@@ -59,9 +59,9 @@ class OrdersController < DevelopmentProgramsController
     end
   end
 
+  # Read-only early refusal (checkout! re-checks under the wallet lock); writes no cache.
   def check_wallet
-    current_user.update_wallet
-    return if current_user.wallet >= current_order.subtotal.to_i
+    return if current_user.get_total_cc >= current_order.subtotal.to_i
     flash[:alert] = "Not enough Cc Points."
     redirect_back(fallback_location: root_path)
   end

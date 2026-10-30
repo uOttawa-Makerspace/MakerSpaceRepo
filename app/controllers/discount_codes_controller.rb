@@ -54,9 +54,9 @@ class DiscountCodesController < DevelopmentProgramsController
     end
   end
 
+  # Read-only early refusal (claim! re-checks under the wallet lock); writes no cache.
   def check_user_wallet
-    current_user.update_wallet
-    unless current_user.wallet >= @price_rule.cc_cost
+    unless current_user.get_total_cc >= @price_rule.cc_cost.to_i
       flash[:alert] = "Not enough CC points"
       redirect_back(fallback_location: root_path)
     end
