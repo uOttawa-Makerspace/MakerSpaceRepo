@@ -143,13 +143,14 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(status_names(start)).to eq(["Waiting to be Processed"])
     end
 
-    # WART(D-J47): update_status calls .last.job_status on the status history
-    it "500s (NoMethodError) on a transition for an order with no status rows" do
+    # FIXED(D-J47): an order with no status rows is in no source state, so the
+    # transition is refused with the generic error (the status is read under the lock)
+    it "refuses a transition for an order with no status rows (no 500)" do
       session_login!(staff)
       statusless = create(:job_order, user: owner)
       patch job_order_start_processing_path(statusless), params: { start_processing: "true" }
-      expect(response).to have_http_status(:internal_server_error)
-      expect(error_text).to include("NoMethodError")
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
+      expect(statusless.reload.job_order_statuses).to be_empty
     end
 
     it "marks a paid transition without sending any mail" do

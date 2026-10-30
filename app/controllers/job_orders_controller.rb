@@ -143,7 +143,8 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
            true,
            JobStatus::DECLINED,
            nil,
-           actor: @job_order.user
+           actor: @job_order.user,
+           approval_token: @token
          )
         true
       else
@@ -391,13 +392,15 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
     )
   end
 
+  # Only while the customer has a live quote: a reminder re-issues the approve link, so one for an order that went
+  # back to staff (or moved on) would make an unquoted or spent quote approvable again.
   def resend_quote_email
-    @job_order.job_order_statuses << JobOrderStatus.create(
-      job_order: @job_order,
-      job_status: JobStatus::SENT_REMINDER,
-      user: @user
-    )
-    JobOrderMailer.send_job_quote(@job_order.id, true).deliver_now if @job_order.save
+    if @job_order.transition!(from: [JobStatus::USER_APPROVAL, JobStatus::SENT_REMINDER], to: JobStatus::SENT_REMINDER,
+                              actor: @user)
+      JobOrderMailer.send_job_quote(@job_order.id, true).deliver_now
+    else
+      flash[:alert] = t("job_orders.alerts.error_while_updating")
+    end
     respond_to do |format|
       format.html { redirect_to job_order_path(@job_order.id) }
       format.js { render "admin_row" }
@@ -528,6 +531,7 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
     
   end
 
+  # One status transition through JobOrder#transition! (row lock, source state and approve link checked under it).
   def update_status(
     param,
     current_status,
@@ -535,33 +539,14 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
     need_false_status,
     false_status = nil,
     redirect_link = job_order_path(@job_order.id),
-    actor: @user
+    actor: @user,
+    approval_token: nil
   )
-    error = false
-
-    if if current_status.is_a?(Array)
-         !current_status.include?(@job_order.job_order_statuses.last.job_status)
-       else
-         @job_order.job_order_statuses.last.job_status != current_status
-       end
-      error = true
-    elsif param.present? && param == "true"
-      @job_order.job_order_statuses << JobOrderStatus.create(
-        job_order: @job_order,
-        job_status: true_status,
-        user: actor
-      )
-      error = true unless @job_order.save
-    elsif param.present? && param == "false" && need_false_status
-      @job_order.job_order_statuses << JobOrderStatus.create(
-        job_order: @job_order,
-        job_status: false_status,
-        user: actor
-      )
-      error = true unless @job_order.save
-    else
-      error = true
-    end
+    next_status = if param == "true" then true_status
+                  elsif param == "false" && need_false_status then false_status
+                  end
+    error = next_status.nil? ||
+            !@job_order.transition!(from: current_status, to: next_status, actor: actor, approval_token: approval_token)
 
     if !error
       flash[:notice] = t(

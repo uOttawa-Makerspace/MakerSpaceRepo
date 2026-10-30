@@ -61,6 +61,23 @@ class JobOrder < ApplicationRecord
     not_deleted.find_by_token_for(:pay, token)
   end
 
+  # JOB-02: one status transition. The row is locked (the same FOR UPDATE as JobOrdersController#quote and
+  # #apply_owner_change!) and the latest status is read under the lock, so a transition cannot interleave with a
+  # re-quote or an owner change. `approval_token` (an emailed approve link) is re-checked under the lock as well: a
+  # re-quote or an owner change that committed after the link was looked up has retired it. Returns true when the
+  # status row was added, false when the order is not in one of `from` (or the link is spent).
+  def transition!(from:, to:, actor:, approval_token: nil)
+    added = transaction do
+      lock!
+      next false unless Array.wrap(from).include?(job_order_statuses.last&.job_status)
+      next false if approval_token && self.class.from_approval_token(approval_token)&.id != id
+      raise ActiveRecord::Rollback unless job_order_statuses.create(job_status: to, user: actor).persisted?
+
+      true
+    end
+    added == true
+  end
+
   def approval_status_marker
     job_order_statuses.where(job_status: JobStatus::USER_APPROVAL).maximum(:id)
   end

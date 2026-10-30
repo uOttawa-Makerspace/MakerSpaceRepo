@@ -311,21 +311,31 @@ RSpec.describe "JobOrders workflow", type: :request do
   # ------------------------------------------------------------- resend_quote_email
 
   describe "PATCH resend_quote_email" do
-    # WART(D-J34): no state guard; a Draft order gets a quote link and the
-    # reminder status makes that link usable for approval.
-    it "works on a Draft order: records the reminder, mails a link and the link then opens the approval page" do
+    # FIXED(D-J34): a reminder is only sent while the customer has a live quote
+    # (USER_APPROVAL / SENT_REMINDER); a Draft order gets no reminder row, no mail
+    # and its link does not open the approval page.
+    it "refuses a Draft order: no reminder row, no mail, no usable link" do
       draft = order_with_task!(status_key: :draft)
       session_login!(staff)
       patch job_order_resend_quote_email_path(draft)
 
-      expect(status_names(draft)).to eq(["Draft", "Sent a Quote Reminder"])
-      expect(deliveries.last.to).to eq([owner.email])
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
+      expect(status_names(draft)).to eq(["Draft"])
+      expect(deliveries).to be_empty
 
       token = magic_link_token_for(draft)
       reset!
       get user_magic_approval_job_orders_path, params: { token: token }
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include("Approve the Quote")
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.approval_magic_link_expired"))
+    end
+
+    it "sends the reminder while the order waits for the customer (control)" do
+      waiting = order_with_task!(status_key: :user_approval)
+      session_login!(staff)
+      patch job_order_resend_quote_email_path(waiting)
+
+      expect(status_names(waiting)).to eq(["Waiting for User Approval", "Sent a Quote Reminder"])
+      expect(deliveries.last.to).to eq([owner.email])
     end
   end
 
