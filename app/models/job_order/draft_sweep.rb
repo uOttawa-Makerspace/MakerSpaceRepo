@@ -12,31 +12,35 @@
 #   environment's operating tag (so another environment's drafts, and the locker and membership drafts, which carry
 #   other operating tags, are never listed), paginated (a repeated cursor or MAX_PAGES ends the listing, unresolved);
 # - a listed draft without exactly one valid marker (a draft made before the marker existed) is not touched;
-# - kept only when the database backs it (JobOrder#shopify_draft_backed?: a live order waiting for payment whose
-#   stored shopify_draft_order_id is this draft);
-# - otherwise deleted (JobOrder.delete_draft_unless_completed!), unless Shopify reports it paid: that one is never
-#   deleted. The database is read under a short row lock; the Shopify calls are made after it is released, so a
-#   slow Shopify never makes /pay or a transition answer :busy. Why that is safe: a draft the database does not
-#   back at the decision can only become backed by a create that stores a NEW id (never this gid), so no later
-#   write can make a deleted draft current; a draft paid in between is refused by Shopify (or seen COMPLETED);
-# - at most MAX_DELETES deletes per run (a sweep run against the wrong or a restored database would otherwise
-#   delete every draft): the rest is left and unresolved;
+# - decided and acted on per draft in ONE locked operation (JobOrder#reconcile_orphan_draft!): under the order's row
+#   lock the order is re-read, kept when the database backs it (JobOrder#backs_draft?: a live order waiting for
+#   payment whose stored shopify_draft_order_id is this draft), otherwise the draft is fetched and deleted (never when
+#   Shopify reports it paid) and the stored id cleared. Deciding and deleting under one lock is what keeps a live
+#   invoice: a transition into COMPLETED keeps the order's stored id, so a draft that was an orphan a moment ago can
+#   become the invoice, and only the lock orders that against the delete. An order whose row is gone has no lock to
+#   take: its draft is deleted the same way (unless paid);
+# - kill switch: the orphans are counted BEFORE anything is deleted, and when there are more than the cap
+#   (MAX_DELETES, or the explicit `run(max_deletes:)` / rake CONFIRM_MAX_DELETES=n override) NOTHING is deleted and the
+#   run is unresolved: a sweep run against the wrong or a restored database would otherwise delete every draft;
 # - fail closed: any Shopify or lock error leaves the draft and lists it as unresolved;
-# - one sweep at a time (a Postgres advisory lock): a second one is skipped.
+# - one sweep at a time (a Postgres advisory lock): a second one is skipped (the rake exits 2).
 #
-# The Report is the one report of a run: Rails.error is told once, with the unresolved list (no per-draft reports).
+# Reporting: an unexpected exception and a :deadlock are reported individually, with their backtrace and the draft's
+# gid. Everything else that is left (Shopify refusals, a busy order, the kill switch ...) is listed in the Report and
+# told ONCE per run, with a stable message (so the error tracker groups it) and the gids and counts in the context.
 # Run by `rake job_orders:sweep_orphan_drafts` and, regularly, by JobOrderDraftSweepJob (config/recurring.yml).
 class JobOrder
   class DraftSweep
     PAGE_SIZE = 50
     MAX_PAGES = 1000
     MAX_DELETES = 200
+    SUMMARY_MESSAGE = "job order draft sweep: unresolved drafts"
     LOCK_KEY = Zlib.crc32("JobOrder::DraftSweep")
     OUTCOMES = %i[kept deleted cleared unmarked].freeze
 
     class Unresolved < StandardError; end
 
-    # counts: outcome => number; unresolved: ["<draft gid> (<reason>): <message>", ...]; unresolved_gids: the drafts
+    # counts: outcome => number (unmarked: distinct drafts); unresolved: ["<draft gid> (<reason>): <message>", ...]; unresolved_gids: the drafts
     # among them; skipped: another sweep was running.
     Report = Data.define(:counts, :unresolved, :unresolved_gids, :skipped) do
       def ok? = unresolved.empty?
@@ -65,7 +69,7 @@ class JobOrder
       @counts = Hash.new(0)
       @unresolved = []
       @unresolved_gids = []
-      @over_cap = 0
+      @unmarked = Set.new
     end
 
     def run
@@ -91,19 +95,38 @@ class JobOrder
     end
 
     def sweep
-      list_payable_drafts.each { |gid, order_id| reconcile(gid, order_id) }
-      @unresolved << "#{@over_cap} orphan draft(s) not deleted: the cap of #{@max_deletes} deletes per run is reached" if @over_cap.positive?
+      drafts = list_payable_drafts
+      reconcile_all(drafts) unless over_cap?(drafts)
       build_report
     end
 
+    def reconcile_all(drafts) = drafts.each { |gid, order_id| reconcile(gid, order_id) }
+
+    # The kill switch: counts the drafts the database does not back, before anything is deleted. Over the cap, nothing
+    # is deleted (the per-draft check under the lock decides again, so it can only delete fewer). Read without a lock:
+    # it is a count, not a decision.
+    def over_cap?(drafts)
+      orders = JobOrder.where(id: drafts.map(&:last)).index_by(&:id)
+      orphans = drafts.count { |gid, order_id| !orders[order_id]&.backs_draft?(gid) }
+      return false if orphans <= @max_deletes
+
+      @unresolved << "#{orphans} orphan draft(s) found, more than the cap of #{@max_deletes}: NOTHING was deleted. " \
+                     "Check that this is the right database, then rerun with an explicit cap " \
+                     "(rake CONFIRM_MAX_DELETES=#{orphans}, or JobOrder::DraftSweep.run(max_deletes: #{orphans}))"
+      true
+    end
+
     def build_report(skipped: false)
-      Report.new(counts: OUTCOMES.index_with { |o| @counts[o] }, unresolved: @unresolved,
+      Report.new(counts: OUTCOMES.index_with { |o| o == :unmarked ? @unmarked.size : @counts[o] }, unresolved: @unresolved,
                  unresolved_gids: @unresolved_gids.uniq, skipped: skipped)
     end
 
+    # The run's one summary report. The message is stable (the tracker groups by it); what varies is in the context.
     def report_once(report)
-      Rails.error.report(Unresolved.new(report.unresolved.join("; ")), handled: true,
-                         context: { unresolved_draft_order_ids: report.unresolved_gids, where: "JobOrder::DraftSweep#run" })
+      Rails.error.report(Unresolved.new(SUMMARY_MESSAGE), handled: true,
+                         context: { unresolved_count: report.unresolved.size, unresolved_draft_order_ids: report.unresolved_gids,
+                                    unresolved: report.unresolved.first(20), counts: report.counts,
+                                    where: "JobOrder::DraftSweep#run" })
     end
 
     def operating_tag = JobOrder.draft_order_operating_tag
@@ -162,34 +185,34 @@ class JobOrder
       ids = tags.filter_map { |t| JobOrder::DRAFT_MARKER.match(t)&.captures&.first&.to_i }.uniq
       return [node["id"], ids.first] if ids.one? && node["id"].present?
 
-      @counts[:unmarked] += 1
+      @unmarked << (node["id"].presence || [:no_id, @unmarked.size]) # one draft on two pages is one
       nil
     end
 
     def reconcile(gid, order_id)
-      order = JobOrder.find_by(id: order_id)
-      backed = order ? order.shopify_draft_backed?(gid) : JobOrder::TransitionResult.refused(:order_missing)
-      return count(:kept) if backed.ok? && backed.value
-      return unresolve(gid, order_id, backed.reason, backed.error) unless backed.ok? || backed.reason == :order_missing
+      result = JobOrder.find_by(id: order_id)&.reconcile_orphan_draft!(gid)
+      result = delete_without_order(gid) if result.nil? || result.reason == :order_missing
+      return count(result.value) if result.ok?
 
-      return @over_cap += 1 if @counts[:deleted] >= @max_deletes
-
-      delete_orphan(gid, order_id, order)
+      report_error(result.error, gid, order_id) if result.reason == :deadlock
+      unresolve(gid, order_id, result.reason, result.error)
     rescue StandardError => e
-      Rails.logger.error("[JobOrder::DraftSweep] #{gid}: #{e.class}: #{e.message}\n#{e.backtrace.first(5).join("\n")}")
+      report_error(e, gid, order_id)
       unresolve(gid, order_id, :unexpected, e)
     end
 
-    # Outside any lock. Then the order, if it still stores this id, drops it (a kept draft keeps its id).
-    def delete_orphan(gid, order_id, order)
-      outcome = JobOrder.delete_draft_unless_completed!(gid)
-      if order && outcome != :kept
-        released = order.release_shopify_draft!(gid)
-        return unresolve(gid, order_id, released.reason, released.error) unless released.ok?
-      end
-      count(outcome)
+    # The order row is gone (never there, or hard-deleted mid-sweep): no lock to take and nothing to keep the draft for.
+    def delete_without_order(gid)
+      JobOrder::TransitionResult.done(DraftDeletion.delete_unless_completed!(gid))
     rescue JobOrder::StaleDraftOrderError => e
-      unresolve(gid, order_id, :draft_not_voidable, e)
+      JobOrder::TransitionResult.refused(:draft_not_voidable, e)
+    end
+
+    # The exception itself, so the tracker has its class and backtrace.
+    def report_error(error, gid, order_id)
+      Rails.logger.error("[JobOrder::DraftSweep] #{gid}: #{error.class}: #{error.message}")
+      Rails.error.report(error, handled: true,
+                                context: { draft_order_id: gid, job_order_id: order_id, where: "JobOrder::DraftSweep#reconcile" })
     end
 
     def count(outcome) = @counts[outcome] += 1

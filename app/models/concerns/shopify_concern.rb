@@ -7,6 +7,7 @@ module ShopifyConcern
   # include the concern: they skip #ensure_can_use_draft_order, so lockers and memberships must not gain them.
   # Used by the concern's instance methods and by JobOrder (its draft rule, JobOrder::DraftSweep).
   module DraftOrders
+    # THE Admin GraphQL client builder (ShopifyService.admin_client uses it too): starts the session and builds the client.
     def self.client
       ShopifyContext.start_session!
       ShopifyAPI::Clients::Graphql::Admin.new(session: ShopifyAPI::Context.active_session)
@@ -50,7 +51,10 @@ module ShopifyConcern
       [gone ? :gone : :error, nil]
     end
 
-    # draftOrderDelete for the draft `gid`. `user_errors_out`: optional Array that receives Shopify's userErrors.
+    # draftOrderDelete for the draft `gid`. It checks nothing about whose draft it is, so it stays out of the models'
+    # API. Its only callers: #destroy_shopify_draft_order below (a record's own stored id, after
+    # #ensure_can_use_draft_order: lockers, memberships) and JobOrder::DraftDeletion (job orders, the sweep).
+    # `user_errors_out`: optional Array that receives Shopify's userErrors.
     # True when Shopify reports it deleted the draft. Fail closed: anything but HTTP 200 raises.
     def self.delete(gid, user_errors_out: nil)
       delete_draft_order = <<~QUERY
@@ -78,10 +82,6 @@ module ShopifyConcern
   end
 
   class_methods do
-    def start_shopify_session
-      ShopifyContext.start_session!
-    end
-
     def draft_order_processable?(tag)
       tags = if tag.is_a?(String)
                tag.split(',').map(&:strip)

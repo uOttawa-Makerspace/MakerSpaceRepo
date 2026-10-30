@@ -214,7 +214,7 @@ RSpec.describe "Shopify Admin GraphQL over real HTTP (WebMock)", type: :request 
   end
 
   describe "in a fresh process (nothing but the boot initializer ran Context.setup)" do
-    # Regression for D-S36-new: ShopifyConcern.start_shopify_session never calls
+    # Regression for D-S36-new: ShopifyConcern::DraftOrders.client never calls
     # Context.setup, so the API version comes from config/initializers/shopify_api.rb.
     # Simulated by blanking the Context, then re-running the initializer.
     let(:context_ivars) { %i[@api_key @api_secret_key @api_version @host] }

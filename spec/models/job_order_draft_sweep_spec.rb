@@ -65,6 +65,38 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
     expect(report).to be_ok
   end
 
+  it "counts a delete as deleted when the order row disappears after the listing" do
+    order = order_with_draft!(stored: "gid://shopify/DraftOrder/1")
+    allow_any_instance_of(JobOrder).to receive(:lock!).and_raise(ActiveRecord::RecordNotFound)
+    report = sweep(draft_node("gid://shopify/DraftOrder/1", order))
+
+    expect(shopify.deleted_ids).to eq(["gid://shopify/DraftOrder/1"])
+    expect(report.counts[:deleted]).to eq(1)
+    expect(report).to be_ok
+  end
+
+  it "keeps a draft whose order moved to COMPLETED (keeping its stored id) after the sweep decided it was an orphan" do
+    order = order_with_draft!(:staff_approval, stored: "gid://shopify/DraftOrder/1")
+    allow(JobOrder).to receive(:find_by).and_wrap_original do |m, *args, **kw|
+      m.call(*args, **kw).tap { |o| o.job_order_statuses.create!(job_status: JobStatus::COMPLETED, user: owner) }
+    end
+    report = sweep(draft_node("gid://shopify/DraftOrder/1", order))
+
+    expect(shopify.deleted_ids).to be_empty
+    expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/1")
+    expect(report.counts).to include(kept: 1, deleted: 0)
+  end
+
+  it "fetches and deletes only inside the order's row lock" do
+    order = order_with_draft!(:staff_approval, stored: "gid://shopify/DraftOrder/1")
+    locked = []
+    allow_any_instance_of(JobOrder).to receive(:lock!).and_wrap_original { |m, *a| locked << true; m.call(*a) }
+    shopify.on_query = ->(q, _v) { expect(locked).not_to be_empty unless q.include?("jobOrderOpenDrafts") }
+    sweep(draft_node("gid://shopify/DraftOrder/1", order))
+
+    expect(shopify.deleted_ids).to eq(["gid://shopify/DraftOrder/1"])
+  end
+
   it "keeps the current draft of an order waiting for payment" do
     order = order_with_draft!(stored: "gid://shopify/DraftOrder/1")
     report = sweep(draft_node("gid://shopify/DraftOrder/1", order))
@@ -132,6 +164,14 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
       expect(report.counts.values.sum).to eq(0)
     end
 
+    it "counts an unmarked draft listed on two pages once" do
+      order = order_with_draft!(:paid)
+      node = draft_node("gid://shopify/DraftOrder/1", order, tags: [operating_tag])
+      report = sweep(pages: [[node], [node]])
+
+      expect(report.counts[:unmarked]).to eq(1)
+    end
+
     it "leaves a draft with two different markers untouched" do
       order = order_with_draft!(:paid)
       report = sweep(draft_node("gid://shopify/DraftOrder/1", order, tags: [operating_tag, "job_order:1", "job_order:2"]))
@@ -168,27 +208,14 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
     expect(shopify.deleted_ids).to eq(["gid://shopify/DraftOrder/1"])
   end
 
-  describe "the Shopify calls are made outside the order's lock" do
-    it "never calls Shopify inside a transaction the sweep opened" do
-      order = order_with_draft!(stored: "gid://shopify/DraftOrder/2")
-      baseline = JobOrder.connection.open_transactions
-      depths = []
-      shopify.on_query = ->(_q, _v) { depths << JobOrder.connection.open_transactions }
-      sweep(draft_node("gid://shopify/DraftOrder/1", order))
+  it "keeps the stored id of a draft Shopify reports paid, and clears the id of a deleted one" do
+    paid = order_with_draft!(:paid, stored: "gid://shopify/DraftOrder/1")
+    shopify.draft_statuses["gid://shopify/DraftOrder/1"] = "COMPLETED"
+    open_one = order_with_draft!(:paid, stored: "gid://shopify/DraftOrder/2")
+    sweep(draft_node("gid://shopify/DraftOrder/1", paid), draft_node("gid://shopify/DraftOrder/2", open_one))
 
-      expect(shopify.deleted_ids).to eq(["gid://shopify/DraftOrder/1"])
-      expect(depths).to all(eq(baseline))
-    end
-
-    it "keeps the stored id of a draft Shopify reports paid, and clears the id of a deleted one" do
-      paid = order_with_draft!(:paid, stored: "gid://shopify/DraftOrder/1")
-      shopify.draft_statuses["gid://shopify/DraftOrder/1"] = "COMPLETED"
-      open_one = order_with_draft!(:paid, stored: "gid://shopify/DraftOrder/2")
-      sweep(draft_node("gid://shopify/DraftOrder/1", paid), draft_node("gid://shopify/DraftOrder/2", open_one))
-
-      expect(paid.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/1")
-      expect(open_one.reload.shopify_draft_order_id).to be_nil
-    end
+    expect(paid.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/1")
+    expect(open_one.reload.shopify_draft_order_id).to be_nil
   end
 
   describe "an order without a status never keeps a draft" do
@@ -271,15 +298,34 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
     end
   end
 
-  describe "the delete cap" do
-    it "stops deleting at the cap, leaves the rest and is unresolved" do
-      nodes = Array.new(3) { |i| draft_node("gid://shopify/DraftOrder/#{i + 1}", order_with_draft!) }
+  describe "the kill switch" do
+    let(:nodes) { Array.new(3) { |i| draft_node("gid://shopify/DraftOrder/#{i + 1}", order_with_draft!) } }
+
+    it "deletes NOTHING when the orphans exceed the cap, and says how to override" do
       shopify.draft_pages = [nodes]
       report = described_class.run(max_deletes: 2)
 
-      expect(shopify.deleted_ids.size).to eq(2)
+      expect(shopify.deleted_ids).to be_empty
+      expect(shopify.calls.size).to eq(1) # the listing only
       expect(report).not_to be_ok
-      expect(report.unresolved.first).to include("cap of 2")
+      expect(report.unresolved.first).to include("3 orphan", "cap of 2", "NOTHING", "CONFIRM_MAX_DELETES=3")
+    end
+
+    it "counts only the drafts the database does not back" do
+      current = order_with_draft!(stored: "gid://shopify/DraftOrder/9")
+      shopify.draft_pages = [nodes + [draft_node("gid://shopify/DraftOrder/9", current)]]
+      report = described_class.run(max_deletes: 3)
+
+      expect(shopify.deleted_ids.size).to eq(3)
+      expect(report).to be_ok
+    end
+
+    it "proceeds with an explicit override" do
+      shopify.draft_pages = [nodes]
+      report = described_class.run(max_deletes: 3)
+
+      expect(shopify.deleted_ids.size).to eq(3)
+      expect(report).to be_ok
     end
 
     it "defaults to 200" do
@@ -287,22 +333,69 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
     end
   end
 
-  describe "one report per problem" do
-    it "reports a run with unresolved drafts once, naming the drafts" do
+  describe "reporting" do
+    let(:reports) { [] }
+
+    before { allow(Rails.error).to receive(:report) { |error, **kw| reports << [error, kw] } }
+
+    it "reports a run with unresolved drafts once, with a stable message and the gids in the context" do
       first = order_with_draft!
       second = order_with_draft!
       shopify.delete_user_errors = [{ "field" => "id", "message" => "cannot delete" }]
-      reports = []
-      allow(Rails.error).to receive(:report) { |*args, **kw| reports << [args, kw] }
       sweep(draft_node("gid://shopify/DraftOrder/1", first), draft_node("gid://shopify/DraftOrder/2", second))
 
       expect(reports.size).to eq(1)
-      expect(reports.first.last.dig(:context, :unresolved_draft_order_ids)).to eq(%w[gid://shopify/DraftOrder/1 gid://shopify/DraftOrder/2])
+      error, kw = reports.first
+      expect(error.message).to eq("job order draft sweep: unresolved drafts")
+      expect(kw[:context]).to include(unresolved_count: 2, unresolved_draft_order_ids: %w[gid://shopify/DraftOrder/1 gid://shopify/DraftOrder/2])
+    end
+
+    it "keeps the message stable whichever drafts are unresolved" do
+      messages = %w[1 2].map do |n|
+        reports.clear
+        shopify.delete_user_errors = [{ "field" => "id", "message" => "cannot delete #{n}" }]
+        sweep(draft_node("gid://shopify/DraftOrder/#{n}", order_with_draft!))
+        reports.first.first.message
+      end
+
+      expect(messages.uniq).to eq(["job order draft sweep: unresolved drafts"])
     end
 
     it "reports nothing when everything is resolved" do
-      expect(Rails.error).not_to receive(:report)
       sweep
+      expect(reports).to be_empty
+    end
+
+    it "reports an unexpected exception on its own, with the gid, plus the run summary" do
+      order = order_with_draft!
+      boom = ArgumentError.new("boom")
+      allow_any_instance_of(JobOrder).to receive(:reconcile_orphan_draft!).and_raise(boom)
+      report = sweep(draft_node("gid://shopify/DraftOrder/1", order))
+
+      expect(report.unresolved.first).to include("unexpected", "boom")
+      expect(reports.size).to eq(2)
+      expect(reports.first.first).to equal(boom)
+      expect(reports.first.last[:context]).to include(draft_order_id: "gid://shopify/DraftOrder/1", job_order_id: order.id)
+      expect(reports.last.first.message).to eq("job order draft sweep: unresolved drafts")
+    end
+
+    it "reports a deadlock on its own, with the real exception, plus the run summary" do
+      order = order_with_draft!
+      allow_any_instance_of(JobOrder).to receive(:lock!).and_raise(ActiveRecord::Deadlocked, "deadlock detected")
+      report = sweep(draft_node("gid://shopify/DraftOrder/1", order))
+
+      expect(report.unresolved.first).to include("deadlock")
+      expect(reports.size).to eq(2)
+      expect(reports.first.first).to be_a(ActiveRecord::Deadlocked)
+      expect(reports.first.last[:context]).to include(draft_order_id: "gid://shopify/DraftOrder/1")
+    end
+
+    it "does not report a busy order or a refused delete individually" do
+      order = order_with_draft!
+      allow_any_instance_of(JobOrder).to receive(:lock!).and_raise(ActiveRecord::LockWaitTimeout)
+      sweep(draft_node("gid://shopify/DraftOrder/1", order))
+
+      expect(reports.size).to eq(1)
     end
   end
 
@@ -359,9 +452,9 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
       expect(JobOrder.draft_paid?("status" => "INVOICE_SENT")).to be(false)
     end
 
-    it "settles a paid-destination order through JobOrder.delete_draft_unless_completed!, dropping the id" do
+    it "settles a paid-destination order through the one paid-settle rule, dropping the id" do
       order = order_with_draft!(:paid, stored: "gid://shopify/DraftOrder/1")
-      expect(JobOrder).to receive(:delete_draft_unless_completed!).with("gid://shopify/DraftOrder/1").and_call_original
+      expect(JobOrder.const_get(:DraftDeletion)).to receive(:delete_unless_completed!).with("gid://shopify/DraftOrder/1").and_call_original
 
       expect(order.send(:settle_for_paid_order)).to eq(:deleted)
       expect(order.reload.shopify_draft_order_id).to be_nil
@@ -382,10 +475,27 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
   describe "the gid-level Shopify calls are not part of the models' API" do
     it "are not class methods of JobOrder, LockerRental or Membership" do
       [JobOrder, LockerRental, Membership].each do |model|
-        %i[delete_shopify_draft_order fetch_shopify_draft_order_result shopify_admin_client].each do |name|
+        %i[delete_shopify_draft_order fetch_shopify_draft_order_result shopify_admin_client delete_draft_unless_completed!
+           fetch_draft_or_raise start_shopify_session].each do |name|
           expect(model).not_to respond_to(name)
         end
       end
+    end
+
+    it "gives LockerRental and Membership no delete-by-gid method at all" do
+      [LockerRental, Membership].each do |model|
+        names = model.public_methods + model.new.public_methods
+        expect(names.grep(/delete.*draft|draft.*delete|reconcile_orphan/) - %i[destroy_shopify_draft_order]).to be_empty
+      end
+    end
+
+    it "keeps the deletion helper out of reach of everything but JobOrder" do
+      expect { JobOrder::DraftDeletion }.to raise_error(NameError, /private constant/)
+    end
+
+    it "uses one Admin client builder for ShopifyService and the draft calls" do
+      expect(ShopifyConcern::DraftOrders).to receive(:client).and_return(:client)
+      expect(ShopifyService.admin_client).to eq(:client)
     end
 
     it "builds the client for a draft create through the one builder" do
