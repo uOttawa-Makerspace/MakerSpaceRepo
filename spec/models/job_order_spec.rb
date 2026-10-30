@@ -319,6 +319,26 @@ RSpec.describe JobOrder, type: :model do
         expect(described_class.money_string(nil)).to eq("0.00")
       end
 
+      # Round 2 review 7: two plain includes-based snapshots, both dropped by reload
+      it "reload drops both quote snapshots (total, fingerprint and draft lines all re-read)" do
+        option = JobOption.create!(name: "Polish", fee: 1)
+        quote = quoted_task!("Task #1", price: 10, service_price: 0, service_quantity: 0).job_task_quote
+        quote.job_task_quote_options.create!(job_option: option, price: 3)
+        order.reload
+        fingerprint = order.quote_fingerprint
+        expect(order.total_price).to eq(13)
+        expect(order.shopify_draft_order_line_items.map { |l| l[:title] }).to include("Task #1 Polish")
+
+        JobTaskQuote.where(id: quote.id).update_all(price: 20)
+        JobOption.where(id: option.id).update_all(name: "Wax")
+        expect(order.total_price).to eq(13) # memoized within the request
+
+        order.reload
+        expect(order.total_price).to eq(23)
+        expect(order.quote_fingerprint).not_to eq(fingerprint)
+        expect(order.shopify_draft_order_line_items.map { |l| l[:title] }).to include("Task #1 Wax")
+      end
+
       it "does not fingerprint display titles: renaming a task or an option leaves it unchanged" do
         option = JobOption.create!(name: "Polish", fee: 1)
         quote = quoted_task!("Task #1", price: 10, service_price: 0, service_quantity: 0).job_task_quote

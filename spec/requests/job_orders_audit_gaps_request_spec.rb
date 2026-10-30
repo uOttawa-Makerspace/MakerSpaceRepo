@@ -398,14 +398,15 @@ RSpec.describe "JobOrders audit gaps", type: :request do
         expect(shopify_ops).to eq(["getDraftOrder"])
       end
 
-      # JOB-03 follow-up: the probe runs once, under the lock (the quote snapshot is built once per request)
-      it "decides gone from one fetch under the lock, creates one draft; the view reuses the link" do
+      # Round 2 review 5: the lock-free fast path fetches the (current) draft once; Shopify says it is gone, so the
+      # locked path re-checks once and creates one draft
+      it "falls back from the fast path to the lock on a gone draft, creates one draft; the view reuses the link" do
         order, = order_with_draft!
         shopify.missing_ids = ["gid://shopify/DraftOrder/9001"]
         shopify.draft_id = "gid://shopify/DraftOrder/9004"
         get pay_job_orders_path, params: { token: order.pay_token }
 
-        expect(shopify_ops).to eq(%w[getDraftOrder draftOrderCreate getDraftOrder])
+        expect(shopify_ops).to eq(%w[getDraftOrder getDraftOrder draftOrderCreate getDraftOrder])
         expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9004")
       end
 

@@ -93,7 +93,9 @@ class JobOrder < ApplicationRecord
       lock!
       latest = job_order_statuses.last&.job_status
       next TransitionResult.refused(:wrong_state) if latest.nil? || !Array.wrap(from).include?(latest)
-      next TransitionResult.refused(:link_spent) if approval_token && self.class.from_approval_token(approval_token)&.id != id
+      if approval_token && self.class.from_approval_token(approval_token)&.id != id
+        next TransitionResult.refused(:link_spent)
+      end
 
       enter_status!(to, actor: actor, from: latest)
       TransitionResult.done
@@ -310,10 +312,20 @@ class JobOrder < ApplicationRecord
   #   (both void the draft themselves), so the customer never approved the current items. Neither the old nor a
   #   new draft is served: the order goes back to staff (#send_back_for_requote!, reason "invoice_mismatch") and
   #   staff are mailed after the commit. If the draft cannot be deleted nothing changes and nothing is served.
-  # Everything is decided under the row lock (with_lock reloads the row, then the status, the Shopify probe, the
-  # fingerprint check and any create all read one #quote_snapshot). The Shopify calls run inside the lock; /pay is
-  # low-traffic, so that is accepted.
+  # A current draft is served without a lock (one fetch). Anything else is re-decided under the row lock: with_lock
+  # reloads the row (dropping the snapshots), then the status, the probe, the fingerprint check and any create read
+  # fresh data; the Shopify calls on that path run inside the lock.
   def checkout_link
+    # Lock-free fast path: a COMPLETED order whose stored draft is current (read without a lock) is served by one
+    # fetch. A race with a change that voids the draft is safe: the void deletes it on Shopify, the fetch then finds
+    # nothing and falls through to the locked path.
+    if job_order_statuses.last&.job_status == JobStatus::COMPLETED && draft_order_current?
+      state, url = probe_draft_order
+      return url if state == :found
+      return nil if state == :error
+    end
+
+    # mismatch, legacy draft, or no (live) draft: re-decide everything under the row lock
     url, sent_back = with_lock { checkout_link_under_lock }
     JobOrderMailer.send_job_requote_needed(id, "invoice_mismatch").deliver_later if sent_back
     url
@@ -340,9 +352,8 @@ class JobOrder < ApplicationRecord
   #   line item     [0, "line_item:<job_quote_line_item id>", amount]
   # amounts as 2-decimal strings, sorted by (task id, component). Display titles (task titles, option names) are
   # not part of it, so renaming a JobOption does not change it, and row order from the database does not matter.
-  def quote_fingerprint
-    snapshot = quote_snapshot
-    components = quote_lines.map { |line| [*line[:key], self.class.money_string(line[:amount])] }
+  def quote_fingerprint(snapshot = quote_snapshot)
+    components = quote_lines(snapshot).map { |line| [*line[:key], self.class.money_string(line[:amount])] }
     components += snapshot.line_items.map { |li| [0, "line_item:#{li.id}", self.class.money_string(li.price)] }
     Digest::SHA256.hexdigest(components.sort_by { |task_id, kind, _| [task_id, kind] }.to_json)
   end
@@ -351,21 +362,24 @@ class JobOrder < ApplicationRecord
     format("%.2f", BigDecimal((amount || 0).to_s).round(2))
   end
 
-  # Everything the quote is made of, loaded once and ordered by id: the tasks with their quotes and quote options,
-  # and the order's line items. total_price, the draft's line items and #quote_fingerprint all read it, so a
-  # request builds it once. reload (and so lock! / with_lock) drops it. The options themselves (only their names
-  # are needed, for draft titles) are preloaded by #quote_lines, once per snapshot.
+  # Everything the quote is made of, loaded once per request and ordered by id: the tasks with their quotes and
+  # quote options, and the order's line items. Two plain includes-based variants:
+  # - #quote_snapshot: what total_price and #quote_fingerprint read (no option names needed);
+  # - #draft_snapshot: the same plus each quote option's JobOption, for the draft's line-item titles.
+  # reload (and so lock! / with_lock) drops both.
   QuoteSnapshot = Data.define(:tasks, :line_items)
 
   def quote_snapshot
-    @quote_snapshot ||= QuoteSnapshot.new(
-      tasks: job_tasks.includes(job_task_quote: :job_task_quote_options).reorder(:id).to_a,
-      line_items: job_quote_line_items.reorder(:id).to_a
-    )
+    @quote_snapshot ||= load_quote_snapshot(job_task_quote: :job_task_quote_options)
+  end
+
+  def draft_snapshot
+    @draft_snapshot ||= load_quote_snapshot(job_task_quote: { job_task_quote_options: :job_option })
   end
 
   def reload(*)
     @quote_snapshot = nil
+    @draft_snapshot = nil
     super
   end
 
@@ -395,8 +409,9 @@ class JobOrder < ApplicationRecord
   end
 
   def shopify_draft_order_line_items
-    quote_lines.map { |line| generate_line_item(line[:title], line[:amount]) } +
-      [generate_line_item("Line Items Total", quote_snapshot.line_items.sum { |li| li.price || 0 })]
+    snapshot = draft_snapshot
+    quote_lines(snapshot, titles: true).map { |line| generate_line_item(line[:title], line[:amount]) } +
+      [generate_line_item("Line Items Total", snapshot.line_items.sum { |li| li.price || 0 })]
   end
 
   def expedited?
@@ -436,31 +451,32 @@ class JobOrder < ApplicationRecord
 
   # JOB-03: the draft id and the fingerprint of the quote it was created from are written in one UPDATE. The line
   # items the concern sent were built from the same #quote_snapshot as #quote_fingerprint.
+  # The fingerprint is computed from the draft snapshot, the very rows the sent line items were built from.
   def store_shopify_draft_order_id(new_id, _line_items)
-    update_columns(shopify_draft_order_id: new_id, shopify_draft_order_fingerprint: quote_fingerprint)
+    update_columns(shopify_draft_order_id: new_id, shopify_draft_order_fingerprint: quote_fingerprint(draft_snapshot))
   end
 
-  # The task components of the quote, from #quote_snapshot, in (task id, component) order:
-  # { key: [task id, component], title: draft line title, amount: BigDecimal }.
-  def quote_lines
-    snapshot = quote_snapshot
-    unless snapshot.equal?(@quote_options_preloaded_for)
-      options = snapshot.tasks.filter_map(&:job_task_quote).flat_map(&:job_task_quote_options)
-      ActiveRecord::Associations::Preloader.new(records: options, associations: :job_option).call
-      @quote_options_preloaded_for = snapshot
-    end
+  def load_quote_snapshot(task_includes)
+    QuoteSnapshot.new(tasks: job_tasks.includes(task_includes).reorder(:id).to_a,
+                      line_items: job_quote_line_items.reorder(:id).to_a)
+  end
+
+  # The task components of `snapshot`, in (task id, component) order:
+  # { key: [task id, component], amount: BigDecimal, title: draft line title (only with titles:, which needs a
+  # #draft_snapshot: it reads the options' names) }.
+  def quote_lines(snapshot, titles: false)
     snapshot.tasks.flat_map do |task|
       quote = task.job_task_quote
       next [] if quote.nil?
 
-      lines = [{ key: [task.id, "service"], title: "#{task.title} Service Fee", amount: quote.price }]
+      lines = [{ key: [task.id, "service"], amount: quote.price, title: titles && "#{task.title} Service Fee" }]
       if (quote.service_price || 0).positive? && (quote.service_quantity || 0).positive?
-        lines << { key: [task.id, "parts"], title: "#{task.title} Parts Fee",
-                   amount: quote.service_price * quote.service_quantity }
+        lines << { key: [task.id, "parts"], amount: quote.service_price * quote.service_quantity,
+                   title: titles && "#{task.title} Parts Fee" }
       end
       quote.job_task_quote_options.sort_by(&:job_option_id).each do |opt|
-        lines << { key: [task.id, "option:#{opt.job_option_id}"], title: "#{task.title} #{opt.job_option.name}",
-                   amount: opt.price }
+        lines << { key: [task.id, "option:#{opt.job_option_id}"], amount: opt.price,
+                   title: titles && "#{task.title} #{opt.job_option.name}" }
       end
       lines
     end

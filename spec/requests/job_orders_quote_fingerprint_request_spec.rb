@@ -91,6 +91,40 @@ RSpec.describe "Job order quote fingerprint", type: :request do
     expect(status_names(order).last).to eq("Completed (Waiting for Payment)")
   end
 
+  # Round 2 review 5: a current draft is served on the lock-free fast path (one unlocked read, one fetch)
+  it "serves a current draft without taking the row lock (no SELECT ... FOR UPDATE)" do
+    order = completed_order!
+    pay!(order) # creates the draft (locked path)
+    sql = []
+    subscriber = ActiveSupport::Notifications.subscribe("sql.active_record") { |*, payload| sql << payload[:sql] }
+    shopify.calls.clear
+    begin
+      pay!(order)
+    ensure
+      ActiveSupport::Notifications.unsubscribe(subscriber)
+    end
+
+    expect(response.body).to include("https://pay.example/invoice")
+    expect(shopify_ops).to eq(["getDraftOrder"])
+    expect(sql.grep(/FOR UPDATE/)).to eq([])
+  end
+
+  it "takes the lock and re-decides when the draft is not current" do
+    order = completed_order!
+    pay!(order)
+    order.job_tasks.min_by(&:id).job_task_quote.update_column(:price, 1) # changed behind the draft
+    sql = []
+    subscriber = ActiveSupport::Notifications.subscribe("sql.active_record") { |*, payload| sql << payload[:sql] }
+    begin
+      pay!(order)
+    ensure
+      ActiveSupport::Notifications.unsubscribe(subscriber)
+    end
+
+    expect(sql.grep(/FOR UPDATE/)).not_to be_empty
+    expect(status_names(order).last).to eq("Waiting for Staff Approval")
+  end
+
   it "builds the quote once per /pay: one query per quote table, whatever the number of tasks" do
     order = completed_order!
     pay!(order) # creates the draft
@@ -107,8 +141,10 @@ RSpec.describe "Job order quote fingerprint", type: :request do
     end
 
     expect(response.body).to include("https://pay.example/invoice")
+    # serving a current draft needs no option names (titles are only built for a new draft)
     expect(tables).to eq("job_tasks" => 1, "job_task_quotes" => 1, "job_task_quote_options" => 1,
-                         "job_options" => 1, "job_quote_line_items" => 1)
+                         "job_quote_line_items" => 1)
+    expect(tables["job_options"]).to eq(0)
   end
 
   it "sends a draft built from the same snapshot it fingerprints, task lines in task-id order" do
