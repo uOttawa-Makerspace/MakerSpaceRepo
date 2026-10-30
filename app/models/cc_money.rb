@@ -33,14 +33,13 @@ class CcMoney < ApplicationRecord
   end
 
   # Wallet lock, the shared start of every CC spend. Inside the caller's transaction (raises
-  # ArgumentError if none is open): bounds the transaction's lock waits (bound_lock_waits!:
-  # this also covers the locks the caller takes next, e.g. the coupon or the order), then locks
-  # the user row FOR NO KEY UPDATE (User::GUARD_LOCK_MODE). House lock order: the user row
-  # FIRST, then the rows the caller spends on. Spends of one user are thereby serialised.
+  # ArgumentError if none is open), it locks the user row FOR NO KEY UPDATE
+  # (User::GUARD_LOCK_MODE). House lock order: the user row FIRST, then the rows the caller
+  # spends on. Spends of one user are thereby serialised. It changes no session setting: the
+  # spends (claim!, checkout!) run in own_transaction, which bounds their lock waits.
   # Returns a Wallet to hand to debit!/debit_all! (which then do not lock again).
   def self.lock_wallet!(user)
     require_caller_transaction!(:lock_wallet!)
-    bound_lock_waits!
     locked = User.where(id: user.id).lock(User::GUARD_LOCK_MODE).take!
     Wallet.new(locked, connection.current_transaction)
   end

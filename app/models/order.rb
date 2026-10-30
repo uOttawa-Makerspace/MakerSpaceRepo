@@ -41,7 +41,6 @@ class Order < ApplicationRecord
     return yield(self) if new_record?
 
     self.class.own_transaction("Order#change_items!") do
-      self.class.bound_lock_waits!
       cart = self.class.lock(CART_LOCK_MODE).find(id)
       raise CartClosed unless cart.order_status&.name == IN_PROGRESS
 
@@ -50,9 +49,9 @@ class Order < ApplicationRecord
   end
 
   # Cart checkout (OrdersController#create; D-S42). Its own top-level transaction
-  # (own_transaction): completes `order` for `user` and debits one CcMoney row per item through
+  # (own_transaction, lock waits bounded): completes `order` for `user` and debits one CcMoney row per item through
   # CcMoney.debit_all! (one balance check for the order total, one wallet refresh). Lock order
-  # (house rule): the wallet (user row; lock_wallet! also bounds the lock waits) first, then the
+  # (house rule): the wallet (user row) first, then the
   # order row, FOR NO KEY UPDATE, the same lock every cart change takes (change_items!), with the
   # status re-checked under it. Returns [outcome, order, kit_project_ids]:
   #   :completed          completed and paid now

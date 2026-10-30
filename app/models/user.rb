@@ -866,11 +866,11 @@ class User < ApplicationRecord
     return false unless persisted?
 
     own = !self.class.caller_transaction_open?
-    self.class.transaction do
-      self.class.bound_lock_waits! if own
+    refresh = proc do
       self.class.unscoped.where(id: id).lock(GUARD_LOCK_MODE).take
       update_columns(wallet: CcMoney.uncached { cc_moneys.sum(:cc) })
     end
+    own ? self.class.own_transaction("User#update_wallet", &refresh) : self.class.transaction(&refresh)
   rescue ActiveRecord::LockWaitTimeout
     raise unless own
 

@@ -14,13 +14,17 @@ class ApplicationRecord < ActiveRecord::Base
     connection.transaction_open? && connection.current_transaction.joinable?
   end
 
-  # Runs the block as its OWN top-level transaction; inside a caller's transaction it raises
-  # ArgumentError instead of joining it (a SET LOCAL in it, e.g. bound_lock_waits!, would
-  # otherwise apply to the rest of the caller's transaction).
-  def self.own_transaction(name, &block)
+  # Runs the block as its OWN top-level transaction with every lock wait bounded
+  # (bound_lock_waits!; COMMIT/ROLLBACK ends the setting). Inside a caller's transaction it raises
+  # ArgumentError instead of joining it: the SET LOCAL would otherwise apply to the rest of the
+  # caller's transaction. This is the only place a money/cart path changes a session setting.
+  def self.own_transaction(name)
     raise ArgumentError, "#{name} must run as its own transaction" if caller_transaction_open?
 
-    transaction(&block)
+    transaction do
+      bound_lock_waits!
+      yield
+    end
   end
 
   # SET LOCAL lock_timeout = LOCK_TIMEOUT for the rest of the current transaction.

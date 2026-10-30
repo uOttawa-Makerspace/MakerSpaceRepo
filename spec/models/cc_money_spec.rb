@@ -97,20 +97,27 @@ RSpec.describe CcMoney, type: :model do
 
     def user_locks(sqls) = sqls.count { |q| q.include?('FROM "users"') && q.include?("FOR NO KEY UPDATE") }
 
-    it "a Wallet from lock_wallet! in this transaction is not locked again; lock_wallet! bounds the lock waits" do
+    it "a Wallet from lock_wallet! in this transaction is not locked again" do
       CcMoney.create!(user: user, cc: 10)
-      timeout = nil
       sqls = sql_during do
         in_caller_transaction do
           wallet = CcMoney.lock_wallet!(user)
-          timeout = CcMoney.connection.select_value("SELECT current_setting('lock_timeout')")
           CcMoney.debit!(wallet, 1)
           CcMoney.debit!(wallet, 2)
         end
       end
       expect(user_locks(sqls)).to eq(1)
-      expect(timeout).to eq("5s")
       expect(user.reload.wallet).to eq(7)
+    end
+
+    it "lock_wallet!/debit! inside a caller transaction leave its lock_timeout unchanged (no session setting)" do
+      CcMoney.create!(user: user, cc: 10)
+      in_caller_transaction do
+        CcMoney.connection.execute("SET LOCAL lock_timeout = '7s'")
+        CcMoney.debit!(user, 1)
+        CcMoney.debit!(CcMoney.lock_wallet!(user), 1)
+        expect(CcMoney.connection.select_value("SELECT current_setting('lock_timeout')")).to eq("7s")
+      end
     end
 
     it "debit_all! checks the TOTAL once, writes every row and refreshes the cached wallet once" do
