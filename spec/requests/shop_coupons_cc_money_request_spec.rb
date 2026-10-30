@@ -94,7 +94,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         first = create(:coupon_code, :unclaimed, dollar_cost: 5, cc_cost: 40)
         create(:coupon_code, :unclaimed, dollar_cost: 5, cc_cost: 40)
 
-        expect { post discount_codes_path, params: { dollar_cost: 5 } }
+        expect { post discount_codes_path, params: { dollar_cost: 5, cc_cost: 40 } }
           .to change(CcMoney, :count).by(1)
 
         expect(response).to redirect_to(discount_codes_path)
@@ -110,7 +110,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
       it "allows an exact-balance purchase" do
         credit_cc!(user, 40)
         create(:coupon_code, :unclaimed, dollar_cost: 5, cc_cost: 40)
-        post discount_codes_path, params: { dollar_cost: 5 }
+        post discount_codes_path, params: { dollar_cost: 5, cc_cost: 40 }
         expect(flash[:notice]).to eq("Discount Code created")
         expect(user.reload.wallet).to eq(0)
       end
@@ -118,26 +118,98 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
       it "rejects with an alert when the wallet is short; nothing changes" do
         credit_cc!(user, 39)
         coupon = create(:coupon_code, :unclaimed, dollar_cost: 5, cc_cost: 40)
-        expect { post discount_codes_path, params: { dollar_cost: 5 } }.not_to change(CcMoney, :count)
+        expect { post discount_codes_path, params: { dollar_cost: 5, cc_cost: 40 } }.not_to change(CcMoney, :count)
         expect(response).to redirect_to(root_path)
         expect(flash[:alert]).to eq("Not enough CC points")
         expect(coupon.reload.user_id).to be_nil
       end
 
+      it "a refusal is decided on the ledger balance, not the stale cache, and writes nothing" do
+        CcMoney.create!(user: user, cc: 39)
+        user.update_column(:wallet, 1000)
+        create(:coupon_code, :unclaimed, dollar_cost: 5, cc_cost: 40)
+        post discount_codes_path, params: { dollar_cost: 5, cc_cost: 40 }
+        expect(flash[:alert]).to eq("Not enough CC points")
+        expect(user.reload.wallet).to eq(1000)
+      end
+
       it "does not touch coupons already claimed by someone else (same dollar value)" do
         credit_cc!(user, 100)
         taken = create(:coupon_code, :claimed, user: other, dollar_cost: 5, cc_cost: 10)
-        expect { post discount_codes_path, params: { dollar_cost: 5 } }.not_to change(CcMoney, :count)
-        # same nil-dereference crash as an unknown value (D-S09)
-        expect(response).to have_http_status(:internal_server_error)
+        expect { post discount_codes_path, params: { dollar_cost: 5, cc_cost: 10 } }.not_to change(CcMoney, :count)
+        # Fixed (was WART D-S09, a 500): redirect back to the offers with the alert
+        expect(response).to redirect_to(new_discount_code_path)
+        expect(flash[:alert]).to eq("Can not find coupon for $5 off")
         expect(taken.reload.user_id).to eq(other.id)
       end
 
-      it "answers with the 'Can not find coupon' alert flash and then 500s on the unknown dollar value" do
+      it "answers the 'Can not find coupon' alert and redirects to the offers on an unknown dollar value" do
         credit_cc!(user, 100)
-        # WART(D-S09): after redirecting for a missing coupon the filter keeps going and dereferences nil (@price_rule.user), so the user sees a 500 instead of the redirect
-        expect { post discount_codes_path, params: { dollar_cost: 777 } }.not_to change(CcMoney, :count)
-        expect(response).to have_http_status(:internal_server_error)
+        # Fixed (was WART D-S09): the filter now returns after its redirect instead of dereferencing nil (a 500)
+        expect { post discount_codes_path, params: { dollar_cost: 777, cc_cost: 40 } }.not_to change(CcMoney, :count)
+        expect(response).to redirect_to(new_discount_code_path)
+        expect(flash[:alert]).to eq("Can not find coupon for $777 off")
+      end
+
+      it "a claim whose save fails changes nothing and answers the 'not created properly' alert (no 500)" do
+        credit_cc!(user, 100)
+        coupon = create(:coupon_code, :unclaimed, dollar_cost: 5, cc_cost: 40)
+        allow_any_instance_of(CouponCode).to receive(:update!).and_raise(ActiveRecord::RecordInvalid.new(coupon))
+        expect { post discount_codes_path, params: { dollar_cost: 5, cc_cost: 40 } }.not_to change(CcMoney, :count)
+        expect(response).to redirect_to(discount_codes_path)
+        expect(flash[:alert]).to eq("Discount Code not created properly!")
+        expect(coupon.reload.user_id).to be_nil
+        expect(user.reload.wallet).to eq(100)
+      end
+
+      it "a debit that is not saved changes nothing and answers the same alert" do
+        credit_cc!(user, 100)
+        coupon = create(:coupon_code, :unclaimed, dollar_cost: 5, cc_cost: 40)
+        allow(CcMoney).to receive(:create!).and_raise(ActiveRecord::RecordNotSaved, "simulated")
+        post discount_codes_path, params: { dollar_cost: 5, cc_cost: 40 }
+        expect(response).to redirect_to(discount_codes_path)
+        expect(flash[:alert]).to eq("Discount Code not created properly!")
+        expect(coupon.reload.user_id).to be_nil
+        expect(user.cc_moneys.where("cc < 0")).to be_empty
+      end
+
+      it "charges the price the user confirmed: two $10 coupons at 500 and 1000 CC, picking 500 charges 500" do
+        credit_cc!(user, 2000)
+        pricey = create(:coupon_code, :unclaimed, dollar_cost: 10, cc_cost: 1000) # lower id
+        cheap = create(:coupon_code, :unclaimed, dollar_cost: 10, cc_cost: 500)
+        post discount_codes_path, params: { dollar_cost: 10, cc_cost: 500 }
+        expect(flash[:notice]).to eq("Discount Code created")
+        expect(cheap.reload.user_id).to eq(user.id)
+        expect(pricey.reload.user_id).to be_nil
+        expect(user.cc_moneys.where("cc < 0").pluck(:cc)).to eq([-500])
+        expect(user.reload.wallet).to eq(1500)
+      end
+
+      it "refuses a post without the confirmed price (no other-priced coupon is picked)" do
+        credit_cc!(user, 2000)
+        coupon = create(:coupon_code, :unclaimed, dollar_cost: 10, cc_cost: 1000)
+        expect { post discount_codes_path, params: { dollar_cost: 10 } }.not_to change(CcMoney, :count)
+        expect(response).to redirect_to(new_discount_code_path)
+        expect(coupon.reload.user_id).to be_nil
+      end
+
+      it "the offers page posts both the dollar value and the price of each offer" do
+        create(:coupon_code, :unclaimed, dollar_cost: 10, cc_cost: 500)
+        create(:coupon_code, :unclaimed, dollar_cost: 10, cc_cost: 1000)
+        get new_discount_code_path
+        expect(response.body).to include(discount_codes_path(dollar_cost: 10, cc_cost: 500).gsub("&", "&amp;"))
+        expect(response.body).to include(discount_codes_path(dollar_cost: 10, cc_cost: 1000).gsub("&", "&amp;"))
+      end
+
+      it "a negative price reaching the claim (defence in depth: validated and DB-checked) answers 'not created properly'" do
+        credit_cc!(user, 100)
+        coupon = create(:coupon_code, :unclaimed, dollar_cost: 5, cc_cost: 10)
+        allow_any_instance_of(CouponCode).to receive(:cc_cost).and_return(-10)
+        post discount_codes_path, params: { dollar_cost: 5, cc_cost: 10 }
+        expect(response).to redirect_to(discount_codes_path)
+        expect(flash[:alert]).to eq("Discount Code not created properly!")
+        expect(coupon.reload.user_id).to be_nil
+        expect(user.reload.wallet).to eq(100)
       end
 
       it "is available to staff and admin with the same economics" do
@@ -146,7 +218,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
           shop_log_in!(u)
           credit_cc!(u, 50)
           coupon = create(:coupon_code, :unclaimed, dollar_cost: 7, cc_cost: 20)
-          post discount_codes_path, params: { dollar_cost: 7 }
+          post discount_codes_path, params: { dollar_cost: 7, cc_cost: 20 }
           expect(flash[:notice]).to eq("Discount Code created")
           expect(coupon.reload.user_id).to eq(u.id)
           expect(u.reload.wallet).to eq(30)
@@ -218,16 +290,49 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         expect(created.user_id).to be_nil
       end
 
+      it "refuses a negative price on create (422, nothing saved) and on update (422, unchanged)" do
+        expect do
+          post coupon_codes_path, params: { coupon_code: { code: "NEG", cc_cost: -5, dollar_cost: 3 } }
+        end.not_to change(CouponCode, :count)
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.body).to include("Cc cost must be a number of CC points (0 or more)")
+
+        patch coupon_code_path(coupon), params: { coupon_code: { cc_cost: -1 } }
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(coupon.reload.cc_cost).not_to eq(-1)
+      end
+
       it "ignores user_id in mass assignment (not permitted)" do
         post coupon_codes_path, params: { coupon_code: { code: "NEW-2", cc_cost: 1, dollar_cost: 1, user_id: other.id } }
         expect(CouponCode.find_by!(code: "NEW-2").user_id).to be_nil
       end
 
-      it "accepts a coupon with no code/prices at all" do
-        # WART(D-S10): CouponCode has no validations, so a blank, free coupon can be created
-        expect { post coupon_codes_path, params: { coupon_code: { code: "" } } }.to change(CouponCode, :count).by(1)
-        expect(CouponCode.last.code).to eq("")
-        expect(CouponCode.last.cc_cost).to be_nil
+      it "refuses a coupon without a price (fixed D-S10: a blank, free coupon used to be created)" do
+        expect { post coupon_codes_path, params: { coupon_code: { code: "" } } }.not_to change(CouponCode, :count)
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.body).to include("Cc cost must be a number of CC points (0 or more)")
+      end
+
+      it "refuses a non-numeric price on create with the same message" do
+        expect { post coupon_codes_path, params: { coupon_code: { code: "X", cc_cost: "abc", dollar_cost: 3 } } }
+          .not_to change(CouponCode, :count)
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.body).to include("Cc cost must be a number of CC points (0 or more)")
+      end
+
+      it "refuses a fractional price on create with the same message (not truncated to 2)" do
+        expect { post coupon_codes_path, params: { coupon_code: { code: "FRAC", cc_cost: "2.9", dollar_cost: 3 } } }
+          .not_to change(CouponCode, :count)
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.body).to include("Cc cost must be a number of CC points (0 or more)")
+      end
+
+      it "renders the admin form again with the error and still creates a priced coupon afterwards" do
+        post coupon_codes_path, params: { coupon_code: { code: "X", dollar_cost: 3 } }
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.body).to include("coupon_code[cc_cost]")
+        expect { post coupon_codes_path, params: { coupon_code: { code: "X", dollar_cost: 3, cc_cost: 0 } } }
+          .to change(CouponCode, :count).by(1)
       end
 
       it "renders the edit page" do
@@ -276,15 +381,20 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         expect(response.body).to match(/0\s*<small/)
       end
 
-      it "shows signed-in users their refreshed wallet and last 10 activities" do
+      it "shows signed-in users their ledger balance (not the stale cache) and last 10 activities, without locking or writing" do
         CcMoney.create!(user: user, cc: 30)
         user.update_column(:wallet, 0)
         shop_log_in!(user)
+        sqls = []
+        sub = ActiveSupport::Notifications.subscribe("sql.active_record") { |*, p| sqls << p[:sql] }
         get cc_moneys_path
+        ActiveSupport::Notifications.unsubscribe(sub)
         expect(response).to have_http_status(:ok)
         expect(response.body).to include("Your CC Balance")
-        expect(user.reload.wallet).to eq(30)
         expect(response.body).to match(/30\s*<small/)
+        expect(sqls.grep(/FOR (NO KEY )?UPDATE/)).to be_empty
+        expect(sqls.grep(/\AUPDATE "users"/).grep(/wallet/)).to be_empty
+        expect(user.reload.wallet).to eq(0) # the cache is not written by a page view
       end
 
       it "caps the activity list at 10" do

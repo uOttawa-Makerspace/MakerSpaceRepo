@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_28_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_30_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -194,13 +194,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_28_120000) do
   end
 
   create_table "coupon_codes", force: :cascade do |t|
-    t.integer "cc_cost"
+    t.integer "cc_cost", null: false
     t.string "code"
     t.datetime "created_at", null: false
     t.integer "dollar_cost"
     t.datetime "updated_at", null: false
     t.bigint "user_id"
     t.index ["user_id"], name: "index_coupon_codes_on_user_id"
+    t.check_constraint "cc_cost >= 0", name: "coupon_codes_cc_cost_non_negative"
   end
 
   create_table "course_names", force: :cascade do |t|
@@ -1001,6 +1002,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_28_120000) do
     t.integer "training_id"
     t.datetime "updated_at", precision: nil, null: false
     t.index ["drop_off_location_id"], name: "index_proficient_projects_on_drop_off_location_id"
+    t.check_constraint "cc >= 0", name: "proficient_projects_cc_non_negative"
   end
 
   create_table "proficient_projects_users", id: false, force: :cascade do |t|
