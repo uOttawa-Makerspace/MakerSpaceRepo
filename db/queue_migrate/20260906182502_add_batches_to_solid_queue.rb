@@ -13,10 +13,7 @@ class AddBatchesToSolidQueue < ActiveRecord::Migration[7.1]
     # Fresh installs create all of this with the base schema, so skip
     # anything that already exists
     add_column :solid_queue_jobs, :batch_id, :bigint, if_not_exists: true
-    reversible do |dir|
-      dir.up { add_index_concurrently :solid_queue_jobs, :batch_id }
-      dir.down { remove_index :solid_queue_jobs, :batch_id, algorithm: :concurrently, if_exists: true }
-    end
+    add_index_concurrently :solid_queue_jobs, :batch_id
 
     create_table :solid_queue_batches, if_not_exists: true do |t|
       t.string :active_job_batch_id

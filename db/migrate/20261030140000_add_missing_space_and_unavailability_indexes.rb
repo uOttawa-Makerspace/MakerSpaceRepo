@@ -26,6 +26,10 @@ class AddMissingSpaceAndUnavailabilityIndexes < ActiveRecord::Migration[8.1]
     remove_index :staff_unavailabilities, name: "idx_staff_unavail_user_times", algorithm: :concurrently, if_exists: true
   end
 
+  # Reversible except for idx_staff_unavail_user_times, deliberately: it is
+  # not part of the schema (nothing queries it), so `up` removes it where it
+  # exists (staging) and `down` does not bring it back. Recreating an unused
+  # index on every rollback would only reintroduce what `up` removed on purpose.
   def down
     add_index_concurrently :events, :space_id, name: "index_events_on_space_id"
     add_index_concurrently :staff_spaces, :space_id, name: "index_staff_spaces_on_space_id"

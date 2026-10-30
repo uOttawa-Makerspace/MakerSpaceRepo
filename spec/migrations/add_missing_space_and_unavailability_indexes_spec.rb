@@ -33,7 +33,14 @@ RSpec.describe AddMissingSpaceAndUnavailabilityIndexes do
     expected.each { |table, list| expect(names(table)).to eq(list.sort), "indexes on #{table}" }
   end
 
-  after { run(:up) } # leave the DB as schema.rb defines it
+  # Leave the DB as schema.rb defines it, however the example ended: even if
+  # `down` raised partway, `up` is idempotent and converges on the schema's set.
+  # The leftover idx_staff_unavail_user_times of one example is dropped by `up`.
+  around do |example|
+    example.run
+  ensure
+    run(:up)
+  end
 
   it "up, down, up: exactly the schema.rb index set, then the single-column set, then again" do
     run(:up)
